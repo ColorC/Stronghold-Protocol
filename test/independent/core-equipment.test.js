@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { grantEquipment, equipItem, mergeItems, pieceEquipmentCount, totalEquipmentLevel } from '../../server/modes/independent/equipment.js';
 
 const catalog = {
-  badges: { precision: { id: 'precision', level: 1, unique: false, slotCost: 1 } },
+  badges: { precision: { id: 'precision', kind: '徽章', level: 1, unique: false, slotCost: 1 } },
   equipment: {
-    'gear-a': { id: 'gear-a', sourceId: 'gear-a', level: 2, eliteLevel: 5, eliteId: 'gear-a-b', unique: true, uniqueKey: 'gear-a', inheritable: true },
-    'gear-b': { id: 'gear-b', sourceId: 'gear-b', level: 1, eliteLevel: 3, eliteId: 'gear-b-b', unique: false, inheritable: true },
+    'gear-a': { id: 'gear-a', sourceId: 'gear-a', kind: '战斗装备', level: 2, eliteLevel: 5, eliteId: 'gear-a-b', unique: true, uniqueKey: 'gear-a', inheritable: true },
+    'gear-b': { id: 'gear-b', sourceId: 'gear-b', kind: '战斗装备', level: 1, eliteLevel: 3, eliteId: 'gear-b-b', unique: false, inheritable: true },
   },
 };
 const state = () => ({ nextUid: 1, inventory: [], pieces: [{ uid: 'p1', equipment: [], attachments: [] }, { uid: 'p2', equipment: [], attachments: [] }] });

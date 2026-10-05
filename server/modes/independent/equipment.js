@@ -39,6 +39,8 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
   if (pi < 0 || !target || !Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_TARGET');
   const item = state.inventory[pi]; const def = equipmentRecord(catalog, item.id);
   if (!def || def.available === false || def.mechanism === 'disabled' || quantity > item.quantity) throw new Error('BAD_QUANTITY');
+  if (!['徽章', 'badge', '功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(def.kind)) throw new Error('NOT_EQUIPPABLE');
+  if (def.unique && quantity !== 1) throw new Error('UNIQUE_QUANTITY');
   const usedByPieces = pieceEquipmentCount(target);
   if (usedByPieces + quantity > 99) throw new Error('CAPACITY');
   if (def.unique && target.equipment.some((x) => {
