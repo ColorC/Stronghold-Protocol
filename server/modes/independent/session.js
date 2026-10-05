@@ -1,15 +1,17 @@
 import { getData } from '../../data.js';
 import { GameData } from '../../match/gamedata.js';
 import { SharedPool } from '../../match/pool.js';
-import { buildDeployMap, canPlace, inField, FIELD } from '../../match/board.js';
+import { canPlace, inField, positionClass } from '../../match/board.js';
 import { modeIdFor } from '../../../shared/constants.js';
 import { createRng } from '../../sim/rng.js';
 import { getCatalog } from './catalog.js';
 import { runNativeHook } from './native.js';
 import { runIndependentBattle, getIndependentField } from './battle.js';
-import { grantEquipment, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
+import { grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
+import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
+import { nativeFactions, attachmentAccepted } from '../../../shared/independentRules.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const FORBIDDEN = new Set(['__proto__', 'prototype', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']);
@@ -78,15 +80,32 @@ function gainChess(state, catalog, chessId, extra = {}) {
   const stock = poolFor(state, chessId);
   if (!extra.poolTaken) { if (!stock?.left) throw new Error('SOLD_OUT'); stock.left--; }
   const uid = `p${state.nextUid++}`; const sourceChess = def.source?.normalChess || {};
-  const piece = { uid, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: Number(def.defaultSkillIndex ?? sourceChess.defaultSkillIndex ?? 0), moduleId: 'none', equipment: [], attachments: [], nativeState: {}, bodyPenaltyApplied: false, poolCopies: extra.poolCopies ?? 1 };
+  const piece = { uid, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: Number(sourceChess.skill?.index ?? def.defaultSkillIndex ?? 0), moduleId: 'none', equipment: [], attachments: [], nativeState: { preferences: { productionBadge: 'precision', factionPriority: Object.values(TAVERN_FACTIONS) } }, bodyPenaltyApplied: false, poolCopies: extra.poolCopies ?? 1 };
   state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1;
   return piece;
 }
 function goodsInShop(state, kind) { return state.shop.slots.filter((x) => x.kind === kind && !x.sold); }
 function safeCopyPool(state, id, n) { const p = poolFor(state, id); if (p) p.left = Math.min(p.cap, p.left + n); }
 function requireFinitePositive(x) { if (!Number.isFinite(x) || x < 0) throw new Error('BAD_NUMBER'); }
+function handleSaleEquipment(state, catalog) {
+  for (const piece of state.pieces) {
+    const factions = new Set(nativeFactions(piece, catalog)); if (!factions.size) continue;
+    for (const item of piece.equipment) {
+      const def = equipmentRecord(catalog, item.id);
+      if (def?.mechanism !== 'saleThresholdRecruit') continue;
+      const used = Number(item.state?.saleTriggersThisPrep || 0);
+      if (used >= Number(def.params?.maxPerPrep || 1)) continue;
+      const threshold = Number(item.elite ? def.params.eliteSaleThreshold : def.params.normalSaleThreshold);
+      if (state.counters.sold < threshold) continue;
+      const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.tier <= tier && nativeFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
+      if (!candidates.length) continue;
+      item.state = { ...(item.state || {}), saleTriggersThisPrep: used + 1 };
+      state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, Number(def.params.choices || 3)), source: item.id, sourceUid: piece.uid });
+    }
+  }
+}
 function roundAward(state) {
-  if (state.roundLimit === 9) return state.round === 4 || state.round === 8 ? 'cashout' : null;
+  if (state.roundLimit === 9) return state.round === 4 ? 'start' : state.round === 8 ? 'cashout' : null;
   return [4, 8, 12].includes(state.round) ? (state.round === 4 ? 'start' : state.round === 8 ? 'build' : 'cashout') : null;
 }
 
@@ -101,7 +120,7 @@ export function createSession(options = {}) {
   const state = { schemaVersion: 1, modeId: 'independent', seed, rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, phase: 'prep', funds: gd.income(1), pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
-    playerEffects: [], counters: { gained: 0, bought: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null };
+    playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
   if (errs.length) throw new Error(`INVALID_INITIAL_STATE:${errs.join(',')}`);
@@ -119,12 +138,13 @@ export function validateSession(state) {
   if (!isRecord(state.pool)) e.push('BAD_POOL');
   else for (const [id, p] of Object.entries(state.pool)) if (!safeId(id) || !Number.isInteger(p.left) || !Number.isInteger(p.cap) || p.left < 0 || p.left > p.cap) e.push('BAD_POOL_ENTRY');
   const uids = new Set();
-  for (const item of [...(state.inventory || []), ...(state.pieces || []).flatMap((p) => [...(p.equipment || []), ...(p.attachments || [])])]) {
+  for (const item of [...(state.inventory || []), ...(state.pieces || []).flatMap((p) => p.equipment || [])]) {
     if (!safeId(item.uid) || uids.has(item.uid)) e.push('BAD_UID'); else uids.add(item.uid);
   }
   for (const p of state.pieces || []) {
     if (!safeId(p.uid) || !safeId(p.chessId) || !Array.isArray(p.equipment) || !Array.isArray(p.attachments) || !isRecord(p.nativeState)) e.push('BAD_PIECE');
     if ((p.row === null) !== (p.col === null) || (p.row !== null && (!inField(p.row, p.col) || !inField(p.row, p.col)))) e.push('BAD_POSITION');
+    for (const attachment of p.attachments || []) if (!safeId(attachment.id) || (attachment.state !== undefined && !isRecord(attachment.state))) e.push('BAD_ATTACHMENT');
   }
   for (const item of state.inventory || []) if (!safeId(item.id) || !Number.isInteger(item.quantity) || item.quantity < 1) e.push('BAD_ITEM');
   for (const p of state.pieces || []) if (p.equipment?.reduce((n, x) => n + Number(x.quantity || 0), 0) > 99) e.push('PIECE_CAPACITY');
@@ -137,9 +157,12 @@ export function viewSession(state, options = {}) {
   try { field = getIndependentField(state, { data, catalog }); } catch { /* keep the raw state visible when content lookup is unavailable */ }
   const pieces = state.pieces.map((p) => {
     const op = opFor(catalog, p.chessId) || {};
-    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(op.source?.skills || op.skills || []), modules: clone(op.source?.modules || op.modules || []), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)) })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'equip', 'sell', 'inherit-preview'] };
+    const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
+    const modules = [op.source?.normalChess?.module, op.source?.eliteChess?.module].filter((x) => x?.id);
+    const steamOptions = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
+    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'] };
   });
-  return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
+    return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary };
 }
 
@@ -168,11 +191,12 @@ export function applyAction(state, action, options = {}) {
         if (offer.type === 'recruit') {
           const op = opFor(catalog, offer.choices[action.index]); if (!op) throw new Error('BAD_CHOICE');
           const piece = gainChess(work, catalog, op.chessId, {}); invokeHook(work, 'gain', { piece, source: offer.source || 'choice' }, services);
+          for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
           work.offers.splice(work.offers.indexOf(offer), 1);
         } else if (offer.type === 'attachment') {
           const piece = work.pieces.find((x) => x.uid === (action.targetUid || offer.targetUid)); if (!piece) throw new Error('BAD_TARGET');
           const attachmentId = offer.choices[action.index]; const attachment = catalog.attachments?.[attachmentId];
-          if (!attachment || piece.attachments.some((x) => x.id === attachmentId)) throw new Error('UNIQUE');
+          if (!attachment || !attachmentAccepted(attachment, piece, catalog) || piece.attachments.some((x) => x.id === attachmentId)) throw new Error('UNIQUE_OR_INELIGIBLE');
           piece.attachments.push({ id: attachmentId, state: {} }); work.offers.splice(work.offers.indexOf(offer), 1);
         }
       }
@@ -183,21 +207,24 @@ export function applyAction(state, action, options = {}) {
       if (work.funds < slot.price) throw new Error('NO_FUNDS');
       if (slot.kind === 'chess') {
         const pool = poolFor(work, slot.id); if (!pool?.left) throw new Error('SOLD_OUT');
-        work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1;
+        work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
         invokeHook(work, 'gain', { piece, source: 'buy', paid: true }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
-        for (const carried of slot.equipment || []) grantEquipment(work, catalog, carried.id, carried.quantity || 1, { sourceId: carried.sourceUid });
+        for (const carried of slot.equipment || []) {
+          const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item);
+          equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1);
+        }
       } else {
-        work.funds -= slot.price; work.counters.spent += slot.price;
+        work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
         grantEquipment(work, catalog, slot.id, 1, { elite: !!slot.elite }); events.push({ type: 'buy-equipment', id: slot.id });
       }
       slot.sold = true;
     } else if (act === 'refresh') {
       ensurePrep(work);
-      if (work.shop.frozen) throw new Error('FROZEN');
-      if (work.shop.freeRefreshes > 0) work.shop.freeRefreshes--;
-      else { if (work.funds < 1) throw new Error('NO_FUNDS'); work.funds--; work.counters.spent++; work.counters.paidRefreshes++; }
       const free = work.shop.freeRefreshes > 0;
+      if (free) work.shop.freeRefreshes--;
+      else { if (work.funds < 1) throw new Error('NO_FUNDS'); work.funds--; work.counters.spent++; work.counters.paidRefreshes++; invokeHook(work, 'spend', { amount: 1, source: 'refresh' }, services); }
+      work.counters.refreshes = (work.counters.refreshes || 0) + 1;
       work.shop.slots = slotsFor(work, gd, catalog, rng); invokeHook(work, 'refresh', { free }, services);
       events.push({ type: 'refresh' });
     } else if (act === 'freeze') {
@@ -205,18 +232,18 @@ export function applyAction(state, action, options = {}) {
     } else if (act === 'upgrade') {
       ensurePrep(work); if (work.shop.level >= gd.maxShopLevel) throw new Error('MAX_LEVEL');
       const price = work.shop.upgradePrice; if (work.funds < price) throw new Error('NO_FUNDS');
-      work.funds -= price; work.counters.spent += price; work.shop.level++;
+      work.funds -= price; work.counters.spent += price; invokeHook(work, 'spend', { amount: price, source: 'upgrade' }, services); work.shop.level++;
       work.shop.upgradePrice = gd.upgradeBase(work.shop.level) ?? 0; events.push({ type: 'upgrade', level: work.shop.level });
     } else if (act === 'sell') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       discardPieceAssets(work, p); safeCopyPool(work, p.chessId, p.poolCopies || 1); work.pieces.splice(work.pieces.indexOf(p), 1);
-      work.funds++; work.counters.sold++; invokeHook(work, 'sold', { piece: p }, services); events.push({ type: 'sell', uid: p.uid, funds: 1 });
+      work.funds++; work.counters.sold++; handleSaleEquipment(work, catalog); invokeHook(work, 'sold', { piece: p }, services); events.push({ type: 'sell', uid: p.uid, funds: 1 });
     } else if (act === 'move') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       if (!Number.isInteger(action.row) || !Number.isInteger(action.col) || !inField(action.row, action.col)) throw new Error('BAD_POSITION');
       const occupied = work.pieces.some((x) => x !== p && x.row === action.row && x.col === action.col); if (occupied) throw new Error('OCCUPIED');
-      const field = getIndependentField(work, { data, catalog }); const op = opFor(catalog, p.chessId); const pos = op?.position || op?.placement || 'ALL';
-      const cls = String(pos).toUpperCase() === 'MELEE' ? 'melee' : String(pos).toUpperCase() === 'RANGED' ? 'ranged' : 'all';
+      const field = getIndependentField(work, { data, catalog }); const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
+      const cls = positionClass(raw, p.moduleId);
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');
       if (action.dir && !['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(action.dir)) throw new Error('BAD_DIRECTION');
       p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
@@ -224,19 +251,47 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET'); p.row = null; p.col = null; events.push({ type: 'bench', uid: p.uid });
     } else if (act === 'loadout') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); const op = p && opFor(catalog, p.chessId); if (!p || !op) throw new Error('BAD_TARGET');
-      if (!Number.isInteger(action.skillIndex) || action.skillIndex < 0 || action.skillIndex >= (op.skills || []).length) throw new Error('BAD_SKILL');
-      const moduleId = action.moduleId ?? p.moduleId; if (moduleId !== 'none' && !(op.modules || []).some((m) => m.id === moduleId || m.moduleId === moduleId)) throw new Error('BAD_MODULE');
+      const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
+      if (!Number.isInteger(action.skillIndex) || action.skillIndex < 0 || action.skillIndex >= (raw?.skills || []).length) throw new Error('BAD_SKILL');
+      const moduleId = action.moduleId ?? p.moduleId; const moduleIds = [op.source?.normalChess?.module?.id, op.source?.eliteChess?.module?.id].filter(Boolean);
+      if (moduleId !== 'none' && !moduleIds.includes(moduleId)) throw new Error('BAD_MODULE');
       p.skillIndex = action.skillIndex; p.moduleId = moduleId; events.push({ type: 'loadout', uid: p.uid });
+    } else if (act === 'configure') {
+      ensurePrep(work); const piece = work.pieces.find((x) => x.uid === action.uid); if (!piece) throw new Error('BAD_TARGET');
+      const preference = { ...(piece.nativeState.preferences || {}) };
+      if (action.productionBadge !== undefined) {
+        if (!['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery'].includes(action.productionBadge)) throw new Error('BAD_PRODUCTION_BADGE');
+        preference.productionBadge = action.productionBadge;
+      }
+      if (action.factionPriority !== undefined) {
+        const factions = Object.values(TAVERN_FACTIONS);
+        if (!Array.isArray(action.factionPriority) || action.factionPriority.length !== factions.length || new Set(action.factionPriority).size !== factions.length || factions.some((x) => !action.factionPriority.includes(x))) throw new Error('BAD_FACTION_PRIORITY');
+        preference.factionPriority = [...action.factionPriority];
+      }
+      piece.nativeState.preferences = preference; events.push({ type: 'configure', uid: piece.uid, preferences: clone(preference) });
     } else if (act === 'equip') {
-      ensurePrep(work); const item = equipItem(work, catalog, action.itemUid, action.targetUid, action.quantity ?? 1); events.push({ type: 'equip', itemId: item.id, targetUid: action.targetUid });
+      ensurePrep(work); const item = equipItem(work, catalog, action.itemUid, action.targetUid, action.quantity ?? 1, { faction: action.faction }); events.push({ type: 'equip', itemId: item.id, targetUid: action.targetUid });
+    } else if (act === 'configure-equipment') {
+      ensurePrep(work);
+      const piece = work.pieces.find((x) => x.uid === action.targetUid);
+      const item = piece?.equipment.find((x) => x.uid === action.itemUid);
+      const def = item && equipmentRecord(catalog, item.id);
+      const steam = def?.params?.effects?.find((x) => x.behavior === 'steamGearUpgrade');
+      if (!piece || !item || !steam) throw new Error('BAD_TARGET');
+      const allowed = steam.params.sourceIds;
+      const selected = action.hammerSourceIds;
+      const limit = Number(item.elite ? steam.params.selectedVariants?.elite : steam.params.selectedVariants?.normal);
+      if (!Array.isArray(selected) || selected.length > limit || new Set(selected).size !== selected.length || selected.some((id) => !allowed.includes(id) || !piece.equipment.some((x) => (x.sourceId || equipmentRecord(catalog, x.id)?.sourceId) === id))) throw new Error('BAD_HAMMER_SELECTION');
+      item.state = { ...(item.state || {}), hammerSourceIds: [...selected] };
+      events.push({ type: 'configure-equipment', targetUid: piece.uid, itemUid: item.uid, hammerSourceIds: [...selected] });
     } else if (act === 'merge-item') {
-      ensurePrep(work); const item = mergeItems(work, catalog, action.firstUid, action.secondUid); events.push({ type: 'merge-item', itemId: item.id });
+      ensurePrep(work); const item = mergeItems(work, catalog, action.firstUid, action.secondUid); invokeHook(work, 'merge', { item, copiesConsumed: 2 }, services); events.push({ type: 'merge-item', itemId: item.id });
     } else if (act === 'use-item') {
-      ensurePrep(work); events.push(useInventoryItem(work, catalog, action.itemUid, action));
+      ensurePrep(work); events.push(useInventoryItem(work, catalog, action.itemUid, action, data));
     } else if (act === 'inherit-preview') {
-      readOnly = true; events.push({ type: 'inherit-preview', preview: previewInheritance(work, catalog, action.donorUid, action.receiverUid) });
+      readOnly = true; events.push({ type: 'inherit-preview', preview: previewInheritance(work, catalog, action.donorUid, action.receiverUid, data) });
     } else if (act === 'inherit') {
-      ensurePrep(work); const result = applyInheritance(work, catalog, action.donorUid, action.receiverUid, action.uniqueSelections || {}); work.funds += 1; work.counters.sold++; events.push({ type: 'inherit', receiverUid: result.receiver.uid, preview: result.preview });
+      ensurePrep(work); const result = applyInheritance(work, catalog, action.donorUid, action.receiverUid, action.uniqueSelections || {}, data); work.funds += 1; work.counters.sold++; handleSaleEquipment(work, catalog); events.push({ type: 'inherit', receiverUid: result.receiver.uid, preview: result.preview });
     } else if (act === 'ready') {
       ensurePrep(work);
       if (work.pieces.filter((x) => x.row !== null).length < 1) throw new Error('NO_DEPLOYED_PIECES');
@@ -244,25 +299,40 @@ export function applyAction(state, action, options = {}) {
       const battle = runIndependentBattle(work, { data, catalog });
       if (!battle || !battle.result) throw new Error('BATTLE_FAILED');
       const gd = gdFor(work, data); const playerResult = battle.result.perPlayer?.independent || Object.values(battle.result.perPlayer || {})[0] || {};
-      const leaked = Array.isArray(playerResult.leaked) ? playerResult.leaked.filter((x) => x && x.counted !== false).length : 0;
+      const leaked = Array.isArray(playerResult.leaked) ? playerResult.leaked.filter((x) => x && x.counted !== false).reduce((n, x) => n + Math.max(0, Number(x.lpr) || 1), 0) : 0;
       const lpLost = Math.min(gd.lpCapPerRound, Math.max(0, leaked));
       work.battleSummary = { result: battle.result, samples: battle.samples || [], diagnostics: battle.diagnostics || {}, pieceStates: battle.pieceStates || {} };
       work.lp = Math.max(0, work.lp - lpLost);
       for (const [uid, ps] of Object.entries(battle.pieceStates || {})) { const piece = work.pieces.find((x) => x.uid === uid); if (piece) { piece.nativeState = clone(ps.nativeState || {}); piece.equipment = clone(ps.equipment || []); piece.attachments = clone(ps.attachments || []); } }
       for (const reward of battle.rewards || []) grantEquipment(work, catalog, reward.id, reward.quantity || 1, { sourceId: reward.sourceUid });
-      work.history.push({ round: work.round, type: 'battle', result: battle.result, lpLost });
-      if (work.lp <= 0 || work.round >= work.roundLimit) { work.phase = 'finished'; events.push({ type: 'finished', result: battle.result }); }
+      const fieldKind = getIndependentField(work, { data, catalog }).field;
+      const bossRound = fieldKind === 'bossL';
+      const bossCleared = bossRound && Number(battle.result.bossHpLeft) <= 0 && !battle.diagnostics?.capped;
+      const lastRound = work.round >= work.roundLimit;
+      const failedBoss = bossRound && !bossCleared;
+      const terminalRound = lastRound || failedBoss || work.lp <= 0;
+      work.history.push({ round: work.round, type: 'battle', result: battle.result, lpLost, bossCleared });
+      if (terminalRound) {
+        work.outcome = !work.lp || (bossRound && !bossCleared) ? 'loss' : 'win'; work.phase = 'finished';
+        events.push({ type: 'finished', outcome: work.outcome, result: battle.result });
+      }
       else {
+      if (work.roundLimit === 15 && work.round === 14 && (!bossCleared || work.lp <= 0)) { work.outcome = 'loss'; work.phase = 'finished'; events.push({ type: 'finished', outcome: work.outcome, result: battle.result }); }
+      else {
+      if (work.roundLimit === 15 && work.round === 14) work.outcome = 'boss-cleared';
       work.round++;
       const baseIncome = gd.income(work.round); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);
       work.incomeThisRound = baseIncome; work.funds = baseIncome + Number(work.pendingFunds || 0) + facility; work.pendingFunds = 0;
-      work.counters.spent = 0; work.counters.bought = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0;
+      work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0;
+      for (const piece of work.pieces) for (const item of piece.equipment) if (equipmentRecord(catalog, item.id)?.mechanism === 'saleThresholdRecruit') item.state = { ...(item.state || {}), saleTriggersThisPrep: 0 };
       work.shop.upgradePrice = Math.max(0, work.shop.upgradePrice - 1); work.shop.freeRefreshes = 0;
       work.shop.slots = advanceShop(work, gd, catalog, rng);
+      work.shop.frozen = false;
       const award = roundAward(work);
       if (award) makePrizeOffer(work, catalog, award, 'round', rng); else work.phase = 'prep';
       invokeHook(work, 'roundStart', { round: work.round }, services);
         events.push({ type: 'round-start', round: work.round });
+      }
       }
     } else throw new Error('UNKNOWN_ACTION');
     if (!readOnly) { work.rngState = rng.state(); work.revision++; }

@@ -1,4 +1,5 @@
 import { grantEquipment, equipmentRecord } from './equipment.js';
+import { attachmentAccepted, nativeFactions } from '../../../shared/independentRules.js';
 
 const byId = (map, id) => map && typeof id === 'string' && Object.hasOwn(map, id) ? map[id] : null;
 const prizeIds = (catalog) => Object.keys(catalog?.prizes || {}).sort();
@@ -6,7 +7,13 @@ const prizeIds = (catalog) => Object.keys(catalog?.prizes || {}).sort();
 export function makePrizeOffer(state, catalog, tier = 'start', source = 'round', rng = null) {
   const available = prizeIds(catalog).filter((id) => {
     const p = catalog.prizes[id];
-    return p.stage === ({ start: '起步', build: '成型', cashout: '兑现' }[tier]) || p.stage === tier;
+    if (!(p.stage === ({ start: '起步', build: '成型', cashout: '兑现' }[tier]) || p.stage === tier)) return false;
+    if (id === 'special-readiness-training') return (state.pieces || []).some((piece) => Object.values(catalog.attachments || {}).some((x) => x.unique && attachmentAccepted(x, piece, catalog) && !piece.attachments.some((a) => a.id === x.id)));
+    if (id === 'heavy-weapons-calibration') {
+      const ids = [...(state.inventory || []).map((x) => x.id), ...(state.pieces || []).flatMap((p) => (p.equipment || []).map((x) => x.id))];
+      return ids.some((itemId) => ['precision', 'assault'].includes(equipmentRecord(catalog, itemId)?.badgeId || itemId));
+    }
+    return true;
   });
   if (!available.length) return null;
   const choices = [];
@@ -33,14 +40,14 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
   const grant = (itemId, n = 1, extra = {}) => grantEquipment(state, catalog, itemId, n, extra);
   const outputs = (rule.outputs || []).map((x) => ({ id: x.id, quantity: x.quantity || 1 }));
   if (rule.type === 'grantItems' || rule.type === 'grantItemsPerPiece') {
-    const multiplier = rule.type === 'grantItemsPerPiece' ? Math.min(rule.cap || 8, state.pieces.length) : 1;
+    const multiplier = rule.type === 'grantItemsPerPiece' ? Math.min(rule.cap || 8, state.pieces.filter((x) => x.row !== null && x.col !== null).length) : 1;
     for (const out of outputs) grant(out.id, out.quantity * multiplier);
   } else if (rule.type === 'grantGear' || rule.type === 'conditionalGrantGear') {
     if (rule.type === 'conditionalGrantGear' && !state.pieces.some((p) => p.equipment.some((x) => rule.requiresAnyBadge?.includes(x.id)))) throw new Error('NO_ELIGIBLE_TARGET');
     grant(rule.gearId);
   } else if (rule.type === 'freeRefreshes') state.shop.freeRefreshes = (state.shop.freeRefreshes || 0) + Number(rule.count || 0);
   else if (rule.type === 'facilityIncome') {
-    if (!state.playerEffects.some((x) => x.type === 'facilityIncome')) state.playerEffects.push({ type: 'facilityIncome', amount: Number(rule.amount || 0), source: id });
+    if (!state.playerEffects.some((x) => x.type === 'facilityIncome')) { const amount = Number(rule.amount || 0); state.funds += amount; state.playerEffects.push({ type: 'facilityIncome', amount, source: id }); }
   } else if (rule.type === 'recruitOffer') {
     const tier = rule.tier === 'currentShopLevel' ? state.shop.level : Number(rule.tier);
     const candidates = Object.keys(catalog.operators).filter((x) => catalog.operators[x].tier === tier && !catalog.operators[x].elite && !catalog.operators[x].isElite).sort();
@@ -60,7 +67,7 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
     for (const slot of state.shop.slots) {
       if (slot.kind !== 'chess' || slot.sold || !slot.id) continue;
       const old = catalog.operators[slot.id]; const tier = Math.min(Number(rule.maxTier || 6), Number(old?.tier || state.shop.level) + Number(rule.tierDelta || 1));
-      const candidates = Object.keys(catalog.operators).filter((x) => catalog.operators[x].tier === tier && !catalog.operators[x].elite && !catalog.operators[x].isElite).sort();
+      const candidates = Object.keys(catalog.operators).filter((x) => catalog.operators[x].tier === tier && !catalog.operators[x].elite && !catalog.operators[x].isElite && state.pool?.[x]?.left > 0).sort();
       if (candidates.length) slot.id = candidates[(state.rngState++ >>> 0) % candidates.length];
       slot.equipment = [];
     }
@@ -77,23 +84,19 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
   return { prizeId: id };
 }
 
-function attachmentAccepted(def, piece, catalog) {
-  const op = catalog.operators[piece.chessId] || {};
-  const condition = String(def.condition || 'any');
-  if (condition === 'any') return true;
-  if (condition === 'native medic profession') return (op.source?.normalChess?.profession || op.profession) === 'MEDIC';
-  if (condition === 'selected ammo skill') return /ammo|弹药/i.test(op.skills?.[piece.skillIndex] || '');
-  if (condition === 'native freeze') return (op.talents || []).some((x) => /冻结/.test(x.desc || '')) || (op.skills || []).some((x) => /freeze/i.test(x));
-  return false;
-}
-
-export function useInventoryItem(state, catalog, itemUid, action = {}) {
+export function useInventoryItem(state, catalog, itemUid, action = {}, data = null) {
   const i = state.inventory.findIndex((x) => x.uid === itemUid); if (i < 0) throw new Error('BAD_TARGET');
   const item = state.inventory[i]; const def = equipmentRecord(catalog, item.id) || byId(catalog.prizes, item.id);
   if (!def) throw new Error('UNKNOWN_ITEM');
   const behavior = def.mechanism ? { type: def.mechanism, ...(def.params || {}) } : def.use || def.rule || def.behavior;
-  if (behavior?.type === 'funds') state.funds += Number(behavior.quantity || 0);
-  else if (behavior?.type === 'topUp') state.funds = Math.max(state.funds, state.incomeThisRound || 0);
+  if (behavior?.type === 'immediateFundsOnUse' || behavior?.type === 'fundsOnUse' || behavior?.type === 'conditionalFundsOnUse') {
+    if (behavior.type === 'conditionalFundsOnUse' && (state.shop?.level || 1) < (behavior.condition === 'tierAtLeast4' ? 4 : 1)) throw new Error('CONDITION_NOT_MET');
+    state.funds += Number(item.elite ? (behavior.eliteFunds ?? behavior.elite) : (behavior.normalFunds ?? behavior.normal));
+  } else if (behavior?.type === 'deferredFundsOnUse') state.pendingFunds += Number(item.elite ? behavior.eliteFunds : behavior.normalFunds);
+  else if (behavior?.type === 'activeFundTopUp') {
+    const target = Number(state.incomeThisRound || 0);
+    if (state.funds < target) state.funds = target;
+  }
   else if (behavior?.type === 'equipment') {
     for (const out of behavior.outputs || []) grantEquipment(state, catalog, out.id, out.quantity || 1);
   } else if (behavior?.type === 'recruit') {
@@ -105,11 +108,53 @@ export function useInventoryItem(state, catalog, itemUid, action = {}) {
     if (!p || p.elite) throw new Error('BAD_TARGET');
     const op = catalog.operators[p.chessId]; if (!op?.eliteChessId) throw new Error('NOT_UPGRADABLE');
     p.chessId = op.eliteChessId; p.elite = true;
-  } else if (behavior?.type === 'funds') {
-    state.funds += Number(behavior.normal ?? 1) + (item.elite ? Number(behavior.eliteBonus ?? 1) : 0);
-  } else if (behavior?.type === 'activeFundTopUp') {
-    const target = Number(state.incomeThisRound || 0);
-    if (state.funds < target) state.funds = target;
+  } else if (behavior?.type === 'shopRecruitOnUse') {
+    const count = Number(item.elite ? behavior.eliteCount : behavior.normalCount); const slots = action.slots || [action.slot];
+    if (!Array.isArray(slots) || slots.length !== count || slots.some((x) => !Number.isInteger(x)) || new Set(slots).size !== slots.length) throw new Error('BAD_SLOT');
+    for (const index of slots) {
+      const slot = state.shop.slots[index];
+      if (!slot || slot.kind !== 'chess' || slot.sold || !slot.id || (behavior.ordinaryOnly && slot.elite)) throw new Error('BAD_SLOT');
+      slot.sold = true;
+      state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: [slot.id], source: item.id, carriedEquipment: structuredClone(slot.equipment || []) });
+    }
+  } else if (behavior?.type === 'factionRecruitOnUse') {
+    const factions = new Set((state.pieces || []).filter((p) => p.row !== null).flatMap((p) => nativeFactions(p, catalog)));
+    if (!factions.has(action.faction)) throw new Error('BAD_FACTION');
+    const count = Number(item.elite ? (behavior.eliteOffers ?? behavior.eliteCount ?? 1) : (behavior.normalOffers ?? behavior.normalCount ?? 1));
+    const exactTier = behavior.normalTier === 'currentShop' ? Math.min(6, state.shop.level + (item.elite ? Number(behavior.eliteTierDelta || 0) : 0)) : null;
+    const maxTier = behavior.maxTier === 'shopLevel' || behavior.normalTier === 'currentShop' ? (exactTier ?? state.shop.level) : Number(behavior.normalTier || behavior.maxTier || 6);
+    for (let i = 0; i < count; i++) {
+      const candidates = Object.values(catalog.operators).filter((op) => !op.elite && (exactTier === null ? op.tier <= maxTier : op.tier === exactTier) && nativeFactions({ chessId: op.chessId }, catalog).includes(action.faction) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
+      if (!candidates.length) throw new Error('NO_CANDIDATE');
+      const choices = candidates.slice(0, behavior.choices || 3);
+      state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices, source: item.id, faction: action.faction });
+    }
+  } else if (behavior?.type === 'recruitOnUse') {
+    const source = state.pieces.find((x) => x.uid === action.sourceUid); if (!source || source.elite) throw new Error('BAD_TARGET');
+    const count = Number(item.elite ? (behavior.eliteOffers ?? behavior.eliteCount) : (behavior.normalOffers ?? behavior.normalCount));
+    for (let i = 0; i < count; i++) state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: [source.chessId], source: item.id });
+  } else if (behavior?.type === 'copyOperatorOnUse') {
+    const source = state.pieces.find((x) => x.uid === action.sourceUid); if (!source || source.elite) throw new Error('BAD_TARGET');
+    const count = Number(item.elite ? (behavior.eliteCount || 2) : (behavior.normalCount || 1));
+    for (let i = 0; i < count; i++) state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: [source.chessId], source: item.id, copyNativeOnly: true });
+  } else if (behavior?.type === 'promoteOnUse') {
+    const count = Number(item.elite ? (behavior.eliteCount || 2) : (behavior.normalCount || 1)); const targets = action.targets || [action.targetUid];
+    if (!Array.isArray(targets) || targets.length !== count || new Set(targets).size !== targets.length) throw new Error('BAD_TARGET');
+    const pieces = targets.map((uid) => state.pieces.find((p) => p.uid === uid));
+    if (pieces.some((p) => !p || p.elite || !catalog.operators[p.chessId]?.eliteChessId)) throw new Error('BAD_TARGET');
+    for (const p of pieces) { p.chessId = catalog.operators[p.chessId].eliteChessId; p.elite = true; }
+  } else if (behavior?.type === 'saleThresholdRecruit') {
+    const threshold = Number(item.elite ? (behavior.eliteSaleThreshold ?? behavior.eliteThreshold ?? behavior.saleThresholdElite) : (behavior.normalSaleThreshold ?? behavior.normalThreshold ?? behavior.saleThresholdNormal));
+    const uses = Number(item.state?.uses || 0);
+    if (!Number.isFinite(threshold) || (state.counters?.sold || 0) < threshold || uses >= Number(behavior.prepCap || 1)) throw new Error('CONDITION_NOT_MET');
+    const factions = new Set((state.pieces || []).flatMap((p) => nativeFactions(p, catalog)));
+    const faction = action.faction;
+    if (!factions.has(faction)) throw new Error('BAD_FACTION');
+    const maxTier = state.shop.level;
+    const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.tier <= maxTier && (data?.chess?.[op.chessId]?.bonds || []).some((id) => (data?.bonds?.[id]?.name || id) === faction) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
+    if (!candidates.length) throw new Error('NO_CANDIDATE');
+    item.state = { ...(item.state || {}), uses: uses + 1 };
+    state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, behavior.choices || 3), source: item.id, faction });
   } else if (behavior?.type === 'custom' || behavior?.type === 'passive') {
     throw new Error('NOT_USABLE');
   } else throw new Error('NOT_USABLE');

@@ -38,3 +38,38 @@ test('view exposes stage, deployed field map, skills, equipment, and legal actio
   assert.equal(Array.isArray(view.board.map), true);
   assert.equal(view.shop.slots.length > 0, true);
 });
+
+test('steam equipment selection is explicit, limited, wearer-owned, and survives JSON state', () => {
+  const state = createSession({ seed: 17 });
+  const bought = applyAction(state, { type: 'buy', slot: state.shop.slots.findIndex((x) => x.kind === 'chess' && x.id) });
+  assert.equal(bought.ok, true);
+  const work = structuredClone(bought.state); const piece = work.pieces[0];
+  const catalog = viewSession(work).catalog;
+  const steam = Object.values(catalog.equipment).find((x) => x.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade'));
+  assert.ok(steam);
+  const sources = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
+  piece.equipment.push({ uid: 'e900', id: steam.id, sourceId: steam.sourceId, elite: false, quantity: 1, state: {} });
+  piece.equipment.push(...sources.slice(0, 2).map((sourceId, i) => ({ uid: `e${901 + i}`, id: sourceId, sourceId, elite: false, quantity: 1, state: {} })));
+  work.nextUid = 1000;
+  const rejected = applyAction(work, { type: 'configure-equipment', targetUid: piece.uid, itemUid: 'e900', hammerSourceIds: sources.slice(0, 2) });
+  assert.equal(rejected.ok, false);
+  const accepted = applyAction(work, { type: 'configure-equipment', targetUid: piece.uid, itemUid: 'e900', hammerSourceIds: [sources[0]] });
+  assert.equal(accepted.ok, true, accepted.error?.message);
+  assert.deepEqual(accepted.state.pieces[0].equipment[0].state.hammerSourceIds, [sources[0]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(accepted.state)).pieces[0].equipment[0].state.hammerSourceIds, [sources[0]]);
+});
+
+test('short-run round 4 offers the start-stage prize before the next preparation', () => {
+  const first = createSession({ seed: 821, roundLimit: 9 });
+  const bought = applyAction(first, { type: 'buy', slot: first.shop.slots.findIndex((x) => x.kind === 'chess' && x.id) });
+  assert.equal(bought.ok, true);
+  let state = bought.state;
+  state.round = 3;
+  const moved = applyAction(state, { type: 'move', uid: state.pieces[0].uid, row: 9, col: 3 });
+  assert.equal(moved.ok, true, moved.error?.message);
+  const ready = applyAction(moved.state, { type: 'ready' });
+  assert.equal(ready.ok, true, ready.error?.message);
+  assert.equal(ready.state.round, 4);
+  assert.equal(ready.state.phase, 'prize');
+  assert.equal(ready.state.offers.some((x) => x.type === 'prize' && x.tier === 'start'), true);
+});
