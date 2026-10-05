@@ -366,3 +366,19 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   assert.ok(copy.granted.every((x) => x.id === 'vitality' && x.sourceUid === 'lily' && x.copied === true));
   assert.equal(copy.granted.filter((x) => x.repeated === true).length, 1);
 });
+
+test('native status production observes targets in range regardless of status source actor', () => {
+  const byName = (name) => all.find((x) => x.name === name && !x.elite);
+  for (const name of ['初雪', '银灰', '缇缇']) {
+    const production = byName(name).nativeTrait.effect.combat.find((x) => x.trigger === 'statusApplied');
+    assert.ok(production, `${name} has a status observer`);
+    assert.equal(Object.hasOwn(production.params.filter, 'actor'), false, `${name} observes statuses applied by any actor`);
+    assert.equal(production.params.filter.range, 'attacker');
+    assert.equal(production.params.filter.entered, true);
+  }
+  const rinyu = byName('凛御银灰').nativeTrait.effect.combat.find((x) => x.trigger === 'statusApplied');
+  assert.deepEqual(rinyu.params.filter, {
+    observer: 'frontAlly', observerTag: '谢拉格', targetSide: 'enemy', status: 'frozen', entered: true, range: 'observer',
+  });
+  assert.equal(rinyu.params.probability, 0.6);
+});
