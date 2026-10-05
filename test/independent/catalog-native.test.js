@@ -67,6 +67,22 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(catalog.equipment['chess_item_4_01_e_a'].params.eliteTierDelta, 1);
   assert.equal(catalog.equipment['chess_item_5_05_e_a'].params.eliteCount, 2);
   assert.equal(catalog.equipment['chess_item_5_06_e_a'].params.eliteCount, 2);
+  const statCases = [
+    ['chess_item_1_05_e_a', 'attackPercent', 0.2, 0.3], ['chess_item_2_01_e_a', 'maxHpPercent', -0.15, -0.2],
+    ['chess_item_2_03_e_a', 'attackPercent', 0.1, 0.2], ['chess_item_2_04_e_a', 'spRecovery', 0.1, 0.2],
+    ['chess_item_3_01_e_a', 'attackSpeedFlat', 8, 16], ['chess_item_3_06_e_a', 'maxHpPercent', 0.15, 0.25],
+    ['chess_item_3_07_e_a', 'attackPercent', 0.2, 0.35], ['chess_item_3_08_e_a', 'resistance', 10, 20],
+    ['chess_item_3_10_e_a', 'attackSpeedFlat', 10, 20], ['chess_item_4_02_e_a', 'maxHpPercent', 0.2, 0.35],
+    ['chess_item_4_09_e_a', 'attackPercent', 0.15, 0.25], ['chess_item_5_09_e_a', 'maxHpPercent', 0.2, 0.35],
+    ['chess_item_6_01_e_a', 'attackPercent', 0.2, 0.35], ['chess_item_6_02_e_a', 'attackPercent', 0.2, 0.35],
+    ['chess_item_6_03_e_a', 'maxHpPercent', 0.2, 0.35], ['chess_item_6_05_e_a', 'attackSpeedFlat', 15, 25],
+    ['chess_item_6_06_e_a', 'resistance', 15, 25], ['chess_item_6_07_e_a', 'initialSp', 10, 20],
+    ['chess_item_6_10_e_a', 'redeployTimeReduction', 0.15, 0.25], ['chess_item_6_11_e_a', 'spRecovery', 0.1, 0.2],
+  ];
+  for (const [id, stat, normal, elite] of statCases) {
+    assert.equal(catalog.equipment[id].stats?.[stat]?.normal, normal, `${id} normal ${stat}`);
+    assert.equal(catalog.equipment[id].stats?.[stat]?.elite, elite, `${id} elite ${stat}`);
+  }
   assert.equal(catalog.config.purchasePrice, 3);
   assert.equal(catalog.config.sellPrice, 1);
   assert.equal(catalog.config.refreshPrice, 1);
@@ -155,23 +171,61 @@ test('native sale, spend and refresh rules mutate the concrete prep state exactl
   assert.deepEqual(refreshed.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 1 }]);
 
   const freeRefreshed = fixture();
-  freeRefreshed.state.counters.refreshes = 2;
-  freeRefreshed.state.shop.slots = [{ kind: 'chess', id: 'offer-b', equipment: [], sold: false }];
+  freeRefreshed.state.counters.refreshes = 3;
+  freeRefreshed.state.shop.slots = [1, 2, 3].map((n) => ({ kind: 'chess', id: `offer-${n}`, equipment: [], sold: false }));
   const aroma = { uid: 'aroma', chessId: 'chess_char_4_10_a', row: 0, col: 0, nativeState: {} };
   freeRefreshed.state.pieces.push(aroma);
   runNativeHook(freeRefreshed.state, 'prepEnd', { origin: 'player' }, freeRefreshed.services);
-  assert.deepEqual(freeRefreshed.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 2 }]);
+  assert.deepEqual(freeRefreshed.state.shop.slots.map((slot) => slot.equipment.map(({ id, quantity }) => ({ id, quantity }))), [
+    [{ id: 'assault', quantity: 1 }], [{ id: 'assault', quantity: 1 }], [{ id: 'assault', quantity: 1 }],
+  ]);
+});
+
+test('bench Lappland sees the first free refresh and copy replay uses the source elite variant as the copier', () => {
+  const lappland = fixture();
+  lappland.state.counters.refreshes = 1;
+  lappland.state.shop.slots = [{ kind: 'chess', id: 'offer', equipment: [], sold: false }];
+  lappland.state.pieces.push({ uid: 'lp', chessId: 'chess_char_2_16_a', row: null, col: null, nativeState: {} });
+  runNativeHook(lappland.state, 'refresh', { paid: false }, lappland.services);
+  assert.deepEqual(lappland.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 1 }]);
+  const eliteLappland = fixture();
+  eliteLappland.state.counters.refreshes = 1;
+  eliteLappland.state.shop.slots = [{ kind: 'chess', id: 'offer', equipment: [], sold: false }];
+  eliteLappland.state.pieces.push({ uid: 'lp-b', chessId: 'chess_char_2_16_b', elite: true, row: null, col: null, nativeState: {} });
+  runNativeHook(eliteLappland.state, 'refresh', { paid: false }, eliteLappland.services);
+  assert.deepEqual(eliteLappland.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 2 }]);
+
+  const copied = fixture();
+  const saria = { uid: 'saria', chessId: 'chess_char_5_11_a', row: 1, col: 1, dir: 'RIGHT', nativeState: {} };
+  const eliteThinGreen = { uid: 'thin-b', chessId: 'chess_char_3_08_b', elite: true, row: 1, col: 2, nativeState: {} };
+  const allies = [0, 1].map((n) => ({ uid: `a${n}`, chessId: `ally${n}_a`, row: n, col: 2, nativeState: {} }));
+  copied.state.pieces.push(saria, eliteThinGreen, ...allies);
+  copied.services.data = {
+    chess: Object.fromEntries(copied.state.pieces.map((p) => [p.chessId, { bonds: ['v'] }])),
+    bonds: { v: { name: '维多利亚' } },
+  };
+  runNativeHook(copied.state, 'prepEnd', {}, copied.services);
+  const sariaGrant = copied.granted.filter((item) => item.sourceUid === 'saria');
+  assert.deepEqual(sariaGrant.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 2 }]);
 });
 
 test('dominant faction recipes use stable tavern order on ties and exclude no-faction profession fallback', () => {
   const { state, services, granted } = fixture();
   const podenco = { uid: 'podenco', chessId: 'chess_char_1_13_a', row: null, col: null, nativeState: {} };
-  const a = { uid: 'a', chessId: 'a_a', row: 0, col: 0, nativeState: {} };
-  const b = { uid: 'b', chessId: 'b_a', row: 0, col: 1, nativeState: {} };
+  const a = { uid: 'a', chessId: 'chess_char_1_03_a', row: 0, col: 0, nativeState: {} };
+  const b = { uid: 'b', chessId: 'chess_char_1_06_a', row: 0, col: 1, nativeState: {} };
   state.pieces.push(podenco, a, b);
-  services.data = { chess: { a_a: { bonds: ['f_yan'] }, b_a: { bonds: ['f_vic'] } }, bonds: { f_yan: { name: '炎' }, f_vic: { name: '维多利亚' } } };
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
-  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 1 }]);
+  assert.deepEqual(granted.filter((x) => x.sourceUid === 'podenco').map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 1 }]);
+});
+
+test('prep faction supply recognizes a selected extra tavern tag', () => {
+  const { state, services, granted } = fixture();
+  const thorn = { uid: 'thorn', chessId: 'chess_char_1_06_a', row: 0, col: 0, nativeState: {} };
+  const identityCarrier = { uid: 'tagged', chessId: 'unknown_a', row: 0, col: 1, nativeState: {}, equipment: [{ id: 'chess_item_identity_gear', state: { faction: '维多利亚' } }] };
+  state.pieces.push(thorn, identityCarrier);
+  runNativeHook(state, 'prepEnd', {}, services);
+  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }]);
 });
 
 test('two-copy native merge qualification is registered as an explicit merge rule', () => {
