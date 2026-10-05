@@ -52,7 +52,7 @@ export function setupUnitKit(battle, unit, mode = 'full') {
   const raw = def.raw ?? def;
   const bb = def.skill?.bb ?? {};
   if (unit.kind === 'token') {
-    const tk = mode === 'full' ? (tokens.kits?.[def.id] ?? tokens.default?.[def.id]) : null;
+    const tk = mode === 'full' || mode === 'independent' ? (tokens.kits?.[def.id] ?? tokens.default?.[def.id]) : null;
     if (typeof tk === 'function') {
       try { const k = tk(bb, raw, def); if (k) return k; } catch (e) { battle._handlerError(`tokenKit:${def.id}`, unit, e); }
     }
@@ -60,11 +60,11 @@ export function setupUnitKit(battle, unit, mode = 'full') {
   }
   if (unit.kind !== 'op') return {};
   const injected = battle.opts && battle.opts.kits;
-  if (mode === 'full' || injected) {
+  if (mode === 'full' || mode === 'independent' || injected) {
     // DESIGN §5.6's example keys kits by the suffix-less id (`chess_char_1_01`), data/SIM.md by baseId (`…_a`): accept both
     const bare = String(def.baseId ?? def.id ?? '').replace(/_[ab]$/, '');
     const pick = (reg) => reg?.[def.baseId] ?? reg?.[def.id] ?? reg?.[bare];
-    const f = pick(injected) ?? (mode === 'full' ? pick(KITS) : undefined);
+    const f = pick(injected) ?? (mode === 'full' || mode === 'independent' ? pick(KITS) : undefined);
     if (typeof f === 'function') {
       try {
         const k = f(bb, raw, def);
@@ -184,7 +184,8 @@ export function skillSpecSource(def, kits = KITS) {
 }
 
 /**
- * Install kits for every ally unit and (mode 'full') every domain module. First, a Battle constructed without the spec
+ * Install kits for every ally unit and (mode 'full') every domain module. Mode 'independent' retains full KITS and
+ * token kits but installs no original-domain modules; its battle mechanisms arrive via extraContent. First, a Battle constructed without the spec
  * path (server-run fields, bot rehearsals, tests) gets the same per-battle loadout data view createBattleFromSpec uses
  * (simdata withUnitLoadouts over its players' inputs), so summons spawned during the battle (`getToken(id, owner)`)
  * and every other id-only lookup resolve the owner's selected skill / module there too (DESIGN §16).
@@ -205,7 +206,11 @@ export function installContent(battle, { mode = 'full', extra = null } = {}) {
     }
   }
   for (const m of extra || []) {
-    try { (typeof m === 'function' ? m : m.install)?.(battle); } catch (e) { battle._handlerError('content:extra', null, e); }
+    try { (typeof m === 'function' ? m : m.install)?.(battle); } catch (e) {
+      // Independent handlers are audited mechanics; a failed installer must not silently produce a partial battle.
+      if (mode === 'independent') throw e;
+      battle._handlerError('content:extra', null, e);
+    }
   }
 }
 
