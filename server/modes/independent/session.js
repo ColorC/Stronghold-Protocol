@@ -280,7 +280,9 @@ export function applyAction(state, action, options = {}) {
       if (!piece || !item || !steam) throw new Error('BAD_TARGET');
       const allowed = steam.params.sourceIds;
       const selected = action.hammerSourceIds;
-      const limit = Number(item.elite ? steam.params.selectedVariants?.elite : steam.params.selectedVariants?.normal);
+      const limits = steam.params.chooseVariantsOnEquip;
+      const limit = Number(item.elite ? limits?.elite : limits?.normal);
+      if (!Number.isInteger(limit) || limit < 1) throw new Error('BAD_EQUIPMENT_RULE');
       if (!Array.isArray(selected) || selected.length > limit || new Set(selected).size !== selected.length || selected.some((id) => !allowed.includes(id) || !piece.equipment.some((x) => (x.sourceId || equipmentRecord(catalog, x.id)?.sourceId) === id))) throw new Error('BAD_HAMMER_SELECTION');
       item.state = { ...(item.state || {}), hammerSourceIds: [...selected] };
       events.push({ type: 'configure-equipment', targetUid: piece.uid, itemUid: item.uid, hammerSourceIds: [...selected] });

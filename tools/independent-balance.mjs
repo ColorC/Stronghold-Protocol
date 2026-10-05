@@ -36,10 +36,11 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
   if (!ROUTES.includes(route)) throw new Error('Unknown route');
   let state = createSession({seed, difficulty, roundLimit});
   const trace = [];
+  const actionLog = [];
   let actions = 0;
   const act = (action, strict=false) => {
     const result = applyAction(state, action, {data,catalog});
-    if (result.ok) { state=result.state; actions++; }
+    if (result.ok) { state=result.state; actions++; actionLog.push(structuredClone(action)); }
     else if (strict) throw Object.assign(new Error(`${action.type}: ${result.error.code}: ${result.error.message}`),{pilotState:state,action,trace});
     return result;
   };
@@ -133,7 +134,7 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
     trace.push({...before,afterLp:state.lp,battle:state.battleSummary,production:(state.history||[]).filter(e=>e.round===round && (e.type==='forge' || e.type==='production')).length});
   }
   if(state.phase!=='finished') throw new Error('Pilot exceeded bounded turns');
-  return {seed,difficulty,roundLimit,route,actions,rounds:trace.length,lp:state.lp,completed:trace.length===roundLimit && state.lp>0 && state.battleSummary?.result?.bossHpLeft===0,trace,state};
+  return {seed,difficulty,roundLimit,route,actions,actionLog,rounds:trace.length,lp:state.lp,completed:trace.length===roundLimit && state.lp>0 && state.battleSummary?.result?.bossHpLeft===0,trace,state};
 }
 
 async function main() {
