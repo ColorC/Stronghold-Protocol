@@ -40,7 +40,7 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
   const act = (action, strict=false) => {
     const result = applyAction(state, action, {data,catalog});
     if (result.ok) { state=result.state; actions++; }
-    else if (strict) throw new Error(`${action.type}: ${result.error.code}: ${result.error.message}`);
+    else if (strict) throw Object.assign(new Error(`${action.type}: ${result.error.code}: ${result.error.message}`),{pilotState:state,action,trace});
     return result;
   };
   const pickOffers = () => {
@@ -105,10 +105,10 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
       });
       const remaining=state.inventory.find(x=>x.uid===item.uid);
       if(!remaining) continue;
-      if(definition?.category==='补给' || definition?.category==='玩家设施' || definition?.kind==='supply' || definition?.kind==='facility') {
+      if(['补给','玩家设施','supply','facility'].includes(definition?.kind)) {
         for(const target of [undefined,...targets]) if(act({type:'use-item',itemUid:item.uid,targetUid:target?.uid}).ok)break;
       } else {
-        for(const target of targets) if(act({type:'equip',itemUid:item.uid,targetUid:target.uid,quantity:remaining.quantity}).ok)break;
+        for(const target of targets) if(act({type:'equip',itemUid:item.uid,targetUid:target.uid,quantity:definition?.unique?1:remaining.quantity}).ok)break;
       }
     }
     const field=getIndependentField(state,{data,catalog});
@@ -133,7 +133,7 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
     trace.push({...before,afterLp:state.lp,battle:state.battleSummary,production:(state.history||[]).filter(e=>e.round===round && (e.type==='forge' || e.type==='production')).length});
   }
   if(state.phase!=='finished') throw new Error('Pilot exceeded bounded turns');
-  return {seed,difficulty,roundLimit,route,actions,rounds:trace.length,lp:state.lp,completed:trace.length===roundLimit && state.lp>0,trace,state};
+  return {seed,difficulty,roundLimit,route,actions,rounds:trace.length,lp:state.lp,completed:trace.length===roundLimit && state.lp>0 && state.battleSummary?.result?.bossHpLeft===0,trace,state};
 }
 
 async function main() {
@@ -145,10 +145,14 @@ async function main() {
   const count=Number(options.seeds||3);
   if(!Number.isInteger(count)||count<1||count>100)throw new Error('seeds must be 1..100');
   const runs=[];
-  for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=1;seed<=count;seed++)runs.push(playSeed({seed,route,difficulty:options.difficulty||'FUNNY',roundLimit:Number(options['round-limit']||9)}));
+  for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=1;seed<=count;seed++) {
+    try { runs.push(playSeed({seed,route,difficulty:options.difficulty||'FUNNY',roundLimit:Number(options['round-limit']||9)})); }
+    catch(error) { runs.push({seed,route,error:error.message,action:error.action,state:error.pilotState,trace:error.trace,rounds:error.trace?.length||0,lp:error.pilotState?.lp||0,completed:false}); }
+  }
   const report={createdAt:new Date().toISOString(),routes:ROUTES.map(route=>{const r=runs.filter(x=>x.route===route);return {route,runs:r.length,completed:r.filter(x=>x.completed).length,meanRounds:r.reduce((n,x)=>n+x.rounds,0)/(r.length||1),meanLp:r.reduce((n,x)=>n+x.lp,0)/(r.length||1)};}),runs};
   const output=resolve(options.output||'runtime/independent-mode-20261005/balance.json');
   await mkdir(dirname(output),{recursive:true});await writeFile(output,JSON.stringify(report,null,2));
-  console.log(JSON.stringify({output,role:'seeded real-action balance experiment',routes:report.routes},null,2));
+  console.log(JSON.stringify({output,role:'seeded real-action balance experiment',routes:report.routes,errors:runs.filter(r=>r.error).map(r=>({seed:r.seed,route:r.route,error:r.error,round:r.state?.round}))},null,2));
+  if(runs.some(r=>r.error))process.exitCode=1;
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();
