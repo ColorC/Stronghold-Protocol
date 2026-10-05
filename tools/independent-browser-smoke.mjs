@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { startServer } from '../server/index.js';
@@ -18,7 +18,9 @@ const errors = [];
 let browser;
 const receipt = { ok: false, url: base, artifacts };
 try {
-  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'], timeout: 30000 });
+  const profile = await mkdtemp(path.resolve('.omni/tmp/independent-browser-profile-'));
+  artifacts.push({ path: profile, role: 'isolated temporary headless Chrome profile' });
+  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', userDataDir: profile, headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'], timeout: 30000 });
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 1000 });
   page.on('pageerror', (error) => errors.push(error.message));
