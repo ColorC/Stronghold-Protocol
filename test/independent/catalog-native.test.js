@@ -382,3 +382,22 @@ test('native status production observes targets in range regardless of status so
   });
   assert.equal(rinyu.params.probability, 0.6);
 });
+
+test('Specter the Unchained combines first death and dollSwap output under the shared badge cap', () => {
+  const normal = all.find((x) => x.name === '归溟幽灵鲨' && !x.elite);
+  const elite = catalog.operators[normal.eliteChessId];
+  for (const [operator, expectedQuantity, expectedCap] of [[normal, 1, 4], [elite, 2, 8]]) {
+    const rules = operator.nativeTrait.effect.combat.filter((x) => ['death', 'dollSwap'].includes(x.trigger));
+    assert.deepEqual(rules.map((x) => x.trigger).sort(), ['death', 'dollSwap']);
+    const death = rules.find((x) => x.trigger === 'death');
+    const swap = rules.find((x) => x.trigger === 'dollSwap');
+    for (const rule of [death, swap]) {
+      assert.equal(rule.params.outputs[0].id, 'vitality');
+      assert.equal(rule.params.outputs[0].quantity, expectedQuantity);
+      assert.equal(rule.params.maxPerBattle, expectedCap);
+      assert.equal(rule.params.filter.actor, 'self');
+    }
+    assert.equal(death.params.firstOnly, true);
+    assert.equal(Object.hasOwn(swap.params, 'firstOnly'), false);
+  }
+});
