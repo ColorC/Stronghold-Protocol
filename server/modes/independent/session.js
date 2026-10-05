@@ -11,7 +11,7 @@ import { grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capac
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
-import { nativeFactions, attachmentAccepted } from '../../../shared/independentRules.js';
+import { nativeFactions, tavernFactions, attachmentAccepted } from '../../../shared/independentRules.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const FORBIDDEN = new Set(['__proto__', 'prototype', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']);
@@ -46,16 +46,22 @@ function drawChess(state, catalog, rng, maxTier) {
   for (const [id, p] of eligible) { roll -= p.left; if (roll < 0) return id; }
   return eligible.at(-1)?.[0] || null;
 }
-function drawEquipment(catalog, rng, level) {
+export function drawEquipment(state, gd, catalog, rng, level) {
   const all = [ ...Object.values(catalog.badges || {}), ...Object.values(catalog.equipment || {}) ]
     .filter((x) => x && x.available !== false && !x.disabled && x.kind !== 'prizeGear' && x.kind !== '停用' && x.shopEligible !== false && x.oldShop !== false && Number(x.shopTier ?? x.tier ?? 1) <= level && x.id)
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  return all.length ? all[Math.floor(rng() * all.length)].id : null;
+  if (!all.length) return null;
+  const pool = new SharedPool(gd);
+  pool.entries = new Map(Object.entries(state.pool || {}).map(([id, value]) => [id, { ...value }]));
+  const grouped = {};
+  for (const item of all) (grouped[Number(item.shopTier ?? item.tier ?? 1)] ||= []).push(item.id);
+  pool.gd = Object.create(gd); pool.gd.shopItemsByTier = grouped;
+  return pool.rollItem(rng, level);
 }
 function slotsFor(state, gd, catalog, rng) {
   const counts = gd.shopSlots(state.shop.level); const slots = [];
   for (let i = 0; i < counts.chess; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
-  for (let i = 0; i < counts.item; i++) slots.push({ kind: 'equipment', id: drawEquipment(catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
+  for (let i = 0; i < counts.item; i++) slots.push({ kind: 'equipment', id: drawEquipment(state, gd, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
   return slots;
 }
 function advanceShop(state, gd, catalog, rng) {
@@ -65,12 +71,22 @@ function advanceShop(state, gd, catalog, rng) {
   return next.map((slot, i) => current[i] && !current[i].sold ? current[i] : slot);
 }
 function invokeHook(state, hook, event, services) {
-  return runNativeHook(state, hook, event, services);
+  const result = runNativeHook(state, hook, event, services);
+  if (hook === 'gain' && event.piece) handleGainEquipment(state, services.catalog, event.piece);
+  if (hook === 'prepEnd' || hook === 'roundStart') {
+    const repeats = state.playerEffects.filter((x) => x.type === 'repeatNativeForging' && x.expiresRound === state.round).reduce((n, x) => n + Number(x.extraRepeats || 0), 0);
+    for (let i = 0; i < repeats; i++) {
+      const markerPrefix = hook === 'prepEnd' ? 'prepEnd:forge' : 'roundStart:replayAdjacentNative';
+      for (const piece of state.pieces) for (const [key, value] of Object.entries(piece.nativeState || {})) if (key.startsWith(markerPrefix) && value?.lastRound === state.round) delete value.lastRound;
+      runNativeHook(state, hook, event, services);
+    }
+  }
+  return result;
 }
 function servicesFor(state, data, catalog, rng) {
   return { data, catalog, rng,
     grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, extra),
-    grantChess: (draft, chessId, extra = {}) => gainChess(draft, catalog, chessId, extra),
+    grantChess: (draft, chessId, extra = {}) => { const piece = gainChess(draft, catalog, chessId, extra); invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); maybeMergeOperator(draft, catalog, chessId); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
     record: (draft, event) => pushEvent(draft, event),
   };
@@ -84,12 +100,113 @@ function gainChess(state, catalog, chessId, extra = {}) {
   state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1;
   return piece;
 }
+function handleGainEquipment(state, catalog, piece) {
+  if (!piece || !tavernFactions(piece, catalog).includes('炎')) return;
+  for (const item of piece.equipment || []) {
+    const def = equipmentRecord(catalog, item.id);
+    const effect = def?.params?.effects?.find((x) => x.behavior === 'gainBattleStats' && x.params?.deferredFunds);
+    if (!effect || !piece.equipment.some((x) => (x.sourceId || equipmentRecord(catalog, x.id)?.sourceId) === effect.params.pairedSourceId)) continue;
+    if (item.state?.deferredFundsRound === state.round) continue;
+    const amount = Number(item.elite ? effect.params.deferredFunds.elite : effect.params.deferredFunds.normal);
+    if (amount > 0) { state.pendingFunds += Math.min(amount, Number(effect.params.deferredFundsMaxPerRound || amount)); item.state = { ...(item.state || {}), deferredFundsRound: state.round }; }
+  }
+}
+function mergeCopiesRequired(op) {
+  const custom = op?.nativeTrait?.effect?.prep?.find((x) => x.trigger === 'merge' && x.behavior === 'twoCopyElite');
+  return Math.max(2, Number(custom?.params?.copiesRequired || 3));
+}
+function mergeKey(item, catalog) {
+  const d = equipmentRecord(catalog, item.id);
+  return d?.unique ? (d.uniqueKey || d.canonicalId || item.id) : null;
+}
+function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
+  if (!Array.isArray(pieceUids) || new Set(pieceUids).size !== pieceUids.length) throw new Error('BAD_MERGE_GROUP');
+  const group = pieceUids.map((uid) => state.pieces.find((p) => p.uid === uid));
+  if (group.some((p) => !p || p.elite) || group.some((p) => p.chessId !== group[0].chessId)) throw new Error('BAD_MERGE_GROUP');
+  const op = opFor(catalog, group[0].chessId); const required = mergeCopiesRequired(op);
+  if (group.length !== required || !op?.eliteChessId) throw new Error('BAD_MERGE_GROUP');
+  const gearGroups = new Map();
+  for (const p of group) for (const x of p.equipment) { const key = mergeKey(x, catalog); if (key) gearGroups.set(key, [...(gearGroups.get(key) || []), { item: x, ownerUid: p.uid }]); }
+  const selectedGear = new Set();
+  for (const [key, items] of gearGroups) if (items.length > 1) {
+    const keep = uniqueSelections[`equipment:${key}`] || uniqueSelections[key];
+    if (typeof keep !== 'string' || !items.some((x) => x.item.uid === keep)) throw new Error('NEED_UNIQUE_SELECTION');
+    selectedGear.add(keep);
+  }
+  const allGear = group.flatMap((p) => p.equipment.map((x) => ({ ...clone(x), ownerUid: p.uid })));
+  const worn = []; const destroyedGear = [];
+  for (const x of allGear) {
+    const key = mergeKey(x, catalog);
+    if (key && gearGroups.get(key).length > 1 && !selectedGear.has(x.uid)) {
+      destroyedGear.push(x);
+    } else worn.push(x);
+  }
+  if (worn.reduce((n, x) => n + Number(x.quantity || 1), 0) > 99) throw new Error('CAPACITY');
+  const fielded = group.filter((p) => p.row !== null && p.col !== null).sort((a, b) => a.uid.localeCompare(b.uid));
+  const survivor = fielded[0] || [...group].sort((a, b) => a.uid.localeCompare(b.uid))[0];
+  const attachments = group.flatMap((p) => (p.attachments || []).map((attachment) => ({ ...clone(attachment), ownerUid: p.uid })));
+  const attachGroups = new Map();
+  for (const a of attachments) if (catalog.attachments?.[a.id]?.unique) attachGroups.set(a.id, [...(attachGroups.get(a.id) || []), a]);
+  const keptAttachments = []; const destroyedAttachments = [];
+  for (const [id, items] of attachGroups) {
+    if (items.length === 1) { const { ownerUid, ...attachment } = items[0]; keptAttachments.push(attachment); }
+    else {
+      const keep = uniqueSelections[`attachment:${id}`];
+      if (typeof keep !== 'string' || !items.some((x) => x.ownerUid === keep)) throw new Error('NEED_UNIQUE_SELECTION');
+      const selected = items.find((x) => x.ownerUid === keep); const { ownerUid, ...attachment } = selected; keptAttachments.push(attachment);
+      destroyedAttachments.push(...items.filter((x) => x !== selected).map((x) => ({ id, ownerUid: x.ownerUid, state: clone(x.state || {}) })));
+    }
+  }
+  const uniqueAttachmentIds = new Set([...attachGroups.keys()]);
+  keptAttachments.push(...attachments.filter((a) => !uniqueAttachmentIds.has(a.id)).map(({ ownerUid, ...attachment }) => attachment));
+  const penaltyApplied = group.some((p) => p.bodyPenaltyApplied);
+  const copies = group.reduce((n, p) => n + Number(p.poolCopies || 1), 0);
+  const mergeMarkers = (target, source) => {
+    for (const [key, value] of Object.entries(source || {})) {
+      if (key === 'preferences') continue;
+      if (value && typeof value === 'object' && !Array.isArray(value)) { target[key] ||= {}; mergeMarkers(target[key], value); }
+      else if (typeof value === 'number') target[key] = Math.max(Number(target[key]) || 0, value);
+      else if (typeof value === 'boolean') target[key] = Boolean(target[key] || value);
+      else if (!Object.hasOwn(target, key)) target[key] = clone(value);
+    }
+  };
+  for (const p of group) if (p !== survivor) mergeMarkers(survivor.nativeState ||= {}, p.nativeState);
+  survivor.chessId = op.eliteChessId; survivor.elite = true; survivor.equipment = worn; survivor.attachments = keptAttachments;
+  survivor.bodyPenaltyApplied = penaltyApplied;
+  survivor.poolCopies = copies;
+  for (const p of group) if (p !== survivor) state.pieces.splice(state.pieces.indexOf(p), 1);
+  return { piece: survivor, consumed: group.map((p) => p.uid), required, destroyedGear: destroyedGear.map((x) => ({ id: x.id, uid: x.uid, ownerUid: x.ownerUid, state: clone(x.state || {}) })), destroyedAttachments };
+}
+function mergeConflictPreview(group, catalog) {
+  const gear = new Map(); const attachments = new Map();
+  for (const p of group) {
+    for (const item of p.equipment || []) { const key = mergeKey(item, catalog); if (key) gear.set(key, [...(gear.get(key) || []), { uid: item.uid, ownerUid: p.uid, id: item.id, state: clone(item.state || {}) }]); }
+    for (const item of p.attachments || []) if (catalog.attachments?.[item.id]?.unique) attachments.set(item.id, [...(attachments.get(item.id) || []), { id: item.id, ownerUid: p.uid, state: clone(item.state || {}) }]);
+  }
+  return { equipment: [...gear].filter(([, xs]) => xs.length > 1).map(([key, items]) => ({ key, choices: items })), attachments: [...attachments].filter(([, xs]) => xs.length > 1).map(([id, items]) => ({ id, choices: items })) };
+}
+function maybeMergeOperator(state, catalog, chessId) {
+  const op = opFor(catalog, chessId); const required = mergeCopiesRequired(op);
+  if (state.offers.some((x) => x.type === 'operatorMerge' && x.chessId === chessId)) return [];
+  const merged = [];
+  while (op?.eliteChessId) {
+    const group = state.pieces.filter((p) => p.chessId === chessId && !p.elite).slice(0, required);
+    if (group.length < required) break;
+    try { merged.push(mergeOperator(state, catalog, group.map((p) => p.uid))); }
+    catch (error) {
+      if (error.message !== 'NEED_UNIQUE_SELECTION' && error.message !== 'CAPACITY') throw error;
+      if (!state.offers.some((x) => x.type === 'operatorMerge' && x.chessId === chessId)) state.offers.push({ id: `o${state.nextUid++}`, type: 'operatorMerge', chessId, pieceUids: group.map((p) => p.uid), required, conflicts: mergeConflictPreview(group, catalog) });
+      break;
+    }
+  }
+  return merged;
+}
 function goodsInShop(state, kind) { return state.shop.slots.filter((x) => x.kind === kind && !x.sold); }
 function safeCopyPool(state, id, n) { const p = poolFor(state, id); if (p) p.left = Math.min(p.cap, p.left + n); }
 function requireFinitePositive(x) { if (!Number.isFinite(x) || x < 0) throw new Error('BAD_NUMBER'); }
 function handleSaleEquipment(state, catalog) {
   for (const piece of state.pieces) {
-    const factions = new Set(nativeFactions(piece, catalog)); if (!factions.size) continue;
+    const factions = new Set(tavernFactions(piece, catalog)); if (!factions.size) continue;
     for (const item of piece.equipment) {
       const def = equipmentRecord(catalog, item.id);
       if (def?.mechanism !== 'saleThresholdRecruit') continue;
@@ -97,7 +214,7 @@ function handleSaleEquipment(state, catalog) {
       if (used >= Number(def.params?.maxPerPrep || 1)) continue;
       const threshold = Number(item.elite ? def.params.eliteSaleThreshold : def.params.normalSaleThreshold);
       if (state.counters.sold < threshold) continue;
-      const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.tier <= tier && nativeFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
+      const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.tier <= tier && tavernFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
       if (!candidates.length) continue;
       item.state = { ...(item.state || {}), saleTriggersThisPrep: used + 1 };
       state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, Number(def.params.choices || 3)), source: item.id, sourceUid: piece.uid });
@@ -120,7 +237,7 @@ export function createSession(options = {}) {
   const state = { schemaVersion: 1, modeId: 'independent', seed, rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, phase: 'prep', funds: gd.income(1), pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
-    playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null, outcome: null };
+    incomeThisRound: gd.income(1), pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
   if (errs.length) throw new Error(`INVALID_INITIAL_STATE:${errs.join(',')}`);
@@ -158,7 +275,7 @@ export function viewSession(state, options = {}) {
   const pieces = state.pieces.map((p) => {
     const op = opFor(catalog, p.chessId) || {};
     const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
-    const modules = [op.source?.normalChess?.module, op.source?.eliteChess?.module].filter((x) => x?.id);
+    const modules = (raw?.modules || []).map((x) => ({ ...clone(x), id: x.uniEquipId || x.id })).filter((x) => x.id);
     const steamOptions = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
     return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'] };
   });
@@ -186,13 +303,21 @@ export function applyAction(state, action, options = {}) {
       const offer = work.offers.find((x) => x.id === action.offerId);
       if (!offer) throw new Error('BAD_OFFER');
       if (offer.type === 'prize') events.push(choosePrize(work, catalog, action.offerId, action.index, action));
+      else if (offer.type === 'operatorMerge') {
+        const sourceChessId = offer.chessId;
+        const merged = mergeOperator(work, catalog, offer.pieceUids, action.uniqueSelections || {});
+        work.offers.splice(work.offers.indexOf(offer), 1); events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId, destroyedEquipment: merged.destroyedGear, destroyedAttachments: merged.destroyedAttachments });
+        for (const further of maybeMergeOperator(work, catalog, sourceChessId)) events.push({ type: 'operator-merge', uid: further.piece.uid, chessId: further.piece.chessId });
+      }
       else {
         if (!Number.isInteger(action.index) || !safeId(offer.choices[action.index])) throw new Error('BAD_CHOICE');
         if (offer.type === 'recruit') {
           const op = opFor(catalog, offer.choices[action.index]); if (!op) throw new Error('BAD_CHOICE');
           const piece = gainChess(work, catalog, op.chessId, {}); invokeHook(work, 'gain', { piece, source: offer.source || 'choice' }, services);
           for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
+          handleGainEquipment(work, catalog, piece);
           work.offers.splice(work.offers.indexOf(offer), 1);
+          for (const merged of maybeMergeOperator(work, catalog, op.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
         } else if (offer.type === 'attachment') {
           const piece = work.pieces.find((x) => x.uid === (action.targetUid || offer.targetUid)); if (!piece) throw new Error('BAD_TARGET');
           const attachmentId = offer.choices[action.index]; const attachment = catalog.attachments?.[attachmentId];
@@ -201,6 +326,9 @@ export function applyAction(state, action, options = {}) {
         }
       }
       if (!work.offers.some((x) => x.type === 'prize')) work.phase = 'prep';
+      if (offer.type === 'prize' && work.pendingRoundStart && !work.offers.some((x) => x.type === 'prize')) {
+        work.pendingRoundStart = false; invokeHook(work, 'roundStart', { round: work.round }, services); events.push({ type: 'round-start', round: work.round });
+      }
     } else if (act === 'buy') {
       ensurePrep(work); const slot = work.shop.slots[action.slot];
       if (!Number.isInteger(action.slot) || !slot || slot.sold || !slot.id) throw new Error('BAD_SLOT');
@@ -214,6 +342,8 @@ export function applyAction(state, action, options = {}) {
           const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item);
           equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1);
         }
+        handleGainEquipment(work, catalog, piece);
+        for (const merged of maybeMergeOperator(work, catalog, piece.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
         grantEquipment(work, catalog, slot.id, 1, { elite: !!slot.elite }); events.push({ type: 'buy-equipment', id: slot.id });
@@ -253,7 +383,7 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); const op = p && opFor(catalog, p.chessId); if (!p || !op) throw new Error('BAD_TARGET');
       const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
       if (!Number.isInteger(action.skillIndex) || action.skillIndex < 0 || action.skillIndex >= (raw?.skills || []).length) throw new Error('BAD_SKILL');
-      const moduleId = action.moduleId ?? p.moduleId; const moduleIds = [op.source?.normalChess?.module?.id, op.source?.eliteChess?.module?.id].filter(Boolean);
+      const moduleId = action.moduleId ?? p.moduleId; const moduleIds = (raw?.modules || []).map((x) => x.uniEquipId || x.id).filter(Boolean);
       if (moduleId !== 'none' && !moduleIds.includes(moduleId)) throw new Error('BAD_MODULE');
       p.skillIndex = action.skillIndex; p.moduleId = moduleId; events.push({ type: 'loadout', uid: p.uid });
     } else if (act === 'configure') {
@@ -296,7 +426,16 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work); const result = applyInheritance(work, catalog, action.donorUid, action.receiverUid, action.uniqueSelections || {}, data); work.funds += 1; work.counters.sold++; handleSaleEquipment(work, catalog); events.push({ type: 'inherit', receiverUid: result.receiver.uid, preview: result.preview });
     } else if (act === 'ready') {
       ensurePrep(work);
-      if (work.pieces.filter((x) => x.row !== null).length < 1) throw new Error('NO_DEPLOYED_PIECES');
+      const deployed = work.pieces.filter((x) => x.row !== null && x.col !== null);
+      if (deployed.length < 1) throw new Error('NO_DEPLOYED_PIECES');
+      if (deployed.length > work.deployCap) throw new Error('DEPLOY_CAP');
+      const field = getIndependentField(work, { data, catalog }); const cells = new Set();
+      for (const p of deployed) {
+        const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
+        const cell = `${p.row},${p.col}`;
+        if (cells.has(cell) || !canPlace(field.deployMap, positionClass(raw, p.moduleId), p.row, p.col)) throw new Error('ILLEGAL_TILE');
+        cells.add(cell);
+      }
       invokeHook(work, 'prepEnd', { round: work.round }, services);
       const battle = runIndependentBattle(work, { data, catalog });
       if (!battle || !battle.result) throw new Error('BATTLE_FAILED');
@@ -323,6 +462,7 @@ export function applyAction(state, action, options = {}) {
       else {
       if (work.roundLimit === 15 && work.round === 14) work.outcome = 'boss-cleared';
       work.round++;
+      work.playerEffects = work.playerEffects.filter((x) => x.type !== 'repeatNativeForging' || x.expiresRound >= work.round);
       const baseIncome = gd.income(work.round); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);
       work.incomeThisRound = baseIncome; work.funds = baseIncome + Number(work.pendingFunds || 0) + facility; work.pendingFunds = 0;
       work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0;
@@ -331,9 +471,8 @@ export function applyAction(state, action, options = {}) {
       work.shop.slots = advanceShop(work, gd, catalog, rng);
       work.shop.frozen = false;
       const award = roundAward(work);
-      if (award) makePrizeOffer(work, catalog, award, 'round', rng); else work.phase = 'prep';
-      invokeHook(work, 'roundStart', { round: work.round }, services);
-        events.push({ type: 'round-start', round: work.round });
+      if (award) { work.pendingRoundStart = true; makePrizeOffer(work, catalog, award, 'round', rng); }
+      else { work.phase = 'prep'; work.pendingRoundStart = false; invokeHook(work, 'roundStart', { round: work.round }, services); events.push({ type: 'round-start', round: work.round }); }
       }
       }
     } else throw new Error('UNKNOWN_ACTION');
