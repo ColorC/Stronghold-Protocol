@@ -27,7 +27,7 @@ const cases = [
 
 for (const [name, normal, elite] of cases) for (const variant of [false, true]) {
   test(`${name} ${variant ? 'elite' : 'ordinary'} constant stats survive its effect handler`, () => {
-    const gear = Object.values(catalog.equipment).find(x => x.name === name);
+    const gear = Object.values(catalog.equipment).find(x => (x.newName || x.name) === name);
     assert.ok(gear, name);
     const id = 'independent_gear_fixture_a';
     const rec = chessRec({ id, stats: { atk: 500, maxHp: 1000, def: 100, res: 0, aspd: 100 }, skill: null });
