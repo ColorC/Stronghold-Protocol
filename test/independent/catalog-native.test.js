@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
+import { tavernFactions } from '../../shared/independentRules.js';
 
 const catalog = getCatalog();
 const all = Object.values(catalog.operators);
@@ -15,7 +16,11 @@ function fixture() {
     data: {},
     rng: () => 0.25,
     grantEquipment(_state, id, quantity, extra) { granted.push({ id, quantity, ...extra }); },
-    grantChess(_state, chessId, extra) { offers.push({ chessId, ...extra }); },
+    grantChess(target, chessId, extra) {
+      offers.push({ chessId, ...extra });
+      const stock = target.pool?.left?.[chessId];
+      if (stock) stock.left = Math.max(0, stock.left - 1);
+    },
     addOffer(_state, offer) { offers.push(offer); },
     record() {},
   };
@@ -246,4 +251,118 @@ test('native registry reports implementation coverage without silent empty callb
   assert.deepEqual(missingCombat.map((x) => x.name), []);
   const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite']);
   for (const behavior of catalog.nativeRegistry.prepBehaviors) assert.ok(expectedPrep.has(behavior), `registered behavior ${behavior}`);
+});
+
+test('all-badge thresholds use all fifteen stable IDs and Meteor keeps its normal/elite stat bonus', () => {
+  const ids = Object.keys(catalog.badges).sort();
+  for (const name of ['隐德来希', '浊心斯卡蒂']) {
+    const operator = all.find((x) => x.name === name && !x.elite);
+    const effect = operator.nativeTrait.effect.combat.find((x) => x.behavior === 'badgeThresholdStat');
+    assert.deepEqual([...effect.params.badgeIds].sort(), ids, `${name} counts the full badge catalog`);
+  }
+  const meteor = all.find((x) => x.name === '流星' && !x.elite);
+  const eliteMeteor = catalog.operators[meteor.eliteChessId];
+  const normalStats = meteor.nativeTrait.effect.combat.find((x) => x.behavior === 'staticStats').params.stats;
+  const eliteStats = eliteMeteor.nativeTrait.effect.combat.find((x) => x.behavior === 'staticStats').params.stats;
+  assert.equal(normalStats.attackPercent, 0.25);
+  assert.equal(normalStats.maxHpPercent, 0.25);
+  assert.equal(eliteStats.attackPercent, 0.5);
+  assert.equal(eliteStats.maxHpPercent, 0.5);
+  assert.ok(meteor.nativeTrait.effect.combat.some((x) => x.behavior === 'weakDamage'));
+  assert.ok(!all.find((x) => x.name === '宴' && !x.elite).nativeTrait.effect.combat.some((x) => x.behavior === 'staticStats' && 'attackPercent' in x.params.stats));
+});
+
+test('native recruitment only selects currently stocked ordinary copies across all offer paths', () => {
+  const get = (name) => all.find((x) => x.name === name && !x.elite);
+  const idFor = (name) => get(name).chessId;
+  const stock = (ids, counts) => Object.fromEntries(ids.map((id, i) => [id, { cap: counts[i], left: counts[i], tier: catalog.operators[id]?.tier }]));
+  const rowAllies = (piece) => [0, 1].map((n) => ({ uid: `row-${n}`, chessId: idFor('角峰'), row: piece.row, col: n, nativeState: {} }));
+
+  for (const elite of [false, true]) {
+    const { state, services, offers } = fixture();
+    const gratia = get('歌蕾蒂娅');
+    const piece = { uid: 'gratia', chessId: elite ? gratia.eliteChessId : gratia.chessId, elite, row: 0, col: 4, nativeState: {} };
+    const candidates = ['chess_char_5_04_a','chess_char_2_07_a','chess_char_1_04_a'];
+    state.pool = { left: stock(candidates, [1, 0, 1]) };
+    state.pieces.push(piece, ...rowAllies(piece));
+    runNativeHook(state, 'roundStart', {}, services);
+    assert.equal(offers.length, elite ? 2 : 1);
+    assert.ok(offers.every((x) => state.pool.left[x.chessId]?.cap > 0));
+    assert.equal(new Set(offers.map((x) => x.chessId)).size, offers.length);
+  }
+  const oneLeft = fixture();
+  const gratia = get('歌蕾蒂娅');
+  const eliteGratia = { uid: 'elite-gratia', chessId: gratia.eliteChessId, elite: true, row: 0, col: 4, nativeState: {} };
+  const onlyCandidate = 'chess_char_5_04_a';
+  oneLeft.state.pool = { left: stock([onlyCandidate], [1]) };
+  oneLeft.state.pieces.push(eliteGratia, ...rowAllies(eliteGratia));
+  runNativeHook(oneLeft.state, 'roundStart', {}, oneLeft.services);
+  assert.deepEqual(oneLeft.offers.map((x) => x.chessId), [onlyCandidate], 'second elite grant quietly skips when finite stock is exhausted');
+
+  const random = fixture();
+  const tail = get('焰尾');
+  const randomPiece = { uid: 'tail', chessId: tail.chessId, row: 0, col: 0, nativeState: {} };
+  const weighted = catalog.pools.pool_char_pinus.weighted.map(([id]) => id);
+  const soleStock = weighted.find((id) => catalog.operators[id]);
+  random.state.pool = { left: stock([soleStock], [1]) };
+  random.state.pieces.push(randomPiece);
+  runNativeHook(random.state, 'gain', { piece: randomPiece }, random.services);
+  assert.deepEqual(random.offers.map((x) => x.chessId), [soleStock]);
+
+  const sold = fixture();
+  const pinecone = get('松果');
+  const soldPiece = { uid: 'pinecone', chessId: pinecone.chessId, nativeState: {} };
+  const ordinary = all.filter((x) => !x.elite && x.source?.normalChess?.tier === 1).slice(0, 3).map((x) => x.chessId);
+  sold.services.data.chess = Object.fromEntries(ordinary.map((id) => [id, { chessId: id, tier: 1, visible: true, bonds: [] }]));
+  sold.state.pool = { left: stock(ordinary, [0, 1, 0]) };
+  sold.state.pieces.push(soldPiece);
+  runNativeHook(sold.state, 'sold', { piece: soldPiece }, sold.services);
+  assert.equal(sold.offers.length, 1);
+  assert.deepEqual(sold.offers[0].choices, [ordinary[1]]);
+
+  const dominant = fixture();
+  const remaining = get('余');
+  const yan = get('角峰');
+  const owner = { uid: 'yu', chessId: remaining.chessId, row: 0, col: 0, nativeState: {} };
+  const allyA = { uid: 'a', chessId: yan.chessId, row: 0, col: 1, nativeState: {} };
+  const allyB = { uid: 'b', chessId: yan.chessId, row: 0, col: 2, nativeState: {} };
+  dominant.state.pieces.push(owner, allyA, allyB);
+  const faction = tavernFactions(allyA, catalog)[0];
+  const sameFaction = all.filter((x) => !x.elite && tavernFactions({ chessId: x.chessId }, catalog).includes(faction)).slice(0, 3).map((x) => x.chessId);
+  dominant.services.data.chess = Object.fromEntries(sameFaction.map((id) => [id, { chessId: id, visible: true, bonds: [faction] }]));
+  dominant.services.data.bonds = { [faction]: { name: faction } };
+  dominant.state.pool = { left: stock(sameFaction, [0, 1, 0]) };
+  runNativeHook(dominant.state, 'roundStart', {}, dominant.services);
+  assert.deepEqual(dominant.offers.map((x) => x.chessId), [sameFaction[1]]);
+});
+
+test('repeatNativeForging duplicates eligible badge gain and copy output once without replaying supply items', () => {
+  const normal = fixture();
+  const corner = all.find((x) => x.name === '角峰' && !x.elite);
+  const piece = { uid: 'corner', chessId: corner.chessId, nativeState: {} };
+  normal.state.pieces.push(piece);
+  normal.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
+  runNativeHook(normal.state, 'gain', { piece }, normal.services);
+  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['vitality', 1, undefined], ['vitality', 1, true]]);
+  assert.equal(normal.granted[1].sourceUid, 'corner');
+
+  const supply = fixture();
+  const swire = all.find((x) => x.name === '诗怀雅' && !x.elite);
+  const supplyPiece = { uid: 'swire', chessId: swire.chessId, nativeState: {} };
+  supply.state.pieces.push(supplyPiece);
+  supply.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
+  runNativeHook(supply.state, 'gain', { piece: supplyPiece }, supply.services);
+  assert.equal(supply.granted.length, 1);
+  assert.equal(supply.granted[0].id, 'chess_item_1_03_e_a');
+
+  const copy = fixture();
+  const lily = all.find((x) => x.name === '铃兰' && !x.elite);
+  const donor = { uid: 'donor', chessId: corner.chessId, row: 0, col: 1, dir: 'RIGHT', nativeState: {} };
+  const copier = { uid: 'lily', chessId: lily.chessId, row: 0, col: 0, dir: 'RIGHT', nativeState: {} };
+  copy.state.pieces.push(copier, donor);
+  copy.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
+  runNativeHook(copy.state, 'roundStart', {}, copy.services);
+  assert.equal(copy.granted.length, 2);
+  assert.ok(copy.granted.every((x) => x.id === 'vitality' && x.sourceUid === 'lily' && x.copied === true));
+  assert.equal(copy.granted.filter((x) => x.repeated === true).length, 1);
 });
