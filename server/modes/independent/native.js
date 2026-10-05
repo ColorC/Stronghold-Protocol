@@ -111,7 +111,7 @@ function combatRules(name, elite) {
     case '菲莱': return [eventScale('skillStart','recovery',1,2,3,6,{actor:'self'})];
     case '海霓': return [eventScale('kill','assault',1,2,1,1,{actor:'self',targetSide:'any'},1,{firstOnly:true})];
     case '瑕光': return [eventScale('deploy','vitality',1,2,3,6,{actor:'self'})];
-    case '初雪': case '银灰': return [eventScale('statusApplied','assault',1,2,4,8,{actor:'self',targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.5})];
+    case '初雪': case '银灰': return [eventScale('statusApplied','assault',1,2,4,8,{targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.5})];
     case '伺夜': return [eventScale('kill','assault',1,2,3,6,{actor:'self',targetSide:'enemy'},1,{firstN:3})];
     case '莫斯提马': return [eventScale('ammoUsed','recovery',1,2,6,12,{actor:'adjacentAllies',ammoOnly:true},6)];
     case '寒芒克洛丝': return [eventScale('skillStart','precision',1,2,4,8,{actor:'adjacentAllies',excludeSelf:true,direction:'front'})];
@@ -121,9 +121,9 @@ function combatRules(name, elite) {
     case '百炼嘉维尔': return [eventScale('skillStart','vitality',2,4,6,12,{actor:'self'})];
     case '华法琳': return [eventScale('skillStart','vitality',1,2,4,8,{actor:'adjacentAllies',direction:'front'})];
     case '圣约送葬人': return [rule('ammoUsed','eventProduction',{counterEvent:'ammoUsed',counterEvery:7,outputs:[{id:'agility',quantity:q(1,2)},{id:'recovery',quantity:q(1,2)}],maxPerBattle:q(7,14),filter:{actor:'self',ammoOnly:true},capPerOutput:q(7,14)})];
-    case '缇缇': return [eventScale('statusApplied','recovery',1,2,6,12,{actor:'self',targetSide:'any',status:['sleep','stun'],entered:true,range:'attacker'})];
+    case '缇缇': return [eventScale('statusApplied','recovery',1,2,6,12,{targetSide:'any',status:['sleep','stun'],entered:true,range:'attacker'})];
     case '归溟幽灵鲨': return [eventScale('death','vitality',1,2,4,8,{actor:'self'},1,{firstOnly:true})];
-    case '凛御银灰': return [eventScale('statusApplied','assault',1,2,6,12,{actor:'adjacentAllies',direction:'front',tag:'谢拉格',targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.6})];
+    case '凛御银灰': return [eventScale('statusApplied','assault',1,2,6,12,{observer:'frontAlly',observerTag:'谢拉格',targetSide:'enemy',status:'frozen',entered:true,range:'observer'},1,{probability:0.6})];
     case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[{idFromEvent:true,quantity:q(1,2)}],copyOutputFromEvent:true,quantity:q(1,2),maxPerBattle:q(4,8),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},fallbackPreference:'productionBadge',fallback:'firstStableOutput',copied:true})];
     case '蕾缪安': return [eventScale('ammoUsed','precision',2,4,8,16,{actor:'self',ammoOnly:true,sameRowCount:3},10)];
     case '塑心': return [eventScale('skillStart','agility',1,2,6,12,{actor:'sameRowAllies',includeSelf:true})];
