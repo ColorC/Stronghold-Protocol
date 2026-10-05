@@ -8,10 +8,12 @@ import { pathToFileURL } from 'node:url';
 import { playSeed } from './independent-balance.mjs';
 
 const LIMIT_MS = 180_000;
-const seed = 1;
-const route = 'defense';
-const difficulty = 'FUNNY';
-const roundLimit = 9;
+const args = process.argv.slice(2);
+const value = (key, fallback) => args.includes(key) ? args[args.indexOf(key) + 1] : fallback;
+const seed = Number(value('--seed', 1));
+const route = value('--route', 'defense');
+const difficulty = value('--difficulty', 'FUNNY');
+const roundLimit = Number(value('--round-limit', 9));
 
 function parseOutputDirectory(argv) {
   const index = argv.indexOf('--output-directory');
@@ -43,7 +45,7 @@ async function main(argv = process.argv.slice(2)) {
   ensureTime();
   assert.deepStrictEqual(pilotA.state, pilotB.state, 'repeated pilot final states differ');
   assert.deepStrictEqual(pilotA.actionLog, pilotB.actionLog, 'repeated pilot action logs differ');
-  assert.equal(pilotA.completed, true, 'pilot did not win the nine-round run');
+  assert.equal(pilotA.completed, true, `pilot did not win the ${roundLimit}-round run`);
   assert.equal(pilotA.state.outcome, 'win', 'pilot outcome is not win');
   ensureTime();
 

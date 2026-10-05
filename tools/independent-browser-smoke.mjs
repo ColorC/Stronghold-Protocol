@@ -83,6 +83,7 @@ try {
   await page.screenshot({ path: mobileImage, fullPage: true });
   artifacts.push({ path: mobileImage, role: 'actual phone-size page' });
   assert.ok(await page.$('a.fullscreen'));
+  assert.ok(await page.$eval('a.fullscreen', (el) => el.offsetParent !== null), 'fullscreen link must be visible on phones');
   assert.equal(await page.$eval('.topbar', (el) => getComputedStyle(el).userSelect === 'none'), false);
   assert.deepEqual(errors, []);
   receipt.ok = true;
