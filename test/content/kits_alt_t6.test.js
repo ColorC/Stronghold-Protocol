@@ -194,12 +194,16 @@ test('6_02 圣聆初雪 S1 铃音吹雪: 2 charges (cast with enemies in range);
   }
 });
 
-test('6_02 圣聆初雪 S2 霜涛覆岭: toggle; group attacks at atk_scale_s2 × ATK; ground enemies on snow take 20 %/s, leaving snow chills, 5 layers freeze the tile (保护目标)', () => {
+// PRTS 圣聆初雪 S2 霜涛覆岭 "积雪在目标点积累至5层时，使目标点变为冻结状态", 备注 "目标点冻结的实际效果为令圣聆初雪在该地块上召唤一个保护目标
+// （冻结状态）（无视部署属性），并去除相应地块上的积雪（且存在自身的该召唤物的地块不会积雪）", "可以被'变为冻结状态'的目标点包括常规的保护目标点…";
+// the token's page: "技能发动后于保护目标叠加5层积雪". Community report #32: until 0.1.3 any free standable tile froze and the blue
+// gate never did (nobody can stand on it).
+test('6_02 圣聆初雪 S2 霜涛覆岭: toggle; group attacks at atk_scale_s2 × ATK; ground enemies on snow take 20 %/s, leaving snow chills, 5 layers on the protection point freeze it (保护目标（冻结状态）), no other tile', () => {
   for (const id of both('chess_char_6_02')) {
     const sid = 'skchr_sbell2_2', bb = bbOf(id, sid);
     const h = run({
       defs: { enemies: { e: dummy('e'), w: enemyRec({ key: 'w', hp: 1e7, speed: 1 }) } },
-      units: [U(id, sid, 10, 4, { carryState: READY })], enemies: [{ key: 'e', pos: [10, 5] }, { key: 'w', route: 0, time: 1 }],
+      units: [U(id, sid, 10, 3, { carryState: READY })], enemies: [{ key: 'e', pos: [10, 5] }, { key: 'w', route: 0, time: 1 }, { key: 'w', route: 0, time: 40 }],
     });
     const u = h.unit(id);
     usesSkill(u, sid);
@@ -218,13 +222,30 @@ test('6_02 圣聆初雪 S2 霜涛覆岭: toggle; group attacks at atk_scale_s2 �
     approx(dot[0].amount, u.s.atk * bb['talent@s2_magic_scale'] * u.s.dmgDealtMul, '20 % ATK per second');
     assert.ok(h.runUntil(() => statuses(h, 'cold', (c) => c.source === u && isKey(c.target, 'w')).length > 0, 20), 'leaving snow ⇒ cold');
     approx(statuses(h, 'cold', (c) => c.source === u && isKey(c.target, 'w'))[0].duration, bb['talent@cold'], 'cold duration');
-    // a free ground tile of her range at 4 layers: the next layer freezes it
+    const iceOf = () => h.b.allyUnits.find((t) => t.defId === 'token_10058_sbell2_icetgt' && t.alive);
+    // a free ground tile of her range reaching 5 layers: no freeze (until 0.1.3 it turned into the token)
     const fk = 11 * COLS + 4;
+    assert.ok(u.rangeKeys.includes(fk));
     u.mem.snow.set(fk, 4);
-    assert.ok(h.runUntil(() => h.b.allyUnits.some((t) => t.defId === 'token_10058_sbell2_icetgt' && t.alive), 7), '保护目标（冻结状态）');
-    const ice = h.b.allyUnits.find((t) => t.defId === 'token_10058_sbell2_icetgt' && t.alive);
-    assert.deepEqual([ice.tileR, ice.tileC], [11, 4]);
+    h.run(7);
+    assert.equal(u.mem.snow.get(fk), 5);
+    assert.equal(iceOf(), undefined, 'only a protection point freezes');
+    // the blue gate (9,2) — build NONE, nobody may stand there — at 4 layers: the next layer freezes it
+    const gk = 9 * COLS + 2;
+    assert.equal(h.b.grid.tile(9, 2).special, 'end');
+    assert.ok(u.rangeKeys.includes(gk));
+    u.mem.snow.set(gk, 4);
+    assert.ok(h.runUntil(() => !!iceOf(), 7), '保护目标（冻结状态）');
+    const ice = iceOf();
+    assert.deepEqual([ice.tileR, ice.tileC], [9, 2]);
     assert.equal(ice.s.blockCnt, 3);
+    assert.equal(u.mem.snow.get(gk), undefined, 'its snow is used up');
+    h.run(7);
+    assert.equal(u.mem.snow.get(gk), undefined, 'no snow gathers under her token');
+    // a walker reaching the gate is held there by it, not leaked
+    const leaks0 = h.result().perPlayer.p1.leaked.length;
+    assert.ok(h.runUntil(() => h.b.enemies.some((x) => x.alive && isKey(x, 'w') && x.blockedBy === ice), 60), 'blocked by the frozen gate');
+    assert.equal(h.result().perPlayer.p1.leaked.length, leaks0);
     done(h);
   }
 });
@@ -978,7 +999,11 @@ test('6_17 耀骑士临光 S2 逐夜烁光: on deploy ATK + and 3 护盾 layers 
     const u = h.unit(id);
     usesSkill(u, sid);
     h.step();
-    approx(u.findBuff('nearl2:night').mods.atkPct, bb.atk);
+    approx(u.skill.spec.mods.atkPct, bb.atk);
+    assert.equal(u.skill.kind, 'duration');
+    assert.equal(u.skill.active, true);
+    assert.equal(u.skill.ready, false);
+    assert.equal(h.snapshot().units.find((t) => t[0] === u.id)[6], dur);
     assert.equal(u.findBuff('nearl2:shield').shieldHits, bb.times);
     h.run(bb.times * 1.2 + 1);
     const taken = h.hooksOf('damaged').filter((c) => c.target === u);
@@ -988,15 +1013,30 @@ test('6_17 耀骑士临光 S2 逐夜烁光: on deploy ATK + and 3 护盾 layers 
     assert.ok(h.runUntil(() => !u.alive, dur + 1));
     approx(h.b.time, dur, 'withdraws when it ends', 0.05);
     approx(u.respawnAt - h.b.time, u.base.respawnTime * bb.respawn_time, 'this redeploy ×1.25', 1e-3);
+    assert.equal(u.removeReason, 'retreat');
+    assert.equal(u.skill.active, false);
+    assert.deepEqual(h.hooksOf('skillEnd').filter((c) => c.unit === u).map((c) => c.reason), ['duration']);
     done(h);
 
     const k = run({ defs: { chess: { kaz: plain('kaz', { bonds: ['kazimierzShip'] }) } }, units: [U(id, sid, 10, 4), { chessId: 'kaz', row: 12, col: 4 }] });
     const ku = k.unit(id);
     k.step(2);
-    assert.ok(ku.alive && ku.findBuff('nearl2:night'));
+    assert.ok(ku.alive && ku.skill.active);
     assert.ok(k.runUntil(() => !ku.alive, dur + 1));
     approx(ku.respawnAt - k.b.time, ku.base.respawnTime, '卡西米尔 before her: no extension', 1e-3);
     done(k);
+
+    const dead = run({ units: [U(id, sid, 10, 4, { moduleId: 'none' })] });
+    dead.step();
+    const du = dead.unit(id);
+    dead.b.kill(du);
+    const respawnAt = du.respawnAt;
+    approx(respawnAt - dead.b.time, du.base.respawnTime, 'early death keeps ordinary redeployment');
+    assert.equal(du.findBuff('nearl2:shield'), null);
+    dead.run(dur + 1);
+    assert.equal(du.respawnAt, respawnAt, 'no delayed retreat or multiplier after death');
+    assert.deepEqual(dead.hooksOf('skillEnd').filter((c) => c.unit === du).map((c) => c.reason), ['death']);
+    done(dead);
   }
 });
 

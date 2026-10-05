@@ -427,13 +427,21 @@ test('1_13 波登可: 孢子扩散 cloud — projectile_delay_time pulses of atk
   approx(u.s.atk, u.base.atk * (1 + t.atk), 'self is SUPPORT');
   approx(goat.s.atk, goat.base.atk * (1 + t.atk), 'other SUPPORT');
   const [a, b, far] = h.enemies();
-  for (const e of [a, b]) {
+  // PRTS 备注 "孢子群范围半径为0.9": the vial lands on one enemy; the next tile (centre distance 1) is outside 0.9 and inside the old 1.2
+  const zone = h.eventsOf('fx').find((e) => e[1] === 'zone' && e[4]?.skill === 'spores');
+  assert.equal(zone[4].radius, 0.9);
+  let inside = 0;
+  for (const e of [a, b, far]) {
+    const d = Math.hypot(e.x - zone[2], e.y - zone[3]);
     const z = dealt(h, u, (c) => c.target === e && (c.dmg.tags || []).includes('zone'));
-    assert.equal(z.length, bb.projectile_delay_time, 'one pulse per second');
-    for (const c of z) approx(c.amount, u.s.atk * bb.atk_scale);
-    assert.ok(statuses(h, 'silence', (c) => c.target === e).length > 0 && statuses(h, 'sluggish', (c) => c.target === e).length > 0);
+    if (d <= 0.9) {
+      inside++;
+      assert.equal(z.length, bb.projectile_delay_time, 'one pulse per second');
+      for (const c of z) approx(c.amount, u.s.atk * bb.atk_scale);
+      assert.ok(statuses(h, 'silence', (c) => c.target === e).length > 0 && statuses(h, 'sluggish', (c) => c.target === e).length > 0);
+    } else assert.equal(z.length, 0, `outside 0.9 (d=${d})`);
   }
-  assert.equal(dealt(h, u, (c) => c.target === far && (c.dmg.tags || []).includes('zone')).length, 0);
+  assert.equal(inside, 1, 'only the enemy the vial landed on');
   done(h);
 
   // elite module: +sp_recovery_per_sec SP/s while an enemy is in range
@@ -934,6 +942,10 @@ test('2_12 砾: 鼠群 barrier hp_ratio × max HP decaying over `duration` s; �
   assert.equal(u.base.cost, raw(id).stats.cost + t.cost);
   h.step();
   const full = u.s.maxHp * bb.hp_ratio;
+  assert.equal(u.skill.kind, 'duration');
+  assert.equal(u.skill.active, true);
+  assert.equal(u.skill.ready, false);
+  assert.deepEqual(h.snapshot().units.find((t) => t[0] === u.id).slice(5, 7), [Math.round(u.skill.timeLeft * 10) / 10, bb.duration]);
   approx(u.s.shield, full, 'full barrier', 1e-2);
   h.run(bb.duration / 2 + 0.5);
   approx(u.s.shield, full / 2, 'half decayed', 1e-2);
@@ -941,6 +953,9 @@ test('2_12 砾: 鼠群 barrier hp_ratio × max HP decaying over `duration` s; �
   approx(u.s.shield, full / 2, 'PRTS: the capacity steps once per second', 1e-2);
   h.run(bb.duration / 2);
   assert.equal(u.s.shield, 0);
+  assert.equal(u.skill.active, false);
+  assert.equal(u.skill.ready, false);
+  assert.equal(u.findBuff('gravel:rats'), null);
   done(h);
   // PRTS "受到伤害后，剩余容量根据屏障最大容量等比变化": a damaged barrier shrinks in proportion, not to the capacity
   const hd = run({ units: [{ chessId: id, row: 9, col: 5 }] });
@@ -952,6 +967,12 @@ test('2_12 砾: 鼠群 barrier hp_ratio × max HP decaying over `duration` s; �
   hd.run(bb.duration / 2 + 0.5);
   approx(ud.s.shield, cap0 * 0.4 / 2, 'remaining × capacity ratio (a plain cap would keep 40 %)', 1e-2);
   assert.ok(ud.hp === ud.s.maxHp);
+  hd.b.retreat(ud);
+  assert.equal(ud.findBuff('gravel:rats'), null);
+  assert.equal(ud.skill.active, false);
+  assert.ok(hd.b.redeploy(ud, { free: true }));
+  approx(ud.skill.timeLeft, bb.duration);
+  approx(ud.s.shield, cap0, 'fresh shield on redeployment');
   done(hd);
   const idb = 'chess_char_2_12_b', tb = tal(idb);
   const cheapRec = chessRec({ id: 't_cheap', stats: { cost: tb['cond.cost'] } });

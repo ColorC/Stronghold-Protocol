@@ -29,6 +29,14 @@ import { EMOTE_CATALOG } from '../../shared/constants.js';
  * models come from the local client only (tools/local-extract ENEMY_SPINES): `localEnemySpines` adds them as the
  * optional `spineLocal` overlay, which the client draws when data/local-assets.json lists its files (user feedback
  * after 0.1.0, D3: 灼热源石虫 / 炽焰源石虫 were drawn as the plain 源石虫 everywhere).
+ *
+ * Why no dump carries them: isHarryh/Ark-Models *indexes* `1305_mhslim` / `1305_mhslim_2` but with an EMPTY
+ * `assetList` — registered, never uploaded — so `arkModel()` returns nothing for them and the alias chain below falls
+ * back to `enemy_1007_slime`: a different enemy rather than a variant of it, which is why the renderer tints it
+ * (render/units.js ALIAS_TINT). The *mobile* build does ship their own model
+ * (`enemy_spine/<enemyId>/<enemyId>.{skel,atlas,png}`), but the only public mirror of that build is a community wiki,
+ * not a GitHub dump, so downloading from it would add a source the project deliberately does not use (docs/ASSETS.md
+ * "Enemy aliases"). The tinted alias therefore stays the web model until a GitHub dump carries these two.
  */
 export const ENEMY_SPINE_ALIAS = Object.freeze({
   enemy_1305_mhslim: 'enemy_1007_slime',
@@ -127,6 +135,23 @@ function soundAlt(path, sub = 'sfx') {
 
 function soundLeaf(paths, sub = 'sfx', max = 4) {
   return leaf((paths || []).slice(0, max).map((p) => soundAlt(p, sub)));
+}
+
+/**
+ * A unit's SFX roles (pickUnitSfx) → { roles: { attack?, hit?, die?, born? } sound leaves, mix: { [role]: { p?, vol? } }
+ * | null } — the official play chance / volume of each role's bank (audio.mjs bankMix; community report #30: 猎狗's
+ * attack bank is 80 % silence). The caller stores `mix` last in the unit's entry (sfx.units[id].mix).
+ */
+function unitSounds(audio, sfx) {
+  const roles = {};
+  let mix = null;
+  for (const r of ['attack', 'hit', 'die', 'born']) {
+    if (!sfx[r]) continue;
+    roles[r] = soundLeaf(sfx[r]);
+    const m = typeof audio.mixOf === 'function' ? audio.mixOf(sfx[r]) : null;
+    if (m) (mix || (mix = {}))[r] = m;
+  }
+  return { roles, mix };
 }
 
 /** Expected bytes for a 07 {url, bytes} record when it matches `url`. */
@@ -286,8 +311,7 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     const short = id.replace(/^char_\d+_/, '');
     const sfx = pickUnitSfx(audio.unitBanks.get(id), { operator: true, projectile: {
       born: audio.bank(`battle.ON_PROJECTILE_BORN.projectile_chr_${short}`), hit: audio.bank(`battle.ON_PROJECTILE_HIT.projectile_chr_${short}`) } });
-    const u = {};
-    for (const r of ['attack', 'hit', 'die', 'born']) if (sfx[r]) u[r] = soundLeaf(sfx[r]);
+    const { roles: u, mix } = unitSounds(audio, sfx);
     const skillSfx = {};
     for (const i of idx) {
       const s = (o.skills || []).find((k) => k.index === i);
@@ -301,6 +325,7 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     const primarySkill = skillSfx[String(idx[0])];
     if (primarySkill) u.skill = primarySkill;
     if (Object.keys(skillSfx).length > 1) u.skills = skillSfx;
+    if (mix) u.mix = mix;
     if (Object.keys(u).length) unitsSfx[id] = u;
   }
 
@@ -334,9 +359,8 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     }
     entry.spine = model;
     tokens[id] = entry;
-    const sfx = pickUnitSfx(audio.unitBanks.get(id));
-    const u = {};
-    for (const r of ['attack', 'hit', 'die', 'born']) if (sfx[r]) u[r] = soundLeaf(sfx[r]);
+    const { roles: u, mix } = unitSounds(audio, pickUnitSfx(audio.unitBanks.get(id)));
+    if (mix) u.mix = mix;
     if (Object.keys(u).length) unitsSfx[id] = u;
   }
 
@@ -406,9 +430,8 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
       if (banks?.size) break;
       if (other) banks = audio.unitBanks.get(other);
     }
-    const sfx = pickUnitSfx(banks);
-    const u = {};
-    for (const r of ['attack', 'hit', 'die', 'born']) if (sfx[r]) u[r] = soundLeaf(sfx[r]);
+    const { roles: u, mix } = unitSounds(audio, pickUnitSfx(banks));
+    if (mix) u.mix = mix;
     if (Object.keys(u).length) unitsSfx[id] = u;
   }
 
@@ -477,11 +500,25 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     }
     return node;
   };
+  // 联防 BGM: the official 联防 levels (`escaped_single` / `escaped_multi`) declare `bgmEvent = corrosion` — a
+  // 卡西米尔 act13d5d0 battle track — so the rescue phase does NOT reuse the 作战's track. Kept out of `bgm` when the
+  // bank is missing (the client then falls back to `bgm.combat`; public/js/audio.js resolveBgm), so the manifest stays
+  // valid for an older audio_data.
+  const unite = flatBgm(bgmLeaf('battle.ON_GAME_READY.corrosion'));
+  // 开战 BGM: the two official battle tracks of the mode's own 卡西米尔 act (music_act13side_1 骑士之日 /
+  // music_act13side_2 无畏者, 塞壬唱片). The client does not draw them: the round decides (audio.js combatTrackFor —
+  // 无畏者 for rounds 1–7, 骑士之日 from round 8 on), so index 0 must stay `bat_kazimierz2_1` and index 1
+  // `bat_kazimierz2_2` (test/ui/audio.test.js pins both the order and the round table).
+  // Kept out of `bgm` below when the index has neither bank, so the manifest stays valid for an older audio_data.
+  const combatAlts = ['battle.ON_GAME_READY.bat_kazimierz2_1', 'battle.ON_GAME_READY.bat_kazimierz2_2']
+    .map((n) => flatBgm(bgmLeaf(n))).filter(Boolean);
   const bgm = {
     lobby: flatBgm(bgmLeaf('sys.ON_ACTIVITY_LOADED.act2autochess')),
     prep: flatBgm(bgmLeaf('battle.ON_GAME_READY.act1autochess_shop')),
     combat: flatBgm(bgmLeaf('battle.ON_GAME_READY.act1autochess_shop')),
     boss: flatBgm(bgmLeaf('battle.ON_GAME_READY.rglk1phantomcastle')),
+    ...(combatAlts.length ? { combatAlts } : {}),
+    ...(unite ? { unite } : {}),
   };
   const bossBgm = {};
   for (const lv of Object.values(maps05?.roundLevels || {})) {
