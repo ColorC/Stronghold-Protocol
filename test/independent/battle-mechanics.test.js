@@ -110,20 +110,17 @@ test('Specter the Unchained real dollSwitch entry produces vitality and shares h
   assert.equal(h.b.independentRewards.filter(r => r.id === 'vitality' && r.sourceUid === 'specter').reduce((n, r) => n + r.quantity, 0), 4);
 });
 
-test('Maaw native production replay copies one preferred badge at its fixed per-event quantity', () => {
-  const id = 'independent_replay_fixture_a';
-  const rules = [{ trigger: 'nativeProduction', behavior: 'eventProduction', params: {
-    counterEvent: 'nativeProduction', counterEvery: 1, outputs: [{ idFromEvent: true, quantity: 1 }],
-    copyOutputFromEvent: true, quantity: 1, maxPerBattle: 4, fallbackPreference: 'productionBadge',
-    filter: { actor: 'self', nativeTraitProduction: true, baseBadgeOnly: true, excludeCopy: true },
-  } }];
-  const piece = fixturePiece('maaw', id, 9, 5);
-  piece.nativeState.preferences = { productionBadge: 'assault' };
-  const { h } = fixtureBattle({ pieces: [piece], rules });
+for (const { chessId, elite, expectedQuantity } of [
+  { chessId: 'chess_char_4_25_a', elite: false, expectedQuantity: 1 },
+  { chessId: 'chess_char_4_25_b', elite: true, expectedQuantity: 2 },
+]) test(`Maaw ${elite ? 'elite' : 'normal'} native production replay copies one preferred badge`, () => {
+  const owner = fixturePiece('maaw', chessId, 9, 5);
+  owner.nativeState.preferences = { productionBadge: 'assault' };
+  const front = fixturePiece('front', 'chess_char_1_02_a', 9, 6);
+  const { h } = fixtureBattle({ pieces: [owner, front], chessOptions: { isGolden: elite } });
   h.step(1);
-  const actor = h.unit('maaw');
-  h.b.emit('nativeProduction', { actor, origin: 'native', outputs: [
+  h.b.emit('nativeProduction', { actor: h.unit('front'), origin: 'native', outputs: [
     { id: 'precision', quantity: 4 }, { id: 'assault', quantity: 9 },
   ] });
-  assert.deepEqual(h.b.independentRewards, [{ id: 'assault', quantity: 1, origin: 'native', sourceUid: 'maaw', copied: true }]);
+  assert.deepEqual(h.b.independentRewards, [{ id: 'assault', quantity: expectedQuantity, origin: 'native', sourceUid: 'maaw', copied: true }]);
 });
