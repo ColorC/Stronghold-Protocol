@@ -4,6 +4,8 @@ import { createSession, applyAction } from '../../server/modes/independent/sessi
 import { makePrizeOffer } from '../../server/modes/independent/prizes.js';
 import { getData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { getIndependentField } from '../../server/modes/independent/battle.js';
+import { tavernFactions } from '../../shared/independentRules.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const data = getData({ log: quiet });
@@ -87,4 +89,49 @@ test('player facility is use-only, normal duplicates reject, and elite replaces 
   const equip = applyAction(body.state, { type: 'equip', itemUid: 'i914', targetUid: body.state.pieces[0].uid }, { data, catalog: baseCatalog });
   assert.equal(equip.ok, false);
   assert.equal(equip.error.code, 'NOT_EQUIPPABLE');
+});
+
+function addBody(state, op, equipment = []) {
+  const piece = { uid: `p${state.nextUid++}`, chessId: op.chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: op.source.normalChess.skill.index, moduleId: 'none', equipment, attachments: [], nativeState: {}, bodyPenaltyApplied: false, poolCopies: 0 };
+  state.pieces.push(piece);
+  return piece;
+}
+
+test('ancient cauldron observes all acquired bodies and pays its elite amount once per preparation', () => {
+  for (const elite of [false, true]) {
+    const state = createSession({ seed: 42, data, catalog: baseCatalog });
+    state.funds = 100;
+    const op = Object.values(baseCatalog.operators).find((x) => !x.elite && tavernFactions({ chessId: x.chessId, equipment: [] }, baseCatalog).includes('炎'));
+    const cauldron = Object.values(baseCatalog.equipment).find((x) => x.newName === '炎国天师古鼎');
+    const rule = cauldron.params.effects.find((x) => x.behavior === 'gainBattleStats');
+    addBody(state, op, [{ uid: 'i900', id: cauldron.id, sourceId: cauldron.sourceId, elite, quantity: 1, state: {} }, { uid: 'i901', id: rule.params.pairedSourceId, sourceId: rule.params.pairedSourceId, quantity: 1, state: {} }]);
+    let current = state;
+    for (let n = 0; n < 2; n++) {
+      const slot = current.shop.slots.findIndex((x) => x.kind === 'chess' && x.id && !x.sold && !baseCatalog.operators[x.id].nativeTrait.effect.prep.some((r) => r.behavior === 'deferredFunds'));
+      const result = applyAction(current, { type: 'buy', slot }, { data, catalog: baseCatalog });
+      assert.equal(result.ok, true, result.error?.message);
+      current = result.state;
+    }
+    assert.equal(current.pendingFunds, elite ? 2 : 1);
+    assert.equal(current.pieces[0].equipment[0].state.deferredFundsRound, 1);
+  }
+});
+
+test('inspection license repeats acquisition forging but leaves preparation-end forging once', () => {
+  const state = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
+  state.playerEffects = [{ type: 'repeatNativeForging', expiresRound: 1, extraRepeats: 1 }];
+  const gainOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '艾丝黛尔');
+  state.shop.slots[0] = { kind: 'chess', id: gainOp.chessId, price: 3, sold: false, equipment: [] };
+  const bought = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog: baseCatalog });
+  assert.equal(bought.ok, true, bought.error?.message);
+  assert.equal(bought.state.inventory.filter((x) => x.id === 'precision').reduce((n, x) => n + x.quantity, 0), 2);
+  const prep = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
+  prep.playerEffects = structuredClone(state.playerEffects);
+  const endOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '雷蛇');
+  const piece = addBody(prep, endOp);
+  const tile = [...getIndependentField(prep, { data, catalog: baseCatalog }).deployMap].find(([, kind]) => kind === 'melee');
+  [piece.row, piece.col] = tile[0].split(',').map(Number);
+  const ready = applyAction(prep, { type: 'ready' }, { data, catalog: baseCatalog });
+  assert.equal(ready.ok, true, ready.error?.message);
+  assert.equal(ready.state.inventory.filter((x) => x.id === 'defense').reduce((n, x) => n + x.quantity, 0), 1);
 });

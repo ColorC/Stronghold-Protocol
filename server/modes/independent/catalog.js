@@ -232,6 +232,7 @@ export function getCatalog(data = getData()) {
     id: 'independent', name: '罗德岛战备演习',
     config: {
       ...clone(DESIGN.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
+      balance: { incomeBonusFromRound: 8, incomeBonus: 1 },
       equipmentCapacity: 99, basicBadgeCount: 15, regularProductionBadgeCount: 6,
       rareInheritanceOperators: 12, bodyPenalty: clone(DESIGN.rules?.bodyPenalty),
       badgeRecipes: clone(DESIGN.badgeRecipes || DESIGN.recipes || {}),

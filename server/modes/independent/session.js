@@ -28,6 +28,10 @@ const pushEvent = (state, event) => state.history.push({ round: state.round, ...
 function sessionData(options = {}) { return options.data || getData({ log: quiet }); }
 function sessionCatalog(data, options = {}) { return options.catalog || getCatalog(data); }
 function gdFor(state, data) { return new GameData(data, modeIdFor('solo', state.difficulty.toLowerCase())); }
+function baseIncomeFor(round, gd, catalog) {
+  const balance = catalog.config?.balance || {};
+  return gd.income(round) + (round >= Number(balance.incomeBonusFromRound || Infinity) ? Number(balance.incomeBonus || 0) : 0);
+}
 function poolFor(state, id) { const key = baseId(id); return state.pool[key] || null; }
 function operatorPool(state, catalog, gd) {
   const out = {};
@@ -73,14 +77,6 @@ function advanceShop(state, gd, catalog, rng) {
 function invokeHook(state, hook, event, services) {
   const result = runNativeHook(state, hook, event, services);
   if (hook === 'gain' && event.piece) handleGainEquipment(state, services.catalog, event.piece);
-  if (hook === 'prepEnd' || hook === 'roundStart') {
-    const repeats = state.playerEffects.filter((x) => x.type === 'repeatNativeForging' && x.expiresRound === state.round).reduce((n, x) => n + Number(x.extraRepeats || 0), 0);
-    for (let i = 0; i < repeats; i++) {
-      const markerPrefix = hook === 'prepEnd' ? 'prepEnd:forge' : 'roundStart:replayAdjacentNative';
-      for (const piece of state.pieces) for (const [key, value] of Object.entries(piece.nativeState || {})) if (key.startsWith(markerPrefix) && value?.lastRound === state.round) delete value.lastRound;
-      runNativeHook(state, hook, event, services);
-    }
-  }
   return result;
 }
 function servicesFor(state, data, catalog, rng) {
@@ -100,15 +96,17 @@ function gainChess(state, catalog, chessId, extra = {}) {
   state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1;
   return piece;
 }
-function handleGainEquipment(state, catalog, piece) {
-  if (!piece || !tavernFactions(piece, catalog).includes('炎')) return;
+function handleGainEquipment(state, catalog) {
+  for (const piece of state.pieces) {
+  if (!tavernFactions(piece, catalog).includes('炎')) continue;
   for (const item of piece.equipment || []) {
     const def = equipmentRecord(catalog, item.id);
     const effect = def?.params?.effects?.find((x) => x.behavior === 'gainBattleStats' && x.params?.deferredFunds);
     if (!effect || !piece.equipment.some((x) => (x.sourceId || equipmentRecord(catalog, x.id)?.sourceId) === effect.params.pairedSourceId)) continue;
     if (item.state?.deferredFundsRound === state.round) continue;
     const amount = Number(item.elite ? effect.params.deferredFunds.elite : effect.params.deferredFunds.normal);
-    if (amount > 0) { state.pendingFunds += Math.min(amount, Number(effect.params.deferredFundsMaxPerRound || amount)); item.state = { ...(item.state || {}), deferredFundsRound: state.round }; }
+    if (amount > 0) { state.pendingFunds += amount; item.state = { ...(item.state || {}), deferredFundsRound: state.round }; }
+  }
   }
 }
 function mergeCopiesRequired(op) {
@@ -234,10 +232,11 @@ export function createSession(options = {}) {
   if (![9, 14, 15].includes(roundLimit)) throw new Error('BAD_ROUND_LIMIT');
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) >>> 0 : 1;
   const rng = createRng(seed); const gd = new GameData(data, modeIdFor('solo', difficulty.toLowerCase()));
+  const income = baseIncomeFor(1, gd, catalog);
   const state = { schemaVersion: 1, modeId: 'independent', seed, rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
-    difficulty, phase: 'prep', funds: gd.income(1), pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
+    difficulty, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
-    incomeThisRound: gd.income(1), pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null, outcome: null };
+    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
   if (errs.length) throw new Error(`INVALID_INITIAL_STATE:${errs.join(',')}`);
@@ -463,7 +462,7 @@ export function applyAction(state, action, options = {}) {
       if (work.roundLimit === 15 && work.round === 14) work.outcome = 'boss-cleared';
       work.round++;
       work.playerEffects = work.playerEffects.filter((x) => x.type !== 'repeatNativeForging' || x.expiresRound >= work.round);
-      const baseIncome = gd.income(work.round); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);
+      const baseIncome = baseIncomeFor(work.round, gd, catalog); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);
       work.incomeThisRound = baseIncome; work.funds = baseIncome + Number(work.pendingFunds || 0) + facility; work.pendingFunds = 0;
       work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0;
       for (const piece of work.pieces) for (const item of piece.equipment) if (equipmentRecord(catalog, item.id)?.mechanism === 'saleThresholdRecruit') item.state = { ...(item.state || {}), saleTriggersThisPrep: 0 };
