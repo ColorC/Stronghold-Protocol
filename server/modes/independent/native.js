@@ -1,6 +1,6 @@
 // Independent mode uses authored, structured native effects. The original game text is metadata only.
+import { tavernFactions as sharedTavernFactions } from '../../../shared/independentRules.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
-const FACTIONS = new Set(['炎', '萨尔贡', '维多利亚', '谢拉格', '拉特兰', '阿戈尔', '叙拉古', '卡西米尔']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
 
 // Ordinary/elite quantities are intentionally explicit. This registry is keyed by operator name from
@@ -22,7 +22,7 @@ const PREP = Object.freeze({
   洛洛: [rule('gain', 'randomEquipment', { poolId: 'pool_equip_rockr', normal: 1, elite: 2 })],
   蒂比: [rule('roundStart', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 1, elite: 2 }] })],
   调香师: [rule('prepEnd', 'forgeDominantFaction', { normal: 2, elite: 4, fallback: 'professionRecipe', worksFromBench: true })],
-  拉普兰德: [rule('refresh', 'attachShopBadgeFirstRefresh', { id: BADGE.assault, normal: 1, elite: 2, firstOnly: true })],
+  拉普兰德: [rule('refresh', 'attachShopBadgeFirstRefresh', { id: BADGE.assault, normal: 1, elite: 2, firstOnly: true, worksFromBench: true })],
   折桠: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 2, elite: 4 }] })],
   灰毫: [rule('gain', 'forgeDominantFaction', { normal: 1, elite: 2 })],
   能天使: [rule('gain', 'deferredFunds', { normal: 1, elite: 2 })],
@@ -47,12 +47,12 @@ const PREP = Object.freeze({
   星熊: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 3, elite: 6 }] })],
   泥岩: [rule('sold', 'deferredFunds', { normal: 2, elite: 4 })],
   焰尾: [rule('gain', 'randomChessOffer', { normal: 1, elite: 2, poolId: 'pool_char_pinus' })],
-  白面鸮: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'roundStart', allow: ['grantEquipment', 'grantEquipmentByTier', 'forgeDominantFaction', 'randomEquipment', 'randomSupply'], neverReenter: true })],
+  白面鸮: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'roundStart', allow: ['grantEquipment', 'grantEquipmentByTier', 'forgeDominantFaction', 'forgeAdjacent', 'randomEquipment', 'randomSupply'], neverReenter: true })],
   卡涅利安: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_02_e_a', normal: 1, elite: 2 }] })],
   烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.vitality, normal: 2, elite: 4 }] })],
   号角: [rule('prepEnd', 'forgeDominantFactionTierCount', { id: BADGE.defense, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   铃兰: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
-  塞雷娅: [rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'prepEnd', allow: ['grantEquipment', 'forgePerGainedChess', 'forgeDominantFaction', 'forgeAdjacent', 'forgeRowCount'], neverReenter: true })],
+  塞雷娅: [rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'prepEnd', allow: ['grantEquipment', 'forgePerGainedChess', 'forgeDominantFaction', 'forgeAdjacent', 'forgeRowCount', 'forgeFactionTierCount', 'forgeDominantFactionTierCount', 'forgeFactionTierPair'], neverReenter: true })],
   夕: [rule('prepEnd', 'forgePerGainedChess', { id: BADGE.assault, normal: 1, elite: 2, capNormal: 8, capElite: 16 })],
   引星棘刺: [rule('prepEnd', 'forgeAdjacent', { id: BADGE.precision, normal: 2, elite: 4, direction: 'front', targets: ['self', 'ally'], capNormal: 4, capElite: 8 })],
   山: [rule('prepEnd', 'forgePerGainedChess', { id: BADGE.vitality, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
@@ -166,6 +166,7 @@ function output(services, state, id, quantity, piece, extra = {}) {
   services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...extra });
 }
 function value(p, isElite) { return Number(p[isElite ? 'elite' : 'normal'] ?? 0); }
+function refreshCount(state) { return Number(state.counters?.refreshes ?? state.counters?.activeRefreshes ?? state.counters?.roundRefreshes ?? state.counters?.paidRefreshes ?? 0); }
 function traitFor(piece, services) { return nativeTraitFor(chessIdOf(piece), services.catalog); }
 function fire(state, hook, piece, event, services, replay = false, selectedRule = null, sourceRules = null) {
   const trait = traitFor(piece, services);
@@ -173,7 +174,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
   for (const r of effect) {
     if (selectedRule && r !== selectedRule) continue;
     if ((r.trigger !== hook && r.params?.alsoAt !== hook) || (replay && r.behavior === 'replayAdjacentNative')) continue;
-    const p = r.params || {}, elite = Boolean(piece.elite || /_b$/.test(chessIdOf(piece)));
+    const p = r.params || {}, elite = event.copyRuleElite ?? Boolean(piece.elite || /_b$/.test(chessIdOf(piece)));
     const memo = (piece.nativeState ||= {});
     const ruleKey = `${hook}:${r.behavior}:${JSON.stringify(p)}`;
     const mark = () => (memo[ruleKey] ||= {});
@@ -238,12 +239,11 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         output(services, state, p.id, n, piece); break;
       }
       case 'attachShopBadgeFirstRefresh':
-        if ((state.counters?.activeRefreshes || state.counters?.refreshes || state.counters?.paidRefreshes || 0) > 0 && !mark().done) { mark().done = true; attachShopEquipment(state, p.id, value(p, elite), piece); }
+        if (refreshCount(state) > 0 && !mark().done) { mark().done = true; attachShopEquipment(state, p.id, value(p, elite), piece); }
         break;
       case 'attachShopByRefreshCount': {
-        const refreshes = state.counters?.activeRefreshes ?? state.counters?.refreshes ?? state.counters?.roundRefreshes ?? state.counters?.paidRefreshes ?? 0;
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshes * value(p, elite));
-        attachShopEquipment(state, p.id, amount, piece); break;
+        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshCount(state) * value(p, elite));
+        attachShopEquipment(state, p.id, amount, piece, true); break;
       }
       case 'randomEquipment': {
         const pool = p.poolId ? services.catalog.pools?.[p.poolId] : null;
@@ -291,7 +291,8 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
           const target = sourceRulesForCopy[0];
           if (!target) continue;
           // The copied effect executes as the copier; copied dispatch/replay rules are excluded.
-          fire(state, p.sourceTrigger, piece, { ...event, replay: true, replayTarget: piece, sourceUid: piece.uid }, services, true, target, [target]);
+          const sourceElite = Boolean(source.elite || /_b$/.test(chessIdOf(source)));
+          fire(state, p.sourceTrigger, piece, { ...event, replay: true, replayTarget: piece, sourceUid: piece.uid, copyRuleElite: sourceElite }, services, true, target, [target]);
         }
         break;
       }
@@ -303,9 +304,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
 }
 
 function hasFaction(piece, faction, services) {
-  const op = services.catalog?.operators?.[chessIdOf(piece)];
-  const data = services.data?.chess?.[chessIdOf(piece)] || op?.source?.normalChess;
-  return (data?.bonds || []).some((id) => services.data?.bonds?.[id]?.name === faction || services.data?.bonds?.[id]?.faction === faction);
+  return sharedTavernFactions(piece, services.catalog).includes(faction);
 }
 
 function roll(services) {
@@ -333,9 +332,7 @@ function choosePool(pool, services, elite = false) {
 function dominantFaction(state, services, piece = null) {
   const counts = new Map();
   for (const p of roster(state).filter(isPresent)) {
-    const chess = services.data?.chess?.[chessIdOf(p)] || services.catalog?.operators?.[chessIdOf(p)]?.source?.normalChess;
-    const factions = new Set((chess?.bonds || []).map((bond) => services.data?.bonds?.[bond]?.name || bond).filter((name) => FACTIONS.has(name)));
-    for (const faction of factions) counts.set(faction, (counts.get(faction) || 0) + 1);
+    for (const faction of sharedTavernFactions(p, services.catalog)) counts.set(faction, (counts.get(faction) || 0) + 1);
   }
   const ranked = [...counts].sort((a, b) => b[1] - a[1]);
   if (!ranked.length) return null;
@@ -348,8 +345,7 @@ function dominantFaction(state, services, piece = null) {
 }
 function hasAnyFaction(state, services) {
   for (const p of roster(state).filter(isPresent)) {
-    const chess = services.data?.chess?.[chessIdOf(p)] || services.catalog?.operators?.[chessIdOf(p)]?.source?.normalChess;
-    if ((chess?.bonds || []).some((id) => FACTIONS.has(services.data?.bonds?.[id]?.name || id))) return true;
+    if (sharedTavernFactions(p, services.catalog).length) return true;
   }
   return false;
 }
@@ -384,13 +380,21 @@ function neighborAt(state, piece, direction, distance = 1) {
 function adjacent(state, piece, direction, distance = 1) {
   return [piece, neighborAt(state, piece, direction, distance)].filter(Boolean);
 }
-function attachShopEquipment(state, id, quantity, sourcePiece) {
-  let left = quantity;
-  for (const slot of state.shop?.slots || []) {
-    if (!left || slot.kind !== 'chess' || slot.sold || slot.frozen) continue;
+function attachShopEquipment(state, id, quantity, sourcePiece, spread = false) {
+  const targets = (state.shop?.slots || []).filter((slot) => slot.kind === 'chess' && !slot.sold);
+  const n = Math.max(0, Math.floor(Number(quantity) || 0));
+  if (!spread) {
+    const slot = targets[0];
+    if (slot && n) {
+      slot.equipment ||= [];
+      slot.equipment.push({ id, quantity: n, origin: 'native', sourceUid: sourcePiece?.uid });
+    }
+    return;
+  }
+  for (let i = 0; i < n && targets.length; i++) {
+    const slot = targets[i % targets.length];
     slot.equipment ||= [];
-    slot.equipment.push({ id, quantity: left, origin: 'native', sourceUid: sourcePiece?.uid });
-    left = 0;
+    slot.equipment.push({ id, quantity: 1, origin: 'native', sourceUid: sourcePiece?.uid });
   }
 }
 function addRecruitOffer(state, services, opts) {
