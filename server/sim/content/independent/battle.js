@@ -211,11 +211,11 @@ function installDerivedNativeRules(battle, unit, piece, catalog, entries) {
           && candidate.homeR === frontR && candidate.homeC === frontC && candidate !== unit && !candidate.removed);
         const each = Number(p.every ?? 5);
         if (!(each > 0)) throw new Error(`startDerivedStats ${piece.chessId} requires params.every`);
-        const ownStacks = Math.floor(badgeCountFor(entries, p.badgeIds) / each);
+        const ownCount = badgeCountFor(entries, p.badgeIds);
         const frontPiece = front && piecesByUid(battle, front.uid);
         const frontEntries = frontPiece ? equipmentFor(frontPiece, catalog) : [];
-        const frontStacks = frontPiece ? Math.floor(badgeCountFor(frontEntries, p.badgeIds) / each) : 0;
-        const stacks = ownStacks + frontStacks;
+        const frontCount = frontPiece ? badgeCountFor(frontEntries, p.badgeIds) : 0;
+        const stacks = Math.floor((ownCount + frontCount) / each);
         const mods = {};
         if (Number.isFinite(Number(p.attackSpeedFlat ?? p.attackSpeedFlatPerStack))) mods.aspd = stacks * Number(p.attackSpeedFlat ?? p.attackSpeedFlatPerStack);
         if (Number.isFinite(Number(p.redeployTimeReduction ?? p.redeployReductionPercentPerStack))) {
@@ -250,7 +250,7 @@ function adjacentInDirection(owner, actor, direction) {
 }
 
 function getActor(event, trigger) {
-  if (trigger === 'skillStart' || trigger === 'deploy' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
+  if (trigger === 'skillStart' || trigger === 'deploy' || trigger === 'dollSwap' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
   if (trigger === 'kill') return event.killer ?? null;
   if (trigger === 'death') return event.unit ?? null;
   if (trigger === 'statusApplied') return event.source ?? null;
@@ -304,7 +304,10 @@ function filterMatches(battle, rule, event, actor, owner) {
   if (f.entered && !event.entered) return false;
   if ((f.nativeSource || f.nativeOnly) && (event.source?.mem?.independentOrigin || event.opts?.independentOrigin || event.dmg?.tags?.includes('independentEquipment') || event.opts?.tags?.includes('independentEquipment'))) return false;
   if (f.nativeTraitProduction && event.origin !== 'native') return false;
-  if (f.baseBadgeOnly && !recordLookup(battle.opts?.flags?.independent?.catalog?.badges, event.id)) return false;
+  if (f.baseBadgeOnly) {
+    const outputs = Array.isArray(event.outputs) ? event.outputs : [{ id: event.id }];
+    if (!outputs.some((output) => recordLookup(battle.opts?.flags?.independent?.catalog?.badges, output.id))) return false;
+  }
   const effectiveHeal = event.target ? Math.max(0, Math.min(Number(event.amount) || 0, Number(event.target.s?.maxHp ?? 0) - Number(event.target.hp ?? 0))) : 0;
   if (f.effective && !(effectiveHeal > 0)) return false;
   if (f.excludeOverheal && effectiveHeal < Number(event.amount || 0)) return false;
@@ -334,10 +337,6 @@ function createRewardEmitter(battle) {
     if (merged) merged.quantity += allowed;
     else rewards.push({ id, quantity: allowed, origin, sourceUid, ...(copied ? { copied: true } : {}) });
     used.set(key, current + allowed);
-    if (origin === 'native') {
-      const actor = battle.allyUnits.find((u) => u.uid === sourceUid && u.kind === 'op');
-      if (actor) battle.emit('nativeProduction', { actor, sourceUid, id, quantity: allowed, origin, copied, replay: copied });
-    }
     return allowed;
   };
   battle.independentRewards = rewards;
@@ -345,7 +344,7 @@ function createRewardEmitter(battle) {
 }
 
 function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
-  const p = rule.params ?? {};
+  const p = selectVariant(rule.params ?? {}, !!owner.def?.isGolden);
   const trigger = p.counterEvent ?? rule.trigger;
   const every = Number(p.counterEvery ?? 1);
   if (!(every > 0) || !Array.isArray(p.outputs) || (p.outputs.length === 0 && !p.copyOutputFromEvent)) throw new Error(`eventProduction ${owner.defId}:${sourceId} has invalid threshold/outputs`);
@@ -378,9 +377,17 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
     const batches = Math.floor(owner.mem.independentState.counters[countKey] / every);
     if (!batches) return;
     owner.mem.independentState.counters[countKey] -= batches * every;
-    const outputs = p.copyOutputFromEvent
-      ? [{ id: event.id, quantity: Number(event.quantity || 0) * Number(p.quantity ?? 1) }]
-      : p.outputs.map((output) => output.idFromEvent ? { ...output, id: event.id } : output);
+    const eventOutputs = Array.isArray(event.outputs) ? event.outputs : (event.id ? [{ id: event.id, quantity: event.quantity }] : []);
+    let outputs;
+    if (p.copyOutputFromEvent) {
+      const badgeOutputs = eventOutputs.filter((output) => recordLookup(battle.opts?.flags?.independent?.catalog?.badges, output.id));
+      const selectedId = owner.mem.independentState.preferences?.[p.fallbackPreference] ?? owner.mem.independentState.preferences?.productionBadge;
+      const selected = badgeOutputs.find((output) => output.id === selectedId) ?? badgeOutputs[0];
+      outputs = selected ? [{ id: selected.id, quantity: Number(p.quantity ?? 1) }] : [];
+    } else {
+      outputs = p.outputs.map((output) => output.idFromEvent ? { ...output, id: event.id } : output);
+    }
+    const producedOutputs = [];
     for (const output of outputs) {
       let quantity = Number(output.quantity ?? output.perEvent ?? 1) * batches;
       if (p.requiresPlayerChoice) {
@@ -396,7 +403,11 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
         if (quantity > 0) owner.mem.independentState.counters[producedKey] = produced + quantity;
       }
       const cap = p.capPerOutput ?? p.maxPerBattle;
-      emit({ id: output.id, quantity, origin, sourceUid: owner.uid, cap, copied: !!p.copyOutputFromEvent || !!p.requiresPlayerChoice });
+      const allowed = emit({ id: output.id, quantity, origin, sourceUid: owner.uid, cap, copied: !!p.copyOutputFromEvent || !!p.requiresPlayerChoice });
+      if (allowed > 0) producedOutputs.push({ id: output.id, quantity: allowed });
+    }
+    if (origin === 'native' && !p.copyOutputFromEvent && producedOutputs.length) {
+      battle.emit('nativeProduction', { actor: owner, sourceUid: owner.uid, outputs: producedOutputs, origin, copied: false, replay: false });
     }
   };
   battle.on(trigger, listener, { owner });
