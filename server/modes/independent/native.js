@@ -1,5 +1,6 @@
 // Independent mode uses authored, structured native effects. The original game text is metadata only.
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
+const FACTIONS = new Set(['炎', '萨尔贡', '维多利亚', '谢拉格', '拉特兰', '阿戈尔', '叙拉古', '卡西米尔']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
 
 // Ordinary/elite quantities are intentionally explicit. This registry is keyed by operator name from
@@ -11,7 +12,7 @@ const PREP = Object.freeze({
   普罗旺斯: [rule('gain', 'freeRefresh', { normal: 1, elite: 2 })],
   德克萨斯: [rule('sold', 'freeRefresh', { normal: 1, elite: 2 })],
   艾丝黛尔: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 1, elite: 2 }] })],
-  波登可: [rule('prepEnd', 'forgeDominantFaction', { normal: 1, elite: 2, fallback: 'professionRecipe' })],
+  波登可: [rule('prepEnd', 'forgeDominantFaction', { normal: 1, elite: 2, fallback: 'professionRecipe', worksFromBench: true })],
   格雷伊: [rule('sold', 'deferredFunds', { normal: 1, elite: 2 })],
   深靛: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.assault, normal: 1, elite: 2 }] })],
   野鬃: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 1, elite: 2 }] })],
@@ -20,7 +21,7 @@ const PREP = Object.freeze({
   小满: [rule('prepEnd', 'forgePerGainedChess', { id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   洛洛: [rule('gain', 'randomEquipment', { poolId: 'pool_equip_rockr', normal: 1, elite: 2 })],
   蒂比: [rule('roundStart', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 1, elite: 2 }] })],
-  调香师: [rule('prepEnd', 'forgeDominantFaction', { normal: 2, elite: 4, fallback: 'professionRecipe' })],
+  调香师: [rule('prepEnd', 'forgeDominantFaction', { normal: 2, elite: 4, fallback: 'professionRecipe', worksFromBench: true })],
   拉普兰德: [rule('refresh', 'attachShopBadgeFirstRefresh', { id: BADGE.assault, normal: 1, elite: 2, firstOnly: true })],
   折桠: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 2, elite: 4 }] })],
   灰毫: [rule('gain', 'forgeDominantFaction', { normal: 1, elite: 2 })],
@@ -31,7 +32,7 @@ const PREP = Object.freeze({
   薄绿: [rule('prepEnd', 'forgeFactionTierCount', { faction: '维多利亚', id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   松果: [rule('sold', 'recruitOffer', { normalTier: 1, eliteTier: 5 })],
   雪猎: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 2, elite: 4 }] })],
-  至简: [rule('buy', 'freeRefreshOnce', { normal: 2, elite: 2, paidOnly: true, expires: 'prepEnd' })],
+  至简: [rule('gain', 'freeRefreshOnce', { normal: 2, elite: 2, paidOnly: true, expires: 'prepEnd' })],
   蛇屠箱: [rule('prepEnd', 'forgeRowCount', { id: BADGE.defense, normal: 1, elite: 2, capNormal: 4, capElite: 8 })],
   忍冬: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.agility, normal: 1, elite: 2 }] })],
   耶拉: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_02_e_a', normal: 1, elite: 2 }] })],
@@ -46,11 +47,11 @@ const PREP = Object.freeze({
   星熊: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 3, elite: 6 }] })],
   泥岩: [rule('sold', 'deferredFunds', { normal: 2, elite: 4 })],
   焰尾: [rule('gain', 'randomChessOffer', { normal: 1, elite: 2, poolId: 'pool_char_pinus' })],
-  白面鸮: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'forgeDominantFaction', 'randomEquipment'], neverReenter: true })],
+  白面鸮: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'roundStart', allow: ['grantEquipment', 'grantEquipmentByTier', 'forgeDominantFaction', 'randomEquipment', 'randomSupply'], neverReenter: true })],
   卡涅利安: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_02_e_a', normal: 1, elite: 2 }] })],
   烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.vitality, normal: 2, elite: 4 }] })],
   号角: [rule('prepEnd', 'forgeDominantFactionTierCount', { id: BADGE.defense, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
-  铃兰: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
+  铃兰: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
   塞雷娅: [rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'prepEnd', allow: ['grantEquipment', 'forgePerGainedChess', 'forgeDominantFaction', 'forgeAdjacent', 'forgeRowCount'], neverReenter: true })],
   夕: [rule('prepEnd', 'forgePerGainedChess', { id: BADGE.assault, normal: 1, elite: 2, capNormal: 8, capElite: 16 })],
   引星棘刺: [rule('prepEnd', 'forgeAdjacent', { id: BADGE.precision, normal: 2, elite: 4, direction: 'front', targets: ['self', 'ally'], capNormal: 4, capElite: 8 })],
@@ -91,10 +92,10 @@ function combatRules(name, elite) {
     case '圣聆初雪': return [badgeScale(['precision','assault','recovery'],5,{attackPercent:[0.01,0.02]})];
     case '浊心斯卡蒂': return [badgeScale(Object.values(BADGE),10,{hpRecoveryPerSecond:[50,100],spRecoveryPerSecond:[0.15,0.3]})];
     case '异客': return [badgeScale(['precision','assault','agility'],5,{attackPercent:[0.02,0.04]})];
-    case '深巡': return [rule('attack','conditionalDamage',{targetTag:'seaMonster',multiplier:q(1.5,2),condition:'targetHasTag'})];
-    case '跃跃': return [rule('attack','conditionalDamage',{targetTag:'drone',multiplier:q(1.5,2),condition:'targetHasTag'})];
-    case '仇白': return [rule('attack','conditionalDamage',{targetTag:null,multiplier:1,condition:'boundOrSluggish',badgeIds:['precision','assault'],every:5,bonusPercent:q(0.01,0.02)})];
-    case '宴': case '流星': return [rule('attack','weakDamage',{enabled:true})];
+    case '深巡': return [rule('hit','conditionalDamage',{targetTag:'seaMonster',multiplier:q(1.5,2),condition:'targetHasTag'})];
+    case '跃跃': return [rule('hit','conditionalDamage',{targetTag:'drone',multiplier:q(1.5,2),condition:'targetHasTag'})];
+    case '仇白': return [rule('hit','conditionalDamage',{targetTag:null,multiplier:1,condition:'boundOrSluggish',badgeIds:['precision','assault'],every:5,bonusPercent:q(0.01,0.02)})];
+    case '宴': case '流星': return [rule('hit','weakDamage',{enabled:true})];
     case '古米': return [staticScale({spRecoveryPerSecond:[0.15,0.3]})];
     case '锡人': return [staticScale({attackPercent:[0.2,0.4],maxHpPercent:[0.2,0.4]}),rule('passive','staticStats',{factions:['炎','萨尔贡','维多利亚','谢拉格','拉特兰','阿戈尔','叙拉古','卡西米尔'],excludeNativeInheritance:true})];
     case '送葬人': return [eventScale('kill','agility',1,2,1,1,{actor:'self',targetSide:'enemy'},1,{firstOnly:true})];
@@ -119,7 +120,7 @@ function combatRules(name, elite) {
     case '缇缇': return [eventScale('statusApplied','recovery',1,2,6,12,{actor:'self',targetSide:'any',status:['sleep','stun'],entered:true,range:'attacker'})];
     case '归溟幽灵鲨': return [eventScale('death','vitality',1,2,4,8,{actor:'self'},1,{firstOnly:true})];
     case '凛御银灰': return [eventScale('statusApplied','assault',1,2,6,12,{actor:'adjacentAllies',direction:'front',tag:'谢拉格',targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.6})];
-    case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[],copyOutputFromEvent:true,quantity:q(1,2),maxPerBattle:q(4,8),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},requiresPlayerChoice:true})];
+    case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[{idFromEvent:true,quantity:q(1,2)}],copyOutputFromEvent:true,quantity:q(1,2),maxPerBattle:q(4,8),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},fallbackPreference:'productionBadge',fallback:'firstStableOutput',copied:true})];
     case '蕾缪安': return [eventScale('ammoUsed','precision',2,4,8,16,{actor:'self',ammoOnly:true,sameRowCount:3},10)];
     case '塑心': return [eventScale('skillStart','agility',1,2,6,12,{actor:'sameRowAllies',includeSelf:true})];
     case '荒芜拉普兰德': return [eventScale('kill','assault',1,1,6,12,{actor:elite?'team':'self',targetSide:'enemy',tag:elite?'叙拉古':undefined},1,{perEnemyOnce:elite})];
@@ -166,18 +167,18 @@ function output(services, state, id, quantity, piece, extra = {}) {
 }
 function value(p, isElite) { return Number(p[isElite ? 'elite' : 'normal'] ?? 0); }
 function traitFor(piece, services) { return nativeTraitFor(chessIdOf(piece), services.catalog); }
-function fire(state, hook, piece, event, services, replay = false, selectedRule = null) {
+function fire(state, hook, piece, event, services, replay = false, selectedRule = null, sourceRules = null) {
   const trait = traitFor(piece, services);
-  const effect = trait?.effect?.prep || [];
+  const effect = sourceRules || trait?.effect?.prep || [];
   for (const r of effect) {
     if (selectedRule && r !== selectedRule) continue;
-    if (r.trigger !== hook || (replay && r.behavior === 'replayAdjacentNative')) continue;
+    if ((r.trigger !== hook && r.params?.alsoAt !== hook) || (replay && r.behavior === 'replayAdjacentNative')) continue;
     const p = r.params || {}, elite = Boolean(piece.elite || /_b$/.test(chessIdOf(piece)));
     const memo = (piece.nativeState ||= {});
     const ruleKey = `${hook}:${r.behavior}:${JSON.stringify(p)}`;
     const mark = () => (memo[ruleKey] ||= {});
-    if (['roundStart', 'prepEnd'].includes(hook) && mark().lastRound === state.round) continue;
-    if (['roundStart', 'prepEnd'].includes(hook)) mark().lastRound = state.round;
+    if (!replay && ['roundStart', 'prepEnd'].includes(hook) && mark().lastRound === state.round) continue;
+    if (!replay && ['roundStart', 'prepEnd'].includes(hook)) mark().lastRound = state.round;
     switch (r.behavior) {
       case 'grantEquipment':
         for (const x of p.outputs || []) output(services, state, x.id, value(x, elite), piece);
@@ -219,7 +220,9 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'forgeFactionTierCount':
       case 'forgeDominantFactionTierCount':
       case 'forgeFactionTierPair': {
-        const ranks = roster(state).filter((x) => isPresent(x) && (r.behavior === 'forgeFactionTierCount' ? hasFaction(x, p.faction, services) : true)).map((x) => services.catalog.operators[chessIdOf(x)]?.tier || 0);
+          const faction = r.behavior === 'forgeDominantFactionTierCount' ? dominantFaction(state, services, piece) : p.faction;
+        if (r.behavior === 'forgeDominantFactionTierCount' && !faction && hasAnyFaction(state, services)) throw new Error('Dominant faction could not be resolved from the catalog faction order');
+        const ranks = roster(state).filter((x) => isPresent(x) && hasFaction(x, faction, services)).map((x) => services.catalog.operators[chessIdOf(x)]?.tier || 0);
         const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, new Set(ranks).size * value(p, elite));
         if (r.behavior === 'forgeFactionTierPair') for (const id of p.ids) output(services, state, id, amount, piece);
         else output(services, state, p.id, amount, piece);
@@ -235,10 +238,11 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         output(services, state, p.id, n, piece); break;
       }
       case 'attachShopBadgeFirstRefresh':
-        if ((state.counters?.paidRefreshes || state.counters?.refreshes || 0) > 0 && !mark().done) { mark().done = true; attachShopEquipment(state, p.id, value(p, elite), piece); }
+        if ((state.counters?.activeRefreshes || state.counters?.refreshes || state.counters?.paidRefreshes || 0) > 0 && !mark().done) { mark().done = true; attachShopEquipment(state, p.id, value(p, elite), piece); }
         break;
       case 'attachShopByRefreshCount': {
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, (state.counters?.paidRefreshes || 0) * value(p, elite));
+        const refreshes = state.counters?.activeRefreshes ?? state.counters?.refreshes ?? state.counters?.roundRefreshes ?? state.counters?.paidRefreshes ?? 0;
+        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshes * value(p, elite));
         attachShopEquipment(state, p.id, amount, piece); break;
       }
       case 'randomEquipment': {
@@ -268,16 +272,26 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       }
       case 'dominantFactionRecruit': {
         const needsRow = elite ? p.eliteRequires : p.normalRequires;
-        if (!needsRow || roster(state).filter((x) => isPresent(x) && x.row === piece.row).length >= 3) addRecruitOffer(state, services, { tierMax: state.shop?.level || 1, choices: 3, faction: dominantFaction(state, services), sourceUid: piece.uid, hook }); break;
+        if (!needsRow || roster(state).filter((x) => isPresent(x) && x.row === piece.row).length >= 3) {
+          const faction = dominantFaction(state, services, piece);
+          if (faction) {
+            const pool = Object.values(services.data?.chess || {}).filter((x) => x.chessId?.endsWith('_a') && x.visible !== false && (x.bonds || []).some((b) => (services.data?.bonds?.[b]?.name || b) === faction));
+            const pick = choose(pool, services);
+            if (pick) services.grantChess(state, pick.chessId, { origin: 'native', sourceUid: piece.uid, ordinary: true });
+          }
+        }
+        break;
       }
       case 'replayAdjacentNative': {
-        const limit = elite ? p.normalRange || 1 : 1;
-        const candidates = adjacent(state, piece, 'front').filter((x) => x !== piece).slice(0, limit);
-        const source = candidates.find((x) => (traitFor(x, services)?.effect?.prep || []).some((other) => other.trigger === p.sourceTrigger && p.allow.includes(other.behavior)));
-        if (source && !event.replay) {
-          const target = (traitFor(source, services).effect.prep).find((other) => other.trigger === p.sourceTrigger && p.allow.includes(other.behavior));
-          // Execute exactly one allowlisted neighboring rule; copied rules cannot replay again.
-          fire(state, p.sourceTrigger, source, { ...event, replay: true, replayTarget: piece }, services, true, target);
+        if (event.replay) break;
+        const limit = p.sourceTrigger === 'gain' ? (elite ? p.eliteRange || 2 : p.normalRange || 1) : 1;
+        const directions = Array.from({ length: limit }, (_, i) => i + 1).map((distance) => neighborAt(state, piece, 'front', distance)).filter(Boolean);
+        for (const source of directions) {
+          const sourceRulesForCopy = (traitFor(source, services)?.effect?.prep || []).filter((other) => other.trigger === p.sourceTrigger && p.allow.includes(other.behavior));
+          const target = sourceRulesForCopy[0];
+          if (!target) continue;
+          // The copied effect executes as the copier; copied dispatch/replay rules are excluded.
+          fire(state, p.sourceTrigger, piece, { ...event, replay: true, replayTarget: piece, sourceUid: piece.uid }, services, true, target, [target]);
         }
         break;
       }
@@ -316,16 +330,31 @@ function choosePool(pool, services, elite = false) {
   for (const [id, weight] of entries) { pick -= Number(weight || 0); if (pick < 0) return id; }
   return entries.at(-1)[0];
 }
-function dominantFaction(state, services) {
+function dominantFaction(state, services, piece = null) {
   const counts = new Map();
   for (const p of roster(state).filter(isPresent)) {
     const chess = services.data?.chess?.[chessIdOf(p)] || services.catalog?.operators?.[chessIdOf(p)]?.source?.normalChess;
-    for (const bond of chess?.bonds || []) counts.set(services.data?.bonds?.[bond]?.name || bond, (counts.get(services.data?.bonds?.[bond]?.name || bond) || 0) + 1);
+    const factions = new Set((chess?.bonds || []).map((bond) => services.data?.bonds?.[bond]?.name || bond).filter((name) => FACTIONS.has(name)));
+    for (const faction of factions) counts.set(faction, (counts.get(faction) || 0) + 1);
   }
-  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  const ranked = [...counts].sort((a, b) => b[1] - a[1]);
+  if (!ranked.length) return null;
+  const ties = ranked.filter((x) => x[1] === ranked[0][1]).map(([name]) => name);
+  if (ties.length === 1) return ties[0];
+  const stableOrder = services.catalog?.config?.tavernFactions || Object.keys(services.catalog?.config?.factionRecipes || {});
+  const preference = piece?.nativeState?.preferences?.factionPriority || state.preferences?.factionPriority || state.factionPriority;
+  const priority = preference?.length ? preference : stableOrder;
+  return priority.find((name) => ties.includes(name)) || stableOrder.find((name) => ties.includes(name)) || null;
+}
+function hasAnyFaction(state, services) {
+  for (const p of roster(state).filter(isPresent)) {
+    const chess = services.data?.chess?.[chessIdOf(p)] || services.catalog?.operators?.[chessIdOf(p)]?.source?.normalChess;
+    if ((chess?.bonds || []).some((id) => FACTIONS.has(services.data?.bonds?.[id]?.name || id))) return true;
+  }
+  return false;
 }
 function dominantRecipe(state, piece, services, params, elite) {
-  const faction = dominantFaction(state, services);
+  const faction = dominantFaction(state, services, piece);
   const recipe = services.catalog.config.badgeRecipes?.[faction] || services.catalog.config.factionRecipes?.[faction] || services.catalog.config.badgeRecipes?.default;
   if (Array.isArray(recipe) && recipe.length) {
     piece.nativeState ||= {}; const stateKey = `recipe:${faction}`; const cursor = piece.nativeState[stateKey] || 0;
@@ -336,14 +365,24 @@ function dominantRecipe(state, piece, services, params, elite) {
   if (recipe && !Array.isArray(recipe)) return Object.entries(recipe).map(([id, n]) => [id, n * value(params, elite)]);
   const profession = services.data?.chess?.[chessIdOf(piece)]?.profession || services.catalog.operators[chessIdOf(piece)]?.source?.normalChess?.profession;
   const fallback = services.catalog.config.professionRecipes?.[profession];
+  if (Array.isArray(fallback) && fallback.length) {
+    piece.nativeState ||= {}; const stateKey = `professionRecipe:${profession}`; const cursor = piece.nativeState[stateKey] || 0;
+    const produced = Array.from({ length: value(params, elite) }, (_, i) => fallback[(cursor + i) % fallback.length]);
+    piece.nativeState[stateKey] = cursor + produced.length;
+    return produced.map((id) => [id, 1]);
+  }
   return Object.entries(fallback || {}).map(([id, n]) => [id, n * value(params, elite)]);
 }
-function adjacent(state, piece, direction) {
-  if (!piece || piece.row == null || piece.col == null) return [piece];
-  const sign = piece.dir === 'LEFT' ? -1 : 1;
-  const delta = direction === 'behind' ? -sign : sign;
-  const col = piece.col + delta;
-  return [piece, ...roster(state).filter((x) => x.row === piece.row && x.col === col)];
+function neighborAt(state, piece, direction, distance = 1) {
+  if (!piece || piece.row == null || piece.col == null) return null;
+  const facing = piece.dir || 'RIGHT';
+  const actual = direction === 'behind' ? ({ RIGHT:'LEFT', LEFT:'RIGHT', UP:'DOWN', DOWN:'UP' }[facing] || facing) : direction === 'front' ? facing : direction;
+  const offset = ({ RIGHT:[0,1], LEFT:[0,-1], UP:[-1,0], DOWN:[1,0] })[actual] || [0,0];
+  const row = piece.row + offset[0] * distance, col = piece.col + offset[1] * distance;
+  return roster(state).find((x) => x.row === row && x.col === col) || null;
+}
+function adjacent(state, piece, direction, distance = 1) {
+  return [piece, neighborAt(state, piece, direction, distance)].filter(Boolean);
 }
 function attachShopEquipment(state, id, quantity, sourcePiece) {
   let left = quantity;
@@ -368,9 +407,14 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
   if (!['gain', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
   const piece = event.piece || (event.uid && roster(state).find((x) => x.uid === event.uid));
   if (['gain', 'sold', 'merge'].includes(hook)) {
-    if (piece) fire(state, hook === 'merge' ? 'gain' : hook, piece, event, services, Boolean(event.replay));
+    if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
   } else {
-    for (const p of roster(state)) fire(state, hook, p, event, services);
+    for (const p of roster(state)) {
+      const trait = traitFor(p, services);
+      const benchAllowed = (trait?.effect?.prep || []).some((r) => r.trigger === hook && r.params?.worksFromBench);
+      if (['roundStart', 'prepEnd', 'refresh'].includes(hook) && !isPresent(p) && !benchAllowed) continue;
+      fire(state, hook, p, event, services);
+    }
   }
   return state;
 }

@@ -25,12 +25,55 @@ const PRIZE_GEAR_IDS = Object.freeze({ 罗德岛便携锻炉: 'rhodes-portable-f
 const IDENTITY_CANONICAL = 'harmony-identity-card';
 const STOPPED_LEGACY_NAMES = new Set(['随身身份牌', '变形同构体']);
 const EQUIPMENT_RULES = Object.freeze({
-  '源石促效溶剂': { mechanism: 'statsAndDrain', params: { normal: { attackPercent: 0.2, hpLossPerSecond: 20 }, elite: { attackPercent: 0.3, hpLossPerSecond: 30, eliteLevel: 2 } } },
+  '源石促效溶剂': { mechanism: 'statsAndDrain', params: { normal: { attackPercent: 0.2, hpLossPerSecond: 20 }, elite: { attackPercent: 0.3, hpLossPerSecond: 30 } } },
   '不屈部署支架': { mechanism: 'statsAndRedeploy', params: { normal: { redeployTimeReduction: 0.2, maxHpPercent: -0.15 }, elite: { redeployTimeReduction: 0.3, maxHpPercent: -0.2 } } },
+  '诱敌蜂鸣器': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'passive', behavior: 'staticStats', params: { maxHpPercent: { normal: 0.2, elite: 0.35 }, tauntLevel: 1 } }] } },
+  '有限加速器': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'eventStats', params: { attackSpeedFlat: 1, maxStacks: { normal: 20, elite: 35 }, duration: 'battle', countOncePerActivation: true } }, { trigger: 'heal', behavior: 'eventStats', params: { attackSpeedFlat: 1, maxStacks: { normal: 20, elite: 35 }, duration: 'battle', effectiveOnly: true, countOncePerActivation: true } }] } },
+  '应急伪装服': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'damageTaken', behavior: 'firstDamageStatus', params: { status: 'stealth', perBattle: 1, durationSeconds: { normal: 6, elite: 10 }, preserveBlocking: true } }] } },
+  '后勤回收协议': { mechanism: 'saleThresholdRecruit', params: { normalSaleThreshold: 6, eliteSaleThreshold: 4, maxPerPrep: 1, requiresSharedFaction: true, ordinaryOnly: true, maxTier: 'currentShop', choices: 3 } },
+  '精准狙击镜': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'conditionalDamage', params: { condition: 'distanceAtLeast', distance: 3, multiplier: { normal: 1.15, elite: 1.25 } } }] } },
+  '源石激光组件': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'resistanceIgnore', params: { damageType: 'arts', ratio: { normal: 0.15, elite: 0.25 }, floor: 0 } }] } },
+  '迅捷作战口粮': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'deploy', behavior: 'deploySpRecovery', params: { base: { normal: 3, elite: 6 }, perSharedFactionAlly: { normal: 1, elite: 2 }, maxBonus: { normal: 5, elite: 10 } } }] } },
+  '歌利亚防护盔': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'deploy', behavior: 'deployWindowStats', params: { maxHpPercent: { normal: 0.15, elite: 0.25 }, noFrontAllyBonus: { normal: 0.1, elite: 0.15 }, duration: 'deployment' } }] } },
+  '奥术抑制器': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'silenceOnHit', params: { durationSeconds: { normal: 3, elite: 5 }, immuneTargetsIgnored: true } }], stats: { resistance: { normal: 10, elite: 20 } } } },
+  '突袭破片榴弹': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'deployFirstHitStatus', params: { status: 'stun', durationSeconds: { normal: 1, elite: 2 }, maxPerBattle: 3, resetOnDeploy: true } }] } },
+  '防暴塔盾': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'damageTaken', behavior: 'blockedDamageReduction', params: { reduction: { normal: 0.2, elite: 0.3 }, condition: 'blocking', attackerNotBlockedByOwner: true } }] } },
+  '休眠子裔': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'healOnHit', params: { maxHpPercent: { normal: 0.01, elite: 0.02 }, oncePerAttack: true, excludedFromHealingTriggers: true } }] } },
+  '卡西米尔竞技旗': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'deploy', behavior: 'deployWindowDamage', params: { durationSeconds: { normal: 10, elite: 15 }, multiplier: { normal: 1.15, elite: 1.25 }, endsFully: true } }] } },
+  '拉特兰备用桥夹': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'ammoUsed', behavior: 'lastBulletRefund', params: { thresholdRemaining: 1, maxPerBattle: 1, initialAmmoRatio: { normal: 0.2, elite: 0.3 }, rounding: 'floor', minimum: 1 } }] } },
+  '灼燃维式重锤': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'artsDamageAfterburn', params: { ratio: { normal: 0.05, elite: 0.1 }, cannotReenter: true } }], stats: { attackPercent: { normal: 0.15, elite: 0.25 } } } },
+  '应急浓缩嗅盐': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'statusApplied', behavior: 'statusImmunityAtHp', params: { statuses: ['stun', 'frozen'], minHpRatio: { normal: 0.8, elite: 0.6 }, doesNotCleanse: true } }] } },
+  '医疗护盾无人机': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'heal', behavior: 'countedHealShield', params: { counterEvery: { normal: 6, elite: 4 }, cooldownSeconds: 4, shieldCharges: 1, mainTargetOnly: true, groupHealCountsOnce: true, skipTargetWithEquipmentShield: true } }] } },
+  'M3应急茧甲': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'death', behavior: 'singleRevive', params: { perBattle: 1, delaySeconds: 1, maxHpRatio: { normal: 0.5, elite: 1 }, sameCell: true, counterPersists: true } }] } },
+  '天马骑士战盔': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'tick', behavior: 'pairedEquipmentRegen', params: { partnerSourceId: 'chess_item_6_01_e_a', maxHpPercentPerSecond: { normal: 0.01, elite: 0.02 }, countsAsHealing: false } }] } },
+  '天马骑士长枪': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'pairedEquipmentHitDamage', params: { partnerSourceId: 'chess_item_5_09_e_a', trueDamageAttackRatio: { normal: 0.1, elite: 0.2 }, oncePerAttack: true } }], stats: { attackPercent: { normal: 0.2, elite: 0.35 } } } },
+  '战栗维式重锤': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'silenceOnHit', params: { groundOnly: true, cooldownSeconds: 8, durationSeconds: { normal: 1, elite: 1.5 } } }], stats: { attackPercent: { normal: 0.1, elite: 0.2 } } } },
+  '萨尔贡行军浓茶': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'passive', behavior: 'staticStats', params: { spRecovery: { normal: 0.1, elite: 0.2, source: 'naturalOnly' } } }] } },
+  '叙拉古仪仗正装': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'deploy', behavior: 'deployWindowStats', params: { self: { attackSpeedFlat: { normal: 8, elite: 16 } }, adjacentHorizontalAllies: { attackSpeedFlat: { normal: 5, elite: 10 } }, sameNameDoesNotStack: true } }] } },
+  '炎国制式短刀': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'skillStart', behavior: 'eventStats', params: { attackPercent: { normal: 0.03, elite: 0.05 }, maxStacks: 5, duration: 'battle' } }] } },
+  '阿戈尔沉海重刃': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'passive', behavior: 'staticStats', params: { attackPercent: { normal: 0.2, elite: 0.35 }, attackSpeedFlat: { normal: -5, elite: -10 } } }] } },
+  '坚固维式重锤': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'lethalDamage', behavior: 'lethalGuard', params: { perBattle: 1, durationSeconds: { normal: 4, elite: 6 }, minimumHp: 1, reviveDoesNotReset: true } }], stats: { attackPercent: { normal: 0.1, elite: 0.2 } } } },
+  '加速维式重锤': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'passive', behavior: 'staticStats', params: { attackPercent: { normal: 0.1, elite: 0.2 }, attackSpeedFlat: { normal: 10, elite: 20 } } }] } },
+  '催泪瓦斯组件': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'slowOnHit', params: { durationSeconds: 3, attackSpeedFlat: { normal: -5, elite: -10 }, moveSpeedPercent: { normal: -0.05, elite: -0.1 }, sameNameDoesNotStack: true, controlImmuneIgnored: true } }] } },
+  '谢拉格不融冰': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'countedStatus', params: { counterEvery: { normal: 8, elite: 6 }, status: 'cold', durationSeconds: { normal: 1.5, elite: 2 }, target: 'primary' } }] } },
+  '双模机械臂': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'damageConversion', params: { from: ['nativePhysical', 'nativeArts'], to: 'weak', exclude: ['equipmentDamage', 'trueDamage'] } }], stats: { attackPercent: { normal: 0.15, elite: 0.25 } } } },
+  '拉特兰铳骑组件': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'attack', behavior: 'countedAttackDamage', params: { counterEvery: { normal: 8, elite: 6 }, multiplier: { normal: 1, elite: 1.5 }, requiresTag: '拉特兰', requiresInRangeEnemy: true, pairedSourceId: 'chess_item_4_08_e_a', pairedMultiplier: { normal: 1.5, elite: 2 } } }], stats: { attackPercent: { normal: 0.2, elite: 0.35 } } } },
+  '炎国天师古鼎': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'gain', behavior: 'gainBattleStats', params: { requiresTag: '炎', attackSpeedPerGain: { normal: 5, elite: 8 }, maxAttackSpeed: { normal: 15, elite: 24 }, duration: 'battle', pairedSourceId: 'chess_item_3_04_e_a', deferredFunds: { normal: 1, elite: 2 }, deferredFundsMaxPerRound: 1 } }] }, stats: { maxHpPercent: { normal: 0.2, elite: 0.35 } } },
+  '阿戈尔海沟实验体': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'damageTaken', behavior: 'damageReductionAndRetaliation', params: { flatReduction: { normal: 40, elite: 80 }, minimumDamage: 1, requiresTag: '阿戈尔', retaliationAttackPercent: { normal: 0.2, elite: 0.3 }, retaliationCooldownSeconds: 1, pairedSourceId: 'chess_item_3_07_e_a', pairedMultiplier: 1.5 } }] } },
+  '维多利亚蒸汽之心': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'passive', behavior: 'steamGearUpgrade', params: { requiresTag: '维多利亚', sourceIds: ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'], selectedVariants: { normal: 1, elite: 2 }, upgradesSpecialEffectsOnly: true } }] }, stats: { attackSpeedFlat: { normal: 15, elite: 25 } } },
+  '耶拉冈德之泪': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'tick', behavior: 'coldAuraDamage', params: { requiresTag: '谢拉格', damageRatio: { normal: 0.15, elite: 0.25 }, condition: 'inRangeColdOrFrozen', pairedSourceId: 'chess_item_5_02_e_a', pairedDamageRatio: { normal: 0.25, elite: 0.4 } } }] }, stats: { resistance: { normal: 15, elite: 25 } } },
+  '萨尔贡黄沙罗盘': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'skillEnd', behavior: 'skillRecovery', params: { requiresTag: '萨尔贡', firstOnly: true, sp: { normal: 10, elite: 20 }, pairedSourceId: 'chess_item_2_04_e_a', teamSpPerSkillStart: { normal: 1, elite: 2 }, pairedSkillStartCap: 3 } }], initialSp: { normal: 10, elite: 20 } } },
+  '卡西米尔骑士戒律': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'skillStart', behavior: 'redeployAndSkillWindow', params: { requiresTag: '卡西米尔', slowWindowSeconds: { normal: 10, elite: 15 }, slowPercent: { normal: 0.1, elite: 0.15 }, pairedSourceId: 'chess_item_4_07_e_a', pairedAttackPercent: { normal: 0.15, elite: 0.25 }, withdrawOnSkillEndWhenPaired: true } }] }, stats: { redeployTimeReduction: { normal: 0.15, elite: 0.25 } } },
+  '叙拉古家族印记': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'stealthLost', behavior: 'stealthBreakDamage', params: { requiresTag: '叙拉古', damageBonus: { normal: 0.3, elite: 0.5 }, pairedSourceId: 'chess_item_3_01_e_a', trueDamageAttackRatio: { normal: 1, elite: 2 }, pairedProcMaxPerBattle: 1 } }], spRecovery: { normal: 0.1, elite: 0.2 } } },
   '医疗部蓄能电容': { mechanism: 'healingCapacitor', params: { thresholdMaxHpRatio: 0.2, damageRatio: 1, cooldownSeconds: 3, damageType: 'arts', range: 'adjacentFour', includeNativeHealing: true, ignoreSelf: true, ignoreOverheal: true, ignoreEquipmentHeal: true } },
   '近战训练记录仪': { mechanism: 'attackEventProduction', params: { counterEvent: 'attack', counterEvery: 15, outputs: [{ id: 'precision', quantity: 1 }], maxPerBattle: 4, filter: { actor: 'self', nativeOnly: true } } },
+  '拉特兰调速器': { mechanism: 'badgeAmplifier', params: { badgeIds: ['agility'], multiplier: 1.5, stats: ['attackSpeedFlat'] } },
+  '维多利亚校准砧': { mechanism: 'badgeAmplifier', params: { badgeIds: ['assault'], multiplier: 1.5, stats: ['attackPercent'] } },
+  '医疗部稳态仪': { mechanism: 'badgeAmplifier', params: { badgeIds: ['vitality'], multiplier: 1.5, stats: ['maxHpFlat'] } },
   '应急屏障组件': { mechanism: 'equipmentShield', params: { charges: 2 } },
   '精英干员战备箱': { mechanism: 'equipmentShield', params: { charges: 1 }, stats: { attackFlat: 50, maxHpFlat: 400, attackSpeedFlat: 10 } },
+  '罗德岛重装防护套件': { mechanism: 'stats', params: {}, stats: { maxHpFlat: 400, defenseFlat: 40, tauntLevel: 1 } },
+  '重型武装校准章': { mechanism: 'badgeAmplifier', params: { badgeIds: ['precision', 'assault'], multiplier: 2, stats: ['attackFlat', 'attackPercent'] } },
   '人事部增援许可': { mechanism: 'deployCap', params: { amount: 1, max: 9, perRunLimit: 1 } },
   '调和识别牌': { mechanism: 'identityTag', params: { chooseOnEquip: true } },
   '罗德岛便携锻炉': { mechanism: 'prepEndForge', params: { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], requiresOnField: true } },
@@ -39,10 +82,10 @@ const EQUIPMENT_RULES = Object.freeze({
   '后勤储蓄盒': { mechanism: 'facilityIncome', params: { normalIncome: 1, eliteIncome: 2, unique: true } },
   '阵营联络终端': { mechanism: 'factionRecruitOnUse', params: { normalOffers: 1, eliteOffers: 2, choices: 3, maxTier: 'shopLevel' } },
   '延期采购回执': { mechanism: 'deferredFundsOnUse', params: { normalFunds: 2, eliteFunds: 4 } },
-  '骑士采购储金罐': { mechanism: 'conditionalFundsOnUse', params: { normalFunds: 2, eliteFunds: 4, condition: 'tierAtLeast4' } },
-  '阵营征调模块': { mechanism: 'factionRecruitOnUse', params: { normalOffers: 1, eliteOffers: 2, choices: 3, maxTier: 'shopLevel' } },
-  '拟态招募样本': { mechanism: 'recruitOnUse', params: { normalOffers: 1, eliteOffers: 2, choices: 3, preserveEliteSelection: true } },
-  '博士晋升授权': { mechanism: 'promoteOnUse', params: { choices: 1, eliteOnly: true } },
+  '骑士采购储金罐': { mechanism: 'immediateFundsOnUse', params: { normal: 3, elite: 5 } },
+  '阵营征调模块': { mechanism: 'factionRecruitOnUse', params: { normalCount: 1, eliteCount: 1, normalTier: 'currentShop', eliteTierDelta: 1, eliteOrdinary: true, requiresExistingFaction: true, choices: 3 } },
+  '拟态招募样本': { mechanism: 'copyOperatorOnUse', params: { normalCount: 1, eliteCount: 2, ordinaryOnly: true, copyNativeOnly: true, copyEquipment: false, copyAttachments: false, copyNativeState: false } },
+  '博士晋升授权': { mechanism: 'promoteOnUse', params: { normalCount: 1, eliteCount: 2, chooseTargets: true, eliteOnly: false } },
 });
 const ATTACHMENT_RULES = Object.freeze({
   军需备品: { mechanism: 'prepEndForge', params: { outputs: [{ id: 'precision', quantity: 1 }], requiresOnField: true, requiresNextBattle: true } },
@@ -76,6 +119,17 @@ const own = (obj, key) => obj && Object.hasOwn(obj, key) ? obj[key] : undefined;
 const clone = (v) => v == null ? v : structuredClone(v);
 const eliteId = (id) => id.endsWith('_a') ? `${id.slice(0, -2)}_b` : null;
 const recordById = (map, id) => own(map, id) || null;
+function resolvedEquipmentRule(name, required = true) {
+  const raw = EQUIPMENT_RULES[name];
+  if (!raw) {
+    if (required) throw new Error(`Independent equipment has no structured rule: ${name}`);
+    return { mechanism: 'disabled', params: {}, stats: null };
+  }
+  const params = clone(raw.params || {});
+  const stats = clone(raw.stats ?? params.stats ?? null);
+  delete params.stats;
+  return { mechanism: raw.mechanism, params, stats };
+}
 
 function makeOperator(source, chess, data, eliteVariant = false) {
   const normal = recordById(data.chess, source.chessId) || chess || {};
@@ -136,28 +190,34 @@ export function getCatalog(data = getData()) {
   for (const item of DESIGN.legacy || []) {
     const canonicalId = STOPPED_LEGACY_NAMES.has(item.oldName) ? IDENTITY_CANONICAL : item.sourceId;
     const upstreamEliteId = item.sourceId.endsWith('_a') ? `${item.sourceId.slice(0, -2)}_b` : null;
+    const rule = item.kind === '徽章' || item.kind === '停用' ? null : resolvedEquipmentRule(item.newName, item.kind === '停用');
     equipment[item.sourceId] = {
       ...clone(item), id: item.sourceId, sourceId: item.sourceId, canonicalId, uniqueKey: canonicalId,
       eliteId: item.eliteLevel == null ? null : upstreamEliteId,
       available: item.kind !== '停用', kind: item.kind,
       badgeId: BADGE_IDS[item.newName] || null,
-      mechanism: EQUIPMENT_RULES[item.newName]?.mechanism || (item.kind === '徽章' ? 'badge' : item.kind === '停用' ? 'disabled' : 'equipmentEffect'),
-      params: clone(EQUIPMENT_RULES[item.newName]?.params || (BADGE_IDS[item.newName] ? { stat: DESIGN.badges.find((x) => x.name === item.newName)?.stat, value: DESIGN.badges.find((x) => x.name === item.newName)?.value } : {})),
-      stats: clone(EQUIPMENT_RULES[item.newName]?.stats || null),
+      mechanism: item.kind === '徽章' ? 'badge' : item.kind === '停用' ? 'disabled' : rule.mechanism,
+      params: clone(rule?.params || (BADGE_IDS[item.newName] ? { stat: DESIGN.badges.find((x) => x.name === item.newName)?.stat, value: DESIGN.badges.find((x) => x.name === item.newName)?.value } : {})),
+      stats: clone(rule?.stats || null),
+      upstream: clone(recordById(data?.chess, item.sourceId)),
+      upstreamGarrisons: clone((recordById(data?.chess, item.sourceId)?.garrisonIds || []).map((gid) => recordById(data?.garrisons, gid)).filter(Boolean)),
     };
   }
   for (const item of DESIGN.extraGear || []) {
     const id = `independent:${item.name}`;
-    equipment[id] = { ...clone(item), id, sourceId: id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'equipment', mechanism: EQUIPMENT_RULES[item.name]?.mechanism || 'equipmentEffect', params: clone(EQUIPMENT_RULES[item.name]?.params || {}), stats: clone(EQUIPMENT_RULES[item.name]?.stats || null) };
+    const rule = resolvedEquipmentRule(item.name);
+    equipment[id] = { ...clone(item), id, sourceId: id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'equipment', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
   const identity = DESIGN.identityGear;
   if (identity) {
     const id = 'chess_item_identity_gear';
-    equipment[id] = { ...clone(identity), id, sourceId: id, canonicalId: IDENTITY_CANONICAL, uniqueKey: IDENTITY_CANONICAL, eliteId: null, available: true, kind: 'equipment', mechanism: 'identityTag', params: clone(EQUIPMENT_RULES[identity.name].params) };
+    const rule = resolvedEquipmentRule(identity.name);
+    equipment[id] = { ...clone(identity), id, sourceId: id, canonicalId: IDENTITY_CANONICAL, uniqueKey: IDENTITY_CANONICAL, eliteId: null, available: true, kind: 'equipment', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
   for (const item of DESIGN.prizeGear || []) {
     const id = PRIZE_GEAR_IDS[item.name];
-    equipment[id] = { ...clone(item), id, sourceId: item.source || id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'prizeGear', mechanism: EQUIPMENT_RULES[item.name]?.mechanism || 'equipmentEffect', params: clone(EQUIPMENT_RULES[item.name]?.params || {}), stats: clone(EQUIPMENT_RULES[item.name]?.stats || null) };
+    const rule = resolvedEquipmentRule(item.name);
+    equipment[id] = { ...clone(item), id, sourceId: item.source || id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'prizeGear', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
 
   const permissions = keyed(DESIGN.permissions, (x) => x.name, (x) => clone(x));
@@ -179,6 +239,7 @@ export function getCatalog(data = getData()) {
         炎: ['precision'], 维多利亚: ['precision', 'vitality'], 拉特兰: ['agility'], 阿戈尔: ['vitality'],
         谢拉格: ['assault'], 萨尔贡: ['recovery'], 叙拉古: ['precision', 'assault'], 卡西米尔: ['defense', 'agility'],
       },
+      tavernFactions: ['炎', '维多利亚', '拉特兰', '阿戈尔', '谢拉格', '萨尔贡', '叙拉古', '卡西米尔'],
       professionRecipes: { PIONEER: ['precision'], WARRIOR: ['precision'], SNIPER: ['precision'], SPECIAL: ['precision'], TANK: ['defense'], MEDIC: ['vitality'], CASTER: ['assault'], SUPPORT: ['recovery'] },
     },
     operators, permissions, badges, equipment, attachments, prizes,
@@ -186,6 +247,11 @@ export function getCatalog(data = getData()) {
       prepBehaviors: [...new Set(Object.values(operators).flatMap((op) => op.nativeTrait.effect.prep.map((x) => x.behavior)))].sort(),
       combatBehaviors: [...new Set(Object.values(operators).flatMap((op) => op.nativeTrait.effect.combat.map((x) => x.behavior)))].sort(),
       unsupported: [...new Set(Object.values(operators).flatMap((op) => op.nativeTrait.effect.unsupported || []))].sort(),
+    },
+    equipmentRegistry: {
+      mechanisms: [...new Set(Object.values(equipment).map((item) => item.mechanism))].sort(),
+      combatBehaviors: [...new Set(Object.values(equipment).flatMap((item) => item.params?.effects || []).map((effect) => effect.behavior))].sort(),
+      unsupported: [],
     },
     pools: Object.fromEntries(['pool_equip_rockr','pool_equip_pepe','pool_char_pinus','pool_equip_normal'].filter((id) => own(data?.choices?.pools,id)).map((id) => [id, clone(data.choices.pools[id])])),
     source: clone(DESIGN.source),
