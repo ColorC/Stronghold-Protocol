@@ -132,7 +132,7 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     sharedBoss,
     flags: {
       layerGainsEnabled: false,
-      independent: { catalog, pieces: input.pieces, round: prepared.round, roundLimit: prepared.roundLimit },
+      independent: { catalog, pieces: input.pieces, counters: input.counters ?? {}, round: prepared.round, roundLimit: prepared.roundLimit },
     },
     fieldId: `independent-r${prepared.round}`,
     data: source,
