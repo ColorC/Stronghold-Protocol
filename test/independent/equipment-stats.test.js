@@ -14,7 +14,7 @@ const cases = [
   ['坚固维式重锤', { atk: 550 }, { atk: 600 }],
   ['加速维式重锤', { atk: 550, aspd: 110 }, { atk: 600, aspd: 120 }],
   ['灼燃维式重锤', { atk: 575 }, { atk: 625 }],
-  ['奥术耐受披风', { res: 10 }, { res: 20 }],
+  ['奥术抑制器', { res: 10 }, { res: 20 }],
   ['天马骑士战盔', { maxHp: 1200 }, { maxHp: 1350 }],
   ['天马骑士长枪', { atk: 600 }, { atk: 675 }],
   ['双模机械臂', { atk: 575 }, { atk: 625 }],
@@ -27,7 +27,7 @@ const cases = [
 
 for (const [name, normal, elite] of cases) for (const variant of [false, true]) {
   test(`${name} ${variant ? 'elite' : 'ordinary'} constant stats survive its effect handler`, () => {
-    const gear = Object.values(catalog.equipment).find(x => x.name === name);
+    const gear = Object.values(catalog.equipment).find(x => x.newName === name);
     assert.ok(gear, name);
     const id = 'independent_gear_fixture_a';
     const rec = chessRec({ id, stats: { atk: 500, maxHp: 1000, def: 100, res: 0, aspd: 100 }, skill: null });
