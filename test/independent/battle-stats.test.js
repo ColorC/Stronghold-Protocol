@@ -82,4 +82,8 @@ test('foresight badges grant their SP again on each deployment, not only at batt
   const {h,u}=unitWith([badge('foresight',3)],false,true);
   h.step(1);
   assert.ok(u.skill.sp>=3 && u.skill.sp<3.1);
+  h.b.retreat(u);
+  u.respawnAt=0;
+  assert.equal(h.b.redeploy(u),true);
+  assert.ok(u.skill.sp>=3 && u.skill.sp<3.1);
 });
