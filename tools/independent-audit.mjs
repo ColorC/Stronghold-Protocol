@@ -8,7 +8,9 @@ import { positionClass, canPlace } from '../server/match/board.js';
 
 const data=getData({log:{info(){},warn(){},error(){}}});
 const catalog=getCatalog(data);
-const output=resolve(process.argv[2]||'runtime/independent-mode-20261005/content-audit.json');
+const args=process.argv.slice(2);
+if(args.length && !(args.length===1 && !args[0].startsWith('--')) && !(args.length===2 && args[0]==='--output')) throw new Error('Usage: independent-audit.mjs [--output path]');
+const output=resolve((args[0]==='--output'?args[1]:args[0])||'runtime/independent-mode-20261005/content-audit.json');
 const cases=[];
 const badges=Object.keys(catalog.badges).map((id,i)=>({uid:`badge${i}`,id,quantity:1,elite:false,state:{}}));
 const ordinary=Object.values(catalog.operators).find(op=>!op.elite && op.name==='角峰');

@@ -9,3 +9,5 @@
 - 初次25分钟检查：三个执行方均已给可运行checkpoint、仍持续修复明确语义问题，无卡死；继续原完整范围，第二次检查25分钟。预选机制统一为configure动作保存nativeState.preferences.productionBadge/factionPriority；身份标签仅改变酒馆阵营，不改变原生继承资格。职业兜底配方是初版可调参数，随机掉落权重复用上游data.choices.pools（上游标注assumed）。
 
 - 第二次收口检查：core1356166与catalog/native fa57379已合入；root修正蒸汽之心限额schema为chooseVariantsOnEquip，并新增30项装备常驻属性真实Battle测试。集成第一次50/55通过，4项等待战斗新版属性映射、1项蒸汽限额已修；证据E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/independent-mode-20261005/core-integrated.stdout.log。主仓native+资格20/20通过，证据E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/independent-mode-20261005/native-integrated-final.stdout.log。终检发现干员自动三连、有限池招募、重复验收许可等未接线，已原范围补齐；战斗逐项修正实际事件来源与触发语义，尚未后端最终验收。
+
+- Battle checkpoint79128ba已合入，root实际43项事件/属性测试通过，全量319项Battle审计通过。证据E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/independent-mode-20261005/battle-integrated.stdout.log、E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/independent-mode-20261005/content-audit-integrated.json。audit工具原仅接收位置参数，root误用--output将报告落到仓根同名文件，已核验并原生移动至上述runtime正式运行区，补回执且CLI兼容--output，不重跑已完成业务。真实经济pilot seed1/defense/FUNNY已完整9轮胜利、剩25LP，未注入单位/资金/结局；这仍是三连最终接入前checkpoint，非最终平衡证据。
