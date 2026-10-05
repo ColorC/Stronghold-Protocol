@@ -46,8 +46,29 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
   };
   const pickOffers = () => {
     for (let guard=0; state.offers.length && guard<40; guard++) {
-      const offer=state.offers[0];
+      const offer=state.offers.find(x=>x.type!=='operatorMerge') || state.offers[0];
       let chosen=false;
+      if (offer.type==='operatorMerge') {
+        const pieces=offer.pieceUids.map(uid=>state.pieces.find(p=>p.uid===uid)).filter(Boolean);
+        const uniqueSelections={};
+        for(const p of pieces) {
+          for(const item of p.equipment) {
+            const def=equipmentRecord(catalog,item.id);
+            if(def?.unique) {
+              const key=`equipment:${def.uniqueKey||def.canonicalId||item.id}`;
+              uniqueSelections[key] ||= item.uid;
+              if(item.elite) uniqueSelections[key]=item.uid;
+            }
+          }
+          for(const attached of p.attachments) uniqueSelections[`attachment:${attached.id}`] ||= p.uid;
+        }
+        const result=act({type:'choose',offerId:offer.id,uniqueSelections});
+        if(result.ok) continue;
+        // An over-capacity set stays as ordinary bodies. The pilot can still play
+        // and sell bodies through the public actions; it never discards assets.
+        if(result.error?.code==='CAPACITY') break;
+        throw new Error(`Merge offer failed: ${result.error?.message}`);
+      }
       for (let i=0; i<offer.choices.length && !chosen; i++) {
         const targets=[undefined,...state.pieces.map(p=>p.uid)];
         for (const targetUid of targets) {
