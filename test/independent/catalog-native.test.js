@@ -60,6 +60,13 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(Object.values(catalog.prizes).length, 19);
   assert.ok(Object.values(catalog.attachments).every((x) => x.mechanism && x.params));
   assert.ok(Object.values(catalog.prizes).every((x) => x.mechanism && x.params));
+  assert.deepEqual(catalog.equipmentRegistry.unsupported, []);
+  assert.ok(Object.values(catalog.equipment).every((x) => !x.available || x.mechanism !== 'equipmentEffect'));
+  assert.ok(Object.values(catalog.equipment).filter((x) => x.mechanism === 'combatEquipment').every((x) => Array.isArray(x.params.effects) && x.params.effects.every((e) => e.trigger && e.behavior && e.params)));
+  assert.equal(catalog.equipment['chess_item_3_12_e_a'].mechanism, 'immediateFundsOnUse');
+  assert.equal(catalog.equipment['chess_item_4_01_e_a'].params.eliteTierDelta, 1);
+  assert.equal(catalog.equipment['chess_item_5_05_e_a'].params.eliteCount, 2);
+  assert.equal(catalog.equipment['chess_item_5_06_e_a'].params.eliteCount, 2);
   assert.equal(catalog.config.purchasePrice, 3);
   assert.equal(catalog.config.sellPrice, 1);
   assert.equal(catalog.config.refreshPrice, 1);
@@ -91,12 +98,90 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
 test('round-start trait replay fires one allowlisted effect once and cannot replay itself', () => {
   const { state, services, granted } = fixture();
   const owl = { uid: 'owl', chessId: 'chess_char_4_21_a', row: 1, col: 2, dir: 'RIGHT', nativeState: {} };
-  const donor = { uid: 'donor', chessId: 'chess_char_1_02_a', row: 1, col: 3, dir: 'RIGHT', nativeState: {} };
+  const donor = { uid: 'donor', chessId: 'chess_char_2_02_a', row: 1, col: 3, dir: 'RIGHT', nativeState: {} };
   state.pieces.push(owl, donor);
   runNativeHook(state, 'roundStart', { origin: 'player' }, services);
   runNativeHook(state, 'roundStart', { origin: 'player' }, services);
-  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }]);
-  assert.equal(granted[0].sourceUid, 'donor');
+  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }, { id: 'vitality', quantity: 1 }]);
+  assert.equal(granted.filter((x) => x.sourceUid === 'owl').length, 1);
+});
+
+test('round-end effects require a fielded owner except approved bench-active makers', () => {
+  const { state, services, granted } = fixture();
+  const benchedMedic = { uid: 'bench-medic', chessId: 'chess_char_2_02_a', row: null, col: null, nativeState: {} };
+  const benchProducer = { uid: 'bench-producer', chessId: 'chess_char_1_13_a', row: null, col: null, nativeState: {} };
+  state.pieces.push(benchedMedic, benchProducer);
+  runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
+  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'recovery', quantity: 1 }]);
+
+  const inField = fixture();
+  inField.state.pieces.push({ uid: 'medic', chessId: 'chess_char_2_02_a', row: 0, col: 0, nativeState: {} });
+  runNativeHook(inField.state, 'roundStart', { origin: 'player' }, inField.services);
+  assert.deepEqual(inField.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }]);
+});
+
+test('no-faction roster uses the approved profession recipe instead of a numeric pseudo-id', () => {
+  const { state, services, granted } = fixture();
+  const podenco = { uid: 'podenco', chessId: 'chess_char_1_13_a', row: null, col: null, nativeState: {} };
+  state.pieces.push(podenco);
+  runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
+  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'recovery', quantity: 1 }]);
+});
+
+test('native sale, spend and refresh rules mutate the concrete prep state exactly once', () => {
+  const sold = fixture();
+  const texas = { uid: 'texas', chessId: 'chess_char_1_08_a', nativeState: {} };
+  sold.state.pieces.push(texas);
+  runNativeHook(sold.state, 'sold', { piece: texas, origin: 'player' }, sold.services);
+  assert.equal(sold.state.shop.freeRefreshes, 1);
+  const elite = { uid: 'texas-b', chessId: 'chess_char_1_08_b', elite: true, nativeState: {} };
+  sold.state.pieces.push(elite);
+  runNativeHook(sold.state, 'sold', { piece: elite, origin: 'player' }, sold.services);
+  assert.equal(sold.state.shop.freeRefreshes, 3);
+
+  const spent = fixture();
+  spent.state.counters.gained = 7;
+  const xiaoman = { uid: 'xiaoman', chessId: 'chess_char_2_04_a', row: 0, col: 0, nativeState: {} };
+  spent.state.pieces.push(xiaoman);
+  runNativeHook(spent.state, 'prepEnd', { origin: 'player' }, spent.services);
+  runNativeHook(spent.state, 'prepEnd', { origin: 'player' }, spent.services);
+  assert.deepEqual(spent.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 6 }]);
+
+  const refreshed = fixture();
+  refreshed.state.counters.refreshes = 1;
+  refreshed.state.shop.slots = [{ kind: 'chess', id: 'offer-a', equipment: [], sold: false }];
+  refreshed.state.pieces.push({ uid: 'lappland', chessId: 'chess_char_2_16_a', row: 0, col: 0, nativeState: {} });
+  runNativeHook(refreshed.state, 'refresh', { origin: 'player' }, refreshed.services);
+  assert.deepEqual(refreshed.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 1 }]);
+
+  const freeRefreshed = fixture();
+  freeRefreshed.state.counters.refreshes = 2;
+  freeRefreshed.state.shop.slots = [{ kind: 'chess', id: 'offer-b', equipment: [], sold: false }];
+  const aroma = { uid: 'aroma', chessId: 'chess_char_4_10_a', row: 0, col: 0, nativeState: {} };
+  freeRefreshed.state.pieces.push(aroma);
+  runNativeHook(freeRefreshed.state, 'prepEnd', { origin: 'player' }, freeRefreshed.services);
+  assert.deepEqual(freeRefreshed.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 2 }]);
+});
+
+test('dominant faction recipes use stable tavern order on ties and exclude no-faction profession fallback', () => {
+  const { state, services, granted } = fixture();
+  const podenco = { uid: 'podenco', chessId: 'chess_char_1_13_a', row: null, col: null, nativeState: {} };
+  const a = { uid: 'a', chessId: 'a_a', row: 0, col: 0, nativeState: {} };
+  const b = { uid: 'b', chessId: 'b_a', row: 0, col: 1, nativeState: {} };
+  state.pieces.push(podenco, a, b);
+  services.data = { chess: { a_a: { bonds: ['f_yan'] }, b_a: { bonds: ['f_vic'] } }, bonds: { f_yan: { name: '炎' }, f_vic: { name: '维多利亚' } } };
+  runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
+  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 1 }]);
+});
+
+test('two-copy native merge qualification is registered as an explicit merge rule', () => {
+  const { state, services } = fixture();
+  const windflit = { uid: 'windflit', chessId: 'chess_char_2_11_a', nativeState: {} };
+  state.pieces.push(windflit);
+  const event = { piece: windflit, copiesConsumed: 2, origin: 'player' };
+  runNativeHook(state, 'merge', event, services);
+  assert.equal(event.mergeRequirement, 2);
+  assert.equal(windflit.chessId, 'chess_char_2_11_a');
 });
 
 test('native registry reports implementation coverage without silent empty callbacks', () => {
