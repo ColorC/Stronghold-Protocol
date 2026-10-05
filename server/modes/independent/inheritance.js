@@ -1,5 +1,7 @@
 import { equipmentRecord, pieceEquipmentCount } from './equipment.js';
 import { canPlace } from '../../match/board.js';
+import { attachmentAccepted as acceptsAttachment, inheritanceQualification, nativeFactions, nativeBodyStats } from '../../../shared/independentRules.js';
+import { getIndependentField } from './battle.js';
 
 const own = (o, k) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k);
 const get = (o, k, d = null) => own(o, k) ? o[k] : d;
@@ -29,28 +31,11 @@ function satisfies(permission, subject, subjectOp, prefix, data) {
 }
 
 function qualifies(catalog, donor, receiver, data) {
-  const give = permissionFor(catalog, donor.chessId);
-  const receive = permissionFor(catalog, receiver.chessId);
-  const direction = (p) => String(p?.direction || '');
-  const donorSide = give && direction(give).includes('给予') && satisfies(give, receiver, operator(catalog, receiver.chessId), 'receiver', data);
-  const receiverSide = receive && direction(receive).includes('接收') && satisfies(receive, donor, operator(catalog, donor.chessId), 'donor', data);
-  return !!(donorSide || receiverSide);
+  return inheritanceQualification(donor, receiver, catalog).allowed;
 }
 
-function canTransferAttachment(def, receiver) {
-  if (!def || def.inheritable === false) return false;
-  const cond = def.condition;
-  if (!cond || ['any', 'all', 'all operators', '无条件'].includes(String(cond).toLowerCase())) return true;
-  if (typeof def.accepts === 'function') return !!def.accepts(receiver);
-  const rule = def.params?.filter || {};
-  const op = receiver?.chessId;
-  if (rule.selectedAmmoSkill) return /ammo|弹药/i.test(String(receiver.skillId || '')) || /ammo|弹药/i.test(String(receiver.skill || ''));
-  if (rule.nativeOnly && rule.status === 'frozen') {
-    const source = receiver.source?.normalChess || {};
-    return [...(source.skills || []), ...(source.talents || [])].some((x) => /freeze|冻结/i.test(JSON.stringify(x)));
-  }
-  if (String(def.condition).includes('medic')) return (receiver.profession || receiver.source?.normalChess?.profession) === 'MEDIC';
-  return false;
+function canTransferAttachment(def, receiver, catalog) {
+  return !!def?.inheritable && acceptsAttachment(def, receiver, catalog);
 }
 
 export function previewInheritance(state, catalog, donorUid, receiverUid, data = null) {
@@ -60,7 +45,7 @@ export function previewInheritance(state, catalog, donorUid, receiverUid, data =
   if (donor.row === null || donor.col === null) return { ok: false, error: 'BAD_TILE' };
   const receiverOp = operator(catalog, receiver.chessId);
   if (!receiverOp) return { ok: false, error: 'BAD_TARGET' };
-  const fieldMap = state.deployMap;
+  const fieldMap = data ? getIndependentField(state, { data, catalog }).deployMap : null;
   const cls = String(receiverOp.position || receiverOp.source?.normalChess?.position || '').toUpperCase() === 'MELEE' ? 'melee' : 'all';
   if (fieldMap && !canPlace(fieldMap, cls, donor.row, donor.col)) return { ok: false, error: 'BAD_TILE' };
   const donorGear = (donor.equipment || []).filter((x) => equipmentRecord(catalog, x.id)?.inheritable !== false);
@@ -73,7 +58,7 @@ export function previewInheritance(state, catalog, donorUid, receiverUid, data =
     if (def?.unique && existing) conflicts.push({ id: incoming.id, donorUid: incoming.uid, receiverUid: existing.uid });
   }
   const gear = donorGear.filter((x) => !conflicts.some((c) => c.donorUid === x.uid));
-  const donorAttachments = (donor.attachments || []).filter((x) => canTransferAttachment(catalog.attachments?.[x.id], receiver));
+  const donorAttachments = (donor.attachments || []).filter((x) => canTransferAttachment(catalog.attachments?.[x.id], receiver, catalog));
   const attachConflicts = donorAttachments.filter((x) => catalog.attachments?.[x.id]?.unique && receiver.attachments.some((y) => y.id === x.id)).map((x) => ({ id: x.id }));
   const receiverUnique = new Set(receiver.attachments.filter((x) => catalog.attachments?.[x.id]?.unique).map((x) => x.id));
   const transferAttachments = donorAttachments.filter((x) => !attachConflicts.some((c) => c.id === x.id) && (!receiverUnique.has(x.id) || !catalog.attachments?.[x.id]?.unique));
@@ -84,7 +69,8 @@ export function previewInheritance(state, catalog, donorUid, receiverUid, data =
     transferredAttachments: transferAttachments.map((x) => ({ ...x })), attachmentConflicts: attachConflicts,
     destroyedEquipment: (donor.equipment || []).filter((x) => !donorGear.includes(x)).map((x) => ({ ...x })),
     destroyedAttachments: (donor.attachments || []).filter((x) => !donorAttachments.includes(x)).map((x) => ({ ...x })),
-    penalty: receiver.bodyPenaltyApplied ? 0 : (catalog.config?.bodyPenalty?.baseAttackRatio ?? 0.8) };
+    penalty: receiver.bodyPenaltyApplied ? 0 : catalog.config?.bodyPenalty?.baseAttackRatio ?? 0.8,
+    oldBodyStats: nativeBodyStats(donor, catalog), newBodyStats: nativeBodyStats(receiver, catalog), donorNativeFactions: nativeFactions(donor, catalog), receiverNativeFactions: nativeFactions(receiver, catalog) };
 }
 
 export function applyInheritance(state, catalog, donorUid, receiverUid, uniqueSelections = {}, data = null) {
@@ -106,7 +92,7 @@ export function applyInheritance(state, catalog, donorUid, receiverUid, uniqueSe
   }
   const passAttachments = [];
   for (const item of donor.attachments || []) {
-    const def = catalog.attachments?.[item.id]; if (!canTransferAttachment(def, receiver)) continue;
+    const def = catalog.attachments?.[item.id]; if (!canTransferAttachment(def, receiver, catalog)) continue;
     const existing = receiver.attachments.find((x) => x.id === item.id && def.unique);
     if (existing) {
       if (uniqueSelections[`attachment:${item.id}`] === 'donor') receiver.attachments.splice(receiver.attachments.indexOf(existing), 1);

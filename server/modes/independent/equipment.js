@@ -25,7 +25,7 @@ export function makeItem(state, id, quantity = 1, extra = {}) {
 
 export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const def = equipmentRecord(catalog, id);
-  if (!def) throw new Error('UNKNOWN_EQUIPMENT');
+  if (!def || def.available === false || def.mechanism === 'disabled') throw new Error('UNKNOWN_EQUIPMENT');
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_QUANTITY');
   const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !!x.elite === !!extra.elite && !x.state?.uniqueState);
   if (stack) stack.quantity += quantity;
@@ -33,19 +33,25 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   return { id, quantity };
 }
 
-export function equipItem(state, catalog, itemUid, targetUid, quantity = 1) {
+export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, options = {}) {
   const pi = state.inventory.findIndex((x) => x.uid === itemUid);
   const target = state.pieces.find((x) => x.uid === targetUid);
   if (pi < 0 || !target || !Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_TARGET');
   const item = state.inventory[pi]; const def = equipmentRecord(catalog, item.id);
-  if (!def || quantity > item.quantity) throw new Error('BAD_QUANTITY');
+  if (!def || def.available === false || def.mechanism === 'disabled' || quantity > item.quantity) throw new Error('BAD_QUANTITY');
   const usedByPieces = pieceEquipmentCount(target);
   if (usedByPieces + quantity > 99) throw new Error('CAPACITY');
   if (def.unique && target.equipment.some((x) => {
     const other = equipmentRecord(catalog, x.id);
     return (other?.uniqueKey || other?.canonicalId || x.id) === (def.uniqueKey || def.canonicalId || item.id);
   })) throw new Error('UNIQUE');
-  const moved = { uid: `e${state.nextUid++}`, id: item.id, elite: !!item.elite, quantity, state: structuredClone(item.state || {}) };
+  const movedState = structuredClone(item.state || {});
+  if (def.mechanism === 'identityTag') {
+    const factions = ['炎', '维多利亚', '拉特兰', '阿戈尔', '谢拉格', '萨尔贡', '叙拉古', '卡西米尔'];
+    if (!factions.includes(options.faction)) throw new Error('BAD_FACTION');
+    movedState.faction = options.faction;
+  }
+  const moved = { uid: `e${state.nextUid++}`, id: item.id, elite: !!item.elite, quantity, state: movedState };
   if (item.sourceId || def.sourceId) moved.sourceId = item.sourceId || def.sourceId;
   target.equipment.push(moved);
   item.quantity -= quantity;
@@ -57,7 +63,7 @@ export function mergeItems(state, catalog, firstUid, secondUid) {
   const a = state.inventory.find((x) => x.uid === firstUid); const b = state.inventory.find((x) => x.uid === secondUid);
   if (!a || !b || a.id !== b.id || a.elite || b.elite || (a === b && a.quantity < 2)) throw new Error('BAD_MERGE');
   const def = equipmentRecord(catalog, a.id);
-  if (!def || !(def.eliteId || def.eliteLevel)) throw new Error('NOT_MERGEABLE');
+  if (!def || def.available === false || def.mechanism === 'disabled' || !(def.eliteId || def.eliteLevel)) throw new Error('NOT_MERGEABLE');
   const leftA = a.quantity - (a === b ? 2 : 1); const leftB = a === b ? 0 : b.quantity - 1;
   if (leftA === 0) state.inventory.splice(state.inventory.indexOf(a), 1); else a.quantity = leftA;
   if (a !== b) { if (leftB === 0) state.inventory.splice(state.inventory.indexOf(b), 1); else b.quantity = leftB; }
