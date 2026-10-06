@@ -352,7 +352,7 @@ export function validateC2S(msg) {
 //   ['skill', unitId, on, skillId]                       on: 1 = activated, 0 = ended; skillId: the skill (null when unnamed)
 //   ['heal', unitId, amount]   ['fx', kind, x, y, extra]   (unchanged)
 export const EV = Object.freeze({
-  SPAWN: 'spawn', ATK: 'atk', DMG: 'dmg', HEAL: 'heal', SKILL: 'skill', DIE: 'die', LEAK: 'leak',
+  SPAWN: 'spawn', ATK: 'atk', DMG: 'dmg', HEAL: 'heal', SKILL: 'skill', ENGAGE: 'engage', DIE: 'die', LEAK: 'leak',
   STATUS: 'status', FX: 'fx', LAYER: 'layer', BOUNTY: 'bounty', DEPLOY: 'deploy',
 });
 
