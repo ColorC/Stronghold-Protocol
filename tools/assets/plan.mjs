@@ -272,7 +272,6 @@ export function collectEnemyIds({ assets07, enemies05, maps05, ops03 }) {
  *   (干员报到 / 编入队伍 / 任命队长) are never requested by the client and cost 360 files / 19.3 MB of downloads.
  * @param {string[]} [p.extraEnemyIds] more enemy ids that can spawn (e.g. keys of data/enemies.json)
  * @param {string[]} [p.extraTokenIds] more token ids (e.g. token_* keys of data/tokens.json)
- * @param {string[]} [p.extraVoiceCharIds] voice-only operators already indexed in data/assets.json
  * @param {Record<string,string>} [p.extraHandbook] enemyId → handbook/model id (e.g. from data/bosses.json)
  * @param {Record<string, import('./spine.mjs').LocalSpineMeta>} [p.localEnemySpines] metadata of the enemy models the
  *   local client has (the committed tools/assets/local-enemy-spines.json, never the disk): each planned enemy listed
@@ -281,7 +280,7 @@ export function collectEnemyIds({ assets07, enemies05, maps05, ops03 }) {
  */
 export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsData, charword = null, voiceLang = 'cn',
   voiceSlots = VOICE_BATTLE_SLOTS,
-  extraEnemyIds = [], extraTokenIds = [], extraVoiceCharIds = [], extraHandbook = {}, localEnemySpines = {} }) {
+  extraEnemyIds = [], extraTokenIds = [], extraHandbook = {}, localEnemySpines = {} }) {
   const notes = [];
   /** @type {Map<string, any>} */
   const models = new Map();
@@ -565,9 +564,8 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
   // client never requests them, and downloading them adds 360 files / 19.3 MB to every `npm run assets` — pass --voice-all for
   // the complete official set (`voiceSlots: null`, reviewer note on the voice PR).
   const voice = {};
-  const voiceCharIds = new Set([...Object.keys(chars), ...extraVoiceCharIds]);
   for (const [charId, slots] of indexVoice(charword, VOICE_ID_LANG, voiceSlots)) {
-    if (!voiceCharIds.has(charId)) continue; // pool operators plus voice-only additions from upstream
+    if (!chars[charId]) continue;            // only the operators this game can field (the 138-pool charIds)
     const v = {};
     for (const [slot, assets] of Object.entries(slots)) {
       // one leaf per line (部署1 / 部署2 …): an array stays an array so the client can draw one — chaining them as
