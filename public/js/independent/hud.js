@@ -205,7 +205,7 @@ function usePageLines() {
  * A long list turns pages (‹ 1/2 ›) instead of scrolling inside the column; a section cut by a page break repeats its
  * heading on the next page.
  */
-export function ProductionPanel({ state, catalog, sinceRevision }) {
+export function ProductionPanel({ state, catalog, sinceRevision, onReport = null }) {
   // folded at first on a short phone screen: open it covers half of the field's left side there
   const [open, setOpen] = useState(() => !(globalThis.matchMedia?.('(max-height: 460px)').matches));
   const [page, setPage] = useState(0);
@@ -237,9 +237,13 @@ export function ProductionPanel({ state, catalog, sinceRevision }) {
   }
   const at = Math.min(page, pages.length - 1);
   return html`<aside class=${cx('ix-prod', !open && 'is-closed')} data-testid="ix-prod">
-    <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)}>
-      <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>产出</span>
-    </button>
+    <div class="ix-prod__tabs">
+      <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)}>
+        <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>产出</span>
+      </button>
+      ${onReport && state.lastBattle ? html`<button type="button" class="ix-prod__toggle" onClick=${onReport} title="上一场的伤害与治疗" data-testid="ix-report">
+        <${Icon} name="sword" /><span>战报</span></button>` : null}
+    </div>
     ${open ? html`<div class="ix-prod__body">
       <ul class="ix-prod__list">${pages[at].map((x, i) => (x.head ? html`<li key=${`h${i}`} class="ix-prod__h">${x.head}${x.more ? '（续）' : ''}</li>`
         : html`<${Fragment} key=${i}>${x.line}<//>`))}</ul>

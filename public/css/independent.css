@@ -329,6 +329,13 @@
   .ix-dchips__lv { font-size: 11px; }
   .ix-dchips__lv b { font-size: 12px; }
   .ix-dgear__text, .ix-dgear__att { font-size: 11px; }
+  /* the result / 战报 box fits the short screen without scrolling */
+  .ix-result__box { padding: .12rem .2rem; }
+  .ix-result__box header { margin-bottom: .04rem; }
+  .ix-result__box footer { padding-bottom: 10px; }
+  .ix-result__box .ix-dmg { margin-bottom: .06rem; }
+  .ix-dmg { display: grid; grid-template-columns: 1fr 1fr; column-gap: .3rem; }
+  .ix-dmg li { padding: 0; grid-template-columns: 1.2rem 1fr .7rem auto; }
   /* 34 px stock cells: the icon fills the cell, the name is on the right once the cell is chosen */
   .ix-inv__cell small { display: none; }
   .ix-inv__cell .ix-gear { width: 82%; height: 82%; }
@@ -347,3 +354,6 @@
 /* ---- effects column (the original .gm__effects): under the bench overflow strip ------------------------------------ */
 .ix-effects { top: 2.1rem; }
 .ix-effects .effect .ix-gear { width: 72%; height: 72%; }
+
+/* 产出 and 战报 side by side above the production column */
+.ix-prod__tabs { display: flex; gap: .04rem; }
