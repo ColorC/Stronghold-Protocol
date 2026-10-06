@@ -713,6 +713,27 @@ export class UnitView {
     this._syncModel();
   }
 
+  /**
+   * Screen-space mount used by extracted client VFX. The Spine skeleton is drawn inside `root`; its local Y axis is
+   * opposite to the screen axis, and `spine.x/y` may carry a model-specific origin offset. Returning screen coordinates
+   * here keeps original effects attached to the animated bone instead of a generic chest or tile anchor.
+   */
+  effectAnchor(name = 'root') {
+    const root = this.root;
+    if (!root) return null;
+    const spine = this.actor?.spine;
+    const bone = name && name !== 'root' ? spine?.skeleton?.findBone?.(name) : null;
+    const sx = Number(spine?.scale?.x) || 0;
+    const sy = Number(spine?.scale?.y) || 0;
+    const ox = Number(spine?.x) || 0;
+    const oy = Number(spine?.y) || 0;
+    const bx = bone && Number.isFinite(Number(bone.worldX)) ? Number(bone.worldX) * sx : 0;
+    const by = bone && Number.isFinite(Number(bone.worldY)) ? Number(bone.worldY) * sy : 0;
+    const x = (Number(root.x) || 0) + ox + bx;
+    const y = (Number(root.y) || 0) + oy - by;
+    return { x, y, depth: Number.isFinite(Number(root.zIndex)) ? -Number(root.zIndex) : 0, bone: bone?.data?.name || name || 'root' };
+  }
+
   _releaseEntry(entry) {
     try { this.ctx.assets?.spine?.release(entry); } catch { /* ignore */ }
   }

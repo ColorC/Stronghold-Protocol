@@ -53,8 +53,9 @@ function snapshot(units, t, hp) {
 
 function makeTimeline(kind) {
   const a = [];
+  const add = (t, ...ev) => a.push([t, ev]);
   if (operator === 'blkkgt') {
-    const add = (t, ...ev) => a.push([t, ev]);
+    // The comparison deliberately exercises only the extracted S1 action: three cast effects and two target hit groups.
     add(0.15, ['deploy', 1]);
     add(0.9, ['atk', 1, 20, 'none', 11, 0]);
     add(1.2, ['dmg', 20, 620, 'phys', 1, 11]);
@@ -68,26 +69,16 @@ function makeTimeline(kind) {
     add(4.5, ['skill', 1, 0, 'skchr_blkkgt_1']);
     return a;
   }
-  const skillId = kind === 'full' ? 'skchr_rosmon_2' : kind;
-  const add = (t, ...ev) => a.push([t, ev]);
+  const addSkill = (skillId, start, attackId, targetId, amount) => {
+    add(start, ['skill', 1, 1, skillId]);
+    add(start + 0.3, ['atk', 1, targetId, 'bolt', attackId, 1]);
+    add(start + 0.6, ['dmg', targetId, amount, 'arts', 1, attackId]);
+    add(start + 0.9, ['skill', 1, 0, skillId]);
+  };
   add(0.15, ['deploy', 1]);
   add(0.8, ['atk', 1, 20, 'bolt', 11, 0]);
   add(1.08, ['dmg', 20, 420, 'arts', 1, 11]);
-  add(1.45, ['skill', 1, 1, skillId]);
-  add(1.75, ['atk', 1, 20, 'bolt', 21, 1]);
-  add(2.05, ['dmg', 20, 880, 'arts', 1, 21]);
-  if (kind === 'skchr_rosmon_2' || kind === 'full') {
-    add(2.35, ['fx', 'link', 7.1, 11, { id: 20, src: 1 }]);
-    add(2.75, ['atk', 1, 21, 'bolt', 22, 1]);
-    add(3.05, ['dmg', 21, 760, 'arts', 1, 22]);
-  }
-  if (kind === 'skchr_rosmon_3' || kind === 'full') {
-    add(3.4, ['fx', 'summon', 7.8, 12, { id: 22, src: 1 }]);
-    add(3.8, ['fx', 'summonStun', 7.8, 12, { id: 22, src: 1 }]);
-    add(4.15, ['atk', 1, 22, 'bolt', 31, 1]);
-    add(4.45, ['dmg', 22, 1200, 'arts', 1, 31]);
-  }
-  add(kind === 'full' ? 6.2 : 5.2, ['skill', 1, 0, kind === 'full' ? 'skchr_rosmon_2' : kind]);
+  addSkill(kind === 'full' ? 'skchr_rosmon_2' : kind, 1.45, 21, 20, 880);
   return a.sort((x, y) => x[0] - y[0]);
 }
 
@@ -141,7 +132,7 @@ function advance(dt) {
 
 function stats(view) {
   const s = view?.stats?.() || {};
-  return `fps ${Number(s.fps || 0).toFixed(0)}  frame ${Number(s.frameMs || 0).toFixed(1)} ms\nFX ${s.particles || 0} 粒子  ${s.projectiles || 0} 投射  原版 ${s.originalVfx || 0}`;
+  return `fps ${Number(s.fps || 0).toFixed(0)}  frame ${Number(s.frameMs || 0).toFixed(1)} ms\nFX ${s.particles || 0} 粒子  ${s.projectiles || 0} 投射  原版 ${s.originalVfx || 0}  缺资源 ${s.originalMissing || 0}`;
 }
 
 function renderErrors() { $('errors').textContent = errors.length ? `错误：${errors.slice(-2).join('；')}` : ''; }

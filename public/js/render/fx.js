@@ -1906,7 +1906,7 @@ export class FxSystem {
   }
 
   get counts() {
-    return { particles: this.parts.length, projectiles: this.projs.length, numbers: this.nums.length, rings: this.rings.length, auras: this.auras.size, locks: this.locks.length, flames: this.flames.length, originalVfx: this.originalVfx?.count || 0, promotions: this.promotions || 0 };
+    return { particles: this.parts.length, projectiles: this.projs.length, numbers: this.nums.length, rings: this.rings.length, auras: this.auras.size, locks: this.locks.length, flames: this.flames.length, originalVfx: this.originalVfx?.count || 0, originalMissing: this.originalVfx?.missingCount || 0, promotions: this.promotions || 0 };
   }
 
   destroy() {
