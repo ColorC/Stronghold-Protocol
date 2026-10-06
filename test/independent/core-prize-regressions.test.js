@@ -120,11 +120,12 @@ test('ancient cauldron observes all acquired bodies and pays its elite amount on
 test('inspection license repeats acquisition forging but leaves preparation-end forging once', () => {
   const state = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
   state.playerEffects = [{ type: 'repeatNativeForging', expiresRound: 1, extraRepeats: 1 }];
-  const gainOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '野鬃');
+  const gainOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '角峰');
   state.shop.slots[0] = { kind: 'chess', id: gainOp.chessId, price: 3, sold: false, equipment: [] };
   const bought = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog: baseCatalog });
   assert.equal(bought.ok, true, bought.error?.message);
-  assert.equal(bought.state.inventory.filter((x) => x.id === 'agility').reduce((n, x) => n + x.quantity, 0), 2);
+  // 角峰's 坚守徽章 lands on it (徽章落点): made twice
+  assert.equal(bought.state.pieces.at(-1).equipment.filter((x) => x.id === 'vitality').reduce((n, x) => n + x.quantity, 0), 2);
   const prep = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
   prep.playerEffects = structuredClone(state.playerEffects);
   const endOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '雷蛇');
@@ -133,5 +134,5 @@ test('inspection license repeats acquisition forging but leaves preparation-end 
   [piece.row, piece.col] = tile[0].split(',').map(Number);
   const ready = applyAction(prep, { type: 'ready' }, { data, catalog: baseCatalog });
   assert.equal(ready.ok, true, ready.error?.message);
-  assert.equal(ready.state.inventory.filter((x) => x.id === 'defense').reduce((n, x) => n + x.quantity, 0), 1);
+  assert.equal(ready.state.pieces.find((x) => x.uid === piece.uid).equipment.filter((x) => x.id === 'defense').reduce((n, x) => n + x.quantity, 0), 1);
 });

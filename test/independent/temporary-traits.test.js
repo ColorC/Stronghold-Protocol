@@ -6,8 +6,8 @@ import { installIndependentBattle } from '../../server/sim/content/independent/b
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 
 const base = getCatalog();
-// 普罗旺斯 / 德克萨斯 are 叙拉古, 刺玫 is 维多利亚, 格雷伊 has no faction; none has a combat trait of its own
-const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', myrtle: 'chess_char_1_06_a', greyy: 'chess_char_1_14_a' };
+// 普罗旺斯 / 德克萨斯 are 叙拉古, 隐现 is 拉特兰, 深靛 has no faction; none has a combat trait of its own (干员表 v3)
+const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', lateran: 'chess_char_1_01_a', loner2: 'chess_char_1_17_a' };
 
 function setup(pieces, rulesByUid) {
   const operators = { ...base.operators };
@@ -27,6 +27,7 @@ function setup(pieces, rulesByUid) {
     extraContent: [(battle) => installIndependentBattle(battle, { catalog, state: { pieces: full } })],
   });
   h.step(1);
+  assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors)); // a rule the engine cannot install is an error
   return h;
 }
 const rule = (behavior, params, trigger = 'battle') => ({ trigger, behavior, params });
@@ -35,7 +36,7 @@ test('开场加成: the row gets the buff for its seconds, the next row does not
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'same', chessId: OPS.texas, row: 10, col: 5 },
-    { uid: 'other', chessId: OPS.myrtle, row: 11, col: 3 },
+    { uid: 'other', chessId: OPS.lateran, row: 11, col: 3 },
   ], { w: [rule('battleStartBuff', { targets: 'row', stats: { atkPct: 0.2 }, duration: 5 })] });
   assert.equal(h.unit('same').s.atk, 120);
   assert.equal(h.unit('w').s.atk, 120);
@@ -48,7 +49,7 @@ test('同阵营 targets read the tavern factions', () => {
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'same', chessId: OPS.texas, row: 12, col: 8 },
-    { uid: 'other', chessId: OPS.myrtle, row: 11, col: 3 },
+    { uid: 'other', chessId: OPS.lateran, row: 11, col: 3 },
   ], { w: [rule('battleStartBuff', { targets: 'faction:same', stats: { aspd: 20 } })] });
   assert.equal(h.unit('same').s.aspd, 120);
   assert.equal(h.unit('other').s.aspd, 100);
@@ -58,8 +59,8 @@ test('队友倒下叠层: a stack for every fallen ally, up to the cap, for the 
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'a', chessId: OPS.texas, row: 10, col: 5 },
-    { uid: 'b', chessId: OPS.myrtle, row: 11, col: 3 },
-    { uid: 'c', chessId: OPS.greyy, row: 12, col: 3 },
+    { uid: 'b', chessId: OPS.lateran, row: 11, col: 3 },
+    { uid: 'c', chessId: OPS.loner2, row: 12, col: 3 },
   ], { w: [rule('allyDownStacks', { every: 1, stats: { atkPct: 0.1 }, maxStacks: 2 })] });
   h.b.kill(h.unit('a')); h.step(1);
   assert.equal(Math.round(h.unit('w').s.atk), 110);
@@ -81,7 +82,7 @@ test('分发护盾: the given count of allies get a layer at battle start, two a
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'a', chessId: OPS.texas, row: 10, col: 5 },
-    { uid: 'b', chessId: OPS.myrtle, row: 11, col: 3 },
+    { uid: 'b', chessId: OPS.lateran, row: 11, col: 3 },
   ], { w: [rule('shieldAllies', { targets: 'all', count: 2, layers: 3 })] });
   const layers = ['w', 'a', 'b'].map((uid) => Number(h.unit(uid).findBuff(`independent:equipmentShield:${uid}`)?.shieldHits ?? 0));
   assert.deepEqual(layers.sort(), [0, 2, 2]);
@@ -136,8 +137,8 @@ test('targets lists, bench scaling, weakness damage and stacks for others', () =
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'a', chessId: OPS.texas, row: 10, col: 4 },
-    { uid: 'b', chessId: OPS.myrtle, row: 9, col: 3 },
-    { uid: 'bench1', chessId: OPS.greyy, row: null, col: null },
+    { uid: 'b', chessId: OPS.lateran, row: 9, col: 3 },
+    { uid: 'bench1', chessId: OPS.loner2, row: null, col: null },
   ], { w: [
     rule('battleStartBuff', { targets: ['self', 'front'], stats: { atkPct: 0.05 }, perBench: true, maxBench: 3 }),
     rule('allyDownStacks', { every: 1, stats: { aspd: 10 }, maxStacks: 2, targets: 'faction:叙拉古' }),

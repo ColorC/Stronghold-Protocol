@@ -4,12 +4,12 @@ import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../share
 import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
 import { mitigate } from '../../damage.js';
 
+// temporary combat traits (2026-10-07, installTemporaryNativeRules)
+const TEMPORARY_BEHAVIORS = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack', 'overkillSpill']);
 const BEHAVIORS = new Set([
   'badgeThresholdStat', 'staticStats', 'conditionalDamage', 'weakDamage', 'eventProduction',
   'deployWindowStats', 'startDerivedStats',
-, 'badgeAmplifier', 'productionMultiplier',
-  // temporary combat traits (2026-10-07, installTemporaryNativeRules)
-  'battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack', 'overkillSpill']);
+, 'badgeAmplifier', 'productionMultiplier', ...TEMPORARY_BEHAVIORS]);
 const STAT_MODS = Object.freeze({
   attackFlat: 'atkFlat', attackPercent: 'atkPct', attackSpeedFlat: 'aspd',
   maxHpFlat: 'hpFlat', maxLifeFlat: 'hpFlat', maxHpPercent: 'hpPct', maxLifePercent: 'hpPct', defenseFlat: 'defFlat', defenceFlat: 'defFlat', defensePercent: 'defPct',
@@ -703,7 +703,7 @@ function installNativeCombat(battle, catalog, pieces, emit) {
         battle.on('hit', ({ source, target, dmg }) => {
           if (source === unit && target?.side === 'enemy' && dmg && (dmg.type === 'phys' || dmg.type === 'arts')) dmg.type = weaknessType(source, target, dmg);
         }, { priority: WEAKNESS_PRIORITY, owner: unit });
-      } else if (!['badgeThresholdStat', 'staticStats', 'deployWindowStats', 'startDerivedStats', 'badgeAmplifier', 'productionMultiplier'].includes(rule.behavior)) {
+      } else if (!['badgeThresholdStat', 'staticStats', 'deployWindowStats', 'startDerivedStats', 'badgeAmplifier', 'productionMultiplier'].includes(rule.behavior) && !TEMPORARY_BEHAVIORS.has(rule.behavior)) {
         throw new Error(`unimplemented independent native rule ${piece.chessId}:${rule.behavior}`);
       }
     }

@@ -117,6 +117,9 @@ test('a 交接凭证 is equipment: it takes one of the 999 places', () => {
   const piece = state.pieces.at(-1);
   state.inventory.push({ uid: `i${state.nextUid++}`, id: 'precision', quantity: 999, elite: false, state: {} });
   const item = state.inventory.at(-1).uid;
-  assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 999 }).error?.code, 'CAPACITY');
-  assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 998 }).ok, true);
+  // 角峰 wears its permit and the 坚守徽章 it made when gained (徽章落点)
+  const worn = piece.equipment.reduce((n, x) => n + Number(x.quantity || 1), 0);
+  assert.ok(piece.equipment.some((x) => x.id === 'vitality'));
+  assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 999 - worn + 1 }).error?.code, 'CAPACITY');
+  assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 999 - worn }).ok, true);
 });

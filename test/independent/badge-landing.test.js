@@ -26,9 +26,10 @@ test('with landing on, a badge an operator makes is worn by it; gear and prizes 
   assert.deepEqual(state.inventory.map((x) => x.id).sort(), ['chess_item_1_03_e_a', 'vitality']);
 });
 
-test('landing off (the default) keeps the stock flow', () => {
+test('landing off keeps the stock flow; the mode turns it on (design rules.badgeLanding)', () => {
+  assert.equal(base.config.badgeLanding, 'self');
   const state = stateWith([piece('p1', 'chess_char_1_07_a', 10, 3)]);
-  grantEquipment(state, base, 'precision', 2, { origin: 'native', sourceUid: 'p1' });
+  grantEquipment(state, landing('stock'), 'precision', 2, { origin: 'native', sourceUid: 'p1' });
   assert.equal(state.pieces[0].equipment.length, 0);
   assert.deepEqual(state.inventory.map((x) => [x.id, x.quantity]), [['precision', 2]]);
 });

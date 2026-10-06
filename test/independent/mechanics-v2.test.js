@@ -10,9 +10,11 @@ import { createSession, applyAction } from '../../server/modes/independent/sessi
 import { getIndependentField, previewUnitStats } from '../../server/modes/independent/battle.js';
 import { canPlace, positionClass } from '../../server/match/board.js';
 import { getData } from '../../server/data.js';
+import { preV3Catalog } from './helpers/preV3.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
-const catalog = getCatalog(data);
+// the second-wave behaviors through the operators that carried them before 干员表 v3 (helpers/preV3.js)
+const catalog = preV3Catalog(getCatalog(data));
 const idOf = (name, elite = false) => {
   const op = Object.values(catalog.operators).find((x) => !x.elite && x.name === name);
   return elite ? op.eliteChessId : op.chessId;
@@ -203,19 +205,19 @@ test('烛煌 counts the elite operators on the field', () => {
 });
 
 test('锏 on the field puts agility badges onto every operator bought, one more each time, up to 5', () => {
-  let state = createSession({ seed: 19, difficulty: 'NORMAL' });
+  let state = createSession({ seed: 19, difficulty: 'NORMAL', data, catalog });
   state.funds = 99;
   state.shop.slots[0] = { kind: 'chess', id: idOf('锏'), elite: false, price: 3, sold: false, equipment: [] };
-  let r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+  let r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
   const jian = state.pieces[0];
   const field = getIndependentField(state, { data, catalog });
   const raw = catalog.operators[jian.chessId].source.normalChess;
   const cell = [...field.deployMap.keys()].find((k) => { const [row, col] = k.split(',').map(Number); return canPlace(field.deployMap, positionClass(raw, 'none'), row, col); });
-  r = applyAction(state, { type: 'move', uid: jian.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }); state = r.state;
+  r = applyAction(state, { type: 'move', uid: jian.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }, { data, catalog }); state = r.state;
   const worn = [];
   for (const name of ['角峰', '雷蛇', '刺玫', '深靛', '野鬃', '宴', '隐现']) {
     state.shop.slots[0] = { kind: 'chess', id: idOf(name), elite: false, price: 3, sold: false, equipment: [] };
-    r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+    r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
     const bought = state.pieces[state.pieces.length - 1];
     worn.push(bought.equipment.filter((x) => x.id === 'agility').reduce((n, x) => n + x.quantity, 0));
   }
@@ -231,47 +233,47 @@ test('赫默 counts professions on the field; 诗怀雅 counts factions', () => 
   assert.equal(sum(granted, 'vitality'), professions.size);
 });
 
-test('塑心 doubles the battle yield; 增压臂铠 doubles its 坚守 every prep phase', () => {
+test('塑心 doubles the battle yield; 增压臂铠 doubles its 精准 every prep phase (干员表 v3: 精准, up to 16)', () => {
   const run = (withSuxin) => {
-    let state = createSession({ seed: 13, difficulty: 'NORMAL' });
+    let state = createSession({ seed: 13, difficulty: 'NORMAL', data, catalog });
     state.funds = 99;
     for (const name of withSuxin ? ['锏', '塑心'] : ['锏']) {
       state.shop.slots[0] = { kind: 'chess', id: idOf(name), elite: false, price: 3, sold: false, equipment: [] };
-      const r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+      const r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
     }
     const field = getIndependentField(state, { data, catalog });
     const cells = [...field.deployMap.keys()];
     for (const p of state.pieces) {
       const raw = catalog.operators[p.chessId].source.normalChess;
       const cell = cells.find((k) => { const [row, col] = k.split(',').map(Number); return !state.pieces.some((q) => q !== p && q.row === row && q.col === col) && canPlace(field.deployMap, positionClass(raw, 'none'), row, col); });
-      const r = applyAction(state, { type: 'move', uid: p.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+      const r = applyAction(state, { type: 'move', uid: p.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
     }
     const jian = state.pieces[0];
-    const r = applyAction(state, { type: 'ready' }); assert.equal(r.ok, true, r.error?.message);
+    const r = applyAction(state, { type: 'ready' }, { data, catalog }); assert.equal(r.ok, true, r.error?.message);
     return r.state.production.filter((row) => row.phase === 'battle' && row.sourceUid === jian.uid && row.id === 'agility').reduce((n, row) => n + row.quantity, 0);
   };
   const single = run(false);
   assert.ok(single > 0);
   assert.equal(run(true), single * 2);
 
-  let state = createSession({ seed: 17, difficulty: 'NORMAL' });
+  let state = createSession({ seed: 17, difficulty: 'NORMAL', data, catalog });
   state.funds = 99;
   state.shop.slots[0] = { kind: 'chess', id: idOf('佩佩'), elite: false, price: 3, sold: false, equipment: [] };
-  let r = applyAction(state, { type: 'buy', slot: 0 }); state = r.state;
+  let r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); state = r.state;
   const pepe = state.pieces[0];
   const arm = state.inventory.find((x) => x.id === 'independent:增压臂铠');
   assert.ok(arm, '佩佩 brings 增压臂铠');
-  r = applyAction(state, { type: 'equip', itemUid: arm.uid, targetUid: pepe.uid }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+  r = applyAction(state, { type: 'equip', itemUid: arm.uid, targetUid: pepe.uid }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
   const field = getIndependentField(state, { data, catalog });
   const raw = catalog.operators[pepe.chessId].source.normalChess;
   const cell = [...field.deployMap.keys()].find((k) => { const [row, col] = k.split(',').map(Number); return canPlace(field.deployMap, positionClass(raw, 'none'), row, col); });
-  r = applyAction(state, { type: 'move', uid: pepe.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }); state = r.state;
+  r = applyAction(state, { type: 'move', uid: pepe.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }, { data, catalog }); state = r.state;
   const yields = [];
   for (let i = 0; i < 3 && state.phase === 'prep'; i++) {
-    r = applyAction(state, { type: 'ready' }); assert.equal(r.ok, true, r.error?.message);
-    yields.push(r.state.production.filter((row) => row.phase === 'prepEnd' && row.origin === 'equipment' && row.id === 'vitality' && row.round === state.round).reduce((n, row) => n + row.quantity, 0));
+    r = applyAction(state, { type: 'ready' }, { data, catalog }); assert.equal(r.ok, true, r.error?.message);
+    yields.push(r.state.production.filter((row) => row.phase === 'prepEnd' && row.origin === 'equipment' && row.id === 'precision' && row.round === state.round).reduce((n, row) => n + row.quantity, 0));
     state = r.state;
-    while (state.offers?.length) { const o = state.offers[0]; r = applyAction(state, { type: 'choose', offerId: o.id, index: 0 }); if (!r.ok) break; state = r.state; }
+    while (state.offers?.length) { const o = state.offers[0]; r = applyAction(state, { type: 'choose', offerId: o.id, index: 0 }, { data, catalog }); if (!r.ok) break; state = r.state; }
   }
   assert.deepEqual(yields.slice(0, 3), [1, 2, 4].slice(0, yields.length));
 });

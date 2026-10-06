@@ -29,8 +29,8 @@ test('each form reads its own counts: an elite form uses its own catalog entry',
   assert.equal(undertaker.summary[0].items[0].normal, 1);
   assert.equal(undertakerElite.summary[0].items[0].elite, 2);
   assert.equal(display.operators[undertaker.eliteChessId].name, '送葬人');
-  assert.equal(find('刺玫', true).summary[0].items[0].elite, 2);
-  assert.equal(find('刺玫', false).summary[0].faction, '维多利亚');
-  assert.match(undertaker.traitTexts.elite, /2枚灵巧徽章/);
+  assert.equal(find('薄绿', true).summary[0].items[0].elite, 2);
+  assert.equal(find('薄绿', false).summary[0].faction, '维多利亚');
+  assert.match(undertaker.traitTexts.elite, /2件拉特兰跳弹模块/);
   assert.deepEqual(display.rules.bodyPenalty, { baseAttackRatio: 0.8, baseLifeRatio: 0.8 });
 });

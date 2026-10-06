@@ -16,8 +16,8 @@ const GEAR = {
   'test:guard': gear('test:guard', 'factionGuard', { damageReduction: 0.3 }),
 };
 const catalog = { ...baseCatalog, equipment: { ...baseCatalog.equipment, ...GEAR } };
-// 普罗旺斯 and 德克萨斯 are 叙拉古, 刺玫 is 维多利亚, 波登可 and 格雷伊 have no faction; none of them has a combat trait
-const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', myrtle: 'chess_char_1_06_a', podenco: 'chess_char_1_13_a', greyy: 'chess_char_1_14_a' };
+// 普罗旺斯 and 德克萨斯 are 叙拉古, 隐现 is 拉特兰, 跃跃 and 深靛 have no faction; none of them has a combat trait (干员表 v3)
+const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', lateran: 'chess_char_1_01_a', loner: 'chess_char_1_09_a', loner2: 'chess_char_1_17_a' };
 
 function setup(pieces) {
   const chess = {};
@@ -31,12 +31,13 @@ function setup(pieces) {
     extraContent: [(battle) => installIndependentBattle(battle, { catalog, state: { pieces: full } })],
   });
   h.step(1);
+  assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors)); // a rule the engine cannot install is an error
   return h;
 }
 const lost = (e) => e.s.maxHp - e.hp;
 
 test('弹射: an attack bounces from its main target to the nearest enemy, then on, within the radius each time', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.podenco, row: 10, col: 3, equipment: [{ id: 'test:ricochet' }] }]);
+  const h = setup([{ uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:ricochet' }] }]);
   const main = h.spawn('enemy_test', { pos: [10, 4] });
   const near = h.spawn('enemy_test', { pos: [10, 5.5] });
   const next = h.spawn('enemy_test', { pos: [10, 7] });
@@ -49,7 +50,7 @@ test('弹射: an attack bounces from its main target to the nearest enemy, then 
 });
 
 test('溅射: every other enemy within the radius of the main target takes a share; its own damage starts nothing again', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.podenco, row: 10, col: 3, equipment: [{ id: 'test:splash' }, { id: 'test:ricochet' }] }]);
+  const h = setup([{ uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:splash' }, { id: 'test:ricochet' }] }]);
   const main = h.spawn('enemy_test', { pos: [10, 4] });
   const a = h.spawn('enemy_test', { pos: [10, 5] });
   const b = h.spawn('enemy_test', { pos: [11, 4] });
@@ -61,9 +62,9 @@ test('溅射: every other enemy within the radius of the main target takes a sha
 
 test('造成伤害时治疗周围随机友军: a hurt ally nearby gets a share of the damage, once per cooldown; the wearer never', () => {
   const h = setup([
-    { uid: 'w', chessId: OPS.podenco, row: 10, col: 3, equipment: [{ id: 'test:heal' }] },
-    { uid: 'ally', chessId: OPS.greyy, row: 10, col: 2 },
-    { uid: 'far', chessId: OPS.myrtle, row: 12, col: 9 },
+    { uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:heal' }] },
+    { uid: 'ally', chessId: OPS.loner2, row: 10, col: 2 },
+    { uid: 'far', chessId: OPS.lateran, row: 12, col: 9 },
   ]);
   const w = h.unit('w'); const ally = h.unit('ally'); const far = h.unit('far');
   w.hp = 500; ally.hp = 500; far.hp = 500;
@@ -83,7 +84,7 @@ test('盟约脆弱: an enemy the wearer hit takes more damage from its faction o
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3, equipment: [{ id: 'test:vulnerable' }] },
     { uid: 'same', chessId: OPS.texas, row: 9, col: 4 },
-    { uid: 'other', chessId: OPS.myrtle, row: 11, col: 4 },
+    { uid: 'other', chessId: OPS.lateran, row: 11, col: 4 },
   ]);
   const e = h.spawn('enemy_test', { pos: [10, 4], mods: { speedMul: 0 } });
   const hitBy = (uid) => { const before = e.hp; h.b.forceAttack(h.unit(uid), [e]); return before - e.hp; };
@@ -98,8 +99,8 @@ test('盟约脆弱: an enemy the wearer hit takes more damage from its faction o
 
 test('盟约脆弱 on an operator without a faction marks for the wearer alone', () => {
   const h = setup([
-    { uid: 'w', chessId: OPS.podenco, row: 10, col: 3, equipment: [{ id: 'test:vulnerable' }] },
-    { uid: 'other', chessId: OPS.greyy, row: 9, col: 4 },
+    { uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:vulnerable' }] },
+    { uid: 'other', chessId: OPS.loner2, row: 9, col: 4 },
   ]);
   const e = h.spawn('enemy_test', { pos: [10, 4] });
   const hitBy = (uid) => { const before = e.hp; h.b.forceAttack(h.unit(uid), [e]); return before - e.hp; };
@@ -112,7 +113,7 @@ test('盟约庇护: allies of the wearer\'s faction take less damage while the w
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3, equipment: [{ id: 'test:guard' }] },
     { uid: 'same', chessId: OPS.texas, row: 9, col: 4 },
-    { uid: 'other', chessId: OPS.myrtle, row: 11, col: 4 },
+    { uid: 'other', chessId: OPS.lateran, row: 11, col: 4 },
   ]);
   const e = h.spawn('enemy_test', { pos: [10, 6] });
   const take = (uid) => { const u = h.unit(uid); const before = u.hp; h.b.dealDamage(e, u, { amount: 100, type: 'true' }); return before - u.hp; };

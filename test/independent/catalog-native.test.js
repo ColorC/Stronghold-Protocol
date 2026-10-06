@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
 import { tavernFactions } from '../../shared/independentRules.js';
+import { preV3Catalog } from './helpers/preV3.js';
 
-const catalog = getCatalog();
+// rule mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js)
+const catalog = preV3Catalog(getCatalog());
 const all = Object.values(catalog.operators);
 
 function fixture() {
