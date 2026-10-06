@@ -83,6 +83,12 @@ export const FX_KINDS = Object.freeze({
   // 限伤 (sim/damage.js leaderHitCancelled): a leader's hit of ≥ 300000 dealt nothing — the official shows no number and
   // no effect [ASSUMED], so nothing is drawn (`a: 'none'`)
   hitCap: { a: 'none', c: 0xffffff },
+  // Upstream 0.2.0 自选 kits (4b059c9): explicit looks for the newly emitted kinds.
+  bulletClear: { a: 'wave', c: 0xd8b0ff }, logosLexicon: { a: 'mark', c: 0xc9a2ff }, logosExecute: { a: 'strike', c: 0xb07dff },
+  mantraArc: { a: 'bolt', c: 0xc77dff }, mantraGrant: { a: 'mark', c: 0xc77dff }, mantraGate: { a: 'reticle', c: 0xc77dff },
+  veenBounce: { a: 'counter', c: 0xffd27a }, veenVolley: { a: 'volley', c: 0xffd27a },
+  harpoon: { a: 'beam', c: 0xd0c0a0 }, arrowRain: { a: 'volley', c: 0xfff2d0 }, mark: { a: 'reticle', c: 0xff7b8a },
+  bounce: { a: 'counter', c: 0xffd9a0 }, dying: { a: 'mark', c: 0xff5a4a },
   // beams
   beam: { a: 'beam', c: 0xff7a5a }, link: { a: 'beam', c: 0x9ff0dc }, lightning: { a: 'bolt', c: 0xc9a2ff }, tentacle: { a: 'beam', c: 0x5fe0ff },
   sandChains: { a: 'beam', c: 0xd8c8a0 }, sandChainsCharged: { a: 'beam', c: 0xffd45a },
@@ -556,6 +562,76 @@ function yanyouFlame(fx, c) {
   if (a) FX_ARCHETYPES.flame(fx, a);
 }
 
+// ---- extracted original-client VFX ---------------------------------------------------------------------------
+
+const ROSMON_CHAR = 'char_391_rosmon';
+const ROSMON_SKILL_PREFABS = Object.freeze({
+  skchr_rosmon_1: ['rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02', 'rosmon_skill_01_A_start_B', 'rosmon_skill_01_A_range'],
+  skchr_rosmon_2: ['rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02', 'rosmon_skill_02_buff'],
+  skchr_rosmon_3: ['rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_range', 'rosmon_skill_03_buff', 'rosmon_skill_03_buff_02'],
+});
+const ROSMON_HIT_PREFABS = Object.freeze({
+  skchr_rosmon_1: ['rosmon_skill_01_A_hit_01', 'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_B_hit_01'],
+  skchr_rosmon_2: ['rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02'],
+  skchr_rosmon_3: ['rosmon_skill_03_A_hit_01', 'rosmon_skill_03_A_hit_02', 'rosmon_skill_03_A_hit_03', 'rosmon_skill_03_A_hit_04', 'rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_02', 'rosmon_skill_03_B_hit_03', 'rosmon_skill_03_B_hit_04', 'rosmon_skill_03_B_hit_01_stone'],
+});
+const ROSMON_ATTACK_PREFABS = Object.freeze(['rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_start_B', 'rosmon_attack_B_start', 'rosmon_attack_B_start_B', 'rosmon_attack_A_range']);
+const rosmonSkillPrefabs = (skill) => ROSMON_SKILL_PREFABS[skill] || ROSMON_SKILL_PREFABS.skchr_rosmon_3;
+const rosmonHitPrefab = (skill, n = 0) => (ROSMON_HIT_PREFABS[skill] || ROSMON_HIT_PREFABS.skchr_rosmon_2)[Math.abs(Number(n) || 0) % (ROSMON_HIT_PREFABS[skill] || ROSMON_HIT_PREFABS.skchr_rosmon_2).length];
+
+/** Overlay the extracted Rosmontis prefab while retaining the upstream procedural effect underneath. */
+function rosmonSkill(fx, c, next) {
+  next();
+  const v = c.view;
+  if (!v || !c.skillId && !c.who?.skill) return;
+  const skill = c.skillId || c.who?.skill;
+  const group = `rosmon:skill:${v.id}`;
+  if (!c.on) { fx.stopOriginalVfx(group); return; }
+  for (const [i, prefab] of rosmonSkillPrefabs(skill).entries()) {
+    const persistent = (skill === 'skchr_rosmon_2' && prefab.includes('buff')) || (skill === 'skchr_rosmon_3' && prefab.includes('buff'));
+    fx.playOriginalVfx(prefab, { followId: v.id, group, delay: i * 0.08, loop: persistent, life: persistent ? 4 : null });
+  }
+}
+
+function rosmonAttack(fx, c, next) {
+  next();
+  if (!c.src) return;
+  const skill = c.isSkill ? c.who?.skill : null;
+  const n = Number(c.attackId) || 0;
+  const prefab = skill === 'skchr_rosmon_3' ? 'rosmon_skill_03_A_start' : ROSMON_ATTACK_PREFABS[n % ROSMON_ATTACK_PREFABS.length];
+  fx.playOriginalVfx(prefab, { followId: c.src.id });
+}
+
+function rosmonDamage(fx, c, next) {
+  next();
+  if (!c.view) return;
+  const skill = c.isSkill ? c.who?.skill : null;
+  fx.playOriginalVfx(rosmonHitPrefab(skill, c.attackId), { x: c.view.x, y: c.view.y, z: c.view.z || 0 });
+}
+
+function rosmonDeploy(fx, c, next) {
+  next();
+  if (c.view) fx.playOriginalVfx('rosmon_birth_01_start', { followId: c.view.id });
+}
+
+function rosmonSummon(fx, c, next) {
+  next();
+  const a = fxSite(fx, c);
+  if (a) fx.playOriginalVfx('rosmon_skill_03_buff', { x: a.at.x, y: a.at.y, z: a.at.z, followId: a.ex.id ?? null, group: `rosmon:summon:${a.ex.id ?? ''}` });
+}
+
+function rosmonLink(fx, c, next) {
+  next();
+  const a = fxSite(fx, c);
+  if (a) fx.playOriginalVfx('rosmon_buff_01_start', { x: a.at.x, y: a.at.y, z: a.at.z, followId: a.ex.id ?? null });
+}
+
+function rosmonGearStun(fx, c, next) {
+  next();
+  const a = fxSite(fx, c);
+  if (a) fx.playOriginalVfx('rosmon_skill_03_B_hit_01_stone', { x: a.at.x, y: a.at.y, z: a.at.z });
+}
+
 /** Sub-professions whose attacks splash around the struck target (the 阵法术师 / 轰击术师 strike every enemy in range). */
 export const SPLASH_SUBS = Object.freeze(['aoesniper', 'splashcaster', 'bombarder', 'fortress', 'hammer']);
 
@@ -584,6 +660,14 @@ export const BUILTIN_FX = Object.freeze([
   ['fx', { kind: 'bombard' }, lemuenBombard],
   ['fx', { kind: 'crit' }, lemuenAimedShot],
   ['fx', { kind: 'yanyouFlame' }, yanyouFlame],
+  ['skill', { char: ROSMON_CHAR, kind: 'on' }, rosmonSkill],
+  ['skill', { char: ROSMON_CHAR, kind: 'off' }, rosmonSkill],
+  ['atk', { char: ROSMON_CHAR }, rosmonAttack],
+  ['dmg', { char: ROSMON_CHAR }, rosmonDamage],
+  ['deploy', { char: ROSMON_CHAR }, rosmonDeploy],
+  ['fx', { char: ROSMON_CHAR, kind: 'summon' }, rosmonSummon],
+  ['fx', { char: ROSMON_CHAR, kind: 'link' }, rosmonLink],
+  ['fx', { kind: 'summonStun' }, rosmonGearStun],
   ...SPLASH_SUBS.map((sub) => ['dmg', { sub }, splashRing]),
 ]);
 

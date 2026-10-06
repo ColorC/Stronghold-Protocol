@@ -43,6 +43,7 @@ import { fxAtlas } from './textures.js';
 import { DMG_STYLE, dmgStyleKey, HIT_TINT, PROJ, COLORS } from './style.js';
 import { FX_KINDS } from './fxRecipes.js';
 import { fxRegistry, fxCue } from './fxRegistry.js';
+import { OriginalVfxPlayer } from './originalVfx.js';
 
 // the default layer of the sim fx kinds and its helpers live with the recipes; exported here as they always were
 export { FX_KINDS, fxSpec, tilesAround, wallTiles } from './fxRecipes.js';
@@ -187,6 +188,7 @@ export class FxSystem {
     const P = ctx.P;
     this.ctx = ctx;
     this.P = P;
+    this.originalVfx = ctx.originalVfx ? new OriginalVfxPlayer({ P, layers: ctx.layers, cam: ctx.cam, view: ctx.view, root: ctx.originalVfx.root }) : null;
     this.atlas = fxAtlas();
     this.tex = this.atlas.tex;
     ensureDamageFonts();
@@ -256,6 +258,10 @@ export class FxSystem {
 
   /** The recipe registry of this view (render/fxRegistry.js): ctx.registry, else the shared default. */
   get registry() { return (this.ctx && this.ctx.registry) || fxRegistry; }
+
+  /** Play one extracted original-client prefab at a world point; optional and inert when local VFX are unavailable. */
+  playOriginalVfx(prefab, options = {}) { return this.originalVfx ? this.originalVfx.play(prefab, options) : false; }
+  stopOriginalVfx(group) { this.originalVfx?.stopGroup(group); }
 
   /** Draw an event: `cue` (fxRegistry.js fxCue) of `channel` through the registry's recipe chain. */
   play(channel, cue) { this.registry.play(this, channel, cue); }
@@ -1839,6 +1845,7 @@ export class FxSystem {
 
   /** Remove everything (battle reset). */
   clear() {
+    this.originalVfx?.clear();
     for (const p of this.parts) this._freeParticle(p);
     this.parts.length = 0;
     for (const pr of this.projs) this._releaseProj(pr);
@@ -1870,6 +1877,7 @@ export class FxSystem {
   }
 
   update(dt) {
+    this.originalVfx?.update(dt);
     this.time += dt;
     this._updateParticles(dt);
     this._updateProjs(dt);
@@ -1898,11 +1906,12 @@ export class FxSystem {
   }
 
   get counts() {
-    return { particles: this.parts.length, projectiles: this.projs.length, numbers: this.nums.length, rings: this.rings.length, auras: this.auras.size, locks: this.locks.length, flames: this.flames.length, promotions: this.promotions || 0 };
+    return { particles: this.parts.length, projectiles: this.projs.length, numbers: this.nums.length, rings: this.rings.length, auras: this.auras.size, locks: this.locks.length, flames: this.flames.length, originalVfx: this.originalVfx?.count || 0, promotions: this.promotions || 0 };
   }
 
   destroy() {
     this.clear();
+    this.originalVfx?.destroy();
     this.addPc.destroy({ children: true });
     this.normPc.destroy({ children: true });
     this.projLayer.destroy({ children: true });
