@@ -88,7 +88,7 @@ function resetBattle() {
   timeline = makeTimeline(scenario);
   const skillId = operator === 'blkkgt' ? 'skchr_blkkgt_1' : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
   const units = unitsFor(skillId);
-  const original = after?.fx?.originalVfx;
+  const original = after?.debug?.fx?.originalVfx;
   if (original && original.root !== (operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon')) {
     original.destroy();
     original.root = operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon';
