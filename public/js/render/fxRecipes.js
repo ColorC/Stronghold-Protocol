@@ -569,16 +569,22 @@ function yanyouFlame(fx, c) {
 
 const ROSMON_CHAR = 'char_391_rosmon';
 const ROSMON_SKILL_CASTS = Object.freeze({ skchr_rosmon_3: ['rosmon_skill_03_start'] });
+// `battle/prefabs/[uc]projectiles.ab` is the authoritative binding for these effects.  The start effect is
+// owned by the shooter, while `_effectsToTargetWhenStart`, `_effectsWhenReached`, and `_effectsWhenHit` are
+// target-side slots.  Keeping the three slots separate is what prevents Rosmontis' sword/impact from landing on
+// her own root.
 const ROSMON_SKILL_ATTACKS = Object.freeze({
-  skchr_rosmon_1: ['rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02'],
-  skchr_rosmon_2: ['rosmon_skill_02_start'],
-  skchr_rosmon_3: ['rosmon_skill_03_start_02'],
+  skchr_rosmon_1: Object.freeze({ starts: ['rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02'], targetStart: ['rosmon_skill_01_A_hit_01'], reach: ['rosmon_skill_01_A_range'], hit: ['rosmon_skill_01_A_hit_02'] }),
+  skchr_rosmon_2: Object.freeze({ starts: ['rosmon_skill_02_start'], targetStart: ['rosmon_skill_02_range'], reach: ['rosmon_skill_02_range_02'], hit: ['rosmon_attack_A_hit_02'] }),
+  skchr_rosmon_3: Object.freeze({ starts: ['rosmon_skill_03_start_02'], targetStart: ['rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_01_stone'], reach: ['rosmon_skill_03_range'], hit: ['rosmon_attack_A_hit_02'] }),
 });
 const ROSMON_NORMAL_ATTACKS = Object.freeze([
-  ['rosmon_attack_A_start', 'rosmon_attack_A_start_02'],
-  ['rosmon_attack_B_start', 'rosmon_attack_A_start_02'],
+  Object.freeze({ starts: ['rosmon_attack_A_start', 'rosmon_attack_A_start_02'], targetStart: ['rosmon_attack_A_hit_01'], reach: ['rosmon_attack_A_range'], hit: ['rosmon_attack_A_hit_02'] }),
+  Object.freeze({ starts: ['rosmon_attack_B_start', 'rosmon_attack_A_start_02'], targetStart: ['rosmon_attack_B_hit_01'], reach: ['rosmon_attack_A_range'], hit: ['rosmon_attack_A_hit_02'] }),
 ]);
 const ROSMON_ATTACK_TURN = new Map();
+const ROSMON_ATTACK_SPECS = new Map();
+const ROSMON_LAST_SPEC = new Map();
 
 function sourceMount(fx, view, prefab, delay = 0) {
   // These are action `_castEffects`, whose extracted records carry no mount-point or bone name. The original effect
@@ -599,44 +605,88 @@ function rosmonSkill(fx, c) {
   }
 }
 
+function rememberRosmonSpec(c, spec) {
+  if (!c.src || !spec) return;
+  const record = { view: c.src, spec };
+  ROSMON_LAST_SPEC.set(c.src.id, record);
+  if (c.attackId != null && c.attackId !== 0) ROSMON_ATTACK_SPECS.set(`${c.src.id}:${c.attackId}`, record);
+}
+
+function rosmonSpecForDamage(c) {
+  const attacker = c.src || c.attacker;
+  if (!attacker) return null;
+  const record = (c.attackId != null && c.attackId !== 0 ? ROSMON_ATTACK_SPECS.get(`${attacker.id}:${c.attackId}`) : null)
+    || ROSMON_LAST_SPEC.get(attacker.id) || null;
+  return record?.view === attacker ? record.spec : null;
+}
+
+function targetMount(fx, view, prefab, delay = 0) {
+  if (!view) return false;
+  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'root', mirror: false, delay });
+}
+
 function rosmonAttack(fx, c, next) {
   if (!c.src) { next(); return; }
   const skill = c.isSkill ? c.who?.skill : null;
-  let prefabs = skill ? ROSMON_SKILL_ATTACKS[skill] : null;
-  if (!prefabs) {
+  let spec = skill ? ROSMON_SKILL_ATTACKS[skill] : null;
+  if (!spec) {
     const turn = ROSMON_ATTACK_TURN.get(c.src.id) || 0;
     ROSMON_ATTACK_TURN.set(c.src.id, turn + 1);
-    prefabs = ROSMON_NORMAL_ATTACKS[turn % ROSMON_NORMAL_ATTACKS.length];
+    spec = ROSMON_NORMAL_ATTACKS[turn % ROSMON_NORMAL_ATTACKS.length];
   }
-  for (const [i, prefab] of prefabs.entries()) sourceMount(fx, c.src, prefab, i * 0.04);
+  rememberRosmonSpec(c, spec);
+  for (const [i, prefab] of spec.starts.entries()) sourceMount(fx, c.src, prefab, i * 0.04);
+  // `_effectsToTargetWhenStart` is explicitly target-side in the projectile prefab.  This is the large sword /
+  // target telegraph that was previously (incorrectly) played on the operator.
+  for (const [i, prefab] of spec.targetStart.entries()) targetMount(fx, c.tgt, prefab, i * 0.02);
   // The extracted Attack/Skill action owns this cue; do not add the upstream generic projectile on top of it.
 }
 
 function rosmonDamage(fx, c, next) {
-  // No hit/projectile binding was present in the extracted action data. Keep the existing hit cue until the projectile
-  // resource itself is available; do not substitute a similarly named effects prefab at an arbitrary chest position.
-  next();
+  const spec = rosmonSpecForDamage(c);
+  if (!spec || !c.view) { next(); return; }
+  // The projectile prefab names both its reached and hit effects.  At the renderer's damage point they share the
+  // target root; preserve their ordering without falling through to the generic hit flash.
+  for (const [i, prefab] of [...spec.reach, ...spec.hit].entries()) targetMount(fx, c.view, prefab, i * 0.015);
 }
 
-// 锏's [uc]skills actions name all S1/S2 cast and target-hit effects. S3 has separate loop/end projectile actions;
-// its projectile resource is not in this extraction, so it remains on the upstream cue for now.
+// 锏's [uc]skills actions name all S1/S2 cast and target-hit effects.  S3's server-side action emits the same
+// semantic sequence as the extracted client slots: `skill` → repeated `fx:slash` + `dmg` → `fx:finale` + `dmg`.
 const BLKKGT_CHAR = 'char_4116_blkkgt';
 const BLKKGT_SKILLS = Object.freeze({
   skchr_blkkgt_1: Object.freeze({ starts: ['blkkgt_skill_01_start_01', 'blkkgt_skill_01_start_02', 'blkkgt_skill_01_start_03'], hits: ['blkkgt_skill_01_hit_01', 'blkkgt_skill_01_hit_02'] }),
   skchr_blkkgt_2: Object.freeze({ starts: ['blkkgt_skill_02_start_01', 'blkkgt_skill_02_start_02', 'blkkgt_skill_02_start_03', 'blkkgt_skill_02_start_05', 'blkkgt_skill_02_start_06'], hits: ['blkkgt_skill_02_hit_1'] }),
-  skchr_blkkgt_3: Object.freeze({ starts: ['blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02'], hits: [] }),
+  skchr_blkkgt_3: Object.freeze({ starts: ['blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02'], hits: ['blkkgt_skill_03_hit_1'], endStarts: ['blkkgt_skill_03_end', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04'], endHits: ['blkkgt_skill_03_hit_2'] }),
 });
 const BLKKGT_HIT_INDEX = new Map();
+const BLKKGT_ACTIVE = new Map();
+const BLKKGT_S3_FINAL = new Set();
 
 function blkkgtSkill(fx, c) {
-  if (!c.view || c.on) return;
-  fx.stopOriginalVfx(`blkkgt:skill:${c.view.id}`);
+  if (!c.view) return;
+  const group = `blkkgt:skill:${c.view.id}`;
+  if (c.on) {
+    const skill = c.skillId || c.who?.skill;
+    BLKKGT_ACTIVE.set(c.view.id, { view: c.view, skill: skill || null });
+    BLKKGT_S3_FINAL.delete(c.view.id);
+    if (skill === 'skchr_blkkgt_3') {
+      c.view.setOriginalVfxHidden?.(true);
+      for (const [i, prefab] of BLKKGT_SKILLS.skchr_blkkgt_3.starts.entries()) fx.playOriginalVfx(prefab, { followId: c.view.id, anchor: 'root', mirror: true, group, delay: i * 0.04 });
+    }
+    return;
+  }
+  BLKKGT_ACTIVE.delete(c.view.id);
+  BLKKGT_S3_FINAL.delete(c.view.id);
+  c.view.setOriginalVfxHidden?.(false);
+  fx.stopOriginalVfx(group);
 }
 
 function blkkgtAttack(fx, c, next) {
   if (!c.src) { next(); return; }
   const skill = c.isSkill ? c.who?.skill : null;
   const binding = skill ? BLKKGT_SKILLS[skill] : null;
+  // S3 has no ordinary `atk` event: its loop and finisher are emitted as `fx`/`dmg` by the server skill.
+  if (skill === 'skchr_blkkgt_3') return;
   const prefabs = binding?.starts || ['blkkgt_attack_start_01'];
   for (const [i, prefab] of prefabs.entries()) sourceMount(fx, c.src, prefab, i * 0.035);
   if (skill === 'skchr_blkkgt_2') {
@@ -645,11 +695,37 @@ function blkkgtAttack(fx, c, next) {
   }
 }
 
+function blkkgtFx(fx, c, next) {
+  const id = c.extra?.id ?? c.unitId ?? null;
+  const activeRecord = id != null ? BLKKGT_ACTIVE.get(id) : null;
+  const active = activeRecord?.view === fx._viewOf?.(id) ? activeRecord.skill : null;
+  const binding = active ? BLKKGT_SKILLS[active] : null;
+  if (!binding) { next(); return; }
+  // Both S2's direct slash burst and S3's ten loop slashes have their target-side visual in the following `dmg`
+  // events.  Suppress the old source-centred generic slash so the two systems are never mixed.
+  if (c.kind === 'slash') return;
+  if (c.kind === 'finale' && active === 'skchr_blkkgt_3') {
+    BLKKGT_S3_FINAL.add(id);
+    for (const [i, prefab] of (binding.endStarts || []).entries()) sourceMount(fx, c.extra?.id != null ? fx._viewOf(c.extra.id) : c.unit, prefab, i * 0.035);
+    return;
+  }
+  next();
+}
+
 function blkkgtDamage(fx, c, next) {
   if (!c.view) { next(); return; }
-  const skill = c.isSkill ? c.who?.skill : null;
+  const owner = c.src || c.attacker;
+  const activeRecord = owner ? BLKKGT_ACTIVE.get(owner.id) : null;
+  const active = activeRecord?.view === owner ? activeRecord.skill : null;
+  const skill = active || (c.isSkill ? c.who?.skill : null);
   const binding = skill ? BLKKGT_SKILLS[skill] : null;
   if (!binding?.hits?.length) { next(); return; }
+  if (skill === 'skchr_blkkgt_3' && owner && BLKKGT_S3_FINAL.has(owner.id)) {
+    for (const prefab of binding.endHits || []) targetMount(fx, c.view, prefab);
+    BLKKGT_S3_FINAL.delete(owner.id);
+    owner.setOriginalVfxHidden?.(false);
+    return;
+  }
   const key = `${c.src?.id ?? c.attacker?.id ?? ''}:${c.attackId ?? ''}`;
   const hitIndex = BLKKGT_HIT_INDEX.get(key) || 0;
   BLKKGT_HIT_INDEX.set(key, hitIndex + 1);
@@ -694,6 +770,8 @@ export const BUILTIN_FX = Object.freeze([
   ['skill', { char: BLKKGT_CHAR, kind: 'off' }, blkkgtSkill],
   ['atk', { char: BLKKGT_CHAR }, blkkgtAttack],
   ['dmg', { char: BLKKGT_CHAR }, blkkgtDamage],
+  ['fx', { char: BLKKGT_CHAR, kind: 'slash' }, blkkgtFx],
+  ['fx', { char: BLKKGT_CHAR, kind: 'finale' }, blkkgtFx],
   ...SPLASH_SUBS.map((sub) => ['dmg', { sub }, splashRing]),
 ]);
 
