@@ -53,7 +53,7 @@ const PREP = Object.freeze({
   焰尾: [rule('gain', 'randomChessOffer', { normal: 1, elite: 2, poolId: 'pool_char_pinus' })],
   白面鸮: [rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
   卡涅利安: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_05_e_a', normal: 1, elite: 2 }] })],
-  烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.vitality, normal: 2, elite: 4 }, { id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'comebackGrant', { id: BADGE.precision, perLp: { normal: 1, elite: 2 }, cap: { normal: 8, elite: 16 } })],
+  烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.vitality, normal: 2, elite: 4 }, { id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'perEliteGrant', { id: BADGE.precision, normal: 2, elite: 4 })],
   号角: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_10_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeDominantFactionTierCount', { id: BADGE.defense, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   铃兰: [rule('aura', 'triggerMultiplier', { hook: 'gain', extra: { normal: 1, elite: 2 } })],
   塞雷娅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_03_e_a', normal: 1, elite: 2 }] }), rule('aura', 'triggerMultiplier', { hook: 'prepEnd', extra: { normal: 1, elite: 2 } })],
@@ -71,7 +71,7 @@ const PREP = Object.freeze({
   新约能天使: [rule('gain', 'randomEquipment', { ids: ['chess_item_2_02_e_a', 'chess_item_2_05_e_a', 'chess_item_2_06_e_a', 'chess_item_2_07_e_a', 'chess_item_3_12_e_a', 'chess_item_4_01_e_a', 'chess_item_5_05_e_a', 'chess_item_5_06_e_a'], normal: 1, elite: 2 }), rule('gain', 'deferredFunds', { normal: 2, elite: 4 })],
   流明: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:医疗部稳态仪', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeBenchCount', { id: BADGE.vitality, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   溯光星源: [rule('prepEnd', 'forgePerFundsSpent', { id: BADGE.recovery, spendPer: 3, normal: 1, elite: 2, capNormal: 6, capElite: 12 }), rule('prepEnd', 'forgePerFundsSpent', { id: 'investor', spendPer: 3, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
-  锏: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 3, elite: 6 }] }), rule('roundStart', 'streakGrant', { id: BADGE.agility, base: { normal: 2, elite: 4 }, step: { normal: 2, elite: 4 }, cap: { normal: 10, elite: 20 } })],
+  锏: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 3, elite: 6 }] }), rule('bought', 'buyGear', { id: BADGE.agility, start: { normal: 1, elite: 2 }, step: { normal: 1, elite: 2 }, max: { normal: 5, elite: 10 } })],
   风丸: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_2_01_e_a', normal: 1, elite: 2 }] }), rule('merge', 'twoCopyElite', { copiesRequired: 2, retainsNativeTrait: true })],
   // 2026-10-06 gear lines: operators whose original trait is combat-only, and who now also bring a piece of gear
   斯卡蒂: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_07_e_a', normal: 1, elite: 2 }] })],
@@ -456,11 +456,22 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         memo.escalation = k + 1;
         break;
       }
-      case 'comebackGrant':
-        output(ruleServices, state, p.id, Math.min(pick(p.cap, elite) || Infinity, total(state, 'lastLpLost') * pick(p.perLp, elite)), piece); break;
-      case 'streakGrant': {
-        const streak = total(state, 'cleanStreak');
-        if (streak > 0) output(ruleServices, state, p.id, Math.min(pick(p.cap, elite) || Infinity, pick(p.base, elite) + pick(p.step, elite) * (streak - 1)), piece);
+      case 'perEliteGrant':
+        // for every elite operator on the field (掘金者: +3/+3 for each friendly Golden minion)
+        output(ruleServices, state, p.id, roster(state).filter((x) => isPresent(x) && isEliteForm(x)).length * value(p, elite), piece); break;
+      case 'buyGear': {
+        // after you buy an operator: badges straight onto it, one step more every time (煮熟的书: +2/+2 and improve this)
+        const target = event.piece;
+        if (!target || target === piece) break;
+        const k = Number(memo.boughtGear || 0);
+        const add = Math.min(pick(p.max, elite), pick(p.start, elite) + pick(p.step, elite) * k, capacityOf(services) - wornCount(target));
+        if (add > 0) {
+          const stack = (target.equipment ||= []).find((x) => x.id === p.id && !x.elite);
+          if (stack) stack.quantity = Number(stack.quantity || 1) + add;
+          else target.equipment.push({ uid: `i${state.nextUid++}`, id: p.id, elite: false, quantity: add, state: {} });
+          services.recordProduction?.(state, { id: p.id, quantity: add, origin: 'native', sourceUid: piece.uid, targetUid: target.uid, worn: true });
+        }
+        memo.boughtGear = k + 1;
         break;
       }
       case 'diversityGrant': {
@@ -623,7 +634,7 @@ export function runEquipmentPrepEnd(state, services = {}) {
 export function runNativeHook(state, hook, event = {}, services = {}) {
   if (!state || !services.catalog) throw new TypeError('runNativeHook requires state and services.catalog');
   if (suppressed(event)) return state;
-  if (!['gain', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
+  if (!['gain', 'bought', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
   const piece = event.piece || (event.uid && roster(state).find((x) => x.uid === event.uid));
   if (['gain', 'selling', 'sold', 'merge'].includes(hook)) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
@@ -635,7 +646,7 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
     for (const p of roster(state)) {
       const trait = traitFor(p, services);
       const benchAllowed = (trait?.effect?.prep || []).some((r) => r.trigger === hook && r.params?.worksFromBench);
-      if (['roundStart', 'prepEnd', 'refresh'].includes(hook) && !isPresent(p) && !benchAllowed) continue;
+      if (['roundStart', 'prepEnd', 'refresh', 'bought'].includes(hook) && !isPresent(p) && !benchAllowed) continue;
       fire(state, hook, p, event, services);
     }
   }

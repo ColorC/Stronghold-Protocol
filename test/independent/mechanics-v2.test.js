@@ -1,6 +1,7 @@
 // 2026-10-07 second-wave mechanics (user: 「绝大部分随从的功能就是……让另一个随从获得+1/+1……必须立刻参考炉石传说……大幅增加
 // 非普通条件的增加徽令的能力和各种阶乘，复合效果，高级装备」): growth, doublers, game totals, shop buffs, badge boosts,
-// moving and doubling badges, comeback / streak / diversity, uncapped battle yields and the two advanced gear pieces.
+// moving and doubling badges, per-elite / buy-reaction / diversity yields, uncapped battle yields and the two advanced
+// gear pieces. (Comeback and streak yields were dropped on 10-07: 「比较少见的……一般不会出现在卡里面，很不建议给」.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
@@ -194,16 +195,32 @@ test('寒檀 doubles what it gives every prep phase, up to 16', () => {
   assert.deepEqual(amounts, [1, 2, 4, 8, 16, 16, 16]);
 });
 
-test('烛煌 pays for the life lost last battle; 锏 pays for clean battles in a row', () => {
+test('烛煌 counts the elite operators on the field', () => {
   const { state, services, granted } = fixture();
-  state.pieces.push(piece('candle', '烛煌', 0, 0), piece('jian', '锏', 0, 1));
-  state.totals = { lastLpLost: 3, cleanStreak: 0 };
-  runNativeHook(state, 'roundStart', {}, services);
-  assert.equal(sum(granted, 'precision'), 3);
-  assert.equal(sum(granted, 'agility'), 0);
-  state.round = 2; state.totals = { lastLpLost: 0, cleanStreak: 3 };
-  runNativeHook(state, 'roundStart', {}, services);
-  assert.equal(sum(granted, 'agility'), 2 + 2 * 2);
+  state.pieces.push(piece('candle', '烛煌', 0, 0), piece('a', '史尔特尔', 0, 1, { elite: true }), piece('b', '雷蛇', 0, 2, { elite: true }), piece('c', '角峰', 0, 3), piece('d', '星熊', null, null, { elite: true }));
+  runNativeHook(state, 'prepEnd', {}, services);
+  assert.equal(sum(granted.filter((x) => x.sourceUid === 'candle'), 'precision'), 2 * 2, 'two elites on the field; the benched one does not count');
+});
+
+test('锏 on the field puts agility badges onto every operator bought, one more each time, up to 5', () => {
+  let state = createSession({ seed: 19, difficulty: 'NORMAL' });
+  state.funds = 99;
+  state.shop.slots[0] = { kind: 'chess', id: idOf('锏'), elite: false, price: 3, sold: false, equipment: [] };
+  let r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+  const jian = state.pieces[0];
+  const field = getIndependentField(state, { data, catalog });
+  const raw = catalog.operators[jian.chessId].source.normalChess;
+  const cell = [...field.deployMap.keys()].find((k) => { const [row, col] = k.split(',').map(Number); return canPlace(field.deployMap, positionClass(raw, 'none'), row, col); });
+  r = applyAction(state, { type: 'move', uid: jian.uid, row: Number(cell.split(',')[0]), col: Number(cell.split(',')[1]), dir: 'RIGHT' }); state = r.state;
+  const worn = [];
+  for (const name of ['角峰', '雷蛇', '刺玫', '深靛', '野鬃', '宴', '隐现']) {
+    state.shop.slots[0] = { kind: 'chess', id: idOf(name), elite: false, price: 3, sold: false, equipment: [] };
+    r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+    const bought = state.pieces[state.pieces.length - 1];
+    worn.push(bought.equipment.filter((x) => x.id === 'agility').reduce((n, x) => n + x.quantity, 0));
+  }
+  assert.deepEqual(worn, [1, 2, 3, 4, 5, 5, 5]);
+  assert.ok(r.state.production.some((row) => row.worn && row.sourceUid === jian.uid && row.id === 'agility'));
 });
 
 test('赫默 counts professions on the field; 诗怀雅 counts factions', () => {

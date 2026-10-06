@@ -7,7 +7,7 @@ export const TRAIT_WHEN = Object.freeze({
   gain: '获得时', roundStart: '休整开始', prepEnd: '休整结束', sold: '出售时', refresh: '刷新后', merge: '三连',
   passive: '常驻', battleStart: '战斗开始', deploy: '部署时', kill: '击杀', hit: '命中', skillStart: '技能开启',
   death: '倒下', statusApplied: '施加状态', ammoUsed: '消耗弹药', nativeProduction: '产出时', dollSwap: '替身切换',
-  aura: '在场时', selling: '出售时', battleProduction: '战斗产出',
+  aura: '在场时', selling: '出售时', battleProduction: '战斗产出', bought: '购买干员后',
 });
 
 const FORGE_SINGLE = new Set(['grantEquipmentByTier', 'forgePerGainedChess', 'forgeAdjacent', 'forgeFactionTierCount', 'forgeRowCount',
@@ -85,10 +85,10 @@ export function traitSummary(effect) {
       entry.kind = 'devour'; entry.items = [{ id: p.id, ...counts(p) }];
     } else if (b === 'doubleWorn') {
       entry.kind = 'doubleWorn';
-    } else if (b === 'escalatingGrant' || b === 'comebackGrant' || b === 'streakGrant' || b === 'diversityGrant') {
-      const n = b === 'escalatingGrant' ? p.start : b === 'comebackGrant' ? p.perLp : b === 'streakGrant' ? p.base : { normal: p.normal, elite: p.elite };
+    } else if (b === 'escalatingGrant' || b === 'diversityGrant' || b === 'perEliteGrant' || b === 'buyGear') {
+      const n = b === 'escalatingGrant' || b === 'buyGear' ? p.start : { normal: p.normal, elite: p.elite };
       entry.kind = 'forge'; entry.items = [{ id: p.id, normal: Number(n?.normal ?? n), elite: Number(n?.elite ?? n?.normal ?? n) }];
-      entry.condition = { escalatingGrant: 'escalate', comebackGrant: 'comeback', streakGrant: 'streak', diversityGrant: p.by === 'faction' ? 'factions' : 'professions' }[b];
+      entry.condition = { escalatingGrant: 'escalate', perEliteGrant: 'elites', buyGear: 'improves', diversityGrant: p.by === 'faction' ? 'factions' : 'professions' }[b];
     } else if (b === 'replayAdjacentNative') {
       entry.kind = 'copy';
     } else if (b === 'twoCopyElite') {

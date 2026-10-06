@@ -86,7 +86,7 @@ function servicesFor(state, data, catalog, rng) {
   };
   return services;
 }
-/** Game-long totals the second-wave traits read (native.js grantByTotal / totalBonus / comeback / streak). */
+/** Game-long totals the second-wave traits read (native.js grantByTotal / totalBonus). */
 function addTotal(state, key, n = 1) { state.totals ||= {}; state.totals[key] = Number(state.totals[key] || 0) + n; }
 function gainChess(state, catalog, chessId, extra = {}) {
   const def = opFor(catalog, chessId); if (!def || def.elite || def.isElite) throw new Error('UNKNOWN_CHESS');
@@ -419,6 +419,8 @@ export function applyAction(state, action, options = {}) {
           equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1);
         }
         handleGainEquipment(work, catalog, piece);
+        // 购买干员后 (native buyGear): operators on the field react to the one just bought, before it merges
+        invokeHook(work, 'bought', { piece, source: 'buy' }, services);
         for (const merged of maybeMergeOperator(work, catalog, piece.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
         // an equipment place left in a shop saved before the shop stopped selling gear (gone at the next refresh)
@@ -534,7 +536,6 @@ export function applyAction(state, action, options = {}) {
       const terminalRound = lastRound || failedBoss || work.lp <= 0;
       work.history.push({ round: work.round, type: 'battle', result: battle.result, lpLost, bossCleared });
       addTotal(work, 'battles'); addTotal(work, 'kills', Number(battle.result.killed || 0)); addTotal(work, 'lpLostTotal', lpLost);
-      work.totals.lastLpLost = lpLost; work.totals.cleanStreak = lpLost === 0 ? Number(work.totals.cleanStreak || 0) + 1 : 0;
       events.push({ type: 'battle', round: work.round, lpLost, bossCleared, duration: replay?.duration ?? null });
       if (terminalRound) {
         work.outcome = !work.lp || (bossRound && !bossCleared) ? 'loss' : 'win'; work.phase = 'finished';

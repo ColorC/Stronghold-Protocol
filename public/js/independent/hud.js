@@ -20,8 +20,8 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 const KIND_WORD = { recruit: '招募', random: '随机', stat: '属性', damage: '增伤', copy: '复制', merge: '两份合成', shopBadge: '商品携装',
   boost: '增幅', transfer: '徽章转交', devour: '吞并商品', doubleWorn: '徽章翻倍' };
-// the second-wave markers: what a yield grows with (每轮翻倍 / 失命 / 连胜 / 种类) and game-long counts
-const CONDITION_WORD = { escalate: '每次翻倍', comeback: '每失1命', streak: '连胜', professions: '每种职业', factions: '每种阵营' };
+// the second-wave markers: what a yield grows with (每轮翻倍 / 种类 / 精锐 / 逐次增加) and game-long counts
+const CONDITION_WORD = { escalate: '每次翻倍', professions: '每种职业', factions: '每种阵营', elites: '每名精锐', improves: '逐次+1' };
 const TOTAL_WORD = { gained: '获得', refreshes: '刷新', sold: '出售', bought: '购买', elites: '晋升', kills: '击倒' };
 
 /**
