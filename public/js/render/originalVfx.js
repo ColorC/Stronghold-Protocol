@@ -41,7 +41,8 @@ export class OriginalVfxPlayer {
       this.manifestPromise = fetch(`${this.root}/index.json`, { cache: 'force-cache' })
         .then((r) => { if (!r.ok) throw new Error(`original VFX manifest ${r.status}`); return r.json(); })
         .then((m) => {
-          this.manifest = new Map((Array.isArray(m) ? m : []).filter((x) => x && x.prefab).map((x) => [x.prefab, x]));
+          // Empty Unity control nodes are kept in the manifest for coverage, but have no atlas to request.
+          this.manifest = new Map((Array.isArray(m) ? m : []).filter((x) => x && x.prefab && !x.empty).map((x) => [x.prefab, x]));
           return this.manifest;
         })
         .catch((err) => { this.manifestPromise = null; console.warn('[vfx] original manifest unavailable', err?.message || err); return null; });

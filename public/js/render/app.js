@@ -557,7 +557,7 @@ export async function createFieldView(host, options = {}) {
   const fxIds = new WeakMap();  // UnitInfo → its FX registry identity (ctx.identify)
   const fx = new FxSystem({
     P, layers, cam: () => cam, settings, assets, heightAt, redVignette: bg.red, surfaceLayer: ctx.surfaceLayer,
-    originalVfx: { root: '/assets/vfx/rosmon' },
+    originalVfx: opts.originalVfx === false ? null : (opts.originalVfx || { root: '/assets/vfx/rosmon' }),
     timeScale: () => ctx.timeScale(),
     loadLevel: () => loadLevel,
     fieldRect: () => (mode === 'battle' && battleMeta ? battleMeta.rect : null),
