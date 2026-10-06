@@ -338,6 +338,10 @@ export class UnitView {
     this._elBar = null;           // { root, disc, bg, fill } sprites of the element gauge row, built on first use
     this._downRing = null;        // { disc, track, arc, text } sprites, built on first use
     this.alpha = 1; this.fadeIn = this.prep ? 1 : 0;
+    // Original-client VFX may temporarily hide the operator during an action (for example 锏 S3's
+    // disappearance before the final slash sequence).  Keep this separate from combat fades so a snapshot
+    // update cannot accidentally make the model reappear between action events.
+    this.originalVfxHidden = false;
     this.lunge = 0; this.lungeDir = { x: 1, y: 0 };
     this.flash = 0;
     this.bob = Math.random() * Math.PI * 2;
@@ -737,6 +741,8 @@ export class UnitView {
     return { x, y, depth: Number.isFinite(Number(root.zIndex)) ? -Number(root.zIndex) : 0, bone: bone?.data?.name || name || 'root' };
   }
 
+  setOriginalVfxHidden(hidden) { this.originalVfxHidden = hidden === true; }
+
   _releaseEntry(entry) {
     try { this.ctx.assets?.spine?.release(entry); } catch { /* ignore */ }
   }
@@ -927,6 +933,7 @@ export class UnitView {
     }
     if (this.flags & UF.STEALTH) alpha *= 0.45;
     if (this.dimmed) alpha *= 0.35;
+    if (this.originalVfxHidden) alpha = 0;
     this.alpha = alpha;
 
     // body placement — the 0.12-tile jolt toward the target on an attack stands in for the avatar diamond's missing attack
