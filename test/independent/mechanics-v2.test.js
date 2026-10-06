@@ -275,3 +275,25 @@ test('塑心 doubles the battle yield; 增压臂铠 doubles its 坚守 every pre
   }
   assert.deepEqual(yields.slice(0, 3), [1, 2, 4].slice(0, yields.length));
 });
+
+test('three copies make an elite and bring the original 晋升奖励: a free pick of three operators one tier up', () => {
+  let state = createSession({ seed: 29, difficulty: 'NORMAL' });
+  state.funds = 99;
+  for (let i = 0; i < 3; i++) {
+    state.shop.slots[0] = { kind: 'chess', id: idOf('角峰'), elite: false, price: 3, sold: false, equipment: [] };
+    const r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+  }
+  assert.ok(state.pieces.some((p) => p.elite), 'the third copy makes an elite');
+  const offer = state.offers.find((o) => o.type === 'recruit' && o.source === 'merge');
+  assert.ok(offer, 'a 晋升奖励 is waiting');
+  assert.equal(offer.tier, Math.min(state.shop.level + 1, 6));
+  assert.equal(offer.choices.length, 3);
+  assert.equal(new Set(offer.choices).size, 3);
+  assert.ok(offer.choices.every((id) => catalog.operators[id].tier === offer.tier));
+  const before = state.pieces.length; const funds = state.funds;
+  const r = applyAction(state, { type: 'choose', offerId: offer.id, index: 1 }); assert.equal(r.ok, true, r.error?.message);
+  assert.equal(r.state.pieces.length, before + 1);
+  assert.equal(r.state.pieces.at(-1).chessId, offer.choices[1]);
+  assert.equal(r.state.funds, funds, 'the pick is free');
+  assert.equal(r.state.offers.some((o) => o.id === offer.id), false);
+});

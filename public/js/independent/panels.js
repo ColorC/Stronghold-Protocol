@@ -211,7 +211,8 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
       })}</div>`;
     }
   } else if (offer.type === 'recruit') {
-    title = '免费招募'; micro = 'RECRUIT';
+    // a promotion's reward (session.js pushPromotionReward) is the original's 晋升奖励
+    title = offer.source === 'merge' ? `晋升奖励 · 科技等级${offer.tier}的干员任选一名` : '免费招募'; micro = offer.source === 'merge' ? 'PROMOTION REWARD' : 'RECRUIT';
     body = html`<div class="ix-choices">${offer.choices.map((id, i) => html`<${OperatorChoice} key=${id} chessId=${id} catalog=${catalog} busy=${busy}
       onPick=${() => onChoose({ type: 'choose', offerId: offer.id, index: i })} />`)}</div>`;
   } else if (offer.type === 'attachment') {
