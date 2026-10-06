@@ -130,6 +130,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   // press began with, so a tap on the selected piece deselects it
   const [shopCollapsed, setShopCollapsed] = useState(false);
   const [finalHidden, setFinalHidden] = useState(false); // 查看阵容 on the end screen
+  const [reportOpen, setReportOpen] = useState(false);   // 战报: the last battle's result again (state.lastBattle)
   const [sel, setSel] = useState(null);
   const selRef = useRef(null); selRef.current = sel;
   const pressSel = useRef(null);
@@ -475,7 +476,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
 
   // ---- keyboard ----------------------------------------------------------------------------------------------------
   const keysRef = useRef({});
-  keysRef.current = { panel, drawer, pen, detail, sel, armed, facing };
+  keysRef.current = { panel, drawer, pen, detail, sel, armed, facing, reportOpen };
   useEffect(() => {
     // the original's keys (ui/gameLogic.js shortcutFor): R refresh, F freeze, D level-up, Q retreat, X sell, Space
     // ready, Esc closes the topmost thing; dialogs own the keyboard, behind the drawer only Esc acts
@@ -485,7 +486,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       if (shortcutBlocked(a, { modal: !!L.panel || !!document.querySelector('.modal, .guide'), drawer: !!L.drawer })) return;
       if (a === 'escape') {
         if (L.facing) return; // the wheel takes its own Escape
-        if (L.drawer) setDrawer(null);
+        if (L.reportOpen) setReportOpen(false);
+        else if (L.drawer) setDrawer(null);
         else if (L.pen && !L.detail) setPen(false);
         else if (L.detail) { setDetail(null); setSel(null); setArmed(null); }
         else if (L.sel) setSel(null);
@@ -579,7 +581,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
           onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
-        <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} />
+        <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} onReport=${() => setReportOpen(true)} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
@@ -611,6 +613,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       grid=${facing.grid} name=${facing.name} onPreview=${(dir) => setPieceDir(view, facing.n, dir || facing.dir)} onCommit=${commitFacing} onCancel=${cancelFacing} />` : null}
     ${!battle && offer ? html`<${OfferOverlay} offer=${offer} state=${state} catalog=${catalog} busy=${busy} onChoose=${simple} />` : null}
     ${state.phase === 'finished' && !battle && !finalHidden ? html`<${FinalScreen} state=${state} catalog=${catalog} onLook=${() => setFinalHidden(true)} onLeave=${onLeave} />` : null}
+    ${reportOpen && !battle && state.lastBattle ? html`<${ResultPanel} review=${true} catalog=${catalog} pieces=${state.pieces} onClose=${() => setReportOpen(false)}
+      battle=${{ round: state.lastBattle.round, result: state.lastBattle.result, lpLost: state.lastBattle.lpLost || 0 }} />` : null}
     ${battle?.done ? html`<${ResultPanel} battle=${battle} catalog=${catalog} pieces=${state.pieces} finished=${battle.finished} onClose=${closeBattle} />` : null}
     <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />
     ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} onClose=${() => setDrawer(null)} info=${html`<${MatchInfo} state=${state} catalog=${catalog} />`}

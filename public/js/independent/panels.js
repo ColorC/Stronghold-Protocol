@@ -321,7 +321,7 @@ export function InheritPanel({ open, state, catalog, busy, fromUid, onClose, pre
 // ---- round result -------------------------------------------------------------------------------------------------
 
 /** After a replay: win / loss of the round, LP lost, per-operator damage and healing, what went into the inventory. */
-export function ResultPanel({ battle, catalog, pieces, onClose, finished }) {
+export function ResultPanel({ battle, catalog, pieces, onClose, finished, review = false }) {
   const res = battle?.result || {};
   const mine = res.perPlayer?.independent || Object.values(res.perPlayer || {})[0] || {};
   // unitStats rows: { uid, defId, name, kind, dmg, heal, kills, taken } (sim Battle.result)
@@ -331,11 +331,11 @@ export function ResultPanel({ battle, catalog, pieces, onClose, finished }) {
     <div class="ix-result__box">
       <header><${MicroLabel}>ROUND ${battle.round}<//><h2>${finished ? (finished === 'win' ? '守住了全部防线' : '防线失守') : battle.lpLost ? `防线受损 −${battle.lpLost}` : '防线完好'}</h2>
         <span class="ix-muted">击倒 ${mine.killed ?? res.killed ?? 0}/${mine.total ?? res.total ?? 0}${(mine.leaked || []).length ? ` · 漏过 ${(mine.leaked || []).length}` : ''}</span></header>
-      ${stats.length ? html`<ul class="ix-dmg">${stats.slice(0, 8).map((u) => html`<li key=${u.uid || u.id}>
+      ${stats.length ? html`<ul class="ix-dmg">${stats.slice(0, 12).map((u) => html`<li key=${u.uid || u.id}>
         <span>${u.name || catalog.operators[u.defId]?.name || ''}</span>
         <span class="ix-dmg__bar"><i style=${`width:${Math.round(((u.dmg || 0) / top) * 100)}%`}></i></span>
         <b class="num">${Math.round(u.dmg || 0)}</b><small class="num">${u.heal ? `治疗 ${Math.round(u.heal)}` : u.kills ? `击倒 ${u.kills}` : ''}</small></li>`)}</ul>` : null}
-      <footer><${Button} variant="primary" onClick=${onClose} data-testid="ix-result-ok">${finished ? '查看结算' : '继续备战'}<//></footer>
+      <footer><${Button} variant="primary" onClick=${onClose} data-testid="ix-result-ok">${review ? '关闭' : finished ? '查看结算' : '继续备战'}<//></footer>
     </div>
   </div>`;
 }
