@@ -2,17 +2,47 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#101512" />
+  <!-- the original game's page head (index.html): landscape, no page zoom, full-bleed; absolute asset paths work on the
+       local server and behind the Workshop gateway, which routes /js /css /vendor /assets /data to this server -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0f0e" />
   <meta name="color-scheme" content="dark" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="罗德岛战备演习 · 卫戍协议网页同人复刻的独立模式（非官方同人作品）" />
   <title>罗德岛战备演习</title>
-  <link rel="stylesheet" href="./css/independent.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230c0f0e'/%3E%3Cpath fill='%234ed8af' d='M12 3 21 8v8l-9 5-9-5V8z'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Oxanium:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/screens/game.css" />
+  <link rel="stylesheet" href="/css/screens/game-shop.css" />
+  <link rel="stylesheet" href="/css/screens/game-panels.css" />
+  <link rel="stylesheet" href="/css/devices.css" />
+  <link rel="stylesheet" href="/css/independent.css" />
   <script type="importmap">
-    { "imports": { "preact": "./vendor/preact.module.js", "preact/hooks": "./vendor/hooks.module.js", "htm": "./vendor/htm.module.js" } }
+    { "imports": { "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js" } }
   </script>
+  <link rel="modulepreload" href="/vendor/preact.module.js" />
+  <link rel="modulepreload" href="/vendor/hooks.module.js" />
+  <link rel="modulepreload" href="/js/independent/main.js" />
+  <link rel="prefetch" href="/vendor/pixi.min.js" as="script" />
+  <link rel="prefetch" href="/vendor/pixi-spine.js" as="script" />
 </head>
 <body>
-  <div id="app" aria-live="polite"><main class="loading">正在载入备战界面…</main></div>
-  <script type="module" src="./js/independent.js"></script>
+  <div id="app"><main class="ix-start"><p>正在载入战备演习…</p></main></div>
+  <div class="rotate-hint" role="alert">
+    <div class="rotate-hint__phone"></div>
+    <div class="rotate-hint__title">请将设备横屏</div>
+    <div>罗德岛战备演习需要横屏显示</div>
+  </div>
+  <noscript><p style="color:#c3cbc7;text-align:center;padding:40px">需要启用 JavaScript 才能运行。</p></noscript>
+  <script type="module" src="/js/independent/main.js"></script>
 </body>
 </html>

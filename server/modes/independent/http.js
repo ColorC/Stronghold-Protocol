@@ -34,7 +34,8 @@ export function independentDisplayCatalog(data, catalog) {
     const steam = d.params?.effects?.find((x) => x.behavior === 'steamGearUpgrade');
     return [id, { name: d.newName || d.name, level: d.level, eliteLevel: d.eliteLevel, normal: gearDescription(d), elite: d.elite || gearDescription(d), kind: d.kind, unique: !!d.unique, mechanism: d.mechanism,
       sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds, steamLimit: steam?.params.chooseVariantsOnEquip,
-      identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined }];
+      identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,
+      ...(d.kind === 'badge' ? { stat: d.stat, value: d.value, statName: BADGE_STATS[d.stat] || null, ratio: BADGE_RATIOS.has(d.stat) } : {}) }];
   }));
   const texts = (table) => Object.fromEntries(Object.entries(table).map(([id, d]) => [id, { name: d.name, effect: d.effect, mechanism: d.mechanism }]));
   return { name: catalog.name, operators, gear, prizes: texts(catalog.prizes), attachments: texts(catalog.attachments),

@@ -11,7 +11,7 @@ import { grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capac
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
-import { nativeFactions, tavernFactions, attachmentAccepted } from '../../../shared/independentRules.js';
+import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats } from '../../../shared/independentRules.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const FORBIDDEN = new Set(['__proto__', 'prototype', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']);
@@ -285,7 +285,10 @@ export function viewSession(state, options = {}) {
     try { const cls = positionClass(raw, p.moduleId); legalTiles = deployCells.filter((cell) => { const [r, c] = cell.split(',').map(Number); return canPlace(field.deployMap, cls, r, c); }); } catch { legalTiles = []; }
     const modules = (raw?.modules || []).map((x) => ({ ...clone(x), id: x.uniEquipId || x.id })).filter((x) => x.id);
     const steamOptions = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
-    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles };
+    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
+      // the body's own numbers: after the 接装损耗 when it applies, and before it (the detail card shows both)
+      bodyStats: nativeBodyStats(p, catalog), rawBodyStats: p.bodyPenaltyApplied ? nativeBodyStats({ ...p, bodyPenaltyApplied: false }, catalog) : undefined,
+      factions: tavernFactions(p, catalog) };
   });
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
