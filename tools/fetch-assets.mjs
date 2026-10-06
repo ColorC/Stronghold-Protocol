@@ -218,6 +218,11 @@ async function main() {
   log(`[assets] root ${ROOT}`);
   if (!skelParserAvailable()) throw new Error('@pixi-spine/runtime-3.8 not found — run `npm install` first');
 
+  let current = null;
+  if (existsSync(MANIFEST)) {
+    try { current = JSON.parse(await readFile(MANIFEST, 'utf8')); } catch (e) { log(`[manifest] the current ${relative(ROOT, MANIFEST)} is unreadable (${e.message}): replaced`); }
+  }
+
   const [assets07, ops03, enemies05, maps05] = await Promise.all([
     readJson('docs/research/07-assets.json'),
     readJson('docs/research/03-operators.json'),
@@ -239,6 +244,8 @@ async function main() {
     voiceSlots: opts.voiceAll ? null : undefined,
     extraEnemyIds: Object.keys(dataEnemies || {}),
     extraTokenIds: Object.keys(dataTokens || {}),
+    // Keep upstream voice-only additions when rebuilding this older pool's manifest.
+    extraVoiceCharIds: Object.keys(current?.audio?.voice || {}),
     extraHandbook,
     localEnemySpines,
   });
@@ -292,10 +299,6 @@ async function main() {
     stats: countStats(body, bytes, resolved.files.size),
     ...body,
   };
-  let current = null;
-  if (existsSync(MANIFEST)) {
-    try { current = JSON.parse(await readFile(MANIFEST, 'utf8')); } catch (e) { log(`[manifest] the current ${relative(ROOT, MANIFEST)} is unreadable (${e.message}): replaced`); }
-  }
   const guard = shrinkGuard(current, manifest, opts);
   if (guard.write) await writeJsonAtomic(MANIFEST, manifest);
 

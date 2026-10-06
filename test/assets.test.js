@@ -529,6 +529,23 @@ describe('emotes and 玩法说明 pages from the public mirror (GitHub issue #42
   });
 });
 
+test('voice-only additions survive asset replanning without enabling extra operator models', () => {
+  const id = 'char_010_chen';
+  const inputs = {
+    assets07: {}, ops03: {}, enemies05: {}, maps05: {}, audio: indexAudio({}), modelsData: {},
+    charword: { charWords: { line: {
+      charId: id, wordKey: id, placeType: 'BATTLE_PLACE', voiceId: 'CN_023',
+      voiceAsset: `${id}/CN_023`, voiceIndex: 23,
+    } } },
+  };
+  const ordinary = buildPlan(inputs);
+  assert.equal(ordinary.template.audio.voice[id], undefined);
+  const extended = buildPlan({ ...inputs, extraVoiceCharIds: [id] });
+  assert.equal(extended.template.audio.voice[id].place.alts[0].rel, `audio/voice/cn/${id}/cn_023.mp3`);
+  assert.deepEqual(extended.template.chars, ordinary.template.chars);
+  assert.deepEqual([...extended.models.keys()], [...ordinary.models.keys()]);
+});
+
 // ---------------------------------------------------------------------------
 describe('generated manifest data/assets.json', () => {
   const haveManifest = existsSync(MANIFEST);

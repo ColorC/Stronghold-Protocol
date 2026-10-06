@@ -54,6 +54,8 @@ How downloads are fetched:
 
 The first run downloads about **309 MiB in about 5,690 files** (it took 134 s on a ~3 MB/s link before the 55 emote and 玩法说明 files, 21.3 MiB, and the 1,680 干员战斗语音 files, 40.1 MiB, were added). A re-run takes about 1 s. The voice count is the twelve slots a battle plays; the three prep-only slots the official client uses elsewhere (干员报到 / 编入队伍 / 任命队长, 360 more files, 18.4 MiB) are left out unless `--voice-all` is passed.
 
+The local voice backport also includes the 71 自选 operators from upstream commit `6499f4b32d2d0337a437390da3664d9e437a71a3`: 191 operators, 2,674 CN battle lines in total. `fetch-assets` keeps existing `audio.voice` operator ids in its voice plan even when this checkout's older chess pool does not contain them. These extra ids add only voice files; they do not enable the newer 自选 gameplay or download its models. The asset manifest is the input for subsequent downloads, with no dependency on temporary upstream exports.
+
 Outputs:
 - `data/assets.json`: the manifest (committed).
 - `public/assets/**`: art and audio (git-ignored).
