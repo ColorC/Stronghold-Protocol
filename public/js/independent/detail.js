@@ -104,7 +104,7 @@ function ModuleChoice({ base, golden, piece, busy, prep, onAct }) {
  * An operator — own piece (prep or battle) or shop card — as the original card's blocks in tabs. `live`: the stats
  * entry it shows (start of battle / live) or null for the record's; `snapHp`: its HP in a battle (`inBattle`).
  */
-function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, inBattle = false, onAct, footer = null, linkKey = null, onCopyLink = null }) {
+function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, inBattle = false, onAct, footer = null }) {
   const [tab, setTab] = useState('traits');
   const prep = state.phase === 'prep' && !inBattle;
   const opBase = catalog.operators[piece ? piece.chessId : slot.id];
@@ -134,7 +134,7 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
   const shown = TABS.filter(([k]) => panes[k].length);
   const cur = shown.some(([k]) => k === tab) ? tab : shown[0]?.[0];
   return html`
-    <div class="ix-dpanel__head">${head}${onCopyLink && linkKey ? html`<button type="button" class="ix-linkbtn ix-dpanel__link" onClick=${() => onCopyLink(linkKey)} title="复制链接"><${Icon} name="link" /></button>` : null}</div>
+    <div class="ix-dpanel__head">${head}</div>
     <div class="ix-dtabs" role="tablist">${shown.map(([k, label]) => html`<button type="button" key=${k} role="tab" aria-selected=${cur === k ? 'true' : 'false'}
       class=${cx('ix-dtabs__tab', cur === k && 'is-on')} onClick=${() => setTab(k)}>${label}${k === 'gear' && piece ? html`<span class="num">${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}</span>` : null}</button>`)}</div>
     <div class="ix-dpanel__pane" role="tabpanel">${panes[cur]}</div>
@@ -146,7 +146,7 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
  * gear) | { kind: 'enemy', id, count } (the pen) | { kind: 'unit', unit } (a battle unit) | { kind: 'terrain', terrain }.
  * `battle` (during a replay): { snapHp(unitId), stats(unitId) } read 4× a second, like the original card's live getter.
  */
-export function DetailCard({ target, state, catalog, busy, battle = null, shopOpen = false, onClose, onAct, onInherit, onBuy, onEquipHere, onCopyLink }) {
+export function DetailCard({ target, state, catalog, busy, battle = null, shopOpen = false, onClose, onAct, onInherit, onBuy, onEquipHere }) {
   const [confirmSell, setConfirmSell] = useState(false);
   useEffect(() => setConfirmSell(false), [target?.uid, target?.slot]);
   useTicker(battle && target ? 250 : 0);
@@ -197,5 +197,5 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
         : html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => setConfirmSell(true)} title="装备与附加效果会一起失去">出售 +${catalog.rules?.sellPrice ?? 1}<//>`}` : null}
   </footer>`;
   return frame(html`<${OperatorCard} key=${piece ? piece.uid : `s${target.slot}`} piece=${piece} slot=${slot} state=${state} catalog=${catalog} busy=${busy} live=${live}
-    onAct=${onAct} footer=${footer} linkKey=${piece ? `piece-${piece.uid}` : `shop-${target.slot}`} onCopyLink=${onCopyLink} />`, 'chess');
+    onAct=${onAct} footer=${footer} />`, 'chess');
 }

@@ -363,3 +363,10 @@
 
 /* 产出 and 战报 side by side above the production column */
 .ix-prod__tabs { display: flex; gap: .04rem; }
+
+/* ---- 圈选元素 (picker.js): the outline follows the pointer and never takes it ---------------------------------------- */
+.ix-picker { position: fixed; z-index: 9999; pointer-events: none; outline: 2px solid #ff4d6d; background: rgba(255, 77, 109, .08); }
+.ix-picker__label { position: absolute; left: -2px; bottom: 100%; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 5px; font: 12px/1.4 ui-monospace, Consolas, monospace; color: #fff; background: #ff4d6d; }
+.ix-picker__btn.is-on { color: #ff4d6d; border-color: #ff4d6d; }
+html.is-picking, html.is-picking * { cursor: crosshair !important; }

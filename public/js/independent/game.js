@@ -13,7 +13,6 @@ import { MODULE_NONE } from '../ui/loadoutModel.js';
 import { attackRangeGrid } from '../../../shared/loadoutRecord.js';
 import { FullscreenButton } from '../ui/device.js';
 import { toast } from '../ui/toasts.js';
-import { copyText } from '../ui/clipboard.js';
 import { audio, bgmKeyFor, combatTrackFor, resultSpeaker, resultVoiceSlot } from '../audio.js';
 import { PHASE, GEO } from '../../../shared/constants.js';
 import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout } from '../ui/gameLogic.js';
@@ -26,6 +25,7 @@ import { EnemyDrawer } from '../ui/enemyDrawer.js';
 import { DpCounter } from '../ui/hud.js';
 import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, USE_NEEDS } from './panels.js';
 import { DetailCard } from './detail.js';
+import { ElementPicker } from './picker.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -459,11 +459,6 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     window.addEventListener('hashchange', follow);
     return () => window.removeEventListener('hashchange', follow);
   }, []);
-  const copyLink = useCallback(async (anchor) => {
-    const url = new URL(location.href); url.hash = anchor;
-    const ok = await copyText(url.href);
-    toast(ok ? '已复制定位链接' : url.href, ok ? 'info' : 'warn');
-  }, []);
 
   // without WebGL / the render engine the DOM view takes over: say so once (the original's toast), unless asked for
   useEffect(() => {
@@ -596,7 +591,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         <${Button} size="sm" variant="secondary" disabled=${battle.done} onClick=${() => seekRef.current?.()} data-testid="ix-skip">跳到结尾<//>
       </div>`}
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
-        onClose=${() => { setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} onCopyLink=${copyLink} />
+        onClose=${() => { setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} />
       ${selPiece && selTile && view && !facing && !battle && state.phase === 'prep' ? html`<${Underframe} key=${selPiece.uid} view=${view}
         row=${selTile.row} col=${selTile.col} busy=${busy} name=${catalog.operators?.[selPiece.chessId]?.name || ''}
         actions=${{ retreat: isDeployed(selPiece), sell: catalog.rules?.sellPrice ?? 1, destroy: false }}
@@ -604,6 +599,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       <div class="gm__corner">
         <button type="button" class="gm__gear" aria-label="设置" title="设置" onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
         <${FullscreenButton} class="gm__gear gm__fs" />
+        <${ElementPicker} view=${view} />
         ${state.phase === 'finished' && !battle && finalHidden ? html`<button type="button" class="gm__gear" aria-label="本局结算" title="本局结算" onClick=${() => setFinalHidden(false)}><${GIcon} name="flag" /></button>` : null}
       </div>
     </div>
