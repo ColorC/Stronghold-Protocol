@@ -247,7 +247,8 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     const ruleServices = Object.create(services);
     ruleServices.__nativeOutputCapture = capturedOutputs;
     ruleServices.__nativeCopied = Boolean(replay || event.replay);
-    ruleServices.__landOn = p.landOn || null; // where this rule's badges land (equipment.js landingPiece)
+    // where this rule's badges land (equipment.js landingPiece); the field's largest faction is the one this rule's recipe reads
+    ruleServices.__landOn = p.landOn === 'dominantFactionLowest' ? `faction:${dominantFaction(state, services, piece) || ''}` : (p.landOn || null);
     const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services) : 0);
     for (let run = 0; run < runs; run++) {
     switch (r.behavior) {

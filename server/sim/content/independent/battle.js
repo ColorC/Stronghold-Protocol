@@ -9,7 +9,7 @@ const BEHAVIORS = new Set([
   'deployWindowStats', 'startDerivedStats',
 , 'badgeAmplifier', 'productionMultiplier',
   // temporary combat traits (2026-10-07, installTemporaryNativeRules)
-  'battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack']);
+  'battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack', 'overkillSpill']);
 const STAT_MODS = Object.freeze({
   attackFlat: 'atkFlat', attackPercent: 'atkPct', attackSpeedFlat: 'aspd',
   maxHpFlat: 'hpFlat', maxLifeFlat: 'hpFlat', maxHpPercent: 'hpPct', maxLifePercent: 'hpPct', defenseFlat: 'defFlat', defenceFlat: 'defFlat', defensePercent: 'defPct',
@@ -204,6 +204,8 @@ function badgeCountFor(entries, badgeIds) {
 
 /** The allies a temporary trait reaches: self | front | adjacent | row | all | faction:<阵营> | faction:same | profession:<PROFESSION>. */
 function traitTargets(battle, unit, targets = 'self') {
+  // a list reaches the union, each operator once
+  if (Array.isArray(targets)) return [...new Set(targets.flatMap((t) => traitTargets(battle, unit, t)))];
   const ops = battle.allyUnits.filter((u) => u.kind === 'op' && u.ownerId === unit.ownerId && u.alive && u.deployed && !u.removed);
   if (targets === 'self') return unit.alive ? [unit] : [];
   if (targets === 'front') { const [r, c] = frontOf(unit.homeR, unit.homeC, unit.dir); return ops.filter((u) => u !== unit && u.homeR === r && u.homeC === c); }
@@ -234,14 +236,33 @@ function grantShieldLayers(battle, target, layers, cap = 2) {
   const total = Math.min(cap, have + layers);
   if (total > have) battle.addBuff(target, { key, shieldHits: total, duration: Infinity, persist: true, allowDead: true, refresh: 'replace' });
 }
+// 弱点伤害 handed out by a trait (宴): the operators marked here deal weakness damage for the rest of the battle
+const WEAK_MARKED = new WeakMap();
+function markWeakDamage(battle, target) {
+  let marked = WEAK_MARKED.get(battle);
+  if (!marked) {
+    marked = new WeakSet(); WEAK_MARKED.set(battle, marked);
+    battle.on('hit', ({ source, target: hit, dmg }) => {
+      if (marked.has(source) && hit?.side === 'enemy' && dmg && (dmg.type === 'phys' || dmg.type === 'arts')) dmg.type = weaknessType(source, hit, dmg);
+    }, { priority: WEAKNESS_PRIORITY });
+  }
+  marked.add(target);
+}
+/** Operators of ours waiting on the bench this battle (no tile). */
+const benchCount = (battle) => (battle.opts?.flags?.independent?.pieces || []).filter((p) => p.row == null || p.col == null).length;
 function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
   rules.forEach((rule, index) => {
     const p = rule.params ?? {};
     const key = `independent:trait:${unit.uid}:${index}`;
+    // perBench: the stats count once for every operator on the bench, up to maxBench
+    const times = () => (p.perBench ? Math.min(benchCount(battle), Number(p.maxBench ?? Infinity)) : 1);
     const give = (targets, stats, duration, spGain) => {
+      const n = times();
+      if (n <= 0) return;
       for (const t of traitTargets(battle, unit, targets)) {
-        traitBuff(battle, t, `${key}:${t.uid}`, statMods(stats), duration);
-        if (Number(spGain) > 0) t.skill?.gainSp(Number(spGain), 'independentTrait');
+        traitBuff(battle, t, `${key}:${t.uid}`, statMods(stats, n), duration);
+        if (Number(spGain) > 0) t.skill?.gainSp(Number(spGain) * n, 'independentTrait');
+        if (p.weakDamage) markWeakDamage(battle, t);
       }
     };
     switch (rule.behavior) {
@@ -259,10 +280,11 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
         let fallen = 0;
         const every = Math.max(1, Number(p.every ?? 1)); const max = Math.max(1, Number(p.maxStacks ?? 1));
         battle.on('death', ({ unit: who }) => {
-          if (!who || who === unit || who.side !== 'ally' || who.kind !== 'op' || who.ownerId !== unit.ownerId) return;
+          if (!who || who === unit || who.side !== 'ally' || who.kind !== 'op' || who.ownerId !== unit.ownerId || !unit.alive) return;
           fallen++;
           const stacks = Math.min(max, Math.floor(fallen / every));
-          if (stacks > 0) traitBuff(battle, unit, key, statMods(p.stats, stacks), 'battle');
+          // the stacks go to the trait's targets (itself unless it names others), counted again for whoever stands now
+          if (stacks > 0) for (const t of traitTargets(battle, unit, p.targets ?? 'self')) traitBuff(battle, t, `${key}:${t.uid}`, statMods(p.stats, stacks), 'battle');
         }, { owner: unit });
         break;
       }
@@ -320,6 +342,20 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
           else if (effect === 'stun') applyEquipmentStatus(battle, unit, main, 'stun', { duration: Number(arg ?? p.duration ?? 1) });
           else if (effect === 'splash') { for (const e of battle.enemies) if (e.alive && e.deployed !== false && tileDistance(e, main) <= Number(p.radius ?? 1)) battle.dealDamage(unit, e, { amount: unit.s.atk * Number(p.atkPct ?? 0.5), type: p.type ?? 'phys', tags: ['independentTrait'] }); }
           else throw new Error(`everyNthAttack ${piece.chessId}: unknown effect ${p.effect}`);
+        }, { owner: unit });
+        break;
+      }
+      case 'overkillSpill': {
+        // a kill's excess damage goes on to the nearest other enemy within the radius (as true damage: it was mitigated once)
+        const before = new WeakMap();
+        battle.on('hit', ({ source, target }) => { if (source === unit && target?.side === 'enemy') before.set(target, target.hp); }, { owner: unit });
+        battle.on('damaged', ({ source, target, amount, dmg }) => {
+          if (source !== unit || target?.side !== 'enemy' || target.hp > 0 || dmg?.tags?.includes('independentTrait')) return;
+          const spill = amount - Number(before.get(target) ?? amount);
+          if (!(spill > 0)) return;
+          let next = null;
+          for (const e of battle.enemies) if (e !== target && e.alive && e.deployed !== false && tileDistance(e, target) <= Number(p.radius ?? 1) && (!next || tileDistance(e, target) < tileDistance(next, target))) next = e;
+          if (next) battle.dealDamage(unit, next, { amount: spill, type: 'true', tags: ['independentTrait'] });
         }, { owner: unit });
         break;
       }

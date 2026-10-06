@@ -40,15 +40,17 @@ export function makeItem(state, id, quantity = 1, extra = {}) {
   return item;
 }
 
-/** Where a landing badge may go (catalog.rules.badgeLanding, a rule's params.landOn). */
-export const LANDING_MODES = Object.freeze(['self', 'front', 'adjacent', 'factionLowest']);
+/** Where a landing badge may go (catalog.config.badgeLanding, a rule's params.landOn). */
+export const LANDING_MODES = Object.freeze(['self', 'front', 'adjacent', 'factionLowest', 'lowest', 'faction:<阵营>']);
 const LANDING_ORIGINS = new Set(['native', 'equipment', 'attachment']);
 const STEP = { RIGHT: [0, 1], LEFT: [0, -1], UP: [-1, 0], DOWN: [1, 0] };
 const onField = (p) => p && p.row != null && p.col != null;
 const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - pieceEquipmentCount(b) || String(a.uid).localeCompare(String(b.uid)))[0] || null;
 /**
  * The operator a badge lands on: the maker itself; the one in front of it; of the four around it, the one wearing the
- * least; of the operators on the field sharing a faction with it, the one wearing the least. Nobody there → the maker.
+ * least; of the operators on the field sharing a faction with it, the one wearing the least; of everyone on the field,
+ * the one wearing the least; of a named faction on the field (`faction:<阵营>`), the one wearing the least.
+ * Nobody there → the maker.
  */
 export function landingPiece(state, catalog, source, how = 'self') {
   if (!source || how === 'self' || !onField(source)) return source;
@@ -62,6 +64,11 @@ export function landingPiece(state, catalog, source, how = 'self') {
   } else if (how === 'factionLowest') {
     const mine = new Set(tavernFactions(source, catalog));
     target = fewestWorn([source, ...others].filter((p) => tavernFactions(p, catalog).some((f) => mine.has(f))));
+  } else if (how === 'lowest') {
+    target = fewestWorn([source, ...others]);
+  } else if (String(how).startsWith('faction:')) {
+    const f = String(how).slice(8);
+    target = fewestWorn([source, ...others].filter((p) => tavernFactions(p, catalog).includes(f)));
   } else throw new Error(`BAD_LANDING ${how}`);
   return target || source;
 }
@@ -72,8 +79,8 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_QUANTITY');
   // 徽章落点 (user 2026-10-06: 「徽章直接落点，装备进库存」): a badge an operator's own effect makes — its trait, its gear,
   // its attachment, a battle reward it earned — goes straight onto an operator instead of the stock. Prizes, supplies and
-  // every other item still go to the stock. catalog.rules.badgeLanding 'stock' (or unset) keeps the old flow.
-  const landing = extra.landOn || catalog?.rules?.badgeLanding || 'stock';
+  // every other item still go to the stock. catalog.config.badgeLanding 'stock' (or unset) keeps the old flow.
+  const landing = extra.landOn || catalog?.config?.badgeLanding || 'stock';
   const isBadge = !!rec(catalog?.badges, id) || def.mechanism === 'badge';
   const source = extra.sourceUid ? (state.pieces || []).find((p) => p.uid === extra.sourceUid) : null;
   if (landing !== 'stock' && isBadge && !extra.elite && source && LANDING_ORIGINS.has(extra.origin)) {

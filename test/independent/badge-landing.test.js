@@ -7,7 +7,7 @@ import { grantEquipment, landingPiece } from '../../server/modes/independent/equ
 import { runNativeHook } from '../../server/modes/independent/native.js';
 
 const base = getCatalog();
-const landing = (mode) => ({ ...base, rules: { ...base.rules, badgeLanding: mode } });
+const landing = (mode) => ({ ...base, config: { ...base.config, badgeLanding: mode } });
 // 普罗旺斯 / 德克萨斯 are 叙拉古, 刺玫 is 维多利亚
 const piece = (uid, chessId, row, col, extra = {}) => ({ uid, chessId, row, col, dir: 'RIGHT', equipment: [], attachments: [], nativeState: {}, ...extra });
 const stateWith = (pieces) => ({ round: 1, revision: 0, nextUid: 100, inventory: [], production: [], pieces });

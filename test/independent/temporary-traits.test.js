@@ -120,3 +120,32 @@ test('技能开启时: the targets get the buff and skill points', () => {
   assert.equal(h.unit('a').s.atk, 130);
   assert.equal(h.unit('w').s.atk, 100);
 });
+
+test('溢出伤害: a kill passes its excess on to the nearest enemy within the radius', () => {
+  const h = setup([{ uid: 'w', chessId: OPS.provence, row: 10, col: 3 }], { w: [rule('overkillSpill', { radius: 1.5 })] });
+  const weak = h.spawn('enemy_test', { pos: [10, 4], mods: { speedMul: 0, hpMul: 0.003 } }); // 30 hp
+  const next = h.spawn('enemy_test', { pos: [10, 5], mods: { speedMul: 0 } });
+  const far = h.spawn('enemy_test', { pos: [10, 9], mods: { speedMul: 0 } });
+  h.b.forceAttack(h.unit('w'), [weak]);
+  assert.equal(weak.alive, false);
+  assert.ok(Math.abs(next.s.maxHp - next.hp - 70) < 1e-6, `${next.s.maxHp - next.hp}`);
+  assert.equal(far.hp, far.s.maxHp);
+});
+
+test('targets lists, bench scaling, weakness damage and stacks for others', () => {
+  const h = setup([
+    { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
+    { uid: 'a', chessId: OPS.texas, row: 10, col: 4 },
+    { uid: 'b', chessId: OPS.myrtle, row: 9, col: 3 },
+    { uid: 'bench1', chessId: OPS.greyy, row: null, col: null },
+  ], { w: [
+    rule('battleStartBuff', { targets: ['self', 'front'], stats: { atkPct: 0.05 }, perBench: true, maxBench: 3 }),
+    rule('allyDownStacks', { every: 1, stats: { aspd: 10 }, maxStacks: 2, targets: 'faction:叙拉古' }),
+  ] });
+  assert.equal(Math.round(h.unit('w').s.atk), 105, 'one operator on the bench');
+  assert.equal(Math.round(h.unit('a').s.atk), 105);
+  assert.equal(Math.round(h.unit('b').s.atk), 100);
+  h.b.kill(h.unit('b')); h.step(1);
+  assert.equal(h.unit('a').s.aspd, 110, 'the 叙拉古 ally gets the stack');
+  assert.equal(h.unit('w').s.aspd, 110);
+});
