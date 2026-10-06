@@ -365,6 +365,9 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
     .filter((name) => !fs.existsSync(path.join(publicDir, name)))
     .map((name) => ({ prefix: `/${name}/`, name: 'public', dir: path.resolve(installDir, 'public', name) })) : [];
   const mediaPublicDir = installMounts.some((m) => m.prefix === '/assets/') ? path.resolve(installDir, 'public') : publicDir;
+  // dev pages (public/dev/) the checkout does not have come from the install's: demos kept untracked in the install
+  // stay reachable while every page of the game is the checkout's own (a checkout file always wins)
+  const devDir = installDir && path.resolve(installDir, 'public', 'dev') !== path.resolve(publicDir, 'dev') ? path.resolve(installDir, 'public', 'dev') : null;
   const mounts = [
     { prefix: '/data/', name: 'data', dir: path.resolve(dataDir) },
     { prefix: '/shared/', name: 'shared', dir: path.resolve(sharedDir) },
@@ -439,7 +442,12 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
       }
     } catch (e) {
       const installManifest = installDir && path.resolve(installDir, 'data', LOCAL_ART_MANIFEST);
-      if (e && e.code === 'ENOENT' && mount.name === 'data' && segments.length === 1 && segments[0] === LOCAL_ART_MANIFEST
+      const devPath = e && e.code === 'ENOENT' && devDir && mount.prefix === '/' && segments[0] === 'dev' && segments.length > 1 && !decoded.endsWith('/')
+        ? path.join(devDir, ...segments.slice(1)) : null;
+      const devStat = devPath && devPath.startsWith(devDir + path.sep) ? await fsp.stat(devPath).catch(() => null) : null;
+      if (devStat && devStat.isFile()) {
+        await serveFile(req, res, devPath, devStat, mount.name, segments, query, gzipCache, log);
+      } else if (e && e.code === 'ENOENT' && mount.name === 'data' && segments.length === 1 && segments[0] === LOCAL_ART_MANIFEST
         && installManifest && fs.existsSync(installManifest)) {
         // the per-machine manifest belongs to the install whose public/assets/local is served (installDir above)
         await serveFile(req, res, installManifest, await fsp.stat(installManifest), mount.name, segments, query, gzipCache, log);
