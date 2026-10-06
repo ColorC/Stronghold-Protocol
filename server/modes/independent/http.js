@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { getCatalog } from './catalog.js';
+import { traitSummary, TRAIT_WHEN } from './summary.js';
 import { createSession, applyAction, viewSession, validateSession } from './session.js';
 import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
 
@@ -24,7 +25,9 @@ export function independentDisplayCatalog(data, catalog) {
   const operators = Object.fromEntries(Object.entries(catalog.operators).map(([id, op]) => {
     const raw = op.elite ? op.source.eliteChess || op.source.normalChess : op.source.normalChess;
     return [id, { name: op.name, tier: op.tier, elite: op.elite, position: raw.position, profession: raw.profession,
+      eliteChessId: op.eliteChessId || null, baseChessId: op.chessId || id,
       avatar: chessAvatarUrl(data.assets, raw), nativeTrait: op.nativeTrait.text, permission: op.inheritance || null,
+      traitTexts: { normal: op.nativeTrait.normalText, elite: op.nativeTrait.eliteText }, summary: traitSummary(op.nativeTrait.effect),
       skills: raw.skills || [], modules: (raw.modules || []).map((x) => ({ ...x, id: x.uniEquipId || x.id })) }];
   }));
   const gear = Object.fromEntries([...Object.entries(catalog.badges), ...Object.entries(catalog.equipment)].map(([id, d]) => {
@@ -36,6 +39,10 @@ export function independentDisplayCatalog(data, catalog) {
   const texts = (table) => Object.fromEntries(Object.entries(table).map(([id, d]) => [id, { name: d.name, effect: d.effect, mechanism: d.mechanism }]));
   return { name: catalog.name, operators, gear, prizes: texts(catalog.prizes), attachments: texts(catalog.attachments),
     factions: catalog.config.tavernFactions,
+    // numbers the page shows instead of hard-coding them (the 20 % 接装损耗 = 1 − these ratios)
+    rules: { purchasePrice: catalog.config.purchasePrice, sellPrice: catalog.config.sellPrice, refreshPrice: catalog.config.refreshPrice,
+      equipmentCapacity: catalog.config.equipmentCapacity, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
+    traitWhen: TRAIT_WHEN,
     modes: [{ name: '短程演习', difficulty: 'FUNNY', roundLimit: 9 }, { name: '完整演习', difficulty: 'NORMAL', roundLimit: 14 }, { name: '追加挑战', difficulty: 'NORMAL', roundLimit: 15 }] };
 }
 
@@ -104,14 +111,15 @@ export function createIndependentHttp({ data, directory }) {
     await writeFile(pending, JSON.stringify(state), { flag: 'wx' });
     await rename(pending, file(id));
   }
-  function packet(id, state, events = []) {
+  // withCatalog false: the page fetched GET catalog once and only needs the state (body.catalog === false / ?catalog=0)
+  function packet(id, state, events = [], withCatalog = true) {
     const view = viewSession(state, definitions());
     const { pool, history, catalog: ignoredCatalog, ...thin } = view;
     thin.lastBattle = history.findLast((x) => x.type === 'battle') || null;
     thin.pieces = thin.pieces.map((piece) => ({ ...piece,
       equipmentDetails: piece.equipmentDetails.map((item) => ({ ...item, record: display.gear[item.id] })),
       attachmentDetails: piece.attachmentDetails.map((item) => ({ ...item, record: display.attachments[item.id] })) }));
-    return { ok: true, id, state: thin, catalog: display, events };
+    return withCatalog ? { ok: true, id, state: thin, catalog: display, events } : { ok: true, id, state: thin, events };
   }
   async function exclusive(id, task) {
     const previous = locks.get(id) || Promise.resolve();
@@ -141,19 +149,20 @@ export function createIndependentHttp({ data, directory }) {
         reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: '演习未找到' } }); return true;
       }
       const id = parts[1];
-      if (parts.length === 2 && req.method === 'GET') { reply(res, 200, packet(id, await load(id))); return true; }
+      if (parts.length === 2 && req.method === 'GET') { reply(res, 200, packet(id, await load(id), [], !/[?&]catalog=0(&|$)/.test(req.url || ''))); return true; }
       if (replayRoute && (req.method === 'GET' || req.method === 'HEAD')) { await sendReplay(req, res, id, Number(parts[3])); return true; }
       if (parts.length === 3 && req.method === 'POST') {
         const body = await bodyOf(req);
         await exclusive(id, async () => {
           const state = await load(id);
-          if (body.expectedRevision !== state.revision) { reply(res, 409, { ...packet(id, state), ok: false, error: { code: 'REVISION', message: '演习已更新，请重试当前操作' } }); return; }
+          const withCatalog = body.catalog !== false;
+          if (body.expectedRevision !== state.revision) { reply(res, 409, { ...packet(id, state, [], withCatalog), ok: false, error: { code: 'REVISION', message: '演习已更新，请重试当前操作' } }); return; }
           const result = applyAction(state, body.action, definitions());
-          if (!result.ok) { reply(res, 422, { ...packet(id, state), ok: false, error: result.error }); return; }
+          if (!result.ok) { reply(res, 422, { ...packet(id, state, [], withCatalog), ok: false, error: result.error }); return; }
           // the replay first: a saved state never points at a battle whose replay is missing
           if (result.replay) await saveReplay(id, result.replay);
           await save(id, result.state);
-          reply(res, 200, packet(id, result.state, result.events));
+          reply(res, 200, packet(id, result.state, result.events, withCatalog));
         });
         return true;
       }
