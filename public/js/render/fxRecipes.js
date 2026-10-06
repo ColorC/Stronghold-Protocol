@@ -578,15 +578,13 @@ const ROSMON_NORMAL_ATTACKS = Object.freeze([
   ['rosmon_attack_A_start', 'rosmon_attack_A_start_02'],
   ['rosmon_attack_B_start', 'rosmon_attack_A_start_02'],
 ]);
-const ROSMON_GROUND_STARTS = new Set(['rosmon_attack_A_start', 'rosmon_attack_B_start', 'rosmon_skill_01_A_start', 'rosmon_skill_02_start', 'rosmon_skill_03_start_02']);
 const ROSMON_ATTACK_TURN = new Map();
 
 function sourceMount(fx, view, prefab, delay = 0) {
-  if (view.info?.spine === ROSMON_CHAR && ROSMON_GROUND_STARTS.has(prefab)) {
-    return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'root', mirror: true, delay });
-  }
-  const bone = view.info?.spine === ROSMON_CHAR ? 'C_Muzzle' : 'F_R_Handweapon';
-  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'bone', bone, mirror: true, delay });
+  // These are action `_castEffects`, whose extracted records carry no mount-point or bone name. The original effect
+  // runner therefore receives the action owner/root; the separate `_mountPointType` fields belong to projectile
+  // actions and are not evidence for attaching this cast effect to a hand or muzzle.
+  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'root', mirror: true, delay });
 }
 
 /** Skill start is an ability-level effect only for Rosmontis S3. S1/S2 are action cast effects below. */
