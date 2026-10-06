@@ -37,6 +37,7 @@
 //        pieceDetail (right-click / long-press) · pieceHover { uid } | { uid: null } (battle: + unitId, unit)
 //        tileHover { row, col, area, idx } | null (while dragging: the drop target — the tile under the pointer)
 //   view.pieceScreenRect(uid) → { left, top, right, bottom, width, height, x, y } (client px: the drawn body) | null
+//   view.pieceAtClient(clientX, clientY) → { uid, area } | null   prep piece on the tile under a client point
 // Picking (user playtest #4 item 1: the ground is drawn as tiles — a press on a tile is a press on the unit standing
 // there): every "which unit is under the pointer" — prep press / click / detail / drag start / hover (pieceAt), battle
 // clicks and hover (battleUnitAt), the pen (penUnitAt) — is render/pick.js over the tile under the pointer (groundTile:
@@ -1903,6 +1904,16 @@ export async function createFieldView(host, options = {}) {
       return () => listeners.get(name)?.delete(fn);
     },
     off(name, fn) { listeners.get(name)?.delete(fn); },
+    /**
+     * The prep piece standing on the tile under a client point, or null (the same picking as a press on the canvas):
+     * for DOM drags that drop onto units, such as gear dragged from a stock strip. → { uid, area } | null
+     */
+    pieceAtClient(clientX, clientY) {
+      if (destroyed) return null;
+      const r = canvas.getBoundingClientRect();
+      const p = pieceAt(clientX - r.left, clientY - r.top);
+      return p ? { uid: p.uid, area: p.area } : null;
+    },
     pieceScreenRect(uid) {
       let v = views.get('p:' + uid);
       if (!v) for (const x of views.values()) if (x.uid === uid || x.info?.uid === uid || x.id === uid) { v = x; break; }

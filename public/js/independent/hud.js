@@ -8,7 +8,7 @@ import { PhaseCapsule } from '../ui/hud.js';
 import { chessPortraitUrl, profIconUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
-import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf } from './model.js';
+import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum } from './model.js';
 import { GearIcon, GameText } from './text.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -84,16 +84,56 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
 // ---- left: inventory strip + production -----------------------------------------------------------------------------
 
 /** Inventory at a glance (the bond strip's place): every stack's icon and count; a tap opens the inventory. */
-export function InventoryStrip({ stacks, total, catalog, onOpen, armedKey, onArm }) {
+/**
+ * The stock laid out as tiles, one per item and grade (the stock holds catalog.rules.inventoryCapacity of them). Drag a
+ * tile onto an operator — on the board, in the bench or in the overflow list — and it is worn (a badge stack goes on
+ * whole; a supply is used on that operator); a tap shows the item's card. The target is the piece on the tile under
+ * the pointer (view.pieceAtClient), or a DOM element carrying data-piece-uid.
+ */
+export function InventoryStrip({ stacks, state, view, catalog, onOpen, onTap, onDrop }) {
+  const [drag, setDrag] = useState(null); // { stack, x, y, uid }
+  const capacity = catalog.rules?.inventoryCapacity ?? 20;
+  const tiles = stacks.filter((s) => s.kind !== '奖品').length;
+  const targetAt = (x, y) => {
+    const dom = document.elementFromPoint(x, y)?.closest?.('[data-piece-uid]');
+    if (dom) return dom.dataset.pieceUid;
+    const hit = view?.pieceAtClient?.(x, y);
+    return hit ? pieceByNum(state, hit.uid)?.uid ?? null : null;
+  };
+  const press = (e, s) => {
+    if (e.button !== 0) return;
+    const el = e.currentTarget; const x0 = e.clientX; const y0 = e.clientY; let moving = false;
+    try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    const move = (ev) => {
+      if (!moving && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      moving = true;
+      setDrag({ stack: s, x: ev.clientX, y: ev.clientY, uid: targetAt(ev.clientX, ev.clientY) });
+    };
+    const finish = (ev, cancelled) => {
+      el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', cancel);
+      setDrag(null);
+      if (!moving) { if (!cancelled) onTap(s); return; }
+      const uid = cancelled ? null : targetAt(ev.clientX, ev.clientY);
+      if (uid) onDrop(s, uid);
+    };
+    const up = (ev) => finish(ev, false); const cancel = (ev) => finish(ev, true);
+    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', cancel);
+  };
+  const over = drag?.uid ? state.pieces.find((p) => p.uid === drag.uid) : null;
   return html`<div class="ix-strip" data-testid="ix-strip">
-    <button type="button" class="ix-strip__head" onClick=${onOpen} title="打开装备库存">
-      <${MicroLabel}>库存<//><b class="num">${total}</b>
+    <button type="button" class=${cx('ix-strip__head', tiles >= capacity && 'is-full')} onClick=${onOpen} title="打开装备库存">
+      <${MicroLabel}>库存<//><b class="num">${tiles}/${capacity}</b>
     </button>
-    ${stacks.length ? stacks.slice(0, 10).map((s) => html`<button type="button" key=${s.key} class=${cx('ix-strip__slot', armedKey === s.key && 'is-armed')}
-        onClick=${() => onArm(s)} aria-label=${`${s.name} ×${s.count}`}>
-        <${GearIcon} id=${s.id} catalog=${catalog} /><b class="num">${s.count}</b>
-      </button>`) : html`<span class="ix-strip__empty">暂无库存</span>`}
-    ${stacks.length > 10 ? html`<button type="button" class="ix-strip__more" onClick=${onOpen}>+${stacks.length - 10}</button>` : null}
+    <div class="ix-strip__tiles">
+      ${stacks.length ? stacks.map((s) => html`<button type="button" key=${s.key} data-testid=${`ix-tile-${s.key}`} class=${cx('ix-strip__slot', drag?.stack.key === s.key && 'is-dragging')}
+          onPointerDown=${(e) => press(e, s)} aria-label=${`${s.name} ×${s.count}，拖到干员身上${s.used ? '使用' : '穿戴'}`}>
+          <${GearIcon} id=${s.id} catalog=${catalog} plain=${!!drag} /><b class="num">${s.count}</b>
+        </button>`) : html`<span class="ix-strip__empty">暂无库存</span>`}
+    </div>
+    ${drag ? html`<div class="ix-ghost" style=${{ transform: `translate(${Math.round(drag.x)}px, ${Math.round(drag.y)}px)` }} aria-hidden="true">
+      <${GearIcon} id=${drag.stack.id} catalog=${catalog} plain=${true} />
+      <span>${over ? `${drag.stack.used ? '用在' : '穿给'}${formEntry(catalog, over)?.name || ''}${drag.stack.badge && drag.stack.count > 1 ? ` ×${drag.stack.count}` : ''}` : '拖到干员身上'}</span>
+    </div>` : null}
   </div>`;
 }
 
@@ -108,12 +148,13 @@ const PHASE_WORD = { battle: '战后', roundStart: '休整开始', prepEnd: '休
 
 function ProdRow({ row, state, catalog, when = false }) {
   const piece = row.sourceUid ? state.pieces.find((p) => p.uid === row.sourceUid) : null;
-  return html`<li class="ix-prod__row">
+  return html`<li class=${cx('ix-prod__row', row.lost && 'is-lost')}>
     ${when ? html`<span class="ix-prod__when">${PHASE_WORD[row.phase] || ''}</span>` : null}
     ${row.sourceUid ? html`<${SourceName} piece=${piece} catalog=${catalog} />`
       : html`<span class="ix-prod__src">${row.prizeId ? (catalog.prizes?.[row.prizeId]?.name || '工程部特供') : ORIGIN_WORD[row.origin] || '其他'}</span>`}
     <span class="ix-prod__out"><${GearIcon} id=${row.id} catalog=${catalog} /><b class="num">×${row.quantity}</b></span>
     ${row.copied ? html`<span class="ix-prod__tag">复制</span>` : null}
+    ${row.lost ? html`<span class="ix-prod__tag ix-prod__tag--lost" title="库存已满，没有放入">库存满</span>` : null}
   </li>`;
 }
 
@@ -312,7 +353,7 @@ export function BenchOverflow({ pieces, catalog, onPick }) {
   if (!pieces.length) return null;
   return html`<div class="ix-overflow" data-testid="ix-overflow">
     <span class="ix-overflow__label">整备区另有 <b class="num">${pieces.length}</b> 名</span>
-    ${pieces.map((p) => html`<button type="button" key=${p.uid} class="ix-overflow__item" onClick=${() => onPick(p.uid)} title=${formEntry(catalog, p)?.name || ''}>
+    ${pieces.map((p) => html`<button type="button" key=${p.uid} class="ix-overflow__item" data-piece-uid=${p.uid} onClick=${() => onPick(p.uid)} title=${formEntry(catalog, p)?.name || ''}>
       <${UnitThumb} kind="chess" id=${renderChessId(catalog, p)} golden=${!!p.elite} size="sm" />
       <span class="num">${p.equipmentLevel ?? 0}级</span>
     </button>`)}

@@ -61,7 +61,7 @@
 .scard .scard__trait { margin: .02rem 0; }
 
 /* ---- inventory strip (the bond strip's place) ------------------------------------------------------------------ */
-.ix-strip { position: absolute; left: 1.56rem; top: 1.36rem; right: 5.2rem; display: flex; align-items: center; gap: .06rem; flex-wrap: wrap; pointer-events: none; }
+.ix-strip { position: absolute; left: .24rem; top: 1.06rem; display: flex; align-items: stretch; gap: .06rem; pointer-events: none; }
 .ix-strip > * { pointer-events: auto; }
 .ix-strip__head, .ix-strip__slot, .ix-strip__more {
   display: inline-flex; align-items: center; gap: .05rem; height: .4rem; padding: 0 .08rem; background: rgba(8, 11, 10, .82);
@@ -71,10 +71,24 @@
 .ix-strip__slot .ix-gear { width: .28rem; height: .28rem; }
 .ix-strip__slot:hover, .ix-strip__head:hover { border-color: var(--mint-600); }
 .ix-strip__slot.is-armed { border-color: var(--mint-400); }
+/* the stock as tiles: drag one onto an operator to wear it (hud.js InventoryStrip) */
+.ix-strip__tiles { display: grid; grid-template-columns: repeat(10, auto); gap: .04rem; align-content: start; }
+.ix-strip__head { flex-direction: column; justify-content: center; height: auto; min-height: .4rem; }
+.ix-strip__tiles .ix-strip__slot { height: .38rem; }
+.ix-strip__slot { touch-action: none; cursor: grab; user-select: none; }
+.ix-strip__slot.is-dragging { opacity: .45; }
+.ix-strip__head.is-full { border-color: var(--danger, #e05a4f); }
+.ix-strip__head.is-full b { color: var(--danger, #e05a4f); }
+.ix-ghost { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; display: flex; align-items: center; gap: .06rem; margin: -.18rem 0 0 -.18rem;
+  padding: .04rem .08rem .04rem .04rem; background: rgba(8, 11, 10, .92); border: 1px solid var(--mint-500); color: var(--text-hi); font-size: max(.15rem, 13px); white-space: nowrap; }
+.ix-ghost .ix-gear { width: .32rem; height: .32rem; }
+.ix-prod__row.is-lost { opacity: .55; }
+.ix-prod__row.is-lost .ix-prod__out { text-decoration: line-through; }
+.ix-prod__tag--lost { color: var(--danger, #e05a4f); border-color: currentColor; }
 .ix-strip__empty { font-size: max(.14rem, 13px); color: var(--text-dim); padding: 0 .06rem; }
 
 /* ---- production column (the team panel's place) ---------------------------------------------------------------- */
-.ix-prod { position: absolute; left: .24rem; top: 1.9rem; width: 2.2rem; max-height: calc(100% - 5rem); display: flex; flex-direction: column; gap: .04rem; }
+.ix-prod { position: absolute; left: .24rem; top: 2.02rem; width: 2.2rem; max-height: calc(100% - 5rem); display: flex; flex-direction: column; gap: .04rem; }
 .ix-prod.is-closed { width: auto; }
 .ix-prod__toggle { align-self: flex-start; display: inline-flex; align-items: center; gap: .04rem; padding: .03rem .08rem; font-size: max(.14rem, 13px);
   background: rgba(8, 11, 10, .85); border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; }

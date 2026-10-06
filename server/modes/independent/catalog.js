@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { getData } from '../../data.js';
 import { nativeEffectFor } from './native.js';
-import { EQUIPMENT_CAPACITY } from './equipment.js';
+import { EQUIPMENT_CAPACITY, INVENTORY_CAPACITY } from './equipment.js';
 
 const DESIGN_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
@@ -255,7 +255,7 @@ export function getCatalog(data = getData()) {
     config: {
       ...clone(DESIGN.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
       balance: { incomeBonusFromRound: 8, incomeBonus: 1 },
-      equipmentCapacity: EQUIPMENT_CAPACITY, basicBadgeCount: 15, regularProductionBadgeCount: 6,
+      equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: 15, regularProductionBadgeCount: 6,
       rareInheritanceOperators: 12, bodyPenalty: clone(DESIGN.rules?.bodyPenalty),
       badgeRecipes: clone(DESIGN.badgeRecipes || DESIGN.recipes || {}),
       factionRecipes: {

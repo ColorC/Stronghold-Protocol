@@ -6,7 +6,7 @@ import { independentDisplayCatalog } from '../../server/modes/independent/http.j
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 import { playSeed } from '../../tools/independent-balance.mjs';
 import { prepView, canDrop, legalTilesOf, benchLayout, groupEquipment, inventoryStacks, forecastRows, formEntry, renderChessId,
-  inheritedLevel, itemLevel, pendingOffer, frameAt, HAND_SLOTS, BADGE_BOND } from '../../public/js/independent/model.js';
+  inheritedLevel, itemLevel, pendingOffer, frameAt, HAND_SLOTS, BADGE_BOND, groupProduction } from '../../public/js/independent/model.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 const catalog = getCatalog(data);
@@ -107,4 +107,13 @@ test('offers: a merge first; replay frames are found by time', () => {
   assert.equal(frameAt(frames, -1), -1);
   assert.equal(frameAt(frames, 9), 3);
   assert.equal(formEntry(display, { chessId: Object.keys(display.operators).find((id) => display.operators[id].eliteChessId), elite: true }).elite, true);
+});
+
+test('production rows of gear that found the stock full stay apart from the stored ones', () => {
+  const rows = groupProduction([
+    { phase: 'prepEnd', sourceUid: 'p3', id: 'precision', quantity: 2 },
+    { phase: 'prepEnd', sourceUid: 'p3', id: 'precision', quantity: 1, lost: true },
+    { phase: 'prepEnd', sourceUid: 'p3', id: 'precision', quantity: 2 },
+  ]);
+  assert.deepEqual(rows.map((r) => [r.quantity, r.lost]), [[4, false], [1, true]]);
 });

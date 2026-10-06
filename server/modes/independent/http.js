@@ -57,7 +57,7 @@ export function independentDisplayCatalog(data, catalog) {
     factions: catalog.config.tavernFactions,
     // numbers the page shows instead of hard-coding them (the 20 % 接装损耗 = 1 − these ratios)
     rules: { purchasePrice: catalog.config.purchasePrice, sellPrice: catalog.config.sellPrice, refreshPrice: catalog.config.refreshPrice,
-      equipmentCapacity: catalog.config.equipmentCapacity, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
+      equipmentCapacity: catalog.config.equipmentCapacity, inventoryCapacity: catalog.config.inventoryCapacity, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
     traitWhen: TRAIT_WHEN,
     modes: [{ name: '短局', difficulty: 'FUNNY', roundLimit: 9 }, { name: '标准局', difficulty: 'NORMAL', roundLimit: 14 }, { name: '追加挑战', difficulty: 'NORMAL', roundLimit: 15 }] };
 }

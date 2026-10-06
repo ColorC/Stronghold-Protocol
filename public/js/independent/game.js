@@ -12,10 +12,10 @@ import { copyText } from '../ui/clipboard.js';
 import { audio } from '../audio.js';
 import { data } from '../data.js';
 import { api } from './api.js';
-import { prepView, canDrop, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks, inventoryCount,
+import { prepView, canDrop, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
   replayClock, frameAt, pendingOffer, renderChessId } from './model.js';
 import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount } from './hud.js';
-import { DetailCard, InventoryPanel, OfferOverlay, InheritPanel, ResultPanel } from './panels.js';
+import { DetailCard, InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, USE_NEEDS } from './panels.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -23,7 +23,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const ERRORS = {
   NO_FUNDS: '采购资金不足', SOLD_OUT: '卡池里已经没有这名干员', DEPLOY_CAP: '场上干员已达上限', ILLEGAL_TILE: '有干员站在不能部署的位置',
   OCCUPIED: '这个位置已有干员', NO_DEPLOYED_PIECES: '至少部署一名干员才能开始战斗', CAPACITY: '这名干员的装备已经穿满',
-  UNIQUE: '同名唯一的装备只能穿戴一件', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
+  UNIQUE: '同名唯一的装备只能穿戴一件', INVENTORY_FULL: '库存已满，先穿戴或使用一些', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
   NOT_MERGEABLE: '这件装备不能合成', NOT_USABLE: '这件物品不能直接使用', CONDITION_NOT_MET: '使用条件未满足', MAX_LEVEL: '调度中心已达最高等级',
   NEED_UNIQUE_SELECTION: '请先选择要保留的同名唯一装备', NEEDS_SELECTION: '请先选择要保留的同名唯一项', NO_ELIGIBLE_TARGET: '没有可以选择的干员',
   NO_PERMISSION: '双方的交接凭证都不允许这次交接', BAD_TILE: '交出装备的一方需要在场，且接收方能部署在那个位置', WRONG_PHASE: '当前阶段不能进行该操作',
@@ -302,6 +302,27 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const loading = viewKind === 'loading' || !gd.ready;
 
   const openInventory = (uid = null) => { setPanelUid(uid || (detail?.kind === 'piece' ? detail.uid : null)); setPanel('inventory'); };
+  /**
+   * A stock tile dropped on an operator: gear is worn (a badge stack whole, up to the operator's room), a supply that
+   * asks for one own operator is used on it; the identity card (a faction to choose) and supplies asking for anything
+   * else open the stock panel with that operator chosen.
+   */
+  const dropFromStock = (stack, uid) => {
+    const piece = state.pieces.find((p) => p.uid === uid); if (!piece || state.phase !== 'prep') return;
+    const item = stack.items[0]; const g = catalog.gear[stack.id] || {};
+    if (stack.used) {
+      const need = USE_NEEDS[stack.mechanism]; const count = (stack.elite ? g.useCount?.elite : g.useCount?.normal) || 1;
+      if (!need) act({ type: 'use-item', itemUid: item.uid });
+      else if (need === 'target') act({ type: 'use-item', itemUid: item.uid, targetUid: uid });
+      else if (need === 'source') act({ type: 'use-item', itemUid: item.uid, sourceUid: uid });
+      else if (need === 'targets' && count === 1) act({ type: 'use-item', itemUid: item.uid, targets: [uid] });
+      else openInventory(uid);
+      return;
+    }
+    if (g.identityFactions) { openInventory(uid); return; }
+    const room = (catalog.rules?.equipmentCapacity ?? 999) - piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0);
+    act({ type: 'equip', itemUid: item.uid, targetUid: uid, quantity: g.unique ? 1 : Math.max(1, Math.min(item.quantity || 1, room)) });
+  };
   const openInherit = (uid) => { setPreview(null); setPanelUid(uid); setPanel('inherit'); };
   const runPreview = useCallback(async (donorUid, receiverUid) => {
     setPreview(null);
@@ -318,8 +339,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${onLeave}
         pen=${pen} onPen=${() => setPen((x) => !x)} />
       ${!battle ? html`
-        <${InventoryStrip} stacks=${stacks} total=${inventoryCount(state.inventory)} catalog=${catalog} onOpen=${() => openInventory()}
-          onArm=${(s) => setDetail({ kind: 'gear', id: s.id, elite: s.elite })} />
+        <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
+          onTap=${(s) => (s.used ? openInventory() : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
         <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />

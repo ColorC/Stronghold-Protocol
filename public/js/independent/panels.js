@@ -172,7 +172,8 @@ export function DetailCard({ target, state, catalog, busy, onClose, onAct, onInh
 // ---- inventory ----------------------------------------------------------------------------------------------------
 
 /** What a supply asks for when used (prizes.js useInventoryItem): one operator, n operators, n shop slots or a faction. */
-const USE_NEEDS = { upgradeChess: 'target', promoteOnUse: 'targets', recruitOnUse: 'source', copyOperatorOnUse: 'source', shopRecruitOnUse: 'slots',
+/** What a supply asks for before it is used: an own operator (target / targets / source), shop places or a faction. */
+export const USE_NEEDS = { upgradeChess: 'target', promoteOnUse: 'targets', recruitOnUse: 'source', copyOperatorOnUse: 'source', shopRecruitOnUse: 'slots',
   factionRecruitOnUse: 'faction', saleThresholdRecruit: 'faction' };
 
 /** The second step of a supply that needs a choice; nothing is sent until the choice is complete. */

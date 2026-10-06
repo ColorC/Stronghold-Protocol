@@ -13508,7 +13508,8 @@
     "noUniversalInheritance": true,
     "noRemovableEquipment": true,
     "shop": "operators only; every piece of gear comes through operators (traits), 工程部特供 prizes or 交接凭证",
-    "equipmentCapacity": 999
+    "equipmentCapacity": 999,
+    "inventory": "20 tiles: one per item and grade, stacks unlimited; gear needing a 21st tile is not stored (ledger lost); kept prizes take no tile"
   },
   "check": {
     "pass": true,
@@ -13601,7 +13602,8 @@
       "Design only; no battle balance or game implementation."
     ],
     "shopSellsEquipment": false,
-    "equipmentCapacity": 999
+    "equipmentCapacity": 999,
+    "inventoryCapacity": 20
   },
   "source": {
     "canvasRevision": 143,
@@ -13621,6 +13623,10 @@
     {
       "date": "2026-10-06",
       "what": "商店只卖干员（原装备位改为多一名干员）；所有装备经干员获得：原有产出不变，另让9名干员加产一种特殊徽章、40名干员获得时带来一件装备，后勤物资由新约能天使随机带来；工程部特供不变；单个干员装备上限99改为999；修正耶拉、卡涅利安发放的物品与文字不符"
+    },
+    {
+      "date": "2026-10-06",
+      "what": "库存平铺成格子，拖到干员身上即穿戴；装备库存上限20格（按种类与普通/精锐计，叠放不限）"
     }
   ]
 }

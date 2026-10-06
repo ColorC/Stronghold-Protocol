@@ -7,6 +7,19 @@ export const equippedCount = (state) => (state.pieces || []).reduce((n, p) => n 
 export const capacityUsed = (state) => itemCount(state);
 /** Pieces of gear one operator may wear (2026-10-06: raised from 99). Inventory has no limit. */
 export const EQUIPMENT_CAPACITY = 999;
+/**
+ * Kinds of gear the stock holds at once (2026-10-06): one tile per item and grade (normal / elite), however many it
+ * holds, so a badge stack is one tile. A prize kept for later is not gear and takes no tile. Gear that would need a
+ * new tile while all are taken is not stored (its production row says lost); a save holding more keeps them.
+ */
+export const INVENTORY_CAPACITY = 20;
+const tileKey = (item) => `${item.id}:${item.elite ? 'elite' : 'normal'}`;
+export function inventoryTiles(state, catalog) {
+  return new Set((state.inventory || []).filter((x) => !catalog || equipmentRecord(catalog, x.id)).map(tileKey)).size;
+}
+export function hasTileFor(state, catalog, id, elite = false) {
+  return (state.inventory || []).some((x) => tileKey(x) === tileKey({ id, elite })) || inventoryTiles(state, catalog) < INVENTORY_CAPACITY;
+}
 export const pieceEquipmentCount = (piece) => (piece?.equipment || []).reduce((n, x) => n + Math.max(0, Math.floor(number(x.quantity, 1))), 0);
 
 export function catalogRecord(catalog, collection, id) { return rec(catalog && catalog[collection], id); }
@@ -29,6 +42,10 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const def = equipmentRecord(catalog, id);
   if (!def || def.available === false || def.mechanism === 'disabled') throw new Error('UNKNOWN_EQUIPMENT');
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_QUANTITY');
+  if (!hasTileFor(state, catalog, id, !!extra.elite)) {
+    recordProduction(state, { id, quantity, elite: !!extra.elite, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
+    return { id, quantity: 0, lost: quantity };
+  }
   const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !!x.elite === !!extra.elite && !x.state?.uniqueState);
   if (stack) stack.quantity += quantity;
   else state.inventory.push(makeItem(state, id, quantity, { ...extra, sourceId: def.sourceId }));
@@ -38,7 +55,7 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
 
 /** Rounds of the production ledger a session keeps: the current one and the one before (its battle rewards). */
 export const PRODUCTION_ROUNDS_KEPT = 2;
-const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated'];
+const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated', 'lost'];
 
 /**
  * Append one entry to `state.production`, the player-facing record of where inventory items came from. An entry
@@ -88,6 +105,9 @@ export function mergeItems(state, catalog, firstUid, secondUid) {
   if (!a || !b || a.id !== b.id || a.elite || b.elite || (a === b && a.quantity < 2)) throw new Error('BAD_MERGE');
   const def = equipmentRecord(catalog, a.id);
   if (!def || def.available === false || def.mechanism === 'disabled' || !(def.eliteId || def.eliteLevel)) throw new Error('NOT_MERGEABLE');
+  // the elite copy needs a tile unless one exists or the two normal copies were the last of theirs
+  const normalLeft = state.inventory.filter((x) => x.id === a.id && !x.elite).reduce((n, x) => n + x.quantity, 0) - 2;
+  if (!state.inventory.some((x) => x.id === a.id && x.elite) && normalLeft > 0 && inventoryTiles(state, catalog) >= INVENTORY_CAPACITY) throw new Error('INVENTORY_FULL');
   const leftA = a.quantity - (a === b ? 2 : 1); const leftB = a === b ? 0 : b.quantity - 1;
   if (leftA === 0) state.inventory.splice(state.inventory.indexOf(a), 1); else a.quantity = leftA;
   if (a !== b) { if (leftB === 0) state.inventory.splice(state.inventory.indexOf(b), 1); else b.quantity = leftB; }
