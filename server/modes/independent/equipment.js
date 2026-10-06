@@ -30,7 +30,27 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !!x.elite === !!extra.elite && !x.state?.uniqueState);
   if (stack) stack.quantity += quantity;
   else state.inventory.push(makeItem(state, id, quantity, { ...extra, sourceId: def.sourceId }));
+  recordProduction(state, { id, quantity, elite: !!extra.elite, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated });
   return { id, quantity };
+}
+
+/** Rounds of the production ledger a session keeps: the current one and the one before (its battle rewards). */
+export const PRODUCTION_ROUNDS_KEPT = 2;
+const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated'];
+
+/**
+ * Append one entry to `state.production`, the player-facing record of where inventory items came from. An entry
+ * carries the revision the running action will commit (`applyAction` bumps it once), so a client can pick the
+ * entries one action added. Older rounds are dropped; a session saved before the ledger existed starts without one.
+ */
+export function recordProduction(state, entry) {
+  if (!Array.isArray(state.production)) state.production = [];
+  const row = { round: state.round, revision: Number(state.revision || 0) + 1, id: entry.id, quantity: entry.quantity };
+  if (entry.elite) row.elite = true;
+  for (const key of PRODUCTION_FIELDS) if (entry[key] !== undefined && entry[key] !== null && entry[key] !== false) row[key] = entry[key];
+  state.production.push(row);
+  const keepFrom = state.round - PRODUCTION_ROUNDS_KEPT + 1;
+  while (state.production.length && state.production[0].round < keepFrom) state.production.shift();
 }
 
 export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, options = {}) {

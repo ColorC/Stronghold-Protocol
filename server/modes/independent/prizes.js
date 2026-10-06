@@ -50,13 +50,13 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
   const offer = state.offers[oi]; const id = offer.choices[index]; const prize = prizeById(catalog, id);
   if (id === 'fallback-procurement-three' || id === 'fallback-procurement-two' || id === 'fallback-procurement-one') {
     const quantity = id.endsWith('three') ? 3 : id.endsWith('two') ? 2 : 1;
-    grantEquipment(state, catalog, 'chess_item_1_03_e_a', quantity);
+    grantEquipment(state, catalog, 'chess_item_1_03_e_a', quantity, { origin: 'prize', phase: 'prize', prizeId: id });
     state.offers.splice(oi, 1); if (!state.offers.some((x) => x.type === 'prize')) state.phase = 'prep';
     return { prizeId: id, quantity };
   }
   if (!prize) throw new Error('BAD_OFFER');
   const rule = { type: prize.mechanism, ...(prize.params || {}) };
-  const grant = (itemId, n = 1, extra = {}) => grantEquipment(state, catalog, itemId, n, extra);
+  const grant = (itemId, n = 1, extra = {}) => grantEquipment(state, catalog, itemId, n, { origin: 'prize', phase: 'prize', prizeId: id, ...extra });
   const outputs = (rule.outputs || []).map((x) => ({ id: x.id, quantity: x.quantity || 1 }));
   if (rule.type === 'grantItems' || rule.type === 'grantItemsPerPiece') {
     const multiplier = rule.type === 'grantItemsPerPiece' ? Math.min(rule.cap || 8, state.pieces.filter((x) => x.row !== null && x.col !== null).length) : 1;
@@ -120,7 +120,7 @@ export function useInventoryItem(state, catalog, itemUid, action = {}, data = nu
     if (state.funds < target) state.funds = target;
   }
   else if (behavior?.type === 'equipment') {
-    for (const out of behavior.outputs || []) grantEquipment(state, catalog, out.id, out.quantity || 1);
+    for (const out of behavior.outputs || []) grantEquipment(state, catalog, out.id, out.quantity || 1, { origin: 'supply', phase: 'supply' });
   } else if (behavior?.type === 'recruit') {
     const list = Object.keys(catalog.operators).filter((id) => catalog.operators[id].tier === Number(behavior.tier) && !catalog.operators[id].elite).sort();
     if (!list.length) throw new Error('NO_CANDIDATE');

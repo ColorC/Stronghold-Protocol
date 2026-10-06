@@ -75,17 +75,22 @@ function advanceShop(state, gd, catalog, rng) {
   return next.map((slot, i) => current[i] && !current[i].sold ? current[i] : slot);
 }
 function invokeHook(state, hook, event, services) {
-  const result = runNativeHook(state, hook, event, services);
-  if (hook === 'gain' && event.piece) handleGainEquipment(state, services.catalog, event.piece);
-  return result;
+  const outer = services.phase; services.phase = hook;
+  try {
+    const result = runNativeHook(state, hook, event, services);
+    if (hook === 'gain' && event.piece) handleGainEquipment(state, services.catalog, event.piece);
+    return result;
+  } finally { services.phase = outer; }
 }
 function servicesFor(state, data, catalog, rng) {
-  return { data, catalog, rng,
-    grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, extra),
+  const services = { data, catalog, rng, phase: null,
+    // the running hook names the production ledger's phase (equipment.js recordProduction)
+    grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, { phase: services.phase, ...extra }),
     grantChess: (draft, chessId, extra = {}) => { const piece = gainChess(draft, catalog, chessId, extra); invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); maybeMergeOperator(draft, catalog, chessId); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
     record: (draft, event) => pushEvent(draft, event),
   };
+  return services;
 }
 function gainChess(state, catalog, chessId, extra = {}) {
   const def = opFor(catalog, chessId); if (!def || def.elite || def.isElite) throw new Error('UNKNOWN_CHESS');
@@ -279,7 +284,24 @@ export function viewSession(state, options = {}) {
     return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'] };
   });
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
-    board: field ? { stageId: field.stageId, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary };
+    board: field ? { stageId: field.stageId, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
+    forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null };
+}
+
+/**
+ * What the coming 休整期结束 hooks will forge if the player readies now: the hooks run on a copy with a copy of
+ * the RNG, so the session, its RNG and its revision stay as they are. Returns the ledger rows the copy gained
+ * (equipment.js recordProduction) and the deferred funds it added, or null when the dry run fails.
+ */
+export function forecastPrepEnd(state, data, catalog) {
+  try {
+    const work = clone(state); const rng = createRng(work.rngState);
+    const services = servicesFor(work, data, catalog, rng);
+    const funds = Number(work.pendingFunds || 0); const revision = Number(work.revision || 0) + 1;
+    invokeHook(work, 'prepEnd', { round: work.round }, services);
+    // rows of earlier actions carry an older revision; the ledger may also drop old rounds while it appends
+    return { production: (work.production || []).filter((x) => x.revision === revision), pendingFunds: Number(work.pendingFunds || 0) - funds };
+  } catch { return null; }
 }
 
 export function applyAction(state, action, options = {}) {
@@ -345,7 +367,7 @@ export function applyAction(state, action, options = {}) {
         for (const merged of maybeMergeOperator(work, catalog, piece.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
-        grantEquipment(work, catalog, slot.id, 1, { elite: !!slot.elite }); events.push({ type: 'buy-equipment', id: slot.id });
+        grantEquipment(work, catalog, slot.id, 1, { elite: !!slot.elite, origin: 'shop', phase: 'shop' }); events.push({ type: 'buy-equipment', id: slot.id });
       }
       slot.sold = true;
     } else if (act === 'refresh') {
@@ -444,7 +466,7 @@ export function applyAction(state, action, options = {}) {
       work.battleSummary = { result: battle.result, samples: battle.samples || [], diagnostics: battle.diagnostics || {}, pieceStates: battle.pieceStates || {} };
       work.lp = Math.max(0, work.lp - lpLost);
       for (const [uid, ps] of Object.entries(battle.pieceStates || {})) { const piece = work.pieces.find((x) => x.uid === uid); if (piece) { piece.nativeState = clone(ps.nativeState || {}); piece.equipment = clone(ps.equipment || []); piece.attachments = clone(ps.attachments || []); } }
-      for (const reward of battle.rewards || []) grantEquipment(work, catalog, reward.id, reward.quantity || 1, { sourceId: reward.sourceUid });
+      for (const reward of battle.rewards || []) grantEquipment(work, catalog, reward.id, reward.quantity || 1, { origin: reward.origin, phase: 'battle', sourceUid: reward.sourceUid, copied: reward.copied });
       const fieldKind = getIndependentField(work, { data, catalog }).field;
       const bossRound = fieldKind === 'bossL';
       const bossCleared = bossRound && Number(battle.result.bossHpLeft) <= 0 && !battle.diagnostics?.capped;

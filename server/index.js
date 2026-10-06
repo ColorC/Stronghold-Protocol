@@ -355,12 +355,22 @@ function splitUrl(url) {
 const LOCAL_ART_MANIFEST = 'local-assets.json';
 const EMPTY_LOCAL_ART = Buffer.from(JSON.stringify({ version: 1, source: 'none', count: 0, groups: {} }));
 
-export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = path.join(ROOT, 'server', 'sim'), log = noopLog }) {
+/** The git-ignored install-time folders of `public/` (tools/vendor.mjs, tools/fetch-assets.mjs). */
+const INSTALL_PUBLIC_DIRS = ['assets', 'vendor', 'fonts'];
+
+export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = path.join(ROOT, 'server', 'sim'), installDir = null, log = noopLog }) {
+  // A checkout without its own install (a Git worktree) can serve another install's art, vendored libraries and
+  // fonts read-only, so nothing is copied or linked into the checkout.
+  const installMounts = installDir ? INSTALL_PUBLIC_DIRS
+    .filter((name) => !fs.existsSync(path.join(publicDir, name)))
+    .map((name) => ({ prefix: `/${name}/`, name: 'public', dir: path.resolve(installDir, 'public', name) })) : [];
+  const mediaPublicDir = installMounts.some((m) => m.prefix === '/assets/') ? path.resolve(installDir, 'public') : publicDir;
   const mounts = [
     { prefix: '/data/', name: 'data', dir: path.resolve(dataDir) },
     { prefix: '/shared/', name: 'shared', dir: path.resolve(sharedDir) },
     // the simulation: ES modules only (no directory listings, no other file types, no Node-only loader)
     { prefix: '/sim/', name: 'sim', dir: path.resolve(simDir), only: new Set(['.js']), deny: SIM_PRIVATE },
+    ...installMounts,
     { prefix: '/', name: 'public', dir: path.resolve(publicDir) },
   ];
   const shimBody = Buffer.from(DATA_SHIM_JS);
@@ -383,7 +393,7 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
     }
     // Extension-less audio (download-manager avoidance): /media/bgm/act1 → /assets/audio/bgm/act1.mp3
     if (decoded.startsWith(MEDIA_PREFIX)) {
-      await serveMedia(req, res, decoded.slice(MEDIA_PREFIX.length), query, publicDir, gzipCache, log);
+      await serveMedia(req, res, decoded.slice(MEDIA_PREFIX.length), query, mediaPublicDir, gzipCache, log);
       return;
     }
     // Bare mount paths (e.g. "/data") → treat as the mount directory.
@@ -428,7 +438,12 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
         if (mount.deny.has(path.basename(real).toLowerCase())) throw Object.assign(new Error('private'), { code: 'ENOENT' });
       }
     } catch (e) {
-      if (e && e.code === 'ENOENT' && mount.name === 'data' && segments.length === 1 && segments[0] === LOCAL_ART_MANIFEST) {
+      const installManifest = installDir && path.resolve(installDir, 'data', LOCAL_ART_MANIFEST);
+      if (e && e.code === 'ENOENT' && mount.name === 'data' && segments.length === 1 && segments[0] === LOCAL_ART_MANIFEST
+        && installManifest && fs.existsSync(installManifest)) {
+        // the per-machine manifest belongs to the install whose public/assets/local is served (installDir above)
+        await serveFile(req, res, installManifest, await fsp.stat(installManifest), mount.name, segments, query, gzipCache, log);
+      } else if (e && e.code === 'ENOENT' && mount.name === 'data' && segments.length === 1 && segments[0] === LOCAL_ART_MANIFEST) {
         // Optional local-client art (DESIGN §13): an install without it gets an empty manifest instead of a 404,
         // so browsers don't log an error on every page load. Clients treat empty groups as "no local art".
         res.writeHead(200, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-cache', 'Content-Length': EMPTY_LOCAL_ART.length });
@@ -603,6 +618,8 @@ function makeLogger(quiet) {
  * @param {{
  *   port?: number, host?: string, quiet?: boolean, log?: object,
  *   publicDir?: string, dataDir?: string, sharedDir?: string,
+ *   installDir?: string, // (env STRONGHOLD_INSTALL_DIR) a full install whose public/{assets,vendor,fonts} and
+ *                        // data/local-assets.json this checkout serves read-only when it has none of its own
  *   MatchClass?: Function, seedFn?: () => number,
  *   lobbyGraceMs?: number, reconnectWindowMs?: number, heartbeatMs?: number, helloTimeoutMs?: number,
  *   ratePerSec?: number, rateBurst?: number, maxConnections?: number, maxRooms?: number,
@@ -637,7 +654,8 @@ export async function startServer(opts = {}) {
   }
   const lobby = new Lobby({ registry, log, MatchClass: opts.MatchClass, getData: () => data, seedFn: opts.seedFn, options: lobbyOptions });
   const network = new Network({ registry, handler: lobby, log, options: netOptions });
-  const serveStatic = createStaticHandler({ publicDir, dataDir, sharedDir, log });
+  const installDir = opts.installDir ?? (process.env.STRONGHOLD_INSTALL_DIR || null);
+  const serveStatic = createStaticHandler({ publicDir, dataDir, sharedDir, installDir, log });
   const startedAt = Date.now();
   // The tag is per process (see buildTag): read the browser runtime once, here, not on every /healthz.
   resetBuildTag();
