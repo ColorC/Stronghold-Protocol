@@ -145,7 +145,7 @@ node tools/independent-browser-smoke.mjs --output 'E:/WindowsWorkspace/webworks/
 - 就绪后取本轮服务器录像在原渲染器回放，可 1×/2×/4× 或跳到结尾；结算显示损失生命、击倒与各干员伤害治疗；顶栏「敌情」把镜头转到下一轮敌人的等候区。
 
 仍需继续，不能称为成品：
-1. **原版特效还原**：注册表与事件字段已就绪（`E:/WindowsWorkspace/webworks/apps/stronghold-protocol/public/js/render/fxRegistry.js`、`fxRecipes.js`），现有效果仍是程序绘制。路线见设计稿「特效解耦与原版特效还原」第 3 步：扩展 `tools/local-extract` 导出特效贴图与预制体参数，PIXI 侧写精简粒子解释器，逐个对照原版录像验收。
+1. **原版特效还原**：注册表与事件字段已就绪（`E:/WindowsWorkspace/webworks/apps/stronghold-protocol/public/js/render/fxRegistry.js`、`fxRecipes.js`），现有效果仍是程序绘制。路线见设计稿「特效解耦与原版特效还原」第 3 步：扩展 `tools/local-extract` 导出特效贴图与预制体参数，PIXI 侧写精简粒子解释器，逐个对照原版录像验收。同日「角色DIY」线已从官方资源服务器直接下载 battle/prefabs/effects 并用 UnityPy+aklz4 解包出迷迭香的 43 个原作特效与贴图（见 `E:/WindowsWorkspace/omnicompany/docs/projects/stronghold-protocol/PROJECT_INDEX.md` 10-06 条目），下载与解包可直接复用。
 2. **战斗中的产出提示**：新模式战斗内容不发事件，单位头顶「+1 灵巧（战后）」与每场上限计数尚未显示，目前在结算后的产出栏可见。
 3. **浏览器逐项验收缺口**：库存使用中需要选择的补给（紧急征调凭证、阵营征调、拟态招募样本、博士晋升授权）、专项战备授训与战备晋升令的目标选择、三连唯一冲突，已有界面与参数，但只做了接口级核对，没有逐项在浏览器里点通。敌情等候区的敌人点击详情未接。
 4. **整备区上限待定**：新模式整备区没有上限，原模式为 10 格加临时区 5 格。设计稿建议沿用原规则并做成可配置参数（会影响平衡，需重跑整局试验）；在你决定前，页面把第 11 名起列在右上角。
