@@ -42,6 +42,29 @@ function operatorPool(state, catalog, gd) {
   }
   return out;
 }
+/**
+ * 晋升奖励 (the original's promotion reward, server/match/PlayerState.js pushRewardOffer): an elite formed queues a free
+ * pick of three DIFFERENT operators of tier min(调度中心等级 + 1, 6), copy-weighted from the pool; a tier without one
+ * more tops up from the tier below. Restored 2026-10-07 (user: 「怎么没有三连奖励了？？？」).
+ */
+export const PROMOTION_REWARD = Object.freeze({ count: 3, tierOffset: 1, maxTier: 6 });
+function pushPromotionReward(state, catalog, rng) {
+  const tier = Math.min((state.shop?.level || 1) + PROMOTION_REWARD.tierOffset, PROMOTION_REWARD.maxTier);
+  const choices = [];
+  for (let i = 0; i < PROMOTION_REWARD.count; i++) {
+    let id = null;
+    for (let t = tier; t >= 1 && !id; t--) {
+      const eligible = Object.entries(state.pool).filter(([cid, p]) => p.left > 0 && p.tier === t && opFor(catalog, cid) && !choices.includes(cid));
+      const total = eligible.reduce((n, [, p]) => n + p.left, 0);
+      if (!total) continue;
+      let roll = rng() * total;
+      for (const [cid, p] of eligible) { roll -= p.left; if (roll < 0) { id = cid; break; } }
+      id ||= eligible.at(-1)[0];
+    }
+    if (id) choices.push(id);
+  }
+  if (choices.length) state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices, tier, source: 'merge' });
+}
 function drawChess(state, catalog, rng, maxTier) {
   const eligible = Object.entries(state.pool).filter(([id, p]) => p.left > 0 && p.tier <= maxTier && opFor(catalog, id));
   const total = eligible.reduce((n, [, p]) => n + p.left, 0);
@@ -365,6 +388,7 @@ export function applyAction(state, action, options = {}) {
   const data = sessionData(options); const catalog = sessionCatalog(data, options); const gd = gdFor(work, data);
   ensurePermits(work, catalog);
   const rng = createRng(work.rngState); const events = [];
+  const elitesBefore = Number(work.totals?.elites || 0); // every elite this action forms earns a 晋升奖励 (below)
   const services = servicesFor(work, data, catalog, rng);
   const act = action.type; let readOnly = false;
   // a ready's battle replay rides beside the result, never inside the saved state (http.js keeps it per round)
@@ -560,6 +584,7 @@ export function applyAction(state, action, options = {}) {
       }
       }
     } else throw new Error('UNKNOWN_ACTION');
+    for (let n = Number(work.totals?.elites || 0) - elitesBefore; n > 0; n--) { pushPromotionReward(work, catalog, rng); events.push({ type: 'promotion-reward' }); }
     if (!readOnly) { work.rngState = rng.state(); work.revision++; }
     const errors = validateSession(work); if (errors.length) throw new Error(`INVALID_RESULT:${errors.join(',')}`);
     return replay ? { ok: true, state: work, events, replay } : { ok: true, state: work, events };

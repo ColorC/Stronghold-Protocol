@@ -333,6 +333,12 @@
   .ix-result__box { padding: .12rem .2rem; }
   .ix-result__box header { margin-bottom: .04rem; }
   .ix-result__box footer { padding-bottom: 10px; }
+  /* choice overlays (晋升奖励, 免费招募, 特供): shorter portraits and smaller notes so three cards fit the screen */
+  .ix-offer__box { padding: .12rem .2rem; }
+  .ix-choices { margin: .04rem 0 .06rem; gap: .1rem; }
+  .ix-choice { padding: .08rem .1rem; gap: .03rem; font-size: 12px; line-height: 1.4; }
+  .ix-choice__art { height: 1.1rem; }
+  .ix-choice .ix-notes li { font-size: 10px; line-height: 1.35; margin: .01rem 0; }
   .ix-result__box .ix-dmg { margin-bottom: .06rem; }
   .ix-dmg { display: grid; grid-template-columns: 1fr 1fr; column-gap: .3rem; }
   .ix-dmg li { padding: 0; grid-template-columns: 1.2rem 1fr .7rem auto; }
