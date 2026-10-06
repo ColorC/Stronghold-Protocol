@@ -566,10 +566,11 @@ function yanyouFlame(fx, c) {
 
 const ROSMON_CHAR = 'char_391_rosmon';
 const ROSMON_SKILL_PREFABS = Object.freeze({
-  skchr_rosmon_1: ['rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02', 'rosmon_skill_01_A_start_B', 'rosmon_skill_01_A_range'],
-  skchr_rosmon_2: ['rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02', 'rosmon_skill_02_buff'],
-  skchr_rosmon_3: ['rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_range', 'rosmon_skill_03_buff', 'rosmon_skill_03_buff_02'],
+  skchr_rosmon_1: ['rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02', 'rosmon_skill_01_A_start_B', 'rosmon_skill_01_B_start', 'rosmon_skill_01_A_range'],
+  skchr_rosmon_2: ['rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02', 'rosmon_skill_02_buff', 'rosmon_skill_02_buff_B', 'rosmon_skill_02_buff_01', 'rosmon_skill_02_buff_01_B', 'rosmon_skill_02_buff_02', 'rosmon_skill_02_buff_02_B'],
+  skchr_rosmon_3: ['rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_range', 'rosmon_skill_03_buff', 'rosmon_skill_03_buff_02', 'rosmon_skill_03_buff_02_B'],
 });
+const ROSMON_NORMAL_HIT_PREFABS = Object.freeze(['rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_B_hit_01']);
 const ROSMON_HIT_PREFABS = Object.freeze({
   skchr_rosmon_1: ['rosmon_skill_01_A_hit_01', 'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_B_hit_01'],
   skchr_rosmon_2: ['rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02'],
@@ -577,7 +578,10 @@ const ROSMON_HIT_PREFABS = Object.freeze({
 });
 const ROSMON_ATTACK_PREFABS = Object.freeze(['rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_start_B', 'rosmon_attack_B_start', 'rosmon_attack_B_start_B', 'rosmon_attack_A_range']);
 const rosmonSkillPrefabs = (skill) => ROSMON_SKILL_PREFABS[skill] || ROSMON_SKILL_PREFABS.skchr_rosmon_3;
-const rosmonHitPrefab = (skill, n = 0) => (ROSMON_HIT_PREFABS[skill] || ROSMON_HIT_PREFABS.skchr_rosmon_2)[Math.abs(Number(n) || 0) % (ROSMON_HIT_PREFABS[skill] || ROSMON_HIT_PREFABS.skchr_rosmon_2).length];
+const rosmonHitPrefab = (skill, n = 0) => {
+  const pool = skill ? (ROSMON_HIT_PREFABS[skill] || ROSMON_HIT_PREFABS.skchr_rosmon_2) : ROSMON_NORMAL_HIT_PREFABS;
+  return pool[Math.abs(Number(n) || 0) % pool.length];
+};
 
 /** Overlay the extracted Rosmontis prefab while retaining the upstream procedural effect underneath. */
 function rosmonSkill(fx, c, next) {
