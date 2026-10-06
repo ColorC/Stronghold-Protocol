@@ -284,7 +284,7 @@ export function viewSession(state, options = {}) {
     return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'] };
   });
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
-    board: field ? { stageId: field.stageId, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
+    board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
     forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null };
 }
 
@@ -314,6 +314,8 @@ export function applyAction(state, action, options = {}) {
   const rng = createRng(work.rngState); const events = [];
   const services = servicesFor(work, data, catalog, rng);
   const act = action.type; let readOnly = false;
+  // a ready's battle replay rides beside the result, never inside the saved state (http.js keeps it per round)
+  let replay = null;
   try {
     if (act === 'inspect') {
       const piece = work.pieces.find((x) => x.uid === action.uid);
@@ -460,6 +462,7 @@ export function applyAction(state, action, options = {}) {
       invokeHook(work, 'prepEnd', { round: work.round }, services);
       const battle = runIndependentBattle(work, { data, catalog });
       if (!battle || !battle.result) throw new Error('BATTLE_FAILED');
+      replay = battle.replay || null;
       const gd = gdFor(work, data); const playerResult = battle.result.perPlayer?.independent || Object.values(battle.result.perPlayer || {})[0] || {};
       const leaked = Array.isArray(playerResult.leaked) ? playerResult.leaked.filter((x) => x && x.counted !== false).reduce((n, x) => n + Math.max(0, Number(x.lpr) || 1), 0) : 0;
       const lpLost = Math.min(gd.lpCapPerRound, Math.max(0, leaked));
@@ -474,6 +477,7 @@ export function applyAction(state, action, options = {}) {
       const failedBoss = bossRound && !bossCleared;
       const terminalRound = lastRound || failedBoss || work.lp <= 0;
       work.history.push({ round: work.round, type: 'battle', result: battle.result, lpLost, bossCleared });
+      events.push({ type: 'battle', round: work.round, lpLost, bossCleared, duration: replay?.duration ?? null });
       if (terminalRound) {
         work.outcome = !work.lp || (bossRound && !bossCleared) ? 'loss' : 'win'; work.phase = 'finished';
         events.push({ type: 'finished', outcome: work.outcome, result: battle.result });
@@ -499,7 +503,7 @@ export function applyAction(state, action, options = {}) {
     } else throw new Error('UNKNOWN_ACTION');
     if (!readOnly) { work.rngState = rng.state(); work.revision++; }
     const errors = validateSession(work); if (errors.length) throw new Error(`INVALID_RESULT:${errors.join(',')}`);
-    return { ok: true, state: work, events };
+    return replay ? { ok: true, state: work, events, replay } : { ok: true, state: work, events };
   } catch (error) {
     const code = typeof error?.message === 'string' && /^[A-Z][A-Z0-9_]*$/.test(error.message) ? error.message : 'ACTION_FAILED';
     return { ok: false, error: { code, message: error?.message || 'Action failed.' }, state };

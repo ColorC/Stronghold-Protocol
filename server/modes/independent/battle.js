@@ -13,6 +13,8 @@ import { getCatalog } from './catalog.js';
 const PLAYER_ID = 'independent';
 const SAMPLE_LIMIT = 24;
 const SAMPLE_INTERVAL_TICKS = 30;
+/** Replay frames: one b.snap + the b.ev tuples drained since the previous one, every 3 ticks (tools/record-battle.mjs). */
+export const REPLAY_SNAP_EVERY = 3;
 const MAX_TICKS = Math.ceil(MAX_BATTLE_TIME / TICK) + 1;
 
 function rawData(data) {
@@ -142,12 +144,24 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     extraContent: [b => installIndependentBattle(b, { catalog, state: input })],
   });
   const samples = [];
+  // The replay the browser plays with the original renderer is recorded from this authoritative run, in the
+  // format of tools/record-battle.mjs (public/dev/render-demo.js plays those): snapshot() and drainEvents() only read
+  // the field and empty the event queue, so the run and its result are the same with or without it.
+  const frames = [];
+  let field = null;
   while (!battle.finished && battle.tickCount < MAX_TICKS) {
     battle.step();
+    if (!field) field = battle.fieldMeta();
+    if (battle.tickCount % REPLAY_SNAP_EVERY === 0) frames.push({ snap: battle.snapshot(), ev: battle.drainEvents() });
     if ((battle.tickCount % SAMPLE_INTERVAL_TICKS === 0 || battle.finished) && samples.length < SAMPLE_LIMIT) samples.push(sampleBattle(battle));
   }
   const capped = !battle.finished;
   if (capped) battle.forceEnd('timeout');
+  // the end state; a battle that ended on a frame tick only appends its trailing events
+  const tail = { snap: battle.snapshot(), ev: battle.drainEvents() };
+  const lastFrame = frames[frames.length - 1];
+  if (!lastFrame || tail.snap.t > lastFrame.snap.t) frames.push(tail);
+  else lastFrame.ev.push(...tail.ev);
   const result = battle.result();
   const rewards = battle.independentRewards ?? [];
   const pieceStates = Object.fromEntries(input.pieces.map((p) => [p.uid, {
@@ -170,5 +184,11 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     errors: battle.errors.slice(0, 20),
   };
   if (battle.errorCount) throw Object.assign(new Error(`independent Battle recorded ${battle.errorCount} simulation/content error(s)`), { diagnostics, result });
-  return { result, rewards, pieceStates, samples, diagnostics };
+  const replay = {
+    // field = the m.field payload, as in tools/record-battle.mjs; fieldKind = the board ('normal' | 'bossL')
+    version: 1, kind: prepared.kind, fieldKind: prepared.field, stageId: prepared.stageId, modeId: prepared.modeId, round: prepared.round,
+    bossId: prepared.bossId ?? null, tick: TICK, snapEvery: REPLAY_SNAP_EVERY, duration: Math.round(battle.time * 100) / 100,
+    field, frames,
+  };
+  return { result, rewards, pieceStates, samples, diagnostics, replay };
 }

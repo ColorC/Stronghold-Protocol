@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
+import http from 'node:http';
 import path from 'node:path';
 import { startServer } from '../../server/index.js';
 
@@ -54,6 +55,26 @@ test('independent HTTP actions serialize revisions, persist across restarts and 
     assert.equal(ready.data.state.round, 2);
     assert.ok(ready.data.state.battleSummary.samples.length);
     assert.equal(ready.data.state.battleSummary.diagnostics.errorCount, 0);
+    // the battle's replay is kept beside the session (never inside it) and served per round, gzip or plain
+    const fought = ready.data.events.find((x) => x.type === 'battle');
+    assert.equal(fought.round, 1);
+    assert.ok(!JSON.stringify(ready.data.state).includes('"frames"'));
+    const replayUrl = new URL(`${endpoint}/replays/1`, root);
+    const zipped = await fetch(replayUrl, { headers: { 'accept-encoding': 'gzip' } });
+    assert.equal(zipped.status, 200);
+    const replay = await zipped.json();
+    assert.equal(replay.round, 1);
+    assert.equal(replay.field.fieldId, 'independent-r1');
+    assert.ok(replay.frames.length > 10 && replay.frames.every((f) => Array.isArray(f.ev) && Array.isArray(f.snap.units)));
+    assert.ok(replay.frames.some((f) => f.ev.some((e) => e[0] === 'atk')), 'the replay carries attack events for the renderer');
+    assert.equal(replay.duration, fought.duration);
+    const plain = await new Promise((resolve, reject) => http.get(replayUrl, (res) => {
+      let body = ''; res.setEncoding('utf8'); res.on('data', (d) => { body += d; }); res.on('end', () => resolve({ res, body }));
+    }).on('error', reject));
+    assert.equal(plain.res.headers['content-encoding'], undefined);
+    assert.deepEqual(JSON.parse(plain.body), replay);
+    assert.equal((await fetch(new URL(`${endpoint}/replays/2`, root))).status, 404);
+    assert.equal((await fetch(new URL(`${endpoint}/replays/x`, root))).status, 404);
     assert.ok((await fetch(new URL('/', root))).ok, 'original homepage remains available');
     console.log(JSON.stringify({ path: path.join(directory, `${id}.json`), role: 'actual session after battle and server restart' }));
   } finally { await server.close(); }

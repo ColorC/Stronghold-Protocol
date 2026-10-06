@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { getCatalog } from './catalog.js';
 import { createSession, applyAction, viewSession, validateSession } from './session.js';
 import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
@@ -65,6 +66,27 @@ export function createIndependentHttp({ data, directory }) {
     return { data, catalog };
   };
   const file = (id) => path.join(directory, `${id}.json`);
+  // one gzip file per fought round, next to the session; replays never enter the session state itself
+  const replayFile = (id, round) => path.join(directory, `${id}.replay-r${round}.json.gz`);
+  async function saveReplay(id, replay) {
+    await mkdir(directory, { recursive: true });
+    const pending = path.join(directory, `${id}.${randomUUID()}.pending`);
+    await writeFile(pending, gzipSync(JSON.stringify(replay)), { flag: 'wx' });
+    await rename(pending, replayFile(id, replay.round));
+  }
+  async function sendReplay(req, res, id, round) {
+    let body;
+    try { body = await readFile(replayFile(id, round)); }
+    catch (error) {
+      if (error.code === 'ENOENT') { reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: '这一轮没有战斗记录' } }); return; }
+      throw error;
+    }
+    const gzip = /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''));
+    if (!gzip) body = gunzipSync(body);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, max-age=3600', Vary: 'Accept-Encoding',
+      ...(gzip ? { 'Content-Encoding': 'gzip' } : {}), 'Content-Length': body.length });
+    res.end(req.method === 'HEAD' ? undefined : body);
+  }
   async function load(id) {
     try {
       const state = JSON.parse(await readFile(file(id), 'utf8'));
@@ -114,11 +136,13 @@ export function createIndependentHttp({ data, directory }) {
         const id = randomUUID(); await save(id, state); reply(res, 201, packet(id, state)); return true;
       }
       const parts = relative.split('/');
-      if (parts[0] !== 'sessions' || !SESSION_ID.test(parts[1] || '') || parts.length > 3 || (parts.length === 3 && parts[2] !== 'actions')) {
+      const replayRoute = parts.length === 4 && parts[2] === 'replays' && /^[1-9][0-9]?$/.test(parts[3]);
+      if (parts[0] !== 'sessions' || !SESSION_ID.test(parts[1] || '') || parts.length > 4 || (parts.length === 3 && parts[2] !== 'actions') || (parts.length === 4 && !replayRoute)) {
         reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: '演习未找到' } }); return true;
       }
       const id = parts[1];
       if (parts.length === 2 && req.method === 'GET') { reply(res, 200, packet(id, await load(id))); return true; }
+      if (replayRoute && (req.method === 'GET' || req.method === 'HEAD')) { await sendReplay(req, res, id, Number(parts[3])); return true; }
       if (parts.length === 3 && req.method === 'POST') {
         const body = await bodyOf(req);
         await exclusive(id, async () => {
@@ -126,6 +150,8 @@ export function createIndependentHttp({ data, directory }) {
           if (body.expectedRevision !== state.revision) { reply(res, 409, { ...packet(id, state), ok: false, error: { code: 'REVISION', message: '演习已更新，请重试当前操作' } }); return; }
           const result = applyAction(state, body.action, definitions());
           if (!result.ok) { reply(res, 422, { ...packet(id, state), ok: false, error: result.error }); return; }
+          // the replay first: a saved state never points at a battle whose replay is missing
+          if (result.replay) await saveReplay(id, result.replay);
           await save(id, result.state);
           reply(res, 200, packet(id, result.state, result.events));
         });
