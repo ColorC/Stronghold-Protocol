@@ -33,6 +33,7 @@ export class OriginalVfxPlayer {
     this.manifestPromise = null;
     this.entries = new Map();
     this.active = new Set();
+    this.missing = new Set();
   }
 
   _manifest() {
@@ -54,7 +55,7 @@ export class OriginalVfxPlayer {
     if (this.entries.has(prefab)) return this.entries.get(prefab);
     const manifest = await this._manifest();
     const meta = manifest?.get(prefab);
-    if (!meta) return null;
+    if (!meta) { this.missing.add(prefab); return null; }
     const atlasUrl = `${this.root}/${encodeURIComponent(prefab)}/atlas.webp`;
     const base = this.P.BaseTexture.from(atlasUrl, { scaleMode: this.P.SCALE_MODES?.LINEAR });
     if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
@@ -73,10 +74,11 @@ export class OriginalVfxPlayer {
     return entry;
   }
 
-  play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', mirror = false, offsetZ = 0 } = {}) {
+  play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', bone = null, mirror = false, offsetZ = 0 } = {}) {
     if (!prefab || typeof document === 'undefined' || !this.P?.Sprite) return false;
     const record = { prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, scale: Number(scale) || 1, followId, group, loop, elapsed: 0, delay: Math.max(0, Number(delay) || 0), ready: false, dead: false, sprite: null, entry: null, life,
-      anchor: anchor === 'chest' ? 'chest' : 'ground', mirror: mirror === true, offsetZ: Number(offsetZ) || 0 };
+      anchor: anchor === 'bone' ? 'bone' : anchor === 'root' ? 'root' : anchor === 'chest' ? 'chest' : 'ground',
+      bone: typeof bone === 'string' && bone ? bone : null, mirror: mirror === true, offsetZ: Number(offsetZ) || 0 };
     this.active.add(record);
     this._entry(prefab).then((entry) => {
       if (record.dead || !entry) return;
@@ -109,11 +111,21 @@ export class OriginalVfxPlayer {
     const z = followed ? (followed.z || 0) + (followed.hover || 0) + (record.anchor === 'chest' ? (followed._headTiles ? followed._headTiles * 0.45 : 0.5) : 0) + record.offsetZ : record.z + record.offsetZ;
     const p = this.cam()?.project(x, y, z, {});
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
-    record.sprite.position.set(p.x, p.y);
+    let sx = p.x, sy = p.y;
+    let depth = p.depth;
+    if (followed && record.anchor === 'bone' && typeof followed.effectAnchor === 'function') {
+      const a = followed.effectAnchor(record.bone);
+      if (a && Number.isFinite(a.x) && Number.isFinite(a.y)) { sx = a.x; sy = a.y; depth = a.depth ?? depth; }
+    } else if (followed && record.anchor === 'root' && followed.root) {
+      sx = Number(followed.root.x) || p.x;
+      sy = Number(followed.root.y) || p.y;
+      depth = Number.isFinite(Number(followed.root.zIndex)) ? -Number(followed.root.zIndex) : depth;
+    }
+    record.sprite.position.set(sx, sy);
     const s = Math.max(0.01, (p.s || 1) * record.scale / Math.max(1, record.entry.meta.pxPerUnit || 96));
     const facing = followed && record.mirror ? (followed.isEnemy ? -1 : 1) * (Number(followed.visFacing ?? followed.facing) < 0 ? -1 : 1) : 1;
     record.sprite.scale.set((s / 2) * facing, s);
-    record.sprite.zIndex = Number.isFinite(p.depth) ? -p.depth : 0;
+    record.sprite.zIndex = Number.isFinite(depth) ? -depth : 0;
   }
 
   _remove(record) {
@@ -143,7 +155,8 @@ export class OriginalVfxPlayer {
   }
 
   get count() { return this.active.size; }
+  get missingCount() { return this.missing.size; }
 
   clear() { for (const record of [...this.active]) this._remove(record); }
-  destroy() { this.clear(); this.entries.clear(); this.manifest = null; this.manifestPromise = null; }
+  destroy() { this.clear(); this.entries.clear(); this.missing.clear(); this.manifest = null; this.manifestPromise = null; }
 }
