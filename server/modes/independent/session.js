@@ -4,10 +4,10 @@ import { canPlace, inField, positionClass } from '../../match/board.js';
 import { modeIdFor } from '../../../shared/constants.js';
 import { createRng } from '../../sim/rng.js';
 import { getCatalog } from './catalog.js';
-import { runNativeHook } from './native.js';
+import { runNativeHook, runEquipmentPrepEnd } from './native.js';
 import { runIndependentBattle, getIndependentField, previewUnitStats } from './battle.js';
 import { previewOf } from '../../match/waves.js';
-import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
+import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets, recordProduction } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
@@ -57,6 +57,8 @@ function drawChess(state, catalog, rng, maxTier) {
 function slotsFor(state, gd, catalog, rng) {
   const counts = gd.shopSlots(state.shop.level); const slots = [];
   for (let i = 0; i < counts.chess + counts.item; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
+  // 商店预增益 (native shopCarry): every new offer carries what the game has built up so far
+  for (const fx of state.playerEffects || []) if (fx.type === 'shopCarry' && fx.quantity > 0) for (const slot of slots) slot.equipment.push({ id: fx.id, quantity: fx.quantity, origin: 'shopCarry' });
   return slots;
 }
 function advanceShop(state, gd, catalog, rng) {
@@ -79,10 +81,13 @@ function servicesFor(state, data, catalog, rng) {
     grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, { phase: services.phase, ...extra }),
     grantChess: (draft, chessId, extra = {}) => { const piece = gainChess(draft, catalog, chessId, extra); invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); maybeMergeOperator(draft, catalog, chessId); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
+    recordProduction: (draft, entry) => recordProduction(draft, { phase: services.phase, ...entry }),
     record: (draft, event) => pushEvent(draft, event),
   };
   return services;
 }
+/** Game-long totals the second-wave traits read (native.js grantByTotal / totalBonus / comeback / streak). */
+function addTotal(state, key, n = 1) { state.totals ||= {}; state.totals[key] = Number(state.totals[key] || 0) + n; }
 function gainChess(state, catalog, chessId, extra = {}) {
   const def = opFor(catalog, chessId); if (!def || def.elite || def.isElite) throw new Error('UNKNOWN_CHESS');
   const stock = poolFor(state, chessId);
@@ -90,7 +95,7 @@ function gainChess(state, catalog, chessId, extra = {}) {
   const uid = `p${state.nextUid++}`; const sourceChess = def.source?.normalChess || {};
   const piece = { uid, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: Number(sourceChess.skill?.index ?? def.defaultSkillIndex ?? 0), moduleId: 'none', equipment: [], attachments: [], nativeState: { preferences: { productionBadge: 'precision', factionPriority: Object.values(TAVERN_FACTIONS) } }, bodyPenaltyApplied: false, poolCopies: extra.poolCopies ?? 1 };
   ensurePermit(piece, catalog);
-  state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1;
+  state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1; addTotal(state, 'gained');
   return piece;
 }
 /**
@@ -182,7 +187,7 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
     }
   };
   for (const p of group) if (p !== survivor) mergeMarkers(survivor.nativeState ||= {}, p.nativeState);
-  survivor.chessId = op.eliteChessId; survivor.elite = true; survivor.equipment = worn; survivor.attachments = keptAttachments;
+  survivor.chessId = op.eliteChessId; survivor.elite = true; addTotal(state, 'elites'); survivor.equipment = worn; survivor.attachments = keptAttachments;
   survivor.bodyPenaltyApplied = penaltyApplied;
   survivor.poolCopies = copies;
   for (const p of group) if (p !== survivor) state.pieces.splice(state.pieces.indexOf(p), 1);
@@ -406,7 +411,7 @@ export function applyAction(state, action, options = {}) {
       if (work.funds < slot.price) throw new Error('NO_FUNDS');
       if (slot.kind === 'chess') {
         const pool = poolFor(work, slot.id); if (!pool?.left) throw new Error('SOLD_OUT');
-        work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
+        work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; addTotal(work, 'bought'); addTotal(work, 'spent', slot.price); invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
         invokeHook(work, 'gain', { piece, source: 'buy', paid: true }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
         for (const carried of slot.equipment || []) {
@@ -426,7 +431,7 @@ export function applyAction(state, action, options = {}) {
       const free = work.shop.freeRefreshes > 0;
       if (free) work.shop.freeRefreshes--;
       else { if (work.funds < 1) throw new Error('NO_FUNDS'); work.funds--; work.counters.spent++; work.counters.paidRefreshes++; invokeHook(work, 'spend', { amount: 1, source: 'refresh' }, services); }
-      work.counters.refreshes = (work.counters.refreshes || 0) + 1;
+      work.counters.refreshes = (work.counters.refreshes || 0) + 1; addTotal(work, 'refreshes'); if (!free) addTotal(work, 'spent');
       work.shop.slots = slotsFor(work, gd, catalog, rng); invokeHook(work, 'refresh', { free }, services);
       events.push({ type: 'refresh' });
     } else if (act === 'freeze') {
@@ -434,10 +439,11 @@ export function applyAction(state, action, options = {}) {
     } else if (act === 'upgrade') {
       ensurePrep(work); if (work.shop.level >= gd.maxShopLevel) throw new Error('MAX_LEVEL');
       const price = work.shop.upgradePrice; if (work.funds < price) throw new Error('NO_FUNDS');
-      work.funds -= price; work.counters.spent += price; invokeHook(work, 'spend', { amount: price, source: 'upgrade' }, services); work.shop.level++;
+      work.funds -= price; work.counters.spent += price; addTotal(work, 'spent', price); addTotal(work, 'upgrades'); invokeHook(work, 'spend', { amount: price, source: 'upgrade' }, services); work.shop.level++;
       work.shop.upgradePrice = gd.upgradeBase(work.shop.level) ?? 0; events.push({ type: 'upgrade', level: work.shop.level });
     } else if (act === 'sell') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
+      invokeHook(work, 'selling', { piece: p }, services); addTotal(work, 'sold');
       discardPieceAssets(work, p); safeCopyPool(work, p.chessId, p.poolCopies || 1); work.pieces.splice(work.pieces.indexOf(p), 1);
       work.funds++; work.counters.sold++; handleSaleEquipment(work, catalog); invokeHook(work, 'sold', { piece: p }, services); events.push({ type: 'sell', uid: p.uid, funds: 1 });
     } else if (act === 'move') {
@@ -509,6 +515,7 @@ export function applyAction(state, action, options = {}) {
         cells.add(cell);
       }
       invokeHook(work, 'prepEnd', { round: work.round }, services);
+      { const outer = services.phase; services.phase = 'prepEnd'; try { runEquipmentPrepEnd(work, services); } finally { services.phase = outer; } }
       const battle = runIndependentBattle(work, { data, catalog });
       if (!battle || !battle.result) throw new Error('BATTLE_FAILED');
       replay = battle.replay || null;
@@ -526,6 +533,8 @@ export function applyAction(state, action, options = {}) {
       const failedBoss = bossRound && !bossCleared;
       const terminalRound = lastRound || failedBoss || work.lp <= 0;
       work.history.push({ round: work.round, type: 'battle', result: battle.result, lpLost, bossCleared });
+      addTotal(work, 'battles'); addTotal(work, 'kills', Number(battle.result.killed || 0)); addTotal(work, 'lpLostTotal', lpLost);
+      work.totals.lastLpLost = lpLost; work.totals.cleanStreak = lpLost === 0 ? Number(work.totals.cleanStreak || 0) + 1 : 0;
       events.push({ type: 'battle', round: work.round, lpLost, bossCleared, duration: replay?.duration ?? null });
       if (terminalRound) {
         work.outcome = !work.lp || (bossRound && !bossCleared) ? 'loss' : 'win'; work.phase = 'finished';
