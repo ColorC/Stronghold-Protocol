@@ -5,7 +5,7 @@ const DEFAULT_ROOT = '/assets/vfx/rosmon';
 
 const asFinite = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const FRAME_FRAG = `
-precision mediump float;
+precision highp float;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
 void main(void) {
@@ -57,7 +57,10 @@ export class OriginalVfxPlayer {
     const meta = manifest?.get(prefab);
     if (!meta) { this.missing.add(prefab); return null; }
     const atlasUrl = `${this.root}/${encodeURIComponent(prefab)}/atlas.webp`;
-    const base = this.P.BaseTexture.from(atlasUrl, { scaleMode: this.P.SCALE_MODES?.LINEAR });
+    // The extractor's atlas is a premultiplied-colour / coverage pair.  The reference player samples it with
+    // nearest filtering and premultiplied blending; linear filtering smears the narrow sword/trail cells into the
+    // black padding and is the reason the otherwise-correct 锏 trail looked muddy.
+    const base = this.P.BaseTexture.from(atlasUrl, { scaleMode: this.P.SCALE_MODES?.NEAREST });
     if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
     const cellW = Math.max(1, Math.floor(asFinite(meta.cell?.[0], base.width / Math.max(1, meta.cols || 1) / 2)));
     const cellH = Math.max(1, Math.floor(asFinite(meta.cell?.[1], base.height / Math.max(1, Math.ceil(meta.frames / Math.max(1, meta.cols || 1))))));

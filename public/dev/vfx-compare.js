@@ -110,6 +110,7 @@ function resetBattle() {
   const skillId = operator === 'blkkgt' ? (scenario.startsWith('skchr_blkkgt_') ? scenario : 'skchr_blkkgt_3') : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
   const units = unitsFor(skillId);
   const original = after?.debug?.fx?.originalVfx;
+  original?.clear?.();
   if (original && original.root !== (operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon')) {
     original.destroy();
     original.root = operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon';

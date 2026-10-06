@@ -607,15 +607,17 @@ function rosmonSkill(fx, c) {
 
 function rememberRosmonSpec(c, spec) {
   if (!c.src || !spec) return;
-  ROSMON_LAST_SPEC.set(c.src.id, spec);
-  if (c.attackId != null && c.attackId !== 0) ROSMON_ATTACK_SPECS.set(`${c.src.id}:${c.attackId}`, spec);
+  const record = { view: c.src, spec };
+  ROSMON_LAST_SPEC.set(c.src.id, record);
+  if (c.attackId != null && c.attackId !== 0) ROSMON_ATTACK_SPECS.set(`${c.src.id}:${c.attackId}`, record);
 }
 
 function rosmonSpecForDamage(c) {
   const attacker = c.src || c.attacker;
   if (!attacker) return null;
-  return (c.attackId != null && c.attackId !== 0 ? ROSMON_ATTACK_SPECS.get(`${attacker.id}:${c.attackId}`) : null)
+  const record = (c.attackId != null && c.attackId !== 0 ? ROSMON_ATTACK_SPECS.get(`${attacker.id}:${c.attackId}`) : null)
     || ROSMON_LAST_SPEC.get(attacker.id) || null;
+  return record?.view === attacker ? record.spec : null;
 }
 
 function targetMount(fx, view, prefab, delay = 0) {
@@ -665,7 +667,7 @@ function blkkgtSkill(fx, c) {
   const group = `blkkgt:skill:${c.view.id}`;
   if (c.on) {
     const skill = c.skillId || c.who?.skill;
-    BLKKGT_ACTIVE.set(c.view.id, skill || null);
+    BLKKGT_ACTIVE.set(c.view.id, { view: c.view, skill: skill || null });
     BLKKGT_S3_FINAL.delete(c.view.id);
     if (skill === 'skchr_blkkgt_3') {
       c.view.setOriginalVfxHidden?.(true);
@@ -695,7 +697,8 @@ function blkkgtAttack(fx, c, next) {
 
 function blkkgtFx(fx, c, next) {
   const id = c.extra?.id ?? c.unitId ?? null;
-  const active = id != null ? BLKKGT_ACTIVE.get(id) : null;
+  const activeRecord = id != null ? BLKKGT_ACTIVE.get(id) : null;
+  const active = activeRecord?.view === fx._viewOf?.(id) ? activeRecord.skill : null;
   const binding = active ? BLKKGT_SKILLS[active] : null;
   if (!binding) { next(); return; }
   // Both S2's direct slash burst and S3's ten loop slashes have their target-side visual in the following `dmg`
@@ -712,7 +715,8 @@ function blkkgtFx(fx, c, next) {
 function blkkgtDamage(fx, c, next) {
   if (!c.view) { next(); return; }
   const owner = c.src || c.attacker;
-  const active = owner ? BLKKGT_ACTIVE.get(owner.id) : null;
+  const activeRecord = owner ? BLKKGT_ACTIVE.get(owner.id) : null;
+  const active = activeRecord?.view === owner ? activeRecord.skill : null;
   const skill = active || (c.isSkill ? c.who?.skill : null);
   const binding = skill ? BLKKGT_SKILLS[skill] : null;
   if (!binding?.hits?.length) { next(); return; }
