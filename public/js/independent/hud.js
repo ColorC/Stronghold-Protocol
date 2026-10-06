@@ -18,7 +18,8 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 export function GearIcon({ id, catalog, class: cls }) {
   if (id && BADGE_BOND[id]) return html`<${BondGlyph} bondId=${BADGE_BOND[id]} class=${cx('ix-gear', cls)} />`;
   if (id && data.lookup('items', id)) return html`<span class=${cx('ix-gear', 'ix-gear--item', cls)}><${ItemIcon} itemId=${id} size="sm" showTier=${false} /></span>`;
-  const name = (id && catalog?.gear?.[id]?.name) || '徽章';
+  // gear without original art (prize gear, a prize kept in the inventory): its own name's first character
+  const name = (id && (catalog?.gear?.[id]?.name || catalog?.prizes?.[id]?.name)) || '徽章';
   return html`<span class=${cx('ix-gear', 'ix-gear--txt', cls)} title=${name}>${[...name][0]}</span>`;
 }
 
