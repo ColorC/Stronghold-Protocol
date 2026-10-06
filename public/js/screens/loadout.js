@@ -110,7 +110,7 @@ function moduleIconOf(m, rec) {
 }
 
 /** Skill icon with the official selection outline; falls back to a lettered tile. */
-function SkillIcon({ m, rec, index, on = false, size = 'md' }) {
+export function SkillIcon({ m, rec, index, on = false, size = 'md' }) {
   const src = skillIconOf(m, rec);
   return html`<span class=${cx('lo-sicon', `lo-sicon--${size}`, on && 'is-on')}>
     <${Img} src=${src} fallback=${html`<span class="lo-sicon__glyph num">${skillLabel(index)}</span>`} />
@@ -188,7 +188,7 @@ function SkillOption({ m, opt, on, level, onPick }) {
   </button>`;
 }
 
-function ModuleInfo({ m, golden, opt }) {
+export function ModuleInfo({ m, golden, opt }) {
   if (!golden) return null;
   const rec = opt.id === MODULE_NONE ? null : opt.rec;
   if (!rec) {

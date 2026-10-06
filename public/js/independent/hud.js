@@ -2,9 +2,12 @@
 // shopbar, scard, lvcard, funds) with the independent mode's own data. Default layer only (docs/independent-mode/
 // frontend-design.md 信息分层): numbers that decide the current step; full texts open in the detail card.
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { html, Icon, Button, HexBadge, TierChip, Tooltip, MicroLabel, DifficultyTag } from '../ui/components.js';
+import { html, Fragment, Icon, Button, HexBadge, TierChip, Tooltip, MicroLabel, DifficultyTag } from '../ui/components.js';
 import { Img, BondGlyph, CoinGlyph, GIcon, LpTower, ItemIcon, UnitThumb } from '../ui/gameComponents.js';
-import { PhaseCapsule } from '../ui/hud.js';
+import { PhaseCapsule, CheckBtn, checkButtons } from '../ui/hud.js';
+import { PriceHex, SkillBadge } from '../ui/shopBar.js';
+import { chessLoadout } from '../ui/gameLogic.js';
+import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { chessPortraitUrl, profIconUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
@@ -48,26 +51,37 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
 // ---- top bar ------------------------------------------------------------------------------------------------------
 
 /** Round / phase / LP / ready, on the original top bar's frame. `battle` = the replay on screen (or null). */
-export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null }) {
+export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null, drawer = null, onDrawer = null }) {
   const enemies = (state.nextEnemies || []).reduce((n, e) => n + Number(e.count || 0), 0);
-  const phase = battle ? PHASE.COMBAT : PHASE.PREP;
+  // a boss field reads 最终攻势 with the leader's HP bar in the capsule (ui/hud.js PhaseCapsule, gameLogic snapHud)
+  const boss = !!battle && battle.replay?.kind && battle.replay.kind !== 'normal';
+  const phase = battle ? (boss ? PHASE.FINAL_ASSAULT : PHASE.COMBAT) : PHASE.PREP;
   const round = battle ? battle.round : state.round;
   const lp = battle ? battle.lpBefore : state.lp;
-  const pending = battle && battle.done ? battle.lpLost : 0;
+  // the leaks of the replay so far come off the tower as they happen (the original's live −N), the settled loss at the end
+  const pending = battle ? Math.min(lp, battle.done ? battle.lpLost : Math.min(battle.lpLost, battle.leaked || 0)) : 0;
+  // the official 🔍 pair: 本局信息 / 敌方情报 on the left (the drawer), the pen of the next enemies on the right
+  const btn = checkButtons({ pen, penAvail: !battle && enemies > 0, infoOpen: !!drawer });
   return html`<header class="gtop ix-top">
     <div class="gtop__left">
       <${Button} variant="danger" size="lg" square=${true} icon="exit" onClick=${onExit} aria-label="离开" title="离开（进度已保存）" class="gtop__exit tapx" />
       <div class="gtop__meta">${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="sm" />` : null}</div>
     </div>
     <div class="gtop__center brackets">
+      ${onDrawer ? html`<${Tooltip} text=${pen ? '返回阵地' : '本局信息与敌方情报'} placement="bottom">
+        <${CheckBtn} sprite=${btn.left.sprite} cls=${cx('gtop__iconbtn', btn.left.back && 'is-back')} label=${pen ? '返回' : '本局信息'}
+          chev=${btn.left.back ? '◀◀' : null} on=${!!drawer && !pen} onClick=${() => (pen ? onPen(false) : onDrawer(drawer ? null : 'info'))} testid="check-player" />
+      <//>` : null}
       <div class="roundbox">
         <span class="roundbox__label">回合</span>
         <b class="roundbox__num num">${Math.min(round, state.roundLimit)}<small>/${state.roundLimit}</small></b>
       </div>
-      <${PhaseCapsule} pub=${{ phase }} hud=${battle ? { killed: battle.killed ?? 0, total: battle.total ?? null } : null} />
+      <${PhaseCapsule} pub=${{ phase }} hud=${battle ? { killed: battle.killed ?? 0, total: battle.total ?? null, boss: battle.hud?.boss ?? null, dp: battle.hud?.dp ?? null } : null} />
       <${LpTower} value=${lp} size="lg" tone=${lp <= 5 ? 'danger' : null} pending=${pending} tip="防线生命：敌人突破防线会扣除" />
-      ${!battle && onPen && enemies ? html`<button type="button" class=${cx('ix-penbtn', pen && 'is-on')} onClick=${onPen} data-testid="ix-pen"
-        title=${pen ? '返回阵地' : '查看下一轮敌人'}>${pen ? '返回阵地' : html`敌情 <b class="num">${enemies}</b>`}</button>` : null}
+      ${onPen ? html`<${Tooltip} text=${btn.right.grey && !pen ? '休整期可以查看即将迎击的敌方单位' : pen ? '返回阵地' : `查看下一轮的 ${enemies} 名敌人`} placement="bottom">
+        <${CheckBtn} sprite=${btn.right.sprite} cls=${cx('enemybtn', btn.right.grey && 'is-grey')} label=${pen ? '返回' : '敌方情报'}
+          chev=${btn.right.grey ? null : '▶▶'} disabled=${btn.right.grey && !pen} onClick=${() => (pen ? onPen(false) : !battle && enemies ? onPen(true) : null)} testid="ix-pen" />
+      <//>` : null}
     </div>
     <div class="gtop__right">
       ${!battle && state.phase === 'prep' ? html`<div class="readywrap">
@@ -76,6 +90,7 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
             <span class="readybtn__box"></span><span class="readybtn__label">开始战斗</span><kbd class="readybtn__key">Space</kbd>
           </button>
         <//>
+        ${readyReason ? html`<span class="readywrap__why" role="status" data-testid="ready-why"><${Icon} name="warn" /><span>${readyReason}</span></span>` : null}
       </div>` : null}
     </div>
   </header>`;
@@ -83,7 +98,6 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
 
 // ---- left: inventory strip + production -----------------------------------------------------------------------------
 
-/** Inventory at a glance (the bond strip's place): every stack's icon and count; a tap opens the inventory. */
 /**
  * The stock laid out as tiles, one per item and grade (the stock holds catalog.rules.inventoryCapacity of them). Drag a
  * tile onto an operator — on the board, in the bench or in the overflow list — and it is worn (a badge stack goes on
@@ -159,34 +173,108 @@ function ProdRow({ row, state, catalog, when = false }) {
 }
 
 /**
+ * How many lines the production column shows per page: the column runs from 2.02rem below the top to 5rem above the
+ * bottom (css .ix-prod), a line is max(.32rem, 22px) tall, one line is kept for the pager. Follows resizes.
+ */
+function usePageLines() {
+  const calc = () => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 100;
+    return Math.max(4, Math.floor((innerHeight - rem * 7.4) / Math.max(rem * .32, 22)) - 1);
+  };
+  const [n, setN] = useState(calc);
+  useEffect(() => { const on = () => setN(calc()); addEventListener('resize', on); return () => removeEventListener('resize', on); }, []);
+  return n;
+}
+
+/**
  * What the coming 休整期结束 will forge (server forecast) and what came in since the last battle began — the answer to
  * "where did this come from" (design: 产出栏). Pieces with a prep-end trait that yields nothing now are listed dim.
+ * A long list turns pages (‹ 1/2 ›) instead of scrolling inside the column; a section cut by a page break repeats its
+ * heading on the next page.
  */
 export function ProductionPanel({ state, catalog, sinceRevision }) {
-  const [open, setOpen] = useState(true);
+  // folded at first on a short phone screen: open it covers half of the field's left side there
+  const [open, setOpen] = useState(() => !(globalThis.matchMedia?.('(max-height: 460px)').matches));
+  const [page, setPage] = useState(0);
+  const perPage = usePageLines();
   const fc = forecastRows(state, catalog);
   // the last ready wrote one revision: its prep-end forging, the battle's rewards and this round's start; later actions wrote the rest
   const rows = (state.production || []).filter((r) => r.revision > sinceRevision && r.origin !== 'shop');
   const battleRows = groupProduction(rows.filter((r) => r.revision === sinceRevision + 1));
   const otherRows = groupProduction(rows.filter((r) => r.revision > sinceRevision + 1));
+  const sections = [
+    { title: '休整期结束时获得', lines: [
+      ...fc.rows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} />`),
+      ...(fc.funds ? [html`<li class="ix-prod__row"><span class="ix-prod__src">下个休整期资金</span><span class="ix-prod__out"><${CoinGlyph} /><b class="num">+${fc.funds}</b></span></li>`] : []),
+      ...(fc.rows.length || fc.funds ? [] : [html`<li class="ix-prod__none">暂无</li>`]),
+      ...fc.idle.map((p) => html`<li class="ix-prod__row is-idle" title="现在开始战斗不会获得，点干员看特质条件"><${SourceName} piece=${p} catalog=${catalog} /><span>条件未满足</span></li>`),
+    ] },
+    { title: '上一轮结算', lines: battleRows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} when=${true} />`) },
+    { title: '本轮获得', lines: otherRows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} when=${true} />`) },
+  ].filter((x) => x.lines.length);
+  const pages = [[]];
+  for (const sec of sections) {
+    let cur = pages[pages.length - 1];
+    if (cur.length && cur.length + 2 > perPage) { cur = []; pages.push(cur); } // a heading never ends a page
+    cur.push({ head: sec.title });
+    for (const line of sec.lines) {
+      if (cur.length >= perPage) { cur = [{ head: sec.title, more: true }]; pages.push(cur); }
+      cur.push({ line });
+    }
+  }
+  const at = Math.min(page, pages.length - 1);
   return html`<aside class=${cx('ix-prod', !open && 'is-closed')} data-testid="ix-prod">
     <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)}>
-      <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>${open ? '产出' : '产出'}</span>
+      <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>产出</span>
     </button>
     ${open ? html`<div class="ix-prod__body">
-      <section>
-        <h3>休整期结束时获得</h3>
-        ${fc.rows.length || fc.funds ? html`<ul>
-          ${fc.rows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} />`)}
-          ${fc.funds ? html`<li class="ix-prod__row"><span class="ix-prod__src">下个休整期资金</span><span class="ix-prod__out"><${CoinGlyph} /><b class="num">+${fc.funds}</b></span></li>` : null}
-        </ul>` : html`<p class="ix-prod__none">暂无</p>`}
-        ${fc.idle.length ? html`<ul class="ix-prod__idle">${fc.idle.map((p) => html`<li key=${p.uid} class="ix-prod__row is-idle" title="现在开始战斗不会获得，点干员看特质条件">
-          <${SourceName} piece=${p} catalog=${catalog} /><span>条件未满足</span></li>`)}</ul>` : null}
-      </section>
-      ${battleRows.length ? html`<section><h3>上一轮结算</h3><ul>${battleRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
-      ${otherRows.length ? html`<section><h3>本轮获得</h3><ul>${otherRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
+      <ul class="ix-prod__list">${pages[at].map((x, i) => (x.head ? html`<li key=${`h${i}`} class="ix-prod__h">${x.head}${x.more ? '（续）' : ''}</li>`
+        : html`<${Fragment} key=${i}>${x.line}<//>`))}</ul>
+      ${pages.length > 1 ? html`<div class="ix-prod__pager">
+        <button type="button" disabled=${at === 0} onClick=${() => setPage(at - 1)} aria-label="上一页"><${Icon} name="chevronLeft" /></button>
+        <span class="num">${at + 1}/${pages.length}</span>
+        <button type="button" disabled=${at === pages.length - 1} onClick=${() => setPage(at + 1)} aria-label="下一页"><${Icon} name="chevronRight" /></button>
+      </div>` : null}
     </div>` : null}
   </aside>`;
+}
+
+// ---- effects column -------------------------------------------------------------------------------------------------
+
+const EFFECT_LINE = {
+  facilityIncome: (e) => `每个休整期资金 +${e.amount}`,
+  deployCap: (e) => `部署上限 +${e.amount}`,
+  repeatNativeForging: () => '本轮有效',
+  futureShopEquipment: (e) => `还剩 ${e.quantity ?? 0} 件`,
+};
+const EFFECT_COUNT = { facilityIncome: (e) => `+${e.amount}`, deployCap: (e) => `+${e.amount}`, futureShopEquipment: (e) => e.quantity };
+
+/**
+ * The original's 生效中的效果 column (ui/effectsList.js, css .gm__effects / .effects) for the mode's lasting effects
+ * (state.playerEffects: a facility's income, a raised deploy cap, an extra forging this round …): the source's icon
+ * with its number, the source's name, what it does now and its full text in the tooltip.
+ */
+export function EffectsColumn({ effects, catalog }) {
+  const list = (effects || []).filter((e) => e && EFFECT_LINE[e.type]);
+  if (!list.length) return null;
+  return html`<div class="gm__effects ix-effects"><div class="effects" aria-label="生效中的效果">
+    <${MicroLabel}>EFFECTS<//>
+    ${list.slice(0, 10).map((e, i) => {
+      const prize = catalog.prizes?.[e.source]; const gear = catalog.gear?.[e.source];
+      const name = prize?.name || gear?.name || '效果';
+      const text = prize?.effect || (gear ? (e.elite ? gear.elite : gear.normal) : '');
+      const n = EFFECT_COUNT[e.type]?.(e);
+      return html`<${Tooltip} key=${`${e.type}:${e.source}:${i}`} placement="bottom" text=${html`<div class="efftip">
+          <b>${name}</b><span class="efftip__kind">${EFFECT_LINE[e.type](e)}</span>
+          ${text ? html`<p><${GameText} text=${text} catalog=${catalog} /></p>` : null}
+        </div>`}>
+        <span class="effect effect--item">
+          ${gear ? html`<${GearIcon} id=${e.source} catalog=${catalog} plain=${true} />` : html`<${GIcon} name="flag" />`}
+          ${n != null && n !== '' ? html`<b class="effect__n num">${n}</b>` : null}
+        </span>
+      <//>`;
+    })}
+  </div></div>`;
 }
 
 // ---- shop bar -----------------------------------------------------------------------------------------------------
@@ -194,26 +282,49 @@ export function ProductionPanel({ state, catalog, sinceRevision }) {
 function copiesOwned(state, chessId) {
   return (state.pieces || []).filter((p) => p.chessId === chessId && !p.elite).length;
 }
+const copiesNeeded = (op) => ((op?.summary || []).some((s) => s.kind === 'merge') ? 2 : 3);
 
-function ShopCard({ slot, idx, state, catalog, armed, reason, onTap }) {
+/**
+ * Where buying `chessId` sends the elite it completes (the original's 可晋升 hint, ui/shopBar.js mergeHint), null when
+ * the buy completes no merge. The session keeps the first copy that stands on the field (in uid order), else the
+ * oldest copy: `tile` is that field tile, lit gold while the card is armed.
+ */
+export function mergeHintOf(state, catalog, chessId) {
+  const op = catalog.operators?.[chessId];
+  if (!op?.eliteChessId) return null;
+  const copies = (state.pieces || []).filter((p) => p.chessId === chessId && !p.elite);
+  if (copies.length + 1 < copiesNeeded(op)) return null;
+  const fielded = copies.filter(isDeployed).sort((a, b) => a.uid.localeCompare(b.uid))[0];
+  return fielded ? { text: '精锐干员将出现在作战区原位置', tile: { row: fielded.row, col: fielded.col } } : { text: '精锐干员将进入整备区', tile: null };
+}
+
+function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail }) {
   const op = catalog.operators[slot.id] || {};
   const c = data.lookup('chess', slot.id);
   const m = data.get('assets');
-  const need = (op.summary || []).some((s) => s.kind === 'merge') ? 2 : 3;
+  const need = copiesNeeded(op);
   const owned = copiesOwned(state, slot.id);
   const carried = slot.equipment || [];
-  return html`<button type="button" class=${cx('scard', `scard--t${op.tier || 1}`, state.shop.frozen && 'is-frozen', reason && 'is-disabled', owned + 1 >= need && 'is-merge', armed && 'is-armed')}
-      onClick=${() => onTap(idx)} data-testid=${`ix-shop-${idx}`} aria-label=${`${op.name || '干员'}，价格 ${slot.price}`}>
+  const hint = mergeHintOf(state, catalog, slot.id);
+  // the skill it fights with when bought (the default one: the choice is made per operator afterwards) and its factions
+  const lo = c ? chessLoadout(c, null, (id) => data.lookup('chess', id)) : null;
+  const factions = (c?.bonds || []).filter((b) => TAVERN_FACTIONS[b]);
+  const card = html`<button type="button" class=${cx('scard', `scard--t${op.tier || 1}`, state.shop.frozen && 'is-frozen', reason && 'is-disabled', hint && 'is-merge', armed && 'is-armed')}
+      onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }}
+      data-testid=${`ix-shop-${idx}`} aria-label=${`${op.name || '干员'}，价格 ${slot.price}${armed ? (reason ? '，无法购买' : '，再次点击确认') : ''}`} aria-pressed=${String(!!armed)}>
     <span class="scard__bg" aria-hidden="true"></span>
+    <span class="scard__water" aria-hidden="true">${factions[0] ? html`<${BondGlyph} bondId=${factions[0]} />` : null}</span>
     <${Img} src=${chessPortraitUrl(m, c)} class="scard__art" />
     <span class="scard__top">
       <${TierChip} tier=${op.tier || 1} size="md" />
-      <${HexBadge} value=${slot.price} tone=${reason === '资金不足' ? 'dark' : 'gold'} size="md" class=${cx('scard__price', reason === '资金不足' && 'is-poor')} />
+      <${PriceHex} slot=${slot} free=${false} poor=${reason === '资金不足'} />
       ${owned > 0 ? html`<span class="scard__pips" title=${`已拥有 ${owned}/${need}`}>
         ${Array.from({ length: need }, (_, i) => html`<i key=${i} class=${i < owned ? 'on' : ''}></i>`)}</span>` : null}
     </span>
     <span class="scard__body">
+      ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} />` : null}
       <span class="scard__name">${op.name || slot.id}</span>
+      ${factions.length ? html`<span class="scard__bonds">${factions.slice(0, 3).map((b) => html`<span key=${b} class="scard__bond"><${BondGlyph} bondId=${b} /><span>${TAVERN_FACTIONS[b]}</span></span>`)}</span>` : null}
       <${TraitGlyphs} summary=${op.summary} catalog=${catalog} class="scard__trait" />
       <span class="scard__class">
         <${Img} src=${profIconUrl(m, op.profession)} class="scard__prof" />
@@ -222,16 +333,17 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap }) {
       </span>
     </span>
     ${carried.length ? html`<span class="ix-carry" title="随商品附带，刷新会丢失">${carried.slice(0, 3).map((it, i) => html`<span key=${i}><${GearIcon} id=${it.id} catalog=${catalog} /><b class="num">${it.quantity || 1}</b></span>`)}</span>` : null}
-    ${owned + 1 >= need ? html`<span class="scard__mergetag">可晋升</span>` : null}
+    ${hint ? html`<span class="scard__mergetag" title=${hint.text}>可晋升</span>` : null}
     ${state.shop.frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
     ${armed ? html`<span class=${cx('scard__confirm', reason && 'is-no')} role="status">${reason ? html`<b>无法购买</b><small>${reason}</small>` : html`<b>确认购买</b><small>再次点击</small>`}</span>` : null}
   </button>`;
+  return reason && !armed ? html`<${Tooltip} text=${reason} block=${true} class="scard-wrap">${card}<//>` : card;
 }
 
-function GearCard({ slot, idx, state, catalog, armed, reason, onTap }) {
+function GearCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail }) {
   const g = catalog.gear[slot.id] || {};
   return html`<button type="button" class=${cx('scard', 'scard--item', state.shop.frozen && 'is-frozen', reason && 'is-disabled', armed && 'is-armed')}
-      onClick=${() => onTap(idx)} data-testid=${`ix-shop-${idx}`} aria-label=${`${g.name || '装备'}，价格 ${slot.price}`}>
+      onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }} data-testid=${`ix-shop-${idx}`} aria-label=${`${g.name || '装备'}，价格 ${slot.price}`}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__top">
       ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${(slot.elite ? g.eliteLevel : g.level) ?? 1}级</span>`}
@@ -255,9 +367,11 @@ function SoldCard({ item }) {
 
 /**
  * The 调度中心 bar: level card, operator and gear goods, funds, refresh / freeze. A card takes two taps like the
- * original (the first one also opens its detail card); the reasons a tap cannot buy come from the state only.
+ * original (the first one also opens its detail card); a right-click (a long press on touch) only opens the card. The
+ * reasons a tap cannot buy come from the state only. 收起 folds it to the original's tab (funds + 展开商店) so the
+ * field behind it can be seen.
  */
-export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, onRefresh, onFreeze, deployed, deployCap }) {
+export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, onRefresh, onFreeze, onDetail, deployed, deployCap, collapsed = false, onCollapse }) {
   const shop = state.shop;
   const price = catalog.rules?.refreshPrice ?? 1;
   const free = shop.freeRefreshes || 0;
@@ -272,6 +386,12 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
   const lvReason = lvMax ? '调度中心已达最高等级' : state.funds < shop.upgradePrice ? '资金不足' : null;
   const chess = shop.slots.map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess');
   const gear = shop.slots.map((s, i) => ({ s, i })).filter(({ s }) => s.kind !== 'chess');
+  if (collapsed) {
+    return html`<div class="shopbar-tab ix-shoptab" data-testid="ix-shop-tab">
+      <div class="shopbar-tab__funds"><${CoinGlyph} /><b class="num">${state.funds}</b></div>
+      <button type="button" class="shopbar-tab__btn" onClick=${() => onCollapse(false)}><${Icon} name="chevronLeft" />展开商店</button>
+    </div>`;
+  }
   return html`<section class=${cx('shopbar', 'ix-shop', shop.frozen && 'is-frozen', armed && 'has-armed')} aria-label="调度中心" data-testid="ix-shop">
     <div class="shopbar__tools">
       <span class="shopbar__remain">场上干员：<b class=${cx('num', deployed >= deployCap && 't-orange')}>${deployed}</b>/<span class="num">${deployCap}</span></span>
@@ -298,15 +418,16 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
       </button>
       <div class="shopbar__cards">
         ${chess.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`s${i}`} />`
-          : html`<${ShopCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} />`))}
+          : html`<${ShopCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} onDetail=${onDetail} />`))}
       </div>
       ${gear.length ? html`<div class="shopbar__item">
         ${gear.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`g${i}`} item=${true} />`
-          : html`<${GearCard} key=${`g${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} />`))}
+          : html`<${GearCard} key=${`g${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} onDetail=${onDetail} />`))}
       </div>` : null /* the shop sells operators only; an equipment place survives only in a shop saved before that */}
       <div class="funds">
         <div class="funds__hex"><${CoinGlyph} class="funds__coin" /><b class="funds__num num" data-testid="ix-funds">${state.funds}</b></div>
         <span class="funds__label">采购资金</span>
+        ${onCollapse ? html`<button type="button" class="funds__collapse" onClick=${() => onCollapse(true)}><${Icon} name="close" />收起</button>` : null}
       </div>
     </div>
   </section>`;
@@ -361,3 +482,23 @@ export function BenchOverflow({ pieces, catalog, onPick }) {
 }
 
 export const deployedCount = (state) => (state.pieces || []).filter(isDeployed).length;
+
+/**
+ * The 本局信息 tab of the original's drawer (ui/enemyDrawer.js `info`) for this mode: where and what is played — the
+ * field, the mode, the rounds of 工程部特供 and of the enemy leader — and the run's levels.
+ */
+export function MatchInfo({ state, catalog }) {
+  const stage = state.board?.stageId ? data.lookup('stages', state.board.stageId) : null;
+  const mode = (catalog.modes || []).find((m) => m.roundLimit === state.roundLimit) || null;
+  const boss = state.board?.bossId ? data.lookup('bosses', state.board.bossId) : null;
+  const prizeRounds = state.roundLimit === 9 ? [4, 8] : [4, 8, 12];
+  return html`<div class="edrawer__body ix-minfo">
+    ${stage ? html`<p class="istage"><${Icon} name="rook" />战场：<b>${stage.name || stage.id}</b></p>` : null}
+    <p class="istage"><${Icon} name="info" />模式：<b>${mode?.name || ''}</b>${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="sm" />` : null}
+      <span class="t-lo">第 <b class="num">${Math.min(state.round, state.roundLimit)}</b>/<span class="num">${state.roundLimit}</span> 回合</span></p>
+    <p class="istage"><${GIcon} name="flag" />工程部特供：第 ${prizeRounds.join('、')} 轮</p>
+    ${boss ? html`<div class="eboss"><${UnitThumb} kind="enemy" id=${boss.enemyKey} size="md" />
+      <div><${MicroLabel} tone="gold">ENEMY LEADER // 敌方领袖</${MicroLabel}><b>${boss.name}</b><span class="t-lo">第 ${state.board?.bossRound ?? state.roundLimit} 回合 · 最终攻势</span></div></div>` : null}
+    <p class="istage"><${Icon} name="user" />调度中心 <b class="num">${state.shop?.level ?? 1}</b> 级 · 部署上限 <b class="num">${state.deployCap}</b> 名 · 防线生命 <b class="num">${state.lp}</b></p>
+  </div>`;
+}

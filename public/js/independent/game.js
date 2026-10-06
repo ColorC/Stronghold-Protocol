@@ -2,20 +2,30 @@
 // Spine operators, drag & drop deploy with the direction wheel, and every ready's battle replayed from the server's
 // recording (server/modes/independent/battle.js) — the battle the result was settled on, never a re-simulation.
 import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
-import { html, Icon, Button, Spinner } from '../ui/components.js';
+import { html, Icon, Button, Spinner, PhaseBanner, confirmDialog } from '../ui/components.js';
+import { GIcon } from '../ui/gameComponents.js';
+import { SettingsModal } from '../ui/settings.js';
 import { useFieldView } from '../ui/fieldHost.js';
 import { useGameData } from '../ui/gameComponents.js';
-import { FacingWheel, holdPiece, setPieceDir } from '../ui/facingWheel.js';
+import { FacingWheel, holdPiece, setPieceDir, showRange } from '../ui/facingWheel.js';
+import { Underframe } from '../ui/underframe.js';
+import { MODULE_NONE } from '../ui/loadoutModel.js';
+import { attackRangeGrid } from '../../../shared/loadoutRecord.js';
 import { FullscreenButton } from '../ui/device.js';
 import { toast } from '../ui/toasts.js';
 import { copyText } from '../ui/clipboard.js';
-import { audio } from '../audio.js';
+import { audio, bgmKeyFor, combatTrackFor, resultSpeaker, resultVoiceSlot } from '../audio.js';
+import { PHASE, GEO } from '../../../shared/constants.js';
+import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout } from '../ui/gameLogic.js';
 import { data } from '../data.js';
 import { api } from './api.js';
 import { prepView, canDrop, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
   replayClock, frameAt, pendingOffer, renderChessId } from './model.js';
-import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount } from './hud.js';
-import { DetailCard, InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, USE_NEEDS } from './panels.js';
+import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount, MatchInfo, mergeHintOf, EffectsColumn } from './hud.js';
+import { EnemyDrawer } from '../ui/enemyDrawer.js';
+import { DpCounter } from '../ui/hud.js';
+import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, USE_NEEDS } from './panels.js';
+import { DetailCard } from './detail.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -39,6 +49,52 @@ function lastReadyRevision(state) {
 }
 
 const SPEEDS = [2, 4, 8];
+// the selected piece's range, in the original's colour (screens/game.js SEL_RANGE); hovering shows the plain group
+const SEL_RANGE = Object.freeze({ group: 'selRange', color: 0xff9c33, fill: 0.3, line: 0.95 });
+// the tile an armed merge card's elite takes (screens/game.js MERGE_HL)
+const MERGE_HL = Object.freeze({ group: 'mergeTile', color: 0xffd45a, fill: 0.34, line: 1 });
+
+/**
+ * The grid a piece fights with: its form (elite or not) under its own skill / module choice (an elite module can
+ * widen it), like the original's previews (DESIGN §16).
+ */
+function rangeGridOf(catalog, piece) {
+  const base = data.lookup('chess', piece.chessId);
+  const opBase = catalog.operators?.[piece.chessId];
+  const golden = opBase?.eliteChessId ? data.lookup('chess', opBase.eliteChessId) : null;
+  const rec = piece.elite && golden ? golden : base;
+  if (!rec) return null;
+  const lo = { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } };
+  let grid = null;
+  try { grid = attackRangeGrid(chessLoadout(rec, lo, (id) => data.lookup('chess', id))?.record || rec); } catch { /* the data grid */ }
+  return grid?.length ? grid : (Array.isArray(rec.rangeGrid) ? rec.rangeGrid : null);
+}
+
+/**
+ * Why a release of piece `n` on `tile` places nothing (the original's toast, ui/gameLogic.js dropFailureReason), or
+ * null when it is put back on its own slot or is a legal place.
+ */
+function dropRefusal(state, n, tile) {
+  const piece = pieceByNum(state, n);
+  if (!piece || !tile || typeof tile !== 'object') return null;
+  if (tile.area === 'board') {
+    if (isDeployed(piece) && piece.row === tile.row && piece.col === tile.col) return null;
+    if (!(piece.legalTiles || []).includes(`${tile.row},${tile.col}`)) return '无法部署在该位置';
+    const holder = (state.pieces || []).find((p) => isDeployed(p) && p.row === tile.row && p.col === tile.col);
+    return holder && holder.uid !== piece.uid ? '这个位置已有干员' : null;
+  }
+  if (tile.area === 'hand') return null;
+  if (tile.area === 'temp') return '临时整备区无法放入单位';
+  if (Number.isInteger(tile.row) && tile.row >= GEO.FIELD.r0 && tile.row <= GEO.FIELD.r1) return '无法部署在该位置';
+  return null;
+}
+
+/** Field tile of a piece: its board tile, or its bench slot (the hand row of the renderer). */
+function pieceTileOf(state, piece) {
+  if (isDeployed(piece)) return { row: piece.row, col: piece.col };
+  const idx = benchLayout(state).hand.findIndex((p) => p.uid === piece.uid);
+  return idx >= 0 ? { row: GEO.HAND_ROW, col: idx } : null;
+}
 
 export function GameScreen({ id, initial, catalog, onLeave }) {
   const [state, setState] = useState(initial);
@@ -58,12 +114,30 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const [facing, setFacing] = useState(null);
   const [panel, setPanel] = useState(null);
   const [panelUid, setPanelUid] = useState(null);
+  const [panelKey, setPanelKey] = useState(null);
   const [preview, setPreview] = useState(null);
   const [battle, setBattle] = useState(null);
   const battleRef = useRef(null); battleRef.current = battle;
   const [speed, setSpeed] = useState(SPEEDS[0]);
   const [pen, setPen] = useState(false);
   const speedRef = useRef(speed); speedRef.current = speed;
+  // the replay frame on show (index into battle.replay.frames): the detail card reads a battle unit's HP and stats there
+  const replayPosRef = useRef(-1);
+  const [banner, setBanner] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [drawer, setDrawer] = useState(null); // the original's 本局信息 / 敌方情报 drawer: 'info' | 'enemies' | null
+  // the tapped own piece (the original's underframe: 撤退 / 出售 and its range); `pressSel` is the selection a field
+  // press began with, so a tap on the selected piece deselects it
+  const [shopCollapsed, setShopCollapsed] = useState(false);
+  const [finalHidden, setFinalHidden] = useState(false); // 查看阵容 on the end screen
+  const [sel, setSel] = useState(null);
+  const selRef = useRef(null); selRef.current = sel;
+  const pressSel = useRef(null);
+  // leaving asks first (the original's ExitModal); the drill is saved and 继续上一局 picks it up
+  const leave = useCallback(async () => {
+    const ok = await confirmDialog({ title: '离开本局', text: '进度已保存，可以在开局页「继续上一局」回来。', okText: '离开' });
+    if (ok) onLeave();
+  }, [onLeave]);
   const [since, setSince] = useState(() => lastReadyRevision(initial));
 
   // ---- actions --------------------------------------------------------------------------------------------------
@@ -89,6 +163,24 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     if (action.type === 'equip') audio.sfx('equip', { volume: 0.6 });
     return res;
   }, [act]);
+
+  // 撤退 / 出售 of the selected piece (the underframe's buttons, Q / X). A sold operator loses its gear and attachments,
+  // so selling one that wears any asks first, like the detail card's 出售.
+  const retreatPiece = useCallback(async (uid) => {
+    if (!(await act({ type: 'bench', uid }))) return;
+    setSel(null);
+    setDetail((d) => (d?.kind === 'piece' && d.uid === uid ? null : d)); // its card would cover the bench
+    audio.sfx('drop', { volume: 0.5 });
+  }, [act]);
+  const sellPiece = useCallback(async (uid) => {
+    const piece = (stateRef.current.pieces || []).find((p) => p.uid === uid);
+    if (!piece) return;
+    if ((piece.equipment || []).length || (piece.attachments || []).length) {
+      const ok = await confirmDialog({ title: '出售干员', text: '装备与附加效果会随干员一起失去。确定出售吗？', okText: '出售', danger: true });
+      if (!ok) return;
+    }
+    if (await simple({ type: 'sell', uid })) { setSel(null); audio.sfx('sell', { volume: 0.6 }); }
+  }, [simple]);
 
   const buy = useCallback(async (slot) => {
     setArmed(null);
@@ -118,7 +210,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const closeBattle = useCallback(() => {
     const b = battleRef.current;
     if (!b) return;
-    setState(b.next); setSince(b.next.revision - 1); setBattle(null);
+    setState(b.next); setSince(b.next.revision - 1); setBattle(null); replayPosRef.current = -1;
+    setDetail((d) => (d?.kind === 'unit' ? null : d));
   }, []);
 
   // ---- prep scene ------------------------------------------------------------------------------------------------
@@ -142,14 +235,31 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   // drag, drop, click, hover on the field
   useEffect(() => {
     if (!view) return undefined;
+    // a release on a tile that takes nothing says why (the drag controller emits no drop there): the pointer-up is
+    // marked in the capture phase, before the controller ends the drag
+    const ptr = { released: false, tile: null, off: null };
     const offs = [
       view.on('pieceDragStart', (e) => {
+        setSel(null);
+        setDetail((d) => (d?.kind === 'piece' ? null : d));
+        ptr.released = false; ptr.tile = null; ptr.off?.();
+        const onUp = () => { ptr.released = true; };
+        window.addEventListener('pointerup', onUp, { passive: true, capture: true });
+        ptr.off = () => { window.removeEventListener('pointerup', onUp, { capture: true }); ptr.off = null; };
         view.highlightTiles(null);
         const tiles = legalTilesOf(stateRef.current, e?.uid);
         if (tiles.length) view.highlightTiles(tiles, 'legal');
         audio.sfx('pick', { volume: 0.5 });
       }),
-      view.on('pieceDragEnd', () => view.highlightTiles(null)),
+      view.on('tileHover', (t) => { ptr.tile = t && typeof t === 'object' ? t : null; }),
+      view.on('pieceDragEnd', (e) => {
+        view.highlightTiles(null);
+        const released = ptr.released; const tile = ptr.tile;
+        ptr.off?.();
+        if (!e || e.dropped || !released || stateRef.current.phase !== 'prep') return;
+        const reason = dropRefusal(stateRef.current, e.uid, tile);
+        if (reason) { audio.sfx('error', { volume: 0.5 }); toast(reason, 'warn'); }
+      }),
       view.on('pieceDrop', async (e) => {
         view.highlightTiles(null);
         const st = stateRef.current;
@@ -163,26 +273,77 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         setFacing({ uid: piece.uid, n: e.uid, row: t.row, col: t.col, dir: piece.dir || 'RIGHT', grid: Array.isArray(rec?.rangeGrid) ? rec.rangeGrid : null, name: rec?.name || '' });
       }),
       view.on('pieceClick', (e) => {
-        if (!e || battleRef.current) return;
+        if (!e) return;
+        // an enemy of the preview pen, then any unit of a battle (the original game screen's order)
+        const penKey = previewEnemyKey(e);
+        if (penKey) { audio.sfx('click', { volume: 0.4 }); setDetail({ kind: 'enemy', id: penKey }); return; }
+        if (e.unitId != null || e.unit) { audio.sfx('click', { volume: 0.4 }); setDetail({ kind: 'unit', unit: e.unit || { id: e.unitId } }); return; }
+        if (battleRef.current) return;
         const piece = pieceByNum(stateRef.current, e.uid);
         if (!piece) return;
         audio.sfx('click', { volume: 0.4 });
         setArmed(null);
-        setDetail((d) => (d?.kind === 'piece' && d.uid === piece.uid && !e.detail ? null : { kind: 'piece', uid: piece.uid }));
+        setDetail({ kind: 'piece', uid: piece.uid });
+        // a tap selects (underframe + range); right-click / long press only opens the card; a tap on the selected piece
+        // deselects it and closes its card
+        const wasSel = pressSel.current === piece.uid;
+        pressSel.current = null;
+        if (e.detail || e.button === 2 || stateRef.current.phase !== 'prep') return;
+        setSel(wasSel ? null : piece.uid);
+        if (wasSel) setDetail((d) => (d?.kind === 'piece' && d.uid === piece.uid ? null : d));
+      }),
+      // a tap on a special terrain tile explains it (upstream 0.1.4: 活性源石, 沼泽, 排气格栅, 深水区, 红蓝门, 传送)
+      view.on('tileClick', (t) => {
+        if (!t || !Number.isInteger(t.row) || !Number.isInteger(t.col)) return;
+        const stageId = battleRef.current?.replay?.stageId || stateRef.current.board?.stageId;
+        const info = terrainInfo(stageId ? data.lookup('stages', stageId) : null, t.row, t.col);
+        if (!info) return;
+        audio.sfx('click', { volume: 0.4 });
+        setDetail({ kind: 'terrain', terrain: info });
       }),
       view.on('pieceHover', (e) => {
         if (battleRef.current) return;
         view.highlightTiles(null, 'range');
         const piece = e?.uid != null ? pieceByNum(stateRef.current, e.uid) : null;
         if (!piece || !isDeployed(piece)) return;
-        const rec = data.lookup('chess', renderChessId(catalog, piece));
-        if (!Array.isArray(rec?.rangeGrid)) return;
-        const tiles = rec.rangeGrid.map(([dr, dc]) => [piece.row + dr, piece.col + dc]).filter(([r, c]) => !(r === piece.row && c === piece.col));
-        view.highlightTiles(tiles, 'range');
+        showRange(view, rangeGridOf(catalog, piece), piece.row, piece.col, piece.dir || 'RIGHT', 'range');
       }),
     ];
-    return () => { for (const off of offs) { try { off?.(); } catch { /* ignore */ } } };
+    return () => { ptr.off?.(); for (const off of offs) { try { off?.(); } catch { /* ignore */ } } };
   }, [view, act]);
+
+  // a press on the field deselects and closes a card the field opened (a tap on a piece re-opens it at release)
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return undefined;
+    const onDown = () => {
+      pressSel.current = selRef.current;
+      setSel(null);
+      setDetail((d) => (closesOnFieldPress(d) ? null : d));
+    };
+    host.addEventListener('pointerdown', onDown, true);
+    return () => host.removeEventListener('pointerdown', onDown, true);
+  }, []);
+  // the selected piece: gone, deployed elsewhere or no longer editable → deselect; on the board its range shows
+  const selPiece = sel ? (state.pieces || []).find((p) => p.uid === sel) || null : null;
+  const selTile = selPiece ? pieceTileOf(state, selPiece) : null;
+  useEffect(() => { if (sel && (!selPiece || !selTile || state.phase !== 'prep' || battle)) setSel(null); }, [sel, selPiece, selTile, state.phase, battle]);
+  const selRangeKey = selPiece && isDeployed(selPiece) ? `${selPiece.uid}:${selPiece.row},${selPiece.col}:${selPiece.dir || 'RIGHT'}:${selPiece.elite ? 1 : 0}:${selPiece.moduleId || ''}` : '';
+  useEffect(() => {
+    if (!view || !selRangeKey) return undefined;
+    showRange(view, rangeGridOf(catalog, selPiece), selPiece.row, selPiece.col, selPiece.dir || 'RIGHT', SEL_RANGE);
+    return () => showRange(view, null, 0, 0, null, SEL_RANGE);
+  }, [view, selRangeKey]);
+
+  // an armed operator card that completes a merge lights the tile its elite will take
+  const armedSlot = armed && armed.startsWith('s') && !battle && state.phase === 'prep' ? state.shop.slots[Number(armed.slice(1))] : null;
+  const mergeAt = armedSlot?.kind === 'chess' && !armedSlot.sold ? mergeHintOf(state, catalog, armedSlot.id)?.tile || null : null;
+  const mergeAtKey = mergeAt ? `${mergeAt.row},${mergeAt.col}` : '';
+  useEffect(() => {
+    if (!view) return undefined;
+    try { view.highlightTiles(mergeAt ? [[mergeAt.row, mergeAt.col]] : [], MERGE_HL); } catch { /* cosmetic */ }
+    return () => { try { view.highlightTiles([], MERGE_HL); } catch { /* cosmetic */ } };
+  }, [view, mergeAtKey]);
 
   const cancelFacing = useCallback(() => {
     const f = facing;
@@ -211,26 +372,37 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const kind = rec.kind === 'hidden' ? 'boss' : rec.kind;
     view.enterBattle(rec.field);
     view.setCamera(kind, { rect: rec.field.rect, side: 'L' });
+    audio.setFieldUnits([]);
     const { t0 } = replayClock(rec);
-    let idx = 0; let gameT = t0 - 0.001; let last = performance.now(); let raf = 0; let shown = -1; let ended = false;
+    let idx = 0; let gameT = t0 - 0.001; let last = performance.now(); let raf = 0; let shown = -1; let ended = false; let leaked = 0;
     const feed = () => {
       while (idx < frames.length && frames[idx].snap.t <= gameT) {
         const f = frames[idx++];
         // like the match server: the b.ev of a drain first, then its b.snap, both on the game clock
-        if (f.ev.length) view.pushEvents({ t: 'b.ev', fieldId, gt: f.snap.t, ev: f.ev });
+        if (f.ev.length) { view.pushEvents({ t: 'b.ev', fieldId, gt: f.snap.t, ev: f.ev }); audio.handleBattleEvents(f.ev); for (const e of f.ev) if (e[0] === 'leak') leaked++; }
         view.pushSnapshot(f.snap);
       }
+      replayPosRef.current = idx - 1;
+    };
+    // 结算 voice (audio.js resultSpeaker / resultVoiceSlot, as the original game screen): an operator of this battle
+    const speak = () => {
+      try {
+        const r = battleRef.current?.result; const mine = r?.perPlayer?.independent || Object.values(r?.perPlayer || {})[0] || null;
+        const charId = resultSpeaker(mine, Math.random, (cid) => data.lookup('chess', cid)?.charId ?? null);
+        if (charId) audio.voice(charId, resultVoiceSlot({ perfect: !!mine?.perfect, leaked: Array.isArray(mine?.leaked) ? mine.leaked.length : 0,
+          killed: mine?.killed ?? r?.killed, total: mine?.total ?? r?.total, hard: ['HARD', 'ABYSS'].includes(stateRef.current.difficulty) }));
+      } catch { /* a missing voice bank is silence */ }
     };
     const report = () => {
       const k = Math.max(0, idx - 1);
-      if (k !== shown) { shown = k; const s = frames[k]?.snap; if (s) setBattle((b) => (b ? { ...b, killed: s.killed, total: s.total } : b)); }
+      if (k !== shown) { shown = k; const s = frames[k]?.snap; if (s) setBattle((b) => (b ? { ...b, killed: s.killed, total: s.total, hud: snapHud(s), leaked } : b)); }
     };
     const loop = (now) => {
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
       gameT += dt * speedRef.current;
       feed(); report();
       if (idx >= frames.length) {
-        if (!ended) { ended = true; setTimeout(() => setBattle((b) => (b ? { ...b, done: true } : b)), 900); }
+        if (!ended) { ended = true; speak(); setTimeout(() => setBattle((b) => (b ? { ...b, done: true } : b)), 900); }
         return;
       }
       raf = requestAnimationFrame(loop);
@@ -248,12 +420,28 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       if (spawns.length) view.pushEvents({ fieldId, ev: spawns });
       for (let i = Math.max(0, k - 3); i <= k; i++) view.pushSnapshot(frames[i].snap);
       view.raw?.debug?.interp?.snapToNewest?.();
-      idx = frames.length; report();
+      for (let i = 0; i <= k; i++) for (const e of frames[i].ev) if (e[0] === 'leak') leaked++;
+      idx = frames.length; replayPosRef.current = k; report();
       if (!ended) { ended = true; setBattle((b) => (b ? { ...b, done: true } : b)); }
     };
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); seekRef.current = null; };
   }, [view, battle?.replay, gd.ready]);
+
+  // ---- the phase as the original game screen sees it: banner, cue and BGM (gameLogic phaseBanner, audio.js bgmKeyFor) --
+  const rec = battle?.replay || null;
+  const phasePub = rec ? (rec.kind === 'normal' ? { phase: PHASE.COMBAT, round: rec.round } : { phase: PHASE.FINAL_ASSAULT, round: rec.round, bossId: rec.bossId })
+    : { phase: PHASE.PREP, round: state.round };
+  const phaseKey = `${phasePub.phase}:${phasePub.round}`;
+  useEffect(() => {
+    audio.playBgm(bgmKeyFor('game', phasePub, combatTrackFor(phasePub.round)));
+    if (state.phase === 'finished' && !rec) return;
+    const b = phaseBanner(phasePub.phase, phasePub);
+    if (b) setBanner({ ...b, key: phaseKey });
+    if (phasePub.phase === PHASE.PREP) audio.sfx('rest', { volume: 0.7 });
+    else if (phasePub.phase === PHASE.COMBAT) audio.sfx('battleStart');
+    else audio.sfx('bossRoundSingle');
+  }, [phaseKey]);
 
   // ---- component links (#piece-p12, #shop-2, #item-i7, #offer-o5): open what the link points at -------------------
   useEffect(() => {
@@ -276,22 +464,56 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     toast(ok ? '已复制定位链接' : url.href, ok ? 'info' : 'warn');
   }, []);
 
-  // ---- keyboard ----------------------------------------------------------------------------------------------------
+  // without WebGL / the render engine the DOM view takes over: say so once (the original's toast), unless asked for
   useEffect(() => {
+    if (viewKind !== 'fallback') return;
+    let asked = null;
+    try { asked = new URLSearchParams(location.search).get('render'); } catch { asked = null; }
+    if (asked === 'fallback' || globalThis.__SP_RENDER__ === 'fallback') return;
+    toast('当前设备无法启用 3D / WebGL 渲染，已切换为简化视图（功能不受影响）', 'info', { ttl: 5000 });
+  }, [viewKind]);
+
+  // ---- keyboard ----------------------------------------------------------------------------------------------------
+  const keysRef = useRef({});
+  keysRef.current = { panel, drawer, pen, detail, sel, armed, facing };
+  useEffect(() => {
+    // the original's keys (ui/gameLogic.js shortcutFor): R refresh, F freeze, D level-up, Q retreat, X sell, Space
+    // ready, Esc closes the topmost thing; dialogs own the keyboard, behind the drawer only Esc acts
     const onKey = (e) => {
-      if (e.target && /input|select|textarea/i.test(e.target.tagName)) return;
-      if (battleRef.current) { if (e.key === 'Escape' || e.key === ' ') { e.preventDefault(); seekRef.current?.(); } return; }
-      if (panel) return; // an open panel (Modal) takes its own Escape
-      if (e.key === 'Escape') { setDetail(null); setArmed(null); return; }
-      if (stateRef.current.phase !== 'prep') return;
-      if (e.key === 'r' || e.key === 'R') act({ type: 'refresh' });
-      else if (e.key === 'f' || e.key === 'F') act({ type: 'freeze' });
-      else if (e.key === 'd' || e.key === 'D') act({ type: 'upgrade' });
-      else if (e.key === ' ') { e.preventDefault(); ready(); }
+      const a = shortcutFor(e);
+      const L = keysRef.current;
+      if (shortcutBlocked(a, { modal: !!L.panel || !!document.querySelector('.modal, .guide'), drawer: !!L.drawer })) return;
+      if (a === 'escape') {
+        if (L.facing) return; // the wheel takes its own Escape
+        if (L.drawer) setDrawer(null);
+        else if (L.pen && !L.detail) setPen(false);
+        else if (L.detail) { setDetail(null); setSel(null); setArmed(null); }
+        else if (L.sel) setSel(null);
+        else if (L.armed) setArmed(null);
+        else if (battleRef.current) seekRef.current?.();
+        else return;
+        e.preventDefault();
+        return;
+      }
+      if (battleRef.current) { if (a === 'ready') { e.preventDefault(); seekRef.current?.(); } return; }
+      if (stateRef.current.phase !== 'prep' || L.facing) return;
+      e.preventDefault(); // a focused HUD button must not also activate (Space)
+      if (a === 'ready' && e.target instanceof HTMLElement && e.target.closest('button, [role="button"]')) e.target.blur();
+      if (a === 'retreat' || a === 'sell') {
+        const piece = L.sel ? (stateRef.current.pieces || []).find((p) => p.uid === L.sel) : null;
+        if (!piece) return;
+        if (a === 'retreat' && isDeployed(piece)) retreatPiece(piece.uid);
+        else if (a === 'sell') sellPiece(piece.uid);
+        return;
+      }
+      if (a === 'refresh') act({ type: 'refresh' });
+      else if (a === 'freeze') act({ type: 'freeze' });
+      else if (a === 'levelUp') act({ type: 'upgrade' });
+      else if (a === 'ready') ready();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [act, ready, panel]);
+  }, [act, ready, retreatPiece, sellPiece]);
 
   // ---- derived -----------------------------------------------------------------------------------------------------
   const stacks = useMemo(() => inventoryStacks(state.inventory, catalog), [state.inventory, catalog]);
@@ -301,7 +523,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const readyReason = state.phase !== 'prep' ? null : deployed < 1 ? '至少部署一名干员' : deployed > state.deployCap ? `场上最多 ${state.deployCap} 名干员` : offer ? '请先完成当前选择' : null;
   const loading = viewKind === 'loading' || !gd.ready;
 
-  const openInventory = (uid = null) => { setPanelUid(uid || (detail?.kind === 'piece' ? detail.uid : null)); setPanel('inventory'); };
+  // the stock panel, with an operator chosen to wear / receive and a tile picked (`key`: an inventoryStacks key)
+  const openInventory = (uid = null, key = null) => { setPanelUid(uid || (detail?.kind === 'piece' ? detail.uid : null)); setPanelKey(key); setPanel('inventory'); };
   /**
    * A stock tile dropped on an operator: gear is worn (a badge stack whole, up to the operator's room), a supply that
    * asks for one own operator is used on it; the identity card (a faction to choose) and supplies asking for anything
@@ -316,10 +539,10 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       else if (need === 'target') act({ type: 'use-item', itemUid: item.uid, targetUid: uid });
       else if (need === 'source') act({ type: 'use-item', itemUid: item.uid, sourceUid: uid });
       else if (need === 'targets' && count === 1) act({ type: 'use-item', itemUid: item.uid, targets: [uid] });
-      else openInventory(uid);
+      else openInventory(uid, stack.key);
       return;
     }
-    if (g.identityFactions) { openInventory(uid); return; }
+    if (g.identityFactions) { openInventory(uid, stack.key); return; }
     const room = (catalog.rules?.equipmentCapacity ?? 999) - piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0);
     act({ type: 'equip', itemUid: item.uid, targetUid: uid, quantity: g.unique ? 1 : Math.max(1, Math.min(item.quantity || 1, room)) });
   };
@@ -331,38 +554,69 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     setPreview(pv ? { ...pv, donorUid, receiverUid } : { ok: false, error: res.error?.code || 'BAD_TARGET', donorUid, receiverUid });
   }, [id]);
 
-  return html`<div class=${cx('screen', 'gm', battle ? 'gm--combat' : 'gm--prep', 'ix-game')} data-testid="ix-game">
+  // a battle unit's card reads the replay where it is (the original card's live getter): HP from the frame's snapshot,
+  // stats from the newest per-second stats record (server/modes/independent/battle.js REPLAY_STATS_EVERY)
+  const battleCard = battle?.replay ? {
+    snapHp: (unitId) => {
+      const f = battle.replay.frames[Math.max(0, replayPosRef.current)];
+      const u = f?.snap?.units?.find((x) => x[0] === unitId);
+      return u ? { hp: u[3], max: u[4] } : null;
+    },
+    stats: (unitId) => {
+      const fr = battle.replay.frames;
+      for (let i = Math.min(fr.length - 1, Math.max(0, replayPosRef.current)); i >= 0; i--) { const e = fr[i].stats?.[unitId]; if (e) return e; }
+      return null;
+    },
+  } : null;
+
+  return html`<div class=${cx('screen', 'gm', battle ? 'gm--combat' : 'gm--prep', 'ix-game', shopCollapsed && 'is-collapsed', pen && 'is-pen')} data-testid="ix-game">
     <div class="gm__field" ref=${hostRef} onContextMenu=${(e) => e.preventDefault()}></div>
     ${loading ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>
     <div class="gm__hud">
-      <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${onLeave}
+      <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${leave} drawer=${drawer} onDrawer=${setDrawer}
         pen=${pen} onPen=${() => setPen((x) => !x)} />
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
-          onTap=${(s) => (s.used ? openInventory() : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
+          onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
         <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
+        ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
         ${state.phase === 'prep' && !pen ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
           onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id, elite: slot.elite }); }}
           onBuy=${buy} onUpgrade=${() => { setArmed(null); act({ type: 'upgrade' }); }} onRefresh=${() => { setArmed(null); act({ type: 'refresh' }); }}
-          onFreeze=${() => act({ type: 'freeze' })} />` : null}
-        <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} onClose=${() => { setDetail(null); setArmed(null); }}
-          onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} onCopyLink=${copyLink} />
-      ` : html`<div class="ix-battlebar" data-testid="ix-battlebar">
+          onFreeze=${() => act({ type: 'freeze' })} collapsed=${shopCollapsed} onCollapse=${(v) => { setShopCollapsed(v); if (v) setArmed(null); }}
+          onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id, elite: s.elite }); }} />` : null}
+      ` : html`<${DpCounter} dp=${battle.hud?.dp} />
+      <div class="ix-battlebar" data-testid="ix-battlebar">
         ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}
         <${Button} size="sm" variant="secondary" disabled=${battle.done} onClick=${() => seekRef.current?.()} data-testid="ix-skip">跳到结尾<//>
       </div>`}
+      <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
+        onClose=${() => { setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} onCopyLink=${copyLink} />
+      ${selPiece && selTile && view && !facing && !battle && state.phase === 'prep' ? html`<${Underframe} key=${selPiece.uid} view=${view}
+        row=${selTile.row} col=${selTile.col} busy=${busy} name=${catalog.operators?.[selPiece.chessId]?.name || ''}
+        actions=${{ retreat: isDeployed(selPiece), sell: catalog.rules?.sellPrice ?? 1, destroy: false }}
+        onRetreat=${() => retreatPiece(selPiece.uid)} onSell=${() => sellPiece(selPiece.uid)} />` : null}
       <div class="gm__corner">
+        <button type="button" class="gm__gear" aria-label="设置" title="设置" onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
         <${FullscreenButton} class="gm__gear gm__fs" />
+        ${state.phase === 'finished' && !battle && finalHidden ? html`<button type="button" class="gm__gear" aria-label="本局结算" title="本局结算" onClick=${() => setFinalHidden(false)}><${GIcon} name="flag" /></button>` : null}
       </div>
     </div>
+    ${banner ? html`<${PhaseBanner} key=${banner.key} mode="overlay" title=${banner.title} sub=${banner.sub} micro=${banner.micro}
+      tone=${banner.tone} duration=${banner.duration || 1500} onDone=${() => setBanner(null)} />` : null}
     ${facing && view ? html`<${FacingWheel} key=${`${facing.uid}:${facing.row},${facing.col}`} view=${view} row=${facing.row} col=${facing.col}
       grid=${facing.grid} name=${facing.name} onPreview=${(dir) => setPieceDir(view, facing.n, dir || facing.dir)} onCommit=${commitFacing} onCancel=${cancelFacing} />` : null}
     ${!battle && offer ? html`<${OfferOverlay} offer=${offer} state=${state} catalog=${catalog} busy=${busy} onChoose=${simple} />` : null}
+    ${state.phase === 'finished' && !battle && !finalHidden ? html`<${FinalScreen} state=${state} catalog=${catalog} onLook=${() => setFinalHidden(true)} onLeave=${onLeave} />` : null}
     ${battle?.done ? html`<${ResultPanel} battle=${battle} catalog=${catalog} pieces=${state.pieces} finished=${battle.finished} onClose=${closeBattle} />` : null}
-    <${InventoryPanel} open=${panel === 'inventory'} state=${state} catalog=${catalog} busy=${busy} targetUid=${panelUid} onTarget=${setPanelUid}
+    <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />
+    ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} onClose=${() => setDrawer(null)} info=${html`<${MatchInfo} state=${state} catalog=${catalog} />`}
+      pub=${{ round: state.round, factions: state.board?.factions || [], bossId: state.board?.bossId || null, lastRound: state.board?.bossRound ?? state.roundLimit }}
+      priv=${{ nextEnemies: state.nextEnemies || [] }} onEnemy=${(key, count) => setDetail({ kind: 'enemy', id: key, count })} onChess=${() => {}} />` : null}
+    <${InventoryPanel} open=${panel === 'inventory'} focus=${panelKey} state=${state} catalog=${catalog} busy=${busy} targetUid=${panelUid} onTarget=${setPanelUid}
       onClose=${() => setPanel(null)} onAct=${simple} />
     <${InheritPanel} open=${panel === 'inherit'} state=${state} catalog=${catalog} busy=${busy} fromUid=${panelUid} preview=${preview}
       onPreview=${runPreview} onClose=${() => setPanel(null)} onConfirm=${async (action) => { const res = await simple(action); if (res) setPanel(null); }} />

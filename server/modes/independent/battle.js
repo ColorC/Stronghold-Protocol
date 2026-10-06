@@ -9,6 +9,7 @@ import { bossPoolHp, SharedBossPool } from '../../match/finalAssault.js';
 import { buildDeployMap } from '../../match/board.js';
 import { installIndependentBattle } from '../../sim/content/independent/battle.js';
 import { getCatalog } from './catalog.js';
+import { unitStatsEntry } from '../../../shared/protocol.js';
 
 const PLAYER_ID = 'independent';
 const SAMPLE_LIMIT = 24;
@@ -16,6 +17,8 @@ const SAMPLE_INTERVAL_TICKS = 30;
 /** Replay frames: one b.snap + the b.ev tuples drained since the previous one, every 3 ticks (tools/record-battle.mjs). */
 export const REPLAY_SNAP_EVERY = 3;
 const MAX_TICKS = Math.ceil(MAX_BATTLE_TIME / TICK) + 1;
+/** Replay stats: every second, the detail-card stats (shared/protocol.js unitStatsEntry) of each unit whose ones changed. */
+export const REPLAY_STATS_EVERY = Math.round(1 / TICK);
 
 function rawData(data) {
   if (data && typeof data === 'object') return data;
@@ -67,6 +70,8 @@ export function getIndependentField(state, { data = null } = {}) {
     wave: prepared.wave,
     field: prepared.field,
     deployMap: buildDeployMap(prepared.stage, { field: prepared.field }),
+    // the run's enemy leader and enemy factions (match/waves.js setupMatchWaves), for the 敌方情报 drawer
+    bossId: prepared.setup.bossId ?? null, hiddenBossId: prepared.setup.hiddenBossId ?? null, factions: [...(prepared.setup.factions || [])],
   };
 }
 
@@ -111,24 +116,23 @@ function sampleBattle(battle) {
   return { t: Math.round(battle.time * 1000) / 1000, units, enemies, killed: battle.killed, leaked: battle.leakedCount };
 }
 
-/** Run one real upstream Battle for the current independent-mode round. Does not mutate state. */
-export function runIndependentBattle(state, { data = null, catalog = null } = {}) {
-  if (!state || typeof state !== 'object') throw new TypeError('independent battle requires a state object');
-  const source = rawData(data);
-  catalog ??= getCatalog(source);
-  const input = structuredClone(state);
+/**
+ * The Battle of a round's own board. `preview`: the start-of-battle preview the detail card reads (the original's
+ * Match._unitStatsOf): no enemies, a normal field, its own seed, no event record — built, started and dropped.
+ */
+function buildBattle(input, source, catalog, { preview = false } = {}) {
   const prepared = prepare(input, source);
   const units = battleUnits(input);
-  const sharedBoss = prepared.kind === 'normal' ? null : new SharedBossPool(bossPoolHp(prepared.gd, prepared.bossId, 1));
+  const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(bossPoolHp(prepared.gd, prepared.bossId, 1));
   const battle = new Battle({
-    seed: deriveSeed(Number(input.seed) >>> 0, `independent:battle:${prepared.round}:${prepared.modeId}`),
-    kind: prepared.kind,
+    seed: deriveSeed(Number(input.seed) >>> 0, `independent:${preview ? 'preview' : 'battle'}:${prepared.round}:${prepared.modeId}`),
+    kind: preview ? 'normal' : prepared.kind,
     modeId: prepared.modeId,
     round: prepared.round,
     stage: prepared.stage,
     timeLimit: prepared.wave.timeLimit,
     players: [{ playerId: PLAYER_ID, seat: 0, side: 'L', colOffset: 0, units, bonds: {} }],
-    spawns: prepared.wave.spawns,
+    spawns: preview ? [] : prepared.wave.spawns,
     routes: [...(prepared.wave.routes || []), ...(prepared.wave.extraRoutes || [])],
     enemyOverrides: prepared.wave.overrides,
     sharedBoss,
@@ -139,20 +143,62 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     fieldId: `independent-r${prepared.round}`,
     data: source,
     content: 'independent',
-    recordEvents: true,
+    recordEvents: !preview,
     logger: { warn() {}, error() {}, info() {}, log() {} },
     extraContent: [b => installIndependentBattle(b, { catalog, state: input })],
   });
+  return { battle, prepared };
+}
+
+/**
+ * What each deployed operator starts its next battle with (equipment, attachments and traits applied, before any skill
+ * or timed effect): piece uid → shared/protocol.js unitStatsEntry, as the original's m.unitStats. {} when it cannot
+ * be built. Does not mutate state.
+ */
+export function previewUnitStats(state, { data = null, catalog = null } = {}) {
+  const source = rawData(data);
+  catalog ??= getCatalog(source);
+  const out = {};
+  try {
+    const { battle } = buildBattle(structuredClone(state), source, catalog, { preview: true });
+    battle.start();
+    for (const u of battle.allyUnits) if (u && typeof u.uid === 'string' && u.kind === 'op') out[u.uid] = unitStatsEntry(u, u.s);
+  } catch { return {}; }
+  return out;
+}
+
+/** Run one real upstream Battle for the current independent-mode round. Does not mutate state. */
+export function runIndependentBattle(state, { data = null, catalog = null } = {}) {
+  if (!state || typeof state !== 'object') throw new TypeError('independent battle requires a state object');
+  const source = rawData(data);
+  catalog ??= getCatalog(source);
+  const input = structuredClone(state);
+  const { battle, prepared } = buildBattle(input, source, catalog);
   const samples = [];
   // The replay the browser plays with the original renderer is recorded from this authoritative run, in the
   // format of tools/record-battle.mjs (public/dev/render-demo.js plays those): snapshot() and drainEvents() only read
   // the field and empty the event queue, so the run and its result are the same with or without it.
   const frames = [];
   let field = null;
+  // the stats each unit was last recorded with (by unit id): a frame carries only the ones that changed
+  const lastStats = new Map();
+  const statsChanges = () => {
+    const out = {};
+    for (const u of battle.units) {
+      if (!u || (u.kind !== 'op' && u.side !== 'enemy') || !u.alive) continue;
+      const entry = unitStatsEntry(u, u.s); const key = JSON.stringify(entry);
+      if (lastStats.get(u.id) !== key) { lastStats.set(u.id, key); out[u.id] = entry; }
+    }
+    return Object.keys(out).length ? out : null;
+  };
   while (!battle.finished && battle.tickCount < MAX_TICKS) {
     battle.step();
     if (!field) field = battle.fieldMeta();
-    if (battle.tickCount % REPLAY_SNAP_EVERY === 0) frames.push({ snap: battle.snapshot(), ev: battle.drainEvents() });
+    if (battle.tickCount % REPLAY_SNAP_EVERY === 0) {
+      const frame = { snap: battle.snapshot(), ev: battle.drainEvents() };
+      if (battle.tickCount % REPLAY_STATS_EVERY === REPLAY_SNAP_EVERY) { const stats = statsChanges(); if (stats) frame.stats = stats; }
+      frames.push(frame);
+    }
     if ((battle.tickCount % SAMPLE_INTERVAL_TICKS === 0 || battle.finished) && samples.length < SAMPLE_LIMIT) samples.push(sampleBattle(battle));
   }
   const capped = !battle.finished;

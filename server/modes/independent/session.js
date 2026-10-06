@@ -5,7 +5,7 @@ import { modeIdFor } from '../../../shared/constants.js';
 import { createRng } from '../../sim/rng.js';
 import { getCatalog } from './catalog.js';
 import { runNativeHook } from './native.js';
-import { runIndependentBattle, getIndependentField } from './battle.js';
+import { runIndependentBattle, getIndependentField, previewUnitStats } from './battle.js';
 import { previewOf } from '../../match/waves.js';
 import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
@@ -280,12 +280,31 @@ export function validateSession(state) {
   return e;
 }
 
+/**
+ * The match so far in numbers, for the end screen (the page never receives the history): battles fought, rounds passed
+ * (a lost last battle does not count), the operators' damage, the enemies felled and the life lost.
+ */
+export function matchStats(state) {
+  const battles = (state.history || []).filter((h) => h.type === 'battle');
+  const mine = (h) => h.result?.perPlayer?.independent || Object.values(h.result?.perPlayer || {})[0] || {};
+  const sum = (f) => battles.reduce((n, h) => n + (Number(f(h)) || 0), 0);
+  return {
+    battles: battles.length,
+    passed: Math.max(0, battles.length - (state.phase === 'finished' && state.outcome === 'loss' ? 1 : 0)),
+    damage: sum((h) => (mine(h).unitStats || []).filter((u) => u.kind === 'op').reduce((n, u) => n + (Number(u.dmg) || 0), 0)),
+    kills: sum((h) => h.result?.killed),
+    lpLost: sum((h) => h.lpLost),
+  };
+}
+
 export function viewSession(state, options = {}) {
   const data = sessionData(options); const catalog = sessionCatalog(data, options);
   if (state.pieces.some((p) => lacksPermit(p, catalog))) { state = clone(state); ensurePermits(state, catalog); }
   let field = null;
   try { field = getIndependentField(state, { data, catalog }); } catch { /* keep the raw state visible when content lookup is unavailable */ }
   const deployCells = field && state.phase === 'prep' ? [...(field.deployMap || new Map()).keys()] : [];
+  // what each deployed operator starts the next battle with (the detail card's 开战时 stats, the original's m.unitStats)
+  const startStats = state.phase === 'prep' ? previewUnitStats(state, { data, catalog }) : {};
   const pieces = state.pieces.map((p) => {
     const op = opFor(catalog, p.chessId) || {};
     const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
@@ -297,12 +316,13 @@ export function viewSession(state, options = {}) {
     return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
       // the body's own numbers: after the 接装损耗 when it applies, and before it (the detail card shows both)
       bodyStats: nativeBodyStats(p, catalog), rawBodyStats: p.bodyPenaltyApplied ? nativeBodyStats({ ...p, bodyPenaltyApplied: false }, catalog) : undefined,
-      factions: tavernFactions(p, catalog),
+      factions: tavernFactions(p, catalog), startStats: startStats[p.uid],
       // whom it may hand its gear to (give) and take gear from (take) under the 交接凭证 worn on either side
       handover: state.phase === 'prep' ? handoverPartners(state, p, catalog) : undefined };
   });
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
-    board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
+    board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()], bossId: field.bossId, factions: field.factions,
+      bossRound: state.roundLimit === 9 ? 9 : 14 } : null, battleSummary: state.battleSummary, matchStats: matchStats(state),
     forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null,
     // the coming round's enemies for the renderer's preview pen (the original m.private.nextEnemies, waves.js previewOf)
     nextEnemies: field && state.phase !== 'finished' ? previewOf(field.wave?.spawns || []) : [] };

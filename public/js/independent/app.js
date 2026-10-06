@@ -2,6 +2,9 @@
 // lives in the address (?session=…), so a reload or a shared link resumes the same drill.
 import { useCallback, useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Panel, MicroLabel, Spinner, TextField } from '../ui/components.js';
+import { GIcon } from '../ui/gameComponents.js';
+import { SettingsModal } from '../ui/settings.js';
+import { audio } from '../audio.js';
 import { toast } from '../ui/toasts.js';
 import { api } from './api.js';
 import { GameScreen } from './game.js';
@@ -59,6 +62,8 @@ const MODE_TEXT = {
 
 function StartScreen({ catalog, onStart, onResume, last }) {
   const [busy, setBusy] = useState(null);
+  const [settings, setSettings] = useState(false);
+  useEffect(() => { audio.playBgm('lobby'); }, []);
   const [seed, setSeed] = useState('');
   const go = async (mode) => {
     if (busy) return;
@@ -87,5 +92,7 @@ function StartScreen({ catalog, onStart, onResume, last }) {
       ${last ? html`<${Button} variant="secondary" onClick=${() => onResume(last)}>继续上一局<//>` : null}
       <a class="ix-start__back" href="./">返回卫戍协议</a>
     </div>
+    <button type="button" class="gm__gear ix-start__gear" aria-label="设置" title="设置" onClick=${() => setSettings(true)}><${GIcon} name="gear" /></button>
+    <${SettingsModal} open=${settings} onClose=${() => setSettings(false)} />
   </main>`;
 }

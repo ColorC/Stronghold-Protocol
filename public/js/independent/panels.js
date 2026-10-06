@@ -1,9 +1,10 @@
-// 卫戍协议：工坊 detail layer and the panels the player opens: detail card, inventory, offers (prize / recruit /
+// 卫戍协议：工坊 panels the player opens (the detail card is detail.js): inventory, offers (prize / recruit /
 // attachment / operator merge), inheritance preview and the round result. Full texts live here, never on the HUD.
-import { useEffect, useMemo, useState } from '../../vendor/hooks.module.js';
-import { html, Icon, Button, Modal, MicroLabel, TierChip } from '../ui/components.js';
-import { Img, CoinGlyph, UnitThumb } from '../ui/gameComponents.js';
-import { chessPortraitUrl, profIconUrl } from '../ui/assetUrls.js';
+import { useEffect, useState } from '../../vendor/hooks.module.js';
+import { html, Icon, Button, Modal, MicroLabel, TierChip, DifficultyTag } from '../ui/components.js';
+import { Img, CoinGlyph, UnitThumb, LpTower, Sprite } from '../ui/gameComponents.js';
+import { chessPortraitUrl, enemyIconUrl, uiUrl } from '../ui/assetUrls.js';
+import { audio } from '../audio.js';
 import { data } from '../data.js';
 import { TraitGlyphs } from './hud.js';
 import { GearIcon, GameText, TermNotes } from './text.js';
@@ -11,18 +12,17 @@ import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, 
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
-const STAT_ROWS = [['maxHp', '生命'], ['atk', '攻击'], ['def', '防御'], ['res', '法术抗性'], ['blockCnt', '阻挡'], ['bat', '攻击间隔']];
 const fmt = (n) => (Number.isInteger(n) ? String(n) : Number(n).toFixed(2).replace(/\.?0+$/, ''));
 
 /** "基础攻击力 +120" for n badges of one kind (catalog gear: stat / value / ratio). */
-function badgeTotal(g, n) {
+export function badgeTotal(g, n) {
   if (!g?.statName || typeof g.value !== 'number') return null;
   const v = g.value * n;
   return `${g.statName} +${g.ratio ? `${fmt(v * 100)}%` : fmt(v)}`;
 }
 
 /** 战栗维式重锤's variants (configure-equipment hammerSourceIds), chosen when it is worn. */
-function HammerPicker({ g, item, busy, catalog, onSave }) {
+export function HammerPicker({ g, item, busy, catalog, onSave }) {
   const [picks, setPicks] = useState(item?.state?.hammerSourceIds || []);
   const limit = (item?.elite ? g.steamLimit?.elite : g.steamLimit?.normal) ?? g.steamLimit ?? 1;
   const toggle = (id) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < limit ? [...p, id] : p));
@@ -31,30 +31,11 @@ function HammerPicker({ g, item, busy, catalog, onSave }) {
     <${Button} size="sm" variant="primary" disabled=${busy || !picks.length} onClick=${() => onSave(picks)}>保存<//></span>`;
 }
 
-function EquipmentList({ items, catalog, busy, onConfigure }) {
-  const rows = groupEquipment(items, catalog);
-  if (!rows.length) return html`<p class="ix-muted">尚未穿戴装备</p>`;
-  return html`<ul class="ix-eq">
-    ${rows.map((r) => {
-      const g = catalog.gear[r.id] || {};
-      const item = (items || []).find((x) => x.uid === r.uids[0]);
-      return html`<li key=${r.uids[0]} class=${cx('ix-eq__row', r.badge && 'is-badge')}>
-        <${GearIcon} id=${r.id} catalog=${catalog} plain=${true} />
-        <span class="ix-eq__name">${r.name}${r.elite ? html`<em>精锐</em>` : null}</span>
-        <span class="ix-eq__lv num">${r.permit ? html`<${GameText} text="交接凭证" catalog=${catalog} class="ix-perm" />` : r.badge ? '' : `${r.level ?? 1}级`}</span>
-        <span class="ix-eq__n num">×${r.count}</span>
-        <span class="ix-eq__fx">${r.badge ? html`<${GameText} text=${r.count > 1 ? (badgeTotal(g, r.count) || g.normal) : g.normal} catalog=${catalog} />`
-          : html`<${GameText} text=${r.elite ? g.elite : g.normal} catalog=${catalog} />`}
-          ${onConfigure && g.steamOptions?.length ? html`<${HammerPicker} g=${g} item=${item} busy=${busy} catalog=${catalog} onSave=${(ids) => onConfigure(item.uid, ids)} />` : null}</span>
-      </li>`;
-    })}
-  </ul>`;
-}
 
-const PRODUCTION_BADGES = ['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery'];
+export const PRODUCTION_BADGES = ['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery'];
 
 /** Both forms' trait texts (the current one lit) and, under them, every item and term they name. */
-function TraitTexts({ op, elite, catalog }) {
+export function TraitTexts({ op, elite, catalog }) {
   const t = op?.traitTexts || {};
   return html`<div class="ix-traittext">
     <p class=${cx(!elite && 'is-on')}><b>普通</b><${GameText} text=${t.normal} catalog=${catalog} /></p>
@@ -67,111 +48,13 @@ function TraitTexts({ op, elite, catalog }) {
 const KIND_LABEL = { equipment: '装备', prizeGear: '特供装备' };
 
 /** The line under a shop gear's name: what kind of gear it is, its level and the rule it carries. */
-function gearMeta(g, elite) {
+export function gearMeta(g, elite) {
   if (g.kind === 'badge' || g.kind === '徽章') return '基础徽章 · 可重复装备';
   return `${KIND_LABEL[g.kind] || g.kind || ''} · ${(elite ? g.eliteLevel : g.level) ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`;
 }
 
-/** The operator's own skills (data/chess.json records, the order of the session's skillIndex). */
-function SkillPicker({ piece, chess, busy, onLoadout }) {
-  const skills = chess?.skills || [];
-  if (skills.length < 2) return null;
-  return html`<div class="ix-skills">
-    ${skills.map((s, i) => html`<button type="button" key=${i} class=${cx('ix-chip', piece.skillIndex === i && 'is-on')} disabled=${busy || piece.skillIndex === i}
-      onClick=${() => onLoadout(i)} title=${s.desc || s.name || ''}>${s.name || `技能 ${i + 1}`}</button>`)}
-  </div>`;
-}
-
-/**
- * Detail card of an own piece, a shop operator or a piece of gear (target: { kind: 'piece', uid } | { kind: 'shop',
- * slot } | { kind: 'gear', id, elite }). Sections fold; the operator and its gear start open (design: 干员详情卡).
- */
-export function DetailCard({ target, state, catalog, busy, onClose, onAct, onInherit, onBuy, onEquipHere, onCopyLink }) {
-  const [confirmSell, setConfirmSell] = useState(false);
-  useEffect(() => setConfirmSell(false), [target?.uid, target?.slot]);
-  if (!target) return null;
-  if (target.kind === 'gear') {
-    const g = catalog.gear[target.id] || {};
-    const body = target.elite ? g.elite : g.normal;
-    return html`<aside class="ix-detail" data-testid="ix-detail"><button type="button" class="ix-detail__close" onClick=${onClose} aria-label="关闭"><${Icon} name="close" /></button>
-      <header class="ix-detail__head"><${GearIcon} id=${target.id} catalog=${catalog} plain=${true} /><div><h2>${g.name || ''}${target.elite ? html`<em class="ix-elite">精锐</em>` : null}</h2>
-        <span class="ix-muted">${gearMeta(g, target.elite)}</span></div></header>
-      <p class="ix-detail__text"><${GameText} text=${body} catalog=${catalog} /></p>
-      <${TermNotes} texts=${[body]} catalog=${catalog} exclude=${g.name} />
-    </aside>`;
-  }
-  const isShop = target.kind === 'shop';
-  const slot = isShop ? state.shop.slots[target.slot] : null;
-  const piece = isShop ? null : state.pieces.find((p) => p.uid === target.uid);
-  if (!slot && !piece) return null;
-  const op = isShop ? catalog.operators[slot.id] : formEntry(catalog, piece);
-  const chessId = isShop ? slot.id : renderChessId(catalog, piece);
-  const c = data.lookup('chess', chessId);
-  const m = data.get('assets');
-  const elite = !!piece?.elite;
-  const stats = piece?.bodyStats || c?.stats || {};
-  const raw = piece?.rawBodyStats;
-  return html`<aside class="ix-detail" data-testid="ix-detail">
-    <button type="button" class="ix-detail__close" onClick=${onClose} aria-label="关闭"><${Icon} name="close" /></button>
-    <header class="ix-detail__head">
-      <${Img} src=${chessPortraitUrl(m, c)} class="ix-detail__art" />
-      <div>
-        <h2>${op?.name || ''}${elite ? html`<em class="ix-elite">精锐</em>` : null}</h2>
-        <span class="ix-detail__meta"><${TierChip} tier=${op?.tier || 1} size="sm" /><${Img} src=${profIconUrl(m, op?.profession)} class="ix-detail__prof" />${c?.subProfessionName || ''}
-          ${piece?.factions?.length ? html`<span class="ix-muted">${piece.factions.map((f) => `【${f}】`).join('')}</span>` : null}</span>
-        ${piece ? html`<span class="ix-detail__eqlv"><${GameText} text="装备总等级" catalog=${catalog} /> <b class="num">${piece.equipmentLevel}</b></span>` : null}
-        ${onCopyLink ? html`<button type="button" class="ix-linkbtn" onClick=${() => onCopyLink(piece ? `piece-${piece.uid}` : `shop-${target.slot}`)}><${Icon} name="link" />复制链接</button>` : null}
-      </div>
-    </header>
-    <details open>
-      <summary>干员</summary>
-      <dl class="ix-stats">${STAT_ROWS.map(([k, label]) => (stats[k] != null ? html`<div key=${k}><dt>${label}</dt><dd class="num">${fmt(stats[k])}${raw && raw[k] !== stats[k] ? html`<s class="num">${fmt(raw[k])}</s>` : null}</dd></div>` : null))}</dl>
-      ${raw ? html`<p class="ix-note"><${GameText} text="已承受接装损耗（划线为原值）" catalog=${catalog} /></p>` : null}
-      ${(() => {
-        const sk = (piece ? c?.skills?.[piece.skillIndex] : null) || c?.skill;
-        return sk ? html`<p class="ix-skill"><b>技能 · ${sk.name}</b>${sk.desc || ''}</p>` : null;
-      })()}
-      ${piece ? html`<${SkillPicker} piece=${piece} chess=${c} busy=${busy} onLoadout=${(i) => onAct({ type: 'loadout', uid: piece.uid, skillIndex: i, moduleId: piece.moduleId })} />` : null}
-      <h4>特质</h4>
-      <${TraitGlyphs} summary=${op?.summary} elite=${elite} catalog=${catalog} max=${4} />
-      <${TraitTexts} op=${catalog.operators[isShop ? slot.id : piece.chessId]} elite=${elite} catalog=${catalog} />
-      ${piece && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
-        ${PRODUCTION_BADGES.map((id) => html`<button type="button" key=${id} class=${cx('ix-chip', (piece.preferences?.productionBadge || 'precision') === id && 'is-on')} disabled=${busy || state.phase !== 'prep'}
-          onClick=${() => onAct({ type: 'configure', uid: piece.uid, productionBadge: id })}>${catalog.gear[id]?.name || ''}</button>`)}</div>` : null}
-      ${isShop && op?.permitGear ? html`<h4>获得时自带</h4>
-        <${EquipmentList} items=${[{ id: op.permitGear, uid: 'permit', quantity: 1 }]} catalog=${catalog} />
-        <${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
-    </details>
-    ${piece ? html`<details open>
-      <summary>装备 · ${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}/${catalog.rules?.equipmentCapacity ?? 999}</summary>
-      <${EquipmentList} items=${piece.equipment} catalog=${catalog} busy=${busy}
-        onConfigure=${state.phase === 'prep' ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />
-      ${permitsOf(piece, catalog).length ? html`<${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
-      <p class="ix-note">装备穿上后无法卸下；出售干员时连同装备一起失去</p>
-    </details>` : null}
-    ${piece?.attachments?.length ? html`<details open>
-      <summary>附加效果</summary>
-      <ul class="ix-att">${piece.attachments.map((a) => html`<li key=${a.id}><b>${catalog.attachments?.[a.id]?.name || ''}</b><${GameText} text=${catalog.attachments?.[a.id]?.effect} catalog=${catalog} /></li>`)}</ul>
-      <${TermNotes} texts=${piece.attachments.map((a) => catalog.attachments?.[a.id]?.effect)} catalog=${catalog} />
-    </details>` : null}
-    ${slot && slot.equipment?.length ? html`<details open><summary>附带装备</summary><${EquipmentList} items=${slot.equipment.map((x, i) => ({ ...x, uid: `c${i}` }))} catalog=${catalog} />
-      <p class="ix-note">购买时一并获得；刷新商店后失去</p></details>` : null}
-    <footer class="ix-detail__actions">
-      ${isShop ? html`<${Button} size="sm" variant="primary" disabled=${busy || slot.sold || state.funds < slot.price} onClick=${() => onBuy(target.slot)}>购买 · ${slot.price}<//>` : null}
-      ${piece && state.phase === 'prep' ? html`
-        <${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onEquipHere(piece.uid)}>穿戴装备<//>
-        ${piece.handover?.give?.length || piece.handover?.take?.length ? html`<${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onInherit(piece.uid)}>交接<//>` : null}
-        ${isDeployed(piece) ? html`<${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onAct({ type: 'bench', uid: piece.uid })}>撤回<//>` : null}
-        ${confirmSell
-          ? html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => onAct({ type: 'sell', uid: piece.uid })}>确认出售 +${catalog.rules?.sellPrice ?? 1}<//>`
-          : html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => setConfirmSell(true)} title="装备与附加效果会一起失去">出售 +${catalog.rules?.sellPrice ?? 1}<//>`}` : null}
-    </footer>
-  </aside>`;
-}
-
 // ---- inventory ----------------------------------------------------------------------------------------------------
 
-/** What a supply asks for when used (prizes.js useInventoryItem): one operator, n operators, n shop slots or a faction. */
 /** What a supply asks for before it is used: an own operator (target / targets / source), shop places or a faction. */
 export const USE_NEEDS = { upgradeChess: 'target', promoteOnUse: 'targets', recruitOnUse: 'source', copyOperatorOnUse: 'source', shopRecruitOnUse: 'slots',
   factionRecruitOnUse: 'faction', saleThresholdRecruit: 'faction' };
@@ -208,21 +91,29 @@ function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
 }
 
 /**
- * The inventory: every stack with its full effect. Gear is worn by the chosen operator (n badges at once); supplies,
- * facilities and kept prizes are used, asking first for what they need; two normal copies merge into the elite one.
- * Wearing is final (design: 不能主动拆卸或替换), so the panel says so.
+ * The inventory: the stock's tiles (as many places as it holds, catalog.rules.inventoryCapacity) on the left, the
+ * chosen tile's full effect and actions on the right — a fixed grid, no scrolling list. Gear is worn by the chosen
+ * operator (n badges at once); supplies, facilities and kept prizes are used, asking first for what they need; two
+ * normal copies merge into the elite one. Wearing is final (design: 不能主动拆卸或替换), so the panel says so.
  */
-export function InventoryPanel({ open, state, catalog, busy, targetUid, onTarget, onClose, onAct }) {
+export function InventoryPanel({ open, focus = null, state, catalog, busy, targetUid, onTarget, onClose, onAct }) {
   const stacks = inventoryStacks(state.inventory, catalog);
   const [qty, setQty] = useState({});
   const [using, setUsing] = useState(null);
   const [tags, setTags] = useState({});
-  useEffect(() => { if (!open) setUsing(null); }, [open]);
+  const [pick, setPick] = useState(null);
+  useEffect(() => { if (!open) setUsing(null); else if (focus) setPick(focus); }, [open, focus]);
   const target = state.pieces.find((p) => p.uid === targetUid) || null;
   const used = target ? target.equipment.reduce((n, x) => n + (x.quantity || 1), 0) : 0;
   const room = (catalog.rules?.equipmentCapacity ?? 999) - used;
   const run = async (action) => { const res = await onAct(action); if (res) setUsing(null); };
-  return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(9.8rem, 94vw)" class="ix-inv">
+  const capacity = Math.max(catalog.rules?.inventoryCapacity ?? 20, stacks.length);
+  const s = stacks.find((x) => x.key === pick) || stacks[0] || null;
+  const g = s ? catalog.gear[s.id] || {} : null;
+  const n = s ? Math.max(1, Math.min(qty[s.key] || 1, s.count, Math.max(1, room))) : 1;
+  const mergeable = s && !s.used && !s.badge && !s.elite && g.eliteLevel != null && s.count >= 2;
+  const tagFactions = g?.identityFactions || null;
+  return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(10.4rem, 96vw)" class="ix-inv">
     <div class="ix-inv__target">
       <span>穿戴到</span>
       <select value=${targetUid || ''} onChange=${(e) => onTarget(e.currentTarget.value || null)} data-testid="ix-inv-target">
@@ -230,20 +121,27 @@ export function InventoryPanel({ open, state, catalog, busy, targetUid, onTarget
         ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备${p.equipmentLevel}级</option>`)}
       </select>
       ${target ? html`<span class="ix-muted">还能穿 <b class="num">${room}</b> 件 · 穿上后无法卸下</span>` : html`<span class="ix-muted">先选干员，再点「穿戴」</span>`}
+      <span class="ix-inv__count num">${stacks.length}/${capacity}</span>
     </div>
-    ${stacks.length ? html`<ul class="ix-inv__list">
-      ${stacks.map((s) => {
-        const g = catalog.gear[s.id] || {};
-        const n = Math.max(1, Math.min(qty[s.key] || 1, s.count, Math.max(1, room)));
-        const mergeable = !s.used && !s.badge && !s.elite && g.eliteLevel != null && s.count >= 2;
-        const tagFactions = g.identityFactions || null;
-        return html`<li key=${s.key} class="ix-inv__row" data-testid=${`ix-inv-${s.id}`}>
-          <${GearIcon} id=${s.id} catalog=${catalog} plain=${true} />
-          <div class="ix-inv__text">
-            <b>${s.name}${s.elite ? html`<em>精锐</em>` : null}</b><span class="num">${!s.badge && !s.used && s.level != null ? `${s.level}级 · ` : ''}×${s.count}</span>
-            <p><${GameText} text=${s.text} catalog=${catalog} /></p>
-            ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} />` : null}
-          </div>
+    <div class="ix-inv__body">
+      <div class="ix-inv__grid" role="listbox" aria-label="库存">
+        ${Array.from({ length: capacity }, (_, i) => {
+          const x = stacks[i];
+          if (!x) return html`<span key=${`e${i}`} class="ix-inv__cell is-empty" aria-hidden="true"></span>`;
+          return html`<button type="button" key=${x.key} role="option" aria-selected=${String(x === s)} class=${cx('ix-inv__cell', x === s && 'is-on', x.elite && 'is-elite')}
+              data-testid=${`ix-inv-${x.id}`} title=${x.name} onClick=${() => { setPick(x.key); setUsing(null); }}>
+            <${GearIcon} id=${x.id} catalog=${catalog} plain=${true} />
+            <b class="num">×${x.count}</b>
+            <small>${x.name}</small>
+          </button>`;
+        })}
+      </div>
+      <div class="ix-inv__sel">
+        ${s ? html`<header class="ix-inv__head"><${GearIcon} id=${s.id} catalog=${catalog} plain=${true} />
+            <div class="ix-inv__text"><b>${s.name}${s.elite ? html`<em>精锐</em>` : null}</b><span class="num">${!s.badge && !s.used && s.level != null ? `${s.level}级 · ` : ''}×${s.count}</span></div></header>
+          <p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>
+          <${TermNotes} texts=${[s.text]} catalog=${catalog} exclude=${s.name} />
+          ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} />` : null}
           <div class="ix-inv__act">
             ${s.used ? html`<${Button} size="sm" variant="secondary" disabled=${busy || using === s.key}
                 onClick=${() => (USE_NEEDS[s.mechanism] ? setUsing(s.key) : run({ type: 'use-item', itemUid: s.items[0].uid }))}>使用<//>`
@@ -259,10 +157,9 @@ export function InventoryPanel({ open, state, catalog, busy, targetUid, onTarget
                 穿戴${s.badge && n > 1 ? ` ${n} 枚` : ''}<//>`}
             ${mergeable ? html`<${Button} size="sm" variant="secondary" disabled=${busy} title="两件合成一件精锐"
                 onClick=${() => run({ type: 'merge-item', firstUid: s.items[0].uid, secondUid: (s.items[1] || s.items[0]).uid })}>合成精锐<//>` : null}
-          </div>
-        </li>`;
-      })}
-    </ul>` : html`<p class="ix-muted">库存为空</p>`}
+          </div>` : html`<p class="ix-muted">库存为空</p>`}
+      </div>
+    </div>
   <//>`;
 }
 
@@ -438,7 +335,76 @@ export function ResultPanel({ battle, catalog, pieces, onClose, finished }) {
         <span>${u.name || catalog.operators[u.defId]?.name || ''}</span>
         <span class="ix-dmg__bar"><i style=${`width:${Math.round(((u.dmg || 0) / top) * 100)}%`}></i></span>
         <b class="num">${Math.round(u.dmg || 0)}</b><small class="num">${u.heal ? `治疗 ${Math.round(u.heal)}` : u.kills ? `击倒 ${u.kills}` : ''}</small></li>`)}</ul>` : null}
-      <footer><${Button} variant="primary" onClick=${onClose} data-testid="ix-result-ok">${finished ? '查看最终阵容' : '继续备战'}<//></footer>
+      <footer><${Button} variant="primary" onClick=${onClose} data-testid="ix-result-ok">${finished ? '查看结算' : '继续备战'}<//></footer>
     </div>
+  </div>`;
+}
+
+// ---- end of the match -----------------------------------------------------------------------------------------------
+
+/**
+ * The end of a match on the original RESULT screen (screens/result.js, css/screens/result.css): 模拟完成 / 模拟失败, the
+ * rounds passed, the enemy leader's medal, then the player's card — final lineup (elites gold), the match's numbers
+ * and the remaining life. 查看阵容 hides it to look at the board; 返回 leaves for the start page.
+ */
+export function FinalScreen({ state, catalog, onLook, onLeave }) {
+  const win = state.outcome === 'win';
+  useEffect(() => { audio.sfx(win ? 'settlementSucceed' : 'settlementFail'); }, []);
+  const m = data.get('assets');
+  const ms = state.matchStats || {};
+  const passed = ms.passed ?? 0;
+  const boss = state.board?.bossId ? data.lookup('bosses', state.board.bossId) : null;
+  const stats = [
+    ['造成伤害', ms.damage || 0],
+    ['击倒敌人', ms.kills || 0],
+    ['损失生命', ms.lpLost || 0],
+    ['精锐干员', state.pieces.filter((p) => p.elite).length],
+    ['装备总等级', state.pieces.reduce((n, p) => n + (p.equipmentLevel || 0), 0)],
+    ['在场干员', state.pieces.filter(isDeployed).length],
+    ['调度中心', state.shop?.level ?? 1],
+  ];
+  const bg = uiUrl(m, win ? 'settle/settlemen_teamshow_success' : 'settle/settlemen_teamshow_fail');
+  const lineup = [...state.pieces].sort((a, b) => Number(isDeployed(b)) - Number(isDeployed(a))).slice(0, 12);
+  return html`<div class=${cx('screen', 'result', 'ix-final', win ? 'is-win' : 'is-lose')} role="dialog" aria-label="本局结算" data-testid="ix-final">
+    <div class="result__bg" aria-hidden="true" style=${bg ? `--result-bg:url("${bg}")` : undefined}></div>
+    <div class="result__grid" aria-hidden="true"></div>
+    <main class="result__main">
+      <section class="result__hero">
+        <div class="result__logo"><${Sprite} k="entry/season_logo_settle" class="result__logoimg" fallback=${html`<${MicroLabel} tone="mint">STRONGHOLD PROTOCOL<//>`} /></div>
+        ${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="lg" />` : null}
+        <h1 class="result__headline">${win ? '模拟完成' : '模拟失败'}</h1>
+        <p class="result__sub">${win ? '成功卫戍 · 敌方领袖已被击败' : state.lp <= 0 ? '防线已被突破' : '敌方领袖突破了防线'}</p>
+        <div class="result__rounds">
+          <span class="result__rlabel">通过回合</span>
+          <b class="result__rnum num">${passed}</b>
+          <span class="result__rof num">/${state.roundLimit}</span>
+        </div>
+        <div class="result__medals">
+          ${boss ? html`<div class=${cx('medal', win && 'is-done')} title=${boss.name}>
+            <${Img} src=${enemyIconUrl(m, boss.enemyKey)} /><span class="medal__check"><${Icon} name=${win ? 'check' : 'close'} /></span>
+            <span class="medal__label">敌方领袖</span></div>` : null}
+        </div>
+        <footer class="result__foot ix-final__foot">
+          <${Button} variant="secondary" size="lg" onClick=${onLook} data-testid="ix-final-look">查看阵容<//>
+          <${Button} variant="primary" size="lg" icon="chevronLeft" onClick=${onLeave}>返回<//>
+        </footer>
+      </section>
+      <section class="result__players">
+        <h2 class="brief-h"><span>本局阵容</span><${MicroLabel}>FINAL LINEUP<//></h2>
+        <article class="rcard is-self">
+          <header class="rcard__head ix-final__head">
+            <div class="rcard__mid">
+              <div class="rcard__lineup">${lineup.map((p) => html`<${UnitThumb} key=${p.uid} kind="chess" id=${renderChessId(catalog, p)} golden=${!!p.elite}
+                tier=${catalog.operators?.[p.chessId]?.tier} size="sm" />`)}</div>
+            </div>
+            <div class="rcard__round"><${MicroLabel}>ROUNDS<//><b class="num">${passed}</b></div>
+          </header>
+          <div class="rcard__stats">
+            ${stats.map(([label, v]) => html`<div key=${label} class="rstat"><span>${label}</span><b class="num">${Math.round(v).toLocaleString('zh-CN')}</b></div>`)}
+            <div class="rstat"><span>剩余生命</span><${LpTower} value=${state.lp} size="sm" /></div>
+          </div>
+        </article>
+      </section>
+    </main>
   </div>`;
 }

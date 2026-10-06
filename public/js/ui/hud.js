@@ -244,7 +244,7 @@ export function checkButtons({ pen, penAvail, infoOpen }) {
 }
 
 /** One official 🔍 button: the sprite when installed, a CSS look-alike (icon + chevrons) otherwise. */
-function CheckBtn({ sprite, cls, label, chev, on, disabled, onClick, testid }) {
+export function CheckBtn({ sprite, cls, label, chev, on, disabled, onClick, testid }) {
   const url = localAsset('ui/battle', sprite);
   return html`<button type="button" class=${cx(cls, 'tapx', url && 'has-sprite', chev && 'is-wide', on && 'is-on')}
       style=${url ? `--chk-sprite:url("${url}")` : ''} aria-label=${label} aria-disabled=${disabled ? 'true' : 'false'}

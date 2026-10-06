@@ -28,7 +28,7 @@ import { data } from '../data.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
-function PriceHex({ slot, free, poor = false }) {
+export function PriceHex({ slot, free, poor = false }) {
   const tone = priceTone(slot);
   const price = Number(slot?.price) || 0;
   if (free || price === 0) return html`<span class="scard__free">FREE</span>`;
@@ -108,7 +108,7 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
 }
 
 /** The loadout's skill (icon; name + 已调配 in the tooltip) and an elite's module type, on an operator card. */
-function SkillBadge({ chess, lo }) {
+export function SkillBadge({ chess, lo }) {
   const m = data.get('assets');
   const custom = !lo.defaultSkill;
   // a chosen skill without an icon in the manifest: its slot letter (S1–S3) instead of the blank skill sprite

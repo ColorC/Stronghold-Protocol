@@ -93,7 +93,13 @@
 .ix-prod__toggle { align-self: flex-start; display: inline-flex; align-items: center; gap: .04rem; padding: .03rem .08rem; font-size: max(.14rem, 13px);
   background: rgba(8, 11, 10, .85); border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; }
 .ix-prod__toggle .icon { width: .16rem; height: .16rem; }
-.ix-prod__body { overflow: auto; padding: .08rem .1rem; background: rgba(8, 11, 10, .78); border: 1px solid var(--line); }
+.ix-prod__body { overflow: hidden; padding: .08rem .1rem; background: rgba(8, 11, 10, .78); border: 1px solid var(--line); }
+.ix-prod__list { list-style: none; margin: 0; padding: 0; }
+.ix-prod__h { margin: .04rem 0; font-size: max(.14rem, 13px); color: var(--mint-400); }
+.ix-prod__pager { display: flex; align-items: center; justify-content: center; gap: .1rem; padding-top: .04rem; border-top: 1px solid var(--line); font-size: max(.13rem, 12px); color: var(--text-lo); }
+.ix-prod__pager button { display: grid; place-items: center; width: max(.3rem, 24px); height: max(.3rem, 24px); background: none; border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer; }
+.ix-prod__pager button:disabled { opacity: .35; cursor: default; }
+.ix-prod__pager .icon { width: .16rem; height: .16rem; }
 .ix-prod h3 { margin: .04rem 0; font-size: max(.14rem, 13px); font-weight: 500; color: var(--mint-400); }
 .ix-prod ul { list-style: none; margin: 0 0 .06rem; padding: 0; }
 .ix-prod__row { display: flex; align-items: center; gap: .06rem; min-height: .3rem; font-size: max(.14rem, 13px); color: var(--text-md); }
@@ -106,7 +112,7 @@
 .ix-prod__out b { color: var(--text-hi); }
 .ix-prod__out .coin-glyph { width: .16rem; height: .16rem; fill: var(--gold); }
 .ix-prod__tag { font-size: max(.13rem, 12px); color: var(--gold); }
-.ix-prod__none { margin: .02rem 0 .06rem; font-size: max(.14rem, 12px); color: var(--text-dim); }
+.ix-prod__none { list-style: none; margin: .02rem 0 .06rem; font-size: max(.14rem, 12px); color: var(--text-dim); }
 .ix-prod__line { display: flex; align-items: center; gap: .04rem; }
 .ix-prod__line .ix-prod__row { flex: 1; }
 .ix-prod__when { font-size: max(.13rem, 12px); color: var(--text-lo); width: .5rem; flex: none; }
@@ -139,63 +145,78 @@
 .ix-overflow__item { display: inline-flex; flex-direction: column; align-items: center; gap: .01rem; background: none; border: 0; color: var(--text-md); cursor: pointer; font-size: max(.13rem, 12px); }
 .ix-overflow__item .uthumb { width: .4rem; height: .4rem; }
 
-/* ---- detail card -------------------------------------------------------------------------------------------------- */
-.ix-detail {
-  position: absolute; right: .3rem; top: 1.9rem; bottom: 3.85rem; width: 3.7rem; overflow: auto; padding: .14rem .16rem;
-  background: linear-gradient(170deg, rgba(20, 29, 25, .97), rgba(9, 13, 11, .97)); border: 1px solid var(--line-2); color: var(--text-md);
-  font-size: max(.15rem, 13px); line-height: 1.55; user-select: text;
-}
-.ix-detail__close { position: sticky; top: 0; float: right; width: .34rem; height: .34rem; display: grid; place-items: center; background: rgba(8, 11, 10, .9);
-  border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; z-index: 1; }
-.ix-detail__close .icon { width: .18rem; height: .18rem; }
-.ix-detail__head { display: flex; gap: .12rem; align-items: center; margin-bottom: .08rem; }
-.ix-detail__head > .ix-gear { width: .6rem; height: .6rem; }
-.ix-detail__head h2 { margin: 0; font-size: .24rem; color: var(--text-hi); }
-.ix-detail__art { width: .9rem; height: 1.2rem; object-fit: cover; object-position: top; border: 1px solid var(--line); flex: none; }
-.ix-detail__meta { display: flex; align-items: center; gap: .06rem; margin-top: .04rem; color: var(--text-lo); }
-.ix-detail__prof { width: .22rem; height: .22rem; }
-.ix-detail__eqlv { display: block; margin-top: .06rem; color: var(--text-lo); }
-.ix-detail__eqlv b { font-size: .22rem; color: var(--gold); }
+/* ---- detail card (detail.js): the original .dpanel frame, its blocks in tabs; the card itself never scrolls ---------- */
+.ix-dpanel { width: min(4.9rem, 46vw); top: 1.02rem; }
+.ix-dpanel.is-shop { bottom: 3.78rem; }
+.ix-dpanel__body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .1rem; padding: .16rem .18rem .14rem; }
+.ix-dpanel__head { position: relative; flex: none; }
+.ix-dpanel__head .dhead__art { width: 1rem; height: 1.36rem; }
+.ix-dpanel__head .dhead__name { font-size: .28rem; }
+.ix-dpanel__link { position: absolute; right: .44rem; top: 0; margin: 0; }
+.ix-dchips { margin-top: .02rem; }
+.ix-dchips .dbond { cursor: default; }
+.ix-dchips__lv { display: inline-flex; align-items: baseline; gap: .04rem; font-size: max(.14rem, 12px); color: var(--text-lo); }
+.ix-dchips__lv b { font-size: max(.2rem, 15px); color: var(--gold); }
+.ix-dtabs { flex: none; display: flex; gap: .04rem; border-bottom: 1px solid var(--line-2); }
+.ix-dtabs__tab { display: inline-flex; align-items: center; gap: .05rem; padding: .05rem .14rem; font: inherit; font-size: max(.16rem, 14px); color: var(--text-lo);
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.ix-dtabs__tab.is-on { color: var(--mint-400); border-bottom-color: var(--mint-500); }
+.ix-dtabs__tab .num { font-size: max(.13rem, 12px); color: var(--gold); }
+/* one tab's blocks; laid out to fit — only a very short screen lets this part (never the card) scroll */
+.ix-dpanel__pane { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .12rem; overflow: hidden auto; scrollbar-width: thin; }
+.ix-dpanel__actions { flex: none; display: flex; flex-wrap: wrap; gap: .06rem; padding-top: .08rem; border-top: 1px solid var(--line); }
+.ix-dpanel__actions:empty { display: none; }
+.ix-dpanel__hint { flex: 1 0 100%; font-size: .13rem; color: var(--gold, #ffd45a); }
+.ix-dtrait .dgarrison__head { display: flex; align-items: center; gap: .1rem; }
+.ix-dchoice { display: flex; flex-wrap: wrap; gap: .06rem; }
+.ix-dchoice__opt { padding: 0; background: none; border: 0; cursor: pointer; }
+.ix-dchoice__opt:disabled { cursor: default; }
+.ix-dchoice .lo-sicon, .ix-dchoice .lo-mglyph { width: .42rem; height: .42rem; }
+.ix-dchoice__opt:not(.is-on):not(:disabled):hover { filter: brightness(1.2); }
+.ix-dmodule { display: flex; flex-direction: column; gap: .08rem; }
+.ix-dgear__head { display: flex; align-items: baseline; justify-content: space-between; gap: .08rem; }
+.ix-dgear__tiles { display: flex; flex-wrap: wrap; gap: .05rem; }
+.ix-dgear__tile { position: relative; display: inline-flex; align-items: center; gap: .03rem; height: .38rem; padding: 0 .06rem; font: inherit;
+  background: rgba(8, 11, 10, .82); border: 1px solid var(--line-2); color: var(--text-hi); cursor: pointer; }
+.ix-dgear__tile.is-on { border-color: var(--mint-400); }
+.ix-dgear__tile .ix-gear { width: .28rem; height: .28rem; }
+.ix-dgear__tile small { font-size: max(.12rem, 11px); color: var(--gold); }
+.ix-dgear__permit { width: .08rem; height: .08rem; background: var(--gold); }
+.ix-dgear__text { display: flex; flex-wrap: wrap; align-items: baseline; gap: .02rem .08rem; padding: .06rem .08rem; font-size: max(.15rem, 13px); line-height: 1.55;
+  background: var(--bg-1); border: 1px solid var(--line); }
+.ix-dgear__text > b { color: var(--text-hi); }
+.ix-dgear__att { display: flex; flex-wrap: wrap; gap: .04rem .1rem; font-size: max(.14rem, 12px); }
+.ix-dgear__att > b { color: var(--text-lo); font-weight: 500; }
+.ix-dgearhead { display: flex; gap: .12rem; align-items: center; }
+.ix-dgearhead > .ix-gear { width: .6rem; height: .6rem; }
 .ix-detail__text { margin: .06rem 0; }
-.ix-detail details { margin: .08rem 0; border-top: 1px solid var(--line); padding-top: .06rem; }
-.ix-detail summary { cursor: pointer; font-size: max(.16rem, 14px); color: var(--mint-400); }
-.ix-detail h4 { margin: .1rem 0 .04rem; font-size: max(.14rem, 13px); font-weight: 500; color: var(--text-lo); }
-.ix-detail__actions { position: sticky; bottom: -.14rem; display: flex; flex-wrap: wrap; gap: .06rem; margin: .1rem -.16rem -.14rem; padding: .1rem .16rem;
-  background: rgba(9, 13, 11, .97); border-top: 1px solid var(--line); }
-.ix-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .04rem .1rem; margin: .06rem 0; }
-.ix-stats div { display: flex; justify-content: space-between; gap: .04rem; }
-.ix-stats dt { color: var(--text-lo); }
-.ix-stats dd { margin: 0; color: var(--text-hi); }
-.ix-stats s { margin-left: .04rem; color: var(--text-dim); font-size: max(.13rem, 12px); }
-.ix-skill { margin: .06rem 0; }
-.ix-skill b { display: block; color: var(--text-hi); }
-.ix-skills { display: flex; flex-wrap: wrap; gap: .04rem; }
 .ix-traittext p { margin: .04rem 0; color: var(--text-dim); }
 .ix-traittext p.is-on { color: var(--text-md); }
 .ix-traittext b { margin-right: .06rem; font-weight: 500; color: var(--text-lo); }
-.ix-eq { list-style: none; margin: .04rem 0; padding: 0; }
-.ix-eq__row { display: grid; grid-template-columns: .26rem 1fr auto auto; grid-template-areas: 'i n l c' 'i f f f'; gap: 0 .08rem; align-items: center; padding: .04rem 0; border-bottom: 1px solid var(--line); }
-.ix-eq__row > .ix-gear { grid-area: i; }
-.ix-eq__name { grid-area: n; color: var(--text-hi); }
-.ix-eq__name em { margin-left: .04rem; font-style: normal; font-size: max(.13rem, 12px); color: var(--gold); }
-.ix-eq__lv { grid-area: l; color: var(--gold); }
-.ix-eq__n { grid-area: c; color: var(--text-hi); }
-.ix-eq__fx { grid-area: f; font-size: max(.14rem, 12px); color: var(--text-lo); }
-.ix-att { list-style: none; margin: 0; padding: 0; }
-.ix-att li { margin: .04rem 0; }
-.ix-att b { display: block; color: var(--text-hi); }
 
 /* ---- inventory / inheritance modals -------------------------------------------------------------------------------- */
 .ix-inv__target { display: flex; align-items: center; gap: .1rem; flex-wrap: wrap; margin-bottom: .1rem; font-size: max(.16rem, 14px); }
 .ix-inv select, .ix-inherit select { min-width: 3rem; padding: .05rem .08rem; font: inherit; font-size: max(.16rem, 14px); color: var(--text-hi); background: var(--bg-2); border: 1px solid var(--line-2); }
-.ix-inv__list { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; }
-.ix-inv__row { display: grid; grid-template-columns: .44rem 1fr auto; gap: .12rem; align-items: center; padding: .08rem 0; border-bottom: 1px solid var(--line); }
-.ix-inv__row > .ix-gear { width: .44rem; height: .44rem; }
+.ix-inv__count { margin-left: auto; color: var(--text-lo); }
+.ix-inv__body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .2rem; align-items: start; }
+.ix-inv__grid { display: grid; grid-template-columns: repeat(5, .86rem); grid-auto-rows: .86rem; gap: .06rem; }
+.ix-inv__cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .01rem; padding: .04rem;
+  font: inherit; background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer; min-width: 0; }
+.ix-inv__cell.is-empty { background: none; border-style: dashed; border-color: var(--line); cursor: default; }
+.ix-inv__cell.is-on { border-color: var(--mint-400); box-shadow: 0 0 0 1px var(--mint-500); }
+.ix-inv__cell.is-elite { border-color: var(--gold-a20); }
+.ix-inv__cell .ix-gear { width: .4rem; height: .4rem; }
+.ix-inv__cell b { position: absolute; right: .04rem; top: .02rem; font-size: max(.13rem, 11px); color: var(--text-hi); }
+.ix-inv__cell small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(.12rem, 10px); color: var(--text-lo); }
+.ix-inv__sel { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
+.ix-inv__head { display: flex; align-items: center; gap: .1rem; }
+.ix-inv__head > .ix-gear { width: .5rem; height: .5rem; }
+.ix-inv__desc { margin: 0; font-size: max(.15rem, 13px); line-height: 1.55; color: var(--text-md); }
 .ix-inv__text b { color: var(--text-hi); font-size: max(.17rem, 14px); }
 .ix-inv__text b em { margin-left: .04rem; font-style: normal; font-size: max(.13rem, 12px); color: var(--gold); }
 .ix-inv__text > span { margin-left: .08rem; color: var(--gold); font-size: max(.14rem, 13px); }
 .ix-inv__text p { margin: .02rem 0 0; font-size: max(.14rem, 13px); color: var(--text-lo); }
-.ix-inv__act { display: flex; flex-wrap: wrap; gap: .06rem; justify-content: flex-end; align-items: center; }
+.ix-inv__act { display: flex; flex-wrap: wrap; gap: .06rem; align-items: center; }
 .ix-qty { display: inline-flex; align-items: center; gap: .04rem; }
 .ix-qty button { min-width: .3rem; height: .3rem; font-size: max(.15rem, 13px); background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-md); cursor: pointer; }
 .ix-qty b { min-width: .3rem; text-align: center; color: var(--text-hi); }
@@ -247,7 +268,7 @@
 /* ---- phones (css/devices.css breakpoints) ------------------------------------------------------------------------ */
 @media (max-height: 520px) {
   .ix-prod { width: 1.9rem; }
-  .ix-detail { width: 4.2rem; }
+  .ix-dpanel { width: min(4.4rem, 52vw); }
   .ix-start__modes { grid-template-columns: repeat(3, minmax(0, 3.1rem)); }
 }
 
@@ -284,3 +305,34 @@
 .scard .ix-trait__rule { white-space: normal; flex-wrap: wrap; row-gap: 0; }
 .ix-prod__when { width: auto; white-space: nowrap; }
 .ix-prod { width: max(2.4rem, 210px); }
+
+/* ---- short landscape phones (1rem = 40 px) ----------------------------------------------------------------------- */
+/* The pixel floors above keep desktop text readable; inside the original's fixed rem frames (the shop cards, the
+   detail card's tab row) they would double the text on a phone and push the name and portrait out of the card. There
+   these spots keep the original's proportions with a smaller floor. */
+@media (max-height: 460px) {
+  .ix-shop .scard__name { font-size: max(.19rem, 11px); }
+  /* a 62 px card: the trait line keeps its outputs (gear icon × count) on one line; the timing words and conditions
+     are in the detail card a tap opens */
+  .ix-shop .scard .ix-trait { flex-wrap: nowrap; overflow: hidden; font-size: 10px; gap: 0 .04rem; }
+  .ix-shop .scard :is(.ix-trait__when, .ix-trait__arrow, .ix-trait__cond, .ix-trait__word) { display: none; }
+  .ix-shop .scard .ix-trait__out b { font-size: 10px; }
+  .ix-shop .scard .ix-trait__out .ix-gear { width: 12px; height: 12px; }
+  .ix-dtabs__tab { padding: .03rem .08rem; font-size: 12px; white-space: nowrap; }
+  .ix-dtabs__tab .num { font-size: 10px; }
+  .ix-dchips__lv { font-size: 11px; }
+  .ix-dchips__lv b { font-size: 12px; }
+  .ix-dgear__text, .ix-dgear__att { font-size: 11px; }
+}
+
+/* ---- end of the match (the original RESULT screen, css/screens/result.css) ---------------------------------------- */
+.ix-final { z-index: 30; }
+.ix-final__head { grid-template-columns: minmax(0, 1fr) auto; }
+.ix-final__foot { gap: .16rem; flex-wrap: wrap; }
+.ix-final__foot .btn { min-width: 2.4rem; }
+/* the board stays dimly visible behind it; without the local settle art the backdrop is the plain dark */
+.ix-final { background: rgba(6, 9, 8, .94); }
+
+/* ---- effects column (the original .gm__effects): under the bench overflow strip ------------------------------------ */
+.ix-effects { top: 2.1rem; }
+.ix-effects .effect .ix-gear { width: 72%; height: 72%; }
