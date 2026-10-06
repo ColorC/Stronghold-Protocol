@@ -241,6 +241,65 @@ function stateCounter(battle, piece, key) { return piece?.nativeState?.counters?
 
 function ownerUnit(battle, uid) { return battle.allyUnits.find((u) => u.kind === 'op' && u.uid === uid) ?? null; }
 
+const tileDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+/**
+ * The keys an ally answers to for 盟约脆弱 / 盟约庇护: its 酒馆阵营 (identity tags and 锡人's all-faction tag included) and
+ * `self:<uid>`, so gear on an operator without a faction works for that operator alone.
+ */
+function factionKeys(battle, unit) {
+  const piece = unit?.uid != null ? piecesByUid(battle, unit.uid) : null;
+  const tags = piece ? tavernFactions(piece, battle.opts?.flags?.independent?.catalog) : [];
+  return [...tags, ...(unit?.uid != null ? [`self:${unit.uid}`] : [])];
+}
+/** The wearer's own marks: its factions, or itself when it has none. */
+function wearerKeys(battle, unit) {
+  const keys = factionKeys(battle, unit);
+  return keys.length > 1 ? keys.slice(0, -1) : keys;
+}
+// one hit hook per battle reads every wearer's marks and auras (several wearers of one faction never stack: the largest counts)
+const FACTION_GEAR = new WeakMap();
+function factionGear(battle) {
+  let reg = FACTION_GEAR.get(battle);
+  if (reg) return reg;
+  reg = { vulnerable: new Map(), guards: [] };
+  FACTION_GEAR.set(battle, reg);
+  battle.on('hit', ({ source, target, dmg }) => {
+    if (!dmg || !source || !target) return;
+    if (target.side === 'enemy' && source.side === 'ally' && reg.vulnerable.size) {
+      let bonus = 0;
+      for (const key of factionKeys(battle, source)) {
+        const pct = reg.vulnerable.get(key);
+        if (pct && target.findBuff(`independent:factionVulnerable:${key}`)) bonus = Math.max(bonus, pct);
+      }
+      if (bonus > 0) dmg.mul *= 1 + bonus;
+    } else if (target.side === 'ally' && source.side === 'enemy' && reg.guards.length) {
+      const keys = new Set(factionKeys(battle, target));
+      let cut = 0;
+      for (const g of reg.guards) if (g.unit.alive && g.unit.deployed && g.keys.some((k) => keys.has(k))) cut = Math.max(cut, g.pct);
+      if (cut > 0) dmg.mul *= Math.max(0, 1 - cut);
+    }
+  });
+  return reg;
+}
+/**
+ * The main target of each of `unit`'s attacks (normal and skill attacks alike): `take(dmg, target)` is true once, for the
+ * first damage that attack does to its first target. Damage the gear itself deals has no attack id and never counts.
+ */
+function mainTargetTracker(battle, unit) {
+  const mains = new Map();
+  battle.on('beforeAttack', ({ attacker, targets }) => {
+    if (attacker === unit && targets?.[0]) mains.set(battle._attackSeq + 1, targets[0].id);
+  }, { owner: unit });
+  return {
+    take(dmg, target) {
+      const id = dmg?.attackId;
+      if (!id || mains.get(id) !== target?.id) return false;
+      mains.delete(id);
+      return true;
+    },
+  };
+}
+
 function withinRange(battle, from, target) {
   if (!from || !target) return false;
   const key = Math.round(target.y) * 21 + Math.round(target.x);
@@ -999,6 +1058,66 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (Number.isFinite(Number(p.redeployTimeReductionPercentPerStack))) mods.redeployMul = Math.max(0, 1 - Math.min(Number(p.maxRedeployTimeReduction ?? 0.3), stacks * Number(p.redeployTimeReductionPercentPerStack)));
       if (Object.keys(mods).length) battle.addBuff(unit, { key: `independent:gearStart:${unit.uid}:${itemIdValue}`, mods, persist: true, allowDead: true });
     }, { owner: unit });
+    return;
+  }
+  // ---- 特殊战斗装备 (user 2026-10-07: 「特殊战斗装备应该和数值区别开……把一些比较特别的做进去，例如对主目标进行弹射伤害或者
+  // 溅射伤害，造成伤害时治疗周围随机友军，对敌人造成盟约脆弱效果，对友军造成盟约庇护效果」). They never pass in a 交接
+  // (design extraGear inheritable: false). Damage they deal is tagged independentEquipment and starts nothing again.
+  if (behavior === 'ricochet' || behavior === 'splash') {
+    const ratio = Number(p.atkPercent ?? 0); const radius = Number(p.radius ?? 0);
+    const bounces = behavior === 'ricochet' ? Math.max(1, Math.floor(Number(p.bounces ?? 1))) : 0;
+    if (!(ratio > 0 && radius > 0)) throw new Error(`combatEquipment ${itemIdValue}:${behavior} needs atkPercent and radius`);
+    const mains = mainTargetTracker(battle, unit);
+    battle.on('damaged', ({ source, target, amount, dmg }) => {
+      if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !mains.take(dmg, target)) return;
+      const type = dmg.type === 'arts' ? 'arts' : dmg.type === 'true' ? 'true' : 'phys';
+      const live = (e) => e.alive && e.deployed !== false && !e.removed;
+      if (behavior === 'splash') {
+        for (const e of battle.enemies) if (e !== target && live(e) && tileDistance(e, target) <= radius) battle.dealDamage(unit, e, { amount: unit.s.atk * ratio, type, tags: ['independentEquipment'] });
+        return;
+      }
+      // 弹射: to the nearest enemy not yet hit by this attack, within the radius of the one before
+      const hit = new Set([target]); let from = target;
+      for (let n = 0; n < bounces; n++) {
+        let next = null;
+        for (const e of battle.enemies) if (!hit.has(e) && live(e) && tileDistance(e, from) <= radius && (!next || tileDistance(e, from) < tileDistance(next, from))) next = e;
+        if (!next) break;
+        battle.dealDamage(unit, next, { amount: unit.s.atk * ratio, type, tags: ['independentEquipment'] });
+        hit.add(next); from = next;
+      }
+    }, { owner: unit });
+    return;
+  }
+  if (behavior === 'healAllyOnDamage') {
+    const ratio = Number(p.damagePercent ?? 0); const radius = Number(p.radius ?? 0); const cooldown = Number(p.cooldownSeconds ?? 0);
+    if (!(ratio > 0 && radius > 0 && cooldown >= 0)) throw new Error(`combatEquipment ${itemIdValue}:healAllyOnDamage needs damagePercent, radius, cooldownSeconds`);
+    let next = -Infinity;
+    battle.on('damaged', ({ source, target, amount, dmg }) => {
+      if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || dmg?.tags?.includes('independentEquipment') || battle.time < next) return;
+      // a random hurt ally around the wearer (not the wearer itself)
+      const hurt = battle.allyUnits.filter((a) => a !== unit && a.alive && a.deployed && a.kind !== 'device' && a.hp < a.s.maxHp && tileDistance(a, unit) <= radius);
+      if (!hurt.length) return;
+      next = battle.time + cooldown;
+      battle.heal(unit, hurt[Math.floor(battle.rng() * hurt.length)], amount * ratio, { tags: ['independentEquipment'] });
+    }, { owner: unit });
+    return;
+  }
+  if (behavior === 'factionVulnerable') {
+    const pct = Number(p.damagePercent ?? 0); const duration = Number(p.durationSeconds ?? 0);
+    if (!(pct > 0 && duration > 0)) throw new Error(`combatEquipment ${itemIdValue}:factionVulnerable needs damagePercent and durationSeconds`);
+    const reg = factionGear(battle);
+    const keys = wearerKeys(battle, unit);
+    for (const key of keys) reg.vulnerable.set(key, Math.max(reg.vulnerable.get(key) ?? 0, pct));
+    battle.on('damaged', ({ source, target, amount }) => {
+      if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !target.alive) return;
+      for (const key of keys) battle.addBuff(target, { key: `independent:factionVulnerable:${key}`, source: unit, duration, refresh: 'replace' });
+    }, { owner: unit });
+    return;
+  }
+  if (behavior === 'factionGuard') {
+    const pct = Number(p.damageReduction ?? 0);
+    if (!(pct > 0 && pct < 1)) throw new Error(`combatEquipment ${itemIdValue}:factionGuard needs 0 < damageReduction < 1`);
+    factionGear(battle).guards.push({ unit, pct, keys: wearerKeys(battle, unit) });
     return;
   }
   throw new Error(`unimplemented independent combatEquipment behavior ${behavior} (${itemIdValue})`);
