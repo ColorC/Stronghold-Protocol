@@ -1198,7 +1198,6 @@ Unknown subprofessions fall back to the profession default (test `professions.te
   e.g. `mortar` for 帝国炮火先兆者, which the renderer does not draw — its fx `bombardShell` is the shell; `attackId` = the attack's DamageInfo.attackId, 0 for none — an enemy heal, an
   ability's cast; `isSkill` 1|0), `['dmg', tgt, amount, type, sourceId, attackId]` (`phys|arts|true|burn|neural|necrosis|apoptosis`;
   `sourceId` = the credited unit or null, `attackId` 0 = not an attack's), `['heal', tgt, amount]`, `['skill', id, 1|0, skillId]`, `['die', id, reason]`, `['leak', id]`, `['status', id, key, 1|0]`,
-  `['engage', id]` (an ally's first attack that hits an enemy — the client's 行动开始 voice, DESIGN §21.30), `['die', id, reason]`, `['leak', id]`, `['status', id, key, 1|0]`,
   `['fx', kind, x, y, extra]` (`hitCap` `{ id, n }`: a leader's hit cancelled by 限伤 — the renderer draws nothing;
   `extra.form` = the unit's model form from then on — an enemy's `content/enemies.js setForm`, a 傀儡师's 替身 — `shared/protocol.js fxForm`),
   `['layer', playerId, bondId, n]` (n = the layers actually added, capped at 999), `['bounty', playerId, coins]`.
