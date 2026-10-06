@@ -205,7 +205,7 @@
 .ix-inv__cell.is-empty { background: none; border-style: dashed; border-color: var(--line); cursor: default; }
 .ix-inv__cell.is-on { border-color: var(--mint-400); box-shadow: 0 0 0 1px var(--mint-500); }
 .ix-inv__cell.is-elite { border-color: var(--gold-a20); }
-.ix-inv__cell .ix-gear { width: .4rem; height: .4rem; }
+.ix-inv__cell .ix-gear, .ix-inv__cell .ix-gear--item .uthumb { width: .46rem; height: .46rem; }
 .ix-inv__cell b { position: absolute; right: .04rem; top: .02rem; font-size: max(.13rem, 11px); color: var(--text-hi); }
 .ix-inv__cell small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(.12rem, 10px); color: var(--text-lo); }
 .ix-inv__sel { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
@@ -323,6 +323,11 @@
   .ix-dchips__lv { font-size: 11px; }
   .ix-dchips__lv b { font-size: 12px; }
   .ix-dgear__text, .ix-dgear__att { font-size: 11px; }
+  /* 34 px stock cells: the icon fills the cell, the name is on the right once the cell is chosen */
+  .ix-inv__cell small { display: none; }
+  .ix-inv__cell .ix-gear { width: 82%; height: 82%; }
+  .ix-inv__cell .ix-gear .uthumb { width: 100%; height: 100%; }
+  .ix-inv__cell b { font-size: 10px; }
 }
 
 /* ---- end of the match (the original RESULT screen, css/screens/result.css) ---------------------------------------- */
