@@ -63,6 +63,30 @@ test('installDir serves the install folders a checkout lacks, never its other fi
   }
 });
 
+test('installDir serves the dev pages a checkout lacks; a checkout dev page wins, game files never fall back', async () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-install-'));
+  const install = path.join(base, 'install'); const checkout = path.join(base, 'checkout');
+  write(path.join(install, 'public', 'dev', 'demo.html'), 'install-demo');
+  write(path.join(install, 'public', 'dev', 'demo', 'demo.js'), 'install-demo-js');
+  write(path.join(install, 'public', 'dev', 'both.html'), 'install-both');
+  write(path.join(install, 'public', 'js', 'app.js'), 'install-app');
+  write(path.join(checkout, 'public', 'dev', 'both.html'), 'checkout-both');
+  write(path.join(checkout, 'public', 'index.html'), 'checkout-page');
+  write(path.join(checkout, 'data', 'config.json'), '{}');
+  const srv = await serve({ publicDir: path.join(checkout, 'public'), dataDir: path.join(checkout, 'data'), installDir: install });
+  try {
+    assert.equal((await get(srv, '/dev/demo.html')).body, 'install-demo');
+    assert.equal((await get(srv, '/dev/demo/demo.js')).body, 'install-demo-js');
+    assert.equal((await get(srv, '/dev/both.html')).body, 'checkout-both');
+    // only dev pages: the install's game files never stand in for the checkout's
+    assert.equal((await get(srv, '/js/app.js')).status, 404);
+    assert.equal((await get(srv, '/dev/missing.html')).status, 404);
+  } finally {
+    srv.close();
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
 test('without installDir a checkout lacking assets answers 404 as before', async () => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-noinstall-'));
   write(path.join(base, 'public', 'index.html'), 'page');
