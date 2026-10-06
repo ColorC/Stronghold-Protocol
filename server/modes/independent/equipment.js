@@ -53,14 +53,18 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   return { id, quantity };
 }
 
-/** Rounds of the production ledger a session keeps: the current one and the one before (its battle rewards). */
-export const PRODUCTION_ROUNDS_KEPT = 2;
+/**
+ * Rounds of the production ledger a session keeps: the whole game (at most 15 rounds, a few hundred short rows), so the
+ * production column can trace any round (user 10-07: 「安排一个完整的log可折叠追溯」).
+ */
+export const PRODUCTION_ROUNDS_KEPT = 16;
 const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated', 'lost', 'worn', 'targetUid'];
 
 /**
  * Append one entry to `state.production`, the player-facing record of where inventory items came from. An entry
  * carries the revision the running action will commit (`applyAction` bumps it once), so a client can pick the
- * entries one action added. Older rounds are dropped; a session saved before the ledger existed starts without one.
+ * entries one action added. Rounds older than PRODUCTION_ROUNDS_KEPT are dropped; a session saved before the ledger existed
+ * starts without one.
  */
 export function recordProduction(state, entry) {
   if (!Array.isArray(state.production)) state.production = [];

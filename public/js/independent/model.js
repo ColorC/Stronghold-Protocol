@@ -143,14 +143,6 @@ export function groupProduction(rows) {
   return [...out.values()];
 }
 
-/**
- * What the last ready brought (battle rewards of the round just fought, then the new round's start), and what the
- * player gained since (gain / prize / supply / shop) — split by the revision of the ready.
- */
-export function productionSince(state, sinceRevision) {
-  return groupProduction((state?.production || []).filter((r) => r.revision > sinceRevision && r.origin !== 'shop'));
-}
-
 /** The prep-end forecast grouped by source, plus pieces whose prep-end trait yields nothing right now. */
 export function forecastRows(state, catalog) {
   const rows = groupProduction(state?.forecast?.production || []);

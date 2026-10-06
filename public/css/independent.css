@@ -158,7 +158,6 @@
 .ix-dpanel__head { position: relative; flex: none; }
 .ix-dpanel__head .dhead__art { width: 1rem; height: 1.36rem; }
 .ix-dpanel__head .dhead__name { font-size: .28rem; }
-.ix-dpanel__link { position: absolute; right: .44rem; top: 0; margin: 0; }
 .ix-dchips { margin-top: .02rem; }
 .ix-dchips .dbond { cursor: default; }
 .ix-dchips__lv { display: inline-flex; align-items: baseline; gap: .04rem; font-size: max(.14rem, 12px); color: var(--text-lo); }
@@ -370,3 +369,65 @@
   padding: 1px 5px; font: 12px/1.4 ui-monospace, Consolas, monospace; color: #fff; background: #ff4d6d; }
 .ix-picker__btn.is-on { color: #ff4d6d; border-color: #ff4d6d; }
 html.is-picking, html.is-picking * { cursor: crosshair !important; }
+
+/* ---- readable sizes (user 10-07 item 5: 「什么谢拉格，医师什么的，还有攻击防御什么的属性文字，小的太离谱了」) ----------
+   The original scales every size with the screen, which leaves 5–6 px text on a phone and 10 px stat names on a
+   desktop. On this page the detail card and the shop card keep pixel floors. */
+.ix-dpanel .dhead__class { font-size: max(.15rem, 14px); }
+.ix-dpanel .dhead__prof, .ix-dpanel .dhead__sub { width: max(.24rem, 22px); height: max(.24rem, 22px); }
+.ix-dpanel .dhead__pos, .ix-dpanel .dhead__en { font-size: max(.12rem, 12px); }
+.ix-dpanel .dbond__name, .ix-dpanel .dhead__info .dbonds--top .dbond { font-size: max(.14rem, 13px); }
+.ix-dpanel .dbond__icon, .ix-dpanel .dhead__info .dbond__icon { width: max(.24rem, 20px); height: max(.24rem, 20px); }
+.ix-dpanel .dstat__k { font-size: max(.12rem, 12px); }
+.ix-dpanel .dstat__v { font-size: max(.17rem, 16px); }
+.ix-dpanel .dstat small, .ix-dpanel .dsp, .ix-dpanel .dsp__num, .ix-dpanel .dskill__slot, .ix-dpanel .dgarrison__type { font-size: max(.12rem, 12px); }
+.ix-dpanel .dskill__name { font-size: max(.19rem, 15px); }
+.ix-dpanel .dtrait, .ix-dpanel .dtalent, .ix-dpanel .dgarrison__text, .ix-dpanel .dtalent b { font-size: max(.14rem, 13px); }
+.ix-dpanel__stats { flex: none; }
+.ix-shop .scard__name { font-size: max(.2rem, 15px); }
+.ix-shop .scard__bond { font-size: max(.14rem, 13px); }
+.ix-shop .scard__bond .bglyph, .ix-shop .scard__bond img { width: max(.18rem, 16px); height: max(.18rem, 16px); }
+@media (max-height: 460px) {
+  .ix-shop .scard__name { font-size: 13px; }
+  .ix-shop .scard__bond { font-size: 11px; }
+  .ix-dpanel .dhead__en { display: none; }
+  /* a phone: the detail card takes most of the screen (over the board and the shop bar) so the bigger text fits */
+  .ix-dpanel.dpanel--right { top: 6px; bottom: 6px; right: 6px; max-height: none; }
+  .ix-dpanel .dhead__art { height: 76px; }
+}
+.ix-dpanel__link { display: none; }
+/* the card's own texts, notes and buttons get the same floors (trait lines, skill and talent texts, 库存 / 出售) */
+.ix-dpanel .ix-traittext p, .ix-dpanel .ix-notes li, .ix-dpanel .ix-note, .ix-dpanel__pane p, .ix-dpanel__pane li { font-size: max(.14rem, 13px); }
+.ix-dpanel .ix-traittext b { font-size: max(.13rem, 12px); }
+.ix-dpanel__actions .btn { min-height: max(.34rem, 30px); padding: 0 max(.12rem, 12px); font-size: max(.14rem, 13px); }
+.ix-dpanel .dpanel__close { width: max(.36rem, 30px); height: max(.36rem, 30px); }
+.ix-dpanel .ix-dtrait .dgarrison__k { font-size: max(.14rem, 13px); }
+/* operator card layout (detail.js OperatorCard): one column by default; on a wide, tall enough screen head + stats on
+   the left and the switching tabs on the right, so a tab gets the card's full height */
+.ix-dop { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .1rem; }
+.ix-dop__main, .ix-dop__side { display: contents; }
+@media (min-width: 800px) {
+  .ix-dpanel.dpanel--right { width: min(max(8.2rem, 680px), 86vw); }
+  .ix-dop { flex-direction: row; gap: .18rem; }
+  .ix-dop__main { display: flex; flex-direction: column; gap: .1rem; width: max(3.7rem, 250px); flex: none; }
+  /* stats in two columns, the range under them */
+  .ix-dop__main .dstats-wrap { flex-direction: column; align-items: stretch; }
+  .ix-dop__main .dstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ix-dop__main .drange { flex-direction: row; justify-content: flex-start; }
+  .ix-dop__side { display: flex; flex-direction: column; gap: .1rem; flex: 1; min-width: 0; min-height: 0; }
+}
+.ix-dpanel .dsec__title { font-size: max(.15rem, 13px); }
+.ix-dpanel .micro { font-size: max(.1rem, 10px); }
+.ix-dpanel .dtext, .ix-dpanel .rt { font-size: max(.14rem, 13px); }
+.ix-dpanel .ix-dgear b, .ix-dpanel .ix-dgear__tile b { font-size: max(.13rem, 12px); }
+@media (max-height: 460px) { .ix-dpanel .dhead__art { height: 60px; } }
+
+/* 产出记录: each section folds on its heading (user 10-07 item 5) */
+.ix-prod__h { margin: .02rem 0; }
+.ix-prod__fold { display: flex; align-items: center; gap: .04rem; width: 100%; padding: .02rem 0; background: none; border: 0; cursor: pointer;
+  font: inherit; font-size: max(.14rem, 13px); color: var(--mint-400); text-align: left; }
+.ix-prod__fold .icon { width: max(.14rem, 12px); height: max(.14rem, 12px); flex: none; transition: transform .15s; }
+.ix-prod__fold.is-open .icon { transform: rotate(90deg); }
+.ix-prod__fold:hover { color: var(--text-hi); }
+.ix-prod__note { margin-left: auto; font-size: max(.12rem, 12px); color: var(--text-lo); }
+.ix-prod__note.is-hurt { color: var(--danger, #e05a4f); }

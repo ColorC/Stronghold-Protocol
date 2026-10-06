@@ -42,12 +42,6 @@ const ERRORS = {
 };
 const errorText = (error) => ERRORS[error?.code] || (error?.message && !/^[A-Z_]+$/.test(error.message) ? error.message : '操作没有完成');
 
-/** Revision of the last ready (its battle rows), so the production panel lists what came in since. */
-function lastReadyRevision(state) {
-  const rows = (state?.production || []).filter((r) => r.phase === 'battle' || r.phase === 'roundStart');
-  return rows.length ? Math.max(...rows.map((r) => r.revision)) - 1 : 0;
-}
-
 const SPEEDS = [2, 4, 8];
 // the selected piece's range, in the original's colour (screens/game.js SEL_RANGE); hovering shows the plain group
 const SEL_RANGE = Object.freeze({ group: 'selRange', color: 0xff9c33, fill: 0.3, line: 0.95 });
@@ -139,7 +133,6 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const ok = await confirmDialog({ title: '离开本局', text: '进度已保存，可以在开局页「继续上一局」回来。', okText: '离开' });
     if (ok) onLeave();
   }, [onLeave]);
-  const [since, setSince] = useState(() => lastReadyRevision(initial));
 
   // ---- actions --------------------------------------------------------------------------------------------------
   const act = useCallback(async (action, opts = {}) => {
@@ -200,7 +193,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const next = res.state;
     if (!replay) {
       toast('这一轮的战斗记录没有取到，直接显示结果', 'warn');
-      setState(next); setSince(next.revision - 1);
+      setState(next);
       return;
     }
     const lastFrame = replay.frames[replay.frames.length - 1]?.snap;
@@ -211,7 +204,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const closeBattle = useCallback(() => {
     const b = battleRef.current;
     if (!b) return;
-    setState(b.next); setSince(b.next.revision - 1); setBattle(null); replayPosRef.current = -1;
+    setState(b.next); setBattle(null); replayPosRef.current = -1;
     setDetail((d) => (d?.kind === 'unit' ? null : d));
   }, []);
 
@@ -576,7 +569,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
           onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
-        <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} onReport=${() => setReportOpen(true)} />
+        <${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />

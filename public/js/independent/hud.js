@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Fragment, Icon, Button, HexBadge, TierChip, Tooltip, MicroLabel, DifficultyTag } from '../ui/components.js';
 import { Img, BondGlyph, CoinGlyph, GIcon, LpTower, ItemIcon, UnitThumb } from '../ui/gameComponents.js';
 import { PhaseCapsule, CheckBtn, checkButtons } from '../ui/hud.js';
-import { PriceHex, SkillBadge } from '../ui/shopBar.js';
+import { SkillBadge } from '../ui/shopBar.js';
 import { chessLoadout } from '../ui/gameLogic.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
-import { chessPortraitUrl, profIconUrl, uiUrl } from '../ui/assetUrls.js';
+import { chessPortraitUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
 import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum } from './model.js';
@@ -169,7 +169,7 @@ function SourceName({ piece, catalog }) {
 }
 
 const ORIGIN_WORD = { prize: '工程部特供', supply: '补给', shop: '商店' };
-const PHASE_WORD = { battle: '战后', roundStart: '休整开始', prepEnd: '休整结束', gain: '获得时', prize: '特供', supply: '补给', sold: '售出时', refresh: '刷新后' };
+const PHASE_WORD = { battle: '战后', roundStart: '休整开始', prepEnd: '休整结束', gain: '获得时', prize: '特供', supply: '补给', sold: '售出时', refresh: '刷新后', shop: '购买' };
 
 function ProdRow({ row, state, catalog, when = false }) {
   const piece = row.sourceUid ? state.pieces.find((p) => p.uid === row.sourceUid) : null;
@@ -200,57 +200,72 @@ function usePageLines() {
 }
 
 /**
- * What the coming 休整期结束 will forge (server forecast) and what came in since the last battle began — the answer to
- * "where did this come from" (design: 产出栏). Pieces with a prep-end trait that yields nothing now are listed dim.
+ * 产出记录 (design: 产出栏; user 10-07: 「产出什么的默认收起来把，你要么就安排一个完整的log可折叠追溯」): folded at first.
+ * Open, it lists what the coming 休整期结束 will forge (server forecast; pieces whose prep-end trait yields nothing now
+ * are listed dim), then every round of the game, newest first: what came in, when and from whom (the shop's included),
+ * and how its battle went. Each section folds on its heading; the forecast, this round and the last one start open.
  * A long list turns pages (‹ 1/2 ›) instead of scrolling inside the column; a section cut by a page break repeats its
- * heading on the next page.
+ * heading on the next page, and a heading the player just folded or opened stays on the page shown.
  */
-export function ProductionPanel({ state, catalog, sinceRevision, onReport = null }) {
-  // folded at first on a short phone screen: open it covers half of the field's left side there
-  const [open, setOpen] = useState(() => !(globalThis.matchMedia?.('(max-height: 460px)').matches));
-  const [page, setPage] = useState(0);
+export function ProductionPanel({ state, catalog, onReport = null }) {
+  const [open, setOpen] = useState(false);
+  const [folds, setFolds] = useState({});                   // section key → folded, once the player toggled it
+  const [at0, setAt] = useState({ page: 0, anchor: null }); // anchor: the heading just toggled
   const perPage = usePageLines();
-  const fc = forecastRows(state, catalog);
-  // the last ready wrote one revision: its prep-end forging, the battle's rewards and this round's start; later actions wrote the rest
-  const rows = (state.production || []).filter((r) => r.revision > sinceRevision && r.origin !== 'shop');
-  const battleRows = groupProduction(rows.filter((r) => r.revision === sinceRevision + 1));
-  const otherRows = groupProduction(rows.filter((r) => r.revision > sinceRevision + 1));
-  const sections = [
-    { title: '休整期结束时获得', lines: [
+  const byRound = new Map();
+  for (const r of state.production || []) { if (!byRound.has(r.round)) byRound.set(r.round, []); byRound.get(r.round).push(r); }
+  const battles = new Map((state.history || []).filter((h) => h.type === 'battle').map((h) => [h.round, h]));
+  const rounds = [...new Set([...byRound.keys(), ...battles.keys(), ...(state.phase === 'prep' ? [state.round] : [])])].sort((x, y) => y - x);
+  const sections = [];
+  if (state.forecast) {
+    const fc = forecastRows(state, catalog);
+    sections.push({ key: 'forecast', title: '休整期结束时获得', lines: [
       ...fc.rows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} />`),
       ...(fc.funds ? [html`<li class="ix-prod__row"><span class="ix-prod__src">下个休整期资金</span><span class="ix-prod__out"><${CoinGlyph} /><b class="num">+${fc.funds}</b></span></li>`] : []),
       ...(fc.rows.length || fc.funds ? [] : [html`<li class="ix-prod__none">暂无</li>`]),
       ...fc.idle.map((p) => html`<li class="ix-prod__row is-idle" title="现在开始战斗不会获得，点干员看特质条件"><${SourceName} piece=${p} catalog=${catalog} /><span>条件未满足</span></li>`),
-    ] },
-    { title: '上一轮结算', lines: battleRows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} when=${true} />`) },
-    { title: '本轮获得', lines: otherRows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} when=${true} />`) },
-  ].filter((x) => x.lines.length);
+    ] });
+  }
+  for (const n of rounds) {
+    const fight = battles.get(n);
+    const rows = groupProduction(byRound.get(n) || []);
+    sections.push({ key: `r${n}`, title: `第${n}回合`, folded: n < state.round - 1,
+      note: fight ? (fight.lpLost ? html`<span class="ix-prod__note is-hurt">防线 −${fight.lpLost}</span>` : html`<span class="ix-prod__note">防线完好</span>`) : null,
+      lines: rows.length ? rows.map((r) => html`<${ProdRow} row=${r} state=${state} catalog=${catalog} when=${true} />`) : [html`<li class="ix-prod__none">没有产出</li>`] });
+  }
   const pages = [[]];
   for (const sec of sections) {
+    const folded = folds[sec.key] ?? !!sec.folded;
     let cur = pages[pages.length - 1];
-    if (cur.length && cur.length + 2 > perPage) { cur = []; pages.push(cur); } // a heading never ends a page
-    cur.push({ head: sec.title });
+    if (cur.length && cur.length + (folded ? 1 : 2) > perPage) { cur = []; pages.push(cur); } // a heading never ends a page
+    cur.push({ head: sec, folded });
+    if (folded) continue;
     for (const line of sec.lines) {
-      if (cur.length >= perPage) { cur = [{ head: sec.title, more: true }]; pages.push(cur); }
+      if (cur.length >= perPage) { cur = [{ head: sec, folded, more: true }]; pages.push(cur); }
       cur.push({ line });
     }
   }
-  const at = Math.min(page, pages.length - 1);
+  let at = at0.anchor ? pages.findIndex((p) => p.some((x) => x.head?.key === at0.anchor && !x.more)) : at0.page;
+  at = Math.max(0, Math.min(at, pages.length - 1));
+  const toggle = (sec, folded) => { setFolds((f) => ({ ...f, [sec.key]: !folded })); setAt({ page: at, anchor: sec.key }); };
   return html`<aside class=${cx('ix-prod', !open && 'is-closed')} data-testid="ix-prod">
     <div class="ix-prod__tabs">
-      <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)}>
+      <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)} aria-expanded=${open ? 'true' : 'false'} data-testid="ix-prod-toggle">
         <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>产出</span>
       </button>
       ${onReport && state.lastBattle ? html`<button type="button" class="ix-prod__toggle" onClick=${onReport} title="上一场的伤害与治疗" data-testid="ix-report">
         <${Icon} name="sword" /><span>战报</span></button>` : null}
     </div>
     ${open ? html`<div class="ix-prod__body">
-      <ul class="ix-prod__list">${pages[at].map((x, i) => (x.head ? html`<li key=${`h${i}`} class="ix-prod__h">${x.head}${x.more ? '（续）' : ''}</li>`
+      <ul class="ix-prod__list">${pages[at].map((x, i) => (x.head ? html`<li key=${`h${x.head.key}${i}`} class="ix-prod__h">
+          <button type="button" class=${cx('ix-prod__fold', !x.folded && 'is-open')} aria-expanded=${x.folded ? 'false' : 'true'}
+            onClick=${() => toggle(x.head, x.folded)} data-testid=${`ix-prod-${x.head.key}`}>
+            <${Icon} name="chevronRight" /><span>${x.head.title}${x.more ? '（续）' : ''}</span>${x.head.note}</button></li>`
         : html`<${Fragment} key=${i}>${x.line}<//>`))}</ul>
       ${pages.length > 1 ? html`<div class="ix-prod__pager">
-        <button type="button" disabled=${at === 0} onClick=${() => setPage(at - 1)} aria-label="上一页"><${Icon} name="chevronLeft" /></button>
+        <button type="button" disabled=${at === 0} onClick=${() => setAt({ page: at - 1, anchor: null })} aria-label="上一页"><${Icon} name="chevronLeft" /></button>
         <span class="num">${at + 1}/${pages.length}</span>
-        <button type="button" disabled=${at === pages.length - 1} onClick=${() => setPage(at + 1)} aria-label="下一页"><${Icon} name="chevronRight" /></button>
+        <button type="button" disabled=${at === pages.length - 1} onClick=${() => setAt({ page: at + 1, anchor: null })} aria-label="下一页"><${Icon} name="chevronRight" /></button>
       </div>` : null}
     </div>` : null}
   </aside>`;
@@ -302,9 +317,6 @@ export function EffectsColumn({ effects, catalog }) {
 
 // ---- shop bar -----------------------------------------------------------------------------------------------------
 
-function copiesOwned(state, chessId) {
-  return (state.pieces || []).filter((p) => p.chessId === chessId && !p.elite).length;
-}
 const copiesNeeded = (op) => ((op?.summary || []).some((s) => s.kind === 'merge') ? 2 : 3);
 
 /**
@@ -325,8 +337,6 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
   const op = catalog.operators[slot.id] || {};
   const c = data.lookup('chess', slot.id);
   const m = data.get('assets');
-  const need = copiesNeeded(op);
-  const owned = copiesOwned(state, slot.id);
   const carried = slot.equipment || [];
   const hint = mergeHintOf(state, catalog, slot.id);
   // the skill it fights with when bought (the default one: the choice is made per operator afterwards) and its factions
@@ -334,26 +344,17 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
   const factions = (c?.bonds || []).filter((b) => TAVERN_FACTIONS[b]);
   const card = html`<button type="button" class=${cx('scard', `scard--t${op.tier || 1}`, state.shop.frozen && 'is-frozen', reason && 'is-disabled', hint && 'is-merge', armed && 'is-armed')}
       onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }}
-      data-testid=${`ix-shop-${idx}`} aria-label=${`${op.name || '干员'}，价格 ${slot.price}${armed ? (reason ? '，无法购买' : '，再次点击确认') : ''}`} aria-pressed=${String(!!armed)}>
+      data-testid=${`ix-shop-${idx}`} aria-label=${`${op.name || '干员'}${armed ? (reason ? '，无法购买' : '，再次点击确认') : ''}`} aria-pressed=${String(!!armed)}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__water" aria-hidden="true">${factions[0] ? html`<${BondGlyph} bondId=${factions[0]} />` : null}</span>
     <${Img} src=${chessPortraitUrl(m, c)} class="scard__art" />
     <span class="scard__top">
       <${TierChip} tier=${op.tier || 1} size="md" />
-      <${PriceHex} slot=${slot} free=${false} poor=${reason === '资金不足'} />
-      ${owned > 0 ? html`<span class="scard__pips" title=${`已拥有 ${owned}/${need}`}>
-        ${Array.from({ length: need }, (_, i) => html`<i key=${i} class=${i < owned ? 'on' : ''}></i>`)}</span>` : null}
       ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} />` : null}
     </span>
     <span class="scard__body">
       <span class="scard__name">${op.name || slot.id}</span>
       ${factions.length ? html`<span class="scard__bonds">${factions.slice(0, 3).map((b) => html`<span key=${b} class="scard__bond"><${BondGlyph} bondId=${b} /><span>${TAVERN_FACTIONS[b]}</span></span>`)}</span>` : null}
-      <${TraitGlyphs} summary=${op.summary} catalog=${catalog} class="scard__trait" />
-      <span class="scard__class">
-        <${Img} src=${profIconUrl(m, op.profession)} class="scard__prof" />
-        <span>${c?.subProfessionName || ''}</span>
-        ${op.permitGear ? html`<${GearIcon} id=${op.permitGear} catalog=${catalog} class="scard__permit" />` : null}
-      </span>
     </span>
     ${carried.length ? html`<span class="ix-carry" title="随商品附带，刷新会丢失">${carried.slice(0, 3).map((it, i) => html`<span key=${i}><${GearIcon} id=${it.id} catalog=${catalog} /><b class="num">${it.quantity || 1}</b></span>`)}</span>` : null}
     ${hint ? html`<span class="scard__mergetag" title=${hint.text}>可晋升</span>` : null}

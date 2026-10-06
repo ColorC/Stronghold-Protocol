@@ -19,9 +19,10 @@ import { TraitTexts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } fro
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const FACTION_BOND = Object.fromEntries(Object.entries(TAVERN_FACTIONS).map(([bond, name]) => [name, bond]));
-const TABS = [['traits', '特质'], ['stats', '属性'], ['skill', '技能'], ['talent', '天赋'], ['gear', '装备']];
+// the stats (and the range) stay on screen (user 10-07: 「属性常驻显示，其余的可以切换」); the rest switches
+const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], ['gear', '装备']];
 /** Which tab each block of the original card goes to (ui/detailPanel.js CHESS_SECTIONS); the header stays on top. */
-const TAB_OF = { garrison: 'traits', trait: 'stats', stats: 'stats', skill: 'skill', module: 'talent', talents: 'talent', equip: 'gear' };
+const TAB_OF = { garrison: 'traits', trait: 'skill', stats: 'stats', skill: 'skill', module: 'talent', talents: 'talent', equip: 'gear' };
 
 /** The header's chips: the operator's tavern factions with their original bond glyphs, and its total equipment level. */
 function FactionChips({ factions, level, catalog }) {
@@ -133,12 +134,15 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
   }
   const shown = TABS.filter(([k]) => panes[k].length);
   const cur = shown.some(([k]) => k === tab) ? tab : shown[0]?.[0];
-  return html`
+  // two columns on a wide screen (head + stats | tabs + pane + actions), one column elsewhere (css .ix-dop)
+  return html`<div class="ix-dop"><div class="ix-dop__main">
     <div class="ix-dpanel__head">${head}</div>
+    ${panes.stats.length ? html`<div class="ix-dpanel__stats">${panes.stats}</div>` : null}
+    </div><div class="ix-dop__side">
     <div class="ix-dtabs" role="tablist">${shown.map(([k, label]) => html`<button type="button" key=${k} role="tab" aria-selected=${cur === k ? 'true' : 'false'}
       class=${cx('ix-dtabs__tab', cur === k && 'is-on')} onClick=${() => setTab(k)}>${label}${k === 'gear' && piece ? html`<span class="num">${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}</span>` : null}</button>`)}</div>
     <div class="ix-dpanel__pane" role="tabpanel">${panes[cur]}</div>
-    ${footer}`;
+    ${footer}</div></div>`;
 }
 
 /**

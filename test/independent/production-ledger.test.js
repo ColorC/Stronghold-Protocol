@@ -36,7 +36,7 @@ test('every real ready forges exactly what the prep-end forecast said, and the f
   assert.equal(viewSession(state, { data, catalog }).forecast, null, 'a finished session has no prep to forecast');
 });
 
-test('ledger rows name their source, phase and the revision that wrote them; only two rounds are kept', () => {
+test('ledger rows name their source, phase and the revision that wrote them; the whole game is kept', () => {
   const game = playSeed({ seed: 2, route: 'assault', difficulty: 'NORMAL', roundLimit: 14 });
   const rows = game.state.production;
   assert.ok(rows.length > 0);
@@ -47,8 +47,12 @@ test('ledger rows name their source, phase and the revision that wrote them; onl
     if (row.origin === 'native') assert.match(row.sourceUid, /^p\d+$/);
   }
   assert.ok(rows.some((r) => r.phase === 'battle'), 'battle rewards are in the ledger');
-  const state = { round: 5, revision: 7, production: [{ round: 3, revision: 1, id: 'precision', quantity: 1 }, { round: 4, revision: 2, id: 'precision', quantity: 1 }] };
+  assert.ok(Math.min(...rows.map((r) => r.round)) <= 3, 'the first rounds are still in the ledger at the end');
+  const state = { round: 5, revision: 7, production: [{ round: 1, revision: 1, id: 'precision', quantity: 1 }, { round: 4, revision: 2, id: 'precision', quantity: 1 }] };
   recordProduction(state, { id: 'agility', quantity: 2, origin: 'shop', phase: 'shop', copied: false });
-  assert.deepEqual(state.production.map((x) => x.round), [4, 5]);
-  assert.deepEqual(state.production[1], { round: 5, revision: 8, id: 'agility', quantity: 2, origin: 'shop', phase: 'shop' });
+  assert.deepEqual(state.production.map((x) => x.round), [1, 4, 5]);
+  assert.deepEqual(state.production[2], { round: 5, revision: 8, id: 'agility', quantity: 2, origin: 'shop', phase: 'shop' });
+  state.round = 1 + PRODUCTION_ROUNDS_KEPT;
+  recordProduction(state, { id: 'agility', quantity: 1, origin: 'shop', phase: 'shop' });
+  assert.deepEqual(state.production.map((x) => x.round), [4, 5, 1 + PRODUCTION_ROUNDS_KEPT], 'only rounds past the keep window drop');
 });
