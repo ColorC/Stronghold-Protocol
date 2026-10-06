@@ -714,9 +714,10 @@ export class UnitView {
   }
 
   /**
-   * Screen-space mount used by extracted client VFX. The Spine skeleton is drawn inside `root`; its local Y axis is
-   * opposite to the screen axis, and `spine.x/y` may carry a model-specific origin offset. Returning screen coordinates
-   * here keeps original effects attached to the animated bone instead of a generic chest or tile anchor.
+   * Screen-space mount used by extracted client VFX. The Spine skeleton is drawn inside `root`; its exported Y
+   * coordinates are already in the renderer's screen direction, and `spine.x/y` may carry a model-specific origin
+   * offset. Returning screen coordinates here keeps original effects attached to the animated bone instead of a generic
+   * chest or tile anchor.
    */
   effectAnchor(name = 'root') {
     const root = this.root;
@@ -730,7 +731,9 @@ export class UnitView {
     const bx = bone && Number.isFinite(Number(bone.worldX)) ? Number(bone.worldX) * sx : 0;
     const by = bone && Number.isFinite(Number(bone.worldY)) ? Number(bone.worldY) * sy : 0;
     const x = (Number(root.x) || 0) + ox + bx;
-    const y = (Number(root.y) || 0) + oy - by;
+    // Spine's exported coordinates are already in the renderer's y-down space after the positive Pixi scale; a
+    // negative bone Y is above the feet. Do not invert it a second time.
+    const y = (Number(root.y) || 0) + oy + by;
     return { x, y, depth: Number.isFinite(Number(root.zIndex)) ? -Number(root.zIndex) : 0, bone: bone?.data?.name || name || 'root' };
   }
 
