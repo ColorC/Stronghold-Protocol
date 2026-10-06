@@ -440,9 +440,14 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     if (Object.keys(baseMods).length) battle.addBuff(unit, { key: `independent:equipment:${unit.uid}`, mods: baseMods, persist: true, allowDead: true });
     installSpecialStatHooks(battle, unit, special);
     installDerivedNativeRules(battle, unit, piece, catalog, entries);
+    const productionOnTrigger = new Map();
     for (const rule of rules) {
       const p = rule.params ?? {};
-    if (rule.behavior === 'eventProduction') installProductionRule(battle, unit, rule, 'native', rule.behavior, emit);
+    if (rule.behavior === 'eventProduction') {
+      // a second production rule on the same trigger counts on its own (the first keeps the key it always had)
+      const nth = productionOnTrigger.get(rule.trigger) || 0; productionOnTrigger.set(rule.trigger, nth + 1);
+      installProductionRule(battle, unit, rule, 'native', nth ? `${rule.behavior}#${nth}` : rule.behavior, emit);
+    }
       else if (rule.behavior === 'conditionalDamage') {
         if (!['attack', 'hit'].includes(rule.trigger)) throw new Error(`conditionalDamage ${piece.chessId} has unsupported trigger ${rule.trigger}`);
         battle.on('hit', ({ source, target, dmg }) => {

@@ -34,7 +34,7 @@ test('same-stack and two-stack items merge into an elite item without losing lef
 
 test('wearer equipment capacity counts items rather than slotCost', () => {
   const s = state(); grantEquipment(s, catalog, 'precision', 101);
-  s.pieces[0].equipment = [{ uid: 'w', id: 'precision', quantity: 99 }];
-  assert.equal(pieceEquipmentCount(s.pieces[0]), 99);
+  s.pieces[0].equipment = [{ uid: 'w', id: 'precision', quantity: 999 }];
+  assert.equal(pieceEquipmentCount(s.pieces[0]), 999);
   assert.throws(() => equipItem(s, catalog, s.inventory[0].uid, 'p1', 3), /CAPACITY/);
 });

@@ -1,6 +1,5 @@
 import { getData } from '../../data.js';
 import { GameData } from '../../match/gamedata.js';
-import { SharedPool } from '../../match/pool.js';
 import { canPlace, inField, positionClass } from '../../match/board.js';
 import { modeIdFor } from '../../../shared/constants.js';
 import { createRng } from '../../sim/rng.js';
@@ -8,7 +7,7 @@ import { getCatalog } from './catalog.js';
 import { runNativeHook } from './native.js';
 import { runIndependentBattle, getIndependentField } from './battle.js';
 import { previewOf } from '../../match/waves.js';
-import { grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
+import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
@@ -51,22 +50,13 @@ function drawChess(state, catalog, rng, maxTier) {
   for (const [id, p] of eligible) { roll -= p.left; if (roll < 0) return id; }
   return eligible.at(-1)?.[0] || null;
 }
-export function drawEquipment(state, gd, catalog, rng, level) {
-  const all = [ ...Object.values(catalog.badges || {}), ...Object.values(catalog.equipment || {}) ]
-    .filter((x) => x && x.available !== false && !x.disabled && x.kind !== 'prizeGear' && x.kind !== '停用' && x.shopEligible !== false && x.oldShop !== false && Number(x.shopTier ?? x.tier ?? 1) <= level && x.id)
-    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  if (!all.length) return null;
-  const pool = new SharedPool(gd);
-  pool.entries = new Map(Object.entries(state.pool || {}).map(([id, value]) => [id, { ...value }]));
-  const grouped = {};
-  for (const item of all) (grouped[Number(item.shopTier ?? item.tier ?? 1)] ||= []).push(item.id);
-  pool.gd = Object.create(gd); pool.gd.shopItemsByTier = grouped;
-  return pool.rollItem(rng, level);
-}
+/**
+ * The shop sells operators only (2026-10-06): every piece of gear comes through operators, so the original's
+ * equipment place shows one more operator.
+ */
 function slotsFor(state, gd, catalog, rng) {
   const counts = gd.shopSlots(state.shop.level); const slots = [];
-  for (let i = 0; i < counts.chess; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
-  for (let i = 0; i < counts.item; i++) slots.push({ kind: 'equipment', id: drawEquipment(state, gd, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
+  for (let i = 0; i < counts.chess + counts.item; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
   return slots;
 }
 function advanceShop(state, gd, catalog, rng) {
@@ -162,7 +152,7 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
       destroyedGear.push(x);
     } else if (!(isPermit(x, catalog) && worn.some((y) => y.id === x.id))) worn.push(x);
   }
-  if (worn.reduce((n, x) => n + Number(x.quantity || 1), 0) > 99) throw new Error('CAPACITY');
+  if (worn.reduce((n, x) => n + Number(x.quantity || 1), 0) > EQUIPMENT_CAPACITY) throw new Error('CAPACITY');
   const fielded = group.filter((p) => p.row !== null && p.col !== null).sort((a, b) => a.uid.localeCompare(b.uid));
   const survivor = fielded[0] || [...group].sort((a, b) => a.uid.localeCompare(b.uid))[0];
   const attachments = group.flatMap((p) => (p.attachments || []).map((attachment) => ({ ...clone(attachment), ownerUid: p.uid })));
@@ -286,7 +276,7 @@ export function validateSession(state) {
     for (const attachment of p.attachments || []) if (!safeId(attachment.id) || (attachment.state !== undefined && !isRecord(attachment.state))) e.push('BAD_ATTACHMENT');
   }
   for (const item of state.inventory || []) if (!safeId(item.id) || !Number.isInteger(item.quantity) || item.quantity < 1) e.push('BAD_ITEM');
-  for (const p of state.pieces || []) if (p.equipment?.reduce((n, x) => n + Number(x.quantity || 0), 0) > 99) e.push('PIECE_CAPACITY');
+  for (const p of state.pieces || []) if (p.equipment?.reduce((n, x) => n + Number(x.quantity || 0), 0) > EQUIPMENT_CAPACITY) e.push('PIECE_CAPACITY');
   return e;
 }
 
@@ -406,6 +396,7 @@ export function applyAction(state, action, options = {}) {
         handleGainEquipment(work, catalog, piece);
         for (const merged of maybeMergeOperator(work, catalog, piece.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
+        // an equipment place left in a shop saved before the shop stopped selling gear (gone at the next refresh)
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
         grantEquipment(work, catalog, slot.id, 1, { elite: !!slot.elite, origin: 'shop', phase: 'shop' }); events.push({ type: 'buy-equipment', id: slot.id });
       }

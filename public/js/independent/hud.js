@@ -259,11 +259,10 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
         ${chess.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`s${i}`} />`
           : html`<${ShopCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} />`))}
       </div>
-      <div class="shopbar__item">
-        ${gear.length ? gear.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`g${i}`} item=${true} />`
-          : html`<${GearCard} key=${`g${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} />`))
-          : html`<${SoldCard} item=${true} />`}
-      </div>
+      ${gear.length ? html`<div class="shopbar__item">
+        ${gear.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`g${i}`} item=${true} />`
+          : html`<${GearCard} key=${`g${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} />`))}
+      </div>` : null /* the shop sells operators only; an equipment place survives only in a shop saved before that */}
       <div class="funds">
         <div class="funds__hex"><${CoinGlyph} class="funds__coin" /><b class="funds__num num" data-testid="ix-funds">${state.funds}</b></div>
         <span class="funds__label">采购资金</span>

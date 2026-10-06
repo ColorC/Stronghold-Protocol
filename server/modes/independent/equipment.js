@@ -5,6 +5,8 @@ const number = (n, fallback = 0) => Number.isFinite(n) ? n : fallback;
 export const itemCount = (state) => (state.inventory || []).reduce((n, x) => n + Math.max(0, Math.floor(number(x.quantity, 1))), 0);
 export const equippedCount = (state) => (state.pieces || []).reduce((n, p) => n + (p.equipment || []).reduce((m, x) => m + Math.max(0, Math.floor(number(x.quantity, 1))), 0), 0);
 export const capacityUsed = (state) => itemCount(state);
+/** Pieces of gear one operator may wear (2026-10-06: raised from 99). Inventory has no limit. */
+export const EQUIPMENT_CAPACITY = 999;
 export const pieceEquipmentCount = (piece) => (piece?.equipment || []).reduce((n, x) => n + Math.max(0, Math.floor(number(x.quantity, 1))), 0);
 
 export function catalogRecord(catalog, collection, id) { return rec(catalog && catalog[collection], id); }
@@ -62,7 +64,7 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
   if (!['徽章', 'badge', '功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(def.kind)) throw new Error('NOT_EQUIPPABLE');
   if (def.unique && quantity !== 1) throw new Error('UNIQUE_QUANTITY');
   const usedByPieces = pieceEquipmentCount(target);
-  if (usedByPieces + quantity > 99) throw new Error('CAPACITY');
+  if (usedByPieces + quantity > EQUIPMENT_CAPACITY) throw new Error('CAPACITY');
   if (def.unique && target.equipment.some((x) => {
     const other = equipmentRecord(catalog, x.id);
     return (other?.uniqueKey || other?.canonicalId || x.id) === (def.uniqueKey || def.canonicalId || item.id);

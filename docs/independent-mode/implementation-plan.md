@@ -1,5 +1,7 @@
 # 罗德岛战备演习实施计划
 
+本计划是 10-05 派发实现时的接口计划，正文保留当时口径；之后的规则修订以 design.md 文末「修订记录」为准，本文只在相关句子旁标注。
+
 所属项目：stronghold-protocol。主仓：E:/WindowsWorkspace/webworks/apps/stronghold-protocol。开发基线：26a3aaad2f993b0d2dc60a79f4535351566203ee，包含上游 8774379d3be06fba3961f388f21c2eea3b666152。
 
 ## 完成条件
@@ -16,11 +18,11 @@ state 的字段：schemaVersion、modeId（independent）、seed、rngState、ne
 
 shop 为 `{level, upgradePrice, slots:[{kind:'chess'|'equipment',id,elite:false,price,sold:false,equipment:[]}], frozen, freeRefreshes}`。pieces 为 `{uid,chessId,elite:false,row:null,col:null,dir:'RIGHT',skillIndex:0,moduleId:'none',equipment:[],attachments:[],nativeState:{},bodyPenaltyApplied:false,poolCopies:1}`。equipment/inventory 条目为 `{uid,id,elite:false,quantity:1,state:{}}`；attachments 为 `{id,state:{}}`。物品 ID 用来源 sourceId（已重命名装备保留sourceId），徽章 ID 用稳定的英文语义 id；通过catalog查名与等级。chessId保留上游普通 `_a` 或精锐 `_b` ID。offers 队列为 `{id,type:'recruit'|'prize'|'attachment',choices:[],tier,source,targetUid?}`。counters 包含 gained、bought、paidRefreshes、spent、sold，原生效果逐实例次数放在 nativeState。
 
-动作：buy(slot)、refresh、freeze、upgrade、sell(uid)、move(uid,row,col,dir)、bench(uid)、loadout(uid,skillIndex,moduleId)、equip(itemUid,targetUid,quantity?)、merge-item(firstUid,secondUid)、use-item(itemUid,targetUid?/slot?/faction?/selection?)、choose(offerId,index,targetUid?/selection?)、inherit-preview(donorUid,receiverUid)、inherit(donorUid,receiverUid,uniqueSelections?)、ready、inspect(uid?)。view要包含角色名字、原技能、自有特质、装备总等级、装备/附加效果/继承资格分开表示、当前阶段合法动作、真实棋盘合法格、战斗摘要与战斗采样帧。
+动作：buy(slot)、refresh、freeze、upgrade、sell(uid)、move(uid,row,col,dir)、bench(uid)、loadout(uid,skillIndex,moduleId)、equip(itemUid,targetUid,quantity?)、merge-item(firstUid,secondUid)、use-item(itemUid,targetUid?/slot?/faction?/selection?)、choose(offerId,index,targetUid?/selection?)、inherit-preview(donorUid,receiverUid)、inherit(donorUid,receiverUid,uniqueSelections?)、ready、inspect(uid?)。view要包含角色名字、原技能、自有特质、装备总等级、装备/附加效果分开表示（交接凭证在装备里）、当前阶段合法动作、真实棋盘合法格、战斗摘要与战斗采样帧。
 
-买价3、卖价1、刷新价1。复用基础收入、升级价、商店科技分布和拷贝卡池。新模式不启用旧盟约层数、策略轮选、机变、悬赏与旧物品处理器。所有徽章一级；装备容量99，数量按实际件数计算，不可卸下或替换；普通出售销毁全部穿戴装备与附加效果。库存两件同名普通物品可以按catalog规则合成精锐，不把已穿戴装备拖入合成。三连保留合法装备和附加效果，自有特质升级为精锐，容量或唯一冲突必须原子预检；保留选择必须明确，无静默丢失。
+买价3、卖价1、刷新价1。复用基础收入、升级价、商店科技分布和拷贝卡池。新模式不启用旧盟约层数、策略轮选、机变、悬赏与旧物品处理器。所有徽章一级；装备容量99（10-06 改为999），数量按实际件数计算，不可卸下或替换；普通出售销毁全部穿戴装备与附加效果。库存两件同名普通物品可以按catalog规则合成精锐，不把已穿戴装备拖入合成。三连保留合法装备和附加效果，自有特质升级为精锐，容量或唯一冲突必须原子预检；保留选择必须明确，无静默丢失。
 
-继承资格为本体稀有词条。给予限制满足或接收限制满足即可，限制仅用原生科技/阵营/职业。同格地形、容量、唯一冲突先预检；旧本体出售一次并退出，原身材/技能/天赋/自有特质/资格不转移。允许转移的装备和满足接收限制的附加效果整体转移；次数不能重置。新本体原生攻击和生命暂按20%损耗一次，此值放config可调且标明试验参数；装备贡献不扣。
+继承资格为本体稀有词条（10-06 改为装备「交接凭证」，见 design.md 修订记录）。给予限制满足或接收限制满足即可，限制仅用原生科技/阵营/职业。同格地形、容量、唯一冲突先预检；旧本体出售一次并退出，原身材/技能/天赋/自有特质/资格不转移。允许转移的装备和满足接收限制的附加效果整体转移；次数不能重置。新本体原生攻击和生命暂按20%损耗一次，此值放config可调且标明试验参数；装备贡献不扣。
 
 ## 内容模块接口
 

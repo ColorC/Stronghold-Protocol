@@ -78,9 +78,9 @@ test('duplicate unique attachments require a source-body choice and preserve sel
   assert.equal(good.events[0].destroyedAttachments[0].ownerUid, offer.pieceUids[1]);
 });
 
-test('99 worn items merge, 100 rejects atomically and leaves every normal body and item intact', () => {
+test('999 worn items merge, 1000 rejects atomically and leaves every normal body and item intact', () => {
   const make = (perPiece) => {
-    // 送葬人 has no 交接凭证 (it would take one of the 99 places)
+    // 送葬人 has no 交接凭证 (it would take one of the 999 places)
     const op = byName('送葬人'); let state = createSession({ seed: 83, data, catalog }); state.funds = 100;
     for (let i = 0; i < 3; i++) {
       const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
@@ -90,10 +90,10 @@ test('99 worn items merge, 100 rejects atomically and leaves every normal body a
     }
     return state;
   };
-  const success = make(33);
+  const success = make(333);
   assert.equal(success.pieces.length, 1);
-  assert.equal(success.pieces[0].equipment.reduce((n, x) => n + x.quantity, 0), 99);
-  const rejected = make(34);
+  assert.equal(success.pieces[0].equipment.reduce((n, x) => n + x.quantity, 0), 999);
+  const rejected = make(334);
   const offer = rejected.offers.find((x) => x.type === 'operatorMerge');
   assert.ok(offer);
   const before = JSON.stringify(rejected);

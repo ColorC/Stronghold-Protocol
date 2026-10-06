@@ -60,9 +60,9 @@ test('qualification can come from the receiver and noneligible attached abilitie
   assert.deepEqual(result.state.pieces[0].attachments,[]);
 });
 
-test('100 combined worn items reject the whole operation before money, pool or assets change',()=>{
+test('1000 combined worn items reject the whole operation before money, pool or assets change',()=>{
   const state=fixture();const [donor,receiver]=state.pieces;
-  donor.equipment=[gear(state,'precision',98)];receiver.equipment=[gear(state,'vitality',2)];
+  donor.equipment=[gear(state,'precision',998)];receiver.equipment=[gear(state,'vitality',2)];
   const snapshot=JSON.stringify(state);
   const result=applyAction(state,{type:'inherit',donorUid:donor.uid,receiverUid:receiver.uid});
   assert.equal(result.ok,false);
@@ -70,15 +70,15 @@ test('100 combined worn items reject the whole operation before money, pool or a
   assert.equal(JSON.stringify(state),snapshot);
 });
 
-test('99 combined worn items succeed while independent inventory does not consume body capacity',()=>{
+test('999 combined worn items succeed while independent inventory does not consume body capacity',()=>{
   const state=fixture();const [donor,receiver]=state.pieces;
-  donor.equipment=[gear(state,'precision',98)];receiver.equipment=[gear(state,'vitality',1)];
-  state.inventory=[{uid:`i${state.nextUid++}`,id:'agility',quantity:500,elite:false,state:{}}];
+  donor.equipment=[gear(state,'precision',998)];receiver.equipment=[gear(state,'vitality',1)];
+  state.inventory=[{uid:`i${state.nextUid++}`,id:'agility',quantity:5000,elite:false,state:{}}];
   assert.deepEqual(validateSession(state),[]);
   const result=applyAction(state,{type:'inherit',donorUid:donor.uid,receiverUid:receiver.uid});
   assert.equal(result.ok,true,result.error?.message);
-  assert.equal(result.state.pieces[0].equipment.reduce((n,i)=>n+i.quantity,0),99);
-  assert.equal(result.state.inventory[0].quantity,500);
+  assert.equal(result.state.pieces[0].equipment.reduce((n,i)=>n+i.quantity,0),999);
+  assert.equal(result.state.inventory[0].quantity,5000);
 });
 
 test('identity aliases are one unique item and require an explicit retention choice',()=>{

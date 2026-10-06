@@ -22,7 +22,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 /** Player-facing reasons for the session's error codes (server/modes/independent/*.js). */
 const ERRORS = {
   NO_FUNDS: '采购资金不足', SOLD_OUT: '卡池里已经没有这名干员', DEPLOY_CAP: '场上干员已达上限', ILLEGAL_TILE: '有干员站在不能部署的位置',
-  OCCUPIED: '这个位置已有干员', NO_DEPLOYED_PIECES: '至少部署一名干员才能开始战斗', CAPACITY: '单个干员最多穿戴 99 件装备',
+  OCCUPIED: '这个位置已有干员', NO_DEPLOYED_PIECES: '至少部署一名干员才能开始战斗', CAPACITY: '这名干员的装备已经穿满',
   UNIQUE: '同名唯一的装备只能穿戴一件', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
   NOT_MERGEABLE: '这件装备不能合成', NOT_USABLE: '这件物品不能直接使用', CONDITION_NOT_MET: '使用条件未满足', MAX_LEVEL: '调度中心已达最高等级',
   NEED_UNIQUE_SELECTION: '请先选择要保留的同名唯一装备', NEEDS_SELECTION: '请先选择要保留的同名唯一项', NO_ELIGIBLE_TARGET: '没有可以选择的干员',

@@ -1,4 +1,4 @@
-import { equipmentRecord, pieceEquipmentCount } from './equipment.js';
+import { EQUIPMENT_CAPACITY, equipmentRecord, pieceEquipmentCount } from './equipment.js';
 import { canPlace } from '../../match/board.js';
 import { attachmentAccepted as acceptsAttachment, inheritanceQualification, nativeFactions, nativeBodyStats } from '../../../shared/independentRules.js';
 import { getIndependentField } from './battle.js';
@@ -37,7 +37,7 @@ export function previewInheritance(state, catalog, donorUid, receiverUid, data =
   const receiverUnique = new Set(receiver.attachments.filter((x) => catalog.attachments?.[x.id]?.unique).map((x) => x.id));
   const transferAttachments = donorAttachments.filter((x) => !attachConflicts.some((c) => c.id === x.id) && (!receiverUnique.has(x.id) || !catalog.attachments?.[x.id]?.unique));
   const incoming = donorGear.reduce((n, x) => n + x.quantity, 0);
-  if (pieceEquipmentCount(receiver) + incoming > 99 + conflicts.reduce((n, c) => n + (receiverGear.find((x) => x.uid === c.receiverUid)?.quantity || 0), 0)) return { ok: false, error: 'CAPACITY' };
+  if (pieceEquipmentCount(receiver) + incoming > EQUIPMENT_CAPACITY + conflicts.reduce((n, c) => n + (receiverGear.find((x) => x.uid === c.receiverUid)?.quantity || 0), 0)) return { ok: false, error: 'CAPACITY' };
   return { ok: true, donorUid, receiverUid, donorChessId: donor.chessId, receiverChessId: receiver.chessId,
     // the 交接凭证 that allows it: the donor's 给予 one or the receiver's 接收 one (the donor's is lost with it)
     permit: { give: qualification.give?.id || null, receive: qualification.receive?.id || null },

@@ -120,11 +120,11 @@ test('ancient cauldron observes all acquired bodies and pays its elite amount on
 test('inspection license repeats acquisition forging but leaves preparation-end forging once', () => {
   const state = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
   state.playerEffects = [{ type: 'repeatNativeForging', expiresRound: 1, extraRepeats: 1 }];
-  const gainOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '艾丝黛尔');
+  const gainOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '野鬃');
   state.shop.slots[0] = { kind: 'chess', id: gainOp.chessId, price: 3, sold: false, equipment: [] };
   const bought = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog: baseCatalog });
   assert.equal(bought.ok, true, bought.error?.message);
-  assert.equal(bought.state.inventory.filter((x) => x.id === 'precision').reduce((n, x) => n + x.quantity, 0), 2);
+  assert.equal(bought.state.inventory.filter((x) => x.id === 'agility').reduce((n, x) => n + x.quantity, 0), 2);
   const prep = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
   prep.playerEffects = structuredClone(state.playerEffects);
   const endOp = Object.values(baseCatalog.operators).find((x) => !x.elite && x.name === '雷蛇');

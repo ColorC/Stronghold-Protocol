@@ -91,7 +91,7 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(catalog.config.purchasePrice, 3);
   assert.equal(catalog.config.sellPrice, 1);
   assert.equal(catalog.config.refreshPrice, 1);
-  assert.equal(catalog.config.equipmentCapacity, 99);
+  assert.equal(catalog.config.equipmentCapacity, 999);
   assert.deepEqual(catalog.config.factionRecipes['维多利亚'], ['precision', 'vitality']);
   assert.deepEqual(catalog.config.professionRecipes.TANK, ['defense']);
   assert.ok(catalog.pools.pool_equip_pepe.assumed);

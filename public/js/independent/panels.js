@@ -143,7 +143,7 @@ export function DetailCard({ target, state, catalog, busy, onClose, onAct, onInh
         <${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
     </details>
     ${piece ? html`<details open>
-      <summary>装备 · ${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}/${catalog.rules?.equipmentCapacity ?? 99}</summary>
+      <summary>装备 · ${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}/${catalog.rules?.equipmentCapacity ?? 999}</summary>
       <${EquipmentList} items=${piece.equipment} catalog=${catalog} busy=${busy}
         onConfigure=${state.phase === 'prep' ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />
       ${permitsOf(piece, catalog).length ? html`<${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
@@ -219,7 +219,7 @@ export function InventoryPanel({ open, state, catalog, busy, targetUid, onTarget
   useEffect(() => { if (!open) setUsing(null); }, [open]);
   const target = state.pieces.find((p) => p.uid === targetUid) || null;
   const used = target ? target.equipment.reduce((n, x) => n + (x.quantity || 1), 0) : 0;
-  const room = (catalog.rules?.equipmentCapacity ?? 99) - used;
+  const room = (catalog.rules?.equipmentCapacity ?? 999) - used;
   const run = async (action) => { const res = await onAct(action); if (res) setUsing(null); };
   return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(9.8rem, 94vw)" class="ix-inv">
     <div class="ix-inv__target">
@@ -348,7 +348,7 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
 const INHERIT_ERRORS = {
   NO_PERMISSION: '双方的交接凭证都不允许这次交接',
   BAD_TILE: '交出装备的一方需要在场，且接收方能部署在那个位置',
-  CAPACITY: '接收方的装备会超过99件',
+  CAPACITY: '接收方的装备会超出穿戴上限',
   BAD_TARGET: '请换一名干员',
 };
 
