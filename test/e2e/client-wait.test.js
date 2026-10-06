@@ -32,7 +32,9 @@ test('a wait longer than one slice keeps polling the same predicate until it hol
   const fn = () => true;
   const got = await waitForFunctionLong(page, fn, { timeout: 1000, polling: 200, slice: 30 }, 'a', 2);
   assert.deepEqual(got, { handle: 'ok', args: ['a', 2] });
-  assert.ok(page.calls.length >= 4, `sliced (${page.calls.length} calls)`);
+  // more than one slice; not a count: a 30 ms setTimeout lasts up to ~47 ms on Windows (15.6 ms timer ticks), so 95 ms
+  // may be covered in 3 slices there and in 4 elsewhere
+  assert.ok(page.calls.length >= 2, `sliced (${page.calls.length} calls)`);
   for (const c of page.calls) {
     assert.equal(c.fn, fn);
     assert.deepEqual(c.args, ['a', 2]);
