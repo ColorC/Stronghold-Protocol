@@ -229,7 +229,7 @@ export function getCatalog(data = getData()) {
   }));
 
   return {
-    id: 'independent', name: '罗德岛战备演习',
+    id: 'independent', name: '卫戍协议：工坊',
     config: {
       ...clone(DESIGN.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
       balance: { incomeBonusFromRound: 8, incomeBonus: 1 },

@@ -1,4 +1,4 @@
-// 罗德岛战备演习 game screen on the original renderer (render/app.js through ui/fieldHost.js): the own board in 3D with
+// 卫戍协议：工坊 game screen on the original renderer (render/app.js through ui/fieldHost.js): the own board in 3D with
 // Spine operators, drag & drop deploy with the direction wheel, and every ready's battle replayed from the server's
 // recording (server/modes/independent/battle.js) — the battle the result was settled on, never a re-simulation.
 import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
@@ -27,7 +27,7 @@ const ERRORS = {
   NOT_MERGEABLE: '这件装备不能合成', NOT_USABLE: '这件物品不能直接使用', CONDITION_NOT_MET: '使用条件未满足', MAX_LEVEL: '调度中心已达最高等级',
   NEED_UNIQUE_SELECTION: '请先选择要保留的同名唯一装备', NEEDS_SELECTION: '请先选择要保留的同名唯一项', NO_ELIGIBLE_TARGET: '没有可以选择的干员',
   NO_PERMISSION: '双方都不满足交接条件', BAD_TILE: '旧本体必须在场，且新本体能站在那个位置', WRONG_PHASE: '当前阶段不能进行该操作',
-  LIMIT_REACHED: '已达到本轮上限', NO_CANDIDATE: '没有可招募的干员', REVISION: '演习已在别处更新，已同步到最新状态',
+  LIMIT_REACHED: '已达到本轮上限', NO_CANDIDATE: '没有可招募的干员', REVISION: '对局已在别处更新，已同步到最新状态',
   NETWORK: '连接中断，请检查网络后重试',
 };
 const errorText = (error) => ERRORS[error?.code] || (error?.message && !/^[A-Z_]+$/.test(error.message) ? error.message : '操作没有完成');

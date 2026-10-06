@@ -1,4 +1,4 @@
-// 罗德岛战备演习 entry: the original client's device support, data store and dialogs, then the independent app.
+// 卫戍协议：工坊 entry: the original client's device support, data store and dialogs, then the independent app.
 import '../ui/compat.js';
 import { render } from '../../vendor/preact.module.js';
 import { html, UiHosts } from '../ui/components.js';

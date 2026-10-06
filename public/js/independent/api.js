@@ -1,4 +1,4 @@
-// 罗德岛战备演习 HTTP client (server/modes/independent/http.js). Paths are relative to the page, so the same build
+// 卫戍协议：工坊 HTTP client (server/modes/independent/http.js). Paths are relative to the page, so the same build
 // works on the local server (/independent.html) and behind the Workshop gateway (/stronghold/independent.html).
 // The display catalog is fetched once; actions ask for the state only (`catalog: false`).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Headless Chrome check of the 罗德岛战备演习 page on the original renderer: start a drill, buy, drag an operator onto
+// Headless Chrome check of the 卫戍协议：工坊 page on the original renderer: start a game, buy, drag an operator onto
 // a legal tile and choose its direction, reload (?session restores it), open its detail card and its component link,
 // ready, watch the replay on the 3D field, skip to the end, compare the result with the server, reach round 2, and
 // take a phone-sized shot. Writes browser-receipt.json (every artifact with its absolute path) and screenshots.

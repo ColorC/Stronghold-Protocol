@@ -253,7 +253,7 @@ export function TitleScreen() {
           placeholder="输入你的代号（最多 ${NAME_MAX_LEN} 字）" autoFocus=${!touchUi}
           onInput=${setName} onEnter=${start} />
         <${Button} variant="primary" size="xl" block=${true} iconRight="chevrons" disabled=${!valid} onClick=${start}>开始<//>
-        <a class="btn btn--secondary btn--block" href="./independent.html">罗德岛战备演习</a>
+        <a class="btn btn--secondary btn--block" href="./independent.html">卫戍协议：工坊</a>
         <div class="title-conn">
           <span class=${`status-dot ${dotClass}`}></span>
           <span>${STATUS_TEXT[conn.status] || conn.status}</span>

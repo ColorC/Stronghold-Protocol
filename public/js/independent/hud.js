@@ -1,4 +1,4 @@
-// 罗德岛战备演习 HUD on the original game screen's frame (css/screens/game*.css classes: gtop, roundbox, capsule,
+// 卫戍协议：工坊 HUD on the original game screen's frame (css/screens/game*.css classes: gtop, roundbox, capsule,
 // shopbar, scard, lvcard, funds) with the independent mode's own data. Default layer only (docs/independent-mode/
 // frontend-design.md 信息分层): numbers that decide the current step; full texts open in the detail card.
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
@@ -8,20 +8,12 @@ import { PhaseCapsule } from '../ui/hud.js';
 import { chessPortraitUrl, profIconUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
-import { BADGE_BOND, formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId } from './model.js';
+import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId } from './model.js';
+import { GearIcon, GameText } from './text.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 // ---- glyphs -------------------------------------------------------------------------------------------------------
-
-/** An inventory / equipment item's icon: a badge wears its bond's glyph, other gear the original item art. */
-export function GearIcon({ id, catalog, class: cls }) {
-  if (id && BADGE_BOND[id]) return html`<${BondGlyph} bondId=${BADGE_BOND[id]} class=${cx('ix-gear', cls)} />`;
-  if (id && data.lookup('items', id)) return html`<span class=${cx('ix-gear', 'ix-gear--item', cls)}><${ItemIcon} itemId=${id} size="sm" showTier=${false} /></span>`;
-  // gear without original art (prize gear, a prize kept in the inventory): its own name's first character
-  const name = (id && (catalog?.gear?.[id]?.name || catalog?.prizes?.[id]?.name)) || '徽章';
-  return html`<span class=${cx('ix-gear', 'ix-gear--txt', cls)} title=${name}>${[...name][0]}</span>`;
-}
 
 const KIND_WORD = { recruit: '招募', random: '随机', stat: '属性', damage: '增伤', copy: '复制', merge: '两份合成', shopBadge: '商品携装' };
 
@@ -64,7 +56,7 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
   const pending = battle && battle.done ? battle.lpLost : 0;
   return html`<header class="gtop ix-top">
     <div class="gtop__left">
-      <${Button} variant="danger" size="lg" square=${true} icon="exit" onClick=${onExit} aria-label="离开演习" title="离开演习（进度已保存）" class="gtop__exit tapx" />
+      <${Button} variant="danger" size="lg" square=${true} icon="exit" onClick=${onExit} aria-label="离开" title="离开（进度已保存）" class="gtop__exit tapx" />
       <div class="gtop__meta">${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="sm" />` : null}</div>
     </div>
     <div class="gtop__center brackets">
@@ -98,7 +90,7 @@ export function InventoryStrip({ stacks, total, catalog, onOpen, armedKey, onArm
       <${MicroLabel}>库存<//><b class="num">${total}</b>
     </button>
     ${stacks.length ? stacks.slice(0, 10).map((s) => html`<button type="button" key=${s.key} class=${cx('ix-strip__slot', armedKey === s.key && 'is-armed')}
-        onClick=${() => onArm(s)} title=${`${s.name}${s.level ? ` · ${s.level}级` : ''} ×${s.count}`}>
+        onClick=${() => onArm(s)} aria-label=${`${s.name} ×${s.count}`}>
         <${GearIcon} id=${s.id} catalog=${catalog} /><b class="num">${s.count}</b>
       </button>`) : html`<span class="ix-strip__empty">暂无库存</span>`}
     ${stacks.length > 10 ? html`<button type="button" class="ix-strip__more" onClick=${onOpen}>+${stacks.length - 10}</button>` : null}
@@ -106,20 +98,20 @@ export function InventoryStrip({ stacks, total, catalog, onOpen, armedKey, onArm
 }
 
 function SourceName({ piece, catalog }) {
-  if (!piece) return html`<span class="ix-prod__src">已离队干员</span>`;
+  if (!piece) return html`<span class="ix-prod__src">已离队</span>`;
   const entry = formEntry(catalog, piece);
   return html`<span class="ix-prod__src"><${UnitThumb} kind="chess" id=${renderChessId(catalog, piece)} golden=${!!piece.elite} size="xs" showTier=${false} />${entry?.name || ''}</span>`;
 }
 
-const ORIGIN_WORD = { prize: '奖品', supply: '补给', shop: '商店' };
-const PHASE_WORD = { battle: '战后', roundStart: '休整开始', prepEnd: '休整结束', gain: '获得时', prize: '奖品', supply: '补给', sold: '出售时', refresh: '刷新后' };
+const ORIGIN_WORD = { prize: '工程部特供', supply: '补给', shop: '商店' };
+const PHASE_WORD = { battle: '战后', roundStart: '休整开始', prepEnd: '休整结束', gain: '获得时', prize: '特供', supply: '补给', sold: '售出时', refresh: '刷新后' };
 
 function ProdRow({ row, state, catalog, when = false }) {
   const piece = row.sourceUid ? state.pieces.find((p) => p.uid === row.sourceUid) : null;
   return html`<li class="ix-prod__row">
     ${when ? html`<span class="ix-prod__when">${PHASE_WORD[row.phase] || ''}</span>` : null}
     ${row.sourceUid ? html`<${SourceName} piece=${piece} catalog=${catalog} />`
-      : html`<span class="ix-prod__src">${row.prizeId ? (catalog.prizes?.[row.prizeId]?.name || '奖品') : ORIGIN_WORD[row.origin] || '其他'}</span>`}
+      : html`<span class="ix-prod__src">${row.prizeId ? (catalog.prizes?.[row.prizeId]?.name || '工程部特供') : ORIGIN_WORD[row.origin] || '其他'}</span>`}
     <span class="ix-prod__out"><${GearIcon} id=${row.id} catalog=${catalog} /><b class="num">×${row.quantity}</b></span>
     ${row.copied ? html`<span class="ix-prod__tag">复制</span>` : null}
   </li>`;
@@ -142,15 +134,15 @@ export function ProductionPanel({ state, catalog, sinceRevision }) {
     </button>
     ${open ? html`<div class="ix-prod__body">
       <section>
-        <h3>休整结束将锻造</h3>
+        <h3>休整期结束时获得</h3>
         ${fc.rows.length || fc.funds ? html`<ul>
           ${fc.rows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} />`)}
-          ${fc.funds ? html`<li class="ix-prod__row"><span class="ix-prod__src">下轮额外资金</span><span class="ix-prod__out"><${CoinGlyph} /><b class="num">+${fc.funds}</b></span></li>` : null}
-        </ul>` : html`<p class="ix-prod__none">本次没有锻造</p>`}
-        ${fc.idle.length ? html`<ul class="ix-prod__idle">${fc.idle.map((p) => html`<li key=${p.uid} class="ix-prod__row is-idle" title="当前条件下休整结束不会产出，点干员查看完整特质">
-          <${SourceName} piece=${p} catalog=${catalog} /><span>本次不触发</span></li>`)}</ul>` : null}
+          ${fc.funds ? html`<li class="ix-prod__row"><span class="ix-prod__src">下个休整期资金</span><span class="ix-prod__out"><${CoinGlyph} /><b class="num">+${fc.funds}</b></span></li>` : null}
+        </ul>` : html`<p class="ix-prod__none">暂无</p>`}
+        ${fc.idle.length ? html`<ul class="ix-prod__idle">${fc.idle.map((p) => html`<li key=${p.uid} class="ix-prod__row is-idle" title="现在开始战斗不会获得，点干员看特质条件">
+          <${SourceName} piece=${p} catalog=${catalog} /><span>条件未满足</span></li>`)}</ul>` : null}
       </section>
-      ${battleRows.length ? html`<section><h3>上一轮结算获得</h3><ul>${battleRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
+      ${battleRows.length ? html`<section><h3>上一轮结算</h3><ul>${battleRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
       ${otherRows.length ? html`<section><h3>本轮获得</h3><ul>${otherRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
     </div>` : null}
   </aside>`;
@@ -201,13 +193,13 @@ function GearCard({ slot, idx, state, catalog, armed, reason, onTap }) {
       onClick=${() => onTap(idx)} data-testid=${`ix-shop-${idx}`} aria-label=${`${g.name || '装备'}，价格 ${slot.price}`}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__top">
-      <span class="ix-lv num">${(slot.elite ? g.eliteLevel : g.level) ?? 1}级</span>
+      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${(slot.elite ? g.eliteLevel : g.level) ?? 1}级</span>`}
       <${HexBadge} value=${slot.price} tone=${reason === '资金不足' ? 'dark' : 'gold'} size="md" class="scard__price" />
     </span>
     <span class="scard__itemart"><${GearIcon} id=${slot.id} catalog=${catalog} /></span>
     <span class="scard__body">
       <span class="scard__name">${g.name || slot.id}</span>
-      <span class="scard__idesc">${slot.elite ? g.elite : g.normal}</span>
+      <span class="scard__idesc"><${GameText} text=${slot.elite ? g.elite : g.normal} catalog=${catalog} /></span>
     </span>
     ${state.shop.frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
     ${armed ? html`<span class=${cx('scard__confirm', reason && 'is-no')} role="status">${reason ? html`<b>无法购买</b><small>${reason}</small>` : html`<b>确认购买</b><small>再次点击</small>`}</span>` : null}

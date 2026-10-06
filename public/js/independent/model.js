@@ -1,4 +1,4 @@
-// 罗德岛战备演习 page model: pure functions from the session view (server/modes/independent/session.js viewSession,
+// 卫戍协议：工坊 page model: pure functions from the session view (server/modes/independent/session.js viewSession,
 // thinned by http.js packet) to what the original renderer and the HUD need. No DOM, no fetch — test/independent/
 // page-model.test.js runs them in Node. The rules stay on the server: legal tiles, forecasts and prices come from it.
 

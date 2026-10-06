@@ -239,3 +239,20 @@
 .ix-penbtn { height: .44rem; padding: 0 .12rem; font-size: .15rem; background: rgba(8, 11, 10, .85); border: 1px solid var(--orange); color: var(--orange-hi); cursor: pointer; }
 .ix-penbtn b { margin-left: .04rem; color: var(--text-hi); }
 .ix-penbtn.is-on { border-color: var(--mint-500); color: var(--mint-400); }
+
+/* ---- game text: moments, terms and their notes (public/js/independent/text.js) --------------------------------- */
+.ix-when { color: var(--mint-400); white-space: nowrap; }
+.ix-text .rt-vup { color: var(--gold); font-family: var(--font-num); }
+.ix-text .rt-term { cursor: help; }
+.ix-tip { display: block; max-width: 3.2rem; font-size: .13rem; line-height: 1.55; text-align: left; }
+.ix-tip b { margin-right: .06rem; color: var(--text-hi); }
+.ix-tip em { margin-right: .06rem; font-style: normal; color: var(--gold); }
+.ix-tip > span { display: block; color: var(--text-md); }
+.ix-notes { list-style: none; margin: .06rem 0 0; padding: .06rem .08rem; background: rgba(255, 255, 255, .03); border-left: 2px solid var(--mint-800); }
+.ix-notes li { display: flex; gap: .06rem; align-items: flex-start; margin: .03rem 0; font-size: .12rem; line-height: 1.5; color: var(--text-lo); }
+.ix-notes li > .ix-gear { width: .2rem; height: .2rem; margin-top: .01rem; }
+.ix-notes b { margin-right: .05rem; color: var(--text-md); font-weight: 500; }
+.ix-notes em { margin-right: .05rem; font-style: normal; color: var(--gold); }
+.ix-notes__mark { width: .2rem; text-align: center; color: var(--mint-400); flex: none; }
+.ix-choice .ix-notes { margin-top: auto; }
+.ix-choice .ix-notes b { font-size: inherit; }
