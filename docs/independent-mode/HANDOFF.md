@@ -162,6 +162,7 @@ node tools/independent-browser-smoke.mjs --output 'E:/WindowsWorkspace/webworks/
 ## 服务与文件职责
 
 - 当前监听：`127.0.0.1:13000`。入口脚本：`E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/start-server.mjs`。执行 `node runtime/start-server.mjs` 在健康服务已存在时只返回现状，不会重启或重新加载后端。
+- **正式服务跑在干净检出上（10-06 22:30 起）**：`start-server.mjs` 启动 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/release-server.mjs`，它运行 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/release`（分支 `release`）的服务器，主仓只作安装目录（`public/assets`、`vendor`、`fonts`、`data/local-assets.json`）和存档目录。主仓工作区里没提交的改动不会再上公网；上线 = 把要发布的提交合进 `release`（只快进或合并，不在该检出里开发），全量测试后受控重启。主仓 `public/dev/` 下未进 Git 的演示页（如 DIY 2B）由服务器兜底从安装目录提供（`server/index.js` devDir，`test/static-install-dir.test.js`）。`release` 检出里的 `public/vendor` 与 `.omni/tmp` 是为跑测试复制/新建的，被 Git 忽略。
 - 服务原生回执：`E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/service.json`。其中 serverPid 是历史启动快照，接手时读回并核对进程命令与占用；不要照抄 PID 杀进程。重启前核对原模式连接/对局，且仅操作本项目已确认的服务。HTTP 会话持久化在独立文件中。
 - 公网网关规则：`C:/Users/lilithgames/codeweb/stronghold-workshop-routes.caddy`。现有 `/stronghold/` 前缀代理已覆盖新页面与接口，本阶段没有另开网关。
 - 演习持久状态：`E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/independent-sessions`。这是真实运行数据，不能用作清理目录或测试 fixture。
