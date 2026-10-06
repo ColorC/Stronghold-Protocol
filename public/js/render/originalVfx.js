@@ -73,9 +73,10 @@ export class OriginalVfxPlayer {
     return entry;
   }
 
-  play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0 } = {}) {
+  play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', mirror = false, offsetZ = 0 } = {}) {
     if (!prefab || typeof document === 'undefined' || !this.P?.Sprite) return false;
-    const record = { prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, scale: Number(scale) || 1, followId, group, loop, elapsed: 0, delay: Math.max(0, Number(delay) || 0), ready: false, dead: false, sprite: null, entry: null, life };
+    const record = { prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, scale: Number(scale) || 1, followId, group, loop, elapsed: 0, delay: Math.max(0, Number(delay) || 0), ready: false, dead: false, sprite: null, entry: null, life,
+      anchor: anchor === 'chest' ? 'chest' : 'ground', mirror: mirror === true, offsetZ: Number(offsetZ) || 0 };
     this.active.add(record);
     this._entry(prefab).then((entry) => {
       if (record.dead || !entry) return;
@@ -104,12 +105,14 @@ export class OriginalVfxPlayer {
   _place(record) {
     if (!record.sprite || !record.entry) return;
     const followed = record.followId == null ? null : this.view(record.followId);
-    const x = followed?.x ?? record.x, y = followed?.y ?? record.y, z = followed?.z ?? record.z;
+    const x = followed?.x ?? record.x, y = followed?.y ?? record.y;
+    const z = followed ? (followed.z || 0) + (followed.hover || 0) + (record.anchor === 'chest' ? (followed._headTiles ? followed._headTiles * 0.45 : 0.5) : 0) + record.offsetZ : record.z + record.offsetZ;
     const p = this.cam()?.project(x, y, z, {});
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
     record.sprite.position.set(p.x, p.y);
     const s = Math.max(0.01, (p.s || 1) * record.scale / Math.max(1, record.entry.meta.pxPerUnit || 96));
-    record.sprite.scale.set(s / 2, s);
+    const facing = followed && record.mirror ? (followed.isEnemy ? -1 : 1) * (Number(followed.visFacing ?? followed.facing) < 0 ? -1 : 1) : 1;
+    record.sprite.scale.set((s / 2) * facing, s);
     record.sprite.zIndex = Number.isFinite(p.depth) ? -p.depth : 0;
   }
 

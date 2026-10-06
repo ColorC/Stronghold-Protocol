@@ -14,6 +14,7 @@ let after;
 let running = true;
 let speed = 1;
 let scenario = 'full';
+let operator = 'rosmon';
 let elapsed = 0;
 let cursor = 0;
 let timeline = [];
@@ -28,6 +29,12 @@ function ros(skillIndex) {
     uid: 106, skillIndex, moduleId: 'uniequip_002_rosmon' };
 }
 
+function blkkgt(skillIndex) {
+  return { id: 1, kind: 'op', side: 'ally', ownerId: 'P1', defId: 'chess_char_6_19_b', name: '锏', tier: 6, golden: true,
+    spine: 'char_4116_blkkgt', avatar: 'char_4116_blkkgt_2', x: 3.5, y: 11, facing: 1, dir: 'RIGHT', maxHp: 2767,
+    uid: 103, skillIndex, moduleId: 'uniequip_002_blkkgt' };
+}
+
 function enemy(id, defId, x, y, extra = {}) {
   const e = data.lookup('enemies', defId);
   return { id, kind: 'enemy', side: 'enemy', ownerId: 'P1', defId, name: e?.name || defId, tier: 1, golden: false,
@@ -35,6 +42,7 @@ function enemy(id, defId, x, y, extra = {}) {
 }
 
 function unitsFor(skillId) {
+  if (operator === 'blkkgt') return [blkkgt(skillId === 'skchr_blkkgt_1' ? 0 : 1), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
   const skillIndex = skillId === 'skchr_rosmon_1' ? 0 : skillId === 'skchr_rosmon_3' ? 2 : 1;
   return [ros(skillIndex), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
 }
@@ -45,6 +53,21 @@ function snapshot(units, t, hp) {
 
 function makeTimeline(kind) {
   const a = [];
+  if (operator === 'blkkgt') {
+    const add = (t, ...ev) => a.push([t, ev]);
+    add(0.15, ['deploy', 1]);
+    add(0.9, ['atk', 1, 20, 'none', 11, 0]);
+    add(1.2, ['dmg', 20, 620, 'phys', 1, 11]);
+    add(1.65, ['skill', 1, 1, 'skchr_blkkgt_1']);
+    add(2.05, ['atk', 1, 20, 'none', 21, 1]);
+    add(2.28, ['dmg', 20, 980, 'phys', 1, 21]);
+    add(2.55, ['dmg', 20, 980, 'phys', 1, 21]);
+    add(2.9, ['atk', 1, 21, 'none', 22, 1]);
+    add(3.15, ['dmg', 21, 980, 'phys', 1, 22]);
+    add(3.42, ['dmg', 21, 980, 'phys', 1, 22]);
+    add(4.5, ['skill', 1, 0, 'skchr_blkkgt_1']);
+    return a;
+  }
   const skillId = kind === 'full' ? 'skchr_rosmon_2' : kind;
   const add = (t, ...ev) => a.push([t, ev]);
   add(0.15, ['deploy', 1]);
@@ -72,7 +95,13 @@ function resetBattle() {
   elapsed = 0;
   cursor = 0;
   timeline = makeTimeline(scenario);
-  const units = unitsFor(scenario === 'full' ? 'skchr_rosmon_2' : scenario);
+  const skillId = operator === 'blkkgt' ? 'skchr_blkkgt_1' : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
+  const units = unitsFor(skillId);
+  const original = after?.fx?.originalVfx;
+  if (original && original.root !== (operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon')) {
+    original.destroy();
+    original.root = operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon';
+  }
   const meta = { fieldId, kind: 'normal', rect, stageId, units };
   for (const view of [before, after]) {
     view.enterBattle(meta);
@@ -82,7 +111,8 @@ function resetBattle() {
   resetBattle.hp = hp;
   const initial = { t: 'b.snap', fieldId, gt: 0, units: snapshot(units, 0, hp), dp: 10, killed: 0, total: 3 };
   before.pushSnapshot(initial); after.pushSnapshot(initial);
-  $('status').innerHTML = `<strong>${scenario === 'full' ? '完整流程' : scenario.replace('skchr_rosmon_', '技能')}：</strong> 同步播放中`;
+  const label = operator === 'blkkgt' ? '锏 · 普攻与技能一' : (scenario === 'full' ? '迷迭香 · 完整流程' : `迷迭香 · ${scenario.replace('skchr_rosmon_', '技能')}`);
+  $('status').innerHTML = `<strong>${label}：</strong> 同步播放中`;
 }
 
 function sendFrame(t, ev, units) {
@@ -96,7 +126,8 @@ function sendFrame(t, ev, units) {
 
 function advance(dt) {
   if (!running) return;
-  const units = unitsFor(scenario === 'full' ? 'skchr_rosmon_2' : scenario);
+  const skillId = operator === 'blkkgt' ? 'skchr_blkkgt_1' : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
+  const units = unitsFor(skillId);
   const next = Math.min(0.1, dt * speed);
   const old = elapsed;
   elapsed += next;
@@ -104,7 +135,7 @@ function advance(dt) {
     const [t, ev] = timeline[cursor++];
     sendFrame(t, ev, units);
   }
-  if (elapsed >= (scenario === 'full' ? 7 : 6)) { running = false; $('status').innerHTML = '<strong>播放结束</strong>：点击“重播”或选择另一个场景'; }
+  if (elapsed >= (operator === 'blkkgt' ? 5.4 : (scenario === 'full' ? 7 : 6))) { running = false; $('status').innerHTML = '<strong>播放结束</strong>：点击“重播”或选择另一个场景'; }
   void old;
 }
 
@@ -119,8 +150,16 @@ function wireControls() {
   const toggle = document.querySelector('[data-action="toggle"]');
   const restart = document.querySelector('[data-action="restart"]');
   for (const b of document.querySelectorAll('[data-scenario]')) b.onclick = () => {
+    if (operator === 'blkkgt') return;
     scenario = b.dataset.scenario;
     document.querySelectorAll('[data-scenario]').forEach((x) => x.classList.toggle('is-on', x === b));
+    running = true;
+    resetBattle();
+  };
+  for (const b of document.querySelectorAll('[data-operator]')) b.onclick = () => {
+    operator = b.dataset.operator;
+    document.querySelectorAll('[data-operator]').forEach((x) => x.classList.toggle('is-on', x === b));
+    document.querySelectorAll('[data-scenario]').forEach((x) => x.classList.toggle('is-on', x.dataset.scenario === 'full'));
     running = true;
     resetBattle();
   };
