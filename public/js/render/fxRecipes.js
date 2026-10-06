@@ -329,12 +329,14 @@ export const FX_ARCHETYPES = Object.freeze({
   },
   crit(fx, a) {
     const { p, s, col } = a;
+    fx._onCrit?.(a.x, a.y, a.ex?.id ?? null);   // this frame's hit there becomes a crit number (render/dmgNumbers.js)
     fx.particle('spark', p.x, p.y, { tint: col, life: 0.28, s0: s / 64 * 1.3, s1: s / 64 * 0.2, a0: 1, a1: 0, rot: Math.random() * Math.PI });
     fx.particle('glow', p.x, p.y, { tint: 0xffffff, life: 0.18, s0: s / 128 * 0.9, s1: s / 128 * 1.4, a0: 0.9, a1: 0 });
     fx.burst(p.x, p.y, s, 8, col, { speed: 3.2, life: 0.3, size: 0.5 });
   },
   dodge(fx, a) {
     const { p, s, col } = a;
+    if (a.at.v && fx.ctx?.settings?.damageNumbers !== false) fx.number?.(a.at.v, 0, 'true', { label: 'MISS' });
     fx.particle('soft', p.x, p.y, { tint: 0xffffff, life: 0.3, s0: s / 128 * 0.5, s1: s / 128 * 0.9, a0: 0.5, a1: 0 });
     fx.particle('slash', p.x, p.y, { tint: col, life: 0.22, s0: s / 128 * 0.8, s1: s / 128 * 1.1, a0: 0.7, a1: 0, rot: -0.5 });
   },
