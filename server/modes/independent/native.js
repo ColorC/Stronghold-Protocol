@@ -191,7 +191,7 @@ function output(services, state, id, quantity, piece, extra = {}) {
   const n = Math.max(0, Math.floor(Number(quantity) || 0));
   if (!n || !id) return;
   services.__nativeOutputCapture?.push({ id, quantity: n });
-  services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...(services.__nativeCopied ? { copied: true } : {}), ...extra });
+  services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...(services.__nativeCopied ? { copied: true } : {}), ...(services.__landOn ? { landOn: services.__landOn } : {}), ...extra });
 }
 function value(p, isElite) { return Number(p[isElite ? 'elite' : 'normal'] ?? 0); }
 // a number that may differ between the normal and the elite form: { normal, elite } or a plain number
@@ -247,6 +247,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     const ruleServices = Object.create(services);
     ruleServices.__nativeOutputCapture = capturedOutputs;
     ruleServices.__nativeCopied = Boolean(replay || event.replay);
+    ruleServices.__landOn = p.landOn || null; // where this rule's badges land (equipment.js landingPiece)
     const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services) : 0);
     for (let run = 0; run < runs; run++) {
     switch (r.behavior) {
