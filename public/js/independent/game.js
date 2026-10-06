@@ -62,6 +62,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const [battle, setBattle] = useState(null);
   const battleRef = useRef(null); battleRef.current = battle;
   const [speed, setSpeed] = useState(SPEEDS[0]);
+  const [pen, setPen] = useState(false);
   const speedRef = useRef(speed); speedRef.current = speed;
   const [since, setSince] = useState(() => lastReadyRevision(initial));
 
@@ -127,8 +128,10 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const stageId = state.board?.stageId;
     const stage = stageId ? data.lookup('stages', stageId) : null;
     if (stage && stageKey.current !== stageId) { view.setStage(stage); stageKey.current = stageId; }
-    view.setCamera(state.board?.field === 'bossL' ? 'bossPrep' : 'prep', state.board?.field === 'bossL' ? { side: 'L' } : {});
-  }, [view, battle, gd.ready, state.board?.stageId, state.board?.field]);
+    if (pen) view.setCamera('pen');
+    else view.setCamera(state.board?.field === 'bossL' ? 'bossPrep' : 'prep', state.board?.field === 'bossL' ? { side: 'L' } : {});
+  }, [view, battle, gd.ready, state.board?.stageId, state.board?.field, pen]);
+  useEffect(() => { if (battle) setPen(false); }, [battle]);
 
   const editable = state.phase === 'prep' && !battle && !busy && !facing;
   useEffect(() => {
@@ -312,14 +315,15 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     ${loading ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>
     <div class="gm__hud">
-      <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${onLeave} />
+      <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${onLeave}
+        pen=${pen} onPen=${() => setPen((x) => !x)} />
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} total=${inventoryCount(state.inventory)} catalog=${catalog} onOpen=${() => openInventory()}
           onArm=${(s) => setDetail({ kind: 'gear', id: s.id, elite: s.elite })} />
         <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} />
-        <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading} />
+        <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
-        ${state.phase === 'prep' ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
+        ${state.phase === 'prep' && !pen ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
           onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id, elite: slot.elite }); }}
           onBuy=${buy} onUpgrade=${() => { setArmed(null); act({ type: 'upgrade' }); }} onRefresh=${() => { setArmed(null); act({ type: 'refresh' }); }}
           onFreeze=${() => act({ type: 'freeze' })} />` : null}

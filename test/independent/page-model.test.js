@@ -37,6 +37,7 @@ test('drops follow the server legal tiles and never land on another piece', () =
   const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
   state = applyAction(state, { type: 'buy', slot }).state;
   const v = view(state);
+  assert.ok(prepView(v, display).nextEnemies.length > 0 && v.nextEnemies.every((e) => e.enemyKey && e.count > 0), 'the coming wave fills the preview pen');
   const piece = v.pieces[0]; const n = Number(piece.uid.slice(1));
   const [r, c] = piece.legalTiles[0].split(',').map(Number);
   assert.equal(canDrop(v, n, { area: 'board', row: r, col: c }), true);

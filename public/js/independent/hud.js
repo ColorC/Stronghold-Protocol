@@ -55,7 +55,8 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
 // ---- top bar ------------------------------------------------------------------------------------------------------
 
 /** Round / phase / LP / ready, on the original top bar's frame. `battle` = the replay on screen (or null). */
-export function TopBar({ state, battle, busy, onExit, onReady, readyReason }) {
+export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null }) {
+  const enemies = (state.nextEnemies || []).reduce((n, e) => n + Number(e.count || 0), 0);
   const phase = battle ? PHASE.COMBAT : PHASE.PREP;
   const round = battle ? battle.round : state.round;
   const lp = battle ? battle.lpBefore : state.lp;
@@ -72,6 +73,8 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason }) {
       </div>
       <${PhaseCapsule} pub=${{ phase }} hud=${battle ? { killed: battle.killed ?? 0, total: battle.total ?? null } : null} />
       <${LpTower} value=${lp} size="lg" tone=${lp <= 5 ? 'danger' : null} pending=${pending} tip="防线生命：敌人突破防线会扣除" />
+      ${!battle && onPen && enemies ? html`<button type="button" class=${cx('ix-penbtn', pen && 'is-on')} onClick=${onPen} data-testid="ix-pen"
+        title=${pen ? '返回阵地' : '查看下一轮敌人'}>${pen ? '返回阵地' : html`敌情 <b class="num">${enemies}</b>`}</button>` : null}
     </div>
     <div class="gtop__right">
       ${!battle && state.phase === 'prep' ? html`<div class="readywrap">

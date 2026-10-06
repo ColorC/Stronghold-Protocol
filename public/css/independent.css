@@ -236,3 +236,6 @@
 .ix-linkbtn { display: inline-flex; align-items: center; gap: .04rem; margin-top: .06rem; padding: .02rem .08rem; font-size: .12rem; background: none; border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; }
 .ix-linkbtn .icon { width: .14rem; height: .14rem; }
 .ix-linkbtn:hover { color: var(--mint-400); border-color: var(--mint-700); }
+.ix-penbtn { height: .44rem; padding: 0 .12rem; font-size: .15rem; background: rgba(8, 11, 10, .85); border: 1px solid var(--orange); color: var(--orange-hi); cursor: pointer; }
+.ix-penbtn b { margin-left: .04rem; color: var(--text-hi); }
+.ix-penbtn.is-on { border-color: var(--mint-500); color: var(--mint-400); }

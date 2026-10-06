@@ -7,6 +7,7 @@ import { createRng } from '../../sim/rng.js';
 import { getCatalog } from './catalog.js';
 import { runNativeHook } from './native.js';
 import { runIndependentBattle, getIndependentField } from './battle.js';
+import { previewOf } from '../../match/waves.js';
 import { grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
@@ -292,7 +293,9 @@ export function viewSession(state, options = {}) {
   });
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
-    forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null };
+    forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null,
+    // the coming round's enemies for the renderer's preview pen (the original m.private.nextEnemies, waves.js previewOf)
+    nextEnemies: field && state.phase !== 'finished' ? previewOf(field.wave?.spawns || []) : [] };
 }
 
 /**

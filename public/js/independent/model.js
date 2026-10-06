@@ -50,7 +50,7 @@ export function prepView(state, catalog) {
     hand: pad(hand, HAND_SLOTS),
     temp: Array(TEMP_SLOTS).fill(null),
     board: (state?.pieces || []).filter(isDeployed).map(toPiece),
-    nextEnemies: [],
+    nextEnemies: Array.isArray(state?.nextEnemies) ? state.nextEnemies : [],
   };
 }
 
