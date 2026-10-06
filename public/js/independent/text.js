@@ -2,7 +2,7 @@
 // way the original shows its own — the moment in angle brackets, values highlighted — and every piece of gear,
 // attachment or game term a text names becomes a term with its explanation: a tooltip on the word, and a 相关说明
 // list under longer texts (a touch screen has no hover). The wording itself is never rewritten here.
-import { html, Tooltip } from '../ui/components.js';
+import { html, Icon, Tooltip } from '../ui/components.js';
 import { BondGlyph, ItemIcon } from '../ui/gameComponents.js';
 import { data } from '../data.js';
 import { BADGE_BOND } from './model.js';
@@ -48,15 +48,17 @@ export function termsIn(texts, catalog, exclude = null) {
 }
 
 /**
- * An item's icon (a badge wears its bond's glyph, other gear the original item art, gear without art the first
- * character of its name) with its explanation on hover / tap; `plain` where the explanation is already beside it.
+ * An item's icon (a badge wears its bond's glyph, other gear the original item art, a 交接凭证 a key, other gear
+ * without art the first character of its name) with its explanation on hover / tap; `plain` where the explanation
+ * is already beside it.
  */
 export function GearIcon({ id, catalog, class: cls, plain = false }) {
   const g = (id && (catalog?.gear?.[id] || catalog?.prizes?.[id])) || null;
   const name = g?.name || '徽章';
   const icon = id && BADGE_BOND[id] ? html`<${BondGlyph} bondId=${BADGE_BOND[id]} class=${cx('ix-gear', cls)} />`
     : id && data.lookup('items', id) ? html`<span class=${cx('ix-gear', 'ix-gear--item', cls)}><${ItemIcon} itemId=${id} size="sm" showTier=${false} /></span>`
-      : html`<span class=${cx('ix-gear', 'ix-gear--txt', cls)}>${[...name][0]}</span>`;
+      : g?.kind === 'permit' ? html`<span class=${cx('ix-gear', 'ix-gear--permit', cls)}><${Icon} name="key" /></span>`
+        : html`<span class=${cx('ix-gear', 'ix-gear--txt', cls)}>${[...name][0]}</span>`;
   if (plain || !g) return icon;
   const badge = !!BADGE_BOND[id] || g.kind === 'badge' || g.kind === '徽章';
   const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.level ? html`<em>${g.level}级</em>` : null}<span>${g.normal || g.effect || ''}</span></span>`;

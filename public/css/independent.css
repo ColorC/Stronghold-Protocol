@@ -34,12 +34,17 @@
 }
 .ix-chip.is-on { border-color: var(--mint-500); color: var(--mint-400); }
 .ix-chip:disabled { cursor: default; }
+.ix-inherit__role .ix-chip:disabled { opacity: .4; }
 .ix-perm { display: inline-block; padding: 0 .05rem; font-size: max(.13rem, 12px); line-height: 1.5; color: #1a1406; background: var(--gold); }
+.ix-perm .rt-term { color: inherit; border-bottom-color: rgba(26, 20, 6, .5); }
 .ix-elite { margin-left: .06rem; padding: 0 .05rem; font-style: normal; font-size: max(.14rem, 12px); color: #1a1406; background: var(--gold-2); vertical-align: middle; }
 .ix-gear { display: inline-grid; place-items: center; width: .26rem; height: .26rem; flex: none; }
 .ix-gear .bglyph, .ix-gear img { width: 100%; height: 100%; }
 .ix-gear--item .uthumb { width: .26rem; height: .26rem; }
 .ix-gear--txt { font-size: max(.15rem, 13px); color: var(--text-hi); background: var(--bg-3); border: 1px solid var(--line-2); }
+/* 交接凭证: a key on gold, the rare permission gear */
+.ix-gear--permit { color: #1a1406; background: var(--gold); }
+.ix-gear--permit .icon { width: 72%; height: 72%; fill: currentColor; }
 
 /* trait icon line (shop cards, detail card, choices) */
 .ix-trait { display: flex; flex-wrap: wrap; align-items: center; gap: .02rem .08rem; font-size: max(.14rem, 12px); color: var(--text-md); min-width: 0; }
@@ -97,6 +102,7 @@
 .ix-carry { position: absolute; right: .06rem; top: .42rem; display: flex; flex-direction: column; gap: .02rem; }
 .ix-carry > span { display: inline-flex; align-items: center; gap: .01rem; padding: .01rem .03rem; background: rgba(8, 11, 10, .85); font-size: max(.13rem, 12px); color: var(--text-hi); }
 .ix-carry .ix-gear { width: .18rem; height: .18rem; }
+.scard__permit.ix-gear { width: .2rem; height: .2rem; margin-left: auto; }
 .ix-lv { font-size: max(.15rem, 13px); color: var(--gold); }
 .ix-shop .scard__itemart .ix-gear { width: .7rem; height: .7rem; }
 
@@ -153,7 +159,6 @@
 .ix-traittext p { margin: .04rem 0; color: var(--text-dim); }
 .ix-traittext p.is-on { color: var(--text-md); }
 .ix-traittext b { margin-right: .06rem; font-weight: 500; color: var(--text-lo); }
-.ix-perm-line { display: flex; flex-wrap: wrap; gap: .06rem; align-items: baseline; margin: .04rem 0; }
 .ix-eq { list-style: none; margin: .04rem 0; padding: 0; }
 .ix-eq__row { display: grid; grid-template-columns: .26rem 1fr auto auto; grid-template-areas: 'i n l c' 'i f f f'; gap: 0 .08rem; align-items: center; padding: .04rem 0; border-bottom: 1px solid var(--line); }
 .ix-eq__row > .ix-gear { grid-area: i; }
@@ -210,6 +215,10 @@
 .ix-choice--piece { flex-direction: row; align-items: center; padding: .06rem .08rem; }
 .ix-choice--piece b { font-size: max(.15rem, 13px); }
 .ix-choice--piece .uthumb { width: .4rem; height: .4rem; flex: none; }
+.ix-choice__permit.ix-gear { width: .2rem; height: .2rem; }
+.ix-inherit__by { display: flex; align-items: center; gap: .06rem; margin: .06rem 0; color: var(--text-md); }
+.ix-inherit__by .ix-gear { width: .24rem; height: .24rem; }
+.ix-inherit__by b { color: var(--gold); }
 .ix-dmg { list-style: none; margin: .06rem 0 .14rem; padding: 0; }
 .ix-dmg li { display: grid; grid-template-columns: 1.4rem 1fr .8rem auto; gap: .1rem; align-items: center; padding: .03rem 0; font-size: max(.15rem, 13px); }
 .ix-dmg__bar { height: .1rem; background: var(--bg-3); }

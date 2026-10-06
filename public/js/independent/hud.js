@@ -8,7 +8,7 @@ import { PhaseCapsule } from '../ui/hud.js';
 import { chessPortraitUrl, profIconUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
-import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId } from './model.js';
+import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf } from './model.js';
 import { GearIcon, GameText } from './text.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -177,7 +177,7 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap }) {
       <span class="scard__class">
         <${Img} src=${profIconUrl(m, op.profession)} class="scard__prof" />
         <span>${c?.subProfessionName || ''}</span>
-        ${op.permission ? html`<span class="ix-perm" title="稀有交接资格">交接</span>` : null}
+        ${op.permitGear ? html`<${GearIcon} id=${op.permitGear} catalog=${catalog} class="scard__permit" />` : null}
       </span>
     </span>
     ${carried.length ? html`<span class="ix-carry" title="随商品附带，刷新会丢失">${carried.slice(0, 3).map((it, i) => html`<span key=${i}><${GearIcon} id=${it.id} catalog=${catalog} /><b class="num">${it.quantity || 1}</b></span>`)}</span>` : null}
@@ -275,8 +275,8 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
 // ---- unit plates and bench overflow -------------------------------------------------------------------------------
 
 /**
- * The equipment level chip under every own unit (design: 常驻装备总等级), plus markers for attachments and the rare
- * inheritance permission. Positions follow the renderer every frame (camera moves, drags, resizes).
+ * The equipment level chip under every own unit (design: 常驻装备总等级), plus markers for attachments and a worn
+ * 交接凭证. Positions follow the renderer every frame (camera moves, drags, resizes).
  */
 export function UnitBadges({ view, pieces, catalog, hidden }) {
   const boxRef = useRef(null);
@@ -300,14 +300,11 @@ export function UnitBadges({ view, pieces, catalog, hidden }) {
   }, [view, hidden]);
   if (hidden) return null;
   return html`<div class="ix-badges" ref=${boxRef} aria-hidden="true">
-    ${pieces.map((p) => {
-      const op = catalog.operators[p.chessId];
-      return html`<span key=${p.uid} class="ix-badge" data-n=${String(p.uid).replace(/^\D+/, '')}>
+    ${pieces.map((p) => html`<span key=${p.uid} class="ix-badge" data-n=${String(p.uid).replace(/^\D+/, '')}>
         <b class="num">${p.equipmentLevel ?? 0}</b><small>级</small>
         ${p.attachments?.length ? html`<i class="ix-badge__att" title="外来附加效果"></i>` : null}
-        ${op?.permission ? html`<i class="ix-badge__perm" title="稀有交接资格"></i>` : null}
-      </span>`;
-    })}
+        ${permitsOf(p, catalog).length ? html`<i class="ix-badge__perm" title="携带交接凭证"></i>` : null}
+      </span>`)}
   </div>`;
 }
 

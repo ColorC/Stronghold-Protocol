@@ -1027,6 +1027,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
         case null:
         case 'badgeAmplifier':
         case 'identityTag':
+        case 'inheritancePermit':
         case 'prepEndForge':
         case 'saleThresholdRecruit':
         case 'stats':

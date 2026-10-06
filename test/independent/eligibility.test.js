@@ -4,14 +4,23 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { inheritanceQualification, attachmentAccepted, nativeFactions, tavernFactions, nativeBodyStats } from '../../shared/independentRules.js';
 
 const catalog=getCatalog();
-const piece=(name)=>({chessId:Object.values(catalog.operators).find(op=>!op.elite && op.name===name).chessId,elite:false,skillIndex:0,moduleId:'none',equipment:[]});
+// a piece as gained: the twelve permission operators wear their 交接凭证 (session.js gainChess)
+const piece=(name)=>{const op=Object.values(catalog.operators).find(x=>!x.elite && x.name===name);return {chessId:op.chessId,elite:false,skillIndex:0,moduleId:'none',equipment:op.permitGearId?[{uid:'k',id:op.permitGearId,quantity:1,elite:false,state:{}}]:[]};};
 
-test('inheritance accepts either native permission while respecting tier, faction and profession',()=>{
+test('inheritance accepts the 交接凭证 of either side while respecting tier, faction and profession',()=>{
   assert.equal(inheritanceQualification(piece('角峰'),piece('送葬人'),catalog).allowed,true);
   assert.equal(inheritanceQualification(piece('休谟斯'),piece('宴'),catalog).allowed,true);
   assert.equal(inheritanceQualification(piece('幽灵鲨'),piece('泡泡'),catalog).allowed,false);
   assert.equal(inheritanceQualification(piece('幽灵鲨'),piece('乌尔比安'),catalog).allowed,true);
   assert.equal(inheritanceQualification(piece('古米'),piece('星熊'),catalog).allowed,false);
+});
+
+test('the worn 交接凭证 decides, not who the operator is',()=>{
+  const bare=piece('角峰');bare.equipment=[];
+  assert.equal(inheritanceQualification(bare,piece('送葬人'),catalog).allowed,false);
+  const carrier=piece('休谟斯');carrier.equipment=piece('角峰').equipment;
+  const q=inheritanceQualification(carrier,piece('送葬人'),catalog);
+  assert.equal(q.allowed,true);assert.equal(q.give.id,'permit-north-handover-order');assert.equal(q.receive,null);
 });
 
 test('identity gear can add a tavern tag without forging native inheritance eligibility',()=>{

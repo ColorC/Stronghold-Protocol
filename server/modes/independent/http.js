@@ -32,7 +32,7 @@ export function independentDisplayCatalog(data, catalog) {
     const raw = op.elite ? op.source.eliteChess || op.source.normalChess : op.source.normalChess;
     return [id, { name: op.name, tier: op.tier, elite: op.elite, position: raw.position, profession: raw.profession,
       eliteChessId: op.eliteChessId || null, baseChessId: op.chessId || id,
-      avatar: chessAvatarUrl(data.assets, raw), nativeTrait: op.nativeTrait.text, permission: op.inheritance || null,
+      avatar: chessAvatarUrl(data.assets, raw), nativeTrait: op.nativeTrait.text, permitGear: op.permitGearId || null,
       traitTexts: GAME_TEXT.operators[baseChessId(id)] ? { normal: GAME_TEXT.operators[baseChessId(id)].normal, elite: GAME_TEXT.operators[baseChessId(id)].elite }
         : { normal: op.nativeTrait.normalText, elite: op.nativeTrait.eliteText },
       summary: traitSummary(op.nativeTrait.effect),
@@ -42,7 +42,7 @@ export function independentDisplayCatalog(data, catalog) {
     const steam = d.params?.effects?.find((x) => x.behavior === 'steamGearUpgrade');
     const text = GAME_TEXT.gear[id];
     return [id, { name: d.newName || d.name, level: d.level, eliteLevel: d.eliteLevel,
-      normal: text ? text.normal : gearDescription(d), elite: text ? (text.elite ?? text.normal) : (d.elite || gearDescription(d)), kind: d.kind, unique: !!d.unique, mechanism: d.mechanism,
+      normal: text ? text.normal : gearDescription(d), elite: text ? (text.elite ?? text.normal) : (d.elite || gearDescription(d)), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
       sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds, steamLimit: steam?.params.chooseVariantsOnEquip,
       identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,
       ...(d.kind === 'badge' ? { stat: d.stat, value: d.value, statName: BADGE_STATS[d.stat] || null, ratio: BADGE_RATIOS.has(d.stat) } : {}),

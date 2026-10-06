@@ -7,7 +7,7 @@ import { chessPortraitUrl, profIconUrl } from '../ui/assetUrls.js';
 import { data } from '../data.js';
 import { TraitGlyphs } from './hud.js';
 import { GearIcon, GameText, TermNotes } from './text.js';
-import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, inheritedLevel } from './model.js';
+import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, inheritedLevel, permitsOf } from './model.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -41,7 +41,7 @@ function EquipmentList({ items, catalog, busy, onConfigure }) {
       return html`<li key=${r.uids[0]} class=${cx('ix-eq__row', r.badge && 'is-badge')}>
         <${GearIcon} id=${r.id} catalog=${catalog} plain=${true} />
         <span class="ix-eq__name">${r.name}${r.elite ? html`<em>精锐</em>` : null}</span>
-        <span class="ix-eq__lv num">${r.badge ? '' : `${r.level ?? 1}级`}</span>
+        <span class="ix-eq__lv num">${r.permit ? html`<${GameText} text="交接凭证" catalog=${catalog} class="ix-perm" />` : r.badge ? '' : `${r.level ?? 1}级`}</span>
         <span class="ix-eq__n num">×${r.count}</span>
         <span class="ix-eq__fx">${r.badge ? html`<${GameText} text=${r.count > 1 ? (badgeTotal(g, r.count) || g.normal) : g.normal} catalog=${catalog} />`
           : html`<${GameText} text=${r.elite ? g.elite : g.normal} catalog=${catalog} />`}
@@ -63,11 +63,13 @@ function TraitTexts({ op, elite, catalog }) {
   </div>`;
 }
 
-function PermissionLine({ op }) {
-  const perm = op?.permission;
-  if (!perm) return html`<p class="ix-muted">无（对方的交接资格允许时，仍可与之交接）</p>`;
-  return html`<p class="ix-perm-line"><span class="ix-perm">${perm.direction === '接收' ? '可接收他人装备' : '可交出装备'}</span>
-    ${perm.gear || perm.wording ? html`<b>${perm.gear || perm.wording}</b>` : null}${perm.limit || ''}</p>`;
+/** Words for the gear kinds that are ids in the catalog. */
+const KIND_LABEL = { equipment: '装备', prizeGear: '特供装备' };
+
+/** The line under a shop gear's name: what kind of gear it is, its level and the rule it carries. */
+function gearMeta(g, elite) {
+  if (g.kind === 'badge' || g.kind === '徽章') return '基础徽章 · 可重复装备';
+  return `${KIND_LABEL[g.kind] || g.kind || ''} · ${(elite ? g.eliteLevel : g.level) ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`;
 }
 
 /** The operator's own skills (data/chess.json records, the order of the session's skillIndex). */
@@ -90,11 +92,10 @@ export function DetailCard({ target, state, catalog, busy, onClose, onAct, onInh
   if (!target) return null;
   if (target.kind === 'gear') {
     const g = catalog.gear[target.id] || {};
-    const badge = g.kind === 'badge' || g.kind === '徽章';
     const body = target.elite ? g.elite : g.normal;
     return html`<aside class="ix-detail" data-testid="ix-detail"><button type="button" class="ix-detail__close" onClick=${onClose} aria-label="关闭"><${Icon} name="close" /></button>
       <header class="ix-detail__head"><${GearIcon} id=${target.id} catalog=${catalog} plain=${true} /><div><h2>${g.name || ''}${target.elite ? html`<em class="ix-elite">精锐</em>` : null}</h2>
-        <span class="ix-muted">${badge ? '基础徽章 · 可重复装备' : `${g.kind === 'badge' ? '' : g.kind || ''} · ${(target.elite ? g.eliteLevel : g.level) ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`}</span></div></header>
+        <span class="ix-muted">${gearMeta(g, target.elite)}</span></div></header>
       <p class="ix-detail__text"><${GameText} text=${body} catalog=${catalog} /></p>
       <${TermNotes} texts=${[body]} catalog=${catalog} exclude=${g.name} />
     </aside>`;
@@ -137,13 +138,15 @@ export function DetailCard({ target, state, catalog, busy, onClose, onAct, onInh
       ${piece && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
         ${PRODUCTION_BADGES.map((id) => html`<button type="button" key=${id} class=${cx('ix-chip', (piece.preferences?.productionBadge || 'precision') === id && 'is-on')} disabled=${busy || state.phase !== 'prep'}
           onClick=${() => onAct({ type: 'configure', uid: piece.uid, productionBadge: id })}>${catalog.gear[id]?.name || ''}</button>`)}</div>` : null}
-      <h4>交接资格</h4>
-      <${PermissionLine} op=${catalog.operators[isShop ? slot.id : piece.chessId]} />
+      ${isShop && op?.permitGear ? html`<h4>获得时自带</h4>
+        <${EquipmentList} items=${[{ id: op.permitGear, uid: 'permit', quantity: 1 }]} catalog=${catalog} />
+        <${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
     </details>
     ${piece ? html`<details open>
       <summary>装备 · ${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}/${catalog.rules?.equipmentCapacity ?? 99}</summary>
       <${EquipmentList} items=${piece.equipment} catalog=${catalog} busy=${busy}
         onConfigure=${state.phase === 'prep' ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />
+      ${permitsOf(piece, catalog).length ? html`<${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
       <p class="ix-note">装备穿上后无法卸下；出售干员时连同装备一起失去</p>
     </details>` : null}
     ${piece?.attachments?.length ? html`<details open>
@@ -157,7 +160,7 @@ export function DetailCard({ target, state, catalog, busy, onClose, onAct, onInh
       ${isShop ? html`<${Button} size="sm" variant="primary" disabled=${busy || slot.sold || state.funds < slot.price} onClick=${() => onBuy(target.slot)}>购买 · ${slot.price}<//>` : null}
       ${piece && state.phase === 'prep' ? html`
         <${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onEquipHere(piece.uid)}>穿戴装备<//>
-        <${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onInherit(piece.uid)}>交接<//>
+        ${piece.handover?.give?.length || piece.handover?.take?.length ? html`<${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onInherit(piece.uid)}>交接<//>` : null}
         ${isDeployed(piece) ? html`<${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onAct({ type: 'bench', uid: piece.uid })}>撤回<//>` : null}
         ${confirmSell
           ? html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => onAct({ type: 'sell', uid: piece.uid })}>确认出售 +${catalog.rules?.sellPrice ?? 1}<//>`
@@ -343,7 +346,7 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
 // ---- inheritance --------------------------------------------------------------------------------------------------
 
 const INHERIT_ERRORS = {
-  NO_PERMISSION: '两人都没有允许对方的交接资格（看科技等级、原生阵营与职业）',
+  NO_PERMISSION: '双方的交接凭证都不允许这次交接',
   BAD_TILE: '交出装备的一方需要在场，且接收方能部署在那个位置',
   CAPACITY: '接收方的装备会超过99件',
   BAD_TARGET: '请换一名干员',
@@ -354,8 +357,9 @@ function StatLine({ label, before, after }) {
 }
 
 /**
- * Inheritance: one piece is chosen; the player picks the other side and its role, the server previews (read-only,
- * no revision), and the panel lists before → after, kept and destroyed parts and unique choices before 确认交接.
+ * Inheritance: one piece is chosen; the player picks its role and, among the pieces the 交接凭证 allow (the view's
+ * handover lists), the other side; the server previews (read-only, no revision), and the panel lists before → after,
+ * the 交接凭证 it rests on, kept and destroyed parts and unique choices before 确认交接.
  */
 export function InheritPanel({ open, state, catalog, busy, fromUid, onClose, preview, onPreview, onConfirm }) {
   const [role, setRole] = useState('donor'); // the chosen piece gives (donor) or receives
@@ -363,6 +367,8 @@ export function InheritPanel({ open, state, catalog, busy, fromUid, onClose, pre
   const [picks, setPicks] = useState({});
   useEffect(() => { setOther(null); setPicks({}); }, [fromUid, open]);
   const from = state.pieces.find((p) => p.uid === fromUid);
+  const gives = from?.handover?.give || []; const takes = from?.handover?.take || [];
+  useEffect(() => { if (open) setRole(gives.length || !takes.length ? 'donor' : 'receiver'); }, [fromUid, open]);
   const donorUid = role === 'donor' ? fromUid : other; const receiverUid = role === 'donor' ? other : fromUid;
   useEffect(() => { if (open && donorUid && receiverUid) onPreview(donorUid, receiverUid); }, [open, donorUid, receiverUid]);
   if (!open || !from) return null;
@@ -375,19 +381,22 @@ export function InheritPanel({ open, state, catalog, busy, fromUid, onClose, pre
   const missing = conflicts.some((c) => !picks[c.id]) || attConflicts.some((c) => !picks[`attachment:${c.id}`]);
   return html`<${Modal} open=${open} title="干员交接" micro="INHERITANCE" onClose=${onClose} width="min(10rem, 94vw)" class="ix-inherit">
     <div class="ix-inherit__role">
-      <button type="button" class=${cx('ix-chip', role === 'donor' && 'is-on')} onClick=${() => setRole('donor')}>由${name(from)}交出装备</button>
-      <button type="button" class=${cx('ix-chip', role === 'receiver' && 'is-on')} onClick=${() => setRole('receiver')}>由${name(from)}接收装备</button>
+      <button type="button" class=${cx('ix-chip', role === 'donor' && 'is-on')} disabled=${!gives.length} onClick=${() => { setRole('donor'); setOther(null); }}>由${name(from)}交出装备</button>
+      <button type="button" class=${cx('ix-chip', role === 'receiver' && 'is-on')} disabled=${!takes.length} onClick=${() => { setRole('receiver'); setOther(null); }}>由${name(from)}接收装备</button>
     </div>
     <div class="ix-choices ix-choices--pieces">
-      ${state.pieces.filter((p) => p.uid !== fromUid).map((p) => html`<button type="button" key=${p.uid} data-uid=${p.uid} class=${cx('ix-choice', 'ix-choice--piece', other === p.uid && 'is-on')}
+      ${state.pieces.filter((p) => (role === 'donor' ? gives : takes).includes(p.uid)).map((p) => html`<button type="button" key=${p.uid} data-uid=${p.uid} class=${cx('ix-choice', 'ix-choice--piece', other === p.uid && 'is-on')}
         onClick=${() => setOther(p.uid)}><${UnitThumb} kind="chess" id=${renderChessId(catalog, p)} golden=${!!p.elite} size="sm" />
-        <b>${name(p)}</b>${catalog.operators[p.chessId]?.permission ? html`<span class="ix-perm">交接</span>` : null}</button>`)}
+        <b>${name(p)}</b>${permitsOf(p, catalog).map((id) => html`<${GearIcon} key=${id} id=${id} catalog=${catalog} plain=${true} class="ix-choice__permit" />`)}</button>`)}
     </div>
+    ${!(role === 'donor' ? gives : takes).length ? html`<p class="ix-muted">没有可以交接的干员</p>` : null}
     ${other && !pv ? html`<p class="ix-muted">正在计算…</p>` : null}
     ${pv && !pv.ok ? html`<p class="ix-warn">${INHERIT_ERRORS[pv.error] || '这两名干员不能交接'}</p>` : null}
+    ${pv && pv.ok && (pv.permit?.give || pv.permit?.receive) ? html`<p class="ix-inherit__by"><${GearIcon} id=${pv.permit.give || pv.permit.receive} catalog=${catalog} plain=${true} />
+      <span>凭借${pv.permit.give ? name(donor) : name(receiver)}的<b>${catalog.gear[pv.permit.give || pv.permit.receive]?.name || ''}</b></span></p>` : null}
     ${pv && pv.ok ? html`<div class="ix-cmp">
       <div class="ix-cmp__col"><h4>交出 · ${name(donor)}</h4>
-        <p>交出装备后离队，视为售出（+${catalog.rules?.sellPrice ?? 1}采购资金），特质与交接资格一并失去</p>
+        <p>交出装备后离队，视为售出（+${catalog.rules?.sellPrice ?? 1}采购资金）</p>
         ${(pv.destroyedEquipment || []).length ? html`<p class="ix-warn">无法交出、随之失去：${groupEquipment(pv.destroyedEquipment, catalog).map((r) => `${r.name}×${r.count}`).join('、')}</p>` : null}
         ${(pv.destroyedAttachments || []).length ? html`<p class="ix-warn">随之失去的附加效果：${pv.destroyedAttachments.map((a) => catalog.attachments?.[a.id]?.name || '').join('、')}</p>` : null}
       </div>

@@ -55,7 +55,10 @@ test('unique equipment conflict becomes an explicit merge choice and reports the
   assert.equal(result.ok, true, result.error?.message);
   assert.equal(result.state.pieces.length, 1);
   assert.equal(result.state.pieces[0].elite, true);
-  assert.equal(result.state.pieces[0].equipment[0].state.counter, 7);
+  assert.equal(result.state.pieces[0].equipment.find((x) => x.id === gear.id).state.counter, 7);
+  // the three copies' own 交接凭证 fold into one without a choice
+  assert.equal(offer.conflicts.equipment.length, 1);
+  assert.equal(result.state.pieces[0].equipment.filter((x) => x.id === byName('角峰').permitGearId).length, 1);
   assert.deepEqual(result.events.find((x) => x.type === 'operator-merge').destroyedEquipment.map((x) => x.state.counter), [8]);
 });
 
@@ -77,7 +80,8 @@ test('duplicate unique attachments require a source-body choice and preserve sel
 
 test('99 worn items merge, 100 rejects atomically and leaves every normal body and item intact', () => {
   const make = (perPiece) => {
-    const op = byName('角峰'); let state = createSession({ seed: 83, data, catalog }); state.funds = 100;
+    // 送葬人 has no 交接凭证 (it would take one of the 99 places)
+    const op = byName('送葬人'); let state = createSession({ seed: 83, data, catalog }); state.funds = 100;
     for (let i = 0; i < 3; i++) {
       const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
       state.shop.slots[slot] = { kind: 'chess', id: op.chessId, elite: false, price: 3, sold: false, equipment: i === 2 ? [{ id: 'precision', quantity: perPiece }] : [] };

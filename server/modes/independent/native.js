@@ -262,7 +262,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         for (let i = 0; i < value(p, elite); i++) output(ruleServices, state, pool ? choosePool(pool, services, elite) : choose(p.ids, services), 1, piece); break;
       }
       case 'randomUnlockedEquipment': {
-        const pool = Object.values(services.catalog.equipment).filter((x) => x.available && x.kind !== 'prizeGear' && (x.shopTier || x.oldTier || x.level || 1) <= (state.shop?.level || 1)).map((x) => x.id);
+        const pool = Object.values(services.catalog.equipment).filter((x) => x.available && x.kind !== 'prizeGear' && x.kind !== 'permit' && (x.shopTier || x.oldTier || x.level || 1) <= (state.shop?.level || 1)).map((x) => x.id);
         for (let i = 0; i < value(p, elite); i++) output(ruleServices, state, choose(pool, services), 1, piece); break;
       }
       case 'recruitOffer':

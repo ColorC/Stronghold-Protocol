@@ -15,6 +15,8 @@ function fixture() {
   for(const [i,name] of ['角峰','送葬人','调香师','灵知'].entries()) {
     const op=Object.values(catalog.operators).find(x=>!x.elite && x.name===name);
     const p={uid:`p${state.nextUid++}`,chessId:op.chessId,elite:false,row:null,col:null,dir:'RIGHT',skillIndex:op.source.normalChess.skill.index,moduleId:'none',equipment:[],attachments:[],nativeState:{saved:7},bodyPenaltyApplied:false,poolCopies:0};
+    // as gained: 角峰 wears its 交接凭证 (session.js gainChess)
+    if(op.permitGearId) p.equipment.push({uid:`permit-${p.uid}`,id:op.permitGearId,elite:false,quantity:1,state:{},sourceId:op.permitGearId});
     if(i<2) {
       const tile=[...map].find(([key,cls])=>!taken.has(key) && (nativeRecord(p,catalog).position!=='MELEE' || cls==='melee'));
       assert.ok(tile);[p.row,p.col]=tile[0].split(',').map(Number);taken.add(tile[0]);

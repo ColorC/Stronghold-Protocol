@@ -6,33 +6,6 @@ import { getIndependentField } from './battle.js';
 const own = (o, k) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k);
 const get = (o, k, d = null) => own(o, k) ? o[k] : d;
 const operator = (catalog, id) => get(catalog?.operators, id);
-const permissionFor = (catalog, chessId) => {
-  const op = operator(catalog, chessId);
-  if (op?.inheritance) return op.inheritance;
-  return op?.name && own(catalog?.permissions, op.name) ? catalog.permissions[op.name] : null;
-};
-
-function factionNames(subjectOp, data) {
-  return (subjectOp?.source?.normalChess?.bonds || []).map((id) => data?.bonds?.[id]?.name || id);
-}
-
-const professionNames = { TANK: '重装', MEDIC: '医疗', WARRIOR: '近卫', SNIPER: '狙击', CASTER: '术师', SUPPORT: '辅助', PIONEER: '先锋', SPECIAL: '特种' };
-function satisfies(permission, subject, subjectOp, prefix, data) {
-  if (!permission || !subject || !subjectOp) return false;
-  const tiers = permission[`${prefix}Tiers`];
-  const tier = Number(subjectOp.tier ?? subjectOp.techLevel);
-  if (!Number.isFinite(tier) || (Array.isArray(tiers) && !tiers.includes(tier))) return false;
-  const native = subjectOp.source?.normalChess || {};
-  if (permission[`${prefix}Faction`] && !factionNames(subjectOp, data).includes(permission[`${prefix}Faction`])) return false;
-  const profession = professionNames[String(native.profession || subjectOp.profession || '').toUpperCase()] || native.profession || subjectOp.profession;
-  const required = professionNames[String(permission[`${prefix}Profession`] || '').toUpperCase()] || permission[`${prefix}Profession`];
-  if (required && profession !== required) return false;
-  return true;
-}
-
-function qualifies(catalog, donor, receiver, data) {
-  return inheritanceQualification(donor, receiver, catalog).allowed;
-}
 
 function canTransferAttachment(def, receiver, catalog) {
   return !!def?.inheritable && acceptsAttachment(def, receiver, catalog);
@@ -41,7 +14,8 @@ function canTransferAttachment(def, receiver, catalog) {
 export function previewInheritance(state, catalog, donorUid, receiverUid, data = null) {
   const donor = state.pieces.find((x) => x.uid === donorUid); const receiver = state.pieces.find((x) => x.uid === receiverUid);
   if (!donor || !receiver || donor === receiver) return { ok: false, error: 'BAD_TARGET' };
-  if (!qualifies(catalog, donor, receiver, data)) return { ok: false, error: 'NO_PERMISSION' };
+  const qualification = inheritanceQualification(donor, receiver, catalog);
+  if (!qualification.allowed) return { ok: false, error: 'NO_PERMISSION' };
   if (donor.row === null || donor.col === null) return { ok: false, error: 'BAD_TILE' };
   const receiverOp = operator(catalog, receiver.chessId);
   if (!receiverOp) return { ok: false, error: 'BAD_TARGET' };
@@ -65,7 +39,9 @@ export function previewInheritance(state, catalog, donorUid, receiverUid, data =
   const incoming = donorGear.reduce((n, x) => n + x.quantity, 0);
   if (pieceEquipmentCount(receiver) + incoming > 99 + conflicts.reduce((n, c) => n + (receiverGear.find((x) => x.uid === c.receiverUid)?.quantity || 0), 0)) return { ok: false, error: 'CAPACITY' };
   return { ok: true, donorUid, receiverUid, donorChessId: donor.chessId, receiverChessId: receiver.chessId,
-    permission: 'donor-or-receiver', oldBody: { chessId: donor.chessId, position: { row: donor.row, col: donor.col }, nativeTrait: operator(catalog, donor.chessId)?.nativeTrait?.text, inheritance: permissionFor(catalog, donor.chessId) }, newBody: { chessId: receiver.chessId, nativeTrait: receiverOp.nativeTrait?.text, inheritance: permissionFor(catalog, receiver.chessId) }, transferredEquipment: gear.map((x) => ({ ...x })), equipmentConflicts: conflicts,
+    // the 交接凭证 that allows it: the donor's 给予 one or the receiver's 接收 one (the donor's is lost with it)
+    permit: { give: qualification.give?.id || null, receive: qualification.receive?.id || null },
+    oldBody: { chessId: donor.chessId, position: { row: donor.row, col: donor.col }, nativeTrait: operator(catalog, donor.chessId)?.nativeTrait?.text }, newBody: { chessId: receiver.chessId, nativeTrait: receiverOp.nativeTrait?.text }, transferredEquipment: gear.map((x) => ({ ...x })), equipmentConflicts: conflicts,
     transferredAttachments: transferAttachments.map((x) => ({ ...x })), attachmentConflicts: attachConflicts,
     destroyedEquipment: (donor.equipment || []).filter((x) => !donorGear.includes(x)).map((x) => ({ ...x })),
     destroyedAttachments: (donor.attachments || []).filter((x) => !donorAttachments.includes(x)).map((x) => ({ ...x })),
@@ -79,7 +55,6 @@ export function applyInheritance(state, catalog, donorUid, receiverUid, uniqueSe
   for (const c of preview.equipmentConflicts) if (!['donor', 'receiver'].includes(uniqueSelections[c.id])) throw new Error('NEEDS_SELECTION');
   for (const c of preview.attachmentConflicts) if (!['donor', 'receiver'].includes(uniqueSelections[`attachment:${c.id}`])) throw new Error('NEEDS_SELECTION');
   const donor = state.pieces.find((x) => x.uid === donorUid); const receiver = state.pieces.find((x) => x.uid === receiverUid);
-  const donorPermission = permissionFor(catalog, donor.chessId); const receiverPermission = permissionFor(catalog, receiver.chessId);
   const allowed = (donor.equipment || []).filter((x) => equipmentRecord(catalog, x.id)?.inheritable !== false);
   for (const item of allowed) {
     const def = equipmentRecord(catalog, item.id); const uniqueKey = def?.uniqueKey || def?.canonicalId || item.id;
@@ -106,5 +81,5 @@ export function applyInheritance(state, catalog, donorUid, receiverUid, uniqueSe
   const pool = state.pool[String(donor.chessId).replace(/_b$/, '_a')]; if (pool) pool.left = Math.min(pool.cap, pool.left + (donor.poolCopies || 1));
   if (!receiver.bodyPenaltyApplied) { receiver.bodyPenaltyApplied = true; receiver.bodyPenalty = structuredClone(catalog.config?.bodyPenalty || { baseAttackRatio: 0.8, baseLifeRatio: 0.8 }); }
   receiver.row = donor.row; receiver.col = donor.col;
-  return { preview, donorPermission, receiverPermission, receiver };
+  return { preview, receiver };
 }

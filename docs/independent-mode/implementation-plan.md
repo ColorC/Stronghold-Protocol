@@ -24,7 +24,7 @@ shop 为 `{level, upgradePrice, slots:[{kind:'chess'|'equipment',id,elite:false,
 
 ## 内容模块接口
 
-`server/modes/independent/catalog.js` 导出 `getCatalog(data?)`，默认读取版本化的 `data/independent-design.json` 与上游 getData。返回 `{id,name,config,badges,equipment,operators,permissions,attachments,prizes}`，operators以实际 chessId可查询且包含112普通及精锐对应项，badge/equipment/prize都有稳定 id、名字、等级/类型和明确规则。重命名物品仍以sourceId查找，随身身份牌与变形同构体归并调和识别牌。只能在catalog中禁用那5种物品，不投放未知或无处理器物品。
+`server/modes/independent/catalog.js` 导出 `getCatalog(data?)`，默认读取版本化的 `data/independent-design.json` 与上游 getData。返回 `{id,name,config,badges,equipment,operators,attachments,prizes}`（交接资格是 equipment 里 kind permit 的12件交接凭证，operators[].permitGearId 指向自带的一件），operators以实际 chessId可查询且包含112普通及精锐对应项，badge/equipment/prize都有稳定 id、名字、等级/类型和明确规则。重命名物品仍以sourceId查找，随身身份牌与变形同构体归并调和识别牌。只能在catalog中禁用那5种物品，不投放未知或无处理器物品。
 
 `server/modes/independent/native.js` 导出 `runNativeHook(state, hook, event, services)`、`nativeTraitFor(chessId,catalog)`。hook为gain/sold/roundStart/prepEnd/refresh/spend/merge。services提供 `{data,catalog,rng,grantEquipment(state,id,quantity,extra?),grantChess(state,chessId,extra?),addOffer(state,offer),record(state,event)}`。处理器作用于工作副本；生产事件带origin:native/equipment/attachment及sourceUid防止递归。复制和复演只读取自有特质，不能搬运资格/装备/附加效果。延后资金、商店携装和装备供给按设计完整结算。battle自有特质由战斗模块负责。
 

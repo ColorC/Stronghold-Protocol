@@ -81,10 +81,12 @@ export function legalTilesOf(state, n) {
 
 const gearRecord = (catalog, id) => catalog?.gear?.[id] || null;
 const isBadge = (catalog, id) => !!BADGE_BOND[id] || gearRecord(catalog, id)?.kind === 'badge';
+/** The 交接凭证 a piece wears (gear kind 'permit'), as gear ids. */
+export const permitsOf = (piece, catalog) => (piece?.equipment || []).filter((x) => gearRecord(catalog, x.id)?.kind === 'permit').map((x) => x.id);
 
 /**
  * Equipment worn by a piece, grouped for display: functional equipment one row per item (they carry the mechanisms),
- * then badges merged per kind ("精准 ×12"). Each row: { id, name, level, count, elite, badge, uids }.
+ * then badges merged per kind ("精准 ×12"). Each row: { id, name, level, count, elite, badge, permit, uids }.
  */
 export function groupEquipment(items, catalog) {
   const rows = new Map();
@@ -92,7 +94,7 @@ export function groupEquipment(items, catalog) {
     const id = item.id; const badge = isBadge(catalog, id);
     const key = badge ? `b:${id}` : `e:${item.uid}`;
     const rec = gearRecord(catalog, id) || item.record || {};
-    const row = rows.get(key) || { id, name: rec.name || id, level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level, count: 0, elite: !!item.elite, badge, uids: [] };
+    const row = rows.get(key) || { id, name: rec.name || id, level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level, count: 0, elite: !!item.elite, badge, permit: rec.kind === 'permit', uids: [] };
     row.count += Number(item.quantity || 1); row.uids.push(item.uid);
     rows.set(key, row);
   }

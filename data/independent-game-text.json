@@ -164,8 +164,8 @@
     },
     "chess_char_2_19_a": {
       "name": "锡人",
-      "normal": "攻击力与最大生命值+20%；同时属于全部8个阵营（不满足交接资格里的原生阵营要求）",
-      "elite": "攻击力与最大生命值+40%；同时属于全部8个阵营（不满足交接资格里的原生阵营要求）"
+      "normal": "攻击力与最大生命值+20%；同时属于全部8个阵营（不满足交接凭证的原生阵营要求）",
+      "elite": "攻击力与最大生命值+40%；同时属于全部8个阵营（不满足交接凭证的原生阵营要求）"
     },
     "chess_char_3_01_a": {
       "name": "能天使",
@@ -932,6 +932,54 @@
     "elite-operator-readiness-case": {
       "name": "精英干员战备箱",
       "normal": "基础攻击力+50，基础最大生命值+400，攻击速度+10；每场战斗开始时获得1层装备护盾"
+    },
+    "permit-north-handover-order": {
+      "name": "北境战备交接令",
+      "normal": "可将装备交接给科技等级2的干员"
+    },
+    "permit-tianshi-seal": {
+      "name": "天师器械封签",
+      "normal": "可将装备交接给科技等级2或3的【炎】干员"
+    },
+    "permit-ursus-logistics-slip": {
+      "name": "乌萨斯后勤交接单",
+      "normal": "可将装备交接给科技等级不高于3的重装干员"
+    },
+    "permit-smith-receipt": {
+      "name": "锻锤师交工凭证",
+      "normal": "可将装备交接给科技等级不高于3的【维多利亚】干员"
+    },
+    "permit-deepsea-entrustment": {
+      "name": "深海遗物托付书",
+      "normal": "可将装备交接给科技等级不高于4的【阿戈尔】干员"
+    },
+    "permit-rural-transfer-slip": {
+      "name": "乡野器械移交单",
+      "normal": "可将装备交接给科技等级2的干员"
+    },
+    "permit-knight-custody": {
+      "name": "骑士装备托管证",
+      "normal": "可将装备交接给科技等级不高于4的【卡西米尔】干员"
+    },
+    "permit-loner-loan": {
+      "name": "独行者借装许可",
+      "normal": "可接收科技等级2或3的干员交接的装备"
+    },
+    "permit-heavy-adapter": {
+      "name": "重装器械适配单",
+      "normal": "可接收科技等级不高于4的重装干员交接的装备"
+    },
+    "permit-seaborn-vessel": {
+      "name": "海嗣遗物容器",
+      "normal": "可接收科技等级不高于3的【阿戈尔】干员交接的装备"
+    },
+    "permit-hunter-succession": {
+      "name": "猎人旧装承接书",
+      "normal": "可接收科技等级不高于4的【阿戈尔】干员交接的装备"
+    },
+    "permit-radiant-edict": {
+      "name": "耀骑士接装敕令",
+      "normal": "可接收科技等级不高于4的【卡西米尔】干员交接的装备"
     }
   },
   "prizes": {
@@ -1054,6 +1102,10 @@
     "equipment-shield": {
       "name": "装备护盾",
       "text": "每层抵挡一次敌人造成的伤害，至多2层"
+    },
+    "handover-permit": {
+      "name": "交接凭证",
+      "text": "少数干员获得时自带的稀有装备，写明携带者能与谁交接；交出方或接收方任一人的凭证允许即可。凭证不随交接转移，交出方的随之失去。阵营要求只认原生阵营"
     },
     "body-penalty": {
       "name": "接装损耗",

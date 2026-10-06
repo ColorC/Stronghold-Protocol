@@ -22,6 +22,14 @@ const PRIZE_IDS = Object.freeze({
   追加采购预算: 'additional-procurement-budget', 战备晋升令: 'readiness-promotion-order', 专项战备授训: 'special-readiness-training',
 });
 const PRIZE_GEAR_IDS = Object.freeze({ 罗德岛便携锻炉: 'rhodes-portable-forge', 罗德岛重装防护套件: 'rhodes-heavy-protection-kit', 应急屏障组件: 'emergency-barrier-module', 重型武装校准章: 'heavy-weapons-calibration-seal', 精英干员战备箱: 'elite-operator-readiness-case' });
+// 交接凭证: the twelve inheritance permissions, worn as gear by the operator that brings it (design operators[].inheritance)
+const PERMIT_GEAR_IDS = Object.freeze({
+  北境战备交接令: 'permit-north-handover-order', 天师器械封签: 'permit-tianshi-seal', 乌萨斯后勤交接单: 'permit-ursus-logistics-slip',
+  锻锤师交工凭证: 'permit-smith-receipt', 深海遗物托付书: 'permit-deepsea-entrustment', 乡野器械移交单: 'permit-rural-transfer-slip',
+  骑士装备托管证: 'permit-knight-custody', 独行者借装许可: 'permit-loner-loan', 重装器械适配单: 'permit-heavy-adapter',
+  海嗣遗物容器: 'permit-seaborn-vessel', 猎人旧装承接书: 'permit-hunter-succession', 耀骑士接装敕令: 'permit-radiant-edict',
+});
+const PERMIT_LIMIT_KEYS = ['direction', 'receiverTiers', 'receiverMaxTier', 'receiverProfession', 'receiverFaction', 'donorTiers', 'donorMaxTier', 'donorProfession', 'donorFaction'];
 const IDENTITY_CANONICAL = 'harmony-identity-card';
 const STOPPED_LEGACY_NAMES = new Set(['随身身份牌', '变形同构体']);
 const EQUIPMENT_RULES = Object.freeze({
@@ -220,7 +228,20 @@ export function getCatalog(data = getData()) {
     equipment[id] = { ...clone(item), id, sourceId: item.source || id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'prizeGear', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
 
-  const permissions = keyed(DESIGN.permissions, (x) => x.name, (x) => clone(x));
+  // a permission is gear the operator brings when gained (session.js gainChess); it never moves in a handover
+  for (const source of DESIGN.operators) {
+    const permission = source.inheritance; if (!permission) continue;
+    const id = PERMIT_GEAR_IDS[permission.gear];
+    if (!id || Object.hasOwn(equipment, id)) throw new Error(`Independent permit gear has a missing or duplicate id: ${permission.gear}`);
+    const op = operators[source.chessId];
+    equipment[id] = { id, sourceId: id, canonicalId: id, uniqueKey: id, name: permission.gear, kind: 'permit', mechanism: 'inheritancePermit',
+      params: Object.fromEntries(PERMIT_LIMIT_KEYS.filter((k) => permission[k] !== undefined).map((k) => [k, clone(permission[k])])), stats: null,
+      level: null, eliteLevel: null, eliteId: null, unique: true, inheritable: false, available: true, shopEligible: false,
+      effect: permission.limit, ownerChessId: source.chessId, ownerName: source.name };
+    op.permitGearId = id;
+    if (op.eliteChessId) operators[op.eliteChessId].permitGearId = id;
+  }
+  for (const op of Object.values(operators)) delete op.inheritance;
   const attachments = keyed(DESIGN.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
   const prizes = keyed(DESIGN.prizes, (x) => PRIZE_IDS[x.name], (x, id) => ({
     ...clone(x), id,
@@ -243,7 +264,7 @@ export function getCatalog(data = getData()) {
       tavernFactions: ['炎', '维多利亚', '拉特兰', '阿戈尔', '谢拉格', '萨尔贡', '叙拉古', '卡西米尔'],
       professionRecipes: { PIONEER: ['precision'], WARRIOR: ['precision'], SNIPER: ['precision'], SPECIAL: ['precision'], TANK: ['defense'], MEDIC: ['vitality'], CASTER: ['assault'], SUPPORT: ['recovery'] },
     },
-    operators, permissions, badges, equipment, attachments, prizes,
+    operators, badges, equipment, attachments, prizes,
     nativeRegistry: {
       prepBehaviors: [...new Set(Object.values(operators).flatMap((op) => op.nativeTrait.effect.prep.map((x) => x.behavior)))].sort(),
       combatBehaviors: [...new Set(Object.values(operators).flatMap((op) => op.nativeTrait.effect.combat.map((x) => x.behavior)))].sort(),

@@ -26,7 +26,7 @@ const ERRORS = {
   UNIQUE: '同名唯一的装备只能穿戴一件', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
   NOT_MERGEABLE: '这件装备不能合成', NOT_USABLE: '这件物品不能直接使用', CONDITION_NOT_MET: '使用条件未满足', MAX_LEVEL: '调度中心已达最高等级',
   NEED_UNIQUE_SELECTION: '请先选择要保留的同名唯一装备', NEEDS_SELECTION: '请先选择要保留的同名唯一项', NO_ELIGIBLE_TARGET: '没有可以选择的干员',
-  NO_PERMISSION: '双方都不满足交接条件', BAD_TILE: '旧本体必须在场，且新本体能站在那个位置', WRONG_PHASE: '当前阶段不能进行该操作',
+  NO_PERMISSION: '双方的交接凭证都不允许这次交接', BAD_TILE: '交出装备的一方需要在场，且接收方能部署在那个位置', WRONG_PHASE: '当前阶段不能进行该操作',
   LIMIT_REACHED: '已达到本轮上限', NO_CANDIDATE: '没有可招募的干员', REVISION: '对局已在别处更新，已同步到最新状态',
   NETWORK: '连接中断，请检查网络后重试',
 };

@@ -12,7 +12,7 @@ import { grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capac
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
-import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats } from '../../../shared/independentRules.js';
+import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const FORBIDDEN = new Set(['__proto__', 'prototype', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']);
@@ -99,9 +99,24 @@ function gainChess(state, catalog, chessId, extra = {}) {
   if (!extra.poolTaken) { if (!stock?.left) throw new Error('SOLD_OUT'); stock.left--; }
   const uid = `p${state.nextUid++}`; const sourceChess = def.source?.normalChess || {};
   const piece = { uid, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: Number(sourceChess.skill?.index ?? def.defaultSkillIndex ?? 0), moduleId: 'none', equipment: [], attachments: [], nativeState: { preferences: { productionBadge: 'precision', factionPriority: Object.values(TAVERN_FACTIONS) } }, bodyPenaltyApplied: false, poolCopies: extra.poolCopies ?? 1 };
+  ensurePermit(piece, catalog);
   state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1;
   return piece;
 }
+/**
+ * The operator's 交接凭证 (catalog permitGearId), worn from the moment it is gained. Its uid follows the piece's,
+ * so granting it draws no uid; it never moves in a handover (inheritable: false) and a merge keeps one copy.
+ */
+function lacksPermit(piece, catalog) {
+  const id = opFor(catalog, piece.chessId)?.permitGearId;
+  return id && !piece.equipment.some((x) => x.id === id) ? id : null;
+}
+function ensurePermit(piece, catalog) {
+  const id = lacksPermit(piece, catalog);
+  if (id) piece.equipment.push({ uid: `permit-${piece.uid}`, id, elite: false, quantity: 1, state: {}, sourceId: id });
+}
+/** A save from before 交接凭证 were gear: give each of the twelve operators the one it brings (no-op otherwise). */
+function ensurePermits(state, catalog) { for (const piece of state.pieces || []) ensurePermit(piece, catalog); }
 function handleGainEquipment(state, catalog) {
   for (const piece of state.pieces) {
   if (!tavernFactions(piece, catalog).includes('炎')) continue;
@@ -119,9 +134,11 @@ function mergeCopiesRequired(op) {
   const custom = op?.nativeTrait?.effect?.prep?.find((x) => x.trigger === 'merge' && x.behavior === 'twoCopyElite');
   return Math.max(2, Number(custom?.params?.copiesRequired || 3));
 }
+const isPermit = (item, catalog) => equipmentRecord(catalog, item.id)?.mechanism === 'inheritancePermit';
 function mergeKey(item, catalog) {
   const d = equipmentRecord(catalog, item.id);
-  return d?.unique ? (d.uniqueKey || d.canonicalId || item.id) : null;
+  // the copies' own 交接凭证 are the same item: they fold into one without asking (mergeOperator)
+  return d?.unique && !isPermit(item, catalog) ? (d.uniqueKey || d.canonicalId || item.id) : null;
 }
 function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
   if (!Array.isArray(pieceUids) || new Set(pieceUids).size !== pieceUids.length) throw new Error('BAD_MERGE_GROUP');
@@ -143,7 +160,7 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
     const key = mergeKey(x, catalog);
     if (key && gearGroups.get(key).length > 1 && !selectedGear.has(x.uid)) {
       destroyedGear.push(x);
-    } else worn.push(x);
+    } else if (!(isPermit(x, catalog) && worn.some((y) => y.id === x.id))) worn.push(x);
   }
   if (worn.reduce((n, x) => n + Number(x.quantity || 1), 0) > 99) throw new Error('CAPACITY');
   const fielded = group.filter((p) => p.row !== null && p.col !== null).sort((a, b) => a.uid.localeCompare(b.uid));
@@ -275,6 +292,7 @@ export function validateSession(state) {
 
 export function viewSession(state, options = {}) {
   const data = sessionData(options); const catalog = sessionCatalog(data, options);
+  if (state.pieces.some((p) => lacksPermit(p, catalog))) { state = clone(state); ensurePermits(state, catalog); }
   let field = null;
   try { field = getIndependentField(state, { data, catalog }); } catch { /* keep the raw state visible when content lookup is unavailable */ }
   const deployCells = field && state.phase === 'prep' ? [...(field.deployMap || new Map()).keys()] : [];
@@ -286,16 +304,25 @@ export function viewSession(state, options = {}) {
     try { const cls = positionClass(raw, p.moduleId); legalTiles = deployCells.filter((cell) => { const [r, c] = cell.split(',').map(Number); return canPlace(field.deployMap, cls, r, c); }); } catch { legalTiles = []; }
     const modules = (raw?.modules || []).map((x) => ({ ...clone(x), id: x.uniEquipId || x.id })).filter((x) => x.id);
     const steamOptions = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
-    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], permission: clone(op.inheritance || (op.name && catalog.permissions?.[op.name]) || null), preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
+    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
       // the body's own numbers: after the 接装损耗 when it applies, and before it (the detail card shows both)
       bodyStats: nativeBodyStats(p, catalog), rawBodyStats: p.bodyPenaltyApplied ? nativeBodyStats({ ...p, bodyPenaltyApplied: false }, catalog) : undefined,
-      factions: tavernFactions(p, catalog) };
+      factions: tavernFactions(p, catalog),
+      // whom it may hand its gear to (give) and take gear from (take) under the 交接凭证 worn on either side
+      handover: state.phase === 'prep' ? handoverPartners(state, p, catalog) : undefined };
   });
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()] } : null, battleSummary: state.battleSummary,
     forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null,
     // the coming round's enemies for the renderer's preview pen (the original m.private.nextEnemies, waves.js previewOf)
     nextEnemies: field && state.phase !== 'finished' ? previewOf(field.wave?.spawns || []) : [] };
+}
+
+/** The pieces a piece may hand over to and take over from: only the 交接凭证 decide (inheritance.js previewInheritance). */
+function handoverPartners(state, piece, catalog) {
+  const others = state.pieces.filter((x) => x !== piece);
+  return { give: others.filter((x) => inheritanceQualification(piece, x, catalog).allowed).map((x) => x.uid),
+    take: others.filter((x) => inheritanceQualification(x, piece, catalog).allowed).map((x) => x.uid) };
 }
 
 /**
@@ -321,6 +348,7 @@ export function applyAction(state, action, options = {}) {
   let work;
   try { work = clone(state); } catch { return { ok: false, error: { code: 'INVALID_STATE', message: 'State is not serializable.' }, state }; }
   const data = sessionData(options); const catalog = sessionCatalog(data, options); const gd = gdFor(work, data);
+  ensurePermits(work, catalog);
   const rng = createRng(work.rngState); const events = [];
   const services = servicesFor(work, data, catalog, rng);
   const act = action.type; let readOnly = false;

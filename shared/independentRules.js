@@ -56,14 +56,15 @@ export function matchesInheritancePermission(permission, prefix, subject, catalo
   return true;
 }
 
+/** The 交接凭证 a piece wears (gear with mechanism inheritancePermit; its params hold direction and limits). */
+export function wornPermits(piece, catalog) {
+  return (piece?.equipment || []).map(item=>catalog?.equipment?.[item.id]).filter(def=>def?.mechanism==='inheritancePermit');
+}
+
 export function inheritanceQualification(donor, receiver, catalog) {
-  const donorOp=catalog?.operators?.[donor?.chessId];
-  const receiverOp=catalog?.operators?.[receiver?.chessId];
-  const give=catalog?.permissions?.[donorOp?.name];
-  const receive=catalog?.permissions?.[receiverOp?.name];
-  const donorAllowed=give?.direction==='给予' && matchesInheritancePermission(give,'receiver',receiver,catalog);
-  const receiverAllowed=receive?.direction==='接收' && matchesInheritancePermission(receive,'donor',donor,catalog);
-  return {allowed:!!(donorAllowed || receiverAllowed),donorAllowed:!!donorAllowed,receiverAllowed:!!receiverAllowed,give:give||null,receive:receive||null};
+  const give=wornPermits(donor,catalog).find(def=>def.params?.direction==='给予' && matchesInheritancePermission(def.params,'receiver',receiver,catalog));
+  const receive=wornPermits(receiver,catalog).find(def=>def.params?.direction==='接收' && matchesInheritancePermission(def.params,'donor',donor,catalog));
+  return {allowed:!!(give || receive),donorAllowed:!!give,receiverAllowed:!!receive,give:give||null,receive:receive||null};
 }
 
 export function nativeBodyStats(piece, catalog) {
