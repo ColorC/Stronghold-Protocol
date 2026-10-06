@@ -563,111 +563,97 @@ function yanyouFlame(fx, c) {
 }
 
 // ---- extracted original-client VFX ---------------------------------------------------------------------------
+// These bindings come from the extracted charpack / [uc]skills action data. A prefab is only played when the source
+// data names it for this event slot. In particular, a prefab that merely exists in the effects bundle is not treated
+// as a hit or projectile binding. Calling `next()` is intentional only for a role that has no extracted binding.
 
 const ROSMON_CHAR = 'char_391_rosmon';
-const ROSMON_SKILL_CASTS = Object.freeze({
-  // Only S3 has a standalone skill start effect in the extracted [uc]skills ability. S1/S2 starts are attached to
-  // their attack action and are emitted by rosmonAttack below.
-  skchr_rosmon_3: ['rosmon_skill_03_start'],
-});
+const ROSMON_SKILL_CASTS = Object.freeze({ skchr_rosmon_3: ['rosmon_skill_03_start'] });
 const ROSMON_SKILL_ATTACKS = Object.freeze({
   skchr_rosmon_1: ['rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02'],
   skchr_rosmon_2: ['rosmon_skill_02_start'],
   skchr_rosmon_3: ['rosmon_skill_03_start_02'],
 });
-const ROSMON_NORMAL_HIT_PREFABS = Object.freeze(['rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_B_hit_01']);
-const ROSMON_HIT_PREFABS = Object.freeze({
-  skchr_rosmon_1: ['rosmon_skill_01_A_hit_01', 'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_B_hit_01'],
-  skchr_rosmon_2: ['rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02'],
-  skchr_rosmon_3: ['rosmon_skill_03_A_hit_01', 'rosmon_skill_03_A_hit_02', 'rosmon_skill_03_A_hit_03', 'rosmon_skill_03_A_hit_04', 'rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_02', 'rosmon_skill_03_B_hit_03', 'rosmon_skill_03_B_hit_04', 'rosmon_skill_03_B_hit_01_stone'],
-});
-const rosmonHitPrefab = (skill, n = 0) => {
-  const pool = skill ? (ROSMON_HIT_PREFABS[skill] || ROSMON_HIT_PREFABS.skchr_rosmon_2) : ROSMON_NORMAL_HIT_PREFABS;
-  return pool[Math.abs(Number(n) || 0) % pool.length];
-};
+const ROSMON_NORMAL_ATTACKS = Object.freeze([
+  ['rosmon_attack_A_start', 'rosmon_attack_A_start_02'],
+  ['rosmon_attack_B_start', 'rosmon_attack_A_start_02'],
+]);
+const ROSMON_ATTACK_TURN = new Map();
 
-/** Overlay the extracted Rosmontis prefab while retaining the upstream procedural effect underneath. */
-function rosmonSkill(fx, c, next) {
-  next();
+function sourceMount(fx, view, prefab, delay = 0) {
+  const bone = view.info?.spine === ROSMON_CHAR ? 'C_Muzzle' : 'F_R_Handweapon';
+  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'bone', bone, mirror: true, delay });
+}
+
+/** Skill start is an ability-level effect only for Rosmontis S3. S1/S2 are action cast effects below. */
+function rosmonSkill(fx, c) {
   const v = c.view;
-  if (!v || !c.skillId && !c.who?.skill) return;
+  if (!v) return;
   const skill = c.skillId || c.who?.skill;
   const group = `rosmon:skill:${v.id}`;
   if (!c.on) { fx.stopOriginalVfx(group); return; }
   for (const [i, prefab] of (ROSMON_SKILL_CASTS[skill] || []).entries()) {
-    fx.playOriginalVfx(prefab, { followId: v.id, anchor: 'chest', mirror: true, group, delay: i * 0.05 });
+    fx.playOriginalVfx(prefab, { followId: v.id, anchor: 'root', mirror: true, group, delay: i * 0.05 });
   }
 }
 
 function rosmonAttack(fx, c, next) {
-  next();
-  if (!c.src) return;
+  if (!c.src) { next(); return; }
   const skill = c.isSkill ? c.who?.skill : null;
-  const n = Number(c.attackId) || 0;
-  const skillPool = skill ? ROSMON_SKILL_ATTACKS[skill] : null;
-  const prefabs = skillPool || [n % 2 ? 'rosmon_attack_B_start' : 'rosmon_attack_A_start', 'rosmon_attack_A_start_02'];
-  for (const [i, prefab] of prefabs.entries()) fx.playOriginalVfx(prefab, { followId: c.src.id, anchor: 'chest', mirror: true, delay: i * 0.04 });
+  let prefabs = skill ? ROSMON_SKILL_ATTACKS[skill] : null;
+  if (!prefabs) {
+    const turn = ROSMON_ATTACK_TURN.get(c.src.id) || 0;
+    ROSMON_ATTACK_TURN.set(c.src.id, turn + 1);
+    prefabs = ROSMON_NORMAL_ATTACKS[turn % ROSMON_NORMAL_ATTACKS.length];
+  }
+  for (const [i, prefab] of prefabs.entries()) sourceMount(fx, c.src, prefab, i * 0.04);
+  // The extracted Attack/Skill action owns this cue; do not add the upstream generic projectile on top of it.
 }
 
 function rosmonDamage(fx, c, next) {
+  // No hit/projectile binding was present in the extracted action data. Keep the existing hit cue until the projectile
+  // resource itself is available; do not substitute a similarly named effects prefab at an arbitrary chest position.
   next();
-  if (!c.view) return;
-  const skill = c.isSkill ? c.who?.skill : null;
-  fx.playOriginalVfx(rosmonHitPrefab(skill, c.attackId), { followId: c.view.id, anchor: 'chest' });
 }
 
-function rosmonDeploy(fx, c, next) {
-  next();
-  if (c.view) fx.playOriginalVfx('rosmon_birth_01_start', { followId: c.view.id, anchor: 'ground', mirror: true });
-}
-
-// 锏's charpack binds the S1 cast to the skill start prefab, while the regular Attack node owns the slash start and
-// the two hit prefabs are emitted at the target. Keep this mapping separate from Rosmontis: the event stream is shared,
-// but a character's original-client bindings decide which prefab belongs to each event.
+// 锏's [uc]skills actions name all S1/S2 cast and target-hit effects. S3 has separate loop/end projectile actions;
+// its projectile resource is not in this extraction, so it remains on the upstream cue for now.
 const BLKKGT_CHAR = 'char_4116_blkkgt';
-const BLKKGT_S1 = 'skchr_blkkgt_1';
-const BLKKGT_SKILL_SEEN = new Set();
-function blkkgtSkill(fx, c, next) {
-  next();
-  if (!c.view) return;
-  const group = `blkkgt:skill:${c.view.id}`;
-  if (!c.on) { BLKKGT_SKILL_SEEN.delete(c.view.id); fx.stopOriginalVfx(group); }
+const BLKKGT_SKILLS = Object.freeze({
+  skchr_blkkgt_1: Object.freeze({ starts: ['blkkgt_skill_01_start_01', 'blkkgt_skill_01_start_02', 'blkkgt_skill_01_start_03'], hits: ['blkkgt_skill_01_hit_01', 'blkkgt_skill_01_hit_02'] }),
+  skchr_blkkgt_2: Object.freeze({ starts: ['blkkgt_skill_02_start_01', 'blkkgt_skill_02_start_02', 'blkkgt_skill_02_start_03', 'blkkgt_skill_02_start_05', 'blkkgt_skill_02_start_06'], hits: ['blkkgt_skill_02_hit_1'] }),
+  skchr_blkkgt_3: Object.freeze({ starts: ['blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02'], hits: [] }),
+});
+const BLKKGT_HIT_INDEX = new Map();
+
+function blkkgtSkill(fx, c) {
+  if (!c.view || c.on) return;
+  fx.stopOriginalVfx(`blkkgt:skill:${c.view.id}`);
 }
+
 function blkkgtAttack(fx, c, next) {
-  next();
-  if (!c.src) return;
+  if (!c.src) { next(); return; }
   const skill = c.isSkill ? c.who?.skill : null;
-  if (skill === BLKKGT_S1) {
-    if (BLKKGT_SKILL_SEEN.has(c.src.id)) return;
-    BLKKGT_SKILL_SEEN.add(c.src.id);
+  const binding = skill ? BLKKGT_SKILLS[skill] : null;
+  const prefabs = binding?.starts || ['blkkgt_attack_start_01'];
+  for (const [i, prefab] of prefabs.entries()) sourceMount(fx, c.src, prefab, i * 0.035);
+  if (skill === 'skchr_blkkgt_2') {
+    const vertical = c.src.dir === 'UP' || c.src.dir === 'DOWN';
+    sourceMount(fx, c.src, vertical ? 'blkkgt_skill_02_start_04_v' : 'blkkgt_skill_02_start_04_h', 0.105);
   }
-  const prefab = skill === BLKKGT_S1 ? 'blkkgt_skill_01_start_02' : 'blkkgt_attack_start_01';
-  fx.playOriginalVfx(prefab, { followId: c.src.id, anchor: 'chest', mirror: true });
 }
+
 function blkkgtDamage(fx, c, next) {
-  next();
-  if (!c.view) return;
+  if (!c.view) { next(); return; }
   const skill = c.isSkill ? c.who?.skill : null;
-  const prefab = skill === BLKKGT_S1 ? 'blkkgt_attack_hit_2' : `blkkgt_attack_hit_${(Number(c.attackId) || 0) % 2 ? 1 : 2}`;
-  fx.playOriginalVfx(prefab, { followId: c.view.id, anchor: 'chest' });
-}
-
-function rosmonSummon(fx, c, next) {
-  next();
-  const a = fxSite(fx, c);
-  if (a) fx.playOriginalVfx('rosmon_skill_03_buff', { x: a.at.x, y: a.at.y, z: a.at.z, followId: a.ex.id ?? null, group: `rosmon:summon:${a.ex.id ?? ''}` });
-}
-
-function rosmonLink(fx, c, next) {
-  next();
-  const a = fxSite(fx, c);
-  if (a) fx.playOriginalVfx('rosmon_buff_01_start', { x: a.at.x, y: a.at.y, z: a.at.z, followId: a.ex.id ?? null });
-}
-
-function rosmonGearStun(fx, c, next) {
-  next();
-  const a = fxSite(fx, c);
-  if (a) fx.playOriginalVfx('rosmon_skill_03_B_hit_01_stone', { x: a.at.x, y: a.at.y, z: a.at.z });
+  const binding = skill ? BLKKGT_SKILLS[skill] : null;
+  if (!binding?.hits?.length) { next(); return; }
+  const key = `${c.src?.id ?? c.attacker?.id ?? ''}:${c.attackId ?? ''}`;
+  const hitIndex = BLKKGT_HIT_INDEX.get(key) || 0;
+  BLKKGT_HIT_INDEX.set(key, hitIndex + 1);
+  const prefab = binding.hits[Math.min(hitIndex, binding.hits.length - 1)];
+  fx.playOriginalVfx(prefab, { followId: c.view.id, anchor: 'root' });
+  // `_hitGroups` / `_hitEffects` are target slots in [uc]skills, so the generic hit is not also emitted here.
 }
 
 /** Sub-professions whose attacks splash around the struck target (the 阵法术师 / 轰击术师 strike every enemy in range). */
@@ -702,14 +688,10 @@ export const BUILTIN_FX = Object.freeze([
   ['skill', { char: ROSMON_CHAR, kind: 'off' }, rosmonSkill],
   ['atk', { char: ROSMON_CHAR }, rosmonAttack],
   ['dmg', { char: ROSMON_CHAR }, rosmonDamage],
-  ['deploy', { char: ROSMON_CHAR }, rosmonDeploy],
   ['skill', { char: BLKKGT_CHAR, kind: 'on' }, blkkgtSkill],
   ['skill', { char: BLKKGT_CHAR, kind: 'off' }, blkkgtSkill],
   ['atk', { char: BLKKGT_CHAR }, blkkgtAttack],
   ['dmg', { char: BLKKGT_CHAR }, blkkgtDamage],
-  ['fx', { char: ROSMON_CHAR, kind: 'summon' }, rosmonSummon],
-  ['fx', { char: ROSMON_CHAR, kind: 'link' }, rosmonLink],
-  ['fx', { kind: 'summonStun' }, rosmonGearStun],
   ...SPLASH_SUBS.map((sub) => ['dmg', { sub }, splashRing]),
 ]);
 
