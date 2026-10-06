@@ -8,7 +8,12 @@ export const TRAIT_WHEN = Object.freeze({
   passive: '常驻', battleStart: '战斗开始', deploy: '部署时', kill: '击杀', hit: '命中', skillStart: '技能开启',
   death: '倒下', statusApplied: '施加状态', ammoUsed: '消耗弹药', nativeProduction: '产出时', dollSwap: '替身切换',
   aura: '在场时', selling: '出售时', battleProduction: '战斗产出', bought: '购买干员后',
+  battle: '战斗中', attack: '攻击',
 });
+
+// temporary combat traits (干员表 v3, 2026-10-07): a buff for this battle, or damage / control in it
+const TEMP_STAT = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'shieldAllies', 'summonBoost']);
+const TEMP_DAMAGE = new Set(['firstWaveStrike', 'everyNthAttack', 'overkillSpill', 'onDown']);
 
 const FORGE_SINGLE = new Set(['grantEquipmentByTier', 'forgePerGainedChess', 'forgeAdjacent', 'forgeFactionTierCount', 'forgeRowCount',
   'forgeDominantFactionTierCount', 'forgeBenchPairs', 'forgeBenchCount', 'forgePerFundsSpent']);
@@ -62,6 +67,10 @@ export function traitSummary(effect) {
       entry.kind = 'stat';
       if (p.badgeIds?.length && p.badgeIds.length < 4) entry.items = p.badgeIds.map((id) => ({ id }));
       if (p.every) entry.every = Number(p.every);
+    } else if (TEMP_STAT.has(b)) {
+      entry.kind = 'stat'; entry.temporary = true;
+    } else if (TEMP_DAMAGE.has(b)) {
+      entry.kind = b === 'onDown' && !p.blast ? 'stat' : 'damage'; entry.temporary = true;
     } else if (b === 'conditionalDamage' || b === 'weakDamage') {
       entry.kind = 'damage';
     } else if (b === 'triggerMultiplier' || b === 'productionMultiplier') {

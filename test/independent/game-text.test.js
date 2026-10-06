@@ -69,9 +69,9 @@ test('prizes and attachments: texts with the design numbers; the page shows them
 test('the display catalog carries the hand-written texts, the new name and no internal ids in names', () => {
   assert.equal(display.name, '卫戍协议：工坊');
   const yan = Object.values(display.operators).find((x) => x.name === '角峰' && !x.elite);
-  assert.equal(yan.traitTexts.normal, '交接：装备可交给科技等级2的干员。<获得时>获得1枚坚守徽章');
+  assert.equal(yan.traitTexts.normal, '交接：装备可交给科技等级2的干员。<获得时>自身获得1枚坚守徽章');
   const yanElite = display.operators[yan.eliteChessId];
-  assert.equal(yanElite.traitTexts.elite, '交接：装备可交给科技等级2的干员。<获得时>获得2枚坚守徽章');
+  assert.equal(yanElite.traitTexts.elite, '交接：装备可交给科技等级2的干员。<获得时>自身获得2枚坚守徽章');
   assert.equal(display.gear.precision.normal, '基础攻击力+10');
   assert.ok(display.terms['basic-badge'].name === '基础徽章');
   for (const g of Object.values(display.gear)) assert.ok(!/^[a-z0-9_:-]+$/.test(g.name), `gear name ${g.name}`);

@@ -37,7 +37,8 @@ test('every real ready forges exactly what the prep-end forecast said, and the f
 });
 
 test('ledger rows name their source, phase and the revision that wrote them; the whole game is kept', () => {
-  const game = playSeed({ seed: 2, route: 'assault', difficulty: 'NORMAL', roundLimit: 14 });
+  // a pilot game that buys an operator producing in battle (干员表 v3 has few of them)
+  const game = playSeed({ seed: 3, route: 'defense', difficulty: 'NORMAL', roundLimit: 14 });
   const rows = game.state.production;
   assert.ok(rows.length > 0);
   for (const row of rows) {

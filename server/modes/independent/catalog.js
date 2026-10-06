@@ -84,7 +84,14 @@ const EQUIPMENT_RULES = Object.freeze({
   '罗德岛重装防护套件': { mechanism: 'stats', params: {}, stats: { maxHpFlat: 400, defenseFlat: 40, tauntLevel: 1 } },
   // 2026-10-07 advanced gear (高级装备)
   '熔铸模具': { mechanism: 'badgeAmplifier', params: { badgeIds: ['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery', 'arcane', 'foresight', 'miracle', 'investor', 'unyielding', 'harmony', 'coordination', 'solitary', 'mastery'], multiplier: 1.25 } },
-  '增压臂铠': { mechanism: 'escalatingForge', params: { id: 'vitality', start: 1, max: 32 } },
+  // 10-07 干员表 v3: 精准 instead of 坚守 (「生命值是够用就行，伤害却是多多益善」), capped lower to match
+  '增压臂铠': { mechanism: 'escalatingForge', params: { id: 'precision', start: 1, max: 16 } },
+  // 10-07 特殊战斗装备 (user: 「特殊战斗装备应该和数值区别开，没必要继承」): mechanisms, never passed in a 交接
+  '拉特兰跳弹模块': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'ricochet', params: { atkPercent: 0.5, radius: 2, bounces: 1 } }] } },
+  '阿戈尔裂潮重刃': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'hit', behavior: 'splash', params: { atkPercent: 0.4, radius: 1.5 } }] } },
+  '医疗部共生血囊': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'damage', behavior: 'healAllyOnDamage', params: { damagePercent: 0.1, radius: 2, cooldownSeconds: 0.5 } }] } },
+  '谢拉格雪境猎印': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'damage', behavior: 'factionVulnerable', params: { damagePercent: 0.1, durationSeconds: 5 } }] } },
+  '维多利亚荆棘纹章': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'passive', behavior: 'factionGuard', params: { damageReduction: 0.06 } }] } },
   '重型武装校准章': { mechanism: 'badgeAmplifier', params: { badgeIds: ['precision', 'assault'], multiplier: 2, stats: ['attackFlat', 'attackPercent'] } },
   '人事部增援许可': { mechanism: 'deployCap', params: { amount: 1, max: 9, perRunLimit: 1 } },
   '调和识别牌': { mechanism: 'identityTag', params: { chooseOnEquip: true } },

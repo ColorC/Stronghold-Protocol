@@ -1057,15 +1057,49 @@ export function statusTexture(key) {
 }
 
 // =============================================================================================================
-// Tier chips (roman numerals), backdrop
+// Tier chips (roman numerals, or pips for 卫戍协议：工坊), backdrop
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
 let _chips = null;
+// 'roman' (the original game) | 'pips' (卫戍协议：工坊: createFieldView({ tierChips: 'pips' }), set per mount)
+let _chipLook = 'roman';
+// pip colour per tier (theme.css --tier-1..6)
+const PIP = ['', '#b4b4b4', '#f2f2f2', '#34e6b2', '#34b8d8', '#f8bf00', '#ff8a1a'];
+
+/** Pip centres of a tier on a w×h chip: one row up to three, the 4th–6th on a second row under them. */
+export function chipPips(tier, w, h) {
+  const t = Math.max(1, Math.min(6, tier | 0 || 1));
+  const rows = t <= 3 ? [t] : [3, t - 3];
+  const dx = w * 0.27, dy = h * 0.34;
+  const pts = [];
+  rows.forEach((n, r) => {
+    const y = h / 2 + (rows.length === 1 ? 0 : (r ? dy / 2 : -dy / 2));
+    for (let i = 0; i < n; i++) pts.push([w / 2 + (i - (n - 1) / 2) * dx, y]);
+  });
+  return pts;
+}
+
+/** A steel tag with rivet-like pips (the 'pips' look): tier colour rim and pips, gold plate for an elite. */
+function drawPipChip(c, x, y, w, h, t, gold) {
+  roundRect(c, x + 3, y + 3, w - 6, h - 6, 5);
+  const grad = c.createLinearGradient(0, y, 0, y + h);
+  if (gold) { grad.addColorStop(0, '#ffe27a'); grad.addColorStop(1, '#d99a00'); }
+  else { grad.addColorStop(0, '#3a4048'); grad.addColorStop(1, '#16191d'); }
+  c.fillStyle = grad; c.fill();
+  c.lineWidth = 3; c.strokeStyle = gold ? '#fff3b8' : PIP[t]; c.stroke();
+  const r = Math.min(w, h) * 0.14;
+  for (const [px, py] of chipPips(t, w, h)) {
+    c.beginPath(); c.arc(x + px, y + py, r + 1.5, 0, Math.PI * 2); c.fillStyle = 'rgba(0,0,0,0.55)'; c.fill();
+    c.beginPath(); c.arc(x + px, y + py, r, 0, Math.PI * 2); c.fillStyle = gold ? '#2a1a00' : PIP[t]; c.fill();
+    if (!gold) { c.beginPath(); c.arc(x + px - r * 0.3, y + py - r * 0.3, r * 0.35, 0, Math.PI * 2); c.fillStyle = 'rgba(255,255,255,0.55)'; c.fill(); }
+  }
+}
 
 function drawChips(c, w, h) {
   c.clearRect(0, 0, w * 7, h * 2);
   for (let g = 0; g < 2; g++) for (let t = 1; t <= 6; t++) {
     const x = t * w, y = g * h;
+    if (_chipLook === 'pips') { c.save(); drawPipChip(c, x, y, w, h, t, !!g); c.restore(); continue; }
     c.save();
     roundRect(c, x + 3, y + 3, w - 6, h - 6, 7);
     const grad = c.createLinearGradient(0, y, 0, y + h);
@@ -1114,6 +1148,19 @@ export function refreshTierChips() {
     _chips.base.update();
   } catch { /* keep the old glyphs */ }
 }
+
+/**
+ * The chips' look for the field view being mounted: 'roman' (default, the original game) or 'pips'. A change redraws
+ * the atlas in place, so chips already handed out follow.
+ * @param {'roman'|'pips'} look
+ */
+export function setTierChipLook(look) {
+  const next = look === 'pips' ? 'pips' : 'roman';
+  if (next === _chipLook) return;
+  _chipLook = next;
+  refreshTierChips();
+}
+export const tierChipLook = () => _chipLook;
 
 let _bg = null;
 /** Backdrop textures: vertical gradient + vignette. */

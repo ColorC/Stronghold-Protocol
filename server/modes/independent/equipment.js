@@ -1,3 +1,5 @@
+import { tavernFactions } from '../../../shared/independentRules.js';
+
 const own = (o, k) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k);
 const rec = (map, id) => typeof id === 'string' && own(map, id) ? map[id] : null;
 const number = (n, fallback = 0) => Number.isFinite(n) ? n : fallback;
@@ -38,10 +40,61 @@ export function makeItem(state, id, quantity = 1, extra = {}) {
   return item;
 }
 
+/** Where a landing badge may go (catalog.config.badgeLanding, a rule's params.landOn). */
+export const LANDING_MODES = Object.freeze(['self', 'front', 'adjacent', 'factionLowest', 'lowest', 'faction:<阵营>']);
+const LANDING_ORIGINS = new Set(['native', 'equipment', 'attachment']);
+const STEP = { RIGHT: [0, 1], LEFT: [0, -1], UP: [-1, 0], DOWN: [1, 0] };
+const onField = (p) => p && p.row != null && p.col != null;
+const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - pieceEquipmentCount(b) || String(a.uid).localeCompare(String(b.uid)))[0] || null;
+/**
+ * The operator a badge lands on: the maker itself; the one in front of it; of the four around it, the one wearing the
+ * least; of the operators on the field sharing a faction with it, the one wearing the least; of everyone on the field,
+ * the one wearing the least; of a named faction on the field (`faction:<阵营>`), the one wearing the least.
+ * Nobody there → the maker.
+ */
+export function landingPiece(state, catalog, source, how = 'self') {
+  if (!source || how === 'self' || !onField(source)) return source;
+  const others = (state.pieces || []).filter((p) => p !== source && onField(p));
+  let target = null;
+  if (how === 'front') {
+    const [dr, dc] = STEP[source.dir || 'RIGHT'] || STEP.RIGHT;
+    target = others.find((p) => p.row === source.row + dr && p.col === source.col + dc) || null;
+  } else if (how === 'adjacent') {
+    target = fewestWorn(others.filter((p) => Math.abs(p.row - source.row) + Math.abs(p.col - source.col) === 1));
+  } else if (how === 'factionLowest') {
+    const mine = new Set(tavernFactions(source, catalog));
+    target = fewestWorn([source, ...others].filter((p) => tavernFactions(p, catalog).some((f) => mine.has(f))));
+  } else if (how === 'lowest') {
+    target = fewestWorn([source, ...others]);
+  } else if (String(how).startsWith('faction:')) {
+    const f = String(how).slice(8);
+    target = fewestWorn([source, ...others].filter((p) => tavernFactions(p, catalog).includes(f)));
+  } else throw new Error(`BAD_LANDING ${how}`);
+  return target || source;
+}
+
 export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const def = equipmentRecord(catalog, id);
   if (!def || def.available === false || def.mechanism === 'disabled') throw new Error('UNKNOWN_EQUIPMENT');
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_QUANTITY');
+  // 徽章落点 (user 2026-10-06: 「徽章直接落点，装备进库存」): a badge an operator's own effect makes — its trait, its gear,
+  // its attachment, a battle reward it earned — goes straight onto an operator instead of the stock. Prizes, supplies and
+  // every other item still go to the stock. catalog.config.badgeLanding 'stock' (or unset) keeps the old flow.
+  const landing = extra.landOn || catalog?.config?.badgeLanding || 'stock';
+  const isBadge = !!rec(catalog?.badges, id) || def.mechanism === 'badge';
+  const source = extra.sourceUid ? (state.pieces || []).find((p) => p.uid === extra.sourceUid) : null;
+  if (landing !== 'stock' && isBadge && !extra.elite && source && LANDING_ORIGINS.has(extra.origin)) {
+    const target = landingPiece(state, catalog, source, landing);
+    const add = Math.min(quantity, EQUIPMENT_CAPACITY - pieceEquipmentCount(target));
+    if (add > 0) {
+      const stack = (target.equipment ||= []).find((x) => x.id === id && !x.elite);
+      if (stack) stack.quantity = Number(stack.quantity || 1) + add;
+      else target.equipment.push(makeItem(state, id, add));
+      recordProduction(state, { id, quantity: add, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, copied: extra.copied, repeated: extra.repeated, worn: true, targetUid: target.uid });
+    }
+    if (add >= quantity) return { id, quantity, worn: target.uid };
+    quantity -= add;
+  }
   if (!hasTileFor(state, catalog, id, !!extra.elite)) {
     recordProduction(state, { id, quantity, elite: !!extra.elite, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
     return { id, quantity: 0, lost: quantity };

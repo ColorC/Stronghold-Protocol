@@ -24,6 +24,7 @@ import { html, TierChip } from './components.js';
 import { GEO } from '../../../shared/constants.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
 import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
+import { numberTier } from '../render/dmgNumbers.js';
 
 const DRAG_PX = 6;
 const DMG_TTL = 900;
@@ -351,7 +352,7 @@ export function createFallbackView(host, opts = {}) {
       if (!s) return null;
       const px = (s[1] - r.c0 + 0.5) * L.tile;
       const py = (r.r1 - s[2] + 0.5) * L.tile - L.tile * 0.4;
-      return html`<span key=${f.key} class=${`ff-float ff-float--${f.type}`} style=${`left:${px}px;top:${py}px`}>${f.text}</span>`;
+      return html`<span key=${f.key} class=${`ff-float ff-float--${f.type} ff-float--${f.tier}`} style=${`left:${px}px;top:${py}px`}>${f.text}</span>`;
     }) : null;
     const d = st.drag;
     const ghost = d?.moved ? (() => {
@@ -439,7 +440,10 @@ export function createFallbackView(host, opts = {}) {
           const amount = Math.round(Number(e[2]) || 0);
           if (amount <= 0) continue;
           const type = e[0] === 'heal' ? 'heal' : (e[3] === 'arts' ? 'arts' : e[3] === 'true' ? 'true' : 'phys');
-          st.floats.push({ key: `${now}:${Math.random()}`, id: e[1], text: e[0] === 'heal' ? `+${amount}` : String(amount), type, at: now });
+          // size by the hit's share of the unit's max HP (render/dmgNumbers.js tiers, docs/damage-numbers.md)
+          const tier = numberTier(amount, Number(st.snapUnits.get(e[1])?.[4]) || Number(st.units.get(e[1])?.maxHp) || 0, type);
+          st.floatSeq = (st.floatSeq | 0) + 1;
+          st.floats.push({ key: `f${st.floatSeq}`, id: e[1], text: e[0] === 'heal' ? `+${amount}` : String(amount), type, tier, at: now });
         }
       }
       schedule();

@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { installIndependentBattle } from '../../server/sim/content/independent/battle.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
+import { preV3Catalog } from './helpers/preV3.js';
 
-const baseCatalog = getCatalog();
+// battle mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js)
+const baseCatalog = preV3Catalog(getCatalog());
 
 function fixturePiece(uid, chessId, row, col, equipment = []) {
   return { uid, chessId, row, col, dir: 'RIGHT', skillIndex: 0, moduleId: 'none', equipment, attachments: [], nativeState: {} };

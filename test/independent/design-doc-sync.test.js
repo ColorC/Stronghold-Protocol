@@ -3,7 +3,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { tableDiff } from '../../tools/independent-design-table.mjs';
+import { gearSourcesDiff } from '../../tools/independent-gear-sources.mjs';
 
 test('every operator row of design.md matches the design data', () => {
   assert.deepEqual(tableDiff().map((x) => x.name), []);
+});
+
+test('the 谁带来哪件装备 lists of design.md match the rules (tools/independent-gear-sources.mjs)', () => {
+  const d = gearSourcesDiff();
+  assert.equal(d.ok, true, d.reason);
 });

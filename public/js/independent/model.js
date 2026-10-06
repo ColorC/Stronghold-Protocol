@@ -54,6 +54,34 @@ export function prepView(state, catalog) {
   };
 }
 
+/**
+ * The mode's tier of every operator form (the display catalog: base and elite ids), which can differ from the
+ * upstream chess record's `tier` (the mode's own roster). Drawn wherever a tier shows on this page.
+ */
+export function catalogTiers(catalog) {
+  const tiers = new Map();
+  for (const [id, op] of Object.entries(catalog?.operators || {})) if (Number.isInteger(op?.tier)) tiers.set(id, op.tier);
+  for (const op of Object.values(catalog?.operators || {})) if (op?.eliteChessId && !tiers.has(op.eliteChessId) && Number.isInteger(op.tier)) tiers.set(op.eliteChessId, op.tier);
+  return tiers;
+}
+
+/**
+ * A battle replay whose operators carry the mode's tier: the simulation's unit info (server/sim/snapshot.js unitInfo)
+ * takes the upstream chess record's, both in the field's unit list and in every spawn event. Enemies, summons and
+ * anything not in the catalog keep theirs.
+ */
+export function withCatalogTiers(replay, catalog) {
+  const tiers = catalogTiers(catalog);
+  if (!replay || !tiers.size) return replay;
+  const fix = (u) => (u && tiers.has(u.defId) && u.tier !== tiers.get(u.defId) ? { ...u, tier: tiers.get(u.defId) } : u);
+  const spawnFix = (e) => (Array.isArray(e) && e[0] === 'spawn' ? [e[0], fix(e[1]), ...e.slice(2)] : e);
+  return {
+    ...replay,
+    ...(replay.field ? { field: { ...replay.field, units: Array.isArray(replay.field.units) ? replay.field.units.map(fix) : replay.field.units } } : {}),
+    frames: Array.isArray(replay.frames) ? replay.frames.map((f) => (Array.isArray(f?.ev) && f.ev.some((e) => e?.[0] === 'spawn') ? { ...f, ev: f.ev.map(spawnFix) } : f)) : replay.frames,
+  };
+}
+
 /** Session piece for a renderer uid. */
 export const pieceByNum = (state, n) => (state?.pieces || []).find((p) => pieceNum(p.uid) === n) || null;
 
