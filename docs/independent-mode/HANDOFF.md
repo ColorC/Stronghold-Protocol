@@ -25,6 +25,8 @@
 
 批准的设计来自 [arknights 画布内容设计卡](https://workshop.colorc.cc/bside/canvas?project=arknights&canvas=canvas-0470c0a1#card=text-79039e4e-14f4-4df2-9ed1-93678e3ae214)，当时 revision 为 143。版本化设计位于 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/independent-mode/design.md`，机器输入位于 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/independent-design.json`。设计稿开头“尚未实装”是设计阶段留下的历史说明；当前实现状态以本交接和运行证据为准。
 
+同一套规则写在几处，改规则时一起改：design.md（含完整干员表）、data/independent-design.json、画布「第一期内容设计：干员特质、徽章与附加效果」卡（design.md 的副本，表格改成列表，画布不渲染表格）、画布原需求卡末尾的修订记录（附用户原话）。design.md 的干员表由 `node tools/independent-design-table.mjs write` 从设计数据生成，`test/independent/design-doc-sync.test.js` 守着两者一致；修订逐条记在 design.md 文末「修订记录」。
+
 - 完整 112 名可招募干员，普通与精锐共 224 个目录形态。保留原战斗技能、天赋、模组；酒馆自有特质属于本体，不强行装备化；部分特质在获得时带来装备（交接凭证、各条装备线），带来的装备按装备规则处理。
 - 15 种基础徽章全部一级，效果简单；阵营与职业配方使用其中六种，其余九种各有固定的产出干员。功能装备保留独立等级，普通与精锐效果分别配置；同名唯一装备的普通/精锐视为同名。
 - 单个身体最多穿戴 999 件（10-06 由 99 改），按实际数量计（`equipment.js` EQUIPMENT_CAPACITY）。库存与全队没有这个上限。不能主动拆卸或替换已穿戴装备；出售身体会销毁其装备和附加效果。
