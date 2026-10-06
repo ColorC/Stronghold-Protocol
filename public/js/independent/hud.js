@@ -320,9 +320,9 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
       <${PriceHex} slot=${slot} free=${false} poor=${reason === '资金不足'} />
       ${owned > 0 ? html`<span class="scard__pips" title=${`已拥有 ${owned}/${need}`}>
         ${Array.from({ length: need }, (_, i) => html`<i key=${i} class=${i < owned ? 'on' : ''}></i>`)}</span>` : null}
+      ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} />` : null}
     </span>
     <span class="scard__body">
-      ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} />` : null}
       <span class="scard__name">${op.name || slot.id}</span>
       ${factions.length ? html`<span class="scard__bonds">${factions.slice(0, 3).map((b) => html`<span key=${b} class="scard__bond"><${BondGlyph} bondId=${b} /><span>${TAVERN_FACTIONS[b]}</span></span>`)}</span>` : null}
       <${TraitGlyphs} summary=${op.summary} catalog=${catalog} class="scard__trait" />

@@ -119,6 +119,12 @@
 
 /* ---- shop cards (on the original scard frame) -------------------------------------------------------------------- */
 .ix-shop .scard__name { font-size: max(.18rem, 15px); }
+/* the skill icon sits in the card's top row after the price: the original pins it to the top of the text block, which
+   grows with the trait lines here, so on a card with more lines it stood higher than on its neighbours */
+.ix-shop .scard__top { justify-content: flex-start; gap: .04rem; }
+.ix-shop .scard__top .scard__skill { position: relative; top: auto; right: auto; flex: none; margin-left: auto; }
+.ix-shop .scard__top .scard__pips { margin-left: auto; }
+.ix-shop .scard__top .scard__pips + .scard__skill { margin-left: .04rem; }
 .ix-carry { position: absolute; right: .06rem; top: .42rem; display: flex; flex-direction: column; gap: .02rem; }
 .ix-carry > span { display: inline-flex; align-items: center; gap: .01rem; padding: .01rem .03rem; background: rgba(8, 11, 10, .85); font-size: max(.13rem, 12px); color: var(--text-hi); }
 .ix-carry .ix-gear { width: .18rem; height: .18rem; }
