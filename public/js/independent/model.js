@@ -134,8 +134,9 @@ export function groupProduction(rows) {
   const out = new Map();
   for (const r of rows || []) {
     // gear that found the stock full (equipment.js grantEquipment `lost`) is its own row
-    const key = `${r.phase}|${r.sourceUid || r.prizeId || r.origin || ''}|${r.id}|${r.lost ? 'lost' : ''}`;
-    const g = out.get(key) || { phase: r.phase, origin: r.origin || null, sourceUid: r.sourceUid || null, prizeId: r.prizeId || null, id: r.id, quantity: 0, copied: false, lost: !!r.lost };
+    // badges put straight onto an operator (worn: 翻倍 / 转交) stay their own row, per target
+    const key = `${r.phase}|${r.sourceUid || r.prizeId || r.origin || ''}|${r.id}|${r.lost ? 'lost' : ''}|${r.worn ? r.targetUid : ''}`;
+    const g = out.get(key) || { phase: r.phase, origin: r.origin || null, sourceUid: r.sourceUid || null, prizeId: r.prizeId || null, id: r.id, quantity: 0, copied: false, lost: !!r.lost, ...(r.worn ? { worn: true, targetUid: r.targetUid } : {}) };
     g.quantity += Number(r.quantity || 0); g.copied ||= !!r.copied;
     out.set(key, g);
   }

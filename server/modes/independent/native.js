@@ -16,21 +16,21 @@ const PREP = Object.freeze({
   德克萨斯: [rule('sold', 'freeRefresh', { normal: 1, elite: 2 })],
   艾丝黛尔: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 1, elite: 2 }, { id: 'independent:近战训练记录仪', normal: 1, elite: 2 }] })],
   波登可: [rule('prepEnd', 'forgeDominantFaction', { normal: 1, elite: 2, fallback: 'professionRecipe', worksFromBench: true })],
-  格雷伊: [rule('sold', 'deferredFunds', { normal: 1, elite: 2 })],
+  格雷伊: [rule('sold', 'deferredFunds', { normal: 1, elite: 2, growth: { step: 1, cap: 3 } })],
   深靛: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.assault, normal: 1, elite: 2 }, { id: 'chess_item_1_05_e_a', normal: 1, elite: 2 }] })],
   野鬃: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 1, elite: 2 }] })],
-  雷蛇: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 1, elite: 2 }] })],
-  赫默: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_11_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'grantEquipment', { outputs: [{ id: BADGE.vitality, normal: 1, elite: 2 }] })],
+  雷蛇: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 1, elite: 2 }], growth: { step: { normal: 1, elite: 2 }, cap: 4 } })],
+  赫默: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_11_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'diversityGrant', { by: 'profession', id: BADGE.vitality, normal: 1, elite: 2 })],
   小满: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_04_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerGainedChess', { id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   洛洛: [rule('gain', 'randomEquipment', { poolId: 'pool_equip_rockr', normal: 1, elite: 2 })],
-  蒂比: [rule('roundStart', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 1, elite: 2 }] })],
+  蒂比: [rule('gain', 'shopCarry', { id: BADGE.agility, normal: 1, elite: 2, max: { normal: 3, elite: 6 } })],
   调香师: [rule('prepEnd', 'forgeDominantFaction', { normal: 2, elite: 4, fallback: 'professionRecipe', worksFromBench: true }), rule('prepEnd', 'grantEquipment', { outputs: [{ id: 'harmony', normal: 2, elite: 4 }], worksFromBench: true })],
   拉普兰德: [rule('refresh', 'attachShopBadgeFirstRefresh', { id: BADGE.assault, normal: 1, elite: 2, firstOnly: true, worksFromBench: true })],
-  折桠: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_06_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 2, elite: 4 }] })],
+  折桠: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_06_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 2, elite: 4 }] }), rule('selling', 'sellTransfer', {})],
   灰毫: [rule('gain', 'forgeDominantFaction', { normal: 1, elite: 2 })],
-  能天使: [rule('gain', 'deferredFunds', { normal: 1, elite: 2 })],
+  能天使: [rule('gain', 'deferredFunds', { normal: 1, elite: 2, totalBonus: { counter: 'refreshes', per: 8, step: 1 } })],
   断崖: [rule('prepEnd', 'forgeAdjacent', { id: BADGE.recovery, normal: 1, elite: 2, direction: 'behind', targets: ['self', 'ally'], capNormal: 2, capElite: 4 })],
-  诗怀雅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_1_03_e_a', normal: 1, elite: 2 }] })],
+  诗怀雅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_1_03_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'diversityGrant', { by: 'faction', id: BADGE.precision, normal: 1, elite: 2 })],
   琳琅诗怀雅: [rule('prepEnd', 'deferredFundsIf', { normal: 1, elite: 2, requiresFactionOnField: '炎' })],
   薄绿: [rule('prepEnd', 'forgeFactionTierCount', { faction: '维多利亚', id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   松果: [rule('sold', 'recruitOffer', { normalTier: 1, eliteTier: 5 })],
@@ -41,37 +41,37 @@ const PREP = Object.freeze({
   耶拉: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_02_e_a', normal: 1, elite: 2 }] })],
   // the original rule stays first: 白面鸮 copies the first 休整期开始 rule
   空弦: [rule('roundStart', 'forgeAdjacent', { id: BADGE.agility, normal: 1, elite: 2, direction: 'front', targets: ['self', 'ally'], capNormal: 2, capElite: 4 }), rule('roundStart', 'grantEquipment', { outputs: [{ id: 'miracle', normal: 1, elite: 2 }] })],
-  伊内丝: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: 'foresight', normal: 2, elite: 4 }] })],
-  阿罗玛: [rule('prepEnd', 'attachShopByRefreshCount', { id: BADGE.assault, normal: 1, elite: 2, capNormal: 3, capElite: 6 })],
+  伊内丝: [rule('prepEnd', 'badgeBoost', { badgeIds: [BADGE.precision], percent: { normal: 0.05, elite: 0.1 }, max: { normal: 0.6, elite: 1.2 } }), rule('prepEnd', 'grantEquipment', { outputs: [{ id: 'foresight', normal: 2, elite: 4 }] })],
+  阿罗玛: [rule('prepEnd', 'shopCarry', { id: BADGE.assault, normal: 1, elite: 2, max: { normal: 4, elite: 8 } })],
   凯瑟琳: [rule('roundStart', 'randomUnlockedEquipment', { normal: 1, elite: 2, oddRoundsOnly: true })],
   歌蕾蒂娅: [rule('roundStart', 'conditionalRecruit', { condition: 'sameRowCount>=3', choices: ['chess_char_5_04_a', 'chess_char_2_07_a', 'chess_char_1_04_a'], normal: 1, elite: 2 })],
   灵知: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.assault, normal: 2, elite: 4 }, { id: 'chess_item_3_08_e_a', normal: 1, elite: 2 }] })],
   莱恩哈特: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: 'arcane', normal: 2, elite: 4 }] })],
   缄默德克萨斯: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_04_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'freeRefresh', { normal: 1, elite: 2 })],
   星熊: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 3, elite: 6 }, { id: 'chess_item_4_05_e_a', normal: 1, elite: 2 }] })],
-  泥岩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_07_e_a', normal: 1, elite: 2 }] }), rule('sold', 'deferredFunds', { normal: 2, elite: 4 })],
+  泥岩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_07_e_a', normal: 1, elite: 2 }] }), rule('sold', 'deferredFunds', { normal: 2, elite: 4 }), rule('aura', 'triggerMultiplier', { hook: 'sold', extra: { normal: 1, elite: 2 } })],
   焰尾: [rule('gain', 'randomChessOffer', { normal: 1, elite: 2, poolId: 'pool_char_pinus' })],
-  白面鸮: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'roundStart', allow: ['grantEquipment', 'grantEquipmentByTier', 'forgeDominantFaction', 'forgeAdjacent', 'randomEquipment', 'randomSupply'], neverReenter: true })],
+  白面鸮: [rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
   卡涅利安: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_05_e_a', normal: 1, elite: 2 }] })],
-  烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.vitality, normal: 2, elite: 4 }, { id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] })],
+  烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 2, elite: 4 }, { id: BADGE.vitality, normal: 2, elite: 4 }, { id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'comebackGrant', { id: BADGE.precision, perLp: { normal: 1, elite: 2 }, cap: { normal: 8, elite: 16 } })],
   号角: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_10_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeDominantFactionTierCount', { id: BADGE.defense, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
-  铃兰: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
-  塞雷娅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_03_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'prepEnd', allow: ['grantEquipment', 'forgePerGainedChess', 'forgeDominantFaction', 'forgeAdjacent', 'forgeRowCount', 'forgeFactionTierCount', 'forgeDominantFactionTierCount', 'forgeFactionTierPair'], neverReenter: true })],
-  夕: [rule('prepEnd', 'forgePerGainedChess', { id: BADGE.assault, normal: 1, elite: 2, capNormal: 8, capElite: 16 })],
-  引星棘刺: [rule('prepEnd', 'forgeAdjacent', { id: BADGE.precision, normal: 2, elite: 4, direction: 'front', targets: ['self', 'ally'], capNormal: 4, capElite: 8 })],
-  山: [rule('prepEnd', 'forgePerGainedChess', { id: BADGE.vitality, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
+  铃兰: [rule('aura', 'triggerMultiplier', { hook: 'gain', extra: { normal: 1, elite: 2 } })],
+  塞雷娅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_03_e_a', normal: 1, elite: 2 }] }), rule('aura', 'triggerMultiplier', { hook: 'prepEnd', extra: { normal: 1, elite: 2 } })],
+  夕: [rule('prepEnd', 'grantByTotal', { counter: 'gained', per: 3, outputs: [{ id: BADGE.assault, normal: 1, elite: 2 }], cap: { normal: 10, elite: 20 } })],
+  引星棘刺: [rule('prepEnd', 'doubleWorn', { target: 'front', cap: { normal: 6, elite: 12 }, perGame: { normal: 3, elite: 4 } })],
+  山: [rule('prepEnd', 'devourShop', { id: BADGE.vitality, normal: 1, elite: 2 })],
   安洁莉娜: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_01_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'attachShopByRefreshCount', { id: BADGE.assault, normal: 2, elite: 4, capNormal: 6, capElite: 12 })],
-  寒檀: [rule('roundStart', 'grantEquipment', { outputs: [{ id: BADGE.recovery, normal: 2, elite: 4 }], alsoAt: 'prepEnd' })],
+  寒檀: [rule('roundStart', 'escalatingGrant', { id: BADGE.recovery, start: { normal: 1, elite: 2 }, max: { normal: 16, elite: 32 } })],
   妮芙: [rule('prepEnd', 'forgeBenchPairs', { id: BADGE.agility, normal: 1, elite: 2, pairSize: 2, capNormal: 4, capElite: 8 })],
   录武官: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.precision, normal: 3, elite: 6 }, { id: BADGE.vitality, normal: 1, elite: 2 }, { id: 'chess_item_6_03_e_a', normal: 1, elite: 2 }] })],
   余: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_08_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'dominantFactionRecruit', { normalRequires: 'sameRowCount>=3', eliteRequires: null })],
-  佩佩: [rule('roundStart', 'randomSupply', { normal: 1, elite: 2, poolId: 'pool_equip_pepe' })],
-  维娜·维多利亚: [rule('prepEnd', 'forgeFactionTierPair', { faction: '维多利亚', ids: [BADGE.precision, BADGE.vitality], normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
+  佩佩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:增压臂铠', normal: 1, elite: 2 }] }), rule('roundStart', 'randomSupply', { normal: 1, elite: 2, poolId: 'pool_equip_pepe' })],
+  维娜·维多利亚: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:熔铸模具', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeFactionTierPair', { faction: '维多利亚', ids: [BADGE.precision, BADGE.vitality], normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   缪尔赛思: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_identity_gear', normal: 1, elite: 2 }] })],
   新约能天使: [rule('gain', 'randomEquipment', { ids: ['chess_item_2_02_e_a', 'chess_item_2_05_e_a', 'chess_item_2_06_e_a', 'chess_item_2_07_e_a', 'chess_item_3_12_e_a', 'chess_item_4_01_e_a', 'chess_item_5_05_e_a', 'chess_item_5_06_e_a'], normal: 1, elite: 2 }), rule('gain', 'deferredFunds', { normal: 2, elite: 4 })],
   流明: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:医疗部稳态仪', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeBenchCount', { id: BADGE.vitality, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   溯光星源: [rule('prepEnd', 'forgePerFundsSpent', { id: BADGE.recovery, spendPer: 3, normal: 1, elite: 2, capNormal: 6, capElite: 12 }), rule('prepEnd', 'forgePerFundsSpent', { id: 'investor', spendPer: 3, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
-  锏: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 3, elite: 6 }] })],
+  锏: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.agility, normal: 3, elite: 6 }] }), rule('roundStart', 'streakGrant', { id: BADGE.agility, base: { normal: 2, elite: 4 }, step: { normal: 2, elite: 4 }, cap: { normal: 10, elite: 20 } })],
   风丸: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_2_01_e_a', normal: 1, elite: 2 }] }), rule('merge', 'twoCopyElite', { copiesRequired: 2, retainsNativeTrait: true })],
   // 2026-10-06 gear lines: operators whose original trait is combat-only, and who now also bring a piece of gear
   斯卡蒂: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_07_e_a', normal: 1, elite: 2 }] })],
@@ -127,14 +127,14 @@ function combatRules(name, elite) {
     case '送葬人': return [eventScale('kill','agility',1,2,1,1,{actor:'self',targetSide:'enemy'},1,{firstOnly:true})];
     case '莎草': return [eventScale('skillStart','recovery',1,2,1,1,{actor:'self'},1,{firstOnly:true})];
     case '幽灵鲨': return [eventScale('death','vitality',1,2,1,1,{actor:'self'},1,{firstOnly:true}),eventScale('death','unyielding',1,2,1,1,{actor:'self'},1,{firstOnly:true})];
-    case '休谟斯': return [eventScale('kill','precision',1,2,4,8,{actor:'self',targetSide:'enemy'},2)];
-    case '砾': return [eventScale('deploy','defense',1,2,3,6,{actor:'self'}),eventScale('deploy','solitary',1,2,3,6,{actor:'self'}),eventScale('death','vitality',1,2,1,1,{actor:'self'},1,{firstOnly:true})];
+    case '休谟斯': return [eventScale('kill','precision',1,2,null,null,{actor:'self',targetSide:'enemy'},2)];
+    case '砾': return [eventScale('death','defense',1,2,null,null,{actor:'team'}),eventScale('death','solitary',1,2,null,null,{actor:'team'})];
     case '斯卡蒂': return [eventScale('kill','vitality',1,2,4,8,{actor:'self',targetSide:'enemy'},2),eventScale('kill','mastery',1,2,4,8,{actor:'self',targetSide:'enemy'},2)];
-    case '菲莱': return [eventScale('skillStart','recovery',1,2,3,6,{actor:'self'})];
+    case '菲莱': return [eventScale('skillStart','recovery',1,2,null,null,{actor:'team'},3)];
     case '海霓': return [eventScale('kill','assault',1,2,1,1,{actor:'self',targetSide:'any'},1,{firstOnly:true})];
     case '瑕光': return [eventScale('deploy','vitality',1,2,3,6,{actor:'self'})];
     case '初雪': case '银灰': return [eventScale('statusApplied','assault',1,2,4,8,{targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.5})];
-    case '伺夜': return [eventScale('kill','assault',1,2,3,6,{actor:'self',targetSide:'enemy'},1,{firstN:3})];
+    case '伺夜': return [eventScale('kill','assault',1,2,null,null,{actor:'team',targetSide:'enemy'},6)];
     case '莫斯提马': return [eventScale('ammoUsed','recovery',1,2,6,12,{actor:'adjacentAllies',ammoOnly:true},6)];
     case '寒芒克洛丝': return [eventScale('skillStart','precision',1,2,4,8,{actor:'adjacentAllies',excludeSelf:true,direction:'front'})];
     case '风笛': return [eventScale('kill','agility',1,2,3,6,{actor:'self',targetSide:'enemy'},1,{firstN:3})];
@@ -148,12 +148,13 @@ function combatRules(name, elite) {
     case '凛御银灰': return [eventScale('statusApplied','assault',1,2,6,12,{observer:'frontAlly',observerTag:'谢拉格',targetSide:'enemy',status:'frozen',entered:true,range:'observer'},1,{probability:0.6})];
     case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[{idFromEvent:true,quantity:q(1,2)}],copyOutputFromEvent:true,quantity:q(1,2),maxPerBattle:q(4,8),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},fallbackPreference:'productionBadge',fallback:'firstStableOutput',copied:true})];
     case '蕾缪安': return [eventScale('ammoUsed','precision',2,4,8,16,{actor:'self',ammoOnly:true,sameRowCount:3},10)];
-    case '塑心': return [eventScale('skillStart','agility',1,2,6,12,{actor:'sameRowAllies',includeSelf:true})];
+    case '塑心': return [rule('passive','productionMultiplier',{extra:q(1,2)})];
     case '荒芜拉普兰德': return [eventScale('kill','assault',1,1,6,12,{actor:elite?'team':'self',targetSide:'enemy',tag:elite?'叙拉古':undefined},1,{perEnemyOnce:elite})];
     case '纯烬艾雅法拉': return [eventScale('skillStart','vitality',1,2,4,8,{actor:'self'})];
     case '锏': return [eventScale('deploy','agility',2,4,6,12,{actor:'self'})];
     case '玛恩纳': return [rule('deploy','deployWindowStats',{badgeIds:ALL_BADGES,every:5,stats:{attackFlat:q(10,20),maxHpFlat:q(50,100)},durationSeconds:100})];
     case '耀骑士临光': return [rule('battleStart','startDerivedStats',{badgeIds:['agility'],every:5,actors:['self','frontAlly'],attackSpeedFlat:q(1,2),redeployTimeReduction:elite?0.03:0.015,maxRedeployTimeReduction:0.3})];
+    case '星熊': return [rule('passive','badgeAmplifier',{badgeIds:['defense'],multiplier:q(2,3)})];
     default: return [];
   }
 }
@@ -193,6 +194,38 @@ function output(services, state, id, quantity, piece, extra = {}) {
   services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...(services.__nativeCopied ? { copied: true } : {}), ...extra });
 }
 function value(p, isElite) { return Number(p[isElite ? 'elite' : 'normal'] ?? 0); }
+// a number that may differ between the normal and the elite form: { normal, elite } or a plain number
+function pick(v, isElite) { return v && typeof v === 'object' ? Number(v[isElite ? 'elite' : 'normal'] ?? v.normal ?? 0) : Number(v ?? 0); }
+const isEliteForm = (piece) => Boolean(piece?.elite || /_b$/.test(chessIdOf(piece)));
+// game-long totals (session.js keeps them in state.totals; a session saved before them reads 0)
+function total(state, key) { return Number(state.totals?.[key] || 0); }
+/**
+ * What a rule adds on top of its listed amount: `growth` (+step for every prep phase the operator began on the field,
+ * up to `cap` times; runNativeHook counts them) and `totalBonus` (+step for every `per` of a game-long total).
+ */
+function bonus(p, piece, state, isElite) {
+  let n = 0;
+  if (p.growth) n += pick(p.growth.step, isElite) * Math.min(Number(piece?.nativeState?.growth || 0), pick(p.growth.cap, isElite));
+  if (p.totalBonus) n += pick(p.totalBonus.step, isElite) * Math.floor(total(state, p.totalBonus.counter) / Number(p.totalBonus.per || 1));
+  return n;
+}
+// the hooks a doubler (an 'aura' rule, behavior triggerMultiplier) repeats: 获得时 / 休整结束时 / 出售时
+const DOUBLED_HOOKS = new Set(['gain', 'prepEnd', 'sold']);
+/** Extra runs of a hook's effects: the strongest doubler on the field for it (doublers do not stack). */
+function extraRuns(state, hook, services) {
+  let extra = 0;
+  for (const p of roster(state)) {
+    if (!isPresent(p)) continue;
+    for (const r of traitFor(p, services)?.effect?.prep || []) {
+      if (r.trigger === 'aura' && r.behavior === 'triggerMultiplier' && r.params?.hook === hook) extra = Math.max(extra, pick(r.params.extra, isEliteForm(p)));
+    }
+  }
+  return extra;
+}
+// badges live in catalog.badges (a legacy badge item also in catalog.equipment with mechanism badge)
+function isBadge(services, id) { return Boolean(services.catalog?.badges?.[id]) || services.catalog?.equipment?.[id]?.mechanism === 'badge'; }
+function wornCount(piece) { return (piece?.equipment || []).reduce((n, x) => n + Number(x.quantity || 1), 0); }
+function capacityOf(services) { return Number(services.catalog?.rules?.equipmentCapacity ?? 999); }
 function refreshCount(state) { return Number(state.counters?.refreshes ?? state.counters?.activeRefreshes ?? state.counters?.roundRefreshes ?? state.counters?.paidRefreshes ?? 0); }
 function traitFor(piece, services) { return nativeTraitFor(chessIdOf(piece), services.catalog); }
 function hasRepeatNativeForging(state) {
@@ -214,9 +247,11 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     const ruleServices = Object.create(services);
     ruleServices.__nativeOutputCapture = capturedOutputs;
     ruleServices.__nativeCopied = Boolean(replay || event.replay);
+    const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services) : 0);
+    for (let run = 0; run < runs; run++) {
     switch (r.behavior) {
       case 'grantEquipment':
-        for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite), piece);
+        for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite) + bonus(p, piece, state, elite), piece);
         break;
       case 'twoCopyElite':
         if (hook === 'merge' && (event.copiesConsumed || 2) >= p.copiesRequired) event.mergeRequirement = p.copiesRequired;
@@ -228,13 +263,13 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         if (roster(state).some((x) => isPresent(x) && hasFaction(x, p.requiresFactionOnField, services))) for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite), piece);
         break;
       case 'freeRefresh':
-        state.shop.freeRefreshes = (state.shop.freeRefreshes || 0) + value(p, elite); break;
+        state.shop.freeRefreshes = (state.shop.freeRefreshes || 0) + value(p, elite) + bonus(p, piece, state, elite); break;
       case 'freeRefreshOnce':
         if (!p.paidOnly || event.paid === true) {
           piece.nativeState ||= {}; if (!piece.nativeState.freeRefreshGranted) { piece.nativeState.freeRefreshGranted = true; state.shop.freeRefreshes = (state.shop.freeRefreshes || 0) + value(p, elite); }
         }
         break;
-      case 'deferredFunds': state.pendingFunds = (state.pendingFunds || 0) + value(p, elite); break;
+      case 'deferredFunds': state.pendingFunds = (state.pendingFunds || 0) + value(p, elite) + bonus(p, piece, state, elite); break;
       case 'deferredFundsIf':
         if (roster(state).some((x) => isPresent(x) && hasFaction(x, p.requiresFactionOnField, services))) state.pendingFunds = (state.pendingFunds || 0) + value(p, elite); break;
       case 'forgePerGainedChess': {
@@ -340,7 +375,102 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       }
       break;
+      // ---- second wave (2026-10-07): growth, doublers, totals, shop buffs, badge boosts, moving and doubling badges ----
+      case 'triggerMultiplier': break; // an aura: extraRuns reads it
+      case 'grantByTotal': {
+        const times = Math.floor(total(state, p.counter) / Number(p.per || 1));
+        for (const x of p.outputs || []) output(ruleServices, state, x.id, Math.min(pick(p.cap, elite) || Infinity, times * value(x, elite)), piece);
+        break;
+      }
+      case 'shopCarry': {
+        // every operator the shop offers from now on carries this many more (the current offers too)
+        const effects = (state.playerEffects ||= []);
+        let fx = effects.find((x) => x.type === 'shopCarry' && x.id === p.id);
+        if (!fx) { fx = { type: 'shopCarry', id: p.id, quantity: 0, max: 0 }; effects.push(fx); }
+        fx.max = Math.max(Number(fx.max || 0), pick(p.max, elite));
+        const add = Math.max(0, Math.min(value(p, elite), fx.max - fx.quantity));
+        if (!add) break;
+        fx.quantity += add;
+        for (const slot of state.shop?.slots || []) if (slot.kind === 'chess' && !slot.sold) (slot.equipment ||= []).push({ id: p.id, quantity: add, origin: 'shopCarry', sourceUid: piece.uid });
+        break;
+      }
+      case 'badgeBoost': {
+        // every listed badge of the team is worth percent more for the rest of the game (sim battle.js reads it)
+        const key = (p.badgeIds || []).join(',');
+        const effects = (state.playerEffects ||= []);
+        let fx = effects.find((x) => x.type === 'badgeBoost' && x.key === key);
+        if (!fx) { fx = { type: 'badgeBoost', key, badgeIds: [...(p.badgeIds || [])], percent: 0, max: 0, source: chessIdOf(piece) }; effects.push(fx); }
+        fx.max = Math.max(Number(fx.max || 0), pick(p.max, elite));
+        fx.percent = Math.min(fx.max, Math.round((Number(fx.percent || 0) + pick(p.percent, elite)) * 1000) / 1000);
+        break;
+      }
+      case 'sellTransfer': {
+        // when sold (run before its gear is discarded): its badges go to the operator on the field that wears the most
+        const to = roster(state).filter((x) => x !== piece && isPresent(x)).sort((a, b) => wornCount(b) - wornCount(a) || String(a.uid).localeCompare(String(b.uid)))[0];
+        if (!to) break;
+        let moved = 0;
+        for (const item of [...(piece.equipment || [])]) {
+          if (!isBadge(services, item.id)) continue;
+          const n = Math.min(Number(item.quantity || 1), capacityOf(services) - wornCount(to));
+          if (n <= 0) break;
+          const stack = to.equipment.find((x) => x.id === item.id && !!x.elite === !!item.elite);
+          if (stack) stack.quantity = Number(stack.quantity || 1) + n;
+          else to.equipment.push({ uid: `i${state.nextUid++}`, id: item.id, elite: !!item.elite, quantity: n, state: {}, ...(item.sourceId ? { sourceId: item.sourceId } : {}) });
+          item.quantity = Number(item.quantity || 1) - n;
+          if (item.quantity <= 0) piece.equipment.splice(piece.equipment.indexOf(item), 1);
+          moved += n;
+        }
+        if (moved) services.recordProduction?.(state, { id: 'badges', quantity: moved, origin: 'native', sourceUid: piece.uid, targetUid: to.uid, worn: true });
+        break;
+      }
+      case 'devourShop': {
+        // the right-most operator on offer leaves the shop; its carried gear and tier x N of a badge come to the stock
+        const slots = state.shop?.slots || [];
+        const index = slots.map((x, i) => (x.kind === 'chess' && !x.sold && x.id ? i : -1)).filter((i) => i >= 0).pop();
+        if (index == null) break;
+        const slot = slots[index];
+        for (const c of slot.equipment || []) output(ruleServices, state, c.id, Number(c.quantity || 1), piece, c.elite ? { elite: true } : {});
+        output(ruleServices, state, p.id, Number(services.catalog.operators?.[slot.id]?.tier || 1) * value(p, elite), piece);
+        slot.sold = true; slot.devoured = true; slot.equipment = [];
+        break;
+      }
+      case 'doubleWorn': {
+        // the badge a target wears most of doubles (up to cap more), a limited number of times a game
+        const used = Number(memo.doubleUses || 0);
+        if (used >= pick(p.perGame, elite)) break;
+        const target = p.target === 'front' ? neighborAt(state, piece, 'front', 1) : piece;
+        if (!target || !isPresent(target)) break;
+        const top = (target.equipment || []).filter((x) => isBadge(services, x.id)).sort((a, b) => Number(b.quantity || 1) - Number(a.quantity || 1) || String(a.id).localeCompare(String(b.id)))[0];
+        if (!top) break;
+        const add = Math.min(Number(top.quantity || 1), pick(p.cap, elite), capacityOf(services) - wornCount(target));
+        if (add <= 0) break;
+        top.quantity = Number(top.quantity || 1) + add;
+        memo.doubleUses = used + 1;
+        services.recordProduction?.(state, { id: top.id, quantity: add, origin: 'native', sourceUid: piece.uid, targetUid: target.uid, worn: true });
+        break;
+      }
+      case 'escalatingGrant': {
+        // start, then twice as many each time it fires, up to max
+        const k = Number(memo.escalation || 0);
+        output(ruleServices, state, p.id, Math.min(pick(p.max, elite), pick(p.start, elite) * 2 ** k), piece);
+        memo.escalation = k + 1;
+        break;
+      }
+      case 'comebackGrant':
+        output(ruleServices, state, p.id, Math.min(pick(p.cap, elite) || Infinity, total(state, 'lastLpLost') * pick(p.perLp, elite)), piece); break;
+      case 'streakGrant': {
+        const streak = total(state, 'cleanStreak');
+        if (streak > 0) output(ruleServices, state, p.id, Math.min(pick(p.cap, elite) || Infinity, pick(p.base, elite) + pick(p.step, elite) * (streak - 1)), piece);
+        break;
+      }
+      case 'diversityGrant': {
+        const present = roster(state).filter(isPresent);
+        const kinds = new Set(p.by === 'faction' ? present.flatMap((x) => sharedTavernFactions(x, services.catalog))
+          : present.map((x) => { const op = services.catalog.operators?.[chessIdOf(x)]; return op?.profession ?? op?.source?.normalChess?.profession ?? op?.source?.eliteChess?.profession; }).filter(Boolean));
+        output(ruleServices, state, p.id, kinds.size * value(p, elite), piece); break;
+      }
       default: throw new Error(`Unregistered native behavior: ${r.behavior}`);
+    }
     }
     if (hook === 'gain' && r.trigger === 'gain' && REPEATABLE_BADGE_FORGES.has(r.behavior) && hasRepeatNativeForging(state)) {
       for (const item of capturedOutputs) {
@@ -469,14 +599,39 @@ function addRecruitOffer(state, services, opts) {
   if (choices.length) services.addOffer(state, { id: `native:${opts.sourceUid}:${state.round}:${state.nextUid++}`, type: 'recruit', choices, source: 'native', sourceUid: opts.sourceUid });
 }
 
+/**
+ * Gear that acts when the prep phase ends (session.js calls it after the operators' own 休整结束时 effects): an
+ * escalatingForge item on an operator on the field gives `start` of its badge, then twice as many each prep phase,
+ * up to `max` (the count lives on the item, so it follows the item).
+ */
+export function runEquipmentPrepEnd(state, services = {}) {
+  for (const piece of roster(state)) {
+    if (!isPresent(piece)) continue;
+    for (const item of piece.equipment || []) {
+      const def = services.catalog?.equipment?.[item.id];
+      if (def?.mechanism !== 'escalatingForge') continue;
+      const p = def.params || {};
+      const k = Number(item.state?.escalation || 0);
+      const n = Math.min(pick(p.max, !!item.elite), pick(p.start, !!item.elite) * 2 ** k);
+      output(services, state, p.id, n, piece, { origin: 'equipment' });
+      item.state = { ...(item.state || {}), escalation: k + 1 };
+    }
+  }
+  return state;
+}
+
 export function runNativeHook(state, hook, event = {}, services = {}) {
   if (!state || !services.catalog) throw new TypeError('runNativeHook requires state and services.catalog');
   if (suppressed(event)) return state;
-  if (!['gain', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
+  if (!['gain', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
   const piece = event.piece || (event.uid && roster(state).find((x) => x.uid === event.uid));
-  if (['gain', 'sold', 'merge'].includes(hook)) {
+  if (['gain', 'selling', 'sold', 'merge'].includes(hook)) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
   } else {
+    // a rule that grows (params.growth) counts the prep phases its operator began on the field
+    if (hook === 'roundStart') for (const p of roster(state)) {
+      if (isPresent(p) && (traitFor(p, services)?.effect?.prep || []).some((r) => r.params?.growth)) { p.nativeState ||= {}; p.nativeState.growth = Number(p.nativeState.growth || 0) + 1; }
+    }
     for (const p of roster(state)) {
       const trait = traitFor(p, services);
       const benchAllowed = (trait?.effect?.prep || []).some((r) => r.trigger === hook && r.params?.worksFromBench);

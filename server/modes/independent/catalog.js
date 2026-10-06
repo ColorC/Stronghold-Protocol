@@ -82,6 +82,9 @@ const EQUIPMENT_RULES = Object.freeze({
   '应急屏障组件': { mechanism: 'equipmentShield', params: { charges: 2 } },
   '精英干员战备箱': { mechanism: 'equipmentShield', params: { charges: 1 }, stats: { attackFlat: 50, maxHpFlat: 400, attackSpeedFlat: 10 } },
   '罗德岛重装防护套件': { mechanism: 'stats', params: {}, stats: { maxHpFlat: 400, defenseFlat: 40, tauntLevel: 1 } },
+  // 2026-10-07 advanced gear (高级装备)
+  '熔铸模具': { mechanism: 'badgeAmplifier', params: { badgeIds: ['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery', 'arcane', 'foresight', 'miracle', 'investor', 'unyielding', 'harmony', 'coordination', 'solitary', 'mastery'], multiplier: 1.25 } },
+  '增压臂铠': { mechanism: 'escalatingForge', params: { id: 'vitality', start: 1, max: 32 } },
   '重型武装校准章': { mechanism: 'badgeAmplifier', params: { badgeIds: ['precision', 'assault'], multiplier: 2, stats: ['attackFlat', 'attackPercent'] } },
   '人事部增援许可': { mechanism: 'deployCap', params: { amount: 1, max: 9, perRunLimit: 1 } },
   '调和识别牌': { mechanism: 'identityTag', params: { chooseOnEquip: true } },

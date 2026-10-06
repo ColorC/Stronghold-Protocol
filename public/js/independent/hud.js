@@ -18,7 +18,11 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 // ---- glyphs -------------------------------------------------------------------------------------------------------
 
-const KIND_WORD = { recruit: '招募', random: '随机', stat: '属性', damage: '增伤', copy: '复制', merge: '两份合成', shopBadge: '商品携装' };
+const KIND_WORD = { recruit: '招募', random: '随机', stat: '属性', damage: '增伤', copy: '复制', merge: '两份合成', shopBadge: '商品携装',
+  boost: '增幅', transfer: '徽章转交', devour: '吞并商品', doubleWorn: '徽章翻倍' };
+// the second-wave markers: what a yield grows with (每轮翻倍 / 失命 / 连胜 / 种类) and game-long counts
+const CONDITION_WORD = { escalate: '每次翻倍', comeback: '每失1命', streak: '连胜', professions: '每种职业', factions: '每种阵营' };
+const TOTAL_WORD = { gained: '获得', refreshes: '刷新', sold: '出售', bought: '购买', elites: '晋升', kills: '击倒' };
 
 /**
  * The trait's icon line: moment → yield (icons × count of this form) and a marker per condition. It indexes the full
@@ -38,11 +42,18 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
         : null}
       ${e.kind === 'funds' ? html`<span class="ix-trait__out"><${CoinGlyph} /><b class="num">+${summaryCount(e.amount, elite)}</b></span>` : null}
       ${e.kind === 'refresh' ? html`<span class="ix-trait__out"><${Icon} name="refresh" /><b class="num">×${summaryCount(e.amount, elite)}</b></span>` : null}
-      ${e.kind === 'stat' && e.items ? e.items.map((it, k) => html`<span class="ix-trait__out" key=${k}><${GearIcon} id=${it.id} catalog=${catalog} /></span>`) : null}
+      ${(e.kind === 'stat' || e.kind === 'boost') && e.items ? e.items.map((it, k) => html`<span class="ix-trait__out" key=${k}><${GearIcon} id=${it.id} catalog=${catalog} /></span>`) : null}
+      ${e.kind === 'stat' && e.times > 1 ? html`<b class="num">×${e.times}</b>` : null}
+      ${e.kind === 'boost' ? html`<b class="num">+${Math.round(summaryCount(e.amount, elite) * 100)}%</b>` : null}
+      ${e.kind === 'double' ? html`<span class="ix-trait__word">${catalog?.traitWhen?.[e.hook] || e.hook}</span><b class="num">×${summaryCount(e.amount, elite)}</b>` : null}
       ${KIND_WORD[e.kind] ? html`<span class="ix-trait__word">${KIND_WORD[e.kind]}</span>` : null}
       ${e.faction ? html`<span class="ix-trait__cond" title=${`需要${e.faction}干员在场`}>${e.faction}</span>` : null}
       ${e.perBattle ? html`<span class="ix-trait__cond" title="每场上限">≤${e.perBattle}</span>` : null}
       ${e.afterBattle ? html`<span class="ix-trait__cond" title="战斗结束后放入库存">战后</span>` : null}
+      ${e.condition && CONDITION_WORD[e.condition] ? html`<span class="ix-trait__cond">${CONDITION_WORD[e.condition]}</span>` : null}
+      ${e.total ? html`<span class="ix-trait__cond" title="按本局累计次数">每${e.total.per}次${TOTAL_WORD[e.total.counter] || ''}</span>` : null}
+      ${e.grows ? html`<span class="ix-trait__cond" title="在场越久越多">成长</span>` : null}
+      ${e.lasting ? html`<span class="ix-trait__cond" title="本局持续">本局</span>` : null}
     </span>`)}
     ${(summary || []).length > max ? html`<span class="ix-trait__more">+${summary.length - max}</span>` : null}
   </span>`;
@@ -166,7 +177,9 @@ function ProdRow({ row, state, catalog, when = false }) {
     ${when ? html`<span class="ix-prod__when">${PHASE_WORD[row.phase] || ''}</span>` : null}
     ${row.sourceUid ? html`<${SourceName} piece=${piece} catalog=${catalog} />`
       : html`<span class="ix-prod__src">${row.prizeId ? (catalog.prizes?.[row.prizeId]?.name || '工程部特供') : ORIGIN_WORD[row.origin] || '其他'}</span>`}
-    <span class="ix-prod__out"><${GearIcon} id=${row.id} catalog=${catalog} /><b class="num">×${row.quantity}</b></span>
+    ${row.id === 'badges' ? html`<span class="ix-prod__out"><span>全部徽章</span><b class="num">×${row.quantity}</b></span>`
+      : html`<span class="ix-prod__out"><${GearIcon} id=${row.id} catalog=${catalog} /><b class="num">×${row.quantity}</b></span>`}
+    ${row.worn ? html`<span class="ix-prod__tag" title="直接穿在干员身上">→${formEntry(catalog, state.pieces.find((p) => p.uid === row.targetUid) || {})?.name || '干员'}</span>` : null}
     ${row.copied ? html`<span class="ix-prod__tag">复制</span>` : null}
     ${row.lost ? html`<span class="ix-prod__tag ix-prod__tag--lost" title="库存已满，没有放入">库存满</span>` : null}
   </li>`;
@@ -246,8 +259,14 @@ const EFFECT_LINE = {
   deployCap: (e) => `部署上限 +${e.amount}`,
   repeatNativeForging: () => '本轮有效',
   futureShopEquipment: (e) => `还剩 ${e.quantity ?? 0} 件`,
+  // 2026-10-07: game-long badge boosts (伊内丝) and shop buffs (蒂比, 阿罗玛)
+  badgeBoost: (e) => `本局效果 +${Math.round(e.percent * 100)}%（至多 +${Math.round(e.max * 100)}%）`,
+  shopCarry: (e) => `商店里的每名干员附带 ${e.quantity} 枚（至多 ${e.max} 枚）`,
 };
-const EFFECT_COUNT = { facilityIncome: (e) => `+${e.amount}`, deployCap: (e) => `+${e.amount}`, futureShopEquipment: (e) => e.quantity };
+const EFFECT_COUNT = { facilityIncome: (e) => `+${e.amount}`, deployCap: (e) => `+${e.amount}`, futureShopEquipment: (e) => e.quantity,
+  badgeBoost: (e) => `+${Math.round(e.percent * 100)}%`, shopCarry: (e) => `×${e.quantity}` };
+/** The item an effect is about: its source gear, or the badge a boost / shop buff concerns. */
+const effectItem = (e) => (e.type === 'badgeBoost' ? e.badgeIds?.[0] : e.type === 'shopCarry' ? e.id : e.source);
 
 /**
  * The original's 生效中的效果 column (ui/effectsList.js, css .gm__effects / .effects) for the mode's lasting effects
@@ -260,16 +279,16 @@ export function EffectsColumn({ effects, catalog }) {
   return html`<div class="gm__effects ix-effects"><div class="effects" aria-label="生效中的效果">
     <${MicroLabel}>EFFECTS<//>
     ${list.slice(0, 10).map((e, i) => {
-      const prize = catalog.prizes?.[e.source]; const gear = catalog.gear?.[e.source];
-      const name = prize?.name || gear?.name || '效果';
-      const text = prize?.effect || (gear ? (e.elite ? gear.elite : gear.normal) : '');
+      const prize = catalog.prizes?.[e.source]; const gear = catalog.gear?.[effectItem(e)];
+      const name = e.type === 'badgeBoost' ? `${gear?.name || '徽章'}增幅` : e.type === 'shopCarry' ? `商品附带${gear?.name || '徽章'}` : prize?.name || gear?.name || '效果';
+      const text = prize?.effect || (gear && !['badgeBoost', 'shopCarry'].includes(e.type) ? (e.elite ? gear.elite : gear.normal) : '');
       const n = EFFECT_COUNT[e.type]?.(e);
       return html`<${Tooltip} key=${`${e.type}:${e.source}:${i}`} placement="bottom" text=${html`<div class="efftip">
           <b>${name}</b><span class="efftip__kind">${EFFECT_LINE[e.type](e)}</span>
           ${text ? html`<p><${GameText} text=${text} catalog=${catalog} /></p>` : null}
         </div>`}>
         <span class="effect effect--item">
-          ${gear ? html`<${GearIcon} id=${e.source} catalog=${catalog} plain=${true} />` : html`<${GIcon} name="flag" />`}
+          ${gear ? html`<${GearIcon} id=${effectItem(e)} catalog=${catalog} plain=${true} />` : html`<${GIcon} name="flag" />`}
           ${n != null && n !== '' ? html`<b class="effect__n num">${n}</b>` : null}
         </span>
       <//>`;

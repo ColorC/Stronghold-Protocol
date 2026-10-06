@@ -116,15 +116,16 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   assert.equal(normal.granted.length, 1);
 });
 
-test('round-start trait replay fires one allowlisted effect once and cannot replay itself', () => {
+test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
+  // 2026-10-07: 白面鸮 now re-triggers the 获得时 effect in front of it at 休整期结束时 (it used to copy 休整期开始)
   const { state, services, granted } = fixture();
+  const corner = all.find((x) => x.name === '角峰' && !x.elite);
   const owl = { uid: 'owl', chessId: 'chess_char_4_21_a', row: 1, col: 2, dir: 'RIGHT', nativeState: {} };
-  const donor = { uid: 'donor', chessId: 'chess_char_2_02_a', row: 1, col: 3, dir: 'RIGHT', nativeState: {} };
+  const donor = { uid: 'donor', chessId: corner.chessId, row: 1, col: 3, dir: 'RIGHT', nativeState: {} };
   state.pieces.push(owl, donor);
-  runNativeHook(state, 'roundStart', { origin: 'player' }, services);
-  runNativeHook(state, 'roundStart', { origin: 'player' }, services);
-  assert.deepEqual(granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }, { id: 'vitality', quantity: 1 }]);
-  assert.equal(granted.filter((x) => x.sourceUid === 'owl').length, 1);
+  runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
+  runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
+  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'vitality', quantity: 1, sourceUid: 'owl' }]);
 });
 
 test('round-end effects require a fielded owner except approved bench-active makers', () => {
@@ -200,18 +201,23 @@ test('bench Lappland sees the first free refresh and copy replay uses the source
   runNativeHook(eliteLappland.state, 'refresh', { paid: false }, eliteLappland.services);
   assert.deepEqual(eliteLappland.state.shop.slots[0].equipment.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'assault', quantity: 2 }]);
 
-  const copied = fixture();
-  const saria = { uid: 'saria', chessId: 'chess_char_5_11_a', row: 1, col: 1, dir: 'RIGHT', nativeState: {} };
-  const eliteThinGreen = { uid: 'thin-b', chessId: 'chess_char_3_08_b', elite: true, row: 1, col: 2, nativeState: {} };
-  const allies = [0, 1].map((n) => ({ uid: `a${n}`, chessId: `ally${n}_a`, row: n, col: 2, nativeState: {} }));
-  copied.state.pieces.push(saria, eliteThinGreen, ...allies);
-  copied.services.data = {
-    chess: Object.fromEntries(copied.state.pieces.map((p) => [p.chessId, { bonds: ['v'] }])),
-    bonds: { v: { name: '维多利亚' } },
-  };
-  runNativeHook(copied.state, 'prepEnd', {}, copied.services);
-  const sariaGrant = copied.granted.filter((item) => item.sourceUid === 'saria');
-  assert.deepEqual(sariaGrant.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 2 }]);
+  // 2026-10-07: 塞雷娅 on the field runs every 休整期结束时 effect once more (an elite once more again)
+  const raze = all.find((x) => x.name === '雷蛇' && !x.elite);
+  const doubled = fixture();
+  doubled.state.pieces.push({ uid: 'saria', chessId: 'chess_char_5_11_a', row: 1, col: 1, dir: 'RIGHT', nativeState: {} },
+    { uid: 'raze', chessId: raze.chessId, row: 1, col: 3, dir: 'RIGHT', nativeState: {} });
+  runNativeHook(doubled.state, 'prepEnd', {}, doubled.services);
+  assert.deepEqual(doubled.granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'defense', quantity: 1, sourceUid: 'raze' }, { id: 'defense', quantity: 1, sourceUid: 'raze' }]);
+  const tripled = fixture();
+  tripled.state.pieces.push({ uid: 'saria', chessId: 'chess_char_5_11_b', elite: true, row: 1, col: 1, dir: 'RIGHT', nativeState: {} },
+    { uid: 'raze', chessId: raze.chessId, row: 1, col: 3, dir: 'RIGHT', nativeState: {} });
+  runNativeHook(tripled.state, 'prepEnd', {}, tripled.services);
+  assert.equal(tripled.granted.length, 3);
+  const benched = fixture();
+  benched.state.pieces.push({ uid: 'saria', chessId: 'chess_char_5_11_a', row: null, col: null, nativeState: {} },
+    { uid: 'raze', chessId: raze.chessId, row: 1, col: 3, dir: 'RIGHT', nativeState: {} });
+  runNativeHook(benched.state, 'prepEnd', {}, benched.services);
+  assert.equal(benched.granted.length, 1, 'a doubler on the bench does nothing');
 });
 
 test('dominant faction recipes use stable tavern order on ties and exclude no-faction profession fallback', () => {
@@ -249,7 +255,7 @@ test('native registry reports implementation coverage without silent empty callb
   assert.ok(all.every((x) => Array.isArray(x.nativeTrait.effect.prep) && Array.isArray(x.nativeTrait.effect.combat)));
   const missingCombat = all.filter((x) => !x.elite && x.nativeTrait.sources.normal.some((s) => s.eventType === 'IN_BATTLE') && x.name !== '风丸' && !x.nativeTrait.effect.combat.length);
   assert.deepEqual(missingCombat.map((x) => x.name), []);
-  const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite']);
+  const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','comebackGrant','streakGrant','diversityGrant']);
   for (const behavior of catalog.nativeRegistry.prepBehaviors) assert.ok(expectedPrep.has(behavior), `registered behavior ${behavior}`);
 });
 
@@ -355,15 +361,16 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   assert.equal(supply.granted.length, 1);
   assert.equal(supply.granted[0].id, 'chess_item_1_03_e_a');
 
+  // the copier is 白面鸮 since 2026-10-07 (it replays a 获得时 effect at 休整期结束时)
   const copy = fixture();
-  const lily = all.find((x) => x.name === '铃兰' && !x.elite);
+  const owl = all.find((x) => x.name === '白面鸮' && !x.elite);
   const donor = { uid: 'donor', chessId: corner.chessId, row: 0, col: 1, dir: 'RIGHT', nativeState: {} };
-  const copier = { uid: 'lily', chessId: lily.chessId, row: 0, col: 0, dir: 'RIGHT', nativeState: {} };
+  const copier = { uid: 'owl', chessId: owl.chessId, row: 0, col: 0, dir: 'RIGHT', nativeState: {} };
   copy.state.pieces.push(copier, donor);
   copy.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
-  runNativeHook(copy.state, 'roundStart', {}, copy.services);
+  runNativeHook(copy.state, 'prepEnd', {}, copy.services);
   assert.equal(copy.granted.length, 2);
-  assert.ok(copy.granted.every((x) => x.id === 'vitality' && x.sourceUid === 'lily' && x.copied === true));
+  assert.ok(copy.granted.every((x) => x.id === 'vitality' && x.sourceUid === 'owl' && x.copied === true));
   assert.equal(copy.granted.filter((x) => x.repeated === true).length, 1);
 });
 

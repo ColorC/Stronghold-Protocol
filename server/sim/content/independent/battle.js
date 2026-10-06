@@ -7,7 +7,7 @@ import { mitigate } from '../../damage.js';
 const BEHAVIORS = new Set([
   'badgeThresholdStat', 'staticStats', 'conditionalDamage', 'weakDamage', 'eventProduction',
   'deployWindowStats', 'startDerivedStats',
-]);
+, 'badgeAmplifier', 'productionMultiplier']);
 const STAT_MODS = Object.freeze({
   attackFlat: 'atkFlat', attackPercent: 'atkPct', attackSpeedFlat: 'aspd',
   maxHpFlat: 'hpFlat', maxLifeFlat: 'hpFlat', maxHpPercent: 'hpPct', maxLifePercent: 'hpPct', defenseFlat: 'defFlat', defenceFlat: 'defFlat', defensePercent: 'defPct',
@@ -100,7 +100,12 @@ function mergeMods(into, mods, multiplier = 1) {
   }
 }
 
-function sumBadgeMods(catalog, entries) {
+/**
+ * `boost(badgeId)`: the extra factor a badge has this battle on top of worn amplifiers — the team's game-long badge
+ * boosts (state.playerEffects badgeBoost, native badgeBoost) and the operator's own in-battle amplifier (native
+ * badgeAmplifier rule).
+ */
+function sumBadgeMods(catalog, entries, boost = () => 1) {
   const mods = {};
   const counts = countBadges(entries);
   for (const [id, n] of counts) {
@@ -117,7 +122,7 @@ function sumBadgeMods(catalog, entries) {
         if (!(scale > 0)) throw new Error(`badge amplifier ${e.id} lacks a positive multiplier`);
         return scale;
       });
-    const scale = factors.reduce((a, b) => a * b, 1);
+    const scale = factors.reduce((a, b) => a * b, 1) * boost(id);
     mergeMods(mods, stat, n * scale);
   }
   for (const e of entries) {
@@ -333,9 +338,11 @@ function createRewardEmitter(battle) {
     const current = used.get(key) ?? 0;
     const allowed = cap == null ? Number(quantity) : Math.max(0, Math.min(Number(quantity), Number(cap) - current));
     if (allowed <= 0) return 0;
+    // a production doubler on the field (native productionMultiplier) multiplies what is handed out; caps count the base
+    const given = allowed * Math.max(1, Number(battle.independentProductionFactor) || 1);
     const merged = rewards.find((r) => r.id === id && r.origin === origin && r.sourceUid === sourceUid && !!r.copied === !!copied);
-    if (merged) merged.quantity += allowed;
-    else rewards.push({ id, quantity: allowed, origin, sourceUid, ...(copied ? { copied: true } : {}) });
+    if (merged) merged.quantity += given;
+    else rewards.push({ id, quantity: given, origin, sourceUid, ...(copied ? { copied: true } : {}) });
     used.set(key, current + allowed);
     return allowed;
   };
@@ -432,7 +439,9 @@ function installNativeCombat(battle, catalog, pieces, emit) {
       }
     }
     const entries = equipmentFor(piece, catalog);
-    const stats = sumBadgeMods(catalog, entries);
+    const own = rules.filter((r) => r.behavior === 'badgeAmplifier');
+    const stats = sumBadgeMods(catalog, entries, (id) => (battle.independentBadgeBoost?.(id) ?? 1)
+      * own.reduce((m, r) => m * ((r.params?.badgeIds || []).includes(id) ? Number(r.params.multiplier) || 1 : 1), 1));
     const startMods = traitsOnBattleStart(unit, catalog, piece, entries);
     const special = splitBattleMods(stats.mods);
     const baseMods = { ...special.buffs };
@@ -463,7 +472,7 @@ function installNativeCombat(battle, catalog, pieces, emit) {
         battle.on('hit', ({ source, target, dmg }) => {
           if (source === unit && target?.side === 'enemy' && dmg && (dmg.type === 'phys' || dmg.type === 'arts')) dmg.type = weaknessType(source, target, dmg);
         }, { priority: WEAKNESS_PRIORITY, owner: unit });
-      } else if (!['badgeThresholdStat', 'staticStats', 'deployWindowStats', 'startDerivedStats'].includes(rule.behavior)) {
+      } else if (!['badgeThresholdStat', 'staticStats', 'deployWindowStats', 'startDerivedStats', 'badgeAmplifier', 'productionMultiplier'].includes(rule.behavior)) {
         throw new Error(`unimplemented independent native rule ${piece.chessId}:${rule.behavior}`);
       }
     }
@@ -1034,6 +1043,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
         case 'identityTag':
         case 'inheritancePermit':
         case 'prepEndForge':
+        case 'escalatingForge':
         case 'saleThresholdRecruit':
         case 'stats':
           break;
@@ -1129,6 +1139,13 @@ export function installIndependentBattle(battle, { catalog, state } = {}) {
     if (!piece || piece.uid == null || typeof piece.chessId !== 'string') throw new TypeError('independent battle piece requires uid and chessId');
     rulesOf(catalog, piece.chessId);
   }
+  // the team's game-long badge boosts (native badgeBoost → state.playerEffects): +percent per listed badge
+  const boosts = entryArray(state?.playerEffects).filter((fx) => fx?.type === 'badgeBoost' && Number(fx.percent) > 0);
+  battle.independentBadgeBoost = (id) => 1 + boosts.reduce((n, fx) => n + ((fx.badgeIds || []).includes(id) ? Number(fx.percent) : 0), 0);
+  // a production doubler that fights this battle: the strongest one counts (they do not stack)
+  const fielded = new Set(battle.allyUnits.filter((u) => u.kind === 'op').map((u) => u.uid));
+  battle.independentProductionFactor = 1 + Math.max(0, ...pieces.filter((p) => fielded.has(p.uid))
+    .flatMap((p) => rulesOf(catalog, p.chessId).filter((r) => r.behavior === 'productionMultiplier').map((r) => Number(r.params?.extra) || 0)));
   const emit = createRewardEmitter(battle);
   installEvents(battle, catalog, pieces, emit);
 }

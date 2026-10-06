@@ -55,7 +55,7 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
 
 /** Rounds of the production ledger a session keeps: the current one and the one before (its battle rewards). */
 export const PRODUCTION_ROUNDS_KEPT = 2;
-const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated', 'lost'];
+const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 'repeated', 'lost', 'worn', 'targetUid'];
 
 /**
  * Append one entry to `state.production`, the player-facing record of where inventory items came from. An entry
