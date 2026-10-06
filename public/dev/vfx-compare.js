@@ -42,7 +42,10 @@ function enemy(id, defId, x, y, extra = {}) {
 }
 
 function unitsFor(skillId) {
-  if (operator === 'blkkgt') return [blkkgt(skillId === 'skchr_blkkgt_1' ? 0 : 1), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
+  if (operator === 'blkkgt') {
+    const skillIndex = skillId === 'skchr_blkkgt_1' ? 0 : skillId === 'skchr_blkkgt_2' ? 1 : 2;
+    return [blkkgt(skillIndex), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
+  }
   const skillIndex = skillId === 'skchr_rosmon_1' ? 0 : skillId === 'skchr_rosmon_3' ? 2 : 1;
   return [ros(skillIndex), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
 }
@@ -55,18 +58,36 @@ function makeTimeline(kind) {
   const a = [];
   const add = (t, ...ev) => a.push([t, ev]);
   if (operator === 'blkkgt') {
-    // The comparison deliberately exercises only the extracted S1 action: three cast effects and two target hit groups.
+    const skillId = kind.startsWith('skchr_blkkgt_') ? kind : 'skchr_blkkgt_3';
+    if (skillId === 'skchr_blkkgt_3') {
+      // This is the actual server event shape: skill → ten fx:slash/dmg pairs → fx:finale/dmg → skill off.
+      // The extracted Spine timings are 0.333 s between loop hits; the final action has one hit at 0.333 s.
+      const start = 0.5;
+      add(0.15, ['deploy', 1]);
+      add(start, ['skill', 1, 1, skillId]);
+      for (let i = 0; i < 10; i++) {
+        const t = start + i * 0.333;
+        add(t, ['fx', 'slash', 3.5, 11, { id: 1, n: 1 }]);
+        add(t + 0.012, ['dmg', 20 + (i % 2), 420, 'phys', 1, 0]);
+      }
+      const finale = start + 10 * 0.333 + 0.08;
+      add(finale, ['fx', 'finale', 3.5, 11, { id: 1 }]);
+      add(finale + 0.333, ['dmg', 21, 980, 'phys', 1, 0]);
+      add(finale + 0.58, ['skill', 1, 0, skillId]);
+      return a;
+    }
+    // S1/S2 retain the extracted action-slot comparison: cast effects plus target hit groups.
     add(0.15, ['deploy', 1]);
     add(0.9, ['atk', 1, 20, 'none', 11, 0]);
     add(1.2, ['dmg', 20, 620, 'phys', 1, 11]);
-    add(1.65, ['skill', 1, 1, 'skchr_blkkgt_1']);
+    add(1.65, ['skill', 1, 1, skillId]);
     add(2.05, ['atk', 1, 20, 'none', 21, 1]);
     add(2.28, ['dmg', 20, 980, 'phys', 1, 21]);
     add(2.55, ['dmg', 20, 980, 'phys', 1, 21]);
     add(2.9, ['atk', 1, 21, 'none', 22, 1]);
     add(3.15, ['dmg', 21, 980, 'phys', 1, 22]);
     add(3.42, ['dmg', 21, 980, 'phys', 1, 22]);
-    add(4.5, ['skill', 1, 0, 'skchr_blkkgt_1']);
+    add(4.5, ['skill', 1, 0, skillId]);
     return a;
   }
   const addSkill = (skillId, start, attackId, targetId, amount) => {
@@ -86,7 +107,7 @@ function resetBattle() {
   elapsed = 0;
   cursor = 0;
   timeline = makeTimeline(scenario);
-  const skillId = operator === 'blkkgt' ? 'skchr_blkkgt_1' : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
+  const skillId = operator === 'blkkgt' ? (scenario.startsWith('skchr_blkkgt_') ? scenario : 'skchr_blkkgt_3') : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
   const units = unitsFor(skillId);
   const original = after?.debug?.fx?.originalVfx;
   if (original && original.root !== (operator === 'blkkgt' ? '/assets/vfx/blkkgt' : '/assets/vfx/rosmon')) {
@@ -102,7 +123,7 @@ function resetBattle() {
   resetBattle.hp = hp;
   const initial = { t: 'b.snap', fieldId, gt: 0, units: snapshot(units, 0, hp), dp: 10, killed: 0, total: 3 };
   before.pushSnapshot(initial); after.pushSnapshot(initial);
-  const label = operator === 'blkkgt' ? '锏 · 普攻与技能一' : (scenario === 'full' ? '迷迭香 · 完整流程' : `迷迭香 · ${scenario.replace('skchr_rosmon_', '技能')}`);
+  const label = operator === 'blkkgt' ? `锏 · ${skillId.replace('skchr_blkkgt_', '技能')}` : (scenario === 'full' ? '迷迭香 · 完整流程' : `迷迭香 · ${scenario.replace('skchr_rosmon_', '技能')}`);
   $('status').innerHTML = `<strong>${label}：</strong> 同步播放中`;
 }
 
@@ -117,7 +138,7 @@ function sendFrame(t, ev, units) {
 
 function advance(dt) {
   if (!running) return;
-  const skillId = operator === 'blkkgt' ? 'skchr_blkkgt_1' : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
+  const skillId = operator === 'blkkgt' ? (scenario.startsWith('skchr_blkkgt_') ? scenario : 'skchr_blkkgt_3') : (scenario === 'full' ? 'skchr_rosmon_2' : scenario);
   const units = unitsFor(skillId);
   const next = Math.min(0.1, dt * speed);
   const old = elapsed;
@@ -126,7 +147,7 @@ function advance(dt) {
     const [t, ev] = timeline[cursor++];
     sendFrame(t, ev, units);
   }
-  if (elapsed >= (operator === 'blkkgt' ? 5.4 : (scenario === 'full' ? 7 : 6))) { running = false; $('status').innerHTML = '<strong>播放结束</strong>：点击“重播”或选择另一个场景'; }
+  if (elapsed >= (operator === 'blkkgt' ? (skillId === 'skchr_blkkgt_3' ? 5.2 : 5.4) : (scenario === 'full' ? 7 : 6))) { running = false; $('status').innerHTML = '<strong>播放结束</strong>：点击“重播”或选择另一个场景'; }
   void old;
 }
 
@@ -141,7 +162,8 @@ function wireControls() {
   const toggle = document.querySelector('[data-action="toggle"]');
   const restart = document.querySelector('[data-action="restart"]');
   for (const b of document.querySelectorAll('[data-scenario]')) b.onclick = () => {
-    if (operator === 'blkkgt') return;
+    const blakkScenario = b.dataset.scenario.startsWith('skchr_blkkgt_');
+    if ((operator === 'blkkgt') !== blakkScenario) return;
     scenario = b.dataset.scenario;
     document.querySelectorAll('[data-scenario]').forEach((x) => x.classList.toggle('is-on', x === b));
     running = true;
@@ -149,8 +171,13 @@ function wireControls() {
   };
   for (const b of document.querySelectorAll('[data-operator]')) b.onclick = () => {
     operator = b.dataset.operator;
+    scenario = operator === 'blkkgt' ? 'skchr_blkkgt_3' : 'full';
     document.querySelectorAll('[data-operator]').forEach((x) => x.classList.toggle('is-on', x === b));
-    document.querySelectorAll('[data-scenario]').forEach((x) => x.classList.toggle('is-on', x.dataset.scenario === 'full'));
+    document.querySelectorAll('[data-scenario]').forEach((x) => {
+      const isBlakk = x.dataset.scenario.startsWith('skchr_blkkgt_');
+      x.hidden = isBlakk !== (operator === 'blkkgt');
+      x.classList.toggle('is-on', x.dataset.scenario === scenario);
+    });
     running = true;
     resetBattle();
   };
@@ -168,6 +195,7 @@ async function main() {
       createFieldView($('after-field'), { data, assets, board: '2d', originalVfx: { root: '/assets/vfx/rosmon' }, settings: { quality: 'high', damageNumbers: true } }),
     ]);
     wireControls();
+    document.querySelectorAll('[data-scenario]').forEach((x) => { const isBlakk = x.dataset.scenario.startsWith('skchr_blkkgt_'); x.hidden = isBlakk; });
     resetBattle();
     window.__vfxCompare = { before, after, reset: resetBattle, stats: () => ({ before: before.stats(), after: after.stats() }) };
     $('status').innerHTML = '<strong>准备完成</strong>：两侧使用同一批战斗事件';
