@@ -111,9 +111,12 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
   const opBase = catalog.operators[piece ? piece.chessId : slot.id];
   const base = data.lookup('chess', piece ? piece.chessId : slot.id);
   const golden = opBase?.eliteChessId ? data.lookup('chess', opBase.eliteChessId) : null;
-  const chess = piece?.elite && golden ? golden : base;
-  if (!chess) return null;
+  const record = piece?.elite && golden ? golden : base;
+  if (!record) return null;
   const formOp = piece?.elite ? catalog.operators[opBase.eliteChessId] || opBase : opBase;
+  // the header's tier is the mode's (catalog), not the upstream chess record's
+  const tier = formOp?.tier ?? opBase?.tier;
+  const chess = Number.isInteger(tier) && tier !== record.tier ? { ...record, tier } : record;
   const loadout = piece ? { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } } : null;
   const gear = piece
     ? html`<${GearSection} key="equip" items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备"

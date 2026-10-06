@@ -19,7 +19,7 @@ import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortc
 import { data } from '../data.js';
 import { api } from './api.js';
 import { prepView, canDrop, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
-  replayClock, frameAt, pendingOffer, renderChessId } from './model.js';
+  replayClock, frameAt, pendingOffer, renderChessId, withCatalogTiers } from './model.js';
 import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount, MatchInfo, mergeHintOf, EffectsColumn } from './hud.js';
 import { EnemyDrawer } from '../ui/enemyDrawer.js';
 import { DpCounter } from '../ui/hud.js';
@@ -43,6 +43,8 @@ const ERRORS = {
 const errorText = (error) => ERRORS[error?.code] || (error?.message && !/^[A-Z_]+$/.test(error.message) ? error.message : '操作没有完成');
 
 const SPEEDS = [2, 4, 8];
+// the units' tier chips on the board as pips, like every tier on this page (main.js setTierLook)
+const FIELD_OPTS = Object.freeze({ tierChips: 'pips' });
 // the selected piece's range, in the original's colour (screens/game.js SEL_RANGE); hovering shows the plain group
 const SEL_RANGE = Object.freeze({ group: 'selRange', color: 0xff9c33, fill: 0.3, line: 0.95 });
 // the tile an armed merge card's elite takes (screens/game.js MERGE_HL)
@@ -94,7 +96,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const [state, setState] = useState(initial);
   const stateRef = useRef(state); stateRef.current = state;
   const hostRef = useRef(null);
-  const { view, kind: viewKind } = useFieldView(hostRef);
+  const { view, kind: viewKind } = useFieldView(hostRef, FIELD_OPTS);
   const gd = useGameData();
   const [busy, setBusy] = useState(false); const busyRef = useRef(false);
   const [armed, setArmed] = useState(null);
@@ -189,7 +191,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const res = await act({ type: 'ready' }, { keep: true });
     if (!res) return;
     const fought = (res.events || []).find((e) => e.type === 'battle');
-    const replay = fought ? await api.replay(id, fought.round) : null;
+    // the operators fight with the mode's tier on their plates (the simulation's unit info has the upstream record's)
+    const replay = fought ? withCatalogTiers(await api.replay(id, fought.round), catalog) : null;
     const next = res.state;
     if (!replay) {
       toast('这一轮的战斗记录没有取到，直接显示结果', 'warn');
@@ -199,7 +202,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const lastFrame = replay.frames[replay.frames.length - 1]?.snap;
     setBattle({ round: fought.round, replay, next, lpBefore: before.lp, lpLost: fought.lpLost || 0, result: next.lastBattle?.result || null,
       killed: 0, total: lastFrame?.total ?? null, done: false, finished: next.phase === 'finished' ? next.outcome : null });
-  }, [act, id]);
+  }, [act, id, catalog]);
 
   const closeBattle = useCallback(() => {
     const b = battleRef.current;

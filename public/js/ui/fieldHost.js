@@ -186,11 +186,13 @@ export function seedAssets(store) {
 /**
  * Create a field view in `host`: the render engine when available, else the DOM fallback.
  * @param {HTMLElement} host
+ * @param {{ tierChips?: 'roman'|'pips' }|null} [extra] a mode's own view options (render/app.js createFieldView)
  * @returns {Promise<ReturnType<typeof guardView>>}
  */
-export async function mountFieldView(host) {
+export async function mountFieldView(host, extra = null) {
   const pref = renderPref();
   const opts = { data, assets: data.get('assets'), audio, settings: settingsStore.get(), padding: hudPadding, hud: hudBands };
+  if (extra) Object.assign(opts, extra);
   if (pref !== 'fallback') {
     try {
       // the shared asset store (public/js/assets.js) keeps its Spine cache across remounts (next match, reconnect)
@@ -220,15 +222,16 @@ export async function mountFieldView(host) {
 /**
  * Preact hook: mount a field view into `hostRef` once; returns { view, kind } (view null while loading).
  * @param {{ current: HTMLElement|null }} hostRef
+ * @param {{ tierChips?: 'roman'|'pips' }|null} [extra] view options of the mode (read once, at mount)
  */
-export function useFieldView(hostRef) {
+export function useFieldView(hostRef, extra = null) {
   const [state, setState] = useState({ view: null, kind: 'loading' });
   const viewRef = useRef(null);
   useEffect(() => {
     let dead = false;
     const host = hostRef.current;
     if (!host) return undefined;
-    mountFieldView(host).then((view) => {
+    mountFieldView(host, extra).then((view) => {
       if (dead) { view.destroy(); return; }
       viewRef.current = view;
       globalThis.__SP_VIEW__ = view; // dev / E2E introspection (view.raw.stats?.())

@@ -116,7 +116,7 @@ import { UnitView, ItemView, DeviceView, FORMS } from './units.js';
 import { FxSystem, ensureDamageFonts } from './fx.js';
 import { FxCues, unitFxIdentity } from './fxRegistry.js';
 import { createDragController, pieceTile } from './drag.js';
-import { backdropTextures, shadowTexture, refreshTierChips, silhouetteTexture } from './textures.js';
+import { backdropTextures, shadowTexture, refreshTierChips, setTierChipLook, silhouetteTexture } from './textures.js';
 import { TILE_H, TIER_COLORS, COLORS } from './style.js';
 import { createAssets, assets as defaultAssets } from '../assets.js';
 import { loadBoardArt } from './boardArt.js';
@@ -403,11 +403,13 @@ export function releaseGl(renderer) {
  * @param {HTMLElement} host
  * @param {{ data?: any, assets?: any, audio?: any, settings?: { damageNumbers?: boolean, quality?: string },
  *           padding?: object|((kind:string, size:{width:number,height:number}) => object),
- *           hud?: {top:number,bottom:number}|((kind:'prep'|'bossPrep', size:{width:number,height:number}, o:{shop:boolean}) => {top:number,bottom:number}|null) }} [opts]
+ *           hud?: {top:number,bottom:number}|((kind:'prep'|'bossPrep', size:{width:number,height:number}, o:{shop:boolean}) => {top:number,bottom:number}|null),
+ *           tierChips?: 'roman'|'pips' }} [opts] `tierChips`: the units' tier chips — roman numerals (default) or pips (卫戍协议：工坊)
  */
 export async function createFieldView(host, options = {}) {
   if (!host || typeof host.appendChild !== 'function') throw new TypeError('createFieldView: host element required');
   const opts = options && typeof options === 'object' ? options : {};
+  setTierChipLook(opts.tierChips);
   const P = await ensurePixi();
   const assets = resolveAssets(opts.assets);
   const data = makeData(opts.data);
@@ -900,7 +902,9 @@ export async function createFieldView(host, options = {}) {
     return {
       kind: 'op', side: 'ally', defId: piece.id,
       spine: rec?.assets?.spine || rec?.charId || null, avatar: rec?.assets?.avatar || rec?.charId || null,
-      tier: rec?.tier || piece.tier || 1, golden: !!(piece.golden || rec?.isGolden), dir,
+      // the piece's own tier first: a mode with its own roster (卫戍协议：工坊) tiers operators differently from the
+      // chess record; the original's server sends the record's tier anyway
+      tier: piece.tier || rec?.tier || 1, golden: !!(piece.golden || rec?.isGolden), dir,
     };
   }
 

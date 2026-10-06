@@ -187,15 +187,34 @@ export function tierChipUrl(t) {
   return uiUrl(data.get('assets'), `shopCard/img_chess_level_${t}`) || localAsset('ui/battle', `img_chess_level_${t}`);
 }
 
+// The page's tier look. 'roman' is the original game's (official chip art, else a numeral octagon); a mode with its own
+// look sets 'pips' once at start-up (卫戍协议：工坊, js/independent/main.js): the tier as that many pips on a tag.
+let tierLook = 'roman';
+/** @param {'roman'|'pips'} look */
+export function setTierLook(look) { tierLook = look === 'pips' ? 'pips' : 'roman'; }
+export const tierLookOf = () => tierLook;
+
+/**
+ * The tier as pips on a tag (the 'pips' look; css/workshop.css lays them out three to a row).
+ * @param {{ tier: number, golden?: boolean, size?: 'sm'|'md'|'lg', class?: string }} props
+ */
+export function TierPips({ tier, golden = false, size = 'md', class: cls }) {
+  const t = Math.max(1, Math.min(6, Number(tier) | 0 || 1));
+  return html`<span class=${cx('tier', 'tier--pips', `tier--${t}`, `tier--${size}`, golden && 'tier--golden', cls)} role="img" aria-label=${`${t}阶`} data-tier=${t}>${
+    Array.from({ length: t }, (_, i) => html`<i key=${i}></i>`)}</span>`;
+}
+
 /**
  * Roman tier chip (I–VI): the official octagon sprite, or a CSS octagon in the official tier colours.
- * Golden = elite (精锐) variant (gold glow).
+ * Golden = elite (精锐) variant (gold glow). With the 'pips' look (setTierLook) the tier is that many pips instead:
+ * one row up to three, a second row for 4–6.
  * @param {{ tier: number, golden?: boolean, size?: 'sm'|'md'|'lg', class?: string }} props
  */
 export function TierChip({ tier, golden = false, size = 'md', class: cls }) {
   const t = Math.max(1, Math.min(6, Number(tier) | 0 || 1));
-  const src = tierChipUrl(t);
   const [bad, setBad] = useState(null);
+  if (tierLook === 'pips') return TierPips({ tier: t, golden, size, class: cls });
+  const src = tierChipUrl(t);
   const img = !!src && bad !== src;
   return html`<span class=${cx('tier', `tier--${t}`, `tier--${size}`, golden && 'tier--golden', img && 'tier--img', cls)} aria-label=${`${t}阶`}>
     ${img ? html`<img src=${src} alt="" draggable=${false} onError=${() => setBad(src)} />` : roman(t)}

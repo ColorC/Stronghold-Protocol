@@ -1,0 +1,212 @@
+/* ==========================================================================================
+   workshop.css — 卫戍协议：工坊's own look (independent.html only, loaded last, everything under html.ix-ws).
+   Direction: an engineering bay. Tool-steel plates instead of the original's green-black glass, safety orange
+   instead of mint, rivets instead of bracket corners, hazard stripes on the edges that matter (shop bar, overlays,
+   the level card) and a tread-plate floor behind the start page. The original page (index.html) never loads this
+   file, so its tokens and frames stay as they were. Fonts are the original's.
+   ========================================================================================== */
+
+html.ix-ws {
+  /* surfaces: neutral cool steel (no green in it) */
+  --bg-0: #101216;
+  --bg-1: #171a1f;
+  --bg-2: #1f2329;
+  --bg-3: #282d34;
+  --bg-4: #323840;
+  --bg-glass: rgba(19, 22, 27, .88);
+  --line: #363c45;
+  --line-2: #4b535e;
+  --line-3: #6a737f;
+
+  /* the accent: safety orange in the original's mint slots (so every original frame on this page follows) */
+  --mint-400: #ffb15a;
+  --mint-500: #ff9a2e;
+  --mint-600: #f08c1f;
+  --mint-glow: #ffa53a;
+  --mint-700: #b8691c;
+  --mint-800: #6e4117;
+  --mint-900: #2e1c0c;
+  --mint-a10: rgba(255, 154, 46, .10);
+  --mint-a20: rgba(255, 154, 46, .20);
+  --mint-a35: rgba(255, 154, 46, .35);
+  --text-on-mint: #1c1005;
+
+  /* text: neutral greys */
+  --text-hi: #f2f4f6;
+  --text-md: #c9ced5;
+  --text-lo: #9aa1ab;
+  --text-dim: #6f7680;
+
+  /* workshop materials */
+  --ws-plate: linear-gradient(180deg, #2a2f36 0%, #1d2126 48%, #16191d 100%);
+  --ws-plate-glass: linear-gradient(180deg, rgba(40, 45, 52, .95) 0%, rgba(25, 28, 33, .95) 50%, rgba(18, 20, 24, .96) 100%);
+  --ws-brushed: repeating-linear-gradient(90deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 3px, rgba(0, 0, 0, .05) 3px 4px, transparent 4px 7px);
+  --ws-bevel: inset 0 1px 0 rgba(255, 255, 255, .09), inset 0 -1px 0 rgba(0, 0, 0, .6);
+  --ws-hazard: repeating-linear-gradient(-45deg, var(--mint-500) 0 .07rem, #17191c .07rem .14rem);
+  --ws-rivet: radial-gradient(circle, #b9c1ca 0 1.2px, #59616b 1.9px, rgba(0, 0, 0, .55) 2.6px, transparent 3.2px);
+  --ws-rivets:
+    var(--ws-rivet) left 4px top 4px / 7px 7px no-repeat,
+    var(--ws-rivet) right 4px top 4px / 7px 7px no-repeat,
+    var(--ws-rivet) left 4px bottom 4px / 7px 7px no-repeat,
+    var(--ws-rivet) right 4px bottom 4px / 7px 7px no-repeat;
+  /* tread plate: raised diagonal bars in alternating directions */
+  --ws-tread: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><g fill='none' stroke-linecap='round' stroke-width='3.2'><path d='M5 12 L12 5' stroke='rgba(255,255,255,.055)'/><path d='M6 13 L13 6' stroke='rgba(0,0,0,.5)'/><path d='M20 20 L27 27' stroke='rgba(255,255,255,.055)'/><path d='M19 21 L26 28' stroke='rgba(0,0,0,.5)'/></g></svg>");
+  --bk-c: var(--mint-500);
+  background: var(--bg-0);
+}
+html.ix-ws body { background: var(--bg-0); color: var(--text-hi); }
+html.ix-ws ::selection { background: var(--mint-500); color: var(--text-on-mint); }
+html.ix-ws ::-webkit-scrollbar-thumb:hover { background: var(--mint-700); }
+
+/* bracket corners → four rivets (the top bar's centre, the detail card, panels, dialogs) */
+html.ix-ws .brackets::after { inset: 0; background: var(--ws-rivets); }
+
+/* ---- shared components ------------------------------------------------------------------------------------------ */
+html.ix-ws .btn { --btn-glow: rgba(255, 154, 46, .25); }
+html.ix-ws .btn--primary { --btn-glow: rgba(255, 165, 58, .4); }
+html.ix-ws .btn--secondary { --btn-bg: rgba(30, 34, 40, .94); --btn-bg-hover: rgba(255, 154, 46, .08); box-shadow: var(--ws-bevel); }
+html.ix-ws .btn--ghost { --btn-bg-hover: rgba(255, 154, 46, .06); }
+html.ix-ws .panel { background: var(--ws-brushed), var(--ws-plate-glass); box-shadow: var(--ws-bevel), 0 .12rem .3rem rgba(0, 0, 0, .4); }
+html.ix-ws .modal { background: rgba(5, 6, 8, .74); }
+html.ix-ws .modal__box { background: var(--ws-brushed), var(--ws-plate); box-shadow: var(--ws-bevel), 0 .3rem .9rem rgba(0, 0, 0, .7); }
+html.ix-ws .tooltip { background: rgba(20, 23, 28, .97); }
+html.ix-ws .tabs__tab:hover:not(:disabled) { background: rgba(255, 154, 46, .05); }
+html.ix-ws .pbanner { --pb-glow: rgba(255, 165, 58, .4); }
+html.ix-ws .field__box:focus-within { box-shadow: 0 0 0 1px rgba(255, 154, 46, .2), 0 0 .18rem rgba(255, 165, 58, .15); }
+html.ix-ws .hex--mint, html.ix-ws .hex--discount { --hex-bg: #241708; }
+
+/* ---- tier as pips (components.js TierChip with setTierLook('pips')): a steel tag with that many rivet pips -------- */
+html.ix-ws .tier--pips {
+  --pip: calc(var(--tier-h) * .2);
+  clip-path: none; isolation: auto;
+  display: inline-flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: calc(var(--tier-h) * .035) calc(var(--tier-h) * .05);
+  padding: 0;
+  background: linear-gradient(180deg, #3a4048, #16191d);
+  border: max(1.5px, calc(var(--tier-h) * .06)) solid var(--tc); border-radius: max(2px, calc(var(--tier-h) * .14));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .12);
+  font-size: 0;
+}
+html.ix-ws .tier--pips::before { content: none; }
+html.ix-ws .tier--pips i { flex: none; width: var(--pip); height: var(--pip); border-radius: 50%; background: var(--tc);
+  box-shadow: 0 0 0 .5px rgba(0, 0, 0, .6), inset 0 -1px 0 rgba(0, 0, 0, .35); }
+/* three to a row: a zero-height break, then the 4th–6th pip on a second row (the break's line makes two row gaps) */
+html.ix-ws .tier--pips::after { content: ''; flex-basis: 100%; height: 0; order: 1; }
+html.ix-ws .tier--pips:is(.tier--1, .tier--2, .tier--3)::after { display: none; }
+html.ix-ws .tier--pips:is(.tier--4, .tier--5, .tier--6) i:nth-child(n+4) { order: 2; }
+html.ix-ws .tier--pips.tier--golden { background: linear-gradient(180deg, #ffe27a, #d99a00); border-color: #fff3b8; }
+html.ix-ws .tier--pips.tier--golden i { background: #2a1a00; }
+/* readable floors: the original's .22rem chip is 9 px on a phone */
+html.ix-ws .tier--pips { --tier-h: max(.28rem, 20px); }
+html.ix-ws .tier--pips.tier--sm { --tier-h: max(.22rem, 17px); }
+html.ix-ws .tier--pips.tier--lg { --tier-h: max(.38rem, 26px); }
+html.ix-ws .uthumb__tier.tier--pips, html.ix-ws :is(.uthumb--xs, .uthumb--sm) .uthumb__tier.tier--pips { transform: none; left: -.02rem; top: -.02rem; --tier-h: max(.2rem, 15px); }
+
+/* ---- start page --------------------------------------------------------------------------------------------------- */
+html.ix-ws .ix-start {
+  background: var(--ws-tread) 0 0 / 32px 32px, radial-gradient(ellipse at 50% 0%, rgba(255, 154, 46, .07), transparent 55%), linear-gradient(180deg, #1b1f24, #0f1114 75%);
+}
+html.ix-ws .ix-start::before, html.ix-ws .ix-start::after { content: ''; position: absolute; left: 0; right: 0; height: .12rem; background: var(--ws-hazard); opacity: .85; pointer-events: none; }
+html.ix-ws .ix-start::before { top: 0; }
+html.ix-ws .ix-start::after { bottom: 0; }
+html.ix-ws .ix-start__head h1 { color: var(--text-hi); text-shadow: 0 2px 0 #000, 0 0 .3rem rgba(255, 154, 46, .18); }
+html.ix-ws .ix-start__head .micro { color: var(--mint-400); }
+html.ix-ws .ix-start__head p { color: var(--text-md); }
+html.ix-ws .ix-mode {
+  padding-left: .3rem;
+  background: var(--ws-hazard) left top / .1rem 100% no-repeat, var(--ws-rivets), var(--ws-brushed), var(--ws-plate);
+  border: 1px solid var(--line-2); box-shadow: var(--ws-bevel), 0 .06rem .18rem rgba(0, 0, 0, .5);
+}
+html.ix-ws .ix-mode b { color: var(--text-hi); }
+html.ix-ws .ix-mode span { color: var(--text-md); }
+html.ix-ws .ix-mode:hover:not(:disabled) { border-color: var(--mint-500); }
+html.ix-ws .ix-start__back { color: var(--mint-400); }
+html.ix-ws .ix-start__gear, html.ix-ws .gm__gear { background: var(--ws-plate); box-shadow: var(--ws-bevel); }
+
+/* ---- game screen: top bar ----------------------------------------------------------------------------------------- */
+html.ix-ws .gm__vignette {
+  background: linear-gradient(180deg, rgba(9, 10, 13, .8) 0%, rgba(9, 10, 13, 0) 18%), linear-gradient(0deg, rgba(9, 10, 13, .6) 0%, rgba(9, 10, 13, 0) 22%),
+    radial-gradient(120% 90% at 45% 50%, transparent 60%, rgba(0, 0, 0, .5) 100%);
+}
+html.ix-ws .gtop__center { background: var(--ws-rivets), var(--ws-brushed), var(--ws-plate-glass); border-color: var(--line-2); box-shadow: var(--ws-bevel), 0 .08rem .28rem rgba(0, 0, 0, .5); }
+html.ix-ws .gtop__center::before { content: ''; position: absolute; left: .3rem; right: .3rem; top: -1px; height: .05rem; background: var(--ws-hazard); }
+html.ix-ws .gtop__iconbtn:not(.has-sprite) { background: rgba(255, 154, 46, .06); }
+/* the official mint sprites (check button, LP tower) turned to the bay's orange */
+html.ix-ws .gtop__iconbtn.has-sprite:not(.enemybtn), html.ix-ws .lp:not(.lp--danger) .lp__icon { filter: hue-rotate(-132deg) saturate(1.35) brightness(1.05); }
+html.ix-ws .gtop__iconbtn.has-sprite:not(.enemybtn):hover { filter: hue-rotate(-132deg) saturate(1.35) brightness(1.25); }
+html.ix-ws .readybtn { background: var(--ws-plate); box-shadow: var(--ws-bevel), 0 0 .18rem rgba(255, 154, 46, .15); }
+html.ix-ws .readybtn:hover:not(:disabled) { background: rgba(255, 154, 46, .14); box-shadow: 0 0 .26rem rgba(255, 165, 58, .3); }
+html.ix-ws .readybtn:disabled { background: var(--ws-plate); }
+html.ix-ws .gm__gear:hover { color: var(--mint-400); }
+
+/* ---- shop bar ------------------------------------------------------------------------------------------------------ */
+html.ix-ws .shopbar__row { background: var(--ws-brushed), linear-gradient(180deg, rgba(36, 40, 47, .96), rgba(17, 19, 23, .98)); border-color: var(--line-2); border-top: 0; box-shadow: var(--ws-bevel), 0 -.04rem .3rem rgba(0, 0, 0, .6); }
+html.ix-ws .shopbar__row::before { top: -.06rem; height: .06rem; background: var(--ws-hazard); }
+html.ix-ws .shopbar.is-frozen .shopbar__row::before { background: repeating-linear-gradient(-45deg, var(--ice) 0 .07rem, #17191c .07rem .14rem); }
+html.ix-ws .shopbar__remain, html.ix-ws .shopbar-tab, html.ix-ws .shopbar__tools > button { box-shadow: var(--ws-bevel); }
+html.ix-ws .shopbar-tab { background: var(--ws-plate); }
+html.ix-ws .scard { background: #181b20; border-color: rgba(150, 160, 172, .35); }
+html.ix-ws .scard__bg {
+  background: linear-gradient(180deg, #252a31, #121418);
+  background: radial-gradient(120% 70% at 80% 30%, color-mix(in srgb, var(--tc) 22%, transparent), transparent 70%), var(--ws-brushed), linear-gradient(180deg, #252a31, #121418);
+}
+html.ix-ws .scard__body { background: linear-gradient(0deg, rgba(15, 17, 21, .98) 60%, transparent); }
+html.ix-ws .scard:not(.is-disabled):not(.scard--sold):hover { box-shadow: 0 0 0 1px var(--mint-400), 0 .1rem .24rem rgba(255, 154, 46, .25); }
+html.ix-ws .scard__skill { background: #121418; }
+html.ix-ws .scard__skill.is-custom { box-shadow: 0 0 0 1px var(--mint-500), 0 0 .08rem rgba(255, 165, 58, .5); }
+html.ix-ws .scard__bond { color: var(--mint-400); }
+html.ix-ws .lvcard { background: var(--ws-brushed), linear-gradient(180deg, #ffb457, #e3851a); }
+html.ix-ws .lvcard__frame { border-color: rgba(28, 16, 5, .7); }
+html.ix-ws .lvcard__key { color: var(--mint-900) !important; border-color: rgba(28, 16, 5, .35) !important; }
+html.ix-ws .lvcard.is-disabled { background: var(--ws-brushed), linear-gradient(180deg, #4a515b, #31363d); color: #b3bac3; }
+html.ix-ws .lvcard.is-disabled .lvcard__frame { border-color: rgba(179, 186, 195, .5); }
+html.ix-ws .lvcard.is-disabled .lvcard__frame::before, html.ix-ws .lvcard.is-disabled .lvcard__frame::after { border-color: #b3bac3; }
+html.ix-ws .funds { border-left-color: var(--line-2); }
+
+/* ---- detail card, stats, chips ------------------------------------------------------------------------------------ */
+html.ix-ws .dpanel { background: var(--ws-rivets), var(--ws-brushed), linear-gradient(180deg, rgba(33, 37, 43, .98), rgba(19, 21, 25, .98)); border-color: var(--line-2); box-shadow: var(--ws-bevel), 0 .14rem .4rem rgba(0, 0, 0, .7); }
+html.ix-ws .dpanel::before { content: ''; position: absolute; left: .2rem; right: .2rem; top: -1px; height: .05rem; background: var(--ws-hazard); z-index: 1; pointer-events: none; }
+html.ix-ws .dstat { background: #15181c; }
+html.ix-ws .dstats { background: var(--line); }
+html.ix-ws .dbond { background: rgba(255, 154, 46, .08); }
+html.ix-ws .dbonds--top .dbond.is-active { background: rgba(255, 154, 46, .1); }
+html.ix-ws .dbond__tiers i.on { box-shadow: 0 0 .04rem rgba(255, 154, 46, .8); }
+html.ix-ws .dmorph__row.is-worn { background: rgba(255, 154, 46, .14); }
+html.ix-ws .iband { background: rgba(255, 154, 46, .05); }
+html.ix-ws .uthumb__art { background-color: #1b1f24; }
+html.ix-ws .effect { background: var(--ws-plate); box-shadow: var(--ws-bevel); }
+html.ix-ws .effect--team { border-color: rgba(255, 154, 46, .6); }
+html.ix-ws .uframe__outer { fill: rgba(255, 154, 46, .06); }
+
+/* ---- the mode's own HUD pieces (independent.css): steel instead of green-black glass -------------------------------- */
+html.ix-ws :is(.ix-strip__head, .ix-strip__slot, .ix-strip__more, .ix-prod__toggle, .ix-chip, .ix-penbtn, .ix-overflow, .ix-dgear__tile, .ix-carry > span) {
+  background: var(--ws-plate-glass); box-shadow: var(--ws-bevel);
+}
+html.ix-ws .ix-prod__body { background: var(--ws-brushed), rgba(20, 23, 28, .9); border-color: var(--line-2); box-shadow: var(--ws-bevel); }
+html.ix-ws .ix-ghost { background: rgba(22, 25, 30, .95); }
+html.ix-ws .ix-badge { background: rgba(20, 23, 28, .9); border-color: rgba(255, 198, 0, .3); box-shadow: 0 1px 2px rgba(0, 0, 0, .7); }
+html.ix-ws .ix-notes { background: rgba(255, 255, 255, .03); border-left-color: var(--mint-700); }
+html.ix-ws .ix-dgear__text { background: #15181c; }
+html.ix-ws .ix-inv__cell, html.ix-ws .ix-cmp__col { background: var(--ws-plate); }
+html.ix-ws .ix-inv__cell.is-empty { background: none; }
+
+/* ---- offers, 战报, end of the match ------------------------------------------------------------------------------- */
+html.ix-ws :is(.ix-offer, .ix-result) { background: rgba(6, 7, 9, .66); }
+html.ix-ws :is(.ix-offer__box, .ix-result__box) {
+  position: relative;
+  /* the hazard band is the top background layer: it stays on the box's top edge while the content scrolls */
+  background: var(--ws-hazard) left top / 100% .07rem no-repeat, var(--ws-rivets), var(--ws-brushed), linear-gradient(170deg, #262b32, #121418);
+  border: 1px solid var(--line-3); box-shadow: var(--ws-bevel), 0 .2rem .6rem rgba(0, 0, 0, .6);
+}
+html.ix-ws .ix-choice { background: var(--ws-brushed), linear-gradient(180deg, rgba(38, 43, 50, .96), rgba(24, 27, 32, .96)); border-color: var(--line-2); box-shadow: var(--ws-bevel); }
+html.ix-ws .ix-dmg__bar { background: #2a2f36; }
+html.ix-ws .ix-dmg__bar i { background: linear-gradient(90deg, var(--mint-700), var(--mint-400)); }
+html.ix-ws .ix-final { background: var(--ws-tread) 0 0 / 32px 32px, rgba(13, 15, 18, .95); }
+html.ix-ws .result__bg::after { background: linear-gradient(90deg, rgba(13, 15, 18, .78), rgba(13, 15, 18, .55) 40%, rgba(13, 15, 18, .9) 62%); }
+html.ix-ws .result__grid { background: none; }
+html.ix-ws .result__headline { text-shadow: 0 0 .4rem rgba(255, 165, 58, .4); }
+html.ix-ws .rcard { background: var(--ws-brushed), rgba(24, 27, 32, .92); box-shadow: var(--ws-bevel); }
+html.ix-ws .rcard.is-self { background: linear-gradient(90deg, rgba(255, 154, 46, .09), rgba(24, 27, 32, .92) 40%); }
+
+@media (max-height: 460px) {
+  html.ix-ws .ix-mode { padding-left: .24rem; background-size: .07rem 100%, 7px 7px, 7px 7px, 7px 7px, 7px 7px, auto, auto; }
+}
