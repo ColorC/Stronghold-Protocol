@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="ix-ws">
 <head>
   <meta charset="utf-8" />
   <!-- the original game's page head (index.html): landscape, no page zoom, full-bleed; absolute asset paths work on the
        local server and behind the Workshop gateway, which routes /js /css /vendor /assets /data to this server -->
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0c0f0e" />
+  <meta name="theme-color" content="#101216" />
   <meta name="color-scheme" content="dark" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description" content="卫戍协议：工坊 · 卫戍协议网页同人复刻的装备玩法模式（非官方同人作品）" />
   <title>卫戍协议：工坊</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230c0f0e'/%3E%3Cpath fill='%234ed8af' d='M12 3 21 8v8l-9 5-9-5V8z'/%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%23101216'/%3E%3Cpath fill='%23ff9a2e' d='M12 3 21 8v8l-9 5-9-5V8z'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" media="print" onload="this.media='all'"
@@ -29,6 +29,8 @@
   <link rel="stylesheet" href="/css/screens/loadout.css" />
   <link rel="stylesheet" href="/css/devices.css" />
   <link rel="stylesheet" href="/css/independent.css" />
+  <!-- the workshop look (steel, safety orange, rivets): html.ix-ws only, so it comes last -->
+  <link rel="stylesheet" href="/css/workshop.css" />
   <script type="importmap">
     { "imports": { "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js" } }
   </script>
