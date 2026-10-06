@@ -99,14 +99,22 @@ export function groupEquipment(items, catalog) {
   return [...rows.values()].sort((a, b) => (a.badge - b.badge) || (b.level ?? 0) - (a.level ?? 0) || b.count - a.count);
 }
 
-/** Inventory stacks for the strip: badge kinds (count summed) then the other items; the uid to equip from. */
+/** Kinds of inventory items that are used (补给, 玩家设施) rather than worn; a prize kept in the inventory too. */
+export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
+
+/**
+ * Inventory stacks for the strip: badge kinds (count summed) then the other items; the uid to equip from. A prize
+ * kept for later (追加采购预算) is in the inventory under its prize id and reads its name from the prizes.
+ */
 export function inventoryStacks(inventory, catalog) {
   const stacks = new Map();
   for (const item of inventory || []) {
     const key = `${item.id}:${item.elite ? 'e' : 'n'}`;
-    const rec = gearRecord(catalog, item.id) || {};
-    const s = stacks.get(key) || { key, id: item.id, elite: !!item.elite, name: rec.name || item.id, level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level,
-      kind: rec.kind || null, mechanism: rec.mechanism || null, badge: isBadge(catalog, item.id), count: 0, items: [] };
+    const prize = !gearRecord(catalog, item.id) && catalog?.prizes?.[item.id];
+    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect, elite: prize.effect } : {});
+    const s = stacks.get(key) || { key, id: item.id, elite: !!item.elite, name: rec.name || '未知物品', level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level,
+      kind: rec.kind || null, mechanism: rec.mechanism || null, text: item.elite ? rec.elite : rec.normal, used: USED_KINDS.has(rec.kind),
+      badge: isBadge(catalog, item.id), count: 0, items: [] };
     s.count += Number(item.quantity || 1); s.items.push(item);
     stacks.set(key, s);
   }
@@ -146,6 +154,30 @@ export function forecastRows(state, catalog) {
   const idle = (state?.pieces || []).filter((p) => !producing.has(p.uid)
     && (formEntry(catalog, p)?.summary || []).some((s) => s.when === 'prepEnd' && (s.kind === 'forge' || s.kind === 'funds' || s.kind === 'copy')));
   return { rows, idle, funds: Number(state?.forecast?.pendingFunds || 0) };
+}
+
+/** Equipment level an item stack contributes (design: 装备总等级 = 每件等级之和). */
+export function itemLevel(item, catalog) {
+  const g = catalog?.gear?.[item.id] || {};
+  return Number((item.elite ? (g.eliteLevel ?? g.level) : g.level) ?? 1) * Number(item.quantity || 1);
+}
+
+/**
+ * The receiver's equipment level after an inheritance (preview + the unique choices made so far): its own level plus
+ * the donor's transferable gear, minus the side dropped in every unique conflict. Null while a conflict is open.
+ */
+export function inheritedLevel(receiver, donor, preview, picks, catalog) {
+  if (!receiver || !donor || !preview?.ok) return null;
+  const destroyed = new Set((preview.destroyedEquipment || []).map((x) => x.uid));
+  let level = Number(receiver.equipmentLevel || 0);
+  for (const item of donor.equipment || []) if (!destroyed.has(item.uid)) level += itemLevel(item, catalog);
+  for (const c of preview.equipmentConflicts || preview.conflicts || []) {
+    const keep = picks?.[c.id];
+    if (!keep) return null;
+    const dropped = keep === 'donor' ? (receiver.equipment || []).find((x) => x.uid === c.receiverUid) : (donor.equipment || []).find((x) => x.uid === c.donorUid);
+    if (dropped) level -= itemLevel(dropped, catalog);
+  }
+  return level;
 }
 
 /** A summary entry's count for a piece form (formEntry already picked the entry). */

@@ -8,6 +8,7 @@ import { useGameData } from '../ui/gameComponents.js';
 import { FacingWheel, holdPiece, setPieceDir } from '../ui/facingWheel.js';
 import { FullscreenButton } from '../ui/device.js';
 import { toast } from '../ui/toasts.js';
+import { copyText } from '../ui/clipboard.js';
 import { audio } from '../audio.js';
 import { data } from '../data.js';
 import { api } from './api.js';
@@ -47,7 +48,13 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const gd = useGameData();
   const [busy, setBusy] = useState(false); const busyRef = useRef(false);
   const [armed, setArmed] = useState(null);
-  const [detail, setDetail] = useState(null);
+  const [detail, setDetailState] = useState(null);
+  // closing what a component link (#piece-…, #shop-…) opened drops the link, so a reload does not open it again
+  const setDetail = useCallback((next) => setDetailState((cur) => {
+    const value = typeof next === 'function' ? next(cur) : next;
+    if (!value && /^#(piece|shop)-/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    return value;
+  }), []);
   const [facing, setFacing] = useState(null);
   const [panel, setPanel] = useState(null);
   const [panelUid, setPanelUid] = useState(null);
@@ -245,13 +252,35 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     return () => { cancelAnimationFrame(raf); seekRef.current = null; };
   }, [view, battle?.replay, gd.ready]);
 
+  // ---- component links (#piece-p12, #shop-2, #item-i7, #offer-o5): open what the link points at -------------------
+  useEffect(() => {
+    const follow = () => {
+      const hash = decodeURIComponent(location.hash.slice(1));
+      const st = stateRef.current;
+      if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
+      else if (hash.startsWith('shop-') && st.shop.slots[Number(hash.slice(5))]) {
+        const i = Number(hash.slice(5)); const s = st.shop.slots[i];
+        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id, elite: s.elite });
+      } else if (hash.startsWith('item-')) { setPanelUid(null); setPanel('inventory'); }
+    };
+    follow();
+    window.addEventListener('hashchange', follow);
+    return () => window.removeEventListener('hashchange', follow);
+  }, []);
+  const copyLink = useCallback(async (anchor) => {
+    const url = new URL(location.href); url.hash = anchor;
+    const ok = await copyText(url.href);
+    toast(ok ? '已复制定位链接' : url.href, ok ? 'info' : 'warn');
+  }, []);
+
   // ---- keyboard ----------------------------------------------------------------------------------------------------
   useEffect(() => {
     const onKey = (e) => {
       if (e.target && /input|select|textarea/i.test(e.target.tagName)) return;
       if (battleRef.current) { if (e.key === 'Escape' || e.key === ' ') { e.preventDefault(); seekRef.current?.(); } return; }
+      if (panel) return; // an open panel (Modal) takes its own Escape
       if (e.key === 'Escape') { setDetail(null); setArmed(null); return; }
-      if (stateRef.current.phase !== 'prep' || panel) return;
+      if (stateRef.current.phase !== 'prep') return;
       if (e.key === 'r' || e.key === 'R') act({ type: 'refresh' });
       else if (e.key === 'f' || e.key === 'F') act({ type: 'freeze' });
       else if (e.key === 'd' || e.key === 'D') act({ type: 'upgrade' });
@@ -285,7 +314,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     <div class="gm__hud">
       <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${onLeave} />
       ${!battle ? html`
-        <${InventoryStrip} stacks=${stacks} total=${inventoryCount(state.inventory)} onOpen=${() => openInventory()}
+        <${InventoryStrip} stacks=${stacks} total=${inventoryCount(state.inventory)} catalog=${catalog} onOpen=${() => openInventory()}
           onArm=${(s) => setDetail({ kind: 'gear', id: s.id, elite: s.elite })} />
         <${ProductionPanel} state=${state} catalog=${catalog} sinceRevision=${since} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading} />
@@ -295,7 +324,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
           onBuy=${buy} onUpgrade=${() => { setArmed(null); act({ type: 'upgrade' }); }} onRefresh=${() => { setArmed(null); act({ type: 'refresh' }); }}
           onFreeze=${() => act({ type: 'freeze' })} />` : null}
         <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} onClose=${() => { setDetail(null); setArmed(null); }}
-          onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} />
+          onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} onCopyLink=${copyLink} />
       ` : html`<div class="ix-battlebar" data-testid="ix-battlebar">
         ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}
         <${Button} size="sm" variant="secondary" disabled=${battle.done} onClick=${() => seekRef.current?.()} data-testid="ix-skip">跳到结尾<//>

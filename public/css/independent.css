@@ -19,7 +19,7 @@
 .ix-mode b { font-size: .26rem; color: var(--text-hi); }
 .ix-mode span { font-size: .15rem; line-height: 1.5; color: var(--text-lo); }
 .ix-mode:hover:not(:disabled) { border-color: var(--mint-500); transform: translateY(-2px); }
-.ix-mode:disabled { opacity: .55; cursor: wait; }
+.ix-mode:disabled { opacity: .55; cursor: default; }
 .ix-mode .spinner { position: absolute; right: .16rem; top: .16rem; }
 .ix-start__foot { display: flex; align-items: flex-end; gap: .2rem; flex-wrap: wrap; justify-content: center; }
 .ix-seed { width: 3rem; }
@@ -231,3 +231,8 @@
 /* ---- top bar: round of the drill's length ---------------------------------------------------------------------- */
 .ix-top .roundbox__num { display: flex; align-items: baseline; gap: .02rem; }
 .ix-top .roundbox__num small { font-size: .16rem; color: #4b5651; }
+.ix-usepick { display: flex; flex-wrap: wrap; align-items: center; gap: .05rem; margin-top: .06rem; padding: .06rem; background: var(--bg-1); border: 1px solid var(--line); }
+.ix-inv__act select { min-width: 1.2rem; }
+.ix-linkbtn { display: inline-flex; align-items: center; gap: .04rem; margin-top: .06rem; padding: .02rem .08rem; font-size: .12rem; background: none; border: 1px solid var(--line-2); color: var(--text-lo); cursor: pointer; }
+.ix-linkbtn .icon { width: .14rem; height: .14rem; }
+.ix-linkbtn:hover { color: var(--mint-400); border-color: var(--mint-700); }

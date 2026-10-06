@@ -35,7 +35,7 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
     ${entries.map((e, i) => html`<span class="ix-trait__rule" key=${i}>
       <span class="ix-trait__when">${catalog?.traitWhen?.[e.when] || e.when}</span>
       <span class="ix-trait__arrow" aria-hidden="true">›</span>
-      ${e.kind === 'forge' || e.kind === 'shopBadge' || (e.kind === 'copy' && e.items)
+      ${e.kind === 'forge' || e.kind === 'shopBadge'
         ? (e.items || []).map((it, k) => html`<span class="ix-trait__out" key=${k}>
             <${GearIcon} id=${it.id} catalog=${catalog} />${summaryCount(it, elite) != null ? html`<b class="num">×${summaryCount(it, elite)}</b>` : null}
           </span>`)
@@ -88,14 +88,14 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason }) {
 // ---- left: inventory strip + production -----------------------------------------------------------------------------
 
 /** Inventory at a glance (the bond strip's place): every stack's icon and count; a tap opens the inventory. */
-export function InventoryStrip({ stacks, total, onOpen, armedKey, onArm }) {
+export function InventoryStrip({ stacks, total, catalog, onOpen, armedKey, onArm }) {
   return html`<div class="ix-strip" data-testid="ix-strip">
     <button type="button" class="ix-strip__head" onClick=${onOpen} title="打开装备库存">
       <${MicroLabel}>库存<//><b class="num">${total}</b>
     </button>
     ${stacks.length ? stacks.slice(0, 10).map((s) => html`<button type="button" key=${s.key} class=${cx('ix-strip__slot', armedKey === s.key && 'is-armed')}
         onClick=${() => onArm(s)} title=${`${s.name}${s.level ? ` · ${s.level}级` : ''} ×${s.count}`}>
-        <${GearIcon} id=${s.id} /><b class="num">${s.count}</b>
+        <${GearIcon} id=${s.id} catalog=${catalog} /><b class="num">${s.count}</b>
       </button>`) : html`<span class="ix-strip__empty">暂无库存</span>`}
     ${stacks.length > 10 ? html`<button type="button" class="ix-strip__more" onClick=${onOpen}>+${stacks.length - 10}</button>` : null}
   </div>`;
@@ -110,9 +110,10 @@ function SourceName({ piece, catalog }) {
 const ORIGIN_WORD = { prize: '奖品', supply: '补给', shop: '商店' };
 const PHASE_WORD = { battle: '战后', roundStart: '休整开始', prepEnd: '休整结束', gain: '获得时', prize: '奖品', supply: '补给', sold: '出售时', refresh: '刷新后' };
 
-function ProdRow({ row, state, catalog }) {
+function ProdRow({ row, state, catalog, when = false }) {
   const piece = row.sourceUid ? state.pieces.find((p) => p.uid === row.sourceUid) : null;
   return html`<li class="ix-prod__row">
+    ${when ? html`<span class="ix-prod__when">${PHASE_WORD[row.phase] || ''}</span>` : null}
     ${row.sourceUid ? html`<${SourceName} piece=${piece} catalog=${catalog} />`
       : html`<span class="ix-prod__src">${row.prizeId ? (catalog.prizes?.[row.prizeId]?.name || '奖品') : ORIGIN_WORD[row.origin] || '其他'}</span>`}
     <span class="ix-prod__out"><${GearIcon} id=${row.id} catalog=${catalog} /><b class="num">×${row.quantity}</b></span>
@@ -127,9 +128,10 @@ function ProdRow({ row, state, catalog }) {
 export function ProductionPanel({ state, catalog, sinceRevision }) {
   const [open, setOpen] = useState(true);
   const fc = forecastRows(state, catalog);
-  const since = groupProduction((state.production || []).filter((r) => r.revision > sinceRevision && r.origin !== 'shop'));
-  const battleRows = since.filter((r) => r.phase === 'battle');
-  const otherRows = since.filter((r) => r.phase !== 'battle');
+  // the last ready wrote one revision: its prep-end forging, the battle's rewards and this round's start; later actions wrote the rest
+  const rows = (state.production || []).filter((r) => r.revision > sinceRevision && r.origin !== 'shop');
+  const battleRows = groupProduction(rows.filter((r) => r.revision === sinceRevision + 1));
+  const otherRows = groupProduction(rows.filter((r) => r.revision > sinceRevision + 1));
   return html`<aside class=${cx('ix-prod', !open && 'is-closed')} data-testid="ix-prod">
     <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)}>
       <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>${open ? '产出' : '产出'}</span>
@@ -144,9 +146,8 @@ export function ProductionPanel({ state, catalog, sinceRevision }) {
         ${fc.idle.length ? html`<ul class="ix-prod__idle">${fc.idle.map((p) => html`<li key=${p.uid} class="ix-prod__row is-idle" title="当前条件下休整结束不会产出，点干员查看完整特质">
           <${SourceName} piece=${p} catalog=${catalog} /><span>本次不触发</span></li>`)}</ul>` : null}
       </section>
-      ${battleRows.length ? html`<section><h3>上一场战后入库</h3><ul>${battleRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} />`)}</ul></section>` : null}
-      ${otherRows.length ? html`<section><h3>本轮获得</h3><ul>${otherRows.map((r, i) => html`<li key=${i} class="ix-prod__line">
-        <span class="ix-prod__when">${PHASE_WORD[r.phase] || ''}</span><${ProdRow} row=${r} state=${state} catalog=${catalog} /></li>`)}</ul></section>` : null}
+      ${battleRows.length ? html`<section><h3>上一轮结算获得</h3><ul>${battleRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
+      ${otherRows.length ? html`<section><h3>本轮获得</h3><ul>${otherRows.map((r, i) => html`<${ProdRow} key=${i} row=${r} state=${state} catalog=${catalog} when=${true} />`)}</ul></section>` : null}
     </div>` : null}
   </aside>`;
 }
