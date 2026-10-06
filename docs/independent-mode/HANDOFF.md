@@ -1,11 +1,11 @@
-# 罗德岛战备演习开发交接
+# 卫戍协议：工坊（内部名：罗德岛战备演习）开发交接
 
 核验日期：2026-10-06（第二次更新：前端已接入原模式渲染器）。本文交接已完成的后端与前端，供继续开发时使用；没有启动新会话或后台开发任务。前端信息设计、战斗演出与特效方案见 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/independent-mode/frontend-design.md`。
 
 ## 接手时先看这些
 
 - 主仓：`E:/WindowsWorkspace/webworks/apps/stronghold-protocol`，分支 `master`。前端适配用的 `.worktrees/independent-frontend-v2` 与特效用的 `.worktrees/fx-registry` 均已合并并用原生 Git 收尾，不能继续使用旧 worktree 路径。
-- 新模式：[罗德岛战备演习](https://workshop.colorc.cc/stronghold/independent.html)。原模式：[卫戍协议](https://workshop.colorc.cc/stronghold/)。本次只读检查公网健康接口正常，版本为 `0.1.3`。
+- 新模式：[卫戍协议：工坊](https://workshop.colorc.cc/stronghold/independent.html)（10-06 起对玩家改名，主题突出装备；暗月奖品对玩家显示为「工程部特供」，三档起步、成型、决胜；模式为短局、标准局、追加挑战）。玩家文本全部手写在 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/independent-game-text.json`，写法与自动术语说明见设计稿「包装与文本」。原模式：[卫戍协议](https://workshop.colorc.cc/stronghold/)。本次只读检查公网健康接口正常，版本为 `0.1.3`。
 - Fork：[ColorC/Stronghold-Protocol](https://github.com/ColorC/Stronghold-Protocol)。上游：[sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol)。本阶段提交保存在本地 Git，未推送远端；不能假设 GitHub 已有这些提交。
 - 已完成“更新上游 → 纯后端与 CLI → 无头测试和首轮调参 → 保存后端版本 → 前端接入原渲染器 → 特效注册表解耦”。接下来是还原原版特效、补齐战斗中的产出提示与少数交互的浏览器验收、扩展平衡验证；不重写后端机制。
 
