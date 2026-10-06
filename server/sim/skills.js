@@ -115,6 +115,9 @@ export class SkillRuntime {
     this.noSkill = !spec;         // unit without any skill spec
   }
 
+  /** The skill id the 'skill' events carry (the kit's / data's skillId; null for an unnamed skill). */
+  get evSkillId() { return this.spec.id ?? this.def.id ?? null; }
+
   /**
    * Extra DEFAULT-trigger range (海嗣 "攻击范围视为自身攻击范围的延伸", 流形): `fn(battle, unit)` returns a list whose
    * entries are ally units (their current `rangeKeys` count while they are on the field) or arrays of absolute tile
@@ -234,9 +237,9 @@ export class SkillRuntime {
     if (!this.noSkill && !(this.duration > 0)) {
       const b = this.battle;
       const u = this.unit;
-      b._ev(['skill', u.id, 1]);
+      b._ev(['skill', u.id, 1, this.evSkillId]);
       u.skillAnimUntil = b.time + SKILL_ANIM_WINDOW;
-      b.after(SKILL_ANIM_WINDOW, () => { if (u.alive) b._ev(['skill', u.id, 0]); }, { owner: u });
+      b.after(SKILL_ANIM_WINDOW, () => { if (u.alive) b._ev(['skill', u.id, 0, this.evSkillId]); }, { owner: u });
     }
   }
 
@@ -461,7 +464,8 @@ export class SkillRuntime {
       // (a targeting-only instant skill must still switch to its skill range for the pending attack)
       if (this.spec.mods || this.spec.flags || this.spec.targeting) this._applyMods();
     }
-    b._ev(['skill', u.id, 1]);
+    // ['skill', unit, 1 | 0, skillId] (shared/protocol.js EV)
+    b._ev(['skill', u.id, 1, this.evSkillId]);
     u.skillAnimUntil = b.time + SKILL_ANIM_WINDOW;
     this._call('onStart', { reason });
     if (b._hooks.skillStart) b.emit('skillStart', { unit: u, skill: this, reason });
@@ -519,7 +523,7 @@ export class SkillRuntime {
     this._call('onEnd', { reason });
     if (!this.active && this.activations === n) this._removeMods();
     if (b._hooks.skillEnd) b.emit('skillEnd', { unit: u, skill: this, reason });
-    if (this.kind !== 'passive') b._ev(['skill', u.id, 0]);
+    if (this.kind !== 'passive') b._ev(['skill', u.id, 0, this.evSkillId]);
   }
 
   /** The attack override to use for the next attack, or null. */

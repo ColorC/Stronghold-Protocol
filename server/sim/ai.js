@@ -159,9 +159,10 @@ export function performAttack(b, u, prof, targets, opts = null) {
   const vis = prof._fortressMelee ? 'none' : (prof.projectile || 'none');
   for (let i = 0; i < targets.length; i++) {
     const t = targets[i];
-    b._ev(['atk', u.id, t.id, vis]);
-    if (isHeal) { doHeal(b, u, prof, t); continue; }
+    // ['atk', src, tgt, projKind, attackId, isSkill 1|0] (shared/protocol.js EV): the renderer's FX registry keys on them
+    b._ev(['atk', u.id, t.id, vis, attackId, isSkill ? 1 : 0]);
     const info = { isSkill, index: i, attackId };
+    if (isHeal) { doHeal(b, u, prof, t, info); continue; }
     if (ranged && t.side === 'enemy' && prof.projectile === 'boomerang') {
       throwBoomerang(b, u, prof, t, info);
     } else if (ranged && t.side === 'enemy') {
@@ -260,7 +261,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
       }
       if (!best) break;
       hit.add(best.id);
-      b._ev(['atk', prev.id, best.id, 'chain']);
+      b._ev(['atk', prev.id, best.id, 'chain', attackId, info.isSkill ? 1 : 0]);
       const d = b.dealDamage(u, best, { amount: atk * scale * skillMul * Math.pow(1 - (prof.chain.falloff ?? 0.15), k), type: baseType, isAttack: true, isSkill: info.isSkill, tags: ['chain'], attackId });
       dealtTotal += d;
       if (prof.chain.sluggish && best.alive) b.applyStatus(best, 'sluggish', { duration: prof.chain.sluggish, source: u });
@@ -281,7 +282,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
   }
 }
 
-function doHeal(b, u, prof, t) {
+function doHeal(b, u, prof, t, info) {
   const atk = u.s.atk;
   const scale = (prof.atkScale ?? 1) * (prof.healScale ?? 1) * u.s.atkScaleMul;
   const h = prof.heal || { mode: 'single' };
@@ -303,7 +304,7 @@ function doHeal(b, u, prof, t) {
       }
       if (!best) break;
       seen.add(best.id);
-      b._ev(['atk', prev.id, best.id, 'chainHeal']);
+      b._ev(['atk', prev.id, best.id, 'chainHeal', info.attackId ?? 0, info.isSkill ? 1 : 0]);
       b.heal(u, best, amount * Math.pow(1 - (h.falloff ?? 0.25), k));
       prev = best;
     }
@@ -684,7 +685,7 @@ function enemyAttack(b, e) {
   // the content's 'attack' handler deals its damage
   const deferred = !!(e.profile && e.profile.deferHit);
   for (const t of targets) {
-    b._ev(['atk', e.id, t.id, deferred ? (e.profile.shot || 'none') : rangedShot ? 'enemy' : 'none']);
+    b._ev(['atk', e.id, t.id, deferred ? (e.profile.shot || 'none') : rangedShot ? 'enemy' : 'none', attackId, 0]);
     if (deferred) continue;
     const hit = (tt) => {
       if (!tt || !tt.alive || !e.alive && !rangedShot) return;
@@ -711,7 +712,7 @@ function enemyHeal(b, e, radius) {
   if (!best) return;
   e.lastAttackAt = b.time;
   e.stats.attacks++;
-  b._ev(['atk', e.id, best.id, 'orb']);
+  b._ev(['atk', e.id, best.id, 'orb', 0, 0]); // (a heal: no attack id — no damage instance carries one)
   b.heal(e, best, e.s.atk);
   e.atkCd = e.s.interval;
 }

@@ -339,7 +339,18 @@ export function validateC2S(msg) {
   return null;
 }
 
-// Event tuple kinds inside `b.ev` (DESIGN §8.2).
+// Event tuple kinds inside `b.ev` (DESIGN §8.2). The tuples of the kinds the FX registry keys on
+// (public/js/render/fxRegistry.js) — fields only ever appended at the end; a reader treats a missing one as unknown
+// (older servers, the recordings in public/dev/recordings):
+//   ['atk', srcId, tgtId, projKind, attackId, isSkill]   projKind: none | arrow | bolt | orb | bomb | lob | drone | enemy |
+//        boomerang | droneBomb | beam | chain | chainHeal (chain / chainHeal: srcId = the previous bounce target);
+//        attackId: the sim's id of this attack (DamageInfo.attackId: every damage instance of it carries it; 0 = none —
+//        an enemy heal, an ability's cast); isSkill: 1 when the attack is a skill's, else 0
+//   ['dmg', tgtId, amount, type, sourceId, attackId]     type: phys | arts | true | elemental | an element (burn …);
+//        sourceId: the unit credited with the damage (null without one); attackId: the attack it belongs to (0 = none:
+//        skill / talent / DoT damage dealt directly)
+//   ['skill', unitId, on, skillId]                       on: 1 = activated, 0 = ended; skillId: the skill (null when unnamed)
+//   ['heal', unitId, amount]   ['fx', kind, x, y, extra]   (unchanged)
 export const EV = Object.freeze({
   SPAWN: 'spawn', ATK: 'atk', DMG: 'dmg', HEAL: 'heal', SKILL: 'skill', DIE: 'die', LEAK: 'leak',
   STATUS: 'status', FX: 'fx', LAYER: 'layer', BOUNTY: 'bounty', DEPLOY: 'deploy',

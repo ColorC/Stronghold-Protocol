@@ -1192,11 +1192,12 @@ Unknown subprofessions fall back to the profession default (test `professions.te
   knocked-out operator's tile, §1; `row, col` = the tile it lies on and comes back on, `unit.body`); `elem: [[id, element, fill,
   cooldownEnd, cooldown]]` (only when non-empty) = `elementView` of every unit with a gauge or a running 爆发冷却 (§3).
   `fieldMeta()` lists the knocked-out operators too (a client joining mid-battle shows them; DESIGN §18.3).
-- `drainEvents()` tuples: `['spawn', UnitInfo]` (first appearance), `['deploy', id]` (every (re)deploy and 【移动】 — the client plays the deploy and its interpolation snaps instead of sliding), `['atk', src, tgt, projKind]`
+- `drainEvents()` tuples: `['spawn', UnitInfo]` (first appearance), `['deploy', id]` (every (re)deploy and 【移动】 — the client plays the deploy and its interpolation snaps instead of sliding), `['atk', src, tgt, projKind, attackId, isSkill]`
   (`none|arrow|bolt|bomb|lob|orb|drone|enemy|boomerang|droneBomb|chain|chainHeal`; a boomerang's way back has no event — the
   renderer flies it back to the thrower at `BOOMERANG_RETURN_SPEED`; an enemy's `profile.shot` may name another kind,
-  e.g. `mortar` for 帝国炮火先兆者, which the renderer does not draw — its fx `bombardShell` is the shell), `['dmg', tgt, amount, type]` (`phys|arts|true|burn|neural|necrosis|apoptosis`),
-  `['heal', tgt, amount]`, `['skill', id, 1|0]`, `['die', id, reason]`, `['leak', id]`, `['status', id, key, 1|0]`,
+  e.g. `mortar` for 帝国炮火先兆者, which the renderer does not draw — its fx `bombardShell` is the shell; `attackId` = the attack's DamageInfo.attackId, 0 for none — an enemy heal, an
+  ability's cast; `isSkill` 1|0), `['dmg', tgt, amount, type, sourceId, attackId]` (`phys|arts|true|burn|neural|necrosis|apoptosis`;
+  `sourceId` = the credited unit or null, `attackId` 0 = not an attack's), `['heal', tgt, amount]`, `['skill', id, 1|0, skillId]`, `['die', id, reason]`, `['leak', id]`, `['status', id, key, 1|0]`,
   `['fx', kind, x, y, extra]` (`hitCap` `{ id, n }`: a leader's hit cancelled by 限伤 — the renderer draws nothing;
   `extra.form` = the unit's model form from then on — an enemy's `content/enemies.js setForm`, a 傀儡师's 替身 — `shared/protocol.js fxForm`),
   `['layer', playerId, bondId, n]` (n = the layers actually added, capped at 999), `['bounty', playerId, coins]`.

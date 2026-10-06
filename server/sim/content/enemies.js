@@ -1927,7 +1927,7 @@ function kitBombd(ab) {
         pending = null;
         if (!e.alive) return;
         const atk = e.s.atk;
-        b._ev(['atk', e.id, t.id, 'droneBomb']);
+        b._ev(['atk', e.id, t.id, 'droneBomb', 0, 1]);   // an ability's cast: no attack id (its damage is land()'s)
         setForm(b, e, 'bombed');                           // UnitInfo.form: a view built later draws it bomb-less
         b.addProjectile({ from: e, target: t, speed: PROJECTILE_SPEEDS.droneBomb, visual: 'droneBomb', source: e, hitDead: true,
           onHit: (c) => { land(b, e, atk, c.target, c.x, c.y); landed = true; done(); } });
