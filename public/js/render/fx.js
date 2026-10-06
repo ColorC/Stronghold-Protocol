@@ -32,9 +32,20 @@
 // projectile and lock records are pooled (the per-frame emitters allocate nothing). Cosmetic extras — trails, muzzle
 // flashes, afterimages, debris, scorch marks, aura motes — are skipped at quality 'low' and under heavy load
 // (adaptive load level ≥ 2), and trails yield to bursts near the particle cap (SOFT_CAP).
+//
+// Layers: this module is the particle pool and the drawing primitives (shoot, mortar, hit, ring, zone, explosion,
+// beams, fire jets, lock reticles, numbers …). WHICH of them an event draws is a recipe (render/fxRecipes.js), picked by
+// the registry (render/fxRegistry.js: charId:skillId → charId → sub-profession → profession → event kind → the default
+// layer FX_KINDS / PROJ). The event methods below (attack, damage, heal, skill, death, deploy, simFx) build a cue and
+// play it through that registry (play); render/app.js feeds the b.ev tuples in through fxRegistry.js FxCues.
 
 import { fxAtlas } from './textures.js';
 import { DMG_STYLE, dmgStyleKey, HIT_TINT, PROJ, COLORS } from './style.js';
+import { FX_KINDS } from './fxRecipes.js';
+import { fxRegistry, fxCue } from './fxRegistry.js';
+
+// the default layer of the sim fx kinds and its helpers live with the recipes; exported here as they always were
+export { FX_KINDS, fxSpec, tilesAround, wallTiles } from './fxRecipes.js';
 
 /**
  * The sim's projectile speeds (server/sim/constants.js PROJECTILE_SPEEDS — pure data, served read-only at
@@ -143,9 +154,8 @@ const feetZ = (v) => (v.z || 0) + (v.hover || 0) + 0.2;
 const camKey = (c) => (c ? c.tx + c.ty * 1e3 + c.tz * 1e6 + c.tilt * 7.13 + c.dist * 1e4 + c.scale * 3.7e-2 + c.cx * 1.1e-5 + c.cy * 1.3e-8 : 0);
 /** Characters of a damage number as drawn (heals get a '+'). */
 const numChars = (v, style) => String(Math.round(v)).length + (style === 'heal' ? 1 : 0);
-
-/** Sub-professions whose attacks splash around the struck target (the 阵法术师 / 轰击术师 strike every enemy in range). */
-const SPLASH_SUBS = new Set(['aoesniper', 'splashcaster', 'bombarder', 'fortress', 'hammer']);
+/** Projectile flight models (pr.flight → stepper): a shot (homing line / lob), a boomerang out and back, a mortar shell. */
+const FLIGHTS = Object.freeze({ shot: '_stepShot', boomerang: '_stepBoomerang', mortar: '_stepMortar' });
 
 let fontsReady = false;
 /** Generate the damage-number bitmap fonts (after web fonts loaded, if possible). */
@@ -164,157 +174,14 @@ export function ensureDamageFonts() {
   fontsReady = true;
 }
 
-const num = (v, d) => { const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN; return Number.isFinite(n) ? n : d; };
-
-/**
- * Sim fx kind → visual archetype (`a`), colour (`c`) and defaults (`r` radius, `dur` game s, `tex`, `smoke`).
- * Covers every kind emitted by server/sim (Battle, kits, tokens, enemies, bosses, devices, bonds, items); unknown
- * kinds fall back to a keyword guess, then to a generic sparkle (fxSpec).
- */
-export const FX_KINDS = Object.freeze({
-  // blasts
-  aoe: { a: 'blast', c: 0xffb35c }, explode: { a: 'blast', c: 0xff7a33 }, explosion: { a: 'blast', c: 0xff7a33 },
-  // `pt`: always at the event's (x, y) (its `id` is the shooter); `heavy`: debris + scorch
-  bombard: { a: 'blast', c: 0xffa04a, r: 1.5, pt: true, heavy: true }, bombardShell: { a: 'shell', c: 0xff5a3a, r: 1.5, pt: true },
-  airstrike: { a: 'blast', c: 0xff8a3d, r: 1.5, heavy: true }, splash: { a: 'blast', c: 0xffc27a },
-  scorchBurst: { a: 'blast', c: 0xff6a2a }, champagneBomb: { a: 'blast', c: 0xffd27a }, shockBlast: { a: 'blast', c: 0x9fd4ff, smoke: 0x1c2630 },
-  frostNova: { a: 'blast', c: 0x9fe6ff, smoke: 0x1c2630 }, sunBurst: { a: 'blast', c: 0xffe28a }, meltdown: { a: 'blast', c: 0xff5a2a, r: 1.5, heavy: true },
-  iceSpike: { a: 'blast', c: 0xbfeeff, smoke: 0x1c2630 }, rockfall: { a: 'blast', c: 0xc8a878, smoke: 0x4a3f33 }, rockslide: { a: 'blast', c: 0xc8a878, smoke: 0x4a3f33 },
-  finale: { a: 'blast', c: 0xffd45a, r: 1.5 }, swordStorm: { a: 'blast', c: 0xdfe8ff }, swordRain: { a: 'blast', c: 0xdfe8ff }, liberate: { a: 'blast', c: 0xffffff },
-  quadShot: { a: 'volley', c: 0xfff2d0 }, featherArrow: { a: 'counter', c: 0xfff2d0 },
-  burst: { a: 'element', c: 0xd0a0ff },
-  // areas
-  zone: { a: 'zone', c: 0xffb35c, dur: 3 }, healField: { a: 'zone', c: 0x62f08a, dur: 4 }, firewall: { a: 'wall', c: 0xff6a2a, dur: 4 },
-  firewallBlock: { a: 'counter', c: 0xff6a2a }, tide: { a: 'zone', c: 0x5fe0ff, dur: 3, r: 2 }, storm: { a: 'zone', c: 0xd8c8a0, dur: 3 },
-  tornado: { a: 'zone', c: 0xd8e8ff, dur: 3 }, snow: { a: 'zone', c: 0xe8f6ff, dur: 3 }, telegraph: { a: 'telegraph', c: 0xff3b30, dur: 1.2 },
-  coldWind: { a: 'chill', c: 0x9fd4ff },
-  // support
-  heal: { a: 'heal', c: 0x62f08a }, healAoe: { a: 'healAoe', c: 0x62f08a, r: 1.5 }, bandage: { a: 'heal', c: 0x62f08a }, blessing: { a: 'healAoe', c: 0xfff0a8 },
-  cleanse: { a: 'healAoe', c: 0xdfffff, r: 0.9 }, revive: { a: 'summon', c: 0xfff0a8 }, reborn: { a: 'summon', c: 0xffd45a }, hpShare: { a: 'heal', c: 0xff9aa6 },
-  spGift: { a: 'sp', c: 0x6fd3ff }, spGain: { a: 'sp', c: 0x6fd3ff }, reload: { a: 'sp', c: 0xffe066 },
-  shield: { a: 'shield', c: 0xdfe8ff }, catShield: { a: 'shield', c: 0xffe0a8 }, saltWard: { a: 'shield', c: 0xbfeeff }, shell: { a: 'shield', c: 0xc8b890 },
-  vest: { a: 'shield', c: 0xdfe8ff }, sleepGuard: { a: 'shield', c: 0xa8b6ff }, truesilver: { a: 'shield', c: 0xfff3b8 }, shieldBreak: { a: 'shatter', c: 0xdfe8ff },
-  // arrivals / departures
-  summon: { a: 'summon', c: 0x9ff0dc }, drones: { a: 'summon', c: 0x8fe6ff }, drone: { a: 'summon', c: 0x8fe6ff }, sentry: { a: 'summon', c: 0x9ff0dc },
-  turretOnline: { a: 'summon', c: 0xff8a6a }, yanyouSummon: { a: 'summon', c: 0xffb347 }, device: { a: 'summon', c: 0xc0c8cc },
-  appear: { a: 'summon', c: 0xb36bff }, copy: { a: 'summon', c: 0xd8b0ff }, manifoldCopy: { a: 'summon', c: 0xd8b0ff }, split: { a: 'summon', c: 0xff9a6a },
-  disappear: { a: 'vanish', c: 0xb36bff }, stealth: { a: 'vanish', c: 0x8fa0b0 }, camouflage: { a: 'vanish', c: 0x8fb08f }, phase: { a: 'vanish', c: 0xb36bff },
-  substitute: { a: 'vanish', c: 0xd8b0ff }, swap: { a: 'blink', c: 0xd8b0ff }, blink: { a: 'blink', c: 0xb36bff }, teleport: { a: 'blink', c: 0xb36bff },
-  // a dollkeeper knocked out as its <替身> (sim professions.js): only its model form goes back to the 本体 for the
-  // redeploy — the 替身's death clip already shows the knock-out, nothing is drawn
-  dollEnd: { a: 'none', c: 0xd8b0ff },
-  ulpiaReturn: { a: 'blink', c: 0x9ff0dc }, manifoldSplit: { a: 'blink', c: 0xd8b0ff },
-  // displacement
-  pull: { a: 'move', c: 0x9fd4ff }, push: { a: 'move', c: 0xffd9a0 }, displace: { a: 'move', c: 0xd0c0a0 }, lure: { a: 'move', c: 0xffb3ec },
-  charge: { a: 'move', c: 0xff9c33 }, dash: { a: 'move', c: 0xffd9a0 }, slippery: { a: 'move', c: 0x9fe6ff },
-  // pulses
-  sonic: { a: 'wave', c: 0xc9a2ff, r: 1.5 }, pulse: { a: 'wave', c: 0x9ff0dc }, sermon: { a: 'wave', c: 0xffe28a, r: 1.5 }, ripple: { a: 'wave', c: 0x5fe0ff },
-  tornadoPulse: { a: 'wave', c: 0xd8e8ff }, wake: { a: 'wave', c: 0x5fe0ff }, wolfShadow: { a: 'wave', c: 0x8fa0b0 }, wolfShadowLost: { a: 'vanish', c: 0x8fa0b0 },
-  redistribute: { a: 'wave', c: 0x62f08a }, dilemma: { a: 'wave', c: 0xc9a2ff },
-  // marks
-  taunt: { a: 'mark', c: 0xff9c33 }, palsy: { a: 'mark', c: 0xc77dff }, emergency: { a: 'mark', c: 0xff5a4a },
-  lock: { a: 'reticle', c: 0xff5a4a }, droneLock: { a: 'reticle', c: 0x8fe6ff }, wanted: { a: 'reticle', c: 0xffc600 }, expose: { a: 'reticle', c: 0xff7b8a },
-  reveal: { a: 'reticle', c: 0x9fd4ff }, anchor: { a: 'reticle', c: 0x9fd4ff },
-  // buffs
-  buff: { a: 'buff', c: 0xffd45a }, overload: { a: 'buff', c: 0xff7a33 }, overclock: { a: 'buff', c: 0xff9c33 }, talent: { a: 'buff', c: 0xffd45a },
-  knack: { a: 'buff', c: 0xffd45a }, bloodBattle: { a: 'buff', c: 0xff4b3e }, sword: { a: 'buff', c: 0xdfe8ff }, equip: { a: 'buff', c: 0x4ed8af },
-  garrisonGrant: { a: 'buff', c: 0x4ed8af }, extraAttack: { a: 'buff', c: 0xffe066 }, soul: { a: 'buff', c: 0xb36bff }, jungleSoul: { a: 'buff', c: 0x7fd37a },
-  candle: { a: 'buff', c: 0xffb347 }, mote: { a: 'buff', c: 0xfff0a8 }, ember: { a: 'buff', c: 0xff7a33 }, ignite: { a: 'buff', c: 0xff6a2a },
-  flame: { a: 'buff', c: 0xff6a2a }, grow: { a: 'buff', c: 0x7fd37a }, weightlessBuff: { a: 'buff', c: 0xcfe0ff },
-  // 炎佑 祛恶之焰: a continuous jet from the dragon (`id`) onto its locked target (`target`) + a burning disc (_flame)
-  yanyouFlame: { a: 'flame', c: 0xff8a3d, r: 1 },
-  // states
-  takeoff: { a: 'lift', c: 0xcfe0ff }, levitate: { a: 'lift', c: 0xcfe0ff }, weightless: { a: 'lift', c: 0xcfe0ff },
-  sleep: { a: 'sleep', c: 0xa8b6ff }, crit: { a: 'crit', c: 0xffe066 },
-  dodge: { a: 'dodge', c: 0xffffff }, riposte: { a: 'counter', c: 0xffd9a0 }, counter: { a: 'counter', c: 0xffd9a0 }, block: { a: 'counter', c: 0xdfe8ff },
-  thorns: { a: 'counter', c: 0xff9aa6 }, downed: { a: 'down', c: 0xbfeee2 }, stone: { a: 'down', c: 0xc0b8a8, smoke: 0x5a5448 },
-  dp: { a: 'dp', c: 0x9fd4ff }, coin: { a: 'coin', c: 0xffc600 }, steal: { a: 'coin', c: 0xffc600 }, crateBreak: { a: 'crate', c: 0xc89a5a },
-  lpLoss: { a: 'lp', c: 0xff3b30 },
-  // 限伤 (sim/damage.js leaderHitCancelled): a leader's hit of ≥ 300000 dealt nothing — the official shows no number and
-  // no effect [ASSUMED], so nothing is drawn (`a: 'none'`)
-  hitCap: { a: 'none', c: 0xffffff },
-  // beams
-  beam: { a: 'beam', c: 0xff7a5a }, link: { a: 'beam', c: 0x9ff0dc }, lightning: { a: 'bolt', c: 0xc9a2ff }, tentacle: { a: 'beam', c: 0x5fe0ff },
-  sandChains: { a: 'beam', c: 0xd8c8a0 }, sandChainsCharged: { a: 'beam', c: 0xffd45a },
-  strike: { a: 'strike', c: 0xffe6a8 }, volley: { a: 'volley', c: 0xfff2d0 }, column: { a: 'pillar', c: 0x9ff0dc }, obelisk: { a: 'pillar', c: 0xc9a2ff },
-  duskDragon: { a: 'blast', c: 0x9dff6a, r: 1.5 }, shadowWeave: { a: 'vanish', c: 0x8f7bff }, reweave: { a: 'summon', c: 0x8f7bff },
-  slash: { a: 'counter', c: 0xfff0d0 }, devour: { a: 'vanish', c: 0xff4b3e }, undying: { a: 'shield', c: 0xffd45a },
-  // summon arrival bursts (content/tokens.js burst(): 沙之碑 default, 迷迭香 gear stun, 耀阳 sword, 纸偶)
-  summonBurst: { a: 'blast', c: 0xe8c878, smoke: 0x4a3f33 }, summonStun: { a: 'blast', c: 0xcfe0ff, smoke: 0x2a2e36 },
-  radiantSword: { a: 'pillar', c: 0xffe8a0 }, paperDoll: { a: 'blast', c: 0xc9a2ff, smoke: 0x2c2436 },
-  // bonds / garrisons (support/index.js fxOn)
-  bondMilestone: { a: 'buff', c: 0xffc600 }, bondProc: { a: 'buff', c: 0x4ed8af }, bondShare: { a: 'wave', c: 0x4ed8af },
-  garrison: { a: 'buff', c: 0x4ed8af }, layer: { a: 'buff', c: 0xffe066 }, sp: { a: 'sp', c: 0x6fd3ff },
-});
-
-/** Keyword guesses for kinds added later (checked in order), before the generic sparkle. */
-const FX_GUESS = [
-  [/heal|cure|mend|regen/i, 'heal'], [/shield|ward|barrier|guard/i, 'shield'], [/summon|spawn|call|deploy/i, 'summon'],
-  [/blast|bomb|explo|burst|boom|nova|strike/i, 'blast'], [/zone|field|area|wall|mist|fog|pool/i, 'zone'],
-  [/buff|boost|power|rage|charge|up$/i, 'buff'], [/mark|lock|target|wanted|expose/i, 'reticle'], [/teleport|blink|warp|swap/i, 'blink'],
-  [/stealth|hide|vanish|cloak/i, 'vanish'], [/pull|push|knock|dash|leap/i, 'move'], [/pulse|wave|ring|sonic/i, 'wave'],
-];
-
-/**
- * 'phase' (an enemy's mode change, render/units.js FORMS) kinds the model shows on its own: 暴鸰 'bombed' — its bomb is
- * the 'droneBomb' projectile of the same moment, a puff on the drone would read as something else (feedback D4).
- */
-const SILENT_PHASES = new Set(['bombed']);
-
-/** Visual spec of an fx kind (see FX_KINDS); `extra.kind` / `extra.element` may pick a better colour. */
-export function fxSpec(kind, extra = {}) {
-  const k = typeof kind === 'string' ? kind : '';
-  if (k === 'phase' && SILENT_PHASES.has(extra && extra.kind)) return { a: 'none', c: 0xffffff };
-  let spec = FX_KINDS[k];
-  if (!spec) {
-    const g = FX_GUESS.find(([re]) => re.test(k));
-    spec = g ? { ...FX_KINDS[{ heal: 'heal', shield: 'shield', summon: 'summon', blast: 'aoe', zone: 'zone', buff: 'buff', reticle: 'lock', blink: 'blink', vanish: 'disappear', move: 'displace', wave: 'pulse' }[g[1]]] } : { a: 'generic', c: 0xfff2d0 };
-  }
-  const el = extra && extra.element;
-  if (el && (spec.a === 'blast' || spec.a === 'zone' || spec.a === 'element')) {
-    const c = el === 'burn' ? 0xff7a33 : el === 'neural' ? 0xff5ad0 : el === 'necrosis' || el === 'apoptosis' ? 0x9dff6a : el === 'erosion' ? 0x6fe0ff : null;
-    if (c) spec = { ...spec, c };
-  }
-  if (extra && (extra.dmgType === 'arts' || /arts|magic/i.test(String(extra.kind || ''))) && spec.a === 'blast') spec = { ...spec, c: 0xc77dff };
-  return spec;
-}
-
-/** Tiles covered by a blast / telegraph: `tiles` = [[r,c]…] or 'box' (Chebyshev ⌊r⌋ around the centre) or 'disc'. */
-export function tilesAround(x, y, r, tiles) {
-  if (Array.isArray(tiles)) return tiles.filter((t) => Array.isArray(t) && Number.isInteger(t[0]) && Number.isInteger(t[1])).slice(0, 80);
-  const cr = Math.round(y), cc = Math.round(x), R = Math.max(0, Math.min(6, Math.floor(r)));
-  const out = [];
-  for (let dr = -R; dr <= R; dr++) for (let dc = -R; dc <= R; dc++) {
-    if (tiles === 'box' || dr * dr + dc * dc <= r * r + 0.25) out.push([cr + dr, cc + dc]);
-  }
-  return out;
-}
-
-/**
- * Tiles of a straight wall through tile (round(y), round(x)): `axis` 'col' = that column, 'row' = that row (余 S3
- * fire wall: perpendicular to his facing, sim/content/kits/tier6.js). Clipped to the field `rect` (inclusive
- * { r0, r1, c0, c1 }); without one ±4 tiles.
- */
-export function wallTiles(x, y, axis, rect) {
-  const R = Math.round(Number(y)), C = Math.round(Number(x));
-  if (!Number.isFinite(R) || !Number.isFinite(C)) return [];
-  const ok = rect && [rect.r0, rect.r1, rect.c0, rect.c1].every(Number.isFinite);
-  const out = [];
-  if (axis === 'row') {
-    const [a, b] = ok ? [rect.c0, rect.c1] : [C - 4, C + 4];
-    for (let c = a; c <= b; c++) out.push([R, c]);
-  } else {
-    const [a, b] = ok ? [rect.r0, rect.r1] : [R - 4, R + 4];
-    for (let r = a; r <= b; r++) out.push([r, C]);
-  }
-  return out.filter(([r, c]) => r >= 0 && r <= 18 && c >= 0 && c <= 20);
-}
-
 export class FxSystem {
   /**
    * @param {{ P, layers: { groundFx, fxAdd, fxNormal, text, screen }, cam: () => any, view: (id) => any,
    *           heightAt: (r,c)=>number, settings: object, assets: any, timeScale: () => number,
-   *           subProfOf: (defId) => string|null, screenSize: () => {width,height}, fieldTop: () => number }} ctx
+   *           subProfOf: (defId) => string|null, screenSize: () => {width,height}, fieldTop: () => number,
+   *           identify?: (view) => ({ char, sub, prof, skill }|null), registry?: import('./fxRegistry.js').FxRegistry }} ctx
+   *   `identify`: a unit view's identity for the FX registry (render/fxRegistry.js unitFxIdentity; without it: the
+   *   view's UnitInfo spine / defId and `subProfOf`); `registry`: recipes of this view (default: fxRegistry).
    */
   constructor(ctx) {
     const P = ctx.P;
@@ -384,6 +251,30 @@ export class FxSystem {
   _ts() { const r = this.ctx.timeScale ? Number(this.ctx.timeScale()) : 2; return r > 0.25 ? r : 0.25; }
   /** Ground height of the tile under (x, y). */
   _groundZ(x, y) { return this.ctx.heightAt ? (this.ctx.heightAt(Math.round(y), Math.round(x)) || 0) : 0; }
+
+  // ---- registry entry ---------------------------------------------------------------------------------------
+
+  /** The recipe registry of this view (render/fxRegistry.js): ctx.registry, else the shared default. */
+  get registry() { return (this.ctx && this.ctx.registry) || fxRegistry; }
+
+  /** Draw an event: `cue` (fxRegistry.js fxCue) of `channel` through the registry's recipe chain. */
+  play(channel, cue) { this.registry.play(this, channel, cue); }
+
+  /**
+   * A unit view's identity for the registry ({ char, sub, prof, skill }): ctx.identify, else its UnitInfo spine /
+   * defId and ctx.subProfOf (no profession, no skill).
+   */
+  identify(view) {
+    if (!view || typeof view !== 'object') return null;
+    const ctx = this.ctx || NO_OPTS;
+    if (typeof ctx.identify === 'function') return ctx.identify(view) || null;
+    const info = view.info;
+    const defId = info ? info.defId : undefined;
+    return { char: (info && (info.spine ?? info.defId)) ?? null, sub: ctx.subProfOf ? ctx.subProfOf(defId) || null : null, prof: null, skill: null };
+  }
+
+  /** World height where shots, beams and lock marks meet `view` (SHOT_HEIGHT.aim). */
+  aimZ(view) { return bodyZ(this.ctx.cam(), view, SHOT_HEIGHT.aim); }
 
   // ---- particles ------------------------------------------------------------------------------------------
 
@@ -496,17 +387,21 @@ export class FxSystem {
 
   // ---- projectiles -----------------------------------------------------------------------------------------
 
-  /** b.ev 'atk' visual. src/tgt are views (tgt may be null). */
-  attack(src, tgt, kind) {
-    if (!src) return;
-    // chain: the source is the previous target of the bounce (sim ai.js), so the arc hops unit to unit
-    if (kind === 'chain' || kind === 'chainHeal') { if (tgt && tgt !== src) this._beam(src, tgt, kind === 'chainHeal' ? 0x7dffa8 : 0xc9a2ff, 0.22, 1, true); return; }
-    if (kind === 'beam') { if (tgt && tgt !== src) this._beam(src, tgt, src.isEnemy ? 0xff7a5a : 0xffe6a8, 0.18, 0.15); return; }
-    const spec = PROJ[kind];
-    if (!spec || !tgt) {
-      if (kind === 'none' || !kind) this._slashAt = src.id;
-      return;
-    }
+  /**
+   * b.ev 'atk' visual (through the registry: fxRecipes.js — a projectile by kind, chain / beam arcs, the boomerang, a
+   * melee blow). src/tgt are views (tgt may be null); o: { attackId, isSkill } of the event.
+   */
+  attack(src, tgt, kind, o) { this.play('atk', fxCue.atk(src, tgt, kind, o)); }
+
+  /** A melee blow by `src` was just made: its next hit (damage with `src`) gets the slash. */
+  meleeBlow(src) { if (src) this._slashAt = src.id; }
+
+  /**
+   * Fire a projectile of `kind` (look `spec`, style.js PROJ) from view `src` at view `tgt`, homing on it; `flight`:
+   * 'shot' (a straight / lobbed shot ending in the target), 'boomerang' (out to the target and back to the thrower).
+   */
+  shoot(src, tgt, kind, spec = PROJ[kind], flight = 'shot') {
+    if (!src || !tgt || !spec) return null;
     const pr = this._takeProj();
     const cam = this.ctx.cam();
     const dx = tgt.x - src.x, dy = tgt.y - src.y;
@@ -514,7 +409,7 @@ export class FxSystem {
     const ux = dist > 1e-6 ? dx / dist : (src.facing || 1) >= 0 ? 1 : -1, uy = dist > 1e-6 ? dy / dist : 0;
     const hand = Math.min(0.28, dist * 0.3);   // the weapon is in front of the body
     const look = spec.look;
-    pr.kind = kind; pr.spec = spec; pr.src = src; pr.tgt = tgt; pr.rise = 0;
+    pr.kind = kind; pr.spec = spec; pr.src = src; pr.tgt = tgt; pr.rise = 0; pr.flight = flight;
     pr.x0 = src.x + ux * hand; pr.y0 = src.y + uy * hand; pr.z0 = bodyZ(cam, src, SHOT_HEIGHT.launch);
     pr.tx = tgt.x; pr.ty = tgt.y; pr.tz = look === 'shell' ? feetZ(tgt) : bodyZ(cam, tgt, SHOT_HEIGHT.aim);
     pr.t = 0; pr.fade = 0; pr.hit = false; pr.emit = Math.random(); pr.ang = Math.atan2(-uy, ux);   // ≈ on screen (rows run up)
@@ -528,6 +423,7 @@ export class FxSystem {
     this._dressProj(pr);
     this.projs.push(pr);
     if (this.rich) this._muzzle(pr);
+    return pr;
   }
 
   /** A pooled projectile record: trail + halo + core sprites (additive, above units) and a ground shadow. */
@@ -587,9 +483,7 @@ export class FxSystem {
     let w = 0;
     for (let i = 0; i < this.projs.length; i++) {
       const pr = this.projs[i];
-      const look = pr.spec.look;
-      const live = look === 'boomerang' ? this._stepBoomerang(pr, dt, cam, rich)
-        : look === 'mortar' ? this._stepMortar(pr, dt, cam, rich) : this._stepShot(pr, dt, cam, rich);
+      const live = this[FLIGHTS[pr.flight] || FLIGHTS.shot](pr, dt, cam, rich);
       if (!live) { this._releaseProj(pr); continue; }
       this.projs[w++] = pr;
     }
@@ -878,23 +772,21 @@ export class FxSystem {
   }
 
   /**
-   * 蕾缪安 S3 shell (fx 'bombardShell'): fired now by `src` (its view, or null) at the spot (x, y), where it lands after
-   * `flight` real seconds (_stepMortar; the sim's shells fly 0.3 game s — they drop out of the sky, a launch streak
-   * leaving the shooter; a flight ≥ 0.45 real s climbs out of her first). The spot gets a thin ring closing in and
-   * brightening plus the blast radius throbbing until the impact. The shell takes the shooter's lock on that spot: the
-   * lock ends with this shell's 'bombard' (_landed).
+   * A mortar shell (蕾缪安 S3, fx 'bombardShell' — fxRecipes.js; the archetype 'shell'): fired now by `src` (its view, or
+   * null) at the spot (x, y), where it lands after `flight` real seconds (_stepMortar; the sim's shells fly 0.3 game s —
+   * they drop out of the sky, a launch streak leaving the shooter; a flight ≥ 0.45 real s climbs out of her first). The
+   * spot gets a thin ring closing in and brightening plus the blast radius throbbing until the impact (landShells ends
+   * it early).
    */
   mortar(src, x, y, r, flight) {
     const pr = this._takeProj();
     const gz = this._groundZ(x, y);
-    pr.kind = 'bombardShell'; pr.spec = BOMBARD_SHELL; pr.src = src; pr.tgt = null;
+    pr.kind = 'bombardShell'; pr.spec = BOMBARD_SHELL; pr.src = src; pr.tgt = null; pr.flight = 'mortar';
     pr.x0 = src ? src.x : x; pr.y0 = src ? src.y : y; pr.z0 = src ? bodyZ(this.ctx.cam(), src, SHOT_HEIGHT.launch) : gz + 0.5;
     pr.tx = x; pr.ty = y; pr.tz = gz;
     pr.t = 0; pr.dur = clamp(flight, 0.1, 4); pr.fade = 0; pr.hit = false; pr.emit = 0; pr.arc = 0; pr.ang = Math.PI / 2;
     pr.rise = pr.dur >= 0.45 ? SHELL_RISE : 0;
     pr.glow = BOMBARD_SHELL.glow; pr.trailTint = BOMBARD_SHELL.trail;
-    const L = this._nearestLock(src ? src.id : null, x, y, 3, true);
-    if (L) { L.shell = true; L.sx = x; L.sy = y; }
     this._dressProj(pr);
     pr.shadow.visible = false;
     this.projs.push(pr);
@@ -912,23 +804,12 @@ export class FxSystem {
     return pr;
   }
 
-  /**
-   * fx 'bombard' (the impact) at (x, y) by shooter `src`: the shell falling there has landed (ended now if still in
-   * the air) and its lock goes — the lock that shell took, found by the landing point (the sim uses the same spot for
-   * both events); a sim without 'bombardShell' releases the shooter's lock nearest to the spot.
-   */
-  _landed(src, x, y, r) {
+  /** The mortar shells of shooter id `src` (any shooter: null) falling onto (x, y) have landed: they end now. */
+  landShells(src, x, y) {
     for (const pr of this.projs) {
       if (pr.spec !== BOMBARD_SHELL || (src != null && pr.src && pr.src.id !== src)) continue;
       if (Math.hypot(pr.tx - x, pr.ty - y) < 0.05) pr.t = Math.max(pr.t, pr.dur);
     }
-    let best = null, bd = Infinity;
-    for (const L of this.locks) {
-      if (L.out >= 0 || (src != null && L.src != null && L.src !== src)) continue;
-      const d = L.shell ? Math.hypot(L.sx - x, L.sy - y) : Math.hypot(L.x - x, L.y - y) + 0.5;
-      if (d < bd) { bd = d; best = L; }
-    }
-    if (best && bd <= r + 1.5) this._releaseLock(best);
   }
 
   /** A beam from view `a` to view `b`; `chain`: a bounce, `a` is the previous target (it leaves from its chest). */
@@ -1094,9 +975,9 @@ export class FxSystem {
   // ---- lock-on reticles (蕾缪安) -------------------------------------------------------------------------------
 
   /**
-   * fx 'lock': a reticle on the locked enemy (following its view; at the last spot once it is gone) until its shell
-   * lands (mortar / _landed) or the aimed shot fires ('crit' from the same shooter); at most LOCK_T game seconds after
-   * the shooter's last lock / shell / bombard (_touchLocks).
+   * A lock reticle on `view` (following it; at the last spot once it is gone) for shooter id `src` until it is released
+   * (_releaseLock — 蕾缪安's recipes, render/fxRecipes.js: her shell's 'bombard', her aimed 'crit'); at most LOCK_T game
+   * seconds after the shooter's last lock / shell / bombard (_touchLocks).
    */
   _lock(view, src, x, y, z) {
     let L = this.lockFree.pop();
@@ -1182,26 +1063,36 @@ export class FxSystem {
 
   // ---- hits / numbers -----------------------------------------------------------------------------------------
 
-  /** b.ev 'dmg' visual: glow + sparks in the hit colour; a melee blow (atk 'none' just before) adds its slash. */
-  damage(view, amount, type, srcView) {
+  /**
+   * b.ev 'dmg' visual (through the registry, fxRecipes.js): glow + sparks in the hit colour; a melee blow (atk 'none'
+   * just before by `srcView`) adds its slash; a splash attacker's blow its ground ring. o: { melee, attacker,
+   * attackId, isSkill } (fxRegistry.js fxCue.dmg).
+   */
+  damage(view, amount, type, srcView, o) { this.play('dmg', fxCue.dmg(view, amount, type, srcView, o)); }
+
+  /** A hit on `view`: glow + sparks in the hit colour, `melee`: the slash of `srcView`'s blow, the damage number. */
+  hit(view, amount, type, srcView, melee) {
     if (!view) return;
     const style = dmgStyleKey(type);
     const p = this._chest(view);
     const px = p.x, py = p.y, s = p.s;
     const tint = HIT_TINT[style] || 0xffffff;
     const big = view.maxHp > 0 && amount >= view.maxHp * 0.18;
-    const melee = !!srcView && this._slashAt === srcView.id;
+    melee = !!melee && !!srcView;
     this.particle('glow', px, py, { tint, life: 0.18, s0: (s / 128) * (big ? 1.0 : 0.6), s1: (s / 128) * (big ? 1.5 : 0.9), a0: 0.9, a1: 0 });
     if (melee) { this._slashAt = null; this._slash(view, srcView, px, py, s, style, big); }
     this.burst(px, py, s, big ? 8 : melee ? 6 : 4, tint, { speed: melee ? 2.8 : 2.4, size: big ? 0.6 : 0.46 });
-    if (srcView && this.ctx.subProfOf && SPLASH_SUBS.has(this.ctx.subProfOf(srcView.info?.defId))) {
-      if (!this._lastRing || this.time - this._lastRing > 0.08) {
-        this._lastRing = this.time;
-        this.ring(view.x, view.y, view.z || 0, 0.1, 1.1, tint, 0.3);
-      }
-    }
     view.onHit?.();
     if (this.ctx.settings?.damageNumbers !== false) this.number(view, amount, style, big);
+  }
+
+  /** An AoE ring on the ground around `view` in the colour of a `type` hit (at most one per 0.08 s). */
+  splashRing(view, type) {
+    if (!view) return;
+    if (!this._lastRing || this.time - this._lastRing > 0.08) {
+      this._lastRing = this.time;
+      this.ring(view.x, view.y, view.z || 0, 0.1, 1.1, HIT_TINT[dmgStyleKey(type)] || 0xffffff, 0.3);
+    }
   }
 
   /**
@@ -1221,7 +1112,11 @@ export class FxSystem {
     b.sx = flip;
   }
 
-  heal(view, amount) {
+  /** b.ev 'heal' visual (through the registry). */
+  heal(view, amount) { this.play('heal', fxCue.heal(view, amount)); }
+
+  /** A heal on `view`: a green glow, rising pluses, the number. */
+  healBurst(view, amount) {
     if (!view) return;
     const p = this._chest(view);
     const s = p.s;
@@ -1525,12 +1420,17 @@ export class FxSystem {
   }
 
   /**
-   * Skill activation (on) / end (off). On: a flash at the body, a gold light pillar with a white-hot core from the
-   * feet, a shockwave and a hex ring on the ground, rising motes — then the active aura (_aura) until it ends.
+   * Skill activation (on) / end (off), through the registry (the default: skillFlash, then the active aura (_aura)
+   * until it ends). o: { skillId } of the event.
    */
-  skill(view, on) {
+  skill(view, on, o) { this.play('skill', fxCue.skill(view, on, o)); }
+
+  /**
+   * A skill activation on `view`: a flash at the body, a gold light pillar with a white-hot core from the feet, a
+   * shockwave and a hex ring on the ground, rising motes.
+   */
+  skillFlash(view) {
     if (!view) return;
-    if (!on) { this._aura(view, false); return; }
     const z = (view.z || 0) + (view.hover || 0);
     const g = this._proj(view.x, view.y, z, this._g);
     const gx = g.x, gy = g.y, s = g.s;
@@ -1542,7 +1442,6 @@ export class FxSystem {
     this.ring(view.x, view.y, z, 0.15, 1.7, 0xffe7a0, 0.45, 'shock');
     this.ring(view.x, view.y, z, 0.3, 1.25, SKILL_GOLD, 0.6, 'hex');
     this.burst(c.x, c.y, s, this.rich ? 10 : 4, 0xffe28a, { speed: 1.4, up: 1.6, life: 0.7, tex: 'dot', size: 0.34 });
-    this._aura(view, true);
   }
 
   /** Active-skill aura: a soft gold glow and a slowly turning hex on the ground under the unit (fading in / out). */
@@ -1605,7 +1504,11 @@ export class FxSystem {
     }
   }
 
-  deploy(view) {
+  /** A unit arrives (b.ev 'deploy', a prep piece placed / dealt), through the registry. */
+  deploy(view) { this.play('deploy', fxCue.deploy(view)); }
+
+  /** Drop-in flash on `view`: a light pillar, a ground ring, motes. */
+  deployBurst(view) {
     if (!view) return;
     const p = this._proj(view.x, view.y, view.z || 0);
     const s = p.s;
@@ -1638,7 +1541,11 @@ export class FxSystem {
     this.burst(c.x, c.y, s, this.rich ? 12 : 5, 0xffe28a, { speed: 1.5, up: 1.8, life: 0.8, tex: 'dot', size: 0.36 });
   }
 
-  death(view) {
+  /** b.ev 'die' visual (through the registry). */
+  death(view) { this.play('die', fxCue.die(view)); }
+
+  /** A unit dissolves: embers and shards rising, a puff of smoke. */
+  deathBurst(view) {
     if (!view) return;
     const p = this._chest(view);
     const s = p.s;
@@ -1695,256 +1602,12 @@ export class FxSystem {
   }
 
   /**
-   * b.ev 'fx': every kind the sim / content emits has a visual (FX_KINDS archetypes: blast, shell, zone, telegraph,
-   * heal, sp, shield, shatter, summon, vanish, blink, move, wave, mark, reticle, buff, lift, sleep, crit, dodge,
-   * counter, dp, coin, crate, down, beam, bolt, strike, volley, pillar, lp, chill, element, flame), except kinds whose
-   * archetype is 'none' (hitCap: a leader hit cancelled by 限伤 draws nothing); unknown kinds get a generic sparkle. `extra` keys used: id (anchor unit — or the shooter of a `pt` kind), r | radius, dur | duration,
-   * t (shell flight, game s), src / from / to / target / targets (unit ids), fx, fy / fromX, fromY / tx, ty (positions),
-   * element, n, scale, kind, tiles.
+   * b.ev 'fx' ['fx', kind, x, y, extra], through the registry: every kind the sim / content emits has a visual — its
+   * FX_KINDS archetype (render/fxRecipes.js FX_ARCHETYPES) unless a registered recipe draws it (蕾缪安's lock /
+   * bombardShell / bombard / crit, 炎佑's yanyouFlame, an operator's or skill's own); archetype 'none' (hitCap: a leader
+   * hit cancelled by 限伤) draws nothing; unknown kinds get a generic sparkle.
    */
-  simFx(kind, x, y, extra) {
-    const ex = extra && typeof extra === 'object' ? extra : {};
-    const spec = fxSpec(kind, ex);
-    if (spec.a === 'none') return; // an event the screen does not show (hitCap)
-    const at = spec.pt ? this._point(Number(x), Number(y)) : this._where(Number(x), Number(y), ex);
-    if (!Number.isFinite(at.x) || !Number.isFinite(at.y)) return;
-    // 蕾缪安 S2: the aimed snipe ('crit' on the locked enemy, from her) ends that aim lock
-    if (kind === 'crit' && ex.src != null && ex.id != null) {
-      for (const L of this.locks) if (L.src === ex.src && L.id === ex.id) this._releaseLock(L);
-    }
-    const col = spec.c;
-    const r = clamp(num(ex.r ?? ex.radius, spec.r ?? 1), 0.3, 30);
-    const ts = this.ctx.timeScale ? Math.max(0.25, this.ctx.timeScale()) : 2;
-    const dur = num(ex.dur ?? ex.duration, spec.dur ?? 0) / ts;
-    const cam = this.ctx.cam();
-    const chest = (v, out = this._p) => (v ? this._chest(v, out) : cam.project(at.x, at.y, at.z + 0.5, out));
-    const p = chest(at.v);
-    const s = p.s;
-    switch (spec.a) {
-      case 'blast': {
-        if (r >= 12) { this.flashScreen(col, 0.5); break; }
-        if (kind === 'bombard') { this._touchLocks(ex.id ?? ex.src ?? null); this._landed(ex.id ?? ex.src ?? null, at.x, at.y, r); }
-        this.explosion(at.x, at.y, at.z, r, col, { smoke: spec.smoke, heavy: !!spec.heavy, tiles: ex.tiles ? tilesAround(at.x, at.y, r, ex.tiles) : null });
-        break;
-      }
-      case 'shell': {
-        // 蕾缪安 S3: a shell fired now by `id` that lands at (x, y) after `t` game seconds (its 'bombard' explodes there)
-        const flight = num(ex.t ?? ex.flight ?? ex.dur ?? ex.duration, 1) / ts;
-        this._touchLocks(ex.id ?? ex.src ?? null);
-        this.mortar(this._viewOf(ex.id ?? ex.src), at.x, at.y, r, flight);
-        break;
-      }
-      case 'zone': this.zone(at.x, at.y, at.z, r, col, Math.max(0.6, dur || 1.5), spec.tex); break;
-      case 'wall': {
-        // a line of burning tiles through the anchor tile along `axis` ('col' | 'row', from the sim event)
-        const rect = this.ctx.fieldRect ? this.ctx.fieldRect() : null;
-        this.tileFlash(wallTiles(Number(x), Number(y), ex.axis === 'row' ? 'row' : 'col', rect), col, Math.max(0.6, dur || 1.5));
-        this.zone(at.x, at.y, at.z, 0.6, col, Math.max(0.6, dur || 1.5), spec.tex);
-        break;
-      }
-      case 'telegraph': {
-        const d = Math.max(0.4, dur || 1);
-        if (r >= 12) { this.flashScreen(col, 0.45, d); break; }
-        if (ex.tiles) this.tileFlash(tilesAround(at.x, at.y, r, ex.tiles), col, d, true);
-        else this.zone(at.x, at.y, at.z, r, col, d, 'ring', true);
-        break;
-      }
-      case 'chill': this.flashScreen(col, 0.35, 0.8); this.snowfall(col); break;
-      case 'heal': this.heal(at.v || { x: at.x, y: at.y, z: at.z }, 0); break;
-      case 'healAoe': {
-        this.ring(at.x, at.y, at.z, 0.2, r, col, 0.6);
-        const n = this.quality === 'low' ? 4 : 9;
-        for (let i = 0; i < n; i++) {
-          const a = Math.random() * Math.PI * 2, d = Math.random() * r * 0.85;
-          const q = cam.project(at.x + Math.cos(a) * d, at.y + Math.sin(a) * d, at.z + 0.2);
-          this.particle('plus', q.x, q.y, { tint: col, vy: -q.s * 0.9, life: 0.8, s0: q.s / 64 * 0.3, s1: q.s / 64 * 0.18, a0: 0.9, a1: 0, fadeIn: 0.1 });
-        }
-        break;
-      }
-      case 'sp': {
-        for (let i = 0; i < (this.quality === 'low' ? 3 : 7); i++) {
-          this.particle('dot', p.x + (Math.random() - 0.5) * s * 0.6, p.y + (Math.random() - 0.2) * s * 0.4, { tint: col, vy: -s * (0.6 + Math.random() * 0.6), life: 0.7, s0: s / 32 * 0.2, s1: 0, a0: 1, a1: 0, fadeIn: 0.05 });
-        }
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.3, s0: s / 128 * 0.6, s1: s / 128 * 1.1, a0: 0.7, a1: 0 });
-        break;
-      }
-      case 'shield': {
-        this.particle('hex', p.x, p.y, { tint: col, life: 0.55, s0: s / 128 * 0.9, s1: s / 128 * 1.25, a0: 0.85, a1: 0, sx: 0.85 });
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.4, s0: s / 128 * 0.9, s1: s / 128 * 1.3, a0: 0.5, a1: 0 });
-        break;
-      }
-      case 'shatter': {
-        this.particle('hex', p.x, p.y, { tint: col, life: 0.25, s0: s / 128 * 1.1, s1: s / 128 * 1.5, a0: 0.9, a1: 0 });
-        for (let i = 0; i < (this.quality === 'low' ? 5 : 12); i++) {
-          const a = Math.random() * Math.PI * 2;
-          this.particle('shard', p.x + Math.cos(a) * s * 0.3, p.y + Math.sin(a) * s * 0.3, { tint: col, vx: Math.cos(a) * s * 1.6, vy: Math.sin(a) * s * 1.2 - s * 0.3, g: s * 3, life: 0.55, s0: s / 32 * 0.16, s1: s / 32 * 0.05, a0: 1, a1: 0, spin: (Math.random() - 0.5) * 12 });
-        }
-        break;
-      }
-      case 'summon': {
-        const g = cam.project(at.x, at.y, at.z);
-        this.particle('pillar', g.x, g.y, { tint: col, life: 0.55, s0: g.s / 64 * 0.8, s1: g.s / 64 * 0.3, a0: 0.9, a1: 0, sx: 1, ay: 1 });
-        this.ring(at.x, at.y, at.z, 0.1, 0.9, col, 0.5, 'hex');
-        this.burst(g.x, g.y - g.s * 0.3, g.s, 8, col, { speed: 1.4, up: 0.8, life: 0.5, tex: 'dot' });
-        break;
-      }
-      case 'vanish': {
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.4, s0: s / 128 * 0.7, s1: s / 128 * 1.5, a0: 0.8, a1: 0 });
-        this.smoke(p.x, p.y, s * 0.7, 0x2c2436, 0.5);
-        this.burst(p.x, p.y, s, 7, col, { speed: 1.5, tex: 'dot', life: 0.45 });
-        break;
-      }
-      case 'blink': {
-        const fx0 = num(ex.fx ?? ex.fromX, NaN), fy0 = num(ex.fy ?? ex.fromY, NaN);
-        if (Number.isFinite(fx0) && Number.isFinite(fy0)) {
-          const q = cam.project(fx0, fy0, at.z + 0.5, this._q);
-          this.smoke(q.x, q.y, q.s * 0.6, 0x2c2436, 0.45);
-          this.particle('glow', q.x, q.y, { tint: col, life: 0.3, s0: q.s / 128 * 0.8, s1: q.s / 128 * 0.2, a0: 0.8, a1: 0 });
-          this.streak(fx0, fy0, at.x, at.y, at.z + 0.5, col, 0.3);
-        }
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.35, s0: s / 128 * 0.3, s1: s / 128 * 1.2, a0: 0.9, a1: 0 });
-        this.burst(p.x, p.y, s, 6, col, { speed: 1.4, tex: 'dot', life: 0.4 });
-        break;
-      }
-      case 'move': {
-        const fx0 = num(ex.fromX ?? ex.fx ?? ex.x0, NaN), fy0 = num(ex.fromY ?? ex.fy ?? ex.y0, NaN);
-        const tx = num(ex.tx, NaN), ty = num(ex.ty, NaN);
-        if (Number.isFinite(fx0) && Number.isFinite(fy0)) this.streak(fx0, fy0, at.x, at.y, at.z + 0.35, col, 0.35);
-        else if (Number.isFinite(tx) && Number.isFinite(ty)) this.streak(at.x, at.y, tx, ty, at.z + 0.35, col, 0.35);
-        const g = cam.project(at.x, at.y, at.z + 0.05);
-        for (let i = 0; i < (this.quality === 'low' ? 2 : 5); i++) {
-          this.particle('smoke', g.x + (Math.random() - 0.5) * g.s * 0.5, g.y, { add: false, tint: 0x6b6358, vx: (Math.random() - 0.5) * g.s * 0.6, vy: -g.s * 0.2, drag: 2, life: 0.5, s0: g.s / 128 * 0.25, s1: g.s / 128 * 0.55, a0: 0.45, a1: 0 });
-        }
-        break;
-      }
-      case 'wave': {
-        const k = clamp(num(ex.scale, 1), 0.5, 4);
-        const rr = Math.max(0.8, r * (ex.scale ? Math.min(2, k / 2) : 1));
-        for (let i = 0; i < 3; i++) this.ring(at.x, at.y, at.z, 0.15 + i * 0.15, rr * (0.7 + i * 0.25), col, 0.45 + i * 0.12);
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.3, s0: s / 128 * 0.5, s1: s / 128 * 1.2, a0: 0.7, a1: 0 });
-        break;
-      }
-      case 'mark': case 'reticle': {
-        if (kind === 'lock') {
-          // `id` is always the locked enemy: the reticle sticks to its view even a little off the event's spot
-          const lv = at.v || this._viewOf(ex.id);
-          this._touchLocks(ex.src ?? null);
-          this._lock(lv, ex.src ?? null, lv ? lv.x : at.x, lv ? lv.y : at.y, lv ? bodyZ(cam, lv, SHOT_HEIGHT.aim) : at.z + 0.55);
-          break;
-        }
-        const v = at.v;
-        const hz = v ? (v.z || 0) + (v.hover || 0) + (v._headTiles || 1.2) + 0.25 : at.z + 1.4;
-        const q = cam.project(at.x, at.y, hz, this._q);
-        if (spec.a === 'mark') {
-          this.particle('glow', q.x, q.y, { tint: col, life: 0.6, s0: q.s / 128 * 0.5, s1: q.s / 128 * 0.7, a0: 0.8, a1: 0 });
-          this.numberAt(q.x, q.y, '!', col, 0.8);
-        } else {
-          this.particle('ring', p.x, p.y, { tint: col, life: 0.6, s0: s / 128 * 1.3, s1: s / 128 * 0.7, a0: 0.95, a1: 0, spin: 3 });
-          this.particle('hex', p.x, p.y, { tint: col, life: 0.6, s0: s / 128 * 0.5, s1: s / 128 * 0.9, a0: 0.8, a1: 0, spin: -2 });
-        }
-        break;
-      }
-      case 'buff': {
-        const g = cam.project(at.x, at.y, at.z + 0.05);
-        const n = this.quality === 'low' ? 3 : 6;
-        for (let i = 0; i < n; i++) {
-          const ox = (Math.random() - 0.5) * g.s * 0.7;
-          this.particle('chevron', g.x + ox, g.y - g.s * (0.1 + Math.random() * 0.5), { tint: col, vy: -g.s * (1 + Math.random() * 0.5), life: 0.65, s0: g.s / 64 * 0.22, s1: g.s / 64 * 0.12, a0: 0.95, a1: 0, rot: -Math.PI / 2, fadeIn: 0.06 });
-        }
-        this.ring(at.x, at.y, at.z, 0.2, 0.75, col, 0.4);
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.35, s0: s / 128 * 0.6, s1: s / 128 * 1.1, a0: 0.6, a1: 0 });
-        break;
-      }
-      case 'lift': {
-        const g = cam.project(at.x, at.y, at.z);
-        this.ring(at.x, at.y, at.z, 0.2, 0.8, col, 0.5);
-        for (let i = 0; i < (this.quality === 'low' ? 3 : 7); i++) {
-          this.particle('streak', g.x + (Math.random() - 0.5) * g.s * 0.6, g.y - g.s * Math.random() * 0.4, { tint: col, vy: -g.s * 1.8, life: 0.4, s0: g.s / 128 * 0.4, s1: g.s / 128 * 0.2, a0: 0.8, a1: 0, rot: -Math.PI / 2, sx: 1 });
-        }
-        break;
-      }
-      case 'sleep': {
-        const v = at.v;
-        const hz = v ? (v.z || 0) + (v._headTiles || 1.2) : at.z + 1.2;
-        const q = cam.project(at.x + 0.2, at.y, hz, this._q);
-        for (let i = 0; i < 3; i++) this.particle('st_sleep', q.x + i * q.s * 0.12, q.y - i * q.s * 0.12, { add: false, vy: -q.s * 0.5, vx: q.s * 0.15, life: 0.9 + i * 0.2, s0: q.s / 32 * 0.22, s1: q.s / 32 * 0.32, a0: 1, a1: 0, fadeIn: 0.1 * i });
-        break;
-      }
-      case 'crit': {
-        this.particle('spark', p.x, p.y, { tint: col, life: 0.28, s0: s / 64 * 1.3, s1: s / 64 * 0.2, a0: 1, a1: 0, rot: Math.random() * Math.PI });
-        this.particle('glow', p.x, p.y, { tint: 0xffffff, life: 0.18, s0: s / 128 * 0.9, s1: s / 128 * 1.4, a0: 0.9, a1: 0 });
-        this.burst(p.x, p.y, s, 8, col, { speed: 3.2, life: 0.3, size: 0.5 });
-        break;
-      }
-      case 'dodge': {
-        this.particle('soft', p.x, p.y, { tint: 0xffffff, life: 0.3, s0: s / 128 * 0.5, s1: s / 128 * 0.9, a0: 0.5, a1: 0 });
-        this.particle('slash', p.x, p.y, { tint: col, life: 0.22, s0: s / 128 * 0.8, s1: s / 128 * 1.1, a0: 0.7, a1: 0, rot: -0.5 });
-        break;
-      }
-      case 'counter': {
-        this.particle('spark', p.x, p.y, { tint: col, life: 0.22, s0: s / 64 * 0.9, s1: 0, a0: 1, a1: 0 });
-        this.particle('slash', p.x, p.y, { tint: col, life: 0.22, s0: s / 128 * 0.9, s1: s / 128 * 1.2, a0: 0.9, a1: 0, rot: 0.6 });
-        this.burst(p.x, p.y, s, 4, col, { speed: 2.4, life: 0.25 });
-        break;
-      }
-      case 'dp': {
-        const n = Math.round(num(ex.n, 0));
-        this.particle('shard', p.x, p.y, { tint: col, vy: -s * 0.6, life: 0.9, s0: s / 32 * 0.28, s1: s / 32 * 0.22, a0: 1, a1: 0 });
-        if (n > 0) this.numberAt(p.x + s * 0.2, p.y, `+${n}`, col, 0.7);
-        break;
-      }
-      case 'coin': {
-        for (let i = 0; i < 4; i++) this.particle('coin', p.x + (Math.random() - 0.5) * s * 0.4, p.y, { add: false, vx: (Math.random() - 0.5) * s, vy: -s * (1.2 + Math.random() * 0.6), g: s * 4, life: 0.7, s0: s / 48 * 0.2, s1: s / 48 * 0.16, a0: 1, a1: 0.2 });
-        break;
-      }
-      case 'crate': this.crateBreak(at.x, at.y, at.z); break;
-      case 'down': {
-        this.smoke(p.x, p.y, s * 0.6, spec.smoke ?? 0x1a1a1a, 0.5);
-        this.burst(p.x, p.y, s, 5, col, { speed: 1.2, tex: 'dot', life: 0.5, g: 2 });
-        break;
-      }
-      case 'beam': case 'bolt': {
-        const a = this._viewOf(ex.from ?? ex.src) || (spec.a === 'bolt' ? null : at.v);
-        const b = this._viewOf(ex.to ?? ex.target) || (a === at.v ? null : at.v);
-        if (a && b && a !== b) this._beam(a, b, col, spec.a === 'bolt' ? 0.28 : 0.4, spec.a === 'bolt' ? 1 : 0.4);
-        else this.strike(at.x, at.y, at.z, col);
-        break;
-      }
-      case 'flame': {
-        // at the event's spot (the locked target), not snapped onto the dragon hovering 0.25 tile from it
-        const fx0 = Number(x), fy0 = Number(y);
-        this._flame(ex.id ?? ex.src ?? null, ex.target ?? ex.to ?? null, fx0, fy0, r, col, Math.max(0.2, dur || 0.5));
-        break;
-      }
-      case 'strike': case 'pillar': this.strike(at.x, at.y, at.z, col, spec.a === 'pillar'); break;
-      case 'volley': {
-        const list = Array.isArray(ex.targets) ? ex.targets.slice(0, 12) : [];
-        const src = this._viewOf(ex.src ?? ex.id);
-        for (const id of list) {
-          const t = this._viewOf(id);
-          if (!t) continue;
-          if (src && src !== t) this.attack(src, t, 'arrow');
-          else { const q = this._chest(t, this._q); this.burst(q.x, q.y, q.s, 4, col, { speed: 2, life: 0.3 }); }
-        }
-        if (!list.length) this.burst(p.x, p.y, s, 6, col, { speed: 2.4, life: 0.35 });
-        break;
-      }
-      case 'lp': this.leak(); break;
-      case 'element': {
-        const el = ex.element;
-        const c2 = el === 'burn' ? 0xff7a33 : el === 'neural' ? 0xff5ad0 : el === 'necrosis' || el === 'apoptosis' ? 0x9dff6a : el === 'erosion' ? 0x6fe0ff : col;
-        this.particle('glow', p.x, p.y, { tint: c2, life: 0.45, s0: s / 128 * 1.2, s1: s / 128 * 2.6, a0: 1, a1: 0 });
-        this.ring(at.x, at.y, at.z, 0.2, 1.5, c2, 0.55);
-        this.burst(p.x, p.y, s, 12, c2, { speed: 3, life: 0.5 });
-        break;
-      }
-      default: {
-        this.particle('spark', p.x, p.y, { tint: col, life: 0.35, s0: s / 64 * 0.6, s1: 0, a0: 0.9, a1: 0, rot: Math.random() });
-        this.particle('glow', p.x, p.y, { tint: col, life: 0.3, s0: s / 128 * 0.4, s1: s / 128 * 0.9, a0: 0.6, a1: 0 });
-        this.burst(p.x, p.y, s, 4, col, { speed: 1.6, tex: 'dot', life: 0.35 });
-      }
-    }
-  }
+  simFx(kind, x, y, extra) { this.play('fx', fxCue.fx(kind, x, y, extra)); }
 
   /**
    * An explosion on the ground at (x, y, z) of radius r tiles: fireball in `col`, a white flash, a shockwave and a

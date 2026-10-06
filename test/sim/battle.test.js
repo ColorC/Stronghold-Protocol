@@ -378,11 +378,24 @@ test('snapshot / event wire format (DESIGN §8.2)', () => {
   assert.deepEqual(Object.keys(spawn[1]).filter((k) => spawn[1][k] !== undefined).slice(0, 15).sort(),
     ['avatar', 'defId', 'dir', 'facing', 'golden', 'id', 'kind', 'maxHp', 'name', 'ownerId', 'side', 'spine', 'tier', 'x', 'y'].sort());
   assert.ok(['UP', 'RIGHT', 'DOWN', 'LEFT'].includes(spawn[1].dir), 'UnitInfo.dir is a direction');
+  // ['atk', src, tgt, projKind, attackId, isSkill 0|1] / ['dmg', tgt, amount, type, sourceId|null, attackId]: the fields
+  // after projKind / type are appended (shared/protocol.js EV; the renderer's FX registry); a hit carries its attack's id
   const atk = allEv.find((e) => e[0] === 'atk');
-  assert.equal(atk.length, 4);
+  assert.equal(atk.length, 6);
+  assert.ok(Number.isInteger(atk[4]) && atk[4] > 0, 'attackId');
+  assert.ok(atk[5] === 0 || atk[5] === 1, 'isSkill 0|1');
   const dmg = allEv.find((e) => e[0] === 'dmg');
-  assert.equal(dmg.length, 4);
+  assert.equal(dmg.length, 6);
   assert.ok(['phys', 'arts', 'true', 'burn', 'neural', 'necrosis', 'apoptosis'].includes(dmg[3]));
+  assert.ok(dmg[4] === null || Number.isInteger(dmg[4]), 'sourceId');
+  assert.ok(Number.isInteger(dmg[5]), 'attackId');
+  const hits = allEv.filter((e) => e[0] === 'dmg' && e[5] > 0);
+  assert.ok(hits.length, 'attack hits carry their attackId');
+  for (const d of hits) {
+    const a = allEv.find((e) => e[0] === 'atk' && e[4] === d[5]);
+    assert.ok(a, `dmg of attack ${d[5]} has its atk`);
+    assert.equal(d[4], a[1], 'the hit is credited to the attacker of that attack');
+  }
   const flyInSnap = h.b.units.find((u) => u.defId === 'enemy_fly');
   if (flyInSnap.alive) assert.ok(snap.units.find((u) => u[0] === flyInSnap.id)[7] & UF.FLYING);
   assert.deepEqual(h.b.drainEvents(), [], 'drained');

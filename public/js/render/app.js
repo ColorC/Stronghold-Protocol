@@ -111,6 +111,7 @@ import { SnapshotBuffer, frameTime } from './interp.js';
 import { TileField } from './tiles.js';
 import { UnitView, ItemView, DeviceView, FORMS } from './units.js';
 import { FxSystem, ensureDamageFonts } from './fx.js';
+import { FxCues, unitFxIdentity } from './fxRegistry.js';
 import { createDragController, pieceTile } from './drag.js';
 import { backdropTextures, shadowTexture, refreshTierChips, silhouetteTexture } from './textures.js';
 import { TILE_H, TIER_COLORS, COLORS } from './style.js';
@@ -510,7 +511,6 @@ export async function createFieldView(host, options = {}) {
   const woundUp = new WeakSet(); // atk event tuples whose attack wind-up already started
   const interp = new SnapshotBuffer({ delay: 0.1, rate: 2 });
   const sample = new Map();
-  const meleePending = new Map(); // target id → { src, t }
   const consumedIds = new Set();  // battle ids used up by their own effect (fx `consumed`): no death particles
   let canPlaceFn = null;
   let editable = false;
@@ -551,12 +551,21 @@ export async function createFieldView(host, options = {}) {
     surfaceLayer: (row) => tiles.surfaceLayer(row),
   };
   const tiles = new TileField({ ground: layers.ground, overlay: layers.overlay, props: layers.units, anim: layers.anim });
+  const fxIds = new WeakMap();  // UnitInfo → its FX registry identity (ctx.identify)
   const fx = new FxSystem({
     P, layers, cam: () => cam, settings, assets, heightAt, redVignette: bg.red, surfaceLayer: ctx.surfaceLayer,
     timeScale: () => ctx.timeScale(),
     loadLevel: () => loadLevel,
     fieldRect: () => (mode === 'battle' && battleMeta ? battleMeta.rect : null),
     subProfOf: (defId) => data.chess(defId)?.subProfessionId || null,
+    // a unit's identity for the FX registry (render/fxRegistry.js): charId / sub-profession / profession / equipped skill
+    identify: (v) => {
+      const info = v && v.info;
+      if (!info || typeof info !== 'object') return null;
+      let id = fxIds.get(info);
+      if (id === undefined) { id = unitFxIdentity(info, data); fxIds.set(info, id); }
+      return id;
+    },
     view: (id) => views.get(id) || null,
     screenSize: size,
     fieldTop: () => {
@@ -566,6 +575,8 @@ export async function createFieldView(host, options = {}) {
     },
   });
   ctx.fx = fx;
+  // b.ev tuples → FX registry cues (render/fxRegistry.js): the melee blows waiting for their hit, attack ids
+  const fxCues = new FxCues({ fx, view: (id) => views.get(id) || null });
   // battle devices (crates / turrets as sim units): the official crate mesh in the 3D scene, else a Pixi box
   ctx.createBox = () => switchableBox({ board: () => board3d, pixi: () => tiles.createBox() });
   const impostors = new ImpostorAtlas(app.renderer);
@@ -1033,7 +1044,7 @@ export async function createFieldView(host, options = {}) {
     battleMeta = null;
     interp.reset();
     fx.clear();
-    meleePending.clear();
+    fxCues.reset();
     consumedIds.clear();
     tiles.setBattleRect(null);
     board3d?.setBattleRect(null);
@@ -1421,7 +1432,7 @@ export async function createFieldView(host, options = {}) {
     gone.clear();
     interp.reset();
     fx.clear();
-    meleePending.clear();
+    fxCues.reset();
     consumedIds.clear();
     clearHl();
     renderT0Battle = null;
@@ -1542,7 +1553,7 @@ export async function createFieldView(host, options = {}) {
       case 'deploy': {
         gone.delete(e[1]);
         const v = battleView(e[1]);
-        if (v) { v.onDeploy?.(); if (v.info?.kind !== 'device') fx.deploy(v); }
+        if (v) { v.onDeploy?.(); if (v.info?.kind !== 'device') fxCues.deploy(v); }
         break;
       }
       case 'atk': {
@@ -1550,26 +1561,16 @@ export async function createFieldView(host, options = {}) {
         const tgt = views.get(e[2]) || battleView(e[2]);
         // chain / chainHeal bounces: the "source" is the previous target of the bounce, not an attacker
         if (src && !CHAIN_KINDS.has(e[3])) src.onAttack?.(tgt, now, e[3]);
-        if (e[3] === 'none' || !e[3]) { if (tgt && src) meleePending.set(tgt.id, { src, t: now }); }
-        fx.attack(src, tgt, e[3]);
+        fxCues.atk(e, src, tgt, now);
         break;
       }
-      case 'dmg': {
-        const v = views.get(e[1]);
-        if (!v) break;
-        const amt = Number(e[2]) || 0;
-        const m = meleePending.get(v.id);
-        let src = null;
-        if (m && now - m.t < 0.35) { src = m.src; meleePending.delete(v.id); fx._slashAt = src.id; }
-        fx.damage(v, amt, e[3], src);
-        break;
-      }
-      case 'heal': { const v = views.get(e[1]); if (v) fx.heal(v, Number(e[2]) || 0); break; }
-      case 'skill': { const v = views.get(e[1]); if (v) { v.setSkill?.(!!e[2]); fx.skill(v, !!e[2]); } break; }
+      case 'dmg': fxCues.dmg(e, views.get(e[1]), now); break;
+      case 'heal': fxCues.heal(e, views.get(e[1])); break;
+      case 'skill': { const v = views.get(e[1]); if (v) { v.setSkill?.(!!e[2]); fxCues.skill(e, v); } break; }
       case 'die': {
         const v = views.get(e[1]);
         const used = consumedIds.delete(e[1]);
-        if (v && v.alive) { v.die(e[2] === FORCED_EXIT); if (showsDeathFx(v.info, used, e[2])) fx.death(v); }
+        if (v && v.alive) { v.die(e[2] === FORCED_EXIT); if (showsDeathFx(v.info, used, e[2])) fxCues.die(v); }
         break;
       }
       case 'leak': {
@@ -1603,7 +1604,7 @@ export async function createFieldView(host, options = {}) {
           const x = late > 0 ? { ...e[4], late, ...(Number(e[4].dur) > 0 ? { dur: Math.max(0, Number(e[4].dur) - late) } : {}) } : e[4];
           views.get(e[4].id)?.setForm?.(form, x);
         }
-        if (!(late > 0)) fx.simFx(e[1], Number(e[2]), Number(e[3]), e[4]);
+        if (!(late > 0)) fxCues.fx(e);
         break;
       }
       case 'layer': {
