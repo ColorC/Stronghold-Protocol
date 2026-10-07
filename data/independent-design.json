@@ -572,7 +572,7 @@
       "name": "刺玫",
       "chessId": "chess_char_1_06_a",
       "charId": "char_494_vendla",
-      "tier": 4,
+      "tier": 1,
       "category": "B",
       "skill": "荆藤庇荫",
       "skillId": "skchr_vendla_2",
@@ -644,71 +644,67 @@
           ]
         }
       ],
-      "role": "联动",
+      "role": "生成",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "受到自身原生有效治疗的其他友方获得攻速加十五，持续八秒",
-        "elite": "受到自身原生有效治疗的其他友方获得攻速加三十，持续八秒",
+        "normal": "售出时，免费发现一名科技一的普通干员，三选一",
+        "elite": "售出时，免费发现两名科技一的普通干员，每次三选一",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
-          "combat": [
+          "prep": [
             {
-              "trigger": "heal",
-              "behavior": "healedBuff",
+              "trigger": "sold",
+              "behavior": "recruitOffer",
               "params": {
-                "stats": {
-                  "aspd": 15
-                },
-                "duration": 8,
-                "effectiveOnly": true,
-                "nativeOnly": true
+                "normalTier": 1,
+                "eliteTier": 1,
+                "normal": 1,
+                "elite": 1
               }
             }
-          ]
+          ],
+          "combat": []
         },
         "elite": {
-          "prep": [],
-          "combat": [
+          "prep": [
             {
-              "trigger": "heal",
-              "behavior": "healedBuff",
+              "trigger": "sold",
+              "behavior": "recruitOffer",
               "params": {
-                "stats": {
-                  "aspd": 30
-                },
-                "duration": 8,
-                "effectiveOnly": true,
-                "nativeOnly": true
+                "normalTier": 1,
+                "eliteTier": 1,
+                "normal": 2,
+                "elite": 2
               }
             }
-          ]
+          ],
+          "combat": []
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "growth",
-        "basis": "将具体原卡的队友属性贡献或关键词支援转为方舟治疗/部署/召唤时机；保留对其他单位的贡献，不再仅给自身低额战后徽章。 本体定位MEDIC/incantationmedic；既有九十秒木桩最佳single_0_0为307.0 DPS（荆藤庇荫），仅作输出倾向证据，治疗/控制/回费另按原技能判断。",
+        "basis": "商贩元素的售出补充本体；维多利亚咒愈师作为低本可卖的过渡成员，其最佳307 DPS与治疗按原技能保留。",
         "cards": [
           {
-            "id": "BGS_056",
-            "name": "撕心狼队长",
-            "nameEn": "Ripsnarl Captain",
-            "tier": 4,
+            "id": "BGS_115",
+            "name": "商贩元素",
+            "nameEn": "Sellemental",
+            "tier": 1,
             "version": "19.2.0.68600",
             "type": "Battlegrounds",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
           }
         ],
         "reference": "撕心狼队长",
-        "traitRevision": "阵容整体映射修订",
+        "traitRevision": "整阵容映射：原生阵营与本体技能保留，经济功能按卡源重新选择成员",
         "nativePower": {
           "profession": "MEDIC",
           "subclass": "incantationmedic",
@@ -1569,7 +1565,7 @@
       "name": "格雷伊",
       "chessId": "chess_char_1_14_a",
       "charId": "char_253_greyy",
-      "tier": 1,
+      "tier": 2,
       "category": "A",
       "skill": "静电释放",
       "skillId": "skchr_greyy_2",
@@ -1682,7 +1678,7 @@
       },
       "sourceRefs": {
         "darkmoonFamily": "economy",
-        "basis": "商贩元素的售出补手牌；使用一阶普通招募代替固定水滴原始体，避免加入没有原生技能的额外永久干员目录。 本体定位CASTER/splashcaster；既有九十秒木桩最佳four_0_0为448.0 DPS（静电释放），仅作输出倾向证据，治疗/控制/回费另按原技能判断。",
+        "basis": "商贩元素售出补充低本干员；格雷伊保留原生群攻与减速，独立作为二本经济过渡，不占维多利亚阵容席位。",
         "cards": [
           {
             "id": "BGS_115",
@@ -9544,7 +9540,7 @@
       "name": "凯瑟琳",
       "chessId": "chess_char_4_11_a",
       "charId": "char_4162_cathy",
-      "tier": 3,
+      "tier": 1,
       "category": "A",
       "skill": "战火淬炼",
       "skillId": "skchr_cathy_2",
@@ -9642,15 +9638,15 @@
           ]
         }
       ],
-      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：进入休整期时，奇数轮时随机获得1件已解锁的通用装备（不含奖品装备）。规则动作：普通整备roundStart触发randomUnlockedEquipment；进阶整备roundStart触发randomUnlockedEquipment。本体依据：SUPPORT/工匠，MELEE，范围1-1；原生攻击456、攻速100、攻击间隔1.5秒、生命2144；选用「战火淬炼」Lv4，SP消耗35/初始15（INCREASE_WITH_TIME）：“停止攻击，生命上限+40%，防御力+10%，装置效果改为使目标干员每秒获得相当于凯瑟琳生命上限6%的屏障（不会超过天赋上限）”。探针依据：单体0防/0抗最佳总DPS 328.3（本体328.3+召唤物0.0；岁月锻打）；单体800防/40抗最佳总DPS 16.4（本体16.4+召唤物0.0；岁月锻打）；四目标0防/0抗最佳总DPS 328.3（本体328.3+召唤物0.0；岁月锻打）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "经济",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "进入休整期时，奇数轮时随机获得1件已解锁的通用装备（不含奖品装备）",
-        "elite": "进入休整期时，奇数轮时随机获得2件已解锁的通用装备（不含奖品装备）",
+        "normal": "获得时，获得一次本次休整期可用的免费刷新",
+        "elite": "获得时，获得两次本次休整期可用的免费刷新",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "生成",
+      "roster": "经济",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
@@ -9659,13 +9655,11 @@
         "normal": {
           "prep": [
             {
-              "trigger": "roundStart",
-              "behavior": "randomUnlockedEquipment",
+              "trigger": "gain",
+              "behavior": "freeRefresh",
               "params": {
                 "normal": 1,
-                "elite": 2,
-                "oddRoundsOnly": true,
-                "quantity": 1
+                "elite": 1
               }
             }
           ],
@@ -9674,13 +9668,11 @@
         "elite": {
           "prep": [
             {
-              "trigger": "roundStart",
-              "behavior": "randomUnlockedEquipment",
+              "trigger": "gain",
+              "behavior": "freeRefresh",
               "params": {
-                "normal": 1,
-                "elite": 2,
-                "oddRoundsOnly": true,
-                "quantity": 2
+                "normal": 2,
+                "elite": 2
               }
             }
           ],
@@ -9689,20 +9681,20 @@
       },
       "sourceRefs": {
         "darkmoonFamily": "generation",
-        "basis": "保留载人收割机的供给主干；触发条件改为凯瑟琳原生技能、天赋所提供的行为，数值与科技另行适配，不声称逐字等同。 本体定位SUPPORT/craftsman；既有九十秒木桩最佳single_0_0为328.3 DPS（岁月锻打），仅作输出倾向证据，治疗/控制/回费另按原技能判断。",
+        "basis": "刷新畸体的免费刷新；维多利亚工匠承担低本经济过渡，其无装备九十秒最佳328.3 DPS，普通攻击与技能不作为高本核心输出。",
         "cards": [
           {
-            "id": "BGS_023",
-            "name": "载人收割机",
-            "nameEn": "Piloted Shredder",
-            "tier": 3,
+            "id": "BGS_116",
+            "name": "刷新畸体",
+            "nameEn": "Refreshing Anomaly",
+            "tier": 1,
             "version": "19.2.0.68600",
             "type": "Battlegrounds",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
           }
         ],
         "reference": "载人收割机",
-        "traitRevision": "阵容整体映射修订",
+        "traitRevision": "整阵容映射：原生阵营与本体技能保留，经济功能按卡源重新选择成员",
         "nativePower": {
           "profession": "SUPPORT",
           "subclass": "craftsman",
@@ -18219,7 +18211,7 @@
       "name": "流明",
       "chessId": "chess_char_6_14_a",
       "charId": "char_4042_lumen",
-      "tier": 2,
+      "tier": 4,
       "category": "B",
       "skill": "灯火不灭",
       "skillId": "skchr_lumen_3",
@@ -18312,8 +18304,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "每次部署时，使另一名在场护盾层数最少的友方获得一层护盾",
-        "elite": "每次部署时，使另外两名在场护盾层数最少的友方各获得一层护盾",
+        "normal": "每次部署时，使另一名在场护盾层数最少的友方获得一层护盾；受到自身原生有效治疗的其他友方获得攻速加十五，持续八秒",
+        "elite": "每次部署时，使另外两名在场护盾层数最少的友方各获得一层护盾；受到自身原生有效治疗的其他友方获得攻速加三十，持续八秒",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -18336,6 +18328,18 @@
                 "count": 1,
                 "layers": 1
               }
+            },
+            {
+              "trigger": "heal",
+              "behavior": "healedBuff",
+              "params": {
+                "stats": {
+                  "aspd": 15
+                },
+                "duration": 8,
+                "effectiveOnly": true,
+                "nativeOnly": true
+              }
             }
           ]
         },
@@ -18352,19 +18356,40 @@
                 "count": 2,
                 "layers": 1
               }
+            },
+            {
+              "trigger": "heal",
+              "behavior": "healedBuff",
+              "params": {
+                "stats": {
+                  "aspd": 30
+                },
+                "duration": 8,
+                "effectiveOnly": true,
+                "nativeOnly": true
+              }
             }
           ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "growth",
-        "basis": "将具体原卡的队友属性贡献或关键词支援转为方舟治疗/部署/召唤时机；保留对其他单位的贡献，不再仅给自身低额战后徽章。 本体定位MEDIC/healer；既有九十秒木桩最佳single_0_0为0.0 DPS（沐雨），仅作输出倾向证据，治疗/控制/回费另按原技能判断。",
+        "basis": "无私的英雄的队友护盾与撕心狼队长的支援加攻速，转为流明部署护盾及有效治疗攻速支援；原生解控、抵抗与持续治疗保留，双功能安排四本。",
         "cards": [
           {
             "id": "OG_221",
             "name": "无私的英雄",
             "nameEn": "Selfless Hero",
             "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+          },
+          {
+            "id": "BGS_056",
+            "name": "撕心狼队长",
+            "nameEn": "Ripsnarl Captain",
+            "tier": 4,
             "version": "19.2.0.68600",
             "type": "Battlegrounds",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -19967,7 +19992,7 @@
       "name": "地灵",
       "chessId": "chess_char_1_11_a",
       "charId": "char_183_skgoat",
-      "tier": 1,
+      "tier": 3,
       "category": "reference",
       "skill": "攻击力强化·β型",
       "skillId": "skcom_atk_up[2]",
@@ -20028,35 +20053,35 @@
           ]
         }
       ],
-      "role": "经济",
+      "role": "生成",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得一次本次休整期可用的免费刷新",
-        "elite": "获得时，获得两次本次休整期可用的免费刷新",
+        "normal": "进入休整期时，奇数轮时随机获得1件已解锁的通用装备（不含奖品装备）",
+        "elite": "进入休整期时，奇数轮时随机获得2件已解锁的通用装备（不含奖品装备）",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "经济",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "莱塔尼亚"
       ],
       "sourceRefs": {
         "darkmoonFamily": "growth",
-        "basis": "刷新畸体的入手免费刷新，保持经济时点，不用交接代替。 本体定位SUPPORT/slower；既有九十秒木桩最佳single_0_0为229.2 DPS（攻击力强化·β型），仅作输出倾向证据，治疗/控制/回费另按原技能判断。",
+        "basis": "载人收割机的随机产物转为奇数休整期补装备；地灵的勘探与支援定位提供跨阵营装备来源，仍按当前商店科技解锁。",
         "cards": [
           {
-            "id": "BGS_116",
-            "name": "刷新畸体",
-            "nameEn": "Refreshing Anomaly",
-            "tier": 1,
+            "id": "BGS_023",
+            "name": "载人收割机",
+            "nameEn": "Piloted Shredder",
+            "tier": 3,
             "version": "19.2.0.68600",
             "type": "Battlegrounds",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
           }
         ],
         "reference": "刷新畸体",
-        "traitRevision": "阵容整体映射修订",
+        "traitRevision": "整阵容映射：原生阵营与本体技能保留，经济功能按卡源重新选择成员",
         "nativePower": {
           "profession": "SUPPORT",
           "subclass": "slower",
@@ -20071,11 +20096,13 @@
         "normal": {
           "prep": [
             {
-              "trigger": "gain",
-              "behavior": "freeRefresh",
+              "trigger": "roundStart",
+              "behavior": "randomUnlockedEquipment",
               "params": {
                 "normal": 1,
-                "elite": 1
+                "elite": 2,
+                "oddRoundsOnly": true,
+                "quantity": 1
               }
             }
           ],
@@ -20084,11 +20111,13 @@
         "elite": {
           "prep": [
             {
-              "trigger": "gain",
-              "behavior": "freeRefresh",
+              "trigger": "roundStart",
+              "behavior": "randomUnlockedEquipment",
               "params": {
-                "normal": 2,
-                "elite": 2
+                "normal": 1,
+                "elite": 2,
+                "oddRoundsOnly": true,
+                "quantity": 2
               }
             }
           ],
