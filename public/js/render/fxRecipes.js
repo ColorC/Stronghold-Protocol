@@ -659,6 +659,13 @@ function rosmonDamage(fx, c, next) {
 // 锏's [uc]skills actions name all S1/S2 cast and target-hit effects.  S3's server-side action emits the same
 // semantic sequence as the extracted client slots: `skill` → repeated `fx:slash` + `dmg` → `fx:finale` + `dmg`.
 const BLKKGT_CHAR = 'char_4116_blkkgt';
+// `data/chess.json` / `skchr_blkkgt_3`: rangeId x-1. These are [dRow,dCol]
+// offsets in the facing-RIGHT frame, and are rotated with the unit's board
+// direction before being drawn on the map.
+const BLKKGT_S3_RANGE = Object.freeze([
+  [2, 0], [1, -1], [1, 0], [1, 1], [0, -2], [0, -1], [0, 0], [0, 1], [0, 2],
+  [-1, -1], [-1, 0], [-1, 1], [-2, 0],
+]);
 const BLKKGT_SKILLS = Object.freeze({
   skchr_blkkgt_1: Object.freeze({ starts: ['blkkgt_skill_01_start_01', 'blkkgt_skill_01_start_02', 'blkkgt_skill_01_start_03'], hits: ['blkkgt_skill_01_hit_01', 'blkkgt_skill_01_hit_02'] }),
   skchr_blkkgt_2: Object.freeze({ starts: ['blkkgt_skill_02_start_01', 'blkkgt_skill_02_start_02', 'blkkgt_skill_02_start_03', 'blkkgt_skill_02_start_05', 'blkkgt_skill_02_start_06'], hits: ['blkkgt_skill_02_hit_1'] }),
@@ -683,7 +690,7 @@ function blkkgtSkill(fx, c) {
       // preview candidates only; the numeric enum mapping remains unresolved.
       groundMount(fx, c.view, 'blkkgt_skill_03_start_01', 0, group);
       fx.markOriginalVfxProcedural?.('blkkgt_skill_03_start_02');
-      fx.playOriginalGroundFrame({ followId: c.view.id, group, life: 1.6 });
+      fx.playOriginalGroundFrame({ followId: c.view.id, group, life: 4.0, grid: BLKKGT_S3_RANGE, dir: c.view.dir || 'RIGHT' });
     }
     return;
   }
@@ -741,8 +748,9 @@ function blkkgtDamage(fx, c, next) {
   if (!binding?.hits?.length) { next(); return; }
   if (skill === 'skchr_blkkgt_3' && owner && BLKKGT_S3_FINAL.has(owner.id)) {
     for (const prefab of binding.endHits || []) targetMount(fx, c.view, prefab);
-    BLKKGT_S3_FINAL.delete(owner.id);
-    owner.setOriginalVfxHidden?.(false);
+    // The finisher is an area hit. Keep the phase flag until skill-off so every
+    // target damage event gets the target-side hit_2 prefab; deleting it after
+    // the first victim made the other victims lose the sheathe impact.
     return;
   }
   const key = `${c.src?.id ?? c.attacker?.id ?? ''}:${c.attackId ?? ''}`;

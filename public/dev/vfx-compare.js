@@ -44,7 +44,11 @@ function enemy(id, defId, x, y, extra = {}) {
 function unitsFor(skillId) {
   if (operator === 'blkkgt') {
     const skillIndex = skillId === 'skchr_blkkgt_1' ? 0 : skillId === 'skchr_blkkgt_2' ? 1 : 2;
-    return [blkkgt(skillIndex), enemy(20, 'enemy_1007_slime', 7, 11), enemy(21, 'enemy_1042_frostd', 8, 10), enemy(22, 'enemy_1006_shield', 8, 12, { elite: true })];
+    // S3 is x-1: [2,0], [1,-1..1], [0,-2..2], [-1,-1..1], [-2,0]
+    // in the facing-RIGHT frame. Keep every demo victim on that authored
+    // 13-tile range so the target-side slash effects can be checked against
+    // the map effect instead of being staged outside the skill.
+    return [blkkgt(skillIndex), enemy(20, 'enemy_1007_slime', 6, 11), enemy(21, 'enemy_1042_frostd', 5, 10), enemy(22, 'enemy_1006_shield', 5, 12, { elite: true })];
   }
   const skillIndex = skillId === 'skchr_rosmon_1' ? 0 : skillId === 'skchr_rosmon_3' ? 2 : 1;
   return [ros(skillIndex), enemy(20, 'enemy_1007_slime', 7, 11), enemy(21, 'enemy_1042_frostd', 8, 10), enemy(22, 'enemy_1006_shield', 8, 12, { elite: true })];
@@ -61,18 +65,20 @@ function makeTimeline(kind) {
     const skillId = kind.startsWith('skchr_blkkgt_') ? kind : 'skchr_blkkgt_3';
     if (skillId === 'skchr_blkkgt_3') {
       // This is the actual server event shape: skill → ten fx:slash/dmg pairs → fx:finale/dmg → skill off.
-      // The extracted Spine timings are 0.333 s between loop hits; the final action has one hit at 0.333 s.
+      // `data/chess.json` and the sim blackboard give d_hit_interval = 0.3 s;
+      // each slash resolves against every victim in the x-1 range (up to 5).
       const start = 0.5;
+      const victims = [20, 21, 22];
       add(0.15, ['deploy', 1]);
       add(start, ['skill', 1, 1, skillId]);
       for (let i = 0; i < 10; i++) {
-        const t = start + i * 0.333;
-        add(t, ['fx', 'slash', 4, 11, { id: 1, n: 1 }]);
-        add(t + 0.012, ['dmg', 20 + (i % 2), 420, 'phys', 1, 0]);
+        const t = start + i * 0.3;
+        add(t, ['fx', 'slash', 4, 11, { id: 1, n: victims.length }]);
+        for (const [j, target] of victims.entries()) add(t + 0.012 + j * 0.006, ['dmg', target, 420, 'phys', 1, 0]);
       }
-      const finale = start + 10 * 0.333 + 0.08;
+      const finale = start + 10 * 0.3 + 0.08;
       add(finale, ['fx', 'finale', 4, 11, { id: 1 }]);
-      add(finale + 0.333, ['dmg', 21, 980, 'phys', 1, 0]);
+      for (const [j, target] of victims.entries()) add(finale + 0.333 + j * 0.006, ['dmg', target, 980, 'phys', 1, 0]);
       add(finale + 0.58, ['skill', 1, 0, skillId]);
       return a;
     }

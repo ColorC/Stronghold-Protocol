@@ -130,10 +130,12 @@ export class OriginalVfxPlayer {
 
   /** Render the authored tile/range frame whose Unity custom vertex stream is
    * not representable by the packed colour/coverage atlas. */
-  playGroundFrame({ x = 0, y = 0, z = 0, followId = null, group = null, life = 1.6, delay = 0 } = {}) {
+  playGroundFrame({ x = 0, y = 0, z = 0, followId = null, group = null, life = 1.6, delay = 0, grid = null, dir = 'RIGHT' } = {}) {
     if (!this.P?.Graphics || typeof document === 'undefined') return false;
     const record = { kind: 'groundFrame', x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, followId, group,
-      elapsed: 0, delay: Math.max(0, Number(delay) || 0), life: Math.max(0.1, Number(life) || 1.6), dead: false, graphics: new this.P.Graphics() };
+      elapsed: 0, delay: Math.max(0, Number(delay) || 0), life: Math.max(0.1, Number(life) || 1.6), dead: false,
+      grid: Array.isArray(grid) ? grid.filter((p) => Array.isArray(p) && Number.isFinite(Number(p[0])) && Number.isFinite(Number(p[1]))).map((p) => [Number(p[0]), Number(p[1])]) : null,
+      dir: typeof dir === 'string' ? dir.toUpperCase() : 'RIGHT', graphics: new this.P.Graphics() };
     record.graphics.visible = false;
     (this.layers.groundFx || this.layers.fxNormal || this.layers.fxAdd).addChild(record.graphics);
     this.active.add(record);
@@ -196,21 +198,47 @@ export class OriginalVfxPlayer {
     const pulse = 0.72 + 0.28 * Math.sin(phase * 9);
     const g = record.graphics;
     g.clear();
-    g.lineStyle(Math.max(1.5, p.s * 0.028), 0xe7b96b, Math.min(0.9, fade * pulse));
-    // The raw prefab contains center plus four children at local ±2.
-    for (const [dx, dy] of [[0, 0], [-2, 0], [2, 0], [0, -2], [0, 2]]) {
-      const cx = tx + dx, cy = ty + dy, q = 0.39, pts = [];
+    const rotate = (dr, dc) => {
+      switch (record.dir) {
+        case 'UP': return [dc, -dr];
+        case 'LEFT': return [-dr, -dc];
+        case 'DOWN': return [-dc, dr];
+        default: return [dr, dc];
+      }
+    };
+    // start_02's range_line is a Unity mesh, not a sprite. Its authored grid is
+    // the skill's x-1 range (13 tiles); the old fallback rendered five guessed
+    // squares and therefore put the map effect in the wrong places.
+    const localGrid = record.grid?.length ? record.grid : [[0, 0], [-2, 0], [2, 0], [0, -2], [0, 2]];
+    const cells = localGrid.map(([dr, dc]) => { const [rr, cc] = rotate(dr, dc); return [tx + rr, ty + cc]; });
+    const seen = new Set(cells.map(([rr, cc]) => `${rr},${cc}`));
+    const q = 0.46;
+    const alpha = Math.min(0.8, fade * pulse);
+    if (typeof g.beginFill === 'function') g.beginFill(0xe7b96b, Math.min(0.12, alpha * 0.12));
+    g.lineStyle(Math.max(1.2, p.s * 0.021), 0xe7b96b, Math.min(0.72, alpha));
+    for (const [cx, cy] of cells) {
+      const pts = [];
       for (const [ox, oy] of [[-q, -q], [q, -q], [q, q], [-q, q]]) {
         const v = cam.project(cx + ox, cy + oy, z + 0.027, {});
         pts.push(v.x, v.y);
       }
-      g.drawPolygon(pts);
+      if (typeof g.drawPolygon === 'function') g.drawPolygon(pts);
     }
-    g.lineStyle(Math.max(1, p.s * 0.018), 0xffe8af, Math.min(0.55, fade * 0.55));
-    const a = cam.project(tx, ty, z + 0.028, {});
-    for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) {
-      const b = cam.project(tx + dx, ty + dy, z + 0.028, {});
-      g.moveTo(a.x, a.y); g.lineTo(b.x, b.y);
+    if (typeof g.endFill === 'function') g.endFill();
+    // range_line is the exposed perimeter; omit shared internal edges so the
+    // indicator reads as one continuous area rather than disconnected boxes.
+    g.lineStyle(Math.max(1.7, p.s * 0.029), 0xffe8af, Math.min(0.86, alpha * 0.95));
+    const edges = [
+      [[-q, -q], [q, -q], [0, -1]], [[q, -q], [q, q], [1, 0]],
+      [[q, q], [-q, q], [0, 1]], [[-q, q], [-q, -q], [-1, 0]],
+    ];
+    for (const [cx, cy] of cells) {
+      for (const [[a, b], [c, d], [ndr, ndc]] of edges) {
+        if (seen.has(`${cx + ndr},${cy + ndc}`)) continue;
+        const v1 = cam.project(cx + a, cy + b, z + 0.029, {});
+        const v2 = cam.project(cx + c, cy + d, z + 0.029, {});
+        g.moveTo(v1.x, v1.y); g.lineTo(v2.x, v2.y);
+      }
     }
     g.zIndex = Number.isFinite(p.depth) ? -p.depth : 0;
   }

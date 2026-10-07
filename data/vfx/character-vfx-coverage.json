@@ -42,7 +42,7 @@
       },
       "rawPrefabSemantics": {
         "blkkgt_skill_03_start_01": {"spawnLocation": 5, "anchor": "tile", "bindingState": "translated"},
-        "blkkgt_skill_03_start_02": {"spawnLocation": 5, "children": ["ground", "range_line", "local ±2 cardinal squares"], "shader": "Torappu custom vertex stream", "anchor": "tile", "bindingState": "procedural"},
+        "blkkgt_skill_03_start_02": {"spawnLocation": 5, "children": ["fixed", "ground", "range_line", "five local particle children"], "rangeGrid": [[2, 0], [1, -1], [1, 0], [1, 1], [0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [-1, -1], [-1, 0], [-1, 1], [-2, 0]], "rangeLineRenderMode": "Mesh", "shader": "Torappu custom vertex stream", "anchor": "tile", "bindingState": "procedural"},
         "blkkgt_skill_03_hit_1": {"spawnLocation": 2, "holdByOwner": 1, "anchor": "target root", "bindingState": "translated"},
         "blkkgt_skill_03_end": {"spawnLocation": 5, "anchor": "tile", "bindingState": "translated"},
         "blkkgt_skill_03_start_03": {"spawnLocation": 8, "holdByOwner": 1, "mountPointType": 5, "anchor": "F_R_Handweapon candidate", "bindingState": "unresolved"},
