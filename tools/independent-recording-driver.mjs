@@ -143,8 +143,17 @@ async function deployPiece(state, piece) {
       report.firstDeployDiagnostic.wheelVisibleAfterWait = true;
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
     }
-    // The normal visible direction wheel supports keyboard navigation; use the same real UI inputs as the smoke path.
-    await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter');
+    // Wait for the visible wheel's keyboard listener to mount before sending normal UI keys.
+    await pause(250);
+    await page.keyboard.press('ArrowRight');
+    try {
+      await page.waitForFunction(() => document.querySelector('.fwheel__sr')?.textContent?.includes('朝向'), { timeout: 1500 });
+    } catch {
+      // A just-mounted overlay can miss the first key while effects attach; repeat the same real key once.
+      await page.keyboard.press('ArrowRight');
+      await page.waitForFunction(() => document.querySelector('.fwheel__sr')?.textContent?.includes('朝向'), { timeout: 2500 });
+    }
+    await page.keyboard.press('Enter');
     try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
     const after = await readState();
