@@ -46,7 +46,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "退场时召唤1个随机高本原型。",
+          "text": "退场时召唤1个随机六星原型。",
           "sourceId": "BGS_006",
           "implementation": "supported",
           "adapter": [
@@ -57,7 +57,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "退场时召唤2个随机高本原型。",
+          "text": "退场时召唤2个随机六星原型。",
           "sourceId": "BGS_006",
           "implementation": "supported",
           "adapter": [
@@ -80,14 +80,14 @@
                 "params": {
                   "sourceId": "BGS_006"
                 },
-                "text": "退场时召唤1个随机高本原型。",
+                "text": "退场时召唤1个随机六星原型。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时召唤1个随机高本原型。",
+                "adaptation": "退场时召唤1个随机六星原型。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -103,14 +103,14 @@
                 "params": {
                   "sourceId": "BGS_006"
                 },
-                "text": "退场时召唤2个随机高本原型。",
+                "text": "退场时召唤2个随机六星原型。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时召唤2个随机高本原型。",
+                "adaptation": "退场时召唤2个随机六星原型。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -130,14 +130,14 @@
             "params": {
               "sourceId": "BGS_006"
             },
-            "text": "退场时召唤1个随机高本原型。",
+            "text": "退场时召唤1个随机六星原型。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个随机高本原型。",
+            "adaptation": "退场时召唤1个随机六星原型。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -153,14 +153,14 @@
             "params": {
               "sourceId": "BGS_006"
             },
-            "text": "退场时召唤2个随机高本原型。",
+            "text": "退场时召唤2个随机六星原型。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个随机高本原型。",
+            "adaptation": "退场时召唤2个随机六星原型。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -2262,7 +2262,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "卡西米尔友方",
           "duration": "本场战斗",
-          "text": "退场时为卡西米尔友方增加5层护盾。",
+          "text": "退场时为卡西米尔友方各增加5层护盾。",
           "sourceId": "BGS_040",
           "implementation": "supported",
           "adapter": [
@@ -2273,7 +2273,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "卡西米尔友方",
           "duration": "本场战斗",
-          "text": "退场时为卡西米尔友方增加10层护盾。",
+          "text": "退场时为卡西米尔友方各增加5层护盾。",
           "sourceId": "BGS_040",
           "implementation": "supported",
           "adapter": [
@@ -2296,7 +2296,7 @@
                 "params": {
                   "sourceId": "BGS_040"
                 },
-                "text": "退场时为卡西米尔友方增加5层护盾。",
+                "text": "退场时为卡西米尔友方各增加5层护盾。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -2304,7 +2304,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时为卡西米尔友方增加5层护盾。",
+                "adaptation": "退场时为卡西米尔友方各增加5层护盾。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -2320,7 +2320,7 @@
                 "params": {
                   "sourceId": "BGS_040"
                 },
-                "text": "退场时为卡西米尔友方增加10层护盾。",
+                "text": "退场时为卡西米尔友方各增加5层护盾。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -2328,7 +2328,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时为卡西米尔友方增加10层护盾。",
+                "adaptation": "退场时为卡西米尔友方各增加5层护盾。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -2348,7 +2348,7 @@
             "params": {
               "sourceId": "BGS_040"
             },
-            "text": "退场时为卡西米尔友方增加5层护盾。",
+            "text": "退场时为卡西米尔友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -2356,7 +2356,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为卡西米尔友方增加5层护盾。",
+            "adaptation": "退场时为卡西米尔友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -2372,7 +2372,7 @@
             "params": {
               "sourceId": "BGS_040"
             },
-            "text": "退场时为卡西米尔友方增加10层护盾。",
+            "text": "退场时为卡西米尔友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -2380,7 +2380,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为卡西米尔友方增加10层护盾。",
+            "adaptation": "退场时为卡西米尔友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -4537,8 +4537,10 @@
         "sourceId": "BGS_080",
         "mechanic": "darkmoonCombat",
         "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
           "duration": "本场战斗",
-          "text": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "text": "攻击后追加1次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
           "sourceId": "BGS_080",
           "implementation": "supported",
           "adapter": [
@@ -4546,8 +4548,10 @@
           ]
         },
         "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
           "duration": "本场战斗",
-          "text": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "text": "攻击后追加3次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4，依职业配置的副属性装备×4。",
           "sourceId": "BGS_080",
           "implementation": "supported",
           "adapter": [
@@ -4562,22 +4566,22 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combat",
+                "trigger": "战斗中",
                 "sourceTrigger": "darkmoonCombat",
-                "recipient": "combatants",
+                "recipient": "自身",
                 "duration": "本场战斗",
                 "kind": "sourceSpecificCombat",
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "text": "攻击后追加1次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adaptation": "攻击后追加1次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -4585,22 +4589,22 @@
             ],
             "elite": [
               {
-                "trigger": "combat",
+                "trigger": "战斗中",
                 "sourceTrigger": "darkmoonCombat",
-                "recipient": "combatants",
+                "recipient": "自身",
                 "duration": "本场战斗",
                 "kind": "sourceSpecificCombat",
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "text": "攻击后追加3次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4，依职业配置的副属性装备×4。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adaptation": "攻击后追加3次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4，依职业配置的副属性装备×4。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -4612,22 +4616,22 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "combat",
+            "trigger": "战斗中",
             "sourceTrigger": "darkmoonCombat",
-            "recipient": "combatants",
+            "recipient": "自身",
             "duration": "本场战斗",
             "kind": "sourceSpecificCombat",
             "params": {
               "sourceId": "BGS_080"
             },
-            "text": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+            "text": "攻击后追加1次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
             "textEn": "",
             "tags": [
               "windfury"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "攻击后追加1次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -4635,22 +4639,22 @@
         ],
         "elite": [
           {
-            "trigger": "combat",
+            "trigger": "战斗中",
             "sourceTrigger": "darkmoonCombat",
-            "recipient": "combatants",
+            "recipient": "自身",
             "duration": "本场战斗",
             "kind": "sourceSpecificCombat",
             "params": {
               "sourceId": "BGS_080"
             },
-            "text": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+            "text": "攻击后追加3次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4，依职业配置的副属性装备×4。",
             "textEn": "",
             "tags": [
               "windfury"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "攻击后追加3次普通攻击；每三秒一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4，依职业配置的副属性装备×4。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -6910,7 +6914,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+          "text": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
           "sourceId": "BGS_126",
           "implementation": "supported",
           "adapter": [
@@ -6921,7 +6925,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+          "text": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。",
           "sourceId": "BGS_126",
           "implementation": "supported",
           "adapter": [
@@ -6944,12 +6948,12 @@
                 "params": {
                   "sourceId": "BGS_126"
                 },
-                "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+                "text": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+                "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -6965,12 +6969,12 @@
                 "params": {
                   "sourceId": "BGS_126"
                 },
-                "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+                "text": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+                "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -6990,12 +6994,12 @@
             "params": {
               "sourceId": "BGS_126"
             },
-            "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+            "text": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+            "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近一个随机敌人。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -7011,12 +7015,12 @@
             "params": {
               "sourceId": "BGS_126"
             },
-            "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+            "text": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+            "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给目标附近所有敌人。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -10557,7 +10561,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+          "text": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
           "sourceId": "FP1_024",
           "implementation": "supported",
           "adapter": [
@@ -10640,7 +10644,7 @@
                 "params": {
                   "sourceId": "FP1_024"
                 },
-                "text": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+                "text": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
                 "textEn": "",
                 "tags": [
                   "taunt",
@@ -10648,7 +10652,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+                "adaptation": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -10728,7 +10732,7 @@
             "params": {
               "sourceId": "FP1_024"
             },
-            "text": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+            "text": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -10736,7 +10740,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+            "adaptation": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -12488,7 +12492,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "随机友方",
           "duration": "本场战斗",
-          "text": "退场时为随机友方增加5层护盾。",
+          "text": "退场时为随机1名友方各增加5层护盾。",
           "sourceId": "OG_221",
           "implementation": "supported",
           "adapter": [
@@ -12499,7 +12503,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "随机友方",
           "duration": "本场战斗",
-          "text": "退场时为随机友方增加10层护盾。",
+          "text": "退场时为随机2名友方各增加5层护盾。",
           "sourceId": "OG_221",
           "implementation": "supported",
           "adapter": [
@@ -12522,7 +12526,7 @@
                 "params": {
                   "sourceId": "OG_221"
                 },
-                "text": "退场时为随机友方增加5层护盾。",
+                "text": "退场时为随机1名友方各增加5层护盾。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -12530,7 +12534,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时为随机友方增加5层护盾。",
+                "adaptation": "退场时为随机1名友方各增加5层护盾。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -12546,7 +12550,7 @@
                 "params": {
                   "sourceId": "OG_221"
                 },
-                "text": "退场时为随机友方增加10层护盾。",
+                "text": "退场时为随机2名友方各增加5层护盾。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -12554,7 +12558,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "退场时为随机友方增加10层护盾。",
+                "adaptation": "退场时为随机2名友方各增加5层护盾。",
                 "adapter": [
                   "darkmoonCombat"
                 ]
@@ -12574,7 +12578,7 @@
             "params": {
               "sourceId": "OG_221"
             },
-            "text": "退场时为随机友方增加5层护盾。",
+            "text": "退场时为随机1名友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -12582,7 +12586,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为随机友方增加5层护盾。",
+            "adaptation": "退场时为随机1名友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ]
@@ -12598,7 +12602,7 @@
             "params": {
               "sourceId": "OG_221"
             },
-            "text": "退场时为随机友方增加10层护盾。",
+            "text": "退场时为随机2名友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -12606,7 +12610,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为随机友方增加10层护盾。",
+            "adaptation": "退场时为随机2名友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ]

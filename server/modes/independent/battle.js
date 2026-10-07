@@ -126,6 +126,8 @@ function sampleBattle(battle) {
 function buildBattle(input, source, catalog, { preview = false } = {}) {
   const prepared = prepare(input, source, catalog);
   const units = battleUnits(input);
+  const supportChess=Object.fromEntries(Object.entries(catalog?.operators||{}).filter(([,op])=>op?.darkmoonSupport&&op.source?.normalChess).map(([id,op])=>[id,op.source.normalChess]));
+  const battleData=Object.keys(supportChess).length?{...source,chess:{...(source.chess||{}),...supportChess}}:source;
   const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1) * (prepared.tuning?.bossHpMul ?? 1)));
   const battle = new Battle({
     seed: deriveSeed(Number(input.seed) >>> 0, `independent:${preview ? 'preview' : 'battle'}:${prepared.round}:${prepared.modeId}`),
@@ -144,7 +146,7 @@ function buildBattle(input, source, catalog, { preview = false } = {}) {
       independent: { catalog, pieces: input.pieces, counters: input.counters ?? {}, round: prepared.round, roundLimit: prepared.roundLimit },
     },
     fieldId: `independent-r${prepared.round}`,
-    data: source,
+    data: battleData,
     content: 'independent',
     recordEvents: !preview,
     logger: { warn() {}, error() {}, info() {}, log() {} },

@@ -9,7 +9,9 @@ import { runNativeHook } from '../../server/modes/independent/native.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, darkmoonGrowthBadges } from '../../server/modes/independent/darkmoonShop.js';
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
-import { buyTargetSpec, buyTargetChoices, buyTargetCount } from '../../public/js/independent/targetSelection.js';
+import { runIndependentBattle } from '../../server/modes/independent/battle.js';
+import { operatorGrowthInfo, grantGrowthLevels } from '../../shared/independentGrowth.js';
+import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from '../../public/js/independent/targetSelection.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const blueprints = JSON.parse(fs.readFileSync(path.join(root, 'data/independent-darkmoon-blueprints.json'), 'utf8'));
@@ -367,7 +369,16 @@ test('purchase target spec requires explicit eligible friendly or shop targets a
   assert.equal(buyTargetCount(shopSpec,brannState,catalog,{id:'shop'}),3,'strongest non-stacking Battlecry multiplier sets the number of selected shop slots');
   const magneticSpec=buyTargetSpec({id:'magnetic'},catalog);
   assert.equal(magneticSpec.optional,true,'magnetic card remains an ordinary recruit unless player chooses fusion');
+  assert.equal(buyRequiresTarget(magneticSpec),false,'an optional target may proceed through the explicit ordinary-buy button');
   assert.deepEqual(buyTargetChoices(magneticSpec,{pieces:[{uid:'c',chessId:'columbia',row:0,col:0},{uid:'w',chessId:'wrongFaction',row:0,col:1}]},catalog,0).map(x=>x.uid),['c']);
+  const noEligible=buyTargetChoices(friendSpec,{pieces:[{uid:'wrong',chessId:'wrong',ownerId:'p',row:0,col:0}]},catalog,0);
+  assert.equal(noEligible.length,0);
+  assert.equal(buyRequiresTarget(friendSpec),true,'UI must keep a required-target purchase open and disabled when no legal recipient exists');
+  for(const id of ['BOT_312','BOT_911']) {
+    const entry=byId.get(id),generated={id,metadata:{op:entry.metadata.op},sourceRefs:{darkmoon19_2:{id}}};
+    const actual=buyTargetSpec({id}, {operators:{[id]:generated}});
+    assert.deepEqual(actual,{kind:'magnetic',faction:'哥伦比亚',count:1,optional:true},`${id} compiled data drives the UI target picker`);
+  }
 });
 
 test('Magnetic purchases can stay normal or consume into an explicit deployed Columbia target; unrelated factions are rejected',()=>{
@@ -399,6 +410,40 @@ test('Magnetic purchases can stay normal or consume into an explicit deployed Co
   const ordinary=createSession({seed:312,catalog});ordinary.funds=20;ordinary.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
   const bought=applyAction(ordinary,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
   assert.ok(bought.state.pieces.some(x=>x.chessId===sourceOp.chessId),'choosing ordinary buy leaves the magnetic operator in the roster');
+});
+
+test('CFM 315 and BGS 115 use actual non-shop, non-merge support prototypes, including native levels and battle simulation',()=>{
+  const base=getCatalog(),specs=designAddon.supportOperators;
+  assert.equal(specs.length,3);
+  for(const spec of specs) {
+    const op=base.operators[spec.id];
+    assert.ok(op?.darkmoonSupport&&op.recruitable===false&&op.mergeable===false,`${spec.id} is a runtime prototype outside the shop pool`);
+    assert.equal(op.source.normalChess.stats.atk,spec.attack);
+    assert.equal(op.source.normalChess.stats.maxHp,spec.health);
+    assert.ok(op.source.normalChess.nativeGrowth,'support token carries an explicit native curve for levels mode');
+  }
+  const normal=Object.values(base.operators).find(x=>!x.elite&&x.recruitable!==false),summoner={...normal,sourceRefs:{darkmoon19_2:{id:'CFM_315'}}};
+  const catalog={...base,operators:{...base.operators,[normal.chessId]:{...summoner,nativeTrait:{...normal.nativeTrait,effect:nativeEffectFor(normal.chessId,summoner,false)}}}};
+  const state=createSession({seed:315,catalog,growthMode:'levels'});state.funds=20;state.shop.slots[0]={kind:'chess',id:normal.chessId,price:3,sold:false,equipment:[]};
+  const recruited=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(recruited.ok,true,JSON.stringify(recruited.error));
+  const cat=recruited.state.pieces.find(x=>x.chessId==='darkmoon:support-cat-1-1');assert.ok(cat);
+  assert.equal(cat.growthMode,'levels');assert.equal(cat.growthLevel,1);
+  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:1,atk:1,def:0,res:0},'support starts from the authored native curve');
+  grantGrowthLevels(recruited.state,base,cat,1);
+  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:2,atk:2,def:0,res:0},'support recipient advances by its own native levels curve');
+  const legal=viewSession(recruited.state,{catalog}).pieces.find(x=>x.uid===cat.uid).legalTiles;assert.ok(legal.length);
+  const [row,col]=legal[0].split(',').map(Number),deployed=applyAction(recruited.state,{type:'move',uid:cat.uid,row,col},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
+  const fight=runIndependentBattle(deployed.state,{catalog});assert.equal(fight.diagnostics.errorCount,0,JSON.stringify(fight.diagnostics.errors));
+  assert.ok(fight.samples.some(frame=>frame.units.some(unit=>unit.uid===cat.uid)),'the authored support body appears as a real participant in the existing Battle simulation');
+
+  const source={...normal,sourceRefs:{darkmoon19_2:{id:'BGS_115'}}},catalog2={...base,operators:{...base.operators,[normal.chessId]:{...source,nativeTrait:{...normal.nativeTrait,effect:nativeEffectFor(normal.chessId,source,false)}}}};
+  const sellerState=createSession({seed:115,catalog:catalog2});sellerState.funds=20;sellerState.shop.slots[0]={kind:'chess',id:normal.chessId,price:3,sold:false,equipment:[]};
+  const bought=applyAction(sellerState,{type:'buy',slot:0},{catalog:catalog2});assert.equal(bought.ok,true,JSON.stringify(bought.error));
+  const sold=applyAction(bought.state,{type:'sell',uid:bought.state.pieces.find(x=>x.chessId===normal.chessId).uid},{catalog:catalog2});assert.equal(sold.ok,true,JSON.stringify(sold.error));
+  const offers=sold.state.offers.filter(x=>x.source==='darkmoon-elemental-token');assert.equal(offers.length,1);
+  const chosen=applyAction(sold.state,{type:'choose',offerId:offers[0].id,index:0},{catalog:catalog2});assert.equal(chosen.ok,true,JSON.stringify(chosen.error));
+  const elemental=chosen.state.pieces.find(x=>x.chessId==='darkmoon:support-elemental-2-2');assert.ok(elemental?.darkmoonPendingPlay,'a hand reward enters the roster without firing its gain trigger before first use');
+  assert.equal(chosen.state.pool['darkmoon:support-elemental-2-2'],undefined,'support copy does not draw or spend normal pool stock');
 });
 
 test('golden Elemental Battlecries add the exact number of frozen shop offers or one-card hand recruit choices',()=>{

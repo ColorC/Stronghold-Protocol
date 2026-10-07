@@ -32,3 +32,7 @@ export function buyTargetCount(spec, state, catalog, slot) {
   }
   return requested+extra;
 }
+
+export function buyRequiresTarget(spec) {
+  return !!spec && !spec.optional;
+}

@@ -458,7 +458,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonElementalTokenOffer': {
         const count=Math.max(0,Math.floor(Number(p.count||0)));
         state.offers||=[];
-        for(let i=0;i<count;i++)state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[p.supportId],source:'darkmoon-elemental-token',poolTaken:true,poolCopies:0,noMerge:true});
+        for(let i=0;i<count;i++)state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[p.supportId],source:'darkmoon-elemental-token',poolTaken:true,poolCopies:0,noMerge:true,deferNativeGain:true});
         break;
       }
       case 'darkmoonTransformFromShop': {

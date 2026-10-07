@@ -10,6 +10,11 @@ const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
+const DARKMOON_ADDON_PATH=process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH
+  ? path.resolve(process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../data/independent-darkmoon-design-addon.json');
+let DARKMOON_SUPPORT_SPECS=[];
+try { DARKMOON_SUPPORT_SPECS=JSON.parse(readFileSync(DARKMOON_ADDON_PATH,'utf8')).supportOperators||[]; } catch { /* Darkmoon support definitions are an optional compiler add-on. */ }
 
 const BADGE_IDS = Object.freeze({
   伤害徽章: 'damage',
@@ -209,6 +214,16 @@ function makeOperator(source, chess, data, eliteVariant = false) {
   };
 }
 
+function makeDarkmoonSupport(spec) {
+  const id=String(spec.id),attack=Math.max(1,Number(spec.attack)||1),health=Math.max(1,Number(spec.health)||1),faction=spec.faction||null;
+  const normalChess={chessId:id,baseId:id,goldenId:null,isGolden:false,tier:1,techLevel:1,identifier:-1,isHidden:true,isDiy:false,visible:false,
+    name:spec.name,profession:'TOKEN',position:'MELEE',nationId:null,bonds:[],garrisonIds:[],stats:{maxHp:health,atk:attack,def:0,res:0,cost:0,blockCnt:0,bat:1,aspd:100,respawnTime:0,spRecovery:1,hpRecoveryPerSec:0,moveSpeed:1,tauntLevel:0,massLevel:0,deployLimit:1,deckStack:0},
+    rangeGrid:[[0,1]],rangeId:null,dmgType:'phys',attackKind:'melee',projectile:null,canHitFly:false,targetPriority:null,trait:null,skill:null,skills:[],talents:[],tokens:[],modules:[],nativeGrowth:{phases:{1:{maxLevel:90,attributesKeyFrames:[{level:1,data:{maxHp:health,atk:attack,def:0,magicResistance:0}},{level:90,data:{maxHp:health+89,atk:attack+89,def:0,magicResistance:0}}]}}},status:{phase:1,level:1,skillLevel:1,equipLevel:0}};
+  return {chessId:id,name:spec.name,tier:1,profession:'TOKEN',nativeFactionTags:faction?[faction]:[],eliteChessId:null,elite:false,recruitable:false,mergeable:false,darkmoonSupport:true,
+    nativeTrait:{normalText:'支援单位',eliteText:'支援单位',text:'支援单位',sources:{normal:[],elite:[]},origin:'Darkmoon support prototype',effect:{prep:[],combat:[],unsupported:[]}},
+    source:{charId:null,normalChess,eliteChess:null,skills:[],talents:[]}};
+}
+
 function keyed(list, idFn, mapFn) {
   const out = Object.create(null);
   for (const value of list || []) {
@@ -248,6 +263,10 @@ export function getCatalog(data = getData(), design = DESIGN) {
     operators[op.chessId].elite = false;
     operators[op.chessId].nativeTrait.text = op.nativeTrait.normalText;
     operators[op.chessId].nativeTrait.sourceRecords = clone(op.nativeTrait.sources.normal);
+  }
+  for(const spec of DARKMOON_SUPPORT_SPECS) {
+    if(!spec?.id||!spec?.name||operators[spec.id])throw new Error(`BAD_DARKMOON_SUPPORT_PROTOTYPE:${spec?.id}`);
+    operators[spec.id]=makeDarkmoonSupport(spec);
   }
 
   const badges = keyed(design.badges, (x) => BADGE_IDS[x.name], (x, id) => ({ ...clone(x), id, kind: 'badge', sourceId: null }));

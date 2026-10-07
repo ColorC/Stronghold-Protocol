@@ -18,7 +18,7 @@ import { GameText, TermNotes, GearIcon } from './text.js';
 import { groupEquipment, permitsOf, isDeployed } from './model.js';
 import { TraitTexts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } from './panels.js';
 import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
-import { buyTargetSpec, buyTargetChoices, buyTargetCount } from './targetSelection.js';
+import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from './targetSelection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const FACTION_BOND = Object.fromEntries(Object.entries(TAVERN_FACTIONS).map(([bond, name]) => [name, bond]));
@@ -298,7 +298,7 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   const startBuy=()=>{
     if(!buySpec){onBuy(target.slot,{});return;}
     const choices=buyTargetChoices(buySpec,state,catalog,target.slot);
-    if(!choices.length){onBuy(target.slot,{});return;}
+    if(!choices.length&&!buyRequiresTarget(buySpec)){onBuy(target.slot,{});return;}
     setBuySelection({slot:target.slot,spec:buySpec,required:buyTargetCount(buySpec,state,catalog,slot),choices,selected:[]});
   };
   const chooseBuyTarget=(choice)=>setBuySelection(current=>{
@@ -320,6 +320,7 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
     ${isShop&&buySelection?.slot===target.slot?html`<section class="ix-buy-targets" role="group" aria-label="选择本次效果目标">
       <p>${buySelection.spec.kind==='shopSlot'?'选择要变化的酒馆干员':buySelection.spec.kind==='magnetic'?'可直接招募；若要合体，选择一名哥伦比亚友方干员':'选择获得效果的友方干员'}${buySelection.spec.kind==='magnetic'?'':`（${buySelection.required}）`}</p>
       ${buySelection.spec.kind==='magnetic'?html`<button type="button" class="ix-buy-targets__normal" disabled=${busy} onClick=${()=>{setBuySelection(null);onBuy(target.slot,{})}}>直接招募</button>`:null}
+      ${!buyChoices.length&&buyRequiresTarget(buySelection.spec)?html`<p role="status">当前没有符合条件的目标。</p>`:null}
       <div class="ix-buy-targets__choices">${buyChoices.map((choice,index)=>{
         const key=choice.kind==='shopSlot'?choice.slot:choice.uid,active=selectedBuyChoices.some(x=>(x.kind==='shopSlot'?x.slot:x.uid)===key);
         const label=choice.kind==='shopSlot'?(catalog.operators?.[choice.id]?.name||choice.id):choice.name;
