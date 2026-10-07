@@ -13,7 +13,6 @@ const RULES = Object.freeze({
   GVG_113: [grantSelf(gear('巨锤盟约'))], // Cleave
   LOOT_078: [grantSelf(gear('巨锤盟约'))],
   BGS_027: [{ trigger:'roundStart', behavior:'grantEquipment', params:{ landOn:'self', outputs:[{id:'precision',normal:1,elite:2}] } }],
-  BGS_049: [{ trigger:'sold', behavior:'deferredFunds', params:{ normal:3, elite:6 } }],
   BGS_116: [{ trigger:'gain', behavior:'freeRefresh', params:{ normal:1, elite:2 } }],
 });
 
@@ -24,5 +23,7 @@ export function darkmoonPrepRulesFor(source,isElite=false) {
   // from a matching operator name: it is activated only when a compiled source ref is attached.
   const id = source?.sourceRefs?.darkmoon19_2?.id || source?.darkmoonSourceId;
   if(id==='BGS_055') return [{trigger:'gain',behavior:'factionReaction',params:{mode:'discount',targets:'self',count:isElite?2:1,excludeSelf:false,maxEventsPerPrep:1}}];
+  if(id==='BGS_049') return [{trigger:'sold',behavior:'factionReaction',params:{mode:'funds',targets:'all',count:isElite?5:2,maxEventsPerPrep:1}}];
+  if(id==='BGS_072') return [{trigger:'bought',behavior:'darkmoonRacePurchaseFunds',params:{race:'PIRATE',count:isElite?2:1}}];
   return structuredClone(RULES[id] || []);
 }

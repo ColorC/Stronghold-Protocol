@@ -13,6 +13,9 @@
           "name": "斯尼德的伐木机",
           "nameEn": "Sneed's Old Shredder",
           "tier": 5,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -81,6 +84,7 @@
           "name": "光牙执行者",
           "nameEn": "Lightfang Enforcer",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -157,6 +161,7 @@
           "name": "坎格尔的学徒",
           "nameEn": "Kangor's Apprentice",
           "tier": 6,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -227,6 +232,7 @@
           "name": "族群领袖",
           "nameEn": "Pack Leader",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -299,6 +305,9 @@
           "name": "巨狼戈德林",
           "nameEn": "Goldrinn, the Great Wolf",
           "tier": 6,
+          "originalRaces": [
+            "BEAST"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -379,6 +388,9 @@
           "name": "熊妈妈",
           "nameEn": "Mama Bear",
           "tier": 5,
+          "originalRaces": [
+            "BEAST"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -455,6 +467,7 @@
           "name": "扎普·斯里维克",
           "nameEn": "Zapp Slywick",
           "tier": 6,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -521,6 +534,9 @@
           "name": "火焰传令官",
           "nameEn": "Herald of Flame",
           "tier": 4,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -589,6 +605,7 @@
           "name": "蜡烛骑士托瓦格尔",
           "nameEn": "Waxrider Togwaggle",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -665,6 +682,9 @@
           "name": "狂野的拉佐格尔",
           "nameEn": "Razorgore, the Untamed",
           "tier": 5,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -741,6 +761,9 @@
           "name": "暮光使者",
           "nameEn": "Twilight Emissary",
           "tier": 3,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -859,6 +882,9 @@
           "name": "龙人军官",
           "nameEn": "Dragonspawn Lieutenant",
           "tier": 1,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -950,6 +976,7 @@
           "name": "红衣纳迪娜",
           "nameEn": "Nadina the Red",
           "tier": 6,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1054,6 +1081,9 @@
           "name": "奥术守护者卡雷苟斯",
           "nameEn": "Kalecgos, Arcane Aspect",
           "tier": 6,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1134,6 +1164,9 @@
           "name": "姆诺兹多",
           "nameEn": "Murozond",
           "tier": 5,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1206,6 +1239,9 @@
           "name": "雕文护卫者",
           "nameEn": "Glyph Guardian",
           "tier": 2,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1268,6 +1304,9 @@
           "name": "亡灵舰长伊丽扎",
           "nameEn": "Dread Admiral Eliza",
           "tier": 6,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1344,6 +1383,9 @@
           "name": "血帆炮手",
           "nameEn": "Bloodsail Cannoneer",
           "tier": 3,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1420,6 +1462,9 @@
           "name": "甲板杂兵",
           "nameEn": "Deck Swabbie",
           "tier": 1,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1471,6 +1516,14 @@
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (1).",
                 "tags": [],
                 "params": {
+                  "mode": "discount",
+                  "targets": "self",
+                  "count": {
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  "excludeSelf": false,
+                  "maxEventsPerPrep": 1,
                   "amount": 1
                 },
                 "adapter": [
@@ -1491,6 +1544,14 @@
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (2).",
                 "tags": [],
                 "params": {
+                  "mode": "discount",
+                  "targets": "self",
+                  "count": {
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  "excludeSelf": false,
+                  "maxEventsPerPrep": 1,
                   "amount": 2
                 },
                 "adapter": [
@@ -1515,6 +1576,9 @@
           "name": "撕心狼队长",
           "nameEn": "Ripsnarl Captain",
           "tier": 4,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1591,6 +1655,9 @@
           "name": "海盗无赖",
           "nameEn": "Scallywag",
           "tier": 1,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1671,6 +1738,9 @@
           "name": "龙人执行者",
           "nameEn": "Drakonid Enforcer",
           "tier": 4,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1787,6 +1857,9 @@
           "name": "偏折机器人",
           "nameEn": "Deflect-o-Bot",
           "tier": 3,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1899,6 +1972,9 @@
           "name": "暴怒的巨蜥",
           "nameEn": "Rabid Saurolisk",
           "tier": 2,
+          "originalRaces": [
+            "BEAST"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -1979,6 +2055,7 @@
           "name": "海浪剃刀号",
           "nameEn": "The Tide Razor",
           "tier": 6,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2049,6 +2126,9 @@
           "name": "破浪巨人",
           "nameEn": "Seabreaker Goliath",
           "tier": 5,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2129,6 +2209,9 @@
           "name": "海上掠夺者",
           "nameEn": "Salty Looter",
           "tier": 3,
+          "originalRaces": [
+            "PIRATE"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2205,6 +2288,7 @@
           "name": "展馆茶杯",
           "nameEn": "Menagerie Mug",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2287,6 +2371,7 @@
           "name": "展馆茶壶",
           "nameEn": "Menagerie Jug",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2369,6 +2454,7 @@
           "name": "“厨房煞星”诺米",
           "nameEn": "Nomi, Kitchen Nightmare",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2445,6 +2531,7 @@
           "name": "管理者埃克索图斯",
           "nameEn": "Majordomo Executus",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2521,6 +2608,7 @@
           "name": "克苏恩的侍僧",
           "nameEn": "Acolyte of C'Thun",
           "tier": 1,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2656,6 +2744,7 @@
           "name": "帝国之手",
           "nameEn": "Arm of the Empire",
           "tier": 3,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2768,6 +2857,7 @@
           "name": "亚煞极的勇士",
           "nameEn": "Champion of Y'Shaarj",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -2884,6 +2974,7 @@
           "name": "其拉传令官",
           "nameEn": "Qiraji Harbinger",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3000,6 +3091,7 @@
           "name": "无面酒客",
           "nameEn": "Faceless Taverngoer",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3066,6 +3158,9 @@
           "name": "爆裂飓风",
           "nameEn": "Crackling Cyclone",
           "tier": 3,
+          "originalRaces": [
+            "ELEMENTAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3134,6 +3229,9 @@
           "name": "酒馆旋风",
           "nameEn": "Tavern Tempest",
           "tier": 5,
+          "originalRaces": [
+            "ELEMENTAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3200,6 +3298,9 @@
           "name": "野火元素",
           "nameEn": "Wildfire Elemental",
           "tier": 4,
+          "originalRaces": [
+            "ELEMENTAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3262,6 +3363,9 @@
           "name": "熔融岩石",
           "nameEn": "Molten Rock",
           "tier": 2,
+          "originalRaces": [
+            "ELEMENTAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3374,6 +3478,9 @@
           "name": "奥术助手",
           "nameEn": "Arcane Assistant",
           "tier": 3,
+          "originalRaces": [
+            "ELEMENTAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3454,6 +3561,7 @@
           "name": "致命的孢子",
           "nameEn": "Deadly Spore",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3545,6 +3653,7 @@
           "name": "古神的卫士",
           "nameEn": "Warden of Old",
           "tier": 3,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3613,6 +3722,7 @@
           "name": "被折磨的祭师",
           "nameEn": "Tormented Ritualist",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3729,6 +3839,7 @@
           "name": "拆解者米斯拉克斯",
           "nameEn": "Mythrax the Unraveler",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3805,6 +3916,7 @@
           "name": "永恒者艾丽斯特拉",
           "nameEn": "Elistra the Immortal",
           "tier": 6,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -3983,6 +4095,9 @@
           "name": "量产型恐吓机",
           "nameEn": "Replicating Menace",
           "tier": 3,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4093,6 +4208,9 @@
           "name": "吵吵模组",
           "nameEn": "Annoy-o-Module",
           "tier": 4,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4227,6 +4345,9 @@
           "name": "瘟疫鼠群",
           "nameEn": "Rat Pack",
           "tier": 3,
+          "originalRaces": [
+            "BEAST"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4299,6 +4420,7 @@
           "name": "兔妖教头",
           "nameEn": "Virmen Sensei",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4379,6 +4501,7 @@
           "name": "卡德加",
           "nameEn": "Khadgar",
           "tier": 3,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4451,6 +4574,7 @@
           "name": "驯兽师",
           "nameEn": "Houndmaster",
           "tier": 3,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4569,6 +4693,7 @@
           "name": "阿古斯防御者",
           "nameEn": "Defender of Argus",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4687,6 +4812,9 @@
           "name": "食腐土狼",
           "nameEn": "Scavenging Hyena",
           "tier": 1,
+          "originalRaces": [
+            "BEAST"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4763,6 +4891,9 @@
           "name": "麦田傀儡",
           "nameEn": "Harvest Golem",
           "tier": 2,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4843,6 +4974,7 @@
           "name": "蹒跚的食尸鬼",
           "nameEn": "Unstable Ghoul",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -4953,6 +5085,7 @@
           "name": "瑞文戴尔男爵",
           "nameEn": "Baron Rivendare",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5029,6 +5162,9 @@
           "name": "钢铁武道家",
           "nameEn": "Iron Sensei",
           "tier": 3,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5105,6 +5241,9 @@
           "name": "废旧螺栓机甲",
           "nameEn": "Screwjank Clunker",
           "tier": 3,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5185,6 +5324,9 @@
           "name": "回收机器人",
           "nameEn": "Junkbot",
           "tier": 5,
+          "originalRaces": [
+            "MECHANICAL"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5261,6 +5403,9 @@
           "name": "深蓝刃鳞龙人",
           "nameEn": "Cobalt Scalebane",
           "tier": 4,
+          "originalRaces": [
+            "DRAGON"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5333,6 +5478,7 @@
           "name": "硬壳清道夫",
           "nameEn": "Strongshell Scavenger",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5451,6 +5597,7 @@
           "name": "浴火者伯瓦尔",
           "nameEn": "Bolvar, Fireblood",
           "tier": 4,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5563,6 +5710,7 @@
           "name": "布莱恩·铜须",
           "nameEn": "Brann Bronzebeard",
           "tier": 5,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5635,6 +5783,9 @@
           "name": "洞穴多头蛇",
           "nameEn": "Cave Hydra",
           "tier": 4,
+          "originalRaces": [
+            "BEAST"
+          ],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5730,6 +5881,7 @@
           "name": "无私的英雄",
           "nameEn": "Selfless Hero",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
@@ -5836,6 +5988,7 @@
           "name": "恩佐斯的子嗣",
           "nameEn": "Spawn of N'Zoth",
           "tier": 2,
+          "originalRaces": [],
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
           "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"

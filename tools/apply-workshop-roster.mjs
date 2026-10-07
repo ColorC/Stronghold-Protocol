@@ -59,8 +59,9 @@ const KEYWORD_ADAPTERS = Object.freeze({
 // Descriptors are written from the source effect, with ordinary/golden parameters kept distinct.
 const PREP_ADAPTERS = Object.freeze({
   BGS_027: { trigger:'roundStart', sourceTrigger:'turnStart', recipient:'self', duration:'permanentWornGear', kind:'badgeGrowth', effect:{ normal:1, elite:2 }, adapter:'grantEquipment', params:{ landOn:'self', outputs:[{id:'precision',normal:1,elite:2}] } },
-  BGS_049: { trigger:'sold', sourceTrigger:'sell', recipient:'playerResource', duration:'nextPrepFunds', kind:'gold', effect:{ normal:3, elite:6 }, adapter:'deferredFunds', params:{ normal:3, elite:6 } },
+  BGS_049: { trigger:'sold', sourceTrigger:'sell', recipient:'playerResource', duration:'immediateOnSale', kind:'gold', effect:{ normal:3, elite:6 }, adapter:'factionReaction', params:{ mode:'funds',targets:'all',maxEventsPerPrep:1 }, runtimeParams:{normal:{count:2},elite:{count:5}}, note:'Base sell already grants 1 gold; adapter adds 2/5 immediately to reach original 3/6 total.' },
   BGS_055: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shopUpgradeCost', duration:'nextUpgrade', kind:'upgradeDiscount', effect:{ normal:1, elite:2 }, adapter:'factionReaction', params:{ mode:'discount',targets:'self',count:{normal:1,elite:2},excludeSelf:false,maxEventsPerPrep:1 } },
+  BGS_072: { trigger:'bought', sourceTrigger:'buyMatchingRace', recipient:'playerResource', duration:'thisTurnOnly', kind:'gold', effect:{ normal:1, elite:2 }, adapter:'darkmoonRacePurchaseFunds', params:{ race:'PIRATE' }, runtimeParams:{normal:{count:1},elite:{count:2}} },
   BGS_116: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'playerResource', duration:'nextRefreshes', kind:'freeRefresh', effect:{ normal:1, elite:2 }, adapter:'freeRefresh', params:{ normal:1, elite:2 } },
 });
 
@@ -145,7 +146,7 @@ const STATIC_KEYWORD_GEAR = Object.freeze({
 });
 function effectDeliveries(card, variant, isElite = false) {
   const authored = PREP_ADAPTERS[card.id];
-  if (authored) return [{ trigger:authored.trigger, sourceTrigger:authored.sourceTrigger, recipient:authored.recipient, duration:authored.duration, kind:authored.kind, text:variant.text_zh||'', textEn:variant.text_en||'', tags:[], params:{ ...authored.effect && { amount:authored.effect[isElite?'elite':'normal'] } }, adapter:[authored.adapter], implementation:'supported', unsupportedReason:null }];
+    if (authored) return [{ trigger:authored.trigger, sourceTrigger:authored.sourceTrigger, recipient:authored.recipient, duration:authored.duration, kind:authored.kind, text:variant.text_zh||'', textEn:variant.text_en||'', tags:[], params:{ ...(authored.params||{}), ...(authored.effect?{amount:authored.effect[isElite?'elite':'normal']}:{}) }, adapter:[authored.adapter], implementation:'supported', unsupportedReason:null }];
   const base = parseEffect(card, variant), found = [];
   for (const tag of ['taunt','divineShield','reborn','poison']) if (base.tags.includes(tag)) found.push(tag);
   if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')) found.push('cleave');
@@ -198,8 +199,8 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
       metadata: { op: { effectDelivery: { normal, elite } } },
       authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : PREP_ADAPTERS[card.id] ? {
         sourceId:card.id, mechanic:PREP_ADAPTERS[card.id].kind,
-        normal:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(card.id==='BGS_055'?{count:1}:{})}},
-        elite:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(card.id==='BGS_055'?{count:2}:{})}},
+        normal:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(PREP_ADAPTERS[card.id].runtimeParams?.normal||{}),...(card.id==='BGS_055'?{count:1}:{})}, ...(PREP_ADAPTERS[card.id].note?{adaptation:PREP_ADAPTERS[card.id].note}:{})},
+        elite:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(PREP_ADAPTERS[card.id].runtimeParams?.elite||{}),...(card.id==='BGS_055'?{count:2}:{})}, ...(PREP_ADAPTERS[card.id].note?{adaptation:PREP_ADAPTERS[card.id].note}:{})},
         status:'supported',reason:null
       } : KEYWORD_ADAPTERS[card.id] ? {
         sourceId:card.id,
@@ -267,7 +268,7 @@ const designAddon = {
     name:x.operator,
     chessId:nativeByName.get(x.operator).chessId,
     sourceId:x.sourceId,
-    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
+    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, originalRaces:x.originalRaces, version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
     authoredRule:x.authoredRule,
     metadata:{op:{effectDelivery:x.metadata.op.effectDelivery}},
     modeEffects:null

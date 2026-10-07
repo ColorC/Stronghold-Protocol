@@ -56,8 +56,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.ok(designAddon.operators.every(x => x.metadata.op.effectDelivery.normal.length && x.metadata.op.effectDelivery.elite.length));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
   assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation==='dispatched-pending-gear-landing-verification')).length,7);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,90);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,4);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,89);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,5);
   assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
   assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
 });
@@ -107,7 +107,7 @@ test('four source-keyed prep adapters cause the expected ordinary and elite stat
     const source={...op,sourceRefs:{darkmoon19_2:{id}},modeEffects:{normal:{prep:[],combat:[]},elite:{prep:[],combat:[]}}};
     const effect=nativeEffectFor(op.chessId,source,elite);
     const catalog={...baseCatalog,operators:{...baseCatalog.operators,[op.chessId]:{...op,nativeTrait:{...op.nativeTrait,effect}}}};
-    const state={round:1,shop:{level:1,upgradePrice:5,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
+    const state={round:1,funds:id==='BGS_049'?1:0,shop:{level:1,upgradePrice:5,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
     const piece={uid:`${id}-${elite?'elite':'normal'}`,chessId:op.chessId,nativeState:{},equipment:[],row:0,col:0};
     state.pieces.push(piece);
     const services={catalog,data:{},rng:()=>0,grantEquipment:(s,item,n,extra)=>grantEquipment(s,catalog,item,n,extra),grantChess(){},addOffer(){},record(){}};
@@ -115,8 +115,32 @@ test('four source-keyed prep adapters cause the expected ordinary and elite stat
     runNativeHook(state,hook,{piece,origin:'player'},services);
     const expected=elite?2:1;
     if(id==='BGS_027') assert.equal(piece.equipment.find(x=>x.id==='precision')?.quantity,expected,`${id} grants permanent precision to self`);
-    if(id==='BGS_049') assert.equal(state.pendingFunds,elite?6:3,`${id} credits sell value`);
+    if(id==='BGS_049') {assert.equal(state.funds,elite?6:3,`${id} immediately reaches source sell value including the base sale`);assert.equal(state.pendingFunds,0,`${id} is not deferred to a later prep phase`);}
     if(id==='BGS_055') assert.equal(state.shop.upgradePrice,5-expected,`${id} discounts the next upgrade cost`);
     if(id==='BGS_116') assert.equal(state.shop.freeRefreshes,expected,`${id} grants exactly the next refresh count`);
+  }
+});
+
+test('Captain Hoggarr pays only for an original Pirate purchase and only for this turn',()=>{
+  const baseCatalog=getCatalog();
+  const normalOps=Object.values(baseCatalog.operators).filter(x=>!x.elite);
+  const eliteOps=Object.values(baseCatalog.operators).filter(x=>x.elite);
+  for(const elite of [false,true]) {
+    const holderOp=(elite?eliteOps:normalOps)[0], buyerOp=(elite?eliteOps:normalOps)[1], otherOp=(elite?eliteOps:normalOps)[2];
+    const holder={...holderOp,sourceRefs:{darkmoon19_2:{id:'BGS_072',originalRaces:['PIRATE']}},modeEffects:{normal:{prep:[],combat:[]},elite:{prep:[],combat:[]}}};
+    const effect=nativeEffectFor(holderOp.chessId,holder,elite);
+    const pirate={...buyerOp,sourceRefs:{darkmoon19_2:{id:'BGS_001',originalRaces:['PIRATE']}}};
+    const other={...otherOp,sourceRefs:{darkmoon19_2:{id:'BGS_002',originalRaces:['BEAST']}}};
+    const catalog={...baseCatalog,operators:{...baseCatalog.operators,[holderOp.chessId]:{...holderOp,nativeTrait:{...holderOp.nativeTrait,effect}},[buyerOp.chessId]:pirate,[otherOp.chessId]:other}};
+    const state={round:1,funds:4,shop:{level:1,upgradePrice:5,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
+    const host={uid:'hoggarr',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:0,col:0}, buyer={uid:'pirate',chessId:buyerOp.chessId,ownerId:'p1',nativeState:{}}, otherBuyer={uid:'other',chessId:otherOp.chessId,ownerId:'p1',nativeState:{}};
+    state.pieces.push(host);
+    const services={catalog,data:{},rng:()=>0,grantEquipment(){},grantChess(){},addOffer(){},record(){}};
+    runNativeHook(state,'bought',{piece:buyer},services);
+    assert.equal(state.funds,4+(elite?2:1),'same-owner source Pirate purchase grants 1/2 spendable gold immediately');
+    runNativeHook(state,'bought',{piece:otherBuyer},services);
+    assert.equal(state.funds,4+(elite?2:1),'non-Pirate purchase does not grant gold');
+    runNativeHook(state,'bought',{piece:{...buyer,uid:'rival',ownerId:'p2'}},services);
+    assert.equal(state.funds,4+(elite?2:1),'another owner purchase does not grant this player gold');
   }
 });

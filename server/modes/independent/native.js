@@ -11,7 +11,7 @@ const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
 const PREP_TRIGGERS = new Set(['aura','gain','bought','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
 const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','damaged','death','deploy','dodge','dollSwap','elementBurst','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
-const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
+const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonRacePurchaseFunds','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
 const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
 PREP_BEHAVIORS.add('teamForge');
 COMBAT_BEHAVIORS.add('allyConditionStats');
@@ -338,6 +338,12 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     for (let run = 0; run < runs; run++) {
     switch (r.behavior) {
       case 'factionReaction': runFactionReaction(state,piece,event,r,ruleServices); break;
+      case 'darkmoonRacePurchaseFunds': {
+        const buyer=event.piece;
+        const ref=services.catalog?.operators?.[chessIdOf(buyer)]?.sourceRefs?.darkmoon19_2;
+        if(buyer && (buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId) && ref?.originalRaces?.includes(p.race)) state.funds=Number(state.funds||0)+Number(p.count||0);
+        break;
+      }
       case 'grantEquipment':
         for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite) + bonus(p, piece, state, elite), piece);
         break;

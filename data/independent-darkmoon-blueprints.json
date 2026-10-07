@@ -1172,6 +1172,14 @@
                 "textEn": "At the start of each turn, gain +1 Attack.",
                 "tags": [],
                 "params": {
+                  "landOn": "self",
+                  "outputs": [
+                    {
+                      "id": "precision",
+                      "normal": 1,
+                      "elite": 2
+                    }
+                  ],
                   "amount": 1
                 },
                 "adapter": [
@@ -1192,6 +1200,14 @@
                 "textEn": "At the start of each turn, gain +2 Attack.",
                 "tags": [],
                 "params": {
+                  "landOn": "self",
+                  "outputs": [
+                    {
+                      "id": "precision",
+                      "normal": 1,
+                      "elite": 2
+                    }
+                  ],
                   "amount": 2
                 },
                 "adapter": [
@@ -1251,6 +1267,14 @@
             "duration": "permanentWornGear",
             "text": "在每个回合开始时，获得+1攻击力。",
             "params": {
+              "landOn": "self",
+              "outputs": [
+                {
+                  "id": "precision",
+                  "normal": 1,
+                  "elite": 2
+                }
+              ],
               "amount": 1
             }
           }
@@ -1263,6 +1287,14 @@
             "duration": "permanentWornGear",
             "text": "在每个回合开始时，获得+2攻击力。",
             "params": {
+              "landOn": "self",
+              "outputs": [
+                {
+                  "id": "precision",
+                  "normal": 1,
+                  "elite": 2
+                }
+              ],
               "amount": 2
             }
           }
@@ -3237,16 +3269,19 @@
                 "trigger": "sold",
                 "sourceTrigger": "sell",
                 "recipient": "playerResource",
-                "duration": "nextPrepFunds",
+                "duration": "immediateOnSale",
                 "kind": "gold",
                 "text": "出售该随从可以获得3枚铸币。",
                 "textEn": "This minion sells for\n3 Gold.",
                 "tags": [],
                 "params": {
+                  "mode": "funds",
+                  "targets": "all",
+                  "maxEventsPerPrep": 1,
                   "amount": 3
                 },
                 "adapter": [
-                  "deferredFunds"
+                  "factionReaction"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null
@@ -3257,16 +3292,19 @@
                 "trigger": "sold",
                 "sourceTrigger": "sell",
                 "recipient": "playerResource",
-                "duration": "nextPrepFunds",
+                "duration": "immediateOnSale",
                 "kind": "gold",
                 "text": "出售该随从可以获得6枚铸币。",
                 "textEn": "This minion sells for\n6 Gold.",
                 "tags": [],
                 "params": {
+                  "mode": "funds",
+                  "targets": "all",
+                  "maxEventsPerPrep": 1,
                   "amount": 6
                 },
                 "adapter": [
-                  "deferredFunds"
+                  "factionReaction"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null
@@ -3281,22 +3319,28 @@
         "normal": {
           "trigger": "sold",
           "recipient": "playerResource",
-          "duration": "nextPrepFunds",
-          "adapter": "deferredFunds",
+          "duration": "immediateOnSale",
+          "adapter": "factionReaction",
           "params": {
-            "normal": 3,
-            "elite": 6
-          }
+            "mode": "funds",
+            "targets": "all",
+            "maxEventsPerPrep": 1,
+            "count": 2
+          },
+          "adaptation": "Base sell already grants 1 gold; adapter adds 2/5 immediately to reach original 3/6 total."
         },
         "elite": {
           "trigger": "sold",
           "recipient": "playerResource",
-          "duration": "nextPrepFunds",
-          "adapter": "deferredFunds",
+          "duration": "immediateOnSale",
+          "adapter": "factionReaction",
           "params": {
-            "normal": 3,
-            "elite": 6
-          }
+            "mode": "funds",
+            "targets": "all",
+            "maxEventsPerPrep": 1,
+            "count": 5
+          },
+          "adaptation": "Base sell already grants 1 gold; adapter adds 2/5 immediately to reach original 3/6 total."
         },
         "status": "supported",
         "reason": null
@@ -3307,9 +3351,12 @@
             "trigger": "sold",
             "sourceTrigger": "sell",
             "recipient": "playerResource",
-            "duration": "nextPrepFunds",
+            "duration": "immediateOnSale",
             "text": "出售该随从可以获得3枚铸币。",
             "params": {
+              "mode": "funds",
+              "targets": "all",
+              "maxEventsPerPrep": 1,
               "amount": 3
             }
           }
@@ -3319,9 +3366,12 @@
             "trigger": "sold",
             "sourceTrigger": "sell",
             "recipient": "playerResource",
-            "duration": "nextPrepFunds",
+            "duration": "immediateOnSale",
             "text": "出售该随从可以获得6枚铸币。",
             "params": {
+              "mode": "funds",
+              "targets": "all",
+              "maxEventsPerPrep": 1,
               "amount": 6
             }
           }
@@ -3488,6 +3538,14 @@
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (1).",
                 "tags": [],
                 "params": {
+                  "mode": "discount",
+                  "targets": "self",
+                  "count": {
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  "excludeSelf": false,
+                  "maxEventsPerPrep": 1,
                   "amount": 1
                 },
                 "adapter": [
@@ -3508,6 +3566,14 @@
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (2).",
                 "tags": [],
                 "params": {
+                  "mode": "discount",
+                  "targets": "self",
+                  "count": {
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  "excludeSelf": false,
+                  "maxEventsPerPrep": 1,
                   "amount": 2
                 },
                 "adapter": [
@@ -3561,6 +3627,14 @@
             "duration": "nextUpgrade",
             "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
             "params": {
+              "mode": "discount",
+              "targets": "self",
+              "count": {
+                "normal": 1,
+                "elite": 2
+              },
+              "excludeSelf": false,
+              "maxEventsPerPrep": 1,
               "amount": 1
             }
           }
@@ -3573,6 +3647,14 @@
             "duration": "nextUpgrade",
             "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。",
             "params": {
+              "mode": "discount",
+              "targets": "self",
+              "count": {
+                "normal": 1,
+                "elite": 2
+              },
+              "excludeSelf": false,
+              "maxEventsPerPrep": 1,
               "amount": 2
             }
           }
@@ -4495,40 +4577,44 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
+                "trigger": "bought",
+                "sourceTrigger": "buyMatchingRace",
                 "recipient": "playerResource",
-                "duration": "turn",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    1
-                  ]
-                },
+                "duration": "thisTurnOnly",
+                "kind": "gold",
                 "text": "在你购买一个海盗后，在本回合中获得一枚铸币。",
                 "textEn": "After you buy a Pirate,\ngain 1 Gold this turn\nonly.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "race": "PIRATE",
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonRacePurchaseFunds"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
+                "trigger": "bought",
+                "sourceTrigger": "buyMatchingRace",
                 "recipient": "playerResource",
-                "duration": "turn",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    2
-                  ]
-                },
+                "duration": "thisTurnOnly",
+                "kind": "gold",
                 "text": "在你购买一个海盗后，在本回合中获得两枚铸币。",
                 "textEn": "After you buy a Pirate,\ngain 2 Gold this turn\nonly.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "race": "PIRATE",
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonRacePurchaseFunds"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -4536,35 +4622,54 @@
       },
       "authoredRule": {
         "sourceId": "BGS_072",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "gold",
+        "normal": {
+          "trigger": "bought",
+          "recipient": "playerResource",
+          "duration": "thisTurnOnly",
+          "adapter": "darkmoonRacePurchaseFunds",
+          "params": {
+            "race": "PIRATE",
+            "count": 1
+          }
+        },
+        "elite": {
+          "trigger": "bought",
+          "recipient": "playerResource",
+          "duration": "thisTurnOnly",
+          "adapter": "darkmoonRacePurchaseFunds",
+          "params": {
+            "race": "PIRATE",
+            "count": 2
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
+            "trigger": "bought",
+            "sourceTrigger": "buyMatchingRace",
             "recipient": "playerResource",
-            "duration": "turn",
+            "duration": "thisTurnOnly",
             "text": "在你购买一个海盗后，在本回合中获得一枚铸币。",
             "params": {
-              "numericLiterals": [
-                1
-              ]
+              "race": "PIRATE",
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
+            "trigger": "bought",
+            "sourceTrigger": "buyMatchingRace",
             "recipient": "playerResource",
-            "duration": "turn",
+            "duration": "thisTurnOnly",
             "text": "在你购买一个海盗后，在本回合中获得两枚铸币。",
             "params": {
-              "numericLiterals": [
-                2
-              ]
+              "race": "PIRATE",
+              "amount": 2
             }
           }
         ]
@@ -6722,6 +6827,8 @@
                 "textEn": "[x]<b>Battlecry:</b> Your next\n<b>Refresh</b> costs (0).",
                 "tags": [],
                 "params": {
+                  "normal": 1,
+                  "elite": 2,
                   "amount": 1
                 },
                 "adapter": [
@@ -6742,6 +6849,8 @@
                 "textEn": "[x]<b>Battlecry:</b> Your next two\n <b>Refreshes</b> cost (0).",
                 "tags": [],
                 "params": {
+                  "normal": 1,
+                  "elite": 2,
                   "amount": 2
                 },
                 "adapter": [
@@ -6789,6 +6898,8 @@
             "duration": "nextRefreshes",
             "text": "<b>战吼：</b>你下一次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
             "params": {
+              "normal": 1,
+              "elite": 2,
               "amount": 1
             }
           }
@@ -6801,6 +6912,8 @@
             "duration": "nextRefreshes",
             "text": "<b>战吼：</b>你下两次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
             "params": {
+              "normal": 1,
+              "elite": 2,
               "amount": 2
             }
           }
