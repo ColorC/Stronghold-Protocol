@@ -300,7 +300,7 @@ export function EffectsColumn({ effects, catalog }) {
     ${list.slice(0, 10).map((e, i) => {
       const prize = catalog.prizes?.[e.source]; const gear = catalog.gear?.[effectItem(e)];
       const name = e.type === 'badgeBoost' ? `${gear?.name || '徽章'}增幅` : e.type === 'shopCarry' ? `商品附带${gear?.name || '徽章'}` : prize?.name || gear?.name || '效果';
-      const text = prize?.effect || (gear && !['badgeBoost', 'shopCarry'].includes(e.type) ? (e.elite ? gear.elite : gear.normal) : '');
+      const text = prize?.effect || (gear && !['badgeBoost', 'shopCarry'].includes(e.type) ? gear.normal : '');
       const n = EFFECT_COUNT[e.type]?.(e);
       return html`<${Tooltip} key=${`${e.type}:${e.source}:${i}`} placement="bottom" text=${html`<div class="efftip">
           <b>${name}</b><span class="efftip__kind">${EFFECT_LINE[e.type](e)}</span>
@@ -370,13 +370,13 @@ function GearCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
       onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }} data-testid=${`ix-shop-${idx}`} aria-label=${`${g.name || '装备'}，价格 ${slot.price}`}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__top">
-      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${(slot.elite ? g.eliteLevel : g.level) ?? 1}级</span>`}
+      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${g.level ?? 1}级</span>`}
       <${HexBadge} value=${slot.price} tone=${reason === '资金不足' ? 'dark' : 'gold'} size="md" class="scard__price" />
     </span>
     <span class="scard__itemart"><${GearIcon} id=${slot.id} catalog=${catalog} /></span>
     <span class="scard__body">
       <span class="scard__name">${g.name || slot.id}</span>
-      <span class="scard__idesc"><${GameText} text=${slot.elite ? g.elite : g.normal} catalog=${catalog} /></span>
+      <span class="scard__idesc"><${GameText} text=${g.normal} catalog=${catalog} /></span>
     </span>
     ${state.shop.frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
     ${armed ? html`<span class=${cx('scard__confirm', reason && 'is-no')} role="status">${reason ? html`<b>无法购买</b><small>${reason}</small>` : html`<b>确认购买</b><small>再次点击</small>`}</span>` : null}
@@ -521,6 +521,7 @@ export function MatchInfo({ state, catalog }) {
     <p class="istage"><${Icon} name="info" />模式：<b>${mode?.name || ''}</b>${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="sm" />` : null}
       <span class="t-lo">第 <b class="num">${Math.min(state.round, state.roundLimit)}</b>/<span class="num">${state.roundLimit}</span> 回合</span></p>
     <p class="istage"><${GIcon} name="flag" />工程部特供：第 ${prizeRounds.join('、')} 轮</p>
+    ${Array.isArray(state.openFactions) ? html`<p class="istage" data-testid="open-factions"><${Icon} name="sword" />本局阵营：<b>${state.openFactions.join('、')}</b><span class="t-lo">（其余阵营的干员本局不出现）</span></p>` : null}
     ${boss ? html`<div class="eboss"><${UnitThumb} kind="enemy" id=${boss.enemyKey} size="md" />
       <div><${MicroLabel} tone="gold">ENEMY LEADER // 敌方领袖</${MicroLabel}><b>${boss.name}</b><span class="t-lo">第 ${state.board?.bossRound ?? state.roundLimit} 回合 · 最终攻势</span></div></div>` : null}
     <p class="istage"><${Icon} name="user" />调度中心 <b class="num">${state.shop?.level ?? 1}</b> 级 · 部署上限 <b class="num">${state.deployCap}</b> 名 · 防线生命 <b class="num">${state.lp}</b></p>

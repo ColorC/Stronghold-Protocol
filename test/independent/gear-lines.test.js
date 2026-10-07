@@ -50,8 +50,9 @@ test('every badge and every piece of wearable gear has an operator that produces
   for (const op of Object.values(catalog.operators)) { const p = producedBy(op); p.fixed.forEach((x) => fixed.add(x)); p.random.forEach((x) => random.add(x)); }
   const missing = []; const randomOnly = [];
   for (const [id, d] of Object.entries(items)) {
-    // retired (干员表 v3): nobody brings it any more; it stays for saves that hold it
-    if (d.available === false || d.retired || d.mechanism === 'disabled' || d.kind === '停用' || d.kind === 'prizeGear' || d.kind === 'permit') continue;
+    // retired (干员表 v3): nobody brings it any more; it stays for saves that hold it. unassigned (gear v4, 10-07): new
+    // gear nobody brings yet — the sources are assigned after the operator traits are rewritten
+    if (d.available === false || d.retired || d.unassigned || d.mechanism === 'disabled' || d.kind === '停用' || d.kind === 'prizeGear' || d.kind === 'permit') continue;
     const c = canonical(id);
     if (fixed.has(c)) continue;
     if (['补给', '玩家设施'].includes(d.kind) && random.has(c)) { randomOnly.push(d.newName || d.name); continue; }

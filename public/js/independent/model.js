@@ -28,13 +28,15 @@ export function formEntry(catalog, piece) {
 export const renderChessId = (catalog, piece) => (piece.elite ? catalog?.operators?.[piece.chessId]?.eliteChessId || piece.chessId : piece.chessId);
 
 /**
- * Bench order: pieces not on the board, in the session's order (stable across actions). The first HAND_SLOTS go to the
- * renderer's hand row; the rest are listed by the HUD (`overflow`). The temp row stays empty: in the original it is the
- * 临时整备区 that blocks ready, and reusing it for extra bench pieces would tell the player something false.
+ * Bench order: pieces not on the board, in the session's order (stable across actions). The bench (整备区, 10 places
+ * since 2026-10-07, session.js BENCH_SIZE) is the renderer's hand row; operators that overflowed into the 临时整备区
+ * (`temp`, 5 places) sit on its temp row and keep the battle from starting, as in the original. A save from before the
+ * cap may hold more: those are listed by the HUD (`overflow`).
  */
 export function benchLayout(state) {
-  const bench = (state?.pieces || []).filter((p) => !isDeployed(p));
-  return { hand: bench.slice(0, HAND_SLOTS), overflow: bench.slice(HAND_SLOTS) };
+  const off = (state?.pieces || []).filter((p) => !isDeployed(p));
+  const bench = off.filter((p) => !p.temp); const temp = off.filter((p) => p.temp);
+  return { hand: bench.slice(0, HAND_SLOTS), temp: temp.slice(0, TEMP_SLOTS), overflow: [...bench.slice(HAND_SLOTS), ...temp.slice(TEMP_SLOTS)] };
 }
 
 /**
@@ -44,11 +46,11 @@ export function benchLayout(state) {
 export function prepView(state, catalog) {
   const toPiece = (p) => ({ uid: pieceNum(p.uid), kind: 'chess', id: renderChessId(catalog, p), golden: !!p.elite,
     tier: catalog?.operators?.[p.chessId]?.tier ?? 1, items: [], ...(isDeployed(p) ? { row: p.row, col: p.col, dir: p.dir || 'RIGHT' } : {}) });
-  const { hand } = benchLayout(state);
+  const { hand, temp } = benchLayout(state);
   const pad = (list, n) => Array.from({ length: n }, (_, i) => (list[i] ? toPiece(list[i]) : null));
   return {
     hand: pad(hand, HAND_SLOTS),
-    temp: Array(TEMP_SLOTS).fill(null),
+    temp: pad(temp, TEMP_SLOTS),
     board: (state?.pieces || []).filter(isDeployed).map(toPiece),
     nextEnemies: Array.isArray(state?.nextEnemies) ? state.nextEnemies : [],
   };
@@ -92,7 +94,7 @@ export const pieceByNum = (state, n) => (state?.pieces || []).find((p) => pieceN
 export function canDrop(state, n, target) {
   const piece = pieceByNum(state, n);
   if (!piece || state?.phase !== 'prep' || !target) return false;
-  if (target.area === 'hand') return isDeployed(piece);
+  if (target.area === 'hand') return isDeployed(piece) || !!piece.temp; // a 临时整备区 operator may go back to the bench
   if (target.area !== 'board') return false;
   if (!(piece.legalTiles || []).includes(`${target.row},${target.col}`)) return false;
   const holder = (state.pieces || []).find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
@@ -114,7 +116,8 @@ export const permitsOf = (piece, catalog) => (piece?.equipment || []).filter((x)
 
 /**
  * Equipment worn by a piece, grouped for display: functional equipment one row per item (they carry the mechanisms),
- * then badges merged per kind ("精准 ×12"). Each row: { id, name, level, count, elite, badge, permit, uids }.
+ * then badges merged per kind ("精准 ×12"). Each row: { id, name, level, count, badge, permit, uids }. Gear has one
+ * form only (owner 2026-10-07 「装备不再有精锐形态」): one level, one text.
  */
 export function groupEquipment(items, catalog) {
   const rows = new Map();
@@ -122,7 +125,7 @@ export function groupEquipment(items, catalog) {
     const id = item.id; const badge = isBadge(catalog, id);
     const key = badge ? `b:${id}` : `e:${item.uid}`;
     const rec = gearRecord(catalog, id) || item.record || {};
-    const row = rows.get(key) || { id, name: rec.name || id, level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level, count: 0, elite: !!item.elite, badge, permit: rec.kind === 'permit', uids: [] };
+    const row = rows.get(key) || { id, name: rec.name || id, level: rec.level, count: 0, badge, permit: rec.kind === 'permit', uids: [] };
     row.count += Number(item.quantity || 1); row.uids.push(item.uid);
     rows.set(key, row);
   }
@@ -139,11 +142,11 @@ export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
 export function inventoryStacks(inventory, catalog) {
   const stacks = new Map();
   for (const item of inventory || []) {
-    const key = `${item.id}:${item.elite ? 'e' : 'n'}`;
+    const key = `${item.id}:n`;
     const prize = !gearRecord(catalog, item.id) && catalog?.prizes?.[item.id];
-    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect, elite: prize.effect } : {});
-    const s = stacks.get(key) || { key, id: item.id, elite: !!item.elite, name: rec.name || '未知物品', level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level,
-      kind: rec.kind || null, mechanism: rec.mechanism || null, text: item.elite ? rec.elite : rec.normal, used: USED_KINDS.has(rec.kind),
+    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect } : {});
+    const s = stacks.get(key) || { key, id: item.id, name: rec.name || '未知物品', level: rec.level,
+      kind: rec.kind || null, mechanism: rec.mechanism || null, text: rec.normal, used: USED_KINDS.has(rec.kind),
       badge: isBadge(catalog, item.id), count: 0, items: [] };
     s.count += Number(item.quantity || 1); s.items.push(item);
     stacks.set(key, s);
@@ -183,7 +186,7 @@ export function forecastRows(state, catalog) {
 /** Equipment level an item stack contributes (design: 装备总等级 = 每件等级之和). */
 export function itemLevel(item, catalog) {
   const g = catalog?.gear?.[item.id] || {};
-  return Number((item.elite ? (g.eliteLevel ?? g.level) : g.level) ?? 1) * Number(item.quantity || 1);
+  return Number(g.level ?? 1) * Number(item.quantity || 1);
 }
 
 /**

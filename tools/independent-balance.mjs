@@ -3,7 +3,7 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createSession, applyAction, validateSession } from '../server/modes/independent/session.js';
+import { createSession, applyAction, validateSession, BENCH_SIZE } from '../server/modes/independent/session.js';
 import { getCatalog } from '../server/modes/independent/catalog.js';
 import { getIndependentField } from '../server/modes/independent/battle.js';
 import { totalEquipmentLevel, equipmentRecord } from '../server/modes/independent/equipment.js';
@@ -112,6 +112,12 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
     add(ranked.find(healing));
     ranked.filter(blocking).slice(0,2).forEach(add);
     ranked.forEach(add);
+    // 整备区 10 格 (session.js BENCH_SIZE): everyone goes back to the bench before the new layout, so the pilot keeps at
+    // most BENCH_SIZE operators — it sells the weakest of those it will not deploy (temp ones included)
+    for(const piece of ranked.slice().reverse()) {
+      if(state.pieces.length<=BENCH_SIZE) break;
+      if(!selected.includes(piece)) act({type:'sell',uid:piece.uid},true);
+    }
     for(const piece of state.pieces.slice()) act({type:'bench',uid:piece.uid},true);
     const selectedUids=selected.map(p=>p.uid);
     for(const item of state.inventory.slice()) {

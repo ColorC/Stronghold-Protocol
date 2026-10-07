@@ -4,9 +4,10 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
 import { tavernFactions } from '../../shared/independentRules.js';
 import { preV3Catalog } from './helpers/preV3.js';
+import { preV4Catalog } from './helpers/preV4.js';
 
-// rule mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js)
-const catalog = preV3Catalog(getCatalog());
+// rule mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js) and before 干员特质 v4 (helpers/preV4.js)
+const catalog = preV3Catalog(preV4Catalog(getCatalog()));
 const all = Object.values(catalog.operators);
 
 function fixture() {
@@ -74,22 +75,13 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(catalog.equipment['chess_item_4_01_e_a'].params.eliteTierDelta, 1);
   assert.equal(catalog.equipment['chess_item_5_05_e_a'].params.eliteCount, 2);
   assert.equal(catalog.equipment['chess_item_5_06_e_a'].params.eliteCount, 2);
-  const statCases = [
-    ['chess_item_1_05_e_a', 'attackPercent', 0.2, 0.3], ['chess_item_2_01_e_a', 'maxHpPercent', -0.15, -0.2],
-    ['chess_item_2_03_e_a', 'attackPercent', 0.1, 0.2], ['chess_item_2_04_e_a', 'spRecovery', 0.1, 0.2],
-    ['chess_item_3_01_e_a', 'attackSpeedFlat', 8, 16], ['chess_item_3_06_e_a', 'maxHpPercent', 0.15, 0.25],
-    ['chess_item_3_07_e_a', 'attackPercent', 0.2, 0.35], ['chess_item_3_08_e_a', 'resistance', 10, 20],
-    ['chess_item_3_10_e_a', 'attackSpeedFlat', 10, 20], ['chess_item_4_02_e_a', 'maxHpPercent', 0.2, 0.35],
-    ['chess_item_4_09_e_a', 'attackPercent', 0.15, 0.25], ['chess_item_5_09_e_a', 'maxHpPercent', 0.2, 0.35],
-    ['chess_item_6_01_e_a', 'attackPercent', 0.2, 0.35], ['chess_item_6_02_e_a', 'attackPercent', 0.2, 0.35],
-    ['chess_item_6_03_e_a', 'maxHpPercent', 0.2, 0.35], ['chess_item_6_05_e_a', 'attackSpeedFlat', 15, 25],
-    ['chess_item_6_06_e_a', 'resistance', 15, 25], ['chess_item_6_07_e_a', 'initialSp', 10, 20],
-    ['chess_item_6_10_e_a', 'redeployTimeReduction', 0.15, 0.25], ['chess_item_6_11_e_a', 'spRecovery', 0.1, 0.2],
-  ];
-  for (const [id, stat, normal, elite] of statCases) {
-    assert.equal(catalog.equipment[id].stats?.[stat]?.normal, normal, `${id} normal ${stat}`);
-    assert.equal(catalog.equipment[id].stats?.[stat]?.elite, elite, `${id} elite ${stat}`);
+  // gear v4 (2026-10-07, user: 「装备不再有精锐形态」): one form, no elite level; special combat gear carries no numbers
+  // (those belong to the badges) beyond 诱敌蜂鸣器's 更容易受到敌人攻击; retired pieces keep their normal stats for old saves
+  for (const x of Object.values(catalog.equipment).filter((d) => d.mechanism === 'combatEquipment' && !d.retired)) {
+    for (const stat of Object.keys(x.stats || {})) assert.equal(stat, 'tauntLevel', `${x.newName || x.name} carries ${stat}`);
   }
+  assert.deepEqual(catalog.equipment['chess_item_3_07_e_a'].stats, { attackPercent: 0.2, attackSpeedFlat: -5 });
+  assert.ok(Object.values(catalog.equipment).every((x) => x.eliteLevel == null), 'no gear has an elite level');
   assert.equal(catalog.config.purchasePrice, 3);
   assert.equal(catalog.config.sellPrice, 1);
   assert.equal(catalog.config.refreshPrice, 1);
@@ -106,16 +98,16 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   const normalPiece = { uid: 'a', chessId: 'chess_char_1_02_a', elite: false, nativeState: {} };
   normal.state.pieces.push(normalPiece);
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'player' }, normal.services);
-  assert.deepEqual(normal.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }]);
+  assert.deepEqual(normal.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:谢拉格冰爪', quantity: 1 }, { id: 'vitality', quantity: 1 }]);
 
   const elite = fixture();
   const elitePiece = { uid: 'b', chessId: 'chess_char_1_02_b', elite: true, nativeState: {} };
   elite.state.pieces.push(elitePiece);
   runNativeHook(elite.state, 'gain', { piece: elitePiece, origin: 'player' }, elite.services);
-  assert.deepEqual(elite.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 2 }]);
+  assert.deepEqual(elite.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:谢拉格冰爪', quantity: 2 }, { id: 'vitality', quantity: 2 }]);
 
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'native', sourceUid: 'a' }, normal.services);
-  assert.equal(normal.granted.length, 1);
+  assert.equal(normal.granted.length, 2, 'a gain from a native source adds nothing to the first gain (谢拉格冰爪 and 生命徽章)');
 });
 
 test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
@@ -127,7 +119,8 @@ test('白面鸮 replays the front operator\'s 获得时 effect once at the end o
   state.pieces.push(owl, donor);
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
-  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'vitality', quantity: 1, sourceUid: 'owl' }]);
+  // the first 获得时 rule of the front operator (角峰 brings 谢拉格冰爪 first since 装备 v4)
+  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'independent:谢拉格冰爪', quantity: 1, sourceUid: 'owl' }]);
 });
 
 test('round-end effects require a fielded owner except approved bench-active makers', () => {
@@ -257,7 +250,7 @@ test('native registry reports implementation coverage without silent empty callb
   assert.ok(all.every((x) => Array.isArray(x.nativeTrait.effect.prep) && Array.isArray(x.nativeTrait.effect.combat)));
   const missingCombat = all.filter((x) => !x.elite && x.nativeTrait.sources.normal.some((s) => s.eventType === 'IN_BATTLE') && x.name !== '风丸' && !x.nativeTrait.effect.combat.length);
   assert.deepEqual(missingCombat.map((x) => x.name), []);
-  const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','perEliteGrant','buyGear','diversityGrant']);
+  const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','perEliteGrant','buyGear','diversityGrant','copyFrontNative','forgePerRefresh']);
   for (const behavior of catalog.nativeRegistry.prepBehaviors) assert.ok(expectedPrep.has(behavior), `registered behavior ${behavior}`);
 });
 
@@ -351,8 +344,9 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   normal.state.pieces.push(piece);
   normal.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
   runNativeHook(normal.state, 'gain', { piece }, normal.services);
-  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['vitality', 1, undefined], ['vitality', 1, true]]);
-  assert.equal(normal.granted[1].sourceUid, 'corner');
+  // the badge is forged twice, the gear 角峰 brings only once
+  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['independent:谢拉格冰爪', 1, undefined], ['vitality', 1, undefined], ['vitality', 1, true]]);
+  assert.equal(normal.granted[2].sourceUid, 'corner');
 
   const supply = fixture();
   const swire = all.find((x) => x.name === '诗怀雅' && !x.elite);
@@ -366,13 +360,14 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   // the copier is 白面鸮 since 2026-10-07 (it replays a 获得时 effect at 休整期结束时)
   const copy = fixture();
   const owl = all.find((x) => x.name === '白面鸮' && !x.elite);
-  const donor = { uid: 'donor', chessId: corner.chessId, row: 0, col: 1, dir: 'RIGHT', nativeState: {} };
+  // a donor whose first 获得时 rule forges a badge (野鬃 under the pre-v3 rules: 攻速徽章)
+  const donor = { uid: 'donor', chessId: 'chess_char_1_19_a', row: 0, col: 1, dir: 'RIGHT', nativeState: {} };
   const copier = { uid: 'owl', chessId: owl.chessId, row: 0, col: 0, dir: 'RIGHT', nativeState: {} };
   copy.state.pieces.push(copier, donor);
   copy.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
   runNativeHook(copy.state, 'prepEnd', {}, copy.services);
   assert.equal(copy.granted.length, 2);
-  assert.ok(copy.granted.every((x) => x.id === 'vitality' && x.sourceUid === 'owl' && x.copied === true));
+  assert.ok(copy.granted.every((x) => x.id === 'agility' && x.sourceUid === 'owl' && x.copied === true));
   assert.equal(copy.granted.filter((x) => x.repeated === true).length, 1);
 });
 

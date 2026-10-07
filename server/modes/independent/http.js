@@ -41,13 +41,16 @@ export function independentDisplayCatalog(data, catalog) {
   const gear = Object.fromEntries([...Object.entries(catalog.badges), ...Object.entries(catalog.equipment)].map(([id, d]) => {
     const steam = d.params?.effects?.find((x) => x.behavior === 'steamGearUpgrade');
     const text = GAME_TEXT.gear[id];
-    return [id, { name: d.newName || d.name, level: d.level, eliteLevel: d.eliteLevel,
-      normal: text ? text.normal : gearDescription(d), elite: text ? (text.elite ?? text.normal) : (d.elite || gearDescription(d)), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
-      sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds, steamLimit: steam?.params.chooseVariantsOnEquip,
+    // gear has one form only (owner 2026-10-07 「装备不再有精锐形态」): one level, one text
+    const steamLimit = steam ? steam.params.chooseVariantsOnEquip : undefined;
+    return [id, { name: d.newName || d.name, level: d.level,
+      normal: text ? text.normal : gearDescription(d), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
+      sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds,
+      steamLimit: steamLimit && typeof steamLimit === 'object' ? steamLimit.normal : (steamLimit ?? (steam ? steam.params.choose ?? 1 : undefined)),
       identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,
       ...(d.kind === 'badge' ? { stat: d.stat, value: d.value, statName: BADGE_STATS[d.stat] || null, ratio: BADGE_RATIOS.has(d.stat) } : {}),
       // how many shop slots / operators a supply asks for when used (prizes.js useInventoryItem)
-      ...(d.params?.normalCount != null ? { useCount: { normal: Number(d.params.normalCount), elite: Number(d.params.eliteCount ?? d.params.normalCount) } } : {}) }];
+      ...(d.params?.normalCount != null ? { useCount: Number(d.params.normalCount) } : {}) }];
   }));
   const prizes = Object.fromEntries(Object.entries(catalog.prizes).map(([id, d]) => [id, { name: d.name, effect: GAME_TEXT.prizes[id]?.text ?? d.effect, mechanism: d.mechanism, stage: PRIZE_STAGE[d.stage] || null }]));
   // the fallback offer when no prize can be drawn (prizes.js choosePrize fallback-procurement-*)

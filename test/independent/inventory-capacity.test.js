@@ -1,6 +1,6 @@
-// 2026-10-06: the stock holds 20 tiles, one per item and grade however many it holds. Gear that would need a 21st tile
-// is not stored and its production row says lost; more of a kind already there still stacks; a prize kept for later
-// takes no tile; merging two normal copies into an elite one needs a tile only when it opens a new one.
+// 2026-10-06: the stock holds 20 tiles, one per item however many it holds. Gear that would need a 21st tile is not
+// stored and its production row says lost; more of a kind already there still stacks; a prize kept for later takes no
+// tile. Since 2026-10-07 gear has one form only (「装备不再有精锐形态」): no 合成精锐.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSession, applyAction } from '../../server/modes/independent/session.js';
@@ -17,7 +17,7 @@ const kinds = Object.values({ ...catalog.badges, ...catalog.equipment })
   .map((d) => d.id);
 
 function fullStock() {
-  const state = createSession({ seed: 5 });
+  const state = createSession({ seed: 5, openFactions: null });
   for (const id of kinds.slice(0, INVENTORY_CAPACITY)) grantEquipment(state, catalog, id, 1, { origin: 'test' });
   return state;
 }
@@ -49,16 +49,15 @@ test('a prize kept for later takes no tile', () => {
   assert.equal(inventoryTiles(state, catalog), 20);
 });
 
-test('merging into an elite copy needs a tile only when it opens a new one', () => {
+test('gear has one form only: no 合成精锐, and an old elite copy shares its kind\'s tile (owner 2026-10-07)', () => {
   const state = fullStock();
-  const mergeable = Object.values(catalog.equipment).find((d) => d.available !== false && !d.unique && d.eliteLevel && kinds.slice(0, 20).includes(d.id) && !['补给', '玩家设施'].includes(d.kind));
-  assert.ok(mergeable, 'a mergeable kind among the twenty');
-  grantEquipment(state, catalog, mergeable.id, 2, { origin: 'test' }); // 3 normal copies: one stays, the elite needs a tile
-  const item = state.inventory.find((x) => x.id === mergeable.id);
-  const full = applyAction(state, { type: 'merge-item', firstUid: item.uid, secondUid: item.uid });
-  assert.equal(full.ok, false); assert.equal(full.error.code, 'INVENTORY_FULL');
-  item.quantity = 2; // the last two: their tile becomes the elite one
-  const swapped = applyAction(state, { type: 'merge-item', firstUid: item.uid, secondUid: item.uid });
-  assert.equal(swapped.ok, true, swapped.error?.message);
-  assert.equal(inventoryTiles(swapped.state, catalog), 20);
+  const kind = state.inventory.find((x) => x.id !== 'precision' && !catalog.equipment[x.id]?.unique) || state.inventory[0];
+  state.inventory.push({ uid: `i${state.nextUid++}`, id: kind.id, elite: true, quantity: 1, state: {} });
+  assert.equal(inventoryTiles(state, catalog), 20, 'the elite copy takes no tile of its own');
+  const merge = applyAction(state, { type: 'merge-item', firstUid: kind.uid, secondUid: kind.uid });
+  assert.equal(merge.ok, false); assert.equal(merge.error.code, 'UNKNOWN_ACTION');
+  const after = applyAction(state, { type: 'freeze' });
+  assert.equal(after.ok, true, after.error?.message);
+  assert.ok(!after.state.inventory.some((x) => x.elite));
+  assert.equal(inventoryTiles(after.state, catalog), 20);
 });

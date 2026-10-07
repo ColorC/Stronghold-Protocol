@@ -65,17 +65,17 @@ test('legacy badge source IDs resolve to their semantic badge at base grade',()=
   assert.equal(aliases.s.def,108);
 });
 
-test('Sargon tea boosts only natural SP recovery, not attack-triggered recovery',()=>{
+// gear v4 (2026-10-07): 萨尔贡行军浓茶 no longer raises natural recovery; each normal attack gives 1 SP (gear-v4.test.js)
+test('Sargon tea adds no natural SP recovery any more',()=>{
   const tea=Object.values(catalog.equipment).find(x=>x.newName==='萨尔贡行军浓茶');
   assert.ok(tea);
   const item={uid:'tea',id:tea.sourceId,quantity:1,elite:false,state:{}};
   const {h,u}=unitWith([item],false,true);
-  assert.ok(Math.abs(u.s.spRecovery-1.1)<1e-8);
+  assert.ok(Math.abs(u.s.spRecovery-1)<1e-8);
   h.step(1);
   const before=u.skill.sp;
   h.run(1);
-  assert.ok(Math.abs((u.skill.sp-before)-1.1)<1e-8);
-  assert.equal(u.skill.gainSp(1,'attack'),1);
+  assert.ok(Math.abs((u.skill.sp-before)-1)<1e-8);
 });
 
 test('foresight badges grant their SP again on each deployment, not only at battle start',()=>{

@@ -32,7 +32,8 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 /** Player-facing reasons for the session's error codes (server/modes/independent/*.js). */
 const ERRORS = {
   NO_FUNDS: '采购资金不足', SOLD_OUT: '卡池里已经没有这名干员', DEPLOY_CAP: '场上干员已达上限', ILLEGAL_TILE: '有干员站在不能部署的位置',
-  OCCUPIED: '这个位置已有干员', NO_DEPLOYED_PIECES: '至少部署一名干员才能开始战斗', CAPACITY: '这名干员的装备已经穿满',
+  OCCUPIED: '这个位置已有干员', NO_DEPLOYED_PIECES: '至少部署一名干员才能开始战斗',
+  BENCH_FULL: '整备区已满（10名）', TEMP_NOT_EMPTY: '临时整备区还有干员：让他们上场、放回整备区或出售后才能开始战斗', CAPACITY: '这名干员的装备已经穿满',
   UNIQUE: '同名唯一的装备只能穿戴一件', INVENTORY_FULL: '库存已满，先穿戴或使用一些', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
   NOT_MERGEABLE: '这件装备不能合成', NOT_USABLE: '这件物品不能直接使用', CONDITION_NOT_MET: '使用条件未满足', MAX_LEVEL: '调度中心已达最高等级',
   NEED_UNIQUE_SELECTION: '请先选择要保留的同名唯一装备', NEEDS_SELECTION: '请先选择要保留的同名唯一项', NO_ELIGIBLE_TARGET: '没有可以选择的干员',
@@ -88,8 +89,11 @@ function dropRefusal(state, n, tile) {
 /** Field tile of a piece: its board tile, or its bench slot (the hand row of the renderer). */
 function pieceTileOf(state, piece) {
   if (isDeployed(piece)) return { row: piece.row, col: piece.col };
-  const idx = benchLayout(state).hand.findIndex((p) => p.uid === piece.uid);
-  return idx >= 0 ? { row: GEO.HAND_ROW, col: idx } : null;
+  const { hand, temp } = benchLayout(state);
+  const idx = hand.findIndex((p) => p.uid === piece.uid);
+  if (idx >= 0) return { row: GEO.HAND_ROW, col: idx };
+  const t = temp.findIndex((p) => p.uid === piece.uid);
+  return t >= 0 ? { row: GEO.TEMP_ROW, col: GEO.TEMP_C0 + t } : null;
 }
 
 export function GameScreen({ id, initial, catalog, onLeave }) {
@@ -148,6 +152,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         return null;
       }
       if (!opts.keep) setState(res.state);
+      // the bench and the 临时整备区 were both full: the operator went back to the pool (session.js roomFor)
+      if ((res.events || []).some((e) => e.type === 'no-room')) toast('整备区已满，获得的干员已返还', 'warn');
       return res;
     } finally { busyRef.current = false; setBusy(false); }
   }, [id]);
@@ -448,7 +454,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
       else if (hash.startsWith('shop-') && st.shop.slots[Number(hash.slice(5))]) {
         const i = Number(hash.slice(5)); const s = st.shop.slots[i];
-        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id, elite: s.elite });
+        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id });
       } else if (hash.startsWith('item-')) { setPanelUid(null); setPanel('inventory'); }
     };
     follow();
@@ -513,7 +519,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const offer = pendingOffer(state);
   const { overflow } = benchLayout(state);
   const deployed = deployedCount(state);
-  const readyReason = state.phase !== 'prep' ? null : deployed < 1 ? '至少部署一名干员' : deployed > state.deployCap ? `场上最多 ${state.deployCap} 名干员` : offer ? '请先完成当前选择' : null;
+  const readyReason = state.phase !== 'prep' ? null : (state.pieces || []).some((p) => p.temp && !isDeployed(p)) ? '临时整备区还有干员' : deployed < 1 ? '至少部署一名干员' : deployed > state.deployCap ? `场上最多 ${state.deployCap} 名干员` : offer ? '请先完成当前选择' : null;
   const loading = viewKind === 'loading' || !gd.ready;
 
   // the stock panel, with an operator chosen to wear / receive and a tile picked (`key`: an inventoryStacks key)
@@ -527,7 +533,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const piece = state.pieces.find((p) => p.uid === uid); if (!piece || state.phase !== 'prep') return;
     const item = stack.items[0]; const g = catalog.gear[stack.id] || {};
     if (stack.used) {
-      const need = USE_NEEDS[stack.mechanism]; const count = (stack.elite ? g.useCount?.elite : g.useCount?.normal) || 1;
+      const need = USE_NEEDS[stack.mechanism]; const count = Number(g.useCount) || 1;
       if (!need) act({ type: 'use-item', itemUid: item.uid });
       else if (need === 'target') act({ type: 'use-item', itemUid: item.uid, targetUid: uid });
       else if (need === 'source') act({ type: 'use-item', itemUid: item.uid, sourceUid: uid });
@@ -571,16 +577,16 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         pen=${pen} onPen=${() => setPen((x) => !x)} />
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
-          onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
+          onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id }))} onDrop=${dropFromStock} />
         <${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
         ${state.phase === 'prep' && !pen ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
-          onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id, elite: slot.elite }); }}
+          onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id }); }}
           onBuy=${buy} onUpgrade=${() => { setArmed(null); act({ type: 'upgrade' }); }} onRefresh=${() => { setArmed(null); act({ type: 'refresh' }); }}
           onFreeze=${() => act({ type: 'freeze' })} collapsed=${shopCollapsed} onCollapse=${(v) => { setShopCollapsed(v); if (v) setArmed(null); }}
-          onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id, elite: s.elite }); }} />` : null}
+          onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id }); }} />` : null}
       ` : html`<${DpCounter} dp=${battle.hud?.dp} />
       <div class="ix-battlebar" data-testid="ix-battlebar">
         ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}

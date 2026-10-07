@@ -7,7 +7,7 @@ import { nativeRecord } from '../../shared/independentRules.js';
 
 const catalog=getCatalog();
 function fixture(donorName='角峰',receiverName='送葬人') {
-  const state=createSession({seed:91,difficulty:'FUNNY'});
+  const state=createSession({seed:91,difficulty:'FUNNY',openFactions:null});
   const map=getIndependentField(state).deployMap;
   for(const name of [donorName,receiverName]) {
     const op=Object.values(catalog.operators).find(x=>!x.elite && x.name===name);

@@ -24,7 +24,7 @@ export function badgeTotal(g, n) {
 /** 战栗维式重锤's variants (configure-equipment hammerSourceIds), chosen when it is worn. */
 export function HammerPicker({ g, item, busy, catalog, onSave }) {
   const [picks, setPicks] = useState(item?.state?.hammerSourceIds || []);
-  const limit = (item?.elite ? g.steamLimit?.elite : g.steamLimit?.normal) ?? g.steamLimit ?? 1;
+  const limit = Number(g.steamLimit) || 1;
   const toggle = (id) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < limit ? [...p, id] : p));
   return html`<span class="ix-usepick"><span class="ix-muted">选择款式（最多 ${limit} 种）</span>
     ${g.steamOptions.map((id) => html`<button type="button" key=${id} class=${cx('ix-chip', picks.includes(id) && 'is-on')} onClick=${() => toggle(id)}>${catalog.gear[id]?.name || ''}</button>`)}
@@ -48,9 +48,9 @@ export function TraitTexts({ op, elite, catalog }) {
 const KIND_LABEL = { equipment: '装备', prizeGear: '特供装备' };
 
 /** The line under a shop gear's name: what kind of gear it is, its level and the rule it carries. */
-export function gearMeta(g, elite) {
+export function gearMeta(g) {
   if (g.kind === 'badge' || g.kind === '徽章') return '基础徽章 · 可重复装备';
-  return `${KIND_LABEL[g.kind] || g.kind || ''} · ${(elite ? g.eliteLevel : g.level) ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`;
+  return `${KIND_LABEL[g.kind] || g.kind || ''} · ${g.level ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`;
 }
 
 // ---- inventory ----------------------------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ export const USE_NEEDS = { upgradeChess: 'target', promoteOnUse: 'targets', recr
 function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
   const need = USE_NEEDS[stack.mechanism];
   const g = catalog.gear[stack.id] || {};
-  const count = (stack.elite ? g.useCount?.elite : g.useCount?.normal) || 1;
+  const count = Number(g.useCount) || 1;
   const [picked, setPicked] = useState([]);
   const itemUid = stack.items[0].uid;
   const toggle = (x) => setPicked((p) => (p.includes(x) ? p.filter((y) => y !== x) : p.length < count ? [...p, x] : [...p.slice(1), x]));
@@ -93,8 +93,8 @@ function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
 /**
  * The inventory: the stock's tiles (as many places as it holds, catalog.rules.inventoryCapacity) on the left, the
  * chosen tile's full effect and actions on the right — a fixed grid, no scrolling list. Gear is worn by the chosen
- * operator (n badges at once); supplies, facilities and kept prizes are used, asking first for what they need; two
- * normal copies merge into the elite one. Wearing is final (design: 不能主动拆卸或替换), so the panel says so.
+ * operator (n badges at once); supplies, facilities and kept prizes are used, asking first for what they need. Gear has
+ * one form only (no 合成精锐, owner 2026-10-07). Wearing is final (design: 不能主动拆卸或替换), so the panel says so.
  */
 export function InventoryPanel({ open, focus = null, state, catalog, busy, targetUid, onTarget, onClose, onAct }) {
   const stacks = inventoryStacks(state.inventory, catalog);
@@ -111,7 +111,6 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
   const s = stacks.find((x) => x.key === pick) || stacks[0] || null;
   const g = s ? catalog.gear[s.id] || {} : null;
   const n = s ? Math.max(1, Math.min(qty[s.key] || 1, s.count, Math.max(1, room))) : 1;
-  const mergeable = s && !s.used && !s.badge && !s.elite && g.eliteLevel != null && s.count >= 2;
   const tagFactions = g?.identityFactions || null;
   return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(10.4rem, 96vw)" class="ix-inv">
     <div class="ix-inv__target">
@@ -128,7 +127,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
         ${Array.from({ length: capacity }, (_, i) => {
           const x = stacks[i];
           if (!x) return html`<span key=${`e${i}`} class="ix-inv__cell is-empty" aria-hidden="true"></span>`;
-          return html`<button type="button" key=${x.key} role="option" aria-selected=${String(x === s)} class=${cx('ix-inv__cell', x === s && 'is-on', x.elite && 'is-elite')}
+          return html`<button type="button" key=${x.key} role="option" aria-selected=${String(x === s)} class=${cx('ix-inv__cell', x === s && 'is-on')}
               data-testid=${`ix-inv-${x.id}`} title=${x.name} onClick=${() => { setPick(x.key); setUsing(null); }}>
             <${GearIcon} id=${x.id} catalog=${catalog} plain=${true} />
             <b class="num">×${x.count}</b>
@@ -138,7 +137,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
       </div>
       <div class="ix-inv__sel">
         ${s ? html`<header class="ix-inv__head"><${GearIcon} id=${s.id} catalog=${catalog} plain=${true} />
-            <div class="ix-inv__text"><b>${s.name}${s.elite ? html`<em>精锐</em>` : null}</b><span class="num">${!s.badge && !s.used && s.level != null ? `${s.level}级 · ` : ''}×${s.count}</span></div></header>
+            <div class="ix-inv__text"><b>${s.name}</b><span class="num">${!s.badge && !s.used && s.level != null ? `${s.level}级 · ` : ''}×${s.count}</span></div></header>
           <p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>
           <${TermNotes} texts=${[s.text]} catalog=${catalog} exclude=${s.name} />
           ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} />` : null}
@@ -155,8 +154,6 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
               <${Button} size="sm" variant="primary" disabled=${busy || !target || room < n || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
                 onClick=${() => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: target.uid, quantity: s.badge ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) })}>
                 穿戴${s.badge && n > 1 ? ` ${n} 枚` : ''}<//>`}
-            ${mergeable ? html`<${Button} size="sm" variant="secondary" disabled=${busy} title="两件合成一件精锐"
-                onClick=${() => run({ type: 'merge-item', firstUid: s.items[0].uid, secondUid: (s.items[1] || s.items[0]).uid })}>合成精锐<//>` : null}
           </div>` : html`<p class="ix-muted">库存为空</p>`}
       </div>
     </div>
