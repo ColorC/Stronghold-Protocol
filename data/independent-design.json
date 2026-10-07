@@ -88,7 +88,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "角峰",
@@ -185,7 +186,8 @@
         "elite": "获得时，自身获得2枚生命徽章",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "惊蛰",
@@ -280,7 +282,8 @@
         "elite": "获得时，自身获得攻击徽章，数量等于调度中心等级",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "深巡",
@@ -368,7 +371,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "刺玫",
@@ -453,7 +457,8 @@
         "elite": "获得时，获得2件维多利亚荆棘纹章；技能持续期间，攻击范围内的【维多利亚】干员获得30%的庇护",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "普罗旺斯",
@@ -534,7 +539,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "德克萨斯",
@@ -613,7 +619,8 @@
         "elite": "售出时，获得2次免费刷新",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "经济"
     },
     {
       "name": "跃跃",
@@ -699,7 +706,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "古米",
@@ -791,7 +799,8 @@
         "elite": "在场时，自身与周围四格友方技力自然回复速度+0.3/秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "艾丝黛尔",
@@ -917,7 +926,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "波登可",
@@ -996,7 +1006,8 @@
         "elite": "在场时，周围四格友方攻击力+16%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "格雷伊",
@@ -1075,7 +1086,8 @@
         "elite": "售出时，下个休整期额外获得2采购资金",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "经济"
     },
     {
       "name": "深靛",
@@ -1165,7 +1177,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "宴",
@@ -1258,7 +1271,8 @@
         "elite": "战斗开始时，自身与同一行友方本场造成的伤害变为弱点伤害",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "野鬃",
@@ -1349,7 +1363,8 @@
         "elite": "部署后15秒内，场上【近卫】干员攻击力+24%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "雷蛇",
@@ -1455,7 +1470,8 @@
         "elite": "战斗中，自身每受到20次攻击，战斗结束后获得2枚防御徽章（每场至多6枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "送葬人",
@@ -1550,7 +1566,8 @@
         "elite": "获得时，获得2件拉特兰跳弹模块",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "赫默",
@@ -1635,7 +1652,8 @@
         "elite": "获得时，获得2件医疗护盾无人机；被自身治疗的友方攻击速度+20，持续5秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "小满",
@@ -1723,7 +1741,8 @@
         "elite": "获得时，获得2件炎国制式短刀；休整期结束时，本次休整期每获得一名干员，身前一格的友方干员获得2枚攻击徽章（至多12枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "哈洛德",
@@ -1860,7 +1879,8 @@
         "elite": "攻击力与最大生命值+40%；自身持有的基础徽章每满5枚，再+2%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "莎草",
@@ -1954,7 +1974,8 @@
         "elite": "获得时，获得2件萨尔贡行军浓茶；技能开启时，周围四格友方技力+2",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "幽灵鲨",
@@ -2051,7 +2072,8 @@
         "elite": "获得时，获得2件阿戈尔裂潮重刃；再部署时间-50%，每次再部署后15秒内攻击力+40%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "泡泡",
@@ -2146,7 +2168,8 @@
         "elite": "自身持有的生命徽章与防御徽章每满5枚，防御力额外+4%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "休谟斯",
@@ -2238,7 +2261,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "洛洛",
@@ -2330,7 +2354,8 @@
         "elite": "获得时，随机获得2件战栗、坚固或灼燃维式重锤",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "风丸",
@@ -2405,7 +2430,8 @@
         "elite": "获得时，获得2件不屈部署支架；只需2个相同的本干员即可合成精锐",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "经济"
     },
     {
       "name": "砾",
@@ -2542,7 +2568,8 @@
         "elite": "获得时，获得2件突袭破片榴弹；每次部署时（包括再部署），同一行友方获得一层护盾",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "蒂比",
@@ -2628,7 +2655,8 @@
         "elite": "战斗中，自身每闪避1次攻击，战斗结束后获得2枚攻速徽章（每场至多6枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "调香师",
@@ -2707,7 +2735,8 @@
         "elite": "休整期结束时，场上人数最多的阵营里，装备最少的干员获得4枚该阵营徽章；在整备区时也生效",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "拉普兰德",
@@ -2792,7 +2821,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "折桠",
@@ -2877,7 +2907,8 @@
         "elite": "休整期结束时，自身获得2枚攻击加成徽章；战斗中，若自身未被击倒，战斗结束后再获得2枚",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "灰毫",
@@ -2958,7 +2989,8 @@
         "elite": "攻击使目标受到的物理伤害提升20%，持续3秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "锡人",
@@ -3091,7 +3123,8 @@
         "elite": "攻击力与最大生命值+40%；算作全部8个阵营的干员，可满足其他干员对任意阵营的要求（交接凭证的阵营要求除外）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "能天使",
@@ -3186,7 +3219,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "断崖",
@@ -3310,7 +3344,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "诗怀雅",
@@ -3430,7 +3465,8 @@
         "elite": "在场时，周围八格的近战友方攻击速度+16",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "琳琅诗怀雅",
@@ -3533,7 +3569,8 @@
         "elite": "休整期结束时，下个休整期额外获得2采购资金；在整备区时需场上有【炎】干员才生效",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "经济"
     },
     {
       "name": "斯卡蒂",
@@ -3639,7 +3676,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "菲莱",
@@ -3729,7 +3767,8 @@
         "elite": "战斗中，自身每开启1次技能，战斗结束后获得2枚技力徽章（每场至多6枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "薄绿",
@@ -3847,7 +3886,8 @@
         "elite": "休整期结束时，场上【维多利亚】干员每有一种不同的科技等级，自身获得2枚攻击徽章（至多12枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "海霓",
@@ -3942,7 +3982,8 @@
         "elite": "攻击范围内的精英和领袖敌人受到16%的脆弱",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "松果",
@@ -4034,7 +4075,8 @@
         "elite": "售出时，进行一次科技等级5干员的免费特殊招募",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "雪猎",
@@ -4116,7 +4158,8 @@
         "elite": "获得时，获得2件谢拉格雪境猎印；技能开启时，攻击范围内的敌人寒冷4秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "瑕光",
@@ -4229,7 +4272,8 @@
         "elite": "获得时，获得2件天马骑士战盔；部署后15秒内，自身与周围四格友方获得30%的庇护",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "至简",
@@ -4309,7 +4353,8 @@
         "elite": "获得时，获得2件源石激光组件；首次花费采购资金购买时，获得2次免费刷新（休整期结束时作废）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "经济"
     },
     {
       "name": "初雪",
@@ -4419,7 +4464,8 @@
         "elite": "战斗中，攻击范围内的敌人每被冻结一次，有50%概率战斗结束后自身获得2枚攻击加成徽章（每场至多8枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "蛇屠箱",
@@ -4506,7 +4552,8 @@
         "elite": "在场时，同一行友方获得16%的庇护",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "流星",
@@ -4629,7 +4676,8 @@
         "elite": "获得时，获得2件卡西米尔竞技旗；技能持续期间，攻击使目标受到的物理伤害提升25%，持续5秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "忍冬",
@@ -4726,7 +4774,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "伺夜",
@@ -4932,7 +4981,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "耶拉",
@@ -5019,7 +5069,8 @@
         "elite": "获得时，获得2件谢拉格不融冰",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "空弦",
@@ -5120,7 +5171,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "信仰搅拌机",
@@ -5226,7 +5278,8 @@
         "elite": "获得时，获得2件诱敌蜂鸣器；在场时，攻击范围内的【拉特兰】干员攻击速度+20",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "莫斯提马",
@@ -5336,7 +5389,8 @@
         "elite": "获得时，获得2件拉特兰备用桥夹；技能持续期间，攻击范围内的敌人受到20%的法术脆弱",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "伊内丝",
@@ -5436,7 +5490,8 @@
         "elite": "战斗中，自身每束缚1名敌人，战斗结束后获得2枚攻击徽章（每场至多8枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "寒芒克洛丝",
@@ -5517,7 +5572,8 @@
         "elite": "被「中的」晕眩的敌人，之后3秒内受到的物理伤害提升30%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "风笛",
@@ -5628,7 +5684,8 @@
         "elite": "获得时，获得2件维多利亚校准砧；战斗中，前三次击倒敌人时，每次战斗结束后自身获得2枚攻速徽章（每场至多6枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "水月",
@@ -5739,7 +5796,8 @@
         "elite": "自身持有的攻击徽章与攻击加成徽章每满5枚，攻击力额外+2%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "阿罗玛",
@@ -5827,7 +5885,8 @@
         "elite": "攻击范围内浮空的敌人受到30%的法术脆弱",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "凯瑟琳",
@@ -5938,7 +5997,8 @@
         "elite": "进入休整期时，奇数轮时随机获得2件已解锁的通用装备（不含奖品装备）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "歌蕾蒂娅",
@@ -6042,7 +6102,8 @@
         "elite": "进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡，重复2次",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "灵知",
@@ -6141,7 +6202,8 @@
         "elite": "获得时，获得2件奥术抑制器；部署后经过10秒时，场上【谢拉格】干员攻击力+30%（本场战斗）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "莱恩哈特",
@@ -6225,7 +6287,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "缄默德克萨斯",
@@ -6325,7 +6388,8 @@
         "elite": "获得时，获得2件应急伪装服；进入休整期时，获得2次免费刷新",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "经济"
     },
     {
       "name": "星熊",
@@ -6421,7 +6485,8 @@
         "elite": "获得时，自身获得6枚防御徽章，并获得2件防暴塔盾；阻挡敌人时，受到攻击会对攻击者造成相当于自身防御力40%的物理伤害",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "泥岩",
@@ -6518,7 +6583,8 @@
         "elite": "获得时，获得2件后勤回收协议；售出时，下个休整期额外获得4采购资金，并触发身前一格与身前两格友方的售出时特质",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "焰尾",
@@ -6614,7 +6680,8 @@
         "elite": "获得时，获得2件卡西米尔骑士戒律，以及2个野鬃或灰毫（小概率改为远牙）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "远牙",
@@ -6709,7 +6776,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "白面鸮",
@@ -6786,7 +6854,8 @@
         "elite": "身前一格友方若有进入休整期时特质，自身拥有相同的精锐特质",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "银灰",
@@ -6895,7 +6964,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "百炼嘉维尔",
@@ -7006,7 +7076,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "卡涅利安",
@@ -7107,7 +7178,8 @@
         "elite": "获得时，获得2件迅捷作战口粮",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "魔王",
@@ -7214,7 +7286,8 @@
         "elite": "战斗中，身前一格的友方干员每通过特质在战斗结束后获得一次基础徽章，自身额外获得2枚同种徽章（每场至多8枚；有多种时按预先选择的种类）。额外获得的徽章不会触发此效果",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "华法琳",
@@ -7296,7 +7369,8 @@
         "elite": "获得时，获得2件医疗部共生血囊；技能开启时，身前一格的友方干员攻击力+40%，持续10秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "圣约送葬人",
@@ -7470,7 +7544,8 @@
         "elite": "战斗中，自身每消耗7发弹药，战斗结束后获得2枚攻速徽章与2枚技力徽章（每场每种至多14枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "缇缇",
@@ -7580,7 +7655,8 @@
         "elite": "在场时，攻击范围内生命值高于50%的友方攻击速度+20",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "烛煌",
@@ -7681,7 +7757,8 @@
         "elite": "获得时，获得2件维多利亚蒸汽之心；战斗中，场上每有1名敌人灼燃损伤爆发，战斗结束后自身获得2枚攻击徽章（每场至多8枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "乌尔比安",
@@ -7797,7 +7874,8 @@
         "elite": "获得时，获得2件阿戈尔海沟实验体；自身持有的攻击徽章与攻击加成徽章每满4枚，攻击力额外+2%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "隐德来希",
@@ -7923,7 +8001,8 @@
         "elite": "攻击使目标受到20%的法术脆弱，持续5秒",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "史尔特尔",
@@ -8031,7 +8110,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "号角",
@@ -8132,7 +8212,8 @@
         "elite": "获得时，获得2件应急浓缩嗅盐；在场时，场上【维多利亚】干员攻击力+20%（与军事要塞不叠加）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "铃兰",
@@ -8232,7 +8313,8 @@
         "elite": "进入休整期时，触发身前一格与身前两格友方的一项获得时特质",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "塞雷娅",
@@ -8325,7 +8407,8 @@
         "elite": "获得时，获得2件双模机械臂；身前一格友方若有休整期结束时特质，自身拥有相同的精锐特质",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "夕",
@@ -8428,7 +8511,8 @@
         "elite": "战斗中，夕与「小自在」每击倒2名敌人，战斗结束后自身获得2枚攻击加成徽章（每场至多10枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "归溟幽灵鲨",
@@ -8571,7 +8655,8 @@
         "elite": "获得时，获得2件M3应急茧甲；替身与本体切换时，对周围八格的敌人造成攻击力500%的物理伤害（每场至多2次）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "凛御银灰",
@@ -8713,7 +8798,8 @@
         "elite": "战斗开始时，整备区每有1名干员，场上友方初始技力+2（至多+10）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "引星棘刺",
@@ -8819,7 +8905,8 @@
         "elite": "休整期结束时，自身与身前一格友方各获得2枚攻速徽章",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "山",
@@ -8925,7 +9012,8 @@
         "elite": "休整期结束时，本次休整期每获得1名干员，自身获得2枚普通攻击徽章（至多8枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "玛恩纳",
@@ -9035,7 +9123,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "安洁莉娜",
@@ -9137,7 +9226,8 @@
         "elite": "获得时，获得2件催泪瓦斯组件；休整期结束时，本次休整期每主动刷新1次，身前一格友方获得2枚攻速徽章（至多6枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "寒檀",
@@ -9268,7 +9358,8 @@
         "elite": "在场20秒后，攻击范围内的敌人受到20%的法术脆弱",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "妮芙",
@@ -9373,7 +9464,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "录武官",
@@ -9460,7 +9552,8 @@
         "elite": "获得时，获得2件炎国天师古鼎与2件炎国制式短刀",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "蕾缪安",
@@ -9578,7 +9671,8 @@
         "elite": "获得时，获得2件拉特兰铳骑组件；战斗中，同一行有三名友方干员时，自身每消耗10发弹药，战斗结束后获得4枚攻击徽章（每场至多16枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "圣聆初雪",
@@ -9687,7 +9781,8 @@
         "elite": "获得时，获得2件耶拉冈德之泪；自身持有的攻击、攻击加成与技力徽章每满5枚，攻击力额外+2%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "余",
@@ -9789,7 +9884,8 @@
         "elite": "获得时，获得2件人事部增援许可；进入休整期时，获得一名场上人数最多阵营的普通干员（人数相同时按预设的阵营顺序）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "浊心斯卡蒂",
@@ -9894,7 +9990,8 @@
         "elite": "在场时，攻击范围内的【阿戈尔】干员攻击力+30%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "异客",
@@ -9998,7 +10095,8 @@
         "elite": "获得时，获得2件萨尔贡黄沙罗盘；自身持有的攻击、攻击加成与攻速徽章每满5枚，攻击力额外+4%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "佩佩",
@@ -10099,7 +10197,8 @@
         "elite": "获得时，获得2件增压臂铠；技能持续期间每击倒1名敌人，周围四格友方技力+2",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "维娜·维多利亚",
@@ -10285,7 +10384,8 @@
         "elite": "获得时，获得2件熔铸模具；休整期结束时，场上【维多利亚】干员每有一种不同的科技等级，自身获得2枚攻击徽章与2枚生命徽章（每种至多12枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "焰影苇草",
@@ -10392,7 +10492,8 @@
         "elite": "带有灼痕的敌人被击倒时，对其周围八格内的所有敌人施加灼痕效果",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "塑心",
@@ -10499,7 +10600,8 @@
         "elite": "战斗中，自身开启技能时，同一行友方下一次通过特质获得的徽章+1（每场至多6次）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "缪尔赛思",
@@ -10598,7 +10700,8 @@
         "elite": "获得时，获得2件调和识别牌（每名干员只能装备一件）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "联动"
     },
     {
       "name": "迷迭香",
@@ -10750,7 +10853,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "新约能天使",
@@ -10848,7 +10952,8 @@
         "elite": "获得时，下个休整期额外获得4采购资金，并随机获得2件后勤物资",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "生成"
     },
     {
       "name": "流明",
@@ -10951,7 +11056,8 @@
         "elite": "休整期结束时，整备区每有一名干员，场上装备最少的友方干员获得2枚攻击徽章（至多12枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "仇白",
@@ -11058,7 +11164,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "溯光星源",
@@ -11164,7 +11271,8 @@
         "elite": "休整期结束时，本次休整期每花费3采购资金，自身获得2枚技力徽章与2枚回复徽章（每种至多12枚）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "成长"
     },
     {
       "name": "耀骑士临光",
@@ -11417,7 +11525,8 @@
         "elite": "获得时，获得2件天马骑士长枪；战斗开始时，自身与身前一格的友方干员攻击速度+30（本场战斗）",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "荒芜拉普兰德",
@@ -11537,7 +11646,8 @@
         "elite": "获得时，获得2件叙拉古家族印记；场上【叙拉古】干员每击倒1名敌人，其技力+2",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     },
     {
       "name": "锏",
@@ -11685,7 +11795,8 @@
         "elite": "没有特质，凭自身技能作战",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "纯战斗"
     },
     {
       "name": "纯烬艾雅法拉",
@@ -11790,7 +11901,8 @@
         "elite": "获得时，获得2件医疗部蓄能电容；技能持续期间，攻击范围内的友方攻击力+24%",
         "inheritable": false,
         "origin": "operator body"
-      }
+      },
+      "roster": "临时战斗"
     }
   ],
   "permissions": [
