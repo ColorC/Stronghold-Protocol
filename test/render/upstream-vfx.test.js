@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FX_KINDS } from '../../public/js/render/fxRecipes.js';
+import { framePlacement } from '../../public/js/render/originalVfx.js';
 
 test('upstream 0.2.0 custom-kit FX kinds keep their explicit visual archetypes', () => {
   const expected = {
@@ -37,4 +38,10 @@ test('character VFX coverage manifest has no silent omissions', () => {
   }
   assert.equal(raw.blkkgt_skill_03_start_02.bindingState, 'procedural');
   assert.equal(raw.blkkgt_skill_03_start_03.bindingState, 'unresolved');
+});
+
+test('packed colour/coverage atlas uses logical-half anchor and scale', () => {
+  const p = framePlacement({ cellW: 200, cellH: 100, originX: 50, originY: 80 });
+  assert.equal(p.anchorX, 0.25);
+  assert.equal(p.anchorY, 0.8);
 });
