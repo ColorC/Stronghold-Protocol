@@ -79,27 +79,39 @@ function tileTuple(value) {
   if (typeof value === 'string') return value.split(',').map(Number);
   return null;
 }
-async function piecePoint(uid) {
-  return page.evaluate((n) => {
-    const r = globalThis.__SP_VIEW__?.pieceScreenRect?.(n);
-    if (r && r.width > 0 && r.height > 0) return { x: r.left + r.width / 2, y: r.top + r.height * 0.55, rect: r };
-    const e = [...document.querySelectorAll('[data-piece-uid]')].find((x) => x.dataset.pieceUid === String(n) || Number(String(x.dataset.pieceUid).replace(/^\D+/, '')) === n);
-    if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, rect: b.toJSON() };
-  }, pieceNumber(uid));
+async function piecePoint(piece, state = null) {
+  let row = piece.row; let col = piece.col;
+  if (!Number.isInteger(row)) {
+    if (piece.temp) {
+      const temp = (state?.pieces || []).filter((p) => p.temp).sort((a, b) => pieceNumber(a.uid) - pieceNumber(b.uid));
+      row = 8; col = 4 + temp.findIndex((p) => p.uid === piece.uid);
+    } else {
+      const hand = (state?.pieces || []).filter((p) => !Number.isInteger(p.row) && !p.temp).sort((a, b) => pieceNumber(a.uid) - pieceNumber(b.uid));
+      row = 7; col = hand.findIndex((p) => p.uid === piece.uid);
+    }
+  }
+  if (!Number.isInteger(row) || !Number.isInteger(col) || col < 0) return null;
+  return page.evaluate(([r, c]) => {
+    const t = globalThis.__SP_VIEW__?.tileScreen?.(r, c);
+    return t ? { x: t.x, y: t.y + t.s * 0.25, tile: t } : null;
+  }, [row, col]);
 }
 async function tilePoint(row, col) {
   return page.evaluate(([r, c]) => {
     const t = globalThis.__SP_VIEW__?.tileScreen?.(r, c); if (!t) return null;
-    const p = t.poly; const center = Array.isArray(p) && p.length ? p.reduce((a, v) => ({ x: a.x + v[0] / p.length, y: a.y + v[1] / p.length }), { x: 0, y: 0 }) : { x: t.x, y: t.y };
-    return { ...center, tile: t };
+    return { x: t.x, y: t.y + t.s * 0.25, tile: t };
   }, [row, col]);
 }
 async function dragPointer(from, to) {
   await page.mouse.move(from.x, from.y); await page.mouse.down();
-  await page.mouse.move(to.x, to.y, { steps: 12 }); await page.mouse.up();
+  for (let i = 1; i <= 16; i += 1) {
+    await page.mouse.move(from.x + ((to.x - from.x) * i) / 16, from.y + ((to.y - from.y) * i) / 16);
+    await pause(40);
+  }
+  await page.mouse.up();
 }
 async function deployPiece(state, piece) {
-  const from = await piecePoint(piece.uid); if (!from) return false;
+  const from = await piecePoint(piece, state); if (!from) return false;
   const occupied = new Set((state.pieces || []).filter((p) => Number.isInteger(p.row) && Number.isInteger(p.col)).map((p) => `${p.row},${p.col}`));
   const legal = (piece.legalTiles || []).map(tileTuple).filter((t) => t && t.every(Number.isFinite) && !occupied.has(`${t[0]},${t[1]}`));
   const candidates = [];
@@ -181,7 +193,7 @@ async function equipVisibleItem(state) {
   const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)); if (!deployed.length) return false;
   const buttons = await page.$$('[data-testid^="ix-tile-"]'); if (!buttons.length) return false;
   const target = deployed.sort((a, b) => Number(b.level || 0) - Number(a.level || 0))[0];
-  const to = await piecePoint(target.uid); if (!to) return false;
+  const to = await piecePoint(target, state); if (!to) return false;
   const before = state.revision;
   for (const button of buttons) {
     const label = await button.evaluate((e) => `${e.getAttribute('aria-label') || ''} ${e.innerText || ''}`);
@@ -239,7 +251,7 @@ async function attemptHandover(state) {
   const pair = pieces.flatMap((donor) => (donor.handover?.give || []).map((uid) => ({ donor, receiver: pieces.find((p) => p.uid === uid) })))
     .find((x) => x.receiver && (x.donor.equipment || []).length && !x.donor.temp && !x.receiver.temp);
   if (!pair) return false;
-  const donorPoint = await piecePoint(pair.donor.uid); if (!donorPoint) return false;
+  const donorPoint = await piecePoint(pair.donor, state); if (!donorPoint) return false;
   await page.mouse.click(donorPoint.x, donorPoint.y); await pause(300);
   if (!await clickText('[data-testid="ix-detail"] button', (s) => s === '交接')) return false;
   await page.waitForSelector('.ix-inherit', { timeout: 5000 });
@@ -257,7 +269,7 @@ async function attemptHandover(state) {
 }
 async function inspectReferenceCard(piece, kind) {
   if (!piece || report.references?.some((x) => x.kind === kind)) return false;
-  const point = await piecePoint(piece.uid); if (!point) return false;
+  const point = await piecePoint(piece); if (!point) return false;
   await page.mouse.click(point.x, point.y); await pause(400);
   const summary = await page.$('[data-testid="ix-detail"] .ix-original-card summary'); if (!summary) return false;
   const opened = await summary.evaluate((e) => e.parentElement.open); if (!opened) await summary.click();
@@ -369,7 +381,7 @@ try {
   await page.waitForSelector('.ix-start__modes .ix-mode', { timeout: 60000 });
   // Chrome can reset an about:blank viewport during navigation; size the real game before session creation so
   // renderer-provided pointer geometry and the initial recording share the same full-resolution canvas.
-  await page.setViewport({ width: 1600, height: 1200, deviceScaleFactor: 1 });
+  await page.setViewport({ width: 1600, height: 900, deviceScaleFactor: 1 });
   const growth = await page.$('.ix-growth-mode button[role="radio"][aria-checked="false"]');
   if (growth) await growth.click();
   await clickText('.ix-start__modes .ix-mode', (s) => s.includes('十四轮'));
