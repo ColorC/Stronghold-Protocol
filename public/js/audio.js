@@ -428,13 +428,14 @@ export class VoiceGate {
  * 404 would — so the fallback looks at the declared type too.
  *
  * A response that declares no type at all is not treated as wrong: absence of a header is not evidence of an HTML
- * page, and fetch stubs / minimal hosts legitimately omit it.
+ * page, and fetch stubs / minimal hosts legitimately omit it. Some static hosts serve extensionless audio as
+ * application/octet-stream; allow that through so Web Audio can validate the actual container bytes.
  * @param {{ ok?: boolean, headers?: { get?: (n: string) => string | null } }} res
  */
 function isAudioResponse(res) {
   if (!res || !res.ok) return false;
   const type = res.headers?.get?.('content-type');
-  return !type || /^\s*audio\//i.test(type);
+  return !type || /^\s*(?:audio\/|application\/octet-stream\b)/i.test(type);
 }
 export class AudioManager {
   /**
@@ -629,13 +630,25 @@ export class AudioManager {
           res = await fetch(url);
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const ab = await res.arrayBuffer();
-        return await new Promise((resolve) => {
-          try {
-            const r = this.ctx.decodeAudioData(ab, resolve, () => resolve(null));
-            if (r && typeof r.then === 'function') r.then(resolve, () => resolve(null));
-          } catch { resolve(null); }
-        });
+        const decode = async (response) => {
+          const ab = await response.arrayBuffer();
+          return await new Promise((resolve) => {
+            try {
+              const r = this.ctx.decodeAudioData(ab, resolve, () => resolve(null));
+              if (r && typeof r.then === 'function') r.then(resolve, () => resolve(null));
+            } catch { resolve(null); }
+          });
+        };
+        let buffer = await decode(res);
+        const responseType = res.headers?.get?.('content-type') || '';
+        if (!buffer && media !== url && /^\s*application\/octet-stream\b/i.test(responseType)) {
+          // MIME is inconclusive on this static host: let Web Audio inspect the bytes, then try the manifest URL only
+          // when those bytes are not a decodable audio container.
+          const original = await fetch(url);
+          if (!original.ok) throw new Error(`HTTP ${original.status}`);
+          buffer = await decode(original);
+        }
+        return buffer;
       } catch (err) {
         this._warn(url, err);
         return null;
