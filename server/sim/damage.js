@@ -189,6 +189,7 @@ export function absorbShields(battle, target, amount) {
     const b = target.buffs[i];
     if (b.shieldHits > 0) {
       b.shieldHits--;
+      if (battle._hooks.shieldLayersBroken) battle.emit('shieldLayersBroken', { unit: target, layers: 1, buff: b });
       rest = 0;
       if (b.shieldHits <= 0 && !(b.shield > 0) && !b.mods && !b.flags) { battle._removeBuffAt(target, i); i--; }
       changed = true;
@@ -247,7 +248,10 @@ export function dealDamage(battle, source, target, dmgIn) {
   // recognise their own (tagged) damage — never re-create such a loss with a fresh loseHp.
   if (ts.flags.hitCount || ts.flags.hitCountArts) {
     const counts = !(ts.flags.hitCountArts && !ts.flags.hitCount && type === 'phys');
-    return applyHpLoss(battle, source, target, absorbShields(battle, target, counts ? 1 : 0), dmg);
+    const finalHit = absorbShields(battle, target, counts ? 1 : 0);
+    return typeof battle.independentPostMitigationDamage === 'function'
+      ? (battle.independentPostMitigationDamage(source, target, finalHit, dmg, { applyHpLoss, absorbShields }) ?? applyHpLoss(battle, source, target, finalHit, dmg))
+      : applyHpLoss(battle, source, target, finalHit, dmg);
   }
   // 无来源 damage (element bursts) takes nothing from its source's stats; the source still gets the credit below
   const ss = source && source.s && !dmg.sourceless ? source.s : null;
@@ -268,6 +272,10 @@ export function dealDamage(battle, source, target, dmgIn) {
   // ran before it (the attack, its SP, `hit` hook effects, separate element 损伤) stays; nothing after it happens
   if (final > 0 && leaderHitCancelled(battle, target, final)) return 0;
   final = absorbShields(battle, target, final);
+  if (typeof battle.independentPostMitigationDamage === 'function') {
+    const redirected = battle.independentPostMitigationDamage(source, target, final, dmg, { applyHpLoss, absorbShields });
+    if (redirected != null) return redirected;
+  }
   return applyHpLoss(battle, source, target, final, dmg);
 }
 

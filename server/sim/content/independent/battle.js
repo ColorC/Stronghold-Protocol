@@ -3,6 +3,7 @@ import { frontOf } from '../../dir.js';
 import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../shared/independentRules.js';
 import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
 import { mitigate } from '../../damage.js';
+import { installKeywordGear } from './keywordGear.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
 // 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
@@ -2002,6 +2003,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
         case 'escalatingForge':
         case 'saleThresholdRecruit':
         case 'stats':
+        case 'keywordGear':
           break;
         case 'equipmentShield': {
           break;
@@ -2087,6 +2089,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
       } else throw new Error(`unimplemented independent attachment mechanism ${rec.mechanism ?? id}`);
     }
   }
+  installKeywordGear(battle, { catalog, pieces });
 }
 
 function installEvents(battle, catalog, pieces, emit) {

@@ -5,6 +5,7 @@ import { getData } from '../../data.js';
 import { nativeEffectFor } from './native.js';
 import { EQUIPMENT_CAPACITY, INVENTORY_CAPACITY } from './equipment.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
+import { KEYWORD_GEAR_BY_NAME } from './keywordGear.js';
 
 const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH)
@@ -166,7 +167,7 @@ const clone = (v) => v == null ? v : structuredClone(v);
 const eliteId = (id) => id.endsWith('_a') ? `${id.slice(0, -2)}_b` : null;
 const recordById = (map, id) => own(map, id) || null;
 function resolvedEquipmentRule(name, required = true) {
-  const raw = EQUIPMENT_RULES[name];
+  const raw = EQUIPMENT_RULES[name] ?? KEYWORD_GEAR_BY_NAME[name];
   if (!raw) {
     if (required) throw new Error(`Independent equipment has no structured rule: ${name}`);
     return { mechanism: 'disabled', params: {}, stats: null };
@@ -271,7 +272,10 @@ export function getCatalog(data = getData(), design = DESIGN) {
   for (const item of design.extraGear || []) {
     const id = `independent:${item.name}`;
     const rule = resolvedEquipmentRule(item.name);
-    equipment[id] = { ...clone(item), id, sourceId: id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'equipment', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
+    const params = rule.mechanism === 'keywordGear'
+      ? { ...clone(rule.params), ...clone(item.keywordParams ?? {}), gearId: rule.params.gearId }
+      : rule.params;
+    equipment[id] = { ...clone(item), id, sourceId: id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'equipment', mechanism: rule.mechanism, params, stats: rule.stats };
   }
   const identity = design.identityGear;
   if (identity) {
