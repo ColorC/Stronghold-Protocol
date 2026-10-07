@@ -20,6 +20,12 @@ async function renew() {
   try {
     const response = await fetch(endpoint, { method: 'POST', credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(10000) });
     const result = await response.json();
+    if (response.status === 202 && result.ok && result.queued) {
+      blocked?.remove(); blocked = null;
+      const { startHostingWait } = await import('/js/hostingWait.js');
+      startHostingWait(result.queued);
+      return false;
+    }
     if (!response.ok || !result.ok) {
       showBlocked(result.error?.message || '无法进入工坊，请稍后再试'); return false;
     }
