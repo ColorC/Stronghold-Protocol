@@ -52,7 +52,7 @@ function normalizeBasePath(value, revision) {
   return `/${parts.join('/')}`;
 }
 
-function versionAbsoluteStaticUrls(text, basePath, ext) {
+function versionAbsoluteStaticUrls(text, basePath, ext, relativeFile) {
   if (ext === '.css') {
     // Generated font CSS uses root-absolute /fonts URLs. Relative URLs preserve the version prefix after the CDN redirect.
     return text.replace(/([("'])\/(fonts|assets)\//g, `$1${basePath}/$2/`);
@@ -61,8 +61,14 @@ function versionAbsoluteStaticUrls(text, basePath, ext) {
   // Dynamic ESM imports resolve from the importing module URL. Prefix only quoted, root-absolute static module paths.
   // Ordinary strings belong to the page context (asset manifests, fetch URLs, MEDIA_PREFIX). Preserve them.
   // ESM import specifiers alone resolve from the module's CDN URL.
-  return text.replace(/(\bimport\s*\(\s*|\bfrom\s*|\bimport\s*)(["'`])(\/(?:sim|shared|vendor|fonts|assets|data|media|js)\/[^"'`]*?)\2/g,
-    (_, lead, quote, specifier) => `${lead}${quote}${basePath}${specifier}${quote}`);
+  return text.replace(/(\bimport\s*\(\s*|\bfrom\s*|\bimport\s*)(["'`])([^"'`]*?)\2/g,
+    (original, lead, quote, specifier) => {
+      if ((!specifier.startsWith('.') && !specifier.startsWith('/')) || specifier.includes('${')) return original;
+      // Resolve against the original public URL layout first. ../../../shared from /js/ui is /shared;
+      // resolving it after adding /<commit> would escape that immutable prefix.
+      const resolved = new URL(specifier, `https://static.invalid/${relativeFile}`);
+      return `${lead}${quote}${basePath}${resolved.pathname}${resolved.search}${resolved.hash}${quote}`;
+    });
 }
 
 async function walkFiles(root, rel = '') {
@@ -174,13 +180,14 @@ async function main() {
     const ext = path.extname(rel).toLowerCase();
     if (ext === '.js' || ext === '.mjs' || ext === '.css') {
       const sourceText = await readFile(source, 'utf8');
-      await writeFile(dest, versionAbsoluteStaticUrls(sourceText, basePath, ext), { flag: 'wx' });
+      await writeFile(dest, versionAbsoluteStaticUrls(sourceText, basePath, ext, rel), { flag: 'wx' });
     } else await cp(source, dest, { errorOnExist: true, force: false, dereference: false });
+    const emittedBytes = (await lstat(dest)).size;
     stats.files++;
-    stats.bytes += info.size;
-    stats.maxFileBytes = Math.max(stats.maxFileBytes, info.size);
-    stats.byTopDir[rel.split('/')[0]] = (stats.byTopDir[rel.split('/')[0]] || 0) + info.size;
-    if (info.size > MAX_FILE_BYTES) stats.oversized.push({ path: rel, bytes: info.size });
+    stats.bytes += emittedBytes;
+    stats.maxFileBytes = Math.max(stats.maxFileBytes, emittedBytes);
+    stats.byTopDir[rel.split('/')[0]] = (stats.byTopDir[rel.split('/')[0]] || 0) + emittedBytes;
+    if (emittedBytes > MAX_FILE_BYTES) stats.oversized.push({ path: rel, bytes: emittedBytes });
   }
   for (const [src, dest] of [['public/assets', 'assets'], ['public/fonts', 'fonts'], ['public/vendor', 'vendor']]) {
     for (const rel of await walkFiles(path.join(sourceRoot, src))) {
@@ -192,13 +199,14 @@ async function main() {
       const ext = path.extname(target).toLowerCase();
       if (ext === '.js' || ext === '.mjs' || ext === '.css') {
         const sourceText = await readFile(abs, 'utf8');
-        await writeFile(out, versionAbsoluteStaticUrls(sourceText, basePath, ext), { flag: 'wx' });
+        await writeFile(out, versionAbsoluteStaticUrls(sourceText, basePath, ext, target), { flag: 'wx' });
       } else await cp(abs, out, { errorOnExist: true, force: false, dereference: false });
+      const emittedBytes = (await lstat(out)).size;
       stats.files++;
-      stats.bytes += info.size;
-      stats.maxFileBytes = Math.max(stats.maxFileBytes, info.size);
-      stats.byTopDir[dest] = (stats.byTopDir[dest] || 0) + info.size;
-      if (info.size > MAX_FILE_BYTES) stats.oversized.push({ path: target, bytes: info.size });
+      stats.bytes += emittedBytes;
+      stats.maxFileBytes = Math.max(stats.maxFileBytes, emittedBytes);
+      stats.byTopDir[dest] = (stats.byTopDir[dest] || 0) + emittedBytes;
+      if (emittedBytes > MAX_FILE_BYTES) stats.oversized.push({ path: target, bytes: emittedBytes });
     }
   }
 
