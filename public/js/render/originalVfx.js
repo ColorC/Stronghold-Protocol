@@ -139,7 +139,12 @@ export class OriginalVfxPlayer {
           if (!this.meshTextures) this.meshTextures = new Map();
           texture = this.P.Texture.from(url);
           this.meshTextures.set(url, texture);
-          if (!texture.valid) await new Promise((resolve, reject) => { texture.once('loaded', resolve); texture.once('error', reject); });
+          // Texture.from returns a Texture wrapper; the load lifecycle belongs
+          // to its BaseTexture. Waiting on the wrapper leaves mesh prefabs in
+          // a permanently pending state in Pixi 6, so the coverage report
+          // shows the prefab as requested but never loaded.
+          const base = texture.baseTexture || texture;
+          if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
         }
         const vtx = new Float32Array(raw.vertices.length * 2);
         const uv = new Float32Array(raw.vertices.length * 2);
