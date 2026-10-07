@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import nativeKits, { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT } from '../../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
+import nativeKits, { NATIVE_DEFAULT_SKILL_IDS, NATIVE_KIT_READY, NATIVE_SKILL_SUPPORT } from '../../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 import { skillSpecSource } from '../../server/sim/content/index.js';
 
@@ -25,6 +25,7 @@ test('Victoria/Kazimierz/Siracusa imports expose explicit source-ID default kits
   for (const [charId, name] of operators) {
     const ids = NATIVE_SKILL_SUPPORT[charId];
     assert.ok(Array.isArray(ids), `${name} declares supported skill IDs`);
+    assert.deepEqual(NATIVE_KIT_READY[charId], { ready: true, talentReady: true, skillReady: ids.length > 0, tokenReady: charId === 'char_4072_ironmn', supportedSkillIds: ids }, `${name} has an explicit complete-kit readiness record`);
     assert.equal(ids.length, name === '正义骑士号' ? 0 : 1, `${name} only advertises authored options`);
     if (ids.length) {
       assert.equal(NATIVE_DEFAULT_SKILL_IDS[charId], expectedDefaults[charId], `${name} chooses its source-backed default`);

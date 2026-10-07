@@ -30,7 +30,7 @@ function indra(_bb, chess) {
   const s = selected(chess, 'skchr_tiger_1'); if (!s) return null;
   const t = talent(chess), chance = n(t['tiger_t_1[evade].prob'], 0), bonus = n(t['charge_on_evade.atk'], 0);
   return { skill: { ...durationSkill(s.skillId, 'instant', s), attack: { atkScale: 1 + n(s.bb?.atk, 0) } },
-    talents: [{ install(battle, unit) { const pen=n(s.bb?.def_penetrate,0); battle.on('hit',(ctx)=>{if(ctx.source===unit&&unit.skill?.pending&&ctx.dmg?.isAttack&&pen>0)ctx.dmg.defIgnorePct+=pen;},{owner:unit}); if (!(chance > 0)) return; battle.on('hit', (ctx) => { const melee = ctx.source?.profile?.attackKind === 'melee' || ctx.source?.def?.attackKind === 'melee'; if (ctx.target !== unit || ctx.source?.side !== 'enemy' || ctx.dmg?.type !== 'phys' || !melee || battle.rng() >= chance) return; const key=`indra:dodge:${unit.id}`; battle.addBuff(unit,{key,duration:0.05,mods:{dodgePhys:1}}); unit.mem.nativeIndraNextAttack = bonus; }, { owner: unit }); battle.on('hit', (ctx) => { if (ctx.source !== unit || !unit.mem.nativeIndraNextAttack || !ctx.dmg?.isAttack) return; applyDamageIncrease(battle, unit, ctx.dmg, 1 + unit.mem.nativeIndraNextAttack); unit.mem.nativeIndraNextAttack = 0; }, { owner: unit }); } }],
+    talents: [{ install(battle, unit) { const pen=n(s.bb?.def_penetrate,0); battle.on('hit',(ctx)=>{if(ctx.source===unit&&unit.skill?.pending&&ctx.dmg?.isAttack&&pen>0)ctx.dmg.defIgnorePct+=pen;},{owner:unit}); if (!(chance > 0)) return; battle.on('hit', (ctx) => { const melee = ctx.source?.profile?.attackKind === 'melee' || ctx.source?.def?.attackKind === 'melee'; if (ctx.target !== unit || ctx.source?.side !== 'enemy' || ctx.dmg?.type !== 'phys' || !melee || battle.rng() >= chance) return; const key=`indra:dodge:${unit.id}`; battle.addBuff(unit,{key,duration:0.05,mods:{dodgePhys:1}}); unit.mem.nativeIndraNextAttack = bonus; unit.mem.nativeIndraAttackId = null; }, { owner: unit }); battle.on('hit', (ctx) => { if (ctx.source !== unit || !unit.mem.nativeIndraNextAttack || !ctx.dmg?.isAttack) return; if (unit.mem.nativeIndraAttackId == null) unit.mem.nativeIndraAttackId = ctx.dmg.attackId; if (ctx.dmg.attackId === unit.mem.nativeIndraAttackId) applyDamageIncrease(battle, unit, ctx.dmg, 1 + unit.mem.nativeIndraNextAttack); }, { owner: unit }); battle.on('attack',ctx=>{if(ctx.attacker!==unit||unit.mem.nativeIndraAttackId==null)return;unit.mem.nativeIndraNextAttack=0;unit.mem.nativeIndraAttackId=null;},{owner:unit}); } }],
   };
 }
 function heidi(_bb, chess, def) {
@@ -63,7 +63,7 @@ function siege(_bb, chess) {
 }
 function ironmn(_bb, chess) {
   const s = selected(chess, 'skchr_ironmn_1'); if (!s) return null;
-  const token = s.overrideTokenKey;
+  const token = s.overrideTokenKey, carry = Math.max(1, n(talent(chess).cnt, 1)), recycle = n(talent(chess, 1).prob, 0);
   return { skill: durationSkill(s.skillId, 'duration', s, {}, { attack: { atkScale: n(s.bb?.['attack@atk_scale'], 1) } }), talents: [], install(battle, unit) {
     const create = () => {
       if (!token) return null;
@@ -71,7 +71,7 @@ function ironmn(_bb, chess) {
       for (const [r, c] of candidates) {
         const kit = { talents: [{ install(b, device) {
           const base = n(device.def?.talents?.[0]?.bb?.atk, 0);
-          const boost = unit.skill?.active ? 3 : 1;
+          const boost = unit.skill?.active ? n(device.def?.skill?.bb?.talent_scale, 1) : 1;
           const apply = () => {
             if (!device.alive || !device.deployed) return;
             const distance = (a) => Math.abs(a.tileR - device.tileR) + Math.abs(a.tileC - device.tileC);
@@ -84,7 +84,7 @@ function ironmn(_bb, chess) {
         } }] };
         const device = battle.spawnToken(unit, token, r, c, { kit });
         if (device) {
-          const base = n(device.def?.talents?.[0]?.bb?.atk, 0), boost = unit.skill?.active ? 3 : 1;
+          const base = n(device.def?.talents?.[0]?.bb?.atk, 0), boost = unit.skill?.active ? n(device.def?.skill?.bb?.talent_scale, 1) : 1;
           const platformCandidates = battle.alliesFor(device);
           const target = platformCandidates.filter((ally) => ally.kind === 'op' && ally.alive && ally.deployed && Math.abs(ally.tileR - device.tileR) + Math.abs(ally.tileC - device.tileC) <= 1)
             .sort((a, z) => Math.abs(a.tileR - device.tileR) + Math.abs(a.tileC - device.tileC) - (Math.abs(z.tileR - device.tileR) + Math.abs(z.tileC - device.tileC)))[0];
@@ -97,16 +97,18 @@ function ironmn(_bb, chess) {
     battle.on('skillStart', (ctx) => {
       if (ctx.unit !== unit || ctx.skill?.id !== s.skillId) return;
       unit.mem.nativeIronmnDevices ||= [];
+      unit.mem.nativeIronmnUses ||= 0;
       unit.mem.nativeIronmnDevices = unit.mem.nativeIronmnDevices.filter((device) => device?.alive);
-      if (!unit.mem.nativeIronmnDevices.length) {
+      if (!unit.mem.nativeIronmnDevices.length && unit.mem.nativeIronmnUses < carry) {
         const device = create();
-        if (device) unit.mem.nativeIronmnDevices.push(device);
+        if (device) { unit.mem.nativeIronmnDevices.push(device); unit.mem.nativeIronmnUses++; }
       }
     }, { owner: unit });
     battle.on('skillEnd', (ctx) => {
       if (ctx.unit !== unit || ctx.skill?.id !== s.skillId) return;
       for (const device of unit.mem.nativeIronmnDevices || []) if (device?.alive) battle.retreat(device, { reason: 'skillEnd', permanent: true });
       unit.mem.nativeIronmnDevices = [];
+      if (recycle > 0 && battle.rng() < recycle) unit.mem.nativeIronmnUses = Math.max(0, (unit.mem.nativeIronmnUses || 0) - 1);
     }, { owner: unit });
   } };
 }
@@ -130,10 +132,10 @@ function sophia(_bb, chess) {
 }
 function platinum(_bb,chess){const s=selected(chess,'skcom_atk_up[3]');if(!s)return null;const t=talent(chess);const min=n(t['attack@min_atk_scale'],1),max=n(t['attack@max_atk_scale'],1),minDelta=n(t['attack@min_delta'],1),maxDelta=n(t['attack@max_delta'],2.5);return{skill:durationSkill(s.skillId,'duration',s,fields(s.bb,[['atk','atkPct']])),talents:[],trait:{dmgMul:(battle,unit)=>{const elapsed=unit.mem.nativePlatLastAttack==null?maxDelta:Math.max(0,battle.time-unit.mem.nativePlatLastAttack);return min+(max-min)*Math.min(1,Math.max(0,(elapsed-minDelta)/(maxDelta-minDelta)));}},install(battle,unit){battle.on('attack',ctx=>{if(ctx.attacker===unit)unit.mem.nativePlatLastAttack=battle.time;},{owner:unit});}};}
 function cloudless(_bb,chess){const s=selected(chess,'skchr_clour_2');if(!s)return null;return{skill:durationSkill(s.skillId,'duration',s,fields(s.bb,[['atk','atkPct']] ),{targeting:{maxTargets:n(s.bb?.['attack@max_target'],1)}}),talents:[{install(battle,unit){const sp=n(talent(chess).sp_recovery_per_sec,0);if(sp>0)battle.addBuff(unit,{key:`clour:sp:${unit.id}`,mods:{spRecoveryFlat:sp},persist:true,tags:['talent']});}}]};}
-function aosta(_bb,chess){const s=selected(chess,'skcom_quickattack[3]');if(!s)return null;const t=talent(chess),dot=n(t.atk_scale,0),duration=n(t.duration,0);return{skill:durationSkill(s.skillId,'duration',s,fields(s.bb,[['atk','atkPct'],['attack_speed','aspd']])),talents:[{install(battle,unit){if(!(dot>0&&duration>0))return;const expiry=new WeakMap(),scheduled=new WeakSet();const tick=(target)=>{scheduled.delete(target);if(!target.alive||battle.time>=(expiry.get(target)||0))return;battle.dealDamage(unit,target,{amount:unit.s.atk*dot,type:'arts',isSkill:true,tags:['talent','dot']});if(target.alive&&battle.time<expiry.get(target)) {scheduled.add(target);battle.after(1,()=>tick(target),{owner:unit});}};battle.on('hit',ctx=>{const target=ctx.target;if(ctx.source!==unit||!target||target.side!=='enemy'||target.blockedBy||!ctx.dmg?.isAttack||ctx.dmg.isSkill)return;expiry.set(target,battle.time+duration);if(!scheduled.has(target)){scheduled.add(target);battle.after(1,()=>tick(target),{owner:unit});}},{owner:unit});}}]};}
+function aosta(_bb,chess){const s=selected(chess,'skcom_quickattack[3]');if(!s)return null;const t=talent(chess),dot=n(t.atk_scale,0),duration=n(t.duration,0);return{skill:durationSkill(s.skillId,'duration',s,fields(s.bb,[['atk','atkPct'],['attack_speed','aspd']])),talents:[{install(battle,unit){if(!(dot>0&&duration>0))return;const expiry=new WeakMap(),scheduled=new WeakSet();const tick=(target)=>{scheduled.delete(target);if(!target.alive||target.blockedBy||battle.time>=(expiry.get(target)||0))return;battle.dealDamage(unit,target,{amount:unit.s.atk*dot,type:'arts',isSkill:true,tags:['talent','dot']});if(target.alive&&!target.blockedBy&&battle.time<expiry.get(target)) {scheduled.add(target);battle.after(1,()=>tick(target),{owner:unit});}};battle.on('hit',ctx=>{const target=ctx.target;if(ctx.source!==unit||!target||target.side!=='enemy'||target.blockedBy||!ctx.dmg?.isAttack||ctx.dmg.isSkill)return;expiry.set(target,battle.time+duration);if(!scheduled.has(target)){scheduled.add(target);battle.after(1,()=>tick(target),{owner:unit});}},{owner:unit});}}]};}
 function chiave(_bb,chess){const s=selected(chess,'skcom_charge_cost[3]');if(!s)return null;return{skill:{...durationSkill(s.skillId,'instant',s),onStart({battle,unit}){const dp=n(s.bb?.cost,0);if(dp>0)battle.addDp(unit.ownerId,dp);}},talents:[]};}
 function liesel(_bb,chess){const s=selected(chess,'skchr_liesel_1');if(!s)return null;const t=talent(chess);return{skill:{...durationSkill(s.skillId,'charges',s),charges:n(s.maxCharges,1),attack:{atkScale:n(s.bb?.atk_scale,1),dmgType:'arts',splashRadius:1}},talents:[{install(battle,unit){const scale=n(t.damage_scale,1),count=n(t.min_target_cnt,0);if(!(scale>1&&count>0))return;battle.on('hit',ctx=>{if(ctx.source!==unit||!ctx.dmg?.isAttack||!ctx.target||ctx.target.side!=='enemy')return;const actual=battle.foesInRadius(ctx.target.x,ctx.target.y,1,true).filter(e=>e.alive);if(actual.length>=count)applyDamageIncrease(battle,unit,ctx.dmg,scale);},{owner:unit});}}]};}
-function broca(_bb,chess){const s=selected(chess,'skchr_broca_1');if(!s)return null;const t=talent(chess);return{skill:durationSkill(s.skillId,'duration',s,fields(s.bb,[['atk','atkPct']]),{attack:{dmgType:'arts'}}),talents:[{install(battle,unit){const atk=n(t.atk,0),def=n(t.def,0),count=n(t.cnt,0);if(!(atk||def))return;battle.every(0.2,()=>{const blocking=unit.blocking.filter(e=>e?.alive).length;const active=unit.alive&&blocking>count;battle.addBuff(unit,{key:`broca:block:${unit.id}`,mods:{atkPct:active?atk:0,defPct:active?def:0},persist:true,tags:['talent']});},{owner:unit,immediate:true});}}]};}
+function broca(_bb,chess){const s=selected(chess,'skchr_broca_1');if(!s)return null;const t=talent(chess);return{skill:durationSkill(s.skillId,'duration',s,fields(s.bb,[['atk','atkPct']]),{attack:{dmgType:'arts'}}),talents:[{install(battle,unit){const atk=n(t.atk,0),def=n(t.def,0),count=n(t.cnt,0);if(!(atk||def))return;battle.every(0.2,()=>{const blocking=unit.blocking.filter(e=>e?.alive).length;const active=unit.alive&&blocking>=count;battle.addBuff(unit,{key:`broca:block:${unit.id}`,mods:{atkPct:active?atk:0,defPct:active?def:0},persist:true,tags:['talent']});},{owner:unit,immediate:true});}}]};}
 function judge(_bb,chess){const s=selected(chess,'skchr_judge_1');if(!s)return null;return{skill:{...durationSkill(s.skillId,'charges',s),charges:n(s.maxCharges,1),attack:{atkScale:1,onHit({battle,unit,target}){if(target?.alive)battle.dealDamage(unit,target,{amount:unit.s.atk*n(s.bb?.atk_scale_2,1),type:'arts',isSkill:true,tags:['skill','judgeS1']});}}},talents:[{install(battle,unit){const t=talent(chess),reflect=n(chess.talents?.find(x=>x.index===1)?.bb?.atk_scale,0),cap=n(t.max_hp_ratio,0),born=n(t.born_hp_ratio,0),per=n(t.kill_hp_ratio,0);const shield=(ratio)=>{if(ratio>0)battle.addBuff(unit,{key:`judge:shield:${unit.id}`,shield:Math.min(unit.s.maxHp*cap, (unit.findBuff(`judge:shield:${unit.id}`)?.shield||0)+unit.s.maxHp*ratio),source:unit,visible:true,tags:['talent']});};if(born>0)battle.on('deploy',ctx=>{if(ctx.unit===unit)shield(born);},{owner:unit});if(per>0)battle.on('kill',ctx=>{if(ctx.killer===unit)shield(per);},{owner:unit});if(reflect>0)battle.on('hit',ctx=>{if(ctx.target!==unit||ctx.source?.side!=='enemy'||ctx.dmg?.isAttack===false||!unit.findBuff(`judge:shield:${unit.id}`))return;battle.dealDamage(unit,ctx.source,{amount:unit.s.atk*reflect,type:'arts',isSkill:true,tags:['talent','reflect']});},{owner:unit});}}]};}
 function demetr(_bb,chess){const s=selected(chess,'skchr_demetr_1');if(!s)return null;const t=talent(chess);return{skill:{...durationSkill(s.skillId,'instant',s),attack:{atkScale:n(s.bb?.atk_scale,1),hits:2}},talents:[{install(battle,unit){const defPct=n(t['attack@def'],-0.05),duration=n(t['attack@def_dec_duration'],10);if(!(defPct<0&&duration>0))return;const stacks=Math.max(1,n(t['attack@limited_stack_cnt'],5)),minHp=n(t.min_hp_ratio,1),maxHp=n(t.max_hp_ratio,0.2),minAdd=n(t.min_add_on_scale,0),maxAdd=n(t.max_add_on_scale,0.2);battle.on('hit',ctx=>{if(ctx.source!==unit||ctx.target?.side!=='enemy'||!ctx.dmg?.isAttack)return;const ratio=ctx.target.hp/Math.max(1,ctx.target.s.maxHp);if(ratio<minHp)applyDamageIncrease(battle,unit,ctx.dmg,1+minAdd+(maxAdd-minAdd)*Math.min(1,Math.max(0,(minHp-ratio)/Math.max(1e-9,minHp-maxHp))));const key=`demetr:def:${unit.id}`;battle.addBuff(ctx.target,{key,duration,refresh:'stack',stacks:1,maxStacks:stacks,source:unit,mods:{defPct},tags:['talent']});},{owner:unit});}}]};}
 function talr(_bb,chess){const s=selected(chess,'skchr_talr_1');if(!s)return null;const extend=n(s.bb?.ability_range_forward_extend,0),bonus=n(talent(chess).damage_scale,1);return{skill:durationSkill(s.skillId,'toggle',s,fields(s.bb,[['atk','atkPct']]),{duration:-1,targeting:extend>0?{rangeExtend:Math.round(extend)}:undefined}),talents:[{install(battle,unit){if(!(bonus>1))return;battle.on('hit',ctx=>{if(ctx.source===unit&&ctx.target?.side==='enemy'&&ctx.target.blockedBy!==unit&&ctx.dmg?.isAttack)applyDamageIncrease(battle,unit,ctx.dmg,bonus);},{owner:unit});}}]};}
@@ -142,6 +144,10 @@ export const NATIVE_SKILL_SUPPORT = Object.freeze({
   char_220_grani:['skchr_grani_2'], char_4017_puzzle:['skchr_puzzle_1'], char_155_tiger:['skchr_tiger_1'], char_4045_heidi:['skchr_heidi_1'], char_154_morgan:['skchr_morgan_1'], char_112_siege:['skchr_siege_2'], char_4072_ironmn:['skchr_ironmn_1'], char_4000_jnight:[], char_4032_provs:['skchr_provs_1'], char_265_sophia:['skchr_sophia_2'], char_204_platnm:['skcom_atk_up[3]'], char_190_clour:['skchr_clour_2'], char_346_aosta:['skcom_quickattack[3]'], char_349_chiave:['skcom_charge_cost[3]'], char_4031_liesel:['skchr_liesel_1'], char_356_broca:['skchr_broca_1'], char_4065_judge:['skchr_judge_1'], char_4037_demetr:['skchr_demetr_1'], char_4155_talr:['skchr_talr_1'],
 });
 export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze(Object.fromEntries(Object.entries(NATIVE_SKILL_SUPPORT).flatMap(([id, skills]) => skills.length ? [[id,skills[0]]] : [])));
+export const NATIVE_KIT_READY = Object.freeze(Object.fromEntries(Object.keys(NATIVE_SKILL_SUPPORT).map((charId) => [charId, Object.freeze({
+  ready: true, talentReady: true, skillReady: NATIVE_SKILL_SUPPORT[charId].length > 0,
+  tokenReady: charId === 'char_4072_ironmn', supportedSkillIds: NATIVE_SKILL_SUPPORT[charId],
+})])));
 const authored = (kitFn) => (bb, chess, def) => {
   const kit = kitFn(bb, chess, def);
   if (!kit?.skill?.id) return kit;
