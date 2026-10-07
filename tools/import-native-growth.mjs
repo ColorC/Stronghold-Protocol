@@ -319,7 +319,9 @@ function attachNativeTokens(tokenTable, candidates, charTable, ctx) {
         skillLevel: ownerRec.status.skillLevel, modulePhase: null, moduleTokenParts: [],
         label: `native token ${tokenId}@${ownerRec.chessId}`,
       });
-      const deployLimit = built.talents?.reduce((max, talent) => Math.max(max, Number(talent.bb?.max_deploy_count) || 0), 0) || built.stats.deployLimit || 1;
+      // Whiteiron's owner talent allows two concurrent devices from E1 onward;
+      // token_table's single device attribute does not express this owner-wide cap.
+      const deployLimit = ownerRec.charId==='char_4072_ironmn' ? (ownerRec.status.phase>=1?2:1) : built.talents?.reduce((max, talent) => Math.max(max, Number(talent.bb?.max_deploy_count) || 0), 0) || built.stats.deployLimit || 1;
       built.stats.deployLimit = deployLimit;
       variants[ownerRec.chessId] = { ...built, nativeGrowth:nativeGrowth(tokenChar), status:{phase:ownerRec.status.phase,level:ownerRec.status.level}, count: deployLimit, sources };
       ownerIds.push(ownerRec.chessId);
