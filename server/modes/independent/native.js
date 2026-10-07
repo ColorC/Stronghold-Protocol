@@ -3,7 +3,8 @@ import { tavernFactions as sharedTavernFactions, nativeFactions, nativeBodyStats
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
 import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
-import { addDarkmoonShopGrowth } from './darkmoonShop.js';
+import { addDarkmoonShopGrowth, darkmoonGrowthBadges } from './darkmoonShop.js';
+import { darkmoonCombatMetadata } from '../../sim/content/independent/darkmoonCombat.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
@@ -12,7 +13,7 @@ const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
 const PREP_TRIGGERS = new Set(['aura','gain','bought','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
 const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','damaged','death','deploy','dodge','dollSwap','elementBurst','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
-const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
+const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonAdjacentGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBeastSummonGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtSelfGrowth','darkmoonElementalTokenOffer','darkmoonEndTurnGrowth','darkmoonLastWarbandRecruit','darkmoonMagneticMerge','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonPlayedTribeGrowth','darkmoonPreviousWinSelfGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonSummonSupport','darkmoonTaggedGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
 const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
 PREP_BEHAVIORS.add('teamForge');
 COMBAT_BEHAVIORS.add('allyConditionStats');
@@ -281,6 +282,15 @@ function output(services, state, id, quantity, piece, extra = {}) {
   services.__nativeOutputCapture?.push({ id, quantity: n });
   services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...(services.__nativeCopied ? { copied: true } : {}), ...(services.__landOn ? { landOn: services.__landOn } : {}), ...extra });
 }
+function darkmoonGrowth(state,source,target,attackUnits,secondaryUnits,services) {
+  if(!target)return;
+  const [attackId,secondaryId]=darkmoonGrowthBadges(target,services.catalog);
+  const landing=target.uid===source.uid?'self':`uid:${target.uid}`;
+  for(const [id,quantity] of [[attackId,attackUnits],[secondaryId,secondaryUnits]]) {
+    const n=Math.max(0,Math.floor(Number(quantity)||0));
+    if(n)services.grantEquipment(state,id,n,{origin:'native',sourceUid:source.uid,targetUid:target.uid,landOn:landing});
+  }
+}
 function value(p, isElite) { return Number(p[isElite ? 'elite' : 'normal'] ?? 0); }
 // a number that may differ between the normal and the elite form: { normal, elite } or a plain number
 function pick(v, isElite) { return v && typeof v === 'object' ? Number(v[isElite ? 'elite' : 'normal'] ?? v.normal ?? 0) : Number(v ?? 0); }
@@ -353,9 +363,109 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonShopGrowth':
         addDarkmoonShopGrowth(state,services.catalog,{sourceId:services.catalog?.operators?.[chessIdOf(piece)]?.sourceRefs?.darkmoon19_2?.id, ...p},Boolean(p.persistent));
         break;
+      case 'darkmoonEndTurnGrowth': {
+        const owner=piece.playerId??piece.ownerId,allies=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner);
+        if(p.mode==='selfIfGolden') {
+          if(allies.some(x=>x.elite||/_b$/.test(chessIdOf(x))))darkmoonGrowth(state,piece,piece,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        } else if(p.mode==='selfPerFaction') {
+          const n=allies.filter(x=>nativeFactions(x,services.catalog).includes(p.faction)).length;
+          darkmoonGrowth(state,piece,piece,n*pick(p.attackPer,elite),n*pick(p.secondaryPer,elite),services);
+        } else if(p.mode==='selfPerDistinctFaction') {
+          const n=new Set(allies.flatMap(x=>nativeFactions(x,services.catalog))).size;
+          darkmoonGrowth(state,piece,piece,n*pick(p.attackPer,elite),n*pick(p.secondaryPer,elite),services);
+        } else if(p.mode==='randomEachFaction') {
+          const factions=[...new Set(allies.flatMap(x=>nativeFactions(x,services.catalog)))],used=new Set();
+          for(const faction of factions) {
+            const candidates=allies.filter(x=>!used.has(x.uid)&&nativeFactions(x,services.catalog).includes(faction));
+            const target=choose(candidates,services);if(!target)continue;used.add(target.uid);
+            darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+          }
+        } else if(p.mode==='randomDistinctFaction') {
+          const factions=[...new Set(allies.flatMap(x=>nativeFactions(x,services.catalog)))],used=new Set();
+          for(let i=0;i<pick(p.targets,elite);i++) {
+            const eligible=factions.filter(f=>!used.has(f)),faction=choose(eligible,services);if(!faction)break;used.add(faction);
+            const target=choose(allies.filter(x=>nativeFactions(x,services.catalog).includes(faction)),services);if(target)darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+          }
+        } else if(p.mode==='leftmostPerPurchase') {
+          const target=allies.slice().sort((a,b)=>a.col-b.col||a.row-b.row||String(a.uid).localeCompare(String(b.uid)))[0];
+          const times=Number(state.counters?.factionBought?.[p.faction]||0);
+          if(target&&times)darkmoonGrowth(state,piece,target,times*pick(p.attackPer,elite),times*pick(p.secondaryPer,elite),services);
+        } else if(p.mode==='randomOtherFaction') {
+          const target=choose(allies.filter(x=>x.uid!==piece.uid&&nativeFactions(x,services.catalog).includes(p.faction)),services);
+          if(target)darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        } else if(p.mode==='randomOtherFriendly') {
+          const target=choose(allies.filter(x=>x.uid!==piece.uid),services);
+          if(target)darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        }
+        break;
+      }
+      case 'darkmoonBoughtSelfGrowth': {
+        const buyer=event.piece;
+        if(buyer&&(buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId)&&nativeFactions(buyer,services.catalog).includes(p.faction))
+          darkmoonGrowth(state,piece,piece,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        break;
+      }
+      case 'darkmoonPlayedTagSelfGrowth': {
+        const played=event.piece,ref=services.catalog?.operators?.[chessIdOf(played)]?.sourceRefs?.darkmoon19_2;
+        if(played&&(played.playerId??played.ownerId)===(piece.playerId??piece.ownerId)&&ref?.[p.tag])
+          darkmoonGrowth(state,piece,piece,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        break;
+      }
+      case 'darkmoonPreviousWinSelfGrowth':
+        if(state.lastCombatWon)darkmoonGrowth(state,piece,piece,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        break;
+      case 'darkmoonPlayedTribeGrowth': {
+        const played=event.piece,owner=piece.playerId??piece.ownerId;
+        if(!played||(played.playerId??played.ownerId)!==owner||!nativeFactions(played,services.catalog).includes(p.faction))break;
+        const target=choose(roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner&&x.uid!==played.uid&&nativeFactions(x,services.catalog).includes(p.faction)),services);
+        if(target)darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        break;
+      }
+      case 'darkmoonBeastSummonGrowth': {
+        const gained=event.piece,owner=piece.playerId??piece.ownerId;
+        if(!gained || gained.uid===piece.uid || (gained.playerId??gained.ownerId)!==owner || !isPresent(gained) || !nativeFactions(gained,services.catalog).includes(p.faction))break;
+        darkmoonGrowth(state,piece,gained,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        break;
+      }
+      case 'darkmoonMagneticMerge': {
+        if(!event.magneticTargetUid || event.source!=='buy')break;
+        const target=roster(state).find(x=>x.uid===event.magneticTargetUid),owner=piece.playerId??piece.ownerId;
+        if(!target || !isPresent(target) || (target.playerId??target.ownerId)!==owner || !nativeFactions(target,services.catalog).includes(p.faction))throw new Error('DARKMOON_MAGNETIC_TARGET_INVALID');
+        if(p.sourceId==='BOT_312') {
+          target.attachments||=[];
+          const sourceOp=services.catalog?.operators?.[chessIdOf(piece)];
+          const name=sourceOp?.name||'回收机器人', combat=darkmoonCombatMetadata(p.sourceId,isEliteForm(piece));
+          target.attachments.push({id:'darkmoon-magnetic',state:{sourceId:p.sourceId,elite:isEliteForm(piece),sourceName:name,sourceEffect:combat?.text||'退场时召唤作战支援单位。'}});
+        } else if(p.sourceId==='BOT_911') {
+          for(const id of ['independent:坚守盟约','independent:护盾发生器']) services.grantEquipment(state,id,1,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+          darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        } else throw new Error('DARKMOON_MAGNETIC_SOURCE_UNSUPPORTED');
+        break;
+      }
+      case 'darkmoonPlayedFactionCountSelfGrowth': {
+        const played=event.piece,owner=piece.playerId??piece.ownerId;
+        if(!played||(played.playerId??played.ownerId)!==owner||!nativeFactions(played,services.catalog).includes(p.faction))break;
+        const count=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner&&nativeFactions(x,services.catalog).includes(p.faction)).length;
+        const secondary=pick(p.secondaryUnitsPerTarget,elite)*count;
+        darkmoonGrowth(state,piece,piece,pick(p.attackUnits,elite)*count,secondary,services);
+        break;
+      }
+      case 'darkmoonSummonSupport': {
+        const id=p[elite?'eliteId':'normalId'];
+        if(id&&typeof services.grantChess==='function')services.grantChess(state,id,{origin:'native',sourceUid:piece.uid,poolTaken:true,poolCopies:0,noMerge:true,source:'darkmoon-support-summon'});
+        break;
+      }
+      case 'darkmoonElementalTokenOffer': {
+        const count=Math.max(0,Math.floor(Number(p.count||0)));
+        state.offers||=[];
+        for(let i=0;i<count;i++)state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[p.supportId],source:'darkmoon-elemental-token',poolTaken:true,poolCopies:0,noMerge:true});
+        break;
+      }
       case 'darkmoonTransformFromShop': {
         const slotIndex=event.shopSlots?.[run] ?? (run===0?event.shopSlot:undefined);
         const slot=Number.isInteger(slotIndex)?state.shop?.slots?.[slotIndex]:null;
+        const eligibleSlots=(state.shop?.slots||[]).filter((x,index)=>!x.sold&&x.id&&index!==event.buySlot);
+        if(!eligibleSlots.length)break;
         if(!slot||slot.sold||!slot.id||slotIndex===event.buySlot) throw new Error('NATIVE_SHOP_TARGET_REQUIRED');
         if(typeof services.transformPiece!=='function') throw new Error('NATIVE_TRANSFORM_UNAVAILABLE');
         services.transformPiece(state,piece,slot,Boolean(p.eliteCopy));
@@ -364,8 +474,10 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonBattlecryFactionGrowth': {
         const gained=event.piece, ref=services.catalog?.operators?.[chessIdOf(gained)]?.sourceRefs?.darkmoon19_2;
         if(!gained || (gained.playerId??gained.ownerId)!==(piece.playerId??piece.ownerId) || !ref?.battlecry || !isPresent(piece)) break;
+        const count=pick(p.count,elite);
+        const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
         for(const target of roster(state).filter(x=>isPresent(x) && (x.playerId??x.ownerId)===(piece.playerId??piece.ownerId) && (!p.excludeSelf || x.uid!==piece.uid) && nativeFactions(x,services.catalog).includes(p.faction))) {
-          for(const id of p.outputs||[]) services.grantEquipment(state,id,Number(p.count||0),{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+          darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services);
         }
         break;
       }
@@ -389,11 +501,32 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         }
         break;
       }
+      case 'darkmoonLastWarbandRecruit': {
+        const candidates=(state.previousRoundWarband||[]).map(x=>String(x.chessId||'').replace(/_b$/,'_a')).filter(id=>services.catalog?.operators?.[id]?.recruitable!==false&&services.catalog?.operators?.[id]&&!services.catalog?.operators?.[id]?.elite);
+        const selected=choose(candidates,services);
+        if(selected)services.grantChess(state,selected,{origin:'native',sourceUid:piece.uid,poolTaken:true,poolCopies:1,deferNativeGain:true,source:'darkmoon-last-warband'});
+        break;
+      }
       case 'darkmoonBattlecryTargetGrowth': {
         const target=state.pieces?.find(x=>x.uid===event.targetUid);
-        if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId) || !nativeFactions(target,services.catalog).includes(p.faction)) throw new Error('DARKMOON_TARGET_REQUIRED');
-        const count=Number(state.counters?.factionBought?.[p.faction]||0)*Number(p.perTribeBought||1);
-        for(const id of p.outputs||[]) services.grantEquipment(state,id,count,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+        const eligible=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===(piece.playerId??piece.ownerId)&&(!p.faction||nativeFactions(x,services.catalog).includes(p.faction)));
+        if(!eligible.length)break;
+        if(!target||!eligible.some(x=>x.uid===target.uid))throw new Error('DARKMOON_TARGET_REQUIRED');
+        const count=p.fixedCount!==undefined?Number(p.fixedCount):Number(state.counters?.factionBought?.[p.faction]||0)*Number(p.perTribeBought||1);
+        const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
+        darkmoonGrowth(state,piece,target,p.attackUnits!==undefined?pick(p.attackUnits,elite):(hasAttack?count:0),p.secondaryUnits!==undefined?pick(p.secondaryUnits,elite):(hasSecondary?count:0),services);
+        for(const id of p.extraGear||[])services.grantEquipment(state,id,1,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+        break;
+      }
+      case 'darkmoonAdjacentGrowth': {
+        const owner=piece.playerId??piece.ownerId,targets=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner&&x.uid!==piece.uid&&Math.abs(x.row-piece.row)+Math.abs(x.col-piece.col)===1);
+        for(const target of targets){darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);for(const id of p.extraGear||[])services.grantEquipment(state,id,1,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});}
+        break;
+      }
+      case 'darkmoonTaggedGrowth': {
+        const owner=piece.playerId??piece.ownerId;
+        const targets=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner&&(x.equipment||[]).some(item=>services.catalog?.equipment?.[item.id]?.params?.gearId===p.gearId));
+        for(const target of targets)darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
         break;
       }
       case 'darkmoonBoughtTribeTargetGrowth': {
@@ -402,10 +535,12 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const target=state.pieces?.find(x=>x.uid===event.targetUid);
         if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId)) throw new Error('DARKMOON_TARGET_REQUIRED');
         const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
-        for(const id of p.outputs||[]) services.grantEquipment(state,id,count,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+        const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
+        darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services);
         break;
       }
       case 'grantEquipment':
+        if(event.magneticTargetUid && p.landOn==='self')break;
         for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite) + bonus(p, piece, state, elite), piece);
         break;
       case 'teamForge': {
@@ -846,7 +981,7 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
     if (hook === 'gain' && piece && !event.replay) for (const holder of roster(state)) {
       if (isPresent(holder)) fire(state,'allyGain',holder,event,services,false,null,(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='allyGain'&&r.behavior==='factionReaction'));
-      if (hook==='gain' && holder.uid!==piece.uid && isPresent(holder)) fire(state,'gain',holder,event,services,false,null,(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='gain'&&r.behavior==='darkmoonBattlecryFactionGrowth'));
+      if (hook==='gain' && holder.uid!==piece.uid && isPresent(holder)) fire(state,'gain',holder,event,services,false,null,(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='gain'&&['darkmoonBattlecryFactionGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonPlayedTribeGrowth'].includes(r.behavior)));
     }
   } else {
     // a rule that grows (params.growth) counts the prep phases its operator began on the field

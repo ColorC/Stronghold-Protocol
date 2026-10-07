@@ -54,18 +54,27 @@ const SOURCE_RULES = Object.freeze({
 });
 const KEYWORD_ADAPTERS = Object.freeze({
   BGS_039:['坚守盟约'], BGS_106:['坚守盟约','不屈盟约'], BGS_034:['护盾发生器','不屈盟约'],
-  BGS_131:['精准盟约'], FP1_010:['精准盟约'], GVG_113:['巨锤盟约'], LOOT_078:['巨锤盟约'],
-  BGS_038:['坚守盟约'], BGS_040:['护盾发生器'], BGS_060:['坚守盟约'], BGS_067:['护盾发生器'],
-  BGS_071:['护盾发生器'], BGS_110:['坚守盟约'], BGS_111:['坚守盟约'], BGS_112:['坚守盟约'],
-  BGS_119:['护盾发生器'], BGS_121:['坚守盟约'], BGS_124:['坚守盟约'], BGS_127:['坚守盟约'],
-  BGS_201:['坚守盟约'], BGS_205:['坚守盟约','护盾发生器','不屈盟约'], BOT_218:['坚守盟约'],
-  BOT_911:['坚守盟约','护盾发生器'], DS1_070:['坚守盟约'], EX1_093:['坚守盟约'], FP1_024:['坚守盟约'],
-  ICC_807:['坚守盟约'], ICC_858:['护盾发生器'], OG_221:['护盾发生器'], ULD_217:['不屈盟约']
+  BGS_038:['坚守盟约'], BGS_060:['坚守盟约'], BGS_121:['坚守盟约'], BGS_124:['坚守盟约'],
+  BGS_127:['坚守盟约'], BGS_201:['坚守盟约'], FP1_024:['坚守盟约'],
+  BGS_071:['护盾发生器'], BGS_119:['护盾发生器'], BGS_205:['护盾发生器','不屈盟约'],
+  BOT_911:['坚守盟约','护盾发生器'], ICC_858:['护盾发生器'], ULD_217:['不屈盟约'],
+  BGS_131:['精准盟约'], FP1_010:['精准盟约'], GVG_113:['巨锤盟约'], LOOT_078:['巨锤盟约']
 });
 // Executable source-id keyed adaptations whose prep behavior already exists in native.js.
 // Descriptors are written from the source effect, with ordinary/golden parameters kept distinct.
 const PREP_ADAPTERS = Object.freeze({
+  BGS_033: { trigger:'roundStart', sourceTrigger:'startOfPrepAfterVictory', recipient:'self', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonPreviousWinSelfGrowth', params:{ attackUnits:{normal:2,elite:4}, secondaryUnits:{normal:2,elite:4} } },
+  BGS_017: { trigger:'gain', sourceTrigger:'newMappedFactionRecruit', recipient:'newSiracusaRecruit', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonBeastSummonGrowth', params:{faction:'叙拉古',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:0,elite:0}} },
+  BGS_021: { trigger:'gain', sourceTrigger:'newMappedFactionRecruit', recipient:'newSiracusaRecruit', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonBeastSummonGrowth', params:{faction:'叙拉古',attackUnits:{normal:4,elite:8},secondaryUnits:{normal:4,elite:8}} },
+  BOT_911: { trigger:'gain', sourceTrigger:'optionalMagneticFusion', recipient:'selectedColumbiaFriendly', duration:'permanentAttachment', kind:'magneticAttachment', adapter:'darkmoonMagneticMerge', params:{sourceId:'BOT_911',faction:'哥伦比亚',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}} },
+  BGS_017: { trigger:'gain', sourceTrigger:'newMappedFactionRecruit', recipient:'newSiracusaRecruit', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonBeastSummonGrowth', params:{faction:'叙拉古',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:0,elite:0}} },
+  BGS_021: { trigger:'gain', sourceTrigger:'newMappedFactionRecruit', recipient:'newSiracusaRecruit', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonBeastSummonGrowth', params:{faction:'叙拉古',attackUnits:{normal:4,elite:8},secondaryUnits:{normal:4,elite:8}} },
+  BGS_115: { trigger:'sold', sourceTrigger:'sell', recipient:'hand', duration:'untilPlayedOrSold', kind:'supportRecruitOffer', adapter:'darkmoonElementalTokenOffer', params:{supportId:'darkmoon:support-elemental-2-2',count:{normal:1,elite:2}}, runtimeParams:{normal:{count:1},elite:{count:2}} },
+  CFM_315: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'friendlyWarbandSupport', duration:'untilSoldOrRetired', kind:'supportSummon', adapter:'darkmoonSummonSupport', params:{normalId:'darkmoon:support-cat-1-1',eliteId:'darkmoon:support-cat-2-2'} },
   BGS_027: { trigger:'roundStart', sourceTrigger:'turnStart', recipient:'self', duration:'permanentWornGear', kind:'badgeGrowth', effect:{ normal:1, elite:2 }, adapter:'grantEquipment', params:{ landOn:'self', outputs:[{id:'precision',normal:1,elite:2}] } },
+  BGS_120: { trigger:'gain', sourceTrigger:'afterPlayMappedFaction', recipient:'oneRandomOtherFriendlyMappedFaction', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonPlayedTribeGrowth', params:{ faction:'炎', attackUnits:{normal:1,elite:2}, secondaryUnits:{normal:1,elite:2} } },
+  BGS_124: { trigger:'gain', sourceTrigger:'afterPlayMappedFaction', recipient:'self', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonPlayedFactionCountSelfGrowth', params:{ faction:'炎', attackUnits:{normal:0,elite:0}, secondaryUnitsPerTarget:{normal:1,elite:2} } },
+  ULD_217: { trigger:'prepEnd', sourceTrigger:'turnEnd', recipient:'oneRandomOtherFriendly', duration:'permanentWornGrowth', kind:'badgeGrowth', adapter:'darkmoonEndTurnGrowth', params:{ mode:'randomOtherFriendly', attackUnits:{normal:1,elite:2}, secondaryUnits:{normal:0,elite:0} } },
   BGS_037: { trigger:'sold', sourceTrigger:'sell', recipient:'currentShopOffers', duration:'currentShopOnly', kind:'shopGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonShopGrowth', params:{rosterTribe:'*',persistent:false} },
   BGS_049: { trigger:'sold', sourceTrigger:'sell', recipient:'playerResource', duration:'immediateOnSale', kind:'gold', effect:{ normal:3, elite:6 }, adapter:'factionReaction', params:{ mode:'funds',targets:'all',maxEventsPerPrep:1 }, runtimeParams:{normal:{count:2},elite:{count:5}}, note:'Base sell already grants 1 gold; adapter adds 2/5 immediately to reach original 3/6 total.' },
   BGS_055: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shopUpgradeCost', duration:'nextUpgrade', kind:'upgradeDiscount', effect:{ normal:1, elite:2 }, adapter:'factionReaction', params:{ mode:'discount',targets:'self',count:{normal:1,elite:2},excludeSelf:false,maxEventsPerPrep:3 } },
@@ -80,6 +89,26 @@ const PREP_ADAPTERS = Object.freeze({
   BGS_048: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'selectedFriendlyPirate', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:'1 per mapped-faction purchase',elite:'2 per mapped-faction purchase'}, adapter:'darkmoonBattlecryTargetGrowth', params:{faction:'维多利亚',outputs:['precision','vitality']} },
   BGS_100: { trigger:'bought', sourceTrigger:'buyElemental', recipient:'selectedFriendlyOperator', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:'Elemental mapped-faction tier',elite:'Elemental mapped-faction tier'}, adapter:'darkmoonBoughtTribeTargetGrowth', params:{triggerFaction:'炎',outputs:['precision','vitality']} },
   BGS_116: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'playerResource', duration:'nextRefreshes', kind:'freeRefresh', effect:{ normal:1, elite:2 }, adapter:'freeRefresh', params:{ normal:1, elite:2 } },
+  BGS_043: {trigger:'gain',sourceTrigger:'battlecryOnGain',recipient:'hand',duration:'untilFirstPlay',kind:'recruitOffer',adapter:'darkmoonLastWarbandRecruit',params:{source:'previousRoundFriendlyWarband',pristine:true}},
+  BGS_127: {trigger:'bought',sourceTrigger:'buyElemental',recipient:'self',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonBoughtSelfGrowth',params:{faction:'炎',attackUnits:{normal:0,elite:0},secondaryUnits:{normal:1,elite:2}}},
+  BGS_009: {trigger:'prepEnd',recipient:'oneRandomFriendlyPerFaction',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'randomEachFaction',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  BGS_036: {trigger:'prepEnd',recipient:'self',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'selfPerFaction',faction:'卡西米尔',attackPer:{normal:1,elite:2},secondaryPer:{normal:1,elite:2}}},
+  BGS_038: {trigger:'gain',recipient:'selectedFriendlyDragon',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonBattlecryTargetGrowth',params:{faction:'卡西米尔',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  BGS_066: {trigger:'prepEnd',recipient:'self',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'selfIfGolden',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  BGS_075: {trigger:'gain',recipient:'self',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonPlayedTagSelfGrowth',params:{tag:'deathrattle',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}},
+  BGS_081: {trigger:'bought',recipient:'self',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonBoughtSelfGrowth',params:{faction:'维多利亚',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}},
+  BGS_082: {trigger:'gain',recipient:'threeFriendlyDifferentFactions',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'randomDistinctFaction',targets:{normal:3,elite:3},attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}},
+  BGS_083: {trigger:'gain',recipient:'threeFriendlyDifferentFactions',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'randomDistinctFaction',targets:{normal:3,elite:3},attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  BGS_105: {trigger:'prepEnd',recipient:'leftmostFriendly',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'leftmostPerPurchase',faction:'炎',attackPer:{normal:1,elite:2},secondaryPer:{normal:1,elite:2}}},
+  BGS_202: {trigger:'prepEnd',recipient:'self',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'selfPerDistinctFaction',attackPer:{normal:1,elite:2},secondaryPer:{normal:2,elite:4}}},
+  CFM_816: {trigger:'gain',recipient:'selectedFriendlyBeast',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonBattlecryTargetGrowth',params:{faction:'叙拉古',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  DS1_070: {trigger:'gain',recipient:'selectedFriendlyBeast',duration:'permanentWornGrowth',kind:'badgeGrowthAndGear',adapter:'darkmoonBattlecryTargetGrowth',params:{faction:'叙拉古',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4},extraGear:['independent:坚守盟约']}},
+  EX1_093: {trigger:'gain',recipient:'adjacentFriendlyOperators',duration:'permanentWornGrowth',kind:'badgeGrowthAndGear',adapter:'darkmoonAdjacentGrowth',params:{attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2},extraGear:['independent:坚守盟约']}},
+  GVG_027: {trigger:'prepEnd',recipient:'randomOtherFriendlyMechanical',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'randomOtherFaction',faction:'哥伦比亚',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  GVG_055: {trigger:'gain',recipient:'selectedFriendlyMechanical',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonBattlecryTargetGrowth',params:{faction:'哥伦比亚',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
+  GVG_048: {trigger:'gain',sourceTrigger:'battlecryOnGain',recipient:'allOtherFriendlyMappedFaction',duration:'permanentWornGrowth',kind:'badgeGrowth',effect:{normal:2,elite:4},adapter:'darkmoonBattlecryFactionGrowth',params:{faction:'哥伦比亚',excludeSelf:true,outputs:['precision']}},
+  ICC_029: {trigger:'prepEnd',recipient:'randomOtherFriendly',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonEndTurnGrowth',params:{mode:'randomOtherFriendly',attackUnits:{normal:3,elite:6},secondaryUnits:{normal:0,elite:0}}},
+  ICC_807: {trigger:'gain',recipient:'allFriendlyWithTaunt',duration:'permanentWornGrowth',kind:'badgeGrowth',adapter:'darkmoonTaggedGrowth',params:{gearId:'oath-cover',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}},
   LOE_077: { trigger:'battlecryMultiplier', sourceTrigger:'battlecry', recipient:'originalBattlecryOutputs', duration:'whileOwnerOnField', kind:'triggerMultiplier', effect:{normal:2,elite:3}, adapter:'triggerMultiplier', params:{hook:'gain',filter:'darkmoonBattlecry'}, runtimeParams:{normal:{extraRuns:1},elite:{extraRuns:2}} },
 });
 
@@ -101,6 +130,10 @@ function triggerOf(text) {
 function hasOwnBattlecry(text) {
   const plain=String(text||'').replace(/<[^>]*>/g,'');
   return /(?:^|[\r\n])\s*Battlecry\s*:/i.test(plain);
+}
+function hasOwnDeathrattle(text) {
+  const plain=String(text||'').replace(/<[^>]*>/g,'');
+  return /(?:^|[\r\n])\s*Deathrattle\s*:/i.test(plain);
 }
 function recipientOf(text) {
   const t = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').toLowerCase();
@@ -166,19 +199,78 @@ const STATIC_KEYWORD_GEAR = Object.freeze({
   reborn:{ label:'复生', gear:'不屈盟约' }, poison:{ label:'剧毒', gear:'精准盟约' },
   cleave:{ label:'攻击相邻随从', gear:'巨锤盟约' }
 });
+const DELIVERY_RECIPIENTS = Object.freeze({
+  self:'自身', inventory:'装备栏', hand:'整备区手牌', playerResource:'玩家资源', shopUpgradeCost:'下次酒馆升级费用',
+  selectedFriendlyDragon:'你选择的一名友方卡西米尔干员', selectedFriendlyBeast:'你选择的一名友方叙拉古干员',
+  selectedFriendlyMechanical:'你选择的一名友方哥伦比亚干员', adjacentFriendlyOperators:'相邻友方干员',
+  allFriendlyWithTaunt:'所有已装备坚守盟约的友方干员', currentShopOffers:'当前酒馆在售干员', matchingTribeShopOffers:'符合条件的酒馆在售干员',
+  oneRandomOtherFriendlyMappedFaction:'一名随机的其他友方炎阵营干员', oneRandomOtherFriendly:'一名随机的其他友方干员',
+  oneRandomFriendlyPerFaction:'每个阵营各一名随机友方干员', threeFriendlyDifferentFactions:'三名不同阵营的友方干员',
+  leftmostFriendly:'最左侧友方干员', randomOtherFriendlyMechanical:'一名随机其他友方哥伦比亚干员',
+  allOtherFriendlyMappedFaction:'所有其他友方哥伦比亚干员', combatants:'本场战斗中的参战单位',
+  combatBoardSummons:'本场战斗召唤物', combatSummonAndHand:'战斗召唤物与整备区手牌', selectedShopMinion:'你选中的一名酒馆干员',
+  shop:'酒馆', currentShopOnly:'本次商店', inventoryOnly:'装备栏'
+});
+const triggerLabel = trigger => ({gain:'招募获得或首次上阵时',bought:'购买时',sold:'出售时',prepEnd:'每回合休整结束时',roundStart:'每回合休整开始时',combatStart:'战斗开始时',death:'退场时',battlecry:'招募获得时触发战吼'}[trigger] || (typeof trigger==='string'?`${trigger}时`:''));
+const displayCount=(value,variant)=>value&&typeof value==='object'?Number(value[variant]??value.normal??0):Number(value||0);
+function deliveryDisplay(e,variant,mode='badges') {
+  const p=e.params||{},when=triggerLabel(e.trigger),who=DELIVERY_RECIPIENTS[e.recipient]||e.recipient||'符合条件的目标';
+  if(e.kind==='keywordGear')return `${when}，${who}永久装备${STATIC_KEYWORD_GEAR[e.tags?.[0]]?.label||String(e.text||'关键词装备').replace(/<[^>]*>/g,'')}。`;
+  if(e.kind==='sourceSpecificCombat') {
+    let adapted=e.adaptation||'本场战斗中触发对应战斗效果。';
+    if(mode==='levels')adapted=adapted.replace(/攻击徽章/g,'攻击训练等级').replace(/副属性装备/g,'职业副属性训练等级');
+    return adapted;
+  }
+  if(e.adaptation)return `${when}，${e.adaptation}`;
+  if(e.kind==='badgeGrowth'||e.kind==='badgeGrowthAndGear') {
+    const amount=p.amount??p.count??p.fixedCount;
+    const attack= p.attackUnits!==undefined?displayCount(p.attackUnits,variant):p.attackPer!==undefined?displayCount(p.attackPer,variant):p.outputs?.includes('precision')?displayCount(amount,variant):0;
+    const secondary=p.secondaryUnits!==undefined?displayCount(p.secondaryUnits,variant):p.secondaryUnitsPerTarget!==undefined?displayCount(p.secondaryUnitsPerTarget,variant):p.secondaryPer!==undefined?displayCount(p.secondaryPer,variant):p.outputs?.some(x=>x!=='precision')?displayCount(amount,variant):0;
+    const label=mode==='levels'?['攻击训练等级','职业副属性训练等级']:['攻击成长徽章','职业副属性成长徽章'];
+    const delta=[]; if(attack)delta.push(`${label[0]}×${attack}`);if(secondary)delta.push(`${label[1]}×${secondary}`);
+    const faction=p.faction?`（${p.faction}阵营条件）`:'';
+    if(!delta.length)return `${when}，${who}${faction}获得固定目标的本局永久成长。`;
+    return `${when}，${who}${faction}获得${delta.join('与')}；成长直接穿戴并永久保留。`;
+  }
+  if(e.kind==='shopGrowth')return `${when}，${who}获得酒馆成长：攻击与生命各+${p.amount??displayCount(p.attack,variant)??1}；${p.persistent?'本局后续酒馆持续生效':'仅当前商店有效'}。`;
+  if(e.kind==='upgradeDiscount')return `${when}，酒馆升级费用减少${p.count??p.amount??1}，在下次升级前生效。`;
+  if(e.kind==='gold')return `${when}，玩家获得${p.count??p.amount??1}枚金币。`;
+  if(e.kind==='recruitOffer')return `${when}，将符合描述的干员放入整备区手牌；首次上阵才触发其招募效果。`;
+  if(e.kind==='supportRecruitOffer')return `${when}，将${displayCount(p.count,variant)}个2/2炎阵营支援单位加入整备区手牌；选取后可部署，本体不可商店招募。`;
+  if(e.kind==='supportSummon')return `${when}，免费召唤1个${variant==='elite'?'2/2':'1/1'}猫形支援单位进入整备区；可部署，本体不可商店招募。`;
+  if(e.kind==='magneticAttachment')return e.params?.sourceId==='BOT_911'
+    ? `${when}，可直接招募；也可消耗此干员，为你选择的一名哥伦比亚友方干员永久装备坚守盟约与护盾发生器，并获得攻击与职业副属性各×${displayCount(e.params.attackUnits,variant)}成长。`
+    : `招募时可直接进入阵容；也可消耗此干员，将其退场效果附加到你选择的一名哥伦比亚友方干员，本体不进入阵容。`;
+  if(e.kind==='combatBoardAction')return `${when}，在本场战斗中执行对应召唤。`;
+  if(e.kind==='statOrCombatBuff')return `${when}，${who}获得本场战斗临时强化。`;
+  if(e.implementation==='unsupported')return `${when}，该效果尚未接入可执行适配。`;
+  return `${when}，${who}：${String(e.text||'执行对应效果。').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim()}`;
+}
 function effectDeliveries(card, variant, isElite = false) {
   const authored = PREP_ADAPTERS[card.id];
-    if (authored) return [{ trigger:authored.trigger, sourceTrigger:authored.sourceTrigger, recipient:authored.recipient, duration:authored.duration, kind:authored.kind, text:variant.text_zh||'', textEn:variant.text_en||'', tags:[], params:{ ...(authored.params||{}), ...(authored.effect?{amount:authored.effect[isElite?'elite':'normal']}:{}) }, adapter:[authored.adapter], implementation:'supported', unsupportedReason:null }];
+  if (authored) {
+    const rows=[{ trigger:authored.trigger, sourceTrigger:authored.sourceTrigger||authored.trigger, recipient:authored.recipient||'self', duration:authored.duration||'permanent', kind:authored.kind, text:variant.text_zh||'', textEn:variant.text_en||'', tags:[], params:{ ...(authored.params||{}), ...(authored.effect?{amount:authored.effect[isElite?'elite':'normal']}:{}) }, adapter:[authored.adapter], implementation:'supported', unsupportedReason:null }];
+    const tags=parseEffect(card,variant).tags;
+    for(const tag of ['taunt','divineShield','reborn','poison']) if(tags.includes(tag) && KEYWORD_ADAPTERS[card.id]?.includes(STATIC_KEYWORD_GEAR[tag].gear)) {
+      const descriptor=STATIC_KEYWORD_GEAR[tag],gearId=descriptor.gear;
+      rows.push({trigger:'gain',sourceTrigger:'staticCombat',recipient:'self',duration:'permanentWornGear',kind:'keywordGear',text:`<b>${descriptor.label}</b>`,textEn:tag,tags:[tag],params:{},adapter:[`independent:${gearId}`],implementation:'supported',unsupportedReason:null});
+    }
+    if(/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en||'') && KEYWORD_ADAPTERS[card.id]?.includes('巨锤盟约')) {
+      const gearId='巨锤盟约';
+      rows.push({trigger:'gain',sourceTrigger:'staticCombat',recipient:'self',duration:'permanentWornGear',kind:'keywordGear',text:'<b>攻击相邻随从</b>',textEn:'cleave',tags:['cleave'],params:{},adapter:[`independent:${gearId}`],implementation:'supported',unsupportedReason:null});
+    }
+    return rows;
+  }
   const base = parseEffect(card, variant), found = [];
   const combatMetadata=darkmoonCombatMetadata(card.id,isElite);
   if(combatMetadata) Object.assign(base,{trigger:typeof combatMetadata.trigger==='string'?combatMetadata.trigger:'combat',sourceTrigger:'darkmoonCombat',recipient:({BGS_046:'hand',BGS_121:'combatSummonAndHand',BGS_200:'inventory'})[card.id]||combatMetadata.recipient||'combatants',duration:combatMetadata.duration||'thisCombat',kind:'sourceSpecificCombat',adaptation:combatMetadata.text,adapter:['darkmoonCombat'],params:{sourceId:card.id},implementation:'supported',unsupportedReason:null});
-  for (const tag of ['taunt','divineShield','reborn','poison']) if (base.tags.includes(tag)) found.push(tag);
-  if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')) found.push('cleave');
+  for (const tag of ['taunt','divineShield','reborn','poison']) if (base.tags.includes(tag)&&KEYWORD_ADAPTERS[card.id]?.some(name=>name===STATIC_KEYWORD_GEAR[tag].gear)) found.push(tag);
+  if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')&&KEYWORD_ADAPTERS[card.id]?.includes('巨锤盟约')) found.push('cleave');
   const rows = found.map(tag => {
     const descriptor = STATIC_KEYWORD_GEAR[tag];
     return { trigger:'gain', sourceTrigger:'staticCombat', recipient:'self', duration:'permanentWornGear', kind:'keywordGear', text:`<b>${descriptor.label}</b>`, textEn:tag, tags:[tag], params:{}, adapter:[`independent:${descriptor.gear}`], implementation:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'supported' : 'unsupported', unsupportedReason:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? null : 'Static keyword has no source-id-specific delivery rule wired.' };
   });
-  if (/\bMagnetic\b/i.test(variant.text_en || '')) rows.push({ trigger:'playAttach', sourceTrigger:'magnetic', recipient:'chosenFriendlyMech', duration:'game', kind:'magneticAttachment', text:'磁力', textEn:'Magnetic', tags:['magnetic'], params:{}, implementation:'unsupported', unsupportedReason:'Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested.' });
+  if (/\bMagnetic\b/i.test(variant.text_en || '')) rows.push({ trigger:'gain', sourceTrigger:'optionalMagneticFusion', recipient:'selectedColumbiaFriendly', duration:'permanentAttachment', kind:'magneticAttachment', text:'磁力', textEn:'Magnetic', tags:['magnetic'], params:{sourceId:card.id,faction:'哥伦比亚'}, adapter:['darkmoonMagneticMerge'], implementation:['BOT_312','BOT_911'].includes(card.id)?'supported':'unsupported', unsupportedReason:['BOT_312','BOT_911'].includes(card.id)?null:'Magnetic source has no source-id-specific merge adapter.' });
   const textWithoutTags=(variant.text_en||'').replace(/<b>(?:Taunt|Divine Shield|Reborn|Poisonous|Windfury|Mega-Windfury)<\/b>/gi,'').replace(/\bMagnetic\b/gi,'').replace(/\[x\]/gi,'').replace(/<[^>]*>/g,'').replace(/[\s\n.,:;]+/g,'');
   const hasMainText=Boolean(textWithoutTags);
   if (hasMainText) {
@@ -203,6 +295,13 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
     duplicates.add(card.id);
     const normal = effectDeliveries(card, { text_en:card.text_en, text_zh:card.text_zh }, false);
     const elite = effectDeliveries(card, card.golden || { text_en:card.text_en, text_zh:card.text_zh }, true);
+    for(const row of [...normal,...elite]) {
+      if(['selectedFriendlyDragon','selectedFriendlyBeast','selectedFriendlyMechanical'].includes(row.recipient)) row.targetSelection={kind:'friendly',faction:row.params?.faction||({selectedFriendlyDragon:'卡西米尔',selectedFriendlyBeast:'叙拉古',selectedFriendlyMechanical:'哥伦比亚'}[row.recipient]),count:1};
+      if(row.kind==='magneticAttachment') row.targetSelection={kind:'magnetic',faction:'哥伦比亚',count:1,optional:true};
+      if(row.recipient==='selectedShopMinion')row.targetSelection={kind:'shopSlot',count:1,excludeSource:true};
+    }
+    for(const row of normal) { row.text=deliveryDisplay(row,'normal','badges'); row.textEn=''; }
+    for(const row of elite) { row.text=deliveryDisplay(row,'elite','badges'); row.textEn=''; }
     entries.push({
       sourceId: card.id,
       dbfId: card.dbf_id,
@@ -296,27 +395,28 @@ const designAddon = {
     name:x.operator,
     chessId:nativeByName.get(x.operator).chessId,
     sourceId:x.sourceId,
-    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, rosterTribe:x.rosterTribe, faction:x.faction, nationId:x.nationId, originalRaces:x.originalRaces, battlecry:hasOwnBattlecry(x.sourceTextsEn.normal), version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
+    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, rosterTribe:x.rosterTribe, faction:x.faction, nationId:x.nationId, originalRaces:x.originalRaces, battlecry:hasOwnBattlecry(x.sourceTextsEn.normal), deathrattle:hasOwnDeathrattle(x.sourceTextsEn.normal), version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl }, cards:[{id:x.sourceId,name:x.name,nameEn:x.nameEn,tier:x.originalTier,version:x.sourceVersion,type:'Battlegrounds',sourceUrl:x.sourceUrl,text:x.sourceTexts.normal,textElite:x.sourceTexts.elite}] },
     authoredRule:x.authoredRule,
     metadata:{op:{effectDelivery:x.metadata.op.effectDelivery}},
+    effectDelivery:x.metadata.op.effectDelivery,
     modeEffects:null
   })),
-  pendingNativeDefinitions: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({name:x.operator,sourceId:x.sourceId}))
+  pendingNativeDefinitions: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({name:x.operator,sourceId:x.sourceId})),
+  supportOperators:[
+    {id:'darkmoon:support-cat-1-1',name:'召唤猫',attack:1,health:1,faction:null,sourceId:'CFM_315',recruitable:false,mergeable:false,freePoolCopy:true},
+    {id:'darkmoon:support-cat-2-2',name:'强化召唤猫',attack:2,health:2,faction:null,sourceId:'CFM_315',recruitable:false,mergeable:false,freePoolCopy:true},
+    {id:'darkmoon:support-elemental-2-2',name:'炎阵营支援单位',attack:2,health:2,faction:'炎',sourceId:'BGS_115',recruitable:false,mergeable:false,freePoolCopy:true}
+  ]
 };
 const gameTextAddon = {
   schema:'stronghold.darkmoon-game-text-addon/v1',
   sourceBuild:roster.sourceBuild,
   basedOnGameText:path.basename(gameTextPath),
   operators:Object.fromEntries(entries.map(x=>{
-    const levelsText=variant=>{
-      const sourceText=x.sourceTexts[variant]||'';
-      const deliveries=x.metadata.op.effectDelivery[variant]||[];
-      const growth=deliveries.map(e=>e.adaptation||e.text||'').filter(t=>t.includes('徽章')||t.includes('副属性装备'))
-        .map(t=>t.replaceAll('攻击徽章','攻击训练等级').replaceAll('副属性装备','副属性训练等级'));
-      return growth.length?`${sourceText}${sourceText?'\n':''}等级成长：${[...new Set(growth)].join('；')}`:sourceText;
-    };
-    return [x.operator,{sourceId:x.sourceId,name:x.name,nameEn:x.nameEn,normal:x.sourceTexts.normal,elite:x.sourceTexts.elite,normalEn:x.sourceTextsEn.normal,eliteEn:x.sourceTextsEn.elite,
-      normalLevels:levelsText('normal'),eliteLevels:levelsText('elite')}];
+    const render=(variant,mode)=>[...new Set((x.metadata.op.effectDelivery[variant]||[]).map(e=>deliveryDisplay(e,variant,mode)))].join('\n');
+    const sourceCard={id:x.sourceId,name:x.name,nameEn:x.nameEn,tier:x.originalTier,version:x.sourceVersion,type:'Battlegrounds',sourceUrl:x.sourceUrl,text:x.sourceTexts.normal,textElite:x.sourceTexts.elite};
+    return [x.operator,{sourceId:x.sourceId,name:x.name,nameEn:x.nameEn,normal:render('normal','badges'),elite:render('elite','badges'),normalEn:'',eliteEn:'',sourceRefs:{cards:[sourceCard]},
+      normalLevels:render('normal','levels'),eliteLevels:render('elite','levels')}];
   }))
 };
 for (const [p, value] of [[designAddonPath,designAddon],[gameTextAddonPath,gameTextAddon]]) {

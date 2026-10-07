@@ -27,6 +27,7 @@ import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, U
 import { DetailCard } from './detail.js';
 import { ElementPicker } from './picker.js';
 import { RecordingControls } from './recorder.js';
+import { buyTargetSpec } from './targetSelection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -186,11 +187,14 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     if (await simple({ type: 'sell', uid })) { setSel(null); audio.sfx('sell', { volume: 0.6 }); }
   }, [simple]);
 
-  const buy = useCallback(async (slot) => {
+  const buy = useCallback(async (slot, targets = undefined) => {
+    const current=stateRef.current,shopSlot=current?.shop?.slots?.[slot];
+    if(targets===undefined&&buyTargetSpec(shopSlot,catalog)) { setDetail({kind:'shop',slot}); return false; }
     setArmed(null);
-    const res = await act({ type: 'buy', slot });
+    const res = await act({ type: 'buy', slot, ...(targets||{}) });
     if (res) { audio.sfx('buy', { volume: 0.6 }); setDetail(null); }
-  }, [act]);
+    return res;
+  }, [act,catalog]);
 
   const ready = useCallback(async () => {
     const before = stateRef.current;

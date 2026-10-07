@@ -18,6 +18,7 @@ import { GameText, TermNotes, GearIcon } from './text.js';
 import { groupEquipment, permitsOf, isDeployed } from './model.js';
 import { TraitTexts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } from './panels.js';
 import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
+import { buyTargetSpec, buyTargetChoices, buyTargetCount } from './targetSelection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const FACTION_BOND = Object.fromEntries(Object.entries(TAVERN_FACTIONS).map(([bond, name]) => [name, bond]));
@@ -154,7 +155,10 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
         ${state && sourcePiece ? html`<${EffectTargetInfo} effect=${{ behavior: g.mechanism, params: g.params || {}, effectDelivery: g.effectDelivery }} source=${sourcePiece} state=${state} catalog=${catalog} anchor=${`piece-${sourcePiece.uid}`} />` : null}
         ${onConfigure && g.steamOptions?.length ? html`<${HammerPicker} g=${g} item=${item} busy=${busy} catalog=${catalog} onSave=${(ids) => onConfigure(item.uid, ids)} />` : null}</div>`
       : html`<p class="t-dim dempty">${note || '尚未穿戴装备：把库存格子拖到干员身上即可穿戴'}</p>`}
-    ${attachments.length ? html`<div class="ix-dgear__att"><b>附加效果</b>${attachments.map((a) => html`<span key=${a.id}><${GameText} text=${catalog.attachments?.[a.id]?.name || ''} catalog=${catalog} /></span>`)}</div>` : null}
+    ${attachments.length ? html`<div class="ix-dgear__att"><b>附加效果</b>${attachments.map((a,index) => {
+      const record=catalog.attachments?.[a.id]||{}, source=a.id==='darkmoon-magnetic'?`${a.state?.sourceName||'来源干员'}：${a.state?.sourceEffect||record.effect||'附加本局退场效果。'}`:record.effect||'';
+      return html`<span key=${`${a.id}-${index}`} title=${source}><${GameText} text=${record.name||'附加组件'} catalog=${catalog} />${a.state?.sourceName?` · ${a.state.sourceName}`:''}<small>${source}</small></span>`;
+    })}</div>` : null}
     ${rows.some((r) => r.permit) ? html`<${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}
   </section>`;
 }
@@ -246,7 +250,9 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
  */
 export function DetailCard({ target, state, catalog, busy, battle = null, shopOpen = false, onClose, onAct, onInherit, onBuy, onEquipHere }) {
   const [confirmSell, setConfirmSell] = useState(false);
+  const [buySelection, setBuySelection] = useState(null);
   useEffect(() => setConfirmSell(false), [target?.uid, target?.slot]);
+  useEffect(() => setBuySelection(null), [target?.uid, target?.slot]);
   useTicker(battle && target ? 250 : 0);
   if (!target) return null;
   const anchor = target.kind === 'piece' ? `piece-${target.uid}` : target.kind === 'shop' ? `shop-${target.slot}`
@@ -286,9 +292,41 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   const prep = state.phase === 'prep' && !battle;
   const live = piece?.startStats ? { ...piece.startStats, src: 'prep' } : null;
   const hint = isShop && !slot.sold ? mergeHintOf(state, catalog, slot.id) : null;
+  const buySpec=isShop?buyTargetSpec(slot,catalog):null;
+  const buyChoices=buySelection?.slot===target.slot?buySelection.choices:[];
+  const selectedBuyChoices=buySelection?.slot===target.slot?buySelection.selected:[];
+  const startBuy=()=>{
+    if(!buySpec){onBuy(target.slot,{});return;}
+    const choices=buyTargetChoices(buySpec,state,catalog,target.slot);
+    if(!choices.length){onBuy(target.slot,{});return;}
+    setBuySelection({slot:target.slot,spec:buySpec,required:buyTargetCount(buySpec,state,catalog,slot),choices,selected:[]});
+  };
+  const chooseBuyTarget=(choice)=>setBuySelection(current=>{
+    if(!current||current.slot!==target.slot)return current;
+    const key=choice.kind==='shopSlot'?choice.slot:choice.uid;
+    const exists=current.selected.some(x=>(x.kind==='shopSlot'?x.slot:x.uid)===key);
+    const selected=exists?current.selected.filter(x=>(x.kind==='shopSlot'?x.slot:x.uid)!==key):current.selected.length<current.required?[...current.selected,choice]:current.selected;
+    return {...current,selected};
+  });
+  const confirmBuyTargets=()=>{
+    if(!buySelection||buySelection.selected.length!==buySelection.required)return;
+    const selected=buySelection.selected;
+    const payload=buySelection.spec.kind==='shopSlot'?{shopSlots:selected.map(x=>x.slot)}:buySelection.spec.kind==='magnetic'?{magneticTargetUid:selected[0]?.uid}:{targetUid:selected[0]?.uid};
+    setBuySelection(null);onBuy(target.slot,payload);
+  };
   const footer = html`<footer class="ix-dpanel__actions">
     ${hint ? html`<span class="ix-dpanel__hint" role="note">${hint.text}</span>` : null}
-    ${isShop ? html`<${Button} size="sm" variant="primary" disabled=${busy || slot.sold || state.funds < slot.price} onClick=${() => onBuy(target.slot)}>购买 · ${slot.price}<//>` : null}
+    ${isShop ? html`<${Button} size="sm" variant="primary" disabled=${busy || slot.sold || state.funds < slot.price} onClick=${startBuy}>购买 · ${slot.price}<//>` : null}
+    ${isShop&&buySelection?.slot===target.slot?html`<section class="ix-buy-targets" role="group" aria-label="选择本次效果目标">
+      <p>${buySelection.spec.kind==='shopSlot'?'选择要变化的酒馆干员':buySelection.spec.kind==='magnetic'?'可直接招募；若要合体，选择一名哥伦比亚友方干员':'选择获得效果的友方干员'}${buySelection.spec.kind==='magnetic'?'':`（${buySelection.required}）`}</p>
+      ${buySelection.spec.kind==='magnetic'?html`<button type="button" class="ix-buy-targets__normal" disabled=${busy} onClick=${()=>{setBuySelection(null);onBuy(target.slot,{})}}>直接招募</button>`:null}
+      <div class="ix-buy-targets__choices">${buyChoices.map((choice,index)=>{
+        const key=choice.kind==='shopSlot'?choice.slot:choice.uid,active=selectedBuyChoices.some(x=>(x.kind==='shopSlot'?x.slot:x.uid)===key);
+        const label=choice.kind==='shopSlot'?(catalog.operators?.[choice.id]?.name||choice.id):choice.name;
+        return html`<button type="button" key=${key||index} aria-pressed=${active?'true':'false'} class=${cx('ix-buy-targets__choice',active&&'is-on')} onClick=${()=>chooseBuyTarget(choice)}>${label}</button>`;
+      })}</div>
+      <div class="ix-buy-targets__actions"><button type="button" onClick=${()=>setBuySelection(null)}>取消</button><button type="button" disabled=${busy||selectedBuyChoices.length!==buySelection.required} onClick=${confirmBuyTargets}>${buySelection.spec.kind==='magnetic'?'消耗合体':'确认目标'}</button></div>
+    </section>`:null}
     ${piece && prep ? html`
       <${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onEquipHere(piece.uid)}>库存<//>
       ${piece.handover?.give?.length || piece.handover?.take?.length ? html`<${Button} size="sm" variant="secondary" disabled=${busy} onClick=${() => onInherit(piece.uid)}>交接<//>` : null}
