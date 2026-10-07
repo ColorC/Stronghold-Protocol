@@ -22,6 +22,8 @@ export function nativeFactions(piece, catalog) {
 export function tavernFactions(piece, catalog) {
   const out=new Set(nativeFactions(piece,catalog));
   const proxyEligible = new Set(Array.isArray(catalog?.config?.tavernFactions) ? catalog.config.tavernFactions : Object.values(TAVERN_FACTIONS));
+  // Workshop faction equivalence satisfies recipes, while native identity still governs handovers.
+  if(catalog?.operators?.[piece?.chessId]?.tavernFactionProxy==='ALL')for(const faction of proxyEligible)out.add(faction);
   for(const item of piece?.equipment || []) {
     const def=catalog?.equipment?.[item.id];
     if(def?.mechanism!=='identityTag')continue;
