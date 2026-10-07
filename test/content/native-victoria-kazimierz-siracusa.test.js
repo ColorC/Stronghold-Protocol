@@ -70,7 +70,8 @@ test('native kits load into real battle for both source forms without runtime ha
       const sourceSkill = chess.skills.find((entry) => entry.skillId === skillId);
       assert.equal(unit.skill.spec.spCost, sourceSkill.spCost, `${name} ${suffix} uses the source SP cost`);
       assert.equal(unit.skill.spec.duration, sourceSkill.duration, `${name} ${suffix} uses the source duration`);
-      if (unit.skill.spec.attack?.atkScale != null) assert.equal(unit.skill.spec.attack.atkScale,
+      if (charId === 'char_4065_judge') assert.equal(typeof unit.skill.spec.attack?.onHit, 'function', `Judge ${suffix} keeps her normal attack and extra arts hit separate`);
+      else if (unit.skill.spec.attack?.atkScale != null) assert.equal(unit.skill.spec.attack.atkScale,
         sourceSkill.bb?.atk_scale ?? (sourceSkill.bb?.atk != null ? 1 + sourceSkill.bb.atk : sourceSkill.bb?.['attack@atk_scale']) ?? sourceSkill.bb?.atk_scale_2 ?? unit.skill.spec.attack.atkScale,
         `${name} ${suffix} applies its source attack multiplier`);
     }
@@ -120,10 +121,102 @@ test('Justice Knight deployment talent buffs ranged allies and flying enemies fr
     const unit = h.unit(chessId), ranged = h.unit(ally.chessId);
     h.run(1);
     const flyer = h.b.spawnEnemy('enemy_air', { pos: [10, 8] });
+    const farFlyer = h.b.spawnEnemy('enemy_air', { pos: [15, 15] });
     h.run(0.1);
     assert.ok(ranged.findBuff(`jnight:cover:${unit.id}`), `Justice Knight ${suffix} lowers ranged ally aggro in range`);
     const fragile = flyer.findBuff(`jnight:fragile:${unit.id}`);
     assert.equal(fragile?.mods?.dmgTakenMul, chess.talents[0].bb.damage_scale, `Justice Knight ${suffix} applies source fragile multiplier`);
+    assert.equal(farFlyer.findBuff(`jnight:fragile:${unit.id}`), null, `Justice Knight ${suffix} does not apply fragile outside her range`);
     assert.equal(h.b.errorCount, 0, `Justice Knight ${suffix} keeps clean Battle handlers`);
+  }
+});
+
+test('Indra emits an engine dodge and spends her source bonus on the next full attack', () => {
+  const chessId = 'chess_native_char_155_tiger_a';
+  const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+  const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_155_tiger);
+  const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 100000, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }], kits: nativeKits, timeLimit: 10 });
+  const unit = h.unit(chessId); h.run(0.25); const enemy = h.enemy('enemy_dummy');
+  enemy.profile.attackKind = 'melee'; h.b.rng = () => 0;
+  const hp = unit.hp;
+  h.b.dealDamage(enemy, unit, { amount: 100, type: 'phys', isAttack: true });
+  assert.equal(unit.hp, hp, 'a successful source-probability roll is resolved as a physical dodge');
+  assert.ok(h.hooksOf('dodge').some((event) => event.target === unit), 'the battle emits the regular dodge event');
+  const enemyHp = enemy.hp;
+  assert.equal(h.b.forceAttack(unit, [enemy]), true);
+  assert.ok(enemy.hp < enemyHp, 'the next attack lands through Battle after the dodge');
+  assert.equal(unit.mem.nativeIndraNextAttack, 0, 'the bonus is consumed by that attack');
+  assert.equal(h.b.errorCount, 0);
+});
+
+test('Proviso grants source ASPD to herself and a deployed Kazimierz ally', () => {
+  const chessId = 'chess_native_char_4032_provs_a';
+  const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+  const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_4032_provs);
+  const ally = chessRec({ id: 'test_kazimierz_ally', profession: 'WARRIOR' }); ally.nationId = 'kazimierz';
+  const h = makeBattle({ defs: { chess: { [chessId]: chess, [ally.chessId]: ally } }, units: [{ chessId, skillIndex, row: 10, col: 5 }, { chessId: ally.chessId, row: 10, col: 6 }], kits: nativeKits, timeLimit: 10 });
+  const unit = h.unit(chessId), target = h.unit(ally.chessId); h.run(0.25);
+  assert.equal(unit.findBuff(`provs:aspd:self:${unit.id}`)?.mods?.aspd, chess.talents[0].bb.attack_speed);
+  assert.equal(target.findBuff(`provs:aspd:ally:${unit.id}`)?.mods?.aspd, chess.talents[0].bb.attack_speed);
+  assert.equal(h.b.errorCount, 0);
+});
+
+test('Grani, Siege, Sophia and Judge talents produce their source-backed Battle effects in both forms', () => {
+  const cases = [
+    { source: 'char_220_grani', ally: chessRec({ id: 'test_pioneer', profession: 'PIONEER' }), key: 'grani:dodge', field: 'dodgePhys', sourceValue: (x) => x.talents[0].bb.prob },
+    { source: 'char_112_siege', ally: chessRec({ id: 'test_pioneer', profession: 'PIONEER' }), key: 'siege:vanguard', field: 'atkPct', sourceValue: (x) => x.talents[0].bb.atk },
+    { source: 'char_265_sophia', ally: chessRec({ id: 'test_tank', profession: 'TANK', stats: { blockCnt: 3 } }), key: 'sophia:aura', field: 'aspd', sourceValue: (x) => x.talents[0].bb.attack_speed },
+  ];
+  for (const { source, ally, key, field, sourceValue } of cases) for (const suffix of ['a', 'b']) {
+    const chessId = `chess_native_${source}_${suffix}`;
+    const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+    const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS[source]);
+    const h = makeBattle({
+      defs: { chess: { [chessId]: chess, [ally.chessId]: ally } },
+      units: [{ chessId, skillIndex, row: 10, col: 5 }, { chessId: ally.chessId, row: 10, col: 6 }], kits: nativeKits, timeLimit: 10,
+    });
+    h.run(0.5);
+    const unit = h.unit(chessId), target = h.unit(ally.chessId), buff = target.findBuff(`${key}:${unit.id}`);
+    assert.ok(buff, `${source} ${suffix} applies its authored talent in battle`);
+    assert.equal(buff.mods[field], sourceValue(chess), `${source} ${suffix} derives the effect from its native blackboard`);
+    if (source === 'char_265_sophia') {
+      assert.equal(unit.skill.activate('native-kit-talent-test', { free: true }), true);
+      h.run(0.25);
+      assert.equal(target.findBuff(`${key}:${unit.id}`).mods[field], sourceValue(chess) * chess.skills.find((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS[source]).bb.talent_scale, `Sophia ${suffix} enhances the aura only while her skill is active`);
+    }
+    assert.equal(h.b.errorCount, 0, `${source} ${suffix} has no runtime content errors`);
+    if (source === 'char_220_grani') {
+      assert.deepEqual(unit.skill.spec.targeting.rangeGrid, [[0, 0]], `Grani ${suffix} restricts S2 to her block tile`);
+      assert.equal(unit.skill.spec.attack.hitAllBlocked, true, `Grani ${suffix} hits her own blocked targets`);
+    }
+  }
+
+  for (const suffix of ['a', 'b']) {
+    const chessId = `chess_native_char_112_siege_${suffix}`;
+    const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+    const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_112_siege);
+    const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 100000, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }], kits: nativeKits, timeLimit: 10 });
+    const unit = h.unit(chessId); h.run(0.25); const player = h.b.getPlayer(unit.ownerId), before = player.dp;
+    assert.equal(unit.skill.activate('native-siege-command-test', { free: true }), true);
+    assert.equal(player.dp - before, chess.skills[skillIndex].bb.cost, `Siege ${suffix} gains source DP once on skill start`);
+    const enemy = h.enemy('enemy_dummy'); h.b.forceAttack(unit, [enemy]);
+    assert.equal(player.dp - before, chess.skills[skillIndex].bb.cost, `Siege ${suffix} does not gain DP per splash hit`);
+  }
+
+  for (const suffix of ['a', 'b']) {
+    const chessId = `chess_native_char_4065_judge_${suffix}`;
+    const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+    const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_4065_judge);
+    const h = makeBattle({ defs: { chess: { [chessId]: chess } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], kits: nativeKits, timeLimit: 10 });
+    const unit = h.unit(chessId); h.run(0.25);
+    const shield = unit.buffs.find((buff) => buff.tags?.includes('talent') && buff.shield > 0);
+    assert.equal(shield?.shield, unit.s.maxHp * chess.talents[0].bb.born_hp_ratio, `Judge ${suffix} receives her native deployment barrier`);
+    assert.equal(h.b.errorCount, 0, `Judge ${suffix} has no runtime content errors`);
+    if (chess.talents.some((talent) => talent.index === 1)) {
+      const enemy = h.b.spawnEnemy('enemy_dummy', { pos: [10, 6] });
+      const hp = enemy.hp;
+      h.b.dealDamage(enemy, unit, { amount: 50, type: 'phys', isAttack: true });
+      assert.ok(enemy.hp < hp, `Judge ${suffix} reflects damage while her native shield is present`);
+    }
   }
 });
