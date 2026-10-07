@@ -45,6 +45,8 @@ import { getData, loadData } from './data.js';
 import { PROTOCOL_VERSION, APP_VERSION } from '../shared/constants.js';
 import { MEDIA_PREFIX, AUDIO_EXTS } from '../shared/media.js';
 import { createIndependentHttp } from './modes/independent/http.js';
+import { createAdmission } from './hosting/admission.js';
+import { createStaticDelivery } from './hosting/staticDelivery.js';
 
 /** Repository root. */
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -528,7 +530,7 @@ async function serveFile(req, res, absPath, stat, mountName, segments, query, gz
 
   const headers = {
     'Content-Type': type,
-    'Cache-Control': cacheControlFor(ext, mountName, segments, query),
+    'Cache-Control': res.getHeader('Cache-Control') || cacheControlFor(ext, mountName, segments, query),
     ETag: etag,
     'Last-Modified': lastModified,
   };
@@ -649,6 +651,10 @@ export async function startServer(opts = {}) {
   // The process-wide singleton serves the default data dir; a custom dir (tests) gets its own copy.
   const data = opts.dataDir ? loadData(dataDir, { log }) : getData({ dir: dataDir, log });
   const independentHttp = createIndependentHttp({ data, directory: opts.independentDirectory || path.join(ROOT, 'runtime', 'independent-sessions') });
+  let network;
+  const admission = createAdmission({ maxActive: opts.independentMaxActive ?? Number(process.env.SP_INDEPENDENT_MAX_ACTIVE || 0),
+    ttlMs: opts.admissionTtlMs ?? 120000, otherActive: () => network?.connectionCount || 0 });
+  const staticDelivery = createStaticDelivery({ base: opts.staticBase ?? process.env.SP_STATIC_BASE ?? '' });
   const netOptions = {};
   for (const k of ['reconnectWindowMs', 'heartbeatMs', 'helloTimeoutMs', 'ratePerSec', 'rateBurst', 'maxConnections', 'abuseDropsPerSec',
     'maxConnectionsPerAddr', 'heavyPerSec', 'heavyBurst', 'trustProxy']) {
@@ -661,7 +667,7 @@ export async function startServer(opts = {}) {
     if (opts[k] != null) lobbyOptions[k] = opts[k];
   }
   const lobby = new Lobby({ registry, log, MatchClass: opts.MatchClass, getData: () => data, seedFn: opts.seedFn, options: lobbyOptions });
-  const network = new Network({ registry, handler: lobby, log, options: netOptions });
+  network = new Network({ registry, handler: lobby, log, options: netOptions });
   const installDir = opts.installDir ?? (process.env.STRONGHOLD_INSTALL_DIR || null);
   const serveStatic = createStaticHandler({ publicDir, dataDir, sharedDir, installDir, log });
   const startedAt = Date.now();
@@ -683,6 +689,7 @@ export async function startServer(opts = {}) {
     if (url.length > MAX_URL_LENGTH) { sendError(req, res, 414, '请求地址过长 · URI too long'); return; }
     const parts = splitUrl(url);
     if (!parts) { sendError(req, res, 400, '请求地址无效 · Bad request'); return; }
+    if (admission.handle(req, res, parts.rawPath)) return;
     if (await independentHttp(req, res, parts.rawPath)) return;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
@@ -696,9 +703,11 @@ export async function startServer(opts = {}) {
         // older than this reloads itself, so a deploy reaches clients that never reload
         build: buildTag(),
         sockets: network.connectionCount, sessions: registry.size, ...lobby.stats(),
+        admission: admission.stats(),
       });
       return;
     }
+    if (staticDelivery(req, res, parts.rawPath)) return;
     await serveStatic(req, res, parts.rawPath, parts.query);
   }
 
@@ -721,6 +730,7 @@ export async function startServer(opts = {}) {
       try { socket.end(`HTTP/1.1 ${status} ${text}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`); } catch { socket.destroy(); }
     };
     if (!parts || parts.rawPath !== '/ws') { reject(404, 'Not Found'); return; }
+    if (!admission.canEnter()) { reject(503, 'Service Unavailable'); return; }
     const refused = network.admission(req);
     if (refused === 'per-address') { reject(429, 'Too Many Requests'); return; }
     if (refused) { reject(503, 'Service Unavailable'); return; }
@@ -766,7 +776,7 @@ export async function startServer(opts = {}) {
     return closing;
   }
 
-  return { port: actualPort, host, url, server, wss, lobby, network, registry, close };
+  return { port: actualPort, host, url, server, wss, lobby, network, registry, admission, close };
 }
 
 // ---------------------------------------------------------------------------------------------------
