@@ -14,3 +14,7 @@
 2026-10-07：入场与外部分发入口实现通过8项测试，50个并发HTTP成功、第51个503无素材引用；API无租约403，续租/释放可回收。SP_STATIC_BASE要求HTTPS和完整Git commit，静态请求307外源、同源Worker回小型import壳，无代理回流。默认配置兼容。
 
 静态回归首次因sparse副本没有generated public/vendor失败，已按精确7个库提供独立测试代码缓存后258项全部通过。失败与修正日志分别为 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/admission/static-regression.log 和 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/admission/static-regression-fixed.log；入场/外源日志 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/admission/tests.log。未修改线上发布。
+
+2026-10-07：后续部署可用 SP_INDEPENDENT_EXECUTION=client 强制工坊前端计算，bootstrap开局前选择client模式，旧服务器actions入口返回409而不运算。SP_INDEPENDENT_DIRECTORY要求绝对独立运行路径，发布目录不作为存档真源。9项相关测试通过，回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/admission/tests-final.log。
+
+主机只读审计完成，证据报告 E:/WindowsWorkspace/webworks/apps/personal-homepage/.omni/tmp/colorc-host-audit-20261007/colorc-host-audit.md 和 audit-data.json：2CPU/3.57GiB，快照可用2.55GiB/load低；根盘79%，剩4.22GiB，备份72份共2.53GiB，日志808MiB；另有数据盘用途未验证。当前Workshop为外跳。主站无gzip/主要静态明确缓存；旧Next仍被路由依赖，禁止凭废弃名称直接停。50人动态/公网带宽峰值未验证。

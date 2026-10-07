@@ -24,6 +24,9 @@ async function renew() {
       showBlocked(result.error?.message || '无法进入工坊，请稍后再试'); return false;
     }
     blocked?.remove(); blocked = null;
+    if (result.lease.execution === 'client') {
+      const url = new URL(location.href); url.searchParams.set('execution', 'client'); history.replaceState(null, '', url);
+    }
     if (result.lease.enabled) timer = setTimeout(renew, result.lease.heartbeatMs);
     return true;
   } catch {

@@ -15,9 +15,10 @@ function json(res, status, body) {
 }
 
 /** A bounded in-memory visitor lease, shared with the original game's live socket count. */
-export function createAdmission({ maxActive = 0, ttlMs = 120000, now = Date.now, otherActive = () => 0 } = {}) {
+export function createAdmission({ maxActive = 0, ttlMs = 120000, execution = 'server', now = Date.now, otherActive = () => 0 } = {}) {
   if (!Number.isInteger(maxActive) || maxActive < 0) throw new RangeError('invalid SP_INDEPENDENT_MAX_ACTIVE');
   if (!Number.isFinite(ttlMs) || ttlMs < 1000) throw new RangeError('invalid admission lease lifetime');
+  if (!['server', 'client'].includes(execution)) throw new RangeError('invalid SP_INDEPENDENT_EXECUTION');
   const leases = new Map();
   const enabled = maxActive > 0;
   const heartbeatMs = Math.min(30000, Math.floor(ttlMs / 3));
@@ -53,13 +54,13 @@ export function createAdmission({ maxActive = 0, ttlMs = 120000, now = Date.now,
       if (req.method !== 'POST' && req.method !== 'DELETE') {
         res.setHeader('Allow', 'POST, DELETE'); json(res, 405, { ok: false, error: { code: 'METHOD', message: '不支持此操作' } }); return true;
       }
-      if (!enabled) { json(res, 200, { ok: true, lease: { enabled: false } }); return true; }
+      if (!enabled) { json(res, 200, { ok: true, lease: { enabled: false, execution } }); return true; }
       if (req.method === 'DELETE') {
         leases.delete(cookieToken(req)); setCookie(req, res, '', 0); json(res, 200, { ok: true }); return true;
       }
       const lease = acquire(req, res);
       if (!lease) refuse(req, res);
-      else json(res, 200, { ok: true, lease: { enabled: true, ...lease } });
+      else json(res, 200, { ok: true, lease: { enabled: true, execution, ...lease } });
       return true;
     }
     if (!enabled) return false;
