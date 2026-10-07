@@ -157,12 +157,13 @@ async function tilePoint(row, col) {
     return { x: t.x, y: t.y + t.s * 0.25, tile: t };
   }, [row, col]);
 }
-async function dragPointer(from, to) {
+async function dragPointer(from, to, onTarget) {
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   for (let i = 1; i <= 16; i += 1) {
     await page.mouse.move(from.x + ((to.x - from.x) * i) / 16, from.y + ((to.y - from.y) * i) / 16);
     await pause(40);
   }
+  if (onTarget) await onTarget();
   await page.mouse.up();
 }
 async function deployPiece(state, piece) {
@@ -177,7 +178,7 @@ async function deployPiece(state, piece) {
   candidates.sort((a, b) => Math.abs(a.row - 10) - Math.abs(b.row - 10) || Math.abs(a.col - 7) - Math.abs(b.col - 7));
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   failure.from = from; failure.occupied = [...occupied]; failure.candidates = candidates.map(({ row, col, x, y }) => ({ row, col, x, y })); failure.viewport = viewport;
-  for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height).slice(0, 6)) {
+  for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height)) {
     await dragPointer(from, target);
     const diagnostic = await page.evaluate(({ from, target, legalCount }) => {
       const describe = (x, y) => {
@@ -212,7 +213,19 @@ async function deployPiece(state, piece) {
     if (!facingHit.wheel) throw new Error(`朝向按钮未命中可见轮盘：${JSON.stringify({ facingTarget, facingHit })}`);
     // The visible wheel commits on pointer-up after the pointer leaves its center dead-zone;
     // a click merely cancels it, so use an ordinary mouse drag through the rendered geometry.
-    await dragPointer(facingTarget.center, facingTarget.target);
+    await page.evaluate(() => {
+      const wheel = document.querySelector('.fwheel'); window.__spFacingTrace = [];
+      for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) wheel?.addEventListener(type, (e) => {
+        window.__spFacingTrace.push({ type, x: e.clientX, y: e.clientY, buttons: e.buttons, pointerId: e.pointerId, target: e.target?.className?.baseVal || e.target?.className || e.target?.tagName || '', defaultPrevented: e.defaultPrevented });
+      }, true);
+    });
+    await dragPointer(facingTarget.center, facingTarget.target, async () => {
+      if (!report.facingPreviewScreenshot) {
+        report.facingPreview = await page.$eval('.fwheel__sr', (e) => e.innerText).catch(() => '');
+        report.facingPreviewScreenshot = await screenshot('facing-wheel-right-preview');
+      }
+    });
+    const pointerTrace = await page.evaluate(() => window.__spFacingTrace || []);
     try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
     const after = await readState();
@@ -222,7 +235,8 @@ async function deployPiece(state, piece) {
     }
     failure.attempts.push({ row: target.row, col: target.col, wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
       revisionAfter: after.revision, movedPiece: (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null,
-      readyReason: (await visibleText('[data-testid="ready-why"]')).join(' '), facingTarget, facingHit });
+      readyReason: (await visibleText('[data-testid="ready-why"]')).join(' '),
+      gameToasts: (await visibleText('.toast-host, .toast__text')).join(' '), facingTarget, facingHit, pointerTrace });
     state = after;
   }
   failure.reason = failure.legalTiles.length ? 'all rendered legal positions rejected' : 'server supplied no legal tiles for this bench piece';
