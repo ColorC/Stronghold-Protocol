@@ -54,6 +54,31 @@ test('native token phase and level resolve from the owning operator instead of s
   assert.deepEqual(levelOneDef.sources, defaultDef.sources, 'level growth preserves native source/loadout eligibility');
 });
 
+test('native token level growth retains generated default and selected module adjustments over table baseline', () => {
+  const owner = structuredClone(ownerA);
+  owner.modules = [{ uniEquipId: 'uniequip_native_fixture', name: 'fixture module', isDefault: false }];
+  const token = structuredClone(rawToken);
+  const base = token.variants[owner.chessId];
+  base.stats.atk += 50;
+  base.stats.deployLimit = 6;
+  base.count = 6;
+  base.byModule = {
+    ...base.byModule,
+    uniequip_native_fixture: {
+      stats: { ...base.stats, atk: base.stats.atk + 100, deployLimit: 8 },
+      count: 8,
+    },
+  };
+  const data = new DataSource({ chess: { [owner.chessId]: owner }, tokens: { [tokenId]: { ...token, nativeGrowth } }, enemies: {} }, getDefaultSource());
+  const defaultLevelOne = data.getToken(tokenId, owner.chessId, null, { phase: 1, level: 1 });
+  const moduleLevelOne = data.getToken(tokenId, owner.chessId, { moduleId: 'uniequip_native_fixture' }, { phase: 1, level: 1 });
+
+  assert.equal(defaultLevelOne.stats.atk, 330, 'Lv1 table ATK 280 keeps the generated default +50 ATK adjustment');
+  assert.equal(defaultLevelOne.count, 6, 'the generated default deploy-count override remains intact');
+  assert.equal(moduleLevelOne.stats.atk, 430, 'Lv1 table ATK keeps both default +50 and selected module +100');
+  assert.equal(moduleLevelOne.count, 8, 'module-selected deploy count remains intact');
+});
+
 test('native battle token spawn consumes the runtime owner phase and level', () => {
   const { battle, unit } = makeTokenBattle();
   assert.equal(battle.b.tokenDef(tokenId, unit, { phase: 1, level: 1 }).stats.maxHp, 1250);
@@ -81,6 +106,55 @@ test('native board token input carries the operator runtime phase and level thro
   assert.equal(summoned.base.maxHp, 1250);
   assert.equal(summoned.base.atk, 280);
   battle.invariants();
+});
+
+test('native owner growth context survives death and redeployment before a later summon', () => {
+  const growthStatus = { phase: 1, level: 1 };
+  const battle = makeBattle({
+    data: dataSource(),
+    units: [{ chessId: ownerA.chessId, row: 10, col: 5, nativeGrowthStatus: growthStatus }],
+    enemies: [{ key: enemyKey, pos: [10, 8] }], flags: { dpPerSec: 0, dpMax: 999 },
+  });
+  battle.b.start();
+  const owner = battle.unit(ownerA.chessId);
+  assert.deepEqual(owner.nativeGrowthStatus, growthStatus);
+  battle.b.kill(owner);
+  assert.equal(battle.b.redeploy(owner, { free: true, tile: [10, 4] }), true);
+  assert.deepEqual(owner.nativeGrowthStatus, growthStatus);
+  const token = battle.b.spawnToken(owner, tokenId, 10, 7);
+  assert.ok(token);
+  assert.equal(token.base.maxHp, 1250);
+  assert.equal(token.base.atk, 280);
+  battle.invariants();
+});
+
+test('Darkmoon native clone resolves its original operator token variant before its kit runs', () => {
+  const { battle, unit: originalOwner } = makeTokenBattle();
+  const growthStatus = { phase: 1, level: 1 };
+  let observedGrowth = null;
+  let summonedStats = null;
+  let summonedGrowth = null;
+  const copyDef = {
+    id: 'token_darkmoon_native_mayer_fixture', name: 'native-copy-fixture',
+    darkmoonNativeChessId: ownerA.chessId,
+    profession: 'TOKEN', position: 'MELEE', stats: { maxHp: 100, atk: 0, def: 0, res: 0, cost: 0, blockCnt: 0 },
+    nativeGrowth: null,
+  };
+  const copy = battle.b.spawnToken(originalOwner, copyDef.id, 10, 7, {
+    def: copyDef,
+    nativeGrowthStatus: growthStatus,
+    kit: { install(b, copiedUnit) {
+      observedGrowth = copiedUnit.nativeGrowthStatus;
+      const mibo = b.spawnToken(copiedUnit, tokenId, 10, 6);
+      summonedStats = mibo ? { maxHp: mibo.base.maxHp, atk: mibo.base.atk } : null;
+      summonedGrowth = mibo?.nativeOwnerGrowth ?? null;
+    } },
+  });
+
+  assert.ok(copy);
+  assert.deepEqual(observedGrowth, growthStatus, 'nativeGrowthStatus is set before the native onDeploy kit executes');
+  assert.deepEqual(summonedStats, { maxHp: 1250, atk: 280 }, 'Mibo is resolved through raw.darkmoonNativeChessId and Lv1 curve');
+  assert.deepEqual(summonedGrowth, growthStatus, 'the child summon retains the clone owner growth context');
 });
 
 test('native E2 battle token spawn uses E2 keyframes and clamps to the token phase cap', () => {
