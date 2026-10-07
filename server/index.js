@@ -656,7 +656,10 @@ export async function startServer(opts = {}) {
   const independentExecution = opts.independentExecution ?? process.env.SP_INDEPENDENT_EXECUTION ?? 'server';
   let network;
   const admission = createAdmission({ maxActive: opts.independentMaxActive ?? Number(process.env.SP_INDEPENDENT_MAX_ACTIVE || 0),
-    ttlMs: opts.admissionTtlMs ?? 120000, execution: independentExecution, otherActive: () => network?.connectionCount || 0 });
+    maxWaiting: opts.independentMaxWaiting ?? Number(process.env.SP_INDEPENDENT_MAX_WAITING || 0),
+    ttlMs: opts.admissionTtlMs ?? 120000, queueTtlMs: opts.admissionQueueTtlMs ?? 90000,
+    waitTimeoutMs: opts.admissionWaitTimeoutMs ?? 25000, execution: independentExecution,
+    otherActive: () => network?.connectionCount || 0 });
   const staticDelivery = createStaticDelivery({ base: opts.staticBase ?? process.env.SP_STATIC_BASE ?? '' });
   const netOptions = {};
   for (const k of ['reconnectWindowMs', 'heartbeatMs', 'helloTimeoutMs', 'ratePerSec', 'rateBurst', 'maxConnections', 'abuseDropsPerSec',
@@ -713,6 +716,11 @@ export async function startServer(opts = {}) {
       });
       return;
     }
+    // Keep the queue UI's tiny controller on this origin; unlike game assets it must work before admission.
+    if (parts.rawPath === '/js/hostingWait.js' && (req.method === 'GET' || req.method === 'HEAD')) {
+      await serveStatic(req, res, parts.rawPath, parts.query);
+      return;
+    }
     if (staticDelivery(req, res, parts.rawPath)) return;
     await serveStatic(req, res, parts.rawPath, parts.query);
   }
@@ -726,7 +734,11 @@ export async function startServer(opts = {}) {
   });
 
   const wss = new WebSocketServer({ noServer: true, maxPayload: WS_MAX_PAYLOAD, perMessageDeflate: false, clientTracking: false });
-  wss.on('connection', (ws, req) => network.handleConnection(ws, req));
+  wss.on('connection', (ws, req) => {
+    network.handleConnection(ws, req);
+    // A released multiplayer socket can free a shared visitor slot for the FIFO workshop queue.
+    ws.once('close', () => admission.canEnter());
+  });
   wss.on('error', (e) => log.error('[ws] server error', e));
 
   server.on('upgrade', (req, socket, head) => {
@@ -771,6 +783,7 @@ export async function startServer(opts = {}) {
     if (closing) return closing;
     closing = (async () => {
       try { lobby.shutdown('shutdown'); } catch (e) { log.error('[shutdown] lobby', e); }
+      admission.close();
       network.close();
       await new Promise((resolve) => {
         server.close(() => resolve());
