@@ -31,7 +31,7 @@ const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
   seed, maxRounds, startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
-  actions: [], notes: [], rounds: [], screenshots: [], errors: [], preparationSnapshots: [],
+  actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
 let server; let assetProxy; let browser; let page; let hardTimer; let recordingId = ''; let sessionId = '';
@@ -68,6 +68,53 @@ async function readRecording() {
     const r = await fetch(`/independent/api/recordings/${encodeURIComponent(id)}`, { credentials: 'same-origin', cache: 'no-store' });
     if (!r.ok) return null; return r.json();
   }, recordingId);
+}
+async function verifyNarratedReplay(recording) {
+  const meta = recording?.meta;
+  const cue = (recording?.events || []).find((event) => event.kind === 'caption' && event.p?.key === 'first-native-mechanic');
+  if (!meta?.endedAt || !cue?.ts) throw new Error('录制结束或首次干员机制讲解字幕缺失，无法验收回放');
+  const cueSecond = Math.max(0, (cue.ts - Date.parse(meta.startedAt)) / 1000);
+  const replayUrl = new URL(`/independent-replay.html?recording=${encodeURIComponent(recordingId)}`, page.url()).href;
+  await page.goto(replayUrl, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent === '记录已结束', { timeout: 45000 });
+  await page.evaluate((second) => {
+    const timeline = document.querySelector('#timeline'); timeline.value = String(second + 0.05);
+    timeline.dispatchEvent(new Event('input', { bubbles: true }));
+  }, cueSecond);
+  await page.waitForFunction((second) => Math.abs(Number(document.querySelector('#timeline')?.value) - second) < 0.25, { timeout: 15000 }, cueSecond + 0.05);
+  await page.click('#play');
+  await page.waitForFunction((expected) => {
+    const caption = document.querySelector('#caption'); const stage = document.querySelector('#stage');
+    return caption && !caption.hidden && caption.textContent === expected && document.querySelector('#play')?.textContent === '播放' && /scale\(/.test(stage?.style.transform || '');
+  }, { timeout: 8000 }, cue.p.text);
+  const visibleProof = await page.evaluate(() => {
+    const iframe = document.querySelector('#stage iframe'); const doc = iframe?.contentDocument;
+    const detail = doc?.querySelector('[data-testid="ix-detail"]'); const card = detail?.querySelector('.ix-original-card');
+    const video = document.querySelector('#stage video[data-sp-canvas-media]');
+    const visible = (element) => {
+      if (!element) return false;
+      const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) > 0;
+    };
+    const text = card?.innerText?.trim() || '';
+    return {
+      caption: document.querySelector('#caption')?.textContent || '',
+      playbackPaused: document.querySelector('#play')?.textContent === '播放',
+      zoomTransform: document.querySelector('#stage')?.style.transform || '',
+      iframeVisible: visible(iframe), detailVisible: visible(detail), cardVisible: visible(card),
+      cardText: text, ordinaryFullText: /普通[\s\S]{5,}/.test(text), eliteFullText: /精锐[\s\S]{5,}/.test(text),
+      webglMediaVisible: visible(video), mediaReadyState: video?.readyState ?? 0,
+      canvasWidth: video?.videoWidth ?? 0, canvasHeight: video?.videoHeight ?? 0,
+      stageText: doc?.body?.innerText?.slice(0, 1200) || '',
+    };
+  });
+  const proofFile = await screenshot('replay-first-mechanic-paused-zoomed');
+  const result = { cueSecond, proofFile, ...visibleProof };
+  await writeFile(path.join(output, 'replay-visual-proof.json'), JSON.stringify(result, null, 2));
+  if (!result.playbackPaused || !result.zoomTransform || !result.iframeVisible || !result.detailVisible || !result.cardVisible || !result.ordinaryFullText || !result.eliteFullText || !result.webglMediaVisible || result.mediaReadyState < 2 || !result.canvasWidth || !result.canvasHeight) {
+    throw new Error(`回放字幕/原卡/HUD/WebGL像素的同帧可见性验收失败：${JSON.stringify(result)}`);
+  }
+  return result;
 }
 async function waitRevision(revision) {
   await page.waitForFunction(async (id, old) => {
@@ -496,7 +543,14 @@ try {
   const origin = await startAssetProxy(server.port);
   browser = await puppeteer.launch({ executablePath: chromePath, headless: true, args: ['--no-sandbox', '--no-proxy-server', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--disable-gpu-sandbox'] });
   page = await browser.newPage();
-  page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', message: error.message, stack: error.stack || '' }));
+  await page.setRequestInterception(true);
+  page.on('request', (request) => {
+    let pathname = '';
+    try { pathname = new URL(request.url()).pathname; } catch { /* let Chromium handle malformed URLs */ }
+    if (pathname === '/favicon.ico') void request.respond({ status: 204, body: '' }).catch(() => {});
+    else void request.continue().catch(() => {});
+  });
+  page.on('pageerror', (error) => { const detail = { message: error.message, stack: error.stack || '' }; report.pageErrors.push(detail); report.errors.push({ type: 'pageerror', ...detail }); });
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
   page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
@@ -616,6 +670,7 @@ try {
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
+  report.replayVisualProof = await verifyNarratedReplay(recording);
   report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption' || e.kind === 'custom').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
   report.actions = report.recording?.events?.filter((e) => e.kind === 'server-action').map((e) => ({ at: e.ts, ...e.p })) || report.actions;
   report.artifacts = { screenshots: report.screenshots, log: runLog, json: path.join(output, 'driver-run.json') };
