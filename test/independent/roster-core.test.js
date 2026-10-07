@@ -4,7 +4,7 @@ import { loadData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { createSession } from '../../server/modes/independent/session.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
-import { nativeFactions, tavernFactions } from '../../shared/independentRules.js';
+import { matchesInheritancePermission, nativeFactions, tavernFactions } from '../../shared/independentRules.js';
 
 const data = loadData(process.env.SP_DATA_DIR || 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data', { log: { warn() {}, error() {} } });
 const sourceDesign = JSON.parse((await import('node:fs')).readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH || 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/independent-design.json', 'utf8'));
@@ -100,5 +100,23 @@ test('native faction tags replace upstream bonds while identity gear adds a tave
   const proxyGear = Object.values(catalog.equipment).find((x) => x.mechanism === 'identityTag');
   const piece = { chessId: active.chessId, equipment: [{ id: proxyGear.id, state: { faction: '炎' } }] };
   assert.deepEqual(nativeFactions(piece, catalog), ['萨尔贡']);
-  assert.deepEqual(new Set(tavernFactions(piece, catalog)), new Set(['萨尔贡', '炎']));
+  assert.deepEqual(new Set(tavernFactions(piece, catalog)), new Set(['萨尔贡']), 'proxy factions outside configured tavern eligibility do not apply');
+  delete design.rules.tavernFactions;
+  const legacyCatalog = getCatalog(data, design);
+  assert.deepEqual(new Set(tavernFactions(piece, legacyCatalog)), new Set(['萨尔贡', '炎']), 'legacy default keeps the original eight proxy factions');
+});
+
+test('configured native organizations stay intact and inheritance ignores proxy-only identities', () => {
+  const { design, active } = tailoredDesign();
+  active.nativeFactionTags = ['莱茵生命', '黑钢国际'];
+  design.rules.tavernFactions = ['莱茵生命', '黑钢国际', '罗德岛'];
+  const catalog = getCatalog(data, design);
+  const proxyGear = Object.values(catalog.equipment).find((x) => x.mechanism === 'identityTag');
+  const piece = { chessId: active.chessId, equipment: [{ id: proxyGear.id, state: { faction: '罗德岛' } }] };
+  assert.deepEqual(nativeFactions(piece, catalog), ['莱茵生命', '黑钢国际']);
+  assert.deepEqual(new Set(tavernFactions(piece, catalog)), new Set(['莱茵生命', '黑钢国际', '罗德岛']));
+  assert.equal(matchesInheritancePermission({ donorFaction: '莱茵生命' }, 'donor', piece, catalog), true);
+  assert.equal(matchesInheritancePermission({ donorFaction: '罗德岛' }, 'donor', piece, catalog), false);
+  active.nativeFactionTags = ['莱茵生命', ''];
+  assert.throws(() => getCatalog(data, design), /BAD_NATIVE_FACTION_TAGS/);
 });

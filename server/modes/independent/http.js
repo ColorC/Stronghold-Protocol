@@ -10,7 +10,12 @@ import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
 
 const PREFIX = '/independent/api/';
 /** The hand-written player texts (data/independent-game-text.json); the design texts stay the rules' source. */
-const GAME_TEXT = JSON.parse(readFileSync(new URL('../../../data/independent-game-text.json', import.meta.url), 'utf8'));
+const GAME_TEXT_PATH = process.env.SP_INDEPENDENT_GAME_TEXT_PATH
+  ? path.resolve(process.env.SP_INDEPENDENT_GAME_TEXT_PATH)
+  : process.env.SP_DATA_DIR
+    ? path.join(path.resolve(process.env.SP_DATA_DIR), 'independent-game-text.json')
+    : new URL('../../../data/independent-game-text.json', import.meta.url);
+const GAME_TEXT = JSON.parse(readFileSync(GAME_TEXT_PATH, 'utf8'));
 /** The three prize draws (design 起步 / 成型 / 兑现) as the player meets them. */
 const PRIZE_STAGE = { 起步: '起步', 成型: '成型', 兑现: '决胜' };
 const baseChessId = (id) => String(id).replace(/_b$/, '_a');

@@ -4,7 +4,6 @@ import path from 'node:path';
 import { getData } from '../../data.js';
 import { nativeEffectFor } from './native.js';
 import { EQUIPMENT_CAPACITY, INVENTORY_CAPACITY } from './equipment.js';
-import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { KEYWORD_GEAR_BY_NAME } from './keywordGear.js';
 
 const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
@@ -228,14 +227,13 @@ export function getCatalog(data = getData(), design = DESIGN) {
       throw new Error('BAD_ACTIVE_ROSTER_IDS');
     }
   }
-  const validFactions = new Set(Object.values(TAVERN_FACTIONS));
   for (const source of design.operators) {
-    if (source.nativeFactionTags !== undefined && (!Array.isArray(source.nativeFactionTags) || source.nativeFactionTags.some((f) => !validFactions.has(f)) || new Set(source.nativeFactionTags).size !== source.nativeFactionTags.length)) throw new Error(`BAD_NATIVE_FACTION_TAGS:${source.chessId}`);
+    if (source.nativeFactionTags !== undefined && (!Array.isArray(source.nativeFactionTags) || source.nativeFactionTags.some((f) => typeof f !== 'string' || !f.trim()) || new Set(source.nativeFactionTags).size !== source.nativeFactionTags.length)) throw new Error(`BAD_NATIVE_FACTION_TAGS:${source.chessId}`);
     const tier = Number(source.tier ?? recordById(data?.chess, source.chessId)?.techLevel ?? recordById(data?.chess, source.chessId)?.tier ?? 1);
     if (!Number.isInteger(tier) || tier < 1 || tier > 6) throw new Error(`BAD_OPERATOR_TIER:${source.chessId}`);
   }
   const configuredTavernFactions = design.rules?.tavernFactions;
-  if (configuredTavernFactions !== undefined && (!Array.isArray(configuredTavernFactions) || configuredTavernFactions.some((f) => !validFactions.has(f)) || new Set(configuredTavernFactions).size !== configuredTavernFactions.length)) throw new Error('BAD_TAVERN_FACTIONS');
+  if (configuredTavernFactions !== undefined && (!Array.isArray(configuredTavernFactions) || configuredTavernFactions.some((f) => typeof f !== 'string' || !f.trim()) || new Set(configuredTavernFactions).size !== configuredTavernFactions.length)) throw new Error('BAD_TAVERN_FACTIONS');
   const activeSet = activeRosterIds === undefined ? null : new Set(activeRosterIds);
   const operators = Object.create(null);
   for (const source of design.operators) {
