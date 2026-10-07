@@ -15,8 +15,8 @@ for(let current=path.resolve(output);current;current=path.dirname(current)){
  if(path.dirname(current)===current)break;
 }
 const git=(...a)=>execFileSync('git',['-C',canonical,...a],{encoding:'utf8'}).trim();
-const revision=git('rev-parse','HEAD');
-const selected=['server','shared','public/independent.html','public/js/hostingBootstrap.js','public/js/hostingWait.js','LICENSE'];
+const revision=git('rev-parse',args.includes('--revision')?option('--revision'):'HEAD');
+const selected=['server','shared','public/independent.html','public/js/hostingBootstrap.js','public/js/hostingWait.js','public/js/ui/assetUrls.js','LICENSE'];
 if(git('status','--porcelain','--untracked-files=no','--',...selected,'data','package-lock.json'))throw new Error('selected release source must be committed');
 mkdirSync(output,{recursive:true});
 const codeArchive=path.join(output,'server-code.tar');const rulesArchive=path.join(output,'public-rules.tar');
