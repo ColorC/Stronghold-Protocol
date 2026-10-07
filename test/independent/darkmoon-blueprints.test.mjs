@@ -7,7 +7,7 @@ import { nativeEffectFor } from '../../server/modes/independent/native.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
-import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth } from '../../server/modes/independent/darkmoonShop.js';
+import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, darkmoonGrowthBadges } from '../../server/modes/independent/darkmoonShop.js';
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -43,12 +43,14 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('BGS_104').metadata.op.effectDelivery.normal[0].recipient, 'matchingTribeShopOffers');
   assert.equal(byId.get('BGS_037').metadata.op.effectDelivery.normal[0].recipient, 'currentShopOffers');
   assert.equal(byId.get('BGS_046').metadata.op.effectDelivery.normal[0].recipient, 'hand');
-  assert.equal(blueprints.entries.filter(x => x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length, 7);
+  assert.equal(blueprints.entries.filter(x => x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length, 30);
   assert.equal(byId.get('BGS_043').authoredRule.adaptation.source, 'randomFriendlyOperatorFromPreviousRound');
-  assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'summonMultiplier');
-  assert.equal(byId.get('LOE_077').authoredRule.normal.trigger, 'battlecryOnGain');
+  assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'darkmoonCombat');
+  assert.equal(byId.get('LOE_077').authoredRule.normal.trigger, 'battlecryMultiplier');
   assert.equal(byId.get('BGS_113').authoredRule.normal.recipient, 'selectedShopMinion');
-  assert.equal(byId.get('FP1_031').authoredRule.normal.trigger, 'retiringEffect');
+  assert.equal(byId.get('FP1_031').authoredRule.normal.sourceId, 'FP1_031');
+  assert.equal(byId.get('BGS_121').metadata.op.effectDelivery.normal.find(e=>e.sourceTrigger==='darkmoonCombat').recipient,'combatSummonAndHand');
+  assert.equal(byId.get('BGS_200').metadata.op.effectDelivery.normal[0].recipient,'inventory');
   assert.equal(byId.get('BGS_039').authoredRule.normal.outputs[0].id,'independent:坚守盟约');
   assert.equal(byId.get('BGS_034').authoredRule.elite.outputs.length,2);
 });
@@ -56,12 +58,17 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
 test('compiler add-ons link only existing native definitions and preserve all source text without replacing canonical files', () => {
   assert.equal(designAddon.operators.length, 67);
   assert.equal(designAddon.pendingNativeDefinitions.length, 34);
+  const levelsText=gameTextAddon.operators[byId.get('BGS_111').operator];
+  assert.match(levelsText.normalLevels,/攻击训练等级×1/);
+  assert.match(levelsText.eliteLevels,/攻击训练等级×2/);
+  assert.equal(levelsText.normal,byId.get('BGS_111').sourceTexts.normal);
+  assert.notEqual(levelsText.normalLevels,levelsText.normal);
   assert.ok(designAddon.operators.every(x => x.chessId && x.modeEffects === null));
   assert.ok(designAddon.operators.every(x => x.metadata.op.effectDelivery.normal.length && x.metadata.op.effectDelivery.elite.length));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length,7);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,78);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,23);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length,30);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,19);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,73);
   assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
   assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
   const addonBySource=new Map(designAddon.operators.map(x=>[x.sourceId,x.sourceRefs.darkmoon19_2.battlecry]));
@@ -105,9 +112,9 @@ test('a compiled source-ref dispatches the Taunt adapter once on recruit gain wi
   }
 });
 
-test('all seven static keyword adapters really wear their gear on normal and elite recipients',()=>{
+test('all source-specific static keyword adapters really wear their gear on normal and elite recipients',()=>{
   const baseCatalog=getCatalog();
-  const sourceIds=['BGS_039','BGS_106','BGS_034','BGS_131','FP1_010','GVG_113','LOOT_078'];
+  const sourceIds=blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear'&&e.implementation==='supported')).map(x=>x.sourceId);
   for(const id of sourceIds) for(const elite of [false,true]) {
     const op=Object.values(baseCatalog.operators).find(x=>Boolean(x.elite)===elite);
     const source={...op,sourceRefs:{darkmoon19_2:{id}},modeEffects:{normal:{prep:[],combat:[]},elite:{prep:[],combat:[]}}};
@@ -117,7 +124,7 @@ test('all seven static keyword adapters really wear their gear on normal and eli
     const piece={uid:`${id}-${elite?'elite':'normal'}`,chessId:op.chessId,nativeState:{},equipment:[]};state.pieces.push(piece);
     const services={catalog,data:{},rng:()=>0,grantEquipment:(s,item,n,extra)=>grantEquipment(s,catalog,item,n,extra),grantChess(){},addOffer(){},record(){}};
     runNativeHook(state,'gain',{piece,origin:'player'},services);
-    const expected=byId.get(id).authoredRule.normal.outputs.map(x=>x.id).sort();
+    const expected=byId.get(id).metadata.op.effectDelivery.normal.filter(x=>x.kind==='keywordGear'&&x.implementation==='supported').map(x=>x.adapter[0]).sort();
     assert.deepEqual(piece.equipment.map(x=>x.id).sort(),expected,`${id} ${elite?'elite':'ordinary'} wears the granted gear`);
     assert.equal(state.inventory.length,0,`${id} never routes fixed self gear through hand inventory`);
   }
@@ -155,8 +162,8 @@ test('Captain Hoggarr pays only for an original Pirate purchase and only for thi
     const holderOp=(elite?eliteOps:normalOps)[0], buyerOp=(elite?eliteOps:normalOps)[1], otherOp=(elite?eliteOps:normalOps)[2];
     const holder={...holderOp,sourceRefs:{darkmoon19_2:{id:'BGS_072',rosterTribe:'PIRATE',faction:'维多利亚'}},modeEffects:{normal:{prep:[],combat:[]},elite:{prep:[],combat:[]}}};
     const effect=nativeEffectFor(holderOp.chessId,holder,elite);
-    const pirate={...buyerOp,sourceRefs:{darkmoon19_2:{id:'BGS_001',rosterTribe:'PIRATE',faction:'维多利亚'}}};
-    const other={...otherOp,sourceRefs:{darkmoon19_2:{id:'BGS_002',rosterTribe:'BEAST',faction:'维多利亚'}}};
+    const pirate={...buyerOp,nativeFactionTags:['维多利亚'],sourceRefs:{darkmoon19_2:{id:'BGS_001',rosterTribe:'PIRATE',faction:'维多利亚'}}};
+    const other={...otherOp,nativeFactionTags:['叙拉古'],sourceRefs:{darkmoon19_2:{id:'BGS_002',rosterTribe:'BEAST',faction:'维多利亚'}}};
     const catalog={...baseCatalog,operators:{...baseCatalog.operators,[holderOp.chessId]:{...holderOp,nativeTrait:{...holderOp.nativeTrait,effect}},[buyerOp.chessId]:pirate,[otherOp.chessId]:other}};
     const state={round:1,funds:4,shop:{level:1,upgradePrice:5,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
     const host={uid:'hoggarr',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:0,col:0}, buyer={uid:'pirate',chessId:buyerOp.chessId,ownerId:'p1',nativeState:{}}, otherBuyer={uid:'other',chessId:otherOp.chessId,ownerId:'p1',nativeState:{}};
@@ -194,8 +201,8 @@ test('shop growth remains a fixed shop recipient and purchase grants growth dire
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite);
   const nomiOp=normal[0], elementalOp=normal[1], mechOp=normal[2];
   const nomi={...nomiOp,sourceRefs:{darkmoon19_2:{id:'BGS_104'}},modeEffects:{normal:{prep:[],combat:[]},elite:{prep:[],combat:[]}}};
-  const elemental={...elementalOp,sourceRefs:{darkmoon19_2:{id:'BGS_001',rosterTribe:'ELEMENTAL',faction:'炎'}}};
-  const mech={...mechOp,sourceRefs:{darkmoon19_2:{id:'BGS_002',rosterTribe:'MECHANICAL',faction:'哥伦比亚'}}};
+  const elemental={...elementalOp,nativeFactionTags:['炎'],sourceRefs:{darkmoon19_2:{id:'BGS_001',rosterTribe:'ELEMENTAL',faction:'炎'}}};
+  const mech={...mechOp,nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id:'BGS_002',rosterTribe:'MECHANICAL',faction:'哥伦比亚'}}};
   const nomiEffect=nativeEffectFor(nomiOp.chessId,nomi,false);
   const catalog={...base,operators:{...base.operators,[nomiOp.chessId]:{...nomiOp,sourceRefs:nomi.sourceRefs,nativeTrait:{...nomiOp.nativeTrait,effect:nomiEffect}},[elementalOp.chessId]:elemental,[mechOp.chessId]:mech}};
   const shop=[{kind:'chess',id:elementalOp.chessId,sold:false,equipment:[]},{kind:'chess',id:mechOp.chessId,sold:false,equipment:[]}];
@@ -208,9 +215,10 @@ test('shop growth remains a fixed shop recipient and purchase grants growth dire
   assert.deepEqual(future[0].darkmoonGrowth,{attack:1,health:1});
   assert.equal(future[1].darkmoonGrowth,undefined);
   const target={uid:'purchased',chessId:elementalOp.chessId,ownerId:'p1',equipment:[]};state.pieces.push(target);
-  const services={grantEquipment:(s,id,n,extra)=>grantEquipment(s,catalog,id,n,extra)};
+  const services={catalog,grantEquipment:(s,id,n,extra)=>grantEquipment(s,catalog,id,n,extra)};
+  const [attackBadge,healthBadge]=darkmoonGrowthBadges(target,catalog);
   assert.equal(applyDarkmoonShopGrowth(state,future[0],target,services).length,2);
-  assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),[['precision',1],['vitality',1]]);
+  assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),[[attackBadge,1],[healthBadge,1]]);
   assert.equal(state.inventory.length,0,'shop stats are fixed recipient growth, not carried inventory');
 });
 
@@ -219,9 +227,10 @@ test('original Battlecry buffs inspect the acquired source tag and wear permanen
   for(const [id,tribe,elite,count,badges] of [['BGS_041','DRAGON',false,1,['precision','vitality']],['BGS_053','PIRATE',true,6,['precision']],['BGS_128','ELEMENTAL',false,1,['precision','vitality']]]) {
     const holderOp=normal.find(x=>x.name!==byId.get(id).operator), otherOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator), gainOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
     const holderRef={id,rosterTribe:tribe}, otherRef={id:'TEST_TARGET',rosterTribe:tribe}, gainedRef={id:'TEST_BATTLECRY',battlecry:true,rosterTribe:'NEUTRAL'};
-    const holder={...holderOp,sourceRefs:{darkmoon19_2:holderRef}};
+    const faction={BGS_041:'卡西米尔',BGS_053:'维多利亚',BGS_128:'炎'}[id];
+    const holder={...holderOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:holderRef}};
     const effect=nativeEffectFor(holderOp.chessId,holder,elite);
-    const catalog={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,sourceRefs:holder.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect}},[otherOp.chessId]:{...otherOp,sourceRefs:{darkmoon19_2:otherRef}},[gainOp.chessId]:{...gainOp,sourceRefs:{darkmoon19_2:gainedRef}}}};
+    const catalog={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,nativeFactionTags:[faction],sourceRefs:holder.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect}},[otherOp.chessId]:{...otherOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:otherRef}},[gainOp.chessId]:{...gainOp,sourceRefs:{darkmoon19_2:gainedRef}}}};
     const state={round:1,shop:{level:1,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
     const host={uid:'host',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:0,col:0,equipment:[]},other={uid:'other',chessId:otherOp.chessId,ownerId:'p1',nativeState:{},row:0,col:1,equipment:[]},gained={uid:'gained',chessId:gainOp.chessId,ownerId:'p1',nativeState:{},equipment:[]};state.pieces.push(host,other);
     const services={catalog,data:{},rng:()=>0,grantEquipment:(s,badge,n,extra)=>grantEquipment(s,catalog,badge,n,extra),grantChess(){},addOffer(){},record(){}};
@@ -240,7 +249,7 @@ test('golden Elemental Battlecries add the exact number of frozen shop offers or
     const holder={...holderOp,elite,sourceRefs:{darkmoon19_2:{id,rosterTribe:'ELEMENTAL',faction:'炎',battlecry:true}}};
     const effect=nativeEffectFor(holderOp.chessId,holder,elite);
     const operators={...base.operators,[holderOp.chessId]:{...holderOp,sourceRefs:holder.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect}}};
-    candidateOps.forEach((op,i)=>operators[op.chessId]={...op,sourceRefs:{darkmoon19_2:{id:`TEST_${i}`,rosterTribe:'ELEMENTAL',faction:'炎'}}});
+    candidateOps.forEach((op,i)=>operators[op.chessId]={...op,nativeFactionTags:['炎'],sourceRefs:{darkmoon19_2:{id:`TEST_${i}`,rosterTribe:'ELEMENTAL',faction:'炎'}}});
     const catalog={...base,operators};
     const state={round:1,shop:{level:1,freeRefreshes:0,slots:[]},pieces:[],offers:[],pool:Object.fromEntries(candidateOps.map(op=>[op.chessId,{left:3,cap:3,tier:op.tier}])),nextUid:1,counters:{},inventory:[]};
     const piece={uid:`${id}-${elite}`,chessId:holderOp.chessId,elite,ownerId:'p1',nativeState:{},equipment:[]};
@@ -271,9 +280,9 @@ test('frozen Battlecry-added tavern slots survive refresh even beyond the normal
 test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; BGS 100 targets a selected friend from bought Elemental tier',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),buyerOp=normal[0],targetOp=normal[1],holderOp=normal[2];
   const buyerRef={id:'BGS_048',rosterTribe:'PIRATE',battlecry:true},targetRef={id:'TEST_PIRATE',rosterTribe:'PIRATE'};
-  const buyer={...buyerOp,sourceRefs:{darkmoon19_2:buyerRef}},effect=nativeEffectFor(buyerOp.chessId,buyer,false);
-  const catalog={...base,operators:{...base.operators,[buyerOp.chessId]:{...buyerOp,sourceRefs:buyer.sourceRefs,nativeTrait:{...buyerOp.nativeTrait,effect}},[targetOp.chessId]:{...targetOp,sourceRefs:{darkmoon19_2:targetRef}}}};
-  const state=createSession({seed:711,catalog});state.funds=20;state.counters.tribeBought={PIRATE:2};
+  const buyer={...buyerOp,nativeFactionTags:['维多利亚'],sourceRefs:{darkmoon19_2:buyerRef}},effect=nativeEffectFor(buyerOp.chessId,buyer,false);
+  const catalog={...base,operators:{...base.operators,[buyerOp.chessId]:{...buyerOp,nativeFactionTags:['维多利亚'],sourceRefs:buyer.sourceRefs,nativeTrait:{...buyerOp.nativeTrait,effect}},[targetOp.chessId]:{...targetOp,nativeFactionTags:['维多利亚'],sourceRefs:{darkmoon19_2:targetRef}}}};
+  const state=createSession({seed:711,catalog});state.funds=20;state.counters.factionBought={'维多利亚':2};
   state.pieces.push({uid:'pirate-target',chessId:targetOp.chessId,nativeState:{},equipment:[],attachments:[],row:9,col:2});
   state.shop.slots[0]={kind:'chess',id:buyerOp.chessId,price:3,sold:false,equipment:[]};
   const result=applyAction(state,{type:'buy',slot:0,targetUid:'pirate-target'},{catalog});
@@ -283,8 +292,8 @@ test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; 
   assert.equal(result.state.inventory.length,0,'selected Pirate receives permanent direct growth');
 
   const elemental={...holderOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},elementalEffect=nativeEffectFor(holderOp.chessId,elemental,false);
-  const bought={...targetOp,sourceRefs:{darkmoon19_2:{id:'TEST_ELEMENTAL',rosterTribe:'ELEMENTAL'}}};
-  const catalog2={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,sourceRefs:elemental.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect:elementalEffect}},[targetOp.chessId]:{...targetOp,sourceRefs:bought.sourceRefs}}};
+  const bought={...targetOp,nativeFactionTags:['炎'],sourceRefs:{darkmoon19_2:{id:'TEST_ELEMENTAL',rosterTribe:'ELEMENTAL'}}};
+  const catalog2={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,nativeFactionTags:['哥伦比亚'],sourceRefs:elemental.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect:elementalEffect}},[targetOp.chessId]:{...targetOp,nativeFactionTags:['炎'],sourceRefs:bought.sourceRefs}}};
   const state2={round:1,shop:{slots:[]},pieces:[{uid:'holder',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:9,col:2,equipment:[]},{uid:'selected',chessId:targetOp.chessId,ownerId:'p1',nativeState:{},row:9,col:3,equipment:[]}],counters:{},inventory:[]};
   const services={catalog:catalog2,data:{},rng:()=>0,grantEquipment:(s,id,n,extra)=>grantEquipment(s,catalog2,id,n,extra),grantChess(){},addOffer(){},record(){}};
   runNativeHook(state2,'bought',{piece:{uid:'elemental-bought',chessId:targetOp.chessId,ownerId:'p1'},targetUid:'selected'},services);
@@ -295,13 +304,13 @@ test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; 
 test('a generated hand card defers its native Battlecry until its first field move, then cannot replay it on redeploy',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=normal[0],candidateOp=normal[1];
   const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_123',rosterTribe:'ELEMENTAL',battlecry:true}}},sourceEffect=nativeEffectFor(sourceOp.chessId,source,false);
-  const candidate={...candidateOp,sourceRefs:{darkmoon19_2:{id:'BGS_116',rosterTribe:'ELEMENTAL',battlecry:true}}},candidateEffect=nativeEffectFor(candidateOp.chessId,candidate,false);
-  const catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,sourceRefs:source.sourceRefs,nativeTrait:{...sourceOp.nativeTrait,effect:sourceEffect}},[candidateOp.chessId]:{...candidateOp,sourceRefs:candidate.sourceRefs,nativeTrait:{...candidateOp.nativeTrait,effect:candidateEffect}}}};
-  const state=createSession({seed:812,catalog});state.funds=20;state.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
+  const candidate={...candidateOp,nativeFactionTags:['炎'],sourceRefs:{darkmoon19_2:{id:'BGS_116',rosterTribe:'ELEMENTAL',battlecry:true}}},candidateEffect=nativeEffectFor(candidateOp.chessId,candidate,false);
+  const catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,sourceRefs:source.sourceRefs,nativeTrait:{...sourceOp.nativeTrait,effect:sourceEffect}},[candidateOp.chessId]:{...candidateOp,nativeFactionTags:['炎'],sourceRefs:candidate.sourceRefs,nativeTrait:{...candidateOp.nativeTrait,effect:candidateEffect}}}};
+  const state=createSession({seed:812,catalog});for(const poolId of Object.keys(state.pool))state.pool[poolId].left=poolId===candidateOp.chessId?3:poolId===sourceOp.chessId?3:0;state.funds=20;state.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
   const bought=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
   const offer=bought.state.offers.find(x=>x.source==='darkmoon-hand-reward');assert.ok(offer);
   const chosen=applyAction(bought.state,{type:'choose',offerId:offer.id,index:0},{catalog});assert.equal(chosen.ok,true,JSON.stringify(chosen.error));
-  const handPiece=chosen.state.pieces.find(x=>x.chessId===candidateOp.chessId);
+  const handPiece=chosen.state.pieces.find(x=>x.chessId===offer.choices[0]);
   assert.equal(handPiece.darkmoonPendingPlay,true,'the hand copy waits on the bench without firing its Battlecry');
   assert.equal(chosen.state.shop.freeRefreshes,0);
   const tiles=viewSession(chosen.state,{catalog}).pieces.find(x=>x.uid===handPiece.uid).legalTiles;
@@ -314,6 +323,30 @@ test('a generated hand card defers its native Battlecry until its first field mo
   const [row2,col2]=alternate.split(',').map(Number);
   const redeployed=applyAction(deployed.state,{type:'move',uid:handPiece.uid,row:row2,col:col2},{catalog});assert.equal(redeployed.ok,true,JSON.stringify(redeployed.error));
   assert.equal(redeployed.state.shop.freeRefreshes,1,'redeploy never repeats the hand copy Battlecry');
+});
+
+test('applyAction persists combat growth on its fixed target and resolves pristine hand copies and coins',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),ownerOp=normal[0],recruitOp=normal.find(x=>x.chessId!==ownerOp.chessId);
+  for(const growthMode of ['badges','levels']) {
+    const state=createSession({seed:growthMode==='badges'?991:992,catalog:base,growthMode});state.funds=20;
+    state.shop.slots[0]={kind:'chess',id:ownerOp.chessId,price:3,sold:false,equipment:[]};
+    const bought=applyAction(state,{type:'buy',slot:0},{catalog:base});assert.equal(bought.ok,true,JSON.stringify(bought.error));
+    const owner=bought.state.pieces.find(x=>x.chessId===ownerOp.chessId);
+    const tile=viewSession(bought.state,{catalog:base}).pieces.find(x=>x.uid===owner.uid).legalTiles[0].split(',').map(Number);
+    const moved=applyAction(bought.state,{type:'move',uid:owner.uid,row:tile[0],col:tile[1]},{catalog:base});assert.equal(moved.ok,true,JSON.stringify(moved.error));
+    const initialLevel=owner.growthLevel||1;
+    const result=applyAction(moved.state,{type:'ready'},{catalog:base,battleRunner:()=>({result:{perPlayer:{independent:{leaked:[]}},killed:0},pieceStates:{},darkmoonResults:{
+      growth:[{sourceUid:owner.uid,targetUid:owner.uid,attackUnits:1,secondaryUnits:1}],
+      recruits:[{sourceUid:owner.uid,chessId:recruitOp.chessId,pristine:true}],coins:[{sourceUid:owner.uid,quantity:2,inventory:true}]
+    }})});
+    assert.equal(result.ok,true,JSON.stringify(result.error));
+    const grown=result.state.pieces.find(x=>x.uid===owner.uid),copy=result.state.pieces.find(x=>x.chessId===recruitOp.chessId);
+    assert.ok(copy?.darkmoonPendingPlay,'combat hand copies enter the bench without firing Battlecry or inheriting gear');
+    assert.equal(result.state.inventory.find(x=>x.id==='chess_item_1_03_e_a')?.quantity,2,'coin output becomes the named inventory resource');
+    if(growthMode==='badges')assert.ok(grown.equipment.some(x=>x.id==='precision'&&x.quantity===1),'combat attack growth wears on the specified target');
+    else assert.equal(grown.growthLevel,initialLevel+2,'attack and profession-matched secondary growth become native curve levels on the same target');
+    assert.equal(result.state.production.some(x=>x.sourceUid===owner.uid&&x.targetUid===owner.uid),true,'battle reward production records the fixed recipient');
+  }
 });
 
 test('BGS 113 consumes the explicitly selected shop slot and creates a normal or golden copy on the purchased body',()=>{

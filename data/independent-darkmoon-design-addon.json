@@ -27,50 +27,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_006",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤1个随机高本原型。",
+          "sourceId": "BGS_006",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤2个随机高本原型。",
+          "sourceId": "BGS_006",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_006"
                 },
                 "text": "<b>亡语：</b>随机召唤一个<b>传说</b>随从。",
                 "textEn": "<b>Deathrattle:</b> Summon a random <b>Legendary</b> minion.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤1个随机高本原型。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "BGS_006"
                 },
                 "text": "<b>亡语：</b>随机召唤两个<b>传说</b>随从。",
                 "textEn": "<b>Deathrattle:</b> Summon 2 random <b>Legendary</b> minions.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤2个随机高本原型。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -181,52 +210,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_012",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召回本场最先倒下的2名哥伦比亚友方的原始幻影。",
+          "sourceId": "BGS_012",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召回本场最先倒下的4名哥伦比亚友方的原始幻影。",
+          "sourceId": "BGS_012",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "BGS_012"
                 },
                 "text": "<b>亡语</b>：召唤本场战斗中最先死亡的两个友方机械。",
                 "textEn": "<b>Deathrattle</b>: Summon the first 2 friendly Mechs that died this combat.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召回本场最先倒下的2名哥伦比亚友方的原始幻影。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    4
-                  ]
+                  "sourceId": "BGS_012"
                 },
                 "text": "<b>亡语</b>：召唤本场战斗中最先死亡的四个友方机械。",
                 "textEn": "<b>Deathrattle</b>: Summon the first 4 friendly Mechs that died this combat.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召回本场最先倒下的4名哥伦比亚友方的原始幻影。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -256,54 +312,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_017",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "召唤友方支援单位",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_017",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "召唤友方支援单位",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_017",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "召唤友方支援单位",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2
-                  },
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "BGS_017"
                 },
                 "text": "每当你召唤一个野兽，使其获得+2\n攻击力。",
                 "textEn": "Whenever you summon a Beast, give it +2 Attack.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "召唤友方支援单位",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4
-                  },
-                  "numericLiterals": [
-                    4
-                  ]
+                  "sourceId": "BGS_017"
                 },
                 "text": "每当你召唤一个野兽，使其获得+4\n攻击力。",
                 "textEn": "Whenever you summon a Beast, give it +4 Attack.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -335,62 +412,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_018",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "叙拉古友方",
+          "duration": "本场战斗",
+          "text": "退场时使叙拉古友方临时获得攻击徽章×5，依职业配置的副属性装备×5。",
+          "sourceId": "BGS_018",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "叙拉古友方",
+          "duration": "本场战斗",
+          "text": "退场时使叙拉古友方临时获得攻击徽章×10，依职业配置的副属性装备×10。",
+          "sourceId": "BGS_018",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "叙拉古友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 5,
-                    "health": 5
-                  },
-                  "numericLiterals": [
-                    5,
-                    5
-                  ]
+                  "sourceId": "BGS_018"
                 },
                 "text": "<b>亡语：</b>使你的野兽获得+5/+5。",
                 "textEn": "<b>Deathrattle:</b> Give your Beasts +5/+5.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时使叙拉古友方临时获得攻击徽章×5，依职业配置的副属性装备×5。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "叙拉古友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 10,
-                    "health": 10
-                  },
-                  "numericLiterals": [
-                    10,
-                    10
-                  ]
+                  "sourceId": "BGS_018"
                 },
                 "text": "<b>亡语：</b>使你的野兽获得+10/+10。",
                 "textEn": "<b>Deathrattle:</b> Give your Beasts +10/+10.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时使叙拉古友方临时获得攻击徽章×10，依职业配置的副属性装备×10。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -422,58 +516,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_021",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "召唤友方支援单位",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_021",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "召唤友方支援单位",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×8，依职业配置的副属性装备×8。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_021",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "召唤友方支援单位",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "BGS_021"
                 },
                 "text": "每当你召唤一个野兽，使其获得+4/+4。",
                 "textEn": "Whenever you summon a Beast, give it +4/+4.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "召唤友方支援单位",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 8,
-                    "health": 8
-                  },
-                  "numericLiterals": [
-                    8,
-                    8
-                  ]
+                  "sourceId": "BGS_021"
                 },
                 "text": "每当你召唤一个野兽，使其获得+8/+8。",
                 "textEn": "Whenever you summon a Beast, give it +8/+8.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "召唤友方支援单位（叙拉古）时，使触发效果的友方临时获得攻击徽章×8，依职业配置的副属性装备×8。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -503,48 +614,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_022",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击后追加1次普通攻击；每三秒一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+          "sourceId": "BGS_022",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击后追加3次普通攻击；每三秒一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+          "sourceId": "BGS_022",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_022"
                 },
                 "text": "<b>风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
                 "textEn": "[x]<b>Windfury</b>\nThis minion always attacks\nthe enemy minion with\nthe lowest Attack.",
                 "tags": [
                   "windfury"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击后追加1次普通攻击；每三秒一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_022"
                 },
                 "text": "<b>超级风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
                 "textEn": "[x]<b>Mega-Windfury</b>\nThis minion always attacks\nthe enemy minion with\nthe lowest Attack.",
                 "tags": [
                   "windfury"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击后追加3次普通攻击；每三秒一轮。优先攻击当前可攻击范围内攻击力最低的敌人。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -576,50 +718,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_032",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击超杀时对最左侧敌人追加150%基础攻击的法术伤害。",
+          "sourceId": "BGS_032",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击超杀时对最左侧敌人追加300%基础攻击的法术伤害。",
+          "sourceId": "BGS_032",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "overkill",
-                "sourceTrigger": "overkill",
-                "recipient": "leftmostFriendly",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "damage": 3,
-                  "numericLiterals": [
-                    3
-                  ]
+                  "sourceId": "BGS_032"
                 },
                 "text": "<b>超杀：</b>对最左边的敌方随从造成3点伤害。",
                 "textEn": "<b>Overkill:</b> Deal 3 damage\nto the left-most enemy minion.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击超杀时对最左侧敌人追加150%基础攻击的法术伤害。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "overkill",
-                "sourceTrigger": "overkill",
-                "recipient": "leftmostFriendly",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "damage": 6,
-                  "numericLiterals": [
-                    6
-                  ]
+                  "sourceId": "BGS_032"
                 },
                 "text": "<b>超杀：</b>对最左边的敌方随从造成6点伤害。",
                 "textEn": "<b>Overkill:</b> Deal 6 damage\nto the left-most enemy minion.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击超杀时对最左侧敌人追加300%基础攻击的法术伤害。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -649,58 +816,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_035",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方击倒敌人",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_035",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方击倒敌人",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_035",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方击倒敌人",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_035"
                 },
                 "text": "每当一条友方的龙消灭一个敌人，便获得+2/+2。",
                 "textEn": "Whenever a friendly Dragon kills an enemy, gain +2/+2.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方击倒敌人",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "BGS_035"
                 },
                 "text": "每当一条友方的龙消灭一个敌人，便获得+4/+4。",
                 "textEn": "Whenever a friendly Dragon kills an enemy, gain +4/+4.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -815,8 +999,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_038",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -837,8 +1044,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -882,8 +1089,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -1036,8 +1243,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_040",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "卡西米尔友方",
+          "duration": "本场战斗",
+          "text": "退场时为卡西米尔友方增加5层护盾。",
+          "sourceId": "BGS_040",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "卡西米尔友方",
+          "duration": "本场战斗",
+          "text": "退场时为卡西米尔友方增加10层护盾。",
+          "sourceId": "BGS_040",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -1058,17 +1288,17 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "卡西米尔友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_040"
                 },
                 "text": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
                 "textEn": "<b>Deathrattle:</b> Give your Dragons <b>Divine Shield</b>.",
@@ -1076,8 +1306,12 @@
                   "divineShield",
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时为卡西米尔友方增加5层护盾。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -1096,17 +1330,17 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "卡西米尔友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_040"
                 },
                 "text": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
                 "textEn": "<b>Deathrattle:</b> Give your Dragons <b>Divine Shield</b>.",
@@ -1114,8 +1348,12 @@
                   "divineShield",
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时为卡西米尔友方增加10层护盾。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -1154,7 +1392,7 @@
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonBattlecryFactionGrowth",
           "params": {
-            "rosterTribe": "DRAGON",
+            "faction": "卡西米尔",
             "outputs": [
               "precision",
               "vitality"
@@ -1167,7 +1405,7 @@
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonBattlecryFactionGrowth",
           "params": {
-            "rosterTribe": "DRAGON",
+            "faction": "卡西米尔",
             "outputs": [
               "precision",
               "vitality"
@@ -1191,7 +1429,7 @@
                 "textEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +1/+1.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "DRAGON",
+                  "faction": "卡西米尔",
                   "outputs": [
                     "precision",
                     "vitality"
@@ -1216,7 +1454,7 @@
                 "textEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +2/+2.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "DRAGON",
+                  "faction": "卡西米尔",
                   "outputs": [
                     "precision",
                     "vitality"
@@ -1338,44 +1576,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_045",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "每次攻击临时提高攻击倍率20%，最多叠加至额外200%；同一效果每三秒触发一次。",
+          "sourceId": "BGS_045",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "每次攻击临时提高攻击倍率30%，最多叠加至额外300%；同一效果每三秒触发一次。",
+          "sourceId": "BGS_045",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "attack",
-                "sourceTrigger": "attack",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_045"
                 },
                 "text": "每当该随从攻击，便使其攻击力翻倍。",
                 "textEn": "Whenever this attacks, double its Attack.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "每次攻击临时提高攻击倍率20%，最多叠加至额外200%；同一效果每三秒触发一次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "attack",
-                "sourceTrigger": "attack",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_045"
                 },
                 "text": "每当该随从攻击，便使其攻击力变为\n三倍。",
                 "textEn": "Whenever this attacks, triple its Attack.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "每次攻击临时提高攻击倍率30%，最多叠加至额外300%；同一效果每三秒触发一次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -1407,58 +1676,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_047",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方攻击",
+          "recipient": "所有友方",
+          "duration": "本场战斗",
+          "text": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×2，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_047",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方攻击",
+          "recipient": "所有友方",
+          "duration": "本场战斗",
+          "text": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×4，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_047",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "allFriendly",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "所有友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    2,
-                    1
-                  ]
+                  "sourceId": "BGS_047"
                 },
                 "text": "每当一个友方海盗攻击时，使所有友方随从获得+2/+1。",
                 "textEn": "Whenever a friendly Pirate attacks, give all friendly minions +2/+1.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×2，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "allFriendly",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "所有友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    4,
-                    2
-                  ]
+                  "sourceId": "BGS_047"
                 },
                 "text": "每当一个友方海盗攻击时，使所有友方随从获得+4/+2。",
                 "textEn": "Whenever a friendly Pirate attacks, give all friendly minions +4/+2.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×4，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -1497,7 +1783,7 @@
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonBattlecryFactionGrowth",
           "params": {
-            "rosterTribe": "PIRATE",
+            "faction": "维多利亚",
             "outputs": [
               "precision"
             ],
@@ -1510,7 +1796,7 @@
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonBattlecryFactionGrowth",
           "params": {
-            "rosterTribe": "PIRATE",
+            "faction": "维多利亚",
             "outputs": [
               "precision"
             ],
@@ -1534,7 +1820,7 @@
                 "textEn": "<b>Battlecry</b>: Give your other Pirates +3 Attack.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "PIRATE",
+                  "faction": "维多利亚",
                   "outputs": [
                     "precision"
                   ],
@@ -1559,7 +1845,7 @@
                 "textEn": "<b>Battlecry</b>: Give your other Pirates +6 Attack.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "PIRATE",
+                  "faction": "维多利亚",
                   "outputs": [
                     "precision"
                   ],
@@ -1720,58 +2006,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_056",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方攻击",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_056",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方攻击",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_056",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_056"
                 },
                 "text": "每当其他友方海盗攻击时，使其获得+2/+2。",
                 "textEn": "Whenever another friendly Pirate attacks, give it +2/+2.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "BGS_056"
                 },
                 "text": "每当其他友方海盗攻击时，使其获得+4/+4。",
                 "textEn": "Whenever another friendly Pirate attacks, give it +4/+4.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -1803,62 +2106,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_061",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤1个作战支援单位。",
+          "sourceId": "BGS_061",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤1个作战支援单位。",
+          "sourceId": "BGS_061",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "summonStats": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
+                  "sourceId": "BGS_061"
                 },
                 "text": "<b>亡语：</b>召唤一个1/1的海盗并使其立即发起攻击。",
                 "textEn": "<b>Deathrattle:</b> Summon a 1/1 Pirate. It attacks immediately.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤1个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "summonStats": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_061"
                 },
                 "text": "<b>亡语：</b>召唤一个2/2的海盗并使其立即发起攻击。",
                 "textEn": "<b>Deathrattle:</b> Summon a 2/2 Pirate. It attacks immediately.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤1个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -1890,8 +2210,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_067",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方累计破裂五层护盾",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_067",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方累计破裂五层护盾",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_067",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -1912,32 +2255,29 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方累计破裂五层护盾",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_067"
                 },
                 "text": "在一个友方随从失去<b>圣盾</b>后，获得+2/+2。",
                 "textEn": "After a friendly minion loses <b>Divine Shield</b>, gain +2/+2.",
                 "tags": [
                   "divineShield"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -1956,32 +2296,29 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方累计破裂五层护盾",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "BGS_067"
                 },
                 "text": "在一个友方随从失去<b>圣盾</b>后，获得+4/+4。",
                 "textEn": "After a friendly minion loses <b>Divine Shield</b>, gain +4/+4.",
                 "tags": [
                   "divineShield"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -2013,8 +2350,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_071",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "召唤友方支援单位",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×1及五层护盾。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_071",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "召唤友方支援单位",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×2及五层护盾。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_071",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -2035,30 +2395,29 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "召唤友方支援单位",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 1
-                  },
-                  "numericLiterals": [
-                    1
-                  ]
+                  "sourceId": "BGS_071"
                 },
                 "text": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+1攻击力和<b>圣盾</b>。",
                 "textEn": "[x]<b>Divine Shield</b>\nWhenever you summon a Mech\nduring combat, gain +1 Attack\nand <b>Divine Shield</b>.",
                 "tags": [
                   "divineShield"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×1及五层护盾。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -2077,30 +2436,29 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "召唤友方支援单位",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2
-                  },
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "BGS_071"
                 },
                 "text": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+2攻击力和<b>圣盾</b>。",
                 "textEn": "[x]<b>Divine Shield</b>\nWhenever you summon a Mech\nduring combat, gain +2 Attack\nand <b>Divine Shield</b>.",
                 "tags": [
                   "divineShield"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×2及五层护盾。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -2217,52 +2575,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_079",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤3个随机维多利亚原型。",
+          "sourceId": "BGS_079",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤6个随机维多利亚原型。",
+          "sourceId": "BGS_079",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    3
-                  ]
+                  "sourceId": "BGS_079"
                 },
                 "text": "<b>亡语：</b>随机召唤三个海盗。",
                 "textEn": "<b>Deathrattle</b>: Summon 3 random Pirates.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤3个随机维多利亚原型。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    6
-                  ]
+                  "sourceId": "BGS_079"
                 },
                 "text": "<b>亡语：</b>随机召唤六个海盗。",
                 "textEn": "<b>Deathrattle</b>: Summon 6 random Pirates.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤6个随机维多利亚原型。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -2294,62 +2679,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_080",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "duration": "本场战斗",
+          "text": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_080",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "duration": "本场战斗",
+          "text": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_080",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "overkill",
-                "sourceTrigger": "overkill",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "combat",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "combatants",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_080"
                 },
                 "text": "<b>风怒，超杀：</b>使你的其他海盗获得+2/+2。",
                 "textEn": "<b>Windfury</b>\n<b>Overkill:</b> Give your other Pirates +2/+2.",
                 "tags": [
                   "windfury"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击后追加1次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "overkill",
-                "sourceTrigger": "overkill",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "combat",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "combatants",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "BGS_080"
                 },
                 "text": "<b>超级风怒，超杀：</b>使你的其他海盗获得+4/+4。",
                 "textEn": "<b>Mega-Windfury</b>\n<b>Overkill:</b> Give your other Pirates +4/+4.",
                 "tags": [
                   "windfury"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击后追加3次普通攻击；每三秒一轮。undefined（维多利亚）时，使undefined临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -2959,8 +3357,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_110",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方受到攻击",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×3。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_110",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方受到攻击",
+          "recipient": "触发效果的友方",
+          "duration": "本场战斗",
+          "text": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×6。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_110",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -2981,30 +3402,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方受到攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 3
-                  },
-                  "numericLiterals": [
-                    3
-                  ]
+                  "sourceId": "BGS_110"
                 },
                 "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+3攻击力。",
                 "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, give it +3 Attack.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×3。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -3023,30 +3443,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方受到攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "触发效果的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 6
-                  },
-                  "numericLiterals": [
-                    6
-                  ]
+                  "sourceId": "BGS_110"
                 },
                 "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+6攻击力。",
                 "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, give it +6 Attack.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×6。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -3076,8 +3495,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_111",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方受到攻击",
+          "recipient": "自身",
+          "duration": "本局永久",
+          "text": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×1，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_111",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方受到攻击",
+          "recipient": "自身",
+          "duration": "本局永久",
+          "text": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_111",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -3098,32 +3540,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "chosenFriendly",
-                "duration": "game",
-                "kind": "combatKeyword",
+                "trigger": "友方受到攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本局永久",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
+                  "sourceId": "BGS_111"
                 },
                 "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+1/+1。",
                 "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, gain +1/+1 permanently.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×1，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -3142,32 +3581,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "chosenFriendly",
-                "duration": "game",
-                "kind": "combatKeyword",
+                "trigger": "友方受到攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本局永久",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_111"
                 },
                 "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+2/+2。",
                 "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, gain +2/+2 permanently.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -3197,8 +3633,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_112",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方退场",
+          "recipient": "退场干员附近的友方",
+          "duration": "本场战斗",
+          "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_112",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方退场",
+          "recipient": "退场干员附近的友方",
+          "duration": "本场战斗",
+          "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_112",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -3219,32 +3678,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "adjacentFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方退场",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "退场干员附近的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_112"
                 },
                 "text": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+2/+2。",
                 "textEn": "After a friendly minion with <b>Taunt</b> dies, give its neighbors +2/+2.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -3263,32 +3719,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "adjacentFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方退场",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "退场干员附近的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "BGS_112"
                 },
                 "text": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+4/+4。",
                 "textEn": "After a friendly minion with <b>Taunt</b> dies, give its neighbors +4/+4.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -3414,8 +3867,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_119",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击后追加1次普通攻击；每三秒一轮。",
+          "sourceId": "BGS_119",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击后追加3次普通攻击；每三秒一轮。",
+          "sourceId": "BGS_119",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -3436,8 +3912,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
@@ -3456,8 +3932,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -3496,7 +3972,7 @@
           "duration": "untilRecruited",
           "adapter": "darkmoonRecruitTribeToHand",
           "params": {
-            "rosterTribe": "ELEMENTAL"
+            "faction": "炎"
           }
         },
         "elite": {
@@ -3505,7 +3981,7 @@
           "duration": "untilRecruited",
           "adapter": "darkmoonRecruitTribeToHand",
           "params": {
-            "rosterTribe": "ELEMENTAL"
+            "faction": "炎"
           }
         },
         "status": "supported",
@@ -3525,7 +4001,7 @@
                 "textEn": "<b>Battlecry:</b> Add another random Elemental to your hand.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "ELEMENTAL",
+                  "faction": "炎",
                   "amount": 1
                 },
                 "adapter": [
@@ -3546,7 +4022,7 @@
                 "textEn": "<b>Battlecry:</b> Add two other random Elementals to your hand.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "ELEMENTAL",
+                  "faction": "炎",
                   "amount": 2
                 },
                 "adapter": [
@@ -3585,44 +4061,75 @@
       },
       "authoredRule": {
         "sourceId": "BGS_126",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+          "sourceId": "BGS_126",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+          "sourceId": "BGS_126",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "attack",
-                "sourceTrigger": "attack",
-                "recipient": "adjacentFriendly",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_126"
                 },
                 "text": "在该随从攻击并消灭一个随从后，随机对一个相邻的随从造成超过目标生命值的伤害。",
                 "textEn": "After this attacks and kills\na minion, deal excess damage to a random adjacent minion.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给附近一名敌人。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "attack",
-                "sourceTrigger": "attack",
-                "recipient": "adjacentFriendly",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_126"
                 },
                 "text": "在该随从攻击并消灭一个随从后，对相邻的随从均造成超过目标生命值的伤害。",
                 "textEn": "After this attacks and kills\na minion, deal excess damage to both adjacent minions.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "攻击击倒敌人时，把超过其生命的伤害传递给附近两名敌人。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -3654,8 +4161,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_127",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -3676,8 +4206,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "prepEvent",
@@ -3718,8 +4248,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "prepEvent",
@@ -3780,7 +4310,7 @@
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonBattlecryFactionGrowth",
           "params": {
-            "rosterTribe": "ELEMENTAL",
+            "faction": "炎",
             "outputs": [
               "precision",
               "vitality"
@@ -3794,7 +4324,7 @@
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonBattlecryFactionGrowth",
           "params": {
-            "rosterTribe": "ELEMENTAL",
+            "faction": "炎",
             "outputs": [
               "precision",
               "vitality"
@@ -3819,7 +4349,7 @@
                 "textEn": "<b>Battlecry:</b> Give your other Elementals +1/+1.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "ELEMENTAL",
+                  "faction": "炎",
                   "outputs": [
                     "precision",
                     "vitality"
@@ -3845,7 +4375,7 @@
                 "textEn": "<b>Battlecry:</b> Give your other Elementals +2/+2.",
                 "tags": [],
                 "params": {
-                  "rosterTribe": "ELEMENTAL",
+                  "faction": "炎",
                   "outputs": [
                     "precision",
                     "vitality"
@@ -3983,50 +4513,79 @@
       },
       "authoredRule": {
         "sourceId": "BGS_200",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+          "sourceId": "BGS_200",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+          "sourceId": "BGS_200",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "hand",
-                "duration": "untilPlayedOrSold",
-                "kind": "resourceOrShopState",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "inventory",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_200"
                 },
                 "text": "<b>亡语：</b>将一枚铸币置入你的手牌。",
                 "textEn": "<b>Deathrattle:</b> Add a Gold Coin to your hand.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "hand",
-                "duration": "untilPlayedOrSold",
-                "kind": "resourceOrShopState",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "inventory",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "BGS_200"
                 },
                 "text": "<b>亡语：</b>将两枚铸币置入你的手牌。",
                 "textEn": "<b>Deathrattle:</b> Add 2 Gold Coins to your hand.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -4056,8 +4615,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_201",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方受到攻击",
+          "recipient": "自身附近的友方",
+          "duration": "本场战斗",
+          "text": "友方受到攻击时，使自身附近的友方临时获得攻击徽章×1，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_201",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方受到攻击",
+          "recipient": "自身附近的友方",
+          "duration": "本场战斗",
+          "text": "友方受到攻击时，使自身附近的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "BGS_201",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -4078,32 +4660,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "adjacentFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方受到攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身附近的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
+                  "sourceId": "BGS_201"
                 },
                 "text": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+1/+1。",
                 "textEn": "[x]<b>Taunt</b>\nWhenever this is attacked,\ngive adjacent minions\n+1/+1.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方受到攻击时，使自身附近的友方临时获得攻击徽章×1，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -4122,32 +4701,29 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "adjacentFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方受到攻击",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身附近的友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BGS_201"
                 },
                 "text": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+2/+2。",
                 "textEn": "[x]<b>Taunt</b>\nWhenever this is attacked,\ngive adjacent minions\n+2/+2.",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方受到攻击时，使自身附近的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -4258,8 +4834,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_205",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+          "sourceId": "BGS_205",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+          "sourceId": "BGS_205",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -4280,8 +4879,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -4298,8 +4897,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -4316,17 +4915,17 @@
                 "adapter": [
                   "independent:不屈盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_205"
                 },
                 "text": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
                 "textEn": "[x]<b>Divine Shield</b>. <b>Reborn</b>.\nWhenever a friendly <b>Taunt</b>\nminion is attacked, this\n  gets attacked instead.",
@@ -4335,8 +4934,12 @@
                   "divineShield",
                   "reborn"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -4355,8 +4958,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -4373,8 +4976,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -4391,17 +4994,17 @@
                 "adapter": [
                   "independent:不屈盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "BGS_205"
                 },
                 "text": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
                 "textEn": "[x]<b>Divine Shield</b>. <b>Reborn</b>.\nWhenever a friendly <b>Taunt</b>\nminion is attacked, this\n  gets attacked instead.",
@@ -4410,8 +5013,12 @@
                   "divineShield",
                   "reborn"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -4443,8 +5050,31 @@
       },
       "authoredRule": {
         "sourceId": "BOT_312",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤3个作战支援单位。",
+          "sourceId": "BOT_312",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤3个作战支援单位。",
+          "sourceId": "BOT_312",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -4466,28 +5096,25 @@
                 "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
               },
               {
-                "trigger": "playAttach",
-                "sourceTrigger": "playAttach",
-                "recipient": "chosenFriendlyMech",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "summonStats": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
+                  "sourceId": "BOT_312"
                 },
                 "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
                 "textEn": "<b>Magnetic</b>\n<b>Deathrattle:</b> Summon three 1/1 Microbots.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤3个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -4507,28 +5134,25 @@
                 "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
               },
               {
-                "trigger": "playAttach",
-                "sourceTrigger": "playAttach",
-                "recipient": "chosenFriendlyMech",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "summonStats": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "BOT_312"
                 },
                 "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
                 "textEn": "<b>Magnetic</b>\n<b>Deathrattle:</b> Summon three 2/2 Microbots.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤3个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -4560,8 +5184,39 @@
       },
       "authoredRule": {
         "sourceId": "BOT_911",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            },
+            {
+              "id": "independent:护盾发生器",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            },
+            {
+              "id": "independent:护盾发生器",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -4582,8 +5237,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -4600,8 +5255,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "playAttach",
@@ -4635,8 +5290,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -4653,8 +5308,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "playAttach",
@@ -4701,54 +5356,79 @@
       },
       "authoredRule": {
         "sourceId": "CFM_316",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤按当前攻击成长计算，最多七个个作战支援单位。",
+          "sourceId": "CFM_316",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤按当前攻击成长计算，最多七个个作战支援单位。",
+          "sourceId": "CFM_316",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
+                  "sourceId": "CFM_316"
                 },
                 "text": "<b>亡语：</b>召唤若干个1/1的老鼠，数量等同于该随从的攻击力。",
                 "textEn": "[x]<b>Deathrattle:</b> Summon a\nnumber of 1/1 Rats equal\n to this minion's Attack.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤按当前攻击成长计算，最多七个个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "self",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "CFM_316"
                 },
                 "text": "<b>亡语：</b>召唤若干个2/2的老鼠，数量等同于该随从的攻击力。",
                 "textEn": "[x]<b>Deathrattle:</b> Summon a\nnumber of 2/2 Rats equal\n to this minion's Attack.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤按当前攻击成长计算，最多七个个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -4862,55 +5542,76 @@
         }
       },
       "authoredRule": {
-        "mechanic": "summonMultiplier",
+        "sourceId": "DAL_575",
+        "mechanic": "darkmoonCombat",
         "normal": {
-          "trigger": "summon",
-          "recipient": "combatBoardSummons",
-          "multiplier": 2
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "卡牌效果召唤的支援单位数量变为2倍；不复制装备或成长。",
+          "sourceId": "DAL_575",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
         },
         "elite": {
-          "trigger": "summon",
-          "recipient": "combatBoardSummons",
-          "multiplier": 3
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "卡牌效果召唤的支援单位数量变为3倍；不复制装备或成长。",
+          "sourceId": "DAL_575",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
         },
-        "status": "unsupported",
-        "reason": "This multiplies summoned units; it must not copy, duplicate, or grant equipment/badges."
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "passiveMultiplier",
-                "sourceTrigger": "passiveMultiplier",
-                "recipient": "summonedUnitOutputs",
-                "duration": "game",
-                "kind": "combatBoardAction",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "DAL_575"
                 },
                 "text": "你的召唤随从的卡牌召唤数量翻倍。",
                 "textEn": "Your cards that summon minions summon twice as many.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "卡牌效果召唤的支援单位数量变为2倍；不复制装备或成长。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "passiveMultiplier",
-                "sourceTrigger": "passiveMultiplier",
-                "recipient": "summonedUnitOutputs",
-                "duration": "game",
-                "kind": "combatBoardAction",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "DAL_575"
                 },
                 "text": "你的召唤随从的卡牌召唤数量变为三倍。",
                 "textEn": "Your cards that summon minions summon three times as many.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "卡牌效果召唤的支援单位数量变为3倍；不复制装备或成长。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -4940,8 +5641,31 @@
       },
       "authoredRule": {
         "sourceId": "DS1_070",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -4962,8 +5686,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -5007,8 +5731,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -5063,8 +5787,31 @@
       },
       "authoredRule": {
         "sourceId": "EX1_093",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -5085,8 +5832,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -5130,8 +5877,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -5188,58 +5935,75 @@
       },
       "authoredRule": {
         "sourceId": "EX1_531",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方退场",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方退场（叙拉古）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "EX1_531",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方退场",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方退场（叙拉古）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "EX1_531",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方退场",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    2,
-                    1
-                  ]
+                  "sourceId": "EX1_531"
                 },
                 "text": "每当一个友方野兽死亡，便获得+2/+1。",
                 "textEn": "Whenever a friendly Beast dies, gain +2/+1.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方退场（叙拉古）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方退场",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    4,
-                    2
-                  ]
+                  "sourceId": "EX1_531"
                 },
                 "text": "每当一个友方野兽死亡，便获得+4/+2。",
                 "textEn": "Whenever a friendly Beast dies, gain +4/+2.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方退场（叙拉古）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -5271,62 +6035,79 @@
       },
       "authoredRule": {
         "sourceId": "EX1_556",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤1个作战支援单位。",
+          "sourceId": "EX1_556",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时召唤1个作战支援单位。",
+          "sourceId": "EX1_556",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "summonStats": {
-                    "attack": 2,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    2,
-                    1
-                  ]
+                  "sourceId": "EX1_556"
                 },
                 "text": "<b>亡语：</b>召唤一个2/1的损坏的傀儡。",
                 "textEn": "<b>Deathrattle:</b> Summon a 2/1 Damaged Golem.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤1个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "summonStats": {
-                    "attack": 4,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    4,
-                    2
-                  ]
+                  "sourceId": "EX1_556"
                 },
                 "text": "<b>亡语：</b>召唤一个4/2的损坏的傀儡。",
                 "textEn": "<b>Deathrattle:</b> Summon a 4/2 Damaged Golem.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时召唤1个作战支援单位。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -5356,8 +6137,31 @@
       },
       "authoredRule": {
         "sourceId": "FP1_024",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+          "sourceId": "FP1_024",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "战场",
+          "duration": "本场战斗",
+          "text": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+          "sourceId": "FP1_024",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -5378,20 +6182,17 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "allCombatants",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "damage": 1,
-                  "numericLiterals": [
-                    1
-                  ]
+                  "sourceId": "FP1_024"
                 },
                 "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害。",
                 "textEn": "<b>Taunt</b>. <b>Deathrattle:</b> Deal 1 damage to all minions.",
@@ -5399,8 +6200,12 @@
                   "taunt",
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -5419,20 +6224,17 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "allCombatants",
-                "duration": "combat",
-                "kind": "combatBoardAction",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "战场",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "damage": 1,
-                  "numericLiterals": [
-                    1
-                  ]
+                  "sourceId": "FP1_024"
                 },
                 "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害，触发两次。",
                 "textEn": "<b>Taunt</b>\n<b>Deathrattle:</b> Deal 1 damage to all minions twice.",
@@ -5440,8 +6242,12 @@
                   "taunt",
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时对场上所有单位造成相当于自身基础攻击80%的法术伤害。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -5470,59 +6276,80 @@
         }
       },
       "authoredRule": {
-        "mechanic": "deathrattleMultiplier",
+        "sourceId": "FP1_031",
+        "mechanic": "darkmoonCombat",
         "normal": {
-          "trigger": "retiringEffect",
-          "recipient": "deathrattleOutputs",
-          "multiplier": 2
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方源卡退场效果触发2次；不增加其他产出。",
+          "sourceId": "FP1_031",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
         },
         "elite": {
-          "trigger": "retiringEffect",
-          "recipient": "deathrattleOutputs",
-          "multiplier": 3
+          "trigger": "战斗中",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方源卡退场效果触发3次；不增加其他产出。",
+          "sourceId": "FP1_031",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
         },
-        "status": "unsupported",
-        "reason": "Only eligible retiring/deathrattle outputs repeat; this does not multiply all combat gains."
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleDeathrattleOutputs",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "FP1_031"
                 },
                 "text": "你的随从的<b>亡语</b>将触发两次。",
                 "textEn": "Your minions trigger their <b>Deathrattles</b> twice.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方源卡退场效果触发2次；不增加其他产出。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "eligibleDeathrattleOutputs",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "战斗中",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "FP1_031"
                 },
                 "text": "你的随从的<b>亡语</b>将触发三次。",
                 "textEn": "Your minions trigger their <b>Deathrattles</b> three times.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方源卡退场效果触发3次；不增加其他产出。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -5724,58 +6551,75 @@
       },
       "authoredRule": {
         "sourceId": "GVG_106",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方退场",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "GVG_106",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方退场",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "GVG_106",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方退场",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "GVG_106"
                 },
                 "text": "每当一个友方机械死亡，便获得+2/+2。",
                 "textEn": "Whenever a friendly Mech dies, gain +2/+2.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "conditionalEvent",
-                "sourceTrigger": "conditionalEvent",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
+                "trigger": "友方退场",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4,
-                    "health": 4
-                  },
-                  "numericLiterals": [
-                    4,
-                    4
-                  ]
+                  "sourceId": "GVG_106"
                 },
                 "text": "每当一个友方机械死亡，便获得+4/+4。",
                 "textEn": "Whenever a friendly Mech dies, gain +4/+4.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -5884,8 +6728,31 @@
       },
       "authoredRule": {
         "sourceId": "ICC_807",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -5906,8 +6773,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -5951,8 +6818,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "battlecry",
@@ -6007,8 +6874,31 @@
       },
       "authoredRule": {
         "sourceId": "ICC_858",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "友方累计破裂五层护盾",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "ICC_858",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "友方累计破裂五层护盾",
+          "recipient": "自身",
+          "duration": "本场战斗",
+          "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4。同一效果每三秒触发一次，每场最多二十五次。",
+          "sourceId": "ICC_858",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -6029,30 +6919,29 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方累计破裂五层护盾",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2
-                  },
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "ICC_858"
                 },
                 "text": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+2攻击力。",
                 "textEn": "<b>Divine Shield</b>\nAfter a friendly minion loses <b>Divine Shield</b>, gain +2 Attack.",
                 "tags": [
                   "divineShield"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -6071,30 +6960,29 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "chosenFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "友方累计破裂五层护盾",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "自身",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 4
-                  },
-                  "numericLiterals": [
-                    4
-                  ]
+                  "sourceId": "ICC_858"
                 },
                 "text": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+4攻击力。",
                 "textEn": "<b>Divine Shield</b>\nAfter a friendly minion loses <b>Divine Shield</b>, gain +4 Attack.",
                 "tags": [
                   "divineShield"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4。同一效果每三秒触发一次，每场最多二十五次。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -6123,19 +7011,32 @@
         }
       },
       "authoredRule": {
-        "mechanic": "battlecryMultiplier",
+        "sourceId": "LOE_077",
+        "mechanic": "triggerMultiplier",
         "normal": {
-          "trigger": "battlecryOnGain",
-          "recipient": "originalBattlecryOutput",
-          "multiplier": 2
+          "trigger": "battlecryMultiplier",
+          "recipient": "originalBattlecryOutputs",
+          "duration": "whileOwnerOnField",
+          "adapter": "triggerMultiplier",
+          "params": {
+            "hook": "gain",
+            "filter": "darkmoonBattlecry",
+            "extraRuns": 1
+          }
         },
         "elite": {
-          "trigger": "battlecryOnGain",
-          "recipient": "originalBattlecryOutput",
-          "multiplier": 3
+          "trigger": "battlecryMultiplier",
+          "recipient": "originalBattlecryOutputs",
+          "duration": "whileOwnerOnField",
+          "adapter": "triggerMultiplier",
+          "params": {
+            "hook": "gain",
+            "filter": "darkmoonBattlecry",
+            "extraRuns": 2
+          }
         },
-        "status": "unsupported",
-        "reason": "Only the source minion Battlecry output repeats on recruitment; unrelated gain hooks do not."
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -6313,8 +7214,31 @@
       },
       "authoredRule": {
         "sourceId": "OG_221",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "随机友方",
+          "duration": "本场战斗",
+          "text": "退场时为随机友方增加5层护盾。",
+          "sourceId": "OG_221",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "随机友方",
+          "duration": "本场战斗",
+          "text": "退场时为随机友方增加10层护盾。",
+          "sourceId": "OG_221",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
@@ -6335,17 +7259,17 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "randomFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "随机友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": []
+                  "sourceId": "OG_221"
                 },
                 "text": "<b>亡语：</b>随机使一个友方随从获得<b>圣盾</b>。",
                 "textEn": "<b>Deathrattle:</b> Give a random friendly minion <b>Divine Shield</b>.",
@@ -6353,8 +7277,12 @@
                   "divineShield",
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时为随机友方增加5层护盾。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
@@ -6373,19 +7301,17 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "randomFriendly",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "随机友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "numericLiterals": [
-                    2
-                  ]
+                  "sourceId": "OG_221"
                 },
                 "text": "<b>亡语：</b>随机使两个友方随从获得<b>圣盾</b>。",
                 "textEn": "<b>Deathrattle:</b> Give 2 random friendly minions <b>Divine Shield</b>.",
@@ -6393,8 +7319,12 @@
                   "divineShield",
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时为随机友方增加10层护盾。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }
@@ -6424,62 +7354,79 @@
       },
       "authoredRule": {
         "sourceId": "OG_256",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "darkmoonCombat",
+        "normal": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "所有友方",
+          "duration": "本场战斗",
+          "text": "退场时使所有友方临时获得攻击徽章×1，依职业配置的副属性装备×1。",
+          "sourceId": "OG_256",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "elite": {
+          "trigger": "每次退场（每场最多三次）",
+          "recipient": "所有友方",
+          "duration": "本场战斗",
+          "text": "退场时使所有友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
+          "sourceId": "OG_256",
+          "implementation": "supported",
+          "adapter": [
+            "darkmoonCombat"
+          ]
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "allFriendly",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "所有友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
+                  "sourceId": "OG_256"
                 },
                 "text": "<b>亡语：</b>使你的所有随从获得+1/+1。",
                 "textEn": "<b>Deathrattle:</b> Give your minions +1/+1.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时使所有友方临时获得攻击徽章×1，依职业配置的副属性装备×1。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "allFriendly",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "每次退场（每场最多三次）",
+                "sourceTrigger": "darkmoonCombat",
+                "recipient": "所有友方",
+                "duration": "本场战斗",
+                "kind": "sourceSpecificCombat",
                 "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
+                  "sourceId": "OG_256"
                 },
                 "text": "<b>亡语：</b>使你的所有随从获得+2/+2。",
                 "textEn": "<b>Deathrattle:</b> Give your minions +2/+2.",
                 "tags": [
                   "deathrattle"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null,
+                "adaptation": "退场时使所有友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
+                "adapter": [
+                  "darkmoonCombat"
+                ]
               }
             ]
           }

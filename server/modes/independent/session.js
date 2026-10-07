@@ -11,7 +11,7 @@ import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, normalizeGearF
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { shopCarryApplies } from './warbandPrep.js';
-import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth } from './darkmoonShop.js';
+import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, applyDarkmoonAHGrowth } from './darkmoonShop.js';
 import { GROWTH_MODES, operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
@@ -219,6 +219,31 @@ function transformPieceIntoShopCopy(state,catalog,piece,slot,makeGolden=false) {
   if(state.growthMode==='levels'){piece.growthMode='levels';piece.growthLevel=1;operatorGrowthInfo(piece,catalog);}else{delete piece.growthMode;delete piece.growthLevel;}
   ensurePermit(piece,catalog);return piece;
 }
+function applyDarkmoonBattleResults(state,catalog,results,services,events) {
+  if(!results)return;
+  const outer=services.phase;services.phase='battle';
+  try {
+    for(const growth of results.growth||[]) {
+      const target=state.pieces.find(p=>p.uid===growth.targetUid);
+      if(!target) { events.push({type:'darkmoon-growth-lost',sourceUid:growth.sourceUid,targetUid:growth.targetUid,reason:'target-missing'}); continue; }
+      const grants=applyDarkmoonAHGrowth(state,catalog,target,growth.attackUnits??growth.attackLevels,growth.secondaryUnits??growth.secondaryLevels,services,
+        {sourceUid:growth.sourceUid,landOn:`uid:${target.uid}`,targetUid:target.uid,battleGrowth:true});
+      if(grants.length)events.push({type:'darkmoon-growth',sourceUid:growth.sourceUid,targetUid:target.uid,grants});
+    }
+    for(const recruit of results.recruits||[]) {
+      const chessId=recruit.chessId,room=roomFor(state,catalog,chessId,{allowTemp:true});
+      if(!room){events.push({type:'darkmoon-recruit-lost',sourceUid:recruit.sourceUid,chessId,reason:'no-room'});continue;}
+      const piece=gainChess(state,catalog,chessId,{poolTaken:false,poolCopies:1});
+      if(room==='temp')piece.temp=true;
+      if(recruit.pristine!==false)piece.darkmoonPendingPlay=true;
+      events.push({type:'darkmoon-recruit',sourceUid:recruit.sourceUid,chessId,uid:piece.uid,pendingPlay:Boolean(piece.darkmoonPendingPlay)});
+    }
+    for(const coin of results.coins||[]) {
+      const quantity=Math.max(0,Math.floor(Number(coin.quantity)||0));
+      if(quantity)grantEquipment(state,catalog,'chess_item_1_03_e_a',quantity,{origin:'native',phase:'battle',sourceUid:coin.sourceUid});
+    }
+  } finally { services.phase=outer; }
+}
 /** A save from before 交接凭证 were gear: give each of the twelve operators the one it brings (no-op otherwise). */
 function ensurePermits(state, catalog) { for (const piece of state.pieces || []) ensurePermit(piece, catalog); }
 function handleGainEquipment(state, catalog) {
@@ -372,7 +397,7 @@ export function createSession(options = {}) {
   const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, growthMode, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
-    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0, tribeBought:{} }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
+    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0, factionBought:{} }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
   if (errs.length) throw new Error(`INVALID_INITIAL_STATE:${errs.join(',')}`);
@@ -550,8 +575,7 @@ export function applyAction(state, action, options = {}) {
         const pool = poolFor(work, slot.id); if (!pool?.left) throw new Error('SOLD_OUT');
         if (!roomFor(work, catalog, slot.id, { allowTemp: false })) throw new Error('BENCH_FULL');
         work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; addTotal(work, 'bought'); addTotal(work, 'spent', slot.price); invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
-        const boughtRef=opFor(catalog,slot.id)?.sourceRefs?.darkmoon19_2;
-        if(boughtRef?.rosterTribe) { work.counters.tribeBought ||= {}; work.counters.tribeBought[boughtRef.rosterTribe]=(work.counters.tribeBought[boughtRef.rosterTribe]||0)+1; }
+        for(const faction of nativeFactions({chessId:slot.id},catalog)) { work.counters.factionBought ||= {}; work.counters.factionBought[faction]=(work.counters.factionBought[faction]||0)+1; }
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
         applyDarkmoonShopGrowth(work,slot,piece,services);
         invokeHook(work, 'gain', { piece, source: 'buy', paid: true, targetUid:action.targetUid, shopSlots: action.shopSlots, shopSlot: action.shopSlot, buySlot: action.slot }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
@@ -665,7 +689,7 @@ export function applyAction(state, action, options = {}) {
       }
       invokeHook(work, 'prepEnd', { round: work.round }, services);
       { const outer = services.phase; services.phase = 'prepEnd'; try { runEquipmentPrepEnd(work, services); } finally { services.phase = outer; } }
-      const battle = runIndependentBattle(work, { data, catalog });
+      const battle = (options.battleRunner || runIndependentBattle)(work, { data, catalog });
       if (!battle || !battle.result) throw new Error('BATTLE_FAILED');
       replay = battle.replay || null;
       const gd = gdFor(work, data); const playerResult = battle.result.perPlayer?.independent || Object.values(battle.result.perPlayer || {})[0] || {};
@@ -675,6 +699,7 @@ export function applyAction(state, action, options = {}) {
       work.lp = Math.max(0, work.lp - lpLost);
       for (const [uid, ps] of Object.entries(battle.pieceStates || {})) { const piece = work.pieces.find((x) => x.uid === uid); if (piece) { piece.nativeState = clone(ps.nativeState || {}); piece.equipment = clone(ps.equipment || []); piece.attachments = clone(ps.attachments || []); } }
       for (const reward of battle.rewards || []) grantEquipment(work, catalog, reward.id, reward.quantity || 1, { origin: reward.origin, phase: 'battle', sourceUid: reward.sourceUid, copied: reward.copied });
+      applyDarkmoonBattleResults(work,catalog,battle.darkmoonResults,services,events);
       const fieldKind = getIndependentField(work, { data, catalog }).field;
       const bossRound = fieldKind === 'bossL';
       const bossCleared = bossRound && Number(battle.result.bossHpLeft) <= 0 && !battle.diagnostics?.capped;
@@ -696,7 +721,7 @@ export function applyAction(state, action, options = {}) {
       work.playerEffects = work.playerEffects.filter((x) => x.type !== 'repeatNativeForging' || x.expiresRound >= work.round);
       const baseIncome = baseIncomeFor(work.round, gd, catalog); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);
       work.incomeThisRound = baseIncome; work.funds = baseIncome + Number(work.pendingFunds || 0) + facility; work.pendingFunds = 0;
-      work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0; work.counters.tribeBought = {};
+      work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0; work.counters.factionBought = {};
       for (const piece of work.pieces) for (const item of piece.equipment) if (equipmentRecord(catalog, item.id)?.mechanism === 'saleThresholdRecruit') item.state = { ...(item.state || {}), saleTriggersThisPrep: 0 };
       work.shop.upgradePrice = Math.max(0, work.shop.upgradePrice - 1); work.shop.freeRefreshes = 0;
       work.shop.slots = advanceShop(work, gd, catalog, rng);

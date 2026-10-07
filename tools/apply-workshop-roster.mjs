@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DARKMOON_COMBAT_SUPPORTED_IDS, darkmoonCombatMetadata } from '../server/sim/content/independent/darkmoonCombat.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..');
@@ -53,7 +54,13 @@ const SOURCE_RULES = Object.freeze({
 });
 const KEYWORD_ADAPTERS = Object.freeze({
   BGS_039:['坚守盟约'], BGS_106:['坚守盟约','不屈盟约'], BGS_034:['护盾发生器','不屈盟约'],
-  BGS_131:['精准盟约'], FP1_010:['精准盟约'], GVG_113:['巨锤盟约'], LOOT_078:['巨锤盟约']
+  BGS_131:['精准盟约'], FP1_010:['精准盟约'], GVG_113:['巨锤盟约'], LOOT_078:['巨锤盟约'],
+  BGS_038:['坚守盟约'], BGS_040:['护盾发生器'], BGS_060:['坚守盟约'], BGS_067:['护盾发生器'],
+  BGS_071:['护盾发生器'], BGS_110:['坚守盟约'], BGS_111:['坚守盟约'], BGS_112:['坚守盟约'],
+  BGS_119:['护盾发生器'], BGS_121:['坚守盟约'], BGS_124:['坚守盟约'], BGS_127:['坚守盟约'],
+  BGS_201:['坚守盟约'], BGS_205:['坚守盟约','护盾发生器','不屈盟约'], BOT_218:['坚守盟约'],
+  BOT_911:['坚守盟约','护盾发生器'], DS1_070:['坚守盟约'], EX1_093:['坚守盟约'], FP1_024:['坚守盟约'],
+  ICC_807:['坚守盟约'], ICC_858:['护盾发生器'], OG_221:['护盾发生器'], ULD_217:['不屈盟约']
 });
 // Executable source-id keyed adaptations whose prep behavior already exists in native.js.
 // Descriptors are written from the source effect, with ordinary/golden parameters kept distinct.
@@ -62,16 +69,16 @@ const PREP_ADAPTERS = Object.freeze({
   BGS_037: { trigger:'sold', sourceTrigger:'sell', recipient:'currentShopOffers', duration:'currentShopOnly', kind:'shopGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonShopGrowth', params:{rosterTribe:'*',persistent:false} },
   BGS_049: { trigger:'sold', sourceTrigger:'sell', recipient:'playerResource', duration:'immediateOnSale', kind:'gold', effect:{ normal:3, elite:6 }, adapter:'factionReaction', params:{ mode:'funds',targets:'all',maxEventsPerPrep:1 }, runtimeParams:{normal:{count:2},elite:{count:5}}, note:'Base sell already grants 1 gold; adapter adds 2/5 immediately to reach original 3/6 total.' },
   BGS_055: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shopUpgradeCost', duration:'nextUpgrade', kind:'upgradeDiscount', effect:{ normal:1, elite:2 }, adapter:'factionReaction', params:{ mode:'discount',targets:'self',count:{normal:1,elite:2},excludeSelf:false,maxEventsPerPrep:3 } },
-  BGS_072: { trigger:'bought', sourceTrigger:'buyMatchingRosterTribe', recipient:'playerResource', duration:'thisTurnOnly', kind:'gold', effect:{ normal:1, elite:2 }, adapter:'darkmoonRosterTribePurchaseFunds', params:{ rosterTribe:'PIRATE',faction:'维多利亚' }, runtimeParams:{normal:{count:1},elite:{count:2}} },
+  BGS_072: { trigger:'bought', sourceTrigger:'buyMatchingMappedFaction', recipient:'playerResource', duration:'thisTurnOnly', kind:'gold', effect:{ normal:1, elite:2 }, adapter:'darkmoonRosterTribePurchaseFunds', params:{ faction:'维多利亚' }, runtimeParams:{normal:{count:1},elite:{count:2}} },
   BGS_104: { trigger:'bought', sourceTrigger:'buyMatchingRosterTribe', recipient:'matchingTribeShopOffers', duration:'permanent', kind:'shopGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonShopGrowth', params:{rosterTribe:'ELEMENTAL',faction:'炎',persistent:true} },
   BGS_113: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'selectedShopMinion', duration:'permanentTransformation', kind:'transform', effect:{normal:1,elite:1}, adapter:'darkmoonTransformFromShop', params:{eliteCopy:false}, runtimeParams:{normal:{eliteCopy:false},elite:{eliteCopy:true}} },
-  BGS_041: { trigger:'gain', sourceTrigger:'otherBattlecryOnGain', recipient:'allFriendlyDragonOperators', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonBattlecryFactionGrowth', params:{rosterTribe:'DRAGON',outputs:['precision','vitality']} },
-  BGS_053: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'otherFriendlyPirates', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:3,elite:6}, adapter:'darkmoonBattlecryFactionGrowth', params:{rosterTribe:'PIRATE',outputs:['precision'],excludeSelf:true} },
-  BGS_128: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'otherFriendlyElementals', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonBattlecryFactionGrowth', params:{rosterTribe:'ELEMENTAL',outputs:['precision','vitality'],excludeSelf:true} },
-  BGS_122: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shop', duration:'frozenUntilPurchase', kind:'shopOffer', effect:{normal:1,elite:2}, adapter:'darkmoonAddTribeShopOffer', params:{rosterTribe:'ELEMENTAL'} },
-  BGS_123: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'hand', duration:'untilRecruited', kind:'recruitOffer', effect:{normal:1,elite:2}, adapter:'darkmoonRecruitTribeToHand', params:{rosterTribe:'ELEMENTAL'} },
-  BGS_048: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'selectedFriendlyPirate', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:'1 per Pirate bought',elite:'2 per Pirate bought'}, adapter:'darkmoonBattlecryTargetGrowth', params:{rosterTribe:'PIRATE',outputs:['precision','vitality']} },
-  BGS_100: { trigger:'bought', sourceTrigger:'buyElemental', recipient:'selectedFriendlyOperator', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:'Elemental tier',elite:'Elemental tier'}, adapter:'darkmoonBoughtTribeTargetGrowth', params:{triggerTribe:'ELEMENTAL',outputs:['precision','vitality']} },
+  BGS_041: { trigger:'gain', sourceTrigger:'otherBattlecryOnGain', recipient:'allFriendlyDragonOperators', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonBattlecryFactionGrowth', params:{faction:'卡西米尔',outputs:['precision','vitality']} },
+  BGS_053: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'otherFriendlyPirates', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:3,elite:6}, adapter:'darkmoonBattlecryFactionGrowth', params:{faction:'维多利亚',outputs:['precision'],excludeSelf:true} },
+  BGS_128: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'otherFriendlyElementals', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonBattlecryFactionGrowth', params:{faction:'炎',outputs:['precision','vitality'],excludeSelf:true} },
+  BGS_122: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shop', duration:'frozenUntilPurchase', kind:'shopOffer', effect:{normal:1,elite:2}, adapter:'darkmoonAddTribeShopOffer', params:{faction:'炎'} },
+  BGS_123: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'hand', duration:'untilRecruited', kind:'recruitOffer', effect:{normal:1,elite:2}, adapter:'darkmoonRecruitTribeToHand', params:{faction:'炎'} },
+  BGS_048: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'selectedFriendlyPirate', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:'1 per mapped-faction purchase',elite:'2 per mapped-faction purchase'}, adapter:'darkmoonBattlecryTargetGrowth', params:{faction:'维多利亚',outputs:['precision','vitality']} },
+  BGS_100: { trigger:'bought', sourceTrigger:'buyElemental', recipient:'selectedFriendlyOperator', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:'Elemental mapped-faction tier',elite:'Elemental mapped-faction tier'}, adapter:'darkmoonBoughtTribeTargetGrowth', params:{triggerFaction:'炎',outputs:['precision','vitality']} },
   BGS_116: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'playerResource', duration:'nextRefreshes', kind:'freeRefresh', effect:{ normal:1, elite:2 }, adapter:'freeRefresh', params:{ normal:1, elite:2 } },
   LOE_077: { trigger:'battlecryMultiplier', sourceTrigger:'battlecry', recipient:'originalBattlecryOutputs', duration:'whileOwnerOnField', kind:'triggerMultiplier', effect:{normal:2,elite:3}, adapter:'triggerMultiplier', params:{hook:'gain',filter:'darkmoonBattlecry'}, runtimeParams:{normal:{extraRuns:1},elite:{extraRuns:2}} },
 });
@@ -163,6 +170,8 @@ function effectDeliveries(card, variant, isElite = false) {
   const authored = PREP_ADAPTERS[card.id];
     if (authored) return [{ trigger:authored.trigger, sourceTrigger:authored.sourceTrigger, recipient:authored.recipient, duration:authored.duration, kind:authored.kind, text:variant.text_zh||'', textEn:variant.text_en||'', tags:[], params:{ ...(authored.params||{}), ...(authored.effect?{amount:authored.effect[isElite?'elite':'normal']}:{}) }, adapter:[authored.adapter], implementation:'supported', unsupportedReason:null }];
   const base = parseEffect(card, variant), found = [];
+  const combatMetadata=darkmoonCombatMetadata(card.id,isElite);
+  if(combatMetadata) Object.assign(base,{trigger:typeof combatMetadata.trigger==='string'?combatMetadata.trigger:'combat',sourceTrigger:'darkmoonCombat',recipient:({BGS_046:'hand',BGS_121:'combatSummonAndHand',BGS_200:'inventory'})[card.id]||combatMetadata.recipient||'combatants',duration:combatMetadata.duration||'thisCombat',kind:'sourceSpecificCombat',adaptation:combatMetadata.text,adapter:['darkmoonCombat'],params:{sourceId:card.id},implementation:'supported',unsupportedReason:null});
   for (const tag of ['taunt','divineShield','reborn','poison']) if (base.tags.includes(tag)) found.push(tag);
   if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')) found.push('cleave');
   const rows = found.map(tag => {
@@ -212,12 +221,15 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
       sourceTextsEn: { normal: card.text_en || '', elite: card.golden?.text_en || card.text_en || '' },
       sourceUrl: `https://api.hearthstonejson.com/v1/68600/zhCN/cards.json`,
       metadata: { op: { effectDelivery: { normal, elite } } },
-      authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : PREP_ADAPTERS[card.id] ? {
+      authoredRule: PREP_ADAPTERS[card.id] ? {
         sourceId:card.id, mechanic:PREP_ADAPTERS[card.id].kind,
         normal:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(PREP_ADAPTERS[card.id].runtimeParams?.normal||{}),...(card.id==='BGS_055'?{count:1}:{})}, ...(PREP_ADAPTERS[card.id].note?{adaptation:PREP_ADAPTERS[card.id].note}:{})},
         elite:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(PREP_ADAPTERS[card.id].runtimeParams?.elite||{}),...(card.id==='BGS_055'?{count:2}:{})}, ...(PREP_ADAPTERS[card.id].note?{adaptation:PREP_ADAPTERS[card.id].note}:{})},
         status:'supported',reason:null
-      } : KEYWORD_ADAPTERS[card.id] ? {
+      } : DARKMOON_COMBAT_SUPPORTED_IDS.includes(card.id) ? {
+        sourceId:card.id,mechanic:'darkmoonCombat',
+        normal:darkmoonCombatMetadata(card.id,false),elite:darkmoonCombatMetadata(card.id,true),status:'supported',reason:null
+      } : SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : KEYWORD_ADAPTERS[card.id] ? {
         sourceId:card.id,
         mechanic:'keywordGearGrant',
         normal:{trigger:'gain',recipient:'self',duration:'permanentWornGear',outputs:KEYWORD_ADAPTERS[card.id].map(name=>({id:`independent:${name}`,quantity:1}))},
@@ -257,6 +269,7 @@ const report = {
   durations:{normal:durationCounts('normal'),elite:durationCounts('elite')},
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
   nativeDispatchedKeywordGear: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
+  nativeDispatchedCombatSources:entries.filter(x=>DARKMOON_COMBAT_SUPPORTED_IDS.includes(x.sourceId)).map(x=>({id:x.sourceId,name:x.name,normal:darkmoonCombatMetadata(x.sourceId,false),elite:darkmoonCombatMetadata(x.sourceId,true)})),
   sourceSpecificPrepAdapters:entries.filter(x=>PREP_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:PREP_ADAPTERS[x.sourceId].kind,status:'supported',normal:x.metadata.op.effectDelivery.normal,elite:x.metadata.op.effectDelivery.elite})),
   totalNormalEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.normal.length,0),
   totalEliteEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.elite.length,0),
@@ -294,7 +307,17 @@ const gameTextAddon = {
   schema:'stronghold.darkmoon-game-text-addon/v1',
   sourceBuild:roster.sourceBuild,
   basedOnGameText:path.basename(gameTextPath),
-  operators:Object.fromEntries(entries.map(x=>[x.operator,{sourceId:x.sourceId,name:x.name,nameEn:x.nameEn,normal:x.sourceTexts.normal,elite:x.sourceTexts.elite,normalEn:x.sourceTextsEn.normal,eliteEn:x.sourceTextsEn.elite}]))
+  operators:Object.fromEntries(entries.map(x=>{
+    const levelsText=variant=>{
+      const sourceText=x.sourceTexts[variant]||'';
+      const deliveries=x.metadata.op.effectDelivery[variant]||[];
+      const growth=deliveries.map(e=>e.adaptation||e.text||'').filter(t=>t.includes('徽章')||t.includes('副属性装备'))
+        .map(t=>t.replaceAll('攻击徽章','攻击训练等级').replaceAll('副属性装备','副属性训练等级'));
+      return growth.length?`${sourceText}${sourceText?'\n':''}等级成长：${[...new Set(growth)].join('；')}`:sourceText;
+    };
+    return [x.operator,{sourceId:x.sourceId,name:x.name,nameEn:x.nameEn,normal:x.sourceTexts.normal,elite:x.sourceTexts.elite,normalEn:x.sourceTextsEn.normal,eliteEn:x.sourceTextsEn.elite,
+      normalLevels:levelsText('normal'),eliteLevels:levelsText('elite')}];
+  }))
 };
 for (const [p, value] of [[designAddonPath,designAddon],[gameTextAddonPath,gameTextAddon]]) {
   fs.mkdirSync(path.dirname(p), { recursive:true });

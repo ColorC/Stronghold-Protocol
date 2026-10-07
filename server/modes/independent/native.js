@@ -1,5 +1,5 @@
 // Independent mode uses authored, structured native effects. The original game text is metadata only.
-import { tavernFactions as sharedTavernFactions, nativeBodyStats, nativeRecord } from '../../../shared/independentRules.js';
+import { tavernFactions as sharedTavernFactions, nativeFactions, nativeBodyStats, nativeRecord } from '../../../shared/independentRules.js';
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
 import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
@@ -347,7 +347,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonRosterTribePurchaseFunds': {
         const buyer=event.piece;
         const ref=services.catalog?.operators?.[chessIdOf(buyer)]?.sourceRefs?.darkmoon19_2;
-        if(buyer && (buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId) && ref?.rosterTribe===p.rosterTribe && ref?.faction===p.faction) state.funds=Number(state.funds||0)+Number(p.count||0);
+        if(buyer && (buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId) && nativeFactions(buyer,services.catalog).includes(p.faction)) state.funds=Number(state.funds||0)+Number(p.count||0);
         break;
       }
       case 'darkmoonShopGrowth':
@@ -364,7 +364,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonBattlecryFactionGrowth': {
         const gained=event.piece, ref=services.catalog?.operators?.[chessIdOf(gained)]?.sourceRefs?.darkmoon19_2;
         if(!gained || (gained.playerId??gained.ownerId)!==(piece.playerId??piece.ownerId) || !ref?.battlecry || !isPresent(piece)) break;
-        for(const target of roster(state).filter(x=>isPresent(x) && (x.playerId??x.ownerId)===(piece.playerId??piece.ownerId) && (!p.excludeSelf || x.uid!==piece.uid) && services.catalog?.operators?.[chessIdOf(x)]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe)) {
+        for(const target of roster(state).filter(x=>isPresent(x) && (x.playerId??x.ownerId)===(piece.playerId??piece.ownerId) && (!p.excludeSelf || x.uid!==piece.uid) && nativeFactions(x,services.catalog).includes(p.faction))) {
           for(const id of p.outputs||[]) services.grantEquipment(state,id,Number(p.count||0),{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
         }
         break;
@@ -372,7 +372,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonAddTribeShopOffer': {
         const amount=Math.max(0,Math.floor(Number(p.count||0)));
         const excluded=String(piece.chessId).replace(/_b$/,'_a');
-        const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && services.catalog?.operators?.[id]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe).map(([id])=>id).sort();
+        const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && nativeFactions({chessId:id},services.catalog).includes(p.faction)).map(([id])=>id).sort();
         for(let i=0;i<amount&&eligible.length;i++) {
           const id=eligible[Math.floor(services.rng()*eligible.length)];
           state.shop.slots.push({kind:'chess',id,elite:false,price:3,sold:false,equipment:[],frozen:true});
@@ -382,7 +382,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'darkmoonRecruitTribeToHand': {
         const amount=Math.max(0,Math.floor(Number(p.count||0)));
         const excluded=String(piece.chessId).replace(/_b$/,'_a');
-        const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && services.catalog?.operators?.[id]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe).map(([id])=>id).sort();
+        const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && nativeFactions({chessId:id},services.catalog).includes(p.faction)).map(([id])=>id).sort();
         for(let i=0;i<amount&&eligible.length;i++) {
           const id=eligible[Math.floor(services.rng()*eligible.length)];
           state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[id],source:'darkmoon-hand-reward',deferNativeGain:true});
@@ -390,15 +390,15 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       }
       case 'darkmoonBattlecryTargetGrowth': {
-        const target=state.pieces?.find(x=>x.uid===event.targetUid), ref=services.catalog?.operators?.[chessIdOf(target)]?.sourceRefs?.darkmoon19_2;
-        if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId) || ref?.rosterTribe!==p.rosterTribe) throw new Error('DARKMOON_TARGET_REQUIRED');
-        const count=Number(state.counters?.tribeBought?.[p.rosterTribe]||0)*Number(p.perTribeBought||1);
+        const target=state.pieces?.find(x=>x.uid===event.targetUid);
+        if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId) || !nativeFactions(target,services.catalog).includes(p.faction)) throw new Error('DARKMOON_TARGET_REQUIRED');
+        const count=Number(state.counters?.factionBought?.[p.faction]||0)*Number(p.perTribeBought||1);
         for(const id of p.outputs||[]) services.grantEquipment(state,id,count,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
         break;
       }
       case 'darkmoonBoughtTribeTargetGrowth': {
-        const buyer=event.piece,buyerRef=services.catalog?.operators?.[chessIdOf(buyer)]?.sourceRefs?.darkmoon19_2;
-        if(!buyerRef || buyerRef.rosterTribe!==p.triggerTribe || (buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId)) break;
+        const buyer=event.piece;
+        if(!nativeFactions(buyer,services.catalog).includes(p.triggerFaction) || (buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId)) break;
         const target=state.pieces?.find(x=>x.uid===event.targetUid);
         if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId)) throw new Error('DARKMOON_TARGET_REQUIRED');
         const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
