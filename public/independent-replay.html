@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>本局回放 · 卫戍协议</title>
+  <link rel="stylesheet" href="/vendor/rrweb.css" />
+  <link rel="stylesheet" href="/css/independent-recording.css" />
+  <script defer src="/vendor/rrweb.umd.js"></script>
+  <script defer src="/js/independent/replay.js"></script>
+</head>
+<body class="ix-replay">
+  <main class="ix-replay__shell">
+    <header class="ix-replay__head"><a href="independent.html">返回游戏</a><h1>本局回放</h1><p id="status" role="status">正在载入记录…</p></header>
+    <section class="ix-replay__screen" aria-label="回放画面">
+      <div id="stage" class="ix-replay__stage"></div>
+      <div id="caption" class="ix-replay__caption" hidden></div>
+      <div id="selection" class="ix-replay__selection" hidden></div>
+    </section>
+    <nav class="ix-replay__controls" aria-label="回放控制">
+      <button id="play" type="button">播放</button><input id="timeline" type="range" min="0" max="1" value="0" step="0.05" aria-label="回放进度" />
+      <time id="clock">00:00</time><button id="zoom" type="button">框选放大</button><button id="reset" type="button">还原画面</button>
+    </nav>
+  </main>
+</body>
+</html>

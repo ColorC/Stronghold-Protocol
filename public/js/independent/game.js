@@ -26,6 +26,7 @@ import { DpCounter } from '../ui/hud.js';
 import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, USE_NEEDS } from './panels.js';
 import { DetailCard } from './detail.js';
 import { ElementPicker } from './picker.js';
+import { RecordingControls } from './recorder.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -152,6 +153,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         return null;
       }
       if (!opts.keep) setState(res.state);
+      try { globalThis.__SP_RECORD_ACTION__?.(action, res); } catch { /* recording never blocks gameplay */ }
       // the bench and the 临时整备区 were both full: the operator went back to the pool (session.js roomFor)
       if ((res.events || []).some((e) => e.type === 'no-room')) toast('整备区已满，获得的干员已返还', 'warn');
       return res;
@@ -573,6 +575,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   } : null;
 
   return html`<div class=${cx('screen', 'gm', battle ? 'gm--combat' : 'gm--prep', 'ix-game', shopCollapsed && 'is-collapsed', pen && 'is-pen')} data-testid="ix-game">
+    <${RecordingControls} sessionId=${id} />
     <div class="gm__field" ref=${hostRef} onContextMenu=${(e) => e.preventDefault()}></div>
     ${loading ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>

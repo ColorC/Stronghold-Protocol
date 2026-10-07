@@ -45,6 +45,7 @@ import { getData, loadData } from './data.js';
 import { PROTOCOL_VERSION, APP_VERSION } from '../shared/constants.js';
 import { MEDIA_PREFIX, AUDIO_EXTS } from '../shared/media.js';
 import { createIndependentHttp } from './modes/independent/http.js';
+import { createRecordingHttp } from './modes/independent/recordings.js';
 import { createAdmission } from './hosting/admission.js';
 import { createStaticDelivery, loadAssetSourceMap } from './hosting/staticDelivery.js';
 
@@ -654,6 +655,9 @@ export async function startServer(opts = {}) {
   const independentDirectory = opts.independentDirectory ?? process.env.SP_INDEPENDENT_DIRECTORY ?? path.join(ROOT, 'runtime', 'independent-sessions');
   if (!path.isAbsolute(independentDirectory)) throw new Error('SP_INDEPENDENT_DIRECTORY must be an absolute canonical runtime path');
   const independentHttp = createIndependentHttp({ data, directory: independentDirectory });
+  const recordingDirectory = opts.recordingDirectory ?? process.env.SP_RECORDING_DIRECTORY ?? path.join(independentDirectory, 'recordings');
+  if (!path.isAbsolute(recordingDirectory)) throw new Error('SP_RECORDING_DIRECTORY must be an absolute canonical runtime path');
+  const recordingHttp = createRecordingHttp({ directory: recordingDirectory, sessionDirectory: independentDirectory });
   const independentExecution = opts.independentExecution ?? process.env.SP_INDEPENDENT_EXECUTION ?? 'server';
   let network;
   const admission = createAdmission({ maxActive: opts.independentMaxActive ?? Number(process.env.SP_INDEPENDENT_MAX_ACTIVE || 0),
@@ -702,6 +706,7 @@ export async function startServer(opts = {}) {
     if (independentExecution === 'client' && /^\/independent\/api\/sessions\/[^/]+\/actions$/.test(parts.rawPath)) {
       sendJson(req, res, 409, { ok: false, error: { code: 'CLIENT_EXECUTION_REQUIRED', message: '请刷新页面后继续' } }); return;
     }
+    if (await recordingHttp(req, res, parts.rawPath)) return;
     if (await independentHttp(req, res, parts.rawPath)) return;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');

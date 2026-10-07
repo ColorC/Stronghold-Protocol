@@ -28,6 +28,10 @@ const serverApi = {
       return response.ok ? await response.json() : null;
     } catch { return null; }
   },
+  recordingStart(sessionId, recordingId, viewport) { return call('recordings/start', { method: 'POST', body: JSON.stringify({ sessionId, recordingId, viewport }) }); },
+  recordingEvents(id, events, keepalive = false) { return call(`recordings/${encodeURIComponent(id)}/events`, { method: 'POST', keepalive, body: JSON.stringify({ events }) }); },
+  recordingStop(id) { return call(`recordings/${encodeURIComponent(id)}/stop`, { method: 'POST', body: '{}' }); },
+  recordingLoad(id) { return call(`recordings/${encodeURIComponent(id)}`); },
 };
 
 let worker;
@@ -152,6 +156,10 @@ const clientApi = {
     const { loadClientReplay } = await import('./client-replays.js');
     return loadClientReplay(id, round);
   },
+  recordingStart: (...args) => serverApi.recordingStart(...args),
+  recordingEvents: (...args) => serverApi.recordingEvents(...args),
+  recordingStop: (...args) => serverApi.recordingStop(...args),
+  recordingLoad: (...args) => serverApi.recordingLoad(...args),
 };
 
 export const executionMode = new URL(globalThis.location?.href || 'http://localhost/').searchParams.get('execution') === 'client' ? 'client' : 'server';
