@@ -114,13 +114,17 @@ async function dragPointer(from, to) {
   await page.mouse.up();
 }
 async function deployPiece(state, piece) {
-  const from = await piecePoint(piece, state); if (!from) return false;
+  const failure = { uid: piece.uid, name: piece.name, row: piece.row ?? null, col: piece.col ?? null,
+    legalTiles: piece.legalTiles || [], attempts: [], revision: state.revision, funds: state.funds };
+  const from = await piecePoint(piece, state);
+  if (!from) { failure.reason = 'hand geometry unavailable'; report.deployFailures ||= []; report.deployFailures.push(failure); return false; }
   const occupied = new Set((state.pieces || []).filter((p) => Number.isInteger(p.row) && Number.isInteger(p.col)).map((p) => `${p.row},${p.col}`));
   const legal = (piece.legalTiles || []).map(tileTuple).filter((t) => t && t.every(Number.isFinite) && !occupied.has(`${t[0]},${t[1]}`));
   const candidates = [];
   for (const [row, col] of legal) { const p = await tilePoint(row, col); if (p) candidates.push({ row, col, ...p }); }
   candidates.sort((a, b) => Math.abs(a.row - 10) - Math.abs(b.row - 10) || Math.abs(a.col - 7) - Math.abs(b.col - 7));
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  failure.from = from; failure.occupied = [...occupied]; failure.candidates = candidates.map(({ row, col, x, y }) => ({ row, col, x, y })); failure.viewport = viewport;
   for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height).slice(0, 6)) {
     await dragPointer(from, target);
     const diagnostic = await page.evaluate(({ from, target, legalCount }) => {
@@ -159,11 +163,17 @@ async function deployPiece(state, piece) {
     await pause(500);
     const after = await readState();
     if ((after.pieces || []).some((p) => p.uid === piece.uid && Number.isInteger(p.row))) {
-      report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + ArrowRight + Enter' });
+      report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + facing-wheel click' });
       return true;
     }
+    failure.attempts.push({ row: target.row, col: target.col, wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
+      revisionAfter: after.revision, movedPiece: (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null,
+      readyReason: (await visibleText('[data-testid="ready-why"]')).join(' '), facingTarget, facingHit });
     state = after;
   }
+  failure.reason = failure.legalTiles.length ? 'all rendered legal positions rejected' : 'server supplied no legal tiles for this bench piece';
+  failure.screenshot = await screenshot(`deploy-failed-${piece.uid}`);
+  report.deployFailures ||= []; report.deployFailures.push(failure);
   return false;
 }
 async function annotateObservedChanges(before, after) {
@@ -559,6 +569,7 @@ try {
         }
         continue;
       }
+      if (bench) throw new Error(`可见手牌干员 ${bench.uid} 无法部署，已保存合法格、轮盘命中与截图诊断`);
     }
     if (await equipVisibleItem(state)) { idle = 0; continue; }
     if (await attemptHandover(state)) { idle = 0; continue; }
