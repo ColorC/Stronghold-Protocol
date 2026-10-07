@@ -25,6 +25,10 @@ export function framePlacement(entry, scaleAtPoint = 1) {
 }
 
 const asFinite = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
+const yieldToBrowser = () => new Promise((resolve) => {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(() => resolve(), { timeout: 50 });
+  else setTimeout(resolve, 0);
+});
 const FRAME_FRAG = `
 precision highp float;
 varying vec2 vTextureCoord;
@@ -234,8 +238,16 @@ export class OriginalVfxPlayer {
    */
   async preload(prefabs = []) {
     const names = [...new Set(Array.isArray(prefabs) ? prefabs.filter(Boolean).map(String) : [])];
-    const results = await Promise.allSettled(names.map((prefab) => this._entry(prefab)));
-    for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
+    const results = [];
+    // Decoding ten to twenty atlases in one Promise.all burst blocks the
+    // compare page while Pixi uploads every texture. Two at a time keeps the
+    // event loop responsive without changing which source slots are warmed.
+    for (let i = 0; i < names.length; i += 2) {
+      const batch = await Promise.allSettled(names.slice(i, i + 2).map((prefab) => this._entry(prefab)));
+      results.push(...batch);
+      for (let j = 0; j < batch.length; j++) if (batch[j].status === 'rejected') this.missing.add(names[i + j]);
+      await yieldToBrowser();
+    }
     return results;
   }
 
@@ -253,13 +265,16 @@ export class OriginalVfxPlayer {
         }
       }
       if (!this.meshTextures) this.meshTextures = new Map();
-      await Promise.all([...files].map(async (file) => {
+      const textureResults = [];
+      for (const file of files) {
         const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`);
         let texture = this.meshTextures.get(url);
         if (!texture) { texture = this.P.Texture.from(url); this.meshTextures.set(url, texture); }
         const base = texture.baseTexture || texture;
-        if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
-      }));
+        textureResults.push(base.valid ? Promise.resolve() : new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); }));
+        if (textureResults.length >= 2) { await Promise.allSettled(textureResults.splice(0)); await yieldToBrowser(); }
+      }
+      if (textureResults.length) { await Promise.allSettled(textureResults); await yieldToBrowser(); }
       return data;
     }));
     for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
