@@ -1,0 +1,122 @@
+{
+  "schema": "stronghold.source-reference/v1",
+  "version": "19.2.0.68600",
+  "dataCommit": "cb9444afd722a16112745e5510ec191d8c813c07",
+  "lobbyReference": {
+    "version": "Battlegrounds 19.2.0.68600",
+    "build": 68600,
+    "dataCommit": "cb9444afd722a16112745e5510ec191d8c813c07",
+    "date": "2020-12-15",
+    "fixedLobbyTribes": [
+      "BEAST",
+      "DRAGON",
+      "ELEMENTAL",
+      "MECHANICAL",
+      "PIRATE"
+    ],
+    "neutralIncluded": true,
+    "excludedLobbyTribes": [
+      "DEMON",
+      "MURLOC"
+    ],
+    "amalgadonExcluded": "BGS_069",
+    "explicitlyExcludedNeutralDemonDependent": [
+      "BGS_004",
+      "BGS_002",
+      "CFM_610"
+    ],
+    "subsetMethod": "race-only inclusion plus explicit card-text inference for the three Demon-dependent neutral cards; no subset-tag claim",
+    "poolSource": "https://github.com/HearthSim/hsdata/blob/cb9444afd722a16112745e5510ec191d8c813c07/CardDefs.xml",
+    "sourceNormalGolden": "https://api.hearthstonejson.com/v1/68600/enUS/cards.json",
+    "sourceNamesZhCN": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+    "sourcePoolSize": 127,
+    "raceOnlyAfterAmalgadon": 104,
+    "selectedCandidateCount": 101,
+    "tierCounts": {
+      "1": 11,
+      "2": 19,
+      "3": 21,
+      "4": 18,
+      "5": 18,
+      "6": 14
+    },
+    "raceOnlyBeforeTargetSpecificExclusions": 105
+  },
+  "archetypes": [
+    {
+      "name": "叙拉古退场与召唤",
+      "faction": "叙拉古",
+      "sourceTribe": "BEAST",
+      "operators": [
+        "忍冬",
+        "伺夜",
+        "德克萨斯",
+        "拉普兰德",
+        "缄默德克萨斯",
+        "巫恋",
+        "荒芜拉普兰德"
+      ],
+      "chain": "伺夜补召唤物，缄默德克萨斯强化召唤；德克萨斯重放荒芜拉普兰德退场增益，巫恋放大退场特质，拉普兰德负责溅射收割。"
+    },
+    {
+      "name": "谢拉格护盾与成长",
+      "faction": "谢拉格",
+      "sourceTribe": "DRAGON",
+      "operators": [
+        "耶拉",
+        "崖心",
+        "银灰",
+        "初雪",
+        "锏",
+        "凛御银灰",
+        "圣聆初雪"
+      ],
+      "chain": "耶拉帮助过渡；银灰与锏持续成长；凛御银灰把获得时特质转阵营徽章，圣聆初雪退场补盾，初雪从累计破盾获得临时增益。"
+    },
+    {
+      "name": "哥伦比亚召唤回收",
+      "faction": "哥伦比亚",
+      "sourceTribe": "MECHANICAL",
+      "operators": [
+        "松果",
+        "赫默",
+        "雷蛇",
+        "白面鸮",
+        "蛇屠箱",
+        "迷迭香",
+        "缪尔赛思"
+      ],
+      "chain": "松果与赫默退场留下小单位，雷蛇刷新护盾，白面鸮补永久徽章，迷迭香回收退场价值，缪尔赛思还原早先损失的原始召唤物。"
+    },
+    {
+      "name": "卡西米尔采购与攻击",
+      "faction": "卡西米尔",
+      "sourceTribe": "PIRATE",
+      "operators": [
+        "流星",
+        "焰尾",
+        "瑕光",
+        "锏",
+        "玛恩纳",
+        "灰毫",
+        "耀骑士临光"
+      ],
+      "chain": "玛恩纳的当期返金支持更多采购，焰尾按卡西米尔获得永久成长；瑕光强化攻击者，耀骑士临光强化全队，灰毫退场补军团，锏提供击杀支援。"
+    },
+    {
+      "name": "维多利亚商店成长",
+      "faction": "维多利亚",
+      "sourceTribe": "ELEMENTAL",
+      "operators": [
+        "地灵",
+        "格雷伊",
+        "薄绿",
+        "洛洛",
+        "号角",
+        "安洁莉娜",
+        "维娜·维多利亚"
+      ],
+      "chain": "地灵提供刷新、格雷伊售出补低阶招募；薄绿与洛洛把获得转徽章，诺米式安洁莉娜强化后续商店，号角定向培养身前单位，维娜按新获得者科技提供更大成长。"
+    }
+  ]
+}
