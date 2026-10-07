@@ -10,6 +10,7 @@ import { previewOf } from '../../match/waves.js';
 import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, normalizeGearForms, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets, recordProduction } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
+import { shopCarryApplies } from './warbandPrep.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
 
@@ -119,7 +120,7 @@ function slotsFor(state, gd, catalog, rng) {
   const counts = gd.shopSlots(state.shop.level); const slots = [];
   for (let i = 0; i < counts.chess + counts.item; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
   // 商店预增益 (native shopCarry): every new offer carries what the game has built up so far
-  for (const fx of state.playerEffects || []) if (fx.type === 'shopCarry' && fx.quantity > 0) for (const slot of slots) slot.equipment.push({ id: fx.id, quantity: fx.quantity, origin: 'shopCarry' });
+  for (const fx of state.playerEffects || []) if (fx.type === 'shopCarry' && fx.quantity > 0) for (const slot of slots) if (shopCarryApplies(fx,slot,catalog)) slot.equipment.push({ id: fx.id, quantity: fx.quantity, origin: 'shopCarry' });
   return slots;
 }
 function advanceShop(state, gd, catalog, rng) {

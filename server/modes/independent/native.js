@@ -1,5 +1,7 @@
 // Independent mode uses authored, structured native effects. The original game text is metadata only.
 import { tavernFactions as sharedTavernFactions, nativeBodyStats, nativeRecord } from '../../../shared/independentRules.js';
+import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
+import { runFactionReaction } from './warbandPrep.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
@@ -13,6 +15,9 @@ const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff',
 PREP_BEHAVIORS.add('teamForge');
 COMBAT_BEHAVIORS.add('allyConditionStats');
 COMBAT_BEHAVIORS.add('badgeAmplifier');
+COMBAT_BEHAVIORS.add('firstWaveStrike');
+PREP_TRIGGERS.add('allyGain'); PREP_BEHAVIORS.add('factionReaction');
+for (const behavior of WARBAND_BEHAVIORS.filter(x => x !== 'factionReaction')) COMBAT_BEHAVIORS.add(behavior);
 const PROFESSIONS = new Set(['PIONEER','WARRIOR','TANK','SNIPER','CASTER','MEDIC','SUPPORT','SPECIAL']);
 const CONDITION_STATS = new Set(['attackPercent','maxHpPercent','defensePercent','attackSpeedFlat']);
 function exactKeys(value, allowed) {
@@ -64,6 +69,9 @@ function authoredModeEffects(source, isElite) {
     for (const r of rules) {
       if (!r || typeof r !== 'object' || Array.isArray(r) || !triggers.has(r.trigger) || typeof r.behavior !== 'string' || !r.behavior || !finiteJson(r.params) || !r.params || typeof r.params !== 'object' || Array.isArray(r.params)) throw new Error(`BAD_MODE_EFFECT_RULE:${source?.chessId}:${kind}`);
       if (!behaviors.has(r.behavior)) throw new Error(`UNSUPPORTED_MODE_EFFECT_BEHAVIOR:${source?.chessId}:${kind}:${r.behavior}`);
+      if (r.trigger === 'allyGain' && r.behavior !== 'factionReaction') throw new Error('BAD_ALLY_GAIN_BEHAVIOR');
+      if (WARBAND_BEHAVIORS.includes(r.behavior)) validateWarbandRule(r);
+      if (r.behavior==='firstWaveStrike' && (r.trigger!=='battleStart' || !exactKeys(r.params,['atSecond','afterSpawns','atkPct','type']) || !(Number.isFinite(r.params.atkPct)&&r.params.atkPct>0) || !['arts','phys','true'].includes(r.params.type) || !(Number.isFinite(r.params.atSecond)&&r.params.atSecond>=0 || positiveInt(r.params.afterSpawns)))) throw new Error('BAD_FIRST_WAVE_STRIKE');
       if (r.behavior === 'allyConditionStats') {
         if (r.trigger !== 'passive') throw new Error('BAD_ALLY_CONDITION_STATS_TRIGGER');
         validateAllyConditionStats(r.params);
@@ -328,6 +336,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services) : 0);
     for (let run = 0; run < runs; run++) {
     switch (r.behavior) {
+      case 'factionReaction': runFactionReaction(state,piece,event,r,ruleServices); break;
       case 'grantEquipment':
         for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite) + bonus(p, piece, state, elite), piece);
         break;
@@ -766,6 +775,9 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
   const piece = event.piece || (event.uid && roster(state).find((x) => x.uid === event.uid));
   if (['gain', 'selling', 'sold', 'merge'].includes(hook)) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
+    if (hook === 'gain' && piece && !event.replay) for (const holder of roster(state)) {
+      if (isPresent(holder)) fire(state,'allyGain',holder,event,services,false,null,(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='allyGain'&&r.behavior==='factionReaction'));
+    }
   } else {
     // a rule that grows (params.growth) counts the prep phases its operator began on the field
     if (hook === 'roundStart') for (const p of roster(state)) {

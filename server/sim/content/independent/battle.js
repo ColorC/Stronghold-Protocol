@@ -7,6 +7,8 @@ import { installKeywordGear } from './keywordGear.js';
 import { validateAllyConditionStats } from '../../../modes/independent/native.js';
 import { INDEPENDENT_BADGE_STATS, independentBadgeMod } from '../../../../shared/independentBadgeStats.js';
 import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
+import { installWarband } from './warband.js';
+import { WARBAND_BEHAVIORS } from '../../../../shared/warbandSchema.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
 // 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
@@ -16,7 +18,7 @@ const TEMPORARY_BEHAVIORS = new Set(['battleStartBuff', 'deployBuff', 'skillStar
 const BEHAVIORS = new Set([
   'badgeThresholdStat', 'staticStats', 'conditionalDamage', 'weakDamage', 'eventProduction',
   'deployWindowStats', 'startDerivedStats',
-, 'badgeAmplifier', 'productionMultiplier', ...TEMPORARY_BEHAVIORS]);
+, 'badgeAmplifier', 'productionMultiplier', ...TEMPORARY_BEHAVIORS,...WARBAND_BEHAVIORS.filter(x=>x!=='factionReaction')]);
 const STAT_MODS = Object.freeze({
   attackFlat: 'atkFlat', attackPercent: 'atkPct', attackSpeedFlat: 'aspd',
   maxHpFlat: 'hpFlat', maxLifeFlat: 'hpFlat', maxHpPercent: 'hpPct', maxLifePercent: 'hpPct', defenseFlat: 'defFlat', defenceFlat: 'defFlat', defensePercent: 'defPct',
@@ -1096,7 +1098,7 @@ function installNativeCombat(battle, catalog, pieces, emit) {
         battle.on('hit', ({ source, target, dmg }) => {
           if (source === unit && target?.side === 'enemy' && dmg && (dmg.type === 'phys' || dmg.type === 'arts')) dmg.type = weaknessType(source, target, dmg);
         }, { priority: WEAKNESS_PRIORITY, owner: unit });
-      } else if (!['badgeThresholdStat', 'staticStats', 'deployWindowStats', 'startDerivedStats', 'badgeAmplifier', 'productionMultiplier'].includes(rule.behavior) && !TEMPORARY_BEHAVIORS.has(rule.behavior)) {
+      } else if (!['badgeThresholdStat', 'staticStats', 'deployWindowStats', 'startDerivedStats', 'badgeAmplifier', 'productionMultiplier','retiringEffect','deathrattleEcho','retirementMultiplier','warbandEvent'].includes(rule.behavior) && !TEMPORARY_BEHAVIORS.has(rule.behavior)) {
         throw new Error(`unimplemented independent native rule ${piece.chessId}:${rule.behavior}`);
       }
     }
@@ -2194,6 +2196,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
 function installEvents(battle, catalog, pieces, emit) {
   installNativeCombat(battle, catalog, pieces, emit);
   installEquipmentMechanisms(battle, catalog, pieces, emit);
+  installWarband(battle,{catalog,pieces});
 }
 
 /** Install the isolated battle-only mechanics for a real Battle instance. */

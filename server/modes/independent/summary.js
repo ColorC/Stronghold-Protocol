@@ -9,6 +9,7 @@ export const TRAIT_WHEN = Object.freeze({
   death: '倒下时', statusApplied: '施加状态时', ammoUsed: '消耗弹药时', nativeProduction: '原生效果产出时', dollSwap: '替身切换时',
   aura: '在场时', selling: '出售时', battleProduction: '战斗产出时', bought: '购买干员后',
   battle: '战斗中', attack: '攻击时',
+  allyGain: '友方获得时', retiring: '退场时', summon:'召唤友方时', allyDamaged:'友方受到伤害时', allyKill:'友方击杀时', allyDeath:'友方退场时',
   // 干员特质 v4 (2026-10-07)
   heal: '治疗时', damaged: '受到伤害时', dodge: '闪避时', elementBurst: '元素爆发时', battleEnd: '战斗结束时',
   shieldLayersGained: '获得护盾层时', shieldLayersBroken: '护盾层破碎时', shieldLayersThreshold: '护盾层达到门槛时',
@@ -39,7 +40,18 @@ export function traitSummary(effect) {
     const p = rule.params || {};
     const entry = { when: rule.trigger, kind: null };
     const b = rule.behavior;
-    if (b === 'allyConditionStats') {
+    if (b === 'factionReaction') {
+      entry.kind = p.mode === 'shop' ? 'shopBadge' : ['refund','funds','discount'].includes(p.mode) ? 'funds' : 'forge';
+      entry.faction=p.faction; entry.items=(p.outputs||[]).map(o=>({id:o.id,normal:o.quantity,elite:o.quantity})); entry.perPrep=p.maxEventsPerPrep; entry.targets=p.targets;
+      entry.description={badge:'友方获得后分发徽章',shop:'为指定阵营的商店干员增添徽章',refund:'购买指定阵营干员后返还资金',discount:'获得时减少商店升级费用',funds:'出售时额外获得资金'}[p.mode];
+    } else if (b === 'retiringEffect') {
+      entry.when='retiring';entry.kind=p.summon||p.returnFallen?'summon':'stat';entry.temporary=true;entry.perBattle=p.perBattle;entry.stats=p.buff?.stats;entry.faction=p.buff?.faction||p.shield?.faction||p.returnFallen?.faction;
+      entry.description=p.returnFallen?'退场时重新召唤本战最早倒下的召唤物':p.summon?'退场时召唤友方':p.shield?'退场时为友方增添护盾':'退场时强化指定阵营友方';
+    } else if (b === 'deathrattleEcho') { entry.kind='copy';entry.every=p.every;entry.perBattle=p.perBattle;entry.faction=p.faction;entry.description='普通攻击后触发另一名友方的退场效果';
+    } else if (b === 'retirementMultiplier') { entry.kind='double';entry.amount={normal:1+p.extra,elite:1+p.extra};entry.description='让友方退场效果额外触发';
+    } else if (b === 'warbandEvent') { entry.kind='stat';entry.temporary=true;entry.stats=p.stats;entry.faction=p.faction;entry.targets=p.targets;entry.maxStacks=p.maxStacks;entry.when={damaged:'allyDamaged',kill:'allyKill',death:'allyDeath'}[p.event]||p.event;entry.description='指定阵营友方行动后强化友方';
+    } else if (b === 'firstWaveStrike') { entry.kind='damage';entry.temporary=true;entry.description='战斗开始后对敌方造成伤害';
+    } else if (b === 'allyConditionStats') {
       entry.kind = 'stat'; entry.temporary = true; entry.stats = { ...p.stats }; entry.maxCount = p.maxCount;
       entry.countBy = p.countBy; entry.match = { ...p.match };
       entry.condition = p.match?.keywordGear ? `携带${p.match.keywordGear}的友方` : p.match?.faction ? `${p.match.faction}友方`
