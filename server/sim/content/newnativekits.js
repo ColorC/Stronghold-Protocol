@@ -2,6 +2,7 @@
 // Values are read only from normalized native operator/skill blackboards; descriptions are never parsed.
 import { COLS } from '../constants.js';
 import { applyDamageIncrease } from '../../../shared/damageIncrease.js';
+import { absoluteRangeKeys } from '../targeting.js';
 
 const number = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
@@ -98,7 +99,21 @@ function qingliu(bb, chess) {
   const x = sourceSkill(chess, 'skchr_finlpp_1');
   const healScale = number(x?.s.bb?.heal_scale);
   if (!x || !(healScale > 0)) return null;
-  return { skills: { skchr_finlpp_1: { id: 'skchr_finlpp_1', kind: 'instant', spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', heal: true, attack: { healScale } } } };
+  const talent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const resistDuration = number(talent['status_resistance[limit]']);
+  const resistValue = Math.min(0.95, Math.max(0, -number(talent.one_minus_status_resistance)));
+  return {
+    skills: { skchr_finlpp_1: { id: 'skchr_finlpp_1', kind: 'instant', spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', heal: true, attack: { healScale } } },
+    talents: [
+      { install(battle, unit) {
+        if (!(resistDuration > 0 && resistValue > 0)) return;
+        battle.on('heal', ({ source, target }) => {
+          if (source !== unit || target?.side !== 'ally' || target.kind !== 'op') return;
+          battle.applyStatus(target, 'resist', { duration: resistDuration, value: resistValue, source: unit });
+        }, { owner: unit });
+      } },
+    ],
+  };
 }
 
 function wanqing(bb, chess) {
@@ -106,6 +121,10 @@ function wanqing(bb, chess) {
   const total = number(x?.s.bb?.value), interval = number(x?.s.bb?.interval), perTick = number(x?.s.bb?.cost), duration = number(x?.s.duration);
   if (!x || !(total > 0) || !(interval > 0) || !(perTick > 0) || !(duration > 0)) return null;
   const ticks = Math.floor(total / perTick);
+  const talent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const hpCommon = number(talent['wanqin_t_1[hp_common].max_hp']);
+  const hpAligned = number(talent['wanqin_t_1[hp_common].wanqin_t_1[hp_extra].max_hp']);
+  const talentGrid = chess?.talents?.find((item) => item.index === 0)?.rangeGrid;
   return { skills: { 'skcom_assist_cost[3]': {
     id: 'skcom_assist_cost[3]', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', attack: { noAttack: true },
     onStart({ unit }) { unit.mem.nativeWanqingDp = { elapsed: 0, gained: 0 }; },
@@ -120,7 +139,20 @@ function wanqing(bb, chess) {
       unit.mem.nativeWanqingDp = null;
       if (state && reason === 'duration' && state.gained < ticks) battle.addDp(unit.ownerId, (ticks - state.gained) * perTick);
     },
-  } } };
+  } }, talents: [{ install(battle, unit) {
+    if (!(hpCommon > 0) || !Array.isArray(talentGrid) || !talentGrid.length) return;
+    const key = `native:wanqing:${unit.id}`;
+    battle.every(0.5, () => {
+      const up = unit.alive && unit.deployed;
+      const range = up ? new Set(absoluteRangeKeys(talentGrid, unit.tileR, unit.tileC, unit.dir, 0)) : null;
+      for (const ally of battle.alliesFor(unit)) {
+        const inside = range?.has(ally.tileR * COLS + ally.tileC);
+        if (ally.kind === 'op' && inside) {
+          battle.addBuff(ally, { key, duration: 0.6, source: unit, mods: { hpPct: hpCommon + (ally.dir === unit.dir ? (hpAligned ?? 0) : 0) }, tags: ['aura', 'talent'] });
+        } else if (ally.findBuff(key)) battle.removeBuff(ally, key);
+      }
+    }, { owner: unit, immediate: true });
+  } }] };
 }
 
 function nineColoredDeer(bb, chess) {

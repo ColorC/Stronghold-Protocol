@@ -110,19 +110,23 @@ test('native Qingliu S1 applies the source heal scale to a healing attack', () =
   const ally = h.unit('chess_char_1_01_a');
   h.run(15);
   ally.hp = ally.s.maxHp * 0.4;
-  h.run(15);
+  h.run(3);
   const unit = h.unit(qingliuId);
   assert.ok(unit.skill.activations > 0);
   assert.ok(h.eventsOf('heal').some((event) => event[1] === ally.id && event[2] > 0));
+  assert.ok(Math.abs(h.b.resistOf(ally) - 0.5) < 1e-8, 'source talent grants the native 50% status-duration resistance');
   h.invariants();
 });
 
-test('native Wanqing S1 distributes its source DP total over the timed command', () => {
-  const data = new DataSource({ chess: { [wanqingId]: wanqingRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+test('native Wanqing talent grants in-range same-facing HP and S1 distributes its native DP total', () => {
+  const data = new DataSource({ chess: { [wanqingId]: wanqingRecord, chess_char_1_01_a: chessData.chess_char_1_01_a }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
   const def = data.getChess(wanqingId);
   assert.equal(def.skill.id, 'skcom_assist_cost[3]');
   assert.equal(skillSpecSource(def), 'skills');
-  const h = makeBattle({ data, units: [{ chessId: wanqingId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }], flags: { dpPerSec: 0, dpMax: 999 } });
+  const h = makeBattle({ data, units: [{ chessId: wanqingId, row: 10, col: 5 }, { chessId: 'chess_char_1_01_a', row: 11, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }], flags: { dpPerSec: 0, dpMax: 999 } });
+  const ally = h.unit('chess_char_1_01_a');
+  h.run(0.6);
+  assert.ok(Math.abs(ally.s.maxHp - ally.base.maxHp * 1.05) < 1, 'normal-phase source common and facing HP bonuses apply');
   const before = h.b.getPlayer('p1').dp;
   h.run(55);
   const unit = h.unit(wanqingId);
