@@ -5,6 +5,11 @@ const ALL_BADGES = Object.freeze(['precision','agility','vitality','defense','as
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
 const REPEATABLE_BADGE_FORGES = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
+// what 铃兰 replays of a 获得时 trait and 泥岩 of a 售出时 one (gear, funds, refreshes, recruits; never another copier)
+const GAIN_COPYABLE = Object.freeze(['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh', 'randomChessOffer']);
+const SOLD_COPYABLE = Object.freeze(['deferredFunds', 'freeRefresh', 'recruitOffer']);
+// what 白面鸮 / 塞雷娅 never take over from the operator in front: other copiers (no chains)
+const COPIERS = new Set(['replayAdjacentNative', 'copyFrontNative']);
 
 // Ordinary/elite quantities are intentionally explicit. This registry is keyed by operator name from
 // the approved design input; no description or bb string is interpreted at runtime.
@@ -12,28 +17,24 @@ const PREP = Object.freeze({
   角峰: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.vitality, normal: 1, elite: 2 }] })],
   惊蛰: [rule('gain', 'grantEquipmentByTier', { id: BADGE.precision, normalDivisor: 2, eliteDivisor: 1, rounding: 'ceil' })],
   德克萨斯: [rule('sold', 'freeRefresh', { normal: 1, elite: 2 })],
-  格雷伊: [rule('sold', 'deferredFunds', { normal: 1, elite: 2, growth: { step: 1, cap: 3 } })],
-  雷蛇: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 1, elite: 2 }], growth: { step: { normal: 1, elite: 2 }, cap: 4 } })],
-  蒂比: [rule('gain', 'shopCarry', { id: BADGE.agility, normal: 1, elite: 2, max: { normal: 3, elite: 6 } })],
+  格雷伊: [rule('sold', 'deferredFunds', { normal: 1, elite: 2 })],
   琳琅诗怀雅: [rule('prepEnd', 'deferredFundsIf', { normal: 1, elite: 2, requiresFactionOnField: '炎' })],
   薄绿: [rule('prepEnd', 'forgeFactionTierCount', { faction: '维多利亚', id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   松果: [rule('sold', 'recruitOffer', { normalTier: 1, eliteTier: 5 })],
   至简: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_03_e_a', normal: 1, elite: 2 }] }), rule('gain', 'freeRefreshOnce', { normal: 2, elite: 2, paidOnly: true, expires: 'prepEnd' })],
   耶拉: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_02_e_a', normal: 1, elite: 2 }] })],
-  // the original rule stays first: 白面鸮 copies the first 休整期开始 rule
-  伊内丝: [rule('prepEnd', 'badgeBoost', { badgeIds: [BADGE.precision], percent: { normal: 0.05, elite: 0.1 }, max: { normal: 0.6, elite: 1.2 } }), rule('prepEnd', 'grantEquipment', { outputs: [{ id: 'foresight', normal: 2, elite: 4 }] })],
   凯瑟琳: [rule('roundStart', 'randomUnlockedEquipment', { normal: 1, elite: 2, oddRoundsOnly: true })],
   歌蕾蒂娅: [rule('roundStart', 'conditionalRecruit', { condition: 'sameRowCount>=3', choices: ['chess_char_5_04_a', 'chess_char_2_07_a', 'chess_char_1_04_a'], normal: 1, elite: 2 })],
   缄默德克萨斯: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_04_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'freeRefresh', { normal: 1, elite: 2 })],
   星熊: [rule('gain', 'grantEquipment', { outputs: [{ id: BADGE.defense, normal: 3, elite: 6 }, { id: 'chess_item_4_05_e_a', normal: 1, elite: 2 }] })],
-  泥岩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_07_e_a', normal: 1, elite: 2 }] }), rule('sold', 'deferredFunds', { normal: 2, elite: 4 }), rule('aura', 'triggerMultiplier', { hook: 'sold', extra: { normal: 1, elite: 2 } })],
-  白面鸮: [rule('prepEnd', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: ['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh'], neverReenter: true, normalRange: 1, eliteRange: 2 })],
+  泥岩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_07_e_a', normal: 1, elite: 2 }] }), rule('sold', 'deferredFunds', { normal: 2, elite: 4 }), rule('sold', 'replayAdjacentNative', { sourceTrigger: 'sold', allow: SOLD_COPYABLE, neverReenter: true, normalRange: 1, eliteRange: 2 })],
+  // 干员特质 v4 (2026-10-07): the original's 身前一格 copies (白面鸮 进入休整期时, 塞雷娅 休整期结束时, 铃兰 获得时, 泥岩 售出时)
+  白面鸮: [rule('roundStart', 'copyFrontNative', { hook: 'roundStart', eliteValues: { normal: false, elite: true } })],
   卡涅利安: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_05_e_a', normal: 1, elite: 2 }] })],
-  铃兰: [rule('aura', 'triggerMultiplier', { hook: 'gain', extra: { normal: 1, elite: 2 } })],
-  塞雷娅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_03_e_a', normal: 1, elite: 2 }] }), rule('aura', 'triggerMultiplier', { hook: 'prepEnd', extra: { normal: 1, elite: 2 } })],
-  夕: [rule('prepEnd', 'grantByTotal', { counter: 'gained', per: 3, outputs: [{ id: BADGE.assault, normal: 1, elite: 2 }], cap: { normal: 10, elite: 20 } })],
-  引星棘刺: [rule('prepEnd', 'doubleWorn', { target: 'front', cap: { normal: 6, elite: 12 }, perGame: { normal: 3, elite: 4 } })],
-  安洁莉娜: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_01_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'attachShopByRefreshCount', { id: BADGE.assault, normal: 2, elite: 4, capNormal: 6, capElite: 12 })],
+  铃兰: [rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: GAIN_COPYABLE, neverReenter: true, normalRange: 1, eliteRange: 2 })],
+  塞雷娅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_03_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'copyFrontNative', { hook: 'prepEnd', eliteValues: { normal: false, elite: true } })],
+  引星棘刺: [rule('prepEnd', 'forgeAdjacent', { id: BADGE.agility, normal: 1, elite: 2, direction: 'front', each: true })],
+  安洁莉娜: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_01_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerRefresh', { id: BADGE.agility, normal: 1, elite: 2, capNormal: 3, capElite: 6, landOn: 'front' })],
   余: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_08_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'dominantFactionRecruit', { normalRequires: 'sameRowCount>=3', eliteRequires: null })],
   维娜·维多利亚: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:熔铸模具', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeFactionTierPair', { faction: '维多利亚', ids: [BADGE.precision, BADGE.vitality], normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
   缪尔赛思: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_identity_gear', normal: 1, elite: 2 }] })],
@@ -56,7 +57,7 @@ const PREP = Object.freeze({
   洛洛: [rule('gain', 'randomEquipment', { ids: ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_4_09_e_a'], normal: 1, elite: 2 })],
   砾: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_11_e_a', normal: 1, elite: 2 }] })],
   调香师: [rule('prepEnd', 'forgeDominantFaction', { normal: 2, elite: 4, fallback: 'professionRecipe', worksFromBench: true, landOn: 'dominantFactionLowest' })],
-  折桠: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.assault, normal: 1, elite: 2 }] }), rule('selling', 'sellTransfer', {})],
+  折桠: [rule('prepEnd', 'grantEquipment', { outputs: [{ id: BADGE.assault, normal: 1, elite: 2 }] })],
   雪猎: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:谢拉格雪境猎印', normal: 1, elite: 2 }] })],
   瑕光: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_09_e_a', normal: 1, elite: 2 }] })],
   流星: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_07_e_a', normal: 1, elite: 2 }] })],
@@ -65,10 +66,10 @@ const PREP = Object.freeze({
   灵知: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_08_e_a', normal: 1, elite: 2 }] })],
   焰尾: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_10_e_a', normal: 1, elite: 2 }] }), rule('gain', 'randomChessOffer', { normal: 1, elite: 2, poolId: 'pool_char_pinus' })],
   华法琳: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:医疗部共生血囊', normal: 1, elite: 2 }] })],
-  烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'perEliteGrant', { id: BADGE.precision, normal: 2, elite: 4 })],
+  烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] })],
   号角: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_10_e_a', normal: 1, elite: 2 }] })],
   归溟幽灵鲨: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_12_e_a', normal: 1, elite: 2 }] })],
-  山: [rule('prepEnd', 'devourShop', { id: 'mastery', normal: 1, elite: 2 })],
+  山: [rule('prepEnd', 'forgePerGainedChess', { id: 'mastery', normal: 1, elite: 2, capNormal: 4, capElite: 8, landOn: 'self' })],
   录武官: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_03_e_a', normal: 1, elite: 2 }, { id: 'chess_item_3_04_e_a', normal: 1, elite: 2 }] })],
   佩佩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:增压臂铠', normal: 1, elite: 2 }] })],
   流明: [rule('prepEnd', 'forgeBenchCount', { id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12, landOn: 'lowest' })],
@@ -96,49 +97,58 @@ function combatRules(name, elite) {
     case '圣聆初雪': return [badgeScale(['precision','assault','recovery'],5,{attackPercent:[0.01,0.02]})];
     case '异客': return [badgeScale(['precision','assault','agility'],5,{attackPercent:[0.02,0.04]})];
     case '锡人': return [staticScale({attackPercent:[0.2,0.4],maxHpPercent:[0.2,0.4]}),rule('passive','staticStats',{factions:['炎','萨尔贡','维多利亚','谢拉格','拉特兰','阿戈尔','叙拉古','卡西米尔'],excludeNativeInheritance:true})];
-    case '菲莱': return [eventScale('skillStart','recovery',1,2,null,null,{actor:'team'},3)];
+    case '菲莱': return [eventScale('skillStart','recovery',1,2,3,6,{actor:'self'})];
     case '初雪': return [eventScale('statusApplied','assault',1,2,4,8,{targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.5})];
     case '风笛': return [eventScale('kill','agility',1,2,3,6,{actor:'self',targetSide:'enemy'},1,{firstN:3})];
     case '圣约送葬人': return [rule('ammoUsed','eventProduction',{counterEvent:'ammoUsed',counterEvery:7,outputs:[{id:'agility',quantity:q(1,2)},{id:'recovery',quantity:q(1,2)}],maxPerBattle:q(7,14),filter:{actor:'self',ammoOnly:true},capPerOutput:q(7,14)})];
     case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[{idFromEvent:true,quantity:q(1,2)}],copyOutputFromEvent:true,quantity:q(1,2),maxPerBattle:q(4,8),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},fallbackPreference:'productionBadge',fallback:'firstStableOutput',copied:true})];
     case '蕾缪安': return [eventScale('ammoUsed','precision',2,4,8,16,{actor:'self',ammoOnly:true,sameRowCount:3},10)];
-    case '塑心': return [rule('passive','productionMultiplier',{extra:q(1,2)})];
-    case '星熊': return [rule('passive','badgeAmplifier',{badgeIds:['defense'],multiplier:q(2,3)})];
-    // 干员表 v3 (2026-10-07): temporary combat traits (battle.js installTemporaryNativeRules)
-    case '刺玫': return [rule('battleStart','shieldAllies',{targets:'faction:维多利亚',count:q(2,4),layers:1})];
-    case '古米': return [rule('battleStart','battleStartBuff',{targets:['self','adjacent'],stats:{spRegen:q(0.15,0.3)}})];
-    case '波登可': return [rule('battle','firstWaveStrike',{afterSpawns:3,atkPct:q(1,2),type:'arts'})];
+    // 干员特质 v4 (2026-10-07, 方舟化): a battle event counted, the badge after the battle
+    case '雷蛇': return [eventScale('damaged','defense',1,2,3,6,{actor:'target',targetSide:'ally',sourceSide:'enemy'},20)];
+    case '折桠': return [eventScale('battleEnd','assault',1,2,null,null,{selfSurvived:true})];
+    case '蒂比': return [eventScale('dodge','agility',1,2,3,6,{actor:'target'})];
+    case '伊内丝': return [eventScale('statusApplied','precision',1,2,4,8,{actor:'self',status:'bind',targetSide:'enemy'})];
+    case '烛煌': return [eventScale('elementBurst','precision',1,2,4,8,{element:'burn',targetSide:'enemy'})];
+    case '夕': return [eventScale('kill','assault',1,2,5,10,{actor:'selfOrSummon',targetSide:'enemy'},2)];
+    // 自身开启技能时，同一行友方下一次通过特质获得的徽章+1: a skill start arms one extra badge for the row's next trait production
+    case '塑心': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[],copyOutputFromEvent:true,quantity:1,armedBy:'skillStart',maxPerBattle:q(3,6),filter:{actor:'sameRowAllies',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true}})];
+    // 干员表 v3 / 干员特质 v4 (2026-10-07): temporary combat traits (battle.js installTemporaryNativeRules)
+    case '星熊': return [rule('hit','blockRetaliate',{condition:'blocking',defPct:q(0.2,0.4),type:'phys'})];
+    case '刺玫': return [rule('skillStart','skillStartBuff',{targets:'inRange',only:{faction:'维多利亚'},stats:{damageTakenPct:q(-0.15,-0.3)},duration:'skill'})];
+    case '古米': return [rule('deploy','aura',{targets:['self','adjacent'],stats:{spRegen:q(0.15,0.3)}})];
+    case '波登可': return [rule('deploy','aura',{targets:'adjacent',stats:{atkPct:q(0.08,0.16)}})];
     case '宴': return [rule('battleStart','battleStartBuff',{targets:q(['self','adjacent'],['self','row']),stats:{},weakDamage:true})];
-    case '野鬃': return [rule('deploy','deployBuff',{targets:'adjacent',stats:{atkPct:q(0.15,0.3)},duration:10})];
-    case '赫默': return [rule('battleStart','shieldAllies',{targets:q('adjacent','row'),count:99,layers:1})];
+    case '野鬃': return [rule('deploy','deployBuff',{firstDeployOnly:true,targets:'profession:WARRIOR',stats:{atkPct:q(0.12,0.24)},duration:15})];
+    case '赫默': return [rule('heal','healedBuff',{stats:{aspd:q(10,20)},duration:5})];
     case '莎草': return [rule('skillStart','skillStartBuff',{targets:'adjacent',stats:{},spGain:q(1,2)})];
-    case '幽灵鲨': return [rule('death','onDown',{buff:{targets:'adjacent',stats:{atkPct:q(0.15,0.3)}}})];
-    case '砾': return [rule('death','onDown',{shield:{targets:q('adjacent','row'),layers:1}})];
-    case '灰毫': return [rule('battleStart','battleStartBuff',{targets:'front',stats:{atkPct:q(0.15,0.3)}})];
-    case '诗怀雅': return [rule('battleStart','battleStartBuff',{targets:'adjacent',stats:{atkPct:q(0.1,0.2)}})];
-    case '海霓': return [rule('death','allyDownStacks',{every:1,stats:{atkPct:q(0.06,0.12)},maxStacks:5,targets:'faction:阿戈尔'})];
-    case '雪猎': return [rule('battleStart','battleStartBuff',{targets:'faction:谢拉格',stats:{aspd:q(8,16)}})];
+    case '幽灵鲨': return [combatStatic({redeployTimeReduction:q(0.3,0.5)}),rule('deploy','deployBuff',{redeployOnly:true,targets:'self',stats:{atkPct:q(0.2,0.4)},duration:15})];
+    case '砾': return [rule('deploy','shieldAllies',{on:'deploy',targets:q('adjacent','row'),count:99,layers:1,excludeSelf:true})];
+    case '灰毫': return [rule('hit','statusOnHit',{status:'physFragile',value:q(0.1,0.2),duration:3})];
+    case '诗怀雅': return [rule('deploy','aura',{targets:'around8',only:{melee:true},stats:{aspd:q(8,16)}})];
+    case '海霓': return [rule('deploy','rangeDebuff',{status:'fragile',value:q(0.08,0.16),only:{eliteOrLeader:true}})];
+    case '雪猎': return [rule('skillStart','rangeDebuff',{on:'skillStart',status:'cold',duration:q(2,4)})];
     case '瑕光': return [rule('deploy','deployBuff',{targets:['self','adjacent'],stats:{damageTakenPct:q(-0.15,-0.3)},duration:15})];
-    case '蛇屠箱': return [rule('battleStart','battleStartBuff',{targets:'row',stats:{damageTakenPct:q(-0.08,-0.16)}})];
-    case '流星': return [rule('deploy','deployBuff',{targets:'adjacent',stats:{aspd:q(15,30)},duration:10})];
-    case '信仰搅拌机': return [rule('battleStart','battleStartBuff',{targets:'faction:拉特兰',stats:{aspd:q(10,20)}})];
-    case '莫斯提马': return [rule('skillStart','skillStartBuff',{targets:'adjacent',stats:{aspd:q(20,40)},duration:10})];
-    case '寒芒克洛丝': return [rule('attack','everyNthAttack',{n:q(4,2),effect:'extraHit',atkPct:1})];
-    case '阿罗玛': return [rule('kill','overkillSpill',{radius:q(1.5,2.5)})];
-    case '灵知': return [rule('battle','firstWaveStrike',{afterSpawns:3,atkPct:q(1.5,3),type:'arts'})];
+    case '蛇屠箱': return [rule('deploy','aura',{targets:'row',stats:{damageTakenPct:q(-0.08,-0.16)}})];
+    case '流星': return [rule('hit','statusOnHit',{duringSkill:true,status:'physFragile',value:q(0.15,0.25),duration:5})];
+    case '信仰搅拌机': return [rule('deploy','aura',{targets:'inRange',only:{faction:'拉特兰'},stats:{aspd:q(10,20)}})];
+    case '莫斯提马': return [rule('deploy','rangeDebuff',{duringSkill:true,status:'artsFragile',value:q(0.1,0.2)})];
+    case '寒芒克洛丝': return [rule('statusApplied','statusOnHit',{afterOwnStun:true,status:'physFragile',value:q(0.15,0.3),duration:3})];
+    case '阿罗玛': return [rule('deploy','rangeDebuff',{only:{levitate:true},status:'artsFragile',value:q(0.15,0.3)})];
+    case '灵知': return [rule('deploy','deployBuff',{firstDeployOnly:true,delay:10,targets:'faction:谢拉格',stats:{atkPct:q(0.15,0.3)},duration:'battle'})];
     case '华法琳': return [rule('skillStart','skillStartBuff',{targets:'front',stats:{atkPct:q(0.2,0.4)},duration:10})];
-    case '缇缇': return [rule('skillStart','skillStartBuff',{targets:'faction:萨尔贡',stats:{},spGain:q(2,4)})];
-    case '隐德来希': return [rule('death','allyDownStacks',{every:1,stats:{atkPct:q(0.12,0.24)},maxStacks:5})];
-    case '号角': return [rule('battle','firstWaveStrike',{afterSpawns:3,atkPct:q(2,4),type:'phys'})];
-    case '归溟幽灵鲨': return [rule('death','onDown',{blast:{atkPct:q(3,6),radius:1.5,type:'phys'}})];
-    case '凛御银灰': return [rule('battleStart','battleStartBuff',{targets:'all',stats:{atkPct:q(0.03,0.06)},perBench:true,maxBench:5})];
-    case '寒檀': return [rule('attack','everyNthAttack',{n:5,effect:q('stun:1','stun:2')})];
-    case '浊心斯卡蒂': return [rule('battleStart','battleStartBuff',{targets:'faction:阿戈尔',stats:{atkPct:q(0.15,0.3)}})];
-    case '佩佩': return [rule('attack','everyNthAttack',{n:6,effect:q('stun:1','stun:2')})];
-    case '焰影苇草': return [rule('death','onDown',{blast:{atkPct:q(2.5,5),radius:1.5,type:'arts'}})];
+    case '缇缇': return [rule('deploy','aura',{targets:'inRange',only:{hpAbove:0.5},stats:{aspd:q(10,20)}})];
+    case '隐德来希': return [rule('hit','statusOnHit',{status:'artsFragile',value:q(0.1,0.2),duration:5})];
+    // 与军事要塞不叠加: 号角's own talent already lifts every 重装 (TANK) operator, so the trait passes them over
+    case '号角': return [rule('deploy','aura',{targets:'faction:维多利亚',only:{notProfession:'TANK'},stats:{atkPct:q(0.1,0.2)}})];
+    case '归溟幽灵鲨': return [rule('dollSwap','onDown',{on:'dollSwap',blast:{atkPct:q(2.5,5),radius:1.5,type:'phys'},perBattle:2})];
+    case '凛御银灰': return [rule('battleStart','battleStartBuff',{targets:'all',stats:{},spGain:q(1,2),perBench:true,maxBench:5})];
+    case '寒檀': return [rule('deploy','rangeDebuff',{delay:20,status:'artsFragile',value:q(0.1,0.2)})];
+    case '浊心斯卡蒂': return [rule('deploy','aura',{targets:'inRange',only:{faction:'阿戈尔'},stats:{atkPct:q(0.15,0.3)}})];
+    case '佩佩': return [rule('kill','onKillSp',{actor:'self',duringSkill:true,targets:'adjacent',sp:q(1,2)})];
+    case '焰影苇草': return [rule('death','markSpread',{mark:'reed2:scorch',radius:q(1,1.5)})];
     case '耀骑士临光': return [rule('battleStart','battleStartBuff',{targets:['self','front'],stats:{aspd:q(15,30)}})];
-    case '荒芜拉普兰德': return [rule('battleStart','summonBoost',{atkMul:q(1.5,2)})];
-    case '纯烬艾雅法拉': return [rule('skillStart','skillStartBuff',{targets:'adjacent',stats:{atkPct:q(0.15,0.3)},duration:10})];
+    case '荒芜拉普兰德': return [rule('kill','onKillSp',{actor:'faction:叙拉古',targets:'killer',sp:q(1,2)})];
+    case '纯烬艾雅法拉': return [rule('skillStart','skillStartBuff',{targets:'inRange',stats:{atkPct:q(0.12,0.24)},duration:'skill'})];
     default: return [];
   }
 }
@@ -286,6 +296,14 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       }
       case 'forgeAdjacent': {
         const targets = adjacent(state, piece, p.direction).filter((x) => x === piece || isPresent(x));
+        if (p.each) {
+          // 自身与身前一格友方各获得: each of them wears its own
+          for (const t of targets) {
+            const each = Object.create(ruleServices); each.__landOn = t === piece ? 'self' : (p.direction || 'front');
+            output(each, state, p.id, value(p, elite), piece);
+          }
+          break;
+        }
         const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, targets.length * value(p, elite));
         output(ruleServices, state, p.id, amount, piece); break;
       }
@@ -296,6 +314,23 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'attachShopBadgeFirstRefresh':
         if (refreshCount(state) > 0 && !mark().done) { mark().done = true; attachShopEquipment(state, p.id, value(p, elite), piece); }
         break;
+      case 'forgePerRefresh': {
+        // 本次休整期每主动刷新1次 (安洁莉娜): badges for the refreshes of this prep phase, landing where the rule says
+        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshCount(state) * value(p, elite));
+        output(ruleServices, state, p.id, amount, piece); break;
+      }
+      case 'copyFrontNative': {
+        // 身前一格友方若有<时点>特质，自身拥有相同特质: the front operator's rules of that moment run as this operator's
+        // (精锐 copier: elite numbers; otherwise normal ones). Copiers are never copied.
+        if (event.replay) break;
+        const front = neighborAt(state, piece, 'front', 1);
+        if (!front || !isPresent(front)) break;
+        const copied = (traitFor(front, services)?.effect?.prep || []).filter((other) => other.trigger === p.hook && !COPIERS.has(other.behavior));
+        if (!copied.length) break;
+        const useElite = Boolean(pick(p.eliteValues, elite));
+        fire(state, p.hook, piece, { ...event, replay: true, replayTarget: piece, sourceUid: piece.uid, copyRuleElite: useElite }, services, true, null, copied);
+        break;
+      }
       case 'attachShopByRefreshCount': {
         const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshCount(state) * value(p, elite));
         attachShopEquipment(state, p.id, amount, piece, true); break;
@@ -349,7 +384,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       }
       case 'replayAdjacentNative': {
         if (event.replay) break;
-        const limit = p.sourceTrigger === 'gain' ? (elite ? p.eliteRange || 2 : p.normalRange || 1) : 1;
+        const limit = elite ? p.eliteRange || p.normalRange || 1 : p.normalRange || 1;
         const directions = Array.from({ length: limit }, (_, i) => i + 1).map((distance) => neighborAt(state, piece, 'front', distance)).filter(Boolean);
         for (const source of directions) {
           const sourceRulesForCopy = (traitFor(source, services)?.effect?.prep || []).filter((other) => other.trigger === p.sourceTrigger && p.allow.includes(other.behavior));
@@ -507,7 +542,10 @@ function choosePool(pool, services, elite = false) {
   return entries.at(-1)[0];
 }
 function hasPoolStock(state, chessId) {
-  return Number(state.pool?.left?.[chessId]?.left || 0) > 0;
+  // a session's pool is { [chessId]: { cap, left, tier } } (session.js operatorPool; closed factions are not in it);
+  // older fixtures nest it under `left`
+  const entry = state.pool?.[chessId]?.left != null && typeof state.pool[chessId] === 'object' ? state.pool[chessId] : state.pool?.left?.[chessId];
+  return Number(entry?.left || 0) > 0;
 }
 function chooseAvailablePool(pool, state, services, elite = false) {
   if (!pool) throw new Error('Missing upstream SharedPool definition for native effect');

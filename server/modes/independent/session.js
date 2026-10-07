@@ -33,10 +33,33 @@ function baseIncomeFor(round, gd, catalog) {
   return gd.income(round) + (round >= Number(balance.incomeBonusFromRound || Infinity) ? Number(balance.incomeBonus || 0) : 0);
 }
 function poolFor(state, id) { const key = baseId(id); return state.pool[key] || null; }
-function operatorPool(state, catalog, gd) {
+/**
+ * 每局只开部分阵营 (干员特质 v4, 2026-10-07; Battlegrounds opens 5 tribes a game): a session opens OPEN_FACTION_COUNT of
+ * the 8 阵营, chosen from its seed. Operators without a faction are always in, an operator of several factions is in when
+ * any of them is open, 锡人 (counts as every faction) is always in. A save from before (no openFactions) keeps all.
+ */
+export const OPEN_FACTION_COUNT = 5;
+export function pickOpenFactions(seed, count = OPEN_FACTION_COUNT) {
+  // its own stream, so the session's main rng (shop draws) is not shifted by the pick
+  const rng = createRng(((Number(seed) >>> 0) ^ 0x5f3759df) >>> 0);
+  const all = Object.values(TAVERN_FACTIONS);
+  const chosen = new Set(rng.shuffle([...all]).slice(0, Math.min(count, all.length)));
+  return all.filter((f) => chosen.has(f));
+}
+const countsAsAllFactions = (op) => op?.name === '锡人'
+  || (op?.nativeTrait?.effect?.combat || []).some((r) => r?.behavior === 'staticStats' && Array.isArray(r.params?.factions) && r.params.factions.length >= Object.keys(TAVERN_FACTIONS).length);
+export function operatorOpen(chessId, catalog, openFactions) {
+  if (!Array.isArray(openFactions)) return true;
+  const op = opFor(catalog, baseId(chessId));
+  if (countsAsAllFactions(op)) return true;
+  const factions = tavernFactions({ chessId: baseId(chessId) }, catalog);
+  return !factions.length || factions.some((f) => openFactions.includes(f));
+}
+function operatorPool(state, catalog, gd, openFactions = null) {
   const out = {};
   for (const [id, op] of Object.entries(ops(catalog))) {
     if (!safeId(id) || op.elite || op.isElite || id.endsWith('_b')) continue;
+    if (!operatorOpen(id, catalog, openFactions)) continue;
     // copies by the tier the operator has in this mode: the mode's own table (design rules.poolCopies, Battlegrounds'
     // 15/15/13/11/9/7 since 2026-10-07) wins over the original's per-operator overrides
     const own = catalog.config?.poolCopies?.[op.tier]; const override = gd.economy?.poolCopiesOverrides?.[id]; const perTier = gd.economy?.poolCopies?.[op.tier];
@@ -305,10 +328,12 @@ export function createSession(options = {}) {
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) >>> 0 : 1;
   const rng = createRng(seed); const gd = new GameData(data, modeIdFor('solo', difficulty.toLowerCase()));
   const income = baseIncomeFor(1, gd, catalog);
-  const state = { schemaVersion: 1, modeId: 'independent', seed, rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
+  // options.openFactions: a list to open (tools, tests), null = every faction (as a save from before); default: the seed's pick
+  const openFactions = options.openFactions === null ? null : Array.isArray(options.openFactions) ? [...options.openFactions] : pickOpenFactions(seed);
+  const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
-    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd), history: [], battleSummary: null, outcome: null };
+    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
   if (errs.length) throw new Error(`INVALID_INITIAL_STATE:${errs.join(',')}`);
@@ -323,6 +348,10 @@ export function validateSession(state) {
   if (![9, 14, 15].includes(state.roundLimit) || state.round < 1 || state.round > state.roundLimit + 1) e.push('BAD_ROUND');
   for (const key of ['pieces', 'inventory', 'offers', 'playerEffects', 'history']) if (!Array.isArray(state[key])) e.push(`BAD_${key.toUpperCase()}`);
   if (!isRecord(state.shop) || !Array.isArray(state.shop.slots) || !Number.isInteger(state.shop.level)) e.push('BAD_SHOP');
+  if (state.openFactions !== undefined) {
+    const known = Object.values(TAVERN_FACTIONS);
+    if (!Array.isArray(state.openFactions) || new Set(state.openFactions).size !== state.openFactions.length || state.openFactions.some((f) => !known.includes(f))) e.push('BAD_OPEN_FACTIONS');
+  }
   if (!isRecord(state.pool)) e.push('BAD_POOL');
   else for (const [id, p] of Object.entries(state.pool)) if (!safeId(id) || !Number.isInteger(p.left) || !Number.isInteger(p.cap) || p.left < 0 || p.left > p.cap) e.push('BAD_POOL_ENTRY');
   const uids = new Set();

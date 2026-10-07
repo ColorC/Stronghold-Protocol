@@ -4,9 +4,10 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
 import { tavernFactions } from '../../shared/independentRules.js';
 import { preV3Catalog } from './helpers/preV3.js';
+import { preV4Catalog } from './helpers/preV4.js';
 
-// rule mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js)
-const catalog = preV3Catalog(getCatalog());
+// rule mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js) and before 干员特质 v4 (helpers/preV4.js)
+const catalog = preV3Catalog(preV4Catalog(getCatalog()));
 const all = Object.values(catalog.operators);
 
 function fixture() {
@@ -257,7 +258,7 @@ test('native registry reports implementation coverage without silent empty callb
   assert.ok(all.every((x) => Array.isArray(x.nativeTrait.effect.prep) && Array.isArray(x.nativeTrait.effect.combat)));
   const missingCombat = all.filter((x) => !x.elite && x.nativeTrait.sources.normal.some((s) => s.eventType === 'IN_BATTLE') && x.name !== '风丸' && !x.nativeTrait.effect.combat.length);
   assert.deepEqual(missingCombat.map((x) => x.name), []);
-  const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','perEliteGrant','buyGear','diversityGrant']);
+  const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','perEliteGrant','buyGear','diversityGrant','copyFrontNative','forgePerRefresh']);
   for (const behavior of catalog.nativeRegistry.prepBehaviors) assert.ok(expectedPrep.has(behavior), `registered behavior ${behavior}`);
 });
 

@@ -17,7 +17,7 @@ const kinds = Object.values({ ...catalog.badges, ...catalog.equipment })
   .map((d) => d.id);
 
 function fullStock() {
-  const state = createSession({ seed: 5 });
+  const state = createSession({ seed: 5, openFactions: null });
   for (const id of kinds.slice(0, INVENTORY_CAPACITY)) grantEquipment(state, catalog, id, 1, { origin: 'test' });
   return state;
 }

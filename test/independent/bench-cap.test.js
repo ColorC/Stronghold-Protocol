@@ -6,7 +6,7 @@ import { createSession, applyAction, BENCH_SIZE, TEMP_SIZE, benchCount, tempCoun
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 
 const catalog = getCatalog();
-const ordinary = Object.values(catalog.operators).filter((x) => !x.elite && x.tier === 1);
+const ordinary = Object.values(catalog.operators).filter((x) => !x.elite);
 const piece = (uid, chessId, extra = {}) => ({ uid, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: 0, moduleId: 'none', equipment: [], attachments: [], nativeState: {}, bodyPenaltyApplied: false, poolCopies: 1, ...extra });
 /** A session whose bench holds `n` operators, all different (no merge can happen). */
 function withBench(n, extra = 0) {
@@ -22,9 +22,10 @@ test('a full bench refuses a purchase, unless it completes an elite', () => {
   const state = withBench(BENCH_SIZE);
   state.shop.slots[0] = { kind: 'chess', id: fresh(state), price: 3, sold: false, equipment: [] };
   assert.equal(applyAction(state, { type: 'buy', slot: 0 }).error?.code, 'BENCH_FULL');
-  // two copies of the first one already there → the third completes the elite
-  state.pieces[1] = piece('b1', state.pieces[0].chessId);
-  state.shop.slots[0] = { kind: 'chess', id: state.pieces[0].chessId, price: 3, sold: false, equipment: [] };
+  // two copies of one in this game's pool already there → the third completes the elite
+  const pair = fresh(state);
+  state.pieces[0] = piece('b0', pair); state.pieces[1] = piece('b1', pair);
+  state.shop.slots[0] = { kind: 'chess', id: pair, price: 3, sold: false, equipment: [] };
   const r = applyAction(state, { type: 'buy', slot: 0 });
   assert.equal(r.ok, true, r.error?.message);
   const eliteId = catalog.operators[state.pieces[0].chessId].eliteChessId;
