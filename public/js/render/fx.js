@@ -262,6 +262,9 @@ export class FxSystem {
 
   /** Play one extracted original-client prefab at a world point; optional and inert when local VFX are unavailable. */
   playOriginalVfx(prefab, options = {}) { return this.originalVfx ? this.originalVfx.play(prefab, options) : false; }
+  /** Play a tile-bound original effect whose source shader needs a procedural ground pass. */
+  playOriginalGroundFrame(options = {}) { return this.originalVfx ? this.originalVfx.playGroundFrame(options) : false; }
+  markOriginalVfxProcedural(prefab) { this.originalVfx?.markProcedural(prefab); }
   stopOriginalVfx(group) { this.originalVfx?.stopGroup(group); }
 
   /** Draw an event: `cue` (fxRegistry.js fxCue) of `channel` through the registry's recipe chain. */
@@ -1982,7 +1985,7 @@ export class FxSystem {
   }
 
   get counts() {
-    return { particles: this.parts.length, projectiles: this.projs.length, numbers: this.nums.length, rings: this.rings.length, auras: this.auras.size, locks: this.locks.length, flames: this.flames.length, originalVfx: this.originalVfx?.count || 0, originalMissing: this.originalVfx?.missingCount || 0, promotions: this.promotions || 0 };
+    return { particles: this.parts.length, projectiles: this.projs.length, numbers: this.nums.length, rings: this.rings.length, auras: this.auras.size, locks: this.locks.length, flames: this.flames.length, originalVfx: this.originalVfx?.count || 0, originalMissing: this.originalVfx?.missingCount || 0, originalCoverage: this.originalVfx?.coverage?.() || null, promotions: this.promotions || 0 };
   }
 
   destroy() {

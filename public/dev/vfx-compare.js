@@ -25,13 +25,13 @@ window.addEventListener('unhandledrejection', (e) => { errors.push(String(e.reas
 
 function ros(skillIndex) {
   return { id: 1, kind: 'op', side: 'ally', ownerId: 'P1', defId: 'chess_char_6_12_b', name: '迷迭香', tier: 6, golden: true,
-    spine: 'char_391_rosmon', avatar: 'char_391_rosmon_2', x: 3.5, y: 11, facing: 1, dir: 'RIGHT', maxHp: 2887,
+    spine: 'char_391_rosmon', avatar: 'char_391_rosmon_2', x: 4, y: 11, facing: 1, dir: 'RIGHT', maxHp: 2887,
     uid: 106, skillIndex, moduleId: 'uniequip_002_rosmon' };
 }
 
 function blkkgt(skillIndex) {
   return { id: 1, kind: 'op', side: 'ally', ownerId: 'P1', defId: 'chess_char_6_19_b', name: '锏', tier: 6, golden: true,
-    spine: 'char_4116_blkkgt', avatar: 'char_4116_blkkgt_2', x: 3.5, y: 11, facing: 1, dir: 'RIGHT', maxHp: 2767,
+    spine: 'char_4116_blkkgt', avatar: 'char_4116_blkkgt_2', x: 4, y: 11, facing: 1, dir: 'RIGHT', maxHp: 2767,
     uid: 103, skillIndex, moduleId: 'uniequip_002_blkkgt' };
 }
 
@@ -44,10 +44,10 @@ function enemy(id, defId, x, y, extra = {}) {
 function unitsFor(skillId) {
   if (operator === 'blkkgt') {
     const skillIndex = skillId === 'skchr_blkkgt_1' ? 0 : skillId === 'skchr_blkkgt_2' ? 1 : 2;
-    return [blkkgt(skillIndex), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
+    return [blkkgt(skillIndex), enemy(20, 'enemy_1007_slime', 7, 11), enemy(21, 'enemy_1042_frostd', 8, 10), enemy(22, 'enemy_1006_shield', 8, 12, { elite: true })];
   }
   const skillIndex = skillId === 'skchr_rosmon_1' ? 0 : skillId === 'skchr_rosmon_3' ? 2 : 1;
-  return [ros(skillIndex), enemy(20, 'enemy_1007_slime', 7.1, 11), enemy(21, 'enemy_1042_frostd', 8.2, 10), enemy(22, 'enemy_1006_shield', 7.8, 12, { elite: true })];
+  return [ros(skillIndex), enemy(20, 'enemy_1007_slime', 7, 11), enemy(21, 'enemy_1042_frostd', 8, 10), enemy(22, 'enemy_1006_shield', 8, 12, { elite: true })];
 }
 
 function snapshot(units, t, hp) {
@@ -67,11 +67,11 @@ function makeTimeline(kind) {
       add(start, ['skill', 1, 1, skillId]);
       for (let i = 0; i < 10; i++) {
         const t = start + i * 0.333;
-        add(t, ['fx', 'slash', 3.5, 11, { id: 1, n: 1 }]);
+        add(t, ['fx', 'slash', 4, 11, { id: 1, n: 1 }]);
         add(t + 0.012, ['dmg', 20 + (i % 2), 420, 'phys', 1, 0]);
       }
       const finale = start + 10 * 0.333 + 0.08;
-      add(finale, ['fx', 'finale', 3.5, 11, { id: 1 }]);
+      add(finale, ['fx', 'finale', 4, 11, { id: 1 }]);
       add(finale + 0.333, ['dmg', 21, 980, 'phys', 1, 0]);
       add(finale + 0.58, ['skill', 1, 0, skillId]);
       return a;
@@ -198,7 +198,8 @@ async function main() {
     wireControls();
     document.querySelectorAll('[data-scenario]').forEach((x) => { const isBlakk = x.dataset.scenario.startsWith('skchr_blkkgt_'); x.hidden = isBlakk; });
     resetBattle();
-    window.__vfxCompare = { before, after, reset: resetBattle, stats: () => ({ before: before.stats(), after: after.stats() }) };
+    window.__vfxCompare = { before, after, reset: resetBattle, stats: () => ({ before: before.stats(), after: after.stats() }),
+      coverage: () => after?.debug?.fx?.originalVfx?.coverage?.() || after?.stats?.()?.originalCoverage || null };
     $('status').innerHTML = '<strong>准备完成</strong>：两侧使用同一批战斗事件';
     const loop = (now) => {
       const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
