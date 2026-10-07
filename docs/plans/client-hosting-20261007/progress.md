@@ -48,3 +48,5 @@ assets/client子任务工作副本与分支已原生收尾，原始client诊断9
 - 已有sysstat与云Agent；新部署分钟级sampler、匿名Nginx时延、1MiB两份轮转及只读实时页面，game原PID326997未重启。采样0.0989秒CPU/次，64MiB和0.1核上限，保留6小时历史。
 - Python真实host fixture窗口/5xx/空值测试通过；Chrome fixture1/1通过，真实HTTPS读取数据及copy链接通过，截图已检查。初次监测alias斜线导致500，诊断Nginx index拼接后改显式HTML路线；原游戏没有变更。
 - 产物与入口回执：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\deployment.json，真实浏览器E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\public-browser-final\receipt.json。
+
+- 2026-10-07 监测最终验收：UI Git ed4c41a8492cc132e6c4e3c28ba19b9488b80f11 已热加载；采样源 b3787d2ff7d280ad1f7bf8c91fda6195a23f337d。真实 Chrome 正常读取、链接复制和默认视图通过，回执 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\public-browser-final-verified\receipt.json；对应源码 fixture E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\final-source-fixture.log。健康 GET 验证匿名请求记录，游戏 PID326997、重启0；完整运维验收 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\monitor-final-verification.json。最新样本无活跃租约，不能用来代表用户正在玩的对局负载；监测只覆盖新 colorc.cc 入口。

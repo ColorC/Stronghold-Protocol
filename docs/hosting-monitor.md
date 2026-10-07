@@ -21,3 +21,5 @@ CPU口径：整机为所有CPU汇总百分比；工坊以单核100%为基准，�
 真实 HTTPS 和 Chrome 已验证页面读取实时VPS数据、复制链接、无外部依赖、无JS错误。fixture另外覆盖null延迟、失联保留及趋势图。首轮URI以斜线结尾却alias单个文件，Nginx index模块返回500；已改为显式index.html文件路由，游戏入口不受影响。失败回执保留。
 
 本批证据：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\public-browser-final\receipt.json（真实运行），E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\parent-browser-test.log（fixture复核），E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\install-sampler.log（服务安装与sampler测试）。
+
+最终页面按十进制单位显示，真实 Chrome 回执 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\public-browser-final-verified\receipt.json 与截图同目录 monitor.png。对应源码 fixture 回执 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\final-source-fixture.log。首轮复制按钮断言未等待异步剪贴板写入便读取，已修正验收等待并保留失败记录；产品按钮无须修改。实际匿名请求日志及游戏进程不变验证：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\monitor-final-verification.json，游戏 MainPID326997、NRestarts0，健康 GET 被正确记录，无玩家状态修改。
