@@ -161,6 +161,52 @@ test('Proviso grants source ASPD to herself and a deployed Kazimierz ally', () =
   assert.equal(h.b.errorCount, 0);
 });
 
+test('Aosta refreshes one independent bleed timer per unblocked target', () => {
+  const chessId = 'chess_native_char_346_aosta_a';
+  const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+  const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_346_aosta);
+  const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 100000, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 8] }], kits: nativeKits, timeLimit: 10 });
+  const unit = h.unit(chessId); h.run(0.25); const enemy = h.enemy('enemy_dummy');
+  h.b.forceAttack(unit, [enemy]); h.b.forceAttack(unit, [enemy]); h.run(0.5);
+  assert.equal(h.b._sched.filter((scheduled) => scheduled.owner === unit).length, 1, 'repeated hits refresh a single DOT timer rather than scheduling parallel ticks');
+  assert.equal(h.b.errorCount, 0);
+});
+
+test('Liesel applies her source damage increase when three enemies occupy the true splash area', () => {
+  const chessId = 'chess_native_char_4031_liesel_a';
+  const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+  const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_4031_liesel);
+  const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 100000, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], kits: nativeKits, timeLimit: 10 });
+  const unit = h.unit(chessId); h.run(0.25);
+  const primary = h.b.spawnEnemy('enemy_dummy', { pos: [10, 7] });
+  h.b.spawnEnemy('enemy_dummy', { pos: [10, 8] });
+  h.b.spawnEnemy('enemy_dummy', { pos: [11, 7] });
+  const observed = [];
+  h.b.on('hit', (ctx) => { if (ctx.source === unit && ctx.target?.side === 'enemy') observed.push(ctx.dmg.mul || 1); });
+  assert.equal(unit.skill.activate('native-liesel-test', { free: true }), true);
+  h.b.forceAttack(unit, [primary]);
+  h.run(0.5);
+  assert.ok(observed.some((multiplier) => multiplier >= chess.talents[0].bb.damage_scale), 'the real hit carries the source talent multiplier through the shared damage helper');
+  assert.equal(h.b.errorCount, 0);
+});
+
+test('Judge S1 keeps a physical normal attack and adds the source-scaled arts hit', () => {
+  for (const suffix of ['a', 'b']) {
+    const chessId = `chess_native_char_4065_judge_${suffix}`;
+    const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+    const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_4065_judge);
+    const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 100000, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }], kits: nativeKits, timeLimit: 10 });
+    const unit = h.unit(chessId); h.run(0.25); const enemy = h.enemy('enemy_dummy');
+    const seen = []; h.b.on('hit', (ctx) => { if (ctx.source === unit && ctx.target === enemy) seen.push(ctx.dmg); });
+    assert.equal(unit.skill.activate('native-judge-s1-test', { free: true }), true);
+    assert.equal(h.b.forceAttack(unit, [enemy]), true); h.run(0.25);
+    assert.ok(seen.some((dmg) => dmg.type === 'phys'), `Judge ${suffix} retains her physical basic hit`);
+    const arts = seen.find((dmg) => dmg.type === 'arts' && dmg.tags?.includes('judgeS1'));
+    assert.equal(arts?.amount, unit.s.atk * chess.skills[skillIndex].bb.atk_scale_2, `Judge ${suffix} adds the native arts hit`);
+    assert.equal(h.b.errorCount, 0);
+  }
+});
+
 test('Grani, Siege, Sophia and Judge talents produce their source-backed Battle effects in both forms', () => {
   const cases = [
     { source: 'char_220_grani', ally: chessRec({ id: 'test_pioneer', profession: 'PIONEER' }), key: 'grani:dodge', field: 'dodgePhys', sourceValue: (x) => x.talents[0].bb.prob },
