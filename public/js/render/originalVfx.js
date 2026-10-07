@@ -3,6 +3,25 @@
 
 const DEFAULT_ROOT = '/assets/vfx/rosmon';
 
+/**
+ * Atlas frames are recorded as `[premultiplied colour | coverage]` but the
+ * shader presents that pair as one logical frame.  Keep the geometry and the
+ * anchor in logical (colour-half) pixels; using the packed width here shifts
+ * every effect by half its own width and makes the error grow with zoom.
+ */
+export function framePlacement(entry, scaleAtPoint = 1) {
+  const cellW = Math.max(1, Number(entry?.cellW) || 1);
+  const cellH = Math.max(1, Number(entry?.cellH) || 1);
+  const originX = Number(entry?.originX);
+  const originY = Number(entry?.originY);
+  return {
+    anchorX: (Number.isFinite(originX) ? originX : cellW / 2) / cellW,
+    anchorY: (Number.isFinite(originY) ? originY : cellH) / cellH,
+    scaleX: Number(scaleAtPoint) || 1,
+    scaleY: Number(scaleAtPoint) || 1,
+  };
+}
+
 const asFinite = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const FRAME_FRAG = `
 precision highp float;
@@ -34,6 +53,9 @@ export class OriginalVfxPlayer {
     this.entries = new Map();
     this.active = new Set();
     this.missing = new Set();
+    this.requested = new Set();
+    this.loaded = new Set();
+    this.procedural = new Set();
   }
 
   _manifest() {
@@ -79,16 +101,19 @@ export class OriginalVfxPlayer {
 
   play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', bone = null, mirror = false, offsetZ = 0 } = {}) {
     if (!prefab || typeof document === 'undefined' || !this.P?.Sprite) return false;
+    this.requested.add(prefab);
     const record = { prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, scale: Number(scale) || 1, followId, group, loop, elapsed: 0, delay: Math.max(0, Number(delay) || 0), ready: false, dead: false, sprite: null, entry: null, life,
-      anchor: anchor === 'bone' ? 'bone' : anchor === 'root' ? 'root' : anchor === 'chest' ? 'chest' : 'ground',
+      anchor: anchor === 'bone' ? 'bone' : anchor === 'root' ? 'root' : anchor === 'chest' ? 'chest' : anchor === 'tile' ? 'tile' : 'ground',
       bone: typeof bone === 'string' && bone ? bone : null, mirror: mirror === true, offsetZ: Number(offsetZ) || 0 };
     this.active.add(record);
     this._entry(prefab).then((entry) => {
       if (record.dead || !entry) return;
       record.entry = entry;
       record.ready = true;
+      this.loaded.add(prefab);
       const sprite = new this.P.Sprite(entry.textures[0]);
-      sprite.anchor.set(entry.originX / (entry.cellW * 2), entry.originY / entry.cellH);
+      const logical = framePlacement(entry);
+      sprite.anchor.set(logical.anchorX, logical.anchorY);
       if (this.P.Filter) {
         sprite.filters = [new this.P.Filter(undefined, FRAME_FRAG)];
       }
@@ -102,6 +127,21 @@ export class OriginalVfxPlayer {
     return true;
   }
 
+  /** Render the authored tile/range frame whose Unity custom vertex stream is
+   * not representable by the packed colour/coverage atlas. */
+  playGroundFrame({ x = 0, y = 0, z = 0, followId = null, group = null, life = 1.6, delay = 0 } = {}) {
+    if (!this.P?.Graphics || typeof document === 'undefined') return false;
+    const record = { kind: 'groundFrame', x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, followId, group,
+      elapsed: 0, delay: Math.max(0, Number(delay) || 0), life: Math.max(0.1, Number(life) || 1.6), dead: false, graphics: new this.P.Graphics() };
+    record.graphics.visible = false;
+    (this.layers.groundFx || this.layers.fxNormal || this.layers.fxAdd).addChild(record.graphics);
+    this.active.add(record);
+    this._placeGroundFrame(record);
+    return true;
+  }
+
+  markProcedural(prefab) { if (prefab) this.procedural.add(String(prefab)); }
+
   stopGroup(group) {
     if (!group) return;
     for (const r of this.active) if (r.group === group) this._remove(r);
@@ -110,8 +150,13 @@ export class OriginalVfxPlayer {
   _place(record) {
     if (!record.sprite || !record.entry) return;
     const followed = record.followId == null ? null : this.view(record.followId);
-    const x = followed?.x ?? record.x, y = followed?.y ?? record.y;
-    const z = followed ? (followed.z || 0) + (followed.hover || 0) + (record.anchor === 'chest' ? (followed._headTiles ? followed._headTiles * 0.45 : 0.5) : 0) + record.offsetZ : record.z + record.offsetZ;
+    // Ground effects belong to the tile, not to the interpolated centre of a
+    // walking/preview unit.  Production battle positions are integer row/col;
+    // the compare page deliberately uses the same rule so a non-grid test
+    // position cannot hide an anchoring bug.
+    const x = record.anchor === 'tile' && followed ? Math.round(followed.x) : (followed?.x ?? record.x);
+    const y = record.anchor === 'tile' && followed ? Math.round(followed.y) : (followed?.y ?? record.y);
+    const z = followed ? (followed.z || 0) + (record.anchor === 'tile' ? 0 : (followed.hover || 0)) + (record.anchor === 'chest' ? (followed._headTiles ? followed._headTiles * 0.45 : 0.5) : 0) + record.offsetZ : record.z + record.offsetZ;
     const p = this.cam()?.project(x, y, z, {});
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
     let sx = p.x, sy = p.y;
@@ -127,8 +172,45 @@ export class OriginalVfxPlayer {
     record.sprite.position.set(sx, sy);
     const s = Math.max(0.01, (p.s || 1) * record.scale / Math.max(1, record.entry.meta.pxPerUnit || 96));
     const facing = followed && record.mirror ? (followed.isEnemy ? -1 : 1) * (Number(followed.visFacing ?? followed.facing) < 0 ? -1 : 1) : 1;
-    record.sprite.scale.set((s / 2) * facing, s);
+    // The shader maps the packed pair back to one logical frame.  The sprite
+    // geometry is therefore scaled by `s` (not `s/2`); the old factor halved
+    // the effect and, together with the packed anchor, put hits behind the
+    // target/operator.
+    record.sprite.scale.set(s * facing, s);
     record.sprite.zIndex = Number.isFinite(depth) ? -depth : 0;
+  }
+
+  _placeGroundFrame(record) {
+    const followed = record.followId == null ? null : this.view(record.followId);
+    const tx = followed ? Math.round(followed.x) : Math.round(record.x);
+    const ty = followed ? Math.round(followed.y) : Math.round(record.y);
+    const z = followed ? (followed.z || 0) : record.z;
+    const cam = this.cam();
+    if (!cam || !record.graphics) return;
+    const p = cam.project(tx, ty, z + 0.025, {});
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+    const phase = Math.max(0, record.elapsed - record.delay);
+    const fade = phase < 0.18 ? phase / 0.18 : phase > record.life - 0.32 ? Math.max(0, (record.life - phase) / 0.32) : 1;
+    const pulse = 0.72 + 0.28 * Math.sin(phase * 9);
+    const g = record.graphics;
+    g.clear();
+    g.lineStyle(Math.max(1.5, p.s * 0.028), 0xe7b96b, Math.min(0.9, fade * pulse));
+    // The raw prefab contains center plus four children at local ±2.
+    for (const [dx, dy] of [[0, 0], [-2, 0], [2, 0], [0, -2], [0, 2]]) {
+      const cx = tx + dx, cy = ty + dy, q = 0.39, pts = [];
+      for (const [ox, oy] of [[-q, -q], [q, -q], [q, q], [-q, q]]) {
+        const v = cam.project(cx + ox, cy + oy, z + 0.027, {});
+        pts.push(v.x, v.y);
+      }
+      g.drawPolygon(pts);
+    }
+    g.lineStyle(Math.max(1, p.s * 0.018), 0xffe8af, Math.min(0.55, fade * 0.55));
+    const a = cam.project(tx, ty, z + 0.028, {});
+    for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) {
+      const b = cam.project(tx + dx, ty + dy, z + 0.028, {});
+      g.moveTo(a.x, a.y); g.lineTo(b.x, b.y);
+    }
+    g.zIndex = Number.isFinite(p.depth) ? -p.depth : 0;
   }
 
   _remove(record) {
@@ -136,6 +218,7 @@ export class OriginalVfxPlayer {
     record.dead = true;
     this.active.delete(record);
     try { record.sprite?.destroy({ children: true }); } catch { /* optional */ }
+    try { record.graphics?.destroy({ children: true }); } catch { /* optional */ }
   }
 
   update(dt) {
@@ -143,6 +226,14 @@ export class OriginalVfxPlayer {
     for (const record of [...this.active]) {
       if (record.dead) continue;
       record.elapsed += delta;
+      if (record.kind === 'groundFrame') {
+        if (record.elapsed < record.delay) { record.graphics.visible = false; continue; }
+        const phase = record.elapsed - record.delay;
+        if (phase >= record.life) { this._remove(record); continue; }
+        record.graphics.visible = true;
+        this._placeGroundFrame(record);
+        continue;
+      }
       if (!record.ready || record.elapsed < record.delay) { if (record.sprite) record.sprite.visible = false; continue; }
       record.sprite.visible = true;
       const entry = record.entry;
@@ -159,7 +250,10 @@ export class OriginalVfxPlayer {
 
   get count() { return this.active.size; }
   get missingCount() { return this.missing.size; }
+  coverage() {
+    return { requested: [...this.requested].sort(), loaded: [...this.loaded].sort(), missing: [...this.missing].sort(), procedural: [...this.procedural].sort() };
+  }
 
   clear() { for (const record of [...this.active]) this._remove(record); }
-  destroy() { this.clear(); this.entries.clear(); this.missing.clear(); this.manifest = null; this.manifestPromise = null; }
+  destroy() { this.clear(); this.entries.clear(); this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.manifest = null; this.manifestPromise = null; }
 }
