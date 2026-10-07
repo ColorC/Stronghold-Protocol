@@ -1,6 +1,7 @@
 // Source-backed native kits that do not replace the existing pool's hand-authored tier kits.
 // Values are read only from normalized native operator/skill blackboards; descriptions are never parsed.
 import { COLS } from '../constants.js';
+import { DIR_VEC } from '../dir.js';
 import { applyDamageIncrease } from '../../../shared/damageIncrease.js';
 import { absoluteRangeKeys } from '../targeting.js';
 
@@ -18,6 +19,10 @@ export const NATIVE_SKILL_SUPPORT = Object.freeze({
   char_484_robrta: Object.freeze(['skchr_robrta_1']),
   char_4222_taraxa: Object.freeze(['skchr_taraxa_1']),
   char_242_otter: Object.freeze(['skchr_otter_1']),
+  char_451_robin: Object.freeze(['skchr_robin_1']),
+  char_4048_doroth: Object.freeze(['skchr_doroth_1']),
+  char_1034_jesca2: Object.freeze(['skchr_jesca2_1']),
+  char_2023_ling: Object.freeze(['skchr_ling_1']),
 });
 export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_240_wyvern: 'skchr_wyvern_1',
@@ -31,6 +36,10 @@ export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_484_robrta: 'skchr_robrta_1',
   char_4222_taraxa: 'skchr_taraxa_1',
   char_242_otter: 'skchr_otter_1',
+  char_451_robin: 'skchr_robin_1',
+  char_4048_doroth: 'skchr_doroth_1',
+  char_1034_jesca2: 'skchr_jesca2_1',
+  char_2023_ling: 'skchr_ling_1',
 });
 
 // Only candidates with a complete default loadout, source talent and required token behavior are workshop-playable.
@@ -39,7 +48,7 @@ export const NATIVE_KIT_READY = Object.freeze([
   'char_240_wyvern', 'char_235_jesica', 'char_366_acdrop',
   'char_385_finlpp', 'char_4119_wanqin', 'char_4019_ncdeer',
   'char_2025_shu', 'char_2024_chyue', 'char_4222_taraxa', 'char_242_otter',
-  'char_484_robrta',
+  'char_484_robrta', 'char_451_robin', 'char_4048_doroth', 'char_1034_jesca2', 'char_2023_ling',
 ]);
 
 const spTypeOf = (value) => ({ INCREASE_WITH_TIME: 'time', INCREASE_WHEN_ATTACK: 'attack', INCREASE_WHEN_TAKEN: 'hurt', NOT_RECOVER: 'none', time: 'time', attack: 'attack', hurt: 'hurt', none: 'none' })[value] ?? null;
@@ -103,6 +112,114 @@ function sourceSkill(chess, expectedId) {
   const spCost = number(s.spCost), spType = spTypeOf(s.spType);
   if (!(spCost > 0) || !spType || !s.bb) return null;
   return { s, spCost, spType };
+}
+
+function installLandmine(owner, battle, tokenId, skillId, resolve) {
+  battle.on('deploy', ({ unit: token }) => {
+    if (token?.kind !== 'token' || token.defId !== tokenId || token.ownerUnit !== owner) return;
+    const effect = resolve(token.def?.skill?.bb ?? {});
+    if (!effect) return;
+    battle.every(0.1, () => {
+      if (!token.alive || !token.deployed) return;
+      const target = battle.enemies.find((enemy) => enemy.alive && !enemy.hidden && !enemy.isFlying && Math.round(enemy.x) === token.tileC && Math.round(enemy.y) === token.tileR);
+      if (!target) return;
+      const scale = number(effect.scale), damage = (owner.s?.atk ?? owner.base?.atk ?? 0) * scale;
+      if (damage > 0) battle.dealDamage(token, target, { amount: damage, type: 'phys', isSkill: true, tags: ['summon', 'trap', 'skill'] });
+      if (effect.bind > 0 && target.alive) battle.applyStatus(target, 'bind', { duration: effect.bind, source: token });
+      if (effect.defPct < 0 && effect.duration > 0 && target.alive) battle.addBuff(target, { key: `native:${skillId}:def:${token.id}`, duration: effect.duration, source: token, mods: { defPct: effect.defPct }, tags: ['summon', 'trap', 'skill'] });
+      battle.fx('nativeTrap', { x: token.x, y: token.y, id: token.id, target: target.id, skillId });
+      battle.retreat(token, { reason: 'expired', permanent: true });
+    }, { owner: token, immediate: true });
+  }, { owner });
+}
+
+function robin(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_robin_1');
+  const scale = number(x?.s.bb?.atk_scale), bind = number(x?.s.bb?.constraint);
+  if (!x || !(scale > 0) || !(bind > 0)) return null;
+  return {
+    skills: { skchr_robin_1: { id: 'skchr_robin_1', kind: 'passive' } },
+    talents: [{ install(battle, unit) {
+      installLandmine(unit, battle, 'token_10013_robin_mine', 'skchr_robin_1', (tokenBb) => {
+        const nativeScale = number(tokenBb.atk_scale), nativeBind = number(tokenBb.constraint);
+        return nativeScale > 0 && nativeBind > 0 ? { scale: nativeScale, bind: nativeBind } : null;
+      });
+    } }],
+  };
+}
+
+function dorothy(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_doroth_1');
+  const scale = number(x?.s.bb?.atk_scale), defPct = number(x?.s.bb?.def), duration = number(x?.s.bb?.duration);
+  if (!x || !(scale > 0) || !(defPct < 0) || !(duration > 0)) return null;
+  return {
+    skills: { skchr_doroth_1: { id: 'skchr_doroth_1', kind: 'passive' } },
+    talents: [{ install(battle, unit) {
+      installLandmine(unit, battle, 'token_10025_doroth_recttp', 'skchr_doroth_1', (tokenBb) => {
+        const nativeScale = number(tokenBb.atk_scale), nativeDef = number(tokenBb.def), nativeDuration = number(tokenBb.duration);
+        return nativeScale > 0 && nativeDef < 0 && nativeDuration > 0 ? { scale: nativeScale, defPct: nativeDef, duration: nativeDuration } : null;
+      });
+    } }],
+  };
+}
+
+function fireJessica(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_jesca2_1');
+  const atkPct = number(x?.s.bb?.atk), defPct = number(x?.s.bb?.def), duration = number(x?.s.bb?.duration);
+  if (!x || atkPct == null || defPct == null || !(duration > 0)) return null;
+  const talent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const shieldDef = number(talent.def), shieldDuration = number(chess?.tokens?.includes('token_10032_jesca2_jckshd') ? 35 : null);
+  const secondTalent = chess?.talents?.find((item) => item.index === 1)?.bb ?? {};
+  const spOnHit = number(secondTalent.sp), prob = number(secondTalent.prob);
+  return {
+    skills: { skchr_jesca2_1: { id: 'skchr_jesca2_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { atkPct, defPct } } },
+    talents: [{ install(battle, unit) {
+      battle.on('deploy', ({ unit: token }) => {
+        if (token?.kind !== 'token' || token.defId !== 'token_10032_jesca2_jckshd' || token.ownerUnit !== unit) return;
+        const nativeTalent = token.def?.talents?.[0]?.bb ?? {};
+        const nativeDef = number(nativeTalent.def) ?? shieldDef, nativeDuration = number(nativeTalent.duration) ?? shieldDuration;
+        if (!(nativeDef > 0 && nativeDuration > 0)) return;
+        battle.after(nativeDuration, () => { if (token.alive) battle.retreat(token, { reason: 'expired', permanent: true }); }, { owner: token });
+        const dr = token.tileR - unit.tileR, dc = token.tileC - unit.tileC;
+        const facing = Object.entries(DIR_VEC).find(([, [r, c]]) => dr === r && dc === c)?.[0];
+        if (facing) unit.dir = facing;
+        const [forwardR, forwardC] = DIR_VEC[facing] ?? [0, 1];
+        const back = [-forwardR, -forwardC];
+        const behindKey = (unit.tileR + back[0]) * COLS + unit.tileC + back[1];
+        for (const ally of battle.alliesFor(unit)) if (ally === unit || (ally.kind === 'op' && ally.tileR * COLS + ally.tileC === behindKey)) {
+          battle.addBuff(ally, { key: `native:jesca2:shield:${token.id}`, duration: nativeDuration, source: unit, mods: { defPct: nativeDef }, tags: ['talent'] });
+        }
+        if (spOnHit > 0 && prob > 0) battle.on('damaged', (ctx) => {
+          if (ctx.target !== token || !unit.alive || battle.rng() >= prob) return;
+          unit.skill?.gainSp?.(spOnHit, 'talent');
+        }, { owner: token });
+      }, { owner: unit });
+    } }],
+  };
+}
+
+function ling(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_ling_1');
+  const atkPct = number(x?.s.bb?.atk), aspd = number(x?.s.bb?.attack_speed), duration = number(x?.s.duration);
+  if (!x || atkPct == null || aspd == null || !(duration > 0)) return null;
+  const talent = chess?.talents?.find((item) => item.index === 1)?.bb ?? {};
+  const spOnSummonLoss = number(talent.sp), atkPerSummonLoss = number(talent.atk), maxStacks = number(talent.max_stack_cnt);
+  return {
+    skills: { skchr_ling_1: { id: 'skchr_ling_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { atkPct, aspd } } },
+    talents: spOnSummonLoss > 0 && atkPerSummonLoss > 0 && maxStacks > 0 ? [{ install(battle, unit) {
+      let stacks = 0;
+      const counted = new Set();
+      const consume = (token) => {
+        if (token?.kind !== 'token' || token.ownerUnit !== unit || counted.has(token.id) || stacks >= maxStacks) return;
+        counted.add(token.id);
+        stacks++;
+        unit.skill?.gainSp?.(spOnSummonLoss, 'talent');
+        battle.addBuff(unit, { key: `native:ling:summon:${unit.id}`, persist: true, source: unit, mods: { atkPct: atkPerSummonLoss * stacks }, tags: ['talent'] });
+      };
+      battle.on('death', (ctx) => consume(ctx.unit), { owner: unit });
+      battle.on('retreating', (ctx) => consume(ctx.unit), { owner: unit });
+    } }] : [],
+  };
 }
 
 function aciddrop(bb, chess) {
@@ -396,4 +513,8 @@ export default Object.freeze({
   chess_native_char_484_robrta: roberta,
   chess_native_char_4222_taraxa: taraxacum,
   chess_native_char_242_otter: mel,
+  chess_native_char_451_robin: robin,
+  chess_native_char_4048_doroth: dorothy,
+  chess_native_char_1034_jesca2: fireJessica,
+  chess_native_char_2023_ling: ling,
 });

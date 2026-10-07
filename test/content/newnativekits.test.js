@@ -5,6 +5,7 @@ import { makeBattle, enemyRec } from '../helpers/battleHarness.js';
 import { skillSpecSource } from '../../server/sim/content/index.js';
 import { DataSource, getDefaultSource } from '../../server/sim/simdata.js';
 import { COLS } from '../../server/sim/constants.js';
+import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_KIT_READY, NATIVE_SKILL_SUPPORT } from '../../server/sim/content/newnativekits.js';
 
 const chessData = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const tokenData = JSON.parse(fs.readFileSync(new URL('../../data/tokens.json', import.meta.url), 'utf8'));
@@ -28,12 +29,40 @@ const chongyueId = 'chess_native_char_2024_chyue_a';
 const chongyueRecord = chessData[chongyueId];
 const robertaId = 'chess_native_char_484_robrta_a';
 const robertaRecord = chessData[robertaId];
+const robinId = 'chess_native_char_451_robin_a';
+const robinRecord = { ...chessData[robinId], skill: chessData[robinId].skills?.[0] ?? null };
+const dorothyId = 'chess_native_char_4048_doroth_a';
+const dorothyRecord = { ...chessData[dorothyId], skill: chessData[dorothyId].skills?.[0] ?? null };
+const fireJessicaId = 'chess_native_char_1034_jesca2_a';
+const fireJessicaRecord = { ...chessData[fireJessicaId], skill: chessData[fireJessicaId].skills?.[0] ?? null };
+const lingId = 'chess_native_char_2023_ling_b';
+const lingRecord = { ...chessData[lingId], skill: chessData[lingId].skills?.[0] ?? null };
 const taraxaId = 'chess_native_char_4222_taraxa_a';
 const taraxaRecord = chessData[taraxaId];
 const melId = 'chess_native_char_242_otter_a';
 const melRecord = chessData[melId];
 const miboTokenId = 'token_10004_otter_motter';
 const miboTokenRecord = tokenData[miboTokenId];
+
+test('native importer marks only complete default kits Workshop-playable while preserving global hidden status', () => {
+  const readyIds = new Set(NATIVE_KIT_READY);
+  const candidates = Object.values(chessData).filter((rec) => rec.chessType === 'NATIVE_IMPORT_CANDIDATE');
+  for (const rec of candidates) {
+    assert.equal(rec.visible, false);
+    assert.equal(rec.isHidden, true);
+    if (rec.nativeImport.playable) {
+      assert.ok(readyIds.has(rec.charId), `${rec.charId} source data cannot mark an unregistered native kit ready`);
+      assert.equal(rec.nativeImport.playable, true, `${rec.charId} complete default kit is independent-only playable`);
+      assert.equal(rec.nativeImport.status, 'workshop-default-kit-ready');
+      assert.deepEqual(rec.nativeImport.availableModes, ['independent']);
+    }
+  }
+  for (const charId of ['char_484_robrta', 'char_451_robin', 'char_4048_doroth', 'char_1034_jesca2', 'char_2023_ling']) {
+    assert.ok(readyIds.has(charId));
+    assert.ok(NATIVE_DEFAULT_SKILL_IDS[charId]);
+    assert.ok(NATIVE_SKILL_SUPPORT[charId]?.includes(NATIVE_DEFAULT_SKILL_IDS[charId]));
+  }
+});
 
 test('native Jessica S1: native blackboard powers attack-recovery next-hit multiplier in battle', () => {
   assert.ok(record?.nativeGrowth?.phases?.length);
@@ -222,6 +251,87 @@ test('native Roberta S1 applies source ATK and DEF buffs during its duration', (
   assert.ok(unit.skill.active);
   assert.ok(unit.s.atk > unit.base.atk);
   assert.ok(unit.s.def > unit.base.def);
+  h.invariants();
+});
+
+test('native Robin S1 mine deals its source physical damage and binds the first ground enemy entering its tile', () => {
+  const data = new DataSource({ chess: { [robinId]: robinRecord }, tokens: { token_10013_robin_mine: tokenData.token_10013_robin_mine }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(robinId);
+  assert.equal(def.skill.id, 'skchr_robin_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: robinId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
+  const unit = h.unit(robinId);
+  const mine = h.b.spawnToken(unit, 'token_10013_robin_mine', 10, 6);
+  assert.ok(mine);
+  h.run(0.2);
+  const enemy = h.enemy('enemy_dummy');
+  assert.ok(enemy.hp < enemy.maxHp);
+  assert.ok(enemy.buffs.some((status) => status.status === 'bind' && status.timeLeft > 0));
+  assert.equal(mine.alive, false, 'the triggered trap is consumed');
+  h.invariants();
+});
+
+test('native Dorothy S1 resonance mine deals source damage and applies its source DEF reduction on entry', () => {
+  const data = new DataSource({ chess: { [dorothyId]: dorothyRecord }, tokens: { token_10025_doroth_recttp: tokenData.token_10025_doroth_recttp }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, def: 400, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(dorothyId);
+  assert.equal(def.skill.id, 'skchr_doroth_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: dorothyId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
+  const unit = h.unit(dorothyId);
+  const mine = h.b.spawnToken(unit, 'token_10025_doroth_recttp', 10, 6);
+  assert.ok(mine);
+  h.run(0.2);
+  const enemy = h.enemy('enemy_dummy');
+  assert.ok(enemy.hp < enemy.maxHp);
+  assert.ok(enemy.s.def < enemy.base.def);
+  assert.ok(enemy.buffs.some((buff) => buff.key.startsWith(`native:skchr_doroth_1:def:${mine.id}`)));
+  assert.equal(mine.alive, false);
+  h.invariants();
+});
+
+test('native Firewatch Jessica S1 and mobile shield talent apply source attack and defense bonuses', () => {
+  const data = new DataSource({ chess: { [fireJessicaId]: fireJessicaRecord, [meleeId]: chessData[meleeId] }, tokens: { token_10032_jesca2_jckshd: tokenData.token_10032_jesca2_jckshd }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(fireJessicaId);
+  assert.equal(def.skill.id, 'skchr_jesca2_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: fireJessicaId, row: 10, col: 5 }, { chessId: meleeId, row: 10, col: 4 }], enemies: [{ key: 'enemy_dummy', pos: [10, 8] }] });
+  const unit = h.unit(fireJessicaId), ally = h.unit(meleeId);
+  h.run(0.6);
+  const shield = h.b.spawnToken(unit, 'token_10032_jesca2_jckshd', 10, 6);
+  assert.ok(shield);
+  assert.equal(shield.def.talents[0].bb.duration, 35);
+  assert.ok(Math.abs(unit.s.def - unit.base.def * 1.1) < 1e-8);
+  assert.ok(Math.abs(ally.s.def - ally.base.def * 1.1) < 1e-8);
+  unit.skill.setSpTotal(unit.skill.spCost);
+  assert.equal(unit.skill.activate('manual'), true);
+  assert.ok(unit.s.atk > unit.base.atk);
+  assert.ok(unit.s.def > unit.base.def * 1.1);
+  h.run(35.1);
+  assert.equal(shield.alive, false, 'the shield expires at its source talent duration');
+  assert.ok(Math.abs(unit.s.def - unit.base.def) < 1e-8);
+  h.invariants();
+});
+
+test('native Ling S1 uses source ATK and ASPD, and her source talent responds to a spirit retreat', () => {
+  const spiritId = 'token_10020_ling_soul1';
+  const data = new DataSource({ chess: { [lingId]: lingRecord }, tokens: { [spiritId]: tokenData[spiritId] }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(lingId);
+  assert.equal(def.skill.id, 'skchr_ling_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: lingId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 8] }] });
+  const unit = h.unit(lingId);
+  h.run(0.6);
+  const spirit = h.b.spawnToken(unit, spiritId, 10, 6);
+  assert.ok(spirit);
+  unit.skill.setSpTotal(0);
+  h.b.retreat(spirit, { reason: 'expired', permanent: true });
+  assert.ok(unit.skill.spTotal > 0, 'losing a summon grants source SP');
+  assert.ok(unit.s.atk > unit.base.atk, 'losing a summon grants source ATK%');
+  const atk = unit.s.atk;
+  unit.skill.setSpTotal(unit.skill.spCost);
+  assert.equal(unit.skill.activate('manual'), true);
+  assert.ok(unit.s.atk > atk, 'S1 adds its source ATK% on top of the talent stack');
+  assert.ok(unit.s.aspd > unit.base.aspd, 'S1 grants source ASPD');
   h.invariants();
 });
 
