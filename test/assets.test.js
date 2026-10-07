@@ -20,11 +20,11 @@ import { assetToPath, pickUnitSfx, indexAudio } from '../tools/assets/audio.mjs'
 import { mirrorUrl, safeName, encodePath } from '../tools/assets/sources.mjs';
 import { collectEnemyIds, skillIndicesByChar, buildPlan, GUIDE_PAGES, UI_EXTRAS } from '../tools/assets/plan.mjs';
 import { resolveTemplate, collectLeaves } from '../tools/assets/manifest.mjs';
-import { spineEntry } from '../public/js/assets.js';
+import { spineEntry, hasBackSpine } from '../public/js/assets.js';
 import { EMOTE_CATALOG, emoteArtGroup } from '../shared/constants.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PUBLIC = join(ROOT, 'public');
+const PUBLIC = process.env.STRONGHOLD_PUBLIC_ASSETS_ROOT || join(ROOT, 'public');
 const ASSETS = join(PUBLIC, 'assets');
 const MANIFEST = join(ROOT, 'data', 'assets.json');
 const readJson = (rel) => JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
@@ -573,6 +573,43 @@ describe('generated manifest data/assets.json', () => {
     }
   });
 
+  test('native imports register their parsed Front/Back models and only selectable skill clips', { skip }, () => {
+    const chess = readJson('data/chess.json');
+    const native = Object.values(chess).filter((r) => r.chessType === 'NATIVE_IMPORT_CANDIDATE' && !r.isGolden);
+    const ids = [...new Set(native.map((r) => r.charId).filter(Boolean))].sort();
+    assert.equal(ids.length, 34);
+    const missingBack = [];
+    for (const id of ids) {
+      const char = manifest.chars[id];
+      assert.ok(char?.spine?.front, `${id} has parsed Front metadata`);
+      for (const path of [char.spine.front.skel, char.spine.front.atlas, ...char.spine.front.textures]) {
+        assert.ok(existsSync(join(PUBLIC, path)), `${id}: ${path}`);
+      }
+      const back = char.spine.back;
+      if (back) {
+        for (const path of [back.skel, back.atlas, ...back.textures]) assert.ok(existsSync(join(PUBLIC, path)), `${id} Back: ${path}`);
+      } else missingBack.push(id);
+      const row = native.find((r) => r.charId === id);
+      const selectable = new Set(row.nativeImport?.selectableSkillIds || []);
+      const skills = (row.skills || []).filter((s) => selectable.has(s.skillId));
+      const exposedSkills = Object.keys(char.spine.front.anims.skills || {});
+      assert.equal(exposedSkills.length, skills.length > 1 ? skills.length : 0, `${id} only lists selectable skill clips`);
+      for (const skill of skills) {
+        const clip = char.spine.front.anims.skill?.index === skill.index
+          ? char.spine.front.anims.skill : char.spine.front.anims.skills?.[String(skill.index)];
+        assert.ok(clip, `${id} selectable ${skill.skillId} has an animation role`);
+        for (const name of [clip.begin, clip.loop, clip.end, clip.idle].filter(Boolean)) {
+          assert.ok(char.spine.front.animations[name] !== undefined, `${id} ${skill.skillId} animation ${name} exists`);
+        }
+      }
+    }
+    assert.deepEqual(missingBack, ['char_4045_heidi']);
+    assert.equal(hasBackSpine(manifest, 'char_4045_heidi'), false);
+    assert.equal(spineEntry(manifest, 'char_4045_heidi', { back: true }), manifest.chars.char_4045_heidi.spine.front,
+      'the renderer uses the real Front model as Heidi’s Back fallback');
+    assert.equal(manifest.chars.undefined, undefined, 'DIY rows without charId do not create a phantom asset record');
+  });
+
   test('all pool chars, bonds, items and bands are covered', { skip }, () => {
     const a07 = readJson('docs/research/07-assets.json');
     for (const id of Object.keys(a07.operators)) assert.ok(manifest.chars[id]?.avatar && manifest.chars[id]?.spine?.front, id);
@@ -601,7 +638,8 @@ describe('generated manifest data/assets.json', () => {
     assert.deepEqual(noClip, [], 'Spine skill clips per index (a non-default skill never plays the default skill\'s animation)');
   });
 
-  test('every atlas on disk has size: lines (and pma: true for enemies)', { skip }, () => {
+  test('generated atlases have size lines; native source atlases normalize in memory (and enemies have pma)', { skip }, () => {
+    const nativeIds = new Set(Object.values(readJson('data/chess.json')).filter((r) => r.chessType === 'NATIVE_IMPORT_CANDIDATE' && r.charId).map((r) => r.charId));
     const atlases = [];
     const walk = (dir) => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -613,8 +651,14 @@ describe('generated manifest data/assets.json', () => {
     if (existsSync(spineDir)) walk(spineDir);
     assert.ok(atlases.length > 400, `${atlases.length} atlases`);
     for (const p of atlases) {
-      const info = atlasInfo(readFileSync(p, 'utf8'));
-      assert.ok(info.hasSize, `${p} has size`);
+      const text = readFileSync(p, 'utf8');
+      const info = atlasInfo(text);
+      if (!info.hasSize && [...nativeIds].some((id) => p.includes(join('spine', 'op', id)))) {
+        const sizes = new Map(info.pages.map((page) => [page, pngSize(readFileSync(join(dirname(p), page)))]));
+        const normalized = normalizeAtlas(text, { pageSize: (page) => sizes.get(page) || null, pma: false, renamePage: safeName });
+        assert.deepEqual(normalized.missingSize, [], `${p} texture dimensions are available for the in-memory native atlas`);
+        assert.ok(atlasInfo(normalized.text).hasSize, `${p} can be normalized without changing the canonical source`);
+      } else assert.ok(info.hasSize, `${p} has size`);
       if (p.includes(`${join('spine', 'enemy')}`)) assert.ok(info.hasPma, `${p} has pma`);
       for (const page of info.pages) assert.ok(existsSync(join(dirname(p), page)), `${p} page ${page}`);
     }
