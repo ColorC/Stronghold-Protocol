@@ -2,6 +2,7 @@
 import { traitSummary, TRAIT_WHEN } from './summary.js';
 import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
 import { quantityEquippable } from '../../../shared/independentInventory.js';
+import { darkmoonCombatEligibilityRules, darkmoonCombatMetadata } from '../../sim/content/independent/darkmoonCombat.js';
 
 /** The hand-written player texts are the same source used by the HTTP catalog. */
 export function independentDisplayCatalog(data, catalog, gameText = data['independent-game-text'] || {}) {
@@ -43,14 +44,14 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
       effectRulesElite: { prep: eliteOp?.nativeTrait.effect?.prep || [], combat: eliteOp?.nativeTrait.effect?.combat || [] },
       traitTexts: gameText.operators?.[baseChessId(id)] ? { normal: gameText.operators[baseChessId(id)].normal, elite: gameText.operators[baseChessId(id)].elite }
         : { normal: op.nativeTrait.normalText, elite: op.nativeTrait.eliteText },
-      summary: traitSummary(op.nativeTrait.effect).map((entry, index) => ({ ...entry,
+      summary: [...traitSummary(op.nativeTrait.effect).map((entry, index) => ({ ...entry,
         ...(rules[index] ? { rule: { behavior: rules[index].behavior, params: rules[index].params || {} } } : {}),
         ...(deliveryAt(op, index, rules[index]?.trigger) ? { effectDelivery: deliveryAt(op, index, rules[index]?.trigger) } : {}),
-      })),
-      summaryElite: eliteOp ? traitSummary(eliteOp.nativeTrait.effect).map((entry, index) => ({ ...entry,
+      })), ...darkmoonCombatEligibilityRules(op.sourceRefs?.darkmoon19_2?.id).map(rule=>({kind:'conditional',rule,effectDelivery:darkmoonCombatMetadata(op.sourceRefs?.darkmoon19_2?.id,!!op.elite)}))],
+      summaryElite: eliteOp ? [...traitSummary(eliteOp.nativeTrait.effect).map((entry, index) => ({ ...entry,
         ...(eliteRules[index] ? { rule: { behavior: eliteRules[index].behavior, params: eliteRules[index].params || {} } } : {}),
         ...(deliveryAtElite(index, eliteRules[index]?.trigger) ? { effectDelivery: deliveryAtElite(index, eliteRules[index]?.trigger) } : {})
-      })) : null,
+      })), ...darkmoonCombatEligibilityRules(op.sourceRefs?.darkmoon19_2?.id).map(rule=>({kind:'conditional',rule,effectDelivery:darkmoonCombatMetadata(op.sourceRefs?.darkmoon19_2?.id,true)}))] : null,
       skills: raw.skills || [], modules: (raw.modules || []).map((x) => ({ ...x, id: x.uniEquipId || x.id })) }];
   }));
   const gear = Object.fromEntries([...Object.entries(catalog.badges), ...Object.entries(catalog.equipment)].map(([id, d]) => {

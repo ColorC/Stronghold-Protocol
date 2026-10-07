@@ -1,6 +1,7 @@
 // Authored 19.2 source-card adaptations. Combat gains stay on the Battle instance;
 // only the three explicitly persistent/resource effects are returned to preparation.
 import { nativeFactions } from '../../../../shared/independentRules.js';
+import { nativeLevelAttributes, operatorGrowthInfo } from '../../../../shared/independentGrowth.js';
 import { findSummonTile } from '../tokens.js';
 
 const alive = u => !!u && u.alive && u.deployed && !u.removed;
@@ -68,6 +69,14 @@ const rules = {
 export const DARKMOON_COMBAT_SUPPORTED_IDS = Object.freeze(Object.keys(rules));
 export const DARKMOON_COMBAT_RULES = Object.freeze(rules);
 
+export function darkmoonCombatEligibilityRules(sourceId) {
+  const r=rules[sourceId];if(!r)return [];
+  const faction=r.faction||r.retire?.faction||r.retire?.fallen||r.startStrike||r.aura?.faction;
+  const match={...(faction?{faction:FACTIONS[faction]}:{}),...(r.requireCover?{keywordGear:'坚守盟约'}:{})};
+  if(!faction&&!r.requireCover&&!r.target?.startsWith('adjacent'))return [];
+  return [{behavior:'darkmoonCombat',params:{scope:'boardonly',targets:r.target==='adjacentSelf'?'adjacentRadius':'all',radius:1.5,match,excludeSelf:!!(r.excludeSelf||r.aura)}}];
+}
+
 export function darkmoonCombatMetadata(sourceId, elite=false) {
   const r=rules[sourceId]; if(!r)return null;
   const m=elite?2:1;
@@ -97,7 +106,7 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   return {trigger,recipient,duration,text,sourceId,implementation:'supported',adapter:['darkmoonCombat']};
 }
 
-export function installDarkmoonCombat(battle,{catalog,pieces=[]}={}) {
+export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) {
   const byUid=new Map(pieces.map(p=>[p.uid,p]));
   const sourceOf=u=>u?.kind==='token'?sourceOf(u.ownerUnit):catalog.operators?.[byUid.get(u?.uid)?.chessId];
   const identity=u=>u?.mem?.darkmoonFactionTags || u?.def?.raw?.darkmoonFactionTags || (u?.kind==='token'?identity(u.ownerUnit):nativeFactions(byUid.get(u?.uid)||{chessId:u?.defId},catalog));
@@ -122,8 +131,15 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[]}={}) {
     const v=e.stacks.get(u.id)||{a:0,h:0};v.a+=a*m;v.h+=h*m;e.stacks.set(u.id,v);
     const [stat,n]=secondary(u),mods={atkFlat:u.base.atk*v.a*.02};
     if(v.h){if(stat==='dmgDealtMul')mods[stat]=1+n*v.h;else if(stat==='spRecoveryFlat'){if(u.skill?.spType==='time')mods[stat]=Math.max(0,Number(u.base.spRecovery??1))*n*v.h;else mods.aspd=2*v.h;}else mods[stat]=n*v.h;}
+    const piece=byUid.get(u.uid);
+    if(state?.growthMode==='levels'&&u.kind==='op'&&piece){
+      for(const field of Object.keys(mods))delete mods[field];
+      const info=operatorGrowthInfo(piece,catalog),op=catalog.operators[piece.chessId],raw=piece.elite?op.source.eliteChess||op.source.normalChess:op.source.normalChess;
+      const trained=nativeLevelAttributes(raw.nativeGrowth,info.phase,Math.min(info.maximum,info.level+(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1)));
+      for(const [field,key]of [['atk','atkFlat'],['maxHp','hpFlat'],['def','defFlat'],['res','resFlat']])mods[key]=trained[field]-info.stats[field];
+    }
     battle.addBuff(u,{key,mods,duration:Infinity,persist:true,allowDead:true,refresh:'replace'});
-    (u.mem.darkmoonTemporaryEquipment||={})[key]={sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,expires:'battleEnd'};
+    (u.mem.darkmoonTemporaryEquipment||={})[key]={sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,...(state?.growthMode==='levels'?{trainingLevels:(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1)}:{}),expires:'battleEnd'};
     if(persistent&&u.kind==='op')results.growth.push({sourceUid:e.unit.uid,targetUid:u.uid,attackUnits:a*m,secondaryUnits:h*m});
   };
   const shield=(e,u,layers)=>{const key=`darkmoon:shield:${e.unit.uid}:${u.id}`,n=Number(u.findBuff(key)?.shieldHits||0);battle.addBuff(u,{key,shieldHits:n+layers,source:e.unit,duration:Infinity,persist:true,allowDead:true,refresh:'replace'});};
@@ -142,7 +158,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[]}={}) {
     };
   }
   const retireMultiplier=owner=>Math.max(1,...entries.filter(e=>e.rule.retireMultiplier&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.retireMultiplier[e.elite?1:0]));
-  const normalOps=()=>Object.values(catalog.operators).filter(op=>!op.elite&&op.active!==false&&op.source?.normalChess?.visible!==false);
+  const normalOps=()=>Object.values(catalog.operators).filter(op=>!op.elite&&op.recruitable!==false&&op.source?.normalChess?.visible!==false);
   const randomDef=(e,kind)=>{
     let ops=normalOps();
     if(FACTIONS[kind])ops=ops.filter(op=>op.nativeFactionTags?.includes(FACTIONS[kind]));

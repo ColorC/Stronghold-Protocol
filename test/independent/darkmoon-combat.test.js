@@ -48,6 +48,10 @@ for(const elite of [false,true])for(const [id,r]of Object.entries(DARKMOON_COMBA
     if(!r.aura&&!r.retireMultiplier&&!r.summonMultiplier)assert.ok(installed.trace.length>before||r.startStrike,'actual causal effect must execute');
     if(r.retire?.token||r.retire?.random||r.retire?.fallen||r.summon||r.overkill==='summon')assert.ok(b.allyUnits.some(u=>u.kind==='token'),'actual support unit exists');
     if(r.permanent)assert.ok(installed.results.growth.every(x=>x.targetUid===unit.uid)&&installed.results.growth.length>0);
+    if(r.buff&&r.event!=='summon'){
+      const receivers=r.target==='self'?[unit]:r.target==='actor'?[r.selfOnly?unit:ally]:r.target==='all'?[unit,ally]:[r.target==='adjacentActor'?unit:ally];
+      for(const target of receivers)assert.ok(Math.abs(target.s.atk-target.base.atk*(1+r.buff[0]*(elite?2:1)*.02))<1e-6,'ordinary/advanced attack equipment quantity follows source magnitude');
+    }
     if(r.recruitOnKill||r.retire?.handCopy)assert.ok(installed.results.recruits.length>0,'real hand recruit, not equipment');
     if(r.retire?.coin)assert.equal(installed.results.coins[0]?.quantity,elite?2:1);
     assert.equal(b.errorCount,0,JSON.stringify(b.errors));
@@ -75,4 +79,19 @@ test('shield growth needs five broken layers, shares the native shield concept, 
   assert.equal(installed.trace.length,0);
   b.dealDamage(enemy,ally,{amount:1,type:'true',isAttack:true});
   assert.equal(installed.trace.length,1);assert.ok(unit.s.atk>unit.base.atk);
+});
+test('Khadgar doubles actual native summons without doubling their equipment, and uses the strongest multiplier only',()=>{
+  const {b,unit}=fixture('DAL_575',false,['DAL_575']);
+  const before=b.allyUnits.filter(u=>u.kind==='token').length;
+  b.spawnToken(unit,'token_10028_vigil_wolf',11,6,{anySource:true});
+  assert.equal(b.allyUnits.filter(u=>u.kind==='token').length-before,2);
+  assert.equal(b.independentRewards,undefined);
+});
+test('retirement can trigger after withdrawal, cannot double-fire for one deployment, and is bounded across repeated redeployment',()=>{
+  const {h,b,unit,installed}=fixture('OG_256');
+  b.retreat(unit);h.run(.1);
+  b.emit('death',{unit,reason:'killed'});h.run(.1);
+  assert.equal(installed.trace.filter(x=>x.kind==='retire').length,1);
+  for(let i=0;i<4;i++){b.redeploy(unit,{free:true});b.retreat(unit);h.run(.1);}
+  assert.equal(installed.trace.filter(x=>x.kind==='retire').length,3);
 });

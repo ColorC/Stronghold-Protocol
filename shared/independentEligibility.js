@@ -105,6 +105,8 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
   }
   if (target === 'adjacent') return source && deployed(source) ? roster.filter((piece) => piece.uid !== source.uid
     && Math.abs(piece.row - source.row) + Math.abs(piece.col - source.col) === 1) : [];
+  if (target === 'adjacentRadius') return source && deployed(source) ? roster.filter((piece)=>piece.uid!==source.uid
+    && Math.hypot(piece.row-source.row,piece.col-source.col)<=Number(params.radius||1.5)) : [];
   if (target === 'row') return source && deployed(source) ? roster.filter((piece) => (!excludeSource || piece.uid !== source.uid) && piece.row === source.row) : [];
   if (target === 'boardonly') return roster.filter(deployed);
   if (Array.isArray(target)) {
@@ -112,7 +114,7 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
     return [...new Map(matched.map((piece) => [piece.uid, piece])).values()];
   }
   // teamForge is board scoped by its mechanics; all is board scoped for battle ally effects only.
-  if (target === 'all' && behavior !== 'teamForge' && behavior !== 'allyConditionStats') return roster;
+  if (target === 'all' && behavior !== 'teamForge' && behavior !== 'allyConditionStats') return roster.filter(piece=>!excludeSource||piece.uid!==source?.uid);
   if (behavior === 'teamForge' || behavior === 'allyConditionStats') return roster.filter(deployed);
   return target == null ? roster : [];
 }

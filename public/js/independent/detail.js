@@ -126,9 +126,9 @@ function TraitSection({ op, elite, catalog, piece, state, busy, prep, onAct, lin
 function GrowthInfo({ piece }) {
   if (!piece || piece.growthLevel == null) return null;
   const stats = piece.growthStats || piece.growthAttributes || {};
-  const labels = { attack: '攻击', atk: '攻击', maxHp: '生命', hp: '生命', defense: '防御', def: '防御', attackSpeed: '攻速', aspd: '攻速' };
+  const labels = { attack: '攻击', atk: '攻击', maxHp: '生命', hp: '生命', defense: '防御', def: '防御', res: '法抗', attackSpeed: '攻速', aspd: '攻速' };
   return html`<section class="ix-growth-info" aria-label="等级成长"><b>成长等级 ${piece.growthLevel}</b>
-    ${Object.entries(stats).map(([key, value]) => html`<span key=${key}>${labels[key] || key} ${Number(value) >= 0 ? '+' : ''}${value}</span>`)}</section>`;
+    ${Object.entries(stats).map(([key, value]) => html`<span key=${key}>${labels[key] || key} ${value}</span>`)}</section>`;
 }
 
 /**
@@ -143,7 +143,7 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
   const item = row ? (items || []).find((x) => x.uid === row.uids[0]) : null;
   const total = (items || []).reduce((n, x) => n + (x.quantity || 1), 0);
   return html`<section key="equip" class="dsec ix-dgear" aria-label=${title}>
-    <header class="dsec__head ix-dgear__head"><b>${title}</b>${total ? html`<span class="num ix-muted">${total}/${catalog.rules?.equipmentCapacity ?? 999}</span>` : null}</header>
+    <header class="dsec__head ix-dgear__head"><b>${title}</b>${total >= (catalog.rules?.equipmentCapacity ?? 999) ? html`<span class="num ix-muted">已满</span>` : null}</header>
     ${rows.length ? html`<div class="ix-dgear__tiles">${rows.map((r) => html`<button type="button" key=${r.uids[0]} class=${cx('ix-dgear__tile', r === row && 'is-on')}
         onClick=${() => setPick(r.uids[0])} aria-label=${`${r.name} ×${r.count}`}>
         <${GearIcon} id=${r.id} catalog=${catalog} plain=${true} /><b class="num">${r.count}</b>

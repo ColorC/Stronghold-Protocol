@@ -2205,11 +2205,11 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
   installKeywordGear(battle, { catalog, pieces });
 }
 
-function installEvents(battle, catalog, pieces, emit) {
+function installEvents(battle, catalog, pieces, emit, state) {
   installNativeCombat(battle, catalog, pieces, emit);
   installEquipmentMechanisms(battle, catalog, pieces, emit);
   installWarband(battle,{catalog,pieces});
-  installDarkmoonCombat(battle,{catalog,pieces});
+  installDarkmoonCombat(battle,{catalog,pieces,state});
 }
 
 /** Install the isolated battle-only mechanics for a real Battle instance. */
@@ -2229,5 +2229,5 @@ export function installIndependentBattle(battle, { catalog, state } = {}) {
   battle.independentProductionFactor = 1 + Math.max(0, ...pieces.filter((p) => fielded.has(p.uid))
     .flatMap((p) => rulesOf(catalog, p.chessId).filter((r) => r.behavior === 'productionMultiplier').map((r) => Number(r.params?.extra) || 0)));
   const emit = createRewardEmitter(battle);
-  installEvents(battle, catalog, pieces, emit);
+  installEvents(battle, catalog, pieces, emit, state);
 }
