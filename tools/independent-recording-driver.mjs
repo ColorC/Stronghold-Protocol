@@ -35,6 +35,7 @@ const report = {
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
 let server; let assetProxy; let browser; let page; let hardTimer; let recordingId = ''; let sessionId = '';
+const pendingActionRequests = new WeakMap();
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const slug = (s) => String(s || 'state').normalize('NFKD').replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-|-$/g, '').slice(0, 42) || 'state';
@@ -204,27 +205,30 @@ async function deployPiece(state, piece) {
     // Choose the visible right-facing arrow with a real pointer click, using the rendered wheel geometry.
     const facingTarget = await page.$eval('.fwheel__dia', (e) => {
       const r = e.getBoundingClientRect();
-      return { center: { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }, target: { x: r.left + r.width * 0.82, y: r.top + r.height * 0.5 }, width: r.width, height: r.height };
+      return { start: { x: r.left + r.width * 0.78, y: r.top + r.height * 0.5 }, target: { x: r.left + r.width * 0.84, y: r.top + r.height * 0.5 }, width: r.width, height: r.height };
     });
     const facingHit = await page.evaluate(({ x, y }) => {
       const e = document.elementFromPoint(x, y);
       return { tag: e?.tagName || '', className: typeof e?.className === 'string' ? e.className : '', wheel: !!e?.closest?.('.fwheel') };
-    }, facingTarget.target);
-    if (!facingHit.wheel) throw new Error(`朝向按钮未命中可见轮盘：${JSON.stringify({ facingTarget, facingHit })}`);
-    // The visible wheel commits on pointer-up after the pointer leaves its center dead-zone;
-    // a click merely cancels it, so use an ordinary mouse drag through the rendered geometry.
+    }, facingTarget.start);
+    if (!facingHit.wheel || /cancel/i.test(facingHit.className)) throw new Error(`朝向拖动起点未命中轮盘扇区：${JSON.stringify({ facingTarget, facingHit })}`);
+    // Press in the visible right sector, outside both the center dead-zone and the cancel tag.
+    // Wait for the direction preview to render before the small outward move and release.
     await page.evaluate(() => {
       const wheel = document.querySelector('.fwheel'); window.__spFacingTrace = [];
       for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) wheel?.addEventListener(type, (e) => {
         window.__spFacingTrace.push({ type, x: e.clientX, y: e.clientY, buttons: e.buttons, pointerId: e.pointerId, target: e.target?.className?.baseVal || e.target?.className || e.target?.tagName || '', defaultPrevented: e.defaultPrevented });
       }, true);
     });
-    await dragPointer(facingTarget.center, facingTarget.target, async () => {
+    await page.mouse.move(facingTarget.start.x, facingTarget.start.y); await page.mouse.down(); await pause(150);
+    await page.mouse.move(facingTarget.target.x, facingTarget.target.y); await pause(100);
+    await (async () => {
       if (!report.facingPreviewScreenshot) {
         report.facingPreview = await page.$eval('.fwheel__sr', (e) => e.innerText).catch(() => '');
         report.facingPreviewScreenshot = await screenshot('facing-wheel-right-preview');
       }
-    });
+    })();
+    await page.mouse.up();
     const pointerTrace = await page.evaluate(() => window.__spFacingTrace || []);
     try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
@@ -616,12 +620,30 @@ try {
   page.on('request', (request) => {
     let pathname = '';
     try { pathname = new URL(request.url()).pathname; } catch { /* let Chromium handle malformed URLs */ }
+    if (request.method() === 'POST' && /\/independent\/api\/sessions\/[^/]+\/actions$/.test(pathname)) {
+      let body = {}; try { body = JSON.parse(request.postData() || '{}'); } catch { /* preserve malformed requests in diagnostics */ }
+      const entry = { requestedAt: new Date().toISOString(), url: request.url(), expectedRevision: body.expectedRevision,
+        action: body.action ? { type: body.action.type, uid: body.action.uid, targetUid: body.action.targetUid, row: body.action.row, col: body.action.col, dir: body.action.dir } : null };
+      pendingActionRequests.set(request, entry); (report.uiActionRequests ||= []).push(entry);
+    }
     if (pathname === '/favicon.ico') void request.respond({ status: 204, body: '' }).catch(() => {});
     else void request.continue().catch(() => {});
   });
   page.on('pageerror', (error) => { const detail = { message: error.message, stack: error.stack || '' }; report.pageErrors.push(detail); report.errors.push({ type: 'pageerror', ...detail }); });
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
-  page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
+  page.on('response', async (response) => {
+    const actionEntry = pendingActionRequests.get(response.request());
+    if (actionEntry) {
+      actionEntry.status = response.status();
+      try {
+        const body = await response.json(); const state = body.state;
+        actionEntry.result = { ok: body.ok, error: body.error?.code || body.error || null, revision: state?.revision,
+          pieces: (state?.pieces || []).map((p) => ({ uid: p.uid, row: p.row ?? null, col: p.col ?? null })) };
+        actionEntry.respondedAt = new Date().toISOString();
+      } catch { actionEntry.result = { unreadable: true }; }
+    }
+    if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`);
+  });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
   hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, Math.max(0, processStartedAt + hardLimitMs - Date.now()));
   await page.goto(`${origin}/independent.html?record=1`, { waitUntil: 'domcontentloaded' });
@@ -680,6 +702,7 @@ try {
           toasts: [...document.querySelectorAll('.toast-host, .toast__text')].map((x) => x.innerText).filter(Boolean),
           facing: !!document.querySelector('.fwheel'), detailOpen: !!document.querySelector('[data-testid="ix-detail"]') };
       });
+      report.stalledPreparation.pendingActions = report.uiActionRequests || [];
       report.stalledPreparation.screenshot = await screenshot(`stalled-preparation-round-${state.round || 0}`);
       await writeFile(path.join(output, 'stalled-preparation-diagnostic.json'), JSON.stringify(report.stalledPreparation, null, 2));
       throw new Error(`同一准备阶段 revision ${state.revision} 超过一分钟没有可见动作推进`);
@@ -733,7 +756,20 @@ try {
     if (deployed > 0) {
       const ready = await page.$('[data-testid="ix-ready"]');
       if (ready && !(await ready.evaluate((e) => e.disabled))) {
+        if (await page.$('[data-testid="ix-detail"]')) {
+          if (!await clickText('[data-testid="ix-detail"] button', (label) => label === '关闭')) await page.keyboard.press('Escape');
+          await pause(250);
+        }
         const round = Number(state.round) || roundsDriven + 1;
+        const readyHit = await page.evaluate(() => {
+          const button = document.querySelector('[data-testid="ix-ready"]'); if (!button) return null;
+          const r = button.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return { disabled: button.disabled, rect: r.toJSON(), buttonText: button.innerText, hitTag: hit?.tagName || '',
+            hitClass: typeof hit?.className === 'string' ? hit.className : '', hitIsButton: hit === button || button.contains(hit),
+            detailOpen: !!document.querySelector('[data-testid="ix-detail"]'), facingOpen: !!document.querySelector('.fwheel') };
+        });
+        (report.readyAttempts ||= []).push({ round, revision: state.revision, deployed, readyHit });
+        if (!readyHit?.hitIsButton || readyHit.disabled || readyHit.detailOpen || readyHit.facingOpen) throw new Error(`开始战斗按钮未命中可交互位置：${JSON.stringify(readyHit)}`);
         await screenshot(`round-${round}-preparation`);
         if (round === 1) await note('从商店招募干员后，拖入战场并选择朝向；之后可以继续扩充与调整阵容。', '[data-testid="ix-ready"]', 'first-deployment');
         await ready.click(); report.actions.push({ type: 'start-battle', round, funds: state.funds, deployed });
