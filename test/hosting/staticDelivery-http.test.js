@@ -22,6 +22,7 @@ test('HTTP exact asset source, media fallback, worker bootstrap, admission UI, a
   try {
     const { startServer } = await import('../../server/index.js');
     server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, staticBase: base,
+      publicDir: fixtureDir, independentDirectory: path.join(fixtureDir, 'sessions'),
       independentMaxActive: 1, independentMaxWaiting: 1,
       independentExecution: 'client' });
     const asset = await fetch(new URL('/assets/sprites/operator.png', server.url), { redirect: 'manual' });
@@ -46,7 +47,7 @@ test('HTTP exact asset source, media fallback, worker bootstrap, admission UI, a
     assert.equal(await worker.text(), `import "${base}/js/independent/client-worker.js";\n`);
 
     const active = await fetch(new URL('/independent.html?execution=client', server.url));
-    assert.equal(active.status, 404); // sparse source checkout has no public page files
+    assert.equal(active.status, 404); // isolated fixture intentionally has no public page files
     const queued = await fetch(new URL('/independent.html?execution=client', server.url));
     assert.equal(queued.status, 200);
     assert.match(await queued.text(), /hostingWait\.js/);
@@ -57,7 +58,8 @@ test('HTTP exact asset source, media fallback, worker bootstrap, admission UI, a
     await server.close(); server = null;
 
     delete process.env.SP_ASSET_SOURCE_MAP;
-    const legacy = await startServer({ port: 0, host: '127.0.0.1', quiet: true, staticBase: '' });
+    const legacy = await startServer({ port: 0, host: '127.0.0.1', quiet: true, staticBase: '',
+      publicDir: fixtureDir, independentDirectory: path.join(fixtureDir, 'sessions') });
     try {
       const local = await fetch(new URL('/assets/sprites/operator.png', legacy.url), { redirect: 'manual' });
       assert.equal(local.status, 404);
