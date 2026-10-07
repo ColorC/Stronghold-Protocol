@@ -11,11 +11,17 @@ import { createReadStream } from 'node:fs';
 import { startServer } from '../server/index.js';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const chessCatalog = JSON.parse(await fs.readFile(path.join(repo, 'data/chess.json'), 'utf8'));
 const canonical = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const runtime = path.join(canonical, 'runtime/growth-destination-20261008/recording');
 const tmp = path.join(canonical, '.omni/tmp/growth-destination-20261008/recording');
 const output = path.resolve(process.env.SP_RECORD_DRIVER_OUTPUT || path.join(runtime, 'driver-run'));
 const runLog = path.join(tmp, `independent-recording-driver-${path.basename(output)}.log`);
+const processStartedAt = Date.now();
+const defaultHardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 30 * 60 * 1000;
+const requestedHardLimitMs = Number(process.env.SP_RECORD_DRIVER_HARD_TIMEOUT_MS || defaultHardLimitMs);
+const hardLimitMs = Number.isFinite(requestedHardLimitMs) && requestedHardLimitMs > 0
+  ? Math.max(60 * 1000, Math.min(60 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
 const maxRounds = Math.max(1, Math.min(14, Number(process.env.SP_RECORD_DRIVER_MAX_ROUNDS || 14)));
 const seed = Number.isSafeInteger(Number(process.env.SP_RECORD_DRIVER_SEED))
   ? Math.trunc(Number(process.env.SP_RECORD_DRIVER_SEED)) : Math.floor(Math.random() * 2 ** 31);
@@ -24,11 +30,12 @@ const require = createRequire(path.join(repo, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
-  seed, maxRounds, startedAt: new Date().toISOString(), baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
-  actions: [], notes: [], rounds: [], screenshots: [], errors: [],
+  seed, maxRounds, startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
+  actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
 let server; let assetProxy; let browser; let page; let hardTimer; let recordingId = ''; let sessionId = '';
+const pendingActionRequests = new WeakMap();
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const slug = (s) => String(s || 'state').normalize('NFKD').replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-|-$/g, '').slice(0, 42) || 'state';
@@ -62,6 +69,53 @@ async function readRecording() {
     const r = await fetch(`/independent/api/recordings/${encodeURIComponent(id)}`, { credentials: 'same-origin', cache: 'no-store' });
     if (!r.ok) return null; return r.json();
   }, recordingId);
+}
+async function verifyNarratedReplay(recording) {
+  const meta = recording?.meta;
+  const cue = (recording?.events || []).find((event) => event.kind === 'caption' && event.p?.key === 'first-native-mechanic');
+  if (!meta?.endedAt || !cue?.ts) throw new Error('录制结束或首次干员机制讲解字幕缺失，无法验收回放');
+  const cueSecond = Math.max(0, (cue.ts - Date.parse(meta.startedAt)) / 1000);
+  const replayUrl = new URL(`/independent-replay.html?recording=${encodeURIComponent(recordingId)}`, page.url()).href;
+  await page.goto(replayUrl, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#status')?.textContent === '记录已结束', { timeout: 45000 });
+  await page.evaluate((second) => {
+    const timeline = document.querySelector('#timeline'); timeline.value = String(second + 0.05);
+    timeline.dispatchEvent(new Event('input', { bubbles: true }));
+  }, cueSecond);
+  await page.waitForFunction((second) => Math.abs(Number(document.querySelector('#timeline')?.value) - second) < 0.25, { timeout: 15000 }, cueSecond + 0.05);
+  await page.click('#play');
+  await page.waitForFunction((expected) => {
+    const caption = document.querySelector('#caption'); const stage = document.querySelector('#stage');
+    return caption && !caption.hidden && caption.textContent === expected && document.querySelector('#play')?.textContent === '播放' && /scale\(/.test(stage?.style.transform || '');
+  }, { timeout: 8000 }, cue.p.text);
+  const visibleProof = await page.evaluate(() => {
+    const iframe = document.querySelector('#stage iframe'); const doc = iframe?.contentDocument;
+    const detail = doc?.querySelector('[data-testid="ix-detail"]'); const card = detail?.querySelector('.ix-original-card');
+    const video = document.querySelector('#stage video[data-sp-canvas-media]');
+    const visible = (element) => {
+      if (!element) return false;
+      const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) > 0;
+    };
+    const text = card?.innerText?.trim() || '';
+    return {
+      caption: document.querySelector('#caption')?.textContent || '',
+      playbackPaused: document.querySelector('#play')?.textContent === '播放',
+      zoomTransform: document.querySelector('#stage')?.style.transform || '',
+      iframeVisible: visible(iframe), detailVisible: visible(detail), cardVisible: visible(card),
+      cardText: text, ordinaryFullText: /普通[\s\S]{5,}/.test(text), eliteFullText: /精锐[\s\S]{5,}/.test(text),
+      webglMediaVisible: visible(video), mediaReadyState: video?.readyState ?? 0,
+      canvasWidth: video?.videoWidth ?? 0, canvasHeight: video?.videoHeight ?? 0,
+      stageText: doc?.body?.innerText?.slice(0, 1200) || '',
+    };
+  });
+  const proofFile = await screenshot('replay-first-mechanic-paused-zoomed');
+  const result = { cueSecond, proofFile, ...visibleProof };
+  await writeFile(path.join(output, 'replay-visual-proof.json'), JSON.stringify(result, null, 2));
+  if (!result.playbackPaused || !result.zoomTransform || !result.iframeVisible || !result.detailVisible || !result.cardVisible || !result.ordinaryFullText || !result.eliteFullText || !result.webglMediaVisible || result.mediaReadyState < 2 || !result.canvasWidth || !result.canvasHeight) {
+    throw new Error(`回放字幕/原卡/HUD/WebGL像素的同帧可见性验收失败：${JSON.stringify(result)}`);
+  }
+  return result;
 }
 async function waitRevision(revision) {
   await page.waitForFunction(async (id, old) => {
@@ -104,23 +158,28 @@ async function tilePoint(row, col) {
     return { x: t.x, y: t.y + t.s * 0.25, tile: t };
   }, [row, col]);
 }
-async function dragPointer(from, to) {
+async function dragPointer(from, to, onTarget) {
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   for (let i = 1; i <= 16; i += 1) {
     await page.mouse.move(from.x + ((to.x - from.x) * i) / 16, from.y + ((to.y - from.y) * i) / 16);
     await pause(40);
   }
+  if (onTarget) await onTarget();
   await page.mouse.up();
 }
 async function deployPiece(state, piece) {
-  const from = await piecePoint(piece, state); if (!from) return false;
+  const failure = { uid: piece.uid, name: piece.name, row: piece.row ?? null, col: piece.col ?? null,
+    legalTiles: piece.legalTiles || [], attempts: [], revision: state.revision, funds: state.funds };
+  const from = await piecePoint(piece, state);
+  if (!from) { failure.reason = 'hand geometry unavailable'; report.deployFailures ||= []; report.deployFailures.push(failure); return false; }
   const occupied = new Set((state.pieces || []).filter((p) => Number.isInteger(p.row) && Number.isInteger(p.col)).map((p) => `${p.row},${p.col}`));
   const legal = (piece.legalTiles || []).map(tileTuple).filter((t) => t && t.every(Number.isFinite) && !occupied.has(`${t[0]},${t[1]}`));
   const candidates = [];
   for (const [row, col] of legal) { const p = await tilePoint(row, col); if (p) candidates.push({ row, col, ...p }); }
   candidates.sort((a, b) => Math.abs(a.row - 10) - Math.abs(b.row - 10) || Math.abs(a.col - 7) - Math.abs(b.col - 7));
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
-  for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height).slice(0, 6)) {
+  failure.from = from; failure.occupied = [...occupied]; failure.candidates = candidates.map(({ row, col, x, y }) => ({ row, col, x, y })); failure.viewport = viewport;
+  for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height)) {
     await dragPointer(from, target);
     const diagnostic = await page.evaluate(({ from, target, legalCount }) => {
       const describe = (x, y) => {
@@ -143,17 +202,50 @@ async function deployPiece(state, piece) {
       report.firstDeployDiagnostic.wheelVisibleAfterWait = true;
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
     }
-    // The normal visible direction wheel supports keyboard navigation; use the same real UI inputs as the smoke path.
-    await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter');
+    // Choose the visible right-facing arrow with a real pointer click, using the rendered wheel geometry.
+    const facingTarget = await page.$eval('.fwheel__dia', (e) => {
+      const r = e.getBoundingClientRect();
+      return { start: { x: r.left + r.width * 0.78, y: r.top + r.height * 0.5 }, target: { x: r.left + r.width * 0.84, y: r.top + r.height * 0.5 }, width: r.width, height: r.height };
+    });
+    const facingHit = await page.evaluate(({ x, y }) => {
+      const e = document.elementFromPoint(x, y);
+      return { tag: e?.tagName || '', className: typeof e?.className === 'string' ? e.className : '', wheel: !!e?.closest?.('.fwheel') };
+    }, facingTarget.start);
+    if (!facingHit.wheel || /cancel/i.test(facingHit.className)) throw new Error(`朝向拖动起点未命中轮盘扇区：${JSON.stringify({ facingTarget, facingHit })}`);
+    // Press in the visible right sector, outside both the center dead-zone and the cancel tag.
+    // Wait for the direction preview to render before the small outward move and release.
+    await page.evaluate(() => {
+      const wheel = document.querySelector('.fwheel'); window.__spFacingTrace = [];
+      for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) wheel?.addEventListener(type, (e) => {
+        window.__spFacingTrace.push({ type, x: e.clientX, y: e.clientY, buttons: e.buttons, pointerId: e.pointerId, target: e.target?.className?.baseVal || e.target?.className || e.target?.tagName || '', defaultPrevented: e.defaultPrevented });
+      }, true);
+    });
+    await page.mouse.move(facingTarget.start.x, facingTarget.start.y); await page.mouse.down(); await pause(150);
+    await page.mouse.move(facingTarget.target.x, facingTarget.target.y); await pause(100);
+    await (async () => {
+      if (!report.facingPreviewScreenshot) {
+        report.facingPreview = await page.$eval('.fwheel__sr', (e) => e.innerText).catch(() => '');
+        report.facingPreviewScreenshot = await screenshot('facing-wheel-right-preview');
+      }
+    })();
+    await page.mouse.up();
+    const pointerTrace = await page.evaluate(() => window.__spFacingTrace || []);
     try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
     const after = await readState();
     if ((after.pieces || []).some((p) => p.uid === piece.uid && Number.isInteger(p.row))) {
-      report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + ArrowRight + Enter' });
+      report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + facing-wheel click' });
       return true;
     }
+    failure.attempts.push({ row: target.row, col: target.col, wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
+      revisionAfter: after.revision, movedPiece: (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null,
+      readyReason: (await visibleText('[data-testid="ready-why"]')).join(' '),
+      gameToasts: (await visibleText('.toast-host, .toast__text')).join(' '), facingTarget, facingHit, pointerTrace });
     state = after;
   }
+  failure.reason = failure.legalTiles.length ? 'all rendered legal positions rejected' : 'server supplied no legal tiles for this bench piece';
+  failure.screenshot = await screenshot(`deploy-failed-${piece.uid}`);
+  report.deployFailures ||= []; report.deployFailures.push(failure);
   return false;
 }
 async function annotateObservedChanges(before, after) {
@@ -230,14 +322,36 @@ async function equipVisibleItem(state) {
   }
   return false;
 }
-async function buyOne(state) {
+async function buyOne(state, { triplesOnly = false } = {}) {
   const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
-  const reserve = deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
-  const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve);
+  const roster = (state.pieces || []).filter((p) => !p.temp);
+  const reserve = roster.length >= 4 && deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
   const counts = new Map(); for (const p of state.pieces || []) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
+  const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve && (!triplesOnly || counts.get(s.id) === 2));
+  const roleCounts = roster.reduce((out, p) => {
+    const card = chessCatalog[p.chessId] || {};
+    if (card.profession === 'MEDIC') out.medic += 1;
+    if (card.position === 'MELEE') out.melee += 1;
+    if (card.position === 'RANGED') out.ranged += 1;
+    return out;
+  }, { medic: 0, melee: 0, ranged: 0 });
   viable.sort((a, b) => {
     const ca = counts.get(a.s.id) || 0, cb = counts.get(b.s.id) || 0;
-    return (cb > 0 && cb < 3 ? 1 : 0) - (ca > 0 && ca < 3 ? 1 : 0) || a.s.price - b.s.price || a.i - b.i;
+    const score = ({ s }, duplicateCount) => {
+      const card = chessCatalog[s.id] || {};
+      let value = 0;
+      if (!roleCounts.medic && card.profession === 'MEDIC') value += 100;
+      if (roleCounts.melee < 2 && card.position === 'MELEE') value += 60;
+      if (roleCounts.ranged < 2 && card.position === 'RANGED') value += 50;
+      if (roster.length < 4 && duplicateCount === 0) value += 24;
+      if (roster.length >= 4 && duplicateCount === 2) value += 40;
+      const currentTier = Number(state.shop?.level) || 1;
+      if (currentTier >= 4 && Number(card.tier) >= 4) value += 30;
+      const sharedBonds = new Set(roster.flatMap((p) => chessCatalog[p.chessId]?.bonds || []));
+      value += (card.bonds || []).filter((bond) => sharedBonds.has(bond)).length * 4;
+      return value;
+    };
+    return score(b, cb) - score(a, ca) || a.s.price - b.s.price || a.i - b.i;
   });
   for (const { s, i } of viable) {
     const card = await page.$(`[data-testid="ix-shop-${i}"]`); if (!card) continue;
@@ -256,14 +370,62 @@ async function buyOne(state) {
   }
   return false;
 }
+function roleCountsOf(pieces) {
+  return (pieces || []).filter((p) => !p.temp).reduce((out, p) => {
+    const card = chessCatalog[p.chessId] || {};
+    if (card.profession === 'MEDIC') out.medic += 1;
+    if (card.position === 'MELEE') out.melee += 1;
+    if (card.position === 'RANGED') out.ranged += 1;
+    return out;
+  }, { medic: 0, melee: 0, ranged: 0 });
+}
+function highTierReplacement(state) {
+  if (Number(state.shop?.level) < 4) return null;
+  const roster = (state.pieces || []).filter((p) => !p.temp);
+  const roles = roleCountsOf(roster);
+  const counts = new Map(); for (const p of roster) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
+  const candidates = (state.shop?.slots || []).map((slot, index) => ({ slot, index, card: chessCatalog[slot.id] || {} }))
+    .filter(({ slot, card }) => slot.kind === 'chess' && !slot.sold && slot.id && Number(slot.price) <= Number(state.funds) && Number(card.tier) >= 4 && counts.get(slot.id) !== 2)
+    .sort((a, b) => Number(b.card.tier) - Number(a.card.tier) || a.slot.price - b.slot.price || a.index - b.index);
+  const replacements = [];
+  for (const candidate of candidates) for (const piece of roster) {
+    if ((piece.equipment || []).length || piece.elite || pieceGrowthLevel(piece) > 0) continue;
+    const current = chessCatalog[piece.chessId] || {};
+    if (Number(candidate.card.tier) <= Number(current.tier || 0)) continue;
+    if (current.profession === 'MEDIC' && roles.medic <= 1) continue;
+    if (current.position === 'MELEE' && roles.melee <= 2) continue;
+    if (current.position === 'RANGED' && roles.ranged <= 2) continue;
+    replacements.push({ candidate, piece, gap: Number(candidate.card.tier) - Number(current.tier || 0) });
+  }
+  replacements.sort((a, b) => b.gap - a.gap || Number(a.candidate.card.tier) - Number(b.candidate.card.tier) || pieceGrowthLevel(a.piece) - pieceGrowthLevel(b.piece));
+  return replacements[0] || null;
+}
+async function sellForHighTierReplacement(state, replacement) {
+  const { candidate, piece } = replacement;
+  const bounds = await page.evaluate((n) => globalThis.__SP_VIEW__?.pieceScreenRect?.(n) || null, pieceNumber(piece.uid));
+  if (!bounds?.width || !bounds?.height) return false;
+  await page.mouse.click(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); await pause(350);
+  if (!await page.$eval('[data-testid="ix-detail"]', (e, name) => (e.innerText || '').includes(name), piece.name).catch(() => false)) return false;
+  const before = state.revision;
+  if (!await clickText('[data-testid="ix-detail"] button', (text) => /^出售\s*\+/.test(text))) return false;
+  if (!await clickText('[data-testid="ix-detail"] button', (text) => /^确认出售\s*\+/.test(text))) return false;
+  try { await waitRevision(before); } catch { return false; }
+  const next = await readState();
+  if ((next.pieces || []).some((p) => p.uid === piece.uid)) return false;
+  report.actions.push({ type: 'sell-for-high-tier-replacement', unit: piece.name, replacement: chessCatalog[candidate.slot.id]?.name || candidate.slot.id, tier: candidate.card.tier });
+  await annotateObservedChanges(state, next);
+  await note('酒馆等级提高后，队伍用更高阶干员替换较弱战力，并保留了现有的支援与前线配合。', '[data-testid="ix-ready"]', 'high-tier-replacement');
+  await pause(350); return true;
+}
 async function maybeUpgrade(state) {
-  if (state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
+  if ((state.pieces || []).filter((p) => !p.temp).length < 4 || state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
   const button = await page.$('[data-testid="ix-upgrade"]'); if (!button) return false;
   const before = state.revision; await button.click(); await pause(200); await button.click();
   try { await waitRevision(before); } catch { return false; }
   const next = await readState(); report.actions.push({ type: 'upgrade-dispatch' }); await annotateObservedChanges(state, next); return true;
 }
 async function triggerRefresh(state) {
+  if ((state.pieces || []).filter((p) => !p.temp).length < 4) return false;
   const button = await page.$('.ix-shop button[title^="刷新商店"]'); if (!button || await button.evaluate((e) => e.disabled)) return false;
   await button.click(); report.actions.push({ type: 'refresh-shop' }); await pause(600); return true;
 }
@@ -309,11 +471,14 @@ async function inspectReferenceCard(piece, kind) {
   const bounds = await page.evaluate((n) => globalThis.__SP_VIEW__?.pieceScreenRect?.(n) || null, pieceNumber(piece.uid));
   if (!bounds?.width || !bounds?.height) return diagnoseFailure('干员画面范围不可用');
   await page.mouse.click(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); await pause(400);
-  if (!await page.$('[data-testid="ix-detail"]')) {
+  const correctDetailOpen = async () => page.$eval('[data-testid="ix-detail"]', (e, name) => (e.innerText || '').includes(name), piece.name).catch(() => false);
+  if (!await correctDetailOpen()) {
     // Fallback to the same visible, copyable component route used by the game's own links.
     await page.evaluate((uid) => { location.hash = `piece-${uid}`; }, piece.uid);
-    try { await page.waitForSelector('[data-testid="ix-detail"]', { timeout: 5000 }); }
-    catch { return diagnoseFailure('干员详情面板未通过可见点击或组件链接打开'); }
+    try { await page.waitForFunction((name) => {
+      const detail = document.querySelector('[data-testid="ix-detail"]'); return !!detail && (detail.innerText || '').includes(name);
+    }, { timeout: 5000 }, piece.name); }
+    catch { return diagnoseFailure('可见点击先打开了其它面板，组件链接也未定位到目标干员'); }
   }
   const tabs = await page.$$('[data-testid="ix-detail"] [role="tab"]');
   for (const tab of tabs) {
@@ -331,6 +496,15 @@ async function inspectReferenceCard(piece, kind) {
   report.references ||= []; report.references.push(evidence);
   await screenshot(`${kind}-original-card`);
   await note(kind === 'elite' ? '精锐形态会展示对应的完整卡面文字，方便核对强化后的能力。' : '这里展示对应炉石原卡的普通与金色效果，可对照卫戍特质的转换。', '.ix-original-card', `${kind}-original-reference`);
+  if (kind === 'ordinary' && piece.nativeTrait) {
+    const trait = String(piece.nativeTrait).replace(/\s+/g, ' ').trim();
+    const explanation = /退场时召唤/.test(trait)
+      ? `${piece.name}退场时会召唤作战支援单位；对应原卡的亡语会成为战场增援。`
+      : /回合开始/.test(trait)
+        ? `${piece.name}的特质会在回合开始时生效，持续留场就能逐轮发挥。`
+        : `${piece.name}的特质会这样生效：${trait}`;
+    await note(explanation, '[data-testid="ix-detail"]', 'first-native-mechanic');
+  }
   if (!await clickText('[data-testid="ix-detail"] button', (s) => s === '关闭')) await page.keyboard.press('Escape');
   return true;
 }
@@ -358,14 +532,20 @@ async function stopRecording() {
       buttonStyle: style(button), centerHit: at ? { tag: at.tagName, className: typeof at.className === 'string' ? at.className : '', text: (at.innerText || '').slice(0, 120) } : null };
   });
   await writeFile(path.join(output, 'recording-control-diagnostic.json'), JSON.stringify(report.recordingControlBeforeStop, null, 2));
-  const button = await page.$('.ix-recording button');
-  if (!button || !(await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled))) {
-    report.recordingStopError = 'The visible recorder stop button was not available.';
-    return;
+  const stopDeadline = Math.min(Date.now() + 6 * 60 * 1000, processStartedAt + hardLimitMs);
+  let attempts = 0;
+  while (Date.now() < stopDeadline) {
+    const panelText = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => '');
+    if (/录制已结束/.test(panelText)) { report.recordingStopAttempts = attempts; delete report.recordingStopError; return; }
+    const button = await page.$('.ix-recording button');
+    const available = button && await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled);
+    if (!available) { await pause(1000); continue; }
+    attempts += 1; await button.click();
+    try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 10000 }); }
+    catch { await pause(1500); }
   }
-  await button.click();
-  try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 30000 }); }
-  catch { report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion'); }
+  report.recordingStopAttempts = attempts;
+  report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion');
 }
 const mime = (file) => ({ '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.otf': 'font/otf', '.ttf': 'font/ttf', '.skel': 'application/octet-stream', '.atlas': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.mp4': 'video/mp4' }[path.extname(file).toLowerCase()] || 'application/octet-stream');
 async function serveCanonicalAsset(req, res, pathname) {
@@ -436,12 +616,36 @@ try {
   const origin = await startAssetProxy(server.port);
   browser = await puppeteer.launch({ executablePath: chromePath, headless: true, args: ['--no-sandbox', '--no-proxy-server', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--disable-gpu-sandbox'] });
   page = await browser.newPage();
-  page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', message: error.message, stack: error.stack || '' }));
+  await page.setRequestInterception(true);
+  page.on('request', (request) => {
+    let pathname = '';
+    try { pathname = new URL(request.url()).pathname; } catch { /* let Chromium handle malformed URLs */ }
+    if (request.method() === 'POST' && /\/independent\/api\/sessions\/[^/]+\/actions$/.test(pathname)) {
+      let body = {}; try { body = JSON.parse(request.postData() || '{}'); } catch { /* preserve malformed requests in diagnostics */ }
+      const entry = { requestedAt: new Date().toISOString(), url: request.url(), expectedRevision: body.expectedRevision,
+        action: body.action ? { type: body.action.type, uid: body.action.uid, targetUid: body.action.targetUid, row: body.action.row, col: body.action.col, dir: body.action.dir } : null };
+      pendingActionRequests.set(request, entry); (report.uiActionRequests ||= []).push(entry);
+    }
+    if (pathname === '/favicon.ico') void request.respond({ status: 204, body: '' }).catch(() => {});
+    else void request.continue().catch(() => {});
+  });
+  page.on('pageerror', (error) => { const detail = { message: error.message, stack: error.stack || '' }; report.pageErrors.push(detail); report.errors.push({ type: 'pageerror', ...detail }); });
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
-  page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
+  page.on('response', async (response) => {
+    const actionEntry = pendingActionRequests.get(response.request());
+    if (actionEntry) {
+      actionEntry.status = response.status();
+      try {
+        const body = await response.json(); const state = body.state;
+        actionEntry.result = { ok: body.ok, error: body.error?.code || body.error || null, revision: state?.revision,
+          pieces: (state?.pieces || []).map((p) => ({ uid: p.uid, row: p.row ?? null, col: p.col ?? null })) };
+        actionEntry.respondedAt = new Date().toISOString();
+      } catch { actionEntry.result = { unreadable: true }; }
+    }
+    if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`);
+  });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
-  const hardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 14 * 60 * 1000;
-  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, hardLimitMs);
+  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, Math.max(0, processStartedAt + hardLimitMs - Date.now()));
   await page.goto(`${origin}/independent.html?record=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.ix-start__modes .ix-mode', { timeout: 60000 });
   // Chrome can reset an about:blank viewport during navigation; size the real game before session creation so
@@ -463,8 +667,7 @@ try {
   const initial = await readState(); report.sessionId = sessionId; report.recordingId = recordingId; report.growthMode = initial.growthMode; report.roundLimit = initial.roundLimit;
   await screenshot('first-preparation');
   let roundsDriven = 0; let idle = 0; let lastPrepRevision = null; let sameRevisionSince = Date.now();
-  const started = Date.now();
-  while (Date.now() - started < 13 * 60 * 1000) {
+  while (Date.now() - processStartedAt < hardLimitMs) {
     if (await page.$('[data-testid="ix-result-ok"]')) {
       const liveRound = Number((await readState()).lastBattle?.round) || roundsDriven + 1;
       await waitBattleResult(liveRound); roundsDriven++;
@@ -478,11 +681,28 @@ try {
       continue;
     }
     const state = await readState();
+    if (state.phase === 'prep' && !report.preparationSnapshots.some((x) => x.revision === state.revision)) {
+      const roster = (state.pieces || []).filter((p) => !p.temp);
+      const roles = roster.map((p) => ({ name: p.name, profession: chessCatalog[p.chessId]?.profession || '', position: chessCatalog[p.chessId]?.position || '' }));
+      report.preparationSnapshots.push({ round: state.round, revision: state.revision, funds: state.funds, shopLevel: state.shop?.level,
+        upgradePrice: state.shop?.upgradePrice, roster: roles, slots: (state.shop?.slots || []).map((s, i) => ({ i, kind: s.kind, name: chessCatalog[s.id]?.name || s.id, price: s.price, sold: s.sold })) });
+    }
     if (state.phase !== 'prep') { lastPrepRevision = null; sameRevisionSince = Date.now(); }
     else if (state.revision !== lastPrepRevision) { lastPrepRevision = state.revision; sameRevisionSince = Date.now(); }
     else if (Date.now() - sameRevisionSince > 60000) {
       report.stalledPreparation = { revision: state.revision, round: state.round, phase: state.phase, actions: report.actions.length,
         since: new Date(sameRevisionSince).toISOString(), reason: (await visibleText('[data-testid="ready-why"]')).join(' ') };
+      const live = await readState();
+      report.stalledPreparation.liveState = { revision: live.revision, phase: live.phase, round: live.round, funds: live.funds,
+        pieces: (live.pieces || []).map((p) => ({ uid: p.uid, name: p.name, chessId: p.chessId, row: p.row ?? null, col: p.col ?? null, temp: !!p.temp })) };
+      report.stalledPreparation.readyUi = await page.evaluate(() => {
+        const button = document.querySelector('[data-testid="ix-ready"]');
+        return { disabled: button?.disabled ?? null, className: button?.className || '', html: button?.outerHTML || '',
+          parentText: button?.parentElement?.innerText || '', why: [...document.querySelectorAll('[data-testid="ready-why"]')].map((x) => x.innerText),
+          toasts: [...document.querySelectorAll('.toast-host, .toast__text')].map((x) => x.innerText).filter(Boolean),
+          facing: !!document.querySelector('.fwheel'), detailOpen: !!document.querySelector('[data-testid="ix-detail"]') };
+      });
+      report.stalledPreparation.pendingActions = report.uiActionRequests || [];
       report.stalledPreparation.screenshot = await screenshot(`stalled-preparation-round-${state.round || 0}`);
       await writeFile(path.join(output, 'stalled-preparation-diagnostic.json'), JSON.stringify(report.stalledPreparation, null, 2));
       throw new Error(`同一准备阶段 revision ${state.revision} 超过一分钟没有可见动作推进`);
@@ -520,16 +740,36 @@ try {
         }
         continue;
       }
+      if (bench) throw new Error(`可见手牌干员 ${bench.uid} 无法部署，已保存合法格、轮盘命中与截图诊断`);
     }
     if (await equipVisibleItem(state)) { idle = 0; continue; }
     if (await attemptHandover(state)) { idle = 0; continue; }
-    if (deployed < 8 && (state.pieces || []).filter((p) => !p.temp).length < 10 && await buyOne(state)) { idle = 0; continue; }
+    const rosterSize = (state.pieces || []).filter((p) => !p.temp).length;
+    if (rosterSize < 10 && await buyOne(state)) { idle = 0; continue; }
+    if (deployed >= 8 && rosterSize >= 10) {
+      if (await buyOne(state, { triplesOnly: true })) { idle = 0; continue; }
+      const replacement = highTierReplacement(state);
+      if (replacement && await sellForHighTierReplacement(state, replacement)) { idle = 0; continue; }
+    }
     if (await maybeUpgrade(state)) { idle = 0; continue; }
     if (idle < 1 && Number(state.funds) >= Number(state.shop?.refreshPrice || 1) + 2) { if (await triggerRefresh(state)) { idle++; continue; } }
     if (deployed > 0) {
       const ready = await page.$('[data-testid="ix-ready"]');
       if (ready && !(await ready.evaluate((e) => e.disabled))) {
+        if (await page.$('[data-testid="ix-detail"]')) {
+          if (!await clickText('[data-testid="ix-detail"] button', (label) => label === '关闭')) await page.keyboard.press('Escape');
+          await pause(250);
+        }
         const round = Number(state.round) || roundsDriven + 1;
+        const readyHit = await page.evaluate(() => {
+          const button = document.querySelector('[data-testid="ix-ready"]'); if (!button) return null;
+          const r = button.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return { disabled: button.disabled, rect: r.toJSON(), buttonText: button.innerText, hitTag: hit?.tagName || '',
+            hitClass: typeof hit?.className === 'string' ? hit.className : '', hitIsButton: hit === button || button.contains(hit),
+            detailOpen: !!document.querySelector('[data-testid="ix-detail"]'), facingOpen: !!document.querySelector('.fwheel') };
+        });
+        (report.readyAttempts ||= []).push({ round, revision: state.revision, deployed, readyHit });
+        if (!readyHit?.hitIsButton || readyHit.disabled || readyHit.detailOpen || readyHit.facingOpen) throw new Error(`开始战斗按钮未命中可交互位置：${JSON.stringify(readyHit)}`);
         await screenshot(`round-${round}-preparation`);
         if (round === 1) await note('从商店招募干员后，拖入战场并选择朝向；之后可以继续扩充与调整阵容。', '[data-testid="ix-ready"]', 'first-deployment');
         await ready.click(); report.actions.push({ type: 'start-battle', round, funds: state.funds, deployed });
@@ -547,10 +787,11 @@ try {
     await pause(500); idle++;
     if (idle > 6) throw new Error(`无法推进整备阶段，当前提示：${(await visibleText('[data-testid="ready-why"]')).join(' ')}`);
   }
-  if (Date.now() - started >= 13 * 60 * 1000) throw new Error('对局驾驶达到13分钟执行时限');
+  if (Date.now() - processStartedAt >= hardLimitMs) throw new Error(`对局驾驶达到${Math.round(hardLimitMs / 60000)}分钟执行时限`);
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
+  report.replayVisualProof = await verifyNarratedReplay(recording);
   report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption' || e.kind === 'custom').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
   report.actions = report.recording?.events?.filter((e) => e.kind === 'server-action').map((e) => ({ at: e.ts, ...e.p })) || report.actions;
   report.artifacts = { screenshots: report.screenshots, log: runLog, json: path.join(output, 'driver-run.json') };
