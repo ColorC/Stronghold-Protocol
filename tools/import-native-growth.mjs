@@ -329,6 +329,10 @@ export async function runImport(opts) {
       { charId: 'char_235_jesica', skillId: 'skchr_jesica_1', case: 'attack-recovery next-hit multiplier', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
       { charId: 'char_235_jesica', skillId: 'skchr_jesica_2', case: 'duration, ATK% and physical/arts dodge', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
       { charId: 'char_240_wyvern', skillId: 'skchr_wyvern_1', case: 'DP charge command, ATK buff and source talent', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
+      { charId: 'char_366_acdrop', skillId: 'skchr_acdrop_1', case: 'native duration ASPD buff', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
+      { charId: 'char_385_finlpp', skillId: 'skchr_finlpp_1', case: 'source heal scale on next healing attack', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
+      { charId: 'char_4119_wanqin', skillId: 'skcom_assist_cost[3]', case: 'native timed command DP total', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
+      { charId: 'char_4019_ncdeer', skillId: 'skchr_ncdeer_1', case: 'native ATK buff and low-HP ally protection aura', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
     ],
     tokenAudit: { importedTokenDefinitions: [], unresolvedTokenIds: candidates.filter(c => !c.inCurrentChess).flatMap(c => c.tokenIds.map(tokenId => ({ charId: c.charId, tokenId }))) },
     assetAudit: {
