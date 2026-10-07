@@ -1,4 +1,5 @@
 const $ = (id) => document.getElementById(id);
+$('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
