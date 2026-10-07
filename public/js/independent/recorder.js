@@ -112,8 +112,12 @@ export function RecordingControls({ sessionId }) {
         });
         const captureCanvas = () => {
           if (state.mediaRecorder || typeof MediaRecorder !== 'function') return;
-          const canvas = [...document.querySelectorAll('canvas')].find((item) => item.width > 0 && item.height > 0 &&
-            (item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game'));
+          // recordCanvas:false deliberately avoids duplicating every WebGL frame into rrweb DOM events, so rrweb does not
+          // necessarily attach its __context marker. The original Pixi canvas is the one mounted in this game's field.
+          const canvases = [...document.querySelectorAll('canvas')].filter((item) => item.width > 0 && item.height > 0);
+          const canvas = document.querySelector('.gm__field canvas[data-render-surface="game"]')
+            || document.querySelector('.gm__field canvas')
+            || canvases.find((item) => item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game');
           if (!canvas?.captureStream) return;
           try {
             const stream = canvas.captureStream(24);
@@ -176,8 +180,8 @@ export function RecordingControls({ sessionId }) {
   const playback = recordId ? new URL(`independent-replay.html?recording=${encodeURIComponent(recordId)}`, location.href).href : '';
   return html`<aside class="ix-recording" aria-live="polite">
     <span class=${recording ? 'ix-recording__dot is-live' : 'ix-recording__dot'}></span>
-    <span>${message || (recording ? '正在记录本局' : '录制已结束')}</span>
-    ${recording ? html`<button type="button" onClick=${stop}>结束并生成回放</button>` : null}
-    ${playback ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
+    <span>${message || (recording ? '正在录制' : '录制已结束')}</span>
+    ${recording ? html`<button type="button" onClick=${stop}>结束录制</button>` : null}
+    ${playback && !recording ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
   </aside>`;
 }
