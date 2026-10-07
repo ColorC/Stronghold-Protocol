@@ -75,6 +75,7 @@ async function note(text, selector, key) {
   report.notes.push({ key, text, selector, at: new Date().toISOString() });
 }
 function pieceNumber(uid) { const n = Number(String(uid).replace(/^\D+/, '')); return Number.isInteger(n) ? n : NaN; }
+function pieceGrowthLevel(piece) { return Number(piece?.growthLevel ?? piece?.level ?? 0); }
 function tileTuple(value) {
   if (Array.isArray(value) && value.length >= 2) return [Number(value[0]), Number(value[1])];
   if (typeof value === 'string') return value.split(',').map(Number);
@@ -165,7 +166,7 @@ async function annotateObservedChanges(before, after) {
     if (old && (old.attachments || []).length < (piece.attachments || []).length) {
       await note('这项战备效果会持续跟随干员，直到本局结束。', '.ix-dpanel, .ix-effects', 'permanent-attachment');
     }
-    if (old && old.level !== piece.level && Number(piece.level) > Number(old.level || 0)) {
+    if (old && pieceGrowthLevel(old) !== pieceGrowthLevel(piece) && pieceGrowthLevel(piece) > pieceGrowthLevel(old)) {
       await note('干员在本局中继续成长，等级会带来持续的属性变化。', '.ix-dpanel, .ix-effects', 'operator-level-growth');
     }
   }
@@ -211,7 +212,7 @@ async function resolveOffer(round) {
 async function equipVisibleItem(state) {
   const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)); if (!deployed.length) return false;
   const buttons = await page.$$('[data-testid^="ix-tile-"]'); if (!buttons.length) return false;
-  const target = deployed.sort((a, b) => Number(b.level || 0) - Number(a.level || 0))[0];
+  const target = deployed.sort((a, b) => pieceGrowthLevel(b) - pieceGrowthLevel(a))[0];
   const to = await piecePoint(target, state); if (!to) return false;
   const before = state.revision;
   for (const button of buttons) {
@@ -289,18 +290,40 @@ async function attemptHandover(state) {
   await pause(800); report.actions.push({ type: 'inherit-through-visible-preview', donor: pair.donor.uid, receiver: pair.receiver.uid }); return true;
 }
 async function inspectReferenceCard(piece, kind) {
-  if (!piece || report.references?.some((x) => x.kind === kind)) return false;
-  const point = await piecePoint(piece); if (!point) return false;
+  if (!piece || report.references?.some((x) => x.kind === kind) || report.referenceAttempts?.[kind]) return false;
+  report.referenceAttempts ||= {}; report.referenceAttempts[kind] = new Date().toISOString();
+  const diagnoseFailure = async (reason) => {
+    const detail = await page.$('[data-testid="ix-detail"]');
+    const evidence = detail ? await detail.evaluate((e) => ({
+      text: (e.innerText || '').slice(0, 5000),
+      tabs: [...e.querySelectorAll('[role="tab"]')].map((tab) => ({ text: (tab.innerText || '').trim(), selected: tab.getAttribute('aria-selected') })),
+    })) : { text: '', tabs: [] };
+    const failure = { kind, uid: piece.uid, reason, ...evidence, at: new Date().toISOString() };
+    report.referenceFailures ||= []; report.referenceFailures.push(failure);
+    failure.screenshot = await screenshot(`reference-${kind}-diagnostic`);
+    await writeFile(path.join(output, `reference-${kind}-diagnostic.json`), JSON.stringify(failure, null, 2));
+    if (detail) await page.keyboard.press('Escape');
+    return false;
+  };
+  const point = await piecePoint(piece); if (!point) return diagnoseFailure('piece screen position unavailable');
   await page.mouse.click(point.x, point.y); await pause(400);
-  const summary = await page.$('[data-testid="ix-detail"] .ix-original-card summary'); if (!summary) return false;
+  const tabs = await page.$$('[data-testid="ix-detail"] [role="tab"]');
+  for (const tab of tabs) {
+    if (await tab.evaluate((e) => (e.innerText || '').trim() === '特质')) {
+      if (await tab.evaluate((e) => e.getAttribute('aria-selected') !== 'true')) await tab.click();
+      break;
+    }
+  }
+  const summary = await page.$('[data-testid="ix-detail"] .ix-original-card summary');
+  if (!summary) return diagnoseFailure('原卡内容在可见详情中不可用');
   const opened = await summary.evaluate((e) => e.parentElement.open); if (!opened) await summary.click();
   await pause(300);
   const text = await page.$eval('[data-testid="ix-detail"] .ix-original-card', (e) => e.innerText.trim());
   const evidence = { kind, uid: piece.uid, visibleText: text, ordinaryTextVisible: /普通[\s\S]{5,}/.test(text), eliteTextVisible: /精锐[\s\S]{5,}/.test(text) };
   report.references ||= []; report.references.push(evidence);
   await screenshot(`${kind}-original-card`);
-  await note(kind === 'elite' ? '精锐形态会展示对应的完整卡面文字，方便核对强化后的能力。' : '干员详情可展开原卡文字，查看其特性与技能说明。', '.ix-original-card', `${kind}-original-reference`);
-  await clickText('[data-testid="ix-detail"] button', (s) => s === '关闭');
+  await note(kind === 'elite' ? '精锐形态会展示对应的完整卡面文字，方便核对强化后的能力。' : '这里展示对应炉石原卡的普通与金色效果，可对照卫戍特质的转换。', '.ix-original-card', `${kind}-original-reference`);
+  if (!await clickText('[data-testid="ix-detail"] button', (s) => s === '关闭')) await page.keyboard.press('Escape');
   return true;
 }
 async function waitBattleResult(round) {
@@ -431,7 +454,7 @@ try {
   await page.waitForFunction(() => document.querySelector('.ix-recording__dot.is-live'), { timeout: 30000 });
   const initial = await readState(); report.sessionId = sessionId; report.recordingId = recordingId; report.growthMode = initial.growthMode; report.roundLimit = initial.roundLimit;
   await screenshot('first-preparation');
-  let roundsDriven = 0; let idle = 0;
+  let roundsDriven = 0; let idle = 0; let lastPrepRevision = null; let sameRevisionSince = Date.now();
   const started = Date.now();
   while (Date.now() - started < 13 * 60 * 1000) {
     if (await page.$('.ix-battlebar')) {
@@ -441,6 +464,15 @@ try {
       continue;
     }
     const state = await readState();
+    if (state.phase !== 'prep') { lastPrepRevision = null; sameRevisionSince = Date.now(); }
+    else if (state.revision !== lastPrepRevision) { lastPrepRevision = state.revision; sameRevisionSince = Date.now(); }
+    else if (Date.now() - sameRevisionSince > 60000) {
+      report.stalledPreparation = { revision: state.revision, round: state.round, phase: state.phase, actions: report.actions.length,
+        since: new Date(sameRevisionSince).toISOString(), reason: (await visibleText('[data-testid="ready-why"]')).join(' ') };
+      report.stalledPreparation.screenshot = await screenshot(`stalled-preparation-round-${state.round || 0}`);
+      await writeFile(path.join(output, 'stalled-preparation-diagnostic.json'), JSON.stringify(report.stalledPreparation, null, 2));
+      throw new Error(`同一准备阶段 revision ${state.revision} 超过一分钟没有可见动作推进`);
+    }
     if (state.phase === 'finished') { await screenshot('terminal-finished'); break; }
     if (await page.$('.ix-offer[role="dialog"]')) {
       const done = await resolveOffer(Number(state.round) || roundsDriven + 1);
@@ -451,9 +483,13 @@ try {
     if (state.phase !== 'prep') { await pause(250); continue; }
     const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
     const ordinary = (state.pieces || []).find((p) => !p.elite && Number.isInteger(p.row));
-    if (ordinary && !report.references?.some((x) => x.kind === 'ordinary')) { await inspectReferenceCard(ordinary, 'ordinary'); continue; }
+    if (ordinary && !report.references?.some((x) => x.kind === 'ordinary') && !report.referenceAttempts?.ordinary) {
+      if (await inspectReferenceCard(ordinary, 'ordinary')) { idle = 0; continue; }
+    }
     const elite = (state.pieces || []).find((p) => p.elite && Number.isInteger(p.row));
-    if (elite && !report.references?.some((x) => x.kind === 'elite')) { await inspectReferenceCard(elite, 'elite'); continue; }
+    if (elite && !report.references?.some((x) => x.kind === 'elite') && !report.referenceAttempts?.elite) {
+      if (await inspectReferenceCard(elite, 'elite')) { idle = 0; continue; }
+    }
     const nonTemporary = (state.pieces || []).filter((p) => !p.temp).length;
     const desired = Math.min(8, Math.max(1, nonTemporary));
     if (deployed < desired) {
@@ -509,7 +545,7 @@ try {
   if (!recording?.meta?.endedAt || !recording?.meta?.mediaSegments?.length || report.errors.length || report.recordingStopError) process.exitCode = 1;
 } catch (error) {
   report.failure = error?.stack || String(error); report.endedAt = new Date().toISOString();
-  try { if (page && !page.isClosed()) { await screenshot('driver-failure'); await stopRecording(); } } catch { /* include original failure */ }
+  try { if (page && !page.isClosed()) { await screenshot('driver-failure'); await stopRecording(); const stopped = await readRecording(); report.recordingMeta = stopped?.meta || null; } } catch { /* include original failure */ }
   const file = path.join(output, 'driver-run-failure.json'); await writeFile(file, JSON.stringify(report, null, 2)).catch(() => {});
   const log = runLog; await writeFile(log, `${report.startedAt}\nFAILED ${error?.stack || error}\n`, 'utf8').catch(() => {});
   console.error(JSON.stringify({ failure: error?.message || String(error), report: file, log, screenshots: report.screenshots }, null, 2)); process.exitCode = 1;
