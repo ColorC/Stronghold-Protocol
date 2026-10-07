@@ -34,3 +34,11 @@ assets/client子任务工作副本与分支已原生收尾，原始client诊断9
 主机72份旧tar私有单一归档到/mnt/datadisk0/colorc-backup-archive/colorc.cc-historical-deploy-backups.tar，72/72 byte cmp通过、精确unlink70份，系统盘腾出2,279,821,312B，留两个有效回滚；不销毁含私人内容的唯一历史来源。主页27c72996合入默认轻量白名单/窄回滚/留2、canonical dry-run包15,747,582B与Linux三次演练通过，现网正文不发布。VPS gzip/静态缓存已上线且安全头保留，首页25,081到9,810B；实际Chrome首页启动无JS错误。系统盘装Node后剩6.60GB。
 
 外源包a7已构建557,798,758B/9,900资源，Pages候选orphan commit d80374aa06fede039c1dbeb12c330bbfc99514c2逐blob对比9,902项0差异，专属-text属性防二进制换行转换；仅本地准备，等待用户确认external git push（omnicompany/AGENTS.md第38行），未修改远端。外源可达后才启用拟定https://colorc.cc/stronghold/independent.html并实际公网整局验收。所有本批产物与作用由runtime/server-deploy-20261007/artifact-index.json列出，Workshop沿用同两张结果卡。
+
+### 2026-10-07 Cloudflare 真实发布与公网验收
+- 用户明确提供账号 Token 并授权试用 Pages，正确账号级验证 active，免费纯静态项目创建及发布成功；未购买付费、未 GitHub push。原生 deployment 9b524c7f-ecc3-4217-9f06-a16aabeef2c7；应用a7，后端1de03265。
+- 全量上游资格完成，5157素材+3字体一致；启用2954非媒体项，移出250666191 B，余包307132567 B。冻结包再次本地字节核对全通过，Chrome全2954 HEAD与两套本地游戏流程通过。
+- colorc公网入口已接通；真实Chrome购买/拖拽/恢复/战斗结算/第二轮/手机布局通过，0错误。Pages固定部署域名启动与BGM WebAudio解码再次通过，避免后续发布覆盖现有来源。
+- a7叠加仅hosting映射的后端提交1de已在VPS运行；fixture测试先因稀疏checkout假设失败，改用独立public fixture后7/7；修正提交1bac合入master7cdf，未改游戏。首次安装尾部健康校验用了错误字段maxActive，实际服务已启动；改读limit后复核通过，未重复安装。
+- no-checkout工作副本初始index为空导致cherry-pick失败；配置稀疏后read-tree尊重范围补齐，再cherry成功，没有完整checkout data/runtime。原生清理后端与未推送Pages候选worktree，报告branch保留Git恢复点。
+- 证据索引：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\artifact-index.json。公网回执：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\public-browser-final\browser-receipt.json；固定部署：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\pinned-browser\receipt.json。首轮失败日志保留，不当成功计数。

@@ -1,50 +1,60 @@
-# 工坊轻量托管与试部署
+# 工坊轻量托管与外部分发
 
-2026-10-07 后续实测。保持工坊玩法与原渲染器，浏览器Worker执行同版本原经济、行动与战斗模块。VPS只提供小型入口、排队、文本存档和revision CAS；大资源直接由外部静态站提供。
+2026-10-07 已上线试玩：[卫戍协议：工坊](https://colorc.cc/stronghold/independent.html)。实际 colorc VPS 提供入口、FIFO 排队和文本存档；浏览器 Worker 使用原经济、行动和战斗模块，原三维棋盘、Spine 和音频继续使用。无需升级 VPS 套餐。
 
-VPS轻后端已经安装、启动，目前仅监听 `127.0.0.1:18010`，尚未开放公网游戏入口。发布快照为原生Git `a7b493b14e3ea2529d376352735d082a71bba685`；其他职责线之后仍在更新主仓，不混入本次冻结包。新服务独立使用Node v22.23.3与ws 8.22.0，进程限512 MiB和一个CPU核心预算；空闲内存实测约49 MB。规则和玩家存档放独立正式目录，无发布树中的可写链接。
+## 实际资源来源
 
-公开静态包已完成：9,900资源文件、557,798,758 B，最大文件15,994,892 B；不含用户存档、运行目录、私有文档和开发演示。拟用现有 `ColorC/Stronghold-Protocol` 独立gh-pages分支做免费试用分发，资源地址为 `https://colorc.github.io/Stronghold-Protocol/<完整Git版本>/`。VPS仅给无正文307和很小的同源Worker import壳，不代理资源或在外源失败时回流。音频现已兼容外源的application/octet-stream，并仍经过WebAudio解码验证。
+原安装流程由 tools/fetch-assets.mjs 从公开社区仓库下载到本机 public/assets，再由本机静态服务把文件发给玩家；玩家原本没有直接使用这些上游。现在优先让浏览器从他人的固定 Git 版本下载未转换素材。
 
-GitHub Pages站点上限1 GB，带宽软限制100 GB/月；本包适合先试用，不能无限保留全量版本或承诺长期流量。[官方限制](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)。本地候选发布commit `d80374aa06fede039c1dbeb12c330bbfc99514c2`，应用版本目录仍为a7。源包复制和9,902个实际Git blob均逐字节比较一致；`.gitattributes`防止Git换行转换改动Spine等二进制资源。
+5,158 个原始素材候选已完成完整流式字节比较，其中 5,157 个一致；唯一不一致的敌人纹理保留原文件。3 个原始字体也一致，但转换后的 WOFF2 仍由静态包提供。考虑现有音频隐藏扩展名的兼容路由，当前启用 2,954 个非媒体映射、250,666,191 B；这批素材又与本次冻结包逐字节核对，全部一致。没有更换游戏素材。
 
-外部发布尚未执行，等待用户对GitHub push的单独确认，依据 `E:\WindowsWorkspace\omnicompany\AGENTS.md` 第38行。服务器路由激活脚本已准备；外源真实可达后才开放拟定试用入口 `https://colorc.cc/stronghold/independent.html` 并做公网Chrome整局验收，目前该链接尚不能作为可玩入口。
+Cloudflare Pages 已由账号 API Token 实际创建并发布成功，只使用免费纯静态服务，未开通付费订阅或 Functions。托管包从 557,798,758 B 降为 307,132,567 B，保留转换图集、字体、本地提取资源、代码和音频兼容路径。实际上传 6,947 个文件，另上传 _headers；单文件最大 15,994,892 B，符合免费直传限制。[Pages 限制](https://developers.cloudflare.com/pages/platform/limits/) · [静态请求计费](https://developers.cloudflare.com/pages/functions/pricing/)。
 
-## 排队和实际容量
+生产静态地址固定到原生 Cloudflare 部署：https://9b524c7f.stronghold-protocol-assets.pages.dev/Stronghold-Protocol/a7b493b14e3ea2529d376352735d082a71bba685/ 。不用可变的 production 域名作为版本依据；以后新上传不会改变现有游戏的资源来源。自有 VPS 对素材只发空正文 307，不代理素材，不在外源失败时回流下载大文件。同源 Worker 壳只导入外部模块。
 
-配置50人游玩、最多200人排队，FIFO和25秒长轮询；离线排队租约90秒，游玩租约120秒、30秒心跳。等待页正文764 B，控制脚本5,442 B，不引用游戏大资源。VPS实测50个游玩和200个排队全部正确，第251个503，空位优先让最早排队者进入；结束后全部租约回收。原盟约WebSocket也占总人数。
+应用原生 Git 版本 a7b493b14e3ea2529d376352735d082a71bba685；服务器版本 1de032651b4418fad6676d4874a35eaa147b597d 是该版本仅叠加精确素材来源路由。规则和玩家存档仍在独立正式目录。Cloudflare 原生 deployment 为 9b524c7f-ecc3-4217-9f06-a16aabeef2c7。未向 GitHub push；原候选发布 worktree 已原生回收，独立分支保留 Git 恢复点。
 
-现成的[Cloudflare Waiting Room](https://developers.cloudflare.com/waiting-room/plans/)有FIFO，但Free/Pro不提供，Business/Enterprise才包含。目前轻量队列不用新增付费服务。
+## 公网验收
 
-实际VPS隔离负载使用同一a7代码与配置、真实磁盘保存，限一个CPU核心和512 MiB；每个客户端做准入、两次创建和两次checkpoint，使用5,912 B早期存档与73,771 B第九轮存档。每档最多8秒，测试目录与玩家目录分离。
+真实 Chrome 已在 https://colorc.cc/stronghold/independent.html 完成购买、拖拽布阵、方向选择、刷新恢复、原三维战斗、结算、第二回合和手机布局；前端 execution=client，0 JS/请求错误。公网截图已人工检查，角色和棋盘正常。页面网络记录包含 Cloudflare 446 次请求、raw GitHub 77 次请求，自有 VPS 可观测传输 131,045 B；这份记录不包含 Worker 的独立网络目标，也不是完整冷缓存流量估计。请求记录中没有服务端 actions 或战斗计算调用，存档通过 checkpoint 写入。
 
-| 并发 | 全批耗时 | checkpoint p95 | 失败 | Node最终RSS | 落盘 |
-| --- | --- | --- | --- | --- | --- |
-| 50 | 1.684秒 | 388.75毫秒 | 0 | 168.8 MB | 100份 / 3.98 MB |
-| 100 | 2.975秒 | 392.08毫秒 | 0 | 174.3 MB | 200份 / 7.97 MB |
-| 200 | 5.898秒 | 385.51毫秒 | 0 | 172.5 MB | 400份 / 15.94 MB |
+切换固定 Cloudflare 部署后，另外一轮全新 Chrome 启动通过；BGM 实际 HTTP 200、audio/mpeg，WebAudio 解码为 71.11 秒双声道，所有可观测 Pages 请求使用固定部署域名。
 
-服务器战斗接口调用和录像文件均为零。负载生成器也在同一Node进程，CPU/RSS包含它的开销。这证明有限样本下轻存档接口能处理200客户端，不是200人完整游玩保证，也没有测出绝对最大人数；试用保持50人，公网整局和长期数据后再调。
+本地混合来源的两套 Chrome 流程也已通过：客户端完整战斗、revision 冲突和恢复，以及原渲染器布阵和结算。2,954 个固定源均在 Chrome HEAD 实际网络验证为 200；剩余静态包 858 请求、140,216,857 B、0 404。完整流式 GET 比较、Chrome HEAD、完整游戏流程分别验证内容、跨源可达性和接入行为，没有混为同一证据。
 
-本机从VPS下载五份既有字体，三并发聚合出口实测约3.50 Mbit/s。这是当时链路样本，不是套餐标称上限。存档请求主要入站；checkpoint确认正文68 B，50人每五秒保存一次时确认正文仅约5.44 kbit/s，另计TLS/HTTP头与心跳。首次创建与恢复仍传完整文本存档；本轮容量测试两份创建回应合计约79.8 KB/客户端，不能误计成每次常规动作出口。
+修正过两项测试方法问题：首次资格比较工具漏传本地路径，失败结果保留后修正重跑；首次公网脚本在开始按钮出现前尝试点击，导致等待超时，修正显式等待后完整流程通过。部署预检使用 Python 默认 UA 被 Pages 拒绝，真实浏览器及浏览器 UA 返回 200；据此不能认定大陆不可达。不同玩家运营商的访问效果仍待实际体验。
 
-## 主页、磁盘和备份的实际变化
+## 人数、服务器与排队
 
-主机除主页和转发还有反馈、Everpoint、旧Next及代理消费者，本轮保留这些服务。72份历史tar原样归档到独立数据盘，逐份解出后cmp一致；系统盘留两个有效回滚点，70个旧源逐项unlink，腾出2,279,821,312 B。历史包存在不能认定可丢弃的私人内容，没有销毁唯一恢复来源。私有单一归档 `/mnt/datadisk0/colorc-backup-archive/colorc.cc-historical-deploy-backups.tar` 仍与VPS处在同一故障域。安装新Node等之后系统盘剩约6.60 GB，数据盘剩约17.15 GB。
+目前限制 50 人同时游玩、最多 200 人 FIFO 等待；离线等待租约 90 秒，游玩租约 120 秒、30 秒心跳、25 秒长轮询。等待页 764 B、控制脚本 5,442 B，不提前加载游戏资源。VPS 上 50 游玩加 200 排队、最早者获空位及第 251 个请求 503 均已实测，全部测试租约已释放。
 
-主页未来默认发布已去掉大demos、字体包和lab，只为本批覆盖文件生成窄回滚包，最多两个活跃点。canonical默认dry-run包15,747,582 B，Linux三次窄备份/恢复及留存演练通过；用户原有脏文件逐字节保全。没有删除现网旧内容或发布主页内容改稿。
+VPS 独立 Node v22.23.3 与 ws 8.22.0，限一个 CPU 核心、512 MiB；空闲约 45–49 MB。真实磁盘隔离测试使用早期和第九轮存档，每客户端准入、两次创建和两次 checkpoint：50/100/200 档耗时 1.684/2.975/5.898 秒，checkpoint p95 约 386–392 毫秒，均 0 失败。只验证有限接口负载，没有测出绝对最大游玩人数；上线保持 50。
 
-主站已开启gzip与静态短缓存。首页HTML实际由25,081 B降到9,810 B，约减少61%；HTTPS Chrome首页启动完成、无JS错误，缓存与原安全头保留。journal和cron日志未删。
+实际出口三并发样本约 3.50 Mbit/s，套餐标称值未确认。checkpoint 确认正文 68 B，50 人每五秒保存时正文约 5.44 kbit/s，另计 TLS/HTTP 头和心跳；首次创建、恢复仍传完整文本存档。
 
-## 验收范围和接续
+## 主页、磁盘与维护
 
-下文首轮代码a8的原模式、本地HTTPS外源完整Chrome整局已通过，899外源请求零失败；此前全仓4208通过、0失败、11跳过。它不代表新a7包已通过公网Chrome验收。本轮队列、checkpoint和音频针对性验证通过，a7在真实VPS的容量和FIFO通过。首次最小包漏掉server display引用的assetUrls模块，已补入；正式配置目录也显式设置SP_INDEPENDENT_DESIGN_PATH，修正后服务启动成功。
+系统盘已释放 2,279,821,312 B；72 份历史发布 tar 已原样整合为独立数据盘上的一个私有历史包，逐项 cmp 和恢复通过，系统盘仅留两个有效回滚点。没有销毁私人内容的唯一恢复来源；历史包仍与 VPS 同一故障域。安装工坊后系统盘约剩 6.60 GB，数据盘约剩 17.15 GB。
 
-证据索引：`E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\artifact-index.json`，列实际绝对路径及作用。关键回执为同目录 `vps-capacity.json`、`queue-live-test.log`、`server-start-final.log`、`network/outbound.json`、`network/homepage.headers.txt`、`network/homepage-js.headers.txt`、`homepage-browser/receipt.json`、`github-pages-package-final/static-build.json`、`pages-preparation/preparation.json`。主页逐项记录为 `E:\WindowsWorkspace\webworks\apps\personal-homepage\.omni\tmp\colorc-disk-cleanup-20261007\backup-retention-manifest.csv` 和 `deploy-linux-test.txt`。
+主页未来默认发布去掉大 demos、字体包及 lab，只备份被覆盖文件并保留两个回滚点；默认 dry-run 包约 15.75 MB，三次 Linux 发布/回滚演练通过。主站 gzip 与缓存已上线，HTML 25,081 B 降至 9,810 B，约减少 61%，原安全头与主页功能保留。主机还有反馈、Everpoint、旧 Next 与代理消费者，未停掉既有服务。journal/cron 历史未删。
 
-收到发布确认后推送候选独立分支、开启Pages、确定性等待构建终态，再开VPS入口，做公网购买、拖动、刷新、战斗、结算和第二回合验收。外源大陆速度不合格时换外源，不让素材正文回流VPS。
+以后更新：先使用新 Git 版本生成客户端引擎和公开白名单包；已有固定上游资源优先沿用，变化素材重新核验；更新小型 source map、静态余量包和必要后端代码。发布完成并验收后才切换 VPS 的固定外源地址。默认保留当前和上一可恢复部署，任何仍被使用的版本先核实消费者再收口；不持续堆积全量发布备份。
 
-## 首轮历史记录（下列状态已由上文更新）
+## 费用与开通
+
+当前方案只用免费 Pages。付费备选的流量样例：腾讯 CDN 大陆 0–2 TB 档 0.21 元/GB，100 GB 为 21 元；亚太 1 档 0.46 元/GB，为 46 元，均另计源站和其它适用费用。境内加速要求备案。[计价](https://cloud.tencent.com/document/product/228/75562) · [接入要求](https://cloud.tencent.com/document/product/228/3149/)。Bunny Standard 亚洲 0.03 美元/GB，100 GB 约 3 美元，存储另计，活跃账号最低月消费 1 美元。[计价](https://bunny.net/pricing/) · [账号最低消费](https://bunny.net/faq/)。没有购买这些服务。
+
+Cloudflare 当前付款列表含银联、Visa、Mastercard、PayPal 等；实际扣款取决于银行及支付校验。普通免费/Pro 不包含中国大陆节点，大陆网络是 Enterprise 的独立订阅且要求 ICP 备案，能付款不等于大陆访问会快。[付款](https://developers.cloudflare.com/billing/understand/billing-policy/) · [中国网络](https://developers.cloudflare.com/china-network/)。本次账号级 Token 的正确验证端点、Pages 创建、上传和原生部署状态均成功，凭据没有进入代码、报告、公开资源或 VPS。
+
+## 证据入口
+
+实际绝对路径索引：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\artifact-index.json。
+公开流程：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\public-browser-final\browser-receipt.json。
+固定部署音频验收：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\pinned-browser\receipt.json。
+外源资格、混合包与浏览器：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\hybrid-preview\summary.json，E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\hybrid-preview\browser\hybrid-browser-receipt.json。
+磁盘逐项与恢复：E:\WindowsWorkspace\webworks\apps\personal-homepage\.omni\tmp\colorc-disk-cleanup-20261007\backup-retention-manifest.csv，E:\WindowsWorkspace\webworks\apps\personal-homepage\.omni\tmp\colorc-disk-cleanup-20261007\deploy-linux-test.txt。
+
+## 首轮历史记录（旧方案与状态已由上文替代，不作当前决策依据）
 
 2026-10-07。目标是以后迁到 colorc.cc 自有服务器：保持工坊现有玩法、规则和渲染器，前端承担计算，大资源从外部下载，同时准入约 50 人。本次实现和隔离验收，不是正式迁移；现有线上发布未重启。
 
