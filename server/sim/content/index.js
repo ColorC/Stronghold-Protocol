@@ -60,7 +60,10 @@ export function setupUnitKit(battle, unit, mode = 'full') {
     if (typeof tk === 'function') {
       try { const k = tk(bb, raw, def); if (k) return k; } catch (e) { battle._handlerError(`tokenKit:${def.id}`, unit, e); }
     }
-    return def.skill ? genericKit(bb, raw, def) : {};
+    const fallback = def.skill ? genericKit(bb, raw, def) : {};
+    // Native summons whose behaviour is managed by the owner still participate in data-defined deployment limits.
+    if (battle.data.rawToken?.(def.id)) fallback.fromTokens = true;
+    return fallback;
   }
   if (unit.kind !== 'op') return {};
   const injected = battle.opts && battle.opts.kits;

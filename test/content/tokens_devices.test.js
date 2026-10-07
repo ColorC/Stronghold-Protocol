@@ -424,26 +424,41 @@ test('every token of data/tokens.json spawns with data defaults and runs without
   const raw = ds.raw.tokens && Object.keys(ds.raw.tokens).length ? ds.raw.tokens : {};
   const ids = Object.keys(raw).filter((id) => id !== TOKEN_IDS.yanyou);
   assert.ok(ids.length >= 21);
-  const h = makeBattle({ defs: { chess: { test_owner: summoner() }, enemies: { enemy_walker: walker({ atk: 50 }) } }, units: [{ chessId: 'test_owner', row: 12, col: 2 }], enemies: [{ key: 'enemy_walker', route: 0, count: 5, interval: 2 }], autoFinish: false, timeLimit: 60 });
-  h.step();
-  const o = h.unit('test_owner');
-  const tiles = [];
-  for (let r = 9; r <= 12; r++) for (let c = 3; c <= 9; c++) tiles.push([r, c]);
+  const observed = new Map();
+  // Isolate each token: the expanded native table exceeds one field's legal deployment capacity.
   for (const id of ids) {
-    const [r, c] = tiles.shift();
-    const t = h.b.spawnToken(raw[id].kind === 'mapChar' ? 'p1' : o, id, r, c);
-    assert.ok(t, `${id} spawned`);
-    assert.ok(t.kit && t.kit.fromTokens, `${id} uses its token kit`);
+    const h = makeBattle({ defs: { chess: { test_owner: summoner() }, enemies: { enemy_walker: walker({ atk: 50 }) } }, units: [{ chessId: 'test_owner', row: 12, col: 2 }], enemies: [{ key: 'enemy_walker', route: 0, count: 5, interval: 2 }], autoFinish: false, timeLimit: 60 });
+    h.step();
+    const owner = h.unit('test_owner');
+    const token = h.b.spawnToken(raw[id].kind === 'mapChar' ? 'p1' : owner, id, 9, 3);
+    assert.ok(token, `${id} spawned`);
+    assert.ok(token.kit?.fromTokens, `${id} participates in its data-defined token deployment limits`);
+    h.run(10);
+    assert.deepEqual(h.b.errors, [], `${id} default token has no content errors`);
+    observed.set(id, token);
+    checkInvariants(h.b);
   }
-  h.run(10);
-  const errs = h.b.errors.filter((e) => /tokens\.js|devices\.js/.test(String(e.stack)));
-  assert.deepEqual(errs, []);
   for (const id of [TOKEN_IDS.deliveryTarget, TOKEN_IDS.eagle1, TOKEN_IDS.eagle2, TOKEN_IDS.eagle3, TOKEN_IDS.iceTarget]) {
-    const t = h.b.allyUnits.find((u) => u.defId === id);
-    assert.ok(t.profile.noAttack, `${id} inert`);
-    assert.equal(t.stats.attacks, 0);
+    const token = observed.get(id);
+    assert.ok(token.profile.noAttack, `${id} inert`);
+    assert.equal(token.stats.attacks, 0);
   }
-  assert.equal(h.b.allyUnits.find((u) => u.defId === TOKEN_IDS.iceTarget).s.blockCnt, 3);
+  assert.equal(observed.get(TOKEN_IDS.iceTarget).s.blockCnt, 3);
+});
+
+test('owner-managed native Roberta devices obey the source deployment limit', REAL, () => {
+  const h = makeBattle({ defs: { chess: { test_owner: summoner() } }, units: [{ chessId: 'test_owner', row: 12, col: 2 }], autoFinish: false, timeLimit: 30 });
+  h.step();
+  const owner = h.unit('test_owner'), id = 'token_10018_robrta_mach';
+  const limit = Number(ds.raw.tokens[id].deployLimit);
+  assert.ok(limit >= 1 && limit < 7);
+  const spawned = Array.from({ length: limit + 1 }, (_, i) => h.b.spawnToken(owner, id, 9, 3 + i));
+  assert.ok(spawned.every(Boolean));
+  assert.equal(spawned.filter(token => token.alive).length, limit);
+  assert.equal(spawned[0].mem.replaced, true, 'the oldest device is replaced rather than silently exceeding the cap');
+  assert.equal(spawned.at(-1).alive, true);
+  h.run(1);
+  assert.deepEqual(h.b.errors, []);
   checkInvariants(h.b);
 });
 

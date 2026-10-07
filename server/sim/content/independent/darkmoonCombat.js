@@ -266,7 +266,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     if(fallen.some(x=>x.unit.id===unit.id))return;
     const op=sourceOf(unit),nativeId=unit.kind==='op'?unit.defId:unit.def.raw?.darkmoonNativeChessId;
     if(nativeId&&op){
-      const elite=!!(byUid.get(unit.uid)?.elite||unit.def.golden),raw=elite?op.source.eliteChess||op.source.normalChess:op.source.normalChess;
+      const elite=!!(byUid.get(unit.uid)?.elite||unit.def.golden),raw=(elite?op.source?.eliteChess||op.source?.normalChess:op.source?.normalChess)||battle.data.raw?.chess?.[nativeId]||unit.def.raw||unit.def;
       const normalized=battle.data.getChess(nativeId,{skillIndex:raw.skill?.index??0,moduleId:'none'});
       const stats=levelBodyStats({chessId:nativeId,elite,growthMode:state?.growthMode,growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw);
       fallen.push({unit,tags:identity(unit),def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',golden:elite,stats,position:'MELEE',darkmoonSourceId:op.sourceRefs?.darkmoon19_2?.id,darkmoonNativeChessId:nativeId}});
