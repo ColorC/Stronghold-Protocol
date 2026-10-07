@@ -9,10 +9,10 @@ const DESIGN_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
 
 const BADGE_IDS = Object.freeze({
-  精准徽章: 'precision', 灵巧徽章: 'agility', 坚守徽章: 'vitality', 助力徽章: 'defense',
-  突袭徽章: 'assault', 迅捷徽章: 'recovery', 奥术徽章: 'arcane', 远见徽章: 'foresight',
-  奇迹徽章: 'miracle', 投资人徽章: 'investor', 不屈徽章: 'unyielding', 调和徽章: 'harmony',
-  协防徽章: 'coordination', 独行徽章: 'solitary', 绝技徽章: 'mastery',
+  攻击徽章: 'precision', 攻速徽章: 'agility', 生命徽章: 'vitality', 防御徽章: 'defense',
+  攻击加成徽章: 'assault', 技力徽章: 'recovery', 法抗徽章: 'arcane', 初始技力徽章: 'foresight',
+  闪避徽章: 'miracle', 回复徽章: 'investor', 生命加成徽章: 'unyielding', 治疗徽章: 'harmony',
+  减伤徽章: 'coordination', 再部署徽章: 'solitary', 普攻徽章: 'mastery',
 });
 const ATTACHMENT_IDS = Object.freeze({ 军需备品: 'quartermaster-kit', 弹药回收: 'ammo-recovery', 寒区记录: 'cold-region-log', 医疗整备: 'medical-readiness' });
 const PRIZE_IDS = Object.freeze({

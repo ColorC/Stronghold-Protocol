@@ -52,7 +52,7 @@ test('front, adjacent and faction-lowest pick their operator, and fall back to t
 
 test('a trait rule names where its badges land (params.landOn)', () => {
   const catalog = landing('self');
-  const op = catalog.operators.chess_char_1_02_a; // 角峰: <获得时> 坚守徽章
+  const op = catalog.operators.chess_char_1_02_a; // 角峰: <获得时> 生命徽章
   const rules = op.nativeTrait.effect.prep.map((r) => ({ ...r, params: { ...r.params, landOn: 'front' } }));
   const custom = { ...catalog, operators: { ...catalog.operators, chess_char_1_02_a: { ...op, nativeTrait: { ...op.nativeTrait, effect: { ...op.nativeTrait.effect, prep: rules } } } } };
   const maker = piece('a', 'chess_char_1_02_a', 10, 3);

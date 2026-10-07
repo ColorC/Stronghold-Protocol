@@ -124,7 +124,7 @@ test('inspection license repeats acquisition forging but leaves preparation-end 
   state.shop.slots[0] = { kind: 'chess', id: gainOp.chessId, price: 3, sold: false, equipment: [] };
   const bought = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog: baseCatalog });
   assert.equal(bought.ok, true, bought.error?.message);
-  // 角峰's 坚守徽章 lands on it (徽章落点): made twice
+  // 角峰's 生命徽章 lands on it (徽章落点): made twice
   assert.equal(bought.state.pieces.at(-1).equipment.filter((x) => x.id === 'vitality').reduce((n, x) => n + x.quantity, 0), 2);
   const prep = createSession({ seed: 44, data, catalog: baseCatalog, difficulty: 'FUNNY' });
   prep.playerEffects = structuredClone(state.playerEffects);

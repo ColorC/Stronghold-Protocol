@@ -97,7 +97,7 @@ test('蒂比 and 阿罗玛 put badges on every offer, now and after each refresh
   assert.equal(bought.equipment.filter((x) => x.id === 'agility').reduce((n, x) => n + x.quantity, 0) >= 1, true, `the bought ${target.id} wears what it carried`);
 });
 
-test('伊内丝 raises every 精准徽章 of the team for the rest of the game, up to +60%', () => {
+test('伊内丝 raises every 攻击徽章 of the team for the rest of the game, up to +60%', () => {
   const { state, services } = fixture();
   state.pieces.push(piece('ines', '伊内丝', 0, 0));
   for (let round = 1; round <= 15; round++) { state.round = round; runNativeHook(state, 'prepEnd', {}, services); }

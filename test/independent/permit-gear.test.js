@@ -49,7 +49,7 @@ test('the operator wears its 交接凭证 from the gain on, without drawing a ui
   const piece = after.pieces.at(-1);
   assert.deepEqual(piece.equipment.filter((x) => x.id.startsWith('permit-')), [{ uid: `permit-${piece.uid}`, id: 'permit-north-handover-order', elite: false, quantity: 1, state: {}, sourceId: 'permit-north-handover-order' }]);
   const plain = buy(start, '隐现'); // brings nothing when gained
-  assert.equal(after.nextUid - start.nextUid, plain.nextUid - start.nextUid + 1, 'only 角峰\'s 坚守徽章 draws one more uid');
+  assert.equal(after.nextUid - start.nextUid, plain.nextUid - start.nextUid + 1, 'only 角峰\'s 生命徽章 draws one more uid');
   assert.ok(!plain.pieces.at(-1).equipment.length);
   assert.deepEqual(validateSession(after), []);
 });
@@ -117,7 +117,7 @@ test('a 交接凭证 is equipment: it takes one of the 999 places', () => {
   const piece = state.pieces.at(-1);
   state.inventory.push({ uid: `i${state.nextUid++}`, id: 'precision', quantity: 999, elite: false, state: {} });
   const item = state.inventory.at(-1).uid;
-  // 角峰 wears its permit and the 坚守徽章 it made when gained (徽章落点)
+  // 角峰 wears its permit and the 生命徽章 it made when gained (徽章落点)
   const worn = piece.equipment.reduce((n, x) => n + Number(x.quantity || 1), 0);
   assert.ok(piece.equipment.some((x) => x.id === 'vitality'));
   assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 999 - worn + 1 }).error?.code, 'CAPACITY');
