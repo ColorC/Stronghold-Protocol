@@ -189,7 +189,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
 
   const buy = useCallback(async (slot, targets = undefined) => {
     const current=stateRef.current,shopSlot=current?.shop?.slots?.[slot];
-    if(targets===undefined&&buyTargetSpec(shopSlot,catalog)) { setDetail({kind:'shop',slot}); return false; }
+    if(targets===undefined&&buyTargetSpec(shopSlot,catalog,current)) { setDetail({kind:'shop',slot}); return false; }
     setArmed(null);
     const res = await act({ type: 'buy', slot, ...(targets||{}) });
     if (res) { audio.sfx('buy', { volume: 0.6 }); setDetail(null); }
