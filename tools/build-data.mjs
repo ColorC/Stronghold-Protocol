@@ -33,7 +33,7 @@
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Grid, DEPLOY_REFUSED_TILES } from '../server/sim/grid.js';
 import { bandBondIds } from '../shared/bandBonds.js';
 
@@ -74,14 +74,10 @@ function parseArgs(argv) {
   return opts;
 }
 
-let OPTS;
-try {
-  OPTS = parseArgs(process.argv.slice(2));
-} catch (e) {
-  console.error(`build-data: ${e.message}`);
-  process.exit(2);
-}
-const CACHE_DIR = OPTS.cache;
+// Keep the pipeline reusable by importers without parsing the caller's CLI arguments or starting
+// the full build as a side effect. The CLI applies its arguments only when this file is executed.
+let OPTS = parseArgs([]);
+let CACHE_DIR = OPTS.cache;
 
 const log = (...a) => { if (!OPTS.quiet) console.log(...a); };
 const warnings = [];
@@ -362,7 +358,7 @@ function rangeGrid(ctx, rangeId) {
 }
 
 /** Interpolate character attribute keyframes at (phase, level); returns the raw float data object. */
-function interpolateAttrs(char, phase, level) {
+export function interpolateAttrs(char, phase, level) {
   const ph = char.phases?.[phase];
   if (!ph) return null;
   const kfs = ph.attributesKeyFrames || [];
@@ -389,7 +385,7 @@ const MODULE_ATTR_MAP = {
 };
 
 /** Convert interpolated attributes (+ optional additive module bonus) into the compact stats object. */
-function statsFrom(attrs, bonus = {}) {
+export function statsFrom(attrs, bonus = {}) {
   if (!attrs) return null;
   const r = (v) => Math.round(v);
   const s = {
@@ -3230,6 +3226,8 @@ function validateAll(f) {
 // ===== main =====================================================================================
 
 async function main() {
+  OPTS = parseArgs(process.argv.slice(2));
+  CACHE_DIR = OPTS.cache;
   const t0 = Date.now();
   const ctx = await loadContext();
   log('building…');
@@ -3302,7 +3300,9 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error('build-data failed:', e && e.stack ? e.stack : e);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  main().catch((e) => {
+    console.error('build-data failed:', e && e.stack ? e.stack : e);
+    process.exitCode = 1;
+  });
+}
