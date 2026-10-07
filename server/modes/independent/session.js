@@ -572,6 +572,10 @@ export function applyAction(state, action, options = {}) {
       if (!Number.isInteger(action.slot) || !slot || slot.sold || !slot.id) throw new Error('BAD_SLOT');
       const sourceId=catalog.operators?.[slot.id]?.sourceRefs?.darkmoon19_2?.id;
       let magneticTarget=null;
+      if(sourceId==='BGS_100') {
+        const target=work.pieces.find(x=>x.uid===action.targetUid);
+        if(!target||!inField(target.row,target.col))throw new Error('DARKMOON_TARGET_REQUIRED');
+      }
       if(action.magneticTargetUid!==undefined) {
         if(!['BOT_312','BOT_911'].includes(sourceId))throw new Error('NOT_MAGNETIC_SOURCE');
         magneticTarget=work.pieces.find(x=>x.uid===action.magneticTargetUid);

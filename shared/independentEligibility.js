@@ -37,6 +37,7 @@ function boardOnly(rule) {
 function matchesMatch(candidate, source, match = {}, catalog) {
   const factions = factionsFor(candidate, catalog);
   const profession = professionOf(candidate, catalog);
+  if(match.elite===true&&!candidate.elite&&!String(candidate.chessId).endsWith('_b'))return false;
   if (match.faction && !factions.includes(match.faction)) return false;
   const professions = match.professions || (match.profession ? [match.profession] : null);
   if (professions?.length && !professions.includes(profession)) return false;
@@ -71,9 +72,32 @@ function statsForPiece(piece, catalog) {
   return out;
 }
 
+
+const DARKMOON_CONDITIONAL = new Set(['darkmoonBattlecryTargetGrowth','darkmoonBattlecryFactionGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth','darkmoonEndTurnGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonShopGrowth','darkmoonBoughtSelfGrowth','darkmoonPlayedTribeGrowth','darkmoonRosterTribePurchaseFunds','darkmoonBeastSummonGrowth']);
+export function hasConditionalTargets(effect){
+  const r=effectRule(effect),p=r?.params||{};
+  return !!r&&(DARKMOON_CONDITIONAL.has(r.behavior)||['teamForge','allyConditionStats'].includes(r.behavior)||!!(p.targets||p.match||p.requiresFactionOnField||p.scope==='boardonly'));
+}
+function projectionRule(rule){
+  if(!DARKMOON_CONDITIONAL.has(rule?.behavior))return rule;
+  const p={...rule.params,match:{...(rule.params?.match||{})}};
+  if(rule.behavior==='darkmoonBoughtTribeTargetGrowth')return {...rule,params:{...p,targets:'all'}};
+  p.scope=['darkmoonShopGrowth','darkmoonBoughtSelfGrowth','darkmoonPlayedTribeGrowth','darkmoonRosterTribePurchaseFunds'].includes(rule.behavior)?'all':'boardonly';
+  p.targets='all';
+  if(p.faction)p.match.faction=p.faction;
+  if(rule.behavior==='darkmoonAdjacentGrowth'){p.targets='adjacent';p.excludeSelf=true;}
+  if(rule.behavior==='darkmoonTaggedGrowth')p.match.keywordGear='坚守盟约';
+  if(rule.behavior==='darkmoonEndTurnGrowth'){
+    if(['randomOtherFriendly','randomOtherFaction'].includes(p.mode))p.excludeSelf=true;
+    if(p.mode==='selfIfGolden')p.match.elite=true;
+    if(p.mode==='leftmostPerPurchase'){p.targets='leftmost';delete p.match.faction;}
+  }
+  return {...rule,params:p};
+}
+
 /** Pure UI projection of the current pieces that satisfy a structured trait/equipment target rule. */
 export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source = null } = {}) {
-  const rule = effectRule(effect);
+  const rule = projectionRule(effectRule(effect));
   const params = rule?.params || effect?.params || {};
   const behavior = rule?.behavior || effect?.behavior;
   const roster = pieces.filter((piece) => realOperator(piece, catalog)
@@ -98,6 +122,7 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
     return roster.filter((piece) => (!excludeSource || piece.uid !== source?.uid) && professionOf(piece, catalog) === profession);
   }
   if (target === 'self' || target === 'selfOnly') return source ? roster.filter((piece) => piece.uid === source.uid) : [];
+  if(target==='leftmost')return roster.filter(deployed).sort((a,b)=>a.col-b.col||a.row-b.row).slice(0,1);
   if (target === 'front') {
     if (!source || !deployed(source)) return [];
     const dirs = { RIGHT: [0, 1], LEFT: [0, -1], UP: [-1, 0], DOWN: [1, 0] };
@@ -117,5 +142,5 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
   // teamForge is board scoped by its mechanics; all is board scoped for battle ally effects only.
   if (target === 'all' && behavior !== 'teamForge' && behavior !== 'allyConditionStats') return roster.filter(piece=>!excludeSource||piece.uid!==source?.uid);
   if (behavior === 'teamForge' || behavior === 'allyConditionStats') return roster.filter(deployed);
-  return target == null ? roster : [];
+  return target == null ? roster.filter(piece=>!excludeSource||piece.uid!==source?.uid) : [];
 }

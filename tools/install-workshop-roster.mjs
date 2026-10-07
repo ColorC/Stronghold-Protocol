@@ -20,6 +20,12 @@ const byNative=new Map(affiliations.operators.map(o=>[o.name,o]));
 const old=new Map(design.operators.map(o=>[o.name,o]));
 const receipts=[],pending=[];
 const extraRefs=new Map(addon.operators.map(o=>[o.name,o]));
+// Only the two original Magnetic cards bring handover permissions.
+const magneticPermits={
+  BOT_312:{gear:'医疗装置交接单',partnerFaction:'哥伦比亚',partnerMaxTier:4,limit:'可以与科技等级不高于4的哥伦比亚干员交接，对方无需凭证。'},
+  BOT_911:{gear:'重装器械适配单',partnerFaction:'哥伦比亚',partnerProfession:'TANK',partnerMaxTier:4,limit:'可以与科技等级不高于4的哥伦比亚重装干员交接，对方无需凭证。'},
+};
+const permissions=[];
 for(const name of selected){
   const native=byNative.get(name),blueprint=blueprints.entries.find(o=>o.operator===name);
   if(!native||!blueprint)throw new Error(`MISSING_ROSTER_SOURCE:${name}`);
@@ -47,12 +53,20 @@ for(const name of selected){
     defaultSkillIndex:raw.skill?.index??0,skills:(raw.skills||[]).map(s=>s.skillId),talents:raw.talents||[],
     growthLandOn:'self',sourceIdentity:{...native.sourceFields}};
   delete operator.tavernFactionProxy;delete operator.permitGearId;delete operator.modeEffects;
+  if(magneticPermits[blueprint.sourceId]){
+    const permission={name,...magneticPermits[blueprint.sourceId],autoGrant:true,sourceRefs:{cards:[cardRef],basis:'磁力的可选设备整合提供双向装备交接；另一方无需凭证。'}};
+    operator.inheritance=permission;permissions.push(permission);
+  }
   old.set(name,operator);active.push(raw.chessId);
   gameText.operators[raw.chessId]={normal:t.normal,elite:t.elite,normalLevels:t.normalLevels||t.normal,eliteLevels:t.eliteLevels||t.elite};
   receipts.push({name,chessId:raw.chessId,sourceId:blueprint.sourceId,originalTier:blueprint.originalTier,tier,nativeFactions:tags});
 }
 if(active.length!==101||new Set(active).size!==101)throw new Error('WRONG_ROSTER_COUNT');
 design.operators=[...old.values()];
+design.permissions=permissions;
+for(const name of ['便携式融毁教学仪','反冲空降仓']){
+  const gear=design.extraGear.find(x=>x.name===name);if(gear){gear.level=6;gear.shopTier=6;}
+}
 design.rules={...design.rules,activeRosterIds:active,factionIdentityEquipment:false,tavernFactions:[...new Set(receipts.flatMap(o=>o.nativeFactions))]};
 design.rules.factionDetails=Object.fromEntries(affiliations.operators.flatMap(o=>Object.values(o.factions).filter(Boolean).map(f=>[f.name,{name:f.name,iconUrl:f.iconPath,type:Object.entries(o.factions).find(([,x])=>x===f)?.[0]}])));
 design.status='implemented';

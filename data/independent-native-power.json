@@ -1,0 +1,5587 @@
+{
+  "scenario": {
+    "seconds": 90,
+    "enemyDefense": 300,
+    "enemyResistance": 30,
+    "enemyCount": 4,
+    "enemyAttack": 40,
+    "enemyPositions": [
+      [
+        10,
+        5.5
+      ],
+      [
+        10,
+        7
+      ],
+      [
+        11,
+        6
+      ],
+      [
+        11,
+        7
+      ]
+    ],
+    "equipment": [],
+    "workshopTraits": false
+  },
+  "operators": [
+    {
+      "name": "香草",
+      "profession": "PIONEER",
+      "subProfession": "pioneer",
+      "forms": [
+        {
+          "chessId": "chess_native_char_240_wyvern_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_wyvern_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 355,
+            "maxHp": 1270,
+            "def": 240,
+            "res": 0
+          },
+          "damage": 8793,
+          "dps": 98,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_240_wyvern_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 50,
+          "skillId": "skchr_wyvern_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 345,
+            "maxHp": 1246,
+            "def": 235,
+            "res": 0
+          },
+          "damage": 8620,
+          "dps": 96,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "罗比菈塔",
+      "profession": "SUPPORT",
+      "subProfession": "craftsman",
+      "forms": [
+        {
+          "chessId": "chess_native_char_484_robrta_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_robrta_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 435,
+            "maxHp": 1939,
+            "def": 342,
+            "res": 0
+          },
+          "damage": 10014,
+          "dps": 111,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_484_robrta_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_robrta_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 509,
+            "maxHp": 2327,
+            "def": 396,
+            "res": 0
+          },
+          "damage": 17884,
+          "dps": 199,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "杰西卡",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_native_char_235_jesica_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_jesica_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 379,
+            "maxHp": 1087,
+            "def": 127,
+            "res": 0
+          },
+          "damage": 13225,
+          "dps": 147,
+          "healing": 0,
+          "attacks": 94,
+          "skillActivations": 18,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_235_jesica_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_jesica_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 450,
+            "maxHp": 1259,
+            "def": 147,
+            "res": 0
+          },
+          "damage": 24000,
+          "dps": 267,
+          "healing": 0,
+          "attacks": 100,
+          "skillActivations": 20,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "松果",
+      "profession": "SNIPER",
+      "subProfession": "reaperrange",
+      "forms": [
+        {
+          "chessId": "chess_char_3_10_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_pinecn_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 560,
+            "maxHp": 1650,
+            "def": 150,
+            "res": 0
+          },
+          "damage": 65224,
+          "dps": 725,
+          "healing": 0,
+          "attacks": 40,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_10_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_pinecn_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 651,
+            "maxHp": 2120,
+            "def": 165,
+            "res": 0
+          },
+          "damage": 87141,
+          "dps": 968,
+          "healing": 0,
+          "attacks": 40,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "酸糖",
+      "profession": "SNIPER",
+      "subProfession": "closerange",
+      "forms": [
+        {
+          "chessId": "chess_native_char_366_acdrop_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_acdrop_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 553,
+            "maxHp": 1175,
+            "def": 149,
+            "res": 0
+          },
+          "damage": 184098,
+          "dps": 2046,
+          "healing": 0,
+          "attacks": 61,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_366_acdrop_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_acdrop_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 686,
+            "maxHp": 1466,
+            "def": 192,
+            "res": 0
+          },
+          "damage": 332032,
+          "dps": 3689,
+          "healing": 0,
+          "attacks": 64,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "赫默",
+      "profession": "MEDIC",
+      "subProfession": "physician",
+      "forms": [
+        {
+          "chessId": "chess_char_2_02_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_silent_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 369,
+            "maxHp": 1400,
+            "def": 110,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 12179,
+          "attacks": 34,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_02_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_silent_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 451,
+            "maxHp": 1544,
+            "def": 133,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 15787,
+          "attacks": 36,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "雷蛇",
+      "profession": "TANK",
+      "subProfession": "shotprotector",
+      "forms": [
+        {
+          "chessId": "chess_char_1_20_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_liskam_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 337,
+            "maxHp": 2198,
+            "def": 489,
+            "res": 0
+          },
+          "damage": 20639,
+          "dps": 229,
+          "healing": 0,
+          "attacks": 55,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_20_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_liskam_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 397,
+            "maxHp": 2892,
+            "def": 637,
+            "res": 0
+          },
+          "damage": 28212,
+          "dps": 313,
+          "healing": 0,
+          "attacks": 53,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "梅尔",
+      "profession": "SUPPORT",
+      "subProfession": "summoner",
+      "forms": [
+        {
+          "chessId": "chess_native_char_242_otter_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_otter_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 359,
+            "maxHp": 801,
+            "def": 101,
+            "res": 20
+          },
+          "damage": 14324,
+          "dps": 159,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_242_otter_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_otter_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 419,
+            "maxHp": 983,
+            "def": 121,
+            "res": 20
+          },
+          "damage": 16718,
+          "dps": 186,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "白面鸮",
+      "profession": "MEDIC",
+      "subProfession": "ringhealer",
+      "forms": [
+        {
+          "chessId": "chess_char_4_21_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_plosis_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 268,
+            "maxHp": 1271,
+            "def": 124,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 13570,
+          "attacks": 51,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_21_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_plosis_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 318,
+            "maxHp": 1524,
+            "def": 143,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 17980,
+          "attacks": 57,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "蒂比",
+      "profession": "SPECIAL",
+      "subProfession": "skywalker",
+      "forms": [
+        {
+          "chessId": "chess_char_2_13_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_tippi_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 567,
+            "maxHp": 1805,
+            "def": 297,
+            "res": 0
+          },
+          "damage": 39623,
+          "dps": 440,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_13_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_tippi_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 695,
+            "maxHp": 2210,
+            "def": 364,
+            "res": 0
+          },
+          "damage": 66165,
+          "dps": 735,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "罗宾",
+      "profession": "SPECIAL",
+      "subProfession": "traper",
+      "forms": [
+        {
+          "chessId": "chess_native_char_451_robin_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_robin_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 398,
+            "maxHp": 1087,
+            "def": 130,
+            "res": 0
+          },
+          "damage": 10192,
+          "dps": 113,
+          "healing": 0,
+          "attacks": 104,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_451_robin_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_robin_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 478,
+            "maxHp": 1327,
+            "def": 155,
+            "res": 0
+          },
+          "damage": 18512,
+          "dps": 206,
+          "healing": 0,
+          "attacks": 104,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "多萝西",
+      "profession": "SPECIAL",
+      "subProfession": "traper",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4048_doroth_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_doroth_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 440,
+            "maxHp": 1107,
+            "def": 131,
+            "res": 0
+          },
+          "damage": 14560,
+          "dps": 162,
+          "healing": 0,
+          "attacks": 104,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4048_doroth_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_doroth_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 534,
+            "maxHp": 1360,
+            "def": 159,
+            "res": 0
+          },
+          "damage": 24336,
+          "dps": 270,
+          "healing": 0,
+          "attacks": 104,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "蛇屠箱",
+      "profession": "TANK",
+      "subProfession": "protector",
+      "forms": [
+        {
+          "chessId": "chess_char_3_16_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_snakek_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 310,
+            "maxHp": 2173,
+            "def": 503,
+            "res": 0
+          },
+          "damage": 791,
+          "dps": 9,
+          "healing": 136,
+          "attacks": 51,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_16_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_snakek_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 357,
+            "maxHp": 2970,
+            "def": 663,
+            "res": 0
+          },
+          "damage": 2907,
+          "dps": 32,
+          "healing": 136,
+          "attacks": 51,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "塞雷娅",
+      "profession": "TANK",
+      "subProfession": "guardian",
+      "forms": [
+        {
+          "chessId": "chess_char_5_11_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_demkni_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 388,
+            "maxHp": 2268,
+            "def": 487,
+            "res": 10
+          },
+          "damage": 9161,
+          "dps": 102,
+          "healing": 4634,
+          "attacks": 75,
+          "skillActivations": 11,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_11_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_demkni_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 452,
+            "maxHp": 2853,
+            "def": 559,
+            "res": 10
+          },
+          "damage": 14383,
+          "dps": 160,
+          "healing": 6679,
+          "attacks": 75,
+          "skillActivations": 12,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "山",
+      "profession": "WARRIOR",
+      "subProfession": "fighter",
+      "forms": [
+        {
+          "chessId": "chess_char_5_17_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_f12yin_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 475,
+            "maxHp": 2250,
+            "def": 299,
+            "res": 0
+          },
+          "damage": 47624,
+          "dps": 529,
+          "healing": 134,
+          "attacks": 113,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_17_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_f12yin_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 549,
+            "maxHp": 2578,
+            "def": 337,
+            "res": 0
+          },
+          "damage": 70575,
+          "dps": 784,
+          "healing": 134,
+          "attacks": 113,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "涤火杰西卡",
+      "profession": "TANK",
+      "subProfession": "shotprotector",
+      "forms": [
+        {
+          "chessId": "chess_native_char_1034_jesca2_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_jesca2_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 405,
+            "maxHp": 2384,
+            "def": 479,
+            "res": 0
+          },
+          "damage": 7875,
+          "dps": 88,
+          "healing": 0,
+          "attacks": 75,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_1034_jesca2_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_jesca2_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 482,
+            "maxHp": 3150,
+            "def": 629,
+            "res": 0
+          },
+          "damage": 13650,
+          "dps": 152,
+          "healing": 0,
+          "attacks": 75,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "凯瑟琳",
+      "profession": "SUPPORT",
+      "subProfession": "craftsman",
+      "forms": [
+        {
+          "chessId": "chess_char_4_11_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_cathy_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 456,
+            "maxHp": 2144,
+            "def": 353,
+            "res": 0
+          },
+          "damage": 5928,
+          "dps": 66,
+          "healing": 0,
+          "attacks": 38,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_11_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_cathy_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 526,
+            "maxHp": 2544,
+            "def": 403,
+            "res": 0
+          },
+          "damage": 7684,
+          "dps": 85,
+          "healing": 0,
+          "attacks": 34,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "刺玫",
+      "profession": "MEDIC",
+      "subProfession": "incantationmedic",
+      "forms": [
+        {
+          "chessId": "chess_char_1_06_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_vendla_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 413,
+            "maxHp": 1137,
+            "def": 77,
+            "res": 15
+          },
+          "damage": 19341,
+          "dps": 215,
+          "healing": 10290,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_06_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_vendla_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 508,
+            "maxHp": 1297,
+            "def": 92,
+            "res": 20
+          },
+          "damage": 25603,
+          "dps": 284,
+          "healing": 14519,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "格拉尼",
+      "profession": "PIONEER",
+      "subProfession": "charger",
+      "forms": [
+        {
+          "chessId": "chess_native_char_220_grani_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_grani_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 438,
+            "maxHp": 1489,
+            "def": 285,
+            "res": 0
+          },
+          "damage": 18057,
+          "dps": 201,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_220_grani_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_grani_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 518,
+            "maxHp": 1980,
+            "def": 342,
+            "res": 0
+          },
+          "damage": 28508,
+          "dps": 317,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "谜图",
+      "profession": "PIONEER",
+      "subProfession": "agent",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4017_puzzle_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_puzzle_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 440,
+            "maxHp": 1452,
+            "def": 192,
+            "res": 0
+          },
+          "damage": 17644,
+          "dps": 196,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 12,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4017_puzzle_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_puzzle_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 527,
+            "maxHp": 1733,
+            "def": 229,
+            "res": 0
+          },
+          "damage": 30358,
+          "dps": 337,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 15,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "因陀罗",
+      "profession": "WARRIOR",
+      "subProfession": "fighter",
+      "forms": [
+        {
+          "chessId": "chess_native_char_155_tiger_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_tiger_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 406,
+            "maxHp": 2002,
+            "def": 277,
+            "res": 0
+          },
+          "damage": 21764,
+          "dps": 242,
+          "healing": 0,
+          "attacks": 113,
+          "skillActivations": 22,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_155_tiger_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_tiger_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 492,
+            "maxHp": 2390,
+            "def": 329,
+            "res": 0
+          },
+          "damage": 36572,
+          "dps": 406,
+          "healing": 0,
+          "attacks": 113,
+          "skillActivations": 22,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "薄绿",
+      "profession": "CASTER",
+      "subProfession": "phalanx",
+      "forms": [
+        {
+          "chessId": "chess_char_3_08_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_mint_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 629,
+            "maxHp": 1594,
+            "def": 170,
+            "res": 15
+          },
+          "damage": 28928,
+          "dps": 321,
+          "healing": 0,
+          "attacks": 18,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_08_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_mint_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 706,
+            "maxHp": 1856,
+            "def": 189,
+            "res": 15
+          },
+          "damage": 41216,
+          "dps": 458,
+          "healing": 0,
+          "attacks": 20,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "洛洛",
+      "profession": "CASTER",
+      "subProfession": "funnel",
+      "forms": [
+        {
+          "chessId": "chess_char_2_10_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_rockr_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 259,
+            "maxHp": 1078,
+            "def": 99,
+            "res": 15
+          },
+          "damage": 19009,
+          "dps": 211,
+          "healing": 0,
+          "attacks": 69,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_10_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_rockr_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 304,
+            "maxHp": 1356,
+            "def": 117,
+            "res": 20
+          },
+          "damage": 26078,
+          "dps": 290,
+          "healing": 0,
+          "attacks": 72,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "海蒂",
+      "profession": "SUPPORT",
+      "subProfession": "bard",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4045_heidi_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_heidi_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 250,
+            "maxHp": 889,
+            "def": 202,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 2399,
+          "attacks": 0,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4045_heidi_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_heidi_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 299,
+            "maxHp": 1140,
+            "def": 247,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 2835,
+          "attacks": 0,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "摩根",
+      "profession": "WARRIOR",
+      "subProfession": "fearless",
+      "forms": [
+        {
+          "chessId": "chess_native_char_154_morgan_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_morgan_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 717,
+            "maxHp": 2689,
+            "def": 191,
+            "res": 0
+          },
+          "damage": 42202,
+          "dps": 469,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_154_morgan_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_morgan_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 847,
+            "maxHp": 3448,
+            "def": 227,
+            "res": 0
+          },
+          "damage": 62135,
+          "dps": 690,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "号角",
+      "profession": "TANK",
+      "subProfession": "fortress",
+      "forms": [
+        {
+          "chessId": "chess_char_5_08_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_horn_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 776,
+            "maxHp": 2200,
+            "def": 452,
+            "res": 0
+          },
+          "damage": 28730,
+          "dps": 319,
+          "healing": 0,
+          "attacks": 39,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_08_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_horn_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 882,
+            "maxHp": 2775,
+            "def": 563,
+            "res": 0
+          },
+          "damage": 55542,
+          "dps": 617,
+          "healing": 0,
+          "attacks": 53,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "风笛",
+      "profession": "PIONEER",
+      "subProfession": "charger",
+      "forms": [
+        {
+          "chessId": "chess_char_4_07_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_bpipe_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 492,
+            "maxHp": 1738,
+            "def": 313,
+            "res": 0
+          },
+          "damage": 28372,
+          "dps": 315,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 15,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_07_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_bpipe_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 554,
+            "maxHp": 2233,
+            "def": 359,
+            "res": 0
+          },
+          "damage": 43016,
+          "dps": 478,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 19,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "推进之王",
+      "profession": "PIONEER",
+      "subProfession": "pioneer",
+      "forms": [
+        {
+          "chessId": "chess_native_char_112_siege_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_siege_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 386,
+            "maxHp": 1502,
+            "def": 282,
+            "res": 0
+          },
+          "damage": 13440,
+          "dps": 149,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 8,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_112_siege_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_siege_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 473,
+            "maxHp": 1978,
+            "def": 349,
+            "res": 0
+          },
+          "damage": 25277,
+          "dps": 281,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 8,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "白铁",
+      "profession": "SUPPORT",
+      "subProfession": "craftsman",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4072_ironmn_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_ironmn_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 453,
+            "maxHp": 1867,
+            "def": 329,
+            "res": 0
+          },
+          "damage": 13402,
+          "dps": 149,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4072_ironmn_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_ironmn_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 548,
+            "maxHp": 2417,
+            "def": 391,
+            "res": 0
+          },
+          "damage": 24227,
+          "dps": 269,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 2,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "维娜·维多利亚",
+      "profession": "WARRIOR",
+      "subProfession": "artsfghter",
+      "forms": [
+        {
+          "chessId": "chess_char_6_07_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_siege2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 546,
+            "maxHp": 2200,
+            "def": 348,
+            "res": 15
+          },
+          "damage": 95542,
+          "dps": 1062,
+          "healing": 0,
+          "attacks": 76,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 7,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_07_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_siege2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 632,
+            "maxHp": 2661,
+            "def": 396,
+            "res": 15
+          },
+          "damage": 115296,
+          "dps": 1281,
+          "healing": 0,
+          "attacks": 76,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 7,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "清流",
+      "profession": "MEDIC",
+      "subProfession": "healer",
+      "forms": [
+        {
+          "chessId": "chess_native_char_385_finlpp_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_finlpp_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 354,
+            "maxHp": 1157,
+            "def": 92,
+            "res": 10
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 12357,
+          "attacks": 32,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_385_finlpp_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_finlpp_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 428,
+            "maxHp": 1309,
+            "def": 111,
+            "res": 10
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 15324,
+          "attacks": 32,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "九色鹿",
+      "profession": "SUPPORT",
+      "subProfession": "blessing",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4019_ncdeer_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_ncdeer_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 349,
+            "maxHp": 1240,
+            "def": 149,
+            "res": 20
+          },
+          "damage": 15086,
+          "dps": 168,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4019_ncdeer_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_ncdeer_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 414,
+            "maxHp": 1544,
+            "def": 171,
+            "res": 25
+          },
+          "damage": 19417,
+          "dps": 216,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "小满",
+      "profession": "SUPPORT",
+      "subProfession": "slower",
+      "forms": [
+        {
+          "chessId": "chess_char_2_04_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_grabds_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 419,
+            "maxHp": 977,
+            "def": 81,
+            "res": 15
+          },
+          "damage": 24344,
+          "dps": 270,
+          "healing": 0,
+          "attacks": 51,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_04_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_grabds_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 497,
+            "maxHp": 1180,
+            "def": 95,
+            "res": 20
+          },
+          "damage": 35486,
+          "dps": 394,
+          "healing": 0,
+          "attacks": 59,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "风絮",
+      "profession": "MEDIC",
+      "subProfession": "watchman",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4222_taraxa_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_taraxa_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 345,
+            "maxHp": 1502,
+            "def": 141,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 16700,
+          "attacks": 89,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4222_taraxa_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_taraxa_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 425,
+            "maxHp": 1714,
+            "def": 171,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 22315,
+          "attacks": 91,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "惊蛰",
+      "profession": "CASTER",
+      "subProfession": "chain",
+      "forms": [
+        {
+          "chessId": "chess_char_1_03_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_leizi_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 502,
+            "maxHp": 1041,
+            "def": 93,
+            "res": 15
+          },
+          "damage": 53277,
+          "dps": 592,
+          "healing": 0,
+          "attacks": 40,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_03_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_leizi_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 594,
+            "maxHp": 1311,
+            "def": 111,
+            "res": 20
+          },
+          "damage": 92733,
+          "dps": 1030,
+          "healing": 0,
+          "attacks": 40,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "万顷",
+      "profession": "PIONEER",
+      "subProfession": "bearer",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4119_wanqin_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skcom_assist_cost[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 408,
+            "maxHp": 1055,
+            "def": 306,
+            "res": 0
+          },
+          "damage": 6156,
+          "dps": 68,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4119_wanqin_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skcom_assist_cost[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 482,
+            "maxHp": 1360,
+            "def": 358,
+            "res": 0
+          },
+          "damage": 10374,
+          "dps": 115,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "录武官",
+      "profession": "MEDIC",
+      "subProfession": "physician",
+      "forms": [
+        {
+          "chessId": "chess_char_4_15_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_reckpr_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 416,
+            "maxHp": 1422,
+            "def": 99,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 14583,
+          "attacks": 32,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_15_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_reckpr_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 480,
+            "maxHp": 1540,
+            "def": 118,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 18338,
+          "attacks": 32,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "仇白",
+      "profession": "WARRIOR",
+      "subProfession": "lord",
+      "forms": [
+        {
+          "chessId": "chess_char_6_15_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_qiubai_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 581,
+            "maxHp": 1959,
+            "def": 333,
+            "res": 10
+          },
+          "damage": 71597,
+          "dps": 796,
+          "healing": 0,
+          "attacks": 79,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_15_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_qiubai_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 672,
+            "maxHp": 2304,
+            "def": 379,
+            "res": 10
+          },
+          "damage": 110816,
+          "dps": 1231,
+          "healing": 0,
+          "attacks": 86,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "夕",
+      "profession": "CASTER",
+      "subProfession": "splashcaster",
+      "forms": [
+        {
+          "chessId": "chess_char_5_12_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_dusk_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 771,
+            "maxHp": 1404,
+            "def": 106,
+            "res": 20
+          },
+          "damage": 45227,
+          "dps": 503,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 12,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_12_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_dusk_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 868,
+            "maxHp": 1667,
+            "def": 120,
+            "res": 20
+          },
+          "damage": 63920,
+          "dps": 710,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 14,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "令",
+      "profession": "SUPPORT",
+      "subProfession": "summoner",
+      "forms": [
+        {
+          "chessId": "chess_native_char_2023_ling_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_ling_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 374,
+            "maxHp": 790,
+            "def": 105,
+            "res": 20
+          },
+          "damage": 18054,
+          "dps": 201,
+          "healing": 0,
+          "attacks": 62,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_2023_ling_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_ling_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 443,
+            "maxHp": 977,
+            "def": 127,
+            "res": 20
+          },
+          "damage": 24473,
+          "dps": 272,
+          "healing": 0,
+          "attacks": 66,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "黍",
+      "profession": "TANK",
+      "subProfession": "guardian",
+      "forms": [
+        {
+          "chessId": "chess_native_char_2025_shu_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_shu_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 360,
+            "maxHp": 2152,
+            "def": 454,
+            "res": 10
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 0,
+          "attacks": 0,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_2025_shu_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_shu_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 440,
+            "maxHp": 2809,
+            "def": 553,
+            "res": 10
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 0,
+          "attacks": 0,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "重岳",
+      "profession": "WARRIOR",
+      "subProfession": "fighter",
+      "forms": [
+        {
+          "chessId": "chess_native_char_2024_chyue_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_chyue_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 439,
+            "maxHp": 2009,
+            "def": 279,
+            "res": 0
+          },
+          "damage": 58258,
+          "dps": 647,
+          "healing": 0,
+          "attacks": 113,
+          "skillActivations": 18,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_2024_chyue_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_chyue_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 539,
+            "maxHp": 2422,
+            "def": 336,
+            "res": 0
+          },
+          "damage": 109463,
+          "dps": 1216,
+          "healing": 0,
+          "attacks": 113,
+          "skillActivations": 22,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "正义骑士号",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4000_jnight_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 0,
+          "nativeLevel": 30,
+          "skillId": null,
+          "skillSpecSource": "no-skill",
+          "base": {
+            "atk": 172,
+            "maxHp": 495,
+            "def": 41,
+            "res": 0
+          },
+          "damage": 757,
+          "dps": 8,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4000_jnight_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 0,
+          "nativeLevel": 30,
+          "skillId": null,
+          "skillSpecSource": "no-skill",
+          "base": {
+            "atk": 172,
+            "maxHp": 495,
+            "def": 41,
+            "res": 0
+          },
+          "damage": 757,
+          "dps": 8,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "砾",
+      "profession": "SPECIAL",
+      "subProfession": "executor",
+      "forms": [
+        {
+          "chessId": "chess_char_2_12_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_gravel_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 352,
+            "maxHp": 1107,
+            "def": 281,
+            "res": 0
+          },
+          "damage": 5044,
+          "dps": 56,
+          "healing": 0,
+          "attacks": 97,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_12_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_gravel_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 430,
+            "maxHp": 1352,
+            "def": 323,
+            "res": 0
+          },
+          "damage": 12610,
+          "dps": 140,
+          "healing": 0,
+          "attacks": 97,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "野鬃",
+      "profession": "PIONEER",
+      "subProfession": "charger",
+      "forms": [
+        {
+          "chessId": "chess_char_1_19_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_wildmn_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 443,
+            "maxHp": 1482,
+            "def": 290,
+            "res": 0
+          },
+          "damage": 3887,
+          "dps": 43,
+          "healing": 0,
+          "attacks": 23,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_19_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_wildmn_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 524,
+            "maxHp": 1971,
+            "def": 347,
+            "res": 0
+          },
+          "damage": 4975,
+          "dps": 55,
+          "healing": 0,
+          "attacks": 18,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "但书",
+      "profession": "SUPPORT",
+      "subProfession": "slower",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4032_provs_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_provs_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 402,
+            "maxHp": 991,
+            "def": 81,
+            "res": 15
+          },
+          "damage": 18460,
+          "dps": 205,
+          "healing": 0,
+          "attacks": 50,
+          "skillActivations": 12,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4032_provs_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_provs_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 480,
+            "maxHp": 1199,
+            "def": 96,
+            "res": 20
+          },
+          "damage": 25469,
+          "dps": 283,
+          "healing": 0,
+          "attacks": 52,
+          "skillActivations": 14,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "流星",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_char_3_17_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_shotst_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 381,
+            "maxHp": 1123,
+            "def": 139,
+            "res": 0
+          },
+          "damage": 13577,
+          "dps": 151,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 4,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_17_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_shotst_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 453,
+            "maxHp": 1334,
+            "def": 161,
+            "res": 0
+          },
+          "damage": 23086,
+          "dps": 257,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 4,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "鞭刃",
+      "profession": "WARRIOR",
+      "subProfession": "instructor",
+      "forms": [
+        {
+          "chessId": "chess_native_char_265_sophia_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_sophia_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 511,
+            "maxHp": 1321,
+            "def": 336,
+            "res": 0
+          },
+          "damage": 21001,
+          "dps": 233,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_265_sophia_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_sophia_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 606,
+            "maxHp": 1727,
+            "def": 394,
+            "res": 0
+          },
+          "damage": 30464,
+          "dps": 338,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "白金",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_native_char_204_platnm_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skcom_atk_up[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 386,
+            "maxHp": 1210,
+            "def": 130,
+            "res": 0
+          },
+          "damage": 12605,
+          "dps": 140,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_204_platnm_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skcom_atk_up[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 470,
+            "maxHp": 1444,
+            "def": 155,
+            "res": 0
+          },
+          "damage": 23138,
+          "dps": 257,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "焰尾",
+      "profession": "PIONEER",
+      "subProfession": "pioneer",
+      "forms": [
+        {
+          "chessId": "chess_char_4_19_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_flamtl_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 431,
+            "maxHp": 1560,
+            "def": 313,
+            "res": 0
+          },
+          "damage": 25166,
+          "dps": 280,
+          "healing": 0,
+          "attacks": 94,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_19_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_flamtl_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 494,
+            "maxHp": 1943,
+            "def": 365,
+            "res": 0
+          },
+          "damage": 40256,
+          "dps": 447,
+          "healing": 0,
+          "attacks": 94,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "瑕光",
+      "profession": "TANK",
+      "subProfession": "guardian",
+      "forms": [
+        {
+          "chessId": "chess_char_3_12_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_blemsh_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 402,
+            "maxHp": 2334,
+            "def": 476,
+            "res": 10
+          },
+          "damage": 29785,
+          "dps": 331,
+          "healing": 19037,
+          "attacks": 75,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_12_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_blemsh_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 461,
+            "maxHp": 2936,
+            "def": 546,
+            "res": 10
+          },
+          "damage": 45417,
+          "dps": 505,
+          "healing": 28545,
+          "attacks": 75,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "灰毫",
+      "profession": "TANK",
+      "subProfession": "fortress",
+      "forms": [
+        {
+          "chessId": "chess_char_2_18_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skcom_atk_up[3]",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 696,
+            "maxHp": 2218,
+            "def": 379,
+            "res": 0
+          },
+          "damage": 18351,
+          "dps": 204,
+          "healing": 0,
+          "attacks": 33,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_18_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skcom_atk_up[3]",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 818,
+            "maxHp": 2920,
+            "def": 494,
+            "res": 0
+          },
+          "damage": 26812,
+          "dps": 298,
+          "healing": 0,
+          "attacks": 33,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "远牙",
+      "profession": "SNIPER",
+      "subProfession": "longrange",
+      "forms": [
+        {
+          "chessId": "chess_char_4_20_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_fartth_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 980,
+            "maxHp": 1217,
+            "def": 133,
+            "res": 0
+          },
+          "damage": 32528,
+          "dps": 361,
+          "healing": 0,
+          "attacks": 34,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_20_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_fartth_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 1123,
+            "maxHp": 1419,
+            "def": 153,
+            "res": 0
+          },
+          "damage": 41458,
+          "dps": 461,
+          "healing": 0,
+          "attacks": 34,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "玛恩纳",
+      "profession": "WARRIOR",
+      "subProfession": "librator",
+      "forms": [
+        {
+          "chessId": "chess_char_5_19_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_mlynar_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 301,
+            "maxHp": 3241,
+            "def": 426,
+            "res": 15
+          },
+          "damage": 154697,
+          "dps": 1719,
+          "healing": 0,
+          "attacks": 22,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_19_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_mlynar_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 337,
+            "maxHp": 3682,
+            "def": 476,
+            "res": 15
+          },
+          "damage": 160881,
+          "dps": 1788,
+          "healing": 0,
+          "attacks": 22,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "耀骑士临光",
+      "profession": "WARRIOR",
+      "subProfession": "fearless",
+      "forms": [
+        {
+          "chessId": "chess_char_6_17_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_nearl2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 883,
+            "maxHp": 2698,
+            "def": 247,
+            "res": 0
+          },
+          "damage": 53168,
+          "dps": 591,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_17_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_nearl2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 1003,
+            "maxHp": 3263,
+            "def": 279,
+            "res": 0
+          },
+          "damage": 66911,
+          "dps": 743,
+          "healing": 0,
+          "attacks": 60,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "红云",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_native_char_190_clour_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_clour_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 387,
+            "maxHp": 989,
+            "def": 133,
+            "res": 0
+          },
+          "damage": 15394,
+          "dps": 171,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_190_clour_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_clour_2",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 459,
+            "maxHp": 1166,
+            "def": 154,
+            "res": 0
+          },
+          "damage": 28762,
+          "dps": 320,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "普罗旺斯",
+      "profession": "SNIPER",
+      "subProfession": "closerange",
+      "forms": [
+        {
+          "chessId": "chess_char_1_07_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_prove_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 569,
+            "maxHp": 1215,
+            "def": 148,
+            "res": 0
+          },
+          "damage": 22616,
+          "dps": 251,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_07_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_prove_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 713,
+            "maxHp": 1527,
+            "def": 193,
+            "res": 0
+          },
+          "damage": 41795,
+          "dps": 464,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "阿罗玛",
+      "profession": "CASTER",
+      "subProfession": "blastcaster",
+      "forms": [
+        {
+          "chessId": "chess_char_4_10_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_aroma_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 638,
+            "maxHp": 1288,
+            "def": 103,
+            "res": 20
+          },
+          "damage": 32423,
+          "dps": 360,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_10_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_aroma_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 729,
+            "maxHp": 1514,
+            "def": 112,
+            "res": 20
+          },
+          "damage": 38272,
+          "dps": 425,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "奥斯塔",
+      "profession": "SNIPER",
+      "subProfession": "reaperrange",
+      "forms": [
+        {
+          "chessId": "chess_native_char_346_aosta_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skcom_quickattack[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 552,
+            "maxHp": 1700,
+            "def": 164,
+            "res": 0
+          },
+          "damage": 94934,
+          "dps": 1055,
+          "healing": 0,
+          "attacks": 43,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_346_aosta_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skcom_quickattack[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 649,
+            "maxHp": 2150,
+            "def": 184,
+            "res": 0
+          },
+          "damage": 139947,
+          "dps": 1555,
+          "healing": 0,
+          "attacks": 45,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "贾维",
+      "profession": "PIONEER",
+      "subProfession": "pioneer",
+      "forms": [
+        {
+          "chessId": "chess_native_char_349_chiave_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skcom_charge_cost[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 403,
+            "maxHp": 1201,
+            "def": 259,
+            "res": 0
+          },
+          "damage": 8755,
+          "dps": 97,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_349_chiave_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skcom_charge_cost[3]",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 486,
+            "maxHp": 1616,
+            "def": 316,
+            "res": 0
+          },
+          "damage": 15810,
+          "dps": 176,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "伺夜",
+      "profession": "PIONEER",
+      "subProfession": "tactician",
+      "forms": [
+        {
+          "chessId": "chess_char_3_19_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_vigil_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 378,
+            "maxHp": 1439,
+            "def": 130,
+            "res": 0
+          },
+          "damage": 9204,
+          "dps": 102,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_19_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_vigil_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 434,
+            "maxHp": 1648,
+            "def": 146,
+            "res": 0
+          },
+          "damage": 16884,
+          "dps": 188,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "复奏",
+      "profession": "CASTER",
+      "subProfession": "splashcaster",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4031_liesel_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_liesel_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 627,
+            "maxHp": 1156,
+            "def": 99,
+            "res": 15
+          },
+          "damage": 15142,
+          "dps": 168,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 7,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4031_liesel_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_liesel_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 737,
+            "maxHp": 1421,
+            "def": 117,
+            "res": 20
+          },
+          "damage": 20120,
+          "dps": 224,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 10,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "拉普兰德",
+      "profession": "WARRIOR",
+      "subProfession": "lord",
+      "forms": [
+        {
+          "chessId": "chess_char_2_16_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_whitew_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 535,
+            "maxHp": 1791,
+            "def": 293,
+            "res": 10
+          },
+          "damage": 33662,
+          "dps": 374,
+          "healing": 0,
+          "attacks": 70,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_16_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_whitew_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 644,
+            "maxHp": 2194,
+            "def": 345,
+            "res": 15
+          },
+          "damage": 53793,
+          "dps": 598,
+          "healing": 0,
+          "attacks": 70,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "布洛卡",
+      "profession": "WARRIOR",
+      "subProfession": "centurion",
+      "forms": [
+        {
+          "chessId": "chess_native_char_356_broca_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_broca_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 546,
+            "maxHp": 1667,
+            "def": 283,
+            "res": 0
+          },
+          "damage": 24389,
+          "dps": 271,
+          "healing": 0,
+          "attacks": 75,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_356_broca_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_broca_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 693,
+            "maxHp": 2113,
+            "def": 341,
+            "res": 0
+          },
+          "damage": 37172,
+          "dps": 413,
+          "healing": 0,
+          "attacks": 75,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "铃兰",
+      "profession": "SUPPORT",
+      "subProfession": "slower",
+      "forms": [
+        {
+          "chessId": "chess_char_5_10_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_lisa_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 432,
+            "maxHp": 1184,
+            "def": 107,
+            "res": 25
+          },
+          "damage": 10366,
+          "dps": 115,
+          "healing": 1103,
+          "attacks": 34,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_10_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_lisa_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 491,
+            "maxHp": 1380,
+            "def": 121,
+            "res": 25
+          },
+          "damage": 11459,
+          "dps": 127,
+          "healing": 1604,
+          "attacks": 33,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "斥罪",
+      "profession": "TANK",
+      "subProfession": "unyield",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4065_judge_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_judge_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 629,
+            "maxHp": 2744,
+            "def": 436,
+            "res": 10
+          },
+          "damage": 28616,
+          "dps": 318,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 14,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4065_judge_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_judge_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 789,
+            "maxHp": 3563,
+            "def": 552,
+            "res": 10
+          },
+          "damage": 70069,
+          "dps": 779,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 18,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "荒芜拉普兰德",
+      "profession": "CASTER",
+      "subProfession": "funnel",
+      "forms": [
+        {
+          "chessId": "chess_char_6_18_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_whitw2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 287,
+            "maxHp": 1142,
+            "def": 98,
+            "res": 20
+          },
+          "damage": 76279,
+          "dps": 848,
+          "healing": 0,
+          "attacks": 39,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_18_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_whitw2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 323,
+            "maxHp": 1381,
+            "def": 111,
+            "res": 20
+          },
+          "damage": 94228,
+          "dps": 1047,
+          "healing": 0,
+          "attacks": 40,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "贝洛内",
+      "profession": "WARRIOR",
+      "subProfession": "fighter",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4037_demetr_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_demetr_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 451,
+            "maxHp": 2002,
+            "def": 273,
+            "res": 0
+          },
+          "damage": 46235,
+          "dps": 514,
+          "healing": 0,
+          "attacks": 113,
+          "skillActivations": 22,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4037_demetr_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_demetr_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 553,
+            "maxHp": 2412,
+            "def": 329,
+            "res": 0
+          },
+          "damage": 74886,
+          "dps": 832,
+          "healing": 0,
+          "attacks": 113,
+          "skillActivations": 22,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "裁度",
+      "profession": "SPECIAL",
+      "subProfession": "merchant",
+      "forms": [
+        {
+          "chessId": "chess_native_char_4155_talr_a",
+          "elite": false,
+          "provisional": true,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_talr_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 587,
+            "maxHp": 1812,
+            "def": 316,
+            "res": 0
+          },
+          "damage": 39520,
+          "dps": 439,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 12.99999999999968,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_native_char_4155_talr_b",
+          "elite": true,
+          "provisional": true,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_talr_1",
+          "skillSpecSource": "skills",
+          "base": {
+            "atk": 693,
+            "maxHp": 2202,
+            "def": 369,
+            "res": 0
+          },
+          "damage": 57314,
+          "dps": 637,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 12.99999999999968,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "深靛",
+      "profession": "CASTER",
+      "subProfession": "mystic",
+      "forms": [
+        {
+          "chessId": "chess_char_1_17_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_indigo_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 885,
+            "maxHp": 1139,
+            "def": 102,
+            "res": 20
+          },
+          "damage": 22302,
+          "dps": 248,
+          "healing": 0,
+          "attacks": 33,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_17_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_indigo_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 1054,
+            "maxHp": 1356,
+            "def": 113,
+            "res": 20
+          },
+          "damage": 30397,
+          "dps": 338,
+          "healing": 0,
+          "attacks": 34,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "波登可",
+      "profession": "SUPPORT",
+      "subProfession": "slower",
+      "forms": [
+        {
+          "chessId": "chess_char_1_13_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 55,
+          "skillId": "skchr_podego_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 399,
+            "maxHp": 913,
+            "def": 78,
+            "res": 15
+          },
+          "damage": 15983,
+          "dps": 178,
+          "healing": 0,
+          "attacks": 48,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_1_13_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 50,
+          "skillId": "skchr_podego_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 468,
+            "maxHp": 1095,
+            "def": 91,
+            "res": 20
+          },
+          "damage": 20354,
+          "dps": 226,
+          "healing": 0,
+          "attacks": 48,
+          "skillActivations": 3,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "协律",
+      "profession": "CASTER",
+      "subProfession": "blastcaster",
+      "forms": [
+        {
+          "chessId": "chess_char_2_15_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_akkord_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 564,
+            "maxHp": 1237,
+            "def": 98,
+            "res": 15
+          },
+          "damage": 27518,
+          "dps": 306,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_15_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_akkord_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 655,
+            "maxHp": 1465,
+            "def": 107,
+            "res": 20
+          },
+          "damage": 32966,
+          "dps": 366,
+          "healing": 0,
+          "attacks": 31,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "调香师",
+      "profession": "MEDIC",
+      "subProfession": "ringhealer",
+      "forms": [
+        {
+          "chessId": "chess_char_2_14_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_flower_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 256,
+            "maxHp": 1232,
+            "def": 120,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 10437,
+          "attacks": 26,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_14_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_flower_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 306,
+            "maxHp": 1489,
+            "def": 140,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 14005,
+          "attacks": 26,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "泡泡",
+      "profession": "TANK",
+      "subProfession": "protector",
+      "forms": [
+        {
+          "chessId": "chess_char_2_08_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_bubble_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 314,
+            "maxHp": 2391,
+            "def": 470,
+            "res": 0
+          },
+          "damage": 1236,
+          "dps": 14,
+          "healing": 0,
+          "attacks": 55,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_08_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_bubble_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 358,
+            "maxHp": 3193,
+            "def": 607,
+            "res": 0
+          },
+          "damage": 6770,
+          "dps": 75,
+          "healing": 0,
+          "attacks": 55,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "蜜蜡",
+      "profession": "CASTER",
+      "subProfession": "phalanx",
+      "forms": [
+        {
+          "chessId": "chess_char_4_05_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_beewax_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 632,
+            "maxHp": 1644,
+            "def": 178,
+            "res": 15
+          },
+          "damage": 33622,
+          "dps": 374,
+          "healing": 172,
+          "attacks": 20,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 2,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_05_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_beewax_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 709,
+            "maxHp": 1914,
+            "def": 198,
+            "res": 15
+          },
+          "damage": 38910,
+          "dps": 432,
+          "healing": 170,
+          "attacks": 20,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 2,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "见行者",
+      "profession": "SPECIAL",
+      "subProfession": "pusher",
+      "forms": [
+        {
+          "chessId": "chess_char_3_07_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_forcer_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 528,
+            "maxHp": 1510,
+            "def": 316,
+            "res": 0
+          },
+          "damage": 4104,
+          "dps": 46,
+          "healing": 0,
+          "attacks": 18,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_07_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_forcer_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 621,
+            "maxHp": 1829,
+            "def": 365,
+            "res": 0
+          },
+          "damage": 5457,
+          "dps": 61,
+          "healing": 0,
+          "attacks": 17,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "华法琳",
+      "profession": "MEDIC",
+      "subProfession": "physician",
+      "forms": [
+        {
+          "chessId": "chess_char_4_26_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_bldsk_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 404,
+            "maxHp": 1368,
+            "def": 100,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 12526,
+          "attacks": 32,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_26_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_bldsk_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 479,
+            "maxHp": 1482,
+            "def": 119,
+            "res": 0
+          },
+          "damage": 0,
+          "dps": 0,
+          "healing": 14851,
+          "attacks": 32,
+          "skillActivations": 0,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "休谟斯",
+      "profession": "WARRIOR",
+      "subProfession": "reaper",
+      "forms": [
+        {
+          "chessId": "chess_char_2_09_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_humus_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 511,
+            "maxHp": 1612,
+            "def": 342,
+            "res": 0
+          },
+          "damage": 37716,
+          "dps": 419,
+          "healing": 0,
+          "attacks": 70,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_09_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_humus_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 593,
+            "maxHp": 2033,
+            "def": 390,
+            "res": 0
+          },
+          "damage": 58098,
+          "dps": 646,
+          "healing": 0,
+          "attacks": 70,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "幽灵鲨",
+      "profession": "WARRIOR",
+      "subProfession": "centurion",
+      "forms": [
+        {
+          "chessId": "chess_char_2_07_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_ghost_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 530,
+            "maxHp": 1909,
+            "def": 280,
+            "res": 0
+          },
+          "damage": 22600,
+          "dps": 251,
+          "healing": 0,
+          "attacks": 66,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_07_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_ghost_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 670,
+            "maxHp": 2422,
+            "def": 335,
+            "res": 0
+          },
+          "damage": 35230,
+          "dps": 391,
+          "healing": 140,
+          "attacks": 59,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "风丸",
+      "profession": "SPECIAL",
+      "subProfession": "dollkeeper",
+      "forms": [
+        {
+          "chessId": "chess_char_2_11_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 1,
+          "nativeLevel": 60,
+          "skillId": "skchr_kazema_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 547,
+            "maxHp": 1816,
+            "def": 254,
+            "res": 0
+          },
+          "damage": 31544,
+          "dps": 350,
+          "healing": 0,
+          "attacks": 75,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 2,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_2_11_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 55,
+          "skillId": "skchr_kazema_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 652,
+            "maxHp": 2214,
+            "def": 301,
+            "res": 0
+          },
+          "damage": 46351,
+          "dps": 515,
+          "healing": 0,
+          "attacks": 75,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 2,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "歌蕾蒂娅",
+      "profession": "SPECIAL",
+      "subProfession": "hookmaster",
+      "forms": [
+        {
+          "chessId": "chess_char_4_12_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_glady_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 640,
+            "maxHp": 1754,
+            "def": 281,
+            "res": 0
+          },
+          "damage": 37332,
+          "dps": 415,
+          "healing": 46,
+          "attacks": 50,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_12_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_glady_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 747,
+            "maxHp": 2122,
+            "def": 314,
+            "res": 0
+          },
+          "damage": 49971,
+          "dps": 555,
+          "healing": 292,
+          "attacks": 50,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "莫斯提马",
+      "profession": "CASTER",
+      "subProfession": "splashcaster",
+      "forms": [
+        {
+          "chessId": "chess_char_4_02_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_mostma_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 700,
+            "maxHp": 1428,
+            "def": 110,
+            "res": 20
+          },
+          "damage": 27342,
+          "dps": 304,
+          "healing": 0,
+          "attacks": 22,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_02_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_mostma_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 789,
+            "maxHp": 1695,
+            "def": 125,
+            "res": 20
+          },
+          "damage": 34574,
+          "dps": 384,
+          "healing": 0,
+          "attacks": 21,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "诗怀雅",
+      "profession": "WARRIOR",
+      "subProfession": "instructor",
+      "forms": [
+        {
+          "chessId": "chess_char_3_03_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_swire_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 551,
+            "maxHp": 1378,
+            "def": 346,
+            "res": 0
+          },
+          "damage": 31077,
+          "dps": 345,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_03_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_swire_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 629,
+            "maxHp": 1778,
+            "def": 396,
+            "res": 0
+          },
+          "damage": 41740,
+          "dps": 464,
+          "healing": 0,
+          "attacks": 85,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "水月",
+      "profession": "SPECIAL",
+      "subProfession": "stalker",
+      "forms": [
+        {
+          "chessId": "chess_char_4_09_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_mizuki_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 692,
+            "maxHp": 1336,
+            "def": 302,
+            "res": 30
+          },
+          "damage": 49895,
+          "dps": 554,
+          "healing": 0,
+          "attacks": 29,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_09_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_mizuki_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 807,
+            "maxHp": 1616,
+            "def": 338,
+            "res": 30
+          },
+          "damage": 73544,
+          "dps": 817,
+          "healing": 0,
+          "attacks": 32,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "寒芒克洛丝",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_char_4_06_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_kroos2_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 411,
+            "maxHp": 1246,
+            "def": 148,
+            "res": 0
+          },
+          "damage": 17760,
+          "dps": 197,
+          "healing": 0,
+          "attacks": 94,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_06_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_kroos2_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 479,
+            "maxHp": 1451,
+            "def": 169,
+            "res": 0
+          },
+          "damage": 33831,
+          "dps": 376,
+          "healing": 0,
+          "attacks": 99,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "海霓",
+      "profession": "SUPPORT",
+      "subProfession": "underminer",
+      "forms": [
+        {
+          "chessId": "chess_char_3_09_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_haini_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 365,
+            "maxHp": 1267,
+            "def": 90,
+            "res": 25
+          },
+          "damage": 26337,
+          "dps": 293,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_09_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_haini_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 421,
+            "maxHp": 1534,
+            "def": 100,
+            "res": 25
+          },
+          "damage": 33591,
+          "dps": 373,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "泥岩",
+      "profession": "TANK",
+      "subProfession": "unyield",
+      "forms": [
+        {
+          "chessId": "chess_char_4_18_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_mudrok_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 687,
+            "maxHp": 2867,
+            "def": 463,
+            "res": 10
+          },
+          "damage": 46413,
+          "dps": 516,
+          "healing": 142,
+          "attacks": 57,
+          "skillActivations": 15,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_18_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_mudrok_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 816,
+            "maxHp": 3570,
+            "def": 555,
+            "res": 10
+          },
+          "damage": 64080,
+          "dps": 712,
+          "healing": 144,
+          "attacks": 57,
+          "skillActivations": 15,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "空弦",
+      "profession": "SNIPER",
+      "subProfession": "fastshot",
+      "forms": [
+        {
+          "chessId": "chess_char_3_21_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_archet_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 427,
+            "maxHp": 1364,
+            "def": 146,
+            "res": 0
+          },
+          "damage": 46824,
+          "dps": 520,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_21_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_archet_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 494,
+            "maxHp": 1590,
+            "def": 163,
+            "res": 0
+          },
+          "damage": 73656,
+          "dps": 818,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "浊心斯卡蒂",
+      "profession": "SUPPORT",
+      "subProfession": "bard",
+      "forms": [
+        {
+          "chessId": "chess_char_6_04_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_skadi2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 305,
+            "maxHp": 1202,
+            "def": 186,
+            "res": 0
+          },
+          "damage": 7759,
+          "dps": 86,
+          "healing": 790,
+          "attacks": 0,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_04_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_skadi2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 347,
+            "maxHp": 1468,
+            "def": 217,
+            "res": 0
+          },
+          "damage": 12138,
+          "dps": 135,
+          "healing": 853,
+          "attacks": 0,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "安洁莉娜",
+      "profession": "SUPPORT",
+      "subProfession": "slower",
+      "forms": [
+        {
+          "chessId": "chess_char_5_20_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_aglina_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 449,
+            "maxHp": 1108,
+            "def": 100,
+            "res": 25
+          },
+          "damage": 38219,
+          "dps": 425,
+          "healing": 174,
+          "attacks": 16,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_20_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_aglina_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 511,
+            "maxHp": 1292,
+            "def": 113,
+            "res": 25
+          },
+          "damage": 58663,
+          "dps": 652,
+          "healing": 174,
+          "attacks": 20,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "缄默德克萨斯",
+      "profession": "SPECIAL",
+      "subProfession": "executor",
+      "forms": [
+        {
+          "chessId": "chess_char_4_16_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_texas2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 443,
+            "maxHp": 1246,
+            "def": 268,
+            "res": 0
+          },
+          "damage": 19288,
+          "dps": 214,
+          "healing": 0,
+          "attacks": 104,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_4_16_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_texas2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 527,
+            "maxHp": 1479,
+            "def": 302,
+            "res": 0
+          },
+          "damage": 30754,
+          "dps": 342,
+          "healing": 0,
+          "attacks": 104,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "妮芙",
+      "profession": "CASTER",
+      "subProfession": "primcaster",
+      "forms": [
+        {
+          "chessId": "chess_char_5_22_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_nymph_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 550,
+            "maxHp": 1237,
+            "def": 107,
+            "res": 15
+          },
+          "damage": 35613,
+          "dps": 396,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 5,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_22_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_nymph_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 620,
+            "maxHp": 1511,
+            "def": 122,
+            "res": 15
+          },
+          "damage": 106074,
+          "dps": 1179,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 6,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "塑心",
+      "profession": "SUPPORT",
+      "subProfession": "ritualist",
+      "forms": [
+        {
+          "chessId": "chess_char_6_09_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_cello_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 407,
+            "maxHp": 936,
+            "def": 93,
+            "res": 15
+          },
+          "damage": 120578,
+          "dps": 1340,
+          "healing": 0,
+          "attacks": 13,
+          "skillActivations": 13,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_09_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_cello_1",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 459,
+            "maxHp": 1112,
+            "def": 104,
+            "res": 15
+          },
+          "damage": 144338,
+          "dps": 1604,
+          "healing": 0,
+          "attacks": 16,
+          "skillActivations": 16,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "巫恋",
+      "profession": "SUPPORT",
+      "subProfession": "underminer",
+      "forms": [
+        {
+          "chessId": "chess_char_3_15_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_vodfox_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 338,
+            "maxHp": 1347,
+            "def": 92,
+            "res": 25
+          },
+          "damage": 13486,
+          "dps": 150,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_3_15_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_vodfox_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 390,
+            "maxHp": 1632,
+            "def": 102,
+            "res": 25
+          },
+          "damage": 15561,
+          "dps": 173,
+          "healing": 0,
+          "attacks": 57,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "烛煌",
+      "profession": "CASTER",
+      "subProfession": "primcaster",
+      "forms": [
+        {
+          "chessId": "chess_char_5_03_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_blaze2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 556,
+            "maxHp": 1206,
+            "def": 108,
+            "res": 15
+          },
+          "damage": 88504,
+          "dps": 983,
+          "healing": 0,
+          "attacks": 84,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_03_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_blaze2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 626,
+            "maxHp": 1472,
+            "def": 123,
+            "res": 15
+          },
+          "damage": 120067,
+          "dps": 1334,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "隐德来希",
+      "profession": "WARRIOR",
+      "subProfession": "reaper",
+      "forms": [
+        {
+          "chessId": "chess_char_5_06_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_etlchi_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 581,
+            "maxHp": 2038,
+            "def": 388,
+            "res": 0
+          },
+          "damage": 467860,
+          "dps": 5198,
+          "healing": 177,
+          "attacks": 97,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_06_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_etlchi_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 660,
+            "maxHp": 2397,
+            "def": 430,
+            "res": 0
+          },
+          "damage": 692748,
+          "dps": 7697,
+          "healing": 175,
+          "attacks": 98,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "缪尔赛思",
+      "profession": "PIONEER",
+      "subProfession": "tactician",
+      "forms": [
+        {
+          "chessId": "chess_char_6_11_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_mlyss_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 407,
+            "maxHp": 1486,
+            "def": 98,
+            "res": 0
+          },
+          "damage": 10849,
+          "dps": 121,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_11_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_mlyss_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 467,
+            "maxHp": 1703,
+            "def": 111,
+            "res": 0
+          },
+          "damage": 18946,
+          "dps": 211,
+          "healing": 0,
+          "attacks": 88,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 1,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "圣约送葬人",
+      "profession": "WARRIOR",
+      "subProfession": "reaper",
+      "forms": [
+        {
+          "chessId": "chess_char_5_01_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_excu2_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 586,
+            "maxHp": 1967,
+            "def": 396,
+            "res": 0
+          },
+          "damage": 94296,
+          "dps": 1048,
+          "healing": 146,
+          "attacks": 104,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_01_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_excu2_2",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 666,
+            "maxHp": 2314,
+            "def": 439,
+            "res": 0
+          },
+          "damage": 145987,
+          "dps": 1622,
+          "healing": 132,
+          "attacks": 111,
+          "skillActivations": 2,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "圣聆初雪",
+      "profession": "CASTER",
+      "subProfession": "phalanx",
+      "forms": [
+        {
+          "chessId": "chess_char_6_02_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_sbell2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 718,
+            "maxHp": 1687,
+            "def": 233,
+            "res": 15
+          },
+          "damage": 131114,
+          "dps": 1457,
+          "healing": 0,
+          "attacks": 23,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_02_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_sbell2_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 796,
+            "maxHp": 1933,
+            "def": 254,
+            "res": 15
+          },
+          "damage": 212962,
+          "dps": 2366,
+          "healing": 0,
+          "attacks": 23,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "佩佩",
+      "profession": "WARRIOR",
+      "subProfession": "hammer",
+      "forms": [
+        {
+          "chessId": "chess_char_6_06_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_pepe_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 1083,
+            "maxHp": 2223,
+            "def": 328,
+            "res": 0
+          },
+          "damage": 155394,
+          "dps": 1727,
+          "healing": 0,
+          "attacks": 47,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_6_06_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_pepe_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 1220,
+            "maxHp": 2639,
+            "def": 367,
+            "res": 0
+          },
+          "damage": 200748,
+          "dps": 2231,
+          "healing": 0,
+          "attacks": 47,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "史尔特尔",
+      "profession": "WARRIOR",
+      "subProfession": "artsfghter",
+      "forms": [
+        {
+          "chessId": "chess_char_5_07_a",
+          "elite": false,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 1,
+          "skillId": "skchr_surtr_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 544,
+            "maxHp": 2216,
+            "def": 343,
+            "res": 15
+          },
+          "damage": 82840,
+          "dps": 920,
+          "healing": 65,
+          "attacks": 34,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        },
+        {
+          "chessId": "chess_char_5_07_b",
+          "elite": true,
+          "provisional": false,
+          "phase": 2,
+          "nativeLevel": 60,
+          "skillId": "skchr_surtr_3",
+          "skillSpecSource": "kit",
+          "base": {
+            "atk": 629,
+            "maxHp": 2680,
+            "def": 390,
+            "res": 15
+          },
+          "damage": 104049,
+          "dps": 1156,
+          "healing": 52,
+          "attacks": 33,
+          "skillActivations": 1,
+          "deaths": 0,
+          "dp": 99,
+          "summons": 0,
+          "errors": []
+        }
+      ]
+    }
+  ],
+  "pending": []
+}

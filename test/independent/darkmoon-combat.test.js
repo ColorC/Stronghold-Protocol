@@ -4,6 +4,7 @@ import { getData } from '../../server/data.js';
 import { makeBattle,chessRec,enemyRec } from '../helpers/battleHarness.js';
 import { installDarkmoonCombat,DARKMOON_COMBAT_RULES,darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { levelBodyStats } from '../../shared/independentGrowth.js';
+import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
 
 const tribes={MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'};
 function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[]) {
@@ -163,4 +164,68 @@ test('magnetic modules retain their own source quality and stack distinct retire
   assert.equal(tokens.length,6);assert.equal(tokens.filter(u=>u.base.atk===120).length,3);assert.equal(tokens.filter(u=>u.base.atk===240).length,3);
   assert.equal(installed.trace.filter(t=>t.kind==='retire'&&t.sourceId==='BOT_312').length,2);
   assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
+
+function originalCopyFixture(id, {elite=false,growthMode='badges',source='BGS_023'}={}) {
+  const f=fixture(source,false,[id],{growthMode});
+  for(const op of Object.values(f.catalog.operators))op.recruitable=false;
+  f.catalog.operators.fixture_1_a.recruitable=true;
+  Object.assign(f.catalog.equipment,Object.fromEntries(KEYWORD_GEAR.map(g=>[g.id,g])));
+  f.pieces[1].elite=elite;
+  const original=f.h.unit('p1');
+  const copiedRule=DARKMOON_COMBAT_RULES[id], copiedFaction=tribes[copiedRule?.aura?.faction||copiedRule?.faction];
+  if(copiedFaction){for(const op of Object.values(f.catalog.operators))op.nativeFactionTags=[copiedFaction];for(const u of f.b.allyUnits)u.mem.darkmoonFactionTags=[copiedFaction];}
+  f.b.retreat(original);f.h.run(.1);
+  f.b.retreat(f.unit);f.h.run(.1);
+  const copy=f.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw.darkmoonNativeChessId==='fixture_1_a');
+  assert.ok(copy,'a real native original copy was deployed');
+  return {...f,copy,original};
+}
+
+for(const elite of [false])test(`original copies retain windfury and their own five-layer shield (${elite?'advanced':'ordinary'})`,()=>{
+  const f=originalCopyFixture('BGS_119',{elite});
+  assert.equal(f.copy.buffs.find(x=>x.key.includes('shield-generator')&&x.key.endsWith(':layers'))?.shieldHits,5);
+  f.copy.atkCd=1e9;f.h.run(3.1);const victim=f.h.spawn('probe',{pos:[f.copy.tileR,f.copy.tileC+1]});
+  f.h.run(.1);const before=f.copy.stats.attacks;f.b.forceAttack(f.copy,[victim]);
+  assert.equal(f.copy.stats.attacks-before,elite?4:2,JSON.stringify({entry:f.installed.entries.filter(e=>e.unit===f.copy).map(e=>({id:e.id,rule:e.rule,channels:e.channels})),trace:f.installed.trace.filter(e=>e.sourceUid===f.copy.uid),alive:f.copy.alive,deployed:f.copy.deployed,range:f.copy.rangeKeys,pos:[f.copy.tileR,f.copy.tileC,f.copy.dir],victim:[victim.tileR,victim.tileC],profile:f.copy.profile}));
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
+
+test('a captain summoned after installation grants its aura and loses it on withdrawal',()=>{
+  const f=originalCopyFixture('NEW1_027');f.h.run(.3);
+  assert.equal(f.ally.s.atk,f.ally.base.atk*1.02);
+  f.b.retreat(f.copy);f.h.run(.6);
+  assert.equal(f.ally.s.atk,f.ally.base.atk);
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
+
+test('a newly copied Khadgar multiplies later real summons without needing an initial Khadgar',()=>{
+  const f=originalCopyFixture('DAL_575');
+  const before=f.b.allyUnits.filter(u=>u.kind==='token').length;
+  f.b.spawnToken(f.ally,'token_10028_vigil_wolf',12,8,{anySource:true});
+  assert.equal(f.b.allyUnits.filter(u=>u.kind==='token').length-before,2);
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
+
+test('a copied combat-start effect does not execute late when another enemy arrives',()=>{
+  const f=originalCopyFixture('BGS_019');
+  const before=f.installed.trace.filter(x=>x.sourceUid===f.copy.uid&&x.kind==='startStrike').length;
+  f.h.spawn('probe',{pos:[12,9]});
+  assert.equal(f.installed.trace.filter(x=>x.sourceUid===f.copy.uid&&x.kind==='startStrike').length,before);
+});
+
+test('fallen advanced copies discard training and temporary growth but retain their original source quality',()=>{
+  const f=fixture('BGS_012',false,['BGS_119'],{growthMode:'levels'}),original=f.h.unit('p1');
+  Object.assign(f.catalog.equipment,Object.fromEntries(KEYWORD_GEAR.map(g=>[g.id,g])));
+  f.pieces[1].elite=true;f.pieces[1].growthLevel=8;
+  original.base.atk=170;original.markDirty();
+  f.b.addBuff(original,{key:'not-original',mods:{atkFlat:100},persist:true});
+  f.b.kill(original,f.enemy);f.h.run(.1);f.b.retreat(f.unit);f.h.run(.1);
+  const copy=f.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw.darkmoonNativeChessId==='fixture_1_a');
+  assert.ok(copy);assert.equal(copy.base.atk,100);assert.equal(copy.findBuff('not-original'),null);
+  assert.equal(copy.nativeGrowthStatus.level,1);
+  assert.equal(copy.buffs.find(x=>x.key.includes('shield-generator')&&x.key.endsWith(':layers'))?.shieldHits,5);
+  copy.atkCd=1e9;f.h.run(3.1);const victim=f.h.spawn('probe',{pos:[copy.tileR,copy.tileC+1]});
+  f.h.run(.1);const before=copy.stats.attacks;f.b.forceAttack(copy,[victim]);assert.equal(copy.stats.attacks-before,4,JSON.stringify({entry:f.installed.entries.filter(e=>e.unit===copy).map(e=>({id:e.id,elite:e.elite,rule:e.rule,channels:e.channels})),trace:f.installed.trace.filter(e=>e.sourceUid===copy.uid),pos:[copy.tileR,copy.tileC],victim:[victim.tileR,victim.tileC],range:copy.rangeKeys,profile:copy.profile}));
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
 });
