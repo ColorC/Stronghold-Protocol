@@ -194,6 +194,7 @@ function wireControls() {
     running = false;
     resetBattle();
     await preloadCurrentOperator();
+    resetBattle();
     running = true;
   };
   for (const b of document.querySelectorAll('[data-operator]')) b.onclick = async () => {
@@ -208,6 +209,7 @@ function wireControls() {
     running = false;
     resetBattle();
     await preloadCurrentOperator();
+    resetBattle();
     running = true;
   };
   toggle.onclick = () => { running = !running; toggle.textContent = running ? '❚❚' : '▶'; };
