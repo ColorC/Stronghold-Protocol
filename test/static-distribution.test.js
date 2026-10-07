@@ -23,10 +23,11 @@ test('static builder pins a safe path-only package and copies extensionless audi
   const source = path.join(tempRoot, 'source');
   const output = path.join(tempRoot, 'upload');
   for (const dir of [
-    'public/js', 'public/css', 'public/vendor', 'public/fonts', 'public/assets/audio/bgm',
+    'public/js/ui', 'public/css', 'public/vendor', 'public/fonts', 'public/assets/audio/bgm',
     'data', 'shared', 'server/sim/content/support',
   ]) await mkdir(path.join(source, dir), { recursive: true });
   await writeFile(path.join(source, 'public/js/main.js'), "export const lazy = () => import('/sim/constants.js');\nexport const asset = '/assets/a.png';\n");
+  await writeFile(path.join(source, 'public/js/ui/helper.js'), "import { MEDIA_PREFIX } from '../../../shared/media.js';\nexport { MEDIA_PREFIX };\n");
   await writeFile(path.join(source, 'public/css/main.css'), "@font-face { src: url('/fonts/demo.woff2'); }\n");
   await writeFile(path.join(source, 'public/vendor/preact.module.js'), 'export {};\n');
   await writeFile(path.join(source, 'public/fonts/fonts.css'), '@font-face { font-family: demo; }\n');
@@ -61,6 +62,7 @@ test('static builder pins a safe path-only package and copies extensionless audi
   assert.match(await readFile(path.join(staticRoot, 'js/main.js'), 'utf8'), new RegExp(`import\\('${basePath}/sim/constants.js'\\)`));
   assert.match(await readFile(path.join(staticRoot, 'css/main.css'), 'utf8'), new RegExp(`url\\('${basePath}/fonts/demo\\.woff2'\\)`));
   assert.match(await readFile(path.join(staticRoot, 'js/main.js'), 'utf8'), /asset = '\/assets\/a\.png'/);
+  assert.match(await readFile(path.join(staticRoot, 'js/ui/helper.js'), 'utf8'), new RegExp(`from '${basePath}/shared/media.js'`));
   assert.match(await readFile(path.join(staticRoot, 'shared/media.js'), 'utf8'), /MEDIA_PREFIX = "\/media\/"/);
   assert.equal(report.clientEngineRevision, revision);
   assert.equal(await readFile(path.join(staticRoot, 'js/independent/engine/entry.js'), 'utf8'), "export const data = { image: '/assets/a.png', media: '/media/' };\n");
