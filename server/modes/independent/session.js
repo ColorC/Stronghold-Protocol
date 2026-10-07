@@ -372,7 +372,7 @@ export function createSession(options = {}) {
   const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, growthMode, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
-    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
+    incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0, tribeBought:{} }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
   if (errs.length) throw new Error(`INVALID_INITIAL_STATE:${errs.join(',')}`);
@@ -524,9 +524,10 @@ export function applyAction(state, action, options = {}) {
           const room = roomFor(work, catalog, op.chessId, { allowTemp: true });
           if (!room) { work.offers.splice(work.offers.indexOf(offer), 1); events.push({ type: 'no-room', chessId: op.chessId }); }
           else {
-          const piece = gainChess(work, catalog, op.chessId, {}); if (room === 'temp') piece.temp = true; invokeHook(work, 'gain', { piece, source: offer.source || 'choice' }, services);
+          const piece = gainChess(work, catalog, op.chessId, {}); if (room === 'temp') piece.temp = true;
+          if(offer.deferNativeGain) piece.darkmoonPendingPlay=true; else invokeHook(work, 'gain', { piece, source: offer.source || 'choice', targetUid:action.targetUid, shopSlot:action.shopSlot, shopSlots:action.shopSlots }, services);
           for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
-          handleGainEquipment(work, catalog, piece);
+          if(!offer.deferNativeGain) handleGainEquipment(work, catalog, piece);
           work.offers.splice(work.offers.indexOf(offer), 1);
           for (const merged of maybeMergeOperator(work, catalog, op.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
           }
@@ -549,16 +550,18 @@ export function applyAction(state, action, options = {}) {
         const pool = poolFor(work, slot.id); if (!pool?.left) throw new Error('SOLD_OUT');
         if (!roomFor(work, catalog, slot.id, { allowTemp: false })) throw new Error('BENCH_FULL');
         work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; addTotal(work, 'bought'); addTotal(work, 'spent', slot.price); invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
+        const boughtRef=opFor(catalog,slot.id)?.sourceRefs?.darkmoon19_2;
+        if(boughtRef?.rosterTribe) { work.counters.tribeBought ||= {}; work.counters.tribeBought[boughtRef.rosterTribe]=(work.counters.tribeBought[boughtRef.rosterTribe]||0)+1; }
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
         applyDarkmoonShopGrowth(work,slot,piece,services);
-        invokeHook(work, 'gain', { piece, source: 'buy', paid: true, shopSlots: action.shopSlots, shopSlot: action.shopSlot, buySlot: action.slot }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
+        invokeHook(work, 'gain', { piece, source: 'buy', paid: true, targetUid:action.targetUid, shopSlots: action.shopSlots, shopSlot: action.shopSlot, buySlot: action.slot }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
         for (const carried of slot.equipment || []) {
           const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item);
           equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1);
         }
         handleGainEquipment(work, catalog, piece);
         // 购买干员后 (native buyGear): operators on the field react to the one just bought, before it merges
-        invokeHook(work, 'bought', { piece, source: 'buy' }, services);
+        invokeHook(work, 'bought', { piece, source: 'buy', targetUid:action.targetUid }, services);
         for (const merged of maybeMergeOperator(work, catalog, piece.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
         // an equipment place left in a shop saved before the shop stopped selling gear (gone at the next refresh)
@@ -595,6 +598,11 @@ export function applyAction(state, action, options = {}) {
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');
       if (action.dir && !['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(action.dir)) throw new Error('BAD_DIRECTION');
       p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; delete p.temp; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
+      if(p.darkmoonPendingPlay) {
+        delete p.darkmoonPendingPlay;
+        invokeHook(work,'gain',{piece:p,source:'darkmoon-hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);
+        handleGainEquipment(work,catalog,p);
+      }
     } else if (act === 'bench') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       if (onBoard(p) || p.temp) { if (benchCount(work) >= BENCH_SIZE) throw new Error('BENCH_FULL'); }
@@ -688,7 +696,7 @@ export function applyAction(state, action, options = {}) {
       work.playerEffects = work.playerEffects.filter((x) => x.type !== 'repeatNativeForging' || x.expiresRound >= work.round);
       const baseIncome = baseIncomeFor(work.round, gd, catalog); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);
       work.incomeThisRound = baseIncome; work.funds = baseIncome + Number(work.pendingFunds || 0) + facility; work.pendingFunds = 0;
-      work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0;
+      work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0; work.counters.tribeBought = {};
       for (const piece of work.pieces) for (const item of piece.equipment) if (equipmentRecord(catalog, item.id)?.mechanism === 'saleThresholdRecruit') item.state = { ...(item.state || {}), saleTriggersThisPrep: 0 };
       work.shop.upgradePrice = Math.max(0, work.shop.upgradePrice - 1); work.shop.freeRefreshes = 0;
       work.shop.slots = advanceShop(work, gd, catalog, rng);

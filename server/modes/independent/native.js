@@ -12,7 +12,7 @@ const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
 const PREP_TRIGGERS = new Set(['aura','gain','bought','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
 const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','damaged','death','deploy','dodge','dollSwap','elementBurst','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
-const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonBattlecryFactionGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
+const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
 const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
 PREP_BEHAVIORS.add('teamForge');
 COMBAT_BEHAVIORS.add('allyConditionStats');
@@ -385,8 +385,24 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && services.catalog?.operators?.[id]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe).map(([id])=>id).sort();
         for(let i=0;i<amount&&eligible.length;i++) {
           const id=eligible[Math.floor(services.rng()*eligible.length)];
-          state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[id],source:'darkmoon-hand-reward'});
+          state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[id],source:'darkmoon-hand-reward',deferNativeGain:true});
         }
+        break;
+      }
+      case 'darkmoonBattlecryTargetGrowth': {
+        const target=state.pieces?.find(x=>x.uid===event.targetUid), ref=services.catalog?.operators?.[chessIdOf(target)]?.sourceRefs?.darkmoon19_2;
+        if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId) || ref?.rosterTribe!==p.rosterTribe) throw new Error('DARKMOON_TARGET_REQUIRED');
+        const count=Number(state.counters?.tribeBought?.[p.rosterTribe]||0)*Number(p.perTribeBought||1);
+        for(const id of p.outputs||[]) services.grantEquipment(state,id,count,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+        break;
+      }
+      case 'darkmoonBoughtTribeTargetGrowth': {
+        const buyer=event.piece,buyerRef=services.catalog?.operators?.[chessIdOf(buyer)]?.sourceRefs?.darkmoon19_2;
+        if(!buyerRef || buyerRef.rosterTribe!==p.triggerTribe || (buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId)) break;
+        const target=state.pieces?.find(x=>x.uid===event.targetUid);
+        if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId)) throw new Error('DARKMOON_TARGET_REQUIRED');
+        const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
+        for(const id of p.outputs||[]) services.grantEquipment(state,id,count,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
         break;
       }
       case 'grantEquipment':

@@ -8,7 +8,7 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth } from '../../server/modes/independent/darkmoonShop.js';
-import { createSession, applyAction } from '../../server/modes/independent/session.js';
+import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const blueprints = JSON.parse(fs.readFileSync(path.join(root, 'data/independent-darkmoon-blueprints.json'), 'utf8'));
@@ -60,8 +60,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.ok(designAddon.operators.every(x => x.metadata.op.effectDelivery.normal.length && x.metadata.op.effectDelivery.elite.length));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
   assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length,7);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,80);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,21);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,78);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,23);
   assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
   assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
   const addonBySource=new Map(designAddon.operators.map(x=>[x.sourceId,x.sourceRefs.darkmoon19_2.battlecry]));
@@ -266,6 +266,54 @@ test('frozen Battlecry-added tavern slots survive refresh even beyond the normal
   const result=applyAction(state,{type:'refresh'},{catalog});
   assert.equal(result.ok,true,JSON.stringify(result.error));
   assert.ok(result.state.shop.slots.some(x=>x.id===normal.chessId&&x.frozen&&!x.sold),'the added frozen slot persists through the refresh and stays available');
+});
+
+test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; BGS 100 targets a selected friend from bought Elemental tier',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),buyerOp=normal[0],targetOp=normal[1],holderOp=normal[2];
+  const buyerRef={id:'BGS_048',rosterTribe:'PIRATE',battlecry:true},targetRef={id:'TEST_PIRATE',rosterTribe:'PIRATE'};
+  const buyer={...buyerOp,sourceRefs:{darkmoon19_2:buyerRef}},effect=nativeEffectFor(buyerOp.chessId,buyer,false);
+  const catalog={...base,operators:{...base.operators,[buyerOp.chessId]:{...buyerOp,sourceRefs:buyer.sourceRefs,nativeTrait:{...buyerOp.nativeTrait,effect}},[targetOp.chessId]:{...targetOp,sourceRefs:{darkmoon19_2:targetRef}}}};
+  const state=createSession({seed:711,catalog});state.funds=20;state.counters.tribeBought={PIRATE:2};
+  state.pieces.push({uid:'pirate-target',chessId:targetOp.chessId,nativeState:{},equipment:[],attachments:[],row:9,col:2});
+  state.shop.slots[0]={kind:'chess',id:buyerOp.chessId,price:3,sold:false,equipment:[]};
+  const result=applyAction(state,{type:'buy',slot:0,targetUid:'pirate-target'},{catalog});
+  assert.equal(result.ok,true,JSON.stringify(result.error));
+  const target=result.state.pieces.find(x=>x.uid==='pirate-target');
+  assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),[['precision',3],['vitality',3]],'the current bought Pirate joins two earlier same-turn purchases before gain resolves');
+  assert.equal(result.state.inventory.length,0,'selected Pirate receives permanent direct growth');
+
+  const elemental={...holderOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},elementalEffect=nativeEffectFor(holderOp.chessId,elemental,false);
+  const bought={...targetOp,sourceRefs:{darkmoon19_2:{id:'TEST_ELEMENTAL',rosterTribe:'ELEMENTAL'}}};
+  const catalog2={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,sourceRefs:elemental.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect:elementalEffect}},[targetOp.chessId]:{...targetOp,sourceRefs:bought.sourceRefs}}};
+  const state2={round:1,shop:{slots:[]},pieces:[{uid:'holder',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:9,col:2,equipment:[]},{uid:'selected',chessId:targetOp.chessId,ownerId:'p1',nativeState:{},row:9,col:3,equipment:[]}],counters:{},inventory:[]};
+  const services={catalog:catalog2,data:{},rng:()=>0,grantEquipment:(s,id,n,extra)=>grantEquipment(s,catalog2,id,n,extra),grantChess(){},addOffer(){},record(){}};
+  runNativeHook(state2,'bought',{piece:{uid:'elemental-bought',chessId:targetOp.chessId,ownerId:'p1'},targetUid:'selected'},services);
+  const tier=Number(targetOp.tier||1);
+  assert.deepEqual(state2.pieces.find(x=>x.uid==='selected').equipment.map(x=>[x.id,x.quantity]),[['precision',tier],['vitality',tier]],'BGS 100 uses the purchased Elemental tier on the exact selected friend');
+});
+
+test('a generated hand card defers its native Battlecry until its first field move, then cannot replay it on redeploy',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=normal[0],candidateOp=normal[1];
+  const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_123',rosterTribe:'ELEMENTAL',battlecry:true}}},sourceEffect=nativeEffectFor(sourceOp.chessId,source,false);
+  const candidate={...candidateOp,sourceRefs:{darkmoon19_2:{id:'BGS_116',rosterTribe:'ELEMENTAL',battlecry:true}}},candidateEffect=nativeEffectFor(candidateOp.chessId,candidate,false);
+  const catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,sourceRefs:source.sourceRefs,nativeTrait:{...sourceOp.nativeTrait,effect:sourceEffect}},[candidateOp.chessId]:{...candidateOp,sourceRefs:candidate.sourceRefs,nativeTrait:{...candidateOp.nativeTrait,effect:candidateEffect}}}};
+  const state=createSession({seed:812,catalog});state.funds=20;state.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
+  const bought=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
+  const offer=bought.state.offers.find(x=>x.source==='darkmoon-hand-reward');assert.ok(offer);
+  const chosen=applyAction(bought.state,{type:'choose',offerId:offer.id,index:0},{catalog});assert.equal(chosen.ok,true,JSON.stringify(chosen.error));
+  const handPiece=chosen.state.pieces.find(x=>x.chessId===candidateOp.chessId);
+  assert.equal(handPiece.darkmoonPendingPlay,true,'the hand copy waits on the bench without firing its Battlecry');
+  assert.equal(chosen.state.shop.freeRefreshes,0);
+  const tiles=viewSession(chosen.state,{catalog}).pieces.find(x=>x.uid===handPiece.uid).legalTiles;
+  const [row,col]=tiles[0].split(',').map(Number);
+  const deployed=applyAction(chosen.state,{type:'move',uid:handPiece.uid,row,col},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
+  assert.equal(deployed.state.pieces.find(x=>x.uid===handPiece.uid).darkmoonPendingPlay,undefined);
+  assert.equal(deployed.state.shop.freeRefreshes,1,'first use fires its original Battlecry once');
+  const tilesAgain=viewSession(deployed.state,{catalog}).pieces.find(x=>x.uid===handPiece.uid).legalTiles;
+  const alternate=tilesAgain.find(x=>x!==`${row},${col}`);assert.ok(alternate);
+  const [row2,col2]=alternate.split(',').map(Number);
+  const redeployed=applyAction(deployed.state,{type:'move',uid:handPiece.uid,row:row2,col:col2},{catalog});assert.equal(redeployed.ok,true,JSON.stringify(redeployed.error));
+  assert.equal(redeployed.state.shop.freeRefreshes,1,'redeploy never repeats the hand copy Battlecry');
 });
 
 test('BGS 113 consumes the explicitly selected shop slot and creates a normal or golden copy on the purchased body',()=>{

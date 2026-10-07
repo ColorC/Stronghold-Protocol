@@ -33,6 +33,8 @@ export function darkmoonPrepRulesFor(source,isElite=false) {
   if(id==='BGS_128') return [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{rosterTribe:'ELEMENTAL',count:isElite?2:1,outputs:['precision','vitality'],excludeSelf:true}}];
   if(id==='BGS_122') return [{trigger:'gain',behavior:'darkmoonAddTribeShopOffer',params:{rosterTribe:'ELEMENTAL',count:isElite?2:1}}];
   if(id==='BGS_123') return [{trigger:'gain',behavior:'darkmoonRecruitTribeToHand',params:{rosterTribe:'ELEMENTAL',count:isElite?2:1}}];
+  if(id==='BGS_048') return [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{rosterTribe:'PIRATE',perTribeBought:isElite?2:1,outputs:['precision','vitality']}}];
+  if(id==='BGS_100') return [{trigger:'bought',behavior:'darkmoonBoughtTribeTargetGrowth',params:{triggerTribe:'ELEMENTAL',outputs:['precision','vitality']}}];
   if(id==='LOE_077') return [{trigger:'aura',behavior:'triggerMultiplier',params:{hook:'gain',extra:isElite?2:1,filter:'darkmoonBattlecry'}}];
   return structuredClone(RULES[id] || []);
 }

@@ -3165,54 +3165,52 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "turn",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "selectedFriendlyPirate",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+1/+1。",
                 "textEn": "<b>Battlecry:</b> Give a friendly Pirate +1/+1 for each Pirate you bought this turn.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "PIRATE",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "amount": "1 per Pirate bought"
+                },
+                "adapter": [
+                  "darkmoonBattlecryTargetGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "turn",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "selectedFriendlyPirate",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+2/+2。",
                 "textEn": "<b>Battlecry:</b> Give a friendly Pirate +2/+2 for each Pirate you bought this turn.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "PIRATE",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "amount": "2 per Pirate bought"
+                },
+                "adapter": [
+                  "darkmoonBattlecryTargetGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -3220,45 +3218,68 @@
       },
       "authoredRule": {
         "sourceId": "BGS_048",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "badgeGrowth",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "selectedFriendlyPirate",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryTargetGrowth",
+          "params": {
+            "rosterTribe": "PIRATE",
+            "outputs": [
+              "precision",
+              "vitality"
+            ]
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "selectedFriendlyPirate",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryTargetGrowth",
+          "params": {
+            "rosterTribe": "PIRATE",
+            "outputs": [
+              "precision",
+              "vitality"
+            ]
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "turn",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "selectedFriendlyPirate",
+            "duration": "permanentWornGrowth",
             "text": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+1/+1。",
             "params": {
-              "statDeltas": {
-                "attack": 1,
-                "health": 1
-              },
-              "numericLiterals": [
-                1,
-                1
-              ]
+              "rosterTribe": "PIRATE",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "amount": "1 per Pirate bought"
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "turn",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "selectedFriendlyPirate",
+            "duration": "permanentWornGrowth",
             "text": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+2/+2。",
             "params": {
-              "statDeltas": {
-                "attack": 2,
-                "health": 2
-              },
-              "numericLiterals": [
-                2,
-                2
-              ]
+              "rosterTribe": "PIRATE",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "amount": "2 per Pirate bought"
             }
           }
         ]
@@ -5621,36 +5642,52 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "trigger": "bought",
+                "sourceTrigger": "buyElemental",
+                "recipient": "selectedFriendlyOperator",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值。",
                 "textEn": "[x]After you play an Elemental,\ngive a friendly minion stats\nequal to the Elemental's\nTavern Tier.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "triggerTribe": "ELEMENTAL",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "amount": "Elemental tier"
+                },
+                "adapter": [
+                  "darkmoonBoughtTribeTargetGrowth"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "trigger": "bought",
+                "sourceTrigger": "buyElemental",
+                "recipient": "selectedFriendlyOperator",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值，触发两次。",
                 "textEn": "[x]After you play an Elemental,\ngive a friendly minion stats\nequal to the Elemental's\nTavern Tier twice.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "triggerTribe": "ELEMENTAL",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "amount": "Elemental tier"
+                },
+                "adapter": [
+                  "darkmoonBoughtTribeTargetGrowth"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -5658,31 +5695,68 @@
       },
       "authoredRule": {
         "sourceId": "BGS_100",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "badgeGrowth",
+        "normal": {
+          "trigger": "bought",
+          "recipient": "selectedFriendlyOperator",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBoughtTribeTargetGrowth",
+          "params": {
+            "triggerTribe": "ELEMENTAL",
+            "outputs": [
+              "precision",
+              "vitality"
+            ]
+          }
+        },
+        "elite": {
+          "trigger": "bought",
+          "recipient": "selectedFriendlyOperator",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBoughtTribeTargetGrowth",
+          "params": {
+            "triggerTribe": "ELEMENTAL",
+            "outputs": [
+              "precision",
+              "vitality"
+            ]
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "bought",
+            "sourceTrigger": "buyElemental",
+            "recipient": "selectedFriendlyOperator",
+            "duration": "permanentWornGrowth",
             "text": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值。",
             "params": {
-              "numericLiterals": []
+              "triggerTribe": "ELEMENTAL",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "amount": "Elemental tier"
             }
           }
         ],
         "elite": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "bought",
+            "sourceTrigger": "buyElemental",
+            "recipient": "selectedFriendlyOperator",
+            "duration": "permanentWornGrowth",
             "text": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值，触发两次。",
             "params": {
-              "numericLiterals": []
+              "triggerTribe": "ELEMENTAL",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "amount": "Elemental tier"
             }
           }
         ]
