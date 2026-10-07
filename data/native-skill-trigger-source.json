@@ -1,0 +1,195 @@
+{
+  "source": {
+    "url": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/activity_table.json",
+    "revision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
+  },
+  "skillTriggerDataList": [
+    {
+      "profession": "TANK",
+      "subProfessionId": null,
+      "charId": null,
+      "skillIndex": 0,
+      "skillTriggerType": "TAKE_DAMAGE"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": "bearer",
+      "charId": null,
+      "skillIndex": 0,
+      "skillTriggerType": "ALWAYS"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": "tactician",
+      "charId": null,
+      "skillIndex": 0,
+      "skillTriggerType": "ALWAYS"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": "bard",
+      "charId": null,
+      "skillIndex": 0,
+      "skillTriggerType": "ALWAYS"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": "librator",
+      "charId": null,
+      "skillIndex": 0,
+      "skillTriggerType": "SEARCH"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": "phalanx",
+      "charId": null,
+      "skillIndex": 0,
+      "skillTriggerType": "SEARCH"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_291_aglina",
+      "skillIndex": 1,
+      "skillTriggerType": "SEARCH"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_291_aglina",
+      "skillIndex": 2,
+      "skillTriggerType": "SEARCH"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_249_mlyss",
+      "skillIndex": -1,
+      "skillTriggerType": "MLYSS_WTRMAN"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_4141_marcil",
+      "skillIndex": 1,
+      "skillTriggerType": "MARCILS2"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_377_gdglow",
+      "skillIndex": 2,
+      "skillTriggerType": "GDGLOW_SKILL_2"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1038_whitw2",
+      "skillIndex": 2,
+      "skillTriggerType": "GDGLOW_SKILL_2"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1016_agoat2",
+      "skillIndex": 2,
+      "skillTriggerType": "GDGLOW_SKILL_2"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1035_wisdel",
+      "skillIndex": 2,
+      "skillTriggerType": "ALWAYS"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_4145_ulpia",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1019_siege2",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_2026_yu",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_430_fartth",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_4037_demetr",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_4064_mlynar",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1043_leizi2",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1046_sbell2",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_4080_lin",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_1051_headb2",
+      "skillIndex": 2,
+      "skillTriggerType": "CUSTOM_RANGE_SEARCH_ENEMY"
+    },
+    {
+      "profession": "NONE",
+      "subProfessionId": null,
+      "charId": "char_2025_shu",
+      "skillIndex": 2,
+      "skillTriggerType": "TRY_SEARCH_ALLY_SKILL"
+    }
+  ],
+  "skillRangeDict": {
+    "skchr_ulpia_3": "6-1",
+    "skchr_siege2_3": "x-4",
+    "skchr_yu_3": "3-15",
+    "skchr_fartth_3": "6-1",
+    "skchr_demetr_3": "x-2",
+    "skchr_mlynar_3": "3-18",
+    "skchr_leizi2_3": "2-1",
+    "skchr_sbell2_3": "x-2",
+    "skchr_lin_3": "x-2",
+    "skchr_headb2_3": "2-4"
+  }
+}

@@ -38,6 +38,7 @@ const PERMIT_GEAR_IDS = Object.freeze({
   锻锤师交工凭证: 'permit-smith-receipt', 深海遗物托付书: 'permit-deepsea-entrustment', 乡野器械移交单: 'permit-rural-transfer-slip',
   骑士装备托管证: 'permit-knight-custody', 独行者借装许可: 'permit-loner-loan', 重装器械适配单: 'permit-heavy-adapter',
   海嗣遗物容器: 'permit-seaborn-vessel', 猎人旧装承接书: 'permit-hunter-succession', 耀骑士接装敕令: 'permit-radiant-edict',
+  医疗装置交接单: 'permit-medical-device-handover',
 });
 const PERMIT_LIMIT_KEYS = ['partnerTiers', 'partnerMaxTier', 'partnerProfession', 'partnerFaction', 'direction', 'receiverTiers', 'receiverMaxTier', 'receiverProfession', 'receiverFaction', 'donorTiers', 'donorMaxTier', 'donorProfession', 'donorFaction'];
 const IDENTITY_CANONICAL = 'harmony-identity-card';
@@ -331,6 +332,15 @@ export function getCatalog(data = getData(), design = DESIGN) {
       delete op.permitGearId;
       if (op.eliteChessId) delete operators[op.eliteChessId].permitGearId;
     }
+  }
+  // Retain stable legacy IDs so existing saves keep their equipment and permissions.
+  for(const old of design.legacyPermissions||[]){
+    const id=PERMIT_GEAR_IDS[old.wording||old.gear];if(!id||equipment[id])continue;
+    const owner=design.operators.find(op=>op.name===old.name);
+    equipment[id]={id,sourceId:id,canonicalId:id,uniqueKey:id,name:old.wording||old.gear,kind:'permit',mechanism:'inheritancePermit',
+      params:Object.fromEntries(PERMIT_LIMIT_KEYS.filter(k=>old[k]!==undefined).map(k=>[k,clone(old[k])])),stats:null,
+      level:null,eliteLevel:null,eliteId:null,unique:true,inheritable:false,available:true,shopEligible:false,legacyOnly:true,retired:true,
+      effect:String(old.limit||'').replaceAll('被继承','接收').replaceAll('继承','交接'),ownerChessId:owner?.chessId,ownerName:old.name};
   }
   for (const op of Object.values(operators)) delete op.inheritance;
   const attachments = keyed(design.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
