@@ -94,8 +94,8 @@ test('native Jessica S2: native duration, ATK% and physical/arts dodge execute i
   h.invariants();
 });
 
-test('native Aciddrop S1 applies its native duration ASPD buff in battle', () => {
-  const data = new DataSource({ chess: { [acidDropId]: acidDropRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+test('native Aciddrop S1 applies its duration ASPD buff and her source minimum-damage talent after DEF', () => {
+  const data = new DataSource({ chess: { [acidDropId]: acidDropRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, def: 100000, speed: 0 }) } }, getDefaultSource());
   const def = data.getChess(acidDropId);
   assert.equal(def.skill.id, 'skchr_acdrop_1');
   assert.equal(skillSpecSource(def), 'skills');
@@ -105,6 +105,9 @@ test('native Aciddrop S1 applies its native duration ASPD buff in battle', () =>
   assert.ok(unit.skill.activations > 0);
   assert.ok(unit.skill.active);
   assert.ok(Math.abs(unit.s.aspd - (unit.base.aspd + acidDropRecord.skill.bb.attack_speed)) < 1e-8);
+  const hit = h.eventsOf('dmg').find((event) => event[1] === h.enemy('enemy_dummy').id && event[4] === unit.id);
+  assert.ok(hit && hit[2] >= unit.base.atk * acidDropRecord.talents[0].bb.atk_scale_2 - 1,
+    'a target one tile forward takes at least the native forward attack-damage floor despite high DEF');
   h.invariants();
 });
 

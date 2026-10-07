@@ -98,7 +98,28 @@ function aciddrop(bb, chess) {
   const x = sourceSkill(chess, 'skchr_acdrop_1');
   const aspd = number(x?.s.bb?.attack_speed), duration = number(x?.s.duration);
   if (!x || aspd == null || !(duration > 0)) return null;
-  return { skills: { skchr_acdrop_1: { id: 'skchr_acdrop_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { aspd } } } };
+  const talent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const minScale = number(talent.atk_scale), forwardMinScale = number(talent.atk_scale_2);
+  return {
+    skills: { skchr_acdrop_1: { id: 'skchr_acdrop_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { aspd } } },
+    talents: [{ install(battle, unit) {
+      if (!(minScale > 0 && forwardMinScale >= minScale)) return;
+      const forwardTiles = [[0, 0], [0, 1], [0, 2]];
+      battle.on('hit', ({ source, target, dmg }) => {
+        if (source !== unit || !target || !dmg?.isAttack || dmg.type !== 'phys') return;
+        const targetTile = target.tileR * COLS + target.tileC;
+        const forward = new Set(absoluteRangeKeys(forwardTiles, unit.tileR, unit.tileC, unit.dir, 0)).has(targetTile);
+        const floor = unit.s.atk * (forward ? forwardMinScale : minScale);
+        const def = target.s.def;
+        const ignorePct = Math.min(1, Math.max(0, dmg.defIgnorePct + unit.s.defIgnorePct));
+        const ignoreFlat = Math.max(0, dmg.defIgnoreFlat + unit.s.defIgnoreFlat);
+        const effectiveDef = Math.max(0, def * (1 - ignorePct) - ignoreFlat);
+        // Aciddrop's source talent floors physical output after DEF but before later dealt/taken damage multipliers.
+        const minimumPreMitigation = Math.max(floor + effectiveDef, floor / 0.05);
+        if (dmg.amount < minimumPreMitigation) dmg.amount = minimumPreMitigation;
+      }, { owner: unit });
+    } }],
+  };
 }
 
 function qingliu(bb, chess) {
