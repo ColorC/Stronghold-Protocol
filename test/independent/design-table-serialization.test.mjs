@@ -43,5 +43,8 @@ test('canonical candidate generates 101 active rows in expected tiers without wr
   assert.deepEqual(expected.map((_, i) => design.operators.filter((entry) => entry.active !== false && Number(entry.tier) === i + 1).length), expected);
   const regenerated = writeOperatorTable(design, source);
   assert.deepEqual(tableDiff(design, regenerated), []);
+  const rows = regenerated.split('\n').filter((line) => /^\| .+ · 科技等级\d+<br>原技能：/.test(line));
+  assert.equal(rows.length, 101);
+  assert.deepEqual(expected.map((_, i) => rows.filter((line) => line.includes(`· 科技等级${i + 1}<br>`)).length), expected);
   assert.equal(writeOperatorTable(design, regenerated), regenerated);
 });
