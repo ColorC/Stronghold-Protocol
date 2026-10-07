@@ -102,6 +102,19 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   else if(r.counterattack)text=`受到敌人攻击并存活后立即反击一次；每三秒触发一次，反击不再次触发自身反击。`;
   else if(r.intercept)text=`敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。`;
   else if(r.aura)text=`在场时使其他维多利亚友方获得${buffText(r.aura.buff)}；自身退场后失效。`;
+  // These descriptions spell out the actual replay body or token recipe. They do not alter
+  // the native rules above; elite forms scale the spawned body even when its count is fixed.
+  if(sourceId==='BGS_006') text=`退场时召唤${number(r.retire.count)}名随机六星干员的作战投影。`;
+  else if(sourceId==='BGS_008') text=`退场时召唤${number(r.retire.count)}名随机带有退场效果干员的作战投影。`;
+  else if(sourceId==='BGS_012') text=`退场时召回本场战斗中最先倒下的${number(r.retire.count)}名哥伦比亚友方干员的作战投影。`;
+  else if(sourceId==='BGS_017') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}；仅本场战斗生效。`;
+  else if(sourceId==='BGS_021') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}与职业副属性徽章×${r.buff[1]*m}；仅本场战斗生效。`;
+  else if(sourceId==='BGS_023') text=`退场时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
+  else if(sourceId==='BGS_061') text=`退场时召唤维多利亚作战支援单位${number(r.retire.count)}个；每个攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='BOT_218') text=`受到伤害后召唤一个哥伦比亚机械支援单位（攻击${240*m}、生命${1050*m}），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。`;
+  else if(sourceId==='BOT_312') text=`退场时召唤3个哥伦比亚机械支援单位；每个攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='BOT_537') text=`退场时召唤一个机械支援单位（攻击${960*m}、生命${2800*m}）。`;
+  else if(sourceId==='CFM_316') text=`退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击${120*m}、生命${350*m}。`;
   if(r.windfury)text=`攻击后追加${elite?3:1}次普通攻击；每三秒一轮。${text}`;
   if(r.weakest)text+='优先攻击当前可攻击范围内攻击力最低的敌人。';
   return {trigger,recipient,duration,text,sourceId,implementation:'supported',adapter:['darkmoonCombat']};

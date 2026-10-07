@@ -12,6 +12,7 @@ import { createSession, applyAction, viewSession } from '../../server/modes/inde
 import { runIndependentBattle } from '../../server/modes/independent/battle.js';
 import { operatorGrowthInfo, grantGrowthLevels } from '../../shared/independentGrowth.js';
 import { nativeFactions } from '../../shared/independentRules.js';
+import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from '../../public/js/independent/targetSelection.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -47,6 +48,8 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('BGS_104').metadata.op.effectDelivery.normal[0].recipient, 'matchingTribeShopOffers');
   assert.equal(byId.get('BGS_037').metadata.op.effectDelivery.normal[0].recipient, 'currentShopOffers');
   assert.equal(byId.get('BGS_046').metadata.op.effectDelivery.normal[0].recipient, 'hand');
+  assert.equal(byId.get('BGS_105').metadata.op.effectDelivery.normal[0].recipientLabel, '最左侧友方干员');
+  assert.equal(byId.get('BGS_009').metadata.op.effectDelivery.normal[0].recipientLabel, '每个阵营各一名随机友方干员');
   assert.equal(blueprints.entries.filter(x => x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length, 20);
   assert.equal(byId.get('BGS_043').authoredRule.normal.adapter, 'darkmoonLastWarbandRecruit');
   assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'darkmoonCombat');
@@ -71,8 +74,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.equal(designAddon.operators.length, 67);
   assert.equal(designAddon.pendingNativeDefinitions.length, 34);
   const levelsText=gameTextAddon.operators[byId.get('BGS_111').operator];
-  assert.match(levelsText.normalLevels,/攻击训练等级×1/);
-  assert.match(levelsText.eliteLevels,/攻击训练等级×2/);
+  assert.match(levelsText.normalLevels,/训练等级×2/);
+  assert.match(levelsText.eliteLevels,/训练等级×4/);
   assert.notEqual(levelsText.normal,byId.get('BGS_111').sourceTexts.normal);
   assert.equal(levelsText.sourceRefs.cards[0].text,byId.get('BGS_111').sourceTexts.normal);
   assert.ok(!levelsText.normal.includes(byId.get('BGS_111').sourceTexts.normal),'player-facing text must describe the executed adaptation, not repeat the source card text');
@@ -396,7 +399,7 @@ test('Magnetic purchases can stay normal or consume into an explicit deployed Co
     assert.equal(result.state.pieces.some(x=>x.chessId===sourceOp.chessId),false,'fusion consumes the magnetic source and it cannot merge into the ordinary roster');
     const fused=result.state.pieces.find(x=>x.uid==='selected-columbia');
     if(id==='BOT_312') {
-      assert.deepEqual(fused.attachments,[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:false,sourceName:sourceOp.name,sourceEffect:byId.get('BOT_312').metadata.op.effectDelivery.normal.find(x=>x.kind==='sourceSpecificCombat').text}}]);
+      assert.deepEqual(fused.attachments,[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:false,sourceName:sourceOp.name,sourceEffect:darkmoonCombatMetadata('BOT_312',false).text}}]);
       assert.ok(catalog.attachments['darkmoon-magnetic'].name&&catalog.attachments['darkmoon-magnetic'].effect,'the attachment always has a display definition');
     } else {
       assert.ok(fused.equipment.some(x=>x.id==='independent:坚守盟约'));
