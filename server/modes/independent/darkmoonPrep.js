@@ -20,7 +20,9 @@ const RULES = Object.freeze({
     {trigger:'bought',behavior:'darkmoonBoughtSelfGrowth',params:{faction:'炎',attackUnits:{normal:0,elite:0},secondaryUnits:{normal:1,elite:2}}}],
   BGS_201: [grantSelf(gear('坚守盟约'))],
   BGS_205: [grantSelf(gear('护盾发生器'),gear('不屈盟约'))],
-  BOT_911: [grantSelf(gear('坚守盟约'),gear('护盾发生器')),{trigger:'gain',behavior:'darkmoonMagneticMerge',params:{sourceId:'BOT_911',faction:'哥伦比亚',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}}],
+  // Magnetic fusion transfers the source body's printed attack/health into the
+  // recipient's permanent growth, in addition to the source's listed effects.
+  BOT_911: [grantSelf(gear('坚守盟约'),gear('护盾发生器')),{trigger:'gain',behavior:'darkmoonMagneticMerge',params:{sourceId:'BOT_911',faction:'哥伦比亚',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:4,elite:8}}}],
   FP1_024: [grantSelf(gear('坚守盟约'))],
   ICC_858: [grantSelf(gear('护盾发生器'))],
   ULD_217: [grantSelf(gear('不屈盟约')),{trigger:'prepEnd',behavior:'darkmoonEndTurnGrowth',params:{mode:'randomOtherFriendly',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:0,elite:0}}}],
@@ -59,7 +61,7 @@ export function darkmoonPrepRulesFor(source,isElite=false) {
   // The generated design add-on carries sourceRefs.darkmoon19_2.id. Do not infer a source
   // from a matching operator name: it is activated only when a compiled source ref is attached.
   const id = source?.sourceRefs?.darkmoon19_2?.id || source?.darkmoonSourceId;
-  if(id==='BOT_312') return [{trigger:'gain',behavior:'darkmoonMagneticMerge',params:{sourceId:'BOT_312',faction:'哥伦比亚'}}];
+  if(id==='BOT_312') return [{trigger:'gain',behavior:'darkmoonMagneticMerge',params:{sourceId:'BOT_312',faction:'哥伦比亚',attackUnits:{normal:3,elite:6},secondaryUnits:{normal:1,elite:2}}}];
   if(id==='BGS_055') return [{trigger:'gain',behavior:'factionReaction',params:{mode:'discount',targets:'self',count:isElite?2:1,excludeSelf:false,maxEventsPerPrep:3}}];
   if(id==='BGS_043') return [{trigger:'gain',behavior:'darkmoonLastWarbandRecruit',params:{source:'previousRoundFriendlyWarband',pristine:true}}];
   if(id==='BGS_115') return [{trigger:'sold',behavior:'darkmoonElementalTokenOffer',params:{supportId:'darkmoon:support-elemental-2-2',count:isElite?2:1}}];

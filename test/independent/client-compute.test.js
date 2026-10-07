@@ -79,7 +79,7 @@ function sampleActionDeltaProfile() {
     const advanced = actNode(node, action, { data: nodeData, catalog: nodeCatalog });
     const mirrored = actClient(client, action, { data: clientData, catalog: clientCatalog });
     assert.deepEqual(mirrored, advanced, `${name} delta fixture stays engine-equal`);
-    assert.equal(advanced.ok, true, `${name} action fixture should succeed`);
+    assert.equal(advanced.ok, true, `${name} action fixture should succeed: ${advanced.error?.code || ''}`);
     records[name] = { requestBytes: deltaBytes(before, advanced.state), changedKeys: Object.keys(topLevelDelta(before, advanced.state)) };
     node = advanced.state; client = mirrored.state;
     return advanced;
@@ -90,11 +90,11 @@ function sampleActionDeltaProfile() {
   const piece = view.pieces[0];
   const [row, col] = piece.legalTiles[0].split(',').map(Number);
   perform('move', { type: 'move', uid: piece.uid, row, col });
-  const itemId = Object.keys(nodeCatalog.equipment).find((id) => nodeCatalog.equipment[id]?.available !== false && nodeCatalog.equipment[id]?.mechanism !== 'disabled');
+  const itemId = 'precision'; // Unrestricted basic ATK badge; retained legacy gear may have a recipient restriction.
   grantEquipment(node, nodeCatalog, itemId, 1, { origin: 'fixture', phase: 'test' });
   grantEquipment(client, clientCatalog, itemId, 1, { origin: 'fixture', phase: 'test' });
   assert.deepEqual(client, node);
-  const itemUid = node.inventory[0].uid;
+  const itemUid = node.inventory.find(item => item.id === itemId).uid;
   perform('equip', { type: 'equip', itemUid, targetUid: piece.uid });
   perform('refresh', { type: 'refresh' });
   const battle = perform('battle', { type: 'ready' });

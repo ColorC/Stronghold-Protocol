@@ -391,7 +391,9 @@ export async function runImport(opts) {
         const traits=traitRecord(ctx,c,rec.status.phase,rec.status.level,[],rec.chessId);
         rec.trait=traits.trait;Object.assign(rec,traits.classify);rec.talents=baseTalentList(ctx,c,rec.status.phase,rec.status.level,rec.chessId);
       }
-      rec.skill = defaultSkillId ? rec.skills.find((skill) => skill.skillId === defaultSkillId) ?? null : null;
+      const selectedNativeSkill = defaultSkillId ? rec.skills.find((skill) => skill.skillId === defaultSkillId) ?? null : null;
+      rec.skill = selectedNativeSkill ? { ...selectedNativeSkill } : null;
+      if(rec.skill) delete rec.skill.isDefault;
       const e2Art = !NO_E2_ART.has(rec.charId);
       rec.assets = {
         avatar: `${rec.charId}${rec.isGolden && e2Art ? '_2' : ''}`,

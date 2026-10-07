@@ -2876,8 +2876,8 @@
         }
       },
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其退场效果附加给你选择的一名友方哥伦比亚干员，本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
-        "elite": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其退场效果附加给你选择的一名友方哥伦比亚干员，本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+        "normal": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+        "elite": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -2928,14 +2928,22 @@
             "recipient": "selectedColumbiaFriendly",
             "duration": "permanentAttachment",
             "kind": "magneticAttachment",
-            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其退场效果附加给你选择的一名友方哥伦比亚干员，本体不进入阵容。",
+            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。",
             "textEn": "",
             "tags": [
               "magnetic"
             ],
             "params": {
               "sourceId": "BOT_312",
-              "faction": "哥伦比亚"
+              "faction": "哥伦比亚",
+              "attackUnits": {
+                "normal": 3,
+                "elite": 6
+              },
+              "secondaryUnits": {
+                "normal": 1,
+                "elite": 2
+              }
             },
             "adapter": [
               "darkmoonMagneticMerge"
@@ -2984,14 +2992,22 @@
             "recipient": "selectedColumbiaFriendly",
             "duration": "permanentAttachment",
             "kind": "magneticAttachment",
-            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其退场效果附加给你选择的一名友方哥伦比亚干员，本体不进入阵容。",
+            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。",
             "textEn": "",
             "tags": [
               "magnetic"
             ],
             "params": {
               "sourceId": "BOT_312",
-              "faction": "哥伦比亚"
+              "faction": "哥伦比亚",
+              "attackUnits": {
+                "normal": 3,
+                "elite": 6
+              },
+              "secondaryUnits": {
+                "normal": 1,
+                "elite": 2
+              }
             },
             "adapter": [
               "darkmoonMagneticMerge"
@@ -8212,8 +8228,8 @@
         }
       },
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并获得攻击与职业副属性各×1成长。",
-        "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并获得攻击与职业副属性各×2成长。",
+        "normal": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×2及职业副属性成长徽章×4；本体不进入阵容。",
+        "elite": "招募获得或首次上阵时，自身永久装备坚守盟约×1、护盾发生器×1。\n招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×4及职业副属性成长徽章×8；本体不进入阵容。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8263,19 +8279,19 @@
             "recipient": "selectedColumbiaFriendly",
             "duration": "permanentAttachment",
             "kind": "magneticAttachment",
-            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并获得攻击与职业副属性各×1成长。",
+            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×2及职业副属性成长徽章×4；本体不进入阵容。",
             "textEn": "",
             "tags": [],
             "params": {
               "sourceId": "BOT_911",
               "faction": "哥伦比亚",
               "attackUnits": {
-                "normal": 1,
-                "elite": 2
+                "normal": 2,
+                "elite": 4
               },
               "secondaryUnits": {
-                "normal": 1,
-                "elite": 2
+                "normal": 4,
+                "elite": 8
               }
             },
             "adapter": [
@@ -8343,19 +8359,19 @@
             "recipient": "selectedColumbiaFriendly",
             "duration": "permanentAttachment",
             "kind": "magneticAttachment",
-            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并获得攻击与职业副属性各×2成长。",
+            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×4及职业副属性成长徽章×8；本体不进入阵容。",
             "textEn": "",
             "tags": [],
             "params": {
               "sourceId": "BOT_911",
               "faction": "哥伦比亚",
               "attackUnits": {
-                "normal": 1,
-                "elite": 2
+                "normal": 2,
+                "elite": 4
               },
               "secondaryUnits": {
-                "normal": 1,
-                "elite": 2
+                "normal": 4,
+                "elite": 8
               }
             },
             "adapter": [
