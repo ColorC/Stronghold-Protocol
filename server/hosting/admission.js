@@ -132,7 +132,12 @@ export function createAdmission({
   }
 
   function enqueue(req, res, token) {
-    if (waiting.has(token)) return true;
+    if (waiting.has(token)) {
+      waiting.get(token).expiresAt = now() + queueTtlMs;
+      setCookie(req, res, token, Math.ceil(queueTtlMs / 1000));
+      scheduleSweep();
+      return true;
+    }
     if (!maxWaiting || waiting.size >= maxWaiting) return false;
     waiting.set(token, { expiresAt: now() + queueTtlMs });
     order.push(token);
@@ -164,7 +169,7 @@ export function createAdmission({
   }
 
   function pendingResponse(req, res, token) {
-    if (pending.has(token)) { json(res, 202, { ok: true, queued: queueInfo(token) }); return; }
+    if (pending.has(token)) { json(res, 202, { ok: true, queued: { ...queueInfo(token), retryAfterMs: 5000 } }); return; }
     const position = positionOf(token);
     const entry = { req, res, token, lastPosition: position, timer: null, onClose: null };
     entry.onClose = () => removePending(token, entry);

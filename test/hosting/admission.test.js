@@ -79,3 +79,38 @@ test('queue expires, recycles capacity and closes pending long polls', () => {
   const pendingPoll = response(); gate.handle(request(token(next), 'POST', `${endpoint}?wait=1`), pendingPoll, endpoint);
   gate.close(); assert.equal(pendingPoll.status, 503); assert.equal(JSON.parse(pendingPoll.body).error.code, 'SERVER_CLOSING');
 });
+
+test('online queue renewals extend only expiry, keep FIFO identity and limit duplicate polls', async () => {
+  let now = 0; const gate = createAdmission({ maxActive: 1, maxWaiting: 2, ttlMs: 20000, queueTtlMs: 10000, now: () => now });
+  const active = response(); gate.handle(request(), active, endpoint);
+  const head = response(); gate.handle(request('', 'POST'), head, endpoint); const headCookie = token(head);
+  const next = response(); gate.handle(request('', 'POST'), next, endpoint); const nextCookie = token(next);
+  const original = JSON.parse(next.body).queued;
+  now = 8000;
+  const renewal = response(); gate.handle(request(nextCookie, 'POST'), renewal, endpoint);
+  const refreshed = JSON.parse(renewal.body).queued;
+  assert.equal(refreshed.position, 2); assert.equal(refreshed.expiresAt, 18000);
+  assert.equal(token(renewal), nextCookie);
+
+  const firstPoll = response(); gate.handle(request(headCookie, 'POST', `${endpoint}?wait=1`), firstPoll, endpoint);
+  const duplicatePoll = response(); gate.handle(request(headCookie, 'POST', `${endpoint}?wait=1`), duplicatePoll, endpoint);
+  const duplicate = JSON.parse(duplicatePoll.body);
+  assert.equal(duplicatePoll.status, 202); assert.ok(duplicate.queued.retryAfterMs >= 5000);
+
+  const oldLocation = globalThis.location; const oldDocument = globalThis.document;
+  globalThis.location = { href: 'http://localhost/stronghold/independent.html' };
+  globalThis.document = { querySelector: () => null };
+  try {
+    const { duplicatePollDelayMs } = await import('../../public/js/hostingWait.js?queue-backoff-test');
+    assert.equal(new URL('independent/api/admission', globalThis.location.href).pathname, '/stronghold/independent/api/admission');
+    assert.equal(duplicatePollDelayMs(duplicate.queued), 5000);
+    assert.equal(duplicatePollDelayMs({ retryAfterMs: 1 }), 5000);
+    assert.equal(duplicatePollDelayMs({ retryAfterMs: 90000 }), 25000);
+    assert.equal(duplicatePollDelayMs({}), 0);
+  } finally {
+    if (oldLocation === undefined) delete globalThis.location; else globalThis.location = oldLocation;
+    if (oldDocument === undefined) delete globalThis.document; else globalThis.document = oldDocument;
+  }
+  assert.ok(refreshed.expiresAt > original.expiresAt);
+  gate.close(); assert.equal(firstPoll.status, 503);
+});

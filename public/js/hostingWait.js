@@ -1,8 +1,13 @@
-const endpoint = new URL('/independent/api/admission', location.href);
+const endpoint = new URL('independent/api/admission', location.href);
 let started = false;
 let cancelled = false;
 let currentPoll = null;
 let lastWake = 0;
+
+export function duplicatePollDelayMs(queued) {
+  const requested = Number(queued?.retryAfterMs);
+  return Number.isFinite(requested) && requested > 0 ? Math.max(5000, Math.min(25000, Math.floor(requested))) : 0;
+}
 
 function render(initial = {}) {
   let main = document.querySelector('#hosting-wait') || document.querySelector('#queue-position')?.closest('main');
@@ -70,6 +75,8 @@ async function runQueue() {
       if (response.status === 202 && result.ok && result.queued) {
         updatePosition(result.queued.position);
         setStatus('空位一到会自动进入。');
+        const retryDelay = duplicatePollDelayMs(result.queued);
+        if (retryDelay) await new Promise((resolve) => setTimeout(resolve, retryDelay));
         continue;
       }
       if (response.ok && result.ok && result.lease) {
