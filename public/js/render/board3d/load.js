@@ -19,7 +19,8 @@ let threePromise = null;
 /** Dynamic import of the vendored three.js ESM build (browser only); null when unavailable. */
 export function loadThree(url = THREE_URL) {
   if (!threePromise) {
-    threePromise = import(/* @vite-ignore */ url).then((m) => (m && m.WebGLRenderer ? m : null), () => null);
+    const source = url.startsWith('/') && globalThis.location?.href ? new URL(url, globalThis.location.href).href : url;
+    threePromise = import(/* @vite-ignore */ source).then((m) => (m && m.WebGLRenderer ? m : null), () => null);
   }
   return threePromise;
 }

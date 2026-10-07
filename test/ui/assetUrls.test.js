@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   uiUrl, chessAvatarUrl, chessPortraitUrl, skillIconUrl, profIconUrl, subProfIconUrl, bondIconUrl, bandIconUrl, itemIconUrl,
-  enemyIconUrl, tokenAvatarUrl, factionIconUrl, titleIconUrl, effectIconUrl,
+  enemyIconUrl, tokenAvatarUrl, factionIconUrl, titleIconUrl, effectIconUrl, pageAssetUrl,
 } from '../../public/js/ui/assetUrls.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -26,6 +26,11 @@ const ALL = manifestUrls(m);
 const inManifest = (u) => u == null || ALL.has(u);
 
 describe('assetUrls', () => {
+  test('CSS variables keep the page asset origin when stylesheets are on a CDN', () => {
+    assert.equal(pageAssetUrl('/assets/a.png', 'https://game.example/independent.html'), 'https://game.example/assets/a.png');
+    assert.equal(pageAssetUrl('https://cdn.example/a.png', 'https://game.example/'), 'https://cdn.example/a.png');
+    assert.equal(pageAssetUrl('/assets/a.png', null), '/assets/a.png');
+  });
   test('every visible chess (normal + golden) has avatar, portrait and skill icon', () => {
     let n = 0;
     for (const c of Object.values(chess)) {

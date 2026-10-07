@@ -16,6 +16,7 @@ import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Modal, Button, TierChip, MicroLabel } from './components.js';
 import { UnitThumb, RichText, GIcon } from './gameComponents.js';
 import { localAsset } from '../data.js';
+import { pageAssetUrl } from './assetUrls.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const isObj = (v) => !!v && typeof v === 'object';
@@ -60,7 +61,7 @@ export function replaceIntent(intent, replaceUid) {
 /** One official sprite as a CSS custom property (empty when the local-client art is not installed). */
 const spriteVar = (name, sprite) => {
   const url = localAsset('ui/battle', sprite);
-  return url ? `${name}:url("${url}");` : '';
+  return url ? `${name}:url("${pageAssetUrl(url)}");` : '';
 };
 
 /** An item card of the dialog (the incoming item on top, the two equipped options below). */
