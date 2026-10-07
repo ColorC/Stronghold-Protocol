@@ -15,15 +15,11 @@ export function framePlacement(entry, scaleAtPoint = 1) {
   const originX = Number(entry?.originX);
   const originY = Number(entry?.originY);
   return {
-    // The atlas stores two logical images side by side, but `originPx` was
-    // recorded after the extractor cropped one logical frame.  It is therefore
-    // measured in logical (colour-half) pixels.  The sprite is laid out at the
-    // packed width and then scaled to half width for the filter, so the
-    // normalized anchor uses the logical cell width (the x scale below still
-    // halves the packed geometry).
+    // `originPx` is measured in the cropped logical colour frame. The packed
+    // coverage half is a storage detail and does not change world geometry.
     anchorX: (Number.isFinite(originX) ? originX : cellW / 2) / cellW,
     anchorY: (Number.isFinite(originY) ? originY : cellH) / cellH,
-    scaleX: (Number(scaleAtPoint) || 1) * 0.5,
+    scaleX: Number(scaleAtPoint) || 1,
     scaleY: Number(scaleAtPoint) || 1,
   };
 }
@@ -33,14 +29,17 @@ const FRAME_FRAG = `
 precision highp float;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
+uniform vec4 uFrame;
+uniform vec2 uTexel;
+uniform float uAlpha;
 void main(void) {
-  vec2 local = clamp(vTextureCoord, 0.0, 1.0);
-  vec2 leftUv = vec2(local.x * 0.5, local.y);
-  vec2 rightUv = vec2(0.5 + local.x * 0.5, local.y);
+  vec2 leftUv = clamp(uFrame.xy + vTextureCoord * uFrame.zw,
+    uFrame.xy + uTexel * 0.5, uFrame.xy + uFrame.zw - uTexel * 0.5);
+  vec2 rightUv = leftUv + vec2(uFrame.z, 0.0);
   vec4 colour = texture2D(uSampler, leftUv);
   vec3 coverage = texture2D(uSampler, rightUv).rgb;
   float alpha = max(max(coverage.r, coverage.g), coverage.b);
-  gl_FragColor = vec4(colour.rgb, alpha);
+  gl_FragColor = vec4(colour.rgb, alpha) * uAlpha;
 }`;
 
 // Unity's dissolve materials are not ordinary textured quads.  In the source
@@ -58,6 +57,51 @@ void main(void) {
   gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
   vTextureCoord = aTextureCoord;
 }`;
+
+function setAtlasFrame(mesh, entry, index) {
+  const count = Math.max(1, entry?.textures?.length || 1);
+  const i = Math.max(0, Math.min(count - 1, Number(index) | 0));
+  const frame = entry?.textures?.[i]?.frame;
+  const base = entry?.base;
+  const uniforms = mesh?.shader?.uniforms;
+  if (!frame || !base || !uniforms?.uFrame) return;
+  const baseW = Math.max(1, Number(base.width) || 1);
+  const baseH = Math.max(1, Number(base.height) || 1);
+  const logicalW = Math.max(1, Number(entry.cellW) || frame.width / 2);
+  const logicalH = Math.max(1, Number(entry.cellH) || frame.height);
+  uniforms.uFrame[0] = frame.x / baseW;
+  uniforms.uFrame[1] = frame.y / baseH;
+  uniforms.uFrame[2] = logicalW / baseW;
+  uniforms.uFrame[3] = logicalH / baseH;
+  mesh.vfxFrameIndex = i;
+}
+
+function createAtlasFrame(P, entry, index = 0) {
+  if (!P?.MeshGeometry || !P?.Shader || !P?.Program || !P?.Mesh || !P?.Texture) return null;
+  const w = Math.max(1, Number(entry.cellW) || 1);
+  const h = Math.max(1, Number(entry.cellH) || 1);
+  const ox = Number(entry.originX) || w / 2;
+  const oy = Number(entry.originY) || h;
+  const baseW = Math.max(1, Number(entry.base?.width) || 1);
+  const baseH = Math.max(1, Number(entry.base?.height) || 1);
+  const geometry = new P.MeshGeometry(
+    new Float32Array([-ox, -oy, w - ox, -oy, w - ox, h - oy, -ox, h - oy]),
+    new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
+    new Uint16Array([0, 1, 2, 0, 2, 3]),
+  );
+  const atlas = entry.atlas || new P.Texture(entry.base);
+  const shader = new P.Shader(P.Program.from(MESH_VERT, FRAME_FRAG), {
+    uSampler: atlas,
+    uFrame: new Float32Array(4),
+    uTexel: new Float32Array([1 / baseW, 1 / baseH]),
+    uAlpha: 1,
+  });
+  const mesh = new P.Mesh(geometry, shader);
+  mesh.blendMode = P.BLEND_MODES?.NORMAL ?? 0;
+  setAtlasFrame(mesh, entry, index);
+  return mesh;
+}
+
 const DISSOLVE_FRAG = `
 precision mediump float;
 varying vec2 vTextureCoord;
@@ -155,7 +199,8 @@ export class OriginalVfxPlayer {
       const sy = Math.floor(i / cols) * cellH;
       textures.push(new this.P.Texture(base, new this.P.Rectangle(sx, sy, cellW * 2, cellH)));
     }
-    const entry = { meta, base, textures, cellW, cellH, fps: Math.max(1, asFinite(meta.fps, 30)), originX: asFinite(meta.originPx?.[0], cellW / 2), originY: asFinite(meta.originPx?.[1], cellH) };
+    const atlas = new this.P.Texture(base);
+    const entry = { meta, base, atlas, textures, cellW, cellH, fps: Math.max(1, asFinite(meta.fps, 30)), originX: asFinite(meta.originPx?.[0], cellW / 2), originY: asFinite(meta.originPx?.[1], cellH) };
     this.entries.set(prefab, entry);
     return entry;
   }
@@ -288,7 +333,7 @@ export class OriginalVfxPlayer {
   }
 
   play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', bone = null, mirror = false, offsetZ = 0 } = {}) {
-    if (!prefab || typeof document === 'undefined' || !this.P?.Sprite) return false;
+    if (!prefab || typeof document === 'undefined' || !this.P?.MeshGeometry || !this.P?.Shader || !this.P?.Program || !this.P?.Mesh) return false;
     this.requested.add(prefab);
     const record = { prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, scale: Number(scale) || 1, followId, group, loop, elapsed: 0, delay: Math.max(0, Number(delay) || 0), ready: false, dead: false, sprite: null, entry: null, life,
       anchor: anchor === 'bone' ? 'bone' : anchor === 'root' ? 'root' : anchor === 'chest' ? 'chest' : anchor === 'tile' ? 'tile' : 'ground',
@@ -299,12 +344,8 @@ export class OriginalVfxPlayer {
       record.entry = entry;
       record.ready = true;
       this.loaded.add(prefab);
-      const sprite = new this.P.Sprite(entry.textures[0]);
-      const logical = framePlacement(entry);
-      sprite.anchor.set(logical.anchorX, logical.anchorY);
-      if (this.P.Filter) {
-        sprite.filters = [new this.P.Filter(undefined, FRAME_FRAG)];
-      }
+      const sprite = createAtlasFrame(this.P, entry, 0);
+      if (!sprite) { record.dead = true; return; }
       sprite.blendMode = this.P.BLEND_MODES?.NORMAL ?? 0;
       sprite.alpha = 1;
       sprite.visible = record.elapsed >= record.delay;
@@ -386,12 +427,7 @@ export class OriginalVfxPlayer {
     record.sprite.position.set(sx, sy);
     const s = Math.max(0.01, (p.s || 1) * record.scale / Math.max(1, record.entry.meta.pxPerUnit || 96));
     const facing = followed && record.mirror ? (followed.isEnemy ? -1 : 1) * (Number(followed.visFacing ?? followed.facing) < 0 ? -1 : 1) : 1;
-    // The fragment shader samples the left half of a packed colour/coverage
-    // texture, but Pixi still lays out the sprite at the packed width.  Keep
-    // the visible frame at its logical width; using `s` here doubles every
-    // hit and shifts the anchor by the same amount.
-    const logical = framePlacement(record.entry);
-    record.sprite.scale.set(s * logical.scaleX * facing, s * logical.scaleY);
+    record.sprite.scale.set(s * facing, s);
     record.sprite.zIndex = Number.isFinite(depth) ? -depth : 0;
   }
 
@@ -601,7 +637,7 @@ export class OriginalVfxPlayer {
       const maxLife = record.life == null ? duration : Math.max(0, Number(record.life));
       if (!record.loop && playTime >= maxLife) { this._remove(record); continue; }
       const index = record.loop ? frame % entry.textures.length : Math.min(frame, entry.textures.length - 1);
-      record.sprite.texture = entry.textures[index];
+      setAtlasFrame(record.sprite, entry, index);
       this._place(record);
     }
   }
