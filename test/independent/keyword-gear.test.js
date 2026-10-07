@@ -56,6 +56,35 @@ test('坚守盟约 stacks linearly, caps and splits post-mitigation damage evenl
   assert.ok(Math.abs(lost(a) - before - 85) < 1e-6, `wearer direct guard is 15% and is not shared again (${lost(a) - before})`);
 });
 
+test('坚守 protects owned summons, excludes other owners and uses only live wearers', () => {
+  const h = setup([
+    { uid: 'a', chessId: 'a', row: 10, col: 3, equipment: [worn('oath-cover')] },
+    { uid: 'b', chessId: 'b', row: 11, col: 3, equipment: [worn('oath-cover')] },
+  ]);
+  const a = h.unit('a'), b = h.unit('b');
+  const token = h.b.spawnToken(a, 'guarded-token', 12, 4, { def: {
+    name: 'guarded-token', position: 'MELEE', rangeGrid: [[0, 0]],
+    stats: { maxHp: 1000, atk: 0, def: 0, res: 0, aspd: 100, bat: 1, blockCnt: 1 },
+  } });
+  assert.ok(token && token.kind === 'token');
+  const shot = enemy(h, [10, 19]);
+  h.b.dealDamage(shot, token, { amount: 100, type: 'true' });
+  assert.equal(lost(token), 80);
+  assert.equal(lost(a), 9);
+  assert.equal(lost(b), 9);
+  token.ownerId = 'other-player';
+  const tokenBefore = token.hp, aBefore = a.hp;
+  h.b.dealDamage(shot, token, { amount: 100, type: 'true' });
+  assert.equal(tokenBefore - token.hp, 100);
+  assert.equal(a.hp, aBefore);
+  token.ownerId = a.ownerId;
+  h.b.kill(b);
+  const aliveBefore = a.hp;
+  h.b.dealDamage(shot, token, { amount: 100, type: 'true' });
+  assert.equal(aliveBefore - a.hp, 18, 'the one live wearer receives the entire shared portion once');
+  assert.equal(h.b.errorCount, 0);
+});
+
 test('护盾发生器 grants 5 + 3(N−1) hit layers per deploy; native shields coexist and gain/break events count deltas', () => {
   const h = setup([{ uid: 'w', chessId: 'w', row: 10, col: 3, equipment: [worn('shield-generator', 2)] }]);
   const w = h.unit('w');

@@ -82,8 +82,10 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
   const oathWearers = installed.filter((x) => x.gearId === 'oath-cover');
   if (oathWearers.length) {
     battle.independentPostMitigationDamage = (source, target, amount, dmg, api) => {
-      if (!(amount > 0) || target?.side !== 'ally' || target.kind !== 'op') return null;
-      const active = oathWearers.filter((x) => x.unit.ownerId === target.ownerId && live(x.unit));
+      if (!(amount > 0) || target?.side !== 'ally') return null;
+      const ownerId = target.ownerId ?? target.ownerUnit?.ownerId;
+      if (ownerId == null) return null;
+      const active = oathWearers.filter((x) => x.unit.ownerId === ownerId && live(x.unit));
       const guardOf = (x) => clamp(Number(x.rec.params.wearerGuardBase ?? 0.10) + Number(x.rec.params.wearerGuardPerPiece ?? 0.05) * (x.quantity - 1), 0, Number(x.rec.params.wearerGuardCap ?? 0.95));
       const apply = (recipient, finalAmount, useShield = true) => api.applyHpLoss(battle, source, recipient, useShield ? api.absorbShields(battle, recipient, Math.max(0, finalAmount)) : Math.max(0, finalAmount), dmg);
       if (!active.length) return null;
