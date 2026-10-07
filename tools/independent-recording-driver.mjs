@@ -305,8 +305,11 @@ async function inspectReferenceCard(piece, kind) {
     if (detail) await page.keyboard.press('Escape');
     return false;
   };
-  const point = await piecePoint(piece); if (!point) return diagnoseFailure('piece screen position unavailable');
-  await page.mouse.click(point.x, point.y); await pause(400);
+  // The game's visible deep link is also its accessible path to a piece detail card. It is reliable for ordinary and
+  // gold pieces across all renderer layers, even when the character sprite is covered by a tile-selection overlay.
+  await page.evaluate((uid) => { location.hash = `piece-${uid}`; }, piece.uid);
+  try { await page.waitForSelector('[data-testid="ix-detail"]', { timeout: 5000 }); }
+  catch { return diagnoseFailure('干员详情面板未通过可见组件链接打开'); }
   const tabs = await page.$$('[data-testid="ix-detail"] [role="tab"]');
   for (const tab of tabs) {
     if (await tab.evaluate((e) => (e.innerText || '').trim() === '特质')) {
@@ -327,7 +330,7 @@ async function inspectReferenceCard(piece, kind) {
   return true;
 }
 async function waitBattleResult(round) {
-  const speed = await page.$$('.ix-battlebar button');
+  const speed = await page.$$('[data-testid="ix-battlebar"] button');
   for (const el of speed) if ((await el.evaluate((e) => (e.innerText || '').trim())) === '4×') await el.click();
   await screenshot(`round-${round}-battle`);
   try { await page.waitForSelector('[data-testid="ix-result-ok"]', { timeout: 180000 }); }
@@ -457,7 +460,7 @@ try {
   let roundsDriven = 0; let idle = 0; let lastPrepRevision = null; let sameRevisionSince = Date.now();
   const started = Date.now();
   while (Date.now() - started < 13 * 60 * 1000) {
-    if (await page.$('.ix-battlebar')) {
+    if (await page.$('[data-testid="ix-battlebar"]')) {
       const liveRound = Number((await readState()).lastBattle?.round) || roundsDriven + 1;
       await waitBattleResult(liveRound); roundsDriven++;
       if (roundsDriven >= maxRounds) break;
@@ -519,7 +522,7 @@ try {
         await screenshot(`round-${round}-preparation`);
         if (round === 1) await note('从商店招募干员后，拖入战场并选择朝向；之后可以继续扩充与调整阵容。', '[data-testid="ix-ready"]', 'first-deployment');
         await ready.click(); report.actions.push({ type: 'start-battle', round, funds: state.funds, deployed });
-        try { await page.waitForSelector('.ix-battlebar', { timeout: 45000 }); } catch { throw new Error(`第 ${round} 轮开始战斗后未进入战斗回放：${(await visibleText('[role=status]')).join(' ')}`); }
+        try { await page.waitForSelector('[data-testid="ix-battlebar"]', { timeout: 45000 }); } catch { throw new Error(`第 ${round} 轮开始战斗后未进入战斗回放：${(await visibleText('[role=status]')).join(' ')}`); }
         continue;
       }
       const reason = await page.$eval('[data-testid="ready-why"]', (e) => e.innerText).catch(() => '');
