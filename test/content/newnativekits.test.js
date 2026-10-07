@@ -379,3 +379,18 @@ test('native Mayer S1 grants source physical and arts evasion to her source-scal
   assert.equal(token.s.dodgeArts, melRecord.skill.bb.prob);
   h.invariants();
 });
+
+
+test('Aciddrop only raises mitigated damage to its floor and never multiplies ordinary low-defense hits', () => {
+  for (const def of [0, 300, 1000, 100000]) for (const forward of [true,false]) {
+    const data = new DataSource({chess:{[acidDropId]:acidDropRecord},enemies:{enemy_dummy:enemyRec({key:'enemy_dummy',hp:1e7,atk:0,def,speed:0})}},getDefaultSource());
+    const h=makeBattle({data,units:[{chessId:acidDropId,row:10,col:5}],enemies:[{key:'enemy_dummy',pos:forward?[10,6]:[11,6]}]});
+    h.run(5);
+    const unit=h.unit(acidDropId),target=h.enemy('enemy_dummy'),hit=h.eventsOf('dmg').find(e=>e[1]===target.id&&e[4]===unit.id);
+    const floor=unit.base.atk*acidDropRecord.talents[0].bb[forward?'atk_scale_2':'atk_scale'];
+    const expected=Math.max(unit.base.atk-def,floor);
+    assert.ok(hit,`DEF ${def} forward ${forward} has an actual attack`);
+    assert.ok(Math.abs(hit[2]-expected)<1,`DEF ${def} forward ${forward}: expected ${expected}, got ${hit[2]}`);
+    h.invariants();
+  }
+});

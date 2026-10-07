@@ -243,7 +243,7 @@ function aciddrop(bb, chess) {
         const ignoreFlat = Math.max(0, dmg.defIgnoreFlat + unit.s.defIgnoreFlat);
         const effectiveDef = Math.max(0, def * (1 - ignorePct) - ignoreFlat);
         // Aciddrop's source talent floors physical output after DEF but before later dealt/taken damage multipliers.
-        const minimumPreMitigation = Math.max(floor + effectiveDef, floor / 0.05);
+        const minimumPreMitigation = Math.min(floor + effectiveDef, floor / 0.05);
         if (dmg.amount < minimumPreMitigation) dmg.amount = minimumPreMitigation;
       }, { owner: unit });
     } }],
