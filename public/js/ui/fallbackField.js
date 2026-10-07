@@ -24,10 +24,10 @@ import { html, TierChip } from './components.js';
 import { GEO } from '../../../shared/constants.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
 import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
-import { numberTier } from '../render/dmgNumbers.js';
+import { CRIT_FONT_SCALE, CRIT_SCALE, CRIT_Y, POPUP_ROWS, lerpKeys, popupAlpha, popupPosition, popupWaypoints } from '../render/dmgNumbers.js';
 
 const DRAG_PX = 6;
-const DMG_TTL = 900;
+const DMG_TTL = 1500;
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 /** Avatar URL for a UnitInfo `avatar` asset id (chars / E2 / tokens / enemies). */
@@ -78,7 +78,7 @@ export function createFallbackView(host, opts = {}) {
     stage: null, camera: 'prep', rect: { ...GEO.NORMAL_RECT }, side: 'L', deployField: 'normal',
     mode: 'prep', priv: null, editable: false, canPlace: null,
     field: null, units: new Map(), snapUnits: new Map(), highlight: new Map(), hlGroups: new Map(), held: new Map(), dirs: new Map(),
-    drag: null, hoverTarget: null, floats: [], settings: { damageNumbers: true, ...(opts.settings || {}) },
+    drag: null, hoverTarget: null, floats: [], critMarks: [], settings: { damageNumbers: true, ...(opts.settings || {}) },
     size: { w: 0, h: 0 }, destroyed: false, pen: [],
   };
 
@@ -352,7 +352,30 @@ export function createFallbackView(host, opts = {}) {
       if (!s) return null;
       const px = (s[1] - r.c0 + 0.5) * L.tile;
       const py = (r.r1 - s[2] + 0.5) * L.tile - L.tile * 0.4;
-      return html`<span key=${f.key} class=${`ff-float ff-float--${f.type} ff-float--${f.tier}`} style=${`left:${px}px;top:${py}px`}>${f.text}</span>`;
+      const ref = (el) => {
+        if (!el || f.animation || typeof el.animate !== 'function') return;
+        const row = POPUP_ROWS[f.motion] || POPUP_ROWS.damage;
+        const times = new Set([0, row.total, ...Array.from({ length: 10 }, (_, i) => row.move * (i + 1) / 10)]);
+        const critScale = f.motion === 'crit' ? CRIT_SCALE : [[0, 1]];
+        const critY = f.motion === 'crit' ? CRIT_Y : [[0, 0]];
+        const alpha = f.motion === 'crit' ? [[0, 0], [0.016667, 1], [0.433333, 1], [0.75, 0]] : [[0, 1], [0.25, 0.9], [0.5, 0]];
+        for (const [t] of [...critScale, ...critY, ...alpha]) times.add(t);
+        const frames = [...times].sort((a, b) => a - b).map((t) => {
+          const elapsed = Math.max(0, t - f.delay);
+          const [dx, dy] = popupPosition(f.path, elapsed, f.direction);
+          const criticalY = f.motion === 'crit' ? lerpKeys(CRIT_Y, elapsed) : 0;
+          const scale = f.rowScale * (f.motion === 'crit' ? CRIT_FONT_SCALE * lerpKeys(CRIT_SCALE, elapsed) : 1);
+          return {
+            offset: t / row.total,
+            left: `${px + (f.path.ox + dx / 56) * L.tile}px`,
+            top: `${py - (f.path.oy + dy / 56 + criticalY / 56) * L.tile}px`,
+            opacity: popupAlpha(f.motion === 'crit', elapsed),
+            transform: `translate(-50%,0) scale(${scale})`,
+          };
+        });
+        f.animation = el.animate(frames, { duration: row.total * 1000, fill: 'forwards' });
+      };
+      return html`<span key=${f.key} ref=${ref} class=${`ff-float ff-float--${f.type}`} style=${`left:${px}px;top:${py}px;font-size:.16rem`}>${f.text}</span>`;
     }) : null;
     const d = st.drag;
     const ghost = d?.moved ? (() => {
@@ -436,14 +459,32 @@ export function createFallbackView(host, opts = {}) {
         if (e[0] === 'spawn' && e[1] && e[1].id != null) {
           st.units.set(e[1].id, e[1]);
           if (!st.snapUnits.has(e[1].id)) st.snapUnits.set(e[1].id, [e[1].id, e[1].x, e[1].y, e[1].maxHp, e[1].maxHp, 0, 0, 0, 6]);
-        } else if ((e[0] === 'dmg' || e[0] === 'heal') && st.settings.damageNumbers && st.floats.length < 60) {
+        } else if (e[0] === 'fx' && e[1] === 'crit') {
+          const x = Number(e[2]), y = Number(e[3]);
+          const target = [...st.snapUnits.values()].map((s) => ({ s, d: Math.hypot(s[1] - x, s[2] - y) })).sort((a, b) => a.d - b.d)[0];
+          if (target && target.d <= 0.75) {
+            const found = [...st.floats].reverse().find((f) => f.id === target.s[0] && Math.abs(now - f.at) < 1 && f.motion !== 'heal');
+            if (found) {
+              found.animation?.cancel(); found.animation = null; found.motion = 'crit'; found.text += '!';
+              found.rowScale = POPUP_ROWS.crit.scale[1]; found.path = popupWaypoints('crit', found.seed);
+            } else st.critMarks.push({ id: target.s[0], at: now });
+          }
+        } else if ((e[0] === 'dmg' || e[0] === 'heal') && st.settings.damageNumbers) {
           const amount = Math.round(Number(e[2]) || 0);
           if (amount <= 0) continue;
           const type = e[0] === 'heal' ? 'heal' : (e[3] === 'arts' ? 'arts' : e[3] === 'true' ? 'true' : 'phys');
-          // size by the hit's share of the unit's max HP (render/dmgNumbers.js tiers, docs/damage-numbers.md)
-          const tier = numberTier(amount, Number(st.snapUnits.get(e[1])?.[4]) || Number(st.units.get(e[1])?.maxHp) || 0, type);
+          const target = st.snapUnits.get(e[1]);
+          const mark = e[0] === 'dmg' ? st.critMarks.findIndex((m) => m.at === now && m.id === e[1]) : -1;
+          const crit = mark >= 0;
+          if (crit) st.critMarks.splice(mark, 1);
+          const motion = e[0] === 'heal' ? 'heal' : crit ? 'crit' : 'damage';
+          const attacker = st.units.get(e[4]) || st.snapUnits.get(e[4]);
+          const attackerX = Array.isArray(attacker) ? attacker[1] : attacker?.x;
+          const direction = attacker && target ? Math.sign(target[1] - attackerX) || 1 : 1;
+          const seed = st.floatSeq + 1 + (Number(e[1]) || 0) * 31;
           st.floatSeq = (st.floatSeq | 0) + 1;
-          st.floats.push({ key: `f${st.floatSeq}`, id: e[1], text: e[0] === 'heal' ? `+${amount}` : String(amount), type, tier, at: now });
+          st.floats.push({ key: `f${st.floatSeq}`, id: e[1], text: e[0] === 'heal' ? `+${amount}` : `${amount}${crit ? '!' : ''}`, type, motion,
+            rowScale: POPUP_ROWS[motion].scale?.[1] ?? 1, direction, delay: 0, seed, path: popupWaypoints(motion, seed), at: now });
         }
       }
       schedule();
