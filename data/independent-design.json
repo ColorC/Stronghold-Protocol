@@ -32624,9 +32624,9 @@
           },
           {
             "fromRound": 9,
-            "hpMul": 0.78,
-            "atkMul": 0.84,
-            "bossHpMul": 0.78
+            "hpMul": 0.65,
+            "atkMul": 0.8,
+            "bossHpMul": 0.66
           }
         ]
       },
@@ -32634,21 +32634,21 @@
         "NORMAL": [
           {
             "fromRound": 1,
-            "hpMul": 0.82,
-            "atkMul": 0.84,
+            "hpMul": 0.68,
+            "atkMul": 0.74,
             "bossHpMul": 1
           },
           {
             "fromRound": 5,
-            "hpMul": 0.75,
-            "atkMul": 0.82,
+            "hpMul": 0.62,
+            "atkMul": 0.7,
             "bossHpMul": 1
           },
           {
             "fromRound": 9,
-            "hpMul": 0.7,
-            "atkMul": 0.78,
-            "bossHpMul": 0.72
+            "hpMul": 0.58,
+            "atkMul": 0.66,
+            "bossHpMul": 0.6
           }
         ]
       }
