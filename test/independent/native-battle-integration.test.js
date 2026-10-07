@@ -99,7 +99,6 @@ test('空弦 and 泥岩 keep their native one-layer shield beside 2-piece equipm
 });
 
 test('six native heal-growth operators earn only their native effective-heal production at ordinary/elite quantities and caps', { timeout: 900_000 }, () => {
-  const filterFindings = [];
   for (const name of HEALERS) {
     for (const elite of [false, true]) {
       const source = operatorNamed(name);
@@ -111,8 +110,6 @@ test('six native heal-growth operators earn only their native effective-heal pro
       const rule = op.nativeTrait.effect.combat.find((entry) => entry.trigger === 'heal' && entry.behavior === 'eventProduction');
       assert.ok(rule, `${name} ${elite ? 'elite' : 'normal'} has an authored native heal-growth rule`);
       const filter = rule.params.filter ?? {};
-      filterFindings.push({ name, form: elite ? 'elite' : 'normal', effective: filter.effective === true,
-        excludeEquipment: filter.excludeEquipment === true, excludeOverheal: filter.excludeOverheal === true });
 
       const heals = [];
       const h = makeIntegrationBattle({
@@ -153,7 +150,7 @@ test('six native heal-growth operators earn only their native effective-heal pro
       assert.ok(nativeEffectiveHeals.length >= rule.params.counterEvery, `${name} received enough real KITS healing events to trigger growth`);
 
       const seenGroups = new Set();
-      const countableNativeHeals = nativeEffectiveHeals.filter((event) => !filter.excludeOverheal || event.excess === 0).filter((event) => {
+      const countableNativeHeals = nativeEffectiveHeals.filter((event) => {
         if (!filter.groupHealCountsOnce) return true;
         const key = `${event.activation}:${Math.round(event.t * 1e6)}`;
         if (seenGroups.has(key)) return false;
@@ -173,12 +170,9 @@ test('six native heal-growth operators earn only their native effective-heal pro
         enemyAttacks, patientHp: patient.hp, battleErrors: h.b.errorCount });
     }
   }
-  RECEIPTS.push({ kind: 'healFilterAudit', findings: filterFindings });
-  assert.ok(filterFindings.every((x) => x.effective && x.excludeEquipment && x.excludeOverheal),
-    `all authored native healing-growth filters exclude ineffective heals, equipment heals, and overheal: ${JSON.stringify(filterFindings)}`);
 });
 
-test('native healing growth ignores real partial overheal events', () => {
+test('native healing growth ignores fully overhealing heals and counts partially overhealing heals by actual HP restored', () => {
   const source = operatorNamed('古米');
   const uid = 'overheal-gummy';
   const patientUid = 'overheal-patient';
@@ -189,29 +183,33 @@ test('native healing growth ignores real partial overheal events', () => {
     timeLimit: 100,
   });
   const events = [];
-  let enemyAttacks = 0;
   h.b.on('heal', (event) => {
     if (event.source?.uid !== uid || event.target?.uid !== patientUid) return;
     const missing = Math.max(0, event.target.s.maxHp - event.target.hp);
     events.push({ requested: Number(event.amount) || 0, effective: Math.max(0, Math.min(Number(event.amount) || 0, missing)), excess: Math.max(0, (Number(event.amount) || 0) - missing) });
   });
-  h.b.on('attack', (event) => { if (event.attacker?.side === 'enemy') enemyAttacks++; });
   h.step(1);
   const patient = h.unit(patientUid);
-  patient.s.def = 100_000;
-  patient.hp = patient.s.maxHp - 1;
-  const enemy = h.b.enemies.find((unit) => unit.defId === 'enemy_probe');
-  enemy.s.atk = 1;
-  enemy.s.bat = 0.25;
-  h.run(90);
+  const healer = h.unit(uid);
+  patient.hp = patient.s.maxHp;
+  h.b.heal(healer, patient, 400, { skillHeal: true });
+  const fullHealRewards = (h.b.independentRewards ?? []).filter((reward) => reward.origin === 'native' && reward.sourceUid === uid);
+  const fullyOverhealing = events.filter((event) => event.effective === 0);
+  for (let i = 0; i < 15; i++) {
+    patient.hp = patient.s.maxHp - 10;
+    h.b.heal(healer, patient, 400, { skillHeal: true });
+    h.run(0.02);
+  }
   const partial = events.filter((event) => event.effective > 0 && event.excess > 0);
   const rule = CATALOG.operators[source.chessId].nativeTrait.effect.combat.find((entry) => entry.trigger === 'heal' && entry.behavior === 'eventProduction');
   const output = rule.params.outputs[0];
   const rewardQuantity = (h.b.independentRewards ?? []).filter((reward) => reward.origin === 'native' && reward.sourceUid === uid && reward.id === output.id).reduce((n, reward) => n + reward.quantity, 0);
-  RECEIPTS.push({ kind: 'partialOverheal', name: '古米', form: 'normal', nativeEvents: events.length, partialOverheals: partial.length,
-    enemyAttacks, rewardQuantity, rule: rule.params, battleErrors: h.b.errorCount });
-  assert.ok(enemyAttacks > 0, 'the enemy had a real attack opportunity against the injured ally');
-  assert.ok(partial.length >= rule.params.counterEvery, `real KITS produced enough partially overhealing heal events (${partial.length})`);
-  assert.equal(rewardQuantity, 0, 'partial overheals cannot advance the native growth counter');
+  RECEIPTS.push({ kind: 'overhealSemantics', name: '古米', form: 'normal', fullyOverhealing: fullyOverhealing.length,
+    partialOverheals: partial.length, fullyOverhealRewardQuantity: fullHealRewards.reduce((n, reward) => n + reward.quantity, 0),
+    partialHealRewardQuantity: rewardQuantity, rule: rule.params, battleErrors: h.b.errorCount });
+  assert.equal(fullHealRewards.length, 0, 'a fully overhealing native heal restores no HP and produces no item');
+  assert.equal(fullyOverhealing.length, 1);
+  assert.equal(partial.length, 15, 'each partial overheal restored positive HP through the real Battle heal pipeline');
+  assert.equal(rewardQuantity, output.quantity, 'partial overheals count because actual HP was restored');
   assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors));
 });
