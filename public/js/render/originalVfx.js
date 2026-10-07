@@ -258,14 +258,16 @@ export class OriginalVfxPlayer {
     // range_line is the exposed perimeter; omit shared internal edges so the
     // indicator reads as one continuous area rather than disconnected boxes.
     g.lineStyle(Math.max(1.7, p.s * 0.029), 0xffe8af, Math.min(0.86, alpha * 0.95));
+    // `cells` are already world `(column, row)` positions. These neighbor
+    // offsets therefore stay in screen-world axes; applying the authored
+    // [row, column] rotation a second time reintroduced every inner edge.
     const edges = [
       [[-q, -q], [q, -q], [0, -1]], [[q, -q], [q, q], [1, 0]],
       [[q, q], [-q, q], [0, 1]], [[-q, q], [-q, -q], [-1, 0]],
     ];
     for (const [cx, cy] of cells) {
-      for (const [[a, b], [c, d], [ndr, ndc]] of edges) {
-        const [nrr, nrc] = rotate(ndr, ndc);
-        if (seen.has(`${cx + nrc},${cy + nrr}`)) continue;
+      for (const [[a, b], [c, d], [ndx, ndy]] of edges) {
+        if (seen.has(`${cx + ndx},${cy + ndy}`)) continue;
         const v1 = cam.project(cx + a, cy + b, z + 0.029, {});
         const v2 = cam.project(cx + c, cy + d, z + 0.029, {});
         g.moveTo(v1.x, v1.y); g.lineTo(v2.x, v2.y);
