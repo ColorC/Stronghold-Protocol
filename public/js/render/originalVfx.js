@@ -100,6 +100,79 @@ export class OriginalVfxPlayer {
     return entry;
   }
 
+  async _meshEntry(prefab) {
+    if (!this.meshEntries) this.meshEntries = new Map();
+    if (this.meshEntries.has(prefab)) return this.meshEntries.get(prefab);
+    const promise = fetch(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`, { cache: 'force-cache' })
+      .then((r) => { if (!r.ok) throw new Error(`mesh VFX ${r.status}`); return r.json(); })
+      .then((data) => {
+        if (!data || data.format !== 1 || !Array.isArray(data.nodes)) throw new Error('invalid mesh VFX export');
+        return data;
+      });
+    this.meshEntries.set(prefab, promise);
+    try { return await promise; } catch (err) { this.meshEntries.delete(prefab); throw err; }
+  }
+
+  /**
+   * Rebuild a Unity Mesh-particle prefab from the extractor's hierarchy export.
+   * This is the path for effects whose authored geometry is part of the visual
+   * (ground slashes, rings, lines); treating those prefabs as one billboard is
+   * what created the transparent polygons in the original compare page.
+   */
+  playMesh(prefab, { x = 0, y = 0, z = 0, followId = null, group = null, delay = 0, life = null } = {}) {
+    if (!prefab || typeof document === 'undefined' || !this.P?.Mesh || !this.P?.MeshGeometry || !this.P?.MeshMaterial) return false;
+    this.requested.add(prefab);
+    const record = { kind: 'meshPrefab', prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0,
+      followId, group, elapsed: 0, delay: Math.max(0, Number(delay) || 0), life: life == null ? null : Math.max(0.1, Number(life)), dead: false, parts: [], ready: false, data: null };
+    this.active.add(record);
+    this._meshEntry(prefab).then(async (data) => {
+      if (record.dead) return;
+      record.data = data;
+      const parts = [];
+      for (const node of data.nodes) {
+        const raw = node?.mesh;
+        const material = Array.isArray(node?.materials) ? node.materials.find((m) => m?.texture?.file) : null;
+        if (!raw || !Array.isArray(raw.vertices) || !raw.vertices.length || !Array.isArray(raw.indices) || !raw.indices.length || !material) continue;
+        const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(material.texture.file)}`;
+        let texture = this.meshTextures?.get(url);
+        if (!texture) {
+          if (!this.meshTextures) this.meshTextures = new Map();
+          texture = this.P.Texture.from(url);
+          this.meshTextures.set(url, texture);
+          if (!texture.valid) await new Promise((resolve, reject) => { texture.once('loaded', resolve); texture.once('error', reject); });
+        }
+        const vtx = new Float32Array(raw.vertices.length * 2);
+        const uv = new Float32Array(raw.vertices.length * 2);
+        const IndexArray = raw.vertices.length > 65535 ? Uint32Array : Uint16Array;
+        const idx = new IndexArray(raw.indices);
+        const geometry = new this.P.MeshGeometry(vtx, uv, idx);
+        const mesh = new this.P.Mesh(geometry, new this.P.MeshMaterial(texture));
+        const color = material.color || [1, 1, 1, 1];
+        mesh.tint = ((Math.max(0, Math.min(1, Number(color[0]) || 0)) * 255) << 16)
+          | ((Math.max(0, Math.min(1, Number(color[1]) || 0)) * 255) << 8)
+          | (Math.max(0, Math.min(1, Number(color[2]) || 0)) * 255);
+        mesh.blendMode = material.additive ? (this.P.BLEND_MODES?.ADD ?? 1) : (this.P.BLEND_MODES?.NORMAL ?? 0);
+        mesh.visible = false;
+        this.layers.fxAdd.addChild(mesh);
+        const texScale = material.texture.scale || [1, 1];
+        const texOffset = material.texture.offset || [0, 0];
+        for (let i = 0; i < raw.vertices.length; i++) {
+          const p = raw.uv0?.[i] || [0, 0];
+          // Unity UVs are bottom-left based; Pixi textures are top-left based.
+          uv[i * 2] = Number(p[0]) * Number(texScale[0] ?? 1) + Number(texOffset[0] ?? 0);
+          uv[i * 2 + 1] = 1 - (Number(p[1]) * Number(texScale[1] ?? 1) + Number(texOffset[1] ?? 0));
+        }
+        geometry.getBuffer('aTextureCoord').update(uv);
+        parts.push({ mesh, geometry, positions: vtx, uv, node, colorAlpha: Math.max(0, Math.min(1, Number(color[3]) || 0)) });
+      }
+      if (record.dead) { for (const p of parts) p.mesh.destroy({ children: true }); return; }
+      record.parts = parts;
+      record.ready = true;
+      this.loaded.add(prefab);
+    }).catch((err) => { record.dead = true; this.missing.add(prefab); console.warn('[vfx] mesh prefab unavailable', prefab, err?.message || err); });
+    return true;
+  }
+
   play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', bone = null, mirror = false, offsetZ = 0 } = {}) {
     if (!prefab || typeof document === 'undefined' || !this.P?.Sprite) return false;
     this.requested.add(prefab);
@@ -341,6 +414,53 @@ export class OriginalVfxPlayer {
         this._placeGroundSheathe(record);
         continue;
       }
+      if (record.kind === 'meshPrefab') {
+        if (record.elapsed < record.delay || !record.ready) { for (const part of record.parts) part.mesh.visible = false; continue; }
+        const phase = record.elapsed - record.delay;
+        const dataLife = Math.max(0.1, ...record.parts.map((part) => Number(part.node?.particle?.life) || 0.1));
+        const maxLife = record.life == null ? dataLife : Math.max(0.1, record.life);
+        if (phase >= maxLife) { this._remove(record); continue; }
+        const followed = record.followId == null ? null : this.view(record.followId);
+        const tx = followed ? Math.round(followed.x) : Math.round(record.x);
+        const ty = followed ? Math.round(followed.y) : Math.round(record.y);
+        const tz = followed ? (followed.z || 0) : record.z;
+        const cam = this.cam();
+        if (!cam) continue;
+        for (const part of record.parts) {
+          const node = part.node;
+          const raw = node.mesh;
+          const particle = node.particle || {};
+          const life = Math.max(0.1, Number(particle.life) || maxLife);
+          const t = Math.max(0, Math.min(1, phase / life));
+          const fadeIn = Math.min(1, phase / 0.05);
+          const fadeOut = Math.max(0, 1 - Math.max(0, t - 0.55) / 0.45);
+          const alpha = fadeIn * fadeOut * (part.colorAlpha ?? 1);
+          const sizes = Array.isArray(particle.size) ? particle.size : [1, 1, 1];
+          const angle = Number(particle.rotation) || 0;
+          const cos = Math.cos(angle), sin = Math.sin(angle);
+          const origin = node.origin || [0, 0, 0];
+          const basis = node.basis || [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+          let depth = 0;
+          for (let i = 0; i < raw.vertices.length; i++) {
+            const source = raw.vertices[i];
+            const rx = source[0] * cos - source[1] * sin;
+            const ry = source[0] * sin + source[1] * cos;
+            const lx = rx * (Number(sizes[0]) || 1), ly = ry * (Number(sizes[1]) || 1), lz = source[2] * (Number(sizes[2]) || 1);
+            const wx = tx + Number(origin[0]) + Number(basis[0][0]) * lx + Number(basis[1][0]) * ly + Number(basis[2][0]) * lz;
+            const wy = ty + Number(origin[1]) + Number(basis[0][1]) * lx + Number(basis[1][1]) * ly + Number(basis[2][1]) * lz;
+            const wz = tz + Number(origin[2]) + Number(basis[0][2]) * lx + Number(basis[1][2]) * ly + Number(basis[2][2]) * lz;
+            const projected = cam.project(wx, wy, wz + 0.04, {});
+            part.positions[i * 2] = projected.x;
+            part.positions[i * 2 + 1] = projected.y;
+            depth += Number(projected.depth) || 0;
+          }
+          part.geometry.getBuffer('aVertexPosition').update(part.positions);
+          part.mesh.alpha = alpha;
+          part.mesh.visible = alpha > 0.001;
+          part.mesh.zIndex = Number.isFinite(depth) ? -(depth / Math.max(1, raw.vertices.length)) : 0;
+        }
+        continue;
+      }
       if (!record.ready || record.elapsed < record.delay) { if (record.sprite) record.sprite.visible = false; continue; }
       record.sprite.visible = true;
       const entry = record.entry;
@@ -363,5 +483,5 @@ export class OriginalVfxPlayer {
   }
 
   clear() { for (const record of [...this.active]) this._remove(record); }
-  destroy() { this.clear(); this.entries.clear(); this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.unresolved.clear(); this.manifest = null; this.manifestPromise = null; }
+  destroy() { this.clear(); this.entries.clear(); this.meshEntries?.clear(); this.meshTextures?.clear(); this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.unresolved.clear(); this.manifest = null; this.manifestPromise = null; }
 }

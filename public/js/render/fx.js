@@ -264,6 +264,8 @@ export class FxSystem {
   playOriginalVfx(prefab, options = {}) { return this.originalVfx ? this.originalVfx.play(prefab, options) : false; }
   /** Play a tile-bound original effect whose source shader needs a procedural ground pass. */
   playOriginalGroundFrame(options = {}) { return this.originalVfx ? this.originalVfx.playGroundFrame(options) : false; }
+  /** Rebuild a Unity Mesh-particle prefab from exported hierarchy/mesh data. */
+  playOriginalMesh(prefab, options = {}) { return this.originalVfx ? this.originalVfx.playMesh(prefab, options) : false; }
   /** Play the mesh-heavy tile-bound end/sheathe pass without billboard polygons. */
   playOriginalGroundSheathe(options = {}) { return this.originalVfx ? this.originalVfx.playGroundSheathe(options) : false; }
   markOriginalVfxProcedural(prefab) { this.originalVfx?.markProcedural(prefab); }

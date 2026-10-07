@@ -726,12 +726,11 @@ function blkkgtFx(fx, c, next) {
     BLKKGT_S3_FINAL.add(id);
     const owner = c.extra?.id != null ? fx._viewOf(c.extra.id) : c.unit;
     if (owner) {
-      // `end` is a tile-bound prefab, but its ring layers use Unity Mesh
-      // particle renderers. Playing its atlas as a billboard is the source of
-      // the giant transparent polygons; the procedural sheathe keeps the same
-      // tile timing and ring/radial semantics without that geometry loss.
-      fx.markOriginalVfxProcedural?.('blkkgt_skill_03_end');
-      fx.playOriginalGroundSheathe?.({ followId: owner.id, group: `blkkgt:skill:${owner.id}`, life: 1.55 });
+      // `end` is a tile-bound prefab whose visible slash layers are Unity Mesh
+      // particle renderers. Rebuild those meshes from the exported hierarchy;
+      // the old billboard atlas turned the mesh vertices into transparent
+      // polygons and lost the three authored slash placements.
+      fx.playOriginalMesh?.('blkkgt_skill_03_end', { followId: owner.id, group: `blkkgt:skill:${owner.id}`, life: 0.9 });
       fx.markOriginalVfxUnresolved?.('blkkgt_skill_03_start_03');
       fx.markOriginalVfxUnresolved?.('blkkgt_skill_03_start_04');
       sourceMount(fx, owner, 'blkkgt_skill_03_start_03', 0.035, { anchor: 'bone', bone: 'F_R_Handweapon' });
