@@ -68,9 +68,19 @@ test('铃兰 triggers one 获得时 trait of the operator in front when the prep
 
 test('泥岩 sold: its own funds and the 售出时 trait of the operator in front', () => {
   // Generic sold-hook regression uses its pre-v4 rule fixture; 泥岩 no longer owns this mode effect.
-  const { state, services } = fixture(preV4Catalog(catalog));
+  const historic = preV4Catalog(catalog);
+  const mudId = idOf('泥岩');
+  const greyId = idOf('格雷伊');
+  const operators = { ...historic.operators };
+  const mudOperator = operators[mudId];
+  operators[mudId] = { ...mudOperator, nativeTrait: { ...mudOperator.nativeTrait, effect: { ...mudOperator.nativeTrait.effect, prep: [
+    { trigger: 'sold', behavior: 'deferredFunds', params: { normal: 2, quantity: 1 } },
+    { trigger: 'sold', behavior: 'copyFrontNative', params: { hook: 'sold' } },
+  ] } } };
+  const useCatalog = { ...historic, operators };
+  const { state, services } = fixture(useCatalog);
   const mud = piece('mud', '泥岩', 1, 1); const grey = piece('grey', '格雷伊', 1, 2);
-  state.pieces.push(grey);
+  state.pieces.push(mud, grey);
   runNativeHook(state, 'sold', { piece: mud }, services);
   assert.equal(state.pendingFunds, 2 + 1);
 });

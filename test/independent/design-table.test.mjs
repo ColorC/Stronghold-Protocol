@@ -20,8 +20,9 @@ test('design table diff is scoped to the 101 active operators', () => {
 test('write replaces stale active data, adds missing rows and preserves non-table prose', () => {
   const original = readFileSync(docPath, 'utf8');
   const inactive = design.operators.find((op) => op.active === false);
+  const tierHeader = `### 科技等级${inactive.tier}\n\n| 干员／科技等级 | 普通与精锐自有特质 | 职责与资格 |\n| --- | --- | --- |`;
   const modified = original.replace(/\| 角峰 · 科技等级[^\n]*/, '| 角峰 · 科技等级1<br>stale | stale | stale |')
-    .replace('## 完整干员表', `| ${inactive.name} · 科技等级${inactive.tier}<br>legacy | legacy | legacy |\n\n## 完整干员表`)
+    .replace(tierHeader, `${tierHeader}\n| ${inactive.name} · 科技等级${inactive.tier}<br>legacy | legacy | legacy |`)
     .replace(/\| 锡人 · 科技等级[^\n]*\n/, '');
   const out = writeOperatorTable(design, modified);
   assert.match(out, /\| 角峰 · 科技等级1<br>原技能：/);

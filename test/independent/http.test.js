@@ -20,7 +20,7 @@ test('independent HTTP actions serialize revisions, persist across restarts and 
     assert.equal(created.status, 201);
     const { id, catalog } = created.data;
     assert.equal(Object.keys(catalog.operators).length, 240);
-    assert.equal(catalog.gear.precision.normal.includes('10'), true);
+    assert.equal(catalog.gear.precision.normal.includes('2%'), true);
     assert.ok(!JSON.stringify(catalog).includes('originalNormal'));
     const endpoint = `/independent/api/sessions/${id}`;
     const actions = endpoint + '/actions';

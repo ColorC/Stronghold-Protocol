@@ -319,7 +319,7 @@ test('native recruitment only selects currently stocked ordinary copies across a
     nativeTrait: { ...pinecone.nativeTrait, effect: { ...pinecone.nativeTrait.effect, prep: [...pinecone.nativeTrait.effect.prep, { trigger: 'sold', behavior: 'recruitOffer', params: { normalTier: 1, choices: 3 } }] } },
   } } };
   const soldPiece = { uid: 'pinecone', chessId: pinecone.chessId, nativeState: {} };
-  const ordinary = all.filter((x) => !x.elite && x.recruitable && x.source?.normalChess?.tier === 1).slice(0, 3).map((x) => x.chessId);
+  const ordinary = all.filter((x) => !x.elite && x.recruitable && x.tier === 1).slice(0, 3).map((x) => x.chessId);
   sold.services.data.chess = Object.fromEntries(ordinary.map((id) => [id, { chessId: id, tier: 1, visible: true, bonds: [] }]));
   sold.state.pool = { left: stock(ordinary, [0, 1, 0]) };
   sold.state.pieces.push(soldPiece);

@@ -70,9 +70,9 @@ test('prizes and attachments: texts with the design numbers; the page shows them
 test('the display catalog carries the hand-written texts, the new name and no internal ids in names', () => {
   assert.equal(display.name, '卫戍协议：工坊');
   const yan = Object.values(display.operators).find((x) => x.name === '角峰' && !x.elite);
-  assert.equal(yan.traitTexts.normal, text.operators[yan.chessId].normal);
+  assert.equal(yan.traitTexts.normal, text.operators[yan.baseChessId].normal);
   const yanElite = display.operators[yan.eliteChessId];
-  assert.equal(yanElite.traitTexts.elite, text.operators[yan.chessId].elite);
+  assert.equal(yanElite.traitTexts.elite, text.operators[yan.baseChessId].elite);
   assert.equal(display.gear.precision.normal, text.gear.precision.normal);
   assert.match(display.gear.precision.normal, /2%/);
   assert.ok(display.terms['basic-badge'].name === '基础徽章');

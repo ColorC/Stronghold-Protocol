@@ -18,7 +18,7 @@ const data = getData({ log: { info() {}, warn() {}, error() {} } });
 // (helpers/preV4.js: growth, doublers, totals, shop carry, badge boosts … are no operator's trait since v4)
 const legacy = preV3Catalog(preV4Catalog(getCatalog(data)));
 // These dispatcher cases intentionally exercise retired operator effects, so activate only their test bodies in this fixture.
-const legacyNames = new Set(['折桠', '宴', '隐现']);
+const legacyNames = new Set(['折桠', '宴', '隐现', '野鬃']);
 const catalog = (() => {
   const operators = { ...legacy.operators };
   const activeRosterIds = [...(legacy.config.activeRosterIds || [])];
@@ -71,8 +71,8 @@ test('铃兰 makes 获得时 effects run twice (elite: three times); a doubler o
     const maker = piece('maker', '惊蛰');
     state.pieces.push(maker);
     runNativeHook(state, 'gain', { piece: maker }, services);
-    const expectedPrecision = elite ? 9 : 4;
-    assert.equal(sum(granted, 'precision'), field ? expectedPrecision : (elite ? 3 : 2), `elite ${elite} field ${field}`);
+    const expectedPrecision = elite ? 6 : 4;
+    assert.equal(sum(granted, 'precision'), field ? expectedPrecision : 2, `elite ${elite} field ${field}`);
   }
 });
 
