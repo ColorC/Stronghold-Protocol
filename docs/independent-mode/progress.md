@@ -75,3 +75,13 @@
 已修蒂比原生必闪只发视觉fx不发dodge事件（tier2.js），并补independent actor解析；普通和精锐真实原生技能测试2/2通过。UI首批a9e0281268222c4ca003b67f8dcf30422a25cb8d、跳字1e54350637cf9e930f5554a31ff50a74192c5976已产出，待root复核融合。研究原始表版本a550f5e048bb94e7cdefc6eb97a4091f0c4c7add含429可获取对象/1236成长phase。审计暂存E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/growth-destination-20261008/audit/gain-destinations.json与native-growth-factions.json；前者native garrison附录不构成炉石对齐依据，正式判断按具名炉石text与实际执行。
 
 后续：root完成真正等级模型与装备固定落点/期限；native-roster负责原生导入与真实技能/资源；darkmoon-blueprints实现每具名原卡的结构化机制；growth-ui接记录真实DOM/画布及动作时间、介绍播放器，发现布局纳入实际浏览器；全量因果测试、完整游玩、发布/表格回读及worktree保全收尾。
+
+2026-10-08：root真正等级按原生phase/keyframes插值并保持信赖/模组附加值；固定目标装备溢出明确损失不改送库存，战斗临时成长不上永久账。当前定向159项全部通过，日志 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/root-growth-combat-final.log。普通/进阶蒂比原生闪避因果产出通过；新源卡映射将替换旧额外特质，原生技能/天赋保留。
+
+51条战斗原卡已逐条执行；追加实测发现并修复多来源临时等级突破本体上限、原始复制技能数据存在但未选中SkillSpec，以及金色不能统一将次数/数量翻倍：纳迪娜护盾不翻倍、破浪反击不翻倍、金色鹦鹉随机两次、安全巡游者仅召唤体属性翻倍、金色炸弹真正两次、金色舍身给两个不同友方护盾。原始复制因果验证使用真实杰西卡技能和天赋，不以合成白值对象冒充。
+
+原生能力首轮probe150形态/101映射、0模拟错误；52形态尚缺可执行新默认技能，未称完成。报告 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-power-first.json。当前tier草案10/19/22/17/18/15，普罗旺斯/松果/号角/隐德来希按原生战斗与长期功能调整；其余重新使用原卡科技基线，最终仍需34新本体验证。统一安装脚本严格列pending，未写正式active roster。
+
+34个新本体在最新上游c2a2ef778cf728ff29b953b9842b2a39b1e9cbea均缺失；资料版本a550f5e，实际下载407资源任务无失败（包含已存在7项），24阵营图标全部存在；资源逐路径回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-import/growth-import-receipt.json。15新Columbia/Yan与19新Victoria/Kazimierz/Siracusa分工，不重复已有本体；完成默认技能/天赋/召唤物因果测试才标independent专用playable，global继续hidden。
+
+发现头像裁切已真实desktop/touch验收，跳字按iGame-TFT参数移除碰撞避让，保持原字体并缩小。录制rrweb真实DOM和WebGL命令加MediaRecorder实帧，服务stop以ffmpeg无重编码remux提供duration/index/Range；回放黑屏查明为iframe视频GPU合成，视频转顶层stage修复。当前仅短局录制proof，完整终局视频尚未开始；刷新媒体序号/时间偏移还需收口。记录与可见战场截图 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/recording-real-e2e-replay-controls-proof.json、E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/recording-real-e2e-replay-controls-proof.png。

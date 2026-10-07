@@ -17,6 +17,7 @@ function factionsFor(piece, catalog) {
   const op = catalog?.operators?.[piece?.chessId];
   if (op?.source) return tavernFactions(piece, catalog);
   const factions = new Set([...(piece?.factions || []), ...(op?.factions || []), ...(op?.nativeFactions || [])]);
+  if(catalog?.rules?.factionIdentityEquipment===false||catalog?.config?.factionIdentityEquipment===false)return [...factions];
   if (op?.tavernFactionProxy === 'ALL') for (const faction of catalog?.config?.tavernFactions || []) factions.add(faction);
   for (const item of gearItems(piece)) {
     const def = catalog?.equipment?.[item.id] || catalog?.gear?.[item.id] || item;

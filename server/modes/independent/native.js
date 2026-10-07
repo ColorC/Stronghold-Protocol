@@ -246,7 +246,7 @@ function combatRules(name, elite) {
 }
 
 export function nativeEffectFor(_chessId, source, isElite = false) {
-  if (source?.sourceRefs?.darkmoon19_2?.id && !Object.hasOwn(source || {}, 'modeEffects')) return { prep:darkmoonPrepRulesFor(source,isElite), combat:[], unsupported:[] };
+  if (source?.sourceRefs?.darkmoon19_2?.id) return { prep:darkmoonPrepRulesFor(source,isElite), combat:[], unsupported:[] };
   if (Object.hasOwn(source || {}, 'modeEffects')) return authoredModeEffects(source, isElite);
   const rules = PREP[source?.name] || [];
   const prep = [...rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) })), ...darkmoonPrepRulesFor(source,isElite)];

@@ -42,7 +42,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
       nativeStats: raw.stats || {}, nativeFactions: op.nativeFactionTags || (raw.bonds || []).map((bond) => ({ yanShip: '炎', victoriaShip: '维多利亚', lateranoShip: '拉特兰', egirShip: '阿戈尔', kjeragShip: '谢拉格', sargonShip: '萨尔贡', siracusaShip: '叙拉古', kazimierzShip: '卡西米尔' })[bond]).filter(Boolean),
       effectRules: { prep: op.nativeTrait.effect?.prep || [], combat: op.nativeTrait.effect?.combat || [] },
       effectRulesElite: { prep: eliteOp?.nativeTrait.effect?.prep || [], combat: eliteOp?.nativeTrait.effect?.combat || [] },
-      traitTexts: gameText.operators?.[baseChessId(id)] ? { normal: gameText.operators[baseChessId(id)].normal, elite: gameText.operators[baseChessId(id)].elite }
+      traitTexts: gameText.operators?.[baseChessId(id)] ? { ...gameText.operators[baseChessId(id)] }
         : { normal: op.nativeTrait.normalText, elite: op.nativeTrait.eliteText },
       summary: [...traitSummary(op.nativeTrait.effect).map((entry, index) => ({ ...entry,
         ...(rules[index] ? { rule: { behavior: rules[index].behavior, params: rules[index].params || {} } } : {}),
@@ -52,7 +52,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
         ...(eliteRules[index] ? { rule: { behavior: eliteRules[index].behavior, params: eliteRules[index].params || {} } } : {}),
         ...(deliveryAtElite(index, eliteRules[index]?.trigger) ? { effectDelivery: deliveryAtElite(index, eliteRules[index]?.trigger) } : {})
       })), ...darkmoonCombatEligibilityRules(op.sourceRefs?.darkmoon19_2?.id).map(rule=>({kind:'conditional',rule,effectDelivery:darkmoonCombatMetadata(op.sourceRefs?.darkmoon19_2?.id,true)}))] : null,
-      skills: raw.skills || [], modules: (raw.modules || []).map((x) => ({ ...x, id: x.uniEquipId || x.id })) }];
+      skills: (raw.skills || []).filter(s=>!raw.nativeImport||raw.nativeImport.supportedSkillIds?.includes(s.skillId)), modules: (raw.modules || []).map((x) => ({ ...x, id: x.uniEquipId || x.id })) }];
   }));
   const gear = Object.fromEntries([...Object.entries(catalog.badges), ...Object.entries(catalog.equipment)].map(([id, d]) => {
     const steam = d.params?.effects?.find((x) => x.behavior === 'steamGearUpgrade');
@@ -74,7 +74,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
   return { name: catalog.name, operators, gear, prizes, attachments, terms: gameText.terms,
     factions: catalog.config.tavernFactions, factionDetails: catalog.factionDetails || catalog.config.factionDetails || {},
     rules: { purchasePrice: catalog.config.purchasePrice, sellPrice: catalog.config.sellPrice, refreshPrice: catalog.config.refreshPrice,
-      equipmentCapacity: catalog.config.equipmentCapacity, inventoryCapacity: catalog.config.inventoryCapacity, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
+      equipmentCapacity: catalog.config.equipmentCapacity, inventoryCapacity: catalog.config.inventoryCapacity, factionIdentityEquipment:catalog.config.factionIdentityEquipment, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
     traitWhen: TRAIT_WHEN,
     modes: [{ name: '短局', difficulty: 'FUNNY', roundLimit: 9 }, { name: '标准局', difficulty: 'NORMAL', roundLimit: 14 }, { name: '追加挑战', difficulty: 'NORMAL', roundLimit: 15 }] };
 }

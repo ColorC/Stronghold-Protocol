@@ -53,12 +53,13 @@ function GearRecipients({ gear, state, catalog, source }) {
 }
 
 /** Both forms' trait texts (the current one lit) and, under them, every item and term they name. */
-export function TraitTexts({ op, elite, catalog }) {
+export function TraitTexts({ op, elite, catalog, growthMode='badges' }) {
   const t = op?.traitTexts || {};
+  const normal=growthMode==='levels'?t.normalLevels||t.normal:t.normal, advanced=growthMode==='levels'?t.eliteLevels||t.elite:t.elite;
   return html`<div class="ix-traittext">
-    <p class=${cx(!elite && 'is-on')}><b>普通</b><${GameText} text=${t.normal} catalog=${catalog} /></p>
-    <p class=${cx(elite && 'is-on')}><b>精锐</b><${GameText} text=${t.elite} catalog=${catalog} /></p>
-    <${TermNotes} texts=${[t.normal, t.elite]} catalog=${catalog} />
+    <p class=${cx(!elite && 'is-on')}><b>普通</b><${GameText} text=${normal} catalog=${catalog} /></p>
+    <p class=${cx(elite && 'is-on')}><b>精锐</b><${GameText} text=${advanced} catalog=${catalog} /></p>
+    <${TermNotes} texts=${[normal,advanced]} catalog=${catalog} />
   </div>`;
 }
 

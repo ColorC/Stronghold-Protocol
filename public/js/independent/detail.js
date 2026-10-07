@@ -62,7 +62,7 @@ function OriginalCardRefs({ op, piece, linkAnchor = null }) {
   return html`<details class="ix-original-card" onContextMenu=${(e) => anchor && copyComponentLink(e, anchor)}>
     <summary>参考原卡</summary>
     ${refs.map((ref, index) => html`<article class="ix-original-card__item" key=${index}>
-      <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>版本 ${ref.version}</span>` : null}${ref.tier != null ? html`<span>Tier ${ref.tier}</span>` : null}
+      <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>${ref.version.startsWith('19.2')?'暗月奖品初版 · 19.2':`版本 ${ref.version}`}</span>` : null}${ref.tier != null ? html`<span>酒馆科技 ${ref.tier}</span>` : null}
         ${ref.sourceUrl ? html`<a href=${ref.sourceUrl} target="_blank" rel="noreferrer">來源卡片</a>` : null}</header>
       ${ref.text ? html`<section><h4>普通</h4><pre>${readableCardText(ref.text)}</pre></section>` : null}
       ${ref.textElite ? html`<section><h4>精锐</h4><pre>${readableCardText(ref.textElite)}</pre></section>` : null}
@@ -114,7 +114,7 @@ function EffectTargetInfo({ effect, source, state, catalog, delivery = null, anc
 function TraitSection({ op, elite, catalog, piece, state, busy, prep, onAct, linkAnchor }) {
   return html`<section key="garrison" class="dgarrison ix-dtrait" aria-label="特质">
     <div class="dgarrison__head"><span class="dgarrison__k">特质</span><${TraitGlyphs} summary=${op?.summary} elite=${elite} catalog=${catalog} max=${4} /></div>
-    <${TraitTexts} op=${op} elite=${elite} catalog=${catalog} />
+    <${TraitTexts} op=${op} elite=${elite} catalog=${catalog} growthMode=${state?.growthMode||piece?.growthMode||'badges'} />
     <${EffectTargets} op=${op} piece=${piece} state=${state} catalog=${catalog} elite=${elite} />
     <${OriginalCardRefs} op=${op} piece=${piece} linkAnchor=${linkAnchor} />
     ${piece && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
@@ -162,7 +162,9 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
 /** The skill tab's choice: each skill's icon (the 干员调配 screen's), the chosen one lit; a tap changes it in the prep. */
 function SkillChoice({ base, golden, piece, busy, prep, onAct }) {
   const m = data.get('assets');
-  const opt = chessOptions(base, golden);
+  const options = chessOptions(base, golden);
+  const supported=base.nativeImport?.supportedSkillIds;
+  const opt={...options,skillOptions:options.skillOptions.filter(s=>!supported||supported.includes(s.normal?.skillId||s.normal?.id))};
   if (!piece || opt.skillOptions.length < 2) return null;
   return html`<div class="ix-dchoice" role="radiogroup" aria-label="选择技能">
     ${opt.skillOptions.map((s) => html`<button type="button" key=${s.index} role="radio" aria-checked=${piece.skillIndex === s.index ? 'true' : 'false'}
