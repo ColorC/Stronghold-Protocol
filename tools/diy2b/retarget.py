@@ -86,8 +86,8 @@ def measure(seg, LEG):
     J["grip"] = grip
     if J["wrist_r"] is None: J["wrist_r"] = grip           # hand label lost (hidden / mislabelled): the hand is where it grips
     body = np.isin(seg, [i + 1 for i, n in enumerate(LEG) if n not in ("sword", "smear")])
-    for a_, b_ in (("knee_r", "knee_l"), ("ankle_r", "ankle_l"), ("sole_r", "sole_l"), ("low_r", "low_l")):
-        if J.get(a_) is not None and J.get(b_) is not None and J[a_][0] > J[b_][0] + 4: J[a_], J[b_] = J[b_], J[a_]
+    # Keep each labelled leg's chain together. Sorting individual joints by x
+    # swaps the supporting leg whenever the legs cross or one knee is raised.
     J["low_all"] = np.array([0.0, float(np.nonzero(body.any(1))[0].max())]) if body.any() else None
     J["hairA"] = centroid(M["hair_a"]); J["skirtB"] = centroid(M["skirt"], "bottom")
     J["hips"] = (J["hip_r"] + J["hip_l"]) / 2 if J["hip_r"] is not None and J["hip_l"] is not None else J["waist"]
@@ -122,9 +122,13 @@ LEG = [n for n, _ in json.load(open(f"{KD}/atk_k1/s2-split/legend.json"))["legen
 bseg = np.load(f"{BASE}/s2-split/labels.npy")
 st_h = boy - np.nonzero(ndi.binary_opening(np.isin(bseg, [bleg.index(n) + 1 for n in bleg if n not in ("sword", "smear")]), iterations=2).any(1))[0].min()
 SEM = {}
+SEM_DIR = next((a[10:] for a in sys.argv[5:] if a.startswith('semantics=')), KD)
 for _sh in {a["sheet"] for a in spec["actions"]}:
-    _f = os.path.join(KD, f"{_sh}.semantics.json")
+    _f = os.path.join(SEM_DIR, f"{_sh}.semantics.json")
     if os.path.exists(_f): SEM[_sh] = {fr["k"]: fr for fr in json.load(open(_f, encoding="utf-8"))["frames"]}
+for action in spec['actions']:
+    for key, override in action.get('semanticOverrides', {}).items():
+        SEM[action['sheet']][int(key)].update(override)
 HEAD_SCALE = {sh for a in spec["actions"] if a.get("scaleBy") == "head" for sh in [a["sheet"]]}
 bhead = np.isin(bseg, [bleg.index(n) + 1 for n in ("hair_a", "hair_b", "face") if n in bleg])
 head_h = float(np.ptp(np.nonzero(ndi.binary_opening(bhead, iterations=2).any(1))[0]))
@@ -239,9 +243,7 @@ def pose(key, foot_lock=None, hip=None):
             vec[s] = None; continue
         full = (float(np.linalg.norm(k_ - h)) + float(np.linalg.norm(an - k_))) if k_ is not None else None
         frac = min(0.999, float(np.linalg.norm(an - h)) / full) if full and full > 1 else 0.95
-        if sem and sem.get("knee_bend", {}).get(f"leg_{s}") in ("straight", "slight", "deep"):
-            want = {"straight": 0.97, "slight": 0.9, "deep": 0.72}[sem["knee_bend"][f"leg_{s}"]]
-            if abs(frac - want) > 0.12: frac = want
+        # Bend descriptions identify the pose; they are not fixed limb lengths.
         d = max(knee_min_d(L), frac * (L["l1"] + L["l2"])); a_ = math.atan2(-(an[1] - h[1]), an[0] - h[0])
         c = max(-1, min(1, (L["l1"] ** 2 + d * d - L["l2"] ** 2) / (2 * L["l1"] * d)))
         A_ = d * np.array([math.cos(a_), math.sin(a_)]); best = None
@@ -306,7 +308,7 @@ def pose(key, foot_lock=None, hip=None):
     if hip is not None: tx, ty = hip                   # standing action: the hip only breathes around the stance
     for s, foot in (foot_lock or {}).items():          # a planted foot that barely moved stays exactly where it was
         vec[s] = leg_to(s, LEGB[s]["hip"] + np.array([tx, ty]), np.array(foot))
-    kneel = [s for s in "rl" if sem and sem.get("knee_on_ground", {}).get(f"leg_{s}")]
+    kneel = [s for s in "rl" if sem and sem.get("knee_on_ground", {}).get(f"leg_{s}") and not lying]
     for s in kneel:
         L = LEGB[s]; hp = L["hip"] + np.array([tx, ty]); knee_y = 9.0
         kx = Wd[f"knee_{s}"][0] if Wd.get(f"knee_{s}") is not None else hp[0] + 8
@@ -366,7 +368,7 @@ def fk(loc):
         if name == "hip": x += loc["hip_t"][0]; y += loc["hip_t"][1]
         pos[name] = pos[par] + np.array([x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)])
         rot[name] = rot[par] + loc.get(name, 0.0)
-    for nm in ("hand_r", "head", "sword", "sword_tip", "upperarm_l", "forearm_l"): go(nm)
+    for nm in bones: go(nm)
     return (pos, rot) if loc.get("_want_rot") else pos
 
 def ease(cv, f):
@@ -424,35 +426,24 @@ for act in spec["actions"]:
         locks = [{s_: [float(a[0]), float(LEGB[s_]["ankle"][1])] for s_, a in st["ankle_w"].items()} for _ in range(n)]
     for i in range(n):
         if locks[i]: seq[i] = pose(keys[ks[i]], foot_lock=locks[i])
-    # the hip moves the way the reader says it moves between consecutive frames (stays / forward / back / up / down): the
-    # pixel readings of the legs are noisy enough to slide the whole body back and forth by 60 units between two keys
-    SS = SEM.get(sh, {})
-    if SS and not act.get("feetFrom"):
-        new_h = [np.array(seq[0]["hip_t"], float)]
-        for i in range(1, n):
-            raw = np.array(seq[i]["hip_t"], float) - np.array(seq[i - 1]["hip_t"], float)
-            hs = SS.get(ks[i], {}).get("moves_from_prev", {}).get("hips", "") if ks[i] == ks[i - 1] + 1 else None
-            special = lambda f: bool(f) and (f.get("lying") or f.get("airborne") or any(f.get("knee_on_ground", {}).values()))
-            if special(SS.get(ks[i])) or special(SS.get(ks[i - 1])): new_h.append(np.array(seq[i]["hip_t"], float)); continue   # own hip rules
-            if hs is None: new_h.append(new_h[-1] + raw); continue
-            dx = max(0, min(30, raw[0])) if "forward" in hs else min(0, max(-30, raw[0])) if "back" in hs else max(-6, min(6, raw[0]))
-            dy = max(-80, min(0, raw[1])) if "down" in hs else max(0, min(80, raw[1])) if "up" in hs else max(-6, min(6, raw[1]))
-            new_h.append(new_h[-1] + np.array([dx, dy]))
-        for i in range(n):
-            if np.allclose(new_h[i], seq[i]["hip_t"], atol=0.5): continue
-            fl = dict(locks[i])
-            for s_ in seq[i]["planted"]:
-                if s_ not in fl and s_ in seq[i]["ankle_w"]: fl[s_] = [float(seq[i]["ankle_w"][s_][0]), float(LEGB[s_]["ankle"][1])]
-            seq[i] = pose(keys[ks[i]], foot_lock=fl, hip=(float(new_h[i][0]), float(new_h[i][1])))
-    ref = seq[-1 if act.get("rootRef") == "last" else 0]["hip_t"][0]     # the clip starts (Start: ends) where she stands
-    if act.get("feetFrom"):
-        hx, hy = st["hip_t"]; ref = hx                 # actions sharing one stance share its origin, so Begin/Loop/End line up
-        for i in range(n):
-            x, y = seq[i]["hip_t"]
-            R = act.get("hipRange", 6); seq[i] = pose(keys[ks[i]], foot_lock=locks[i], hip=(hx + max(-6, min(6, x - hx)), hy + max(-R, min(R, y - hy))))
-    for i in range(n):                                 # shift the whole clip so it starts where she stands; feet move with it
-        seq[i]["hip_t"] = (seq[i]["hip_t"][0] - ref, seq[i]["hip_t"][1])
-        seq[i]["ankle_w"] = {s_: np.array([a[0] - ref, a[1]]) for s_, a in seq[i]["ankle_w"].items()}
+    from continuity import stabilize
+    seq = stabilize(seq, keys, ks, T, END, act, LEGB, leg_solve, fk, SEM.get(sh, {}), ROT)
+    n = len(seq)
+    previous_clip = {'Skill_3_End': 'Skill_3_Begin', 'Stun_Skill_3': 'Skill_3_End',
+                     'Skill_2_Loop': 'Skill_2_Begin', 'Skill_2_End': 'Skill_2_Loop'}.get(name)
+    if previous_clip and previous_clip in anims:
+        previous_bones = anims[previous_clip].get('bones', {})
+        for b in ROT + ['hair_a', 'hair_b']:
+            if previous_bones.get(b, {}).get('rotate'): seq[0][b] = previous_bones[b]['rotate'][-1]['angle']
+        if previous_bones.get('hip', {}).get('translate'):
+            last = previous_bones['hip']['translate'][-1]
+            seq[0]['hip_t'] = (last.get('x', 0), last.get('y', 0))
+        seq[0]['ankle_w'] = {s: fk(seq[0])['foot_' + s] for s in 'rl'}
+        if name == 'Stun_Skill_3' and n > 1:
+            import copy
+            seq[-1] = copy.deepcopy(seq[0])
+    # stabilize may append the rest pose at the clip's declared end.
+    if n > len(ks): T = list(T) + [END]
     nlock = sum(len(l) for l in locks)
     if os.environ.get("RT_DEBUG") and name in os.environ["RT_DEBUG"].split(","):
         for i in range(n): print("  ", name, ks[i], "planted", seq[i]["planted"], {s_: [round(float(v), 1) for v in a] for s_, a in seq[i]["ankle_w"].items()}, "lock", locks[i])
@@ -460,10 +451,13 @@ for act in spec["actions"]:
     for k in ks: joints_out[f"{sh}_k{k}"] = {"world": {j: [round(float(v), 2) for v in p] for j, p in keys[k]["W"].items() if p is not None},
                                            "px": {j: [round(float(v), 1) for v in p] for j, p in keys[k]["px"].items() if p is not None}}
     curves = [CURVES[c] for c in act.get("curves", ["E"] * (n - 1))]
+    while len(curves) < n - 1: curves.append(E)
+    if name in ('Attack', 'Skill_1', 'Start', 'Skill_3_End', 'Die'):
+        curves = [{} for _ in curves]  # avoid a sixfold velocity spike at the start of a short segment
     # world sword direction decides the swing path (hints for big ambiguous swings); the hand absorbs the difference
     hints = dict(act.get("swordDir", {}))
     SS = SEM.get(sh, {})
-    for i in range(n - 1):
+    for i in range(len(ks) - 1):
         a_, b_ = ks[i], ks[i + 1]; t_ = None
         if b_ == a_ + 1 and SS.get(b_): t_ = SS[b_].get("sword_turn_from_prev")
         elif b_ == a_ - 1 and SS.get(a_): t_ = {"cw": "ccw", "ccw": "cw"}.get(SS[a_].get("sword_turn_from_prev"))
@@ -471,11 +465,18 @@ for act in spec["actions"]:
     tl = {}
     sw = unwrap([p["sword_world"] for p in seq], hints)
     # a swing whose blade would pass straight down (through the floor) is the blade turning behind her: foreshorten instead
-    flips = [i for i in range(n - 1) if abs(sw[i + 1] - sw[i]) > 120 and any(abs(norm(a + 90)) < 25 for a in np.linspace(sw[i], sw[i + 1], 30)[3:-3])]
+    flips = []  # A sweep must remain continuous; never jump the blade or collapse it to a sliver.
     scl = []
+    world_bones = ('torso', 'head', 'upperarm_r', 'forearm_r', 'hand_r', 'sword', 'upperarm_l', 'forearm_l')
+    measured_world = [fk(dict(p, _want_rot=True))[1] for p in seq]
+    world_rotation = {b: unwrap([p[b] for p in measured_world], {}) for b in world_bones}
     for b in ROT + ["hair_a", "hair_b"]:
-        vals = [p[b] for p in seq]
-        vals = unwrap(vals, hints if b in ("sword", "upperarm_r") else {})
+        if b in world_rotation:
+            parent = PARENT.get(b)
+            vals = [world_rotation[b][i] - (world_rotation[parent][i] if parent in world_rotation else 0) for i in range(n)]
+        else: vals = unwrap([p[b] for p in seq], {})
+        # Fit world directions first, then derive local rotations. Independently
+        # unwrapping each joint can insert a complete extra turn in the blade.
         lag = HAIR_LAG if b.startswith("hair") else 0
         keys_ = []
         for i in range(n):
@@ -567,7 +568,10 @@ for act in spec["actions"]:
         out.setdefault("slots", {}).setdefault("hand_l", {})["attachment"] = ks2
     anims[name] = out
     print(f"{name}: keys {ks}; sword world {[round(a) for a in sw]}, turns behind in {flips}; feet locked {nlock}; hip {[tuple(round(v) for v in p['hip_t']) for p in seq]}")
+from continuity import stitch
+stitch(anims)
 for a in anims.values():                               # every event a clip fires must be declared in the skeleton
     for e in a.get("events", []): sk.setdefault("events", {}).setdefault(e["name"], {})
 json.dump(sk, open(f"{MD}/{NAME}.json", "w"), indent=1)
-json.dump(joints_out, open(f"{KD}/joints_rt.json", "w"), indent=1)
+joints_path = next((a[11:] for a in sys.argv[5:] if a.startswith("joints_out=")), None)
+if joints_path: json.dump(joints_out, open(joints_path, "w"), indent=1)
