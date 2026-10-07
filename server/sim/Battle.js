@@ -942,6 +942,7 @@ export class Battle {
    */
   retreat(unit, { reason = 'retreat', permanent = false } = {}) {
     if (!unit || !unit.alive || unit.side !== 'ally') return;
+    if (this._hooks.retreating) this.emit('retreating', { unit, reason, permanent });
     this._remove(unit, reason, null, permanent);
   }
 
@@ -1229,6 +1230,10 @@ export class Battle {
   addBuff(unit, b) {
     if (!unit || (!unit.alive && !b.allowDead)) return null;
     const buff = makeBuff(b);
+    const gainedShieldLayers = (layers, active) => {
+      const n = Math.max(0, Number(layers) || 0);
+      if (n > 0 && this._hooks.shieldLayersGained) this.emit('shieldLayersGained', { unit, layers: n, buff: active, source: b.source ?? null });
+    };
     const list = unit.buffs;
     let idx = -1;
     for (let i = 0; i < list.length; i++) if (list[i].key === buff.key) { idx = i; break; }
@@ -1252,10 +1257,11 @@ export class Battle {
           if (buff.mods) old.mods = buff.mods;
           if (buff.flags) old.flags = buff.flags;
           if (buff.shield > old.shield) old.shield = buff.shield;
-          if (buff.shieldHits > old.shieldHits) old.shieldHits = buff.shieldHits;
+          if (buff.shieldHits > old.shieldHits) { const gained = buff.shieldHits - old.shieldHits; old.shieldHits = buff.shieldHits; gainedShieldLayers(gained, old); }
           unit.markDirty();
           return old;
         default:
+          gainedShieldLayers(Number(buff.shieldHits ?? 0) - Number(old.shieldHits ?? 0), buff);
           list[idx] = buff;
           unit.markDirty();
           return buff;
@@ -1269,6 +1275,7 @@ export class Battle {
       }
     }
     list.push(buff);
+    gainedShieldLayers(buff.shieldHits, buff);
     unit.markDirty();
     if (buff.visible || buff.status) {
       const key = buff.status ?? buff.key;

@@ -9,6 +9,7 @@ import { bossPoolHp, SharedBossPool } from '../../match/finalAssault.js';
 import { buildDeployMap } from '../../match/board.js';
 import { installIndependentBattle } from '../../sim/content/independent/battle.js';
 import { getCatalog } from './catalog.js';
+import { independentEnemyBalance, balanceIndependentWave } from './enemyBalance.js';
 import { unitStatsEntry } from '../../../shared/protocol.js';
 
 const PLAYER_ID = 'independent';
@@ -36,7 +37,7 @@ function modeOf(state) {
   return modeIdFor('solo', difficulty);
 }
 
-function prepare(state, data) {
+function prepare(state, data, catalog = null) {
   const round = roundOf(state);
   const modeId = modeOf(state);
   const roundLimit = Number(state.roundLimit ?? 14);
@@ -48,22 +49,24 @@ function prepare(state, data) {
   const field = isBossRound ? 'bossL' : 'normal';
   const rng = createRng(deriveSeed(Number(state.seed) >>> 0, `independent:wave:${round}:${modeId}`));
   const bossId = isHiddenRound ? setup.hiddenBossId : setup.bossId;
-  const wave = isBossRound
+  const sourceWave = isBossRound
     ? buildBossWave(gd, rng, setup, round, { bossId, solo: true })
     : buildNormalWave(gd, rng, setup, round);
+  const tuning = independentEnemyBalance(state, catalog);
+  const wave = balanceIndependentWave(sourceWave, tuning);
   const stageId = setup.stageId ?? wave.templateId ?? null;
   const stage = gd.stage(stageId);
   if (!stage) throw new Error(`independent wave ${round} has no resolvable stage (stageId=${stageId ?? 'null'})`);
   if (!wave.templateId) throw new Error(`independent wave ${round} has no upstream wave template`);
   if (isBossRound && (!bossId || !gd.boss(bossId))) throw new Error(`independent boss wave ${round} has no upstream boss`);
   const kind = isHiddenRound ? 'hidden' : isBossRound ? 'boss' : 'normal';
-  return { gd, round, modeId, setup, field, wave, stageId, stage, bossId, roundLimit, kind };
+  return { gd, round, modeId, setup, field, wave, stageId, stage, bossId, roundLimit, kind, tuning };
 }
 
 /** Resolve the deterministic upstream field and legal placement map used by both prep and battle. */
-export function getIndependentField(state, { data = null } = {}) {
+export function getIndependentField(state, { data = null, catalog = null } = {}) {
   const source = rawData(data);
-  const prepared = prepare(state, source);
+  const prepared = prepare(state, source, catalog);
   return {
     stageId: prepared.stageId,
     stage: prepared.stage,
@@ -121,9 +124,9 @@ function sampleBattle(battle) {
  * Match._unitStatsOf): no enemies, a normal field, its own seed, no event record — built, started and dropped.
  */
 function buildBattle(input, source, catalog, { preview = false } = {}) {
-  const prepared = prepare(input, source);
+  const prepared = prepare(input, source, catalog);
   const units = battleUnits(input);
-  const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(bossPoolHp(prepared.gd, prepared.bossId, 1));
+  const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1) * (prepared.tuning?.bossHpMul ?? 1)));
   const battle = new Battle({
     seed: deriveSeed(Number(input.seed) >>> 0, `independent:${preview ? 'preview' : 'battle'}:${prepared.round}:${prepared.modeId}`),
     kind: preview ? 'normal' : prepared.kind,

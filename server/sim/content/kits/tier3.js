@@ -33,6 +33,7 @@ import { absoluteRangeKeys, sortEnemyTargets, canTargetEnemy } from '../../targe
 import { COLS, PUSH_DIRECTIONAL_MIN_DIST } from '../../constants.js';
 import { bodyDist, bodyInKeys, bodyOnTile } from '../../body.js';
 import { normalizeChess, normalizeSkill } from '../../simdata.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 import { tacticalPoint as sharedTacticalPoint, releaseSkillSummon } from '../tokens.js';
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1140,7 +1141,7 @@ const KITS = {
             if (s.length) ctx.targets = [s[0], ...ctx.targets.filter((t) => t !== s[0])].slice(0, Math.max(1, ctx.targets.length));
           }, { owner: unit });
           battle.on('hit', (ctx) => {
-            if (ctx.source === unit && ctx.target.side === 'enemy' && ctx.target.s.flags.sleep) ctx.dmg.mul *= mercy;
+            if (ctx.source === unit && ctx.target.side === 'enemy' && ctx.target.s.flags.sleep) applyDamageIncrease(battle, ctx.source, ctx.dmg, mercy);
           }, { owner: unit });
           // (a lone sleeper is found by the engine's own target search: `trait.hitSleep` makes sleepers targetable
           // and damageable for her only)
@@ -1469,7 +1470,7 @@ const KITS = {
         const mod = tal.find((t) => t && t.bb && t.bb.damage_scale != null);
         if (mod) {
           battle.on('hit', (ctx) => {
-            if (ctx.target === w && ctx.source && ctx.source.blockedBy === w) ctx.dmg.mul *= num(mod.bb.damage_scale, 1);
+            if (ctx.target === w && ctx.source && ctx.source.blockedBy === w) applyDamageIncrease(battle, ctx.source, ctx.dmg, num(mod.bb.damage_scale, 1));
           }, { owner: w });
         }
       },
@@ -1535,7 +1536,7 @@ const KITS = {
       }, { owner: unit, priority: -100 });
       battle.on('hit', (ctx) => {
         const g = ctx.source?.mem?.vigilGiftOn;
-        if (g && ctx.dmg.isAttack && ctx.source === wolfOf(unit)) ctx.dmg.mul *= g.scale;
+        if (g && ctx.dmg.isAttack && ctx.source === wolfOf(unit)) applyDamageIncrease(battle, ctx.source, ctx.dmg, g.scale);
       }, { owner: unit });
       battle.on('kill', (ctx) => {
         const g = ctx.killer?.mem?.vigilGiftOn;

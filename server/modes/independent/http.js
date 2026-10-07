@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
@@ -9,6 +10,9 @@ export { independentDisplayCatalog } from './display.js';
 
 const PREFIX = '/independent/api/';
 /** The hand-written player texts (data/independent-game-text.json); the design texts stay the rules' source. */
+const GAME_TEXT_OVERRIDE = process.env.SP_INDEPENDENT_GAME_TEXT_PATH
+  ? JSON.parse(readFileSync(path.resolve(process.env.SP_INDEPENDENT_GAME_TEXT_PATH), 'utf8'))
+  : null;
 const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const MAX_ACTION_BODY = 64 * 1024;
 const MAX_CHECKPOINT_BODY = 2 * 1024 * 1024;
@@ -48,7 +52,7 @@ export function createIndependentHttp({ data, directory }) {
   let catalog, display;
   const locks = new Map();
   const definitions = () => {
-    if (!catalog) { catalog = getCatalog(data); display = independentDisplayCatalog(data, catalog, data['independent-game-text']); }
+    if (!catalog) { catalog = getCatalog(data); display = independentDisplayCatalog(data, catalog, GAME_TEXT_OVERRIDE || data['independent-game-text']); }
     return { data, catalog };
   };
   const file = (id) => path.join(directory, `${id}.json`);

@@ -645,7 +645,7 @@ export async function startServer(opts = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new RangeError(`invalid PORT ${port}`);
   const log = opts.log || makeLogger(!!opts.quiet);
   const publicDir = opts.publicDir || path.join(ROOT, 'public');
-  const dataDir = opts.dataDir || path.join(ROOT, 'data');
+  const dataDir = opts.dataDir || (process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data'));
   const sharedDir = opts.sharedDir || path.join(ROOT, 'shared');
 
   // The process-wide singleton serves the default data dir; a custom dir (tests) gets its own copy.

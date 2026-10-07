@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getData } from '../../server/data.js';
-import { getIndependentField, runIndependentBattle } from '../../server/modes/independent/battle.js';
+import { getIndependentField, previewUnitStats, runIndependentBattle } from '../../server/modes/independent/battle.js';
+import { getCatalog } from '../../server/modes/independent/catalog.js';
 
 const DATA = getData();
 const CHESS_ID = 'chess_char_1_02_a';
@@ -85,6 +86,22 @@ test('independent runner resolves KITS and returns actual Battle events and nati
   assert.deepEqual(out.rewards, [{ id: 'precision', quantity: 2, origin: 'native', sourceUid: 'u1' }]);
   assert.ok(out.samples.length > 0 && out.samples.length <= 24);
   assert.equal(out.pieceStates.u1.battle.counters['independentCounter:native:eventProduction:deploy'], 0);
+});
+
+test('preview and actual Battle use the same percentage badge stats',()=>{
+  const baseCatalog=getCatalog(DATA);
+  const catalog={...baseCatalog,operators:{...baseCatalog.operators,[CHESS_ID]:{
+    ...baseCatalog.operators[CHESS_ID],nativeTrait:{effect:{combat:[]}},
+  }}};
+  const input=state({pieces:[{...state().pieces[0],equipment:[
+    {uid:'p',id:'precision',quantity:2,state:{}},{uid:'v',id:'vitality',quantity:2,state:{}},{uid:'a',id:'assault',quantity:2,state:{}},
+  ]}]});
+  const preview=previewUnitStats(input,{data:DATA,catalog}).u1;
+  const actual=runIndependentBattle(input,{data:DATA,catalog});
+  const first=Object.values(actual.replay.frames.find((frame)=>frame.stats)?.stats || {}).find((entry)=>entry.defId===CHESS_ID);
+  assert.ok(first,'actual Battle records the operator stats');
+  assert.equal(first.atk,preview.atk);
+  assert.equal(first.maxHp,preview.maxHp);
 });
 
 test('functional equipment production counts ordinary attack events and keeps equipment origin', () => {

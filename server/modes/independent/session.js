@@ -34,9 +34,7 @@ function baseIncomeFor(round, gd, catalog) {
 }
 function poolFor(state, id) { const key = baseId(id); return state.pool[key] || null; }
 /**
- * 每局只开部分阵营 (干员特质 v4, 2026-10-07; Battlegrounds opens 5 tribes a game): a session opens OPEN_FACTION_COUNT of
- * the 8 阵营, chosen from its seed. Operators without a faction are always in, an operator of several factions is in when
- * any of them is open, 锡人 (counts as every faction) is always in. A save from before (no openFactions) keeps all.
+ * Retained for legacy callers. New sessions no longer roll a faction ban; missing openFactions means every configured faction.
  */
 export const OPEN_FACTION_COUNT = 5;
 export function pickOpenFactions(seed, count = OPEN_FACTION_COUNT) {
@@ -58,7 +56,7 @@ export function operatorOpen(chessId, catalog, openFactions) {
 function operatorPool(state, catalog, gd, openFactions = null) {
   const out = {};
   for (const [id, op] of Object.entries(ops(catalog))) {
-    if (!safeId(id) || op.elite || op.isElite || id.endsWith('_b')) continue;
+    if (!safeId(id) || op.elite || op.isElite || id.endsWith('_b') || op.recruitable === false) continue;
     if (!operatorOpen(id, catalog, openFactions)) continue;
     // copies by the tier the operator has in this mode: the mode's own table (design rules.poolCopies, Battlegrounds'
     // 15/15/13/11/9/7 since 2026-10-07) wins over the original's per-operator overrides
@@ -67,6 +65,20 @@ function operatorPool(state, catalog, gd, openFactions = null) {
     if (cap) out[id] = { cap, left: cap, tier: Number(op.tier || 1) };
   }
   return out;
+}
+function sanitizeRecruitPool(state, catalog) {
+  for (const [id, entry] of Object.entries(state.pool || {})) {
+    const op = opFor(catalog, id);
+    if (!op || op.elite || op.isElite || op.recruitable === false) entry.left = 0;
+  }
+  for (const slot of state.shop?.slots || []) {
+    const op = slot.kind === 'chess' && slot.id ? opFor(catalog, slot.id) : null;
+    if (slot.kind === 'chess' && slot.id && (!op || op.elite || op.isElite || op.recruitable === false)) {
+      slot.id = null;
+      slot.sold = true;
+      slot.equipment = [];
+    }
+  }
 }
 /**
  * 晋升奖励 (the original's promotion reward, server/match/PlayerState.js pushRewardOffer): an elite formed queues a free
@@ -80,7 +92,7 @@ function pushPromotionReward(state, catalog, rng) {
   for (let i = 0; i < PROMOTION_REWARD.count; i++) {
     let id = null;
     for (let t = tier; t >= 1 && !id; t--) {
-      const eligible = Object.entries(state.pool).filter(([cid, p]) => p.left > 0 && p.tier === t && opFor(catalog, cid) && !choices.includes(cid));
+      const eligible = Object.entries(state.pool).filter(([cid, p]) => p.left > 0 && p.tier === t && Boolean(opFor(catalog, cid)) && opFor(catalog, cid)?.recruitable !== false && !choices.includes(cid));
       const total = eligible.reduce((n, [, p]) => n + p.left, 0);
       if (!total) continue;
       let roll = rng() * total;
@@ -92,7 +104,7 @@ function pushPromotionReward(state, catalog, rng) {
   if (choices.length) state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices, tier, source: 'merge' });
 }
 function drawChess(state, catalog, rng, maxTier) {
-  const eligible = Object.entries(state.pool).filter(([id, p]) => p.left > 0 && p.tier <= maxTier && opFor(catalog, id));
+  const eligible = Object.entries(state.pool).filter(([id, p]) => p.left > 0 && p.tier <= maxTier && Boolean(opFor(catalog, id)) && opFor(catalog, id)?.recruitable !== false);
   const total = eligible.reduce((n, [, p]) => n + p.left, 0);
   if (!total) return null;
   let roll = rng() * total;
@@ -307,7 +319,7 @@ function handleSaleEquipment(state, catalog) {
       if (used >= Number(def.params?.maxPerPrep || 1)) continue;
       const threshold = Number(def.params.normalSaleThreshold);
       if (state.counters.sold < threshold) continue;
-      const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.tier <= tier && tavernFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
+      const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.recruitable !== false && op.tier <= tier && tavernFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
       if (!candidates.length) continue;
       item.state = { ...(item.state || {}), saleTriggersThisPrep: used + 1 };
       state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, Number(def.params.choices || 3)), source: item.id, sourceUid: piece.uid });
@@ -328,8 +340,8 @@ export function createSession(options = {}) {
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) >>> 0 : 1;
   const rng = createRng(seed); const gd = new GameData(data, modeIdFor('solo', difficulty.toLowerCase()));
   const income = baseIncomeFor(1, gd, catalog);
-  // options.openFactions: a list to open (tools, tests), null = every faction (as a save from before); default: the seed's pick
-  const openFactions = options.openFactions === null ? null : Array.isArray(options.openFactions) ? [...options.openFactions] : pickOpenFactions(seed);
+  // New sessions include all real factions. Existing saves may still carry openFactions for legacy decoding.
+  const openFactions = null;
   const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
@@ -448,6 +460,7 @@ export function applyAction(state, action, options = {}) {
   let work;
   try { work = clone(state); } catch { return { ok: false, error: { code: 'INVALID_STATE', message: 'State is not serializable.' }, state }; }
   const data = sessionData(options); const catalog = sessionCatalog(data, options); const gd = gdFor(work, data);
+  sanitizeRecruitPool(work, catalog);
   // an old save's elite gear becomes the normal item, same quantity (owner 2026-10-07 「装备不再有精锐形态」)
   normalizeGearForms(work, catalog);
   ensurePermits(work, catalog);

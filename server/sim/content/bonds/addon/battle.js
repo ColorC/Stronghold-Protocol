@@ -273,7 +273,7 @@ function raidReach(u) {
  * tile-key order), so the landing tile turns with its direction. Only the tiles a range offset leads back to from a
  * body tile are looked at, so a search that finds nothing stays cheap.
  */
-function raidTile(battle, u, e, reach) {
+export function raidTile(battle, u, e, reach) {
   const er = Math.round(e.y), ec = Math.round(e.x);
   const ranged = u.def?.position === 'RANGED';
   let best = null, bd = Infinity, bo = null;
@@ -297,7 +297,7 @@ function raidTile(battle, u, e, reach) {
  * first (least remaining path distance, then the earliest spawned) [ASSUMED, research 02 §3.18]. The same list for
  * every member of the player (canTargetEnemy reads the enemy, not the attacker).
  */
-function raidTargets(battle, u, pid) {
+export function raidTargets(battle, u, pid) {
   const own = [], other = [];
   for (const e of battle.enemies) {
     if (e.isFlying || !canTargetEnemy(u, e, { canHitFly: false })) continue;
@@ -349,11 +349,22 @@ function raidPoll(battle, st) {
  * tile (never stranded off the field).
  * Returns 'raid' | 'home' | false.
  */
-function raidRedeploy(battle, u, r, c) {
+export function raidRedeploy(battle, u, r, c) {
   battle.retreat(u, { reason: 'raid' });
   if (u.alive) return false;
   if (battle.redeploy(u, { free: true, tile: [r, c], keepSp: true })) return 'raid';
   return battle.redeploy(u, { free: true, keepSp: true }) ? 'home' : false;
+}
+
+/** Shared legal raid landing resolver for independent-mode equipment; it uses the same targeting and terrain rules. */
+export function findRaidLanding(battle, unit, playerId = unit?.ownerId) {
+  if (!battle || !unit || playerId == null) return null;
+  const reach = raidReach(unit);
+  for (const target of raidTargets(battle, unit, playerId).slice(0, RAID_TARGETS)) {
+    const tile = raidTile(battle, unit, target, reach);
+    if (tile) return { target, tile };
+  }
+  return null;
 }
 
 // =====================================================================================================================

@@ -114,6 +114,7 @@ import { rotateOffset } from '../../dir.js';
 import { bodyDist, bodyInKeys, bodyKeys } from '../../body.js';
 import { hasHp } from '../../damage.js';
 import { summonToken, TOKEN_IDS } from '../tokens.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 
 // ------------------------------------------------------------------------------------------------------------------
 // helpers
@@ -426,7 +427,7 @@ function ensureWanted(battle) {
     if (!ctx.dmg.isAttack && !ctx.dmg.isSkill) return;
     if (!t.findBuff('lemuen:wanted')) return;
     const lems = activeLem();
-    if (lems.length) ctx.dmg.mul *= Math.max(...lems.map((u) => u.mem.wantedScale));
+    if (lems.length) applyDamageIncrease(battle, s, ctx.dmg, Math.max(...lems.map((u) => u.mem.wantedScale)));
   });
   return W;
 }
@@ -934,7 +935,7 @@ function yu(bb, chess, def) {
           const s = ctx.source;
           if (!s || ctx.dmg.type !== 'arts' || !ctx.target || ctx.target.side !== 'enemy' || !ctx.target.findBuff('burnBurst')) return;
           if (s !== unit && !(s.kind === 'op' && s.ownerId === unit.ownerId && live(unit) && s3On(unit))) return;
-          if (opsOf(battle, unit.ownerId).length >= cnt) ctx.dmg.mul *= ds;
+          if (opsOf(battle, unit.ownerId).length >= cnt) applyDamageIncrease(battle, s, ctx.dmg, ds);
         }, { owner: unit });
       } },
     ],
@@ -1182,7 +1183,7 @@ function pasngr(bb, chess, def) {
           const t = ctx.target;
           if (ctx.source !== unit || !t || t.side !== 'enemy' || ctx.dmg.type === 'element') return;
           if (ctx.dmg.isAttack && t.hpRatio >= thr - 1e-9) battle.addBuff(t, { key, duration: dur, refresh: 'replace', source: unit });
-          if (t.findBuff(key)) ctx.dmg.mul *= ds;
+          if (t.findBuff(key)) applyDamageIncrease(battle, unit, ctx.dmg, ds);
         }, { owner: unit });
       } },
       { install(battle, unit) { // 孤卒: no enemy on the 4 surrounding tiles
@@ -1301,7 +1302,7 @@ function pepe(bb, chess, def) {
           const r = num(ctx.profile?.splashRadius, 1);
           unit.mem.pepeBoost = !!t && battle.foesInRadius(t.x, t.y, r).length >= cnt;
         }, { owner: unit });
-        battle.on('hit', (ctx) => { if (ctx.source === unit && ctx.dmg.isAttack && unit.mem.pepeBoost) ctx.dmg.mul *= sc; }, { owner: unit });
+        battle.on('hit', (ctx) => { if (ctx.source === unit && ctx.dmg.isAttack && unit.mem.pepeBoost) applyDamageIncrease(battle, ctx.source, ctx.dmg, sc); }, { owner: unit });
         battle.on('attack', (ctx) => { if (ctx.attacker === unit) unit.mem.pepeBoost = false; }, { owner: unit, priority: -100 });
       } },
     ],
@@ -1358,7 +1359,7 @@ function siege2(bb, chess, def) {
       if (tremMul > 1) battle.on('hit', (ctx) => {
         const t = ctx.target;
         if (!mine(ctx.source, unit) || !t || t.side !== 'enemy' || !(t.findBuff('tremble') || t.s.flags.tremble)) return;
-        ctx.dmg.mul *= tremMul;
+        applyDamageIncrease(battle, ctx.source, ctx.dmg, tremMul);
       }, { owner: unit });
     },
     skill: {
@@ -1742,7 +1743,7 @@ function nymph(bb, chess, def) {
       } },
       { install(battle, unit) { // elite module: ×1.1 vs targets in an element burst
         const ds = num(tb.damage_scale, 1);
-        if (ds > 1) battle.on('hit', (ctx) => { if (ctx.source === unit && ctx.target.s.flags.burstLock) ctx.dmg.mul *= ds; }, { owner: unit });
+        if (ds > 1) battle.on('hit', (ctx) => { if (ctx.source === unit && ctx.target.s.flags.burstLock) applyDamageIncrease(battle, ctx.source, ctx.dmg, ds); }, { owner: unit });
       } },
     ],
   };

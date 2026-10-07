@@ -26,7 +26,7 @@ function score(p, route) {
   const stats = rec?.stats || {};
   const gear = totalEquipmentLevel(p, catalog);
   const production = catalog.operators[p.chessId]?.nativeTrait?.effect;
-  return Number(rec?.tier || 1) * 100 + (p.elite ? 110 : 0) + gear * 15 +
+  return Number(catalog.operators[p.chessId]?.tier || rec?.tier || 1) * 100 + (p.elite ? 110 : 0) + gear * 15 +
     Number(stats.atk || 0) / 12 + Number(stats.maxHp || 0) / 150 +
     (route === 'defense' && blocking(p) ? 80 : route === 'skill' && production?.combat?.length ? 60 : 0) +
     (production?.prep?.length ? 35 : 0);

@@ -16,6 +16,7 @@
 import { COLS, ELEMENT_GAUGE_MAX } from '../../constants.js';
 import { canTargetEnemy } from '../../targeting.js';
 import { bodyInKeys } from '../../body.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 import {
   num, talentBb, moduleBb, traitBb, up, cheb, byEnemyAttack, onHitBy, onHitOn, onDamagedOn, enemiesInGrid,
   alliesInGridOf, enemyInRange, statBuff, toggleBuff, installAura, spTimeBonus, freeTileAround, instantKind,
@@ -786,7 +787,7 @@ export default {
             if (u === unit && reason !== 'death' && unit.alive) battle.heal(unit, unit, unit.s.maxHp * hr, { self: true, tags: ['talent'] });
           }, { owner: unit });
         }
-        if (tb.damage_scale != null) onHitOn(battle, unit, ({ source, dmg }) => { if (source && source.blockedBy === unit) dmg.mul *= num(tb.damage_scale, 1); });
+        if (tb.damage_scale != null) onHitOn(battle, unit, ({ source, dmg }) => { if (source && source.blockedBy === unit) applyDamageIncrease(battle, source, dmg, num(tb.damage_scale, 1)); });
       } }],
     };
   },

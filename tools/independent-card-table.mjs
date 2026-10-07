@@ -12,10 +12,11 @@ import { getCatalog } from '../server/modes/independent/catalog.js';
 import { tavernFactions } from '../shared/independentRules.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const TEXT = JSON.parse(readFileSync(resolve(ROOT, 'data/independent-game-text.json'), 'utf8'));
-const DESIGN = JSON.parse(readFileSync(resolve(ROOT, 'data/independent-design.json'), 'utf8'));
+const TEXT = JSON.parse(readFileSync(resolve(process.env.SP_INDEPENDENT_GAME_TEXT_PATH || resolve(ROOT, 'data/independent-game-text.json')), 'utf8'));
+const DESIGN = JSON.parse(readFileSync(resolve(process.env.SP_INDEPENDENT_DESIGN_PATH || resolve(ROOT, 'data/independent-design.json')), 'utf8'));
 const PROFESSION = { PIONEER: '先锋', WARRIOR: '近卫', TANK: '重装', SNIPER: '狙击', CASTER: '术师', MEDIC: '医疗', SUPPORT: '辅助', SPECIAL: '特种' };
-export const ROSTER_KINDS = ['纯战斗', '临时战斗', '成长', '经济', '生成', '联动'];
+export const ROSTER_KINDS = ['纯战斗', '临时战斗', '成长', '经济', '生成', '联动', '一次性工具'];
+export const INACTIVE_OPERATOR_IDS = new Set(DESIGN.operators.filter((op) => op.active === false).map((op) => op.chessId));
 
 const OPERATOR_COLUMNS = [
   { key: 'id', title: '编号（勿改）', width: 150 },
@@ -42,7 +43,7 @@ const GEAR_COLUMNS = [
 ];
 
 function operatorRows(catalog) {
-  return DESIGN.operators.slice().sort((a, b) => a.tier - b.tier || 0).map((src) => {
+  return DESIGN.operators.filter((op) => op.active !== false).slice().sort((a, b) => a.tier - b.tier || 0).map((src) => {
     const op = catalog.operators[src.chessId]; const raw = op.source?.normalChess || {};
     const text = TEXT.operators[src.chessId] || {};
     return { id: src.chessId, name: src.name, tier: String(src.tier), kind: src.roster || '', rarity: String(raw.rarity ?? ''),
@@ -88,7 +89,7 @@ export function cardTableDiff(which, edited, catalog = getCatalog()) {
   const changes = [];
   for (const row of edited.rows || []) {
     const was = byId.get(row.id);
-    if (!was) { changes.push({ id: row.id || '', name: row.name || '', key: '*', title: '新行', was: '', now: JSON.stringify(row) }); continue; }
+    if (!was) { if (!INACTIVE_OPERATOR_IDS.has(row.id)) changes.push({ id: row.id || '', name: row.name || '', key: '*', title: '新行', was: '', now: JSON.stringify(row) }); continue; }
     byId.delete(row.id);
     for (const col of base.columns) {
       const a = String(was[col.key] ?? ''); const b = String(row[col.key] ?? '');

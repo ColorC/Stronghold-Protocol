@@ -92,6 +92,7 @@ export function makeDamageInfo(d = {}) {
     ignoreSelect: !!d.ignoreSelect,
     sourceless: !!d.sourceless,
     attackId: d.attackId ?? 0,
+    damageIncreaseBonus: Number.isFinite(Number(d.damageIncreaseBonus)) ? Number(d.damageIncreaseBonus) : 0,
     // 咒愈师 skills whose damage triggers their trait for ONE named ally ("并仅对该角色/干员触发…特性"): the instance
     // carries that ally, and the trait hook (professions.js installIncantation) heals it instead of the lowest-HP ally
     // in range. null = the ordinary target of the trait.
@@ -189,6 +190,7 @@ export function absorbShields(battle, target, amount) {
     const b = target.buffs[i];
     if (b.shieldHits > 0) {
       b.shieldHits--;
+      if (battle._hooks.shieldLayersBroken) battle.emit('shieldLayersBroken', { unit: target, layers: 1, buff: b });
       rest = 0;
       if (b.shieldHits <= 0 && !(b.shield > 0) && !b.mods && !b.flags) { battle._removeBuffAt(target, i); i--; }
       changed = true;
@@ -247,7 +249,10 @@ export function dealDamage(battle, source, target, dmgIn) {
   // recognise their own (tagged) damage — never re-create such a loss with a fresh loseHp.
   if (ts.flags.hitCount || ts.flags.hitCountArts) {
     const counts = !(ts.flags.hitCountArts && !ts.flags.hitCount && type === 'phys');
-    return applyHpLoss(battle, source, target, absorbShields(battle, target, counts ? 1 : 0), dmg);
+    const finalHit = absorbShields(battle, target, counts ? 1 : 0);
+    return typeof battle.independentPostMitigationDamage === 'function'
+      ? (battle.independentPostMitigationDamage(source, target, finalHit, dmg, { applyHpLoss, absorbShields }) ?? applyHpLoss(battle, source, target, finalHit, dmg))
+      : applyHpLoss(battle, source, target, finalHit, dmg);
   }
   // 无来源 damage (element bursts) takes nothing from its source's stats; the source still gets the credit below
   const ss = source && source.s && !dmg.sourceless ? source.s : null;
@@ -260,7 +265,26 @@ export function dealDamage(battle, source, target, dmgIn) {
   });
   // 脆弱 / "受到的伤害±" (dmgTakenMul) scale 物理、法术、真实 only; 元素伤害 takes 元素脆弱 alone (header)
   let mul = dmg.mul * (type === 'elemental' ? 1 : ts.dmgTakenMul);
-  if (ss) mul *= ss.dmgDealtMul * (type === 'phys' ? ss.physDealtMul : type === 'arts' ? ss.artsDealtMul : 1);
+  const independentOperator = (battle.contentMode === 'independent' || !!battle.flags?.independent)
+    && source?.side === 'ally' && source?.kind === 'op';
+  if (ss) {
+    if (independentOperator) {
+      // Unit.s currently products MUL_KEYS. In this mode, every outgoing increase contributes to the
+      // shared additive bucket with explicit DamageInfo increases before type-specific and target buckets.
+      const buffs = Array.isArray(source.buffs) ? source.buffs : [];
+      const buffBonus = buffs.reduce((sum, buff) => {
+        const v = Number(buff?.mods?.dmgDealtMul);
+        return Number.isFinite(v) ? sum + (v - 1) * Math.max(1, Number(buff.stacks) || 1) : sum;
+      }, 0);
+      const explicitBonus = Number(dmg.damageIncreaseBonus) || 0;
+      mul *= Math.max(0, 1 + buffBonus + explicitBonus);
+    } else mul *= ss.dmgDealtMul;
+    mul *= type === 'phys' ? ss.physDealtMul : type === 'arts' ? ss.artsDealtMul : 1;
+  } else if (independentOperator && dmg.damageIncreaseBonus) {
+    // Preserve the engine's sourceless rule for source buffs/type-specific stats while honoring
+    // a per-hit output factor explicitly snapshotted by the caller.
+    mul *= Math.max(0, 1 + Number(dmg.damageIncreaseBonus));
+  }
   mul *= type === 'phys' ? ts.physTakenMul : type === 'arts' ? ts.artsTakenMul : type === 'elemental' ? ts.elementalTakenMul : ts.trueTakenMul;
   final *= mul;
   if (!(final > 0) || !Number.isFinite(final)) final = 0;
@@ -268,6 +292,10 @@ export function dealDamage(battle, source, target, dmgIn) {
   // ran before it (the attack, its SP, `hit` hook effects, separate element 损伤) stays; nothing after it happens
   if (final > 0 && leaderHitCancelled(battle, target, final)) return 0;
   final = absorbShields(battle, target, final);
+  if (typeof battle.independentPostMitigationDamage === 'function') {
+    const redirected = battle.independentPostMitigationDamage(source, target, final, dmg, { applyHpLoss, absorbShields });
+    if (redirected != null) return redirected;
+  }
   return applyHpLoss(battle, source, target, final, dmg);
 }
 
