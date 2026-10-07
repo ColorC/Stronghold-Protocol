@@ -23,6 +23,12 @@ const ROUTES = ['assault', 'defense', 'skill'];
 const role = (p) => data.chess[p.chessId]?.profession;
 const healing = (p) => role(p) === 'MEDIC';
 const blocking = (p) => !healing(p) && Number(data.chess[p.chessId]?.stats?.blockCnt) > 0 && data.chess[p.chessId]?.position === 'MELEE';
+const primaryDamage = (p) => !['MEDIC','TANK','PIONEER','TOKEN'].includes(role(p)) && Number(loadoutRecord(data.chess[p.chessId],p)?.stats?.atk || 0) > 0;
+const damagePreference = (p) => {
+  const profession=role(p);
+  return (['CASTER','SNIPER','WARRIOR'].includes(profession)?160:['SPECIAL','SUPPORT'].includes(profession)?80:0) +
+    Number(loadoutRecord(data.chess[p.chessId],p)?.stats?.atk || 0)/8;
+};
 
 function score(p, route, growthMode='badges', targetId='') {
   const rec = loadoutRecord(data.chess[p.chessId], p);
@@ -35,7 +41,7 @@ function score(p, route, growthMode='badges', targetId='') {
   const growthSupport=prep.some(x=>x.behavior.startsWith('darkmoon')&&x.behavior.toLowerCase().includes('growth'))?125:0;
   return Number(catalog.operators[p.chessId]?.tier || rec?.tier || 1) * 100 + (p.elite ? 110 : 0) + gear * 15 +
     Number(stats.atk || 0) / 12 + Number(stats.maxHp || 0) / 150 +
-    (route === 'defense' && blocking(p) ? 80 : route === 'skill' && production?.combat?.length ? 60 : 0) +
+    (route === 'defense' ? (blocking(p) ? 20 : damagePreference(p)) : route === 'skill' && production?.combat?.length ? 60 : 0) +
     (production?.prep?.length ? 35 : 0) + growthValue + growthSupport + (targetId&&p.chessId===targetId?10000:0);
 }
 function mainFaction(pieces) {
@@ -170,7 +176,9 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
         .sort((a,b)=>{
         const value=({slot})=>slot.kind==='chess' ? score({chessId:slot.id, equipment:[]},route,growthMode,targetId)+factionScore(slot.id,state.pieces)+
             state.pieces.filter(p=>p.chessId===slot.id).length*130 +
-            (data.chess[slot.id]?.profession==='MEDIC' && !state.pieces.some(healing)?300:0) : -100;
+            (route==='defense'&&blocking({chessId:slot.id})?(state.pieces.filter(blocking).length<2?220:-180):0) +
+            (data.chess[slot.id]?.profession==='MEDIC' && !state.pieces.some(healing) &&
+              (route!=='defense' || state.pieces.some(p=>!healing(p)))?300:0) : -100;
           return value(b)-value(a);
         });
       let bought=false;
@@ -192,9 +200,13 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
     const add=(p)=>{if(p && !selected.includes(p) && selected.length<state.deployCap)selected.push(p);};
     add(ranked.find(healing));
     ranked.filter(blocking).sort((a,b)=>{
-      const priority=p=>factionScore(p.chessId,state.pieces)+(route==='defense'?100:0)+score(p,route,growthMode,targetId);
+      const priority=p=>factionScore(p.chessId,state.pieces)+score(p,route,growthMode,targetId);
       return priority(b)-priority(a);
     }).slice(0,2).forEach(add);
+    if(route==='defense') ranked.filter(primaryDamage).sort((a,b)=>
+      damagePreference(b)+score(b,route,growthMode,targetId)-damagePreference(a)-score(a,route,growthMode,targetId)
+    ).slice(0,2).forEach(add);
+    ranked.filter(p=>!blocking(p)).forEach(add);
     ranked.forEach(add);
     // 整备区 10 格 (session.js BENCH_SIZE): everyone goes back to the bench before the new layout, so the pilot keeps at
     // most BENCH_SIZE operators — it sells the weakest of those it will not deploy (temp ones included)
