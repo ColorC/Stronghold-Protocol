@@ -39,7 +39,7 @@ export function previewInheritance(state, catalog, donorUid, receiverUid, data =
   const incoming = donorGear.reduce((n, x) => n + x.quantity, 0);
   if (pieceEquipmentCount(receiver) + incoming > EQUIPMENT_CAPACITY + conflicts.reduce((n, c) => n + (receiverGear.find((x) => x.uid === c.receiverUid)?.quantity || 0), 0)) return { ok: false, error: 'CAPACITY' };
   return { ok: true, donorUid, receiverUid, donorChessId: donor.chessId, receiverChessId: receiver.chessId,
-    // the 交接凭证 that allows it: the donor's 给予 one or the receiver's 接收 one (the donor's is lost with it)
+    // Either body's 交接凭证 allows both directions; give/receive identify which body wears it.
     permit: { give: qualification.give?.id || null, receive: qualification.receive?.id || null },
     oldBody: { chessId: donor.chessId, position: { row: donor.row, col: donor.col }, nativeTrait: operator(catalog, donor.chessId)?.nativeTrait?.text }, newBody: { chessId: receiver.chessId, nativeTrait: receiverOp.nativeTrait?.text }, transferredEquipment: gear.map((x) => ({ ...x })), equipmentConflicts: conflicts,
     transferredAttachments: transferAttachments.map((x) => ({ ...x })), attachmentConflicts: attachConflicts,

@@ -1,6 +1,7 @@
 // Pure workshop catalog and session view projection. Kept shared by the HTTP and client-compute paths.
 import { traitSummary, TRAIT_WHEN } from './summary.js';
 import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
+import { quantityEquippable } from '../../../shared/independentInventory.js';
 
 /** The hand-written player texts are the same source used by the HTTP catalog. */
 export function independentDisplayCatalog(data, catalog, gameText = data['independent-game-text'] || {}) {
@@ -28,7 +29,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
     const text = gameText.gear?.[id];
     const steamLimit = steam ? steam.params.chooseVariantsOnEquip : undefined;
     return [id, { name: d.newName || d.name, level: d.level,
-      normal: text ? text.normal : gearDescription(d), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
+      normal: text ? text.normal : gearDescription(d), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism, quantityEquippable: quantityEquippable(d),
       sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds,
       steamLimit: steamLimit && typeof steamLimit === 'object' ? steamLimit.normal : (steamLimit ?? (steam ? steam.params.choose ?? 1 : undefined)),
       identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,

@@ -81,6 +81,7 @@ function effectiveEquipmentParams(entry) { return selectVariant(entry.rec.params
 
 function equipmentFor(piece, catalog) {
   const out = [];
+  const wornUnique = new Set();
   for (const item of entryArray(piece.equipment)) {
     const id = itemId(item);
     const badge = recordLookup(catalog.badges, id);
@@ -88,7 +89,13 @@ function equipmentFor(piece, catalog) {
     if (!badge && (!gear || gear.available === false)) throw new Error(`unknown independent equipment ${id} on piece ${piece.uid}`);
     const legacyBadge = gear?.mechanism === 'badge' ? recordLookup(catalog.badges, gear.badgeId) : null;
     if (gear?.mechanism === 'badge' && !legacyBadge) throw new Error(`legacy badge equipment ${id} lacks a resolvable badgeId`);
-    out.push({ item, id: badge?.id ?? legacyBadge?.id ?? gear?.sourceId ?? gear?.id ?? id, rec: badge ?? legacyBadge ?? gear, kind: badge || legacyBadge ? 'badge' : 'equipment', sourceId: gear?.sourceId ?? id });
+    // Legacy duplicate unique gear stays in the save. Only its first copy may affect this wearer's battle.
+    if (gear?.unique) {
+      const key = gear.uniqueKey || gear.canonicalId || gear.id || id;
+      if (wornUnique.has(key)) continue;
+      wornUnique.add(key);
+    }
+    out.push({ item: gear?.unique ? { ...item, quantity: 1 } : item, id: badge?.id ?? legacyBadge?.id ?? gear?.sourceId ?? gear?.id ?? id, rec: badge ?? legacyBadge ?? gear, kind: badge || legacyBadge ? 'badge' : 'equipment', sourceId: gear?.sourceId ?? id });
   }
   return out;
 }
@@ -1382,7 +1389,11 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     // damageType (造成法术伤害时: every hit of that type, no counting)
     const duration = Number(p.durationSeconds ?? 0);
     const radius = Number(p.radius ?? 0);
+    const cooldown = Number(p.cooldownSeconds ?? 0);
+    if (!Number.isFinite(cooldown) || cooldown < 0) throw new Error(`combatEquipment ${itemIdValue}: countedStatus needs a nonnegative cooldownSeconds`);
     const apply = (target) => {
+      // Stored on the wearer and keyed by this gear's native source id: redeployment cannot refresh it.
+      if (!cooldownReady(`independentCountedStatusCd:${itemIdValue}`, cooldown)) return;
       const list = radius > 0 ? battle.enemies.filter((e) => liveEnemy(e) && tileDistance(e, target) <= radius) : [target];
       for (const t of list) gearStatus(battle, unit, t, p.status, duration, p.value, itemIdValue);
     };
@@ -1401,7 +1412,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     }, { owner: unit });
     battle.on('damaged', ({ source, target, amount, dmg }) => {
       const attackId = dmg?.attackId;
-      if (source !== unit || !(amount > 0) || !procTargets.has(attackId) || target?.id !== procTargets.get(attackId)) return;
+      if (source !== unit || !(amount > 0) || dmg?.isSkill || isGearDamage(dmg) || !procTargets.has(attackId) || target?.id !== procTargets.get(attackId)) return;
       procTargets.delete(attackId);
       apply(target);
     }, { owner: unit });

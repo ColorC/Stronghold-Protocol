@@ -1,4 +1,6 @@
 import { tavernFactions } from '../../../shared/independentRules.js';
+import { INVENTORY_STACK_LIMIT, inventoryStackKey, inventoryStackGroups, quantityEquippable } from '../../../shared/independentInventory.js';
+export { INVENTORY_STACK_LIMIT } from '../../../shared/independentInventory.js';
 
 const own = (o, k) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k);
 const rec = (map, id) => typeof id === 'string' && own(map, id) ? map[id] : null;
@@ -7,21 +9,25 @@ const number = (n, fallback = 0) => Number.isFinite(n) ? n : fallback;
 export const itemCount = (state) => (state.inventory || []).reduce((n, x) => n + Math.max(0, Math.floor(number(x.quantity, 1))), 0);
 export const equippedCount = (state) => (state.pieces || []).reduce((n, p) => n + (p.equipment || []).reduce((m, x) => m + Math.max(0, Math.floor(number(x.quantity, 1))), 0), 0);
 export const capacityUsed = (state) => itemCount(state);
-/** Pieces of gear one operator may wear (2026-10-06: raised from 99). Inventory has no limit. */
+/** Pieces of gear one operator may wear (2026-10-06: raised from 99). */
 export const EQUIPMENT_CAPACITY = 999;
 /**
- * Kinds of gear the stock holds at once (2026-10-06): one tile per item, however many it holds, so a badge stack is
- * one tile (gear has one form only since 2026-10-07: 「装备不再有精锐形态」). A prize kept for later is not gear and takes
- * no tile. Gear that would need a new tile while all are taken is not stored (its production row says lost); a save
- * holding more keeps them.
+ * Stock slots: compatible configurations share tiles of at most 999 pieces. A prize kept for later takes no tile.
+ * Overflow follows the production ledger's lost contract; old over-capacity saves keep their items and uids.
  */
 export const INVENTORY_CAPACITY = 20;
-const tileKey = (item) => String(item.id);
 export function inventoryTiles(state, catalog) {
-  return new Set((state.inventory || []).filter((x) => !catalog || equipmentRecord(catalog, x.id)).map(tileKey)).size;
+  return inventoryStackGroups((state.inventory || []).filter((x) => !catalog || equipmentRecord(catalog, x.id)))
+    .reduce((count, group) => count + Math.ceil(group.quantity / INVENTORY_STACK_LIMIT), 0);
 }
-export function hasTileFor(state, catalog, id) {
-  return (state.inventory || []).some((x) => tileKey(x) === tileKey({ id })) || inventoryTiles(state, catalog) < INVENTORY_CAPACITY;
+export function inventoryRoomFor(state, catalog, id, extra = {}) {
+  const key = inventoryStackKey({ id, state: extra.state || {} });
+  const group = inventoryStackGroups(state.inventory).find((x) => x.key === key);
+  const partial = group ? Math.ceil(group.quantity / INVENTORY_STACK_LIMIT) * INVENTORY_STACK_LIMIT - group.quantity : 0;
+  return partial + Math.max(0, INVENTORY_CAPACITY - inventoryTiles(state, catalog)) * INVENTORY_STACK_LIMIT;
+}
+export function hasTileFor(state, catalog, id, extra = {}) {
+  return inventoryRoomFor(state, catalog, id, extra) > 0;
 }
 export const pieceEquipmentCount = (piece) => (piece?.equipment || []).reduce((n, x) => n + Math.max(0, Math.floor(number(x.quantity, 1))), 0);
 
@@ -108,15 +114,24 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
     if (add >= quantity) return { id, quantity, worn: target.uid };
     quantity -= add;
   }
-  if (!hasTileFor(state, catalog, id)) {
-    recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, targetUid: explicitTarget?.uid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
-    return { id, quantity: 0, lost: quantity };
+  const add = Math.min(quantity, inventoryRoomFor(state, catalog, id, extra));
+  const lost = quantity - add;
+  let remaining = add;
+  const key = inventoryStackKey({ id, state: extra.state || {} });
+  for (const stack of state.inventory || []) {
+    if (remaining <= 0) break;
+    if (inventoryStackKey(stack) !== key || stack.quantity >= INVENTORY_STACK_LIMIT) continue;
+    const n = Math.min(remaining, INVENTORY_STACK_LIMIT - stack.quantity);
+    stack.quantity += n; remaining -= n;
   }
-  const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !x.state?.uniqueState);
-  if (stack) stack.quantity += quantity;
-  else state.inventory.push(makeItem(state, id, quantity, { ...extra, sourceId: def.sourceId }));
-  recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, targetUid: explicitTarget?.uid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated });
-  return { id, quantity };
+  while (remaining > 0) {
+    const n = Math.min(remaining, INVENTORY_STACK_LIMIT);
+    state.inventory.push(makeItem(state, id, n, { ...extra, sourceId: def.sourceId })); remaining -= n;
+  }
+  const production = { id, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, targetUid: explicitTarget?.uid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated };
+  if (add) recordProduction(state, { ...production, quantity: add });
+  if (lost) recordProduction(state, { ...production, quantity: lost, lost: true });
+  return { id, quantity: add, ...(lost ? { lost } : {}) };
 }
 
 /**
@@ -149,6 +164,7 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
   if (!def || def.available === false || def.mechanism === 'disabled' || quantity > item.quantity) throw new Error('BAD_QUANTITY');
   if (!['徽章', 'badge', '功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(def.kind)) throw new Error('NOT_EQUIPPABLE');
   if (def.unique && quantity !== 1) throw new Error('UNIQUE_QUANTITY');
+  if (quantity > 1 && !quantityEquippable(def)) throw new Error('SINGLE_EQUIP_ONLY');
   const usedByPieces = pieceEquipmentCount(target);
   if (usedByPieces + quantity > EQUIPMENT_CAPACITY) throw new Error('CAPACITY');
   if (def.unique && target.equipment.some((x) => {
@@ -184,9 +200,10 @@ export function normalizeGearForms(state, catalog = null) {
     for (const item of list || []) {
       if (item?.elite) delete item.elite;
       if (!item || unique(item)) { out.push(item); continue; }
-      const first = firstOf.get(item.id);
+      const key = inventoryStackKey(item);
+      const first = firstOf.get(key);
       if (first) { first.quantity = Number(first.quantity || 1) + Number(item.quantity || 1); continue; }
-      firstOf.set(item.id, item); out.push(item);
+      firstOf.set(key, item); out.push(item);
     }
     return out;
   };

@@ -11,14 +11,15 @@ const catalog = {
 };
 const state = () => ({ nextUid: 1, inventory: [], pieces: [{ uid: 'p1', equipment: [], attachments: [] }, { uid: 'p2', equipment: [], attachments: [] }] });
 
-test('inventory is uncapped, per-operator equipped quantity is capped, and unique equipment is local to its wearer', () => {
+test('inventory stacks unique gear while per-operator equipped quantity and uniqueness remain capped', () => {
   const s = state(); grantEquipment(s, catalog, 'precision', 120);
   assert.equal(s.inventory[0].quantity, 120);
   grantEquipment(s, catalog, 'gear-a'); grantEquipment(s, catalog, 'gear-a');
-  const gearUids = s.inventory.filter((x) => x.id === 'gear-a').map((x) => x.uid);
-  equipItem(s, catalog, gearUids[0], 'p1');
-  assert.throws(() => equipItem(s, catalog, gearUids[1], 'p1'), /UNIQUE/);
-  equipItem(s, catalog, gearUids[1], 'p2');
+  const gearUid = s.inventory.find((x) => x.id === 'gear-a').uid;
+  assert.equal(s.inventory.find((x) => x.id === 'gear-a').quantity, 2);
+  equipItem(s, catalog, gearUid, 'p1');
+  assert.throws(() => equipItem(s, catalog, gearUid, 'p1'), /UNIQUE/);
+  equipItem(s, catalog, gearUid, 'p2');
   assert.equal(s.pieces[0].equipment.length, 1);
   assert.equal(s.pieces[1].equipment.length, 1);
 });

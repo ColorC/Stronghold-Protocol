@@ -95,8 +95,8 @@ test('the view lists whom each piece may hand over to and take over from', () =>
   const { state, donor, receiver } = pair('角峰', '送葬人');
   const view = viewSession(state, { data, catalog });
   const d = view.pieces.find((p) => p.uid === donor.uid); const r = view.pieces.find((p) => p.uid === receiver.uid);
-  assert.deepEqual(d.handover, { give: [receiver.uid], take: [] });
-  assert.deepEqual(r.handover, { give: [], take: [donor.uid] });
+  assert.deepEqual(d.handover, { give: [receiver.uid], take: [receiver.uid] });
+  assert.deepEqual(r.handover, { give: [donor.uid], take: [donor.uid] });
   assert.equal(d.permission, undefined);
 });
 

@@ -33,7 +33,7 @@ const PERMIT_GEAR_IDS = Object.freeze({
   骑士装备托管证: 'permit-knight-custody', 独行者借装许可: 'permit-loner-loan', 重装器械适配单: 'permit-heavy-adapter',
   海嗣遗物容器: 'permit-seaborn-vessel', 猎人旧装承接书: 'permit-hunter-succession', 耀骑士接装敕令: 'permit-radiant-edict',
 });
-const PERMIT_LIMIT_KEYS = ['direction', 'receiverTiers', 'receiverMaxTier', 'receiverProfession', 'receiverFaction', 'donorTiers', 'donorMaxTier', 'donorProfession', 'donorFaction'];
+const PERMIT_LIMIT_KEYS = ['partnerTiers', 'partnerMaxTier', 'partnerProfession', 'partnerFaction', 'direction', 'receiverTiers', 'receiverMaxTier', 'receiverProfession', 'receiverFaction', 'donorTiers', 'donorMaxTier', 'donorProfession', 'donorFaction'];
 const IDENTITY_CANONICAL = 'harmony-identity-card';
 const STOPPED_LEGACY_NAMES = new Set(['随身身份牌', '变形同构体']);
 // 2026-10-07 特殊战斗装备 第四版 (user: 「装备不再有精锐形态」「做就做呗」): one form per piece; special pieces only change how
