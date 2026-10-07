@@ -10,6 +10,7 @@
 2. **反编译战斗绑定**：从 `[uc]skills`、projectile prefab 和 action effect 槽中确认效果名称、触发事件、重复次数、目标侧/持有者侧/地面侧和方向。
 3. **原始 prefab 解算**：逐个解算粒子层级、材质、shader、纹理、Mesh、粒子寿命和自定义顶点流；不能解算的 shader 必须进入未解决清单。
 4. **Unity 取证导出**：对 atlas 和 Mesh 分开导出。atlas 保存颜色与 coverage，Mesh 保留顶点、索引、UV、节点变换和材质。
+   统一 atlas 后处理入口为 `tools/assets/vfx-atlas-post.py`；它会保留 additive 的源形状，并在写入 atlas 前检查 premultiplied color 不超过 coverage，避免混合材质生成整块透明面。
 5. **语义绑定**：把每个效果绑定到干员、目标、格子或骨骼挂点。命中效果不能挂到施法者；地图 Mesh 不能压成干员 billboard。
 6. **浏览器接入**：按事件时序播放，资源带批次缓存键，预加载分批让事件循环可响应；加载、缺失、未解决和活动挂点都可观测。
 7. **密集验收**：浏览器抓取 pageerror、console error、网络失败、长任务、事件日志、活动 prefab、followId、anchor、帧号、截图，并检查 missing/unresolved 必须为零。肉眼截图只作为最后一层对齐检查，不能替代源绑定证据。
