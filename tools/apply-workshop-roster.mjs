@@ -51,6 +51,10 @@ const SOURCE_RULES = Object.freeze({
     status: 'unsupported', reason: 'Only eligible retiring/deathrattle outputs repeat; this does not multiply all combat gains.'
   }
 });
+const KEYWORD_ADAPTERS = Object.freeze({
+  BGS_039:['坚守盟约'], BGS_106:['坚守盟约','不屈盟约'], BGS_034:['护盾发生器','不屈盟约'],
+  BGS_131:['精准盟约'], FP1_010:['精准盟约'], GVG_113:['巨锤盟约'], LOOT_078:['巨锤盟约']
+});
 
 function triggerOf(text) {
   if (/Start of Combat/i.test(text)) return 'combatStart';
@@ -121,6 +125,14 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
     duplicates.add(card.id);
     const normal = parseEffect(card, { text_en: card.text_en, text_zh: card.text_zh });
     const elite = parseEffect(card, card.golden || { text_en: card.text_en, text_zh: card.text_zh });
+    for (const delivery of [normal, elite]) {
+      delivery.sourceTrigger = delivery.trigger;
+      if (KEYWORD_ADAPTERS[card.id]) Object.assign(delivery, {
+        trigger:'gain', recipient:'self', duration:'permanentWornGear', kind:'keywordGear',
+        implementation:'dispatched-pending-gear-landing-verification', adapter:KEYWORD_ADAPTERS[card.id].map(name=>`independent:${name}`),
+        unsupportedReason:'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.'
+      });
+    }
     entries.push({
       sourceId: card.id,
       dbfId: card.dbf_id,
@@ -166,6 +178,7 @@ const report = {
   neutral: counts.NEUTRAL,
   exactSourceBodyCoverage: entries.length === 101 && new Set(entries.map(x=>x.name)).size === 101 && new Set(entries.map(x=>x.sourceId)).size === 101,
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
+  nativeDispatchedPendingLanding: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
   unsupportedSourceIds: entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation!=='supported') || x.metadata.op.effectDelivery.elite.some(e=>e.implementation!=='supported')).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal[0].unsupportedReason})),
   sourceSpecificSemanticRules: entries.filter(x=>SOURCE_RULES[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:x.authoredRule.mechanic,status:x.authoredRule.status})),

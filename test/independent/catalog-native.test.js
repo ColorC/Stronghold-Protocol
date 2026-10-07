@@ -113,6 +113,7 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   assert.equal(normal.granted.length, 1, 'a gain from a native source does not recursively repeat the ordinary gear grant');
 });
 
+
 test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
   // 2026-10-07: 白面鸮 now re-triggers the 获得时 effect in front of it at 休整期结束时 (it used to copy 休整期开始)
   const { state, services, granted } = fixture();

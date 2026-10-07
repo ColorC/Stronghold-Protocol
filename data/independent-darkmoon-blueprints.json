@@ -43,7 +43,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -58,7 +59,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -124,7 +126,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -139,7 +142,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -201,7 +205,8 @@
                 "textEn": "[x]At the end of your turn,\ngive a friendly minion\nof each minion type\n+2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -214,7 +219,8 @@
                 "textEn": "[x]At the end of your turn,\ngive a friendly minion\nof each minion type\n+4/+4.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -278,7 +284,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -293,7 +300,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -355,7 +363,8 @@
                 "textEn": "Whenever you summon a Beast, give it +2 Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -368,7 +377,8 @@
                 "textEn": "Whenever you summon a Beast, give it +4 Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -434,7 +444,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -449,7 +460,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -513,7 +525,8 @@
                 "textEn": "[x]<b>Start of Combat:</b> Deal\n1 damage per friendly\nDragon to one random\nenemy minion.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatStart"
               }
             ],
             "elite": [
@@ -526,7 +539,8 @@
                 "textEn": "[x]<b>Start of Combat:</b> Deal\n1 damage per friendly\nDragon to one random\nenemy minion twice.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatStart"
               }
             ]
           }
@@ -590,7 +604,8 @@
                 "textEn": "Whenever you summon a Beast, give it +4/+4.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -603,7 +618,8 @@
                 "textEn": "Whenever you summon a Beast, give it +8/+8.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -667,7 +683,8 @@
                   "windfury"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ],
             "elite": [
@@ -682,7 +699,8 @@
                   "windfury"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ]
           }
@@ -748,7 +766,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -763,7 +782,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -827,7 +847,8 @@
                 "textEn": "At the start of each turn, gain +1 Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnStart"
               }
             ],
             "elite": [
@@ -840,7 +861,8 @@
                 "textEn": "At the start of each turn, gain +2 Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnStart"
               }
             ]
           }
@@ -904,7 +926,8 @@
                 "textEn": "<b>Overkill:</b> Deal 3 damage\nto the left-most enemy minion.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "overkill"
               }
             ],
             "elite": [
@@ -917,7 +940,8 @@
                 "textEn": "<b>Overkill:</b> Deal 6 damage\nto the left-most enemy minion.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "overkill"
               }
             ]
           }
@@ -981,7 +1005,8 @@
                 "textEn": "[x]At the start of your turn,\ngain +2/+2 if you won\nthe last combat.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnStart"
               }
             ],
             "elite": [
@@ -994,7 +1019,8 @@
                 "textEn": "[x]At the start of your turn,\ngain +4/+4 if you won\nthe last combat.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnStart"
               }
             ]
           }
@@ -1050,34 +1076,44 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>圣盾，复生</b>",
                 "textEn": "<b>Divine Shield</b>\n<b>Reborn</b>",
                 "tags": [
                   "divineShield",
                   "reborn"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:护盾发生器",
+                  "independent:不屈盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>圣盾，复生</b>",
                 "textEn": "<b>Divine Shield</b>\n<b>Reborn</b>",
                 "tags": [
                   "divineShield",
                   "reborn"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:护盾发生器",
+                  "independent:不屈盟约"
+                ]
               }
             ]
           }
@@ -1090,15 +1126,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>圣盾，复生</b>"
         },
         "elite": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>圣盾，复生</b>"
         }
       }
@@ -1139,7 +1175,8 @@
                 "textEn": "Whenever a friendly Dragon kills an enemy, gain +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -1152,7 +1189,8 @@
                 "textEn": "Whenever a friendly Dragon kills an enemy, gain +4/+4.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -1216,7 +1254,8 @@
                 "textEn": "At the end of your turn, gain +1/+1 for each Dragon you have.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -1229,7 +1268,8 @@
                 "textEn": "At the end of your turn, gain +2/+2 for each Dragon you have.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -1293,7 +1333,8 @@
                 "textEn": "When you sell this minion, give all minions in Bob's Tavern +1/+1.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -1306,7 +1347,8 @@
                 "textEn": "When you sell this minion, give all minions in Bob's Tavern +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -1373,7 +1415,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -1389,7 +1432,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -1445,32 +1489,40 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>嘲讽</b>",
                 "textEn": "<b>Taunt</b>",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:坚守盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>嘲讽</b>",
                 "textEn": "<b>Taunt</b>",
                 "tags": [
                   "taunt"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:坚守盟约"
+                ]
               }
             ]
           }
@@ -1483,15 +1535,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>嘲讽</b>"
         },
         "elite": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>嘲讽</b>"
         }
       }
@@ -1535,7 +1587,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -1551,7 +1604,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -1617,7 +1671,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -1632,7 +1687,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -1698,7 +1754,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -1713,7 +1770,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -1783,7 +1841,8 @@
                 "textEn": "Whenever this attacks, double its Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "attack"
               }
             ],
             "elite": [
@@ -1796,7 +1855,8 @@
                 "textEn": "Whenever this attacks, triple its Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "attack"
               }
             ]
           }
@@ -1860,7 +1920,8 @@
                 "textEn": "[x]When this attacks and kills\na minion, add a random\nminion to your hand.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "attack"
               }
             ],
             "elite": [
@@ -1873,7 +1934,8 @@
                 "textEn": "[x]When this attacks and kills\na minion, add 2 random\nminions to your hand.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "attack"
               }
             ]
           }
@@ -1937,7 +1999,8 @@
                 "textEn": "Whenever a friendly Pirate attacks, give all friendly minions +2/+1.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -1950,7 +2013,8 @@
                 "textEn": "Whenever a friendly Pirate attacks, give all friendly minions +4/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -2016,7 +2080,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -2031,7 +2096,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -2095,7 +2161,8 @@
                 "textEn": "This minion sells for\n3 Gold.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ],
             "elite": [
@@ -2108,7 +2175,8 @@
                 "textEn": "This minion sells for\n6 Gold.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ]
           }
@@ -2174,7 +2242,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -2189,7 +2258,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -2255,7 +2325,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -2270,7 +2341,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -2334,7 +2406,8 @@
                 "textEn": "Whenever another friendly Pirate attacks, give it +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -2347,7 +2420,8 @@
                 "textEn": "Whenever another friendly Pirate attacks, give it +4/+4.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -2413,7 +2487,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -2428,7 +2503,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -2494,7 +2570,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -2509,7 +2586,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -2573,7 +2651,8 @@
                 "textEn": "At the end of your turn, gain +2/+2 for each friendly Golden minion.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -2586,7 +2665,8 @@
                 "textEn": "At the end of your turn, gain +4/+4 for each friendly Golden minion.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -2652,7 +2732,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ],
             "elite": [
@@ -2667,7 +2748,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ]
           }
@@ -2733,7 +2815,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -2748,7 +2831,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -2812,7 +2896,8 @@
                 "textEn": "After you buy a Pirate,\ngain 1 Gold this turn\nonly.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -2825,7 +2910,8 @@
                 "textEn": "After you buy a Pirate,\ngain 2 Gold this turn\nonly.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -2891,7 +2977,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -2906,7 +2993,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -2972,7 +3060,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -2987,7 +3076,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -3051,7 +3141,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -3066,7 +3157,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -3132,7 +3224,8 @@
                   "windfury"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "overkill"
               }
             ],
             "elite": [
@@ -3147,7 +3240,8 @@
                   "windfury"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "overkill"
               }
             ]
           }
@@ -3211,7 +3305,8 @@
                 "textEn": "Whenever you play a Pirate, gain +1/+1.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -3224,7 +3319,8 @@
                 "textEn": "Whenever you play a Pirate, gain +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -3288,7 +3384,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -3303,7 +3400,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -3367,7 +3465,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -3382,7 +3481,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -3446,7 +3546,8 @@
                 "textEn": "[x]After you play an Elemental,\ngive a friendly minion stats\nequal to the Elemental's\nTavern Tier.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -3459,7 +3560,8 @@
                 "textEn": "[x]After you play an Elemental,\ngive a friendly minion stats\nequal to the Elemental's\nTavern Tier twice.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -3521,7 +3623,8 @@
                 "textEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +1/+1 for the rest\nof the game.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -3534,7 +3637,8 @@
                 "textEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +2/+2 for the rest\nof the game.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -3596,7 +3700,8 @@
                 "textEn": "[x]At the end of your turn, give\nyour left-most minion +1/+1.\nRepeat for each Elemental\nyou played this turn.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -3609,7 +3714,8 @@
                 "textEn": "[x]At the end of your turn, give\nyour left-most minion +2/+2.\nRepeat for each Elemental\nyou played this turn.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -3663,34 +3769,44 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>复生</b>，<b>嘲讽</b>",
                 "textEn": "<b>Taunt</b>\n<b>Reborn</b>",
                 "tags": [
                   "taunt",
                   "reborn"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:坚守盟约",
+                  "independent:不屈盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>嘲讽</b>，<b>复生</b>",
                 "textEn": "<b>Taunt</b>\n<b>Reborn</b>",
                 "tags": [
                   "taunt",
                   "reborn"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:坚守盟约",
+                  "independent:不屈盟约"
+                ]
               }
             ]
           }
@@ -3703,15 +3819,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>复生</b>，<b>嘲讽</b>"
         },
         "elite": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>嘲讽</b>，<b>复生</b>"
         }
       }
@@ -3754,7 +3870,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -3769,7 +3886,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -3833,7 +3951,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -3848,7 +3967,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -3912,7 +4032,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ],
             "elite": [
@@ -3927,7 +4048,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ]
           }
@@ -3991,7 +4113,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -4006,7 +4129,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -4070,7 +4194,8 @@
                 "textEn": "[x]When you sell this,\nadd a 2/2 Elemental\nto your hand.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -4083,7 +4208,8 @@
                 "textEn": "[x]When you sell this,\nadd two 2/2 Elementals\nto your hand.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -4149,7 +4275,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -4164,7 +4291,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -4231,7 +4359,8 @@
                   "windfury"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ],
             "elite": [
@@ -4247,7 +4376,8 @@
                   "windfury"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ]
           }
@@ -4311,7 +4441,8 @@
                 "textEn": "After you play an Elemental, give another random friendly Elemental +1/+1.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -4324,7 +4455,8 @@
                 "textEn": "After you play an Elemental, give another random friendly Elemental +1/+1 twice.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -4391,7 +4523,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -4407,7 +4540,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -4473,7 +4607,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -4488,7 +4623,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -4554,7 +4690,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -4569,7 +4706,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -4635,7 +4773,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -4650,7 +4789,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -4714,7 +4854,8 @@
                 "textEn": "After this attacks and kills\na minion, deal excess damage to a random adjacent minion.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "attack"
               }
             ],
             "elite": [
@@ -4727,7 +4868,8 @@
                 "textEn": "After this attacks and kills\na minion, deal excess damage to both adjacent minions.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "attack"
               }
             ]
           }
@@ -4793,7 +4935,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ],
             "elite": [
@@ -4808,7 +4951,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "prepEvent"
               }
             ]
           }
@@ -4874,7 +5018,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -4889,7 +5034,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -4943,32 +5089,40 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>剧毒</b>",
                 "textEn": "<b>Poisonous</b>",
                 "tags": [
                   "poison"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:精准盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>剧毒</b>",
                 "textEn": "<b>Poisonous</b>",
                 "tags": [
                   "poison"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:精准盟约"
+                ]
               }
             ]
           }
@@ -4981,15 +5135,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>剧毒</b>"
         },
         "elite": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>剧毒</b>"
         }
       }
@@ -5032,7 +5186,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -5047,7 +5202,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -5111,7 +5267,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -5126,7 +5283,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -5188,7 +5346,8 @@
                 "textEn": "[x]At the end of your turn,\ngain +1/+2 for each\n  minion type you control.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -5201,7 +5360,8 @@
                 "textEn": "[x]At the end of your turn,\ngain +2/+4 for each\n  minion type you control.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -5267,7 +5427,8 @@
                   "reborn"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -5284,7 +5445,8 @@
                   "reborn"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -5350,7 +5512,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -5365,7 +5528,8 @@
                   "taunt"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -5431,7 +5595,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -5446,7 +5611,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -5512,7 +5678,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -5527,7 +5694,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -5593,7 +5761,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -5608,7 +5777,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -5675,7 +5845,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ],
             "elite": [
@@ -5691,7 +5862,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ]
           }
@@ -5757,7 +5929,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -5772,7 +5945,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -5838,7 +6012,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -5853,7 +6028,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -5917,7 +6093,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -5932,7 +6109,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -5994,7 +6172,8 @@
                 "textEn": "Your cards that summon minions summon twice as many.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ],
             "elite": [
@@ -6007,7 +6186,8 @@
                 "textEn": "Your cards that summon minions summon three times as many.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ]
           }
@@ -6082,7 +6262,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -6098,7 +6279,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -6163,7 +6345,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -6179,7 +6362,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -6243,7 +6427,8 @@
                 "textEn": "Whenever a friendly Beast dies, gain +2/+1.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -6256,7 +6441,8 @@
                 "textEn": "Whenever a friendly Beast dies, gain +4/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -6322,7 +6508,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -6337,7 +6524,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -6403,7 +6591,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -6418,7 +6607,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -6474,32 +6664,40 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>剧毒</b>",
                 "textEn": "<b>Poisonous</b>",
                 "tags": [
                   "poison"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:精准盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "<b>剧毒</b>",
                 "textEn": "<b>Poisonous</b>",
                 "tags": [
                   "poison"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "staticCombat",
+                "adapter": [
+                  "independent:精准盟约"
+                ]
               }
             ]
           }
@@ -6512,15 +6710,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>剧毒</b>"
         },
         "elite": {
-          "trigger": "staticCombat",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "<b>剧毒</b>"
         }
       }
@@ -6564,7 +6762,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -6580,7 +6779,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -6644,7 +6844,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -6659,7 +6860,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -6733,7 +6935,8 @@
                 "textEn": "At the end of your turn, give another friendly Mech +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -6746,7 +6949,8 @@
                 "textEn": "At the end of your turn, give another friendly Mech +4/+4.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -6812,7 +7016,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -6827,7 +7032,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -6893,7 +7099,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -6908,7 +7115,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -6972,7 +7180,8 @@
                 "textEn": "Whenever a friendly Mech dies, gain +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ],
             "elite": [
@@ -6985,7 +7194,8 @@
                 "textEn": "Whenever a friendly Mech dies, gain +4/+4.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "conditionalEvent"
               }
             ]
           }
@@ -7041,32 +7251,40 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combatPassive",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "同时对其攻击目标相邻的随从造成伤害。",
                 "textEn": "Also damages the minions next to whomever it attacks.",
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "combatPassive",
+                "adapter": [
+                  "independent:巨锤盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "combatPassive",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "trigger": "gain",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "同时对其攻击目标相邻的随从造成伤害。",
                 "textEn": "Also damages the minions next to whomever it attacks.",
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "combatPassive",
+                "adapter": [
+                  "independent:巨锤盟约"
+                ]
               }
             ]
           }
@@ -7079,15 +7297,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "combatPassive",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "同时对其攻击目标相邻的随从造成伤害。"
         },
         "elite": {
-          "trigger": "combatPassive",
-          "recipient": "selfOrBoard",
-          "duration": "combat",
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
           "text": "同时对其攻击目标相邻的随从造成伤害。"
         }
       }
@@ -7130,7 +7348,8 @@
                 "textEn": "At the end of your turn, give another random friendly minion +3 Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -7143,7 +7362,8 @@
                 "textEn": "At the end of your turn, give another random friendly minion +6 Attack.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }
@@ -7208,7 +7428,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ],
             "elite": [
@@ -7224,7 +7445,8 @@
                   "battlecry"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "battlecry"
               }
             ]
           }
@@ -7288,7 +7510,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ],
             "elite": [
@@ -7303,7 +7526,8 @@
                   "divineShield"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "staticCombat"
               }
             ]
           }
@@ -7369,7 +7593,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -7384,7 +7609,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -7446,7 +7672,8 @@
                 "textEn": "Your <b>Battlecries</b> trigger twice.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ],
             "elite": [
@@ -7459,7 +7686,8 @@
                 "textEn": "Your <b>Battlecries</b> trigger three times.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ]
           }
@@ -7525,32 +7753,40 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combatPassive",
+                "trigger": "gain",
                 "recipient": "self",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "同时对其攻击目标相邻的随从造成伤害。",
                 "textEn": "Also damages the minions next to whomever\nthis attacks.",
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "combatPassive",
+                "adapter": [
+                  "independent:巨锤盟约"
+                ]
               }
             ],
             "elite": [
               {
-                "trigger": "combatPassive",
+                "trigger": "gain",
                 "recipient": "self",
-                "duration": "combat",
-                "kind": "statOrCombatBuff",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
                 "text": "同时对其攻击目标相邻的随从造成伤害。",
                 "textEn": "Also damages the minions next to whomever\nthis attacks.",
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "sourceTrigger": "combatPassive",
+                "adapter": [
+                  "independent:巨锤盟约"
+                ]
               }
             ]
           }
@@ -7563,15 +7799,15 @@
       },
       "sourceEffect": {
         "normal": {
-          "trigger": "combatPassive",
+          "trigger": "gain",
           "recipient": "self",
-          "duration": "combat",
+          "duration": "permanentWornGear",
           "text": "同时对其攻击目标相邻的随从造成伤害。"
         },
         "elite": {
-          "trigger": "combatPassive",
+          "trigger": "gain",
           "recipient": "self",
-          "duration": "combat",
+          "duration": "permanentWornGear",
           "text": "同时对其攻击目标相邻的随从造成伤害。"
         }
       }
@@ -7614,7 +7850,8 @@
                 "textEn": "Your other Pirates have +1/+1.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ],
             "elite": [
@@ -7627,7 +7864,8 @@
                 "textEn": "Your other Pirates have +2/+2.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "combatPassive"
               }
             ]
           }
@@ -7693,7 +7931,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -7708,7 +7947,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -7773,7 +8013,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -7789,7 +8030,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -7853,7 +8095,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ],
             "elite": [
@@ -7868,7 +8111,8 @@
                   "deathrattle"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "death"
               }
             ]
           }
@@ -7932,7 +8176,8 @@
                 "textEn": "<b>Overkill:</b> Summon a 5/5 Ironhide Runt.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "overkill"
               }
             ],
             "elite": [
@@ -7945,7 +8190,8 @@
                 "textEn": "<b>Overkill:</b> Summon a 10/10 Ironhide Runt.",
                 "tags": [],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "overkill"
               }
             ]
           }
@@ -8011,7 +8257,8 @@
                   "reborn"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ],
             "elite": [
@@ -8026,7 +8273,8 @@
                   "reborn"
                 ],
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised.",
+                "sourceTrigger": "turnEnd"
               }
             ]
           }

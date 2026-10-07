@@ -2,6 +2,7 @@
 import { tavernFactions as sharedTavernFactions, nativeBodyStats, nativeRecord } from '../../../shared/independentRules.js';
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
+import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
@@ -83,7 +84,7 @@ function authoredModeEffects(source, isElite) {
       if (r.behavior === 'eventProduction' && !COUNTER_EVENTS.has(r.params.counterEvent)) throw new Error(`BAD_MODE_EFFECT_COUNTER_EVENT:${source?.chessId}:${kind}:${r.params.counterEvent}`);
     }
   }
-  return { prep: structuredClone(variant.prep), combat: structuredClone(variant.combat), unsupported: [] };
+  return { prep: [...structuredClone(variant.prep), ...darkmoonPrepRulesFor(source)], combat: structuredClone(variant.combat), unsupported: [] };
 }
 // what 铃兰 replays of a 获得时 trait and 泥岩 of a 售出时 one (gear, funds, refreshes, recruits; never another copier)
 const GAIN_COPYABLE = Object.freeze(['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh', 'randomChessOffer']);
@@ -245,7 +246,7 @@ function combatRules(name, elite) {
 export function nativeEffectFor(_chessId, source, isElite = false) {
   if (Object.hasOwn(source || {}, 'modeEffects')) return authoredModeEffects(source, isElite);
   const rules = PREP[source?.name] || [];
-  const prep = rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) }));
+  const prep = [...rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) })), ...darkmoonPrepRulesFor(source)];
   for (const r of prep) {
     for (const key of ['normal', 'elite']) if (Object.hasOwn(r.params, key)) {
       r.params.quantity = r.params[isElite ? 'elite' : 'normal'];
