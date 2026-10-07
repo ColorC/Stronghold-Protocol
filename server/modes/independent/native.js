@@ -84,7 +84,7 @@ function authoredModeEffects(source, isElite) {
       if (r.behavior === 'eventProduction' && !COUNTER_EVENTS.has(r.params.counterEvent)) throw new Error(`BAD_MODE_EFFECT_COUNTER_EVENT:${source?.chessId}:${kind}:${r.params.counterEvent}`);
     }
   }
-  return { prep: [...structuredClone(variant.prep), ...darkmoonPrepRulesFor(source)], combat: structuredClone(variant.combat), unsupported: [] };
+  return { prep: [...structuredClone(variant.prep), ...darkmoonPrepRulesFor(source,isElite)], combat: structuredClone(variant.combat), unsupported: [] };
 }
 // what 铃兰 replays of a 获得时 trait and 泥岩 of a 售出时 one (gear, funds, refreshes, recruits; never another copier)
 const GAIN_COPYABLE = Object.freeze(['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh', 'randomChessOffer']);
@@ -246,7 +246,7 @@ function combatRules(name, elite) {
 export function nativeEffectFor(_chessId, source, isElite = false) {
   if (Object.hasOwn(source || {}, 'modeEffects')) return authoredModeEffects(source, isElite);
   const rules = PREP[source?.name] || [];
-  const prep = [...rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) })), ...darkmoonPrepRulesFor(source)];
+  const prep = [...rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) })), ...darkmoonPrepRulesFor(source,isElite)];
   for (const r of prep) {
     for (const key of ['normal', 'elite']) if (Object.hasOwn(r.params, key)) {
       r.params.quantity = r.params[isElite ? 'elite' : 'normal'];

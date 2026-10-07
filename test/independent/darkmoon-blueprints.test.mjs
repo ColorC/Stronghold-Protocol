@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { nativeEffectFor } from '../../server/modes/independent/native.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
+import { grantEquipment } from '../../server/modes/independent/equipment.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const blueprints = JSON.parse(fs.readFileSync(path.join(root, 'data/independent-darkmoon-blueprints.json'), 'utf8'));
@@ -55,7 +56,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.ok(designAddon.operators.every(x => x.metadata.op.effectDelivery.normal.length && x.metadata.op.effectDelivery.elite.length));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
   assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation==='dispatched-pending-gear-landing-verification')).length,7);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,94);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,90);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported')).length,4);
   assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
   assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
 });
@@ -92,5 +94,29 @@ test('a compiled source-ref dispatches the Taunt adapter once on recruit gain wi
     const n=granted.length;
     runNativeHook(state,'roundStart',{piece,origin:'player'},services);
     assert.equal(granted.length,n,'gear is awarded on acquisition, not redeploy or a later prep phase');
+  }
+});
+
+test('four source-keyed prep adapters cause the expected ordinary and elite state changes', () => {
+  const baseCatalog=getCatalog();
+  const ids=['BGS_027','BGS_049','BGS_055','BGS_116'];
+  for(const id of ids) for(const elite of [false,true]) {
+    const entry=byId.get(id);
+    const op=Object.values(baseCatalog.operators).find(x=>Boolean(x.elite)===elite);
+    assert.ok(op,`${id} ${elite?'elite':'ordinary'} fixture`);
+    const source={...op,sourceRefs:{darkmoon19_2:{id}},modeEffects:{normal:{prep:[],combat:[]},elite:{prep:[],combat:[]}}};
+    const effect=nativeEffectFor(op.chessId,source,elite);
+    const catalog={...baseCatalog,operators:{...baseCatalog.operators,[op.chessId]:{...op,nativeTrait:{...op.nativeTrait,effect}}}};
+    const state={round:1,shop:{level:1,upgradePrice:5,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
+    const piece={uid:`${id}-${elite?'elite':'normal'}`,chessId:op.chessId,nativeState:{},equipment:[],row:0,col:0};
+    state.pieces.push(piece);
+    const services={catalog,data:{},rng:()=>0,grantEquipment:(s,item,n,extra)=>grantEquipment(s,catalog,item,n,extra),grantChess(){},addOffer(){},record(){}};
+    const hook=id==='BGS_027'?'roundStart':id==='BGS_049'?'sold':'gain';
+    runNativeHook(state,hook,{piece,origin:'player'},services);
+    const expected=elite?2:1;
+    if(id==='BGS_027') assert.equal(piece.equipment.find(x=>x.id==='precision')?.quantity,expected,`${id} grants permanent precision to self`);
+    if(id==='BGS_049') assert.equal(state.pendingFunds,elite?6:3,`${id} credits sell value`);
+    if(id==='BGS_055') assert.equal(state.shop.upgradePrice,5-expected,`${id} discounts the next upgrade cost`);
+    if(id==='BGS_116') assert.equal(state.shop.freeRefreshes,expected,`${id} grants exactly the next refresh count`);
   }
 });

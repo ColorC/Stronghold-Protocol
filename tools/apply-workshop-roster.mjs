@@ -55,6 +55,14 @@ const KEYWORD_ADAPTERS = Object.freeze({
   BGS_039:['坚守盟约'], BGS_106:['坚守盟约','不屈盟约'], BGS_034:['护盾发生器','不屈盟约'],
   BGS_131:['精准盟约'], FP1_010:['精准盟约'], GVG_113:['巨锤盟约'], LOOT_078:['巨锤盟约']
 });
+// Executable source-id keyed adaptations whose prep behavior already exists in native.js.
+// Descriptors are written from the source effect, with ordinary/golden parameters kept distinct.
+const PREP_ADAPTERS = Object.freeze({
+  BGS_027: { trigger:'roundStart', sourceTrigger:'turnStart', recipient:'self', duration:'permanentWornGear', kind:'badgeGrowth', effect:{ normal:1, elite:2 }, adapter:'grantEquipment', params:{ landOn:'self', outputs:[{id:'precision',normal:1,elite:2}] } },
+  BGS_049: { trigger:'sold', sourceTrigger:'sell', recipient:'playerResource', duration:'nextPrepFunds', kind:'gold', effect:{ normal:3, elite:6 }, adapter:'deferredFunds', params:{ normal:3, elite:6 } },
+  BGS_055: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shopUpgradeCost', duration:'nextUpgrade', kind:'upgradeDiscount', effect:{ normal:1, elite:2 }, adapter:'factionReaction', params:{ mode:'discount',targets:'self',count:{normal:1,elite:2},excludeSelf:false,maxEventsPerPrep:1 } },
+  BGS_116: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'playerResource', duration:'nextRefreshes', kind:'freeRefresh', effect:{ normal:1, elite:2 }, adapter:'freeRefresh', params:{ normal:1, elite:2 } },
+});
 
 function triggerOf(text) {
   if (/your Battlecries trigger|your minions trigger their Deathrattles|cards that summon minions summon/i.test(text)) return 'passiveMultiplier';
@@ -135,7 +143,9 @@ const STATIC_KEYWORD_GEAR = Object.freeze({
   reborn:{ label:'复生', gear:'不屈盟约' }, poison:{ label:'剧毒', gear:'精准盟约' },
   cleave:{ label:'攻击相邻随从', gear:'巨锤盟约' }
 });
-function effectDeliveries(card, variant) {
+function effectDeliveries(card, variant, isElite = false) {
+  const authored = PREP_ADAPTERS[card.id];
+  if (authored) return [{ trigger:authored.trigger, sourceTrigger:authored.sourceTrigger, recipient:authored.recipient, duration:authored.duration, kind:authored.kind, text:variant.text_zh||'', textEn:variant.text_en||'', tags:[], params:{ ...authored.effect && { amount:authored.effect[isElite?'elite':'normal'] } }, adapter:[authored.adapter], implementation:'supported', unsupportedReason:null }];
   const base = parseEffect(card, variant), found = [];
   for (const tag of ['taunt','divineShield','reborn','poison']) if (base.tags.includes(tag)) found.push(tag);
   if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')) found.push('cleave');
@@ -186,7 +196,12 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
       sourceTextsEn: { normal: card.text_en || '', elite: card.golden?.text_en || card.text_en || '' },
       sourceUrl: `https://api.hearthstonejson.com/v1/68600/zhCN/cards.json`,
       metadata: { op: { effectDelivery: { normal, elite } } },
-      authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : KEYWORD_ADAPTERS[card.id] ? {
+      authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : PREP_ADAPTERS[card.id] ? {
+        sourceId:card.id, mechanic:PREP_ADAPTERS[card.id].kind,
+        normal:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(card.id==='BGS_055'?{count:1}:{})}},
+        elite:{trigger:PREP_ADAPTERS[card.id].trigger,recipient:PREP_ADAPTERS[card.id].recipient,duration:PREP_ADAPTERS[card.id].duration,adapter:PREP_ADAPTERS[card.id].adapter,params:{...structuredClone(PREP_ADAPTERS[card.id].params),...(card.id==='BGS_055'?{count:2}:{})}},
+        status:'supported',reason:null
+      } : KEYWORD_ADAPTERS[card.id] ? {
         sourceId:card.id,
         mechanic:'keywordGearGrant',
         normal:{trigger:'gain',recipient:'self',duration:'permanentWornGear',outputs:KEYWORD_ADAPTERS[card.id].map(name=>({id:`independent:${name}`,quantity:1}))},
@@ -226,6 +241,7 @@ const report = {
   durations:{normal:durationCounts('normal'),elite:durationCounts('elite')},
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
   nativeDispatchedPendingLanding: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
+  sourceSpecificPrepAdapters:entries.filter(x=>PREP_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:PREP_ADAPTERS[x.sourceId].kind,status:'supported',normal:x.metadata.op.effectDelivery.normal,elite:x.metadata.op.effectDelivery.elite})),
   totalNormalEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.normal.length,0),
   totalEliteEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.elite.length,0),
   deliveryCounts:{
@@ -233,12 +249,12 @@ const report = {
     elite:{pendingLanding:entries.flatMap(x=>x.metadata.op.effectDelivery.elite).filter(e=>e.implementation==='dispatched-pending-gear-landing-verification').length,unsupported:entries.flatMap(x=>x.metadata.op.effectDelivery.elite).filter(e=>e.implementation==='unsupported').length}
   },
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
-  unsupportedSourceIds: entries.filter(x=>!KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal[0].unsupportedReason})),
+  unsupportedSourceIds: entries.filter(x=>[...x.metadata.op.effectDelivery.normal,...x.metadata.op.effectDelivery.elite].some(e=>e.implementation==='unsupported')).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal.find(e=>e.implementation==='unsupported')?.unsupportedReason || 'At least one variant effect is unsupported.'})),
   pendingGearLandingSourceIds: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,gear:KEYWORD_ADAPTERS[x.sourceId]})),
   sourceSpecificSemanticRules: entries.filter(x=>SOURCE_RULES[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:x.authoredRule.mechanic,status:x.authoredRule.status})),
   nativeDefinitionMatches: entries.filter(x=>nativeByName.has(x.operator)).length,
   nativeDefinitionPending: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({id:x.sourceId,name:x.name,operator:x.operator,reason:'No matching operator definition in the currently checked-in design input; no native body is fabricated.'})),
-  caveats: ['This compiler records source text and an initial fixed-recipient interpretation; it does not claim mechanics execution.', 'Text-derived descriptors are compile-time metadata only; runtime must use source-id-keyed authored rules, never parse localized source text.', 'All entries remain unsupported until a matching native behavior is wired and ordinary/elite trigger, target, duration, and reset are tested.']
+  caveats: ['Text-derived descriptors are compile-time metadata only; runtime uses source-id-keyed authored rules, never parses localized source text.', 'Only effect rows marked supported have a matching runtime behavior; pendingLanding is dispatched but awaits non-badge self-landing proof; unsupported rows need matching ordinary/elite trigger, target, duration, and reset behavior.']
 };
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, JSON.stringify({ schema:'stronghold.darkmoon-blueprints/v1', sourceBuild: roster.sourceBuild, rosterCommit: roster.sourceCommit, entries }, null, 2) + '\n');

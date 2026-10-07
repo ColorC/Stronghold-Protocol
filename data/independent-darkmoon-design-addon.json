@@ -1427,52 +1427,77 @@
       },
       "authoredRule": {
         "sourceId": "BGS_055",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "upgradeDiscount",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "shopUpgradeCost",
+          "duration": "nextUpgrade",
+          "adapter": "factionReaction",
+          "params": {
+            "mode": "discount",
+            "targets": "self",
+            "count": 1,
+            "excludeSelf": false,
+            "maxEventsPerPrep": 1
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "shopUpgradeCost",
+          "duration": "nextUpgrade",
+          "adapter": "factionReaction",
+          "params": {
+            "mode": "discount",
+            "targets": "self",
+            "count": 2,
+            "excludeSelf": false,
+            "maxEventsPerPrep": 1
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "metadata": {
         "op": {
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    1
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "shopUpgradeCost",
+                "duration": "nextUpgrade",
+                "kind": "upgradeDiscount",
                 "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (1).",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "amount": 1
+                },
+                "adapter": [
+                  "factionReaction"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    2
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "shopUpgradeCost",
+                "duration": "nextUpgrade",
+                "kind": "upgradeDiscount",
                 "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。",
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (2).",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "amount": 2
+                },
+                "adapter": [
+                  "factionReaction"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }

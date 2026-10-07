@@ -1163,46 +1163,42 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "turnStart",
+                "trigger": "roundStart",
                 "sourceTrigger": "turnStart",
                 "recipient": "self",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 1
-                  },
-                  "numericLiterals": [
-                    1
-                  ]
-                },
+                "duration": "permanentWornGear",
+                "kind": "badgeGrowth",
                 "text": "在每个回合开始时，获得+1攻击力。",
                 "textEn": "At the start of each turn, gain +1 Attack.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "amount": 1
+                },
+                "adapter": [
+                  "grantEquipment"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "turnStart",
+                "trigger": "roundStart",
                 "sourceTrigger": "turnStart",
                 "recipient": "self",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 2
-                  },
-                  "numericLiterals": [
-                    2
-                  ]
-                },
+                "duration": "permanentWornGear",
+                "kind": "badgeGrowth",
                 "text": "在每个回合开始时，获得+2攻击力。",
                 "textEn": "At the start of each turn, gain +2 Attack.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "amount": 2
+                },
+                "adapter": [
+                  "grantEquipment"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -1210,41 +1206,64 @@
       },
       "authoredRule": {
         "sourceId": "BGS_027",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "badgeGrowth",
+        "normal": {
+          "trigger": "roundStart",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "adapter": "grantEquipment",
+          "params": {
+            "landOn": "self",
+            "outputs": [
+              {
+                "id": "precision",
+                "normal": 1,
+                "elite": 2
+              }
+            ]
+          }
+        },
+        "elite": {
+          "trigger": "roundStart",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "adapter": "grantEquipment",
+          "params": {
+            "landOn": "self",
+            "outputs": [
+              {
+                "id": "precision",
+                "normal": 1,
+                "elite": 2
+              }
+            ]
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "turnStart",
+            "trigger": "roundStart",
             "sourceTrigger": "turnStart",
             "recipient": "self",
-            "duration": "game",
+            "duration": "permanentWornGear",
             "text": "在每个回合开始时，获得+1攻击力。",
             "params": {
-              "statDeltas": {
-                "attack": 1
-              },
-              "numericLiterals": [
-                1
-              ]
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "turnStart",
+            "trigger": "roundStart",
             "sourceTrigger": "turnStart",
             "recipient": "self",
-            "duration": "game",
+            "duration": "permanentWornGear",
             "text": "在每个回合开始时，获得+2攻击力。",
             "params": {
-              "statDeltas": {
-                "attack": 2
-              },
-              "numericLiterals": [
-                2
-              ]
+              "amount": 2
             }
           }
         ]
@@ -3215,40 +3234,42 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "self",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "numericLiterals": [
-                    3
-                  ]
-                },
+                "trigger": "sold",
+                "sourceTrigger": "sell",
+                "recipient": "playerResource",
+                "duration": "nextPrepFunds",
+                "kind": "gold",
                 "text": "出售该随从可以获得3枚铸币。",
                 "textEn": "This minion sells for\n3 Gold.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "amount": 3
+                },
+                "adapter": [
+                  "deferredFunds"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "self",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "numericLiterals": [
-                    6
-                  ]
-                },
+                "trigger": "sold",
+                "sourceTrigger": "sell",
+                "recipient": "playerResource",
+                "duration": "nextPrepFunds",
+                "kind": "gold",
                 "text": "出售该随从可以获得6枚铸币。",
                 "textEn": "This minion sells for\n6 Gold.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "amount": 6
+                },
+                "adapter": [
+                  "deferredFunds"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -3256,35 +3277,52 @@
       },
       "authoredRule": {
         "sourceId": "BGS_049",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "gold",
+        "normal": {
+          "trigger": "sold",
+          "recipient": "playerResource",
+          "duration": "nextPrepFunds",
+          "adapter": "deferredFunds",
+          "params": {
+            "normal": 3,
+            "elite": 6
+          }
+        },
+        "elite": {
+          "trigger": "sold",
+          "recipient": "playerResource",
+          "duration": "nextPrepFunds",
+          "adapter": "deferredFunds",
+          "params": {
+            "normal": 3,
+            "elite": 6
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "combatPassive",
-            "sourceTrigger": "combatPassive",
-            "recipient": "self",
-            "duration": "game",
+            "trigger": "sold",
+            "sourceTrigger": "sell",
+            "recipient": "playerResource",
+            "duration": "nextPrepFunds",
             "text": "出售该随从可以获得3枚铸币。",
             "params": {
-              "numericLiterals": [
-                3
-              ]
+              "amount": 3
             }
           }
         ],
         "elite": [
           {
-            "trigger": "combatPassive",
-            "sourceTrigger": "combatPassive",
-            "recipient": "self",
-            "duration": "game",
+            "trigger": "sold",
+            "sourceTrigger": "sell",
+            "recipient": "playerResource",
+            "duration": "nextPrepFunds",
             "text": "出售该随从可以获得6枚铸币。",
             "params": {
-              "numericLiterals": [
-                6
-              ]
+              "amount": 6
             }
           }
         ]
@@ -3441,44 +3479,42 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    1
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "shopUpgradeCost",
+                "duration": "nextUpgrade",
+                "kind": "upgradeDiscount",
                 "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (1).",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "amount": 1
+                },
+                "adapter": [
+                  "factionReaction"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    2
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "shopUpgradeCost",
+                "duration": "nextUpgrade",
+                "kind": "upgradeDiscount",
                 "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。",
                 "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (2).",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "amount": 2
+                },
+                "adapter": [
+                  "factionReaction"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -3486,35 +3522,58 @@
       },
       "authoredRule": {
         "sourceId": "BGS_055",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "upgradeDiscount",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "shopUpgradeCost",
+          "duration": "nextUpgrade",
+          "adapter": "factionReaction",
+          "params": {
+            "mode": "discount",
+            "targets": "self",
+            "count": 1,
+            "excludeSelf": false,
+            "maxEventsPerPrep": 1
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "shopUpgradeCost",
+          "duration": "nextUpgrade",
+          "adapter": "factionReaction",
+          "params": {
+            "mode": "discount",
+            "targets": "self",
+            "count": 2,
+            "excludeSelf": false,
+            "maxEventsPerPrep": 1
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "shopUpgradeCost",
+            "duration": "nextUpgrade",
             "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
             "params": {
-              "numericLiterals": [
-                1
-              ]
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "shopUpgradeCost",
+            "duration": "nextUpgrade",
             "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。",
             "params": {
-              "numericLiterals": [
-                2
-              ]
+              "amount": 2
             }
           }
         ]
@@ -6654,44 +6713,42 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
                 "recipient": "playerResource",
-                "duration": "turnOrNextUse",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    0
-                  ]
-                },
+                "duration": "nextRefreshes",
+                "kind": "freeRefresh",
                 "text": "<b>战吼：</b>你下一次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
                 "textEn": "[x]<b>Battlecry:</b> Your next\n<b>Refresh</b> costs (0).",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "amount": 1
+                },
+                "adapter": [
+                  "freeRefresh"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
                 "recipient": "playerResource",
-                "duration": "turnOrNextUse",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": [
-                    0
-                  ]
-                },
+                "duration": "nextRefreshes",
+                "kind": "freeRefresh",
                 "text": "<b>战吼：</b>你下两次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
                 "textEn": "[x]<b>Battlecry:</b> Your next two\n <b>Refreshes</b> cost (0).",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "amount": 2
+                },
+                "adapter": [
+                  "freeRefresh"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -6699,35 +6756,52 @@
       },
       "authoredRule": {
         "sourceId": "BGS_116",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "freeRefresh",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "playerResource",
+          "duration": "nextRefreshes",
+          "adapter": "freeRefresh",
+          "params": {
+            "normal": 1,
+            "elite": 2
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "playerResource",
+          "duration": "nextRefreshes",
+          "adapter": "freeRefresh",
+          "params": {
+            "normal": 1,
+            "elite": 2
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
             "recipient": "playerResource",
-            "duration": "turnOrNextUse",
+            "duration": "nextRefreshes",
             "text": "<b>战吼：</b>你下一次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
             "params": {
-              "numericLiterals": [
-                0
-              ]
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
             "recipient": "playerResource",
-            "duration": "turnOrNextUse",
+            "duration": "nextRefreshes",
             "text": "<b>战吼：</b>你下两次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
             "params": {
-              "numericLiterals": [
-                0
-              ]
+              "amount": 2
             }
           }
         ]
