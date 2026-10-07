@@ -3,7 +3,7 @@
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, Button, Modal, MicroLabel, TierChip, DifficultyTag } from '../ui/components.js';
 import { Img, CoinGlyph, UnitThumb, LpTower, Sprite } from '../ui/gameComponents.js';
-import { chessPortraitUrl, enemyIconUrl, uiUrl } from '../ui/assetUrls.js';
+import { chessPortraitUrl, enemyIconUrl, uiUrl, pageAssetUrl } from '../ui/assetUrls.js';
 import { audio } from '../audio.js';
 import { data } from '../data.js';
 import { TraitGlyphs } from './hud.js';
@@ -364,7 +364,7 @@ export function FinalScreen({ state, catalog, onLook, onLeave }) {
   const bg = uiUrl(m, win ? 'settle/settlemen_teamshow_success' : 'settle/settlemen_teamshow_fail');
   const lineup = [...state.pieces].sort((a, b) => Number(isDeployed(b)) - Number(isDeployed(a))).slice(0, 12);
   return html`<div class=${cx('screen', 'result', 'ix-final', win ? 'is-win' : 'is-lose')} role="dialog" aria-label="本局结算" data-testid="ix-final">
-    <div class="result__bg" aria-hidden="true" style=${bg ? `--result-bg:url("${bg}")` : undefined}></div>
+    <div class="result__bg" aria-hidden="true" style=${bg ? `--result-bg:url("${pageAssetUrl(bg)}")` : undefined}></div>
     <div class="result__grid" aria-hidden="true"></div>
     <main class="result__main">
       <section class="result__hero">
