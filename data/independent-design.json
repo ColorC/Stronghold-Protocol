@@ -21697,11 +21697,11 @@
       "kind": "功能装备",
       "level": 2,
       "eliteLevel": null,
-      "normal": "首次装备时，选择一个额外酒馆阵营标签。选择后不能改变；不改变原技能、天赋或继承限制使用的原生阵营。",
+      "normal": "首次装备时，选择一个额外酒馆阵营标签。选择后不能改变；不改变原技能、天赋或交接限制使用的原生阵营。",
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -21716,7 +21716,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_1_05_e_a",
@@ -21732,7 +21733,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -21747,7 +21748,8 @@
           }
         ],
         "basis": "参考此原卡的属性、关键词或联动主干，按方舟伤害/技力/部署机制分解。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_2_01_e_a",
@@ -22433,7 +22435,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -22448,7 +22450,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_4_05_e_a",
@@ -22712,7 +22715,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -22727,7 +22730,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_5_02_e_a",
@@ -22743,7 +22747,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -22758,7 +22762,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_5_03_e_a",
@@ -23194,7 +23199,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -23209,7 +23214,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_6_06_e_a",
@@ -23225,7 +23231,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -23240,7 +23246,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_6_07_e_a",
@@ -23312,11 +23319,11 @@
       "kind": "功能装备",
       "level": 2,
       "eliteLevel": null,
-      "normal": "首次装备时，选择一个额外酒馆阵营标签。选择后不能改变；不改变原技能、天赋或继承限制使用的原生阵营。",
+      "normal": "首次装备时，选择一个额外酒馆阵营标签。选择后不能改变；不改变原技能、天赋或交接限制使用的原生阵营。",
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -23331,7 +23338,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "sourceId": "chess_item_6_10_e_a",
@@ -23536,7 +23544,7 @@
       "slotCost": 1,
       "unique": false,
       "upgrade": null,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -23551,7 +23559,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "name": "增压臂铠",
@@ -23978,7 +23987,7 @@
       "slotCost": 1,
       "unique": true,
       "upgrade": null,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -23993,7 +24002,8 @@
           }
         ],
         "basis": "构筑法术或暗月奖品作为方舟装备行为的补充范式；时机与数值按装备说明调整。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "name": "叙拉古处决令",
@@ -24082,7 +24092,7 @@
       "slotCost": 1,
       "unique": true,
       "upgrade": null,
-      "retired": false,
+      "retired": true,
       "unassigned": false,
       "sourceRefs": {
         "cards": [
@@ -24097,7 +24107,8 @@
           }
         ],
         "basis": "参考此原卡的属性、关键词或联动主干，按方舟伤害/技力/部署机制分解。"
-      }
+      },
+      "legacyOnly": true
     },
     {
       "name": "萨米凋亡枝",
@@ -24508,7 +24519,10 @@
         }
       ],
       "basis": "梦魇融合怪的类型适配只转为可选阵营标签，不采用畸变怪的随机进化。"
-    }
+    },
+    "retired": true,
+    "legacyOnly": true,
+    "unassigned": false
   },
   "attachments": [
     {
