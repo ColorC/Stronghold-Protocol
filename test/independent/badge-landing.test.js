@@ -52,16 +52,16 @@ test('front, adjacent and faction-lowest pick their operator, and fall back to t
 
 test('a trait rule names where its badges land (params.landOn)', () => {
   const catalog = landing('self');
-  const op = catalog.operators.chess_char_1_02_a; // 角峰: <获得时> 生命徽章
+  const op = catalog.operators.chess_char_1_03_a; // 惊蛰: a native gain badge is directed to the front operator
   const rules = op.nativeTrait.effect.prep.map((r) => ({ ...r, params: { ...r.params, landOn: 'front' } }));
   const custom = { ...catalog, operators: { ...catalog.operators, chess_char_1_02_a: { ...op, nativeTrait: { ...op.nativeTrait, effect: { ...op.nativeTrait.effect, prep: rules } } } } };
-  const maker = piece('a', 'chess_char_1_02_a', 10, 3);
+  const maker = piece('a', 'chess_char_1_03_a', 10, 3);
   const front = piece('b', 'chess_char_1_06_a', 10, 4);
   const state = stateWith([maker, front]);
   const services = { catalog: custom, data: null, rng: () => 0, grantEquipment: (s, id, n, extra) => grantEquipment(s, custom, id, n, extra), recordProduction: () => {} };
   runNativeHook(state, 'gain', { piece: maker }, services);
-  assert.deepEqual(front.equipment.map((x) => x.id), ['vitality']);
+  assert.deepEqual(front.equipment.map((x) => x.id), ['precision']);
   assert.equal(maker.equipment.length, 0);
-  // 角峰 also brings 谢拉格冰爪 (装备 v4): gear goes to the stock, never onto anyone
-  assert.deepEqual(state.inventory.map((x) => x.id), ['independent:谢拉格冰爪']);
+  // 惊蛰 also brings 炎国缚锁: gear goes to the stock, never onto anyone
+  assert.deepEqual(state.inventory.map((x) => x.id), ['independent:炎国缚锁']);
 });

@@ -33,9 +33,11 @@ function fixture() {
 test('catalog resolves every approved operator in ordinary and elite chessId namespaces', () => {
   const ordinary = all.filter((x) => !x.elite);
   const elite = all.filter((x) => x.elite);
-  assert.equal(ordinary.length, 112);
-  assert.equal(elite.length, 112);
-  assert.equal(Object.keys(catalog.operators).length, 224);
+  assert.equal(ordinary.length, 120);
+  assert.equal(elite.length, 120);
+  assert.equal(ordinary.filter((x) => x.recruitable).length, 101);
+  assert.equal(elite.filter((x) => x.recruitable).length, 101);
+  assert.equal(Object.keys(catalog.operators).length, 240);
   for (const base of ordinary) {
     const promoted = catalog.operators[base.eliteChessId];
     assert.ok(promoted, `${base.name} elite id is queryable`);
@@ -98,16 +100,16 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   const normalPiece = { uid: 'a', chessId: 'chess_char_1_02_a', elite: false, nativeState: {} };
   normal.state.pieces.push(normalPiece);
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'player' }, normal.services);
-  assert.deepEqual(normal.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:谢拉格冰爪', quantity: 1 }, { id: 'vitality', quantity: 1 }]);
+  assert.deepEqual(normal.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:坚守盟约', quantity: 1 }]);
 
   const elite = fixture();
   const elitePiece = { uid: 'b', chessId: 'chess_char_1_02_b', elite: true, nativeState: {} };
   elite.state.pieces.push(elitePiece);
   runNativeHook(elite.state, 'gain', { piece: elitePiece, origin: 'player' }, elite.services);
-  assert.deepEqual(elite.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:谢拉格冰爪', quantity: 2 }, { id: 'vitality', quantity: 2 }]);
+  assert.deepEqual(elite.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:坚守盟约', quantity: 2 }]);
 
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'native', sourceUid: 'a' }, normal.services);
-  assert.equal(normal.granted.length, 2, 'a gain from a native source adds nothing to the first gain (谢拉格冰爪 and 生命徽章)');
+  assert.equal(normal.granted.length, 1, 'a gain from a native source does not recursively repeat the ordinary gear grant');
 });
 
 test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
@@ -119,8 +121,8 @@ test('白面鸮 replays the front operator\'s 获得时 effect once at the end o
   state.pieces.push(owl, donor);
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
-  // the first 获得时 rule of the front operator (角峰 brings 谢拉格冰爪 first since 装备 v4)
-  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'independent:谢拉格冰爪', quantity: 1, sourceUid: 'owl' }]);
+  // 角峰's current 获得时 effect grants one ordinary gear item, not a badge.
+  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'independent:坚守盟约', quantity: 1, sourceUid: 'owl' }]);
 });
 
 test('round-end effects require a fielded owner except approved bench-active makers', () => {
@@ -248,7 +250,7 @@ test('native registry reports implementation coverage without silent empty callb
   assert.deepEqual(catalog.nativeRegistry.unsupported, []);
   assert.ok(catalog.nativeRegistry.prepBehaviors.length > 0);
   assert.ok(all.every((x) => Array.isArray(x.nativeTrait.effect.prep) && Array.isArray(x.nativeTrait.effect.combat)));
-  const missingCombat = all.filter((x) => !x.elite && x.nativeTrait.sources.normal.some((s) => s.eventType === 'IN_BATTLE') && x.name !== '风丸' && !x.nativeTrait.effect.combat.length);
+  const missingCombat = all.filter((x) => !x.elite && x.recruitable && x.nativeTrait.sources.normal.some((s) => s.eventType === 'IN_BATTLE') && !x.nativeTrait.effect.combat.length);
   assert.deepEqual(missingCombat.map((x) => x.name), []);
   const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','perEliteGrant','buyGear','diversityGrant','copyFrontNative','forgePerRefresh']);
   for (const behavior of catalog.nativeRegistry.prepBehaviors) assert.ok(expectedPrep.has(behavior), `registered behavior ${behavior}`);
@@ -305,7 +307,7 @@ test('native recruitment only selects currently stocked ordinary copies across a
   const tail = get('焰尾');
   const randomPiece = { uid: 'tail', chessId: tail.chessId, row: 0, col: 0, nativeState: {} };
   const weighted = catalog.pools.pool_char_pinus.weighted.map(([id]) => id);
-  const soleStock = weighted.find((id) => catalog.operators[id]);
+  const soleStock = weighted.find((id) => catalog.operators[id]?.recruitable);
   random.state.pool = { left: stock([soleStock], [1]) };
   random.state.pieces.push(randomPiece);
   runNativeHook(random.state, 'gain', { piece: randomPiece }, random.services);
@@ -314,7 +316,7 @@ test('native recruitment only selects currently stocked ordinary copies across a
   const sold = fixture();
   const pinecone = get('松果');
   const soldPiece = { uid: 'pinecone', chessId: pinecone.chessId, nativeState: {} };
-  const ordinary = all.filter((x) => !x.elite && x.source?.normalChess?.tier === 1).slice(0, 3).map((x) => x.chessId);
+  const ordinary = all.filter((x) => !x.elite && x.recruitable && x.source?.normalChess?.tier === 1).slice(0, 3).map((x) => x.chessId);
   sold.services.data.chess = Object.fromEntries(ordinary.map((id) => [id, { chessId: id, tier: 1, visible: true, bonds: [] }]));
   sold.state.pool = { left: stock(ordinary, [0, 1, 0]) };
   sold.state.pieces.push(soldPiece);
@@ -340,14 +342,14 @@ test('native recruitment only selects currently stocked ordinary copies across a
 
 test('repeatNativeForging duplicates eligible badge gain and copy output once without replaying supply items', () => {
   const normal = fixture();
-  const corner = all.find((x) => x.name === '角峰' && !x.elite);
-  const piece = { uid: 'corner', chessId: corner.chessId, nativeState: {} };
+  const jingzhe = all.find((x) => x.name === '惊蛰' && !x.elite);
+  const piece = { uid: 'jingzhe', chessId: jingzhe.chessId, nativeState: {} };
   normal.state.pieces.push(piece);
   normal.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
   runNativeHook(normal.state, 'gain', { piece }, normal.services);
-  // the badge is forged twice, the gear 角峰 brings only once
-  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['independent:谢拉格冰爪', 1, undefined], ['vitality', 1, undefined], ['vitality', 1, true]]);
-  assert.equal(normal.granted[2].sourceUid, 'corner');
+  // 惊蛰's authored badge gain repeats; its unrelated gear reward remains once.
+  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['independent:炎国缚锁', 1, undefined], ['precision', 1, undefined], ['precision', 1, true]]);
+  assert.equal(normal.granted[2].sourceUid, 'jingzhe');
 
   const supply = fixture();
   const swire = all.find((x) => x.name === '诗怀雅' && !x.elite);

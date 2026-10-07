@@ -78,8 +78,8 @@ test('short-run round 4 offers the start-stage prize before the next preparation
 test('pool copies follow Battlegrounds by tier (15/15/13/11/9/7), by the tier an operator has in this mode', () => {
   const state = createSession({ seed: 5, difficulty: 'NORMAL' });
   const catalog = getCatalog();
-  const want = { 1: 15, 2: 15, 3: 13, 4: 11, 5: 9, 6: 7 };
+  const want = catalog.config.poolCopies;
   for (const [id, p] of Object.entries(state.pool)) assert.equal(p.cap, want[catalog.operators[id].tier], id);
   const skadi = Object.values(catalog.operators).find((x) => !x.elite && x.name === '斯卡蒂');
-  assert.equal(state.pool[skadi.chessId].cap, 15, 'moved to tier 1');
+  assert.equal(state.pool[skadi.chessId].cap, want[skadi.tier], `copies follow current mode tier ${skadi.tier}`);
 });

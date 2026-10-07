@@ -4,6 +4,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { cardTable, cardTableDiff, INACTIVE_OPERATOR_IDS, ROSTER_KINDS } from '../../tools/independent-card-table.mjs';
 import { gearSourcesBlock } from '../../tools/independent-gear-sources.mjs';
+import { fileURLToPath } from 'node:url';
+
+// In a sparse worktree, resolve formal data through the same explicit override as the runtime.
+process.env.SP_INDEPENDENT_DESIGN_PATH ||= process.env.SP_DATA_DIR
+  ? `${process.env.SP_DATA_DIR}\\independent-design.json`
+  : fileURLToPath(new URL('../../data/independent-design.json', import.meta.url));
 
 test('the operator table has every operator once, with a known kind; an untouched table reads back unchanged', () => {
   const t = cardTable('operators');

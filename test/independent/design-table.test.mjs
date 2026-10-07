@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { tableDiff, writeOperatorTable } from '../../tools/independent-design-table.mjs';
 
-const design = JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH, 'utf8'));
+const designPath = process.env.SP_INDEPENDENT_DESIGN_PATH || new URL('../../data/independent-design.json', import.meta.url);
+const design = JSON.parse(readFileSync(designPath, 'utf8'));
 const docPath = new URL('../../docs/independent-mode/design.md', import.meta.url);
 
 test('design table diff is scoped to the 101 active operators', () => {

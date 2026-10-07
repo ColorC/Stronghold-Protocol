@@ -24,10 +24,10 @@ function fixture() {
 const piece = (uid, name, row = null, col = null, elite = false) => ({ uid, chessId: idOf(name, elite), elite, row, col, dir: 'RIGHT', nativeState: {}, equipment: [], attachments: [] });
 const sum = (granted, id, filter = () => true) => granted.filter((x) => x.id === id && filter(x)).reduce((n, x) => n + x.quantity, 0);
 
-test('tiers follow Battlegrounds scaled to 112: 10/16/21/27/23/15', () => {
+test('the fixed active roster follows the approved tier distribution', () => {
   const counts = {};
-  for (const op of Object.values(catalog.operators).filter((x) => !x.elite)) counts[op.tier] = (counts[op.tier] || 0) + 1;
-  assert.deepEqual(counts, { 1: 10, 2: 16, 3: 21, 4: 27, 5: 23, 6: 15 });
+  for (const op of Object.values(catalog.operators).filter((x) => !x.elite && x.recruitable)) counts[op.tier] = (counts[op.tier] || 0) + 1;
+  assert.deepEqual(counts, { 1: 13, 2: 19, 3: 20, 4: 18, 5: 18, 6: 13 });
 });
 
 test('白面鸮 has the 进入休整期时 trait of the operator in front (精锐: its elite numbers); nothing in front, nothing', () => {

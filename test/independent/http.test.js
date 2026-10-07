@@ -19,7 +19,8 @@ test('independent HTTP actions serialize revisions, persist across restarts and 
     const created = await request('/independent/api/sessions', { seed: 1, difficulty: 'FUNNY', roundLimit: 9 });
     assert.equal(created.status, 201);
     const { id, catalog } = created.data;
-    assert.equal(Object.keys(catalog.operators).length, 224);
+    assert.equal(Object.keys(catalog.operators).length, 240);
+    assert.equal(Object.values(catalog.operators).filter((x) => !x.elite && x.recruitable).length, 101);
     assert.equal(catalog.gear.precision.normal.includes('10'), true);
     assert.ok(!JSON.stringify(catalog).includes('originalNormal'));
     const endpoint = `/independent/api/sessions/${id}`;

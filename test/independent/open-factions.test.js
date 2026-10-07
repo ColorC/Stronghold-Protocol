@@ -7,7 +7,7 @@ import { TAVERN_FACTIONS, tavernFactions } from '../../shared/independentRules.j
 
 const catalog = getCatalog();
 const ALL = Object.values(TAVERN_FACTIONS);
-const ordinary = Object.values(catalog.operators).filter((op) => !op.elite);
+const ordinary = Object.values(catalog.operators).filter((op) => !op.elite && op.recruitable);
 const factionsOf = (op) => tavernFactions({ chessId: op.chessId }, catalog);
 
 test('new sessions open every faction and do not roll random bans', () => {

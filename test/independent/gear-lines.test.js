@@ -12,7 +12,8 @@ import { modeIdFor } from '../../shared/constants.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 const catalog = getCatalog(data);
-const text = JSON.parse(readFileSync(new URL('../../data/independent-game-text.json', import.meta.url), 'utf8'));
+const textPath = process.env.SP_GAME_TEXT_PATH || process.env.SP_INDEPENDENT_GAME_TEXT_PATH || new URL('../../data/independent-game-text.json', import.meta.url);
+const text = JSON.parse(readFileSync(textPath, 'utf8'));
 const items = { ...catalog.badges, ...catalog.equipment };
 /** The item every id stands for: a legacy badge is its badge, a legacy identity card the one 缪尔赛思 brings. */
 const canonical = (id) => { const d = items[id]; return d?.mechanism === 'badge' ? d.badgeId : (d?.canonicalId && d.canonicalId !== id ? Object.values(catalog.equipment).find((x) => x.canonicalId === d.canonicalId && x.id !== d.canonicalId && !x.oldName)?.id || id : id); };

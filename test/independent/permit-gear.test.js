@@ -48,8 +48,8 @@ test('the operator wears its 交接凭证 from the gain on, without drawing a ui
   const after = buy(start, '角峰');
   const piece = after.pieces.at(-1);
   assert.deepEqual(piece.equipment.filter((x) => x.id.startsWith('permit-')), [{ uid: `permit-${piece.uid}`, id: 'permit-north-handover-order', quantity: 1, state: {}, sourceId: 'permit-north-handover-order' }]);
-  const plain = buy(start, '隐现'); // brings nothing when gained
-  assert.equal(after.nextUid - start.nextUid, plain.nextUid - start.nextUid + 2, '角峰\'s 生命徽章 and 谢拉格冰爪 draw one uid each');
+  const plain = buy(start, '波登可'); // its trait forges later, not on acquisition
+  assert.equal(after.nextUid - start.nextUid, plain.nextUid - start.nextUid + 1, '角峰 receives its permit and one gear reward; the maker badge is no longer part of its trait');
   assert.ok(!plain.pieces.at(-1).equipment.length);
   assert.deepEqual(validateSession(after), []);
 });
@@ -84,7 +84,7 @@ test('a donor\'s 交接凭证 is lost with it; the receiver keeps its own', () =
   assert.equal(done.ok, true, done.error?.message);
   assert.ok(!done.state.pieces.some((p) => p.equipment.some((x) => x.id === 'permit-north-handover-order')));
 
-  const other = pair('送葬人', '宴');
+  const other = pair('送葬人', '崖心');
   const r = applyAction(other.state, { type: 'inherit', donorUid: other.donor.uid, receiverUid: other.receiver.uid });
   assert.equal(r.ok, true, r.error?.message);
   assert.deepEqual(r.events[0].preview.permit, { give: null, receive: 'permit-loner-loan' });
