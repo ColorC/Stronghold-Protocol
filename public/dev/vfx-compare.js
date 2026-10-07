@@ -154,7 +154,7 @@ function advance(dt) {
 
 function stats(view) {
   const s = view?.stats?.() || {};
-  return `fps ${Number(s.fps || 0).toFixed(0)}  frame ${Number(s.frameMs || 0).toFixed(1)} ms\nFX ${s.particles || 0} 粒子  ${s.projectiles || 0} 投射  原版 ${s.originalVfx || 0}  缺资源 ${s.originalMissing || 0}`;
+  return `fps ${Number(s.fps || 0).toFixed(0)}  frame ${Number(s.frameMs || 0).toFixed(1)} ms\nFX ${s.particles || 0} 粒子  ${s.projectiles || 0} 投射  原版 ${s.originalVfx || 0}  缺资源 ${s.originalMissing || 0}  未解挂点 ${s.originalUnresolved || 0}`;
 }
 
 function renderErrors() { $('errors').textContent = errors.length ? `错误：${errors.slice(-2).join('；')}` : ''; }

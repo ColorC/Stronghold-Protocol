@@ -56,6 +56,7 @@ export class OriginalVfxPlayer {
     this.requested = new Set();
     this.loaded = new Set();
     this.procedural = new Set();
+    this.unresolved = new Set();
   }
 
   _manifest() {
@@ -141,6 +142,7 @@ export class OriginalVfxPlayer {
   }
 
   markProcedural(prefab) { if (prefab) this.procedural.add(String(prefab)); }
+  markUnresolved(prefab) { if (prefab) this.unresolved.add(String(prefab)); }
 
   stopGroup(group) {
     if (!group) return;
@@ -250,10 +252,11 @@ export class OriginalVfxPlayer {
 
   get count() { return this.active.size; }
   get missingCount() { return this.missing.size; }
+  get unresolvedCount() { return this.unresolved.size; }
   coverage() {
-    return { requested: [...this.requested].sort(), loaded: [...this.loaded].sort(), missing: [...this.missing].sort(), procedural: [...this.procedural].sort() };
+    return { requested: [...this.requested].sort(), loaded: [...this.loaded].sort(), missing: [...this.missing].sort(), procedural: [...this.procedural].sort(), unresolved: [...this.unresolved].sort() };
   }
 
   clear() { for (const record of [...this.active]) this._remove(record); }
-  destroy() { this.clear(); this.entries.clear(); this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.manifest = null; this.manifestPromise = null; }
+  destroy() { this.clear(); this.entries.clear(); this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.unresolved.clear(); this.manifest = null; this.manifestPromise = null; }
 }
