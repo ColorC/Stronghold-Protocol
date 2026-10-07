@@ -1,12 +1,5 @@
 // Source-id keyed, authored adapters for Darkmoon effects delivered in preparation.
 // Gear IDs intentionally reuse the project's nine stable keyword-gear definitions.
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const blueprints = JSON.parse(fs.readFileSync(path.resolve(here, '../../../data/independent-darkmoon-blueprints.json'), 'utf8'));
-const sourceIdByName = new Map(blueprints.entries.map(x => [x.operator, x.sourceId]));
 const gear = id => ({ id: `independent:${id}`, normal: 1, elite: 1 });
 const grantSelf = (...items) => ({ trigger:'gain', behavior:'grantEquipment', params:{ landOn:'self', outputs:items } });
 
@@ -25,6 +18,8 @@ const RULES = Object.freeze({
 export const DARKMOON_PREP_SUPPORTED_IDS = Object.freeze(Object.keys(RULES));
 
 export function darkmoonPrepRulesFor(source) {
-  const id = source?.sourceRefs?.darkmoon19_2?.id || source?.darkmoonSourceId || sourceIdByName.get(source?.name);
+  // The generated design add-on carries sourceRefs.darkmoon19_2.id. Do not infer a source
+  // from a matching operator name: it is activated only when a compiled source ref is attached.
+  const id = source?.sourceRefs?.darkmoon19_2?.id || source?.darkmoonSourceId;
   return structuredClone(RULES[id] || []);
 }

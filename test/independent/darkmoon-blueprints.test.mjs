@@ -57,7 +57,7 @@ test('compiler add-ons link only existing native definitions and preserve all so
 });
 
 test('explicit keyword adapters dispatch source-id keyed gain grants only to self', () => {
-  const source = { name:'砾', modeEffects:{ normal:{prep:[],combat:[]}, elite:{prep:[],combat:[]} } };
+  const source = { name:'砾', sourceRefs:{darkmoon19_2:{id:'BGS_039'}}, modeEffects:{ normal:{prep:[],combat:[]}, elite:{prep:[],combat:[]} } };
   const effect = nativeEffectFor('test-id', source, false);
   const rule = effect.prep.find(x=>x.params?.outputs?.some(o=>o.id==='independent:坚守盟约'));
   assert.ok(rule);
@@ -67,21 +67,26 @@ test('explicit keyword adapters dispatch source-id keyed gain grants only to sel
   assert.equal(rule.params.outputs[0].elite,1);
 });
 
-test('live catalog dispatches the Taunt adapter once on recruit gain with wearer target', () => {
-  const catalog = getCatalog();
-  const op = Object.values(catalog.operators).find(x=>x.name==='砾'&&!x.elite);
-  assert.ok(op);
-  const state={round:1,shop:{level:1,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
-  const granted=[];
-  const piece={uid:'dragonspawn',chessId:op.chessId,nativeState:{}};
-  const services={catalog,data:{},rng:()=>0,grantEquipment(_s,id,quantity,extra){granted.push({id,quantity,...extra});},grantChess(){},addOffer(){},record(){}};
-  state.pieces.push(piece);
-  runNativeHook(state,'gain',{piece,origin:'player'},services);
-  const grant=granted.find(x=>x.id==='independent:坚守盟约');
-  assert.ok(grant);
-  assert.equal(grant.landOn,'self');
-  assert.equal(grant.quantity,1);
-  const n=granted.length;
-  runNativeHook(state,'roundStart',{piece,origin:'player'},services);
-  assert.equal(granted.length,n,'gear is awarded on acquisition, not redeploy or a later prep phase');
+test('a compiled source-ref dispatches the Taunt adapter once on recruit gain with wearer target', () => {
+  const baseCatalog = getCatalog();
+  for (const elite of [false,true]) {
+    const op = Object.values(baseCatalog.operators).find(x=>x.name==='砾'&&Boolean(x.elite)===elite);
+    assert.ok(op);
+    const source={...op,sourceRefs:{darkmoon19_2:{id:'BGS_039'}}};
+    const effect=nativeEffectFor(op.chessId,source,elite);
+    const catalog={...baseCatalog,operators:{...baseCatalog.operators,[op.chessId]:{...op,nativeTrait:{...op.nativeTrait,effect}}}};
+    const state={round:1,shop:{level:1,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
+    const granted=[];
+    const piece={uid:`dragonspawn-${elite?'elite':'normal'}`,chessId:op.chessId,nativeState:{}};
+    const services={catalog,data:{},rng:()=>0,grantEquipment(_s,id,quantity,extra){granted.push({id,quantity,...extra});},grantChess(){},addOffer(){},record(){}};
+    state.pieces.push(piece);
+    runNativeHook(state,'gain',{piece,origin:'player'},services);
+    const grant=granted.find(x=>x.id==='independent:坚守盟约');
+    assert.ok(grant);
+    assert.equal(grant.landOn,'self');
+    assert.equal(grant.quantity,1,'non-scaled golden source keeps one gear');
+    const n=granted.length;
+    runNativeHook(state,'roundStart',{piece,origin:'player'},services);
+    assert.equal(granted.length,n,'gear is awarded on acquisition, not redeploy or a later prep phase');
+  }
 });
