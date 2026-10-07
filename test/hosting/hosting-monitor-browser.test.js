@@ -84,4 +84,3 @@ test('hosting monitor renders fixture, preserves values on fetch failure, and co
     await writeFile(receiptPath, JSON.stringify(receipt, null, 2) + '\n');
   }
 });
-
