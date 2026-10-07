@@ -23,6 +23,7 @@ export function uiUrl(m, key) {
  * @param {any} chess chess.json record (or { assets: { avatar } })
  */
 export function chessAvatarUrl(m, chess) {
+  if (chess?.darkmoonSupport) return tokenAvatarUrl(m, chess.assets?.avatar);
   const chars = obj(obj(m)?.chars);
   const id = str(chess?.assets?.avatar) || str(chess?.charId);
   if (!chars || !id) return null;
@@ -39,6 +40,7 @@ export function chessAvatarUrl(m, chess) {
  * @param {any} chess
  */
 export function chessPortraitUrl(m, chess) {
+  if (chess?.darkmoonSupport) return tokenAvatarUrl(m, chess.assets?.avatar);
   const chars = obj(obj(m)?.chars);
   const id = str(chess?.assets?.portrait);
   if (!chars) return null;

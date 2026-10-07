@@ -244,7 +244,7 @@ test('shop growth remains a fixed shop recipient and purchase grants growth dire
 test('original Battlecry buffs inspect the acquired source tag and wear permanent growth only on the fixed tribe targets',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false);
   for(const [id,tribe,elite,count,badges] of [['BGS_041','DRAGON',false,1,['precision','vitality']],['BGS_053','PIRATE',true,6,['precision']],['BGS_128','ELEMENTAL',false,1,['precision','vitality']]]) {
-    const holderOp=normal.find(x=>x.name!==byId.get(id).operator), otherOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator), gainOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
+    const holderOp=normal.find(x=>x.profession==='TANK'&&x.name!==byId.get(id).operator), otherOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator), gainOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
     const holderRef={id,rosterTribe:tribe}, otherRef={id:'TEST_TARGET',rosterTribe:tribe}, gainedRef={id:'TEST_BATTLECRY',battlecry:true,rosterTribe:'NEUTRAL'};
     const faction={BGS_041:'卡西米尔',BGS_053:'维多利亚',BGS_128:'炎'}[id];
     const holder={...holderOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:holderRef}};
@@ -418,8 +418,9 @@ test('CFM 315 and BGS 115 use actual non-shop, non-merge support prototypes, inc
   for(const spec of specs) {
     const op=base.operators[spec.id];
     assert.ok(op?.darkmoonSupport&&op.recruitable===false&&op.mergeable===false,`${spec.id} is a runtime prototype outside the shop pool`);
-    assert.equal(op.source.normalChess.stats.atk,spec.attack);
-    assert.equal(op.source.normalChess.stats.maxHp,spec.health);
+    assert.equal(op.source.normalChess.stats.atk,spec.attack*120);
+    assert.equal(op.source.normalChess.stats.maxHp,spec.health*350);
+    assert.ok(op.nativeFactionTags.length,'a support unit also has its summon origin affiliation');
     assert.ok(op.source.normalChess.nativeGrowth,'support token carries an explicit native curve for levels mode');
   }
   const normal=Object.values(base.operators).find(x=>!x.elite&&x.recruitable!==false),summoner={...normal,sourceRefs:{darkmoon19_2:{id:'CFM_315'}}};
@@ -428,9 +429,9 @@ test('CFM 315 and BGS 115 use actual non-shop, non-merge support prototypes, inc
   const recruited=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(recruited.ok,true,JSON.stringify(recruited.error));
   const cat=recruited.state.pieces.find(x=>x.chessId==='darkmoon:support-cat-1-1');assert.ok(cat);
   assert.equal(cat.growthMode,'levels');assert.equal(cat.growthLevel,1);
-  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:1,atk:1,def:0,res:0},'support starts from the authored native curve');
+  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:350,atk:120,def:0,res:0},'support starts from its translated combat body');
   grantGrowthLevels(recruited.state,base,cat,1);
-  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:2,atk:2,def:0,res:0},'support recipient advances by its own native levels curve');
+  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:354,atk:121,def:0,res:0},'support recipient advances along its authored support curve');
   const legal=viewSession(recruited.state,{catalog}).pieces.find(x=>x.uid===cat.uid).legalTiles;assert.ok(legal.length);
   const [row,col]=legal[0].split(',').map(Number),deployed=applyAction(recruited.state,{type:'move',uid:cat.uid,row,col},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
   const fight=runIndependentBattle(deployed.state,{catalog});assert.equal(fight.diagnostics.errorCount,0,JSON.stringify(fight.diagnostics.errors));

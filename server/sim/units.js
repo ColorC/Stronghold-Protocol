@@ -37,6 +37,8 @@ export class Unit {
     this.ownerId = init.ownerId ?? null;  // playerId (enemies: field owner)
     this.uid = init.uid ?? null;          // match piece uid (ops/tokens from the board)
     this.ownerUnit = init.ownerUnit ?? null; // summoner (tokens)
+    this.nativeGrowthStatus = init.nativeGrowthStatus ?? null; // optional runtime owner phase/level for native summon curves
+    this.nativeOwnerGrowth = init.nativeOwnerGrowth ?? null; // frozen phase/level context on a spawned summon
     this.x = init.x ?? 0;
     this.y = init.y ?? 0;
     this.tileR = init.tileR ?? Math.round(this.y);

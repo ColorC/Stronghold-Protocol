@@ -35,13 +35,15 @@ async function safeImport(path) {
 
 const TIERS = await Promise.all([1, 2, 3, 4, 5, 6].map((t) => safeImport(`./kits/tier${t}.js`)));
 const NEW_NATIVE_KITS = await safeImport('./newnativekits.js');
+const NATIVE_FACTION_KITS = await safeImport('./nativeVictoriaKazimierzSiracusa.js');
 const DOMAIN_NAMES = ['tokens', 'devices', 'enemies', 'bosses', 'bonds', 'garrisons', 'items', 'bands', 'choices'];
 const DOMAINS = await Promise.all(DOMAIN_NAMES.map((n) => safeImport(`./${n}.js`)));
 const tokens = DOMAINS[0];
 
 /** Merged kit registry: baseChessId → (bb, chess, def) => Kit */
 export const KITS = Object.freeze(Object.assign({}, ...TIERS.map((m) => (m && m.default && typeof m.default === 'object' ? m.default : {})),
-  NEW_NATIVE_KITS?.default && typeof NEW_NATIVE_KITS.default === 'object' ? NEW_NATIVE_KITS.default : {}));
+  NEW_NATIVE_KITS?.default && typeof NEW_NATIVE_KITS.default === 'object' ? NEW_NATIVE_KITS.default : {},
+  NATIVE_FACTION_KITS?.default && typeof NATIVE_FACTION_KITS.default === 'object' ? NATIVE_FACTION_KITS.default : {}));
 
 /** Domain modules in install order: tokens, devices, enemies, bosses, bonds, garrisons, items, bands, choices. */
 export const MODULES = Object.freeze(DOMAIN_NAMES.map((n, i) => [n, DOMAINS[i]]));
@@ -137,7 +139,8 @@ export function syncUnitLoadout(battle, unit) {
     const owner = unit.ownerUnit;
     syncUnitLoadout(battle, owner);
     if (!owner.def || !owner.def.loadout) return;
-    const want = battle.data.getToken(unit.def.id, owner.def.id, owner.def.loadout);
+    const ownerChessId = owner.def.raw?.darkmoonNativeChessId ?? owner.def.id;
+    const want = battle.data.getToken(unit.def.id, ownerChessId, owner.def.loadout, unit.nativeOwnerGrowth ?? owner.nativeGrowthStatus ?? null);
     if (want && want !== unit.def && want.id === unit.def.id) swapDef(unit, want);
   }
 }

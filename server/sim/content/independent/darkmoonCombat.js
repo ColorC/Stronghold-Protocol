@@ -1,7 +1,7 @@
 // Authored 19.2 source-card adaptations. Combat gains stay on the Battle instance;
 // only the three explicitly persistent/resource effects are returned to preparation.
 import { nativeFactions } from '../../../../shared/independentRules.js';
-import { nativeLevelAttributes, operatorGrowthInfo } from '../../../../shared/independentGrowth.js';
+import { nativeLevelAttributes, operatorGrowthInfo, levelBodyStats } from '../../../../shared/independentGrowth.js';
 import { findSummonTile } from '../tokens.js';
 import { KITS, selectSkillSpec } from '../index.js';
 
@@ -109,7 +109,7 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
 
 export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) {
   const byUid=new Map(pieces.map(p=>[p.uid,p]));
-  const sourceOf=u=>u?.kind==='token'?sourceOf(u.ownerUnit):catalog.operators?.[byUid.get(u?.uid)?.chessId];
+  const sourceOf=u=>catalog.operators?.[u?.def?.raw?.darkmoonNativeChessId] || (u?.kind==='token'?sourceOf(u.ownerUnit):catalog.operators?.[byUid.get(u?.uid)?.chessId]);
   const identity=u=>u?.mem?.darkmoonFactionTags || u?.def?.raw?.darkmoonFactionTags || (u?.kind==='token'?identity(u.ownerUnit):nativeFactions(byUid.get(u?.uid)||{chessId:u?.defId},catalog));
   const eligible=(u,owner,tribe=null)=>!!u&&u.side==='ally'&&own(u,owner)&&['op','token'].includes(u.kind)&&(!tribe||identity(u).includes(FACTIONS[tribe]));
   const members=(owner,tribe=null)=>battle.allyUnits.filter(u=>alive(u)&&eligible(u,owner,tribe)).sort(order);
@@ -146,6 +146,8 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const contributions=u.mem.darkmoonLevelContributions||{};
     for(const [key,value]of Object.entries(contributions))if(value.expiresAt<=battle.time)delete contributions[key];
     const total=Object.values(contributions).reduce((sum,value)=>sum+value.units,0);
+    const info=operatorGrowthInfo(byUid.get(u.uid),catalog);
+    u.nativeGrowthStatus={phase:info.phase,level:Math.min(info.maximum,info.level+total*Number(catalog.config?.levelsPerBadge||1))};
     battle.addBuff(u,{key:'darkmoon:native-level-growth',mods:growthMods(u,total,0),persist:true,allowDead:true,refresh:'replace'});
   };
   const applyGrowth=(u,key,a,h,duration=Infinity)=>{
@@ -187,7 +189,8 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     else if(kind==='deathrattle')ops=ops.filter(op=>rules[op.sourceRefs?.darkmoon19_2?.id]?.retire);
     const op=pick(ops);if(!op)return null;
     const raw=op.source.normalChess,normalized=battle.data.getChess(op.chessId,{skillIndex:raw.skill?.index??0,moduleId:'none'});
-    return {op,def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',spine:'token_10030_mlyss_wtrman',avatar:'token_10030_mlyss_wtrman',name:raw.name+'的流形',stats:{...raw.stats},position:'MELEE',darkmoonSourceId:op.sourceRefs?.darkmoon19_2?.id,darkmoonNativeChessId:op.chessId}};
+    const stats=state?.growthMode==='levels'?levelBodyStats({chessId:op.chessId,growthMode:'levels',growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw):{...raw.stats};
+    return {op,def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',spine:'token_10030_mlyss_wtrman',avatar:'token_10030_mlyss_wtrman',name:raw.name+'的流形',stats,position:'MELEE',darkmoonSourceId:op.sourceRefs?.darkmoon19_2?.id,darkmoonNativeChessId:op.chessId}};
   };
   const tokenDef=(e,p)=>{
     const nativeId=p.token==='beast'?'token_10028_vigil_wolf':p.token==='pirate'?'token_10040_siege2_vlion':'token_10030_mlyss_wtrman';
@@ -205,10 +208,11 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       const factory=nativeId?(KITS[nativeId]||KITS[nativeId.replace(/_[ab]$/,'')]):null;
       const authored=factory?.(nativeDef?.skill?.bb||{},nativeDef?.raw||{},nativeDef)||{};
       const kit=nativeId?selectSkillSpec(authored,nativeDef?.skill?.bb||{},nativeDef?.raw||{},nativeDef):authored;
-      const token=battle.spawnToken(e.unit,clean.id,...cell,{def:clean,anySource:true,kit,duration:45,darkmoonHandled:true});
+      const nativeGrowthStatus=nativeId?{phase:nativeDef?.raw?.status?.phase??0,level:state?.growthMode==='levels'?1:nativeDef?.raw?.status?.level??1}:null;
+      const token=battle.spawnToken(e.unit,clean.id,...cell,{def:clean,anySource:true,kit,nativeGrowthStatus,duration:45,darkmoonHandled:true});
       if(token){token.mem.darkmoonSummon=true;token.mem.darkmoonFactionTags=tags;token.mem.darkmoonCover=!!p.cover;if(p.cover)battle.addBuff(token,{key:'darkmoon:token-cover',mods:{taunt:1,physTakenMul:.9,artsTakenMul:.9},persist:true});out.push(token);if(p.immediate)battle.forceAttack(token);
         const childRule=rules[clean.darkmoonSourceId];
-        if(childRule?.retire&&(e.depth||0)<3){const child={unit:token,id:clean.darkmoonSourceId,rule:childRule,elite:false,depth:(e.depth||0)+1,stacks:new Map()};entries.push(child);battle.on('death',({unit:who,reason})=>{if(who===token&&reason==='killed')battle.after(0,()=>{for(let j=0;j<retireMultiplier(token);j++)retireAction(child);});},{owner:token});}
+        if(childRule?.retire&&(e.depth||0)<3){const child={unit:token,id:clean.darkmoonSourceId,rule:childRule,elite:!!(clean.golden||clean.isGolden),depth:(e.depth||0)+1,stacks:new Map()};entries.push(child);battle.on('death',({unit:who,reason})=>{if(who===token&&reason==='killed')battle.after(0,()=>{for(let j=0;j<retireMultiplier(token);j++)retireAction(child);});},{owner:token});}
       }
     }
     note(e,'summon',out);return out;

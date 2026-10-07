@@ -221,7 +221,8 @@ export class Battle {
       const owner = ps.units.find((x) => x.kind === 'op' && x.uid === inp.ownerUid);
       if (!owner) continue;
       t.ownerUnit = owner;
-      const def = inp.def ? null : this._tokenDef(inp.tokenId ?? inp.chessId, owner, null);
+      t.nativeOwnerGrowth = inp.ownerGrowth ?? owner.nativeGrowthStatus ?? null;
+      const def = inp.def ? null : this._tokenDef(inp.tokenId ?? inp.chessId, owner, null, inp.ownerGrowth ?? owner.nativeGrowthStatus ?? null);
       if (!def || def === t.def) continue;
       const st = def.stats;
       t.def = def; t.defId = def.id; t.name = def.name; t.rangeGrid = def.rangeGrid;
@@ -262,9 +263,9 @@ export class Battle {
     const dir = this.mapDir(ps, inp.dir, !!inp.abs);
     if (inp.kind === 'token') {
       const owner = inp.ownerUid != null ? ps.units.find((x) => x.uid === inp.ownerUid) : null;
-      const def = this._tokenDef(inp.tokenId ?? inp.chessId, owner, inp.def);
+      const def = this._tokenDef(inp.tokenId ?? inp.chessId, owner, inp.def, inp.ownerGrowth ?? owner?.nativeGrowthStatus ?? null);
       if (!def) { this.log(`unknown token ${inp.tokenId}`); return null; }
-      const u = this._makeAlly(ps, def, 'token', r, c, { uid: inp.uid, ownerUnit: owner, dir });
+      const u = this._makeAlly(ps, def, 'token', r, c, { uid: inp.uid, ownerUnit: owner, dir, nativeOwnerGrowth: inp.ownerGrowth ?? owner?.nativeGrowthStatus ?? null });
       u.carry = inp.carryState ?? null;
       return u;
     }
@@ -272,7 +273,7 @@ export class Battle {
     // choice for the same chess id in a multi-player field (the per-battle data view maps id-only lookups)
     const def = this.data.getChess(inp.chessId, { skillIndex: inp.skillIndex ?? null, moduleId: inp.moduleId ?? null });
     if (!def) { this.log(`unknown chess ${inp.chessId}`); return null; }
-    const u = this._makeAlly(ps, def, 'op', r, c, { uid: inp.uid, dir });
+    const u = this._makeAlly(ps, def, 'op', r, c, { uid: inp.uid, dir, nativeGrowthStatus: inp.nativeGrowthStatus ?? null });
     u.items = [...(inp.items ?? [])];
     u.carry = inp.carryState ?? null;
     return u;
@@ -283,11 +284,14 @@ export class Battle {
    * for the owner — `owner` = the owning ally unit (its chess and its selected skill / module: getToken(id,
    * owner.defId, owner.def.loadout), DESIGN §16), a chess id, or null.
    */
-  _tokenDef(tokenId, owner, inline) {
+  _tokenDef(tokenId, owner, inline, ownerGrowth = null) {
     if (inline) return normalizeToken(tokenId, inline);
     if (!this.data.getToken) return null;
-    if (owner && typeof owner === 'object') return this.data.getToken(tokenId, owner.defId ?? null, owner.def?.loadout ?? null);
-    return this.data.getToken(tokenId, owner ?? null);
+    if (owner && typeof owner === 'object') {
+      const ownerChessId = owner.def?.raw?.darkmoonNativeChessId ?? owner.defId ?? null;
+      return this.data.getToken(tokenId, ownerChessId, owner.def?.loadout ?? null, ownerGrowth ?? owner.nativeGrowthStatus ?? null);
+    }
+    return this.data.getToken(tokenId, owner ?? null, null, ownerGrowth);
   }
 
   _makeAlly(ps, def, kind, r, c, extra = {}) {
@@ -295,6 +299,7 @@ export class Battle {
     const u = new Unit({
       id: ++this._idSeq, side: 'ally', kind, def, defId: def.id, name: def.name, ownerId: ps ? ps.playerId : null,
       uid: extra.uid ?? null, ownerUnit: extra.ownerUnit ?? null, x: c, y: r, tileR: r, tileC: c,
+      nativeGrowthStatus: extra.nativeGrowthStatus ?? null, nativeOwnerGrowth: extra.nativeOwnerGrowth ?? null,
       dir: extra.dir != null ? normDir(extra.dir) : extra.facing != null ? normDir(extra.facing) : ps ? ps.dir : 'RIGHT',
       base: {
         maxHp: st.maxHp, atk: st.atk, def: st.def, res: st.res, aspd: st.aspd, bat: st.bat, blockCnt: st.blockCnt,
@@ -1794,8 +1799,8 @@ export class Battle {
    * the def spawnToken uses. For content that reads summon stats / skill blackboards: exact in a multi-player field
    * where two players give the same chess different loadouts (an id-only `data.getToken(id, chessId)` is not).
    */
-  tokenDef(tokenId, owner = null) {
-    return this._tokenDef(tokenId, owner, null);
+  tokenDef(tokenId, owner = null, ownerGrowth = null) {
+    return this._tokenDef(tokenId, owner, null, ownerGrowth);
   }
 
   /**
@@ -1825,7 +1830,7 @@ export class Battle {
     const ownerUnit = owner && typeof owner === 'object' ? owner : null;
     const pid = ownerUnit ? ownerUnit.ownerId : owner;
     const ps = this.getPlayer(pid) ?? (ownerUnit ? ownerUnit.player : null);
-    const def = opts.def ? normalizeToken(tokenId, opts.def) : this._tokenDef(tokenId, ownerUnit, null);
+    const def = opts.def ? normalizeToken(tokenId, opts.def) : this._tokenDef(tokenId, ownerUnit, null, opts.ownerGrowth ?? null);
     if (!def) { this.log(`unknown token ${tokenId}`); return null; }
     if (!opts.def && !opts.anySource && ownerUnit && ownerUnit.def?.loadout?.skillIsDefault === false && !this.producesToken(ownerUnit, tokenId, def)) {
       this.log(`${ownerUnit.defId} (skill ${ownerUnit.def?.loadout?.skillIndex ?? '?'}) does not produce ${tokenId}`);
@@ -1835,7 +1840,11 @@ export class Battle {
     const occ = this._occ[row * COLS + col];
     if (occ && occ.alive && !opts.force) return null;
     const dir = opts.dir != null ? normDir(opts.dir) : opts.facing != null ? normDir(opts.facing) : ownerUnit ? ownerUnit.dir : ps ? ps.dir : 'RIGHT';
-    const u = this._makeAlly(ps, def, 'token', row, col, { ownerUnit, dir });
+    const u = this._makeAlly(ps, def, 'token', row, col, {
+      ownerUnit, dir,
+      nativeGrowthStatus: opts.nativeGrowthStatus ?? null,
+      nativeOwnerGrowth: opts.ownerGrowth ?? ownerUnit?.nativeGrowthStatus ?? null,
+    });
     if (opts.stats) for (const [k, v] of Object.entries(opts.stats)) if (Number.isFinite(v)) u.base[k] = v;
     this._setupUnit(u, opts.kit ?? null);
     if (opts.untargetable) this.addBuff(u, { key: 'trait:untargetable', flags: { untargetable: true }, persist: true, allowDead: true });

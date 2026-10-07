@@ -333,6 +333,47 @@ export function normalizeToken(id, t0, ownerChessId = null, variantOverride = nu
   };
 }
 
+/**
+ * Interpolate token stats from native character_table growth using the owning operator's phase and level.
+ * This mirrors tools/build-data.mjs interpolateAttrs + statsFrom; token variants remain the source for
+ * skill/loadout/talent differences, while this supplies their level-dependent base attributes.
+ */
+export function interpolateNativeTokenStats(nativeGrowth, phase, level) {
+  const phases = nativeGrowth?.phases;
+  if (!Array.isArray(phases) || !phases.length) return null;
+  const requestedPhase = Number.isFinite(Number(phase)) ? Number(phase) : 0;
+  const p = phases.find((entry) => Number(entry.phase) === requestedPhase)
+    ?? phases[Math.max(0, Math.min(phases.length - 1, requestedPhase))];
+  const frames = p?.attributesKeyFrames;
+  if (!Array.isArray(frames) || !frames.length) return null;
+  const maxLevel = Number(p.maxLevel) || Number(frames.at(-1)?.level) || Number(level) || 1;
+  const lv = Math.max(1, Math.min(Number(level) || 1, maxLevel));
+  let a = frames[0], b = frames.at(-1);
+  for (let i = 0; i < frames.length - 1; i++) {
+    if (lv >= frames[i].level && lv <= frames[i + 1].level) { a = frames[i]; b = frames[i + 1]; break; }
+  }
+  const t = Number(b.level) === Number(a.level) ? 0 : (lv - Number(a.level)) / (Number(b.level) - Number(a.level));
+  const attrs = {};
+  for (const [key, v0] of Object.entries(a.data || {})) {
+    const v1 = b.data?.[key];
+    attrs[key] = typeof v0 === 'number' && typeof v1 === 'number' ? v0 + (v1 - v0) * t : v0;
+  }
+  const round = (value) => Math.round(Number(value) || 0);
+  const clean = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.round(n * 1e6) / 1e6 : 0;
+  };
+  return {
+    maxHp: round(attrs.maxHp), atk: round(attrs.atk), def: round(attrs.def), res: clean(attrs.magicResistance),
+    cost: round(attrs.cost), blockCnt: round(attrs.blockCnt), bat: clean(attrs.baseAttackTime),
+    aspd: clean(attrs.attackSpeed) || 100, respawnTime: round(attrs.respawnTime),
+    spRecovery: clean(attrs.spRecoveryPerSec), hpRecoveryPerSec: clean(attrs.hpRecoveryPerSec),
+    moveSpeed: clean(attrs.moveSpeed), tauntLevel: Number(attrs.tauntLevel) | 0,
+    massLevel: Number(attrs.massLevel) | 0, deployLimit: Number(attrs.maxDeployCount) | 0,
+    deckStack: Number(attrs.maxDeckStackCnt) | 0,
+  };
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // stage / route / wave helpers
 
@@ -570,9 +611,11 @@ export class DataSource {
    * `def.sources` / `def.count` are those of the owner's loadout (a hand piece exists only when `sources` has more
    * than 'display'; PlayerState / the kits' skill summons read them from here).
    */
-  getToken(id, ownerChessId = null, ownerLoadout = null) {
+  getToken(id, ownerChessId = null, ownerLoadout = null, ownerGrowth = null) {
     const olo = ownerChessId && ownerLoadout ? resolveLoadout(this.rawChess(ownerChessId), ownerLoadout) : null;
-    const ck = id + '|' + (ownerChessId ?? '') + loadoutKey(olo);
+    const growthKey = ownerGrowth && Number.isFinite(Number(ownerGrowth.level))
+      ? `|p${Number(ownerGrowth.phase ?? 0)}l${Number(ownerGrowth.level)}` : '';
+    const ck = id + '|' + (ownerChessId ?? '') + loadoutKey(olo) + growthKey;
     if (this._token.has(ck)) return this._token.get(ck);
     let r = this.rawToken(id);
     if (r && ownerChessId && !r.variants) {
@@ -594,9 +637,32 @@ export class DataSource {
     }
     if (r && r.variants && !owner) owner = Object.keys(r.variants)[0] ?? null;
     let variant = r && r.variants && owner ? r.variants[owner] ?? null : null;
+    const baseVariant = variant;
     if (variant && olo && !olo.isDefault) {
       if (!olo.skillIsDefault && variant.bySkill && variant.bySkill[olo.skillIndex]) variant = { ...variant, ...variant.bySkill[olo.skillIndex] };
       if (!olo.moduleIsDefault && variant.byModule && variant.byModule[olo.moduleId]) variant = { ...variant, ...variant.byModule[olo.moduleId] };
+    }
+    if (r?.nativeGrowth && variant) {
+      const ownerRecord = ownerChessId ? this.rawChess(ownerChessId) : null;
+      const phase = ownerGrowth?.phase ?? ownerRecord?.status?.phase ?? variant.phase;
+      const level = ownerGrowth?.level ?? ownerRecord?.status?.level ?? variant.level;
+      const grownStats = interpolateNativeTokenStats(r.nativeGrowth, phase, level);
+      if (grownStats) {
+        // Keep generated variant adjustments (e.g. talent deploy-count overrides and module attributes) relative to
+        // the native table baseline at the same preset phase/level. The prebuilt variant stats are not pure table
+        // attrs, so subtracting them directly would erase or misapply those adjustments at a new runtime level.
+        const basePhase = baseVariant?.phase ?? phase;
+        const baseLevel = baseVariant?.level ?? level;
+        const tableBaseline = interpolateNativeTokenStats(r.nativeGrowth, basePhase, baseLevel) ?? r.stats ?? {};
+        const selectedStats = variant.stats ?? baseVariant?.stats ?? r.stats ?? {};
+        const stats = { ...selectedStats, ...grownStats };
+        for (const key of Object.keys(stats)) {
+          const selected = Number(selectedStats[key]);
+          const baseline = Number(tableBaseline[key]);
+          if (Number.isFinite(selected) && Number.isFinite(baseline)) stats[key] += selected - baseline;
+        }
+        variant = { ...variant, stats };
+      }
     }
     const d = r ? freezeDef(normalizeToken(id, r, owner, variant)) : null;
     this._token.set(ck, d);
@@ -714,7 +780,7 @@ export function withUnitLoadouts(ds, players) {
   const view = Object.create(ds);
   view.getChess = (id, loadout = null) => ds.getChess(id, loadout ?? map.get(id) ?? null);
   if (typeof ds.getToken === 'function') {
-    view.getToken = (id, owner = null, ownerLoadout = null) => ds.getToken(id, owner, ownerLoadout ?? (owner != null ? map.get(owner) ?? null : null));
+    view.getToken = (id, owner = null, ownerLoadout = null, ownerGrowth = null) => ds.getToken(id, owner, ownerLoadout ?? (owner != null ? map.get(owner) ?? null : null), ownerGrowth);
   }
   view.loadoutConflicts = [...conflicts];
   return view;

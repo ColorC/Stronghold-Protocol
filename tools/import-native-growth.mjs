@@ -8,13 +8,16 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { safeName } from './assets/sources.mjs';
 import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList, tokenVariant } from './build-data.mjs';
-import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT } from '../server/sim/content/newnativekits.js';
+import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT, NATIVE_KIT_READY } from '../server/sim/content/newnativekits.js';
 import { NATIVE_DEFAULT_SKILL_IDS as VKS_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT as VKS_SKILL_SUPPORT } from '../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
+import * as VKS_MANIFEST from '../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
 
 // Keep the new faction kits in their own file while letting the importer generate the same
 // explicit default loadout and skill allowlist. The final battle registry is composed by content/index.js.
 const ALL_NATIVE_DEFAULT_SKILL_IDS = Object.freeze({ ...NATIVE_DEFAULT_SKILL_IDS, ...VKS_DEFAULT_SKILL_IDS });
 const ALL_NATIVE_SKILL_SUPPORT = Object.freeze({ ...NATIVE_SKILL_SUPPORT, ...VKS_SKILL_SUPPORT });
+const completeKitIds=manifest=>Array.isArray(manifest)?manifest:Object.entries(manifest||{}).filter(([,entry])=>entry.ready&&entry.talentReady&&entry.skillReady&&entry.tokenReady).map(([id])=>id);
+const ALL_NATIVE_KIT_READY = new Set([...completeKitIds(NATIVE_KIT_READY),...completeKitIds(VKS_MANIFEST.NATIVE_KIT_READY)]);
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GIT_COMMON = resolve(execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8' }).trim());
@@ -149,8 +152,8 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
       return rec ? { ...rec, index, isDefault: s.skillId === configuredSkillId, overrideTokenKey: s.overrideTokenKey || null } : null;
     }).filter(Boolean);
     const supportedSkillIds = (ALL_NATIVE_SKILL_SUPPORT[charId] || []);
-    // Unsupported source skills are archived as IDs below but omitted from the selectable loadout list.
-    const skills = sourceSkills.filter((s) => supportedSkillIds.includes(s.skillId));
+    // Keep the complete source record; UI and server validation expose only supported IDs.
+    const skills = sourceSkills;
     const skill = configuredSkillId ? skills.find((s) => s.skillId === configuredSkillId) ?? null : null;
     const tokenIds = [...new Set([
       ...Object.keys(char.displayTokenDict || {}),
@@ -181,8 +184,8 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
       },
       nativeGrowth: nativeGrowth(char),
       nativeImport: {
-        status: skill || !sourceSkills.length ? 'hidden-ready-default-only' : 'hidden-pending-native-kit', playable: !!skill || !sourceSkills.length,
-        sourceNativeSkillIds: sourceSkills.map((s) => s.skillId), supportedSkillIds, unsupportedSkillIds: sourceSkills.map(s => s.skillId).filter(id => !supportedSkillIds.includes(id)), selectableSkillIds: skills.map(s => s.skillId), tokenIds,
+        status: ALL_NATIVE_KIT_READY.has(charId)?'workshop-default-kit-ready':'hidden-pending-native-kit',playable:ALL_NATIVE_KIT_READY.has(charId),availableModes:ALL_NATIVE_KIT_READY.has(charId)?['independent']:[],
+        sourceNativeSkillIds: sourceSkills.map((s) => s.skillId), supportedSkillIds, unsupportedSkillIds: sourceSkills.map(s => s.skillId).filter(id => !supportedSkillIds.includes(id)), selectableSkillIds: skills.filter(s=>supportedSkillIds.includes(s.skillId)).map(s => s.skillId), tokenIds,
         defaultLoadout: skill ? { skillIndex: skill.index, skillId: skill.skillId, source: 'explicit native skill registry' } : null,
         assetSources,
         source: { characterTableUrl: SOURCE_URL, revision: SOURCE_REVISION, skillReferences: skills.map((s) => `https://prts.wiki/w/${encodeURIComponent(char.name)}`) },
@@ -261,14 +264,14 @@ function computeCandidates(charTable, chess) {
       profession: c.profession, subProfessionId: c.subProfessionId, rarity: c.rarity,
       inCurrentChess: inPool,
       candidateAlreadyImported,
-      importStatus: inPool ? 'existing-pool-growth-attached' : candidateAlreadyImported ? 'hidden-native-candidate-already-imported' : 'source-backed-candidate-needs-native-battle-kit',
+      importStatus: inPool ? 'existing-pool-growth-attached' : ALL_NATIVE_KIT_READY.has(charId) ? 'workshop-default-kit-ready' : 'hidden-pending-native-kit',
       skillIds: (c.skills || []).map((s) => s?.skillId).filter(Boolean),
       assetSources: nativeAssetSources(charId, c, (c.skills || []).map((skill) => ({ skillId: skill?.skillId, iconId: skill?.iconId })).filter((skill) => skill.skillId)),
       tokenIds: tokenIdsForNativeOperator(c, ALL_NATIVE_SKILL_SUPPORT[charId] || []),
       skillExecution: inPool
         ? { status: 'existing-upstream-definition-not-changed', supportedSkillIds: [], needsFocusedKitAudit: (c.skills || []).map(s => s?.skillId).filter(Boolean) }
         : {
-          status: 'hidden-ready-default-only',
+          status: ALL_NATIVE_KIT_READY.has(charId) ? 'workshop-default-kit-ready' : 'hidden-pending-native-kit',
           defaultLoadout: (() => {
           const skillId = ALL_NATIVE_DEFAULT_SKILL_IDS[charId];
             const skillIndex = (c.skills || []).findIndex((skill) => skill?.skillId === skillId);
@@ -280,7 +283,7 @@ function computeCandidates(charTable, chess) {
         },
       nativeGrowth: growth,
       projectSampleStats: { normal: { phase: 1, level: atNormal, values: normalStats }, advanced: { phase: c.phases.length > 2 ? 2 : c.phases.length - 1, level: atAdvanced, values: advancedStats } },
-      unresolved: inPool ? [] : ['no upstream chess definition at pinned upstream revision', 'native skill execution and token variants must be implemented before activation'],
+      unresolved: inPool || ALL_NATIVE_KIT_READY.has(charId) ? [] : ['native skill execution and token variants must be implemented before activation'],
     });
   }
   return rows;
@@ -316,9 +319,11 @@ function attachNativeTokens(tokenTable, candidates, charTable, ctx) {
         skillLevel: ownerRec.status.skillLevel, modulePhase: null, moduleTokenParts: [],
         label: `native token ${tokenId}@${ownerRec.chessId}`,
       });
-      const deployLimit = built.talents?.reduce((max, talent) => Math.max(max, Number(talent.bb?.max_deploy_count) || 0), 0) || built.stats.deployLimit || 1;
+      // Whiteiron's owner talent allows two concurrent devices from E1 onward;
+      // token_table's single device attribute does not express this owner-wide cap.
+      const deployLimit = ownerRec.charId==='char_4072_ironmn' ? (ownerRec.status.phase>=1?2:1) : built.talents?.reduce((max, talent) => Math.max(max, Number(talent.bb?.max_deploy_count) || 0), 0) || built.stats.deployLimit || 1;
       built.stats.deployLimit = deployLimit;
-      variants[ownerRec.chessId] = { ...built, count: deployLimit, sources };
+      variants[ownerRec.chessId] = { ...built, nativeGrowth:nativeGrowth(tokenChar), status:{phase:ownerRec.status.phase,level:ownerRec.status.level}, count: deployLimit, sources };
       ownerIds.push(ownerRec.chessId);
     }
     if (!ownerIds.length) continue;
@@ -341,6 +346,7 @@ function attachNativeTokens(tokenTable, candidates, charTable, ctx) {
       count: Math.max(existing.count || 1, ...Object.values(variants).map((v) => v.count || 1)),
       abnormal: existing.abnormal || [], variants: { ...(existing.variants || {}), ...variants },
       assets: existing.assets || { avatar: tokenId, spine: tokenId },
+      nativeGrowth:nativeGrowth(tokenChar),
       source: { table: 'character_table.json', revision: SOURCE_REVISION, url: SOURCE_URL },
     };
     attached.push(tokenId);
@@ -375,7 +381,7 @@ export async function runImport(opts) {
       if (defaultSkillId && !supportedSkillIds.includes(defaultSkillId)) throw new Error(`${rec.charId}: selected native loadout ${defaultSkillId} has no complete kit`);
       const sourceSkills = rec.skills || [];
       rec.nativeSourceSkillIds = sourceNativeSkillIds;
-      rec.skills = sourceSkills.filter((skill) => supportedSkillIds.includes(skill.skillId)).map((skill) => ({ ...skill, isDefault: skill.skillId === defaultSkillId }));
+      rec.skills = sourceSkills.map((skill) => ({ ...skill, isDefault: skill.skillId === defaultSkillId }));
       rec.skill = defaultSkillId ? rec.skills.find((skill) => skill.skillId === defaultSkillId) ?? null : null;
       const e2Art = !NO_E2_ART.has(rec.charId);
       rec.assets = {
@@ -385,7 +391,7 @@ export async function runImport(opts) {
       };
       rec.nativeImport = {
         ...(rec.nativeImport || {}),
-        status: defaultSkillId || !sourceNativeSkillIds.length ? 'hidden-ready-default-only' : 'hidden-pending-native-kit', playable: !!defaultSkillId || !sourceNativeSkillIds.length, sourceNativeSkillIds, supportedSkillIds, selectableSkillIds: rec.skills.map(skill => skill.skillId),
+        status: ALL_NATIVE_KIT_READY.has(rec.charId)?'workshop-default-kit-ready':'hidden-pending-native-kit',playable:ALL_NATIVE_KIT_READY.has(rec.charId),availableModes:ALL_NATIVE_KIT_READY.has(rec.charId)?['independent']:[],sourceNativeSkillIds,supportedSkillIds,selectableSkillIds:rec.skills.filter(skill=>supportedSkillIds.includes(skill.skillId)).map(skill=>skill.skillId),
         unsupportedSkillIds: sourceNativeSkillIds.filter((id) => !supportedSkillIds.includes(id)),
         defaultLoadout: (() => {
           const skillId = defaultSkillId;
@@ -413,6 +419,10 @@ export async function runImport(opts) {
     }
   }
   const nativeTokenIds = attachNativeTokens(updatedTokens, Object.values(updated).filter((rec) => rec.chessType === 'NATIVE_IMPORT_CANDIDATE'), charTable, ctx);
+  for(const tokenId of nativeTokenIds){
+    const owner=Object.values(updated).find(rec=>rec.chessType==='NATIVE_IMPORT_CANDIDATE'&&rec.tokens?.includes(tokenId))?.charId;
+    updatedAssets.tokens||={};updatedAssets.tokens[tokenId]={...(updatedAssets.tokens[tokenId]||{}),owner,avatar:`/assets/token/avatar/${tokenId}.png`};
+  }
   const noGrowthRefs = Object.values(updated).filter((c) => c.charId && c.visible && !c.nativeGrowth).map((c) => c.charId);
   if (noGrowthRefs.length) throw new Error(`growth join incomplete: ${noGrowthRefs.slice(0, 10).join(', ')}`);
   const phaseCount = candidates.reduce((n, c) => n + c.nativeGrowth.phases.length, 0);
@@ -457,7 +467,7 @@ export async function runImport(opts) {
     assetAudit: {
       newlyIndexedCharacters: candidates.filter((candidate) => !candidate.inCurrentChess).map((candidate) => candidate.charId),
       existingImageManifestEntries: Object.values(chess).filter((c) => c.chessType === 'NATIVE_IMPORT_CANDIDATE').length,
-      localAssetPaths: 'data/assets.json; candidate URL provenance is retained per nativeImport.assetSources; public/assets downloads remain pending',
+      localAssetPaths: resolve(CANONICAL_ROOT,'public/assets'),
       imageSourceRevision: IMAGE_REVISION, spineSourceRevision: SPINE_REVISION,
       noE2Artwork: [...NO_E2_ART], noSpineBack: [...NO_SPINE_BACK],
       sourceHttpChecks: {
@@ -494,7 +504,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   try {
     const opts = parseArgs(process.argv.slice(2));
     const report = await runImport(opts);
-    console.log(JSON.stringify({ status: report.status, targetChess: report.targetChess, report: opts.report, currentPool: report.currentPool, selected: report.selected.total, missingKits: report.selected.candidates.filter(c => !c.inCurrentChess).length }));
+    console.log(JSON.stringify({ status: report.status, targetChess: report.targetChess, targetAssets:report.targetAssets,targetTokens:report.targetTokens,report: opts.report, currentPool: report.currentPool, selected: report.selected.total, missingKits: report.selected.candidates.filter(c => c.unresolved.length).length }));
   } catch (e) {
     console.error(`import-native-growth: ${e.stack || e}`);
     process.exitCode = 1;
