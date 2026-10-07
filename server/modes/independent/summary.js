@@ -31,7 +31,7 @@ const caps = (p) => (p.capNormal != null ? { normal: Number(p.capNormal), elite:
  * One summary entry per rule: { when, kind, items?, amount?, cap?, perBattle?, bench?, faction?, condition?, stats? }.
  * The normal and the elite form are separate catalog entries, and some rules keep the elite numbers only in the
  * elite entry (eventProduction): read a form's count from its own entry — normal entry `.normal`, elite entry `.elite`.
- * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | double | boost | transfer | devour | doubleWorn.
+ * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | double | boost | transfer | devour | doubleWorn | summon | discount.
  * `items` = [{ id, normal, elite }] (id null = decided in play, e.g. the dominant faction's recipe).
  */
 export function traitSummary(effect) {
@@ -129,6 +129,47 @@ export function traitSummary(effect) {
       entry.kind = 'copy';
     } else if (b === 'twoCopyElite') {
       entry.kind = 'merge';
+    } else if (b === 'darkmoonBeastSummonGrowth' || b === 'darkmoonBoughtSelfGrowth'
+      || b === 'darkmoonBattlecryTargetGrowth' || b === 'darkmoonEndTurnGrowth'
+      || b === 'darkmoonPlayedTagSelfGrowth' || b === 'darkmoonAdjacentGrowth'
+      || b === 'darkmoonTaggedGrowth' || b === 'darkmoonPlayedTribeGrowth'
+      || b === 'darkmoonPlayedFactionCountSelfGrowth' || b === 'darkmoonPreviousWinSelfGrowth') {
+      // Prep adapters compiled from effectDelivery: their full Chinese wording remains on the card; this compact
+      // index only tells the HUD that the effect permanently grows an operator.
+      entry.kind = 'stat'; entry.grows = true;
+      entry.faction = p.faction || p.triggerFaction;
+      entry.description = '为干员永久增加属性成长';
+    } else if (b === 'darkmoonBattlecryFactionGrowth' || b === 'darkmoonBoughtTribeTargetGrowth') {
+      entry.kind = 'stat'; entry.grows = true;
+      entry.faction = p.faction || p.triggerFaction;
+      entry.description = '为符合条件的友方永久增加徽章成长';
+    } else if (b === 'darkmoonMagneticMerge') {
+      entry.kind = 'transfer'; entry.faction = p.faction;
+      entry.description = '招募时可选择将退场效果附加给一名友方干员';
+    } else if (b === 'darkmoonTransformFromShop') {
+      entry.kind = 'stat';
+      entry.description = '招募后按效果变为精锐形态';
+    } else if (b === 'darkmoonLastWarbandRecruit') {
+      entry.kind = 'recruit';
+      entry.description = '招募上一休整期阵容中的友方干员';
+    } else if (b === 'darkmoonRecruitTribeToHand' || b === 'darkmoonAddTribeShopOffer') {
+      entry.kind = 'recruit'; entry.faction = p.faction;
+      entry.amount = counts(p);
+      entry.description = '为酒馆增加指定阵营的招募机会';
+    } else if (b === 'darkmoonShopGrowth') {
+      entry.kind = 'stat'; entry.temporary = !p.persistent;
+      entry.stats = { attack: p.attack, health: p.health };
+      entry.faction = p.faction;
+      entry.description = p.persistent ? '强化指定阵营的酒馆干员' : '暂时强化当前酒馆在售干员';
+    } else if (b === 'darkmoonRosterTribePurchaseFunds') {
+      entry.kind = 'funds'; entry.amount = counts(p); entry.faction = p.faction;
+      entry.description = '购买符合条件的干员后获得资金';
+    } else if (b === 'darkmoonElementalTokenOffer') {
+      entry.kind = 'recruit'; entry.amount = counts(p);
+      entry.description = '出售后为酒馆增加元素招募机会';
+    } else if (b === 'darkmoonSummonSupport') {
+      entry.kind = 'summon';
+      entry.description = '招募后召唤一名友方支援干员';
     }
     if (!entry.kind) throw new Error(`UNCLASSIFIED_TRAIT_RULE:${rule.trigger}:${b}`);
     if (p.requiresFactionOnField) entry.faction = p.requiresFactionOnField;
