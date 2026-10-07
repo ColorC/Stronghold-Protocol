@@ -10,13 +10,15 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getCatalog } from '../server/modes/independent/catalog.js';
 import { tavernFactions } from '../shared/independentRules.js';
+import { classifyRosterKind } from './independent-roster-classification.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const TEXT = JSON.parse(readFileSync(resolve(process.env.SP_INDEPENDENT_GAME_TEXT_PATH || resolve(ROOT, 'data/independent-game-text.json')), 'utf8'));
 const DESIGN = JSON.parse(readFileSync(resolve(process.env.SP_INDEPENDENT_DESIGN_PATH || resolve(ROOT, 'data/independent-design.json')), 'utf8'));
 const PROFESSION = { PIONEER: '先锋', WARRIOR: '近卫', TANK: '重装', SNIPER: '狙击', CASTER: '术师', MEDIC: '医疗', SUPPORT: '辅助', SPECIAL: '特种' };
-export const ROSTER_KINDS = ['纯战斗', '临时战斗', '成长', '经济', '生成', '联动', '一次性工具'];
-export const INACTIVE_OPERATOR_IDS = new Set(DESIGN.operators.filter((op) => op.active === false).map((op) => op.chessId));
+export const ROSTER_KINDS = ['成长', '生成', '经济', '辅助', '战斗', '交接'];
+export const ACTIVE_OPERATOR_IDS = new Set(DESIGN.rules.activeRosterIds);
+export const INACTIVE_OPERATOR_IDS = new Set(DESIGN.operators.filter((op) => !ACTIVE_OPERATOR_IDS.has(op.chessId)).map((op) => op.chessId));
 
 const OPERATOR_COLUMNS = [
   { key: 'id', title: '编号（勿改）', width: 150 },
@@ -43,10 +45,10 @@ const GEAR_COLUMNS = [
 ];
 
 function operatorRows(catalog) {
-  return DESIGN.operators.filter((op) => op.active !== false).slice().sort((a, b) => a.tier - b.tier || 0).map((src) => {
+  return DESIGN.operators.filter((op) => ACTIVE_OPERATOR_IDS.has(op.chessId)).slice().sort((a, b) => a.tier - b.tier || 0).map((src) => {
     const op = catalog.operators[src.chessId]; const raw = op.source?.normalChess || {};
     const text = TEXT.operators[src.chessId] || {};
-    return { id: src.chessId, name: src.name, tier: String(src.tier), kind: src.roster || '', rarity: String(raw.rarity ?? ''),
+    return { id: src.chessId, name: src.name, tier: String(src.tier), kind: src.roster || classifyRosterKind(src), rarity: String(raw.rarity ?? ''),
       profession: PROFESSION[raw.profession] || raw.profession || '', faction: tavernFactions({ chessId: src.chessId, equipment: [] }, catalog).join('、'),
       normal: text.normal || '', elite: text.elite || '', note: src.role || '', remark: '' };
   });
@@ -58,7 +60,7 @@ function bringers(catalog) {
   for (const op of Object.values(catalog.operators)) {
     // The table shows sources for the live roster only. Retired ordinary forms stay in saved
     // catalog data, but must not make a current gear card look obtainable from an inactive unit.
-    if (op.elite || op.recruitable === false) continue;
+    if (op.elite || !ACTIVE_OPERATOR_IDS.has(op.chessId)) continue;
     for (const r of [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat]) {
       for (const id of [...(r.params?.outputs || []).map((x) => x.id), ...(r.params?.ids || []), r.params?.id].filter(Boolean)) {
         if (!out.has(id)) out.set(id, new Set());

@@ -45,6 +45,8 @@ const GAMEDATA_URL = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameD
 const SEASON = 'act2autochess';
 const USAGE = 'usage: node tools/build-data.mjs [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--quiet] [--no-research] [--force]';
 
+class CliUsageError extends Error {}
+
 /**
  * Parse the command line strictly (unknown options and missing values are errors, so a typo can
  * never silently write data somewhere unexpected).
@@ -64,13 +66,13 @@ function parseArgs(argv) {
     if (flags[name] && inline === null) { opts[flags[name]] = true; continue; }
     if (dirs[name]) {
       const v = inline ?? argv[++i];
-      if (!v || v.startsWith('--')) throw new Error(`${name} needs a path argument\n${USAGE}`);
+      if (!v || v.startsWith('--')) throw new CliUsageError(`${name} needs a path argument\n${USAGE}`);
       opts[dirs[name]] = resolve(v);
       continue;
     }
-    throw new Error(`unknown option ${argv[i]}\n${USAGE}`);
+    throw new CliUsageError(`unknown option ${argv[i]}\n${USAGE}`);
   }
-  if (opts.refresh && opts.offline) throw new Error(`--refresh and --offline are mutually exclusive\n${USAGE}`);
+  if (opts.refresh && opts.offline) throw new CliUsageError(`--refresh and --offline are mutually exclusive\n${USAGE}`);
   return opts;
 }
 
@@ -3303,6 +3305,6 @@ async function main() {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((e) => {
     console.error('build-data failed:', e && e.stack ? e.stack : e);
-    process.exitCode = 1;
+    process.exitCode = e instanceof CliUsageError ? 2 : 1;
   });
 }

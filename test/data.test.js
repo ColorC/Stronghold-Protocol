@@ -16,6 +16,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { getCatalog as getIndependentCatalog } from '../server/modes/independent/catalog.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // DATA_DIR lets the suite validate an alternative build output (e.g. `--out /tmp/x`).
@@ -74,29 +75,49 @@ test('numbers: every stats/bb/enemyScale object holds only finite numbers (no nu
   assert.deepEqual(bad.slice(0, 10), [], `${bad.length} bad numeric fields`);
 });
 
-test('chess: 266 records, 112 visible non-DIY (16/17/19/22/19/19 per tier)', () => {
-  assert.equal(Object.keys(chess).length, 266);
+test('chess: 337 generated records preserve the 112-card base lobby and independent-only imports', () => {
+  assert.equal(Object.keys(chess).length, 337);
+  assert.equal(normalChess.length, 170);
+  assert.equal(Object.values(chess).filter((c) => c.isGolden).length, 167);
   assert.equal(visible.length, 112);
   const perTier = {};
   for (const c of visible) perTier[c.tier] = (perTier[c.tier] || 0) + 1;
   assert.deepEqual(perTier, { 1: 16, 2: 17, 3: 19, 4: 22, 5: 19, 6: 19 });
   assert.equal(normalChess.filter((c) => c.isDiy).length, 4);
-  assert.equal(normalChess.filter((c) => c.isHidden).length, 17);
+  const modeOnly = normalChess.filter((c) => c.nativeImport?.playable === true);
+  assert.equal(modeOnly.length, 34, 'native roster candidates are kept out of the base-mode visible pool');
+  assert.ok(modeOnly.every((c) => c.tier === null && c.visible === false && c.nativeImport.availableModes.includes('independent')));
+  const helpers = normalChess.filter((c) => c.darkmoonSupport === true);
+  assert.equal(helpers.length, 3, 'support prototypes are non-recruitable helpers, not roster candidates');
+  assert.ok(helpers.every((c) => c.isHidden && c.visible === false && c.skill === null));
+  assert.equal(normalChess.filter((c) => c.isHidden).length, 54);
 });
 
 test('chess: ids, golden pairs and references resolve', () => {
+  const nativeCandidates = Object.values(chess).filter((c) => !c.isGolden && c.nativeImport?.playable === true);
+  assert.equal(new Set(nativeCandidates.map((c) => c.chessId)).size, nativeCandidates.length);
   for (const [id, c] of Object.entries(chess)) {
     assert.equal(c.chessId, id);
     assert.ok(chess[c.baseId], `${id}: baseId`);
     assert.equal(chess[c.baseId].isGolden, false, `${id}: baseId must be normal`);
-    assert.ok(c.goldenId && chess[c.goldenId]?.isGolden, `${id}: goldenId`);
+    if (c.darkmoonSupport === true) assert.equal(c.goldenId, null, `${id}: standalone support prototype has no golden form`);
+    else assert.ok(c.goldenId && chess[c.goldenId]?.isGolden, `${id}: goldenId`);
     assert.equal(c.tier, chess[c.baseId].tier, `${id}: tier differs from base`);
-    assert.ok(c.tier >= 1 && c.tier <= 6);
+    if (c.nativeImport?.playable === true) {
+      assert.equal(c.tier, null, `${c.chessId}: raw native body has no cross-mode tavern tier`);
+      assert.ok(c.nativeImport.availableModes.includes('independent'));
+    } else assert.ok(c.tier >= 1 && c.tier <= 6);
     for (const b of c.bonds) assert.ok(bonds[b], `${id}: bond ${b}`);
     for (const g of c.garrisonIds) assert.ok(garrisons[g], `${id}: garrison ${g}`);
     for (const t of c.tokens) assert.ok(tokens[t], `${id}: token ${t}`);
-    assert.ok(isFiniteNum(c.price) && isFiniteNum(c.sellPrice), `${id}: price`);
+    if (c.nativeImport?.playable === true || c.darkmoonSupport === true) {
+      assert.ok(c.price == null, `${id}: mode-only body has no base-mode buy price`);
+      assert.ok(c.sellPrice == null, `${id}: mode-only body has no base-mode sell price`);
+    } else assert.ok(isFiniteNum(c.price) && isFiniteNum(c.sellPrice), `${id}: price`);
   }
+  const independentCatalog = getIndependentCatalog();
+  assert.equal(independentCatalog.config.purchasePrice, 3, 'independent recruitable bodies use the mode catalog price');
+  assert.ok(nativeCandidates.every((c) => independentCatalog.operators[c.chessId]?.recruitable), 'independent roster catalog exposes every native candidate');
   assert.equal(chess.chess_char_2_11_a.upgradeNum, 2, '风丸 merges with 2 copies');
 });
 
@@ -107,15 +128,28 @@ test('chess: every non-DIY chess has stats, range, classification and a resolvab
     assertStatsFinite(c.stats, c.chessId, statKeys);
     assert.ok(c.stats.maxHp > 0 && c.stats.bat > 0 && c.stats.aspd > 0, `${c.chessId}: positive stats`);
     assert.ok(Array.isArray(c.rangeGrid) && c.rangeGrid.every(isPair), `${c.chessId}: rangeGrid`);
+    if (c.darkmoonSupport) {
+      assert.equal(c.visible, false, `${c.chessId}: helper is hidden from the base pool`);
+      assert.ok(!c.recruitable, `${c.chessId}: helper is not recruitable`);
+      assert.equal(c.skill, null, `${c.chessId}: helper has no operator skill`);
+      assert.equal(c.trait, null, `${c.chessId}: helper has no operator trait`);
+      assert.deepEqual(c.modules, [], `${c.chessId}: helper has no module choices`);
+      assert.ok(c.assets?.avatar && c.assets?.spine, `${c.chessId}: support prototype assets`);
+      continue;
+    }
     assert.ok(['phys', 'arts', 'heal', 'true'].includes(c.dmgType), `${c.chessId}: dmgType ${c.dmgType}`);
     assert.ok(['melee', 'ranged', 'heal', 'none'].includes(c.attackKind), `${c.chessId}: attackKind`);
-    assert.ok(['arrow', 'bolt', 'orb', 'none'].includes(c.projectile), `${c.chessId}: projectile`);
+    if (!c.darkmoonSupport) assert.ok(['arrow', 'bolt', 'orb', 'none'].includes(c.projectile), `${c.chessId}: projectile`);
     assert.equal(typeof c.canHitFly, 'boolean');
-    assert.ok(c.skill && typeof c.skill.skillId === 'string', `${c.chessId}: skill`);
-    assert.ok(c.skill.level === (c.isGolden ? 7 : 4), `${c.chessId}: skill level ${c.skill.level}`);
-    assert.ok(typeof c.skill.trigger?.rule === 'string', `${c.chessId}: trigger`);
-    assert.ok(typeof c.skill.desc === 'string' && !/\{[a-z_@.\[\]]+(:[0-9.%]+)?\}/i.test(c.skill.desc), `${c.chessId}: unresolved skill placeholder`);
-    for (const [k, v] of Object.entries(c.skill.bb)) assert.ok(isFiniteNum(v), `${c.chessId}: skill bb ${k}`);
+    if (!c.skill) {
+      assert.ok(['chess_native_char_4000_jnight_a', 'chess_native_char_4000_jnight_b'].includes(c.chessId), `${c.chessId}: only the skillless native robot has no skill`);
+    } else assert.ok(typeof c.skill.skillId === 'string', `${c.chessId}: skill`);
+    if (c.skill) {
+      assert.ok(c.skill.level === (c.isGolden ? 7 : 4), `${c.chessId}: skill level ${c.skill.level}`);
+      assert.ok(typeof c.skill.trigger?.rule === 'string', `${c.chessId}: trigger`);
+      assert.ok(typeof c.skill.desc === 'string' && !/\{[a-z_@.\[\]]+(:[0-9.%]+)?\}/i.test(c.skill.desc), `${c.chessId}: unresolved skill placeholder`);
+      for (const [k, v] of Object.entries(c.skill.bb)) assert.ok(isFiniteNum(v), `${c.chessId}: skill bb ${k}`);
+    }
     assert.ok(c.trait && typeof c.trait.desc === 'string', `${c.chessId}: trait`);
     assert.ok(Array.isArray(c.talents));
     assert.ok(c.assets && c.assets.avatar && c.assets.spine, `${c.chessId}: assets`);
@@ -423,10 +457,11 @@ test('chess/tokens: talent tokens resolve and every token variant says where it 
   for (const t of Object.values(tokens)) {
     if (t.kind !== 'summon') continue;
     const made = Object.values(t.variants).some((v) => makes(v.sources) || Object.values(v.bySkill || {}).some((b) => makes(b.sources)));
-    assert.equal(t.placeable, t.displayType !== 'HIDDEN' && made, `${t.tokenId} (${t.name}): placeable`);
+      const returnMarker = t.tokenId === 'token_10065_demetr_dmtpos';
+      assert.equal(t.placeable, !returnMarker && t.displayType !== 'HIDDEN' && made, `${t.tokenId} (${t.name}): placeable`);
   }
   assert.deepEqual(Object.values(tokens).filter((t) => t.placeable).map((t) => t.name).sort(),
-    ['医疗探机', '诅咒娃娃', '斯卡蒂的海嗣', '流形', '狼群', '爬行号·防护单元'].sort());
+    ['医疗探机', '机械水獭', '诅咒娃娃', '“夹子”', '斯卡蒂的海嗣', '全自动造型仪', '“清平”', '“逍遥”', '“弦惊”', '共振装置', '白铁™多功能平台', '白铁™多功能平台', '铁钳号·原型机', '狼群', '流形', '机动盾牌', '爬行号·防护单元'].sort());
   assert.equal(tokens.enemy_9012_acloon.stats.deployLimit, tokens.enemy_9012_acloon.deployLimit);
 });
 
@@ -435,12 +470,14 @@ test('chess/tokens: talent tokens resolve and every token variant says where it 
 test('chess: skills[] = every skill unlocked at the status, at the chess skill level; exactly one default = skill', () => {
   for (const c of Object.values(chess)) {
     if (c.isDiy) { assert.equal(c.skills, undefined, `${c.chessId}: DIY has no skills`); continue; }
+    if (c.darkmoonSupport) { assert.deepEqual(c.skills, [], `${c.chessId}: helper has no selectable operator skills`); continue; }
+    if (!c.skill) { assert.ok(['chess_native_char_4000_jnight_a', 'chess_native_char_4000_jnight_b'].includes(c.chessId), `${c.chessId}: only the native robot has no selectable skill`); assert.deepEqual(c.skills, []); continue; }
     assert.ok(Array.isArray(c.skills) && c.skills.length >= 1 && c.skills.length <= 3, `${c.chessId}: skills`);
     const idx = c.skills.map((s) => s.index);
     assert.deepEqual(idx, [...idx].sort((a, b) => a - b), `${c.chessId}: skills ordered by index`);
     assert.equal(new Set(idx).size, idx.length, `${c.chessId}: unique skill indices`);
     // E1 unlocks S1–S2, E2 S1–S3 (tier 1–2 normal chess are E1)
-    assert.ok(idx.every((i) => i <= c.status.phase), `${c.chessId}: skill ${idx} locked at E${c.status.phase}`);
+    if (c.nativeImport?.playable !== true) assert.ok(idx.every((i) => i <= c.status.phase), `${c.chessId}: skill ${idx} locked at E${c.status.phase}`);
     const defs = c.skills.filter((s) => s.isDefault);
     assert.equal(defs.length, 1, `${c.chessId}: one default skill`);
     const { isDefault, ...d } = defs[0];
@@ -455,7 +492,7 @@ test('chess: skills[] = every skill unlocked at the status, at the chess skill l
       for (const [k, v] of Object.entries(s.bb)) assert.ok(isFiniteNum(v), `${c.chessId} ${s.skillId}: bb ${k}`);
       assert.ok(s.overrideTokenKey === null || c.tokens.includes(s.overrideTokenKey), `${c.chessId} ${s.skillId}: token ${s.overrideTokenKey} listed`);
     }
-    if (c.tier <= 2 && !c.isGolden) assert.ok(idx.length <= 2, `${c.chessId}: E1 chess has no S3`);
+    if (c.tier != null && c.tier <= 2 && !c.isGolden) assert.ok(idx.length <= 2, `${c.chessId}: E1 chess has no S3`);
   }
   // Triggers per skill (PRTS 卫戍协议/帮助 技能策略; tools/build-data.mjs resolveTrigger): the class rows cover every MANUAL
   // skill of the class and no AUTO one; a MANUAL skill with a 技能范围 of its own (not an attack-range change) is SKILL_RANGE.
@@ -516,6 +553,10 @@ test('chess: golden modules[] (+ statsBase/traitBase/talentsBase) compose back t
   let nMods = 0;
   for (const c of Object.values(chess)) {
     if (c.isDiy) continue;
+    if (c.darkmoonSupport) {
+      assert.deepEqual(c.modules, [], `${c.chessId}: non-recruitable helper has no module choices`);
+      continue;
+    }
     if (!c.isGolden || !(c.status.equipLevel > 0)) {
       for (const k of ['modules', 'statsBase', 'traitBase', 'talentsBase']) assert.equal(c[k], undefined, `${c.chessId}: normal chess has no ${k}`);
       continue;
@@ -559,7 +600,7 @@ test('tokens: owner loadout variants (bySkill per non-default owner skill, byMod
   for (const t of Object.values(tokens)) {
     for (const [owner, v] of Object.entries(t.variants || {})) {
       const o = chess[owner];
-      const alt = o.skills.filter((s) => !s.isDefault).map((s) => String(s.index));
+      const alt = o.skills.filter((s) => !s.isDefault && (!o.nativeImport?.selectableSkillIds || o.nativeImport.selectableSkillIds.includes(s.skillId))).map((s) => String(s.index));
       assert.deepEqual(Object.keys(v.bySkill || {}), alt, `${t.tokenId}@${owner}: bySkill keys`);
       for (const b of Object.values(v.bySkill || {})) {
         assert.ok(Array.isArray(b.sources) && b.sources.every((x) => allowed.has(x)), `${t.tokenId}@${owner}: bySkill sources`);

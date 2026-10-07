@@ -42,8 +42,7 @@ test('default pool holds every recruitable operator; legacy helper still models 
   assert.equal(operatorOpen(multi.chessId, catalog, [b]), true, 'one open faction is enough');
   assert.equal(operatorOpen(multi.chessId, catalog, [a]), true);
   assert.equal(operatorOpen(multi.chessId, catalog, ALL.filter((x) => x !== a && x !== b)), false);
-  const tin = ordinary.find((op) => op.name === '锡人');
-  assert.equal(operatorOpen(tin.chessId, catalog, []), true, '锡人 counts as every faction');
+  assert.equal(ordinary.some((op) => op.name === '锡人'), false, 'retired all-faction proxy is not in the active pool');
 });
 
 test('a save without openFactions keeps every faction; a bad openFactions is rejected', () => {
