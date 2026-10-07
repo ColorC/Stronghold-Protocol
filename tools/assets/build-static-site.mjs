@@ -55,11 +55,14 @@ function normalizeBasePath(value, revision) {
 function versionAbsoluteStaticUrls(text, basePath, ext) {
   if (ext === '.css') {
     // Generated font CSS uses root-absolute /fonts URLs. Relative URLs preserve the version prefix after the CDN redirect.
-    return text.replace(/([("'])\/(?:fonts)\//g, '$1./');
+    return text.replace(/([("'])\/(fonts|assets)\//g, `$1${basePath}/$2/`);
   }
   if (ext !== '.js' && ext !== '.mjs') return text;
   // Dynamic ESM imports resolve from the importing module URL. Prefix only quoted, root-absolute static module paths.
-  return text.replace(/([("'`])\/(sim|shared|vendor|fonts|assets|data|media)\//g, `$1${basePath}/$2/`);
+  // Ordinary strings belong to the page context (asset manifests, fetch URLs, MEDIA_PREFIX). Preserve them.
+  // ESM import specifiers alone resolve from the module's CDN URL.
+  return text.replace(/(\bimport\s*\(\s*|\bfrom\s*|\bimport\s*)(["'`])(\/(?:sim|shared|vendor|fonts|assets|data|media|js)\/[^"'`]*?)\2/g,
+    (_, lead, quote, specifier) => `${lead}${quote}${basePath}${specifier}${quote}`);
 }
 
 async function walkFiles(root, rel = '') {
@@ -112,6 +115,7 @@ async function main() {
   const { DATA_SHIM_JS } = await import(pathToFileURL(path.join(sourceRoot, 'server', 'index.js')).href);
   if (existsSync(outputRoot)) throw new Error(`output already exists; choose a new runtime batch path: ${outputRoot}`);
   await ensureNoReparseAncestors(outputRoot);
+  await ensureNoReparseAncestors(sourceRoot);
 
   const trackedStatic = [
     ...trackedFiles(sourceRoot, 'public/js/').map((p) => ({ source: p, target: p.replace(/^public\//, '') })),
@@ -123,6 +127,19 @@ async function main() {
       .filter((name) => name !== 'local-assets.json' || existsSync(path.join(sourceRoot, 'data', name)))
       .map((name) => `data/${name}`),
   ].map((entry) => typeof entry === 'string' ? ({ source: entry, target: entry }) : entry);
+  const engineRel = 'public/js/independent/engine';
+  const enginePath = path.join(sourceRoot, engineRel);
+  const needsEngine = existsSync(path.join(sourceRoot, 'public/js/independent/client-worker.js'));
+  let engineBuild = null;
+  if (needsEngine || existsSync(enginePath)) {
+    if (!existsSync(enginePath)) throw new Error(`generate the client engine before packaging: ${enginePath}`);
+    engineBuild = JSON.parse(await readFile(path.join(enginePath, 'engine-build.json'), 'utf8'));
+    if (engineBuild.sourceRevision !== revision || engineBuild.sourceDirty) throw new Error('client engine must be generated from the same clean Git commit as the static package');
+    for (const rel of await walkFiles(enginePath)) {
+      if (!rel.endsWith('.js') && rel !== 'engine-build.json') throw new Error(`unexpected generated engine file: ${rel}`);
+      trackedStatic.push({ source: `${engineRel}/${rel}`, target: `js/independent/engine/${rel}` });
+    }
+  }
   for (const prefix of ['public/js/', 'public/css/', 'shared/', 'server/sim/', 'data/']) {
     const dirty = git(sourceRoot, 'status', '--porcelain', '--untracked-files=no', '--', prefix);
     if (dirty) throw new Error(`tracked static source has local modifications under ${prefix}; build from its committed checkout`);
@@ -225,6 +242,7 @@ async function main() {
   const report = {
     version: 1,
     sourceRevision: revision,
+    clientEngineRevision: engineBuild?.sourceRevision || null,
     immutablePrefix: `${basePath}/`,
     files: stats.files,
     bytes: stats.bytes,
