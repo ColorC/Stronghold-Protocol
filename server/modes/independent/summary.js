@@ -9,14 +9,16 @@ export const TRAIT_WHEN = Object.freeze({
   death: '倒下', statusApplied: '施加状态', ammoUsed: '消耗弹药', nativeProduction: '产出时', dollSwap: '替身切换',
   aura: '在场时', selling: '出售时', battleProduction: '战斗产出', bought: '购买干员后',
   battle: '战斗中', attack: '攻击',
+  // 干员特质 v4 (2026-10-07)
+  heal: '治疗时', damaged: '受到攻击', dodge: '闪避', elementBurst: '元素爆发', battleEnd: '战斗结束',
 });
 
 // temporary combat traits (干员表 v3, 2026-10-07): a buff for this battle, or damage / control in it
-const TEMP_STAT = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'shieldAllies', 'summonBoost']);
-const TEMP_DAMAGE = new Set(['firstWaveStrike', 'everyNthAttack', 'overkillSpill', 'onDown']);
+const TEMP_STAT = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'shieldAllies', 'summonBoost', 'aura', 'healedBuff', 'onKillSp']);
+const TEMP_DAMAGE = new Set(['firstWaveStrike', 'everyNthAttack', 'overkillSpill', 'onDown', 'rangeDebuff', 'statusOnHit', 'markSpread', 'blockRetaliate']);
 
 const FORGE_SINGLE = new Set(['grantEquipmentByTier', 'forgePerGainedChess', 'forgeAdjacent', 'forgeFactionTierCount', 'forgeRowCount',
-  'forgeDominantFactionTierCount', 'forgeBenchPairs', 'forgeBenchCount', 'forgePerFundsSpent']);
+  'forgeDominantFactionTierCount', 'forgeBenchPairs', 'forgeBenchCount', 'forgePerFundsSpent', 'forgePerRefresh']);
 const RECRUIT = new Set(['recruitOffer', 'conditionalRecruit', 'randomChessOffer', 'dominantFactionRecruit']);
 
 const counts = (p) => ({ normal: Number(p.normal ?? p.quantity ?? 1), elite: Number(p.elite ?? p.normal ?? p.quantity ?? 1) });
@@ -98,7 +100,7 @@ export function traitSummary(effect) {
       const n = b === 'escalatingGrant' || b === 'buyGear' ? p.start : { normal: p.normal, elite: p.elite };
       entry.kind = 'forge'; entry.items = [{ id: p.id, normal: Number(n?.normal ?? n), elite: Number(n?.elite ?? n?.normal ?? n) }];
       entry.condition = { escalatingGrant: 'escalate', perEliteGrant: 'elites', buyGear: 'improves', diversityGrant: p.by === 'faction' ? 'factions' : 'professions' }[b];
-    } else if (b === 'replayAdjacentNative') {
+    } else if (b === 'replayAdjacentNative' || b === 'copyFrontNative') {
       entry.kind = 'copy';
     } else if (b === 'twoCopyElite') {
       entry.kind = 'merge';

@@ -44,7 +44,7 @@ test('the twelve permissions are gear: one per operator, on both forms, never in
 });
 
 test('the operator wears its 交接凭证 from the gain on, without drawing a uid', () => {
-  const start = createSession({ seed: 7, difficulty: 'FUNNY' });
+  const start = createSession({ seed: 7, difficulty: 'FUNNY', openFactions: null }); // named operators: every faction open
   const after = buy(start, '角峰');
   const piece = after.pieces.at(-1);
   assert.deepEqual(piece.equipment.filter((x) => x.id.startsWith('permit-')), [{ uid: `permit-${piece.uid}`, id: 'permit-north-handover-order', elite: false, quantity: 1, state: {}, sourceId: 'permit-north-handover-order' }]);
@@ -55,7 +55,7 @@ test('the operator wears its 交接凭证 from the gain on, without drawing a ui
 });
 
 test('three copies merge into one elite that keeps a single 交接凭证 without asking', () => {
-  let state = createSession({ seed: 7, difficulty: 'FUNNY' });
+  let state = createSession({ seed: 7, difficulty: 'FUNNY', openFactions: null });
   for (let i = 0; i < 3; i++) state = buy(state, '角峰');
   const elites = state.pieces.filter((p) => p.elite);
   assert.equal(elites.length, 1);
@@ -64,7 +64,7 @@ test('three copies merge into one elite that keeps a single 交接凭证 without
 });
 
 function pair(donorName, receiverName) {
-  let state = createSession({ seed: 91, difficulty: 'FUNNY' });
+  let state = createSession({ seed: 91, difficulty: 'FUNNY', openFactions: null }); // named operators: every faction open
   state = buy(state, donorName); state = buy(state, receiverName);
   const [donor, receiver] = state.pieces.slice(-2);
   const map = getIndependentField(state).deployMap;
@@ -113,7 +113,7 @@ test('a save from before 交接凭证 were gear gets them on view and on the nex
 });
 
 test('a 交接凭证 is equipment: it takes one of the 999 places', () => {
-  const state = buy(createSession({ seed: 7, difficulty: 'FUNNY' }), '角峰');
+  const state = buy(createSession({ seed: 7, difficulty: 'FUNNY', openFactions: null }), '角峰');
   const piece = state.pieces.at(-1);
   state.inventory.push({ uid: `i${state.nextUid++}`, id: 'precision', quantity: 999, elite: false, state: {} });
   const item = state.inventory.at(-1).uid;

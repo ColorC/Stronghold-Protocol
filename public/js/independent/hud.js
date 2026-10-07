@@ -521,6 +521,7 @@ export function MatchInfo({ state, catalog }) {
     <p class="istage"><${Icon} name="info" />模式：<b>${mode?.name || ''}</b>${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="sm" />` : null}
       <span class="t-lo">第 <b class="num">${Math.min(state.round, state.roundLimit)}</b>/<span class="num">${state.roundLimit}</span> 回合</span></p>
     <p class="istage"><${GIcon} name="flag" />工程部特供：第 ${prizeRounds.join('、')} 轮</p>
+    ${Array.isArray(state.openFactions) ? html`<p class="istage" data-testid="open-factions"><${Icon} name="sword" />本局阵营：<b>${state.openFactions.join('、')}</b><span class="t-lo">（其余阵营的干员本局不出现）</span></p>` : null}
     ${boss ? html`<div class="eboss"><${UnitThumb} kind="enemy" id=${boss.enemyKey} size="md" />
       <div><${MicroLabel} tone="gold">ENEMY LEADER // 敌方领袖</${MicroLabel}><b>${boss.name}</b><span class="t-lo">第 ${state.board?.bossRound ?? state.roundLimit} 回合 · 最终攻势</span></div></div>` : null}
     <p class="istage"><${Icon} name="user" />调度中心 <b class="num">${state.shop?.level ?? 1}</b> 级 · 部署上限 <b class="num">${state.deployCap}</b> 名 · 防线生命 <b class="num">${state.lp}</b></p>

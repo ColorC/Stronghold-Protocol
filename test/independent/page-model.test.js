@@ -73,8 +73,9 @@ test('inventory stacks name prizes kept for later and mark what is used rather t
 });
 
 test('the forecast rows name their sources; idle prep-end producers are listed apart', () => {
-  const game = playSeed({ seed: 2, route: 'assault', difficulty: 'NORMAL', roundLimit: 14 });
-  let state = createSession({ seed: 2, difficulty: 'NORMAL', roundLimit: 14 });
+  // (干员特质 v4 reshuffled the pool: seed 3 is a bot game with prep-end producers on the field)
+  const game = playSeed({ seed: 3, route: 'assault', difficulty: 'NORMAL', roundLimit: 14 });
+  let state = createSession({ seed: 3, difficulty: 'NORMAL', roundLimit: 14 });
   let checked = 0;
   for (const action of game.actionLog) {
     if (action.type === 'ready') {

@@ -5,7 +5,10 @@ import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
 import { mitigate } from '../../damage.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
-const TEMPORARY_BEHAVIORS = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack', 'overkillSpill']);
+// 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
+// 加成 · onKillSp 击倒回技力 · markSpread 灼痕蔓延 · blockRetaliate 阻挡时按防御力反击 (照抄身前一格 is a prep rule: native.js)
+const TEMPORARY_BEHAVIORS = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack', 'overkillSpill',
+  'aura', 'rangeDebuff', 'statusOnHit', 'healedBuff', 'onKillSp', 'markSpread', 'blockRetaliate']);
 const BEHAVIORS = new Set([
   'badgeThresholdStat', 'staticStats', 'conditionalDamage', 'weakDamage', 'eventProduction',
   'deployWindowStats', 'startDerivedStats',
@@ -202,14 +205,32 @@ function badgeCountFor(entries, badgeIds) {
 // fall, an effect when it falls, a strike once the first enemies are in, shields handed out, summons made stronger,
 // something every Nth attack. Nothing here outlives the battle.
 
-/** The allies a temporary trait reaches: self | front | adjacent | row | all | faction:<阵营> | faction:same | profession:<PROFESSION>. */
-function traitTargets(battle, unit, targets = 'self') {
+/**
+ * The allies a temporary trait reaches: self | front | adjacent (周围四格) | around8 (周围八格) | row | inRange (攻击范围内)
+ * | all | faction:<阵营> | faction:same | profession:<PROFESSION>. `only` narrows them: { faction, melee, hpAbove,
+ * notProfession }.
+ */
+function traitTargets(battle, unit, targets = 'self', only = null) {
   // a list reaches the union, each operator once
-  if (Array.isArray(targets)) return [...new Set(targets.flatMap((t) => traitTargets(battle, unit, t)))];
+  if (Array.isArray(targets)) return [...new Set(targets.flatMap((t) => traitTargets(battle, unit, t, only)))];
+  const found = traitTargetsOf(battle, unit, targets);
+  return only ? found.filter((u) => matchesOnly(battle, u, only)) : found;
+}
+function matchesOnly(battle, u, only) {
+  const catalog = battle.opts?.flags?.independent?.catalog;
+  if (only.faction && !tavernFactions(piecesByUid(battle, u.uid), catalog).includes(only.faction)) return false;
+  if (only.melee && u.def?.position !== 'MELEE') return false;
+  if (only.notProfession && u.def?.profession === only.notProfession) return false;
+  if (only.hpAbove != null && !(u.hp / Math.max(1, u.s.maxHp) > Number(only.hpAbove))) return false;
+  return true;
+}
+function traitTargetsOf(battle, unit, targets) {
   const ops = battle.allyUnits.filter((u) => u.kind === 'op' && u.ownerId === unit.ownerId && u.alive && u.deployed && !u.removed);
   if (targets === 'self') return unit.alive ? [unit] : [];
   if (targets === 'front') { const [r, c] = frontOf(unit.homeR, unit.homeC, unit.dir); return ops.filter((u) => u !== unit && u.homeR === r && u.homeC === c); }
   if (targets === 'adjacent') return ops.filter((u) => u !== unit && Math.abs(u.homeR - unit.homeR) + Math.abs(u.homeC - unit.homeC) === 1);
+  if (targets === 'around8') return ops.filter((u) => u !== unit && Math.max(Math.abs(u.homeR - unit.homeR), Math.abs(u.homeC - unit.homeC)) === 1);
+  if (targets === 'inRange') return ops.filter((u) => u !== unit && withinRange(battle, unit, u));
   if (targets === 'row') return ops.filter((u) => u.homeR === unit.homeR);
   if (targets === 'all') return ops;
   const catalog = battle.opts?.flags?.independent?.catalog;
@@ -250,6 +271,65 @@ function markWeakDamage(battle, target) {
 }
 /** Operators of ours waiting on the bench this battle (no tile). */
 const benchCount = (battle) => (battle.opts?.flags?.independent?.pieces || []).filter((p) => p.row == null || p.col == null).length;
+
+// 脆弱 / 法术脆弱 / 受到的物理伤害提升 given by a trait (user 2026-10-07: 「原版的脆弱什么的都不管」): their own effect. They are
+// buffs under their own keys, never the catalogue status, so an operator's original talent or skill (同名效果取最高 among
+// themselves) neither overrides nor absorbs them; they multiply with it.
+const TRAIT_STATUS_MODS = Object.freeze({
+  fragile: (v) => ({ dmgTakenMul: 1 + v }), artsFragile: (v) => ({ artsTakenMul: 1 + v }), physFragile: (v) => ({ physTakenMul: 1 + v }),
+});
+const TRAIT_STATUS_TYPES = Object.freeze({ fragile: ['phys', 'arts', 'true'], artsFragile: ['arts'], physFragile: ['phys'] });
+function traitStatus(battle, source, target, status, value, duration) {
+  const mods = TRAIT_STATUS_MODS[status];
+  if (!mods) throw new Error(`unknown trait status ${status}`);
+  if (!target?.alive || !(Number(value) > 0) || !(Number(duration) > 0)) return;
+  battle.addBuff(target, { key: `independent:traitStatus:${status}:${source.uid}`, duration: Number(duration), refresh: 'replace', mods: mods(Number(value)), source });
+}
+const isEliteOrLeader = (e) => e?.isBoss || e?.def?.rank === 'ELITE' || e?.def?.rank === 'BOSS';
+/** An enemy a rangeDebuff `only` lets through: { eliteOrLeader, levitate }. */
+function enemyMatches(e, only) {
+  if (!only) return true;
+  if (only.eliteOrLeader && !isEliteOrLeader(e)) return false;
+  if (only.levitate && !e.s?.flags?.levitate) return false;
+  return true;
+}
+// 攻击范围内的敌人受到…: one hit hook per battle reads every source standing now (after the damage type is settled)
+const RANGE_DEBUFFS = new WeakMap();
+function rangeDebuffs(battle) {
+  let list = RANGE_DEBUFFS.get(battle);
+  if (list) return list;
+  list = [];
+  RANGE_DEBUFFS.set(battle, list);
+  battle.on('hit', ({ target, dmg }) => {
+    if (!dmg || target?.side !== 'enemy' || !list.length) return;
+    for (const d of list) {
+      if (!d.active() || !(TRAIT_STATUS_TYPES[d.status] || []).includes(dmg.type)) continue;
+      if (!withinRange(battle, d.unit, target) || !enemyMatches(target, d.only)) continue;
+      dmg.mul *= 1 + d.value;
+    }
+  }, { priority: WEAKNESS_PRIORITY - 10 });
+  return list;
+}
+/** How many times `unit` was put on the field this battle (a tile move is not a deployment). */
+function deployCounter(battle, unit) {
+  const s = { count: 0, at: -Infinity };
+  battle.on('deploy', ({ unit: who, move }) => { if (who === unit && !move) { s.count++; s.at = battle.time; } }, { owner: unit, priority: 100 });
+  return s;
+}
+const onField = (unit) => unit.alive && unit.deployed && !unit.removed;
+/**
+ * `fn(event)` on every deployment of `unit` (a tile move aside). The opening deployment runs at battle start, once the
+ * whole field is in (operators come in one after another, and a neighbour deployed after it would miss out).
+ */
+function onDeployOf(battle, unit, fn) {
+  let opening = null;
+  battle.on('deploy', (ev) => {
+    if (ev.unit !== unit || ev.move) return;
+    if (ev.initial) opening = ev; else fn(ev);
+  }, { owner: unit });
+  battle.on('battleStart', () => { if (opening && onField(unit)) fn(opening); opening = null; }, { owner: unit });
+}
+
 function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
   rules.forEach((rule, index) => {
     const p = rule.params ?? {};
@@ -258,22 +338,137 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
     const times = () => (p.perBench ? Math.min(benchCount(battle), Number(p.maxBench ?? Infinity)) : 1);
     const give = (targets, stats, duration, spGain) => {
       const n = times();
-      if (n <= 0) return;
-      for (const t of traitTargets(battle, unit, targets)) {
+      if (n <= 0) return [];
+      const reached = traitTargets(battle, unit, targets, p.only);
+      for (const t of reached) {
         traitBuff(battle, t, `${key}:${t.uid}`, statMods(stats, n), duration);
         if (Number(spGain) > 0) t.skill?.gainSp(Number(spGain) * n, 'independentTrait');
         if (p.weakDamage) markWeakDamage(battle, t);
       }
+      return reached;
     };
     switch (rule.behavior) {
       case 'battleStartBuff':
         battle.on('battleStart', () => give(p.targets, p.stats, p.duration, p.spGain), { owner: unit });
         break;
-      case 'deployBuff':
-        battle.on('deploy', ({ unit: who }) => { if (who === unit) give(p.targets, p.stats, p.duration, p.spGain); }, { owner: unit });
+      case 'deployBuff': {
+        // firstDeployOnly: 首次部署; redeployOnly: 每次再部署; delay: 部署后经过N秒时 (still on the field then)
+        const deploys = deployCounter(battle, unit);
+        let pendingAt = null;
+        onDeployOf(battle, unit, () => {
+          if (p.firstDeployOnly && deploys.count !== 1) return;
+          if (p.redeployOnly && deploys.count < 2) return;
+          if (Number(p.delay) > 0) pendingAt = deploys.at + Number(p.delay);
+          else give(p.targets, p.stats, p.duration, p.spGain);
+        });
+        if (Number(p.delay) > 0) battle.on('tick', () => {
+          if (pendingAt == null || battle.time + 1e-9 < pendingAt) return;
+          pendingAt = null;
+          if (onField(unit)) give(p.targets, p.stats, p.duration, p.spGain);
+        }, { owner: unit });
         break;
-      case 'skillStartBuff':
-        battle.on('skillStart', ({ unit: who }) => { if (who === unit) give(p.targets, p.stats, p.duration, p.spGain); }, { owner: unit });
+      }
+      case 'skillStartBuff': {
+        // duration 'skill': 技能持续期间 — the buffs leave when the skill ends (or the operator falls)
+        let held = [];
+        const drop = () => { for (const t of held) battle.removeBuff(t, `${key}:${t.uid}`); held = []; };
+        battle.on('skillStart', ({ unit: who }) => {
+          if (who !== unit) return;
+          if (p.duration === 'skill') { drop(); held = give(p.targets, p.stats, 'battle', p.spGain); } else give(p.targets, p.stats, p.duration, p.spGain);
+        }, { owner: unit });
+        if (p.duration === 'skill') {
+          battle.on('skillEnd', ({ unit: who }) => { if (who === unit) drop(); }, { owner: unit });
+          battle.on('death', ({ unit: who }) => { if (who === unit) drop(); }, { owner: unit });
+        }
+        break;
+      }
+      case 'aura': {
+        // 在场时: while it stands, the targets (re-read every 0.2 s: who stands where, whose HP is above the line) carry the
+        // buff; it lapses within half a second of the operator falling and comes back when it is deployed again
+        let next = -Infinity;
+        const pulse = () => {
+          if (!onField(unit) || battle.time < next) return;
+          next = battle.time + 0.2;
+          for (const t of traitTargets(battle, unit, p.targets, p.only)) traitBuff(battle, t, `${key}:${t.uid}`, statMods(p.stats), 0.5);
+        };
+        battle.on('battleStart', pulse, { owner: unit });
+        battle.on('deploy', ({ unit: who }) => { if (who === unit) { next = -Infinity; pulse(); } }, { owner: unit });
+        battle.on('tick', pulse, { owner: unit });
+        break;
+      }
+      case 'rangeDebuff': {
+        // on 'skillStart': the enemies in range at that moment get the status (寒冷) once. Otherwise lasting: while it stands
+        // (delay: N seconds after it was deployed; duringSkill: while its skill runs) the enemies in range take more damage
+        if (p.on === 'skillStart') {
+          battle.on('skillStart', ({ unit: who }) => {
+            if (who !== unit) return;
+            for (const e of battle.enemies) if (e.alive && e.deployed !== false && withinRange(battle, unit, e) && enemyMatches(e, p.only)) battle.applyStatus(e, p.status, { duration: Number(p.duration), source: unit });
+          }, { owner: unit });
+          break;
+        }
+        const deploys = deployCounter(battle, unit);
+        rangeDebuffs(battle).push({ unit, status: p.status, value: Number(p.value), only: p.only,
+          active: () => onField(unit) && (!(Number(p.delay) > 0) || battle.time - deploys.at + 1e-9 >= Number(p.delay)) && (!p.duringSkill || !!unit.skill?.active) });
+        break;
+      }
+      case 'statusOnHit': {
+        // 攻击使目标受到…: every damage it deals (its trait's and gear's own damage aside); afterOwnStun: an enemy it stuns
+        if (p.afterOwnStun) {
+          battle.on('statusApplied', ({ source, target, status }) => {
+            if (source === unit && status === 'stun' && target?.side === 'enemy') traitStatus(battle, unit, target, p.status, p.value, p.duration);
+          }, { owner: unit });
+          break;
+        }
+        battle.on('damaged', ({ source, target, amount, dmg }) => {
+          if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !target.alive) return;
+          if (dmg?.type === 'element' || dmg?.tags?.includes('independentTrait') || dmg?.tags?.includes('independentEquipment')) return;
+          if (p.duringSkill && !unit.skill?.active) return;
+          traitStatus(battle, unit, target, p.status, p.value, p.duration);
+        }, { owner: unit });
+        break;
+      }
+      case 'healedBuff':
+        // 被自身治疗的友方: every ally it heals (itself aside) carries the buff for its seconds
+        battle.on('heal', ({ source, target }) => {
+          if (source !== unit || !target || target === unit || target.side !== 'ally' || !target.alive) return;
+          traitBuff(battle, target, `${key}:${target.uid ?? target.id}`, statMods(p.stats), p.duration);
+        }, { owner: unit });
+        break;
+      case 'onKillSp':
+        // 击倒敌人时回技力: actor self (duringSkill: while its skill runs) or faction:<阵营> (any of ours of it, while this
+        // operator stands); targets: its 周围四格 / the killer
+        battle.on('kill', ({ killer, victim }) => {
+          if (!killer || victim?.side !== 'enemy' || !onField(unit)) return;
+          if (p.actor === 'self') { if (killer !== unit || (p.duringSkill && !unit.skill?.active)) return; }
+          else if (String(p.actor).startsWith('faction:')) {
+            if (killer.kind !== 'op' || killer.ownerId !== unit.ownerId || !matchesOnly(battle, killer, { faction: String(p.actor).slice(8) })) return;
+          } else return;
+          const to = p.targets === 'killer' ? [killer] : traitTargets(battle, unit, p.targets ?? 'self');
+          for (const t of to) if (t.alive) t.skill?.gainSp(Number(p.sp ?? 0), 'independentTrait');
+        }, { owner: unit });
+        break;
+      case 'markSpread':
+        // 带有灼痕的敌人被击倒时，其周围的敌人也被施加灼痕: the mark (its own buff, its seconds left) and the 法术脆弱 it carries
+        battle.on('kill', ({ victim }) => {
+          if (victim?.side !== 'enemy' || !unit.alive) return;
+          const mark = victim.findBuff(p.mark);
+          if (!mark) return;
+          const left = Number.isFinite(mark.until) ? Math.max(0.1, mark.until - battle.time) : Number(mark.duration) > 0 && Number.isFinite(Number(mark.duration)) ? Number(mark.duration) : 6;
+          const fragile = victim.findBuff('artsFragile');
+          for (const e of battle.enemies) {
+            if (e === victim || !e.alive || e.deployed === false || tileDistance(e, victim) > Number(p.radius ?? 1) + 1e-9) continue;
+            battle.addBuff(e, { key: p.mark, duration: left, refresh: 'extend', mods: mark.mods || null, visible: true, source: mark.source ?? unit });
+            if (fragile) battle.applyStatus(e, 'artsFragile', { duration: left, value: fragile.value ?? fragile.statusValue, source: mark.source ?? unit });
+          }
+        }, { owner: unit });
+        break;
+      case 'blockRetaliate':
+        // 阻挡敌人时，受到攻击会对攻击者造成相当于自身防御力N%的伤害
+        battle.on('hit', ({ source, target, dmg }) => {
+          if (target !== unit || source?.side !== 'enemy' || !source.alive || !dmg || dmg.type === 'element' || !onField(unit)) return;
+          if (p.condition === 'blocking' && !unit.blocking?.length) return;
+          battle.dealDamage(unit, source, { amount: unit.s.def * Number(p.defPct ?? 0), type: p.type ?? 'phys', tags: ['independentTrait'] });
+        }, { owner: unit });
         break;
       case 'allyDownStacks': {
         // every `every` other operators of ours that fall this battle add a stack, up to maxStacks
@@ -289,8 +484,9 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
         break;
       }
       case 'onDown': {
+        // on 'dollSwap': 替身与本体切换时 (either way) instead of 被击倒时
         let left = Number(p.perBattle ?? 1);
-        battle.on('death', ({ unit: who }) => {
+        battle.on(p.on === 'dollSwap' ? 'dollSwap' : 'death', ({ unit: who }) => {
           if (who !== unit || left <= 0) return;
           left--;
           if (p.blast) {
@@ -315,9 +511,10 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
         break;
       }
       case 'shieldAllies':
-        // battle start: `count` of the targets (wearing the fewest layers first, then left to right) get `layers`, 2 at most
-        battle.on('battleStart', () => {
-          const list = traitTargets(battle, unit, p.targets ?? 'all')
+        // battle start (on 'deploy': every time it is deployed, redeploys too): `count` of the targets (wearing the fewest
+        // layers first, then left to right) get `layers`, 2 at most
+        (p.on === 'deploy' ? (fn) => onDeployOf(battle, unit, fn) : (fn) => battle.on('battleStart', fn, { owner: unit }))(() => {
+          const list = traitTargets(battle, unit, p.targets ?? 'all').filter((t) => !p.excludeSelf || t !== unit)
             .sort((a, b) => Number(a.findBuff(`independent:equipmentShield:${a.uid}`)?.shieldHits ?? 0) - Number(b.findBuff(`independent:equipmentShield:${b.uid}`)?.shieldHits ?? 0) || a.homeC - b.homeC || a.homeR - b.homeR);
           for (const t of list.slice(0, Math.max(1, Number(p.count ?? 1)))) grantShieldLayers(battle, t, Number(p.layers ?? 1));
         }, { owner: unit });
@@ -485,7 +682,7 @@ function adjacentInDirection(owner, actor, direction) {
 }
 
 function getActor(event, trigger) {
-  if (trigger === 'skillStart' || trigger === 'deploy' || trigger === 'dollSwap' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
+  if (trigger === 'skillStart' || trigger === 'skillEnd' || trigger === 'deploy' || trigger === 'dollSwap' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
   if (trigger === 'kill') return event.killer ?? null;
   if (trigger === 'death') return event.unit ?? null;
   if (trigger === 'statusApplied') return event.source ?? null;
@@ -528,6 +725,9 @@ function filterMatches(battle, rule, event, actor, owner) {
   if (f.actor === 'adjacentAllies' && f.direction && !adjacentInDirection(owner, actor, f.direction)) return false;
   if (f.actor === 'adjacentAllies' && f.excludeSelf && actor === owner) return false;
   if (f.actor === 'target' && event.target !== owner) return false;
+  if (f.actor === 'selfOrSummon' && actor !== owner && actor?.ownerUnit !== owner) return false;
+  if (f.sourceSide && event.source?.side !== f.sourceSide) return false;
+  if (f.element && event.element !== f.element) return false;
   const target = event.victim ?? event.target ?? null;
   if (f.targetSide && f.targetSide !== 'any' && target?.side !== f.targetSide) return false;
   if (f.targetKind && target?.kind !== f.targetKind) return false;
@@ -588,11 +788,19 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
   const countKey = `independentCounter:${origin}:${sourceId}:${rule.trigger}`;
   owner.mem.independentState.counters[countKey] = Number(owner.mem.independentState.counters[countKey]) || 0;
   let lastHealGroup = null;
+  // selfSurvived (战斗结束时未被击倒): a fall at any time of the battle voids it
+  let downed = false;
+  if (p.filter?.selfSurvived) battle.on('death', ({ unit }) => { if (unit === owner) downed = true; }, { owner });
+  // armedBy (塑心): each of the owner's own `armedBy` events arms one production
+  let armed = 0;
+  if (p.armedBy) battle.on(p.armedBy, (event) => { if (getActor(event, p.armedBy) === owner) armed++; }, { owner });
   const listener = (event) => {
     const actor = getActor(event, trigger);
     const lifecycleEvent = trigger === 'death' || trigger === 'deploy';
     if ((!owner.alive || !owner.deployed) && !lifecycleEvent) return;
     if (actor && (!actor.alive || !actor.deployed) && !lifecycleEvent) return;
+    if (p.filter?.selfSurvived && downed) return;
+    if (p.armedBy && armed <= 0) return;
     if (!filterMatches(battle, { ...rule, params: p }, event, actor, owner)) return;
     if (trigger === 'heal' && p.filter?.groupHealCountsOnce) {
       const skill = actor?.skill;
@@ -643,6 +851,7 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
       const allowed = emit({ id: output.id, quantity, origin, sourceUid: owner.uid, cap, copied: !!p.copyOutputFromEvent || !!p.requiresPlayerChoice });
       if (allowed > 0) producedOutputs.push({ id: output.id, quantity: allowed });
     }
+    if (p.armedBy && producedOutputs.length) armed--;
     if (origin === 'native' && !p.copyOutputFromEvent && producedOutputs.length) {
       battle.emit('nativeProduction', { actor: owner, sourceUid: owner.uid, outputs: producedOutputs, origin, copied: false, replay: false });
     }
@@ -673,9 +882,11 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     const stats = sumBadgeMods(catalog, entries, (id) => (battle.independentBadgeBoost?.(id) ?? 1)
       * own.reduce((m, r) => m * ((r.params?.badgeIds || []).includes(id) ? Number(r.params.multiplier) || 1 : 1), 1));
     const startMods = traitsOnBattleStart(unit, catalog, piece, entries);
-    const special = splitBattleMods(stats.mods);
+    // a trait's own static stats go through the same split as the gear's (再部署时间, 初始技力 …: 幽灵鲨)
+    const merged = { ...stats.mods };
+    mergeMods(merged, startMods);
+    const special = splitBattleMods(merged);
     const baseMods = { ...special.buffs };
-    mergeMods(baseMods, startMods);
     if (Object.keys(baseMods).length) battle.addBuff(unit, { key: `independent:equipment:${unit.uid}`, mods: baseMods, persist: true, allowDead: true });
     installSpecialStatHooks(battle, unit, special);
     installDerivedNativeRules(battle, unit, piece, catalog, entries);

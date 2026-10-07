@@ -9,7 +9,7 @@ const data = getData({ log: quiet });
 const catalog = getCatalog(data);
 const byName = (name) => Object.values(catalog.operators).find((x) => x.name === name && !x.elite);
 function purchaseCopies(name, count, setup = () => {}) {
-  let state = createSession({ seed: 83, data, catalog });
+  let state = createSession({ seed: 83, data, catalog, openFactions: null });
   const op = byName(name);
   assert.ok(op?.eliteChessId, `expected upgradeable ${name}`);
   state.funds = 100;
@@ -83,7 +83,7 @@ test('duplicate unique attachments require a source-body choice and preserve sel
 test('999 worn items merge, 1000 rejects atomically and leaves every normal body and item intact', () => {
   const make = (perPiece) => {
     // 送葬人 has no 交接凭证 (it would take one of the 999 places)
-    const op = byName('送葬人'); let state = createSession({ seed: 83, data, catalog }); state.funds = 100;
+    const op = byName('送葬人'); let state = createSession({ seed: 83, data, catalog, openFactions: null }); state.funds = 100;
     for (let i = 0; i < 3; i++) {
       const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
       state.shop.slots[slot] = { kind: 'chess', id: op.chessId, elite: false, price: 3, sold: false, equipment: i === 2 ? [{ id: 'precision', quantity: perPiece }] : [] };
