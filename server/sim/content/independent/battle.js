@@ -514,8 +514,10 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
       }
       case 'healedBuff':
         // 被自身治疗的友方: every ally it heals (itself aside) carries the buff for its seconds
-        battle.on('heal', ({ source, target }) => {
+        battle.on('heal', ({ source, target, amount, opts }) => {
           if (source !== unit || !target || target === unit || target.side !== 'ally' || !target.alive) return;
+          if(p.effectiveOnly&&!(Math.min(Number(amount)||0,Math.max(0,target.s.maxHp-target.hp))>0))return;
+          if(p.nativeOnly&&(opts?.independentOrigin||opts?.tags?.includes('independentEquipment')||source.mem?.independentOrigin))return;
           traitBuff(battle, target, `${key}:${target.uid ?? target.id}`, statMods(p.stats), p.duration);
         }, { owner: unit });
         break;

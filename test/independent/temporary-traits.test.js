@@ -261,6 +261,19 @@ test('击倒回技力: its 周围四格 allies, or a killer of the named faction
   assert.equal(sp('t') - before.t, 0, 'no faction, no skill points');
 });
 
+test('healedBuff effectiveOnly/nativeOnly reject overheal and equipment healing, preserve native targets and duration, and keep old descriptors compatible',()=>{
+  const make=flags=>setup([{uid:'m',chessId:OPS.provence,row:10,col:3},{uid:'a',chessId:OPS.texas,row:10,col:5}],{m:[rule('healedBuff',{stats:{aspd:10},duration:5,...flags},'heal')]});
+  const h=make({effectiveOnly:true,nativeOnly:true}),medic=h.unit('m'),ally=h.unit('a');
+  assert.equal(h.b.heal(medic,ally,100),0);assert.equal(ally.s.aspd,100,'overheal cannot create the temporary buff');
+  ally.hp=500;h.b.heal(medic,ally,100,{tags:['independentEquipment']});assert.equal(ally.s.aspd,100);
+  h.b.heal(medic,ally,100,{independentOrigin:'equipment'});assert.equal(ally.s.aspd,100);
+  medic.mem.independentOrigin='equipment';h.b.heal(medic,ally,100);assert.equal(ally.s.aspd,100);delete medic.mem.independentOrigin;
+  const before=ally.hp;assert.equal(h.b.heal(medic,ally,50),50);assert.equal(ally.hp,before+50);assert.equal(ally.s.aspd,110);
+  medic.hp=500;h.b.heal(medic,medic,100);assert.equal(medic.s.aspd,100,'self target remains excluded');
+  h.run(5.1);assert.equal(ally.s.aspd,100,'declared duration is unchanged');
+  const legacy=make({});legacy.b.heal(legacy.unit('m'),legacy.unit('a'),100,{tags:['independentEquipment']});assert.equal(legacy.unit('a').s.aspd,110,'flagless legacy descriptor keeps its prior trigger');
+});
+
 test('灼痕蔓延: a marked enemy knocked down passes the mark and its 法术脆弱 to the enemies within the radius', () => {
   const h = setup([{ uid: 'r', chessId: OPS.provence, row: 12, col: 0 }], { r: [rule('markSpread', { mark: 'reed2:scorch', radius: 1 }, 'death')] });
   const marked = h.spawn('enemy_test', { pos: [10, 4], mods: { speedMul: 0 } });

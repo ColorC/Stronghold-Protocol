@@ -20,7 +20,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 // ---- glyphs -------------------------------------------------------------------------------------------------------
 
 const KIND_WORD = { recruit: '招募', random: '随机', stat: '属性', damage: '增伤', copy: '复制', merge: '两份合成', shopBadge: '商品携装',
-  boost: '增幅', transfer: '徽章转交', devour: '吞并商品', doubleWorn: '徽章翻倍' };
+  boost: '增幅', transfer: '徽章转交', devour: '吞并商品', doubleWorn: '徽章翻倍', discount:'升级减费', summon:'召唤' };
 // the second-wave markers: what a yield grows with (每轮翻倍 / 种类 / 精锐 / 逐次增加) and game-long counts
 const CONDITION_WORD = { escalate: '每次翻倍', professions: '每种职业', factions: '每种阵营', elites: '每名精锐', improves: '逐次+1' };
 const TOTAL_WORD = { gained: '获得', refreshes: '刷新', sold: '出售', bought: '购买', elites: '晋升', kills: '击倒' };
@@ -33,7 +33,7 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
   const entries = (summary || []).slice(0, max);
   if (!entries.length) return null;
   return html`<span class=${cx('ix-trait', cls)}>
-    ${entries.map((e, i) => html`<span class="ix-trait__rule" key=${i}>
+    ${entries.map((e, i) => html`<span class="ix-trait__rule" key=${i} title=${e.description||undefined}>
       <span class="ix-trait__when">${catalog?.traitWhen?.[e.when] || e.when}</span>
       <span class="ix-trait__arrow" aria-hidden="true">›</span>
       ${e.kind === 'forge' || e.kind === 'shopBadge'
@@ -41,7 +41,8 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
             <${GearIcon} id=${it.id} catalog=${catalog} />${summaryCount(it, elite) != null ? html`<b class="num">×${summaryCount(it, elite)}</b>` : null}
           </span>`)
         : null}
-      ${e.kind === 'funds' ? html`<span class="ix-trait__out"><${CoinGlyph} /><b class="num">+${summaryCount(e.amount, elite)}</b></span>` : null}
+      ${e.kind === 'funds' && summaryCount(e.amount,elite)!=null ? html`<span class="ix-trait__out"><${CoinGlyph} /><b class="num">+${summaryCount(e.amount, elite)}</b></span>` : null}
+      ${e.kind === 'discount' && summaryCount(e.amount,elite)!=null ? html`<b class="num">−${summaryCount(e.amount,elite)}</b>` : null}
       ${e.kind === 'refresh' ? html`<span class="ix-trait__out"><${Icon} name="refresh" /><b class="num">×${summaryCount(e.amount, elite)}</b></span>` : null}
       ${(e.kind === 'stat' || e.kind === 'boost') && e.items ? e.items.map((it, k) => html`<span class="ix-trait__out" key=${k}><${GearIcon} id=${it.id} catalog=${catalog} /></span>`) : null}
       ${e.kind === 'stat' && e.times > 1 ? html`<b class="num">×${e.times}</b>` : null}

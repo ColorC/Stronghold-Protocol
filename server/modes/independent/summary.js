@@ -41,14 +41,15 @@ export function traitSummary(effect) {
     const entry = { when: rule.trigger, kind: null };
     const b = rule.behavior;
     if (b === 'factionReaction') {
-      entry.kind = p.mode === 'shop' ? 'shopBadge' : ['refund','funds','discount'].includes(p.mode) ? 'funds' : 'forge';
+      entry.kind = p.mode === 'shop' ? 'shopBadge' : p.mode==='discount' ? 'discount' : ['refund','funds'].includes(p.mode) ? 'funds' : 'forge';
+      if(['refund','funds','discount'].includes(p.mode))entry.amount={normal:p.count,elite:p.count};
       entry.faction=p.faction; entry.items=(p.outputs||[]).map(o=>({id:o.id,normal:o.quantity,elite:o.quantity})); entry.perPrep=p.maxEventsPerPrep; entry.targets=p.targets;
       entry.description={badge:'友方获得后分发徽章',shop:'为指定阵营的商店干员增添徽章',refund:'购买指定阵营干员后返还资金',discount:'获得时减少商店升级费用',funds:'出售时额外获得资金'}[p.mode];
     } else if (b === 'retiringEffect') {
       entry.when='retiring';entry.kind=p.summon||p.returnFallen?'summon':'stat';entry.temporary=true;entry.perBattle=p.perBattle;entry.stats=p.buff?.stats;entry.faction=p.buff?.faction||p.shield?.faction||p.returnFallen?.faction;
       entry.description=p.returnFallen?'退场时重新召唤本战最早倒下的召唤物':p.summon?'退场时召唤友方':p.shield?'退场时为友方增添护盾':'退场时强化指定阵营友方';
     } else if (b === 'deathrattleEcho') { entry.kind='copy';entry.every=p.every;entry.perBattle=p.perBattle;entry.faction=p.faction;entry.description='普通攻击后触发另一名友方的退场效果';
-    } else if (b === 'retirementMultiplier') { entry.kind='double';entry.amount={normal:1+p.extra,elite:1+p.extra};entry.description='让友方退场效果额外触发';
+    } else if (b === 'retirementMultiplier') { entry.kind='double';entry.amount={normal:1+p.extra,elite:1+p.extra};entry.hook='retiring';entry.description='让友方退场效果额外触发';
     } else if (b === 'warbandEvent') { entry.kind='stat';entry.temporary=true;entry.stats=p.stats;entry.faction=p.faction;entry.targets=p.targets;entry.maxStacks=p.maxStacks;entry.when={damaged:'allyDamaged',kill:'allyKill',death:'allyDeath'}[p.event]||p.event;entry.description='指定阵营友方行动后强化友方';
     } else if (b === 'firstWaveStrike') { entry.kind='damage';entry.temporary=true;entry.description='战斗开始后对敌方造成伤害';
     } else if (b === 'allyConditionStats') {
