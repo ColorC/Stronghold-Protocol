@@ -20,7 +20,7 @@ const run=(op,equipment,label)=>{
   const raw=data.chess[op.chessId];
   const tile=[...field.deployMap.keys()].map(k=>k.split(',').map(Number)).find(([r,c])=>canPlace(field.deployMap,positionClass(raw,'none'),r,c));
   if(!tile) throw new Error('No legal tile for '+op.name);
-  state.pieces.push({uid:'p1',chessId:op.chessId,elite:op.elite,row:tile[0],col:tile[1],dir:'RIGHT',skillIndex:raw.skill.index,moduleId:'none',equipment,attachments:[],nativeState:{}});
+  state.pieces.push({uid:'p1',chessId:op.chessId,elite:op.elite,row:tile[0],col:tile[1],dir:'RIGHT',skillIndex:raw.skill?.index??0,moduleId:'none',equipment,attachments:[],nativeState:{}});
   try {
     const result=runIndependentBattle(state,{data,catalog});
     if(result.diagnostics.errorCount || result.diagnostics.capped) throw new Error('Battle error or tick bound');
