@@ -303,7 +303,7 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   const hint = isShop && !slot.sold ? mergeHintOf(state, catalog, slot.id) : null;
   const buySpec=isShop?buyTargetSpec(slot,catalog):null;
   const buyChoices=buySelection && buySelection.slot === target.slot ? buySelection.choices : [];
-  const selectedBuyChoices=buySelection?.slot===target.slot?buySelection.selected:[];
+  const selectedBuyChoices=buySelection && buySelection.slot === target.slot ? buySelection.selected : [];
   const startBuy=()=>{
     if(!buySpec){onBuy(target.slot,{});return;}
     const choices=buyTargetChoices(buySpec,state,catalog,target.slot);
