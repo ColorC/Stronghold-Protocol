@@ -76,7 +76,11 @@
 
 另对101名干员普通、进阶各一次实际波次检查，共202场，没有机制诊断错误或模拟上限错误。单人波次里的超时不算胜利，也不等于机制错误。真实空弦、泥岩护盾与六名治疗干员普通、进阶共存/增长用例通过。
 
-全量回归、浏览器验收和最终发布版本见本文发布回执，运行日志只作为诊断材料，不成为配置真源。
+全量回归为4291项：4279通过、0失败、12跳过。跳过项包含已有环境相关检查及一次仅在指定候选路径下运行的表格检查；该表格检查已单独执行通过，101人的完整目录、科技配比及202场实战检查均实际执行。
+
+桌面、手机横屏、前端计算模式及公开入口均完成购买、部署朝向、详情直链、重新载入、回放、结算与下一轮。浏览器错误列表为空；前端计算模式的目录与服务端一致，修订冲突检查也通过。
+
+2026年10月7日已发布 `cdd835aaf515d0786c9805c78bb8d0d1415035be`。全量测试对应 `6396c8d2bc6f9e59ed50582b01d7d287673ed1f3`；之后合入线上分支仅合并Git历史，没有文件内容差异。可恢复的新版本标签为 `workshop-roster-rework-20261007-v1`。发布副本使用稀疏检出，正式数据与素材均读取主目录的独立路径，生产对局存档保留。
 
 ## 原生版本与诊断入口
 
@@ -84,4 +88,26 @@
 
 正式配置真源为 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\data\independent-design.json` 和 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\data\independent-game-text.json`；正式规则说明为 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\docs\independent-mode\design.md`。集中表由这些配置和原生资料生成，修改表格后仍需同步规则、可见文本和验证，表格自身不会绕过游戏规则直接执行。
 
-诊断产物位于 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\`。具体批次文件与用途由最终发布回执逐项列出。
+集中表是187行、9列，包含101名干员、15种徽章、41件普通装备、5件特供装备、19种已有特供和6个敌人阶段。写入Workshop后1683个单元格回读一致；两张既有编辑表也更新到当前目录，原译稿及表格历史保留。
+
+| 用途 | 实际文件绝对路径 |
+|---|---|
+| 改动前原生版本回执 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\baseline-snapshot.json` |
+| 装备公式与原生输出核算 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\gear-balance-analysis.json` |
+| 普通、进阶实战检查 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\roster-validation\roster-rework-results.json` |
+| 原生护盾与治疗共存检查 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\roster-validation\native-battle-integration.json` |
+| 休闲整局结果 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\final-funny9.json` |
+| 标准14轮整局结果 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\final-normal14.json` |
+| 标准15轮整局结果 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\final-normal15.json` |
+| 全量测试终态回执 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\full-suite-final\node-test.receipt.json` |
+| 全量测试输出 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\full-suite-final\node-test.stdout.log` |
+| 全量测试错误输出 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\full-suite-final\node-test.stderr.log` |
+| 前端计算浏览器回执 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\final-client-browser\browser-receipt.json` |
+| 公开入口浏览器回执 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\public-browser\browser-receipt.json` |
+| 公开接口内容核对 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\public-browser\remote-api-summary.json` |
+| 集中表原生回读 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\concentrated-table-readback.json` |
+| 发布终态回执 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\publication\publication-receipt.json` |
+| 服务正常输出 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\publication\server.stdout.log` |
+| 服务错误输出 | `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\publication\server.stderr.log` |
+
+这些运行文件只作为诊断材料，不成为配置真源。正式报告为 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\docs\independent-mode\roster-rework.md`，集中表生成稿为 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\docs\independent-mode\roster-rework-table.json`。
