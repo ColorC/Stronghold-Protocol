@@ -28,6 +28,7 @@ import { PHASE } from '../../../shared/constants.js';
 import { html, Button, Icon, PingPill, Countdown, Tooltip, MicroLabel, DifficultyTag, useTicker } from './components.js';
 import { Sprite, LpTower, GIcon, LocalSprite } from './gameComponents.js';
 import { localAsset } from '../data.js';
+import { pageAssetUrl } from './assetUrls.js';
 import { serverNow } from '../store.js';
 import { isCombatPhase, isBossPhase, prepCapsuleLabel, bossFrac, bossPctText, fmtNum, shopBlockReason } from './gameLogic.js';
 import { overtimeState, overtimeDrainPerSec, remainAt } from './matchStatus.js';
@@ -247,7 +248,7 @@ export function checkButtons({ pen, penAvail, infoOpen }) {
 export function CheckBtn({ sprite, cls, label, chev, on, disabled, onClick, testid }) {
   const url = localAsset('ui/battle', sprite);
   return html`<button type="button" class=${cx(cls, 'tapx', url && 'has-sprite', chev && 'is-wide', on && 'is-on')}
-      style=${url ? `--chk-sprite:url("${url}")` : ''} aria-label=${label} aria-disabled=${disabled ? 'true' : 'false'}
+      style=${url ? `--chk-sprite:url("${pageAssetUrl(url)}")` : ''} aria-label=${label} aria-disabled=${disabled ? 'true' : 'false'}
       data-sprite=${sprite} data-testid=${testid} onClick=${onClick}>
     ${url ? null : html`<${Icon} name="search" />${chev ? html`<span class="enemybtn__chev">${chev}</span>` : null}`}
   </button>`;

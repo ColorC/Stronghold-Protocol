@@ -28,6 +28,7 @@ import { html, HexBadge, Icon } from './components.js';
 import { GIcon } from './gameComponents.js';
 import { useTileScreen } from './facingWheel.js';
 import { localAsset } from '../data.js';
+import { pageAssetUrl } from './assetUrls.js';
 import { GEO } from '../../../shared/constants.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -48,7 +49,7 @@ function RetreatGlyph() {
 export function PlateIcon({ sprite, glyph, tone }) {
   const url = localAsset('ui/battle', sprite);
   return html`<span class=${cx('uframe__plate', `uframe__plate--${tone}`, url ? 'has-mask' : 'is-glyph')}
-      style=${url ? `--uf-mask:url("${url}")` : ''} data-sprite=${url ? sprite : null} aria-hidden="true">
+      style=${url ? `--uf-mask:url("${pageAssetUrl(url)}")` : ''} data-sprite=${url ? sprite : null} aria-hidden="true">
     ${url ? null : html`<${GIcon} name=${glyph} class="uframe__pglyph" />`}
   </span>`;
 }

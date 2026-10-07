@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile } from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { startServer } from '../../server/index.js';
 
 test('independent HTTP actions serialize revisions, persist across restarts and run the real battle', async () => {
+  await mkdir(path.resolve('.omni/tmp'), { recursive: true });
   const directory = await mkdtemp(path.resolve('.omni/tmp/independent-http-'));
   console.log(JSON.stringify({ directory, role: 'isolated persistent-session test files' }));
   let server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, independentDirectory: directory });

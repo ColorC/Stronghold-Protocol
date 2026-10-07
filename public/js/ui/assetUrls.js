@@ -6,6 +6,12 @@
 const str = (v) => (typeof v === 'string' && v ? v : null);
 const obj = (v) => (v && typeof v === 'object' ? v : null);
 
+/** CSS variables are resolved by the stylesheet that consumes them, which may live on a CDN. */
+export function pageAssetUrl(url, pageUrl = globalThis.location?.href) {
+  if (!url || !pageUrl) return url;
+  return new URL(url, pageUrl).href;
+}
+
 /** @param {any} m manifest @param {string} key 'group/key' */
 export function uiUrl(m, key) {
   return str(obj(obj(m)?.ui)?.[key]);
