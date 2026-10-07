@@ -4,6 +4,8 @@ import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../share
 import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
 import { mitigate } from '../../damage.js';
 import { installKeywordGear } from './keywordGear.js';
+import { INDEPENDENT_BADGE_STATS, independentBadgeMod } from '../../../../shared/independentBadgeStats.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
 // 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
@@ -24,6 +26,8 @@ const STAT_MODS = Object.freeze({
   initialSkillPointsFlat: 'initialSkillPoints', normalAttackDamagePercent: 'normalAttackDamageBonus',
   healingDealtPercent: 'healingDealtMul', spRecovery: 'spRecoveryFlat', resistance: 'resFlat', tauntLevel: 'taunt',
   taunt: 'taunt', initialSp: 'initialSkillPoints', maxLifePercent: 'hpPct', maxHpPercent: 'hpPct',
+  attackSpeedFlat: 'aspd', defenceFlat: 'defFlat', defenseFlat: 'defFlat', artsDamageReduction: 'artsReduction',
+  skillCostInitialPercent: 'initialSkillPointsPercent',
   // short names the temporary combat traits use
   atkPct: 'atkPct', aspd: 'aspd', defPct: 'defPct', spRegen: 'spRecoveryFlat', damageTakenPercent: 'dmgTakenMul', damageTakenPct: 'dmgTakenMul',
   // 阻挡数 (防暴塔盾, gear v4)
@@ -119,47 +123,67 @@ function mergeMods(into, mods, multiplier = 1) {
  * boosts (state.playerEffects badgeBoost, native badgeBoost) and the operator's own in-battle amplifier (native
  * badgeAmplifier rule).
  */
-function sumBadgeMods(catalog, entries, boost = () => 1) {
+function sumBadgeMods(catalog, entries, baseStats = {}, boost = () => 1, preserveInheritedBase = false) {
   const mods = {};
+  const mergeEquipmentStat = (stat, value, quantity) => {
+    const nativeBase = stat === 'attackPercent' ? baseStats.atk : stat === 'maxLifePercent' || stat === 'maxHpPercent' ? baseStats.maxHp : null;
+    const flat = stat === 'attackPercent' ? 'attackFlat' : 'maxLifeFlat';
+    if (preserveInheritedBase && nativeBase != null && Number.isFinite(Number(nativeBase)) && Number.isFinite(Number(value))) {
+      mergeMods(mods, modFromStat(flat, Number(nativeBase) * Number(value)), quantity);
+    } else mergeMods(mods, modFromStat(stat, value), quantity);
+  };
   const counts = countBadges(entries);
   for (const [id, n] of counts) {
     const rec = recordLookup(catalog.badges, id);
     if (!rec?.stat) throw new Error(`badge ${id} lacks stat metadata`);
-    const stat = modFromStat(rec.stat, rec.value);
+    const definition = INDEPENDENT_BADGE_STATS[id];
+    const badgeStat = definition?.stat ?? rec.stat;
+    const badgeValue = definition?.value ?? rec.value;
     const factors = entries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'badgeAmplifier')
       .map((e) => {
       const p = e.rec.params ?? {};
+      const legacyStats = definition?.legacy ?? [];
+      const allowedStats = [badgeStat, rec.stat, ...legacyStats].filter(Boolean);
       const applicable = Array.isArray(p.badgeIds) && p.badgeIds.includes(id)
-          && (!p.stats || (Array.isArray(p.stats) ? p.stats.includes(rec.stat) : Object.hasOwn(p.stats, rec.stat)));
+          && (!p.stats || allowedStats.some((stat) => Array.isArray(p.stats) ? p.stats.includes(stat) : Object.hasOwn(p.stats, stat)));
         if (!applicable) return 1;
         const scale = Number(p.multiplier);
         if (!(scale > 0)) throw new Error(`badge amplifier ${e.id} lacks a positive multiplier`);
         return scale;
       });
     const scale = factors.reduce((a, b) => a * b, 1) * boost(id);
-    mergeMods(mods, stat, n * scale);
+    if (definition) {
+      const dynamic = independentBadgeMod({ ...definition, value: badgeValue }, baseStats, n * scale);
+      if (dynamic) {
+        const [stat, value] = Object.entries(dynamic)[0];
+        mergeMods(mods, modFromStat(stat, value));
+      } else mergeMods(mods, modFromStat(definition.stat, badgeValue), n * scale);
+    }
+    else mergeMods(mods, modFromStat(rec.stat, rec.value), n * scale);
   }
   for (const e of entries) {
     if (e.kind !== 'equipment') continue;
-    if (e.rec.stat && e.rec.value != null) mergeMods(mods, modFromStat(e.rec.stat, selectVariant(e.rec.value, GEAR_ELITE)), Math.max(1, Number(e.item.quantity) || 1));
+    if (e.rec.stat && e.rec.value != null) mergeEquipmentStat(e.rec.stat, selectVariant(e.rec.value, GEAR_ELITE), Math.max(1, Number(e.item.quantity) || 1));
     const itemStats = e.rec.stats ?? {};
     if (!Array.isArray(itemStats)) for (const [stat, rawValue] of Object.entries(itemStats)) {
       const quantity = Math.max(1, Number(e.item.quantity) || 1);
       const value = rawValue && typeof rawValue === 'object' && (Object.hasOwn(rawValue, 'normal') || Object.hasOwn(rawValue, 'elite'))
         ? rawValue.normal ?? rawValue.elite
         : rawValue;
-      if (!Array.isArray(rawValue) && value != null) mergeMods(mods, modFromStat(stat, value), quantity);
+      if (!Array.isArray(rawValue) && value != null) mergeEquipmentStat(stat, value, quantity);
     }
   }
   return { mods, counts };
 }
 
-function splitBattleMods(mods) {
+function splitBattleMods(mods, unit) {
   const buffs = { ...mods };
   const initialSp = Number(buffs.initialSkillPoints || 0);
+  const initialSpPercent = Number(buffs.initialSkillPointsPercent || 0);
   const normalAttackDamageBonus = Number(buffs.normalAttackDamageBonus || 0);
   const redeployReduction = Number(buffs.redeployReduction || 0);
   delete buffs.initialSkillPoints;
+  delete buffs.initialSkillPointsPercent;
   delete buffs.normalAttackDamageBonus;
   delete buffs.redeployReduction;
   if (redeployReduction) buffs.redeployMul = Math.max(0.5, 1 - Math.min(0.5, redeployReduction));
@@ -171,7 +195,8 @@ function splitBattleMods(mods) {
   if (artsReduction) buffs.artsTakenMul = Math.max(0.5, 1 - Math.min(0.5, artsReduction));
   if (Number.isFinite(Number(buffs.dodgePhys))) buffs.dodgePhys = Math.min(0.6, Number(buffs.dodgePhys));
   if (Number.isFinite(Number(buffs.dodgeArts))) buffs.dodgeArts = Math.min(0.6, Number(buffs.dodgeArts));
-  return { buffs, initialSp, normalAttackDamageBonus };
+  const cost = Number(unit?.skill?.spCost) || 0;
+  return { buffs, initialSp: Math.min(cost, initialSp + cost * initialSpPercent), normalAttackDamageBonus };
 }
 
 function installSpecialStatHooks(battle, unit, { initialSp = 0, normalAttackDamageBonus = 0 } = {}) {
@@ -179,7 +204,7 @@ function installSpecialStatHooks(battle, unit, { initialSp = 0, normalAttackDama
     if (deployed === unit) unit.skill?.gainSp(initialSp, 'independentBadge');
   }, { owner: unit });
   if (normalAttackDamageBonus > 0) battle.on('hit', ({ source, dmg }) => {
-    if (source === unit && dmg && !dmg.isSkill && dmg.type !== 'element') dmg.mul *= 1 + normalAttackDamageBonus;
+    if (source === unit && dmg?.isAttack && !dmg.isSkill && dmg.type !== 'element') applyDamageIncrease(battle, source, dmg, 1 + normalAttackDamageBonus);
   }, { owner: unit });
 }
 
@@ -961,6 +986,17 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     const piece = byUid.get(unit.uid);
     if (!piece) continue;
     const rules = rulesOf(catalog, piece.chessId);
+    // Unit.base already reflects the selected native skill/module loadout. Preserve it before
+    // applying a handover penalty so badge percentages never shrink with the inherited body.
+    const nativeBaseStats = { ...unit.base };
+    const nativeRecordForStats = nativeRecord(piece, catalog);
+    const rawNativeStats = loadoutRecord(nativeRecordForStats, piece)?.stats ?? nativeRecordForStats?.stats ?? {};
+    for (const [field, aliases] of Object.entries({
+      atk: ['atk', 'attack'], maxHp: ['maxHp', 'maxHP'], def: ['def', 'defense'], aspd: ['aspd', 'attackSpeed'], spRecovery: ['spRecovery', 'spRecoveryPerSec'],
+    })) {
+      const rawValue = aliases.map((key) => rawNativeStats[key]).find((value) => value != null);
+      if (Number(rawValue) === 0) nativeBaseStats[field] = 0;
+    }
     unit.mem.independentState = { counters: {}, active: true, preferences: structuredClone(piece.nativeState?.preferences ?? {}) };
     if (piece.bodyPenaltyApplied) {
       const record = nativeRecord(piece, catalog);
@@ -974,13 +1010,13 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     }
     const entries = equipmentFor(piece, catalog);
     const own = rules.filter((r) => r.behavior === 'badgeAmplifier');
-    const stats = sumBadgeMods(catalog, entries, (id) => (battle.independentBadgeBoost?.(id) ?? 1)
-      * own.reduce((m, r) => m * ((r.params?.badgeIds || []).includes(id) ? Number(r.params.multiplier) || 1 : 1), 1));
+    const stats = sumBadgeMods(catalog, entries, nativeBaseStats, (id) => (battle.independentBadgeBoost?.(id) ?? 1)
+      * own.reduce((m, r) => m * ((r.params?.badgeIds || []).includes(id) ? Number(r.params.multiplier) || 1 : 1), 1), !!piece.bodyPenaltyApplied);
     const startMods = traitsOnBattleStart(unit, catalog, piece, entries);
     // a trait's own static stats go through the same split as the gear's (再部署时间, 初始技力 …: 幽灵鲨)
     const merged = { ...stats.mods };
     mergeMods(merged, startMods);
-    const special = splitBattleMods(merged);
+    const special = splitBattleMods(merged, unit);
     const baseMods = { ...special.buffs };
     if (Object.keys(baseMods).length) battle.addBuff(unit, { key: `independent:equipment:${unit.uid}`, mods: baseMods, persist: true, allowDead: true });
     installSpecialStatHooks(battle, unit, special);
@@ -1002,7 +1038,7 @@ function installNativeCombat(battle, catalog, pieces, emit) {
           if (tag && !target.def?.tags?.includes(tag)) return;
           if (p.condition === 'boundOrSluggish' && !target.s.flags.bind && !target.findBuff('sluggish')) return;
           if (p.multiplier != null) dmg.amount *= Number(p.multiplier);
-          else if (p.bonusPercent != null) dmg.mul *= 1 + Number(p.bonusPercent);
+          else if (p.bonusPercent != null) applyDamageIncrease(battle, source, dmg, 1 + Number(p.bonusPercent));
         }, { owner: unit });
       } else if (rule.behavior === 'weakDamage') {
         if (!['attack', 'hit'].includes(rule.trigger)) throw new Error(`weakDamage ${piece.chessId} has unsupported trigger ${rule.trigger}`);
@@ -1034,8 +1070,8 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       // 叙拉古处决令: 攻击生命值低于40%的敌人时 (the target's HP when the hit lands)
       if (p.condition === 'targetHpBelow' && !(target.hp < Number(target.s.maxHp) * Number(p.hpRatio))) return;
       const multiplier = Number(p.multiplier);
-      if (Number.isFinite(multiplier) && multiplier > 0) dmg.mul *= multiplier;
-      else if (p.bonusPercent != null) dmg.mul *= 1 + Number(p.bonusPercent);
+      if (Number.isFinite(multiplier) && multiplier > 0) applyDamageIncrease(battle, source, dmg, multiplier);
+      else if (p.bonusPercent != null) applyDamageIncrease(battle, source, dmg, 1 + Number(p.bonusPercent));
     }, { owner: unit });
     return;
   }
@@ -1152,7 +1188,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (deployed === unit) until = battle.time + Number(p.durationSeconds ?? 0);
     }, { owner: unit });
     battle.on('hit', ({ source, dmg }) => {
-      if (source === unit && dmg && battle.time < until) dmg.mul *= Number(p.multiplier ?? 1);
+      if (source === unit && dmg && battle.time < until) applyDamageIncrease(battle, source, dmg, Number(p.multiplier ?? 1));
     }, { owner: unit });
     return;
   }
@@ -1391,7 +1427,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     }, { owner: unit });
     battle.on('hit', ({ source, dmg }) => {
       const multiplier = multipliers.get(dmg?.attackId) ?? 1;
-      if (source === unit && dmg && multiplier !== 1) dmg.mul *= multiplier;
+      if (source === unit && dmg && multiplier !== 1) applyDamageIncrease(battle, source, dmg, multiplier);
     }, { owner: unit });
     return;
   }
@@ -1505,7 +1541,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     }, { owner: unit });
     battle.on('hit', ({ source, target, dmg }) => {
       if (source !== unit || !unit.alive || !unit.deployed || !armed || !dmg || dmg.isSkill || isGearDamage(dmg)) return;
-      if (p.damageBonus != null) dmg.mul *= 1 + Number(p.damageBonus);
+      if (p.damageBonus != null) applyDamageIncrease(battle, source, dmg, 1 + Number(p.damageBonus));
       // gear v4: the attack stuns its target instead of hitting harder
       if (Number(p.stunSeconds) > 0 && target?.side === 'enemy') applyEquipmentStatus(battle, unit, target, 'stun', { duration: Number(p.stunSeconds) });
       if (paired && procs < procCap) {

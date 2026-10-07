@@ -37,6 +37,7 @@ import { bodyInKeys, bodyInRadius, bodyKeys } from '../../body.js';
 import { absoluteRangeKeys, sortEnemyTargets } from '../../targeting.js';
 import { frontOf, rotateOffset, toLocal } from '../../dir.js';
 import { mitigate, hasHp, isHpLoss } from '../../damage.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 
 // ---- text-only constants (the official blackboards carry no key for these) --------------------------------------
 /** 华法琳 S1 "只当目标生命值不满一半时才会触发"; 塞雷娅 S1 "血量小于等于一半"; 山 module "生命值高于50%时". */
@@ -206,7 +207,7 @@ function burstDamageUp(battle, unit, mul) {
   if (!(mul > 1)) return;
   battle.on('hit', (c) => {
     if (c.source !== unit || !c.target || c.target.side !== 'enemy' || c.dmg.type === 'element') return;
-    if (c.target.s.flags.burstLock) c.dmg.mul *= mul;
+    if (c.target.s.flags.burstLock) applyDamageIncrease(battle, c.source, c.dmg, mul);
   }, { owner: unit });
 }
 
@@ -1651,7 +1652,7 @@ const KITS = {
           const cut = num(bb.hp_ratio, HALF_HP), mul = num(bb.damage_scale, 1);
           battle.on('hit', (c) => {
             if (c.source !== unit || !unit.skill?.active || c.dmg.type !== 'arts' || !c.target || c.target.side !== 'enemy') return;
-            if (c.target.hpRatio < cut) c.dmg.mul *= mul;
+            if (c.target.hpRatio < cut) applyDamageIncrease(battle, unit, c.dmg, mul);
           }, { owner: unit });
         }
         if (sid === 'skchr_dusk_3') {

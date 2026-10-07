@@ -6,6 +6,7 @@ import { html, Icon, Tooltip } from '../ui/components.js';
 import { BondGlyph, ItemIcon } from '../ui/gameComponents.js';
 import { data } from '../data.js';
 import { BADGE_BOND } from './model.js';
+import { badgeEffectText } from './badgeText.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const glossaries = new WeakMap();
@@ -21,7 +22,7 @@ export function glossaryOf(catalog) {
   const byName = new Map();
   const add = (name, entry) => { if (name && !byName.has(name)) byName.set(name, entry); };
   // badges first: an old item id renamed to a badge shares the badge's name
-  for (const id of Object.keys(BADGE_BOND)) { const x = catalog.gear?.[id]; if (x) add(x.name, { kind: 'gear', id, name: x.name, text: x.normal, level: x.level, badge: true }); }
+  for (const id of Object.keys(BADGE_BOND)) { const x = catalog.gear?.[id]; if (x) add(x.name, { kind: 'gear', id, name: x.name, text: badgeEffectText(id) || x.normal, level: x.level, badge: true }); }
   for (const [id, x] of Object.entries(catalog.gear || {})) {
     if (x.available === false || x.kind === '停用') continue;
     add(x.name, { kind: 'gear', id, name: x.name, text: x.normal, level: x.level, badge: x.kind === 'badge' || x.kind === '徽章', used: USED.has(x.kind) });
@@ -61,7 +62,7 @@ export function GearIcon({ id, catalog, class: cls, plain = false }) {
         : html`<span class=${cx('ix-gear', 'ix-gear--txt', cls)}>${[...name][0]}</span>`;
   if (plain || !g) return icon;
   const badge = !!BADGE_BOND[id] || g.kind === 'badge' || g.kind === '徽章';
-  const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.level ? html`<em>${g.level}级</em>` : null}<span>${g.normal || g.effect || ''}</span></span>`;
+  const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.level ? html`<em>${g.level}级</em>` : null}<span>${badgeEffectText(id) || g.normal || g.effect || ''}</span></span>`;
   return html`<${Tooltip} text=${tip} placement="top">${icon}<//>`;
 }
 

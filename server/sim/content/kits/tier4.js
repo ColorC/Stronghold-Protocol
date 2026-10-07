@@ -34,6 +34,7 @@ import { aggregateMods } from '../../buffs.js';
 import { CAT_SHIELD_KEY } from '../tokens.js';
 import { isHpLoss } from '../../damage.js';
 import { holdsUndying } from '../items/battle.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 
 const TICK_EPS = 0.01;     // minimal status duration (s)
 const AURA = 0.2;          // aura refresh period (s)
@@ -755,7 +756,7 @@ const kits = {
             sortEnemyTargets(battle, unit, extra, c.profile?.priority ?? null);
             if (extra[0]) c.targets = [...c.targets, extra[0]];
           }, { owner: unit });
-          battle.on('hit', (c) => { if (c.source === unit && c.dmg.isAttack && unit.mem.bpBoost) c.dmg.mul *= num(t0.atk_scale, 1.3); }, { owner: unit });
+          battle.on('hit', (c) => { if (c.source === unit && c.dmg.isAttack && unit.mem.bpBoost) applyDamageIncrease(battle, c.source, c.dmg, num(t0.atk_scale, 1.3)); }, { owner: unit });
           battle.on('attack', (c) => { if (c.attacker === unit) unit.mem.bpBoost = false; }, { owner: unit });
         } },
         { install(battle, unit) { // 军事传统: every 先锋 of the team starts with +6 SP
@@ -890,7 +891,7 @@ const kits = {
           if (c.source !== unit || !c.dmg.isAttack || e.side !== 'enemy' || e.findBuff(AROMA_MARK)) return;
           battle.addBuff(e, { key: AROMA_MARK, source: unit });
           unit.mem.bubbled.add(e.id);
-          c.dmg.mul *= num(t0.damage_scale, 1.1);
+          applyDamageIncrease(battle, c.source, c.dmg, num(t0.damage_scale, 1.1));
           if (battle.applyStatus(e, 'levitate', { duration: num(t0.levitate_duration, 2.5), source: unit })) battle.fx('levitate', { x: e.x, y: e.y, id: e.id });
         }, { owner: unit });
         battle.on('death', (c) => {
@@ -924,7 +925,7 @@ const kits = {
           battle.on('hit', (c) => {
             if (c.source !== unit || !c.dmg.isAttack) return;
             const d = Math.hypot(c.target.x - unit.x, c.target.y - unit.y);
-            c.dmg.mul *= 1 + ds * Math.max(0, Math.min(1, (d - lo) / Math.max(1e-6, hi - lo)));
+            applyDamageIncrease(battle, c.source, c.dmg, 1 + ds * Math.max(0, Math.min(1, (d - lo) / Math.max(1e-6, hi - lo))));
           }, { owner: unit });
         }
       },
@@ -1042,7 +1043,7 @@ const kits = {
         } },
         { install(battle, unit) { // 弱肉强食: ×1.3 against enemies of weight ≤ 3
           battle.on('hit', (c) => {
-            if (c.source === unit && c.dmg.isAttack && c.target.side === 'enemy' && c.target.s.massLevel <= num(t1.value, 3)) c.dmg.mul *= num(t1.atk_scale, 1.3);
+            if (c.source === unit && c.dmg.isAttack && c.target.side === 'enemy' && c.target.s.massLevel <= num(t1.value, 3)) applyDamageIncrease(battle, c.source, c.dmg, num(t1.atk_scale, 1.3));
           }, { owner: unit });
         } },
       ],
@@ -1656,8 +1657,8 @@ const kits = {
         const ds = num(tb.damage_scale, 0), lo = num(tb.min_dist, 1), hi = num(tb.max_dist, 4.5);
         battle.on('hit', (c) => {
           if (c.source !== unit || !c.dmg.isAttack) return;
-          if (S3 && skillActive(unit) && unit.baseRangeKeys && !bodyInKeys(c.target, unit.baseRangeKeys)) c.dmg.mul *= num(bb.damage_scale, 1.25);
-          if (ds > 0) { const d = Math.hypot(c.target.x - unit.x, c.target.y - unit.y); c.dmg.mul *= 1 + ds * Math.max(0, Math.min(1, (d - lo) / Math.max(1e-6, hi - lo))); }
+          if (S3 && skillActive(unit) && unit.baseRangeKeys && !bodyInKeys(c.target, unit.baseRangeKeys)) applyDamageIncrease(battle, c.source, c.dmg, num(bb.damage_scale, 1.25));
+          if (ds > 0) { const d = Math.hypot(c.target.x - unit.x, c.target.y - unit.y); applyDamageIncrease(battle, c.source, c.dmg, 1 + ds * Math.max(0, Math.min(1, (d - lo) / Math.max(1e-6, hi - lo)))); }
         }, { owner: unit });
       },
     };
@@ -1771,7 +1772,7 @@ const kits = {
       ],
       install(battle, unit) {
         const s = num(tb.atk_scale, 0); // module (elite): ×1.1 against blocked enemies
-        if (s > 0) battle.on('hit', (c) => { if (c.source === unit && c.dmg.isAttack && c.target.blockedBy === unit) c.dmg.mul *= s; }, { owner: unit });
+        if (s > 0) battle.on('hit', (c) => { if (c.source === unit && c.dmg.isAttack && c.target.blockedBy === unit) applyDamageIncrease(battle, c.source, c.dmg, s); }, { owner: unit });
         const yr = num(tb.hp_ratio, 0), yd = num(tb.damage_resistance, 0); // module CEN-Y: 生命值高于50%时受到的物理伤害降低20%
         if (yr > 0 && yd > 0) battle.on('hit', (c) => { if (c.target === unit && c.dmg.type === 'phys' && unit.hpRatio > yr) c.dmg.mul *= 1 - yd; }, { owner: unit });
         if (!S3) return;
@@ -1890,7 +1891,7 @@ const kits = {
           battle.on('hit', (c) => {
             if (c.source !== unit || c.target.side !== 'enemy') return;
             const n = Math.min(cap, enemiesOnRange(battle, unit).length);
-            if (n > 0) c.dmg.mul *= 1 + per * n;
+            if (n > 0) applyDamageIncrease(battle, c.source, c.dmg, 1 + per * n);
           }, { owner: unit });
         }
         if (S3) {
@@ -1909,7 +1910,7 @@ const kits = {
                 if (m) unit.mem.billroMarked?.add(e.id);
               }
             }
-            if (m && m.source === unit) c.dmg.mul *= 1 + per * (m.stacks || 1);
+            if (m && m.source === unit) applyDamageIncrease(battle, c.source, c.dmg, 1 + per * (m.stacks || 1));
           }, { owner: unit });
         }
         if (!S2) return;

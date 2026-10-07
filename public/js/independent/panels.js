@@ -9,6 +9,7 @@ import { data } from '../data.js';
 import { TraitGlyphs } from './hud.js';
 import { GearIcon, GameText, TermNotes } from './text.js';
 import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, inheritedLevel, permitsOf } from './model.js';
+import { badgeEffectText } from './badgeText.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -16,6 +17,8 @@ const fmt = (n) => (Number.isInteger(n) ? String(n) : Number(n).toFixed(2).repla
 
 /** "基础攻击力 +120" for n badges of one kind (catalog gear: stat / value / ratio). */
 export function badgeTotal(g, n) {
+  const percentage = badgeEffectText(g?.id, n);
+  if (percentage) return percentage;
   if (!g?.statName || typeof g.value !== 'number') return null;
   const v = g.value * n;
   return `${g.statName} +${g.ratio ? `${fmt(v * 100)}%` : fmt(v)}`;
