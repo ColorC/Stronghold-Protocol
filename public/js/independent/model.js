@@ -1,6 +1,7 @@
 // 卫戍协议：工坊 page model: pure functions from the session view (server/modes/independent/session.js viewSession,
 // thinned by http.js packet) to what the original renderer and the HUD need. No DOM, no fetch — test/independent/
 // page-model.test.js runs them in Node. The rules stay on the server: legal tiles, forecasts and prices come from it.
+import { INVENTORY_STACK_LIMIT, inventoryStackGroups } from '../../../shared/independentInventory.js';
 
 /** The 15 badges reuse the names of the 15 small bonds, so they wear those bonds' glyphs (public/assets/bond). */
 export const BADGE_BOND = Object.freeze({
@@ -141,17 +142,33 @@ export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
  */
 export function inventoryStacks(inventory, catalog) {
   const stacks = new Map();
-  for (const item of inventory || []) {
-    const key = `${item.id}:n`;
+  for (const group of inventoryStackGroups(inventory || [])) {
+    const item = group.items[0];
+    const key = `${item.id}:n${Object.keys(item.state || {}).length ? `:${encodeURIComponent(group.key)}` : ''}`;
     const prize = !gearRecord(catalog, item.id) && catalog?.prizes?.[item.id];
     const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect } : {});
     const s = stacks.get(key) || { key, id: item.id, name: rec.name || '未知物品', level: rec.level,
       kind: rec.kind || null, mechanism: rec.mechanism || null, text: rec.normal, used: USED_KINDS.has(rec.kind),
       badge: isBadge(catalog, item.id), count: 0, items: [] };
-    s.count += Number(item.quantity || 1); s.items.push(item);
+    s.count += group.quantity; s.items.push(...group.items);
     stacks.set(key, s);
   }
-  return [...stacks.values()].sort((a, b) => (b.badge - a.badge) || b.count - a.count);
+  // A cell is a same-name stack. Preserve real UIDs when a stack fills 999.
+  return [...stacks.values()].sort((a, b) => (b.badge - a.badge) || b.count - a.count).flatMap((s) => {
+    const cells = []; let cell = null;
+    for (const item of s.items) {
+      let left = Number(item.quantity || 1);
+      while (left > 0) {
+        if (!cell || cell.count === INVENTORY_STACK_LIMIT) {
+          cell = { ...s, key: cells.length ? `${s.key}:${cells.length}` : s.key, count: 0, items: [] };
+          cells.push(cell);
+        }
+        const quantity = Math.min(left, INVENTORY_STACK_LIMIT - cell.count);
+        cell.items.push({ ...item, quantity }); cell.count += quantity; left -= quantity;
+      }
+    }
+    return cells;
+  });
 }
 
 /** Total pieces in the inventory (each badge counts once per copy). */

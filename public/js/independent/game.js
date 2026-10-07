@@ -34,7 +34,7 @@ const ERRORS = {
   NO_FUNDS: '采购资金不足', SOLD_OUT: '卡池里已经没有这名干员', DEPLOY_CAP: '场上干员已达上限', ILLEGAL_TILE: '有干员站在不能部署的位置',
   OCCUPIED: '这个位置已有干员', NO_DEPLOYED_PIECES: '至少部署一名干员才能开始战斗',
   BENCH_FULL: '整备区已满（10名）', TEMP_NOT_EMPTY: '临时整备区还有干员：让他们上场、放回整备区或出售后才能开始战斗', CAPACITY: '这名干员的装备已经穿满',
-  UNIQUE: '同名唯一的装备只能穿戴一件', INVENTORY_FULL: '库存已满，先穿戴或使用一些', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
+  UNIQUE: '同名唯一的装备只能穿戴一件', SINGLE_EQUIP_ONLY: '该装备请逐件装配', UNIQUE_QUANTITY: '同名唯一的装备只能穿戴一件', INVENTORY_FULL: '库存已满，先穿戴或使用一些', UNIQUE_OR_INELIGIBLE: '该干员不能穿戴这件装备', NOT_EQUIPPABLE: '这件物品不能穿戴',
   NOT_MERGEABLE: '这件装备不能合成', NOT_USABLE: '这件物品不能直接使用', CONDITION_NOT_MET: '使用条件未满足', MAX_LEVEL: '调度中心已达最高等级',
   NEED_UNIQUE_SELECTION: '请先选择要保留的同名唯一装备', NEEDS_SELECTION: '请先选择要保留的同名唯一项', NO_ELIGIBLE_TARGET: '没有可以选择的干员',
   NO_PERMISSION: '双方的交接凭证都不允许这次交接', BAD_TILE: '交出装备的一方需要在场，且接收方能部署在那个位置', WRONG_PHASE: '当前阶段不能进行该操作',
@@ -108,7 +108,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   // closing what a component link (#piece-…, #shop-…) opened drops the link, so a reload does not open it again
   const setDetail = useCallback((next) => setDetailState((cur) => {
     const value = typeof next === 'function' ? next(cur) : next;
-    if (!value && /^#(piece|shop)-/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (!value && /^#(piece|shop|gear)-/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     return value;
   }), []);
   const [facing, setFacing] = useState(null);
@@ -449,13 +449,17 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   // ---- component links (#piece-p12, #shop-2, #item-i7, #offer-o5): open what the link points at -------------------
   useEffect(() => {
     const follow = () => {
-      const hash = decodeURIComponent(location.hash.slice(1));
+      const rawHash = location.hash.slice(1);
+      const hash = decodeURIComponent(rawHash);
       const st = stateRef.current;
       if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
       else if (hash.startsWith('shop-') && st.shop.slots[Number(hash.slice(5))]) {
         const i = Number(hash.slice(5)); const s = st.shop.slots[i];
         setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id });
-      } else if (hash.startsWith('item-')) { setPanelUid(null); setPanel('inventory'); }
+      } else if (hash.startsWith('gear-') && catalog.gear[hash.slice(5)]) setDetail({ kind: 'gear', id: hash.slice(5) });
+      else if (hash.startsWith('item-') || hash === 'stock' || hash.startsWith('stock-')) {
+        setPanelUid(null); setPanelKey(hash.startsWith('stock-') ? rawHash.slice(6) : null); setPanel('inventory');
+      }
     };
     follow();
     window.addEventListener('hashchange', follow);
@@ -543,7 +547,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     }
     if (g.identityFactions) { openInventory(uid, stack.key); return; }
     const room = (catalog.rules?.equipmentCapacity ?? 999) - piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0);
-    act({ type: 'equip', itemUid: item.uid, targetUid: uid, quantity: g.unique ? 1 : Math.max(1, Math.min(item.quantity || 1, room)) });
+    act({ type: 'equip', itemUid: item.uid, targetUid: uid, quantity: stack.badge || g.quantityEquippable === true ? Math.max(1, Math.min(item.quantity || 1, room)) : 1 });
   };
   const openInherit = (uid) => { setPreview(null); setPanelUid(uid); setPanel('inherit'); };
   const runPreview = useCallback(async (donorUid, receiverUid) => {
@@ -574,11 +578,10 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     <div class="gm__vignette" aria-hidden="true"></div>
     <div class="gm__hud">
       <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${leave} drawer=${drawer} onDrawer=${setDrawer}
-        pen=${pen} onPen=${() => setPen((x) => !x)} />
+        pen=${pen} onPen=${() => setPen((x) => !x)} production=${!battle ? html`<${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />` : null} />
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
-          onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id }))} onDrop=${dropFromStock} />
-        <${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />
+          onTap=${(s) => openInventory(null, s.key)} onDrop=${dropFromStock} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
@@ -619,7 +622,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       pub=${{ round: state.round, factions: state.board?.factions || [], bossId: state.board?.bossId || null, lastRound: state.board?.bossRound ?? state.roundLimit }}
       priv=${{ nextEnemies: state.nextEnemies || [] }} onEnemy=${(key, count) => setDetail({ kind: 'enemy', id: key, count })} onChess=${() => {}} />` : null}
     <${InventoryPanel} open=${panel === 'inventory'} focus=${panelKey} state=${state} catalog=${catalog} busy=${busy} targetUid=${panelUid} onTarget=${setPanelUid}
-      onClose=${() => setPanel(null)} onAct=${simple} />
+      onClose=${() => { setPanel(null); if (/^#(stock|item)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search); }} onAct=${simple} />
     <${InheritPanel} open=${panel === 'inherit'} state=${state} catalog=${catalog} busy=${busy} fromUid=${panelUid} preview=${preview}
       onPreview=${runPreview} onClose=${() => setPanel(null)} onConfirm=${async (action) => { const res = await simple(action); if (res) setPanel(null); }} />
   </div>`;

@@ -6,6 +6,7 @@
 // and special terrain use the original cards unchanged.
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, Button, useTicker } from '../ui/components.js';
+import { copyComponentLink } from './componentLinks.js';
 import { BondGlyph } from '../ui/gameComponents.js';
 import { ChessDetail, EnemyDetail, TokenDetail, TerrainDetail } from '../ui/detailPanel.js';
 import { SkillIcon, ModuleGlyph, ModuleInfo } from '../screens/loadout.js';
@@ -158,7 +159,9 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   useEffect(() => setConfirmSell(false), [target?.uid, target?.slot]);
   useTicker(battle && target ? 250 : 0);
   if (!target) return null;
-  const frame = (body, kind) => html`<aside class=${cx('dpanel', 'brackets', 'dpanel--right', shopOpen && 'is-shop', 'ix-dpanel', `ix-dpanel--${kind}`)} data-testid="ix-detail" role="dialog" aria-label="详情">
+  const anchor = target.kind === 'piece' ? `piece-${target.uid}` : target.kind === 'shop' ? `shop-${target.slot}` : target.kind === 'gear' ? `gear-${target.id}` : null;
+  const frame = (body, kind) => html`<aside class=${cx('dpanel', 'brackets', 'dpanel--right', shopOpen && 'is-shop', 'ix-dpanel', `ix-dpanel--${kind}`)} data-testid="ix-detail" role="dialog" aria-label="详情"
+    onContextMenu=${anchor ? (e) => copyComponentLink(e, anchor) : null}>
     <button type="button" class="dpanel__close" aria-label="关闭" onClick=${onClose}><${Icon} name="close" /></button>
     <div class="ix-dpanel__body">${body}</div>
   </aside>`;

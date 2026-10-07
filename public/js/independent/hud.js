@@ -13,6 +13,7 @@ import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
 import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum } from './model.js';
 import { GearIcon, GameText } from './text.js';
+import { copyComponentLink } from './componentLinks.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -62,7 +63,7 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
 // ---- top bar ------------------------------------------------------------------------------------------------------
 
 /** Round / phase / LP / ready, on the original top bar's frame. `battle` = the replay on screen (or null). */
-export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null, drawer = null, onDrawer = null }) {
+export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null, drawer = null, onDrawer = null, production = null }) {
   const enemies = (state.nextEnemies || []).reduce((n, e) => n + Number(e.count || 0), 0);
   // a boss field reads 最终攻势 with the leader's HP bar in the capsule (ui/hud.js PhaseCapsule, gameLogic snapHud)
   const boss = !!battle && battle.replay?.kind && battle.replay.kind !== 'normal';
@@ -95,6 +96,7 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
       <//>` : null}
     </div>
     <div class="gtop__right">
+      ${production}
       ${!battle && state.phase === 'prep' ? html`<div class="readywrap">
         <${Tooltip} text=${readyReason || '开始本轮战斗 · Space'} placement="bottom">
           <button type="button" class=${cx('readybtn', 'tapx', busy && 'is-busy')} disabled=${!!readyReason || busy} onClick=${onReady} data-testid="ix-ready">
@@ -145,15 +147,19 @@ export function InventoryStrip({ stacks, state, view, catalog, onOpen, onTap, on
     el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', cancel);
   };
   const over = drag?.uid ? state.pieces.find((p) => p.uid === drag.uid) : null;
-  return html`<div class="ix-strip" data-testid="ix-strip">
+  return html`<div class="ix-strip" data-testid="ix-strip" onContextMenu=${(e) => copyComponentLink(e, 'stock')}>
     <button type="button" class=${cx('ix-strip__head', tiles >= capacity && 'is-full')} onClick=${onOpen} title="打开装备库存">
-      <${MicroLabel}>库存<//><b class="num">${tiles}/${capacity}</b>
+      <span>装备</span>${tiles >= capacity ? html`<span class="ix-warn" role="status">库存已满</span>` : null}
     </button>
     <div class="ix-strip__tiles">
-      ${stacks.length ? stacks.map((s) => html`<button type="button" key=${s.key} data-testid=${`ix-tile-${s.key}`} class=${cx('ix-strip__slot', drag?.stack.key === s.key && 'is-dragging')}
-          onPointerDown=${(e) => press(e, s)} aria-label=${`${s.name} ×${s.count}，拖到干员身上${s.used ? '使用' : '穿戴'}`}>
+      ${Array.from({ length: Math.max(capacity, stacks.length) }, (_, i) => {
+        const s = stacks[i];
+        if (!s) return html`<span key=${`empty-${i}`} class="ix-strip__slot is-empty" aria-hidden="true"></span>`;
+        return html`<button type="button" key=${s.key} data-testid=${`ix-tile-${s.key}`} class=${cx('ix-strip__slot', drag?.stack.key === s.key && 'is-dragging')}
+          onPointerDown=${(e) => press(e, s)} onContextMenu=${(e) => copyComponentLink(e, `stock-${s.key}`)} aria-label=${`${s.name} ×${s.count}，拖到干员身上${s.used ? '使用' : '穿戴'}`}>
           <${GearIcon} id=${s.id} catalog=${catalog} plain=${!!drag} /><b class="num">${s.count}</b>
-        </button>`) : html`<span class="ix-strip__empty">暂无库存</span>`}
+        </button>`;
+      })}
     </div>
     ${drag ? html`<div class="ix-ghost" style=${{ transform: `translate(${Math.round(drag.x)}px, ${Math.round(drag.y)}px)` }} aria-hidden="true">
       <${GearIcon} id=${drag.stack.id} catalog=${catalog} plain=${true} />
@@ -209,6 +215,8 @@ function usePageLines() {
  */
 export function ProductionPanel({ state, catalog, onReport = null }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => { const follow = () => { if (location.hash === '#production') setOpen(true); }; follow();
+    addEventListener('hashchange', follow); return () => removeEventListener('hashchange', follow); }, []);
   const [folds, setFolds] = useState({});                   // section key → folded, once the player toggled it
   const [at0, setAt] = useState({ page: 0, anchor: null }); // anchor: the heading just toggled
   const perPage = usePageLines();
@@ -248,7 +256,7 @@ export function ProductionPanel({ state, catalog, onReport = null }) {
   let at = at0.anchor ? pages.findIndex((p) => p.some((x) => x.head?.key === at0.anchor && !x.more)) : at0.page;
   at = Math.max(0, Math.min(at, pages.length - 1));
   const toggle = (sec, folded) => { setFolds((f) => ({ ...f, [sec.key]: !folded })); setAt({ page: at, anchor: sec.key }); };
-  return html`<aside class=${cx('ix-prod', !open && 'is-closed')} data-testid="ix-prod">
+  return html`<aside class=${cx('ix-prod', !open && 'is-closed')} data-testid="ix-prod" onContextMenu=${(e) => copyComponentLink(e, 'production')}>
     <div class="ix-prod__tabs">
       <button type="button" class="ix-prod__toggle" onClick=${() => setOpen(!open)} aria-expanded=${open ? 'true' : 'false'} data-testid="ix-prod-toggle">
         <${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /><span>产出</span>

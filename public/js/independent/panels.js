@@ -2,6 +2,7 @@
 // attachment / operator merge), inheritance preview and the round result. Full texts live here, never on the HUD.
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, Button, Modal, MicroLabel, TierChip, DifficultyTag } from '../ui/components.js';
+import { copyComponentLink } from './componentLinks.js';
 import { Img, CoinGlyph, UnitThumb, LpTower, Sprite } from '../ui/gameComponents.js';
 import { chessPortraitUrl, enemyIconUrl, uiUrl, pageAssetUrl } from '../ui/assetUrls.js';
 import { audio } from '../audio.js';
@@ -113,7 +114,8 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
   const capacity = Math.max(catalog.rules?.inventoryCapacity ?? 20, stacks.length);
   const s = stacks.find((x) => x.key === pick) || stacks[0] || null;
   const g = s ? catalog.gear[s.id] || {} : null;
-  const n = s ? Math.max(1, Math.min(qty[s.key] || 1, s.count, Math.max(1, room))) : 1;
+  const many = s?.badge || g?.quantityEquippable === true;
+  const n = s ? Math.max(1, Math.min(qty[s.key] || 1, s.count, Number(s.items[0]?.quantity || 1), Math.max(1, room))) : 1;
   const tagFactions = g?.identityFactions || null;
   return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(10.4rem, 96vw)" class="ix-inv">
     <div class="ix-inv__target">
@@ -122,8 +124,8 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
         <option value="">选择干员</option>
         ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备${p.equipmentLevel}级</option>`)}
       </select>
-      ${target ? html`<span class="ix-muted">还能穿 <b class="num">${room}</b> 件 · 穿上后无法卸下</span>` : html`<span class="ix-muted">先选干员，再点「穿戴」</span>`}
-      <span class="ix-inv__count num">${stacks.length}/${capacity}</span>
+      ${target ? html`<span class=${room <= 0 ? 'ix-warn' : 'ix-muted'}>${room <= 0 ? '装备已满' : '穿上后无法卸下'}</span>` : html`<span class="ix-muted">先选干员，再点「穿戴」</span>`}
+      ${stacks.filter((x) => x.kind !== '奖品').length >= (catalog.rules?.inventoryCapacity ?? 20) ? html`<span class="ix-warn" role="status">库存已满</span>` : null}
     </div>
     <div class="ix-inv__body">
       <div class="ix-inv__grid" role="listbox" aria-label="库存">
@@ -131,7 +133,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
           const x = stacks[i];
           if (!x) return html`<span key=${`e${i}`} class="ix-inv__cell is-empty" aria-hidden="true"></span>`;
           return html`<button type="button" key=${x.key} role="option" aria-selected=${String(x === s)} class=${cx('ix-inv__cell', x === s && 'is-on')}
-              data-testid=${`ix-inv-${x.id}`} title=${x.name} onClick=${() => { setPick(x.key); setUsing(null); }}>
+              data-testid=${`ix-inv-${x.id}`} title=${x.name} onContextMenu=${(e) => copyComponentLink(e, `stock-${x.key}`)} onClick=${() => { setPick(x.key); setUsing(null); }}>
             <${GearIcon} id=${x.id} catalog=${catalog} plain=${true} />
             <b class="num">×${x.count}</b>
             <small>${x.name}</small>
@@ -148,15 +150,15 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
             ${s.used ? html`<${Button} size="sm" variant="secondary" disabled=${busy || using === s.key}
                 onClick=${() => (USE_NEEDS[s.mechanism] ? setUsing(s.key) : run({ type: 'use-item', itemUid: s.items[0].uid }))}>使用<//>`
               : html`
-              ${s.badge && s.count > 1 ? html`<span class="ix-qty">
+              ${many && s.count > 1 ? html`<span class="ix-qty">
                 <button type="button" onClick=${() => setQty({ ...qty, [s.key]: Math.max(1, n - 1) })} aria-label="减少">−</button><b class="num">${n}</b>
                 <button type="button" onClick=${() => setQty({ ...qty, [s.key]: Math.min(s.count, n + 1) })} aria-label="增加">+</button>
                 <button type="button" onClick=${() => setQty({ ...qty, [s.key]: Math.min(s.count, Math.max(1, room)) })}>全部</button></span>` : null}
               ${tagFactions ? html`<select value=${tags[s.key] || ''} onChange=${(e) => setTags({ ...tags, [s.key]: e.currentTarget.value })} aria-label="身份标签阵营">
                 <option value="">选择阵营</option>${tagFactions.map((f) => html`<option key=${f} value=${f}>${f}</option>`)}</select>` : null}
               <${Button} size="sm" variant="primary" disabled=${busy || !target || room < n || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
-                onClick=${() => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: target.uid, quantity: s.badge ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) })}>
-                穿戴${s.badge && n > 1 ? ` ${n} 枚` : ''}<//>`}
+                onClick=${() => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: target.uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) })}>
+                穿戴${many && n > 1 ? ` ${n} 件` : ''}<//>`}
           </div>` : html`<p class="ix-muted">库存为空</p>`}
       </div>
     </div>
