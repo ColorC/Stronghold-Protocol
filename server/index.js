@@ -650,10 +650,13 @@ export async function startServer(opts = {}) {
 
   // The process-wide singleton serves the default data dir; a custom dir (tests) gets its own copy.
   const data = opts.dataDir ? loadData(dataDir, { log }) : getData({ dir: dataDir, log });
-  const independentHttp = createIndependentHttp({ data, directory: opts.independentDirectory || path.join(ROOT, 'runtime', 'independent-sessions') });
+  const independentDirectory = opts.independentDirectory ?? process.env.SP_INDEPENDENT_DIRECTORY ?? path.join(ROOT, 'runtime', 'independent-sessions');
+  if (!path.isAbsolute(independentDirectory)) throw new Error('SP_INDEPENDENT_DIRECTORY must be an absolute canonical runtime path');
+  const independentHttp = createIndependentHttp({ data, directory: independentDirectory });
+  const independentExecution = opts.independentExecution ?? process.env.SP_INDEPENDENT_EXECUTION ?? 'server';
   let network;
   const admission = createAdmission({ maxActive: opts.independentMaxActive ?? Number(process.env.SP_INDEPENDENT_MAX_ACTIVE || 0),
-    ttlMs: opts.admissionTtlMs ?? 120000, otherActive: () => network?.connectionCount || 0 });
+    ttlMs: opts.admissionTtlMs ?? 120000, execution: independentExecution, otherActive: () => network?.connectionCount || 0 });
   const staticDelivery = createStaticDelivery({ base: opts.staticBase ?? process.env.SP_STATIC_BASE ?? '' });
   const netOptions = {};
   for (const k of ['reconnectWindowMs', 'heartbeatMs', 'helloTimeoutMs', 'ratePerSec', 'rateBurst', 'maxConnections', 'abuseDropsPerSec',
@@ -690,6 +693,9 @@ export async function startServer(opts = {}) {
     const parts = splitUrl(url);
     if (!parts) { sendError(req, res, 400, '请求地址无效 · Bad request'); return; }
     if (admission.handle(req, res, parts.rawPath)) return;
+    if (independentExecution === 'client' && /^\/independent\/api\/sessions\/[^/]+\/actions$/.test(parts.rawPath)) {
+      sendJson(req, res, 409, { ok: false, error: { code: 'CLIENT_EXECUTION_REQUIRED', message: '请刷新页面后继续' } }); return;
+    }
     if (await independentHttp(req, res, parts.rawPath)) return;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');

@@ -24,3 +24,13 @@ test('HTTP: 50 concurrent cold visitors, renewal, protected API, 51st rejection 
     assert.equal(server.admission.stats().active, 50);
   } finally { await server.close(); }
 });
+
+test('client-only deploy announces frontend execution and blocks legacy server simulation', async () => {
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, independentExecution: 'client' });
+  try {
+    const admission = await fetch(new URL('/independent/api/admission', server.url), { method: 'POST' });
+    assert.equal((await admission.json()).lease.execution, 'client');
+    const legacy = await fetch(new URL('/independent/api/sessions/00000000-0000-4000-8000-000000000000/actions', server.url), { method: 'POST', body: '{}' });
+    assert.equal(legacy.status, 409); assert.equal((await legacy.json()).error.code, 'CLIENT_EXECUTION_REQUIRED');
+  } finally { await server.close(); }
+});
