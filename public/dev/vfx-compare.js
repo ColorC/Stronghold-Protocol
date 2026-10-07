@@ -43,7 +43,13 @@ async function preloadCurrentOperator() {
   const names = VFX_PRELOAD[operator]?.[scenario] || [];
   $('status').innerHTML = '<strong>准备素材中</strong>：首次播放会预先解码当前场景的特效';
   const meshNames = operator === 'blkkgt' && scenario === 'skchr_blkkgt_3' ? ['blkkgt_skill_03_start_02', 'blkkgt_skill_03_end'] : [];
-  await Promise.all([original.preload(names), original.preloadMesh?.(meshNames)]);
+  // A browser image decode can remain pending after a 200 response (for
+  // example when the remote tab is backgrounded). Warmup is an optimisation,
+  // so it must never prevent the compare surface from becoming interactive.
+  // The player keeps the same lazy promises and will use any late-loaded
+  // atlas on the first event.
+  const warmup = Promise.all([original.preload(names), original.preloadMesh?.(meshNames)]);
+  await Promise.race([warmup, new Promise((resolve) => setTimeout(resolve, 8000))]);
 }
 
 window.addEventListener('error', (e) => { errors.push(e.message || '页面错误'); renderErrors(); });
