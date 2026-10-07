@@ -21,7 +21,10 @@ export function permitLine(op) {
   const who = p.limit.replace(/^只能(被|继承)/, '').replace(/(继承)?。$/, '');
   return p.direction === '给予' ? `交接凭证「${p.gear}」：装备可交给${who}。` : `交接凭证「${p.gear}」：可接收${who}的装备。`;
 }
-export const operatorRow = (op) => `| ${op.name} · 科技等级${op.tier}<br>原技能：${op.skill} | 普通：${op.nativeTrait.normal}<br>精锐：${op.nativeTrait.elite} | ${op.role}${permitLine(op) ? `<br>${permitLine(op)}` : ''} |`;
+// Markdown table cells must stay on one physical line. Escape pipes as cell
+// content and render source newlines as HTML breaks so neither changes columns.
+export const tableCell = (value) => String(value ?? '').replace(/\r\n|\r|\n/g, '<br>').replace(/\|/g, '\\|');
+export const operatorRow = (op) => `| ${tableCell(`${op.name} · 科技等级${op.tier}\n原技能：${op.skill}`)} | ${tableCell(`普通：${op.nativeTrait.normal}\n精锐：${op.nativeTrait.elite}`)} | ${tableCell(`${op.role}${permitLine(op) ? `\n${permitLine(op)}` : ''}`)} |`;
 
 const activeOperators = (design) => design.operators.filter((op) => op.active !== false);
 const HANDOVER_HEADER = '| 干员／方向 | 获得时自带的交接凭证与限制 |';
@@ -40,36 +43,33 @@ export function writeHandoverTable(design, doc) {
 /** Rows of the doc that differ from the data: [{ name, doc, data }] (doc null when the operator has no row). */
 export function tableDiff(design = JSON.parse(readFileSync(DESIGN, 'utf8')), doc = readFileSync(DOC, 'utf8')) {
   const lines = doc.split('\n');
-  return activeOperators(design).map((op) => ({ name: op.name, doc: lines.find((l) => l.startsWith(`| ${op.name} · 科技等级`)) ?? null, data: operatorRow(op) }))
+  return activeOperators(design).map((op) => ({ name: op.name, doc: lines.find((l) => l.startsWith(`| ${tableCell(`${op.name} · 科技等级${op.tier}\n原技能：${op.skill}`)} |`)) ?? null, data: operatorRow(op) }))
     .filter((x) => x.doc !== x.data);
 }
 
-/** Replace active operator rows, add missing current rows, remove retired rows, and leave surrounding prose intact. */
+/** Rebuild the six generated tier tables, preserving all content outside those table blocks. */
 export function writeOperatorTable(design, doc) {
-  const active = activeOperators(design);
-  const activeByName = new Map(active.map((op) => [op.name, op]));
-  const inactiveNames = new Set(design.operators.filter((op) => op.active === false).map((op) => op.name));
+  const active = [...activeOperators(design)].sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name, 'zh-CN'));
   const lines = doc.split('\n');
-  const seen = new Set();
-  const kept = [];
-  for (const line of lines) {
-    if (!line.startsWith('| ') || !line.includes(' · 科技等级')) { kept.push(line); continue; }
-    const name = line.slice(2, line.indexOf(' · 科技等级'));
-    const op = activeByName.get(name);
-    if (op) { kept.push(operatorRow(op)); seen.add(name); }
-    else if (!inactiveNames.has(name)) kept.push(line);
+  const sectionStart = lines.indexOf('## 完整干员表');
+  if (sectionStart < 0) throw new Error('design.md has no 完整干员表 section');
+  for (let tier = 6; tier >= 1; tier--) {
+    let sectionEnd = lines.findIndex((line, i) => i > sectionStart && line.startsWith('## '));
+    if (sectionEnd < 0) sectionEnd = lines.length;
+    const heading = `### 科技等级${tier}`;
+    const start = lines.indexOf(heading, sectionStart);
+    if (start < 0 || start >= sectionEnd) throw new Error(`design.md has no table for tier ${tier}`);
+    let next = lines.findIndex((line, i) => i > start && (line.startsWith('### ') || line.startsWith('## ')));
+    if (next < 0 || next > sectionEnd) next = sectionEnd;
+    const header = lines.findIndex((line, i) => i > start && i < next && line === '| 干员／科技等级 | 普通与精锐自有特质 | 职责与资格 |');
+    if (header < 0 || lines[header + 1] !== '| --- | --- | --- |') throw new Error(`tier ${tier} table header not found`);
+    let blockEnd = header + 2;
+    while (blockEnd < next && lines[blockEnd] !== '') blockEnd++;
+    const tierRows = active.filter((op) => Number(op.tier) === tier).map(operatorRow);
+    lines.splice(header + 2, blockEnd - header - 2, ...tierRows);
   }
-  const missing = active.filter((op) => !seen.has(op.name));
-  for (const op of missing) {
-    const heading = kept.findIndex((line) => line === `### 科技等级${op.tier}`);
-    if (heading < 0) throw new Error(`design.md has no table for tier ${op.tier}`);
-    let tableEnd = heading + 1;
-    while (tableEnd < kept.length && !kept[tableEnd].startsWith('## ') && !kept[tableEnd].startsWith('### ')) tableEnd++;
-    let insertAt = tableEnd;
-    for (let i = heading + 1; i < tableEnd; i++) if (kept[i].startsWith('| ') && kept[i].includes(' · 科技等级')) insertAt = i + 1;
-    kept.splice(insertAt, 0, operatorRow(op));
-  }
-  return writeHandoverTable(design, kept.join('\n'));
+  const result = lines.join('\n');
+  return writeHandoverTable(design, result);
 }
 
 function main() {

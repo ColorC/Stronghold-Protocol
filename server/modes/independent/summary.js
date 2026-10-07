@@ -4,13 +4,15 @@
 
 /** Trigger → the player-facing moment. */
 export const TRAIT_WHEN = Object.freeze({
-  gain: '获得时', roundStart: '休整开始', prepEnd: '休整结束', sold: '出售时', refresh: '刷新后', merge: '三连',
+  gain: '获得时', roundStart: '整备开始', prepEnd: '整备结束时', sold: '出售时', refresh: '刷新后', merge: '三连时',
   passive: '常驻', battleStart: '战斗开始', deploy: '部署时', kill: '击杀', hit: '命中', skillStart: '技能开启',
-  death: '倒下', statusApplied: '施加状态', ammoUsed: '消耗弹药', nativeProduction: '产出时', dollSwap: '替身切换',
-  aura: '在场时', selling: '出售时', battleProduction: '战斗产出', bought: '购买干员后',
-  battle: '战斗中', attack: '攻击',
+  death: '倒下时', statusApplied: '施加状态时', ammoUsed: '消耗弹药时', nativeProduction: '原生效果产出时', dollSwap: '替身切换时',
+  aura: '在场时', selling: '出售时', battleProduction: '战斗产出时', bought: '购买干员后',
+  battle: '战斗中', attack: '攻击时',
   // 干员特质 v4 (2026-10-07)
-  heal: '治疗时', damaged: '受到攻击', dodge: '闪避', elementBurst: '元素爆发', battleEnd: '战斗结束',
+  heal: '治疗时', damaged: '受到伤害时', dodge: '闪避时', elementBurst: '元素爆发时', battleEnd: '战斗结束时',
+  shieldLayersGained: '获得护盾层时', shieldLayersBroken: '护盾层破碎时', shieldLayersThreshold: '护盾层达到门槛时',
+  freeze: '冻结敌人时', stun: '使敌人晕眩时',
 });
 
 // temporary combat traits (干员表 v3, 2026-10-07): a buff for this battle, or damage / control in it
@@ -28,14 +30,14 @@ const caps = (p) => (p.capNormal != null ? { normal: Number(p.capNormal), elite:
  * One summary entry per rule: { when, kind, items?, amount?, cap?, perBattle?, bench?, faction?, condition?, stats? }.
  * The normal and the elite form are separate catalog entries, and some rules keep the elite numbers only in the
  * elite entry (eventProduction): read a form's count from its own entry — normal entry `.normal`, elite entry `.elite`.
- * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | other.
+ * kind ∈ forge | funds | refresh | recruit | shopBadge | random | stat | damage | copy | merge | double | boost | transfer | devour | doubleWorn.
  * `items` = [{ id, normal, elite }] (id null = decided in play, e.g. the dominant faction's recipe).
  */
 export function traitSummary(effect) {
   const rules = [...(effect?.prep || []), ...(effect?.combat || [])];
   return rules.map((rule) => {
     const p = rule.params || {};
-    const entry = { when: rule.trigger, kind: 'other' };
+    const entry = { when: rule.trigger, kind: null };
     const b = rule.behavior;
     if (b === 'grantEquipment' || b === 'conditionalGrant') {
       entry.kind = 'forge'; entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: Number(o.normal ?? 1), elite: Number(o.elite ?? o.normal ?? 1) }));
@@ -105,6 +107,7 @@ export function traitSummary(effect) {
     } else if (b === 'twoCopyElite') {
       entry.kind = 'merge';
     }
+    if (!entry.kind) throw new Error(`UNCLASSIFIED_TRAIT_RULE:${rule.trigger}:${b}`);
     if (p.requiresFactionOnField) entry.faction = p.requiresFactionOnField;
     else if (p.faction) entry.faction = p.faction;
     if (p.worksFromBench) entry.bench = true;

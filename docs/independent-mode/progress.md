@@ -51,3 +51,5 @@
 ## 2026-10-07 工坊干员池重制
 
 用户确认参考暗月初版禁用后卡池；已保存源码d31592f27b1567267ff35ac95932f08c8ae74d9d及线上7e726de4872934236522d01a9a519e4c8c36dc19两个原生恢复标签。快照回执：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/workshop-roster-rework-20261007/baseline-snapshot.json。任务副本：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/workshop-roster-rework-20261007；稀疏检出不包含正式data或runtime。已核旧工坊112人及现有随机5/8阵营规则；历史21组合均值101、范围97–105。431可用方舟对象的原始数据、PRTS与112原生属性审计位于E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/workshop-roster-rework-20261007/。下一步：真实本体输出探针、成员/功能/科技分配、百分比徽章与敌人配置实装。
+
+2026-10-07：源码与配置已合入主线；101 active/120存档定义，9关键词与15比例徽章落地。实测发现并修正候选招募名单、进阶上限、徽章旧数值文本和47件无active来源装备的随机奖励资格。最终135局公开动作验证结束（43/45、21/45、17/45，无机制错误），回执 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\workshop-roster-rework-20261007\final-normal14.receipt.txt。全量首跑4266项中32旧口径/摘要/同步项失败，测试与摘要、文档序列化已分工修复；待全量收口、真实浏览器、发布与集中表回读。

@@ -1,5 +1,5 @@
 {
-  "status": "implemented; integration verified; publication pending",
+  "status": "implemented and tested; initial balance",
   "basedOnGitCommit": "bde151b",
   "operators": [
     {
@@ -7441,7 +7441,7 @@
       "inheritance": null,
       "nativeTrait": {
         "normal": "休整期结束时，整备区每有一名干员，自身获得1枚技力徽章（至多5枚）",
-        "elite": "休整期结束时，整备区每有一名干员，自身获得2枚技力徽章（至多5枚）",
+        "elite": "休整期结束时，整备区每有一名干员，自身获得2枚技力徽章（至多10枚）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8507,11 +8507,11 @@
           ]
         }
       ],
-      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡。规则动作：普通整备gain触发授予装备；普通整备roundStart触发conditionalRecruit；进阶整备gain触发授予装备；进阶整备roundStart触发conditionalRecruit。本体依据：SPECIAL/钩索师，MELEE，范围3-2；原生攻击640、攻速100、攻击间隔1.8秒、生命1754；选用「缺水的碎漩狂舞」Lv4，SP消耗42/初始22（INCREASE_WITH_TIME）：“对一个远处目标束缚并制造一个龙卷风使周围敌人移动速度-50%，每1.5秒造成85%攻击力的法术伤害并小力地拖拽至中心。技能结束时把目标地点周围的敌人小力地拖拽至面前”。探针依据：单体0防/0抗最佳总DPS 526.9（本体526.9+召唤物0.0；缺水的大洋裂断）；单体800防/40抗最佳总DPS 59.4（本体59.4+召唤物0.0；缺水的碎漩狂舞）；四目标0防/0抗最佳总DPS 708.1（本体708.1+召唤物0.0；缺水的掌握怒海）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
+      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或海霓。规则动作：普通整备gain触发授予装备；普通整备roundStart触发conditionalRecruit；进阶整备gain触发授予装备；进阶整备roundStart触发conditionalRecruit。本体依据：SPECIAL/钩索师，MELEE，范围3-2；原生攻击640、攻速100、攻击间隔1.8秒、生命1754；选用「缺水的碎漩狂舞」Lv4，SP消耗42/初始22（INCREASE_WITH_TIME）：“对一个远处目标束缚并制造一个龙卷风使周围敌人移动速度-50%，每1.5秒造成85%攻击力的法术伤害并小力地拖拽至中心。技能结束时把目标地点周围的敌人小力地拖拽至面前”。探针依据：单体0防/0抗最佳总DPS 526.9（本体526.9+召唤物0.0；缺水的大洋裂断）；单体800防/40抗最佳总DPS 59.4（本体59.4+召唤物0.0；缺水的碎漩狂舞）；四目标0防/0抗最佳总DPS 708.1（本体708.1+召唤物0.0；缺水的掌握怒海）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡",
-        "elite": "获得时，获得2件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡，重复2次",
+        "normal": "获得时，获得1件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或海霓",
+        "elite": "获得时，获得2件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或海霓，重复2次",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8543,9 +8543,9 @@
               "params": {
                 "condition": "sameRowCount>=3",
                 "choices": [
-                  "chess_char_5_04_a",
+                  "chess_char_3_05_a",
                   "chess_char_2_07_a",
-                  "chess_char_1_04_a"
+                  "chess_char_3_09_a"
                 ],
                 "normal": 1,
                 "elite": 2,
@@ -8576,9 +8576,9 @@
               "params": {
                 "condition": "sameRowCount>=3",
                 "choices": [
-                  "chess_char_5_04_a",
+                  "chess_char_3_05_a",
                   "chess_char_2_07_a",
-                  "chess_char_1_04_a"
+                  "chess_char_3_09_a"
                 ],
                 "normal": 1,
                 "elite": 2,
@@ -16793,7 +16793,7 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 547.6（本体547.6+召唤物0.0；槌音）；单体800防/40抗最佳总DPS 75.7（本体75.7+召唤物0.0；槌音）；四目标0防/0抗最佳总DPS 547.6（本体547.6+召唤物0.0；槌音）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 547.6（本体547.6+召唤物0.0；槌音）；单体800防/40抗最佳总DPS 75.7（本体75.7+召唤物0.0；槌音）；四目标0防/0抗最佳总DPS 547.6（本体547.6+召唤物0.0；槌音）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。 原生资料补全：默认技能「槌音」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=32；initSp=0；duration字段=22）：攻击间隔略微增大，攻击力+120%；原生天赋：蛮力穿刺：攻击时，10%几率当次攻击的攻击力+50%。技能中这个几率提高到30%。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "纯战斗干员：保留本体技能与天赋，不追加工坊特质。",
@@ -16886,11 +16886,11 @@
           ]
         }
       ],
-      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：休整期结束时，每次主动刷新使身前干员获得1枚技力徽章（至多2枚）。规则动作：普通整备prepEnd触发按刷新成长；进阶整备prepEnd触发按刷新成长。本体依据：SUPPORT/凝滞师，RANGED，范围y-2；原生攻击390、攻速100、攻击间隔1.9秒、生命946；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 229.2（本体229.2+召唤物0.0；攻击力强化·β型）；单体800防/40抗最佳总DPS 137.5（本体137.5+召唤物0.0；攻击力强化·β型）；四目标0防/0抗最佳总DPS 229.2（本体229.2+召唤物0.0；攻击力强化·β型）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：休整期结束时，每次主动刷新使身前干员获得1枚技力徽章（至多2枚）。规则动作：普通整备prepEnd触发按刷新成长；进阶整备prepEnd触发按刷新成长。本体依据：SUPPORT/凝滞师，RANGED，范围y-2；原生攻击390、攻速100、攻击间隔1.9秒、生命946；默认技能「攻击力强化·β型」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=37；initSp=0；duration字段=25）：攻击力+35%；原生天赋：GameData默认棋子talents为空（未挂载可生效天赋）；PRTS候选含未并入默认棋子的地质勘探（PHASE_2，略微延长特性停顿的持续时间）。探针依据：单体0防/0抗最佳总DPS 229.2（本体229.2+召唤物0.0；攻击力强化·β型）；单体800防/40抗最佳总DPS 137.5（本体137.5+召唤物0.0；攻击力强化·β型）；四目标0防/0抗最佳总DPS 229.2（本体229.2+召唤物0.0；攻击力强化·β型）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "休整期结束时，每次主动刷新使身前干员获得1枚技力徽章（至多2枚）",
-        "elite": "休整期结束时，每次主动刷新使身前干员获得2枚技力徽章（至多2枚）",
+        "elite": "休整期结束时，每次主动刷新使身前干员获得2枚技力徽章（至多4枚）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -17011,7 +17011,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质将招募、刷新或部署辅助限制为一次性动作。具体特质：获得时，获得1件突袭盟约。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：SPECIAL/钩索师，MELEE，范围3-2；原生攻击592、攻速100、攻击间隔1.8秒、生命1447；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 372.1（本体372.1+召唤物0.0；束缚链）；单体800防/40抗最佳总DPS 56.7（本体56.7+召唤物0.0；束缚链）；四目标0防/0抗最佳总DPS 412.2（本体412.2+召唤物0.0；束缚链）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
+      "role": "定位依据：该特质将招募、刷新或部署辅助限制为一次性动作。具体特质：获得时，获得1件突袭盟约。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：SPECIAL/钩索师，MELEE，范围3-2；原生攻击592、攻速100、攻击间隔1.8秒、生命1447；默认技能「束缚链」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=22；initSp=10；duration字段=0）：立即将前方大范围内至多2个目标中等力度地拖拽至面前，对其造成相当于自己攻击力150%的真实的伤害，并使其晕眩1.5秒；原生天赋：雪境猎手：未阻挡敌人时，攻击力和防御力各+6%。探针依据：单体0防/0抗最佳总DPS 372.1（本体372.1+召唤物0.0；束缚链）；单体800防/40抗最佳总DPS 56.7（本体56.7+召唤物0.0；束缚链）；四目标0防/0抗最佳总DPS 412.2（本体412.2+召唤物0.0；束缚链）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
       "inheritance": {
         "name": "崖心",
         "direction": "接收",
@@ -17147,7 +17147,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：自身每使一名敌人晕眩，战斗结束后获得1枚攻击加成徽章（每场至多4枚）。规则动作：普通战斗statusApplied触发按事件累计产出；进阶战斗statusApplied触发按事件累计产出。本体依据：CASTER/轰击术师，RANGED，范围5-1；原生攻击564、攻速100、攻击间隔2.9秒、生命1237；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 218.4（本体218.4+召唤物0.0；震爆调谐）；单体800防/40抗最佳总DPS 131.0（本体131.0+召唤物0.0；震爆调谐）；四目标0防/0抗最佳总DPS 873.6（本体873.6+召唤物0.0；震爆调谐）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：自身每使一名敌人晕眩，战斗结束后获得1枚攻击加成徽章（每场至多4枚）。规则动作：普通战斗statusApplied触发按事件累计产出；进阶战斗statusApplied触发按事件累计产出。本体依据：CASTER/轰击术师，RANGED，范围5-1；原生攻击564、攻速100、攻击间隔2.9秒、生命1237；默认技能「震爆调谐」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=60；initSp=20；duration字段=32）：攻击力+35%，每次攻击在攻击范围内的其他干员处施加一次音爆，造成相当于15%攻击力的群体法术伤害；原生天赋：律脉同构：攻击范围内至少有1名其他友方干员时，攻击力+8%。探针依据：单体0防/0抗最佳总DPS 218.4（本体218.4+召唤物0.0；震爆调谐）；单体800防/40抗最佳总DPS 131.0（本体131.0+召唤物0.0；震爆调谐）；四目标0防/0抗最佳总DPS 873.6（本体873.6+召唤物0.0；震爆调谐）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "自身每使一名敌人晕眩，战斗结束后获得1枚攻击加成徽章（每场至多4枚）",
@@ -17296,7 +17296,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质将招募、刷新或部署辅助限制为一次性动作。具体特质：获得时，获得1件反冲空降仓。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：SPECIAL/推击手，MELEE，范围1-1；原生攻击528、攻速100、攻击间隔1.2秒、生命1510；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 105.6（本体105.6+召唤物0.0；惊爆射击）；单体800防/40抗最佳总DPS 5.3（本体5.3+召唤物0.0；惊爆射击）；四目标0防/0抗最佳总DPS 140.8（本体140.8+召唤物0.0；护身射击）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：该特质将招募、刷新或部署辅助限制为一次性动作。具体特质：获得时，获得1件反冲空降仓。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：SPECIAL/推击手，MELEE，范围1-1；原生攻击528、攻速100、攻击间隔1.2秒、生命1510；默认技能「惊爆射击」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=21；initSp=0；duration字段=-1）：立即将范围内所有敌人往身前方向中等力度地推开并晕眩1.9秒（撞到高台时晕眩时间延长为3秒）。若目标碰撞其他敌人，使其晕眩1.9秒。；原生天赋：技巧射击：攻击重量大于等于3的敌人时无视目标180的防御力。探针依据：单体0防/0抗最佳总DPS 105.6（本体105.6+召唤物0.0；惊爆射击）；单体800防/40抗最佳总DPS 5.3（本体5.3+召唤物0.0；惊爆射击）；四目标0防/0抗最佳总DPS 140.8（本体140.8+召唤物0.0；护身射击）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "获得时，获得1件反冲空降仓",
@@ -17423,7 +17423,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：休整期结束时，自身与身前干员各获得1枚防御徽章。规则动作：普通整备prepEnd触发forgeAdjacent；进阶整备prepEnd触发forgeAdjacent。本体依据：SUPPORT/削弱者，RANGED，范围y-6；原生攻击338、攻速100、攻击间隔1.6秒、生命1347；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 218.6（本体218.6+召唤物0.0；病入膏肓）；单体800防/40抗最佳总DPS 131.1（本体131.1+召唤物0.0；病入膏肓）；四目标0防/0抗最佳总DPS 218.6（本体218.6+召唤物0.0；病入膏肓）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：休整期结束时，自身与身前干员各获得1枚防御徽章。规则动作：普通整备prepEnd触发forgeAdjacent；进阶整备prepEnd触发forgeAdjacent。本体依据：SUPPORT/削弱者，RANGED，范围y-6；原生攻击338、攻速100、攻击间隔1.6秒、生命1347；默认技能「诅咒娃娃」（Lv4；skillType=AUTO；spType=INCREASE_WITH_TIME；spCost=44；initSp=10；duration字段=-1）：获得一个诅咒娃娃（最多可库存1个）\n诅咒娃娃周围敌人的攻击力和防御力-25%，15秒后自动销毁；原生天赋：溃败暗示 ：攻击范围内的敌人生命少于40%时，令其获得30%的脆弱效果。探针依据：单体0防/0抗最佳总DPS 218.6（本体218.6+召唤物0.0；病入膏肓）；单体800防/40抗最佳总DPS 131.1（本体131.1+召唤物0.0；病入膏肓）；四目标0防/0抗最佳总DPS 218.6（本体218.6+召唤物0.0；病入膏肓）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "休整期结束时，自身与身前干员各获得1枚防御徽章",
@@ -17551,7 +17551,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件护盾发生器。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：CASTER/阵法术师，RANGED，范围x-1；原生攻击632、攻速100、攻击间隔2秒、生命1644；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 168.5（本体168.5+召唤物0.0；守卫尖碑）；单体800防/40抗最佳总DPS 101.1（本体101.1+召唤物0.0；守卫尖碑）；四目标0防/0抗最佳总DPS 646.0（本体646.0+召唤物0.0；守卫尖碑）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件护盾发生器。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：CASTER/阵法术师，RANGED，范围x-1；原生攻击632、攻速100、攻击间隔2秒、生命1644；默认技能「守卫尖碑」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=28；initSp=10；duration字段=20）：在攻击范围内的近战部署位召唤一个可以阻挡敌人的方尖塔，方尖塔在出现时会对附近的敌人造成相当于攻击力200%的法术伤害，并使其晕眩1秒；原生天赋：沙原的庇护：技能未开启时，每秒恢复4%的最大生命。探针依据：单体0防/0抗最佳总DPS 168.5（本体168.5+召唤物0.0；守卫尖碑）；单体800防/40抗最佳总DPS 101.1（本体101.1+召唤物0.0；守卫尖碑）；四目标0防/0抗最佳总DPS 646.0（本体646.0+召唤物0.0；守卫尖碑）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "获得时，获得1件护盾发生器",
@@ -17680,7 +17680,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：每完成15次有效治疗，战斗结束后获得1枚治疗徽章（每场至多4枚）。规则动作：普通战斗heal触发按事件累计产出；进阶战斗heal触发按事件累计产出。本体依据：MEDIC/群愈师，RANGED，范围y-2；原生攻击264、攻速100、攻击间隔2.85秒、生命1323；选用技能、等级与SP字段：源数据未提供。探针依据：单体0防/0抗最佳总DPS 0.0（本体0.0+召唤物0.0；上佳的应急药呀）；单体800防/40抗最佳总DPS 0.0（本体0.0+召唤物0.0；上佳的应急药呀）；四目标0防/0抗最佳总DPS 0.0（本体0.0+召唤物0.0；上佳的应急药呀）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：每完成15次有效治疗，战斗结束后获得1枚治疗徽章（每场至多4枚）。规则动作：普通战斗heal触发按事件累计产出；进阶战斗heal触发按事件累计产出。本体依据：MEDIC/群愈师，RANGED，范围y-2；原生攻击264、攻速100、攻击间隔2.85秒、生命1323；默认技能「绝妙的长效药呀」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=43；initSp=19；duration字段=27）：攻击间隔小幅度缩短，攻击范围内的友方干员受到的物理与法术伤害的20%变为持续5秒的生命流失；原生天赋：最好的草药医生：自身攻击力-5%，但攻击范围内的友方干员受到的治疗效果提升15%。探针依据：单体0防/0抗最佳总DPS 0.0（本体0.0+召唤物0.0；上佳的应急药呀）；单体800防/40抗最佳总DPS 0.0（本体0.0+召唤物0.0；上佳的应急药呀）；四目标0防/0抗最佳总DPS 0.0（本体0.0+召唤物0.0；上佳的应急药呀）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
         "normal": "每完成15次有效治疗，战斗结束后获得1枚治疗徽章（每场至多4枚）",
@@ -18128,7 +18128,7 @@
       "kind": "徽章",
       "level": 1,
       "eliteLevel": null,
-      "normal": "改为一级攻击加成徽章，攻击力增加2%；可重复装备。",
+      "normal": "每枚使攻击力增加2%，与技能和天赋的攻击增益加算。",
       "inheritable": true,
       "slotCost": 1,
       "unique": false
@@ -18143,7 +18143,7 @@
       "kind": "徽章",
       "level": 1,
       "eliteLevel": null,
-      "normal": "改为一级防御徽章，基础防御力增加8点；可重复装备。",
+      "normal": "每枚使干员原生基础防御力提高2%。",
       "inheritable": true,
       "slotCost": 1,
       "unique": false
@@ -18177,7 +18177,9 @@
       "normal": "首次装备时，选择一个额外酒馆阵营标签。选择后不能改变；不改变原技能、天赋或继承限制使用的原生阵营。",
       "inheritable": true,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_1_05_e_a",
@@ -18192,7 +18194,9 @@
       "normal": "普通攻击命中时，主目标累积侵蚀损伤，数值为携带者攻击力的10%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_2_01_e_a",
@@ -18207,7 +18211,9 @@
       "normal": "被击倒时，在倒下的位置放下一个装置（阻挡1名敌人，生命值为携带者最大生命值的50%），携带者再部署时移除",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_2_02_e_a",
@@ -18237,7 +18243,9 @@
       "normal": "普通攻击命中使主目标战栗4秒（被阻挡时无法普通攻击；冷却8秒）",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_2_04_e_a",
@@ -18252,7 +18260,9 @@
       "normal": "技能也能靠攻击回复技力：每次普通攻击额外回复1点技力",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_2_05_e_a",
@@ -18312,7 +18322,9 @@
       "normal": "每次部署时获得隐匿，首次普通攻击后解除",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_02_e_a",
@@ -18327,7 +18339,9 @@
       "normal": "普通攻击优先攻击范围内生命值最低的敌人",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_03_e_a",
@@ -18342,7 +18356,9 @@
       "normal": "普通攻击穿透：主目标身后1格内、同一直线上的敌人受到同样伤害",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_04_e_a",
@@ -18357,7 +18373,9 @@
       "normal": "每次开启技能时，对攻击范围内所有敌人造成携带者攻击力80%的物理伤害",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_05_e_a",
@@ -18373,7 +18391,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_06_e_a",
@@ -18389,7 +18408,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_07_e_a",
@@ -18405,7 +18425,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_08_e_a",
@@ -18420,7 +18441,9 @@
       "normal": "普通攻击命中后，主目标3秒内无法使用技能",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_09_e_a",
@@ -18435,7 +18458,9 @@
       "normal": "每场首次受到致命伤害时，4秒内生命值不会低于1",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_10_e_a",
@@ -18450,7 +18475,9 @@
       "normal": "普通攻击命中时中等力度地击退主目标（冷却4秒）",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_11_e_a",
@@ -18465,7 +18492,9 @@
       "normal": "每次主战斗部署后的首次普通攻击命中，使主目标晕眩1秒；每场战斗最多触发3次。",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_3_12_e_a",
@@ -18510,7 +18539,9 @@
       "normal": "更容易受到敌人攻击；每次部署时，诱导攻击范围内的所有敌人至携带者身边，持续2秒",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_03_e_a",
@@ -18526,7 +18557,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_04_e_a",
@@ -18541,7 +18573,9 @@
       "normal": "每场主战斗第一次受到伤害后获得隐匿，持续6秒；不脱离已接触敌人的阻挡。",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_05_e_a",
@@ -18556,7 +18590,9 @@
       "normal": "阻挡数+1",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_06_e_a",
@@ -18572,7 +18608,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_07_e_a",
@@ -18587,7 +18624,9 @@
       "normal": "每次部署时冲锋，对攻击范围内所有敌人造成携带者攻击力150%的物理伤害",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_08_e_a",
@@ -18602,7 +18641,9 @@
       "normal": "每场主战斗中，子弹技能第一次剩余1发弹药时，回复该技能初始弹药数的20%，向下取整且至少回复1发；最多触发一次。",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_09_e_a",
@@ -18617,7 +18658,9 @@
       "normal": "造成法术伤害时，目标累积灼燃损伤，数值为该次伤害的15%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_10_e_a",
@@ -18633,7 +18676,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_11_e_a",
@@ -18649,7 +18693,8 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_4_12_e_a",
@@ -18664,7 +18709,9 @@
       "normal": "每场主战斗被击倒后，在原格停留1秒，再以50%最大生命值重新部署；最多触发一次，装备计数不重置。",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_5_01_e_a",
@@ -18679,7 +18726,9 @@
       "normal": "普通攻击命中使主目标攻击速度减少5点、移动速度减少5%，持续3秒；同名减速不叠加，不能减速免疫控制的敌人。",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_5_02_e_a",
@@ -18694,7 +18743,9 @@
       "normal": "每8次普通攻击发动后，若本次攻击命中主目标，使其寒冷1.5秒；多段攻击只计算一次发动。",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_5_03_e_a",
@@ -18709,7 +18760,9 @@
       "normal": "技能与普通攻击造成的物理和法术伤害变为弱点伤害",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_5_04_e_a",
@@ -18769,7 +18822,9 @@
       "normal": "每个休整期累计出售6名干员后，免费发现一名与携带者共享酒馆阵营的普通干员，三选一，不高于当前科技等级；每个休整期最多触发一次。",
       "inheritable": true,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_5_08_e_a",
@@ -18799,7 +18854,9 @@
       "normal": "每次开启技能时获得1层护盾（抵挡1次伤害）；同时装备天马骑士长枪时，护盾被打破时对周围1格内的敌人造成携带者攻击力100%的真实伤害",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_01_e_a",
@@ -18814,7 +18871,9 @@
       "normal": "普通攻击命中主目标后，追加携带者攻击力15%的真实伤害；同时装备天马骑士战盔时改为30%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_01_m",
@@ -18844,7 +18903,9 @@
       "normal": "携带者属于【拉特兰】时，每发动8次普通攻击，对攻击范围内另一名敌人额外造成携带者攻击力100%的物理伤害；同时装备拉特兰跳弹模块时，这次伤害也会弹射",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_02_m",
@@ -18874,7 +18935,9 @@
       "normal": "携带者属于【炎】时，每次开启技能，场上其他【炎】干员的下一次普通攻击改为对攻击范围内所有敌人造成其攻击力60%的物理伤害；同时装备炎国制式短刀时改为100%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_03_m",
@@ -18904,7 +18967,9 @@
       "normal": "携带者属于【阿戈尔】时，受到伤害后对伤害来源反击，造成携带者攻击力40%的法术伤害（冷却1秒）；同时装备阿戈尔裂潮重刃时，反击也溅射伤害来源周围1格",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_05_e_a",
@@ -18919,7 +18984,9 @@
       "normal": "携带者属于【维多利亚】时，预先选择身上一件维式重锤强化：战栗维式重锤冷却改为5秒；坚固维式重锤改为6秒内生命值不会低于1；冲击维式重锤冷却改为2秒；灼燃维式重锤改为该次伤害的25%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_06_e_a",
@@ -18934,7 +19001,9 @@
       "normal": "携带者属于【谢拉格】时，范围内寒冷或冻结的敌人每秒受到携带者攻击力15%的法术伤害；同时装备谢拉格不融冰时改为25%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_07_e_a",
@@ -18949,7 +19018,9 @@
       "normal": "携带者属于【萨尔贡】时，每场第一次技能结束后，立即再次开启该技能（不消耗技力）；同时装备萨尔贡行军浓茶时，每次开启技能为场上其他【萨尔贡】干员各回复2点技力（每场至多3次）",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_08_e_a",
@@ -18979,7 +19050,9 @@
       "normal": "首次装备时，选择一个额外酒馆阵营标签。选择后不能改变；不改变原技能、天赋或继承限制使用的原生阵营。",
       "inheritable": true,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": false,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_10_e_a",
@@ -18994,7 +19067,9 @@
       "normal": "携带者属于【卡西米尔】时，开启技能后10秒内，攻击范围内的敌人移动速度-30%；同时装备卡西米尔竞技旗时，技能结束后撤退并立即在原地重新部署（再次冲锋）",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     },
     {
       "sourceId": "chess_item_6_11_e_a",
@@ -19009,7 +19084,9 @@
       "normal": "携带者属于【叙拉古】时，脱离隐匿后的首次普通攻击使主目标晕眩1.5秒；同时装备叙拉古仪仗正装时，这次攻击再追加携带者攻击力100%的真实伤害",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true
+      "unique": true,
+      "retired": true,
+      "unassigned": false
     }
   ],
   "extraGear": [
@@ -19022,7 +19099,8 @@
       "slotCost": 1,
       "unique": true,
       "upgrade": null,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "维多利亚校准砧",
@@ -19032,7 +19110,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "医疗部稳态仪",
@@ -19043,7 +19123,8 @@
       "slotCost": 1,
       "unique": true,
       "upgrade": null,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "医疗部蓄能电容",
@@ -19053,7 +19134,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "近战训练记录仪",
@@ -19064,7 +19147,8 @@
       "slotCost": 1,
       "unique": true,
       "upgrade": null,
-      "retired": true
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "熔铸模具",
@@ -19074,7 +19158,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "增压臂铠",
@@ -19084,7 +19170,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "拉特兰跳弹模块",
@@ -19094,7 +19182,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "阿戈尔裂潮重刃",
@@ -19104,7 +19194,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "医疗部共生血囊",
@@ -19114,7 +19206,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "谢拉格雪境猎印",
@@ -19124,7 +19218,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "维多利亚荆棘纹章",
@@ -19134,7 +19230,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "谢拉格冰爪",
@@ -19144,7 +19242,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "炎国缚锁",
@@ -19154,7 +19254,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "萨尔贡流沙符",
@@ -19164,7 +19266,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "工程部标定信标",
@@ -19174,7 +19278,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "拉特兰速射扳机",
@@ -19184,7 +19290,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "阿戈尔神经毒棘",
@@ -19194,7 +19302,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "叙拉古狼嚎哨",
@@ -19204,7 +19314,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "卡西米尔破甲箭簇",
@@ -19214,7 +19326,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "莱塔尼亚共鸣音叉",
@@ -19224,7 +19338,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "阿戈尔深潜锚钩",
@@ -19234,7 +19350,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "莱茵生命浮空发生器",
@@ -19244,7 +19362,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "叙拉古处决令",
@@ -19254,7 +19374,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "炎国点睛笔",
@@ -19264,7 +19386,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "萨尔贡链雷护符",
@@ -19274,7 +19398,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "黑钢双联弹匣",
@@ -19284,7 +19410,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "萨米凋亡枝",
@@ -19294,7 +19422,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "工程部节拍校准器",
@@ -19304,7 +19434,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "罗德岛处置预案",
@@ -19314,7 +19446,9 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null
+      "upgrade": null,
+      "retired": true,
+      "unassigned": false
     },
     {
       "name": "坚守盟约",
@@ -19334,7 +19468,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "护盾发生器",
@@ -19351,7 +19487,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "突袭盟约",
@@ -19372,7 +19510,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "巨锤盟约",
@@ -19389,7 +19529,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "精准盟约",
@@ -19406,7 +19548,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "不屈盟约",
@@ -19423,7 +19567,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "爆破部署台",
@@ -19441,7 +19587,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "反冲空降仓",
@@ -19458,7 +19606,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     },
     {
       "name": "便携式融毁教学仪",
@@ -19478,7 +19628,9 @@
       "inheritable": true,
       "slotCost": 1,
       "unique": false,
-      "upgrade": null
+      "upgrade": null,
+      "retired": false,
+      "unassigned": false
     }
   ],
   "identityGear": {
@@ -20004,20 +20156,20 @@
       "FUNNY": [
         {
           "fromRound": 1,
-          "hpMul": 1.0,
-          "atkMul": 1.0,
-          "bossHpMul": 1.0
+          "hpMul": 1,
+          "atkMul": 1,
+          "bossHpMul": 1
         },
         {
           "fromRound": 5,
           "hpMul": 1.03,
-          "atkMul": 1.0,
-          "bossHpMul": 1.0
+          "atkMul": 1,
+          "bossHpMul": 1
         },
         {
           "fromRound": 9,
           "hpMul": 1.05,
-          "atkMul": 1.0,
+          "atkMul": 1,
           "bossHpMul": 1.04
         }
       ],
@@ -20026,13 +20178,13 @@
           "fromRound": 1,
           "hpMul": 0.9,
           "atkMul": 0.9,
-          "bossHpMul": 1.0
+          "bossHpMul": 1
         },
         {
           "fromRound": 5,
           "hpMul": 0.88,
           "atkMul": 0.92,
-          "bossHpMul": 1.0
+          "bossHpMul": 1
         },
         {
           "fromRound": 9,
@@ -20147,6 +20299,10 @@
       "normal15Runs": 15,
       "diagnosticErrors": 0,
       "note": "Public-action seeded pilot; route policies differ from earlier baseline scoring, not a controlled before/after experiment."
+    },
+    "retiredGearAfterRosterRework": {
+      "count": 47,
+      "note": "Unproduced wearable gear remains readable in old saves and is excluded from new random unlocked gear rewards."
     }
   },
   "source": {
