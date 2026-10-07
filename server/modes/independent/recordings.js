@@ -1,9 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, writeFile, appendFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { stat, unlink } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_BODY = 2 * 1024 * 1024;
+// A rrweb full snapshot can carry a lossless canvas data URL as one indivisible event. Keep the request bounded while
+// allowing that real frame through; the regular client batches remain capped at 1 MiB.
+const MAX_BODY = 16 * 1024 * 1024;
+const MAX_MEDIA_CHUNK = 8 * 1024 * 1024;
+const execFileAsync = promisify(execFile);
 const json = (res, status, value) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
 
 async function readBody(req) {
@@ -13,6 +21,23 @@ async function readBody(req) {
   let value; try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw Object.assign(new Error('BAD_JSON'), { status: 400 }); }
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Object.assign(new Error('BAD_JSON'), { status: 400 });
   return value;
+}
+async function readMediaChunk(req) {
+  let size = 0; const chunks = [];
+  for await (const chunk of req) { size += chunk.length; if (size <= MAX_MEDIA_CHUNK) chunks.push(chunk); }
+  if (size > MAX_MEDIA_CHUNK) throw Object.assign(new Error('MEDIA_LIMIT'), { status: 413 });
+  return Buffer.concat(chunks);
+}
+async function remuxPlayback(dir) {
+  const input = path.join(dir, 'canvas.webm'); const output = path.join(dir, 'canvas-playback.webm'); const pending = path.join(dir, 'canvas-playback.pending.webm');
+  try {
+    await execFileAsync(process.env.SP_FFMPEG_PATH || 'ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', input, '-map', '0:v:0', '-c:v', 'copy', '-cues_to_front', '1', pending],
+      { timeout: 25000, windowsHide: true, maxBuffer: 1024 * 1024 });
+    await rename(pending, output); const info = await stat(output); return { ready: true, bytes: info.size };
+  } catch {
+    try { await unlink(pending); } catch { /* no generated output to remove */ }
+    return { ready: false, bytes: 0 };
+  }
 }
 
 /** Server-side rrweb event store. Recording IDs are opaque UUIDs and never become session state. */
@@ -57,6 +82,51 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
         });
         return json(res, 200, { ok: true, id, nextSeq, endedAt }), true;
       }
+      const mediaMatch = relative.match(/^([0-9a-f-]{36})\/media(?:\/(playback|\d+))?$/i);
+      if (mediaMatch && UUID.test(mediaMatch[1])) {
+        const id = mediaMatch[1]; const mediaFile = path.join(dirOf(id), 'canvas.webm');
+        if (mediaMatch[2] && /^\d+$/.test(mediaMatch[2]) && req.method === 'POST') {
+          const seq = Number(mediaMatch[2]); const startedAt = Number(req.headers['x-media-started-at']);
+          const timeMs = Number(req.headers['x-media-time-ms']);
+          if (!Number.isSafeInteger(seq) || seq < 1 || !Number.isFinite(startedAt) || !Number.isFinite(timeMs) || timeMs < 0) return json(res, 422, { ok: false, error: 'INVALID_MEDIA_CHUNK' }), true;
+          const chunk = await readMediaChunk(req); if (!chunk.length) return json(res, 422, { ok: false, error: 'EMPTY_MEDIA_CHUNK' }), true;
+          const result = await exclusive(id, async () => {
+            const meta = await loadMeta(id); if (meta.endedAt) return { error: 'ENDED' };
+            const next = Number(meta.nextMediaSeq) || 1;
+            if (seq < next) return { ack: next - 1 };
+            if (seq > next) return { error: 'OUT_OF_ORDER', ack: next - 1 };
+            const mime = String(req.headers['x-media-mime-type'] || 'video/webm').slice(0, 100);
+            if (!mime.startsWith('video/webm')) return { error: 'INVALID_MEDIA_TYPE' };
+            await appendFile(mediaFile, chunk);
+            await saveMeta(id, { ...meta, nextMediaSeq: next + 1, mediaStartedAt: meta.mediaStartedAt || new Date(startedAt).toISOString(),
+              mediaMimeType: mime, mediaBytes: (Number(meta.mediaBytes) || 0) + chunk.length,
+              mediaChunks: (Number(meta.mediaChunks) || 0) + 1, mediaLastTimeMs: timeMs });
+            return { ack: next };
+          });
+          return json(res, result.error ? (result.error === 'ENDED' ? 409 : 409) : 200, { ok: !result.error, ...result }), true;
+        }
+        if (!mediaMatch[2] && req.method === 'GET') {
+          const meta = await loadMeta(id);
+          if (!meta.mediaBytes) return json(res, 404, { ok: false, error: 'MEDIA_NOT_FOUND' }), true;
+          res.writeHead(200, { 'Content-Type': meta.mediaMimeType || 'video/webm', 'Content-Length': String(meta.mediaBytes), 'Cache-Control': 'private, no-store',
+            'X-Media-Started-At': meta.mediaStartedAt || '', 'X-Media-Duration-Ms': String(meta.mediaLastTimeMs || 0) });
+          createReadStream(mediaFile).pipe(res); return true;
+        }
+        if (mediaMatch[2] === 'playback' && req.method === 'GET') {
+          const meta = await loadMeta(id);
+          if (!meta.mediaPlaybackReady) return json(res, 409, { ok: false, error: 'MEDIA_NOT_FINALIZED' }), true;
+          const file = path.join(dirOf(id), 'canvas-playback.webm'); const info = await stat(file); const range = req.headers.range;
+          const match = typeof range === 'string' ? range.match(/^bytes=(\d*)-(\d*)$/) : null;
+          if (range && !match) { res.writeHead(416, { 'Content-Range': `bytes */${info.size}` }); res.end(); return true; }
+          let start = 0; let end = info.size - 1;
+          if (match) { start = match[1] ? Number(match[1]) : Math.max(0, info.size - Number(match[2])); end = match[2] && match[1] ? Number(match[2]) : info.size - 1; }
+          if (start > end || start >= info.size) { res.writeHead(416, { 'Content-Range': `bytes */${info.size}` }); res.end(); return true; }
+          end = Math.min(end, info.size - 1);
+          res.writeHead(match ? 206 : 200, { 'Content-Type': 'video/webm', 'Content-Length': String(end - start + 1), 'Accept-Ranges': 'bytes',
+            'Cache-Control': 'private, no-store', ...(match ? { 'Content-Range': `bytes ${start}-${end}/${info.size}` } : {}) });
+          createReadStream(file, { start, end }).pipe(res); return true;
+        }
+      }
       const match = relative.match(/^([0-9a-f-]{36})(?:\/(events|stop))?$/i);
       if (!match || !UUID.test(match[1])) return json(res, 404, { ok: false, error: 'NOT_FOUND' }), true;
       const id = match[1]; const action = match[2] || 'read';
@@ -82,8 +152,12 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
         return json(res, ack.error ? 409 : 200, { ok: !ack.error, ...ack }), true;
       }
       if (action === 'stop' && req.method === 'POST') {
-        const meta = await exclusive(id, async () => { const current = await loadMeta(id); if (current.endedAt) return current; const done = { ...current, endedAt: new Date().toISOString() }; await saveMeta(id, done); return done; });
-        return json(res, 200, { ok: true, endedAt: meta.endedAt }), true;
+          let meta = await exclusive(id, async () => { const current = await loadMeta(id); if (current.endedAt) return current; const done = { ...current, endedAt: new Date().toISOString() }; await saveMeta(id, done); return done; });
+          if (meta.mediaBytes && !meta.mediaPlaybackReady) {
+            const playback = await remuxPlayback(dirOf(id));
+            if (playback.ready) meta = await exclusive(id, async () => { const current = await loadMeta(id); const next = { ...current, mediaPlaybackReady: true, mediaPlaybackBytes: playback.bytes }; await saveMeta(id, next); return next; });
+          }
+          return json(res, 200, { ok: true, endedAt: meta.endedAt, mediaPlaybackReady: !!meta.mediaPlaybackReady }), true;
       }
       if (action === 'read' && req.method === 'GET') {
         const meta = await loadMeta(id); const lines = (await readFile(eventsFile(id), 'utf8')).split(/\r?\n/).filter(Boolean);

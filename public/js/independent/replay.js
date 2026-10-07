@@ -3,7 +3,7 @@ const stage = $('stage'); const status = $('status'); const caption = $('caption
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
 const API = new URL('independent/api/', location.href);
-let player; let items = []; let cues = []; let duration = 0; let baseTimestamp = 0; let baseWall = 0;
+let player; let items = []; let cues = []; let duration = 0; let baseTimestamp = 0; let baseWall = 0; let mediaVideo; let mediaStartSecond = Infinity; let mediaReady = Promise.resolve(); let mediaDuration = 0;
 let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let selecting = false; let drag = null;
 let zoomRect = null;
 const fmt = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -27,6 +27,31 @@ const paintCue = (second) => {
 };
 function position(second) {
   timeline.value = String(second); clock.textContent = `${fmt(second)} / ${fmt(duration)}`; paintCue(second);
+  if (mediaVideo && !playing) syncMediaTime(second);
+}
+function syncMediaTime(second) {
+  if (!mediaVideo || second < mediaStartSecond) { if (mediaVideo) mediaVideo.pause(); return; }
+  const time = Math.max(0, (second - mediaStartSecond));
+  if (mediaDuration > 0 && time < mediaDuration) {
+    try { if (Math.abs(mediaVideo.currentTime - time) > 0.4) mediaVideo.currentTime = time; } catch { /* metadata may still be loading */ }
+  }
+}
+function attachCanvasMedia(id) {
+  const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
+  if (!canvas) return;
+  if (!mediaVideo || mediaVideo.ownerDocument !== doc) {
+    mediaVideo = doc.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
+    mediaVideo.dataset.spCanvasMedia = '1';
+    Object.assign(mediaVideo.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', zIndex: '4', background: '#08090c' });
+    mediaReady = new Promise((resolve) => {
+      const done = () => { mediaDuration = Number.isFinite(mediaVideo.duration) ? mediaVideo.duration : mediaDuration; resolve(); };
+      mediaVideo.addEventListener('loadedmetadata', done, { once: true }); mediaVideo.addEventListener('error', done, { once: true });
+    });
+  }
+  if (!mediaVideo.isConnected) canvas.parentElement?.insertBefore(mediaVideo, canvas.nextSibling);
+  canvas.style.visibility = 'hidden';
+  if (!mediaVideo.src) mediaVideo.src = new URL(`recordings/${encodeURIComponent(id)}/media/playback`, API).href;
+  syncMediaTime(Number(timeline.value));
 }
 function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : Number(timeline.value); }
 function tick() {
@@ -38,18 +63,24 @@ function tick() {
 function play() {
   if (playing || !player) return;
   playing = true; startedAt = performance.now(); startedSecond = Number(timeline.value);
-  player.play(startedSecond * 1000); playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
+  player.play(startedSecond * 1000); if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
+  playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
 function pause() {
   if (!playing) return;
-  const now = offset(); playing = false; cancelAnimationFrame(raf); player?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
+  const now = offset(); playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
 }
 async function seek(value) {
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
   const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause();
   timeline.value = String(second); position(second); player?.play(second * 1000);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  player?.pause();
+  player?.pause(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
+  if (mediaVideo && second >= mediaStartSecond) {
+    await mediaReady; syncMediaTime(second);
+    if (resume) void mediaVideo.play().catch(() => {});
+    else { void mediaVideo.play().then(() => new Promise((resolve) => { if (mediaVideo.requestVideoFrameCallback) mediaVideo.requestVideoFrameCallback(resolve); else setTimeout(resolve, 80); })).then(() => { mediaVideo.pause(); }).catch(() => {}); }
+  }
   if (resume) { playing = false; play(); }
 }
 playButton.addEventListener('click', () => playing ? pause() : play());
@@ -84,17 +115,28 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const last = Math.max(...items.map((e) => e.timestamp).filter(Number.isFinite));
   const wallEnd = records.length ? Math.max(...records.map((e) => e.ts || 0)) : Date.parse(packet.meta.startedAt);
   baseWall = Date.parse(packet.meta.startedAt); duration = Math.max(1, (wallEnd - baseWall) / 1000, (last - baseTimestamp) / 1000);
+  if (packet.meta.mediaStartedAt) mediaStartSecond = Math.max(0, (Date.parse(packet.meta.mediaStartedAt) - baseWall) / 1000);
+  mediaDuration = (Number(packet.meta.mediaLastTimeMs) || 0) / 1000;
   timeline.max = String(duration); timeline.step = '0.05';
   const width = packet.meta.viewport?.width || 1280; const height = packet.meta.viewport?.height || 720;
   stage.style.aspectRatio = `${width} / ${height}`; stage.style.setProperty('--ix-frame-width', `${width}px`); stage.style.setProperty('--ix-frame-height', `${height}px`);
   player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: true });
   // Replayer construction sets up its sandbox but does not paint the full snapshot until the timeline advances.
   // Render the first recorded frame before enabling controls so a replay link never opens on a blank stage.
-  player.play(0);
+  const firstVisibleSecond = Number.isFinite(mediaStartSecond) ? Math.min(duration, mediaStartSecond + 0.7) : 0;
+  player.play(firstVisibleSecond * 1000);
   // Let CSS transitions present in the captured page finish while the replay clock advances.
-  await new Promise((resolve) => setTimeout(resolve, 700));
+  await new Promise((resolve) => setTimeout(resolve, 900));
   player.pause();
-  timeline.value = String(Math.min(duration, 0.7)); position(Number(timeline.value)); status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
+  timeline.value = String(Math.min(duration, firstVisibleSecond)); position(Number(timeline.value)); attachCanvasMedia(id);
+  if (mediaVideo) {
+    await mediaReady; syncMediaTime(Number(timeline.value));
+    if (Number(timeline.value) >= mediaStartSecond) {
+      void mediaVideo.play().then(() => new Promise((resolve) => { if (mediaVideo.requestVideoFrameCallback) mediaVideo.requestVideoFrameCallback(resolve); else setTimeout(resolve, 80); }))
+        .then(() => { mediaVideo.pause(); }).catch(() => {});
+    }
+  }
+  status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
 })().catch((error) => { status.textContent = error.message || '回放载入失败'; });
 
 window.addEventListener('pagehide', () => { cancelAnimationFrame(raf); player?.pause(); });

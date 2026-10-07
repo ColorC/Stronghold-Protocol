@@ -30,6 +30,11 @@ const serverApi = {
   },
   recordingStart(sessionId, recordingId, viewport) { return call('recordings/start', { method: 'POST', body: JSON.stringify({ sessionId, recordingId, viewport }) }); },
   recordingEvents(id, events, keepalive = false) { return call(`recordings/${encodeURIComponent(id)}/events`, { method: 'POST', keepalive, body: JSON.stringify({ events }) }); },
+  recordingMedia(id, seq, blob, startedAt, timeMs) {
+    return fetch(new URL(`recordings/${encodeURIComponent(id)}/media/${seq}`, base()), { method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/octet-stream', 'x-media-mime-type': blob.type || 'video/webm', 'x-media-started-at': String(startedAt), 'x-media-time-ms': String(timeMs) }, body: blob })
+      .then(async (response) => ({ ...(await response.json()), status: response.status }));
+  },
   recordingStop(id) { return call(`recordings/${encodeURIComponent(id)}/stop`, { method: 'POST', body: '{}' }); },
   recordingLoad(id) { return call(`recordings/${encodeURIComponent(id)}`); },
 };

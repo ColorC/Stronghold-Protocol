@@ -22,7 +22,8 @@ export function RecordingControls({ sessionId }) {
     const enabled = url.searchParams.get('record') === '1' || !!url.searchParams.get('recording');
     if (!enabled) return undefined;
     let active = true; let timer;
-    const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null };
+    const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
+      mediaSeq: 0, mediaStartedAt: 0, mediaRecorder: null, mediaObserver: null, mediaPush: Promise.resolve(), mediaError: false };
     ctx.current = state;
     const event = (kind, p) => {
       if (state.stopped || !state.id) return;
@@ -95,6 +96,32 @@ export function RecordingControls({ sessionId }) {
           maskAllInputs: true, maskInputOptions: { color: true, date: true, 'datetime-local': true, email: true, month: true, number: true, password: true, search: true, tel: true, text: true, time: true, url: true, week: true },
           slimDOMOptions: { script: true, comment: true, headFavicon: true, headWhitespace: true, headMetaDesc: true, headMetaSocial: true, headMetaRobots: true, headMetaHttpEquiv: true, headMetaAuthorship: true, headMetaVerification: true },
         });
+        const captureCanvas = () => {
+          if (state.mediaRecorder || typeof MediaRecorder !== 'function') return;
+          const canvas = [...document.querySelectorAll('canvas')].find((item) => item.width > 0 && item.height > 0 &&
+            (item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game'));
+          if (!canvas?.captureStream) return;
+          try {
+            const stream = canvas.captureStream(12);
+            const mimeType = ['video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
+            if (!mimeType) { stream.getTracks().forEach((track) => track.stop()); return; }
+            state.mediaStartedAt = Date.now();
+            const recorder = state.mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1800000, videoKeyFrameIntervalDuration: 1000 });
+            recorder.addEventListener('dataavailable', (e) => {
+              if (!e.data?.size || !state.id) return;
+              const seq = ++state.mediaSeq; const timeMs = Number.isFinite(e.timecode) ? e.timecode : (seq - 1) * 1000;
+              state.mediaPush = state.mediaPush.then(async () => {
+                const response = await api.recordingMedia(state.id, seq, e.data, state.mediaStartedAt, timeMs);
+                if (!response.ok) state.mediaError = true;
+              }).catch(() => { state.mediaError = true; });
+            });
+            recorder.addEventListener('error', () => { state.mediaError = true; });
+            recorder.start(1000);
+            event('custom', { tag: 'canvas-media-start', width: canvas.width, height: canvas.height, mimeType });
+          } catch { state.mediaError = true; }
+        };
+        captureCanvas();
+        state.mediaObserver = new MutationObserver(captureCanvas); state.mediaObserver.observe(document.body, { childList: true, subtree: true });
         state.observer = new MutationObserver(bindDetails); state.observer.observe(document.body, { childList: true, subtree: true }); bindDetails();
         timer = state.timer = setInterval(() => { void flush(); }, 1000);
         event('custom', { tag: 'recording-start', sessionId, viewport: { width: innerWidth, height: innerHeight } });
@@ -105,7 +132,8 @@ export function RecordingControls({ sessionId }) {
     window.addEventListener('pagehide', onHide);
     return () => {
       active = false; clearInterval(timer); window.removeEventListener('pagehide', onHide); document.removeEventListener('click', onClick, true);
-      state.rrwebStop?.(); state.observer?.disconnect();
+      state.rrwebStop?.(); state.observer?.disconnect(); state.mediaObserver?.disconnect();
+      try { state.mediaRecorder?.stream?.getTracks().forEach((track) => track.stop()); } catch { /* disposed with the page */ }
       if (globalThis.__SP_RECORD_ACTION__) delete globalThis.__SP_RECORD_ACTION__;
       ctx.current = null;
     };
@@ -115,6 +143,12 @@ export function RecordingControls({ sessionId }) {
     const state = ctx.current;
     if (!state?.id || state.stopped) return;
     state.rrwebStop?.(); state.rrwebStop = null;
+    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+      const recorder = state.mediaRecorder;
+      await new Promise((resolve) => { recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); } });
+      try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
+      await Promise.race([state.mediaPush, new Promise((resolve) => setTimeout(resolve, 8000))]);
+    }
     const drained = await new Promise((resolve) => { const wait = setInterval(() => { if (!state.queue.length && !state.pushing) { clearInterval(wait); resolve(true); } }, 100); setTimeout(() => { clearInterval(wait); resolve(!state.queue.length && !state.pushing); }, 5000); });
     if (!drained) { setMessage('网络恢复后请再次结束录制，未发送的记录仍在等待'); return; }
     clearInterval(state.timer);
