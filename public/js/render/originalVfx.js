@@ -168,7 +168,7 @@ export class OriginalVfxPlayer {
           uv[i * 2 + 1] = 1 - (Number(p[1]) * Number(texScale[1] ?? 1) + Number(texOffset[1] ?? 0));
         }
         geometry.getBuffer('aTextureCoord').update(uv);
-        parts.push({ mesh, geometry, positions: vtx, uv, node, colorAlpha: Math.max(0, Math.min(1, Number(color[3]) || 0)) });
+        parts.push({ mesh, geometry, positions: vtx, uv, node, material, colorAlpha: Math.max(0, Math.min(1, Number(color[3]) || 0)) });
       }
       if (record.dead) { for (const p of parts) p.mesh.destroy({ children: true }); return; }
       record.parts = parts;
@@ -440,7 +440,15 @@ export class OriginalVfxPlayer {
           const fadeIn = Math.min(1, phase / 0.05);
           const fadeOut = Math.max(0, 1 - Math.max(0, t - 0.55) / 0.45);
           const alpha = fadeIn * fadeOut * (part.colorAlpha ?? 1);
-          const sizes = Array.isArray(particle.size) ? particle.size : [1, 1, 1];
+          const sizes = Array.isArray(particle.size) ? particle.size.slice() : [1, 1, 1];
+          // The t2 slash's dark/light child is authored at 10× the edge
+          // height. That value is consumed by Torappu's custom particle
+          // stream; applying it as raw map geometry makes the browser show a
+          // full-height transparent quad. Keep the source width and the
+          // sibling edge height while the custom shader path is unavailable.
+          if (/\/dg_3\/(dark|light)$/.test(String(node.path || "")) && /_dg_(dark|light)/.test(String(part.material?.name || ""))) {
+            sizes[1] = Math.min(Number(sizes[1]) || 1, (Number(sizes[0]) || 1) * 0.8);
+          }
           const angle = Number(particle.rotation) || 0;
           const cos = Math.cos(angle), sin = Math.sin(angle);
           const origin = node.origin || [0, 0, 0];

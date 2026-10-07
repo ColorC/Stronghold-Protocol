@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "local-extract"))
 import aklz4  # noqa: F401  (registers the custom bundle decoder)
 import UnityPy
+from PIL import Image
 from UnityPy.helpers.MeshHelper import MeshHandler
 
 
@@ -139,9 +140,9 @@ def material_data(env, material_ptr, texture_dir: Path, texture_cache: dict):
     saved = material.m_SavedProperties
     colors = {str(k): [float(c.r), float(c.g), float(c.b), float(c.a)] for k, c in saved.m_Colors}
     floats = {str(k): float(v) for k, v in saved.m_Floats}
-    main = None
+    textures = {}
     for key, envv in saved.m_TexEnvs:
-        if str(key) != "_MainTex" or not envv.m_Texture.path_id:
+        if not envv.m_Texture.path_id:
             continue
         tex = read_ptr(envv.m_Texture)
         if tex is None:
@@ -155,17 +156,45 @@ def material_data(env, material_ptr, texture_dir: Path, texture_cache: dict):
                 texture_cache[tex_id] = True
             except Exception:
                 texture_cache[tex_id] = False
-        main = {"file": tex_id, "scale": [float(envv.m_Scale.x), float(envv.m_Scale.y)], "offset": [float(envv.m_Offset.x), float(envv.m_Offset.y)]}
-        break
+        textures[str(key).lstrip("_")] = {"file": tex_id, "scale": [float(envv.m_Scale.x), float(envv.m_Scale.y)], "offset": [float(envv.m_Offset.x), float(envv.m_Offset.y)]}
+    main = textures.get("MainTex")
+    baked = None
+    # The shipped smoke material uses an opaque white MainTex plus a grayscale
+    # dissolve texture. A plain Pixi texture would turn the whole mesh plane
+    # into a white rectangle; bake the source mask into alpha while retaining
+    # both original textures in `textures` for a later custom-shader path.
+    dissolve = textures.get("DissolveTex")
+    if main and dissolve and "smoke" in str(getattr(material, "m_Name", "")).lower():
+        baked_name = f"baked_{slug(getattr(material, 'm_Name', 'smoke'))}-alpha.png"
+        baked_path = texture_dir / baked_name
+        if baked_name not in texture_cache:
+            try:
+                main_img = Image.open(texture_dir / main["file"]).convert("RGBA")
+                dis_img = Image.open(texture_dir / dissolve["file"]).convert("L").resize(main_img.size, Image.Resampling.BILINEAR)
+                alpha = dis_img.point(lambda v: int(max(0, min(255, v * 0.62))))
+                main_img.putalpha(alpha)
+                main_img.save(baked_path)
+                texture_cache[baked_name] = True
+            except Exception:
+                texture_cache[baked_name] = False
+        if texture_cache.get(baked_name):
+            baked = {"file": baked_name, "scale": main["scale"], "offset": main["offset"]}
     dst = floats.get("_DstBlend")
     additive = "Add" in shader_name or (dst is not None and abs(dst - 1.0) < 0.01)
     color = colors.get("_MainColor") or colors.get("_TintColor") or colors.get("_Color") or [1, 1, 1, 1]
-    return {"name": str(material.m_Name), "shader": shader_name, "texture": main, "color": color, "floats": floats, "additive": bool(additive)}
+    return {"name": str(material.m_Name), "shader": shader_name, "texture": baked or main, "sourceTexture": main, "textures": textures, "color": color, "floats": floats, "additive": bool(additive)}
 
 
 def particle_data(ps):
     initial = ps.InitialModule
     emission = ps.EmissionModule
+    custom = ps.CustomDataModule
+    curves = {}
+    for name in ("vector0_0", "vector0_1", "vector0_2", "vector0_3", "vector1_0", "vector1_1", "vector1_2", "vector1_3"):
+        curve = getattr(getattr(custom, name, None), "maxCurve", None)
+        keys = getattr(curve, "m_Curve", None) if curve else None
+        if keys:
+            curves[name] = {"mode": int(getattr(getattr(custom, name), "minMaxState", 0)), "scalar": scalar(getattr(custom, name), 0), "keys": [[float(k.time), float(k.value)] for k in keys]}
     return {
         "life": scalar(initial.startLifetime, 0.5),
         "startSpeed": scalar(initial.startSpeed),
@@ -174,7 +203,8 @@ def particle_data(ps):
         "duration": float(getattr(ps, "lengthInSec", 1.0)),
         "looping": bool(getattr(ps, "looping", False)),
         "burst": int(getattr(emission, "m_BurstCount", 0)),
-        "customData": bool(getattr(ps.CustomDataModule, "enabled", False)),
+        "customData": bool(getattr(custom, "enabled", False)),
+        "customCurves": curves,
     }
 
 
