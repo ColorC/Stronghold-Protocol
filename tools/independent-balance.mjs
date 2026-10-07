@@ -55,16 +55,19 @@ function actionTargetUid(state, candidateId,targetId='') {
   const candidateFactions=nativeFactions({chessId:candidateId,equipment:[]},catalog);
   const candidate=catalog.operators[candidateId];
   const requirements=(candidate?.nativeTrait?.effect?.prep||[]).filter(x=>x.behavior==='darkmoonBattlecryTargetGrowth').map(x=>x.params?.faction).filter(Boolean);
+  const boughtTargetRequired=state.pieces.some(p=>(catalog.operators[p.chessId]?.nativeTrait?.effect?.prep||[])
+    .some(x=>x.behavior==='darkmoonBoughtTribeTargetGrowth'&&candidateFactions.includes(x.params?.triggerFaction)));
   for(const p of state.pieces)for(const effect of catalog.operators[p.chessId]?.nativeTrait?.effect?.prep||[]) {
     if(effect.behavior==='darkmoonBattlecryTargetGrowth'&&candidateFactions.includes(effect.params?.faction))requirements.push(effect.params.faction);
   }
   const required=[...new Set(requirements)];
-  const eligible=state.pieces.filter(p=>required.every(f=>nativeFactions(p,catalog).includes(f)))
+  const eligible=state.pieces.filter(p=>p.row!==null&&p.row!==undefined&&p.col!==null&&p.col!==undefined&&required.every(f=>nativeFactions(p,catalog).includes(f)))
     .sort((a,b)=>Number(b.chessId===targetId)-Number(a.chessId===targetId)+score(b,'assault')-score(a,'assault'));
+  if(boughtTargetRequired&&eligible.length)return eligible[0].uid;
   if(eligible.length)return eligible[0].uid;
   if(required.every(f=>candidateFactions.includes(f))&&required.length)return `p${state.nextUid}`;
   const newPieceCouldReceive=(candidate?.nativeTrait?.effect?.prep||[]).some(x=>['darkmoonBoughtTribeTargetGrowth','darkmoonBattlecryTargetGrowth'].includes(x.behavior));
-  return newPieceCouldReceive?`p${state.nextUid}`:undefined;
+  return newPieceCouldReceive?(state.pieces.slice().sort((a,b)=>score(b,'assault')-score(a,'assault'))[0]?.uid||`p${state.nextUid}`):undefined;
 }
 
 export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', growthMode='badges', targetId=''}={}) {
@@ -74,10 +77,17 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
   const trace = [];
   const actionLog = [];
   const rejectedActions = [];
+  const rejectedSignatures = new Set();
+  const repeatedRejectSkips = [];
   const battleReceipts=[];
   let actions = 0;
   const act = (action, strict=false) => {
     const actionRound=state.round;
+    const signature=JSON.stringify(action);
+    if(rejectedSignatures.has(signature)) {
+      repeatedRejectSkips.push({round:state.round,action:structuredClone(action)});
+      return {ok:false,error:{code:'PILOT_DUPLICATE_REJECTION_SKIPPED'}};
+    }
     const result = applyAction(state, action, {data,catalog});
     if (result.ok) {
       state=result.state; actions++; actionLog.push(structuredClone(action));
@@ -97,7 +107,11 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       }
     }
     else {
-      rejectedActions.push({round:state.round,action:structuredClone(action),code:result.error?.code,message:result.error?.message});
+      rejectedSignatures.add(signature);
+      const slot=action.type==='buy'?state.shop.slots[action.slot]:null;
+      rejectedActions.push({round:state.round,action:structuredClone(action),code:result.error?.code,message:result.error?.message,
+        ...(slot?{slotId:slot.id,slotKind:slot.kind}:{}),
+        ...(action.type==='buy'?{nextUid:state.nextUid,ownedUids:state.pieces.map(p=>p.uid),ownedFactions:state.pieces.map(p=>({uid:p.uid,factions:nativeFactions(p,catalog)})),triggerSources:state.pieces.flatMap(p=>(catalog.operators[p.chessId]?.nativeTrait?.effect?.prep||[]).filter(x=>['darkmoonBoughtTribeTargetGrowth','darkmoonBattlecryTargetGrowth'].includes(x.behavior)).map(x=>({uid:p.uid,chessId:p.chessId,behavior:x.behavior,params:x.params})))}:{})});
       if (strict) throw Object.assign(new Error(`${action.type}: ${result.error.code}: ${result.error.message}`),{pilotState:state,action,trace});
     }
     return result;
@@ -191,7 +205,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
     for(const piece of state.pieces.slice()) act({type:'bench',uid:piece.uid},true);
     const selectedUids=selected.map(p=>p.uid);
     for(const item of state.inventory.slice()) {
-      const definition=equipmentRecord(catalog,item.id);
+      const definition=equipmentRecord(catalog,item.id)||catalog.prizes?.[item.id];
       const targets=state.pieces.filter(p=>selectedUids.includes(p.uid)).sort((a,b)=>{
         const preference=p=>{
           let value=score(p,route,growthMode,targetId);
@@ -226,7 +240,9 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
     }
     if(!state.pieces.some(p=>p.row!==null)) throw new Error('Pilot has no legal deployed piece');
     const before={round,lp:state.lp,funds:state.funds,shopLevel:state.shop.level,mainFaction:mainFaction(state.pieces),
-      deployed:state.pieces.filter(p=>p.row!==null).map(p=>({chessId:p.chessId,level:p.growthLevel||null,equipmentLevel:totalEquipmentLevel(p,catalog)})),
+      deployed:state.pieces.filter(p=>p.row!==null).map(p=>({chessId:p.chessId,level:p.growthLevel||null,equipmentLevel:totalEquipmentLevel(p,catalog),
+        profession:data.chess[p.chessId]?.profession||null,blockCnt:Number(data.chess[p.chessId]?.stats?.blockCnt||0),position:data.chess[p.chessId]?.position||null,
+        factions:nativeFactions(p,catalog)})),
       inventoryCount:state.inventory.reduce((n,i)=>n+i.quantity,0)};
     const whiteAndStartStats=Object.fromEntries(state.pieces.filter(p=>p.row!==null).map(p=>{
       const white=loadoutRecord(data.chess[p.chessId],p)?.stats||{};
@@ -246,7 +262,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       production:(state.production||[]).filter(e=>e.round===round),battleEvents:(state.history||[]).filter(e=>e.round===round && e.type==='battle').length});
   }
   if(state.phase!=='finished') throw new Error('Pilot exceeded bounded turns');
-  return {seed,difficulty,roundLimit,route,growthMode,targetId,actions,rejectedActions,actionLog,rounds:trace.length,lp:state.lp,
+  return {seed,difficulty,roundLimit,route,growthMode,targetId,actions,rejectedActions,repeatedRejectSkips,actionLog,rounds:trace.length,lp:state.lp,
     outcome:state.outcome,completed:state.phase==='finished'&&state.outcome==='win',bossHpLeft:state.battleSummary?.result?.bossHpLeft,trace,state};
 }
 
@@ -258,10 +274,12 @@ async function main() {
   }
   const count=Number(options.seeds||3);
   if(!Number.isInteger(count)||count<1||count>100)throw new Error('seeds must be 1..100');
+  const startSeed=Number(options['start-seed']||1);
+  if(!Number.isInteger(startSeed)||startSeed<1)throw new Error('start-seed must be a positive integer');
   const modes=(options['growth-modes']||'badges,levels').split(',');
   const roundLimits=(options['round-limits']||options['round-limit']||'9,14').split(',').map(Number);
   const runs=[];
-  for(const growthMode of modes)for(const roundLimit of roundLimits)for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=1;seed<=count;seed++) {
+  for(const growthMode of modes)for(const roundLimit of roundLimits)for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=startSeed;seed<startSeed+count;seed++) {
     try { runs.push(playSeed({seed,route,growthMode,targetId:options['target-id']||'',difficulty:options.difficulty,roundLimit})); }
     catch(error) { runs.push({seed,route,growthMode,roundLimit,error:error.message,action:error.action,state:error.pilotState,trace:error.trace,rounds:error.trace?.length||0,lp:error.pilotState?.lp||0,completed:false}); }
   }

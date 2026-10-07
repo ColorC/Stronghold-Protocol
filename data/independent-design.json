@@ -31844,6 +31844,22 @@
         }
       ]
     },
+    "enemyBalanceByGrowthMode": {
+      "badges": {
+        "NORMAL": [
+          { "fromRound": 1, "hpMul": 0.9, "atkMul": 0.9, "bossHpMul": 1 },
+          { "fromRound": 5, "hpMul": 0.84, "atkMul": 0.88, "bossHpMul": 1 },
+          { "fromRound": 9, "hpMul": 0.78, "atkMul": 0.84, "bossHpMul": 0.78 }
+        ]
+      },
+      "levels": {
+        "NORMAL": [
+          { "fromRound": 1, "hpMul": 0.82, "atkMul": 0.84, "bossHpMul": 1 },
+          { "fromRound": 5, "hpMul": 0.75, "atkMul": 0.82, "bossHpMul": 1 },
+          { "fromRound": 9, "hpMul": 0.7, "atkMul": 0.78, "bossHpMul": 0.72 }
+        ]
+      }
+    },
     "defaultGrowthMode": "badges",
     "growthModes": [
       "badges",
