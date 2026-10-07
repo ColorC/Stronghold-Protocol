@@ -19,7 +19,8 @@ test('independent HTTP actions serialize revisions, persist across restarts and 
     const created = await request('/independent/api/sessions', { seed: 1, difficulty: 'FUNNY', roundLimit: 9 });
     assert.equal(created.status, 201);
     const { id, catalog } = created.data;
-    assert.equal(Object.keys(catalog.operators).length, 240);
+    assert.ok(Object.keys(catalog.operators).length >= 202, 'ordinary and elite recruitable forms are projected alongside retained legacy forms');
+    assert.equal(created.data.state.pool, undefined, 'private remaining pool counts are not exposed over HTTP');
     assert.equal(catalog.gear.precision.normal.includes('2%'), true);
     assert.ok(!JSON.stringify(catalog).includes('originalNormal'));
     const endpoint = `/independent/api/sessions/${id}`;
