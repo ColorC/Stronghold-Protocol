@@ -15,24 +15,31 @@ function keepReplayAnimationsVisible() {
   style.textContent = 'html.rrweb-paused *, html.rrweb-paused *::before, html.rrweb-paused *::after { animation-play-state: running !important; }';
   doc.head.append(style);
 }
-function rebaseRecordedAssets(value) {
-  if (!value || typeof value !== 'object') return;
-  if (Array.isArray(value)) { for (const item of value) rebaseRecordedAssets(item); return; }
-  for (const [key, current] of Object.entries(value)) {
-    if (typeof current !== 'string') continue;
-    let next = current.replace(/https?:\/\/[^/]+(?=\/(?:assets|fonts|css|vendor)\/)/g, (origin) => {
-      try { return new URL(origin).hostname === location.hostname ? location.origin : origin; }
-      catch { return origin; }
-    });
-    if (['src', 'href', 'poster', 'xlink:href'].includes(key)) {
-      try {
-        const url = new URL(next, location.href);
-        if (url.hostname === location.hostname && /\/(?:assets|fonts|css|vendor)\//.test(url.pathname) && url.origin !== location.origin) next = `${location.origin}${url.pathname}${url.search}${url.hash}`;
-      } catch { /* retain non-URL attributes */ }
+function rebaseRecordedAssets(events) {
+  const href = events.find((event) => event?.type === 4 && typeof event.data?.href === 'string')?.data.href;
+  if (!href) return;
+  let recorded;
+  try { recorded = new URL(href); } catch { return; }
+  const isLocalAsset = (url) => url.origin === recorded.origin && /^\/(?:assets|fonts|css|vendor)\//.test(url.pathname);
+  const rebase = (raw, base) => {
+    try {
+      const url = new URL(raw, base);
+      return isLocalAsset(url) ? `${location.origin}${url.pathname}${url.search}${url.hash}` : raw;
+    } catch { return raw; }
+  };
+  const visit = (value) => {
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value)) { for (const item of value) visit(item); return; }
+    for (const [key, current] of Object.entries(value)) {
+      if (typeof current === 'string') {
+        let next = current.replace(/https?:\/\/[^\s"'()<>]+/g, (raw) => rebase(raw, recorded.href));
+        if (['src', 'href', 'poster', 'xlink:href'].includes(key)) next = rebase(next, recorded.href);
+        if (next !== current) value[key] = next;
+      }
     }
-    if (next !== current) value[key] = next;
-  }
-  for (const item of Object.values(value)) rebaseRecordedAssets(item);
+    for (const item of Object.values(value)) visit(item);
+  };
+  visit(events);
 }
 function paintMediaLayer() {
   const frame = stage.querySelector('iframe') || player?.iframe;
