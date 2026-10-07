@@ -360,9 +360,14 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         if(buyer && (buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId) && nativeFactions(buyer,services.catalog).includes(p.faction)) state.funds=Number(state.funds||0)+Number(p.count||0);
         break;
       }
-      case 'darkmoonShopGrowth':
+      case 'darkmoonShopGrowth': {
+        if(r.trigger==='bought') {
+          const buyer=event.piece;
+          if(!buyer||(buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId)||!nativeFactions(buyer,services.catalog).includes(p.faction))break;
+        }
         addDarkmoonShopGrowth(state,services.catalog,{sourceId:services.catalog?.operators?.[chessIdOf(piece)]?.sourceRefs?.darkmoon19_2?.id, ...p},Boolean(p.persistent));
         break;
+      }
       case 'darkmoonEndTurnGrowth': {
         const owner=piece.playerId??piece.ownerId,allies=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner);
         if(p.mode==='selfIfGolden') {
@@ -502,9 +507,15 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       }
       case 'darkmoonLastWarbandRecruit': {
-        const candidates=(state.previousRoundWarband||[]).map(x=>String(x.chessId||'').replace(/_b$/,'_a')).filter(id=>services.catalog?.operators?.[id]?.recruitable!==false&&services.catalog?.operators?.[id]&&!services.catalog?.operators?.[id]?.elite);
+        const candidates=(state.previousRoundWarband||[]).map(x=>String(x.chessId||'').replace(/_b$/,'_a')).filter(id=>services.catalog?.operators?.[id]?.recruitable!==false&&services.catalog?.operators?.[id]&&!services.catalog?.operators?.[id]?.elite&&(!elite||services.catalog.operators[id].eliteChessId));
         const selected=choose(candidates,services);
-        if(selected)services.grantChess(state,selected,{origin:'native',sourceUid:piece.uid,poolTaken:true,poolCopies:1,deferNativeGain:true,source:'darkmoon-last-warband'});
+        if(selected) {
+          const recruited=services.grantChess(state,selected,{origin:'native',sourceUid:piece.uid,poolTaken:true,poolCopies:1,deferNativeGain:true,source:'darkmoon-last-warband'});
+          if(elite&&recruited) {
+            const definition=services.catalog.operators[selected],goldenId=definition?.eliteChessId;
+            if(goldenId&&services.catalog.operators[goldenId]) { recruited.chessId=goldenId; recruited.elite=true; }
+          }
+        }
         break;
       }
       case 'darkmoonBattlecryTargetGrowth': {
@@ -536,7 +547,8 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         if(!target || (target.playerId??target.ownerId)!==(piece.playerId??piece.ownerId)) throw new Error('DARKMOON_TARGET_REQUIRED');
         const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
         const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
-        darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services);
+        const repeats=Math.max(1,Math.floor(pick(p.repeatCount,elite)));
+        for(let i=0;i<repeats;i++)darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services);
         break;
       }
       case 'grantEquipment':
