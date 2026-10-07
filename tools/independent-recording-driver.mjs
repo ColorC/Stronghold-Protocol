@@ -436,7 +436,7 @@ try {
   const origin = await startAssetProxy(server.port);
   browser = await puppeteer.launch({ executablePath: chromePath, headless: true, args: ['--no-sandbox', '--no-proxy-server', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--disable-gpu-sandbox'] });
   page = await browser.newPage();
-  page.on('pageerror', (error) => report.errors.push(error.message));
+  page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', message: error.message, stack: error.stack || '' }));
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
   page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
