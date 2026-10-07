@@ -25,7 +25,7 @@ function sameNumbers(key, design, written) {
 }
 
 test('every operator form has hand-written text with the design numbers and none of the spec wording', () => {
-  for (const op of Object.values(catalog.operators).filter((x) => !x.elite)) {
+  for (const op of Object.values(catalog.operators).filter((x) => !x.elite && x.recruitable !== false)) {
     const entry = text.operators[op.chessId];
     assert.ok(entry, `${op.name} has text`);
     assert.equal(entry.name, op.name);

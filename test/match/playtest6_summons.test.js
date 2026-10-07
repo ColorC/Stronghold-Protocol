@@ -37,12 +37,18 @@ const tokensOf = (ps, id) => [...ps.hand, ...ps.temp, ...ps.board.values()].filt
 const stackOf = (ps, id) => ps.hand.find((p) => p && p.kind === 'token' && p.id === id) ?? null;
 const move = (m, uid, to, dir) => m.handle('p_0', { t: 'g.move', uid, to, ...(dir ? { dir } : {}) });
 
-test('tokens.json: the manually deployable summons are hand pieces — 医疗探机, 诅咒娃娃, 爬行号·防护单元 with the talent ones', () => {
+test('tokens.json: every manually deployable summon is represented by a hand piece', () => {
   const placeable = Object.values(DATA.tokens).filter((t) => t.placeable).map((t) => t.tokenId).sort();
-  assert.deepEqual(placeable, [DRONE, DOLL, 'token_10017_skadi2_dedant', 'token_10028_vigil_wolf', 'token_10030_mlyss_wtrman', DEVICE].sort());
+  assert.deepEqual(placeable, [
+    DRONE, 'token_10004_otter_motter', DOLL, 'token_10013_robin_mine', 'token_10017_skadi2_dedant',
+    'token_10018_robrta_mach', 'token_10020_ling_soul1', 'token_10020_ling_soul2', 'token_10020_ling_soul3',
+    'token_10025_doroth_recttp', 'token_10027_ironmn_pile1', 'token_10027_ironmn_pile2', 'token_10027_ironmn_pile3',
+    'token_10028_vigil_wolf', 'token_10030_mlyss_wtrman', 'token_10032_jesca2_jckshd', DEVICE,
+  ].sort());
   // HIDDEN shop-state tokens stay battle-only (PRTS: 新约能天使 with 使命必达！ provides no 投递坐标 card)
   for (const t of Object.values(DATA.tokens)) if (t.displayType === 'HIDDEN') assert.equal(t.placeable, false, t.name);
   assert.equal(DATA.tokens.token_10056_angel2_target.placeable, false);
+  assert.equal(DATA.tokens.token_10065_demetr_dmtpos.placeable, false, '牵绊 is a return-position marker, not a deployable hand piece');
   // 凯瑟琳's device: no shop-state entry; the hand gets its deploy limit (2), not the 3 carried
   assert.equal(DATA.tokens[DEVICE].displayType, null);
   assert.equal(DATA.tokens[DEVICE].deployLimit, 2);

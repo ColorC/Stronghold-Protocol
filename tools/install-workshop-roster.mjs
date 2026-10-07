@@ -3,10 +3,12 @@
 // A source reference, native affiliation and an executable default kit are required for every new member.
 import fs from 'node:fs';
 import path from 'node:path';
+import { classifyRosterKind } from './independent-roster-classification.mjs';
 import { fileURLToPath } from 'node:url';
 import { makeDarkmoonSupport } from '../server/modes/independent/catalog.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const args=process.argv.slice(2),value=(flag,fallback)=>{const i=args.indexOf(flag);return i>=0?path.resolve(args[i+1]):path.join(root,fallback);};
+const playerText=(value)=>String(value||'').replaceAll('该干员','该名干员');
 const load=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const designPath=value('--design','data/independent-design.json'),textPath=value('--game-text','data/independent-game-text.json');
 const chessPath=value('--chess','data/chess.json');
@@ -44,24 +46,30 @@ for(const name of selected){
     text:blueprint.sourceTexts.normal,textElite:blueprint.sourceTexts.elite,goldenText:blueprint.sourceTexts.elite,
     version:blueprint.sourceVersion,sourceUrl:blueprint.sourceUrl,type:'Battlegrounds'};
   const t=textAddon.operators[name];if(!t)throw new Error(`MISSING_TRANSLATED_TEXT:${name}`);
-  operator={...(operator||{}),name,chessId:raw.chessId,charId:raw.charId,tier,nativeFactionTags:tags,
+   operator={...(operator||{}),name,chessId:raw.chessId,charId:raw.charId,tier,nativeFactionTags:tags,
+     skill:raw.skill?.name??operator?.skill??(raw.nativeImport?.playable?'无主动技能':''),
     sourceRefs:{...(extra?.sourceRefs||{}),darkmoon19_2:{id:blueprint.sourceId,name:blueprint.name,nameEn:blueprint.nameEn,tier:blueprint.originalTier,
       rosterTribe:blueprint.rosterTribe,faction:blueprint.faction,nationId:blueprint.nationId,originalRaces:blueprint.originalRaces,
       battlecry:/Battlecry:/i.test(blueprint.sourceTextsEn.normal),deathrattle:/Deathrattle:/i.test(blueprint.sourceTextsEn.normal),version:blueprint.sourceVersion,type:'Battlegrounds',sourceUrl:blueprint.sourceUrl},cards:[cardRef]},effectDelivery:blueprint.metadata.op.effectDelivery,
     nativeTrait:{normal:t.normal,elite:t.elite,inheritable:false,origin:'operator body'},
     modeEffects:null,inheritance:null,tierReason:plan.tierOverrides?.[name]?.reason||'按原卡科技与功能安排',
     defaultSkillIndex:raw.skill?.index??0,skills:(raw.skills||[]).map(s=>s.skillId),talents:raw.talents||[],
-    growthLandOn:'self',sourceIdentity:{...native.sourceFields}};
+     growthLandOn:'self',sourceIdentity:{...native.sourceFields}};
   delete operator.tavernFactionProxy;delete operator.permitGearId;delete operator.modeEffects;
   if(magneticPermits[blueprint.sourceId]){
     const permission={name,...magneticPermits[blueprint.sourceId],autoGrant:true,sourceRefs:{cards:[cardRef],basis:'磁力的可选设备整合提供双向装备交接；另一方无需凭证。'}};
     operator.inheritance=permission;permissions.push(permission);
   }
-  old.set(name,operator);active.push(raw.chessId);
-  gameText.operators[raw.chessId]={normal:t.normal,elite:t.elite,normalLevels:t.normalLevels||t.normal,eliteLevels:t.eliteLevels||t.elite};
+   operator.active=true;
+   operator.roster=classifyRosterKind(operator);
+   operator.role ||= operator.roster;
+   old.set(name,operator);active.push(raw.chessId);
+  gameText.operators[raw.chessId]={name,normal:playerText(t.normal),elite:playerText(t.elite),normalLevels:playerText(t.normalLevels||t.normal),eliteLevels:playerText(t.eliteLevels||t.elite)};
   receipts.push({name,chessId:raw.chessId,sourceId:blueprint.sourceId,originalTier:blueprint.originalTier,tier,nativeFactions:tags});
 }
 if(active.length!==101||new Set(active).size!==101)throw new Error('WRONG_ROSTER_COUNT');
+const activeSet=new Set(active);
+for(const operator of old.values())operator.active=activeSet.has(operator.chessId);
 design.operators=[...old.values()];
 design.permissions=permissions;
 for(const name of ['便携式融毁教学仪','反冲空降仓']){

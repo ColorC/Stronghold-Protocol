@@ -206,7 +206,7 @@
         "origin": "operator body"
       },
       "roster": "生成",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易"
@@ -360,7 +360,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "炎"
@@ -813,8 +813,8 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
-      "active": false,
+      "roster": "战斗",
+      "active": true,
       "nativeFactionTags": [
         "叙拉古"
       ],
@@ -989,7 +989,7 @@
         "origin": "operator body"
       },
       "roster": "联动",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "龙门",
         "企鹅物流",
@@ -1249,7 +1249,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "乌萨斯",
         "乌萨斯学生自治团"
@@ -1447,7 +1447,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "萨尔贡"
       ],
@@ -1596,7 +1596,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -1784,7 +1784,7 @@
         "origin": "operator body"
       },
       "roster": "生成",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "玻利瓦尔"
       ],
@@ -1936,7 +1936,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "伊比利亚"
@@ -2250,8 +2250,8 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
-      "active": false,
+      "roster": "战斗",
+      "active": true,
       "nativeFactionTags": [
         "卡西米尔",
         "红松骑士团"
@@ -2453,7 +2453,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚",
@@ -2692,7 +2692,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "拉特兰"
       ],
@@ -2881,7 +2881,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "交接",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚",
@@ -3147,7 +3147,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": false,
+      "active": true,
       "nativeFactionTags": [
         "炎"
       ],
@@ -3536,7 +3536,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "萨尔贡"
       ],
@@ -3704,7 +3704,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "生成",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "阿戈尔",
@@ -3891,7 +3891,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "萨尔贡"
@@ -4123,7 +4123,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -4306,7 +4306,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "一次性工具",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
@@ -4491,7 +4491,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "经济",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "东"
@@ -4722,7 +4722,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "一次性工具",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔"
@@ -5304,7 +5304,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "一次性工具",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
@@ -5573,7 +5573,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔",
@@ -5818,7 +5818,7 @@
         "origin": "operator body"
       },
       "roster": "联动",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "哥伦比亚"
       ],
@@ -6059,7 +6059,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "龙门",
         "企鹅物流",
@@ -6599,7 +6599,7 @@
         "origin": "operator body"
       },
       "roster": "经济",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "龙门"
       ],
@@ -6770,7 +6770,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "阿戈尔",
         "深海猎人"
@@ -7247,7 +7247,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "生成",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "阿戈尔"
@@ -7459,7 +7459,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚"
@@ -7752,7 +7752,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔"
@@ -8048,7 +8048,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易"
@@ -8233,7 +8233,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "一次性工具",
+      "roster": "交接",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚"
@@ -8564,7 +8564,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔"
@@ -8826,7 +8826,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "叙拉古"
       ],
@@ -9104,7 +9104,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
@@ -9292,7 +9292,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易"
@@ -9454,7 +9454,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "拉特兰"
@@ -9701,7 +9701,7 @@
         "origin": "operator body"
       },
       "roster": "生成",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "拉特兰"
       ],
@@ -10096,7 +10096,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "巴别塔"
       ],
@@ -10259,7 +10259,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -10468,7 +10468,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
@@ -10672,7 +10672,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "东"
@@ -10858,8 +10858,8 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
-      "active": false,
+      "roster": "成长",
+      "active": true,
       "nativeFactionTags": [
         "叙拉古"
       ],
@@ -11293,7 +11293,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "生成",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "阿戈尔",
@@ -11520,7 +11520,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易"
@@ -11792,7 +11792,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "炎-龙门",
@@ -11994,7 +11994,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "龙门",
         "龙门近卫局",
@@ -12381,7 +12381,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔",
@@ -12573,8 +12573,8 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
-      "active": false,
+      "roster": "生成",
+      "active": true,
       "nativeFactionTags": [
         "卡西米尔",
         "红松骑士团"
@@ -12970,7 +12970,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易"
@@ -13163,7 +13163,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "罗德岛",
         "萨尔贡"
@@ -13451,7 +13451,7 @@
         "origin": "operator body"
       },
       "roster": "联动",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "罗德岛",
         "巴别塔"
@@ -13630,7 +13630,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "临时战斗",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -13902,7 +13902,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "拉特兰"
@@ -14457,7 +14457,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "阿戈尔",
         "深海猎人"
@@ -14670,7 +14670,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "辅助",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -14874,7 +14874,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -15161,7 +15161,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
@@ -15357,7 +15357,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
@@ -15560,7 +15560,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚",
@@ -16005,7 +16005,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "阿戈尔",
         "深海猎人"
@@ -16227,7 +16227,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格"
       ],
@@ -16424,7 +16424,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "伊比利亚"
       ],
@@ -16596,7 +16596,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚"
@@ -16802,7 +16802,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "经济",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔"
@@ -17355,7 +17355,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -17534,7 +17534,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "生成",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "炎"
@@ -17759,7 +17759,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "拉特兰"
       ],
@@ -18002,7 +18002,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "谢拉格"
@@ -18205,7 +18205,7 @@
         "origin": "operator body"
       },
       "roster": "生成",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "炎",
         "炎-岁"
@@ -18636,7 +18636,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "萨尔贡"
       ],
@@ -18845,7 +18845,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "生成",
       "active": true,
       "nativeFactionTags": [
         "萨尔贡"
@@ -19129,7 +19129,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
@@ -19333,7 +19333,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "维多利亚",
         "塔拉"
@@ -19555,7 +19555,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "拉特兰"
@@ -19762,7 +19762,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚",
@@ -20014,7 +20014,7 @@
         "origin": "operator body"
       },
       "roster": "临时战斗",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "罗德岛",
         "罗德岛-精英干员",
@@ -20187,7 +20187,7 @@
         "origin": "operator body"
       },
       "roster": "生成",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "龙门",
         "企鹅物流",
@@ -20391,7 +20391,7 @@
         "origin": "operator body"
       },
       "roster": "联动",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "伊比利亚"
       ],
@@ -20595,7 +20595,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "炎"
@@ -20798,7 +20798,7 @@
         "origin": "operator body"
       },
       "roster": "联动",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "哥伦比亚",
         "莱茵生命"
@@ -21165,7 +21165,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔"
@@ -21389,7 +21389,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
@@ -21638,7 +21638,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易",
@@ -21868,7 +21868,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "莱塔尼亚"
       ],
@@ -22034,7 +22034,7 @@
         "origin": "operator body"
       },
       "roster": "经济",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "哥伦比亚"
       ],
@@ -22173,7 +22173,7 @@
         "origin": "operator body"
       },
       "roster": "生成",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "莱塔尼亚"
       ],
@@ -22339,7 +22339,7 @@
         "origin": "operator body"
       },
       "roster": "一次性工具",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "谢拉格",
         "喀兰贸易"
@@ -22545,7 +22545,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "莱塔尼亚"
@@ -22727,7 +22727,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "一次性工具",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "拉特兰"
@@ -22907,7 +22907,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "联动",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
@@ -23090,7 +23090,7 @@
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "生成",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "萨尔贡"
@@ -23315,7 +23315,7 @@
         "origin": "operator body"
       },
       "roster": "成长",
-      "active": true,
+      "active": false,
       "nativeFactionTags": [
         "伊比利亚"
       ],
@@ -23539,7 +23539,10 @@
         "nationId": "columbia",
         "groupId": "blacksteel",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "冲锋号令·援军"
     },
     {
       "name": "罗比菈塔",
@@ -23722,7 +23725,10 @@
         "nationId": "columbia",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "叙拉古式上妆"
     },
     {
       "name": "杰西卡",
@@ -23854,7 +23860,10 @@
         "nationId": "columbia",
         "groupId": "blacksteel",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "强力击·β型"
     },
     {
       "name": "酸糖",
@@ -23990,7 +23999,10 @@
         "nationId": "columbia",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "花式点射"
     },
     {
       "name": "梅尔",
@@ -24122,7 +24134,10 @@
         "nationId": "columbia",
         "groupId": "rhine",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "迷惑装置"
     },
     {
       "name": "罗宾",
@@ -24253,7 +24268,10 @@
         "nationId": "columbia",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "束缚“夹子”"
     },
     {
       "name": "多萝西",
@@ -24387,7 +24405,10 @@
         "nationId": "columbia",
         "groupId": "rhine",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "危险目标清除"
     },
     {
       "name": "涤火杰西卡",
@@ -24519,7 +24540,10 @@
         "nationId": "columbia",
         "groupId": "blacksteel",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "坚守阵线"
     },
     {
       "name": "格拉尼",
@@ -24650,7 +24674,10 @@
         "nationId": "victoria",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "经济",
+      "skill": "永不后退！"
     },
     {
       "name": "谜图",
@@ -24825,7 +24852,10 @@
         "nationId": "victoria",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "关键线索"
     },
     {
       "name": "因陀罗",
@@ -24954,7 +24984,10 @@
         "nationId": "victoria",
         "groupId": "glasgow",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "碎甲拳"
     },
     {
       "name": "海蒂",
@@ -25090,7 +25123,10 @@
         "nationId": "victoria",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "虚构故事·怒士"
     },
     {
       "name": "摩根",
@@ -25233,7 +25269,10 @@
         "nationId": "victoria",
         "groupId": "glasgow",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "街头好手"
     },
     {
       "name": "推进之王",
@@ -25363,7 +25402,10 @@
         "nationId": "victoria",
         "groupId": "glasgow",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "跃空锤"
     },
     {
       "name": "白铁",
@@ -25491,7 +25533,10 @@
         "nationId": "victoria",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "经济",
+      "skill": "极致火力"
     },
     {
       "name": "清流",
@@ -25621,7 +25666,10 @@
         "nationId": "yan",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "经济",
+      "skill": "治愈水波"
     },
     {
       "name": "九色鹿",
@@ -25755,7 +25803,10 @@
         "nationId": "yan",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "人间降吉"
     },
     {
       "name": "风絮",
@@ -25897,7 +25948,10 @@
         "nationId": "yan",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "何处着"
     },
     {
       "name": "万顷",
@@ -26062,7 +26116,10 @@
         "nationId": "yan",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "支援号令·γ型"
     },
     {
       "name": "令",
@@ -26255,7 +26312,10 @@
         "nationId": "yan",
         "groupId": "sui",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "重进酒"
     },
     {
       "name": "黍",
@@ -26441,7 +26501,10 @@
         "nationId": "yan",
         "groupId": "sui",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "化被草木"
     },
     {
       "name": "重岳",
@@ -26580,7 +26643,10 @@
         "nationId": "yan",
         "groupId": "sui",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "冲盈"
     },
     {
       "name": "正义骑士号",
@@ -26707,7 +26773,10 @@
         "nationId": "kazimierz",
         "groupId": "pinus",
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "无主动技能"
     },
     {
       "name": "但书",
@@ -26836,7 +26905,10 @@
         "nationId": "kazimierz",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "纠纷起诉"
     },
     {
       "name": "鞭刃",
@@ -26978,7 +27050,10 @@
         "nationId": "kazimierz",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "成长",
+      "skill": "鞭刃"
     },
     {
       "name": "白金",
@@ -27148,7 +27223,10 @@
         "nationId": "kazimierz",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "攻击力强化·γ型"
     },
     {
       "name": "红云",
@@ -27275,7 +27353,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "双弦开弓"
     },
     {
       "name": "奥斯塔",
@@ -27408,7 +27489,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": "chiave"
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "迅捷打击·γ型"
     },
     {
       "name": "贾维",
@@ -27542,7 +27626,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": "chiave"
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "冲锋号令·γ型"
     },
     {
       "name": "复奏",
@@ -27674,7 +27761,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "合奏起拍"
     },
     {
       "name": "布洛卡",
@@ -27808,7 +27898,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": "chiave"
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "通电"
     },
     {
       "name": "斥罪",
@@ -27939,7 +28032,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "一锤定音"
     },
     {
       "name": "贝洛内",
@@ -28084,7 +28180,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "战斗",
+      "skill": "家主的余裕"
     },
     {
       "name": "裁度",
@@ -28215,7 +28314,10 @@
         "nationId": "siracusa",
         "groupId": null,
         "teamId": null
-      }
+      },
+      "active": true,
+      "roster": "生成",
+      "skill": "量衣尺"
     }
   ],
   "permissions": [
@@ -32565,12 +32667,12 @@
       "version": "19.2.0.68600",
       "targetSize": 101,
       "tierCounts": {
-        "1": 11,
+        "1": 10,
         "2": 19,
-        "3": 21,
-        "4": 18,
+        "3": 22,
+        "4": 17,
         "5": 18,
-        "6": 14
+        "6": 15
       },
       "lobbyTribes": [
         "BEAST",
@@ -32579,7 +32681,17 @@
         "MECHANICAL",
         "PIRATE"
       ],
-      "neutralSubsetEvidence": "Card-text inference; preserved CardDefs has no subset tags; not a proven historical lobby roster."
+      "neutralSubsetEvidence": "Card-text inference; preserved CardDefs has no subset tags; not a proven historical lobby roster.",
+      "historicalTargetSize": 101,
+      "historicalTierCounts": {
+        "1": 11,
+        "2": 19,
+        "3": 21,
+        "4": 18,
+        "5": 18,
+        "6": 14
+      },
+      "currentPoolBasis": "rules.activeRosterIds"
     },
     "enemyBalance": {
       "FUNNY": [

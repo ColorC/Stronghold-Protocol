@@ -22,17 +22,20 @@ const groups=[
  ['凯瑟琳','刺玫','薄绿','洛洛','号角','安洁莉娜','维娜·维多利亚'],
 ];
 const normal=name=>Object.values(catalog.operators).find(o=>o.name===name&&!o.elite);
-test('current source reference, 101-member distribution and twelve compatible permits agree',()=>{
+test('current source reference, 101-member distribution and thirteen compatible permits agree',()=>{
  const design=JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH||new URL('../../data/independent-design.json',import.meta.url),'utf8'));
  const path=process.env.SP_INDEPENDENT_DESIGN_PATH?resolve(dirname(process.env.SP_INDEPENDENT_DESIGN_PATH),'independent-source-reference.json'):new URL('../../data/independent-source-reference.json',import.meta.url);
  const reference=JSON.parse(readFileSync(path,'utf8'));
- const active=design.operators.filter(o=>o.active!==false);
- assert.equal(active.length,101);assert.equal(reference.lobbyReference.selectedCandidateCount,101);
- const counts=Object.fromEntries([1,2,3,4,5,6].map(t=>[t,active.filter(o=>o.tier===t).length]));
- assert.deepEqual(counts,{1:11,2:19,3:21,4:18,5:18,6:14});assert.deepEqual(reference.lobbyReference.tierCounts,counts);
+  const activeIds=new Set(design.rules.activeRosterIds);
+  const active=design.operators.filter(o=>activeIds.has(o.chessId));
+  assert.equal(active.length,101);assert.equal(reference.lobbyReference.selectedCandidateCount,101);
+  const counts=Object.fromEntries([1,2,3,4,5,6].map(t=>[t,active.filter(o=>o.tier===t).length]));
+  assert.deepEqual(counts,{1:10,2:19,3:22,4:17,5:18,6:15});
+  assert.deepEqual(design.rules.rosterReference.tierCounts,counts,'rosterReference describes the live active pool');
+  assert.deepEqual(reference.lobbyReference.tierCounts,{1:11,2:19,3:21,4:18,5:18,6:14},'source-reference keeps its historical 19.2 tier distribution');
  assert.deepEqual(reference.lobbyReference.fixedLobbyTribes,['BEAST','DRAGON','ELEMENTAL','MECHANICAL','PIRATE']);
- assert.deepEqual(active.filter(o=>catalog.operators[o.chessId].permitGearId).map(o=>[o.name,o.tier]).sort(),[['幽灵鲨',3],['蛇屠箱',4]]);
- const permits=Object.values(catalog.equipment).filter(e=>e.kind==='permit');assert.equal(permits.length,12);assert.ok(permits.every(e=>e.available));assert.equal(permits.filter(e=>e.legacyOnly).length,10);
+ assert.deepEqual(active.filter(o=>catalog.operators[o.chessId].permitGearId).map(o=>[o.name,o.tier]).sort(),[['蛇屠箱',4],['赫默',3]]);
+ const permits=Object.values(catalog.equipment).filter(e=>e.kind==='permit');assert.equal(permits.length,13);assert.ok(permits.every(e=>e.available));assert.equal(permits.filter(e=>e.legacyOnly).length,11);
 });
 function roster(names,elite){return names.map((name,i)=>({uid:String(i).padStart(2,'0'),name,chessId:elite?normal(name).eliteChessId:normal(name).chessId,elite,row:10+Math.floor(i/4),col:3+i%4,dir:'RIGHT',moduleId:'none',skillIndex:0,equipment:[],attachments:[],nativeState:{}}));}
 function prep(pieces){const state={round:1,nextUid:100,funds:0,pieces,inventory:[],production:[],playerEffects:[],counters:{gained:0},shop:{level:6,slots:[],freeRefreshes:0}};const services={catalog,data,rng:()=>.2,grantEquipment:(s,id,q,x)=>grantEquipment(s,catalog,id,q,x),recordProduction,record(){},addOffer(){},grantChess(){}};return {state,hook:(trigger,piece)=>runNativeHook(state,trigger,{piece},services)};}
