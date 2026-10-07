@@ -57,10 +57,12 @@ function operatorRows(catalog) {
 /** Operators whose trait names an item they bring, by item id (the same walk as tools/independent-gear-sources.mjs). */
 function bringers(catalog) {
   const out = new Map();
-  for (const op of Object.values(catalog.operators)) {
+  const ids=catalog.config?.activeRosterIds||catalog.rules?.activeRosterIds;
+  const live=Array.isArray(ids)?new Set(ids):null;
+  for (const [id,op] of Object.entries(catalog.operators)) {
     // The table shows sources for the live roster only. Retired ordinary forms stay in saved
     // catalog data, but must not make a current gear card look obtainable from an inactive unit.
-    if (op.elite || !ACTIVE_OPERATOR_IDS.has(op.chessId)) continue;
+    if (op.elite || op.recruitable===false || live && !live.has(op.chessId||id)) continue;
     for (const r of [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat]) {
       for (const id of [...(r.params?.outputs || []).map((x) => x.id), ...(r.params?.ids || []), r.params?.id].filter(Boolean)) {
         if (!out.has(id)) out.set(id, new Set());
