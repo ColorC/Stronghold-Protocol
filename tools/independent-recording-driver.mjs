@@ -104,10 +104,11 @@ async function deployPiece(state, piece) {
   const legal = (piece.legalTiles || []).map(tileTuple).filter((t) => t && t.every(Number.isFinite) && !occupied.has(`${t[0]},${t[1]}`));
   const candidates = [];
   for (const [row, col] of legal) { const p = await tilePoint(row, col); if (p) candidates.push({ row, col, ...p }); }
-  candidates.sort((a, b) => Math.abs(a.row - 2) - Math.abs(b.row - 2) || a.col - b.col);
-  for (const target of candidates) {
+  candidates.sort((a, b) => Math.abs(a.row - 10) - Math.abs(b.row - 10) || Math.abs(a.col - 7) - Math.abs(b.col - 7));
+  const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height).slice(0, 6)) {
     await dragPointer(from, target);
-    try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 3000 }); } catch { continue; }
+    try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 1200 }); } catch { continue; }
     const box = await page.$eval('.fwheel__dia', (e) => { const r = e.getBoundingClientRect(); return r.toJSON(); });
     const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     // Direction is a real pointer gesture on the visible four-way direction wheel.
@@ -290,10 +291,10 @@ async function stopRecording() {
     try { await page.waitForFunction(() => document.querySelector('.ix-recording')?.innerText.includes('录制已结束'), { timeout: 20000 }); } catch { /* collect metadata for a failure report */ }
   }
 }
-const mime = (file) => ({ '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.otf': 'font/otf', '.ttf': 'font/ttf', '.skel': 'application/octet-stream', '.atlas': 'text/plain; charset=utf-8' }[path.extname(file).toLowerCase()] || 'application/octet-stream');
+const mime = (file) => ({ '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.otf': 'font/otf', '.ttf': 'font/ttf', '.skel': 'application/octet-stream', '.atlas': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.mp4': 'video/mp4' }[path.extname(file).toLowerCase()] || 'application/octet-stream');
 async function serveCanonicalAsset(req, res, pathname) {
-  const prefix = pathname.startsWith('/assets/') ? '/assets/' : '/fonts/';
-  const dir = prefix === '/assets/' ? path.join(canonical, 'public', 'assets') : path.join(canonical, 'public', 'fonts');
+  const prefix = ['/assets/', '/fonts/'].find((x) => pathname.startsWith(x));
+  const dir = path.join(canonical, 'public', prefix.slice(1, -1));
   let rel; try { rel = decodeURIComponent(pathname.slice(prefix.length)); } catch { rel = ''; }
   const file = path.resolve(dir, rel); const root = path.resolve(dir);
   if (!rel || !file.startsWith(root + path.sep)) { res.writeHead(400, { 'Cache-Control': 'no-store' }); res.end(); return; }
@@ -302,6 +303,27 @@ async function serveCanonicalAsset(req, res, pathname) {
     res.writeHead(200, { 'Content-Type': mime(file), 'Content-Length': String(stat.size), 'Cache-Control': 'public, max-age=86400' });
     if (req.method === 'HEAD') res.end(); else createReadStream(file).pipe(res);
   } catch { res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end(); }
+}
+async function serveCanonicalMedia(req, res, pathname) {
+  let rel; try { rel = decodeURIComponent(pathname.slice('/media/'.length)); } catch { rel = ''; }
+  const root = path.resolve(canonical, 'public', 'assets', 'audio');
+  const segments = rel.split('/').filter(Boolean);
+  if (!segments.length || segments.some((x) => x === '.' || x === '..' || x.startsWith('.') || x.endsWith('.'))) {
+    res.writeHead(400, { 'Cache-Control': 'no-store' }); res.end(); return;
+  }
+  const given = path.extname(segments.at(-1)).toLowerCase();
+  const extensions = ['.mp3', '.m4a', '.aac', '.ogg', '.oga', '.opus', '.wav'];
+  const candidates = given ? [path.resolve(root, ...segments)] : extensions.map((ext) => path.resolve(root, ...segments.slice(0, -1), `${segments.at(-1)}${ext}`));
+  for (const file of candidates) {
+    if (!file.startsWith(root + path.sep)) continue;
+    try {
+      const stat = await fs.stat(file); if (!stat.isFile()) continue;
+      res.writeHead(200, { 'Content-Type': mime(file), 'Content-Length': String(stat.size), 'Cache-Control': 'public, max-age=86400' });
+      if (req.method === 'HEAD') res.end(); else createReadStream(file).pipe(res);
+      return;
+    } catch { /* try the next supported audio extension */ }
+  }
+  res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end();
 }
 function proxyUpstream(req, res, backendPort) {
   const upstream = http.request({ hostname: '127.0.0.1', port: backendPort, path: req.url, method: req.method, headers: req.headers }, (answer) => {
@@ -315,6 +337,7 @@ async function startAssetProxy(backendPort) {
   assetProxy = http.createServer(async (req, res) => {
     const pathname = new URL(req.url || '/', 'http://local').pathname;
     if (pathname.startsWith('/assets/') || pathname.startsWith('/fonts/')) { await serveCanonicalAsset(req, res, pathname); return; }
+    if (pathname.startsWith('/media/')) { await serveCanonicalMedia(req, res, pathname); return; }
     proxyUpstream(req, res, backendPort);
   });
   assetProxy.on('upgrade', (req, socket, head) => {
@@ -336,13 +359,17 @@ try {
     independentDirectory: path.join(runtime, 'sessions'), recordingDirectory: path.join(runtime, 'recordings') });
   const origin = await startAssetProxy(server.port);
   browser = await puppeteer.launch({ executablePath: chromePath, headless: true, args: ['--no-sandbox', '--no-proxy-server', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--disable-gpu-sandbox'] });
-  page = await browser.newPage(); await page.setViewport({ width: 1600, height: 1200, deviceScaleFactor: 1 });
+  page = await browser.newPage();
   page.on('pageerror', (error) => report.errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
+  page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
   hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, 14 * 60 * 1000);
   await page.goto(`${origin}/independent.html?record=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.ix-start__modes .ix-mode', { timeout: 60000 });
+  // Chrome can reset an about:blank viewport during navigation; size the real game before session creation so
+  // renderer-provided pointer geometry and the initial recording share the same full-resolution canvas.
+  await page.setViewport({ width: 1600, height: 1200, deviceScaleFactor: 1 });
   const growth = await page.$('.ix-growth-mode button[role="radio"][aria-checked="false"]');
   if (growth) await growth.click();
   await clickText('.ix-start__modes .ix-mode', (s) => s.includes('十四轮'));
@@ -352,7 +379,7 @@ try {
   if (!sessionId || !recordingId) throw new Error('UI 创建对局或录制未完成');
   await page.waitForFunction(() => document.querySelector('.ix-recording__dot.is-live'), { timeout: 30000 });
   const initial = await readState(); report.sessionId = sessionId; report.recordingId = recordingId; report.growthMode = initial.growthMode; report.roundLimit = initial.roundLimit;
-  report.screenshots.push(await screenshot('first-preparation'));
+  await screenshot('first-preparation');
   let roundsDriven = 0; let idle = 0;
   const started = Date.now();
   while (Date.now() - started < 13 * 60 * 1000) {
@@ -419,7 +446,7 @@ try {
   if (!recording?.meta?.endedAt || !recording?.meta?.mediaSegments?.length || report.errors.length) process.exitCode = 1;
 } catch (error) {
   report.failure = error?.stack || String(error); report.endedAt = new Date().toISOString();
-  try { if (page && !page.isClosed()) { report.screenshots.push(await screenshot('driver-failure')); await stopRecording(); } } catch { /* include original failure */ }
+  try { if (page && !page.isClosed()) { await screenshot('driver-failure'); await stopRecording(); } } catch { /* include original failure */ }
   const file = path.join(output, 'driver-run-failure.json'); await writeFile(file, JSON.stringify(report, null, 2)).catch(() => {});
   const log = path.join(tmp, 'independent-recording-driver.log'); await writeFile(log, `${report.startedAt}\nFAILED ${error?.stack || error}\n`, 'utf8').catch(() => {});
   console.error(JSON.stringify({ failure: error?.message || String(error), report: file, log, screenshots: report.screenshots }, null, 2)); process.exitCode = 1;
