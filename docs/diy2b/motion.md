@@ -1,4 +1,28 @@
-# 2B motion reconstruction
+# Current 2B motion authoring
+
+The current build path is `tools/diy2b/visual_motion.py`. Run it with absolute
+`--repo`, `--out` and `--artifacts` paths. It restores the original rig from Git
+`ae4c9bd`, preserves the small original clips for unaffected actions, and authors
+Attack, Skill_1, and self-destruct/kneeling using explicit pelvis, hilt and blade
+tracks. Both attack feet stay at their setup positions; the rigid blade follows
+a broad planar sweep. Both kneeling knees share a stable plane, with shins folded
+back. Interpolate these controls before solving/baking the original limbs.
+
+`authored-joints.json` records actual world positions. The viewer at
+`public/dev/diy-2b/motion.html` shares the battle model and can isolate legs, arms,
+sword or torso, show joints and tip trajectories, pause and scrub.
+`study-test.mjs <viewer-url> <artifact-dir> [candidate-worktree]` checks support
+foot displacement, full blade length/sweep, both knee contacts and actual
+part-filter visibility in the Spine renderer, with separate-part screenshots.
+The existing `smoke.mjs` exercises the demo battle and self-destruct/reboot.
+Both browser tests have a 120-second deadline and close their browsers.
+
+The older retarget/continuity/projection tools below are historical experiments,
+not the current build path. Their checks passed while the gesture remained wrong;
+the video itself repeatedly lifted the rear foot. Numerical checks support visual
+review and do not certify artistic quality.
+
+# Previous reconstruction experiment
 
 The existing demo is now tracked in Git. Its original drawings, rig and pre-fix
 model are recoverable from seed commit `ae4c9bd`.
