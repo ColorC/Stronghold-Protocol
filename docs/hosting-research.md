@@ -1,4 +1,50 @@
-# 工坊低负担托管研发
+# 工坊轻量托管与试部署
+
+2026-10-07 后续实测。保持工坊玩法与原渲染器，浏览器Worker执行同版本原经济、行动与战斗模块。VPS只提供小型入口、排队、文本存档和revision CAS；大资源直接由外部静态站提供。
+
+VPS轻后端已经安装、启动，目前仅监听 `127.0.0.1:18010`，尚未开放公网游戏入口。发布快照为原生Git `a7b493b14e3ea2529d376352735d082a71bba685`；其他职责线之后仍在更新主仓，不混入本次冻结包。新服务独立使用Node v22.23.3与ws 8.22.0，进程限512 MiB和一个CPU核心预算；空闲内存实测约49 MB。规则和玩家存档放独立正式目录，无发布树中的可写链接。
+
+公开静态包已完成：9,900资源文件、557,798,758 B，最大文件15,994,892 B；不含用户存档、运行目录、私有文档和开发演示。拟用现有 `ColorC/Stronghold-Protocol` 独立gh-pages分支做免费试用分发，资源地址为 `https://colorc.github.io/Stronghold-Protocol/<完整Git版本>/`。VPS仅给无正文307和很小的同源Worker import壳，不代理资源或在外源失败时回流。音频现已兼容外源的application/octet-stream，并仍经过WebAudio解码验证。
+
+GitHub Pages站点上限1 GB，带宽软限制100 GB/月；本包适合先试用，不能无限保留全量版本或承诺长期流量。[官方限制](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)。本地候选发布commit `d80374aa06fede039c1dbeb12c330bbfc99514c2`，应用版本目录仍为a7。源包复制和9,902个实际Git blob均逐字节比较一致；`.gitattributes`防止Git换行转换改动Spine等二进制资源。
+
+外部发布尚未执行，等待用户对GitHub push的单独确认，依据 `E:\WindowsWorkspace\omnicompany\AGENTS.md` 第38行。服务器路由激活脚本已准备；外源真实可达后才开放拟定试用入口 `https://colorc.cc/stronghold/independent.html` 并做公网Chrome整局验收，目前该链接尚不能作为可玩入口。
+
+## 排队和实际容量
+
+配置50人游玩、最多200人排队，FIFO和25秒长轮询；离线排队租约90秒，游玩租约120秒、30秒心跳。等待页正文764 B，控制脚本5,442 B，不引用游戏大资源。VPS实测50个游玩和200个排队全部正确，第251个503，空位优先让最早排队者进入；结束后全部租约回收。原盟约WebSocket也占总人数。
+
+现成的[Cloudflare Waiting Room](https://developers.cloudflare.com/waiting-room/plans/)有FIFO，但Free/Pro不提供，Business/Enterprise才包含。目前轻量队列不用新增付费服务。
+
+实际VPS隔离负载使用同一a7代码与配置、真实磁盘保存，限一个CPU核心和512 MiB；每个客户端做准入、两次创建和两次checkpoint，使用5,912 B早期存档与73,771 B第九轮存档。每档最多8秒，测试目录与玩家目录分离。
+
+| 并发 | 全批耗时 | checkpoint p95 | 失败 | Node最终RSS | 落盘 |
+| --- | --- | --- | --- | --- | --- |
+| 50 | 1.684秒 | 388.75毫秒 | 0 | 168.8 MB | 100份 / 3.98 MB |
+| 100 | 2.975秒 | 392.08毫秒 | 0 | 174.3 MB | 200份 / 7.97 MB |
+| 200 | 5.898秒 | 385.51毫秒 | 0 | 172.5 MB | 400份 / 15.94 MB |
+
+服务器战斗接口调用和录像文件均为零。负载生成器也在同一Node进程，CPU/RSS包含它的开销。这证明有限样本下轻存档接口能处理200客户端，不是200人完整游玩保证，也没有测出绝对最大人数；试用保持50人，公网整局和长期数据后再调。
+
+本机从VPS下载五份既有字体，三并发聚合出口实测约3.50 Mbit/s。这是当时链路样本，不是套餐标称上限。存档请求主要入站；checkpoint确认正文68 B，50人每五秒保存一次时确认正文仅约5.44 kbit/s，另计TLS/HTTP头与心跳。首次创建与恢复仍传完整文本存档；本轮容量测试两份创建回应合计约79.8 KB/客户端，不能误计成每次常规动作出口。
+
+## 主页、磁盘和备份的实际变化
+
+主机除主页和转发还有反馈、Everpoint、旧Next及代理消费者，本轮保留这些服务。72份历史tar原样归档到独立数据盘，逐份解出后cmp一致；系统盘留两个有效回滚点，70个旧源逐项unlink，腾出2,279,821,312 B。历史包存在不能认定可丢弃的私人内容，没有销毁唯一恢复来源。私有单一归档 `/mnt/datadisk0/colorc-backup-archive/colorc.cc-historical-deploy-backups.tar` 仍与VPS处在同一故障域。安装新Node等之后系统盘剩约6.60 GB，数据盘剩约17.15 GB。
+
+主页未来默认发布已去掉大demos、字体包和lab，只为本批覆盖文件生成窄回滚包，最多两个活跃点。canonical默认dry-run包15,747,582 B，Linux三次窄备份/恢复及留存演练通过；用户原有脏文件逐字节保全。没有删除现网旧内容或发布主页内容改稿。
+
+主站已开启gzip与静态短缓存。首页HTML实际由25,081 B降到9,810 B，约减少61%；HTTPS Chrome首页启动完成、无JS错误，缓存与原安全头保留。journal和cron日志未删。
+
+## 验收范围和接续
+
+下文首轮代码a8的原模式、本地HTTPS外源完整Chrome整局已通过，899外源请求零失败；此前全仓4208通过、0失败、11跳过。它不代表新a7包已通过公网Chrome验收。本轮队列、checkpoint和音频针对性验证通过，a7在真实VPS的容量和FIFO通过。首次最小包漏掉server display引用的assetUrls模块，已补入；正式配置目录也显式设置SP_INDEPENDENT_DESIGN_PATH，修正后服务启动成功。
+
+证据索引：`E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\artifact-index.json`，列实际绝对路径及作用。关键回执为同目录 `vps-capacity.json`、`queue-live-test.log`、`server-start-final.log`、`network/outbound.json`、`network/homepage.headers.txt`、`network/homepage-js.headers.txt`、`homepage-browser/receipt.json`、`github-pages-package-final/static-build.json`、`pages-preparation/preparation.json`。主页逐项记录为 `E:\WindowsWorkspace\webworks\apps\personal-homepage\.omni\tmp\colorc-disk-cleanup-20261007\backup-retention-manifest.csv` 和 `deploy-linux-test.txt`。
+
+收到发布确认后推送候选独立分支、开启Pages、确定性等待构建终态，再开VPS入口，做公网购买、拖动、刷新、战斗、结算和第二回合验收。外源大陆速度不合格时换外源，不让素材正文回流VPS。
+
+## 首轮历史记录（下列状态已由上文更新）
 
 2026-10-07。目标是以后迁到 colorc.cc 自有服务器：保持工坊现有玩法、规则和渲染器，前端承担计算，大资源从外部下载，同时准入约 50 人。本次实现和隔离验收，不是正式迁移；现有线上发布未重启。
 
