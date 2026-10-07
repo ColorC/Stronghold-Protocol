@@ -13,6 +13,7 @@ import { previewInheritance, applyInheritance } from './inheritance.js';
 import { shopCarryApplies } from './warbandPrep.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, applyDarkmoonAHGrowth } from './darkmoonShop.js';
 import { GROWTH_MODES, operatorGrowthInfo } from '../../../shared/independentGrowth.js';
+import { reactiveBuyTargetSpec } from '../../../shared/independentEligibility.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
 
@@ -572,9 +573,9 @@ export function applyAction(state, action, options = {}) {
       if (!Number.isInteger(action.slot) || !slot || slot.sold || !slot.id) throw new Error('BAD_SLOT');
       const sourceId=catalog.operators?.[slot.id]?.sourceRefs?.darkmoon19_2?.id;
       let magneticTarget=null;
-      if(sourceId==='BGS_100') {
+      if(reactiveBuyTargetSpec(slot,work,catalog)) {
         const target=work.pieces.find(x=>x.uid===action.targetUid);
-        if(!target||!inField(target.row,target.col))throw new Error('DARKMOON_TARGET_REQUIRED');
+        if(!target||target.deleted||target.removed)throw new Error('DARKMOON_TARGET_REQUIRED');
       }
       if(action.magneticTargetUid!==undefined) {
         if(!['BOT_312','BOT_911'].includes(sourceId))throw new Error('NOT_MAGNETIC_SOURCE');

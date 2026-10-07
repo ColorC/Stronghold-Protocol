@@ -144,3 +144,12 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
   if (behavior === 'teamForge' || behavior === 'allyConditionStats') return roster.filter(deployed);
   return target == null ? roster.filter(piece=>!excludeSource||piece.uid!==source?.uid) : [];
 }
+
+/** Deployed purchase reactors request one shared recipient before any funds or pool stock are consumed. */
+export function reactiveBuyTargetSpec(slot, state, catalog) {
+  if(!slot?.id || !state?.pieces) return null;
+  const buyerFactions=factionsFor({chessId:slot.id},catalog);
+  const holders=state.pieces.filter(piece=>realOperator(piece,catalog)&&deployed(piece)
+    && (catalog.operators[piece.chessId]?.nativeTrait?.effect?.prep||catalog.operators[piece.chessId]?.effectRules?.prep||[]).some(rule=>rule.trigger==='bought' && rule.behavior==='darkmoonBoughtTribeTargetGrowth' && buyerFactions.includes(rule.params?.triggerFaction)));
+  return holders.length ? {kind:'friendly',count:1,scope:'all',sourceUids:holders.map(piece=>piece.uid)} : null;
+}
