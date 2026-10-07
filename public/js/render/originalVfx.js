@@ -143,6 +143,24 @@ export class OriginalVfxPlayer {
     return true;
   }
 
+  /**
+   * The S3 end prefab contains several Unity Mesh particle renderers. A packed
+   * billboard atlas cannot preserve those mesh vertices: showing it as a Sprite
+   * produces the large transparent polygons seen in the compare page. Keep the
+   * authored tile binding, but express the mesh ring as thin 2D line geometry
+   * until a mesh/vertex-stream renderer is available.
+   */
+  playGroundSheathe({ x = 0, y = 0, z = 0, followId = null, group = null, life = 1.55, delay = 0 } = {}) {
+    if (!this.P?.Graphics || typeof document === 'undefined') return false;
+    const record = { kind: 'groundSheathe', x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, followId, group,
+      elapsed: 0, delay: Math.max(0, Number(delay) || 0), life: Math.max(0.1, Number(life) || 1.55), dead: false, graphics: new this.P.Graphics() };
+    record.graphics.visible = false;
+    (this.layers.groundFx || this.layers.fxNormal || this.layers.fxAdd).addChild(record.graphics);
+    this.active.add(record);
+    this._placeGroundSheathe(record);
+    return true;
+  }
+
   markProcedural(prefab) { if (prefab) this.procedural.add(String(prefab)); }
   markUnresolved(prefab) { if (prefab) this.unresolved.add(String(prefab)); }
 
@@ -243,6 +261,42 @@ export class OriginalVfxPlayer {
     g.zIndex = Number.isFinite(p.depth) ? -p.depth : 0;
   }
 
+  _placeGroundSheathe(record) {
+    const followed = record.followId == null ? null : this.view(record.followId);
+    const tx = followed ? Math.round(followed.x) : Math.round(record.x);
+    const ty = followed ? Math.round(followed.y) : Math.round(record.y);
+    const z = followed ? (followed.z || 0) : record.z;
+    const cam = this.cam();
+    if (!cam || !record.graphics) return;
+    const p = cam.project(tx, ty, z + 0.034, {});
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+    const phase = Math.max(0, record.elapsed - record.delay) / Math.max(0.1, record.life);
+    const fade = phase < 0.16 ? phase / 0.16 : Math.max(0, 1 - Math.max(0, phase - 0.62) / 0.38);
+    const radius = 0.3 + 0.85 * Math.min(1, phase * 1.35);
+    const g = record.graphics;
+    g.clear();
+    const points = [];
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16;
+      const q = cam.project(tx + Math.cos(a) * radius, ty + Math.sin(a) * radius, z + 0.036, {});
+      points.push(q);
+    }
+    g.lineStyle(Math.max(1.5, p.s * 0.026), 0xe7b96b, Math.min(0.88, fade));
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i], b = points[(i + 1) % points.length];
+      g.moveTo(a.x, a.y); g.lineTo(b.x, b.y);
+    }
+    g.lineStyle(Math.max(1, p.s * 0.014), 0xfff3c4, Math.min(0.72, fade * 0.82));
+    const center = cam.project(tx, ty, z + 0.037, {});
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI * 2 * i) / 8 + phase * 1.8;
+      const inner = cam.project(tx + Math.cos(a) * radius * 0.55, ty + Math.sin(a) * radius * 0.55, z + 0.037, {});
+      const outer = cam.project(tx + Math.cos(a) * radius * 1.18, ty + Math.sin(a) * radius * 1.18, z + 0.037, {});
+      g.moveTo(inner.x, inner.y); g.lineTo(outer.x, outer.y);
+    }
+    g.zIndex = Number.isFinite(p.depth) ? -p.depth : 0;
+  }
+
   _remove(record) {
     if (record.dead) return;
     record.dead = true;
@@ -262,6 +316,14 @@ export class OriginalVfxPlayer {
         if (phase >= record.life) { this._remove(record); continue; }
         record.graphics.visible = true;
         this._placeGroundFrame(record);
+        continue;
+      }
+      if (record.kind === 'groundSheathe') {
+        if (record.elapsed < record.delay) { record.graphics.visible = false; continue; }
+        const phase = record.elapsed - record.delay;
+        if (phase >= record.life) { this._remove(record); continue; }
+        record.graphics.visible = true;
+        this._placeGroundSheathe(record);
         continue;
       }
       if (!record.ready || record.elapsed < record.delay) { if (record.sprite) record.sprite.visible = false; continue; }
