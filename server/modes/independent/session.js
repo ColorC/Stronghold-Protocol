@@ -105,7 +105,7 @@ function servicesFor(state, data, catalog, rng) {
   const services = { data, catalog, rng, phase: null,
     // the running hook names the production ledger's phase (equipment.js recordProduction)
     grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, { phase: services.phase, ...extra }),
-    grantChess: (draft, chessId, extra = {}) => { const piece = gainChess(draft, catalog, chessId, extra); invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); maybeMergeOperator(draft, catalog, chessId); return piece; },
+    grantChess: (draft, chessId, extra = {}) => { const room = roomFor(draft, catalog, chessId, { allowTemp: true }); if (!room) { pushEvent(draft, { type: 'no-room', chessId }); return null; } const piece = gainChess(draft, catalog, chessId, extra); if (room === 'temp') piece.temp = true; invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); maybeMergeOperator(draft, catalog, chessId); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
     recordProduction: (draft, entry) => recordProduction(draft, { phase: services.phase, ...entry }),
     record: (draft, event) => pushEvent(draft, event),
@@ -114,6 +114,34 @@ function servicesFor(state, data, catalog, rng) {
 }
 /** Game-long totals the second-wave traits read (native.js grantByTotal / totalBonus). */
 function addTotal(state, key, n = 1) { state.totals ||= {}; state.totals[key] = Number(state.totals[key] || 0) + n; }
+/**
+ * 整备区上限 (user 2026-10-07 chose the original's 10 + 5; server/match/PlayerState.js acquireChess): the bench holds
+ * BENCH_SIZE operators. A full bench refuses buys and withdrawals, except a purchase that completes an elite. An operator
+ * gained any other way (a reward, a free recruit, a trait's recruit) overflows into the 临时整备区 (TEMP_SIZE); while it
+ * holds anyone, the battle cannot start. With both full the operator goes back to the pool (「整备区已满，获得的干员已返还」).
+ * A save from before the cap keeps every operator it has.
+ */
+export const BENCH_SIZE = 10;
+export const TEMP_SIZE = 5;
+const onBoard = (p) => p.row != null && p.col != null;
+export const benchCount = (state) => state.pieces.filter((p) => !onBoard(p) && !p.temp).length;
+export const tempCount = (state) => state.pieces.filter((p) => p.temp).length;
+function completesMerge(state, catalog, chessId) {
+  const op = opFor(catalog, chessId);
+  if (!op?.eliteChessId) return false;
+  return state.pieces.filter((p) => p.chessId === chessId && !p.elite).length + 1 >= mergeCopiesRequired(op);
+}
+/** Where an operator about to be gained goes: 'merge' | 'bench' | 'temp' | null (no room). */
+function roomFor(state, catalog, chessId, { allowTemp }) {
+  if (completesMerge(state, catalog, chessId)) return 'merge';
+  if (benchCount(state) < BENCH_SIZE) return 'bench';
+  if (allowTemp && tempCount(state) < TEMP_SIZE) return 'temp';
+  return null;
+}
+/** A temp operator moves onto the bench as soon as a place frees up (a sale, a merge, a deployment). */
+function settleTemp(state) {
+  for (const p of state.pieces) if (p.temp && benchCount(state) < BENCH_SIZE) delete p.temp;
+}
 function gainChess(state, catalog, chessId, extra = {}) {
   const def = opFor(catalog, chessId); if (!def || def.elite || def.isElite) throw new Error('UNKNOWN_CHESS');
   const stock = poolFor(state, chessId);
@@ -416,11 +444,15 @@ export function applyAction(state, action, options = {}) {
         if (!Number.isInteger(action.index) || !safeId(offer.choices[action.index])) throw new Error('BAD_CHOICE');
         if (offer.type === 'recruit') {
           const op = opFor(catalog, offer.choices[action.index]); if (!op) throw new Error('BAD_CHOICE');
-          const piece = gainChess(work, catalog, op.chessId, {}); invokeHook(work, 'gain', { piece, source: offer.source || 'choice' }, services);
+          const room = roomFor(work, catalog, op.chessId, { allowTemp: true });
+          if (!room) { work.offers.splice(work.offers.indexOf(offer), 1); events.push({ type: 'no-room', chessId: op.chessId }); }
+          else {
+          const piece = gainChess(work, catalog, op.chessId, {}); if (room === 'temp') piece.temp = true; invokeHook(work, 'gain', { piece, source: offer.source || 'choice' }, services);
           for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
           handleGainEquipment(work, catalog, piece);
           work.offers.splice(work.offers.indexOf(offer), 1);
           for (const merged of maybeMergeOperator(work, catalog, op.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
+          }
         } else if (offer.type === 'attachment') {
           const piece = work.pieces.find((x) => x.uid === (action.targetUid || offer.targetUid)); if (!piece) throw new Error('BAD_TARGET');
           const attachmentId = offer.choices[action.index]; const attachment = catalog.attachments?.[attachmentId];
@@ -438,6 +470,7 @@ export function applyAction(state, action, options = {}) {
       if (work.funds < slot.price) throw new Error('NO_FUNDS');
       if (slot.kind === 'chess') {
         const pool = poolFor(work, slot.id); if (!pool?.left) throw new Error('SOLD_OUT');
+        if (!roomFor(work, catalog, slot.id, { allowTemp: false })) throw new Error('BENCH_FULL');
         work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; addTotal(work, 'bought'); addTotal(work, 'spent', slot.price); invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
         invokeHook(work, 'gain', { piece, source: 'buy', paid: true }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
@@ -483,9 +516,11 @@ export function applyAction(state, action, options = {}) {
       const cls = positionClass(raw, p.moduleId);
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');
       if (action.dir && !['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(action.dir)) throw new Error('BAD_DIRECTION');
-      p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
+      p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; delete p.temp; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
     } else if (act === 'bench') {
-      ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET'); p.row = null; p.col = null; events.push({ type: 'bench', uid: p.uid });
+      ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
+      if (onBoard(p) || p.temp) { if (benchCount(work) >= BENCH_SIZE) throw new Error('BENCH_FULL'); }
+      p.row = null; p.col = null; delete p.temp; events.push({ type: 'bench', uid: p.uid });
     } else if (act === 'loadout') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); const op = p && opFor(catalog, p.chessId); if (!p || !op) throw new Error('BAD_TARGET');
       const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
@@ -533,6 +568,7 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work); const result = applyInheritance(work, catalog, action.donorUid, action.receiverUid, action.uniqueSelections || {}, data); work.funds += 1; work.counters.sold++; handleSaleEquipment(work, catalog); events.push({ type: 'inherit', receiverUid: result.receiver.uid, preview: result.preview });
     } else if (act === 'ready') {
       ensurePrep(work);
+      if (tempCount(work) > 0) throw new Error('TEMP_NOT_EMPTY'); // 「直到溢出情况排除才可开始进行作战」
       const deployed = work.pieces.filter((x) => x.row !== null && x.col !== null);
       if (deployed.length < 1) throw new Error('NO_DEPLOYED_PIECES');
       if (deployed.length > work.deployCap) throw new Error('DEPLOY_CAP');
@@ -588,6 +624,7 @@ export function applyAction(state, action, options = {}) {
       }
     } else throw new Error('UNKNOWN_ACTION');
     for (let n = Number(work.totals?.elites || 0) - elitesBefore; n > 0; n--) { pushPromotionReward(work, catalog, rng); events.push({ type: 'promotion-reward' }); }
+    settleTemp(work);
     if (!readOnly) { work.rngState = rng.state(); work.revision++; }
     const errors = validateSession(work); if (errors.length) throw new Error(`INVALID_RESULT:${errors.join(',')}`);
     return replay ? { ok: true, state: work, events, replay } : { ok: true, state: work, events };

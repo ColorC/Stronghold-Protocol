@@ -28,13 +28,15 @@ export function formEntry(catalog, piece) {
 export const renderChessId = (catalog, piece) => (piece.elite ? catalog?.operators?.[piece.chessId]?.eliteChessId || piece.chessId : piece.chessId);
 
 /**
- * Bench order: pieces not on the board, in the session's order (stable across actions). The first HAND_SLOTS go to the
- * renderer's hand row; the rest are listed by the HUD (`overflow`). The temp row stays empty: in the original it is the
- * 临时整备区 that blocks ready, and reusing it for extra bench pieces would tell the player something false.
+ * Bench order: pieces not on the board, in the session's order (stable across actions). The bench (整备区, 10 places
+ * since 2026-10-07, session.js BENCH_SIZE) is the renderer's hand row; operators that overflowed into the 临时整备区
+ * (`temp`, 5 places) sit on its temp row and keep the battle from starting, as in the original. A save from before the
+ * cap may hold more: those are listed by the HUD (`overflow`).
  */
 export function benchLayout(state) {
-  const bench = (state?.pieces || []).filter((p) => !isDeployed(p));
-  return { hand: bench.slice(0, HAND_SLOTS), overflow: bench.slice(HAND_SLOTS) };
+  const off = (state?.pieces || []).filter((p) => !isDeployed(p));
+  const bench = off.filter((p) => !p.temp); const temp = off.filter((p) => p.temp);
+  return { hand: bench.slice(0, HAND_SLOTS), temp: temp.slice(0, TEMP_SLOTS), overflow: [...bench.slice(HAND_SLOTS), ...temp.slice(TEMP_SLOTS)] };
 }
 
 /**
@@ -44,11 +46,11 @@ export function benchLayout(state) {
 export function prepView(state, catalog) {
   const toPiece = (p) => ({ uid: pieceNum(p.uid), kind: 'chess', id: renderChessId(catalog, p), golden: !!p.elite,
     tier: catalog?.operators?.[p.chessId]?.tier ?? 1, items: [], ...(isDeployed(p) ? { row: p.row, col: p.col, dir: p.dir || 'RIGHT' } : {}) });
-  const { hand } = benchLayout(state);
+  const { hand, temp } = benchLayout(state);
   const pad = (list, n) => Array.from({ length: n }, (_, i) => (list[i] ? toPiece(list[i]) : null));
   return {
     hand: pad(hand, HAND_SLOTS),
-    temp: Array(TEMP_SLOTS).fill(null),
+    temp: pad(temp, TEMP_SLOTS),
     board: (state?.pieces || []).filter(isDeployed).map(toPiece),
     nextEnemies: Array.isArray(state?.nextEnemies) ? state.nextEnemies : [],
   };
@@ -92,7 +94,7 @@ export const pieceByNum = (state, n) => (state?.pieces || []).find((p) => pieceN
 export function canDrop(state, n, target) {
   const piece = pieceByNum(state, n);
   if (!piece || state?.phase !== 'prep' || !target) return false;
-  if (target.area === 'hand') return isDeployed(piece);
+  if (target.area === 'hand') return isDeployed(piece) || !!piece.temp; // a 临时整备区 operator may go back to the bench
   if (target.area !== 'board') return false;
   if (!(piece.legalTiles || []).includes(`${target.row},${target.col}`)) return false;
   const holder = (state.pieces || []).find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
