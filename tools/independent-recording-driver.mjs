@@ -143,17 +143,17 @@ async function deployPiece(state, piece) {
       report.firstDeployDiagnostic.wheelVisibleAfterWait = true;
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
     }
-    // Wait for the visible wheel's keyboard listener to mount before sending normal UI keys.
-    await pause(250);
-    await page.keyboard.press('ArrowRight');
-    try {
-      await page.waitForFunction(() => document.querySelector('.fwheel__sr')?.textContent?.includes('朝向'), { timeout: 1500 });
-    } catch {
-      // A just-mounted overlay can miss the first key while effects attach; repeat the same real key once.
-      await page.keyboard.press('ArrowRight');
-      await page.waitForFunction(() => document.querySelector('.fwheel__sr')?.textContent?.includes('朝向'), { timeout: 2500 });
-    }
-    await page.keyboard.press('Enter');
+    // Choose the visible right-facing arrow with a real pointer click, using the rendered wheel geometry.
+    const facingTarget = await page.$eval('.fwheel__dia', (e) => {
+      const r = e.getBoundingClientRect();
+      return { x: r.left + r.width * 0.82, y: r.top + r.height * 0.5, width: r.width, height: r.height };
+    });
+    const facingHit = await page.evaluate(({ x, y }) => {
+      const e = document.elementFromPoint(x, y);
+      return { tag: e?.tagName || '', className: typeof e?.className === 'string' ? e.className : '', wheel: !!e?.closest?.('.fwheel') };
+    }, facingTarget);
+    if (!facingHit.wheel) throw new Error(`朝向按钮未命中可见轮盘：${JSON.stringify({ facingTarget, facingHit })}`);
+    await page.mouse.click(facingTarget.x, facingTarget.y);
     try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
     const after = await readState();
