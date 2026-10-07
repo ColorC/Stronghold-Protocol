@@ -13,7 +13,8 @@ const design = read('independent-design.json');
 const gameText = read('independent-game-text.json');
 const chessData = read('chess.json');
 const sourceReference = read('independent-source-reference.json');
-const table = buildTable({ design, gameText, chessData, catalog: getCatalog(), sourceReference });
+const catalog = getCatalog();
+const table = buildTable({ design, gameText, chessData, catalog, sourceReference });
 const bySection = (name) => table.rows.filter((row) => row.section === name);
 
 test('concentrated table cites original cards, complete native text and probe limits', () => {
@@ -38,6 +39,9 @@ test('concentrated table cites original cards, complete native text and probe li
     assert.ok(row.basis.includes(archetype.chain));
     assert.ok(row.reference.includes('；'));
   }
+  const victoria = warbands.find((row) => row.name === '维多利亚商店成长');
+  assert.ok(victoria.native.includes('安洁莉娜（科技5；中立成员'));
+  assert.ok(victoria.basis.includes('中立成员（阵营按本体资料）：安洁莉娜'));
 });
 
 test('new games show only the two active auto-issued handover permits', () => {
@@ -52,4 +56,17 @@ test('new games show only the two active auto-issued handover permits', () => {
   const airdrop = table.rows.find((row) => row.name === '反冲空降仓');
   assert.match(melt.basis, /科技6史尔特尔带来/);
   assert.match(airdrop.basis, /科技6蕾缪安带来/);
+});
+
+test('current table omits retired and unassigned equipment while keeping catalog-eligible legacy flags', () => {
+  const equipmentRows = [...bySection('装备'), ...bySection('特供装备')];
+  for (const row of equipmentRows) {
+    const item = catalog.equipment[row.name] || Object.values(catalog.equipment).find((entry) => (entry.newName || entry.name) === row.name);
+    assert.ok(item, `missing catalog item for ${row.name}`);
+    assert.notEqual(item.retired, true, `${row.name} is retired`);
+    assert.notEqual(item.unassigned, true, `${row.name} is unassigned`);
+  }
+  for (const name of ['调和识别牌', '源石促效溶剂', '应急伪装服', '催泪瓦斯组件', '谢拉格不融冰', '维多利亚蒸汽之心', '耶拉冈德之泪', '熔铸模具', '莱茵生命浮空发生器', '黑钢双联弹匣']) {
+    assert.ok(!equipmentRows.some((row) => row.name === name), `${name} must not be a current issuance row`);
+  }
 });

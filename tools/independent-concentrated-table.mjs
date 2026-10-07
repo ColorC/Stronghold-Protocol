@@ -104,7 +104,10 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
     upgrade: '每多一枚增加相同百分比或百分点；现有上限仍生效', basis: badge.retired ? '旧版装备兼容；新局不再产出' : '原生白值、技能加攻、造伤、治疗和回复分别结算',
   });
   const gearTable = cardTable('gear', catalog);
-  for (const gear of gearTable.rows.filter((x) => x.state === '在用').sort((a, b) => Number(!gearNotes[a.name]) - Number(!gearNotes[b.name]) || Number(a.level) - Number(b.level))) {
+  for (const gear of gearTable.rows.filter((x) => {
+    const item = catalog.equipment[x.id];
+    return item && item.available !== false && !item.retired && !item.unassigned && x.state === '在用';
+  }).sort((a, b) => Number(!gearNotes[a.name]) - Number(!gearNotes[b.name]) || Number(a.level) - Number(b.level))) {
     const record = catalog.equipment[gear.id];
     rows.push({ section: record.kind === 'prizeGear' ? '特供装备' : '装备', level: gear.level ? `装备${gear.level}` : '', name: gear.name,
       role: record.mechanism === 'keywordGear' ? '关键词转换' : record.kind === '补给' ? '指定目标补给' : record.kind === '玩家设施' ? '玩家设施' : '战术装备',
@@ -125,15 +128,16 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
     normal: clean(gameText.prizes?.[id]?.text), upgrade: '', basis: '完整暗月奖品译稿与当前已实装奖品目录分开标明' });
   const operatorByName = new Map(ops.map((op) => [op.name, op]));
   for (const warband of sourceReference?.archetypes || []) {
+    const neutralMembers = new Set(warband.neutralOperators || []);
     const members = warband.operators.map((name) => {
       const op = operatorByName.get(name);
       if (!op) throw new Error(`${warband.name}: missing active operator ${name}`);
       return op;
     });
     rows.push({ section: '七人阵容', level: `参考族群：${warband.sourceTribe}`, name: warband.name, role: '完整构筑阵容', faction: warband.faction,
-      native: members.map((op) => `${op.name}（科技${op.tier}）`).join('、'),
+      native: members.map((op) => `${op.name}（科技${op.tier}${neutralMembers.has(op.name) ? '；中立成员' : ''}）`).join('、'),
       reference: members.map((op) => `${op.name}：${sourceCardSummary(op.sourceRefs)}`).join('；'), nativePower: '',
-      normal: '', upgrade: '', basis: warband.chain });
+      normal: '', upgrade: '', basis: `${warband.chain}${neutralMembers.size ? `；中立成员（阵营按本体资料）：${[...neutralMembers].join('、')}` : ''}` });
   }
   for (const [difficulty, phases] of Object.entries(design.rules.enemyBalance || {})) for (const phase of phases) rows.push({
     section: '敌人', level: `第${phase.fromRound}轮起`, name: difficulty === 'FUNNY' ? '休闲局' : '标准局', role: '波次倍率', faction: '',
