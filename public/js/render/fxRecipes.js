@@ -588,11 +588,15 @@ const ROSMON_ATTACK_TURN = new Map();
 const ROSMON_ATTACK_SPECS = new Map();
 const ROSMON_LAST_SPEC = new Map();
 
-function sourceMount(fx, view, prefab, delay = 0) {
+function sourceMount(fx, view, prefab, delay = 0, options = {}) {
   // These are action `_castEffects`, whose extracted records carry no mount-point or bone name. The original effect
   // runner therefore receives the action owner/root; the separate `_mountPointType` fields belong to projectile
   // actions and are not evidence for attaching this cast effect to a hand or muzzle.
-  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'root', mirror: true, delay });
+  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: options.anchor || 'root', bone: options.bone || null, mirror: options.mirror ?? true, delay });
+}
+
+function groundMount(fx, view, prefab, delay = 0, group = null) {
+  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'tile', mirror: false, delay, group });
 }
 
 /** Skill start is an ability-level effect only for Rosmontis S3. S1/S2 are action cast effects below. */
@@ -673,7 +677,13 @@ function blkkgtSkill(fx, c) {
     BLKKGT_S3_FINAL.delete(c.view.id);
     if (skill === 'skchr_blkkgt_3') {
       c.view.setOriginalVfxHidden?.(true);
-      for (const [i, prefab] of BLKKGT_SKILLS.skchr_blkkgt_3.starts.entries()) fx.playOriginalVfx(prefab, { followId: c.view.id, anchor: 'root', mirror: true, group, delay: i * 0.04 });
+      // Raw prefab evidence: start_01/start_02/end have _spawnLocation 5
+      // (ground), while start_03/04 are owner-held (_spawnLocation 8/11) and
+      // explicitly request mount types 5/9.  The latter resolve to the two
+      // authored hand-weapon bones in the Blakk Spine skeleton.
+      groundMount(fx, c.view, 'blkkgt_skill_03_start_01', 0, group);
+      fx.markOriginalVfxProcedural?.('blkkgt_skill_03_start_02');
+      fx.playOriginalGroundFrame({ followId: c.view.id, group, life: 1.6 });
     }
     return;
   }
@@ -708,7 +718,12 @@ function blkkgtFx(fx, c, next) {
   if (c.kind === 'slash') return;
   if (c.kind === 'finale' && active === 'skchr_blkkgt_3') {
     BLKKGT_S3_FINAL.add(id);
-    for (const [i, prefab] of (binding.endStarts || []).entries()) sourceMount(fx, c.extra?.id != null ? fx._viewOf(c.extra.id) : c.unit, prefab, i * 0.035);
+    const owner = c.extra?.id != null ? fx._viewOf(c.extra.id) : c.unit;
+    if (owner) {
+      groundMount(fx, owner, 'blkkgt_skill_03_end');
+      sourceMount(fx, owner, 'blkkgt_skill_03_start_03', 0.035, { anchor: 'bone', bone: 'F_R_Handweapon' });
+      sourceMount(fx, owner, 'blkkgt_skill_03_start_04', 0.07, { anchor: 'bone', bone: 'F_L_Handweapon' });
+    }
     return;
   }
   next();
