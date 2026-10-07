@@ -61,12 +61,14 @@ export function gearSourcesBlock(catalog = getCatalog()) {
   lines.push('', '功能与战斗装备的来源（凯瑟琳随机获得已解锁的通用装备，不列；停产的装备不进她的随机池）：', '');
   const gear = Object.values(catalog.equipment).filter((d) => d.available !== false && d.mechanism !== 'badge' && d.mechanism !== 'disabled'
     && !['prizeGear', 'permit', '停用'].includes(d.kind) && !USED.has(d.kind) && d.canonicalId === d.id);
-  const retired = [];
+  const retired = []; const pending = [];
   for (const d of gear) {
     const s = src.get(d.id) || none;
-    if (!s.fixed.size && !s.random.size) { retired.push(d.newName || d.name); continue; }
-    lines.push(`- **${d.newName || d.name}**：${who(s)}`);
+    // gear v4 (2026-10-07): a piece marked `unassigned` waits for its operator; a retired one some trait still names is flagged
+    if (!s.fixed.size && !s.random.size) { (d.unassigned && !d.retired ? pending : retired).push(d.newName || d.name); continue; }
+    lines.push(`- **${d.newName || d.name}**：${who(s)}${d.retired ? '（已停用，来源待重新分配）' : ''}`);
   }
+  if (pending.length) lines.push(`- **来源待定**（第四版新装备与改回的装备，还没有干员带来，也不进凯瑟琳的随机池）：${pending.join('、')}`);
   if (retired.length) lines.push(`- **停产**（没有干员带来；旧存档里已有的照常生效）：${retired.join('、')}`);
   const used = Object.values(catalog.equipment).filter((d) => d.available !== false && USED.has(d.kind)).map((d) => {
     const s = src.get(d.id) || none;

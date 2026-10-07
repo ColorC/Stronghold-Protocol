@@ -10,17 +10,18 @@ export const capacityUsed = (state) => itemCount(state);
 /** Pieces of gear one operator may wear (2026-10-06: raised from 99). Inventory has no limit. */
 export const EQUIPMENT_CAPACITY = 999;
 /**
- * Kinds of gear the stock holds at once (2026-10-06): one tile per item and grade (normal / elite), however many it
- * holds, so a badge stack is one tile. A prize kept for later is not gear and takes no tile. Gear that would need a
- * new tile while all are taken is not stored (its production row says lost); a save holding more keeps them.
+ * Kinds of gear the stock holds at once (2026-10-06): one tile per item, however many it holds, so a badge stack is
+ * one tile (gear has one form only since 2026-10-07: 「装备不再有精锐形态」). A prize kept for later is not gear and takes
+ * no tile. Gear that would need a new tile while all are taken is not stored (its production row says lost); a save
+ * holding more keeps them.
  */
 export const INVENTORY_CAPACITY = 20;
-const tileKey = (item) => `${item.id}:${item.elite ? 'elite' : 'normal'}`;
+const tileKey = (item) => String(item.id);
 export function inventoryTiles(state, catalog) {
   return new Set((state.inventory || []).filter((x) => !catalog || equipmentRecord(catalog, x.id)).map(tileKey)).size;
 }
-export function hasTileFor(state, catalog, id, elite = false) {
-  return (state.inventory || []).some((x) => tileKey(x) === tileKey({ id, elite })) || inventoryTiles(state, catalog) < INVENTORY_CAPACITY;
+export function hasTileFor(state, catalog, id) {
+  return (state.inventory || []).some((x) => tileKey(x) === tileKey({ id })) || inventoryTiles(state, catalog) < INVENTORY_CAPACITY;
 }
 export const pieceEquipmentCount = (piece) => (piece?.equipment || []).reduce((n, x) => n + Math.max(0, Math.floor(number(x.quantity, 1))), 0);
 
@@ -35,7 +36,8 @@ export function equipmentForSource(catalog, sourceId) {
 
 export function makeItem(state, id, quantity = 1, extra = {}) {
   if (!Number.isInteger(quantity) || quantity < 1) throw new Error('BAD_QUANTITY');
-  const item = { uid: `i${state.nextUid++}`, id, elite: !!extra.elite, quantity, state: structuredClone(extra.state || {}) };
+  // gear has one form only (owner 2026-10-07 「装备不再有精锐形态」): an item never carries an elite flag
+  const item = { uid: `i${state.nextUid++}`, id, quantity, state: structuredClone(extra.state || {}) };
   if (extra.sourceId) item.sourceId = extra.sourceId;
   return item;
 }
@@ -83,11 +85,11 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const landing = extra.landOn || catalog?.config?.badgeLanding || 'stock';
   const isBadge = !!rec(catalog?.badges, id) || def.mechanism === 'badge';
   const source = extra.sourceUid ? (state.pieces || []).find((p) => p.uid === extra.sourceUid) : null;
-  if (landing !== 'stock' && isBadge && !extra.elite && source && LANDING_ORIGINS.has(extra.origin)) {
+  if (landing !== 'stock' && isBadge && source && LANDING_ORIGINS.has(extra.origin)) {
     const target = landingPiece(state, catalog, source, landing);
     const add = Math.min(quantity, EQUIPMENT_CAPACITY - pieceEquipmentCount(target));
     if (add > 0) {
-      const stack = (target.equipment ||= []).find((x) => x.id === id && !x.elite);
+      const stack = (target.equipment ||= []).find((x) => x.id === id);
       if (stack) stack.quantity = Number(stack.quantity || 1) + add;
       else target.equipment.push(makeItem(state, id, add));
       recordProduction(state, { id, quantity: add, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, copied: extra.copied, repeated: extra.repeated, worn: true, targetUid: target.uid });
@@ -95,14 +97,14 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
     if (add >= quantity) return { id, quantity, worn: target.uid };
     quantity -= add;
   }
-  if (!hasTileFor(state, catalog, id, !!extra.elite)) {
-    recordProduction(state, { id, quantity, elite: !!extra.elite, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
+  if (!hasTileFor(state, catalog, id)) {
+    recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
     return { id, quantity: 0, lost: quantity };
   }
-  const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !!x.elite === !!extra.elite && !x.state?.uniqueState);
+  const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !x.state?.uniqueState);
   if (stack) stack.quantity += quantity;
   else state.inventory.push(makeItem(state, id, quantity, { ...extra, sourceId: def.sourceId }));
-  recordProduction(state, { id, quantity, elite: !!extra.elite, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated });
+  recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated });
   return { id, quantity };
 }
 
@@ -122,7 +124,6 @@ const PRODUCTION_FIELDS = ['origin', 'phase', 'sourceUid', 'prizeId', 'copied', 
 export function recordProduction(state, entry) {
   if (!Array.isArray(state.production)) state.production = [];
   const row = { round: state.round, revision: Number(state.revision || 0) + 1, id: entry.id, quantity: entry.quantity };
-  if (entry.elite) row.elite = true;
   for (const key of PRODUCTION_FIELDS) if (entry[key] !== undefined && entry[key] !== null && entry[key] !== false) row[key] = entry[key];
   state.production.push(row);
   const keepFrom = state.round - PRODUCTION_ROUNDS_KEPT + 1;
@@ -149,7 +150,7 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
     if (!factions.includes(options.faction)) throw new Error('BAD_FACTION');
     movedState.faction = options.faction;
   }
-  const moved = { uid: `e${state.nextUid++}`, id: item.id, elite: !!item.elite, quantity, state: movedState };
+  const moved = { uid: `e${state.nextUid++}`, id: item.id, quantity, state: movedState };
   if (item.sourceId || def.sourceId) moved.sourceId = item.sourceId || def.sourceId;
   target.equipment.push(moved);
   item.quantity -= quantity;
@@ -157,19 +158,30 @@ export function equipItem(state, catalog, itemUid, targetUid, quantity = 1, opti
   return moved;
 }
 
-export function mergeItems(state, catalog, firstUid, secondUid) {
-  const a = state.inventory.find((x) => x.uid === firstUid); const b = state.inventory.find((x) => x.uid === secondUid);
-  if (!a || !b || a.id !== b.id || a.elite || b.elite || (a === b && a.quantity < 2)) throw new Error('BAD_MERGE');
-  const def = equipmentRecord(catalog, a.id);
-  if (!def || def.available === false || def.mechanism === 'disabled' || !(def.eliteId || def.eliteLevel)) throw new Error('NOT_MERGEABLE');
-  // the elite copy needs a tile unless one exists or the two normal copies were the last of theirs
-  const normalLeft = state.inventory.filter((x) => x.id === a.id && !x.elite).reduce((n, x) => n + x.quantity, 0) - 2;
-  if (!state.inventory.some((x) => x.id === a.id && x.elite) && normalLeft > 0 && inventoryTiles(state, catalog) >= INVENTORY_CAPACITY) throw new Error('INVENTORY_FULL');
-  const leftA = a.quantity - (a === b ? 2 : 1); const leftB = a === b ? 0 : b.quantity - 1;
-  if (leftA === 0) state.inventory.splice(state.inventory.indexOf(a), 1); else a.quantity = leftA;
-  if (a !== b) { if (leftB === 0) state.inventory.splice(state.inventory.indexOf(b), 1); else b.quantity = leftB; }
-  const result = makeItem(state, a.id, 1, { elite: true, sourceId: a.sourceId || def.sourceId }); state.inventory.push(result);
-  return result;
+/**
+ * Gear has one form only (owner 2026-10-07 「装备不再有精锐形态」; the 两件合成精锐 action is gone). An old save's elite
+ * item becomes the normal item with the same quantity; the same-id stacks this leaves side by side merge into the first
+ * one — in the stock and on each piece. A unique item stays a separate item. Returns true when an elite item was found.
+ */
+export function normalizeGearForms(state, catalog = null) {
+  const all = [...(state.inventory || []), ...(state.pieces || []).flatMap((p) => p.equipment || [])].filter(Boolean);
+  // nothing elite: the save is left exactly as it is (an explicit elite: false is harmless)
+  if (!all.some((x) => x.elite)) return false;
+  const unique = (item) => !!item.state?.uniqueState || !!(catalog && equipmentRecord(catalog, item.id)?.unique);
+  const flatten = (list) => {
+    const out = []; const firstOf = new Map();
+    for (const item of list || []) {
+      if (item?.elite) delete item.elite;
+      if (!item || unique(item)) { out.push(item); continue; }
+      const first = firstOf.get(item.id);
+      if (first) { first.quantity = Number(first.quantity || 1) + Number(item.quantity || 1); continue; }
+      firstOf.set(item.id, item); out.push(item);
+    }
+    return out;
+  };
+  state.inventory = flatten(state.inventory);
+  for (const piece of state.pieces || []) piece.equipment = flatten(piece.equipment);
+  return true;
 }
 
 export function discardPieceAssets(state, piece) {
@@ -181,6 +193,6 @@ export function discardPieceAssets(state, piece) {
 export function totalEquipmentLevel(piece, catalog) {
   return (piece?.equipment || []).reduce((sum, item) => {
     const def = equipmentRecord(catalog, item.id);
-    return sum + Math.max(0, Number(item.elite ? (def?.eliteLevel ?? def?.level) : (def?.level ?? def?.tier) || 0)) * Math.max(1, Number(item.quantity || 1));
+    return sum + Math.max(0, Number((def?.level ?? def?.tier) || 0)) * Math.max(1, Number(item.quantity || 1));
   }, 0);
 }

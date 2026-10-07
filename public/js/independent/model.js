@@ -116,7 +116,8 @@ export const permitsOf = (piece, catalog) => (piece?.equipment || []).filter((x)
 
 /**
  * Equipment worn by a piece, grouped for display: functional equipment one row per item (they carry the mechanisms),
- * then badges merged per kind ("精准 ×12"). Each row: { id, name, level, count, elite, badge, permit, uids }.
+ * then badges merged per kind ("精准 ×12"). Each row: { id, name, level, count, badge, permit, uids }. Gear has one
+ * form only (owner 2026-10-07 「装备不再有精锐形态」): one level, one text.
  */
 export function groupEquipment(items, catalog) {
   const rows = new Map();
@@ -124,7 +125,7 @@ export function groupEquipment(items, catalog) {
     const id = item.id; const badge = isBadge(catalog, id);
     const key = badge ? `b:${id}` : `e:${item.uid}`;
     const rec = gearRecord(catalog, id) || item.record || {};
-    const row = rows.get(key) || { id, name: rec.name || id, level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level, count: 0, elite: !!item.elite, badge, permit: rec.kind === 'permit', uids: [] };
+    const row = rows.get(key) || { id, name: rec.name || id, level: rec.level, count: 0, badge, permit: rec.kind === 'permit', uids: [] };
     row.count += Number(item.quantity || 1); row.uids.push(item.uid);
     rows.set(key, row);
   }
@@ -141,11 +142,11 @@ export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
 export function inventoryStacks(inventory, catalog) {
   const stacks = new Map();
   for (const item of inventory || []) {
-    const key = `${item.id}:${item.elite ? 'e' : 'n'}`;
+    const key = `${item.id}:n`;
     const prize = !gearRecord(catalog, item.id) && catalog?.prizes?.[item.id];
-    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect, elite: prize.effect } : {});
-    const s = stacks.get(key) || { key, id: item.id, elite: !!item.elite, name: rec.name || '未知物品', level: item.elite ? (rec.eliteLevel ?? rec.level) : rec.level,
-      kind: rec.kind || null, mechanism: rec.mechanism || null, text: item.elite ? rec.elite : rec.normal, used: USED_KINDS.has(rec.kind),
+    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect } : {});
+    const s = stacks.get(key) || { key, id: item.id, name: rec.name || '未知物品', level: rec.level,
+      kind: rec.kind || null, mechanism: rec.mechanism || null, text: rec.normal, used: USED_KINDS.has(rec.kind),
       badge: isBadge(catalog, item.id), count: 0, items: [] };
     s.count += Number(item.quantity || 1); s.items.push(item);
     stacks.set(key, s);
@@ -185,7 +186,7 @@ export function forecastRows(state, catalog) {
 /** Equipment level an item stack contributes (design: 装备总等级 = 每件等级之和). */
 export function itemLevel(item, catalog) {
   const g = catalog?.gear?.[item.id] || {};
-  return Number((item.elite ? (g.eliteLevel ?? g.level) : g.level) ?? 1) * Number(item.quantity || 1);
+  return Number(g.level ?? 1) * Number(item.quantity || 1);
 }
 
 /**

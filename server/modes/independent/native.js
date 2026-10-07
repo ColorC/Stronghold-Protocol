@@ -340,8 +340,8 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         for (let i = 0; i < value(p, elite); i++) output(ruleServices, state, pool ? choosePool(pool, services, elite) : choose(p.ids, services), 1, piece); break;
       }
       case 'randomUnlockedEquipment': {
-        // gear nobody brings any more (design retired) stays out of the random pool too
-        const pool = Object.values(services.catalog.equipment).filter((x) => x.available && !x.retired && x.kind !== 'prizeGear' && x.kind !== 'permit' && (x.shopTier || x.oldTier || x.level || 1) <= (state.shop?.level || 1)).map((x) => x.id);
+        // gear nobody brings any more (design retired) or nobody brings yet (design unassigned) stays out of the random pool too
+        const pool = Object.values(services.catalog.equipment).filter((x) => x.available && !x.retired && !x.unassigned && x.kind !== 'prizeGear' && x.kind !== 'permit' && (x.shopTier || x.oldTier || x.level || 1) <= (state.shop?.level || 1)).map((x) => x.id);
         for (let i = 0; i < value(p, elite); i++) output(ruleServices, state, choose(pool, services), 1, piece); break;
       }
       case 'recruitOffer':
@@ -435,9 +435,9 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
           if (!isBadge(services, item.id)) continue;
           const n = Math.min(Number(item.quantity || 1), capacityOf(services) - wornCount(to));
           if (n <= 0) break;
-          const stack = to.equipment.find((x) => x.id === item.id && !!x.elite === !!item.elite);
+          const stack = to.equipment.find((x) => x.id === item.id);
           if (stack) stack.quantity = Number(stack.quantity || 1) + n;
-          else to.equipment.push({ uid: `i${state.nextUid++}`, id: item.id, elite: !!item.elite, quantity: n, state: {}, ...(item.sourceId ? { sourceId: item.sourceId } : {}) });
+          else to.equipment.push({ uid: `i${state.nextUid++}`, id: item.id, quantity: n, state: {}, ...(item.sourceId ? { sourceId: item.sourceId } : {}) });
           item.quantity = Number(item.quantity || 1) - n;
           if (item.quantity <= 0) piece.equipment.splice(piece.equipment.indexOf(item), 1);
           moved += n;
@@ -451,7 +451,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const index = slots.map((x, i) => (x.kind === 'chess' && !x.sold && x.id ? i : -1)).filter((i) => i >= 0).pop();
         if (index == null) break;
         const slot = slots[index];
-        for (const c of slot.equipment || []) output(ruleServices, state, c.id, Number(c.quantity || 1), piece, c.elite ? { elite: true } : {});
+        for (const c of slot.equipment || []) output(ruleServices, state, c.id, Number(c.quantity || 1), piece);
         output(ruleServices, state, p.id, Number(services.catalog.operators?.[slot.id]?.tier || 1) * value(p, elite), piece);
         slot.sold = true; slot.devoured = true; slot.equipment = [];
         break;
@@ -488,9 +488,9 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const k = Number(memo.boughtGear || 0);
         const add = Math.min(pick(p.max, elite), pick(p.start, elite) + pick(p.step, elite) * k, capacityOf(services) - wornCount(target));
         if (add > 0) {
-          const stack = (target.equipment ||= []).find((x) => x.id === p.id && !x.elite);
+          const stack = (target.equipment ||= []).find((x) => x.id === p.id);
           if (stack) stack.quantity = Number(stack.quantity || 1) + add;
-          else target.equipment.push({ uid: `i${state.nextUid++}`, id: p.id, elite: false, quantity: add, state: {} });
+          else target.equipment.push({ uid: `i${state.nextUid++}`, id: p.id, quantity: add, state: {} });
           services.recordProduction?.(state, { id: p.id, quantity: add, origin: 'native', sourceUid: piece.uid, targetUid: target.uid, worn: true });
         }
         memo.boughtGear = k + 1;
@@ -648,7 +648,7 @@ export function runEquipmentPrepEnd(state, services = {}) {
       if (def?.mechanism !== 'escalatingForge') continue;
       const p = def.params || {};
       const k = Number(item.state?.escalation || 0);
-      const n = Math.min(pick(p.max, !!item.elite), pick(p.start, !!item.elite) * 2 ** k);
+      const n = Math.min(pick(p.max, false), pick(p.start, false) * 2 ** k);
       output(services, state, p.id, n, piece, { origin: 'equipment' });
       item.state = { ...(item.state || {}), escalation: k + 1 };
     }

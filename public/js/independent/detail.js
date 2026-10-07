@@ -62,8 +62,8 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
         <${GearIcon} id=${r.id} catalog=${catalog} plain=${true} /><b class="num">${r.count}</b>
         ${r.permit ? html`<i class="ix-dgear__permit" aria-hidden="true"></i>` : !r.badge && r.level ? html`<small class="num">${r.level}级</small>` : null}
       </button>`)}</div>
-      <div class="ix-dgear__text"><b>${row.name}${row.elite ? html`<em class="ix-elite">精锐</em>` : null}</b>${row.permit ? html`<span class="ix-perm"><${GameText} text="交接凭证" catalog=${catalog} /></span>` : null}
-        <${GameText} text=${row.badge && row.count > 1 ? (badgeTotal(g, row.count) || g.normal) : row.elite ? g.elite : g.normal} catalog=${catalog} />
+      <div class="ix-dgear__text"><b>${row.name}</b>${row.permit ? html`<span class="ix-perm"><${GameText} text="交接凭证" catalog=${catalog} /></span>` : null}
+        <${GameText} text=${row.badge && row.count > 1 ? (badgeTotal(g, row.count) || g.normal) : g.normal} catalog=${catalog} />
         ${onConfigure && g.steamOptions?.length ? html`<${HammerPicker} g=${g} item=${item} busy=${busy} catalog=${catalog} onSave=${(ids) => onConfigure(item.uid, ids)} />` : null}</div>`
       : html`<p class="t-dim dempty">${note || '尚未穿戴装备：把库存格子拖到干员身上即可穿戴'}</p>`}
     ${attachments.length ? html`<div class="ix-dgear__att"><b>附加效果</b>${attachments.map((a) => html`<span key=${a.id}><${GameText} text=${catalog.attachments?.[a.id]?.name || ''} catalog=${catalog} /></span>`)}</div>` : null}
@@ -149,7 +149,7 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
 }
 
 /**
- * The card for a detail target: { kind: 'piece', uid } | { kind: 'shop', slot } | { kind: 'gear', id, elite } (a shop
+ * The card for a detail target: { kind: 'piece', uid } | { kind: 'shop', slot } | { kind: 'gear', id } (a shop
  * gear) | { kind: 'enemy', id, count } (the pen) | { kind: 'unit', unit } (a battle unit) | { kind: 'terrain', terrain }.
  * `battle` (during a replay): { snapHp(unitId), stats(unitId) } read 4× a second, like the original card's live getter.
  */
@@ -164,9 +164,9 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   </aside>`;
   if (target.kind === 'gear') {
     const g = catalog.gear[target.id] || {};
-    const body = target.elite ? g.elite : g.normal;
-    return frame(html`<header class="ix-dgearhead"><${GearIcon} id=${target.id} catalog=${catalog} plain=${true} /><div><h3 class="dhead__name">${g.name || ''}${target.elite ? html`<em class="ix-elite">精锐</em>` : null}</h3>
-        <span class="ix-muted">${gearMeta(g, target.elite)}</span></div></header>
+    const body = g.normal;
+    return frame(html`<header class="ix-dgearhead"><${GearIcon} id=${target.id} catalog=${catalog} plain=${true} /><div><h3 class="dhead__name">${g.name || ''}</h3>
+        <span class="ix-muted">${gearMeta(g)}</span></div></header>
       <p class="ix-detail__text"><${GameText} text=${body} catalog=${catalog} /></p>
       <${TermNotes} texts=${[body]} catalog=${catalog} exclude=${g.name} />`, 'gear');
   }

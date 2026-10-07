@@ -25,7 +25,14 @@ const STAT_MODS = Object.freeze({
   taunt: 'taunt', initialSp: 'initialSkillPoints', maxLifePercent: 'hpPct', maxHpPercent: 'hpPct',
   // short names the temporary combat traits use
   atkPct: 'atkPct', aspd: 'aspd', defPct: 'defPct', spRegen: 'spRecoveryFlat', damageTakenPercent: 'dmgTakenMul', damageTakenPct: 'dmgTakenMul',
+  // 阻挡数 (防暴塔盾, gear v4)
+  blockCnt: 'blockCnt', blockCount: 'blockCnt',
 });
+// 2026-10-07 (user: 「装备不再有精锐形态」): gear has one form. An `elite` flag an old save still carries changes nothing in
+// battle; a {normal, elite} pair in a retired item's rule reads its normal value.
+const GEAR_ELITE = false;
+const GEAR_TAGS = Object.freeze(['independentEquipment']);
+const GEAR_ELEMENTS = new Set(['burn', 'neural', 'necrosis', 'apoptosis', 'erosion']);
 
 function rulesOf(catalog, chessId) {
   const op = catalog?.operators?.[chessId];
@@ -64,8 +71,7 @@ function selectVariant(value, elite) {
   return Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, selectVariant(nested, elite)]));
 }
 
-function effectiveEquipmentParams(entry) { return selectVariant(entry.rec.params ?? {}, !!entry.item.elite || !!entry.specialElite); }
-function effectiveEquipmentStats(entry) { return selectVariant(entry.rec.stats ?? {}, !!entry.item.elite); }
+function effectiveEquipmentParams(entry) { return selectVariant(entry.rec.params ?? {}, GEAR_ELITE); }
 
 function equipmentFor(piece, catalog) {
   const out = [];
@@ -134,12 +140,12 @@ function sumBadgeMods(catalog, entries, boost = () => 1) {
   }
   for (const e of entries) {
     if (e.kind !== 'equipment') continue;
-    if (e.rec.stat && e.rec.value != null) mergeMods(mods, modFromStat(e.rec.stat, selectVariant(e.rec.value, !!e.item.elite)), Math.max(1, Number(e.item.quantity) || 1));
+    if (e.rec.stat && e.rec.value != null) mergeMods(mods, modFromStat(e.rec.stat, selectVariant(e.rec.value, GEAR_ELITE)), Math.max(1, Number(e.item.quantity) || 1));
     const itemStats = e.rec.stats ?? {};
     if (!Array.isArray(itemStats)) for (const [stat, rawValue] of Object.entries(itemStats)) {
       const quantity = Math.max(1, Number(e.item.quantity) || 1);
       const value = rawValue && typeof rawValue === 'object' && (Object.hasOwn(rawValue, 'normal') || Object.hasOwn(rawValue, 'elite'))
-        ? rawValue[!!e.item.elite ? 'elite' : 'normal'] ?? rawValue[!!e.item.elite ? 'normal' : 'elite']
+        ? rawValue.normal ?? rawValue.elite
         : rawValue;
       if (!Array.isArray(rawValue) && value != null) mergeMods(mods, modFromStat(stat, value), quantity);
     }
@@ -703,6 +709,86 @@ function applyEquipmentStatus(battle, source, target, status, options) {
   }
 }
 
+// ---- gear v4 helpers (特殊战斗装备 第四版, 2026-10-07) ----
+const liveEnemy = (e) => !!e && e.side === 'enemy' && e.alive && e.deployed !== false && !e.removed;
+const isGearDamage = (dmg) => !!dmg?.tags?.includes('independentEquipment');
+/**
+ * 脆弱 / 法术脆弱 / 防御力降低 from gear are their own effects (user 2026-10-07: 「原版的脆弱什么的都不管」): a buff keyed by
+ * the piece, shown as the status, that stacks apart from the same status of operators' talents and skills (they keep
+ * the official 同名取最高 among themselves and never override or absorb it). Two hits of the same piece refresh it.
+ */
+const OWN_VALUED = Object.freeze({
+  fragile: (v) => ({ dmgTakenMul: 1 + v }),
+  artsFragile: (v) => ({ artsTakenMul: 1 + v }),
+  defDown: (v) => ({ defMul: Math.max(0, 1 - v) }),
+});
+function gearStatus(battle, source, target, status, duration, value, itemIdValue) {
+  if (!target?.alive || !(duration > 0)) return false;
+  if (OWN_VALUED[status]) {
+    const v = Number(value);
+    if (!(v > 0)) throw new Error(`gear ${itemIdValue}: ${status} needs a positive value`);
+    battle.addBuff(target, { key: `independent:gear:${status}:${itemIdValue}`, status, duration, refresh: 'replace', mods: OWN_VALUED[status](v), source });
+    return true;
+  }
+  return applyEquipmentStatus(battle, source, target, status, { duration, ...(value != null ? { value: Number(value) } : {}) });
+}
+/** An extra attack a piece of gear makes (速射扳机's second shot): it counts for nothing. */
+const extraAttack = (unit) => !!unit.mem.independentExtraAttack;
+/**
+ * A 「每发动N次普通攻击」 counter: each normal attack adds the wearer's count step (工程部节拍校准器: 2) and the counter
+ * fires when it reaches N, keeping what is left over.
+ */
+function attackCounter(unit, every) {
+  const n = Math.max(1, Number(every ?? 1));
+  let count = 0;
+  return () => {
+    count += Math.max(1, Number(unit.mem.independentCountStep) || 1);
+    if (count < n) return false;
+    count -= n;
+    if (count >= n) count %= n;
+    return true;
+  };
+}
+/** `onHit(target, dmg, amount)` once per normal attack, for the first damage it does to its main target. */
+function normalHits(battle, unit, onHit, { skip = null } = {}) {
+  const mains = new Map();
+  battle.on('beforeAttack', ({ attacker, targets, isSkill }) => {
+    if (attacker !== unit || isSkill || !targets?.[0] || (skip && skip())) return;
+    mains.set(battle._attackSeq + 1, targets[0].id);
+  }, { owner: unit });
+  battle.on('damaged', ({ source, target, amount, dmg }) => {
+    const id = dmg?.attackId;
+    if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !id || mains.get(id) !== target.id) return;
+    mains.delete(id);
+    onHit(target, dmg, amount);
+  }, { owner: unit });
+}
+/** The enemies in `unit`'s attack range now. */
+const enemiesInRange = (battle, unit) => battle.enemies.filter((e) => liveEnemy(e) && withinRange(battle, unit, e));
+// 炎国天师古鼎: the other 炎 operators whose next normal attack hits every enemy in their range (one hook per battle)
+const TEAM_STRIKE = new WeakMap();
+function teamStrike(battle) {
+  let reg = TEAM_STRIKE.get(battle);
+  if (reg) return reg;
+  reg = { pending: new Map(), attacks: new Map() };
+  TEAM_STRIKE.set(battle, reg);
+  battle.on('beforeAttack', (ctx) => {
+    const ratio = reg.pending.get(ctx.attacker);
+    if (ratio == null || ctx.isSkill || ctx.attacker.side !== 'ally') return;
+    const all = enemiesInRange(battle, ctx.attacker);
+    if (!all.length) return;
+    reg.pending.delete(ctx.attacker);
+    ctx.targets = all;
+    reg.attacks.set(battle._attackSeq + 1, ratio);
+  }, { priority: 90 });
+  battle.on('hit', ({ source, dmg }) => {
+    const ratio = dmg?.attackId ? reg.attacks.get(dmg.attackId) : null;
+    if (ratio == null || isGearDamage(dmg)) return;
+    dmg.amount = source.s.atk * ratio; dmg.atkScale = 1; dmg.type = 'phys';
+  }, { priority: 90 });
+  return reg;
+}
+
 function filterMatches(battle, rule, event, actor, owner) {
   const f = rule.params?.filter ?? {};
   let observer = owner;
@@ -936,6 +1022,8 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (p.targetTag && !target.def?.tags?.includes(p.targetTag)) return;
       if (p.condition === 'boundOrSluggish' && !target.s.flags.bind && !target.findBuff('sluggish')) return;
       if (p.condition === 'distanceAtLeast' && Math.abs(Math.round(target.y - unit.y)) + Math.abs(Math.round(target.x - unit.x)) < Number(p.distance)) return;
+      // 叙拉古处决令: 攻击生命值低于40%的敌人时 (the target's HP when the hit lands)
+      if (p.condition === 'targetHpBelow' && !(target.hp < Number(target.s.maxHp) * Number(p.hpRatio))) return;
       const multiplier = Number(p.multiplier);
       if (Number.isFinite(multiplier) && multiplier > 0) dmg.mul *= multiplier;
       else if (p.bonusPercent != null) dmg.mul *= 1 + Number(p.bonusPercent);
@@ -986,7 +1074,8 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || target.id !== mainTargetId) return;
       mainTargets.delete(dmg.attackId);
       if (!cooldownReady(`independentGearCd:${itemIdValue}`, cooldown)) return;
-      if (behavior === 'disarmOnHit') applyEquipmentStatus(battle, unit, target, 'disarm', { duration });
+      // 战栗维式重锤 (gear v4): the same path with 战栗 instead of 无法普通攻击
+      if (behavior === 'disarmOnHit') applyEquipmentStatus(battle, unit, target, p.status ?? 'disarm', { duration });
       else if (behavior === 'silenceOnHit') applyEquipmentStatus(battle, unit, target, 'silence', { duration });
       else battle.addBuff(target, { key: `independent:slow:${itemIdValue}`, duration, refresh: 'replace', mods: { aspd: Number(p.attackSpeedFlat ?? 0), moveMul: Math.max(0, 1 + Number(p.moveSpeedPercent ?? 0)) } });
     }, { owner: unit });
@@ -1071,9 +1160,11 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   }
   if (behavior === 'deployFirstHitStatus') {
     let used = 0;
-    let armed = false;
+    // perDeploy (谢拉格冰爪, gear v4): how many of the first normal attacks after each deployment carry the status
+    const perDeploy = Math.max(1, Math.floor(Number(p.perDeploy ?? 1)));
+    let armed = 0;
     const pendingTargets = new Map();
-    if (p.resetOnDeploy) battle.on('deploy', ({ unit: deployed }) => { if (deployed === unit) armed = true; }, { owner: unit });
+    if (p.resetOnDeploy) battle.on('deploy', ({ unit: deployed }) => { if (deployed === unit) armed = perDeploy; }, { owner: unit });
     battle.on('beforeAttack', ({ attacker, targets: attackTargets, isSkill }) => {
       if (attacker !== unit || isSkill || used >= Number(p.maxPerBattle ?? Infinity)) return;
       pendingTargets.set(battle._attackSeq + 1, attackTargets?.[0]?.id ?? null);
@@ -1083,9 +1174,9 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       if (source !== unit || !(amount > 0) || !target || !pendingTargets.has(attackId)) return;
       const mainTargetId = pendingTargets.get(attackId);
       pendingTargets.delete(attackId);
-      if (!armed || target.id !== mainTargetId || used >= Number(p.maxPerBattle ?? Infinity)) return;
+      if (armed <= 0 || target.id !== mainTargetId || used >= Number(p.maxPerBattle ?? Infinity)) return;
       if (applyEquipmentStatus(battle, unit, target, p.status, { duration: Number(p.durationSeconds ?? 0) })) used++;
-      armed = false;
+      armed--;
     }, { owner: unit });
     return;
   }
@@ -1198,20 +1289,32 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'countedStatus') {
-    let count = 0;
+    // gear v4 params: value (脆弱 / 法术脆弱 / 防御力降低 strength), radius (the main target and the enemies around it),
+    // damageType (造成法术伤害时: every hit of that type, no counting)
+    const duration = Number(p.durationSeconds ?? 0);
+    const radius = Number(p.radius ?? 0);
+    const apply = (target) => {
+      const list = radius > 0 ? battle.enemies.filter((e) => liveEnemy(e) && tileDistance(e, target) <= radius) : [target];
+      for (const t of list) gearStatus(battle, unit, t, p.status, duration, p.value, itemIdValue);
+    };
+    if (p.damageType) {
+      battle.on('damaged', ({ source, target, amount, dmg }) => {
+        if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !target.alive || dmg?.type !== p.damageType || isGearDamage(dmg)) return;
+        apply(target);
+      }, { owner: unit });
+      return;
+    }
+    const tick = attackCounter(unit, p.counterEvery);
     const procTargets = new Map();
     battle.on('beforeAttack', ({ attacker, targets: attackTargets, isSkill }) => {
-      if (attacker !== unit || isSkill) return;
-      count++;
-      if (count < Number(p.counterEvery ?? 1)) return;
-      count = 0;
+      if (attacker !== unit || isSkill || extraAttack(unit) || !tick()) return;
       if (attackTargets?.[0]) procTargets.set(battle._attackSeq + 1, attackTargets[0].id);
     }, { owner: unit });
     battle.on('damaged', ({ source, target, amount, dmg }) => {
       const attackId = dmg?.attackId;
       if (source !== unit || !(amount > 0) || !procTargets.has(attackId) || target?.id !== procTargets.get(attackId)) return;
-      applyEquipmentStatus(battle, unit, target, p.status, { duration: Number(p.durationSeconds ?? 0) });
       procTargets.delete(attackId);
+      apply(target);
     }, { owner: unit });
     return;
   }
@@ -1244,11 +1347,19 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     return;
   }
   if (behavior === 'pairedEquipmentHitDamage') {
-    if (!ownPair(p.partnerSourceId)) return;
+    // gear v4 (天马骑士长枪): works alone; worn with its partner the ratio becomes pairedRatio. Old rules (no
+    // singleWorks) still need the partner.
+    const paired = ownPair(p.partnerSourceId);
+    if (!paired && !p.singleWorks) return;
+    let ratio = Number(p.trueDamageAttackRatio ?? 0);
+    if (paired && p.pairedRatio != null) ratio = Number(p.pairedRatio);
+    else if (paired && p.pairedMultiplier != null) ratio *= Number(p.pairedMultiplier);
+    if (p.singleWorks) {
+      normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { amount: unit.s.atk * ratio, type: 'true', tags: GEAR_TAGS }); });
+      return;
+    }
     battle.on('attack', ({ attacker, targets, isSkill }) => {
       if (attacker !== unit || isSkill) return;
-      let ratio = Number(p.trueDamageAttackRatio ?? 0);
-      if (p.pairedMultiplier != null) ratio *= Number(p.pairedMultiplier);
       for (const target of targets || []) if (target?.alive && target.side === 'enemy') battle.dealDamage(unit, target, { amount: unit.s.atk * ratio, type: 'true', tags: ['independentEquipment'] });
     }, { owner: unit });
     return;
@@ -1298,8 +1409,14 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       }
       if (hasTag(p.requiresTag) && battle.time >= nextRetaliation) {
           let ratio = Number(p.retaliationAttackPercent ?? 0);
-          if (p.pairedSourceId && ownPair(p.pairedSourceId)) ratio *= Number(p.pairedMultiplier ?? 1);
-          if (ratio > 0) battle.dealDamage(unit, source, { amount: unit.s.atk * ratio, type: 'arts', tags: ['independentEquipment'] });
+          const paired = p.pairedSourceId && ownPair(p.pairedSourceId);
+          if (paired && p.pairedMultiplier != null) ratio *= Number(p.pairedMultiplier);
+          if (ratio > 0) {
+            // gear v4 pairing (裂潮重刃): the counter also splashes the enemies around the source
+            const splash = paired && Number(p.pairedSplashRadius) > 0
+              ? battle.enemies.filter((e) => e !== source && liveEnemy(e) && tileDistance(e, source) <= Number(p.pairedSplashRadius)) : [];
+            for (const e of [source, ...splash]) battle.dealDamage(unit, e, { amount: unit.s.atk * ratio, type: 'arts', tags: ['independentEquipment'] });
+          }
           nextRetaliation = battle.time + Number(p.retaliationCooldownSeconds ?? 0);
       }
     }, { owner: unit });
@@ -1350,9 +1467,18 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     battle.on('skillStart', ({ unit: actor }) => {
       if (actor !== unit) return;
       const duration = Number(p.slowWindowSeconds ?? 0);
-      for (const enemy of battle.enemies) if (enemy.alive && enemy.deployed) battle.addBuff(enemy, { key: `independent:skillWindowSlow:${unit.uid}`, duration, refresh: 'replace', mods: { moveMul: Math.max(0, 1 - Number(p.slowPercent ?? 0)) } });
+      // gear v4: the enemies in the wearer's attack range (inRangeOnly), else every enemy (old rule)
+      for (const enemy of battle.enemies) if (enemy.alive && enemy.deployed && (!p.inRangeOnly || withinRange(battle, unit, enemy))) battle.addBuff(enemy, { key: `independent:skillWindowSlow:${unit.uid}`, duration, refresh: 'replace', mods: { moveMul: Math.max(0, 1 - Number(p.slowPercent ?? 0)) } });
       if (paired && Number(p.pairedAttackPercent) > 0) battle.addBuff(unit, { key: `independent:pairedSkillAttack:${unit.uid}:${itemIdValue}`, duration, refresh: 'replace', mods: { atkPct: Number(p.pairedAttackPercent) }, allowDead: true });
     }, { owner: unit });
+    // skillEndRedeploy (gear v4, worn with 卡西米尔竞技旗): when the skill ends the wearer withdraws and is at once deployed
+    // again on its tile (【移动】: a new deployment, so 部署时 effects — the 竞技旗 charge — fire again)
+    if (paired && p.pairedRedeployOnSkillEnd) {
+      battle.on('skillEnd', ({ unit: actor, reason }) => {
+        if (actor !== unit || reason === 'death' || !unit.alive || !unit.deployed) return;
+        battle.after(0, () => { if (unit.alive && unit.deployed) battle.moveRedeploy(unit, unit.tileR, unit.tileC); }, { owner: unit });
+      }, { owner: unit });
+    }
     return;
   }
   if (behavior === 'stealthBreakDamage') {
@@ -1369,8 +1495,10 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       else if (hadStealth) { armed = true; hadStealth = false; }
     }, { owner: unit });
     battle.on('hit', ({ source, target, dmg }) => {
-      if (source !== unit || !unit.alive || !unit.deployed || !armed || !dmg || dmg.isSkill) return;
-      dmg.mul *= 1 + Number(p.damageBonus ?? 0);
+      if (source !== unit || !unit.alive || !unit.deployed || !armed || !dmg || dmg.isSkill || isGearDamage(dmg)) return;
+      if (p.damageBonus != null) dmg.mul *= 1 + Number(p.damageBonus);
+      // gear v4: the attack stuns its target instead of hitting harder
+      if (Number(p.stunSeconds) > 0 && target?.side === 'enemy') applyEquipmentStatus(battle, unit, target, 'stun', { duration: Number(p.stunSeconds) });
       if (paired && procs < procCap) {
         battle.dealDamage(unit, target, { amount: unit.s.atk * Number(p.trueDamageAttackRatio ?? 0), type: 'true', tags: ['independentEquipment'] });
         procs++;
@@ -1453,6 +1581,9 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     const mains = mainTargetTracker(battle, unit);
     battle.on('damaged', ({ source, target, amount, dmg }) => {
       if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !mains.take(dmg, target)) return;
+      // gear v4 (萨尔贡链雷护符): 法术普通攻击 only
+      if (p.normalOnly && dmg.isSkill) return;
+      if (p.damageType && dmg.type !== p.damageType) return;
       const type = dmg.type === 'arts' ? 'arts' : dmg.type === 'true' ? 'true' : 'phys';
       const live = (e) => e.alive && e.deployed !== false && !e.removed;
       if (behavior === 'splash') {
@@ -1481,7 +1612,11 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       const hurt = battle.allyUnits.filter((a) => a !== unit && a.alive && a.deployed && a.kind !== 'device' && a.hp < a.s.maxHp && tileDistance(a, unit) <= radius);
       if (!hurt.length) return;
       next = battle.time + cooldown;
-      battle.heal(unit, hurt[Math.floor(battle.rng() * hurt.length)], amount * ratio, { tags: ['independentEquipment'] });
+      // targets (gear v4 param): that many different hurt allies, each healed the share
+      for (let n = Math.max(1, Math.floor(Number(p.targets ?? 1))); n > 0 && hurt.length; n--) {
+        const pick = hurt.splice(Math.floor(battle.rng() * hurt.length), 1)[0];
+        battle.heal(unit, pick, amount * ratio, { tags: ['independentEquipment'] });
+      }
     }, { owner: unit });
     return;
   }
@@ -1503,7 +1638,321 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     factionGear(battle).guards.push({ unit, pct, keys: wearerKeys(battle, unit) });
     return;
   }
+  if (installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, cooldownReady })) return;
   throw new Error(`unimplemented independent combatEquipment behavior ${behavior} (${itemIdValue})`);
+}
+
+/**
+ * 特殊战斗装备 第四版 (2026-10-07; user: 「做就做呗」): the new behaviors. Returns false for a behavior it does not know.
+ * Damage they deal is tagged independentEquipment, so no other piece starts again from it.
+ */
+function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, cooldownReady }) {
+  const gearHit = (target, amount, type) => battle.dealDamage(unit, target, { amount, type, tags: GEAR_TAGS });
+  const sameType = (dmg) => (dmg?.type === 'arts' ? 'arts' : dmg?.type === 'true' ? 'true' : 'phys');
+  // the damage a normal attack's hit carried before the target's own defences: what 穿透 / 处置预案 deal again
+  const rawOf = (dmg) => Number(dmg?.amount ?? 0) * Number(dmg?.atkScale ?? 1) * Number(dmg?.mul ?? 1);
+  switch (behavior) {
+    case 'elementOnHit': {
+      // 元素损伤 on the main target of each normal attack (atkPercent of ATK), or on every hit of damageType
+      // (damagePercent of that hit: 灼燃维式重锤 — 造成法术伤害时); gear damage never starts it again
+      if (!GEAR_ELEMENTS.has(p.element)) throw new Error(`combatEquipment ${itemIdValue}: elementOnHit has unknown element ${p.element}`);
+      if (p.damageType) {
+        const share = Number(p.damagePercent);
+        if (!(share > 0)) throw new Error(`combatEquipment ${itemIdValue}: elementOnHit needs damagePercent`);
+        battle.on('damaged', ({ source, target, amount, dmg }) => {
+          if (source !== unit || target?.side !== 'enemy' || !(amount > 0) || !target.alive || dmg?.type !== p.damageType || isGearDamage(dmg)) return;
+          battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: amount * share, tags: GEAR_TAGS });
+        }, { owner: unit });
+        return true;
+      }
+      const ratio = Number(p.atkPercent);
+      if (!(ratio > 0)) throw new Error(`combatEquipment ${itemIdValue}: elementOnHit needs atkPercent`);
+      normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: unit.s.atk * ratio, tags: GEAR_TAGS }); });
+      return true;
+    }
+    case 'knockbackOnHit': {
+      // 击退 the main target of a normal attack with 力度 `force` (0 小力, 1 中力), once per cooldown
+      const cd = Number(p.cooldownSeconds ?? 0);
+      normalHits(battle, unit, (target) => {
+        if (!target.alive || !cooldownReady(`independentGearCd:${itemIdValue}`, cd)) return;
+        battle.push(target, Number(p.force ?? 1), { from: unit });
+      });
+      return true;
+    }
+    case 'pullOnHit': {
+      // every Nth normal attack pulls its main target to the wearer (拉向携带者, 力度 `force`)
+      const tick = attackCounter(unit, p.counterEvery);
+      const marked = new Set();
+      battle.on('beforeAttack', ({ attacker, isSkill }) => {
+        if (attacker === unit && !isSkill && !extraAttack(unit) && tick()) marked.add(battle._attackSeq + 1);
+      }, { owner: unit });
+      normalHits(battle, unit, (target, dmg) => {
+        if (!marked.delete(dmg.attackId) || !target.alive) return;
+        battle.pullToFront(target, unit, Number(p.force ?? 0));
+      });
+      return true;
+    }
+    case 'pierce': {
+      // 穿透: the enemies behind the main target on the line from the wearer through it, up to `depth` tiles further
+      const depth = Number(p.depth ?? 1);
+      normalHits(battle, unit, (target, dmg) => {
+        const dx = target.x - unit.x, dy = target.y - unit.y, len = Math.hypot(dx, dy);
+        if (!(len > 1e-6)) return;
+        const ux = dx / len, uy = dy / len;
+        const amount = rawOf(dmg);
+        for (const e of battle.enemies) {
+          if (e === target || !liveEnemy(e)) continue;
+          const along = (e.x - target.x) * ux + (e.y - target.y) * uy;
+          const side = Math.abs((e.x - target.x) * uy - (e.y - target.y) * ux);
+          if (along > 1e-6 && along <= depth + 0.5 && side <= 0.5) gearHit(e, amount, sameType(dmg));
+        }
+      });
+      return true;
+    }
+    case 'doubleStrike': {
+      // 连射: every Nth normal attack is made twice at once (the second counts for nothing)
+      const tick = attackCounter(unit, p.counterEvery);
+      battle.on('attack', ({ attacker, targets, isSkill }) => {
+        if (attacker !== unit || isSkill || extraAttack(unit) || !tick()) return;
+        const again = (targets || []).filter((t) => t?.alive && t.side === 'enemy');
+        if (!again.length || !unit.alive) return;
+        unit.mem.independentExtraAttack = true;
+        try { battle.forceAttack(unit, again, { noAmmo: true }); } finally { unit.mem.independentExtraAttack = false; }
+      }, { owner: unit });
+      return true;
+    }
+    case 'extraTargets': {
+      // 普通攻击同时攻击范围内N名敌人: a single-target normal attack takes the next enemies in range too
+      const n = Math.max(1, Math.floor(Number(p.targets ?? 2)));
+      battle.on('beforeAttack', (ctx) => {
+        if (ctx.attacker !== unit || ctx.isSkill || !ctx.targets?.length || ctx.targets.length >= n || ctx.targets.some((t) => t.side !== 'enemy')) return;
+        const more = enemiesInRange(battle, unit).filter((e) => !ctx.targets.includes(e))
+          .sort((a, b) => tileDistance(a, unit) - tileDistance(b, unit) || a.id - b.id);
+        ctx.targets = [...ctx.targets, ...more.slice(0, n - ctx.targets.length)];
+      }, { owner: unit, priority: 100 });
+      return true;
+    }
+    case 'targetPriority': {
+      // 普通攻击优先攻击范围内生命值最低的敌人 (the blocked enemies count as in range, as for any attack)
+      if (p.priority !== 'lowestHp') throw new Error(`combatEquipment ${itemIdValue}: unknown targetPriority ${p.priority}`);
+      battle.on('beforeAttack', (ctx) => {
+        if (ctx.attacker !== unit || ctx.isSkill || ctx.targets?.length !== 1 || ctx.targets[0].side !== 'enemy') return;
+        const pool = [...new Set([...enemiesInRange(battle, unit), ...battle.blockedTargets(unit, ctx.profile)])];
+        const lowest = pool.sort((a, b) => a.hp - b.hp || a.id - b.id)[0];
+        if (lowest && lowest !== ctx.targets[0]) ctx.targets = [lowest];
+      }, { owner: unit, priority: 110 });
+      return true;
+    }
+    case 'skillStartStrike': {
+      // 每次开启技能时，对攻击范围内所有敌人造成伤害
+      const ratio = Number(p.atkPercent);
+      battle.on('skillStart', ({ unit: who }) => {
+        if (who !== unit) return;
+        for (const e of enemiesInRange(battle, unit)) gearHit(e, unit.s.atk * ratio, p.type ?? 'phys');
+      }, { owner: unit });
+      return true;
+    }
+    case 'skillStartTeamStrike': {
+      // 炎国天师古鼎: each skill of the wearer makes the next normal attack of every other operator of the faction on the
+      // field hit every enemy in its range for ratio × its own ATK (paired with 炎国制式短刀: pairedAtkPercent)
+      if (!hasTag(p.requiresTag)) return true;
+      const ratio = Number(ownPair(p.pairedSourceId) ? p.pairedAtkPercent ?? p.atkPercent : p.atkPercent);
+      const reg = teamStrike(battle);
+      battle.on('skillStart', ({ unit: who }) => {
+        if (who !== unit) return;
+        for (const ally of battle.allyUnits) {
+          if (ally === unit || ally.kind !== 'op' || ally.ownerId !== unit.ownerId || !ally.alive || !ally.deployed) continue;
+          if (!tavernFactions(piecesFor(battle, ally.uid), catalog).includes(p.requiresTag)) continue;
+          reg.pending.set(ally, Math.max(reg.pending.get(ally) ?? 0, ratio));
+        }
+      }, { owner: unit });
+      return true;
+    }
+    case 'stealthOnDeploy': {
+      // 每次部署时获得隐匿，首次普通攻击后解除 (its own buff: a talent's 隐匿 stays)
+      const key = `independent:gearStealth:${itemIdValue}`;
+      battle.on('deploy', ({ unit: who }) => {
+        if (who === unit) battle.addBuff(unit, { key, status: 'stealth', flags: { stealth: true }, duration: Infinity, refresh: 'replace', source: unit });
+      }, { owner: unit });
+      battle.on('attack', ({ attacker, isSkill }) => {
+        if (attacker === unit && !isSkill && unit.findBuff(key)) battle.removeBuff(unit, key);
+      }, { owner: unit, priority: -10 });
+      return true;
+    }
+    case 'attractOnDeploy': {
+      // 每次部署时，诱导攻击范围内的敌人向携带者靠拢
+      const duration = Number(p.durationSeconds ?? 2);
+      battle.on('deploy', ({ unit: who }) => {
+        if (who !== unit) return;
+        for (const e of enemiesInRange(battle, unit)) applyEquipmentStatus(battle, unit, e, 'attract', { duration, point: { x: unit.x, y: unit.y } });
+      }, { owner: unit });
+      return true;
+    }
+    case 'deployStrike': {
+      // 每次部署时冲锋：对攻击范围内所有敌人造成伤害
+      const ratio = Number(p.atkPercent);
+      battle.on('deploy', ({ unit: who }) => {
+        if (who !== unit) return;
+        battle.refreshRange?.(unit);
+        for (const e of enemiesInRange(battle, unit)) gearHit(e, unit.s.atk * ratio, p.type ?? 'phys');
+      }, { owner: unit });
+      return true;
+    }
+    case 'deviceOnDown': {
+      // 被击倒时，在原位置放下一个装置（阻挡1名敌人，生命值为携带者最大生命值的一定比例），直到携带者再部署
+      let device = null;
+      const clear = () => { if (device?.alive) battle.retreat(device, { reason: 'expired', permanent: true }); device = null; };
+      battle.on('death', ({ unit: who, reason }) => {
+        if (who !== unit || reason !== 'killed' || !battle.isDown(unit)) return;
+        const [r, c] = unit.body ?? [unit.tileR, unit.tileC];
+        device = battle.spawnDevice('independent_gear_device', r, c, {
+          hp: Math.max(1, unit.s.maxHp * Number(p.maxHpPercent ?? 0.5)), blockCnt: Number(p.blockCnt ?? 1), name: '装置', overBody: unit, dir: unit.dir,
+        });
+        if (device) device.ownerId = unit.ownerId;
+      }, { owner: unit });
+      // gone before the wearer comes back, so its own redeploy is never held up by it
+      battle.on('tick', () => { if (device && (unit.alive || !battle.isDown(unit) || battle.time + 1e-9 >= unit.respawnAt)) clear(); }, { owner: unit });
+      return true;
+    }
+    case 'summonOnDeploy': {
+      // 每场首次部署时，在相邻空位放下召唤物（攻击力与最大生命值为携带者的一定比例，阻挡1名敌人，存在一段时间）
+      let left = Number(p.perBattle ?? 1);
+      battle.on('deploy', ({ unit: who }) => {
+        if (who !== unit || left <= 0) return;
+        left--;
+        let made = 0;
+        const steps = [[0, 1], [1, 0], [-1, 0], [0, -1]];
+        for (const [dr, dc] of steps) {
+          if (made >= Number(p.count ?? 1)) break;
+          const r = unit.tileR + dr, c = unit.tileC + dc;
+          if (!battle.grid.inRect(r, c) || battle.isReservedTile(r, c) || !battle.grid.isLow(r, c) || !battle.grid.groundPassable(r, c, true)) continue;
+          const ratio = Number(p.statRatio ?? 0.5);
+          const token = battle.spawnToken(unit, p.tokenId ?? 'token_10015_dusk_drgn', r, c, {
+            anySource: true, kit: { skill: null }, duration: Number(p.durationSeconds ?? 20),
+            stats: { atk: unit.s.atk * ratio, maxHp: Math.max(1, unit.s.maxHp * ratio), blockCnt: Number(p.blockCnt ?? 1) },
+          });
+          if (token) made++;
+        }
+      }, { owner: unit });
+      return true;
+    }
+    case 'spChargeMode': {
+      // 技能也能靠攻击回复技力：每次普通攻击额外回复技力
+      const sp = Number(p.onAttack ?? 1);
+      battle.on('attack', ({ attacker, isSkill }) => {
+        if (attacker !== unit || isSkill || extraAttack(unit)) return;
+        const sk = unit.skill;
+        if (!sk || sk.noSkill || sk.kind === 'passive' || (sk.active && sk.isTimed)) return;
+        sk.gainSp(sp, 'independentEquipment');
+      }, { owner: unit });
+      return true;
+    }
+    case 'skillRecast': {
+      // 萨尔贡黄沙罗盘: the first `recasts` skills of the battle start again for free as soon as they end; paired with
+      // 萨尔贡行军浓茶, each skill the wearer starts gives the other 萨尔贡 operators on the field SP (至多 pairedSkillStartCap 次)
+      if (!hasTag(p.requiresTag)) return true;
+      let left = Number(p.recasts ?? 1);
+      battle.on('skillEnd', ({ unit: who, reason }) => {
+        if (who !== unit || left <= 0 || reason === 'death' || !unit.alive || !unit.deployed) return;
+        left--;
+        battle.after(0, () => { if (unit.alive && unit.deployed && !unit.skill?.active) unit.skill?.activate('independentEquipment', { free: true }); }, { owner: unit });
+      }, { owner: unit });
+      if (ownPair(p.pairedSourceId) && Number(p.teamSpPerSkillStart) > 0) {
+        let given = 0;
+        battle.on('skillStart', ({ unit: who }) => {
+          if (who !== unit || given >= Number(p.pairedSkillStartCap ?? Infinity)) return;
+          given++;
+          for (const ally of battle.allyUnits) {
+            if (ally === unit || ally.kind !== 'op' || ally.ownerId !== unit.ownerId || !ally.alive || !ally.deployed) continue;
+            if (tavernFactions(piecesFor(battle, ally.uid), catalog).includes(p.requiresTag)) ally.skill?.gainSp(Number(p.teamSpPerSkillStart), 'independentEquipment');
+          }
+        }, { owner: unit });
+      }
+      return true;
+    }
+    case 'skillStartShield': {
+      // 每次开启技能时获得护盾（装备护盾，至多2层）; paired with 天马骑士长枪: when the shield is broken, true damage to
+      // the enemies around the wearer
+      const key = `independent:equipmentShield:${unit.uid}`;
+      let last = 0;
+      battle.on('skillStart', ({ unit: who }) => {
+        if (who !== unit) return;
+        grantShieldLayers(battle, unit, Number(p.charges ?? 1));
+        last = Number(unit.findBuff(key)?.shieldHits ?? 0);
+      }, { owner: unit });
+      if (ownPair(p.pairedSourceId)) {
+        battle.on('tick', () => {
+          const now = unit.alive && unit.deployed ? Number(unit.findBuff(key)?.shieldHits ?? 0) : 0;
+          if (last > 0 && now === 0 && unit.alive && unit.deployed) {
+            const radius = Number(p.radius ?? 1) + 0.5;
+            for (const e of battle.enemies) if (liveEnemy(e) && tileDistance(e, unit) <= radius) gearHit(e, unit.s.atk * Number(p.breakBurstAtkPercent ?? 1), 'true');
+          }
+          last = now;
+        }, { owner: unit });
+      }
+      return true;
+    }
+    case 'countedExtraShot': {
+      // 拉特兰铳骑组件: every Nth normal attack fires one more shot at another enemy in range (the main target when it is
+      // alone) for ratio × ATK; worn with 拉特兰跳弹模块 that shot bounces like the 跳弹模块's
+      if (!hasTag(p.requiresTag)) return true;
+      const tick = attackCounter(unit, p.counterEvery);
+      const bounce = ownPair(p.pairedSourceId)
+        ? entries.find((e) => e.sourceId === p.pairedSourceId)?.rec?.params?.effects?.find((x) => x.behavior === 'ricochet')?.params ?? null : null;
+      battle.on('attack', ({ attacker, targets, isSkill }) => {
+        if (attacker !== unit || isSkill || extraAttack(unit) || !tick()) return;
+        const main = (targets || [])[0];
+        const others = enemiesInRange(battle, unit).filter((e) => e !== main).sort((a, b) => tileDistance(a, unit) - tileDistance(b, unit) || a.id - b.id);
+        const shot = others[0] ?? (main && liveEnemy(main) ? main : null);
+        if (!shot) return;
+        const type = p.type ?? 'phys';
+        gearHit(shot, unit.s.atk * Number(p.atkPercent ?? 1), type);
+        if (bounce) {
+          const hit = new Set([shot]); let from = shot;
+          for (let n = 0; n < Math.max(1, Number(bounce.bounces ?? 1)); n++) {
+            let next = null;
+            for (const e of battle.enemies) if (!hit.has(e) && liveEnemy(e) && tileDistance(e, from) <= Number(bounce.radius ?? 2) && (!next || tileDistance(e, from) < tileDistance(next, from))) next = e;
+            if (!next) break;
+            gearHit(next, unit.s.atk * Number(bounce.atkPercent ?? 0.5), type);
+            hit.add(next); from = next;
+          }
+        }
+      }, { owner: unit });
+      return true;
+    }
+    case 'counterAccelerator':
+      // 工程部节拍校准器: read by every counter of the wearer (installEquipmentMechanisms sets the step first)
+      return true;
+    case 'controlledSplash': {
+      // 罗德岛处置预案: a normal attack on a 晕眩 / 束缚 / 冻结 / 浮空 enemy hits the other enemies around it the same
+      const radius = Number(p.radius ?? 1.5);
+      const controlled = (e) => { const f = e.s.flags; return !!(f.stun || f.bind || f.freeze || f.levitate); };
+      normalHits(battle, unit, (target, dmg) => {
+        if (!controlled(target)) return;
+        const amount = rawOf(dmg);
+        for (const e of battle.enemies) if (e !== target && liveEnemy(e) && tileDistance(e, target) <= radius) gearHit(e, amount, sameType(dmg));
+      });
+      return true;
+    }
+    case 'blockedAttackerStatus': {
+      // 罗德岛重装防护套件: an enemy the wearer blocks that hits it may be stunned
+      const chance = Number(p.chance ?? 0);
+      battle.on('damaged', ({ source, target, amount }) => {
+        if (target !== unit || source?.side !== 'enemy' || !(amount > 0) || source.blockedBy !== unit || !source.alive) return;
+        if (battle.rng() < chance) applyEquipmentStatus(battle, unit, source, p.status ?? 'stun', { duration: Number(p.durationSeconds ?? 1) });
+      }, { owner: unit });
+      return true;
+    }
+    case 'killSpGain': {
+      // 精英干员战备箱: 击倒敌人时回复技力
+      battle.on('kill', ({ killer, victim }) => {
+        if (killer === unit && victim?.side === 'enemy' && unit.alive) unit.skill?.gainSp(Number(p.sp ?? 1), 'independentEquipment');
+      }, { owner: unit });
+      return true;
+    }
+    default:
+      return false;
+  }
 }
 
 function installEquipmentMechanisms(battle, catalog, pieces, emit) {
@@ -1517,14 +1966,19 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
       const steamEffect = (steam.rec.params?.effects ?? []).find((effect) => effect.behavior === 'steamGearUpgrade');
       if (!steamEffect || !factionSet.has(steamEffect.params?.requiresTag)) continue;
       const selected = steam.item.state?.hammerSourceIds ?? [];
-      const maxSelected = Number(steamEffect.params?.chooseVariantsOnEquip?.[steam.item.elite ? 'elite' : 'normal'] ?? 0);
-      if (!Array.isArray(selected) || selected.length > maxSelected) throw new Error(`steamGearUpgrade ${steam.id} has invalid hammerSourceIds selection`);
-      for (const sourceId of selected) {
+      // gear v4: one form — the chosen hammer is 强化 (its params' `steam` overrides); an old save that chose more keeps
+      // the first ones it may
+      const maxSelected = Number(steamEffect.params?.choose ?? steamEffect.params?.chooseVariantsOnEquip?.normal ?? 0);
+      if (!Array.isArray(selected)) throw new Error(`steamGearUpgrade ${steam.id} has invalid hammerSourceIds selection`);
+      for (const sourceId of selected.slice(0, maxSelected)) {
         const target = ownedEntries.find((e) => e.sourceId === sourceId);
         if (!target || !(steamEffect.params.sourceIds ?? []).includes(sourceId)) throw new Error(`steamGearUpgrade ${steam.id} selects an unavailable hammer ${sourceId}`);
-        target.specialElite = true;
+        target.steamBoost = true;
       }
     }
+    // 工程部节拍校准器: every 「每发动N次普通攻击」 counter of the wearer advances this much per normal attack
+    unit.mem.independentCountStep = Math.max(1, ...ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'combatEquipment')
+      .flatMap((e) => (e.rec.params?.effects ?? []).filter((x) => x.behavior === 'counterAccelerator').map((x) => Number(x.params?.countPerAttack) || 1)));
     const shieldCharges = Math.min(2, ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'equipmentShield')
       .reduce((sum, e) => {
         const n = Number(e.rec.params?.charges);
@@ -1606,7 +2060,15 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
         case 'combatEquipment': {
           if (!Array.isArray(p.effects)) throw new Error(`combatEquipment ${e.id} requires params.effects[]`);
           if (Number(p.initialSp) > 0) battle.on('battleStart', () => unit.skill?.gainSp(Number(p.initialSp), 'independentEquipment'), { owner: unit });
-          for (const effect of p.effects) installEquipmentCombatRule(battle, catalog, unit, piece, selectVariant(effect, !!e.item.elite || !!e.specialElite), ownedEntries, emit, e.sourceId ?? e.id);
+          for (const raw of p.effects) {
+            let effect = selectVariant(raw, GEAR_ELITE);
+            // 维多利亚蒸汽之心 强化: the chosen hammer's `steam` params replace its own
+            if (effect.params?.steam) {
+              const { steam, ...own } = effect.params;
+              effect = { ...effect, params: e.steamBoost ? { ...own, ...steam } : own };
+            }
+            installEquipmentCombatRule(battle, catalog, unit, piece, effect, ownedEntries, emit, e.sourceId ?? e.id);
+          }
           break;
         }
         default:

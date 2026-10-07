@@ -66,7 +66,7 @@ test('initial base income is available to current-round procurement top-up', () 
   assert.equal(result.state.funds, state.incomeThisRound);
 });
 
-test('player facility is use-only, normal duplicates reject, and elite replaces normal', () => {
+test('player facility is use-only, duplicates reject, and an old elite copy is the normal one (gear has one form, 10-07)', () => {
   const facility = Object.values(baseCatalog.equipment).find((x) => x.kind === '玩家设施' && x.mechanism === 'facilityIncome');
   assert.ok(facility);
   const state = createSession({ seed: 31, data, catalog: baseCatalog });
@@ -78,11 +78,12 @@ test('player facility is use-only, normal duplicates reject, and elite replaces 
   const duplicate = applyAction(normal.state, { type: 'use-item', itemUid: 'i912' }, { data, catalog: baseCatalog });
   assert.equal(duplicate.ok, false);
   assert.equal(duplicate.error.code, 'LIMIT_REACHED');
+  // an old save's elite copy (no 合成精锐 since 2026-10-07) joins the normal stack and is refused like any duplicate
   normal.state.inventory.push({ uid: 'i913', id: facility.id, sourceId: facility.sourceId, elite: true, quantity: 1, state: {} });
-  const elite = applyAction(normal.state, { type: 'use-item', itemUid: 'i913' }, { data, catalog: baseCatalog });
-  assert.equal(elite.ok, true, elite.error?.message);
-  assert.equal(elite.state.playerEffects.find((x) => x.type === 'facilityIncome').amount, 2);
-  assert.equal(elite.state.playerEffects.find((x) => x.type === 'facilityIncome').elite, true);
+  const elite = applyAction(normal.state, { type: 'use-item', itemUid: 'i912' }, { data, catalog: baseCatalog });
+  assert.equal(elite.ok, false);
+  assert.equal(elite.error.code, 'LIMIT_REACHED');
+  assert.equal(normal.state.playerEffects.find((x) => x.type === 'facilityIncome').amount, 1);
   const body = applyAction(state, { type: 'buy', slot: state.shop.slots.findIndex((x) => x.kind === 'chess' && x.id) }, { data, catalog: baseCatalog });
   assert.equal(body.ok, true);
   body.state.inventory.push({ uid: 'i914', id: facility.id, sourceId: facility.sourceId, quantity: 1, state: {} });
@@ -97,13 +98,16 @@ function addBody(state, op, equipment = []) {
   return piece;
 }
 
-test('ancient cauldron observes all acquired bodies and pays its elite amount once per preparation', () => {
+// gear v4 (2026-10-07): 炎国天师古鼎 acts in battle only (the other 炎 operators' strike, gear-v4.test.js); gaining
+// operators while it is worn pays nothing any more, whether the copy is normal or an old elite one
+test('ancient cauldron pays no funds in the preparation phase any more', () => {
   for (const elite of [false, true]) {
     const state = createSession({ seed: 42, data, catalog: baseCatalog });
     state.funds = 100;
     const op = Object.values(baseCatalog.operators).find((x) => !x.elite && tavernFactions({ chessId: x.chessId, equipment: [] }, baseCatalog).includes('炎'));
     const cauldron = Object.values(baseCatalog.equipment).find((x) => x.newName === '炎国天师古鼎');
-    const rule = cauldron.params.effects.find((x) => x.behavior === 'gainBattleStats');
+    const rule = cauldron.params.effects.find((x) => x.behavior === 'skillStartTeamStrike');
+    assert.ok(rule && !cauldron.params.effects.some((x) => x.behavior === 'gainBattleStats'));
     addBody(state, op, [{ uid: 'i900', id: cauldron.id, sourceId: cauldron.sourceId, elite, quantity: 1, state: {} }, { uid: 'i901', id: rule.params.pairedSourceId, sourceId: rule.params.pairedSourceId, quantity: 1, state: {} }]);
     let current = state;
     for (let n = 0; n < 2; n++) {
@@ -112,8 +116,7 @@ test('ancient cauldron observes all acquired bodies and pays its elite amount on
       assert.equal(result.ok, true, result.error?.message);
       current = result.state;
     }
-    assert.equal(current.pendingFunds, elite ? 2 : 1);
-    assert.equal(current.pieces[0].equipment[0].state.deferredFundsRound, 1);
+    assert.equal(current.pendingFunds, 0);
   }
 });
 

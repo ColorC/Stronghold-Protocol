@@ -300,7 +300,7 @@ export function EffectsColumn({ effects, catalog }) {
     ${list.slice(0, 10).map((e, i) => {
       const prize = catalog.prizes?.[e.source]; const gear = catalog.gear?.[effectItem(e)];
       const name = e.type === 'badgeBoost' ? `${gear?.name || '徽章'}增幅` : e.type === 'shopCarry' ? `商品附带${gear?.name || '徽章'}` : prize?.name || gear?.name || '效果';
-      const text = prize?.effect || (gear && !['badgeBoost', 'shopCarry'].includes(e.type) ? (e.elite ? gear.elite : gear.normal) : '');
+      const text = prize?.effect || (gear && !['badgeBoost', 'shopCarry'].includes(e.type) ? gear.normal : '');
       const n = EFFECT_COUNT[e.type]?.(e);
       return html`<${Tooltip} key=${`${e.type}:${e.source}:${i}`} placement="bottom" text=${html`<div class="efftip">
           <b>${name}</b><span class="efftip__kind">${EFFECT_LINE[e.type](e)}</span>
@@ -370,13 +370,13 @@ function GearCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
       onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }} data-testid=${`ix-shop-${idx}`} aria-label=${`${g.name || '装备'}，价格 ${slot.price}`}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__top">
-      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${(slot.elite ? g.eliteLevel : g.level) ?? 1}级</span>`}
+      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${g.level ?? 1}级</span>`}
       <${HexBadge} value=${slot.price} tone=${reason === '资金不足' ? 'dark' : 'gold'} size="md" class="scard__price" />
     </span>
     <span class="scard__itemart"><${GearIcon} id=${slot.id} catalog=${catalog} /></span>
     <span class="scard__body">
       <span class="scard__name">${g.name || slot.id}</span>
-      <span class="scard__idesc"><${GameText} text=${slot.elite ? g.elite : g.normal} catalog=${catalog} /></span>
+      <span class="scard__idesc"><${GameText} text=${g.normal} catalog=${catalog} /></span>
     </span>
     ${state.shop.frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
     ${armed ? html`<span class=${cx('scard__confirm', reason && 'is-no')} role="status">${reason ? html`<b>无法购买</b><small>${reason}</small>` : html`<b>确认购买</b><small>再次点击</small>`}</span>` : null}
