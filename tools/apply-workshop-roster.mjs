@@ -177,7 +177,14 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
       sourceTextsEn: { normal: card.text_en || '', elite: card.golden?.text_en || card.text_en || '' },
       sourceUrl: `https://api.hearthstonejson.com/v1/68600/zhCN/cards.json`,
       metadata: { op: { effectDelivery: { normal, elite } } },
-      authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : {
+      authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : KEYWORD_ADAPTERS[card.id] ? {
+        sourceId:card.id,
+        mechanic:'keywordGearGrant',
+        normal:{trigger:'gain',recipient:'self',duration:'permanentWornGear',outputs:KEYWORD_ADAPTERS[card.id].map(name=>({id:`independent:${name}`,quantity:1}))},
+        elite:{trigger:'gain',recipient:'self',duration:'permanentWornGear',outputs:KEYWORD_ADAPTERS[card.id].map(name=>({id:`independent:${name}`,quantity:1}))},
+        status:'pending-gear-landing',
+        reason:'Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification.'
+      } : {
         sourceId: card.id,
         status: 'unsupported',
         reason: 'Needs a source-specific adapter rule and matching ordinary/elite trigger test.'
@@ -228,6 +235,7 @@ const designAddon = {
     sourceId:x.sourceId,
     sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
     authoredRule:x.authoredRule,
+    metadata:{op:{effectDelivery:x.metadata.op.effectDelivery}},
     modeEffects:null
   })),
   pendingNativeDefinitions: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({name:x.operator,sourceId:x.sourceId}))

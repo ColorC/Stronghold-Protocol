@@ -23,6 +23,52 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>亡语：</b>随机召唤一个<b>传说</b>随从。",
+                "textEn": "<b>Deathrattle:</b> Summon a random <b>Legendary</b> minion.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>随机召唤两个<b>传说</b>随从。",
+                "textEn": "<b>Deathrattle:</b> Summon 2 random <b>Legendary</b> minions.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -44,6 +90,60 @@
         "sourceId": "BGS_009",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "onePerEligibleType",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你的回合结束时，随机使每个随从类型的各一个友方随从获得+2/+2。",
+                "textEn": "[x]At the end of your turn,\ngive a friendly minion\nof each minion type\n+2/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "onePerEligibleType",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "在你的回合结束时，随机使每个随从类型的各一个友方随从获得+4/+4。",
+                "textEn": "[x]At the end of your turn,\ngive a friendly minion\nof each minion type\n+4/+4.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -67,6 +167,54 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>亡语</b>：召唤本场战斗中最先死亡的两个友方机械。",
+                "textEn": "<b>Deathrattle</b>: Summon the first 2 friendly Mechs that died this combat.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    4
+                  ]
+                },
+                "text": "<b>亡语</b>：召唤本场战斗中最先死亡的四个友方机械。",
+                "textEn": "<b>Deathrattle</b>: Summon the first 4 friendly Mechs that died this combat.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -88,6 +236,56 @@
         "sourceId": "BGS_017",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2
+                  },
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "每当你召唤一个野兽，使其获得+2\n攻击力。",
+                "textEn": "Whenever you summon a Beast, give it +2 Attack.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4
+                  },
+                  "numericLiterals": [
+                    4
+                  ]
+                },
+                "text": "每当你召唤一个野兽，使其获得+4\n攻击力。",
+                "textEn": "Whenever you summon a Beast, give it +4 Attack.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -111,6 +309,64 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 5,
+                    "health": 5
+                  },
+                  "numericLiterals": [
+                    5,
+                    5
+                  ]
+                },
+                "text": "<b>亡语：</b>使你的野兽获得+5/+5。",
+                "textEn": "<b>Deathrattle:</b> Give your Beasts +5/+5.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 10,
+                    "health": 10
+                  },
+                  "numericLiterals": [
+                    10,
+                    10
+                  ]
+                },
+                "text": "<b>亡语：</b>使你的野兽获得+10/+10。",
+                "textEn": "<b>Deathrattle:</b> Give your Beasts +10/+10.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -132,6 +388,60 @@
         "sourceId": "BGS_021",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "每当你召唤一个野兽，使其获得+4/+4。",
+                "textEn": "Whenever you summon a Beast, give it +4/+4.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "statDeltas": {
+                    "attack": 8,
+                    "health": 8
+                  },
+                  "numericLiterals": [
+                    8,
+                    8
+                  ]
+                },
+                "text": "每当你召唤一个野兽，使其获得+8/+8。",
+                "textEn": "Whenever you summon a Beast, give it +8/+8.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -155,6 +465,50 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
+                "textEn": "[x]<b>Windfury</b>\nThis minion always attacks\nthe enemy minion with\nthe lowest Attack.",
+                "tags": [
+                  "windfury"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>超级风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
+                "textEn": "[x]<b>Mega-Windfury</b>\nThis minion always attacks\nthe enemy minion with\nthe lowest Attack.",
+                "tags": [
+                  "windfury"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -176,6 +530,52 @@
         "sourceId": "BGS_032",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "overkill",
+                "sourceTrigger": "overkill",
+                "recipient": "leftmostFriendly",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "damage": 3,
+                  "numericLiterals": [
+                    3
+                  ]
+                },
+                "text": "<b>超杀：</b>对最左边的敌方随从造成3点伤害。",
+                "textEn": "<b>Overkill:</b> Deal 3 damage\nto the left-most enemy minion.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "overkill",
+                "sourceTrigger": "overkill",
+                "recipient": "leftmostFriendly",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "damage": 6,
+                  "numericLiterals": [
+                    6
+                  ]
+                },
+                "text": "<b>超杀：</b>对最左边的敌方随从造成6点伤害。",
+                "textEn": "<b>Overkill:</b> Deal 6 damage\nto the left-most enemy minion.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -199,6 +599,60 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "每当一条友方的龙消灭一个敌人，便获得+2/+2。",
+                "textEn": "Whenever a friendly Dragon kills an enemy, gain +2/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "每当一条友方的龙消灭一个敌人，便获得+4/+4。",
+                "textEn": "Whenever a friendly Dragon kills an enemy, gain +4/+4.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -220,6 +674,60 @@
         "sourceId": "BGS_036",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "self",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "在你的回合结束时，你每有一条龙，便获得+1/+1。",
+                "textEn": "At the end of your turn, gain +1/+1 for each Dragon you have.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "self",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你的回合结束时，你每有一条龙，便获得+2/+2。",
+                "textEn": "At the end of your turn, gain +2/+2 for each Dragon you have.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -243,6 +751,102 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>嘲讽，战吼：</b>使一条友方的龙获得+2/+2。",
+                "textEn": "<b>Taunt</b>\n<b>Battlecry:</b> Give a friendly Dragon +2/+2.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>嘲讽，战吼：</b>使一条友方的龙获得+4/+4。",
+                "textEn": "<b>Taunt</b>\n<b>Battlecry:</b> Give a friendly Dragon +4/+4.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -262,8 +866,77 @@
       },
       "authoredRule": {
         "sourceId": "BGS_039",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -287,6 +960,88 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
+                "textEn": "<b>Deathrattle:</b> Give your Dragons <b>Divine Shield</b>.",
+                "tags": [
+                  "divineShield",
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
+                "textEn": "<b>Deathrattle:</b> Give your Dragons <b>Divine Shield</b>.",
+                "tags": [
+                  "divineShield",
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -308,6 +1063,64 @@
         "sourceId": "BGS_041",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "在你使用一张<b>战吼</b>随从牌后，使你的龙获得+1/+1。",
+                "textEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +1/+1.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你使用一张<b>战吼</b>随从牌后，使你的所有龙获得+2/+2。",
+                "textEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +2/+2.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -337,6 +1150,50 @@
         "status": "unsupported",
         "reason": "No PvP opponent warband exists in this co-op mode; implement the approved previous-round friendly copy source, never an invented enemy."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "hand",
+                "duration": "untilPlayedOrSold",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>战吼：</b>将你上一个对手的战队中的一个随从置入你的手牌。",
+                "textEn": "[x]<b>Battlecry:</b> Add a minion\nfrom your last opponent's\nwarband to your hand.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "hand",
+                "duration": "untilPlayedOrSold",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>战吼：</b>将你上一个对手的战队中的一个随从置入你的手牌，并使其变为金色！",
+                "textEn": "[x]<b>Battlecry:</b> Add a minion\nfrom your last opponent's\nwarband to your hand.\nMake it Golden!",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -358,6 +1215,46 @@
         "sourceId": "BGS_045",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "attack",
+                "sourceTrigger": "attack",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "每当该随从攻击，便使其攻击力翻倍。",
+                "textEn": "Whenever this attacks, double its Attack.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "attack",
+                "sourceTrigger": "attack",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "每当该随从攻击，便使其攻击力变为\n三倍。",
+                "textEn": "Whenever this attacks, triple its Attack.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -381,6 +1278,60 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "allFriendly",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    2,
+                    1
+                  ]
+                },
+                "text": "每当一个友方海盗攻击时，使所有友方随从获得+2/+1。",
+                "textEn": "Whenever a friendly Pirate attacks, give all friendly minions +2/+1.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "allFriendly",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    4,
+                    2
+                  ]
+                },
+                "text": "每当一个友方海盗攻击时，使所有友方随从获得+4/+2。",
+                "textEn": "Whenever a friendly Pirate attacks, give all friendly minions +4/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -402,6 +1353,60 @@
         "sourceId": "BGS_053",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 3
+                  },
+                  "numericLiterals": [
+                    3
+                  ]
+                },
+                "text": "<b>战吼：</b>使你的其他海盗获得+3攻击力。",
+                "textEn": "<b>Battlecry</b>: Give your other Pirates +3 Attack.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 6
+                  },
+                  "numericLiterals": [
+                    6
+                  ]
+                },
+                "text": "<b>战吼：</b>使你的其他海盗获得+6攻击力。",
+                "textEn": "<b>Battlecry</b>: Give your other Pirates +6 Attack.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -425,6 +1430,54 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "shop",
+                "duration": "untilShopRefreshOrPurchase",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": [
+                    1
+                  ]
+                },
+                "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
+                "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (1).",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "shop",
+                "duration": "untilShopRefreshOrPurchase",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。",
+                "textEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (2).",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -446,6 +1499,60 @@
         "sourceId": "BGS_056",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "每当其他友方海盗攻击时，使其获得+2/+2。",
+                "textEn": "Whenever another friendly Pirate attacks, give it +2/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "每当其他友方海盗攻击时，使其获得+4/+4。",
+                "textEn": "Whenever another friendly Pirate attacks, give it +4/+4.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -469,6 +1576,64 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "summonStats": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>亡语：</b>召唤一个1/1的海盗并使其立即发起攻击。",
+                "textEn": "<b>Deathrattle:</b> Summon a 1/1 Pirate. It attacks immediately.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "summonStats": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>召唤一个2/2的海盗并使其立即发起攻击。",
+                "textEn": "<b>Deathrattle:</b> Summon a 2/2 Pirate. It attacks immediately.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -490,6 +1655,100 @@
         "sourceId": "BGS_067",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在一个友方随从失去<b>圣盾</b>后，获得+2/+2。",
+                "textEn": "After a friendly minion loses <b>Divine Shield</b>, gain +2/+2.",
+                "tags": [
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "在一个友方随从失去<b>圣盾</b>后，获得+4/+4。",
+                "textEn": "After a friendly minion loses <b>Divine Shield</b>, gain +4/+4.",
+                "tags": [
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -513,6 +1772,96 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1
+                  },
+                  "numericLiterals": [
+                    1
+                  ]
+                },
+                "text": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+1攻击力和<b>圣盾</b>。",
+                "textEn": "[x]<b>Divine Shield</b>\nWhenever you summon a Mech\nduring combat, gain +1 Attack\nand <b>Divine Shield</b>.",
+                "tags": [
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2
+                  },
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+2攻击力和<b>圣盾</b>。",
+                "textEn": "[x]<b>Divine Shield</b>\nWhenever you summon a Mech\nduring combat, gain +2 Attack\nand <b>Divine Shield</b>.",
+                "tags": [
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -534,6 +1883,64 @@
         "sourceId": "BGS_075",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "在你使用一张<b>亡语</b>随从牌后，获得+1/+1。",
+                "textEn": "After you play a minion with <b>Deathrattle</b>, gain +1/+1.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你使用一张<b>亡语</b>随从牌后，获得+2/+2。",
+                "textEn": "After you play a minion with <b>Deathrattle</b>, gain +2/+2.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -557,6 +1964,54 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    3
+                  ]
+                },
+                "text": "<b>亡语：</b>随机召唤三个海盗。",
+                "textEn": "<b>Deathrattle</b>: Summon 3 random Pirates.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    6
+                  ]
+                },
+                "text": "<b>亡语：</b>随机召唤六个海盗。",
+                "textEn": "<b>Deathrattle</b>: Summon 6 random Pirates.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -578,6 +2033,64 @@
         "sourceId": "BGS_080",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "overkill",
+                "sourceTrigger": "overkill",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>风怒，超杀：</b>使你的其他海盗获得+2/+2。",
+                "textEn": "<b>Windfury</b>\n<b>Overkill:</b> Give your other Pirates +2/+2.",
+                "tags": [
+                  "windfury"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "overkill",
+                "sourceTrigger": "overkill",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>超级风怒，超杀：</b>使你的其他海盗获得+4/+4。",
+                "textEn": "<b>Mega-Windfury</b>\n<b>Overkill:</b> Give your other Pirates +4/+4.",
+                "tags": [
+                  "windfury"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -601,6 +2114,60 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "self",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "每当你使用一张海盗牌时，获得+1/+1。",
+                "textEn": "Whenever you play a Pirate, gain +1/+1.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "self",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "每当你使用一张海盗牌时，获得+2/+2。",
+                "textEn": "Whenever you play a Pirate, gain +2/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -622,6 +2189,66 @@
         "sourceId": "BGS_082",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "onePerEligibleType",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    3,
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>战吼：</b>随机使三个不同类型的友方随从获得+1/+1。",
+                "textEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +1/+1.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "onePerEligibleType",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    3,
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>随机使三个不同类型的友方随从获得+2/+2。",
+                "textEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +2/+2.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -645,6 +2272,66 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "onePerEligibleType",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    3,
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>随机使三个不同类型的友方随从获得+2/+2。",
+                "textEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +2/+2.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "onePerEligibleType",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    3,
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>战吼：</b>随机使三个不同类型的友方随从获得+4/+4。",
+                "textEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +4/+4.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -666,6 +2353,60 @@
         "sourceId": "BGS_104",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "shop",
+                "duration": "untilShopRefreshOrPurchase",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+1/+1。",
+                "textEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +1/+1 for the rest\nof the game.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "shop",
+                "duration": "untilShopRefreshOrPurchase",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+2/+2。",
+                "textEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +2/+2 for the rest\nof the game.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -689,6 +2430,60 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "leftmostFriendly",
+                "duration": "turn",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "在你的回合结束时，使你最左边的随从获得+1/+1。在本回合中你每使用过一张元素牌，就重复一次。",
+                "textEn": "[x]At the end of your turn, give\nyour left-most minion +1/+1.\nRepeat for each Elemental\nyou played this turn.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "leftmostFriendly",
+                "duration": "turn",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你的回合结束时，使你最左边的随从获得+2/+2。在本回合中你每使用过一张元素牌，就重复一次。",
+                "textEn": "[x]At the end of your turn, give\nyour left-most minion +2/+2.\nRepeat for each Elemental\nyou played this turn.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -708,8 +2503,121 @@
       },
       "authoredRule": {
         "sourceId": "BGS_106",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            },
+            {
+              "id": "independent:不屈盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            },
+            {
+              "id": "independent:不屈盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>复生</b>",
+                "textEn": "reborn",
+                "tags": [
+                  "reborn"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:不屈盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>复生</b>",
+                "textEn": "reborn",
+                "tags": [
+                  "reborn"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:不屈盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -733,6 +2641,96 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 3
+                  },
+                  "numericLiterals": [
+                    3
+                  ]
+                },
+                "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+3攻击力。",
+                "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, give it +3 Attack.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 6
+                  },
+                  "numericLiterals": [
+                    6
+                  ]
+                },
+                "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+6攻击力。",
+                "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, give it +6 Attack.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -754,6 +2752,100 @@
         "sourceId": "BGS_111",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "chosenFriendly",
+                "duration": "game",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+1/+1。",
+                "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, gain +1/+1 permanently.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "chosenFriendly",
+                "duration": "game",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+2/+2。",
+                "textEn": "Whenever a friendly <b>Taunt</b> minion is attacked, gain +2/+2 permanently.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -777,6 +2869,100 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+2/+2。",
+                "textEn": "After a friendly minion with <b>Taunt</b> dies, give its neighbors +2/+2.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+4/+4。",
+                "textEn": "After a friendly minion with <b>Taunt</b> dies, give its neighbors +4/+4.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -798,6 +2984,50 @@
         "sourceId": "BGS_113",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "shop",
+                "duration": "untilShopRefreshOrPurchase",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的原始版\n复制。",
+                "textEn": "[x]<b>Battlecry:</b> Choose a minion\nin Bob's Tavern. Transform\ninto a plain copy of it.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "shop",
+                "duration": "untilShopRefreshOrPurchase",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的金色复制。",
+                "textEn": "[x]<b>Battlecry:</b> Choose a minion\nin Bob's Tavern. Transform\ninto a Golden copy of it.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -821,6 +3051,52 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -842,6 +3118,50 @@
         "sourceId": "BGS_123",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "hand",
+                "duration": "untilPlayedOrSold",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>战吼：</b>随机将一张其他元素牌置入你的\n手牌。",
+                "textEn": "<b>Battlecry:</b> Add another random Elemental to your hand.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "hand",
+                "duration": "untilPlayedOrSold",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>战吼：</b>随机将两张其他元素牌置入你的\n手牌。",
+                "textEn": "<b>Battlecry:</b> Add two other random Elementals to your hand.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -865,6 +3185,46 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "attack",
+                "sourceTrigger": "attack",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "在该随从攻击并消灭一个随从后，随机对一个相邻的随从造成超过目标生命值的伤害。",
+                "textEn": "After this attacks and kills\na minion, deal excess damage to a random adjacent minion.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "attack",
+                "sourceTrigger": "attack",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "在该随从攻击并消灭一个随从后，对相邻的随从均造成超过目标生命值的伤害。",
+                "textEn": "After this attacks and kills\na minion, deal excess damage to both adjacent minions.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -886,6 +3246,96 @@
         "sourceId": "BGS_127",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1
+                  ]
+                },
+                "text": "<b>嘲讽</b>\n在你使用一张元素牌后，获得+1生命值。",
+                "textEn": "<b>Taunt</b>. After you play an Elemental, gain +1 Health.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "prepEvent",
+                "sourceTrigger": "prepEvent",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>嘲讽</b>\n在你使用一张元素牌后，获得+2生命值。",
+                "textEn": "<b>Taunt</b>. After you play an Elemental, gain +2 Health.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -909,6 +3359,64 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>战吼：</b>使你的其他元素获得+1/+1。",
+                "textEn": "<b>Battlecry:</b> Give your other Elementals +1/+1.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>使你的其他元素获得+2/+2。",
+                "textEn": "<b>Battlecry:</b> Give your other Elementals +2/+2.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -928,8 +3436,77 @@
       },
       "authoredRule": {
         "sourceId": "BGS_131",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:精准盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:精准盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>剧毒</b>",
+                "textEn": "poison",
+                "tags": [
+                  "poison"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:精准盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>剧毒</b>",
+                "textEn": "poison",
+                "tags": [
+                  "poison"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:精准盟约"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -953,6 +3530,52 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "hand",
+                "duration": "untilPlayedOrSold",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>亡语：</b>将一枚铸币置入你的手牌。",
+                "textEn": "<b>Deathrattle:</b> Add a Gold Coin to your hand.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "hand",
+                "duration": "untilPlayedOrSold",
+                "kind": "resourceOrShopState",
+                "params": {
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>将两枚铸币置入你的手牌。",
+                "textEn": "<b>Deathrattle:</b> Add 2 Gold Coins to your hand.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -974,6 +3597,100 @@
         "sourceId": "BGS_201",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+1/+1。",
+                "textEn": "[x]<b>Taunt</b>\nWhenever this is attacked,\ngive adjacent minions\n+1/+1.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+2/+2。",
+                "textEn": "[x]<b>Taunt</b>\nWhenever this is attacked,\ngive adjacent minions\n+2/+2.",
+                "tags": [
+                  "taunt"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -997,6 +3714,60 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "self",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    1,
+                    2
+                  ]
+                },
+                "text": "在你的回合结束时，你每控制一个随从类型的随从，便获得+1/+2。",
+                "textEn": "[x]At the end of your turn,\ngain +1/+2 for each\n  minion type you control.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "self",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    2,
+                    4
+                  ]
+                },
+                "text": "在你的回合结束时，你每控制一个随从类型的随从，便获得+2/+4。",
+                "textEn": "[x]At the end of your turn,\ngain +2/+4 for each\n  minion type you control.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1018,6 +3789,162 @@
         "sourceId": "BGS_205",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>复生</b>",
+                "textEn": "reborn",
+                "tags": [
+                  "reborn"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:不屈盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
+                "textEn": "[x]<b>Divine Shield</b>. <b>Reborn</b>.\nWhenever a friendly <b>Taunt</b>\nminion is attacked, this\n  gets attacked instead.",
+                "tags": [
+                  "taunt",
+                  "divineShield",
+                  "reborn"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>复生</b>",
+                "textEn": "reborn",
+                "tags": [
+                  "reborn"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:不屈盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
+                "textEn": "[x]<b>Divine Shield</b>. <b>Reborn</b>.\nWhenever a friendly <b>Taunt</b>\nminion is attacked, this\n  gets attacked instead.",
+                "tags": [
+                  "taunt",
+                  "divineShield",
+                  "reborn"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1041,6 +3968,64 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "summonStats": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
+                "textEn": "<b>Magnetic</b>\n<b>Deathrattle:</b> Summon three 1/1 Microbots.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "summonStats": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
+                "textEn": "<b>Magnetic</b>\n<b>Deathrattle:</b> Summon three 2/2 Microbots.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1062,6 +4047,124 @@
         "sourceId": "BOT_911",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "selfOrBoard",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+                "textEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+                "tags": [
+                  "taunt",
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "selfOrBoard",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+                "textEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+                "tags": [
+                  "taunt",
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1085,6 +4188,56 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>亡语：</b>召唤若干个1/1的老鼠，数量等同于该随从的攻击力。",
+                "textEn": "[x]<b>Deathrattle:</b> Summon a\nnumber of 1/1 Rats equal\n to this minion's Attack.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "self",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>召唤若干个2/2的老鼠，数量等同于该随从的攻击力。",
+                "textEn": "[x]<b>Deathrattle:</b> Summon a\nnumber of 2/2 Rats equal\n to this minion's Attack.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1106,6 +4259,64 @@
         "sourceId": "CFM_816",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>使一个友方野兽获得+2/+2。",
+                "textEn": "<b>Battlecry:</b> Give a friendly Beast +2/+2.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>战吼：</b>使一个友方野兽获得+4/+4。",
+                "textEn": "<b>Battlecry:</b> Give a friendly Beast +4/+4.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1139,6 +4350,46 @@
         "status": "unsupported",
         "reason": "This multiplies summoned units; it must not copy, duplicate, or grant equipment/badges."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "combatPassive",
+                "sourceTrigger": "combatPassive",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "你的召唤随从的卡牌召唤数量翻倍。",
+                "textEn": "Your cards that summon minions summon twice as many.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "combatPassive",
+                "sourceTrigger": "combatPassive",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "你的召唤随从的卡牌召唤数量变为三倍。",
+                "textEn": "Your cards that summon minions summon three times as many.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1160,6 +4411,102 @@
         "sourceId": "DS1_070",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
+                "textEn": "<b>Battlecry:</b> Give a friendly Beast +2/+2 and <b>Taunt</b>.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。",
+                "textEn": "<b>Battlecry:</b> Give a friendly Beast +4/+4 and <b>Taunt</b>.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1183,6 +4530,102 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>战吼：</b>使相邻的随从获得+1/+1和<b>嘲讽</b>。",
+                "textEn": "<b>Battlecry:</b> Give adjacent minions +1/+1 and <b>Taunt</b>.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "adjacentFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>使相邻的随从获得+2/+2和<b>嘲讽</b>。",
+                "textEn": "<b>Battlecry:</b> Give adjacent minions +2/+2 and <b>Taunt</b>.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1204,6 +4647,60 @@
         "sourceId": "EX1_531",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    2,
+                    1
+                  ]
+                },
+                "text": "每当一个友方野兽死亡，便获得+2/+1。",
+                "textEn": "Whenever a friendly Beast dies, gain +2/+1.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    4,
+                    2
+                  ]
+                },
+                "text": "每当一个友方野兽死亡，便获得+4/+2。",
+                "textEn": "Whenever a friendly Beast dies, gain +4/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1227,6 +4724,64 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "summonStats": {
+                    "attack": 2,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    2,
+                    1
+                  ]
+                },
+                "text": "<b>亡语：</b>召唤一个2/1的损坏的傀儡。",
+                "textEn": "<b>Deathrattle:</b> Summon a 2/1 Damaged Golem.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "combatBoardSummon",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "summonStats": {
+                    "attack": 4,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    4,
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>召唤一个4/2的损坏的傀儡。",
+                "textEn": "<b>Deathrattle:</b> Summon a 4/2 Damaged Golem.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1248,6 +4803,94 @@
         "sourceId": "FP1_024",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "selfOrBoard",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "damage": 1,
+                  "numericLiterals": [
+                    1
+                  ]
+                },
+                "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害。",
+                "textEn": "<b>Taunt</b>. <b>Deathrattle:</b> Deal 1 damage to all minions.",
+                "tags": [
+                  "taunt",
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "selfOrBoard",
+                "duration": "combat",
+                "kind": "combatBoardAction",
+                "params": {
+                  "damage": 1,
+                  "numericLiterals": [
+                    1
+                  ]
+                },
+                "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害，触发两次。",
+                "textEn": "<b>Taunt</b>\n<b>Deathrattle:</b> Deal 1 damage to all minions twice.",
+                "tags": [
+                  "taunt",
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1281,6 +4924,50 @@
         "status": "unsupported",
         "reason": "Only eligible retiring/deathrattle outputs repeat; this does not multiply all combat gains."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "allFriendly",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "你的随从的<b>亡语</b>将触发两次。",
+                "textEn": "Your minions trigger their <b>Deathrattles</b> twice.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "allFriendly",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "你的随从的<b>亡语</b>将触发三次。",
+                "textEn": "Your minions trigger their <b>Deathrattles</b> three times.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1302,6 +4989,60 @@
         "sourceId": "GVG_027",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "在你的回合结束时，使另一个友方机械获得+2/+2。",
+                "textEn": "At the end of your turn, give another friendly Mech +2/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "在你的回合结束时，使另一个友方机械获得+4/+4。",
+                "textEn": "At the end of your turn, give another friendly Mech +4/+4.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1325,6 +5066,64 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>使一个友方机械获得+2/+2。",
+                "textEn": "<b>Battlecry:</b> Give a friendly Mech +2/+2.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>战吼：</b>使一个友方机械获得+4/+4。",
+                "textEn": "<b>Battlecry:</b> Give a friendly Mech +4/+4.",
+                "tags": [
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1346,6 +5145,60 @@
         "sourceId": "GVG_106",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "每当一个友方机械死亡，便获得+2/+2。",
+                "textEn": "Whenever a friendly Mech dies, gain +2/+2.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "conditionalEvent",
+                "sourceTrigger": "conditionalEvent",
+                "recipient": "eligibleFriendlyTribe",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "每当一个友方机械死亡，便获得+4/+4。",
+                "textEn": "Whenever a friendly Mech dies, gain +4/+4.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1369,6 +5222,56 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "randomOtherFriendly",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 3
+                  },
+                  "numericLiterals": [
+                    3
+                  ]
+                },
+                "text": "在你的回合结束时，随机使另一个友方随从获得+3攻击力。",
+                "textEn": "At the end of your turn, give another random friendly minion +3 Attack.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "turnEnd",
+                "sourceTrigger": "turnEnd",
+                "recipient": "randomOtherFriendly",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 6
+                  },
+                  "numericLiterals": [
+                    6
+                  ]
+                },
+                "text": "在你的回合结束时，随机使另一个友方随从获得+6攻击力。",
+                "textEn": "At the end of your turn, give another random friendly minion +6 Attack.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1391,6 +5294,102 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "selfOrBoard",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+2/+2。",
+                "textEn": "<b>Battlecry:</b> Give your <b>Taunt</b> minions +2/+2.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>嘲讽</b>",
+                "textEn": "taunt",
+                "tags": [
+                  "taunt"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:坚守盟约"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "battlecry",
+                "sourceTrigger": "battlecry",
+                "recipient": "selfOrBoard",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4,
+                    "health": 4
+                  },
+                  "numericLiterals": [
+                    4,
+                    4
+                  ]
+                },
+                "text": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+4/+4。",
+                "textEn": "<b>Battlecry:</b> Give your <b>Taunt</b> minions +4/+4.",
+                "tags": [
+                  "taunt",
+                  "battlecry"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1412,6 +5411,96 @@
         "sourceId": "ICC_858",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2
+                  },
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+2攻击力。",
+                "textEn": "<b>Divine Shield</b>\nAfter a friendly minion loses <b>Divine Shield</b>, gain +2 Attack.",
+                "tags": [
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "staticCombat",
+                "sourceTrigger": "staticCombat",
+                "recipient": "chosenFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "statDeltas": {
+                    "attack": 4
+                  },
+                  "numericLiterals": [
+                    4
+                  ]
+                },
+                "text": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+4攻击力。",
+                "textEn": "<b>Divine Shield</b>\nAfter a friendly minion loses <b>Divine Shield</b>, gain +4 Attack.",
+                "tags": [
+                  "divineShield"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1445,6 +5534,46 @@
         "status": "unsupported",
         "reason": "Only the source minion Battlecry output repeats on recruitment; unrelated gain hooks do not."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "combatPassive",
+                "sourceTrigger": "combatPassive",
+                "recipient": "selfOrBoard",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "你的<b>战吼</b>会触发\n两次。",
+                "textEn": "Your <b>Battlecries</b> trigger twice.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "combatPassive",
+                "sourceTrigger": "combatPassive",
+                "recipient": "selfOrBoard",
+                "duration": "game",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "你的<b>战吼</b>会触发\n三次。",
+                "textEn": "Your <b>Battlecries</b> trigger three times.",
+                "tags": [],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1464,8 +5593,81 @@
       },
       "authoredRule": {
         "sourceId": "LOOT_078",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:巨锤盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:巨锤盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "combatPassive",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "同时对其攻击目标相邻的随从造成伤害。",
+                "textEn": "Also damages the minions next to whomever\nthis attacks.",
+                "tags": [
+                  "cleave"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "adapter": [
+                  "independent:巨锤盟约"
+                ]
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "combatPassive",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "同时对其攻击目标相邻的随从造成伤害。",
+                "textEn": "Also damages the minions next to whomever\nthis attacks.",
+                "tags": [
+                  "cleave"
+                ],
+                "implementation": "dispatched-pending-gear-landing-verification",
+                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "adapter": [
+                  "independent:巨锤盟约"
+                ]
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     },
@@ -1489,6 +5691,90 @@
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "randomFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": []
+                },
+                "text": "<b>亡语：</b>随机使一个友方随从获得<b>圣盾</b>。",
+                "textEn": "<b>Deathrattle:</b> Give a random friendly minion <b>Divine Shield</b>.",
+                "tags": [
+                  "divineShield",
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "gain",
+                "sourceTrigger": "staticCombat",
+                "recipient": "self",
+                "duration": "permanentWornGear",
+                "kind": "keywordGear",
+                "text": "<b>圣盾</b>",
+                "textEn": "divineShield",
+                "tags": [
+                  "divineShield"
+                ],
+                "params": {},
+                "adapter": [
+                  "independent:护盾发生器"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
+              },
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "randomFriendly",
+                "duration": "combat",
+                "kind": "combatKeyword",
+                "params": {
+                  "numericLiterals": [
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>随机使两个友方随从获得<b>圣盾</b>。",
+                "textEn": "<b>Deathrattle:</b> Give 2 random friendly minions <b>Divine Shield</b>.",
+                "tags": [
+                  "divineShield",
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
+      },
       "modeEffects": null
     },
     {
@@ -1510,6 +5796,64 @@
         "sourceId": "OG_256",
         "status": "unsupported",
         "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "metadata": {
+        "op": {
+          "effectDelivery": {
+            "normal": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "allFriendly",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 1,
+                    "health": 1
+                  },
+                  "numericLiterals": [
+                    1,
+                    1
+                  ]
+                },
+                "text": "<b>亡语：</b>使你的所有随从获得+1/+1。",
+                "textEn": "<b>Deathrattle:</b> Give your minions +1/+1.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ],
+            "elite": [
+              {
+                "trigger": "death",
+                "sourceTrigger": "death",
+                "recipient": "allFriendly",
+                "duration": "combat",
+                "kind": "statOrCombatBuff",
+                "params": {
+                  "statDeltas": {
+                    "attack": 2,
+                    "health": 2
+                  },
+                  "numericLiterals": [
+                    2,
+                    2
+                  ]
+                },
+                "text": "<b>亡语：</b>使你的所有随从获得+2/+2。",
+                "textEn": "<b>Deathrattle:</b> Give your minions +2/+2.",
+                "tags": [
+                  "deathrattle"
+                ],
+                "implementation": "unsupported",
+                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+              }
+            ]
+          }
+        }
       },
       "modeEffects": null
     }

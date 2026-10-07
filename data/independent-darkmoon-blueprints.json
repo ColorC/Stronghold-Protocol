@@ -1593,8 +1593,39 @@
       },
       "authoredRule": {
         "sourceId": "BGS_034",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:护盾发生器",
+              "quantity": 1
+            },
+            {
+              "id": "independent:不屈盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:护盾发生器",
+              "quantity": 1
+            },
+            {
+              "id": "independent:不屈盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [
@@ -2264,8 +2295,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_039",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [
@@ -5760,8 +5814,39 @@
       },
       "authoredRule": {
         "sourceId": "BGS_106",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            },
+            {
+              "id": "independent:不屈盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:坚守盟约",
+              "quantity": 1
+            },
+            {
+              "id": "independent:不屈盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [
@@ -7872,8 +7957,31 @@
       },
       "authoredRule": {
         "sourceId": "BGS_131",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:精准盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:精准盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [
@@ -10613,8 +10721,31 @@
       },
       "authoredRule": {
         "sourceId": "FP1_010",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:精准盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:精准盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [
@@ -11490,8 +11621,31 @@
       },
       "authoredRule": {
         "sourceId": "GVG_113",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:巨锤盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:巨锤盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [
@@ -12300,8 +12454,31 @@
       },
       "authoredRule": {
         "sourceId": "LOOT_078",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "keywordGearGrant",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:巨锤盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "self",
+          "duration": "permanentWornGear",
+          "outputs": [
+            {
+              "id": "independent:巨锤盟约",
+              "quantity": 1
+            }
+          ]
+        },
+        "status": "pending-gear-landing",
+        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
       },
       "sourceEffect": {
         "normal": [

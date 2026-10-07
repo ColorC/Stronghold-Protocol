@@ -43,12 +43,15 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'summonMultiplier');
   assert.equal(byId.get('LOE_077').authoredRule.normal.trigger, 'battlecryOnGain');
   assert.equal(byId.get('FP1_031').authoredRule.normal.trigger, 'retiringEffect');
+  assert.equal(byId.get('BGS_039').authoredRule.normal.outputs[0].id,'independent:坚守盟约');
+  assert.equal(byId.get('BGS_034').authoredRule.elite.outputs.length,2);
 });
 
 test('compiler add-ons link only existing native definitions and preserve all source text without replacing canonical files', () => {
   assert.equal(designAddon.operators.length, 67);
   assert.equal(designAddon.pendingNativeDefinitions.length, 34);
   assert.ok(designAddon.operators.every(x => x.chessId && x.modeEffects === null));
+  assert.ok(designAddon.operators.every(x => x.metadata.op.effectDelivery.normal.length && x.metadata.op.effectDelivery.elite.length));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
   assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation==='dispatched-pending-gear-landing-verification')).length,7);
   assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,94);
