@@ -214,6 +214,10 @@ const report = {
   nativeDispatchedPendingLanding: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
   totalNormalEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.normal.length,0),
   totalEliteEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.elite.length,0),
+  deliveryCounts:{
+    normal:{pendingLanding:entries.flatMap(x=>x.metadata.op.effectDelivery.normal).filter(e=>e.implementation==='dispatched-pending-gear-landing-verification').length,unsupported:entries.flatMap(x=>x.metadata.op.effectDelivery.normal).filter(e=>e.implementation==='unsupported').length},
+    elite:{pendingLanding:entries.flatMap(x=>x.metadata.op.effectDelivery.elite).filter(e=>e.implementation==='dispatched-pending-gear-landing-verification').length,unsupported:entries.flatMap(x=>x.metadata.op.effectDelivery.elite).filter(e=>e.implementation==='unsupported').length}
+  },
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
   unsupportedSourceIds: entries.filter(x=>!KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal[0].unsupportedReason})),
   pendingGearLandingSourceIds: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,gear:KEYWORD_ADAPTERS[x.sourceId]})),
