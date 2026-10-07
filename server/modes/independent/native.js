@@ -1,5 +1,5 @@
 // Independent mode uses authored, structured native effects. The original game text is metadata only.
-import { tavernFactions as sharedTavernFactions } from '../../../shared/independentRules.js';
+import { tavernFactions as sharedTavernFactions, nativeBodyStats, nativeRecord } from '../../../shared/independentRules.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
@@ -10,6 +10,40 @@ const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
 const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
+PREP_BEHAVIORS.add('teamForge');
+COMBAT_BEHAVIORS.add('allyConditionStats');
+COMBAT_BEHAVIORS.add('badgeAmplifier');
+const PROFESSIONS = new Set(['PIONEER','WARRIOR','TANK','SNIPER','CASTER','MEDIC','SUPPORT','SPECIAL']);
+const CONDITION_STATS = new Set(['attackPercent','maxHpPercent','defensePercent','attackSpeedFlat']);
+function exactKeys(value, allowed) {
+  return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every((k) => allowed.includes(k));
+}
+const nonempty = (v) => typeof v === 'string' && v.trim().length > 0;
+const positiveInt = (v) => Number.isInteger(v) && v > 0;
+/** Shared schema validation also protects synthetic/direct battle catalog consumers. */
+export function validateAllyConditionStats(p) {
+  const m = p?.match;
+  if (!exactKeys(p, ['match','countBy','maxCount','stats']) || !exactKeys(m, ['faction','professions','profession','keywordGear','baseStat','minBaseStatRatioToSelf','minBaseStat'])
+      || !['operators','professions','factions'].includes(p.countBy) || !positiveInt(p.maxCount)
+      || !exactKeys(p.stats, [...CONDITION_STATS]) || !Object.keys(p.stats).length
+      || !Object.values(p.stats).every((v) => typeof v === 'number' && Number.isFinite(v) && v > 0)
+      || (m.faction !== undefined && !nonempty(m.faction)) || (m.keywordGear !== undefined && !nonempty(m.keywordGear))
+      || (m.profession !== undefined && !PROFESSIONS.has(m.profession))
+      || (m.professions !== undefined && (!Array.isArray(m.professions) || !m.professions.length || !m.professions.every((v) => PROFESSIONS.has(v))))
+      || (m.baseStat !== undefined && !['atk','def','maxHp'].includes(m.baseStat))
+      || ['minBaseStatRatioToSelf','minBaseStat'].some((k) => m[k] !== undefined && (!m.baseStat || typeof m[k] !== 'number' || !Number.isFinite(m[k]) || m[k] < 0))) {
+    throw new Error('BAD_ALLY_CONDITION_STATS');
+  }
+}
+function validateTeamForge(p) {
+  const t = p?.targets;
+  const validTarget = ['all','adjacent','row'].includes(t) || (typeof t === 'string' && ((t.startsWith('faction:') && nonempty(t.slice(8))) || (t.startsWith('profession:') && PROFESSIONS.has(t.slice(11)))));
+  if (!exactKeys(p, ['targets','excludeSelf','count','sort','outputs']) || !validTarget || typeof p.excludeSelf !== 'boolean'
+      || !positiveInt(p.count) || !['leastEquipment','highestBaseAttack','highestBaseHp'].includes(p.sort)
+      || !Array.isArray(p.outputs) || !p.outputs.length || !p.outputs.every((o) => exactKeys(o, ['id','normal','elite']) && nonempty(o.id) && positiveInt(o.normal) && positiveInt(o.elite))) {
+    throw new Error('BAD_TEAM_FORGE');
+  }
+}
 function finiteJson(value, seen = new Set()) {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
   if (typeof value === 'number') return Number.isFinite(value);
@@ -30,6 +64,14 @@ function authoredModeEffects(source, isElite) {
     for (const r of rules) {
       if (!r || typeof r !== 'object' || Array.isArray(r) || !triggers.has(r.trigger) || typeof r.behavior !== 'string' || !r.behavior || !finiteJson(r.params) || !r.params || typeof r.params !== 'object' || Array.isArray(r.params)) throw new Error(`BAD_MODE_EFFECT_RULE:${source?.chessId}:${kind}`);
       if (!behaviors.has(r.behavior)) throw new Error(`UNSUPPORTED_MODE_EFFECT_BEHAVIOR:${source?.chessId}:${kind}:${r.behavior}`);
+      if (r.behavior === 'allyConditionStats') {
+        if (r.trigger !== 'passive') throw new Error('BAD_ALLY_CONDITION_STATS_TRIGGER');
+        validateAllyConditionStats(r.params);
+      }
+      if (r.behavior === 'teamForge') {
+        if (r.trigger !== 'prepEnd') throw new Error('BAD_TEAM_FORGE_TRIGGER');
+        validateTeamForge(r.params);
+      }
       if (r.behavior === 'eventProduction' && !COUNTER_EVENTS.has(r.params.counterEvent)) throw new Error(`BAD_MODE_EFFECT_COUNTER_EVENT:${source?.chessId}:${kind}:${r.params.counterEvent}`);
     }
   }
@@ -289,6 +331,23 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'grantEquipment':
         for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite) + bonus(p, piece, state, elite), piece);
         break;
+      case 'teamForge': {
+        validateTeamForge(p);
+        if (r.trigger !== 'prepEnd') throw new Error('BAD_TEAM_FORGE_TRIGGER');
+        if (!p.outputs.every((x) => isBadge(services, x.id))) throw new Error('TEAM_FORGE_REQUIRES_BADGES');
+        const owner = piece.playerId ?? piece.ownerId;
+        const profession = (x) => nativeRecord(x, services.catalog)?.profession;
+        const candidates = roster(state).filter((x) => isPresent(x) && !x.removed && !x.deleted && (!x.kind || x.kind === 'op') && services.catalog?.operators?.[chessIdOf(x)] && (x.playerId ?? x.ownerId) === owner
+          && (!p.excludeSelf || x.uid !== piece.uid)
+          && (p.targets !== 'adjacent' || Math.abs(x.row - piece.row) + Math.abs(x.col - piece.col) === 1)
+          && (p.targets !== 'row' || x.row === piece.row)
+          && (!p.targets.startsWith('faction:') || sharedTavernFactions(x, services.catalog).includes(p.targets.slice(8)))
+          && (!p.targets.startsWith('profession:') || profession(x) === p.targets.slice(11)));
+        const score = (x) => p.sort === 'leastEquipment' ? wornCount(x) : -Number(nativeBodyStats(x, services.catalog)[p.sort === 'highestBaseAttack' ? 'atk' : 'maxHp'] || 0);
+        const targets = [...new Map(candidates.map((x) => [x.uid, x])).values()].sort((a,b) => score(a) - score(b) || String(a.uid).localeCompare(String(b.uid))).slice(0, p.count);
+        for (const target of targets) for (const x of p.outputs) output(ruleServices, state, x.id, value(x, elite), piece, { targetUid: target.uid, landOn: `uid:${target.uid}` });
+        break;
+      }
       case 'twoCopyElite':
         if (hook === 'merge' && (event.copiesConsumed || 2) >= p.copiesRequired) event.mergeRequirement = p.copiesRequired;
         break;

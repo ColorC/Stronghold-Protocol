@@ -39,7 +39,17 @@ export function traitSummary(effect) {
     const p = rule.params || {};
     const entry = { when: rule.trigger, kind: null };
     const b = rule.behavior;
-    if (b === 'grantEquipment' || b === 'conditionalGrant') {
+    if (b === 'allyConditionStats') {
+      entry.kind = 'stat'; entry.temporary = true; entry.stats = { ...p.stats }; entry.maxCount = p.maxCount;
+      entry.countBy = p.countBy; entry.match = { ...p.match };
+      entry.condition = p.match?.keywordGear ? `携带${p.match.keywordGear}的友方` : p.match?.faction ? `${p.match.faction}友方`
+        : p.match?.professions || p.match?.profession ? '指定职业友方' : p.match?.baseStat ? '满足原生属性条件的友方' : '其他在场友方';
+    } else if (b === 'teamForge') {
+      entry.kind = 'forge'; entry.grows = true; entry.targets = p.targets; entry.excludeSelf = p.excludeSelf; entry.targetCount = p.count; entry.sort = p.sort;
+      entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: o.normal, elite: o.elite }));
+      entry.condition = p.targets.startsWith('faction:') ? `${p.targets.slice(8)}友方` : p.targets.startsWith('profession:') ? '指定职业友方'
+        : p.targets === 'adjacent' ? '相邻友方' : p.targets === 'row' ? '同排友方' : '在场友方';
+    } else if (b === 'grantEquipment' || b === 'conditionalGrant') {
       entry.kind = 'forge'; entry.items = (p.outputs || []).map((o) => ({ id: o.id, normal: Number(o.normal ?? 1), elite: Number(o.elite ?? o.normal ?? 1) }));
       if (p.alsoAt) entry.alsoAt = p.alsoAt;
     } else if (b === 'eventProduction') {

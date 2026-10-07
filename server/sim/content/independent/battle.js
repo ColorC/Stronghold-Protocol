@@ -4,6 +4,7 @@ import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../share
 import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
 import { mitigate } from '../../damage.js';
 import { installKeywordGear } from './keywordGear.js';
+import { validateAllyConditionStats } from '../../../modes/independent/native.js';
 import { INDEPENDENT_BADGE_STATS, independentBadgeMod } from '../../../../shared/independentBadgeStats.js';
 import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 
@@ -11,7 +12,7 @@ import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 // 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
 // 加成 · onKillSp 击倒回技力 · markSpread 灼痕蔓延 · blockRetaliate 阻挡时按防御力反击 (照抄身前一格 is a prep rule: native.js)
 const TEMPORARY_BEHAVIORS = new Set(['battleStartBuff', 'deployBuff', 'skillStartBuff', 'allyDownStacks', 'onDown', 'firstWaveStrike', 'shieldAllies', 'summonBoost', 'everyNthAttack', 'overkillSpill',
-  'aura', 'rangeDebuff', 'statusOnHit', 'healedBuff', 'onKillSp', 'markSpread', 'blockRetaliate']);
+  'aura', 'rangeDebuff', 'statusOnHit', 'healedBuff', 'onKillSp', 'markSpread', 'blockRetaliate', 'allyConditionStats']);
 const BEHAVIORS = new Set([
   'badgeThresholdStat', 'staticStats', 'conditionalDamage', 'weakDamage', 'eventProduction',
   'deployWindowStats', 'startDerivedStats',
@@ -380,6 +381,49 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
       return reached;
     };
     switch (rule.behavior) {
+      case 'allyConditionStats': {
+        validateAllyConditionStats(p);
+        if (rule.trigger !== 'passive') throw new Error('BAD_ALLY_CONDITION_STATS_TRIGGER');
+        let next = -Infinity;
+        let lastCount = -1;
+        const base = nativeBodyStats(piece, catalog);
+        const m = p.match;
+        const refresh = () => {
+          next = battle.time + 0.2;
+          if (!onField(unit)) { battle.removeBuff(unit, key); lastCount = -1; return; }
+          const matched = battle.allyUnits.filter((u) => {
+            if (u === unit || u.uid === unit.uid || u.kind !== 'op' || u.ownerId !== unit.ownerId || !onField(u)) return false;
+            const other = piecesByUid(battle, u.uid);
+            if (!other || other.row == null || other.col == null || other.removed || other.deleted) return false;
+            const prof = nativeRecord(other, catalog)?.profession;
+            if (m.faction && !tavernFactions(other, catalog).includes(m.faction)) return false;
+            if (m.profession && prof !== m.profession) return false;
+            if (m.professions && !m.professions.includes(prof)) return false;
+            if (m.keywordGear && !(other.equipment || []).some((item) => {
+              const def = recordLookup(catalog.equipment, itemId(item));
+              return def?.mechanism === 'keywordGear' && def.name === m.keywordGear && Number(item.quantity ?? 1) > 0;
+            })) return false;
+            if (m.baseStat) {
+              const stat = Number(nativeBodyStats(other, catalog)[m.baseStat]);
+              if (!Number.isFinite(stat) || (m.minBaseStat != null && stat < m.minBaseStat)
+                  || (m.minBaseStatRatioToSelf != null && stat < Number(base[m.baseStat]) * m.minBaseStatRatioToSelf)) return false;
+            }
+            return true;
+          });
+          const unique = [...new Map(matched.map((u) => [u.uid, u])).values()];
+          const count = Math.min(p.maxCount, p.countBy === 'factions' ? new Set(unique.flatMap((u) => tavernFactions(piecesByUid(battle, u.uid), catalog))).size
+            : p.countBy === 'professions' ? new Set(unique.map((u) => nativeRecord(piecesByUid(battle, u.uid), catalog)?.profession).filter(Boolean)).size : unique.length);
+          if (count === lastCount) return;
+          lastCount = count;
+          if (count) traitBuff(battle, unit, key, statMods(p.stats, count), 'battle');
+          else battle.removeBuff(unit, key);
+        };
+        battle.on('battleStart', refresh, { owner: unit });
+        battle.on('deploy', ({ initial }) => { if (!initial) refresh(); }, { owner: unit });
+        battle.on('death', refresh, { owner: unit });
+        battle.on('tick', () => { if (battle.time + 1e-9 >= next) refresh(); }, { owner: unit });
+        break;
+      }
       case 'battleStartBuff':
         battle.on('battleStart', () => give(p.targets, p.stats, p.duration, p.spGain), { owner: unit });
         break;

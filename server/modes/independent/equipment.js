@@ -55,6 +55,14 @@ const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - p
  * Nobody there → the maker.
  */
 export function landingPiece(state, catalog, source, how = 'self') {
+  if (typeof how === 'string' && how.startsWith('uid:')) {
+    const uid = how.slice(4);
+    const target = (state.pieces || []).find((p) => String(p.uid) === uid);
+    if (!source || !onField(source) || source.removed || source.deleted || !target || !onField(target) || target.removed || target.deleted || (target.kind && target.kind !== 'op')
+        || (target.playerId ?? target.ownerId) !== (source.playerId ?? source.ownerId)
+        || !catalog?.operators?.[target.chessId]) throw new Error('BAD_LANDING_TARGET');
+    return target;
+  }
   if (!source || how === 'self' || !onField(source)) return source;
   const others = (state.pieces || []).filter((p) => p !== source && onField(p));
   let target = null;
@@ -85,8 +93,11 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const landing = extra.landOn || catalog?.config?.badgeLanding || 'stock';
   const isBadge = !!rec(catalog?.badges, id) || def.mechanism === 'badge';
   const source = extra.sourceUid ? (state.pieces || []).find((p) => p.uid === extra.sourceUid) : null;
+  const explicit = typeof landing === 'string' && landing.startsWith('uid:');
+  if (explicit && (!isBadge || extra.origin !== 'native' || String(extra.targetUid) !== landing.slice(4))) throw new Error('BAD_LANDING_TARGET');
+  const explicitTarget = explicit ? landingPiece(state, catalog, source, landing) : null;
   if (landing !== 'stock' && isBadge && source && LANDING_ORIGINS.has(extra.origin)) {
-    const target = landingPiece(state, catalog, source, landing);
+    const target = explicitTarget || landingPiece(state, catalog, source, landing);
     const add = Math.min(quantity, EQUIPMENT_CAPACITY - pieceEquipmentCount(target));
     if (add > 0) {
       const stack = (target.equipment ||= []).find((x) => x.id === id);
@@ -98,13 +109,13 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
     quantity -= add;
   }
   if (!hasTileFor(state, catalog, id)) {
-    recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
+    recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, targetUid: explicitTarget?.uid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, lost: true });
     return { id, quantity: 0, lost: quantity };
   }
   const stack = !def.unique && (state.inventory || []).find((x) => x.id === id && !x.state?.uniqueState);
   if (stack) stack.quantity += quantity;
   else state.inventory.push(makeItem(state, id, quantity, { ...extra, sourceId: def.sourceId }));
-  recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated });
+  recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, targetUid: explicitTarget?.uid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated });
   return { id, quantity };
 }
 
