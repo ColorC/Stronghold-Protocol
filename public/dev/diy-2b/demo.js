@@ -1452,10 +1452,13 @@ function buildAnimList() {
   const all = [...op.names];
   const body = [...(contract.body || []), ...all.filter((n) => !/^Pod_/.test(n) && !(contract.body || []).includes(n))];
   const pod = [...(contract.pod || []), ...all.filter((n) => /^Pod_/.test(n) && !(contract.pod || []).includes(n))];
-  const btn = (n) => `<button class="btn ${op.names.has(n) ? '' : 'missing'}" type="button" data-anim="${esc(n)}" title="${op.names.has(n) ? `${n} · ${animDur(op.data, n).toFixed(2)}s` : `${n}：模型里还没有这个动作`}">${esc(n)}</button>`;
+  const btn = (n) => {
+    const link = new URL(location.href); link.searchParams.set('auto', '0'); link.searchParams.set('action', n); link.searchParams.set('side', op.side); link.searchParams.set('panel', '1');
+    return `<a class="btn ${op.names.has(n) ? '' : 'missing'}" href="${esc(link.href)}" data-anim="${esc(n)}" title="${esc(n)} · 右键复制动作链接">${esc(n)}</a>`;
+  };
   $('animsBody').innerHTML = body.map(btn).join('');
   $('animsPod').innerHTML = pod.map(btn).join('') || '<span class="hint">—</span>';
-  document.querySelectorAll('[data-anim]').forEach((el) => el.addEventListener('click', () => play(el.dataset.anim)));
+  document.querySelectorAll('[data-anim]').forEach((el) => el.addEventListener('click', (event) => { event.preventDefault(); history.replaceState(null, '', el.href); play(el.dataset.anim); }));
   // contract check line (what the art side still owes)
   const have = (list) => list.filter((n) => op.names.has(n)).length;
   const bones = Object.keys(contract.bones || {}), evs = Object.keys(contract.events || {});
@@ -1480,7 +1483,8 @@ function updateNow() {
   $('nowInfo').innerHTML = `${esc(line(0))}\n${esc(line(1))}\n事件  ${esc(S.evLog.slice(-5).join('  ') || '—')}<div class="bar"><i style="width:${(u0 * 100).toFixed(1)}%"></i></div>`;
   const n0 = e0 && e0.animation.name, n1 = op.track(1)?.animation.name;
   document.querySelectorAll('[data-anim]').forEach((el) => el.classList.toggle('on', el.dataset.anim === n0 || el.dataset.anim === n1));
-  $('stAnim').textContent = n0 || '—';
+  const labels = { Default: '待机', Idle: '待机', Start: '登场', Attack: '普攻', Skill_1: '三连斩', Skill_2_Begin: '准备射击', Skill_2_Loop: '激光射击', Skill_2_End: '收束射击', Skill_3_Begin: '蓄力', Skill_3_End: '自爆', Stun_Skill_3: '机体重组', Die: '倒下', Stun: '眩晕', Hit: '受击' };
+  $('stAnim').textContent = labels[n0] || '待机';
   $('stWave').textContent = String(S.wave); $('stKills').textContent = String(S.kills); $('stLeak').textContent = String(S.leaked);
 }
 function bindUi() {
@@ -1499,7 +1503,7 @@ function bindUi() {
   const setPanel = (open) => { document.body.classList.toggle('panel-closed', !open); if (!S.userMoved) resetView(); };
   $('panelToggle').addEventListener('click', () => setPanel(document.body.classList.contains('panel-closed')));
   $('panelClose').addEventListener('click', () => setPanel(false));
-  if (innerWidth <= 760 || q.get('panel') === '0') document.body.classList.add('panel-closed');
+  if (q.get('panel') !== '1') document.body.classList.add('panel-closed');
   $('btnFront').addEventListener('click', () => switchModel('front'));
   $('btnBack').addEventListener('click', () => switchModel('back'));
   addEventListener('keydown', (e) => {
@@ -1627,6 +1631,7 @@ async function main() {
     app.ticker.add(frame);
     loading.classList.add('gone');
     diy.ready = true;
+    if (q.get('side') !== 'back' && q.get('action')) play(q.get('action'));
     loadIcons();
     // back model: optional; the toggle shows only when the file exists
     if (a.back) {
@@ -1634,6 +1639,7 @@ async function main() {
         if (!r.ok) return;
         S.models.back = await loadSpine(here(a.back));
         $('modelRow').hidden = false;
+        if (q.get('side') === 'back') { switchModel('back'); if (q.get('action')) play(q.get('action')); }
       }).catch(() => {});
     }
   } catch (err) {
