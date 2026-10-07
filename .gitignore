@@ -2,6 +2,7 @@
 node_modules/
 # copied from node_modules by tools/vendor.mjs (postinstall); never commit third-party builds
 public/vendor/
+public/js/independent/engine/
 
 # --- game assets: (c) Hypergryph / Yostar, fetched or extracted locally, NEVER committed ----------
 # tools/fetch-assets.mjs → public/assets/** (~270 MB) and public/fonts/** (+ fonts.css)
