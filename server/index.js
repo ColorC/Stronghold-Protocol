@@ -46,7 +46,7 @@ import { PROTOCOL_VERSION, APP_VERSION } from '../shared/constants.js';
 import { MEDIA_PREFIX, AUDIO_EXTS } from '../shared/media.js';
 import { createIndependentHttp } from './modes/independent/http.js';
 import { createAdmission } from './hosting/admission.js';
-import { createStaticDelivery } from './hosting/staticDelivery.js';
+import { createStaticDelivery, loadAssetSourceMap } from './hosting/staticDelivery.js';
 
 /** Repository root. */
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -635,6 +635,7 @@ function makeLogger(quiet) {
  *   ratePerSec?: number, rateBurst?: number, maxConnections?: number, maxRooms?: number,
  *   maxConnectionsPerAddr?: number, maxRoomsPerAddr?: number, maxMatchesPerAddr?: number, resyncMinGapMs?: number,
  *   heavyPerSec?: number, heavyBurst?: number, trustProxy?: 'auto' | boolean, soloReconnectWindowMs?: number,
+ *   assetSources?: Record<string, string>,
  * }} [opts]
  * @returns {Promise<{ port: number, host: string, url: string, server: http.Server, wss: WebSocketServer,
  *                     lobby: Lobby, network: Network, registry: SessionRegistry, close: () => Promise<void> }>}
@@ -660,7 +661,9 @@ export async function startServer(opts = {}) {
     ttlMs: opts.admissionTtlMs ?? 120000, queueTtlMs: opts.admissionQueueTtlMs ?? 90000,
     waitTimeoutMs: opts.admissionWaitTimeoutMs ?? 25000, execution: independentExecution,
     otherActive: () => network?.connectionCount || 0 });
-  const staticDelivery = createStaticDelivery({ base: opts.staticBase ?? process.env.SP_STATIC_BASE ?? '' });
+  const sourceMapPath = process.env.SP_ASSET_SOURCE_MAP;
+  const assetSources = opts.assetSources ?? (sourceMapPath === undefined ? {} : loadAssetSourceMap(sourceMapPath));
+  const staticDelivery = createStaticDelivery({ base: opts.staticBase ?? process.env.SP_STATIC_BASE ?? '', assetSources });
   const netOptions = {};
   for (const k of ['reconnectWindowMs', 'heartbeatMs', 'helloTimeoutMs', 'ratePerSec', 'rateBurst', 'maxConnections', 'abuseDropsPerSec',
     'maxConnectionsPerAddr', 'heavyPerSec', 'heavyBurst', 'trustProxy']) {
