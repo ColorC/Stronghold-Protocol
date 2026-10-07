@@ -30,10 +30,14 @@ const FRAME_FRAG = `
 precision highp float;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
+uniform vec4 uFrame;
 void main(void) {
-  vec2 local = clamp(vTextureCoord, 0.0, 1.0);
-  vec2 leftUv = vec2(local.x * 0.5, local.y);
-  vec2 rightUv = vec2(0.5 + local.x * 0.5, local.y);
+  // Pixi supplies the current Texture frame in base-texture UV space.  The
+  // atlas frame itself is a packed colour/coverage pair, so first recover the
+  // local frame coordinate and then sample the two halves inside this frame.
+  vec2 local = clamp((vTextureCoord - uFrame.xy) / max(uFrame.zw, vec2(0.000001)), 0.0, 1.0);
+  vec2 leftUv = vec2(uFrame.x + local.x * uFrame.z * 0.5, uFrame.y + local.y * uFrame.w);
+  vec2 rightUv = vec2(uFrame.x + uFrame.z * 0.5 + local.x * uFrame.z * 0.5, uFrame.y + local.y * uFrame.w);
   vec4 colour = texture2D(uSampler, leftUv);
   vec3 coverage = texture2D(uSampler, rightUv).rgb;
   float alpha = max(max(coverage.r, coverage.g), coverage.b);
@@ -287,13 +291,20 @@ export class OriginalVfxPlayer {
       const logical = framePlacement(entry);
       sprite.anchor.set(logical.anchorX, logical.anchorY);
       if (this.P.Filter) {
-        sprite.filters = [new this.P.Filter(undefined, FRAME_FRAG)];
+        const sx = 0;
+        const sy = 0;
+        const bw = Math.max(1, entry.base.width);
+        const bh = Math.max(1, entry.base.height);
+        sprite.filters = [new this.P.Filter(undefined, FRAME_FRAG, {
+          uFrame: [sx / bw, sy / bh, (entry.cellW * 2) / bw, entry.cellH / bh],
+        })];
       }
       sprite.blendMode = this.P.BLEND_MODES?.NORMAL ?? 0;
       sprite.alpha = 1;
       sprite.visible = record.elapsed >= record.delay;
       this.layers.fxAdd.addChild(sprite);
       record.sprite = sprite;
+      record.frameUv = { baseWidth: Math.max(1, entry.base.width), baseHeight: Math.max(1, entry.base.height) };
       this._place(record);
     }).catch((err) => { record.dead = true; console.warn('[vfx] original prefab unavailable', prefab, err?.message || err); });
     return true;
@@ -586,6 +597,17 @@ export class OriginalVfxPlayer {
       if (!record.loop && playTime >= maxLife) { this._remove(record); continue; }
       const index = record.loop ? frame % entry.textures.length : Math.min(frame, entry.textures.length - 1);
       record.sprite.texture = entry.textures[index];
+      const bw = Math.max(1, entry.base.width);
+      const bh = Math.max(1, entry.base.height);
+      const sx = (index % entry.meta.cols) * entry.cellW * 2;
+      const sy = Math.floor(index / entry.meta.cols) * entry.cellH;
+      const filter = Array.isArray(record.sprite.filters) ? record.sprite.filters[0] : null;
+      if (filter?.uniforms?.uFrame) {
+        filter.uniforms.uFrame[0] = sx / bw;
+        filter.uniforms.uFrame[1] = sy / bh;
+        filter.uniforms.uFrame[2] = (entry.cellW * 2) / bw;
+        filter.uniforms.uFrame[3] = entry.cellH / bh;
+      }
       this._place(record);
     }
   }
