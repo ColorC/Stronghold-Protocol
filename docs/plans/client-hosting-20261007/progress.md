@@ -18,3 +18,11 @@
 2026-10-07：后续部署可用 SP_INDEPENDENT_EXECUTION=client 强制工坊前端计算，bootstrap开局前选择client模式，旧服务器actions入口返回409而不运算。SP_INDEPENDENT_DIRECTORY要求绝对独立运行路径，发布目录不作为存档真源。9项相关测试通过，回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/admission/tests-final.log。
 
 主机只读审计完成，证据报告 E:/WindowsWorkspace/webworks/apps/personal-homepage/.omni/tmp/colorc-host-audit-20261007/colorc-host-audit.md 和 audit-data.json：2CPU/3.57GiB，快照可用2.55GiB/load低；根盘79%，剩4.22GiB，备份72份共2.53GiB，日志808MiB；另有数据盘用途未验证。当前Workshop为外跳。主站无gzip/主要静态明确缓存；旧Next仍被路由依赖，禁止凭废弃名称直接停。50人动态/公网带宽峰值未验证。
+
+2026-10-07：前端引擎与外部分发完成整合。完整全仓测试4208通过、0失败、11跳过（E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/integration/full-suite.log）；跨域路径后续修改针对性39通过、0失败、6跳过（同目录cdn-path-tests-fixed.log）。首次稀疏副本无vendor的失败保留在cdn-path-tests.log，补齐独立代码缓存后通过。全5700素材引用missing=0，1679语音和告警补供回执在E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/asset-distribution/manifest-assets-final.json、manifest-voice-repair-results.json、alarmenter-repair.json。
+
+最终验收代码a8ad2ef866afb12d7164c1598eb60ad051fb6e7a，原规则复用Worker、增量checkpoint、50准入、固定Git路径静态包；完整跨域Chrome购买/拖动/朝向/回放/下一回合/手机尺寸通过，catalog线协议相同，899外源请求0失败。实际回执E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/integration/cdn-ui/cdn-receipt.json、cdn-ui/browser/browser-receipt.json、cdn-ui/ui-browser/browser-receipt.json。独立50客户端写入并第51个拒绝通过，实际回执同integration/capacity/capacity.json；未在colorc VPS压测，未迁移或重启现网。
+
+旧外源测试先发现模块相对路径越过版本根、变量动态import和CSS自定义属性从CDN根解析的问题，已修复；中间catalog字符串比较失败在精确版本复测不再出现，诊断增强记录语义首差异，未改Worker或游戏数据来消除检测误报。原服务器方式Chrome整轮通过，回执E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/integration/legacy-browser/browser-receipt.json。
+
+assets/client子任务工作副本与分支已原生收尾，原始client诊断9d9fcc保留merge ancestry。client自产失败generated目录此前被工具policy拦截删除，未重试；改为保全迁移至E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/client-hosting-20261007/preserved-client-generated，再原生worktree remove，无force。实际收尾回执E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/asset-distribution/worktree-cleanup.json与client-compute/worktree-cleanup.json。
