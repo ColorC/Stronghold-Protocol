@@ -8,9 +8,36 @@ let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let 
 let zoomRect = null;
 let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let activeMediaIndex=0;
+function keepReplayAnimationsVisible() {
+  const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument;
+  if (!doc?.head || doc.getElementById('sp-replay-animation-playback')) return;
+  const style = doc.createElement('style'); style.id = 'sp-replay-animation-playback';
+  style.textContent = 'html.rrweb-paused *, html.rrweb-paused *::before, html.rrweb-paused *::after { animation-play-state: running !important; }';
+  doc.head.append(style);
+}
+function rebaseRecordedAssets(value) {
+  if (!value || typeof value !== 'object') return;
+  if (Array.isArray(value)) { for (const item of value) rebaseRecordedAssets(item); return; }
+  for (const [key, current] of Object.entries(value)) {
+    if (typeof current !== 'string') continue;
+    let next = current.replace(/https?:\/\/[^/]+(?=\/(?:assets|fonts|css|vendor)\/)/g, (origin) => {
+      try { return new URL(origin).hostname === location.hostname ? location.origin : origin; }
+      catch { return origin; }
+    });
+    if (['src', 'href', 'poster', 'xlink:href'].includes(key)) {
+      try {
+        const url = new URL(next, location.href);
+        if (url.hostname === location.hostname && /\/(?:assets|fonts|css|vendor)\//.test(url.pathname) && url.origin !== location.origin) next = `${location.origin}${url.pathname}${url.search}${url.hash}`;
+      } catch { /* retain non-URL attributes */ }
+    }
+    if (next !== current) value[key] = next;
+  }
+  for (const item of Object.values(value)) rebaseRecordedAssets(item);
+}
 function paintMediaLayer() {
-  if (!mediaVideo) return;
   const frame = stage.querySelector('iframe') || player?.iframe;
+  if (frame) frame.style.pointerEvents = selecting ? 'none' : 'auto';
+  if (!mediaVideo) return;
   const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
   if (!canvas || !frame) { mediaVideo.hidden = true; return; }
   const fb = frame.getBoundingClientRect(), sb = stage.getBoundingClientRect(), cb = canvas.getBoundingClientRect();
@@ -113,15 +140,15 @@ function play() {
 }
 function pause() {
   if (!playing) return;
-  const now = offset(); playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
+  const now = offset(); playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
 }
 async function seek(value) {
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
-  const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause();
+  const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible();
   clearTimeout(narrationTimer);narrating=false;resetZoom();
   timeline.value = String(second); position(second); player?.play(Math.max(0,second-rrOffset) * 1000);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  player?.pause(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
+  player?.pause(); keepReplayAnimationsVisible(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
   if (mediaVideo && second >= mediaStartSecond) {
     await mediaReady; syncMediaTime(second);
     if (resume) void mediaVideo.play().catch(() => {});
@@ -131,7 +158,7 @@ async function seek(value) {
 }
 playButton.addEventListener('click', () => {if(narrating){clearTimeout(narrationTimer);narrating=false;resetZoom();play();}else playing ? pause() : play();});
 timeline.addEventListener('input', () => { if (playing) pause(); void seek(timeline.value); });
-$('zoom').addEventListener('click', () => { selecting = true; status.textContent = '在画面上拖动，框选要放大的区域。'; });
+$('zoom').addEventListener('click', () => { selecting = true; paintMediaLayer(); status.textContent = '在画面上拖动，框选要放大的区域。'; });
 function resetZoom(){zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();}
 function zoomArea(rect){
   zoomRect=rect;const w=stage.clientWidth,h=stage.clientHeight;
@@ -153,7 +180,7 @@ stage.parentElement.addEventListener('pointermove', (e) => {
 stage.parentElement.addEventListener('pointerup', (e) => {
   if (!drag) return; const x = Math.min(Math.max(e.clientX, drag.rect.left), drag.rect.right); const y = Math.min(Math.max(e.clientY, drag.rect.top), drag.rect.bottom);
   const width = Math.abs(x - drag.x); const height = Math.abs(y - drag.y); const localX = Math.min(drag.x, x) - drag.rect.left; const localY = Math.min(drag.y, y) - drag.rect.top;
-  drag = null; selecting = false;
+  drag = null; selecting = false; paintMediaLayer();
   if (width > 12 && height > 12) {zoomArea({localX,localY,width,height});status.textContent='放大查看中，可点「还原画面」回到全景。';}
 });
 
@@ -162,7 +189,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   if (!id) throw new Error('没有指定本局回放');
   const response = await fetch(new URL(`recordings/${encodeURIComponent(id)}`, API), { credentials: 'same-origin' });
   const packet = await response.json(); if (!response.ok || !packet.ok) throw new Error('无法载入本局回放');
-  const records = packet.events || []; items = records.filter((e) => e.kind === 'rrweb').map((e) => e.p);
+  const records = packet.events || []; items = records.filter((e) => e.kind === 'rrweb').map((e) => e.p); rebaseRecordedAssets(items);
   cues = records.filter((e) => e.kind === 'caption' && e.p?.text).map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), ...e.p }));
   if (!items.length || !globalThis.rrweb?.Replayer) throw new Error('这段记录还没有可播放的画面');
   baseTimestamp = Math.min(...items.map((e) => e.timestamp).filter(Number.isFinite));
@@ -184,7 +211,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   player.play(Math.max(0,firstVisibleSecond-rrOffset) * 1000);
   // Let CSS transitions present in the captured page finish while the replay clock advances.
   await new Promise((resolve) => setTimeout(resolve, 900));
-  player.pause();
+  player.pause(); keepReplayAnimationsVisible();
   timeline.value = String(Math.min(duration, firstVisibleSecond)); position(Number(timeline.value)); attachCanvasMedia(id);
   if (mediaVideo) {
     await mediaReady; syncMediaTime(Number(timeline.value));
