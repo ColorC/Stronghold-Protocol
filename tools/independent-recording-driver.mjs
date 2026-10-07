@@ -670,6 +670,16 @@ try {
     else if (Date.now() - sameRevisionSince > 60000) {
       report.stalledPreparation = { revision: state.revision, round: state.round, phase: state.phase, actions: report.actions.length,
         since: new Date(sameRevisionSince).toISOString(), reason: (await visibleText('[data-testid="ready-why"]')).join(' ') };
+      const live = await readState();
+      report.stalledPreparation.liveState = { revision: live.revision, phase: live.phase, round: live.round, funds: live.funds,
+        pieces: (live.pieces || []).map((p) => ({ uid: p.uid, name: p.name, chessId: p.chessId, row: p.row ?? null, col: p.col ?? null, temp: !!p.temp })) };
+      report.stalledPreparation.readyUi = await page.evaluate(() => {
+        const button = document.querySelector('[data-testid="ix-ready"]');
+        return { disabled: button?.disabled ?? null, className: button?.className || '', html: button?.outerHTML || '',
+          parentText: button?.parentElement?.innerText || '', why: [...document.querySelectorAll('[data-testid="ready-why"]')].map((x) => x.innerText),
+          toasts: [...document.querySelectorAll('.toast-host, .toast__text')].map((x) => x.innerText).filter(Boolean),
+          facing: !!document.querySelector('.fwheel'), detailOpen: !!document.querySelector('[data-testid="ix-detail"]') };
+      });
       report.stalledPreparation.screenshot = await screenshot(`stalled-preparation-round-${state.round || 0}`);
       await writeFile(path.join(output, 'stalled-preparation-diagnostic.json'), JSON.stringify(report.stalledPreparation, null, 2));
       throw new Error(`同一准备阶段 revision ${state.revision} 超过一分钟没有可见动作推进`);
