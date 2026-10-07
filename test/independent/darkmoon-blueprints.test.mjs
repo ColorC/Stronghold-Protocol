@@ -245,7 +245,7 @@ test('shop growth remains a fixed shop recipient and purchase grants growth dire
 test('original Battlecry buffs inspect the acquired source tag and wear permanent growth only on the fixed tribe targets',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false);
   for(const [id,tribe,elite,count,badges] of [['BGS_041','DRAGON',false,1,['precision','vitality']],['BGS_053','PIRATE',true,6,['precision']],['BGS_128','ELEMENTAL',false,1,['precision','vitality']]]) {
-    const holderOp=normal.find(x=>x.profession==='TANK'&&x.name!==byId.get(id).operator), otherOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator), gainOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
+    const holderOp=normal.find(x=>x.source?.normalChess?.profession==='TANK'&&x.name!==byId.get(id).operator), otherOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator), gainOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
     const holderRef={id,rosterTribe:tribe}, otherRef={id:'TEST_TARGET',rosterTribe:tribe}, gainedRef={id:'TEST_BATTLECRY',battlecry:true,rosterTribe:'NEUTRAL'};
     const faction={BGS_041:'卡西米尔',BGS_053:'维多利亚',BGS_128:'炎'}[id];
     const holder={...holderOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:holderRef}};
