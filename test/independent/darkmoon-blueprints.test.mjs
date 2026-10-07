@@ -27,7 +27,7 @@ test('blueprint is an exact 101-name roster slice with original 19.2 texts and b
     assert.ok(entry.sourceTexts.elite.length > 0, `${entry.sourceId} golden text`);
     for (const variant of ['normal','elite']) {
       const effects = entry.metadata.op.effectDelivery[variant];
-      assert.equal(effects.length, 1, `${entry.sourceId} ${variant} single source effect`);
+      assert.ok(effects.length > 0, `${entry.sourceId} ${variant} source effects`);
       for (const key of ['trigger','recipient','duration','text']) assert.ok(effects[0][key], `${entry.sourceId} ${variant} ${key}`);
     }
   }
@@ -38,7 +38,7 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('BGS_009').metadata.op.effectDelivery.normal[0].recipient, 'onePerEligibleType');
   assert.equal(byId.get('BGS_104').metadata.op.effectDelivery.normal[0].recipient, 'shop');
   assert.equal(byId.get('BGS_046').metadata.op.effectDelivery.normal[0].recipient, 'hand');
-  assert.equal(blueprints.entries.filter(x => x.metadata.op.effectDelivery.normal[0].implementation === 'dispatched-pending-gear-landing-verification').length, 7);
+  assert.equal(blueprints.entries.filter(x => x.metadata.op.effectDelivery.normal.some(e=>e.implementation === 'dispatched-pending-gear-landing-verification')).length, 7);
   assert.equal(byId.get('BGS_043').authoredRule.adaptation.source, 'randomFriendlyOperatorFromPreviousRound');
   assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'summonMultiplier');
   assert.equal(byId.get('LOE_077').authoredRule.normal.trigger, 'battlecryOnGain');
@@ -50,8 +50,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.equal(designAddon.pendingNativeDefinitions.length, 34);
   assert.ok(designAddon.operators.every(x => x.chessId && x.modeEffects === null));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal[0].implementation==='dispatched-pending-gear-landing-verification').length,7);
-  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal[0].implementation==='unsupported').length,94);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation==='dispatched-pending-gear-landing-verification')).length,7);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='unsupported')).length,94);
   assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
   assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
 });

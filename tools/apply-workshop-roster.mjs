@@ -111,7 +111,41 @@ function parseEffect(card, variant) {
   // The source-specific effect is preserved as an authored per-id descriptor. This is
   // deliberately not marked executable until a matching native behavior is wired and tested.
   const kind = recipient === 'shop' || recipient === 'hand' || recipient === 'playerResource' ? 'resourceOrShopState' : /summon|deal .* damage|attacks immediately/i.test(text) ? 'combatBoardAction' : tags.some(x => ['taunt','divineShield','reborn','poison','windfury'].includes(x)) ? 'combatKeyword' : 'statOrCombatBuff';
-  return { trigger, recipient, duration, kind, text: variant.text_zh || '', textEn: text, tags, implementation: 'unsupported', unsupportedReason: 'No source-id-specific native behavior has yet been implemented and exercised.' };
+  const statDeltas = {};
+  const pair = text.match(/\+(\d+)\s*\/\s*\+(\d+)/);
+  if (pair) { statDeltas.attack = Number(pair[1]); statDeltas.health = Number(pair[2]); }
+  const attack = text.match(/\+(\d+)\s+Attack/i); if (attack) statDeltas.attack = Number(attack[1]);
+  const health = text.match(/\+(\d+)\s+Health/i); if (health) statDeltas.health = Number(health[1]);
+  const damage = text.match(/(?:deal|deals)\s+(\d+)\s+damage/i); const damageAmount = damage ? Number(damage[1]) : null;
+  const summonStats = text.match(/summon(?:s)?\s+(?:a|an|two|three|four|\d+)?\s*(\d+)\s*\/\s*(\d+)/i);
+  const params = { ...(Object.keys(statDeltas).length ? { statDeltas } : {}), ...(damageAmount ? { damage:damageAmount } : {}), ...(summonStats ? { summonStats:{ attack:Number(summonStats[1]), health:Number(summonStats[2]) } } : {}), numericLiterals:[...text.matchAll(/\b\d+(?:\.\d+)?\b/g)].map(m=>Number(m[0])) };
+  return { trigger, sourceTrigger:trigger, recipient, duration, kind, params, text: variant.text_zh || '', textEn: text, tags, implementation: 'unsupported', unsupportedReason: 'No source-id-specific native behavior has yet been implemented and exercised.' };
+}
+
+const STATIC_KEYWORD_GEAR = Object.freeze({
+  taunt:{ label:'嘲讽', gear:'坚守盟约' }, divineShield:{ label:'圣盾', gear:'护盾发生器' },
+  reborn:{ label:'复生', gear:'不屈盟约' }, poison:{ label:'剧毒', gear:'精准盟约' },
+  cleave:{ label:'攻击相邻随从', gear:'巨锤盟约' }
+});
+function effectDeliveries(card, variant) {
+  const base = parseEffect(card, variant), found = [];
+  for (const tag of ['taunt','divineShield','reborn','poison']) if (base.tags.includes(tag)) found.push(tag);
+  if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')) found.push('cleave');
+  const rows = found.map(tag => {
+    const descriptor = STATIC_KEYWORD_GEAR[tag];
+    return { trigger:'gain', sourceTrigger:'staticCombat', recipient:'self', duration:'permanentWornGear', kind:'keywordGear', text:`<b>${descriptor.label}</b>`, textEn:tag, tags:[tag], params:{}, adapter:[`independent:${descriptor.gear}`], implementation:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'dispatched-pending-gear-landing-verification' : 'unsupported', unsupportedReason:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.' : 'Static keyword has no source-id-specific delivery rule wired.' };
+  });
+  const textWithoutTags=(variant.text_en||'').replace(/<b>(?:Taunt|Divine Shield|Reborn|Poisonous|Windfury|Mega-Windfury)<\/b>/gi,'').replace(/\[x\]/gi,'').replace(/<[^>]*>/g,'').replace(/[\s\n.,:;]+/g,'');
+  const hasMainText=Boolean(textWithoutTags);
+  if (hasMainText) {
+    if (KEYWORD_ADAPTERS[card.id] && found.length===0) {
+      const names=KEYWORD_ADAPTERS[card.id];
+      Object.assign(base,{trigger:'gain',recipient:'self',duration:'permanentWornGear',kind:'keywordGear',adapter:names.map(n=>`independent:${n}`),implementation:'dispatched-pending-gear-landing-verification',unsupportedReason:'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.'});
+    }
+    rows.push(base);
+  }
+  if (!rows.length) rows.push(base);
+  return rows;
 }
 
 const entries = [];
@@ -123,16 +157,8 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
     if (!card) { missing.push(name); continue; }
     if (duplicates.has(card.id)) throw new Error(`duplicate source id ${card.id}`);
     duplicates.add(card.id);
-    const normal = parseEffect(card, { text_en: card.text_en, text_zh: card.text_zh });
-    const elite = parseEffect(card, card.golden || { text_en: card.text_en, text_zh: card.text_zh });
-    for (const delivery of [normal, elite]) {
-      delivery.sourceTrigger = delivery.trigger;
-      if (KEYWORD_ADAPTERS[card.id]) Object.assign(delivery, {
-        trigger:'gain', recipient:'self', duration:'permanentWornGear', kind:'keywordGear',
-        implementation:'dispatched-pending-gear-landing-verification', adapter:KEYWORD_ADAPTERS[card.id].map(name=>`independent:${name}`),
-        unsupportedReason:'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.'
-      });
-    }
+    const normal = effectDeliveries(card, { text_en:card.text_en, text_zh:card.text_zh }, false);
+    const elite = effectDeliveries(card, card.golden || { text_en:card.text_en, text_zh:card.text_zh }, true);
     entries.push({
       sourceId: card.id,
       dbfId: card.dbf_id,
@@ -150,15 +176,15 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
       sourceTexts: { normal: card.text_zh || '', elite: card.golden?.text_zh || card.text_zh || '' },
       sourceTextsEn: { normal: card.text_en || '', elite: card.golden?.text_en || card.text_en || '' },
       sourceUrl: `https://api.hearthstonejson.com/v1/68600/zhCN/cards.json`,
-      metadata: { op: { effectDelivery: { normal: [normal], elite: [elite] } } },
+      metadata: { op: { effectDelivery: { normal, elite } } },
       authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : {
         sourceId: card.id,
         status: 'unsupported',
         reason: 'Needs a source-specific adapter rule and matching ordinary/elite trigger test.'
       },
       sourceEffect: {
-        normal: { trigger: normal.trigger, recipient: normal.recipient, duration: normal.duration, text: normal.text },
-        elite: { trigger: elite.trigger, recipient: elite.recipient, duration: elite.duration, text: elite.text }
+        normal: normal.map(({trigger,sourceTrigger,recipient,duration,text,params})=>({trigger,sourceTrigger,recipient,duration,text,params})),
+        elite: elite.map(({trigger,sourceTrigger,recipient,duration,text,params})=>({trigger,sourceTrigger,recipient,duration,text,params}))
       }
     });
   }
@@ -179,6 +205,8 @@ const report = {
   exactSourceBodyCoverage: entries.length === 101 && new Set(entries.map(x=>x.name)).size === 101 && new Set(entries.map(x=>x.sourceId)).size === 101,
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
   nativeDispatchedPendingLanding: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
+  totalNormalEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.normal.length,0),
+  totalEliteEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.elite.length,0),
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
   unsupportedSourceIds: entries.filter(x=>!KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal[0].unsupportedReason})),
   pendingGearLandingSourceIds: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,gear:KEYWORD_ADAPTERS[x.sourceId]})),
