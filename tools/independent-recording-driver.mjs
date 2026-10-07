@@ -14,7 +14,8 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const canonical = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const runtime = path.join(canonical, 'runtime/growth-destination-20261008/recording');
 const tmp = path.join(canonical, '.omni/tmp/growth-destination-20261008/recording');
-const output = path.join(runtime, 'driver-run');
+const output = path.resolve(process.env.SP_RECORD_DRIVER_OUTPUT || path.join(runtime, 'driver-run'));
+const runLog = path.join(tmp, `independent-recording-driver-${path.basename(output)}.log`);
 const maxRounds = Math.max(1, Math.min(14, Number(process.env.SP_RECORD_DRIVER_MAX_ROUNDS || 14)));
 const seed = Number.isSafeInteger(Number(process.env.SP_RECORD_DRIVER_SEED))
   ? Math.trunc(Number(process.env.SP_RECORD_DRIVER_SEED)) : Math.floor(Math.random() * 2 ** 31);
@@ -120,16 +121,34 @@ async function deployPiece(state, piece) {
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height).slice(0, 6)) {
     await dragPointer(from, target);
+    const diagnostic = await page.evaluate(({ from, target, legalCount }) => {
+      const describe = (x, y) => {
+        const e = document.elementFromPoint(x, y);
+        return e ? { tag: e.tagName, id: e.id, className: typeof e.className === 'string' ? e.className : '', text: (e.innerText || e.getAttribute('aria-label') || '').slice(0, 160), html: e.outerHTML.slice(0, 800) } : null;
+      };
+      return {
+        from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, row: target.row, col: target.col, legalTiles: legalCount,
+        viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
+        elementFromPoint: { from: describe(from.x, from.y), to: describe(target.x, target.y) },
+        wheelVisible: !!document.querySelector('.fwheel[role="dialog"]'),
+      };
+    }, { from, target, legalCount: legal.length });
+    if (!report.firstDeployDiagnostic) {
+      report.firstDeployDiagnostic = { ...diagnostic, screenshot: await screenshot('first-deploy-after-drop') };
+      await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
+    }
     try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 1200 }); } catch { continue; }
-    const box = await page.$eval('.fwheel__dia', (e) => { const r = e.getBoundingClientRect(); return r.toJSON(); });
-    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-    // Direction is a real pointer gesture on the visible four-way direction wheel.
-    await dragPointer(center, { x: center.x + Math.max(48, box.width * 0.29), y: center.y });
-    try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter'); }
+    if (report.firstDeployDiagnostic?.row === target.row && report.firstDeployDiagnostic?.col === target.col) {
+      report.firstDeployDiagnostic.wheelVisibleAfterWait = true;
+      await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
+    }
+    // The normal visible direction wheel supports keyboard navigation; use the same real UI inputs as the smoke path.
+    await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter');
+    try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
     const after = await readState();
     if ((after.pieces || []).some((p) => p.uid === piece.uid && Number.isInteger(p.row))) {
-      report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + facing-wheel pointer drag' });
+      report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + ArrowRight + Enter' });
       return true;
     }
     state = after;
@@ -297,11 +316,23 @@ async function waitBattleResult(round) {
   if (summary.button === '查看结算') { await screenshot('terminal-result'); }
 }
 async function stopRecording() {
+  report.recordingControlBeforeStop = await page.evaluate(() => {
+    const panel = document.querySelector('.ix-recording'); const button = panel?.querySelector('button');
+    const rect = (node) => { const r = node?.getBoundingClientRect(); return r ? r.toJSON() : null; };
+    const style = (node) => node ? Object.fromEntries(['display', 'visibility', 'opacity', 'position', 'zIndex', 'pointerEvents', 'clipPath'].map((k) => [k, getComputedStyle(node)[k]])) : null;
+    const b = button && rect(button); const at = b && document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+    return { exists: !!panel, text: panel?.innerText || '', panelRect: rect(panel), panelStyle: style(panel), buttonText: button?.innerText || '', buttonRect: b,
+      buttonStyle: style(button), centerHit: at ? { tag: at.tagName, className: typeof at.className === 'string' ? at.className : '', text: (at.innerText || '').slice(0, 120) } : null };
+  });
+  await writeFile(path.join(output, 'recording-control-diagnostic.json'), JSON.stringify(report.recordingControlBeforeStop, null, 2));
   const button = await page.$('.ix-recording button');
-  if (button && await button.evaluate((e) => e.getClientRects().length && !e.disabled)) {
-    await button.click();
-    try { await page.waitForFunction(() => document.querySelector('.ix-recording')?.innerText.includes('录制已结束'), { timeout: 20000 }); } catch { /* collect metadata for a failure report */ }
+  if (!button || !(await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled))) {
+    report.recordingStopError = 'The visible recorder stop button was not available.';
+    return;
   }
+  await button.click();
+  try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 30000 }); }
+  catch { report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion'); }
 }
 const mime = (file) => ({ '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.otf': 'font/otf', '.ttf': 'font/ttf', '.skel': 'application/octet-stream', '.atlas': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.mp4': 'video/mp4' }[path.extname(file).toLowerCase()] || 'application/octet-stream');
 async function serveCanonicalAsset(req, res, pathname) {
@@ -376,16 +407,22 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
   page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
-  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, 14 * 60 * 1000);
+  const hardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 14 * 60 * 1000;
+  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, hardLimitMs);
   await page.goto(`${origin}/independent.html?record=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.ix-start__modes .ix-mode', { timeout: 60000 });
   // Chrome can reset an about:blank viewport during navigation; size the real game before session creation so
   // renderer-provided pointer geometry and the initial recording share the same full-resolution canvas.
   await page.setViewport({ width: 1600, height: 900, deviceScaleFactor: 1 });
-  const growth = await page.$('.ix-growth-mode button[role="radio"][aria-checked="false"]');
-  if (growth) await growth.click();
+  const growthOptions = await page.$$('.ix-growth-mode button[role="radio"]');
+  for (const option of growthOptions) {
+    const label = await option.evaluate((e) => (e.innerText || '').trim());
+    if (label.includes('徽章成长') && await option.evaluate((e) => e.getAttribute('aria-checked') !== 'true')) { await option.click(); break; }
+  }
   await clickText('.ix-start__modes .ix-mode', (s) => s.includes('十四轮'));
   await page.waitForSelector('[data-testid="ix-game"]', { timeout: 60000 });
+  await page.waitForFunction(() => !document.querySelector('.gm__loading') && globalThis.__SP_VIEW__, { timeout: 90000 });
+  await pause(2500);
   await page.waitForFunction(() => !!new URL(location.href).searchParams.get('session') && !!new URL(location.href).searchParams.get('recording'), { timeout: 30000 });
   const url = new URL(page.url()); sessionId = url.searchParams.get('session'); recordingId = url.searchParams.get('recording');
   if (!sessionId || !recordingId) throw new Error('UI 创建对局或录制未完成');
@@ -418,7 +455,18 @@ try {
     const desired = Math.min(8, Math.max(1, Math.ceil(Number(state.round || 1) / 2)));
     if (deployed < desired) {
       const bench = (state.pieces || []).find((p) => !Number.isInteger(p.row) && !p.temp);
-      if (bench && await deployPiece(state, bench)) { idle = 0; await annotateObservedChanges(state, await readState()); continue; }
+      if (bench && await deployPiece(state, bench)) {
+        idle = 0; const afterDeploy = await readState(); await annotateObservedChanges(state, afterDeploy);
+        if (process.env.SP_RECORD_DRIVER_PREP_ONLY === '1') {
+          if (report.firstDeployDiagnostic) {
+            report.firstDeployDiagnostic.afterDropState = (afterDeploy.pieces || []).find((p) => p.uid === bench.uid) || null;
+            report.firstDeployDiagnostic.wheelVisibleAfterDirection = !!(await page.$('.fwheel[role="dialog"]'));
+            await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
+          }
+          await screenshot('prep-diagnostic-complete'); report.prepDiagnosticComplete = true; break;
+        }
+        continue;
+      }
     }
     if (await equipVisibleItem(state)) { idle = 0; continue; }
     if (await attemptHandover(state)) { idle = 0; continue; }
@@ -448,23 +496,23 @@ try {
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
-  report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
+  report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption' || e.kind === 'custom').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
   report.actions = report.recording?.events?.filter((e) => e.kind === 'server-action').map((e) => ({ at: e.ts, ...e.p })) || report.actions;
-  report.artifacts = { screenshots: report.screenshots, log: path.join(tmp, 'independent-recording-driver.log'), json: path.join(output, 'driver-run.json') };
+  report.artifacts = { screenshots: report.screenshots, log: runLog, json: path.join(output, 'driver-run.json') };
   const reportFile = path.join(output, 'driver-run.json'); await writeFile(reportFile, JSON.stringify(report, null, 2));
   const summary = `ok=${!!recording?.meta?.endedAt} rounds=${roundsDriven} recording=${recordingId} events=${report.recording?.events?.length || 0} media=${JSON.stringify(recording?.meta?.mediaSegments || [])}`;
-  await writeFile(path.join(tmp, 'independent-recording-driver.log'), `${report.startedAt}\n${summary}\n${report.errors.join('\n')}\n`, 'utf8');
-  console.log(JSON.stringify({ report: reportFile, log: path.join(tmp, 'independent-recording-driver.log'), recordingId, sessionId, roundsDriven, endedAt: recording?.meta?.endedAt, mediaSegments: recording?.meta?.mediaSegments, errors: report.errors, screenshots: report.screenshots }, null, 2));
-  if (!recording?.meta?.endedAt || !recording?.meta?.mediaSegments?.length || report.errors.length) process.exitCode = 1;
+  await writeFile(runLog, `${report.startedAt}\n${summary}\n${report.errors.join('\n')}\n`, 'utf8');
+  console.log(JSON.stringify({ report: reportFile, log: runLog, recordingId, sessionId, roundsDriven, endedAt: recording?.meta?.endedAt, mediaSegments: recording?.meta?.mediaSegments, errors: report.errors, screenshots: report.screenshots }, null, 2));
+  if (!recording?.meta?.endedAt || !recording?.meta?.mediaSegments?.length || report.errors.length || report.recordingStopError) process.exitCode = 1;
 } catch (error) {
   report.failure = error?.stack || String(error); report.endedAt = new Date().toISOString();
   try { if (page && !page.isClosed()) { await screenshot('driver-failure'); await stopRecording(); } } catch { /* include original failure */ }
   const file = path.join(output, 'driver-run-failure.json'); await writeFile(file, JSON.stringify(report, null, 2)).catch(() => {});
-  const log = path.join(tmp, 'independent-recording-driver.log'); await writeFile(log, `${report.startedAt}\nFAILED ${error?.stack || error}\n`, 'utf8').catch(() => {});
+  const log = runLog; await writeFile(log, `${report.startedAt}\nFAILED ${error?.stack || error}\n`, 'utf8').catch(() => {});
   console.error(JSON.stringify({ failure: error?.message || String(error), report: file, log, screenshots: report.screenshots }, null, 2)); process.exitCode = 1;
 } finally {
   clearTimeout(hardTimer);
   if (browser) await browser.close().catch(() => {});
-  if (assetProxy) await new Promise((resolve) => assetProxy.close(resolve)).catch(() => {});
-  if (server) await server.close().catch(() => {});
+  if (assetProxy) await new Promise((resolve) => { assetProxy.closeAllConnections?.(); assetProxy.close(resolve); }).catch(() => {});
+  if (server) { server.closeAllConnections?.(); await server.close().catch(() => {}); }
 }
