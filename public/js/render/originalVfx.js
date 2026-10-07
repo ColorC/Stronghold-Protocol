@@ -58,6 +58,19 @@ void main(void) {
   vTextureCoord = aTextureCoord;
 }`;
 
+// `Program.from` compiles/linkes a WebGL program on first use. Creating one for
+// every target hit made the compare page compile the same two programs over and
+// over during a skill, which shows up as main-thread stalls and repeated
+// texture/program binds in the browser. Keep the immutable programs per Pixi
+// namespace; each effect still receives its own Shader uniforms below.
+const PROGRAM_CACHE = new WeakMap();
+function sharedProgram(P, key, vertex, fragment) {
+  let cache = PROGRAM_CACHE.get(P);
+  if (!cache) { cache = new Map(); PROGRAM_CACHE.set(P, cache); }
+  if (!cache.has(key)) cache.set(key, P.Program.from(vertex, fragment));
+  return cache.get(key);
+}
+
 function setAtlasFrame(mesh, entry, index) {
   const count = Math.max(1, entry?.textures?.length || 1);
   const i = Math.max(0, Math.min(count - 1, Number(index) | 0));
@@ -90,7 +103,7 @@ function createAtlasFrame(P, entry, index = 0) {
     new Uint16Array([0, 1, 2, 0, 2, 3]),
   );
   const atlas = entry.atlas || new P.Texture(entry.base);
-  const shader = new P.Shader(P.Program.from(MESH_VERT, FRAME_FRAG), {
+  const shader = new P.Shader(sharedProgram(P, 'atlas-frame', MESH_VERT, FRAME_FRAG), {
     uSampler: atlas,
     uFrame: new Float32Array(4),
     uTexel: new Float32Array([1 / baseW, 1 / baseH]),
@@ -329,7 +342,7 @@ export class OriginalVfxPlayer {
             uBorderWidth: Number(material.floats?._BorderWidth) || 0.1,
             uAlpha: 1,
           };
-          materialInstance = new this.P.Shader(this.P.Program.from(MESH_VERT, DISSOLVE_FRAG), uniforms);
+          materialInstance = new this.P.Shader(sharedProgram(this.P, 'mesh-dissolve', MESH_VERT, DISSOLVE_FRAG), uniforms);
         } else {
           materialInstance = new this.P.MeshMaterial(texture);
         }
