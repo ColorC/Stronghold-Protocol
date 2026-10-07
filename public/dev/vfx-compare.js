@@ -244,7 +244,7 @@ async function main() {
     await assets.ready();
     [before, after] = await Promise.all([
       createFieldView($('before-field'), { data, assets, board: '2d', originalVfx: false, settings: { quality: 'high', damageNumbers: true } }),
-      createFieldView($('after-field'), { data, assets, board: '2d', originalVfx: { root: '/assets/vfx/rosmon', cacheKey: 'vfx-20261008-r2' }, settings: { quality: 'high', damageNumbers: true } }),
+      createFieldView($('after-field'), { data, assets, board: '2d', originalVfx: { root: '/assets/vfx/rosmon', cacheKey: 'vfx-20261008-r3' }, settings: { quality: 'high', damageNumbers: true } }),
     ]);
     wireControls();
     document.querySelectorAll('[data-scenario]').forEach((x) => { const isBlakk = x.dataset.scenario.startsWith('skchr_blkkgt_'); x.hidden = isBlakk; });
