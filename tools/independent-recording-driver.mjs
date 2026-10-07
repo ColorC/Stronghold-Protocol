@@ -17,6 +17,11 @@ const runtime = path.join(canonical, 'runtime/growth-destination-20261008/record
 const tmp = path.join(canonical, '.omni/tmp/growth-destination-20261008/recording');
 const output = path.resolve(process.env.SP_RECORD_DRIVER_OUTPUT || path.join(runtime, 'driver-run'));
 const runLog = path.join(tmp, `independent-recording-driver-${path.basename(output)}.log`);
+const processStartedAt = Date.now();
+const defaultHardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 30 * 60 * 1000;
+const requestedHardLimitMs = Number(process.env.SP_RECORD_DRIVER_HARD_TIMEOUT_MS || defaultHardLimitMs);
+const hardLimitMs = Number.isFinite(requestedHardLimitMs) && requestedHardLimitMs > 0
+  ? Math.max(60 * 1000, Math.min(60 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
 const maxRounds = Math.max(1, Math.min(14, Number(process.env.SP_RECORD_DRIVER_MAX_ROUNDS || 14)));
 const seed = Number.isSafeInteger(Number(process.env.SP_RECORD_DRIVER_SEED))
   ? Math.trunc(Number(process.env.SP_RECORD_DRIVER_SEED)) : Math.floor(Math.random() * 2 ** 31);
@@ -25,7 +30,7 @@ const require = createRequire(path.join(repo, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
-  seed, maxRounds, startedAt: new Date().toISOString(), baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
+  seed, maxRounds, startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
   actions: [], notes: [], rounds: [], screenshots: [], errors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
@@ -495,8 +500,7 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') report.errors.push(message.text()); });
   page.on('response', (response) => { if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`); });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
-  const hardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 14 * 60 * 1000;
-  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, hardLimitMs);
+  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, Math.max(0, processStartedAt + hardLimitMs - Date.now()));
   await page.goto(`${origin}/independent.html?record=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.ix-start__modes .ix-mode', { timeout: 60000 });
   // Chrome can reset an about:blank viewport during navigation; size the real game before session creation so
@@ -518,8 +522,7 @@ try {
   const initial = await readState(); report.sessionId = sessionId; report.recordingId = recordingId; report.growthMode = initial.growthMode; report.roundLimit = initial.roundLimit;
   await screenshot('first-preparation');
   let roundsDriven = 0; let idle = 0; let lastPrepRevision = null; let sameRevisionSince = Date.now();
-  const started = Date.now();
-  while (Date.now() - started < 13 * 60 * 1000) {
+  while (Date.now() - processStartedAt < hardLimitMs) {
     if (await page.$('[data-testid="ix-result-ok"]')) {
       const liveRound = Number((await readState()).lastBattle?.round) || roundsDriven + 1;
       await waitBattleResult(liveRound); roundsDriven++;
@@ -609,7 +612,7 @@ try {
     await pause(500); idle++;
     if (idle > 6) throw new Error(`无法推进整备阶段，当前提示：${(await visibleText('[data-testid="ready-why"]')).join(' ')}`);
   }
-  if (Date.now() - started >= 13 * 60 * 1000) throw new Error('对局驾驶达到13分钟执行时限');
+  if (Date.now() - processStartedAt >= hardLimitMs) throw new Error(`对局驾驶达到${Math.round(hardLimitMs / 60000)}分钟执行时限`);
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
