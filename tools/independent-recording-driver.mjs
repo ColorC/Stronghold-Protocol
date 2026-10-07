@@ -302,12 +302,12 @@ async function equipVisibleItem(state) {
   }
   return false;
 }
-async function buyOne(state) {
+async function buyOne(state, { triplesOnly = false } = {}) {
   const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
   const roster = (state.pieces || []).filter((p) => !p.temp);
   const reserve = roster.length >= 4 && deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
-  const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve);
   const counts = new Map(); for (const p of state.pieces || []) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
+  const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve && (!triplesOnly || counts.get(s.id) === 2));
   const roleCounts = roster.reduce((out, p) => {
     const card = chessCatalog[p.chessId] || {};
     if (card.profession === 'MEDIC') out.medic += 1;
@@ -349,6 +349,53 @@ async function buyOne(state) {
     const next = await readState(); await annotateObservedChanges(state, next); await pause(500); return true;
   }
   return false;
+}
+function roleCountsOf(pieces) {
+  return (pieces || []).filter((p) => !p.temp).reduce((out, p) => {
+    const card = chessCatalog[p.chessId] || {};
+    if (card.profession === 'MEDIC') out.medic += 1;
+    if (card.position === 'MELEE') out.melee += 1;
+    if (card.position === 'RANGED') out.ranged += 1;
+    return out;
+  }, { medic: 0, melee: 0, ranged: 0 });
+}
+function highTierReplacement(state) {
+  if (Number(state.shop?.level) < 4) return null;
+  const roster = (state.pieces || []).filter((p) => !p.temp);
+  const roles = roleCountsOf(roster);
+  const counts = new Map(); for (const p of roster) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
+  const candidates = (state.shop?.slots || []).map((slot, index) => ({ slot, index, card: chessCatalog[slot.id] || {} }))
+    .filter(({ slot, card }) => slot.kind === 'chess' && !slot.sold && slot.id && Number(slot.price) <= Number(state.funds) && Number(card.tier) >= 4 && counts.get(slot.id) !== 2)
+    .sort((a, b) => Number(b.card.tier) - Number(a.card.tier) || a.slot.price - b.slot.price || a.index - b.index);
+  const replacements = [];
+  for (const candidate of candidates) for (const piece of roster) {
+    if ((piece.equipment || []).length || piece.elite || pieceGrowthLevel(piece) > 0) continue;
+    const current = chessCatalog[piece.chessId] || {};
+    if (Number(candidate.card.tier) <= Number(current.tier || 0)) continue;
+    if (current.profession === 'MEDIC' && roles.medic <= 1) continue;
+    if (current.position === 'MELEE' && roles.melee <= 2) continue;
+    if (current.position === 'RANGED' && roles.ranged <= 2) continue;
+    replacements.push({ candidate, piece, gap: Number(candidate.card.tier) - Number(current.tier || 0) });
+  }
+  replacements.sort((a, b) => b.gap - a.gap || Number(a.candidate.card.tier) - Number(b.candidate.card.tier) || pieceGrowthLevel(a.piece) - pieceGrowthLevel(b.piece));
+  return replacements[0] || null;
+}
+async function sellForHighTierReplacement(state, replacement) {
+  const { candidate, piece } = replacement;
+  const bounds = await page.evaluate((n) => globalThis.__SP_VIEW__?.pieceScreenRect?.(n) || null, pieceNumber(piece.uid));
+  if (!bounds?.width || !bounds?.height) return false;
+  await page.mouse.click(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); await pause(350);
+  if (!await page.$eval('[data-testid="ix-detail"]', (e, name) => (e.innerText || '').includes(name), piece.name).catch(() => false)) return false;
+  const before = state.revision;
+  if (!await clickText('[data-testid="ix-detail"] button', (text) => /^出售\s*\+/.test(text))) return false;
+  if (!await clickText('[data-testid="ix-detail"] button', (text) => /^确认出售\s*\+/.test(text))) return false;
+  try { await waitRevision(before); } catch { return false; }
+  const next = await readState();
+  if ((next.pieces || []).some((p) => p.uid === piece.uid)) return false;
+  report.actions.push({ type: 'sell-for-high-tier-replacement', unit: piece.name, replacement: chessCatalog[candidate.slot.id]?.name || candidate.slot.id, tier: candidate.card.tier });
+  await annotateObservedChanges(state, next);
+  await note('酒馆等级提高后，队伍用更高阶干员替换较弱战力，并保留了现有的支援与前线配合。', '[data-testid="ix-ready"]', 'high-tier-replacement');
+  await pause(350); return true;
 }
 async function maybeUpgrade(state) {
   if ((state.pieces || []).filter((p) => !p.temp).length < 4 || state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
@@ -642,7 +689,13 @@ try {
     }
     if (await equipVisibleItem(state)) { idle = 0; continue; }
     if (await attemptHandover(state)) { idle = 0; continue; }
-    if (deployed < 8 && (state.pieces || []).filter((p) => !p.temp).length < 10 && await buyOne(state)) { idle = 0; continue; }
+    const rosterSize = (state.pieces || []).filter((p) => !p.temp).length;
+    if (rosterSize < 10 && await buyOne(state)) { idle = 0; continue; }
+    if (deployed >= 8 && rosterSize >= 10) {
+      if (await buyOne(state, { triplesOnly: true })) { idle = 0; continue; }
+      const replacement = highTierReplacement(state);
+      if (replacement && await sellForHighTierReplacement(state, replacement)) { idle = 0; continue; }
+    }
     if (await maybeUpgrade(state)) { idle = 0; continue; }
     if (idle < 1 && Number(state.funds) >= Number(state.shop?.refreshPrice || 1) + 2) { if (await triggerRefresh(state)) { idle++; continue; } }
     if (deployed > 0) {
