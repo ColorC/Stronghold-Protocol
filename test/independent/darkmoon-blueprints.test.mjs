@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const blueprints = JSON.parse(fs.readFileSync(path.join(root, 'data/independent-darkmoon-blueprints.json'), 'utf8'));
+const designAddon = JSON.parse(fs.readFileSync(path.join(root, 'data/independent-darkmoon-design-addon.json'), 'utf8'));
+const gameTextAddon = JSON.parse(fs.readFileSync(path.join(root, 'data/independent-darkmoon-game-text-addon.json'), 'utf8'));
 const byId = new Map(blueprints.entries.map(x => [x.sourceId, x]));
 
 test('blueprint is an exact 101-name roster slice with original 19.2 texts and both variants', () => {
@@ -38,4 +40,13 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'summonMultiplier');
   assert.equal(byId.get('LOE_077').authoredRule.normal.trigger, 'battlecryOnGain');
   assert.equal(byId.get('FP1_031').authoredRule.normal.trigger, 'retiringEffect');
+});
+
+test('compiler add-ons link only existing native definitions and preserve all source text without replacing canonical files', () => {
+  assert.equal(designAddon.operators.length, 67);
+  assert.equal(designAddon.pendingNativeDefinitions.length, 34);
+  assert.ok(designAddon.operators.every(x => x.chessId && x.modeEffects === null));
+  assert.equal(Object.keys(gameTextAddon.operators).length, 101);
+  assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
+  assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
 });

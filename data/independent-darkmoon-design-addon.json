@@ -1,0 +1,1655 @@
+{
+  "schema": "stronghold.darkmoon-design-addon/v1",
+  "sourceBuild": "19.2.0.68600",
+  "basedOnDesign": "independent-design.json",
+  "operators": [
+    {
+      "name": "塞雷娅",
+      "chessId": "chess_char_5_11_a",
+      "sourceId": "BGS_006",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_006",
+          "name": "斯尼德的伐木机",
+          "nameEn": "Sneed's Old Shredder",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_006",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "浊心斯卡蒂",
+      "chessId": "chess_char_6_04_a",
+      "sourceId": "BGS_009",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_009",
+          "name": "光牙执行者",
+          "nameEn": "Lightfang Enforcer",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_009",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "缪尔赛思",
+      "chessId": "chess_char_6_11_a",
+      "sourceId": "BGS_012",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_012",
+          "name": "坎格尔的学徒",
+          "nameEn": "Kangor's Apprentice",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_012",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "波登可",
+      "chessId": "chess_char_1_13_a",
+      "sourceId": "BGS_017",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_017",
+          "name": "族群领袖",
+          "nameEn": "Pack Leader",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_017",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "荒芜拉普兰德",
+      "chessId": "chess_char_6_18_a",
+      "sourceId": "BGS_018",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_018",
+          "name": "巨狼戈德林",
+          "nameEn": "Goldrinn, the Great Wolf",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_018",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "铃兰",
+      "chessId": "chess_char_5_10_a",
+      "sourceId": "BGS_021",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_021",
+          "name": "熊妈妈",
+          "nameEn": "Mama Bear",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_021",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "圣约送葬人",
+      "chessId": "chess_char_5_01_a",
+      "sourceId": "BGS_022",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_022",
+          "name": "扎普·斯里维克",
+          "nameEn": "Zapp Slywick",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_022",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "焰尾",
+      "chessId": "chess_char_4_19_a",
+      "sourceId": "BGS_032",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_032",
+          "name": "火焰传令官",
+          "nameEn": "Herald of Flame",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_032",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "协律",
+      "chessId": "chess_char_2_15_a",
+      "sourceId": "BGS_035",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_035",
+          "name": "蜡烛骑士托瓦格尔",
+          "nameEn": "Waxrider Togwaggle",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_035",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "玛恩纳",
+      "chessId": "chess_char_5_19_a",
+      "sourceId": "BGS_036",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_036",
+          "name": "狂野的拉佐格尔",
+          "nameEn": "Razorgore, the Untamed",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_036",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "流星",
+      "chessId": "chess_char_3_17_a",
+      "sourceId": "BGS_038",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_038",
+          "name": "暮光使者",
+          "nameEn": "Twilight Emissary",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_038",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "砾",
+      "chessId": "chess_char_2_12_a",
+      "sourceId": "BGS_039",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_039",
+          "name": "龙人军官",
+          "nameEn": "Dragonspawn Lieutenant",
+          "tier": 1,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_039",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "圣聆初雪",
+      "chessId": "chess_char_6_02_a",
+      "sourceId": "BGS_040",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_040",
+          "name": "红衣纳迪娜",
+          "nameEn": "Nadina the Red",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_040",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "耀骑士临光",
+      "chessId": "chess_char_6_17_a",
+      "sourceId": "BGS_041",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_041",
+          "name": "奥术守护者卡雷苟斯",
+          "nameEn": "Kalecgos, Arcane Aspect",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_041",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "远牙",
+      "chessId": "chess_char_4_20_a",
+      "sourceId": "BGS_043",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_043",
+          "name": "姆诺兹多",
+          "nameEn": "Murozond",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "mechanic": "lastWarbandRecruit",
+        "adaptation": {
+          "trigger": "gainOnce",
+          "recipient": "hand",
+          "duration": "untilPlayedOrSold",
+          "source": "randomFriendlyOperatorFromPreviousRound"
+        },
+        "status": "unsupported",
+        "reason": "No PvP opponent warband exists in this co-op mode; implement the approved previous-round friendly copy source, never an invented enemy."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "野鬃",
+      "chessId": "chess_char_1_19_a",
+      "sourceId": "BGS_045",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_045",
+          "name": "雕文护卫者",
+          "nameEn": "Glyph Guardian",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_045",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "维娜·维多利亚",
+      "chessId": "chess_char_6_07_a",
+      "sourceId": "BGS_047",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_047",
+          "name": "亡灵舰长伊丽扎",
+          "nameEn": "Dread Admiral Eliza",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_047",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "薄绿",
+      "chessId": "chess_char_3_08_a",
+      "sourceId": "BGS_053",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_053",
+          "name": "血帆炮手",
+          "nameEn": "Bloodsail Cannoneer",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_053",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "凯瑟琳",
+      "chessId": "chess_char_4_11_a",
+      "sourceId": "BGS_055",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_055",
+          "name": "甲板杂兵",
+          "nameEn": "Deck Swabbie",
+          "tier": 1,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_055",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "号角",
+      "chessId": "chess_char_5_08_a",
+      "sourceId": "BGS_056",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_056",
+          "name": "撕心狼队长",
+          "nameEn": "Ripsnarl Captain",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_056",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "刺玫",
+      "chessId": "chess_char_1_06_a",
+      "sourceId": "BGS_061",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_061",
+          "name": "海盗无赖",
+          "nameEn": "Scallywag",
+          "tier": 1,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_061",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "瑕光",
+      "chessId": "chess_char_3_12_a",
+      "sourceId": "BGS_067",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_067",
+          "name": "龙人执行者",
+          "nameEn": "Drakonid Enforcer",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_067",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "雷蛇",
+      "chessId": "chess_char_1_20_a",
+      "sourceId": "BGS_071",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_071",
+          "name": "偏折机器人",
+          "nameEn": "Deflect-o-Bot",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_071",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "阿罗玛",
+      "chessId": "chess_char_4_10_a",
+      "sourceId": "BGS_075",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_075",
+          "name": "暴怒的巨蜥",
+          "nameEn": "Rabid Saurolisk",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_075",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "佩佩",
+      "chessId": "chess_char_6_06_a",
+      "sourceId": "BGS_079",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_079",
+          "name": "海浪剃刀号",
+          "nameEn": "The Tide Razor",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_079",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "风笛",
+      "chessId": "chess_char_4_07_a",
+      "sourceId": "BGS_080",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_080",
+          "name": "破浪巨人",
+          "nameEn": "Seabreaker Goliath",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_080",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "洛洛",
+      "chessId": "chess_char_2_10_a",
+      "sourceId": "BGS_081",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_081",
+          "name": "海上掠夺者",
+          "nameEn": "Salty Looter",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_081",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "调香师",
+      "chessId": "chess_char_2_14_a",
+      "sourceId": "BGS_082",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_082",
+          "name": "展馆茶杯",
+          "nameEn": "Menagerie Mug",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_082",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "莫斯提马",
+      "chessId": "chess_char_4_02_a",
+      "sourceId": "BGS_083",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_083",
+          "name": "展馆茶壶",
+          "nameEn": "Menagerie Jug",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_083",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "安洁莉娜",
+      "chessId": "chess_char_5_20_a",
+      "sourceId": "BGS_104",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_104",
+          "name": "“厨房煞星”诺米",
+          "nameEn": "Nomi, Kitchen Nightmare",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_104",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "诗怀雅",
+      "chessId": "chess_char_3_03_a",
+      "sourceId": "BGS_105",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_105",
+          "name": "管理者埃克索图斯",
+          "nameEn": "Majordomo Executus",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_105",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "深靛",
+      "chessId": "chess_char_1_17_a",
+      "sourceId": "BGS_106",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_106",
+          "name": "克苏恩的侍僧",
+          "nameEn": "Acolyte of C'Thun",
+          "tier": 1,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_106",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "休谟斯",
+      "chessId": "chess_char_2_09_a",
+      "sourceId": "BGS_110",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_110",
+          "name": "帝国之手",
+          "nameEn": "Arm of the Empire",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_110",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "水月",
+      "chessId": "chess_char_4_09_a",
+      "sourceId": "BGS_111",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_111",
+          "name": "亚煞极的勇士",
+          "nameEn": "Champion of Y'Shaarj",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_111",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "寒芒克洛丝",
+      "chessId": "chess_char_4_06_a",
+      "sourceId": "BGS_112",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_112",
+          "name": "其拉传令官",
+          "nameEn": "Qiraji Harbinger",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_112",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "缄默德克萨斯",
+      "chessId": "chess_char_4_16_a",
+      "sourceId": "BGS_113",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_113",
+          "name": "无面酒客",
+          "nameEn": "Faceless Taverngoer",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_113",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "惊蛰",
+      "chessId": "chess_char_1_03_a",
+      "sourceId": "BGS_119",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_119",
+          "name": "爆裂飓风",
+          "nameEn": "Crackling Cyclone",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_119",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "夕",
+      "chessId": "chess_char_5_12_a",
+      "sourceId": "BGS_123",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_123",
+          "name": "酒馆旋风",
+          "nameEn": "Tavern Tempest",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_123",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "仇白",
+      "chessId": "chess_char_6_15_a",
+      "sourceId": "BGS_126",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_126",
+          "name": "野火元素",
+          "nameEn": "Wildfire Elemental",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_126",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "小满",
+      "chessId": "chess_char_2_04_a",
+      "sourceId": "BGS_127",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_127",
+          "name": "熔融岩石",
+          "nameEn": "Molten Rock",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_127",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "录武官",
+      "chessId": "chess_char_5_23_a",
+      "sourceId": "BGS_128",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_128",
+          "name": "奥术助手",
+          "nameEn": "Arcane Assistant",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_128",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "妮芙",
+      "chessId": "chess_char_5_22_a",
+      "sourceId": "BGS_131",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_131",
+          "name": "致命的孢子",
+          "nameEn": "Deadly Spore",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_131",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "幽灵鲨",
+      "chessId": "chess_char_2_07_a",
+      "sourceId": "BGS_200",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_200",
+          "name": "古神的卫士",
+          "nameEn": "Warden of Old",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_200",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "泡泡",
+      "chessId": "chess_char_2_08_a",
+      "sourceId": "BGS_201",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_201",
+          "name": "被折磨的祭师",
+          "nameEn": "Tormented Ritualist",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_201",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "塑心",
+      "chessId": "chess_char_6_09_a",
+      "sourceId": "BGS_202",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_202",
+          "name": "拆解者米斯拉克斯",
+          "nameEn": "Mythrax the Unraveler",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_202",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "史尔特尔",
+      "chessId": "chess_char_5_07_a",
+      "sourceId": "BGS_205",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BGS_205",
+          "name": "永恒者艾丽斯特拉",
+          "nameEn": "Elistra the Immortal",
+          "tier": 6,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_205",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "赫默",
+      "chessId": "chess_char_2_02_a",
+      "sourceId": "BOT_312",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BOT_312",
+          "name": "量产型恐吓机",
+          "nameEn": "Replicating Menace",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BOT_312",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "蛇屠箱",
+      "chessId": "chess_char_3_16_a",
+      "sourceId": "BOT_911",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "BOT_911",
+          "name": "吵吵模组",
+          "nameEn": "Annoy-o-Module",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "BOT_911",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "伺夜",
+      "chessId": "chess_char_3_19_a",
+      "sourceId": "CFM_316",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "CFM_316",
+          "name": "瘟疫鼠群",
+          "nameEn": "Rat Pack",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "CFM_316",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "海霓",
+      "chessId": "chess_char_3_09_a",
+      "sourceId": "CFM_816",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "CFM_816",
+          "name": "兔妖教头",
+          "nameEn": "Virmen Sensei",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "CFM_816",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "风丸",
+      "chessId": "chess_char_2_11_a",
+      "sourceId": "DAL_575",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "DAL_575",
+          "name": "卡德加",
+          "nameEn": "Khadgar",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "mechanic": "summonMultiplier",
+        "normal": {
+          "trigger": "summon",
+          "recipient": "combatBoardSummons",
+          "multiplier": 2
+        },
+        "elite": {
+          "trigger": "summon",
+          "recipient": "combatBoardSummons",
+          "multiplier": 3
+        },
+        "status": "unsupported",
+        "reason": "This multiplies summoned units; it must not copy, duplicate, or grant equipment/badges."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "歌蕾蒂娅",
+      "chessId": "chess_char_4_12_a",
+      "sourceId": "DS1_070",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "DS1_070",
+          "name": "驯兽师",
+          "nameEn": "Houndmaster",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "DS1_070",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "泥岩",
+      "chessId": "chess_char_4_18_a",
+      "sourceId": "EX1_093",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "EX1_093",
+          "name": "阿古斯防御者",
+          "nameEn": "Defender of Argus",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "EX1_093",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "普罗旺斯",
+      "chessId": "chess_char_1_07_a",
+      "sourceId": "EX1_531",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "EX1_531",
+          "name": "食腐土狼",
+          "nameEn": "Scavenging Hyena",
+          "tier": 1,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "EX1_531",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "松果",
+      "chessId": "chess_char_3_10_a",
+      "sourceId": "EX1_556",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "EX1_556",
+          "name": "麦田傀儡",
+          "nameEn": "Harvest Golem",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "EX1_556",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "蜜蜡",
+      "chessId": "chess_char_4_05_a",
+      "sourceId": "FP1_024",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "FP1_024",
+          "name": "蹒跚的食尸鬼",
+          "nameEn": "Unstable Ghoul",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "FP1_024",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "巫恋",
+      "chessId": "chess_char_3_15_a",
+      "sourceId": "FP1_031",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "FP1_031",
+          "name": "瑞文戴尔男爵",
+          "nameEn": "Baron Rivendare",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "mechanic": "deathrattleMultiplier",
+        "normal": {
+          "trigger": "retiringEffect",
+          "recipient": "deathrattleOutputs",
+          "multiplier": 2
+        },
+        "elite": {
+          "trigger": "retiringEffect",
+          "recipient": "deathrattleOutputs",
+          "multiplier": 3
+        },
+        "status": "unsupported",
+        "reason": "Only eligible retiring/deathrattle outputs repeat; this does not multiply all combat gains."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "白面鸮",
+      "chessId": "chess_char_4_21_a",
+      "sourceId": "GVG_027",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "GVG_027",
+          "name": "钢铁武道家",
+          "nameEn": "Iron Sensei",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "GVG_027",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "蒂比",
+      "chessId": "chess_char_2_13_a",
+      "sourceId": "GVG_055",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "GVG_055",
+          "name": "废旧螺栓机甲",
+          "nameEn": "Screwjank Clunker",
+          "tier": 3,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "GVG_055",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "山",
+      "chessId": "chess_char_5_17_a",
+      "sourceId": "GVG_106",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "GVG_106",
+          "name": "回收机器人",
+          "nameEn": "Junkbot",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "GVG_106",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "灰毫",
+      "chessId": "chess_char_2_18_a",
+      "sourceId": "ICC_029",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "ICC_029",
+          "name": "深蓝刃鳞龙人",
+          "nameEn": "Cobalt Scalebane",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "ICC_029",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "烛煌",
+      "chessId": "chess_char_5_03_a",
+      "sourceId": "ICC_807",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "ICC_807",
+          "name": "硬壳清道夫",
+          "nameEn": "Strongshell Scavenger",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "ICC_807",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "空弦",
+      "chessId": "chess_char_3_21_a",
+      "sourceId": "ICC_858",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "ICC_858",
+          "name": "浴火者伯瓦尔",
+          "nameEn": "Bolvar, Fireblood",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "ICC_858",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "隐德来希",
+      "chessId": "chess_char_5_06_a",
+      "sourceId": "LOE_077",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "LOE_077",
+          "name": "布莱恩·铜须",
+          "nameEn": "Brann Bronzebeard",
+          "tier": 5,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "mechanic": "battlecryMultiplier",
+        "normal": {
+          "trigger": "battlecryOnGain",
+          "recipient": "originalBattlecryOutput",
+          "multiplier": 2
+        },
+        "elite": {
+          "trigger": "battlecryOnGain",
+          "recipient": "originalBattlecryOutput",
+          "multiplier": 3
+        },
+        "status": "unsupported",
+        "reason": "Only the source minion Battlecry output repeats on recruitment; unrelated gain hooks do not."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "拉普兰德",
+      "chessId": "chess_char_2_16_a",
+      "sourceId": "LOOT_078",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "LOOT_078",
+          "name": "洞穴多头蛇",
+          "nameEn": "Cave Hydra",
+          "tier": 4,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "LOOT_078",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "见行者",
+      "chessId": "chess_char_3_07_a",
+      "sourceId": "OG_221",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "OG_221",
+          "name": "无私的英雄",
+          "nameEn": "Selfless Hero",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "OG_221",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    },
+    {
+      "name": "华法琳",
+      "chessId": "chess_char_4_26_a",
+      "sourceId": "OG_256",
+      "sourceRefs": {
+        "darkmoon19_2": {
+          "id": "OG_256",
+          "name": "恩佐斯的子嗣",
+          "nameEn": "Spawn of N'Zoth",
+          "tier": 2,
+          "version": "19.2.0.68600",
+          "type": "Battlegrounds",
+          "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+        }
+      },
+      "authoredRule": {
+        "sourceId": "OG_256",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
+      "modeEffects": null
+    }
+  ],
+  "pendingNativeDefinitions": [
+    {
+      "name": "裁度",
+      "sourceId": "BGS_008"
+    },
+    {
+      "name": "正义骑士号",
+      "sourceId": "BGS_019"
+    },
+    {
+      "name": "梅尔",
+      "sourceId": "BGS_023"
+    },
+    {
+      "name": "香草",
+      "sourceId": "BGS_027"
+    },
+    {
+      "name": "鞭刃",
+      "sourceId": "BGS_033"
+    },
+    {
+      "name": "白金",
+      "sourceId": "BGS_034"
+    },
+    {
+      "name": "但书",
+      "sourceId": "BGS_037"
+    },
+    {
+      "name": "推进之王",
+      "sourceId": "BGS_046"
+    },
+    {
+      "name": "海蒂",
+      "sourceId": "BGS_048"
+    },
+    {
+      "name": "格拉尼",
+      "sourceId": "BGS_049"
+    },
+    {
+      "name": "谜图",
+      "sourceId": "BGS_060"
+    },
+    {
+      "name": "摩根",
+      "sourceId": "BGS_066"
+    },
+    {
+      "name": "白铁",
+      "sourceId": "BGS_072"
+    },
+    {
+      "name": "贾维",
+      "sourceId": "BGS_078"
+    },
+    {
+      "name": "重岳",
+      "sourceId": "BGS_100"
+    },
+    {
+      "name": "九色鹿",
+      "sourceId": "BGS_115"
+    },
+    {
+      "name": "清流",
+      "sourceId": "BGS_116"
+    },
+    {
+      "name": "风絮",
+      "sourceId": "BGS_120"
+    },
+    {
+      "name": "令",
+      "sourceId": "BGS_121"
+    },
+    {
+      "name": "万顷",
+      "sourceId": "BGS_122"
+    },
+    {
+      "name": "黍",
+      "sourceId": "BGS_124"
+    },
+    {
+      "name": "罗宾",
+      "sourceId": "BOT_218"
+    },
+    {
+      "name": "多萝西",
+      "sourceId": "BOT_537"
+    },
+    {
+      "name": "杰西卡",
+      "sourceId": "BOT_606"
+    },
+    {
+      "name": "红云",
+      "sourceId": "CFM_315"
+    },
+    {
+      "name": "布洛卡",
+      "sourceId": "EX1_534"
+    },
+    {
+      "name": "贝洛内",
+      "sourceId": "FP1_010"
+    },
+    {
+      "name": "酸糖",
+      "sourceId": "GVG_048"
+    },
+    {
+      "name": "涤火杰西卡",
+      "sourceId": "GVG_113"
+    },
+    {
+      "name": "奥斯塔",
+      "sourceId": "KAR_005"
+    },
+    {
+      "name": "因陀罗",
+      "sourceId": "NEW1_027"
+    },
+    {
+      "name": "复奏",
+      "sourceId": "OG_216"
+    },
+    {
+      "name": "斥罪",
+      "sourceId": "TRL_232"
+    },
+    {
+      "name": "罗比菈塔",
+      "sourceId": "ULD_217"
+    }
+  ]
+}

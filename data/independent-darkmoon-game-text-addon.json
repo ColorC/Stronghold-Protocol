@@ -1,0 +1,916 @@
+{
+  "schema": "stronghold.darkmoon-game-text-addon/v1",
+  "sourceBuild": "19.2.0.68600",
+  "basedOnGameText": "independent-game-text.json",
+  "operators": {
+    "塞雷娅": {
+      "sourceId": "BGS_006",
+      "name": "斯尼德的伐木机",
+      "nameEn": "Sneed's Old Shredder",
+      "normal": "<b>亡语：</b>随机召唤一个<b>传说</b>随从。",
+      "elite": "<b>亡语：</b>随机召唤两个<b>传说</b>随从。",
+      "normalEn": "<b>Deathrattle:</b> Summon a random <b>Legendary</b> minion.",
+      "eliteEn": "<b>Deathrattle:</b> Summon 2 random <b>Legendary</b> minions."
+    },
+    "裁度": {
+      "sourceId": "BGS_008",
+      "name": "阴森巨蟒",
+      "nameEn": "Ghastcoiler",
+      "normal": "<b>亡语：</b>随机召唤\n两个<b>亡语</b>随从。",
+      "elite": "<b>亡语：</b>随机召唤\n四个<b>亡语</b>随从。",
+      "normalEn": "<b>Deathrattle:</b> Summon\n2 random <b>Deathrattle</b> minions.",
+      "eliteEn": "<b>Deathrattle:</b> Summon\n4 random <b>Deathrattle</b> minions."
+    },
+    "浊心斯卡蒂": {
+      "sourceId": "BGS_009",
+      "name": "光牙执行者",
+      "nameEn": "Lightfang Enforcer",
+      "normal": "在你的回合结束时，随机使每个随从类型的各一个友方随从获得+2/+2。",
+      "elite": "在你的回合结束时，随机使每个随从类型的各一个友方随从获得+4/+4。",
+      "normalEn": "[x]At the end of your turn,\ngive a friendly minion\nof each minion type\n+2/+2.",
+      "eliteEn": "[x]At the end of your turn,\ngive a friendly minion\nof each minion type\n+4/+4."
+    },
+    "缪尔赛思": {
+      "sourceId": "BGS_012",
+      "name": "坎格尔的学徒",
+      "nameEn": "Kangor's Apprentice",
+      "normal": "<b>亡语</b>：召唤本场战斗中最先死亡的两个友方机械。",
+      "elite": "<b>亡语</b>：召唤本场战斗中最先死亡的四个友方机械。",
+      "normalEn": "<b>Deathrattle</b>: Summon the first 2 friendly Mechs that died this combat.",
+      "eliteEn": "<b>Deathrattle</b>: Summon the first 4 friendly Mechs that died this combat."
+    },
+    "波登可": {
+      "sourceId": "BGS_017",
+      "name": "族群领袖",
+      "nameEn": "Pack Leader",
+      "normal": "每当你召唤一个野兽，使其获得+2\n攻击力。",
+      "elite": "每当你召唤一个野兽，使其获得+4\n攻击力。",
+      "normalEn": "Whenever you summon a Beast, give it +2 Attack.",
+      "eliteEn": "Whenever you summon a Beast, give it +4 Attack."
+    },
+    "荒芜拉普兰德": {
+      "sourceId": "BGS_018",
+      "name": "巨狼戈德林",
+      "nameEn": "Goldrinn, the Great Wolf",
+      "normal": "<b>亡语：</b>使你的野兽获得+5/+5。",
+      "elite": "<b>亡语：</b>使你的野兽获得+10/+10。",
+      "normalEn": "<b>Deathrattle:</b> Give your Beasts +5/+5.",
+      "eliteEn": "<b>Deathrattle:</b> Give your Beasts +10/+10."
+    },
+    "正义骑士号": {
+      "sourceId": "BGS_019",
+      "name": "红色雏龙",
+      "nameEn": "Red Whelp",
+      "normal": "<b>战斗开始时：</b>随机对一个敌方随从造成等同于友方龙的数量的\n伤害。",
+      "elite": "<b>战斗开始时：</b>随机对一个敌方随从造成等同于友方龙的数量的伤害，触发两次。",
+      "normalEn": "[x]<b>Start of Combat:</b> Deal\n1 damage per friendly\nDragon to one random\nenemy minion.",
+      "eliteEn": "[x]<b>Start of Combat:</b> Deal\n1 damage per friendly\nDragon to one random\nenemy minion twice."
+    },
+    "铃兰": {
+      "sourceId": "BGS_021",
+      "name": "熊妈妈",
+      "nameEn": "Mama Bear",
+      "normal": "每当你召唤一个野兽，使其获得+4/+4。",
+      "elite": "每当你召唤一个野兽，使其获得+8/+8。",
+      "normalEn": "Whenever you summon a Beast, give it +4/+4.",
+      "eliteEn": "Whenever you summon a Beast, give it +8/+8."
+    },
+    "圣约送葬人": {
+      "sourceId": "BGS_022",
+      "name": "扎普·斯里维克",
+      "nameEn": "Zapp Slywick",
+      "normal": "<b>风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
+      "elite": "<b>超级风怒</b>\n该随从总会攻击攻击力最低的敌方随从。",
+      "normalEn": "[x]<b>Windfury</b>\nThis minion always attacks\nthe enemy minion with\nthe lowest Attack.",
+      "eliteEn": "[x]<b>Mega-Windfury</b>\nThis minion always attacks\nthe enemy minion with\nthe lowest Attack."
+    },
+    "梅尔": {
+      "sourceId": "BGS_023",
+      "name": "载人收割机",
+      "nameEn": "Piloted Shredder",
+      "normal": "<b>亡语：</b>随机召唤一个法力值消耗为（2）的随从。",
+      "elite": "<b>亡语：</b>随机召唤两个法力值消耗为（2）的随从。",
+      "normalEn": "<b>Deathrattle:</b> Summon a random 2-Cost minion.",
+      "eliteEn": "<b>Deathrattle:</b> Summon two random 2-Cost minions."
+    },
+    "香草": {
+      "sourceId": "BGS_027",
+      "name": "微型战斗机甲",
+      "nameEn": "Micro Machine",
+      "normal": "在每个回合开始时，获得+1攻击力。",
+      "elite": "在每个回合开始时，获得+2攻击力。",
+      "normalEn": "At the start of each turn, gain +1 Attack.",
+      "eliteEn": "At the start of each turn, gain +2 Attack."
+    },
+    "焰尾": {
+      "sourceId": "BGS_032",
+      "name": "火焰传令官",
+      "nameEn": "Herald of Flame",
+      "normal": "<b>超杀：</b>对最左边的敌方随从造成3点伤害。",
+      "elite": "<b>超杀：</b>对最左边的敌方随从造成6点伤害。",
+      "normalEn": "<b>Overkill:</b> Deal 3 damage\nto the left-most enemy minion.",
+      "eliteEn": "<b>Overkill:</b> Deal 6 damage\nto the left-most enemy minion."
+    },
+    "鞭刃": {
+      "sourceId": "BGS_033",
+      "name": "急饿巨龙",
+      "nameEn": "Hangry Dragon",
+      "normal": "在你的回合开始时，如果你在上一场战斗中获胜，则获得+2/+2。",
+      "elite": "在你的回合开始时，如果你在上一场战斗中获胜，则获得+4/+4。",
+      "normalEn": "[x]At the start of your turn,\ngain +2/+2 if you won\nthe last combat.",
+      "eliteEn": "[x]At the start of your turn,\ngain +4/+4 if you won\nthe last combat."
+    },
+    "白金": {
+      "sourceId": "BGS_034",
+      "name": "青铜守卫",
+      "nameEn": "Bronze Warden",
+      "normal": "<b>圣盾，复生</b>",
+      "elite": "<b>圣盾，复生</b>",
+      "normalEn": "<b>Divine Shield</b>\n<b>Reborn</b>",
+      "eliteEn": "<b>Divine Shield</b>\n<b>Reborn</b>"
+    },
+    "协律": {
+      "sourceId": "BGS_035",
+      "name": "蜡烛骑士托瓦格尔",
+      "nameEn": "Waxrider Togwaggle",
+      "normal": "每当一条友方的龙消灭一个敌人，便获得+2/+2。",
+      "elite": "每当一条友方的龙消灭一个敌人，便获得+4/+4。",
+      "normalEn": "Whenever a friendly Dragon kills an enemy, gain +2/+2.",
+      "eliteEn": "Whenever a friendly Dragon kills an enemy, gain +4/+4."
+    },
+    "玛恩纳": {
+      "sourceId": "BGS_036",
+      "name": "狂野的拉佐格尔",
+      "nameEn": "Razorgore, the Untamed",
+      "normal": "在你的回合结束时，你每有一条龙，便获得+1/+1。",
+      "elite": "在你的回合结束时，你每有一条龙，便获得+2/+2。",
+      "normalEn": "At the end of your turn, gain +1/+1 for each Dragon you have.",
+      "eliteEn": "At the end of your turn, gain +2/+2 for each Dragon you have."
+    },
+    "但书": {
+      "sourceId": "BGS_037",
+      "name": "时间管理者",
+      "nameEn": "Steward of Time",
+      "normal": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+1/+1。",
+      "elite": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+2/+2。",
+      "normalEn": "When you sell this minion, give all minions in Bob's Tavern +1/+1.",
+      "eliteEn": "When you sell this minion, give all minions in Bob's Tavern +2/+2."
+    },
+    "流星": {
+      "sourceId": "BGS_038",
+      "name": "暮光使者",
+      "nameEn": "Twilight Emissary",
+      "normal": "<b>嘲讽，战吼：</b>使一条友方的龙获得+2/+2。",
+      "elite": "<b>嘲讽，战吼：</b>使一条友方的龙获得+4/+4。",
+      "normalEn": "<b>Taunt</b>\n<b>Battlecry:</b> Give a friendly Dragon +2/+2.",
+      "eliteEn": "<b>Taunt</b>\n<b>Battlecry:</b> Give a friendly Dragon +4/+4."
+    },
+    "砾": {
+      "sourceId": "BGS_039",
+      "name": "龙人军官",
+      "nameEn": "Dragonspawn Lieutenant",
+      "normal": "<b>嘲讽</b>",
+      "elite": "<b>嘲讽</b>",
+      "normalEn": "<b>Taunt</b>",
+      "eliteEn": "<b>Taunt</b>"
+    },
+    "圣聆初雪": {
+      "sourceId": "BGS_040",
+      "name": "红衣纳迪娜",
+      "nameEn": "Nadina the Red",
+      "normal": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
+      "elite": "<b>亡语：</b>使你的龙获得<b>圣盾</b>。",
+      "normalEn": "<b>Deathrattle:</b> Give your Dragons <b>Divine Shield</b>.",
+      "eliteEn": "<b>Deathrattle:</b> Give your Dragons <b>Divine Shield</b>."
+    },
+    "耀骑士临光": {
+      "sourceId": "BGS_041",
+      "name": "奥术守护者卡雷苟斯",
+      "nameEn": "Kalecgos, Arcane Aspect",
+      "normal": "在你使用一张<b>战吼</b>随从牌后，使你的龙获得+1/+1。",
+      "elite": "在你使用一张<b>战吼</b>随从牌后，使你的所有龙获得+2/+2。",
+      "normalEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +1/+1.",
+      "eliteEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +2/+2."
+    },
+    "远牙": {
+      "sourceId": "BGS_043",
+      "name": "姆诺兹多",
+      "nameEn": "Murozond",
+      "normal": "<b>战吼：</b>将你上一个对手的战队中的一个随从置入你的手牌。",
+      "elite": "<b>战吼：</b>将你上一个对手的战队中的一个随从置入你的手牌，并使其变为金色！",
+      "normalEn": "[x]<b>Battlecry:</b> Add a minion\nfrom your last opponent's\nwarband to your hand.",
+      "eliteEn": "[x]<b>Battlecry:</b> Add a minion\nfrom your last opponent's\nwarband to your hand.\nMake it Golden!"
+    },
+    "野鬃": {
+      "sourceId": "BGS_045",
+      "name": "雕文护卫者",
+      "nameEn": "Glyph Guardian",
+      "normal": "每当该随从攻击，便使其攻击力翻倍。",
+      "elite": "每当该随从攻击，便使其攻击力变为\n三倍。",
+      "normalEn": "Whenever this attacks, double its Attack.",
+      "eliteEn": "Whenever this attacks, triple its Attack."
+    },
+    "推进之王": {
+      "sourceId": "BGS_046",
+      "name": "“钓鱼王”纳特·帕格",
+      "nameEn": "Nat Pagle, Extreme Angler",
+      "normal": "当该随从攻击并消灭一个随从时，随机将一张随从牌置入你的\n手牌。",
+      "elite": "当该随从攻击并消灭一个随从时，随机将两张随从牌置入你的\n手牌。",
+      "normalEn": "[x]When this attacks and kills\na minion, add a random\nminion to your hand.",
+      "eliteEn": "[x]When this attacks and kills\na minion, add 2 random\nminions to your hand."
+    },
+    "维娜·维多利亚": {
+      "sourceId": "BGS_047",
+      "name": "亡灵舰长伊丽扎",
+      "nameEn": "Dread Admiral Eliza",
+      "normal": "每当一个友方海盗攻击时，使所有友方随从获得+2/+1。",
+      "elite": "每当一个友方海盗攻击时，使所有友方随从获得+4/+2。",
+      "normalEn": "Whenever a friendly Pirate attacks, give all friendly minions +2/+1.",
+      "eliteEn": "Whenever a friendly Pirate attacks, give all friendly minions +4/+2."
+    },
+    "海蒂": {
+      "sourceId": "BGS_048",
+      "name": "南海勇夫",
+      "nameEn": "Southsea Strongarm",
+      "normal": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+1/+1。",
+      "elite": "<b>战吼：</b>在本回合中，你每购买过一个海盗，使一个友方海盗获得+2/+2。",
+      "normalEn": "<b>Battlecry:</b> Give a friendly Pirate +1/+1 for each Pirate you bought this turn.",
+      "eliteEn": "<b>Battlecry:</b> Give a friendly Pirate +2/+2 for each Pirate you bought this turn."
+    },
+    "格拉尼": {
+      "sourceId": "BGS_049",
+      "name": "白赚赌徒",
+      "nameEn": "Freedealing Gambler",
+      "normal": "出售该随从可以获得3枚铸币。",
+      "elite": "出售该随从可以获得6枚铸币。",
+      "normalEn": "This minion sells for\n3 Gold.",
+      "eliteEn": "This minion sells for\n6 Gold."
+    },
+    "薄绿": {
+      "sourceId": "BGS_053",
+      "name": "血帆炮手",
+      "nameEn": "Bloodsail Cannoneer",
+      "normal": "<b>战吼：</b>使你的其他海盗获得+3攻击力。",
+      "elite": "<b>战吼：</b>使你的其他海盗获得+6攻击力。",
+      "normalEn": "<b>Battlecry</b>: Give your other Pirates +3 Attack.",
+      "eliteEn": "<b>Battlecry</b>: Give your other Pirates +6 Attack."
+    },
+    "凯瑟琳": {
+      "sourceId": "BGS_055",
+      "name": "甲板杂兵",
+      "nameEn": "Deck Swabbie",
+      "normal": "<b>战吼：</b>提升酒馆等级所需的铸币减少（1）枚。",
+      "elite": "<b>战吼：</b>提升酒馆等级所需的铸币减少\n（2）枚。",
+      "normalEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (1).",
+      "eliteEn": "<b>Battlecry:</b> Reduce the cost of upgrading Bob's\nTavern by (2)."
+    },
+    "号角": {
+      "sourceId": "BGS_056",
+      "name": "撕心狼队长",
+      "nameEn": "Ripsnarl Captain",
+      "normal": "每当其他友方海盗攻击时，使其获得+2/+2。",
+      "elite": "每当其他友方海盗攻击时，使其获得+4/+4。",
+      "normalEn": "Whenever another friendly Pirate attacks, give it +2/+2.",
+      "eliteEn": "Whenever another friendly Pirate attacks, give it +4/+4."
+    },
+    "谜图": {
+      "sourceId": "BGS_060",
+      "name": "喊号食人魔",
+      "nameEn": "Yo-Ho-Ogre",
+      "normal": "<b>嘲讽</b>\n在该随从受到攻击并没有死亡后，立即发起攻击。",
+      "elite": "<b>嘲讽</b>\n在该随从受到攻击并没有死亡后，立即发起攻击。",
+      "normalEn": "[x]<b>Taunt</b>\nAfter this minion survives\nbeing attacked,\nattack immediately.",
+      "eliteEn": "[x]<b>Taunt</b>\nAfter this minion survives\nbeing attacked,\nattack immediately."
+    },
+    "刺玫": {
+      "sourceId": "BGS_061",
+      "name": "海盗无赖",
+      "nameEn": "Scallywag",
+      "normal": "<b>亡语：</b>召唤一个1/1的海盗并使其立即发起攻击。",
+      "elite": "<b>亡语：</b>召唤一个2/2的海盗并使其立即发起攻击。",
+      "normalEn": "<b>Deathrattle:</b> Summon a 1/1 Pirate. It attacks immediately.",
+      "eliteEn": "<b>Deathrattle:</b> Summon a 2/2 Pirate. It attacks immediately."
+    },
+    "摩根": {
+      "sourceId": "BGS_066",
+      "name": "掘金者",
+      "nameEn": "Goldgrubber",
+      "normal": "在你的回合结束时，你每有一个金色友方随从，便获得+2/+2。",
+      "elite": "在你的回合结束时，你每有一个金色友方随从，便获得+4/+4。",
+      "normalEn": "At the end of your turn, gain +2/+2 for each friendly Golden minion.",
+      "eliteEn": "At the end of your turn, gain +4/+4 for each friendly Golden minion."
+    },
+    "瑕光": {
+      "sourceId": "BGS_067",
+      "name": "龙人执行者",
+      "nameEn": "Drakonid Enforcer",
+      "normal": "在一个友方随从失去<b>圣盾</b>后，获得+2/+2。",
+      "elite": "在一个友方随从失去<b>圣盾</b>后，获得+4/+4。",
+      "normalEn": "After a friendly minion loses <b>Divine Shield</b>, gain +2/+2.",
+      "eliteEn": "After a friendly minion loses <b>Divine Shield</b>, gain +4/+4."
+    },
+    "雷蛇": {
+      "sourceId": "BGS_071",
+      "name": "偏折机器人",
+      "nameEn": "Deflect-o-Bot",
+      "normal": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+1攻击力和<b>圣盾</b>。",
+      "elite": "<b>圣盾</b>\n在战斗阶段中，每当你召唤一个机械，便获得+2攻击力和<b>圣盾</b>。",
+      "normalEn": "[x]<b>Divine Shield</b>\nWhenever you summon a Mech\nduring combat, gain +1 Attack\nand <b>Divine Shield</b>.",
+      "eliteEn": "[x]<b>Divine Shield</b>\nWhenever you summon a Mech\nduring combat, gain +2 Attack\nand <b>Divine Shield</b>."
+    },
+    "白铁": {
+      "sourceId": "BGS_072",
+      "name": "霍格船长",
+      "nameEn": "Cap'n Hoggarr",
+      "normal": "在你购买一个海盗后，在本回合中获得一枚铸币。",
+      "elite": "在你购买一个海盗后，在本回合中获得两枚铸币。",
+      "normalEn": "After you buy a Pirate,\ngain 1 Gold this turn\nonly.",
+      "eliteEn": "After you buy a Pirate,\ngain 2 Gold this turn\nonly."
+    },
+    "阿罗玛": {
+      "sourceId": "BGS_075",
+      "name": "暴怒的巨蜥",
+      "nameEn": "Rabid Saurolisk",
+      "normal": "在你使用一张<b>亡语</b>随从牌后，获得+1/+1。",
+      "elite": "在你使用一张<b>亡语</b>随从牌后，获得+2/+2。",
+      "normalEn": "After you play a minion with <b>Deathrattle</b>, gain +1/+1.",
+      "eliteEn": "After you play a minion with <b>Deathrattle</b>, gain +2/+2."
+    },
+    "贾维": {
+      "sourceId": "BGS_078",
+      "name": "巨大的金刚鹦鹉",
+      "nameEn": "Monstrous Macaw",
+      "normal": "在该随从攻击后，随机触发一个友方随从的<b>亡语</b>。",
+      "elite": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。",
+      "normalEn": "[x]After this attacks,\ntrigger a random friendly\nminion's <b>Deathrattle</b>.",
+      "eliteEn": "[x]After this attacks, trigger\na random friendly minion's\n<b>Deathrattle</b> twice."
+    },
+    "佩佩": {
+      "sourceId": "BGS_079",
+      "name": "海浪剃刀号",
+      "nameEn": "The Tide Razor",
+      "normal": "<b>亡语：</b>随机召唤三个海盗。",
+      "elite": "<b>亡语：</b>随机召唤六个海盗。",
+      "normalEn": "<b>Deathrattle</b>: Summon 3 random Pirates.",
+      "eliteEn": "<b>Deathrattle</b>: Summon 6 random Pirates."
+    },
+    "风笛": {
+      "sourceId": "BGS_080",
+      "name": "破浪巨人",
+      "nameEn": "Seabreaker Goliath",
+      "normal": "<b>风怒，超杀：</b>使你的其他海盗获得+2/+2。",
+      "elite": "<b>超级风怒，超杀：</b>使你的其他海盗获得+4/+4。",
+      "normalEn": "<b>Windfury</b>\n<b>Overkill:</b> Give your other Pirates +2/+2.",
+      "eliteEn": "<b>Mega-Windfury</b>\n<b>Overkill:</b> Give your other Pirates +4/+4."
+    },
+    "洛洛": {
+      "sourceId": "BGS_081",
+      "name": "海上掠夺者",
+      "nameEn": "Salty Looter",
+      "normal": "每当你使用一张海盗牌时，获得+1/+1。",
+      "elite": "每当你使用一张海盗牌时，获得+2/+2。",
+      "normalEn": "Whenever you play a Pirate, gain +1/+1.",
+      "eliteEn": "Whenever you play a Pirate, gain +2/+2."
+    },
+    "调香师": {
+      "sourceId": "BGS_082",
+      "name": "展馆茶杯",
+      "nameEn": "Menagerie Mug",
+      "normal": "<b>战吼：</b>随机使三个不同类型的友方随从获得+1/+1。",
+      "elite": "<b>战吼：</b>随机使三个不同类型的友方随从获得+2/+2。",
+      "normalEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +1/+1.",
+      "eliteEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +2/+2."
+    },
+    "莫斯提马": {
+      "sourceId": "BGS_083",
+      "name": "展馆茶壶",
+      "nameEn": "Menagerie Jug",
+      "normal": "<b>战吼：</b>随机使三个不同类型的友方随从获得+2/+2。",
+      "elite": "<b>战吼：</b>随机使三个不同类型的友方随从获得+4/+4。",
+      "normalEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +2/+2.",
+      "eliteEn": "[x]<b>Battlecry:</b> Give 3 random\nfriendly minions of different\nminion types +4/+4."
+    },
+    "重岳": {
+      "sourceId": "BGS_100",
+      "name": "小拉格",
+      "nameEn": "Lil' Rag",
+      "normal": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值。",
+      "elite": "在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值，触发两次。",
+      "normalEn": "[x]After you play an Elemental,\ngive a friendly minion stats\nequal to the Elemental's\nTavern Tier.",
+      "eliteEn": "[x]After you play an Elemental,\ngive a friendly minion stats\nequal to the Elemental's\nTavern Tier twice."
+    },
+    "安洁莉娜": {
+      "sourceId": "BGS_104",
+      "name": "“厨房煞星”诺米",
+      "nameEn": "Nomi, Kitchen Nightmare",
+      "normal": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+1/+1。",
+      "elite": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+2/+2。",
+      "normalEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +1/+1 for the rest\nof the game.",
+      "eliteEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +2/+2 for the rest\nof the game."
+    },
+    "诗怀雅": {
+      "sourceId": "BGS_105",
+      "name": "管理者埃克索图斯",
+      "nameEn": "Majordomo Executus",
+      "normal": "在你的回合结束时，使你最左边的随从获得+1/+1。在本回合中你每使用过一张元素牌，就重复一次。",
+      "elite": "在你的回合结束时，使你最左边的随从获得+2/+2。在本回合中你每使用过一张元素牌，就重复一次。",
+      "normalEn": "[x]At the end of your turn, give\nyour left-most minion +1/+1.\nRepeat for each Elemental\nyou played this turn.",
+      "eliteEn": "[x]At the end of your turn, give\nyour left-most minion +2/+2.\nRepeat for each Elemental\nyou played this turn."
+    },
+    "深靛": {
+      "sourceId": "BGS_106",
+      "name": "克苏恩的侍僧",
+      "nameEn": "Acolyte of C'Thun",
+      "normal": "<b>复生</b>，<b>嘲讽</b>",
+      "elite": "<b>嘲讽</b>，<b>复生</b>",
+      "normalEn": "<b>Taunt</b>\n<b>Reborn</b>",
+      "eliteEn": "<b>Taunt</b>\n<b>Reborn</b>"
+    },
+    "休谟斯": {
+      "sourceId": "BGS_110",
+      "name": "帝国之手",
+      "nameEn": "Arm of the Empire",
+      "normal": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+3攻击力。",
+      "elite": "每当一个友方<b>嘲讽</b>随从受到攻击时，使其获得+6攻击力。",
+      "normalEn": "Whenever a friendly <b>Taunt</b> minion is attacked, give it +3 Attack.",
+      "eliteEn": "Whenever a friendly <b>Taunt</b> minion is attacked, give it +6 Attack."
+    },
+    "水月": {
+      "sourceId": "BGS_111",
+      "name": "亚煞极的勇士",
+      "nameEn": "Champion of Y'Shaarj",
+      "normal": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+1/+1。",
+      "elite": "每当一个友方<b>嘲讽</b>随从受到攻击时，便永久获得+2/+2。",
+      "normalEn": "Whenever a friendly <b>Taunt</b> minion is attacked, gain +1/+1 permanently.",
+      "eliteEn": "Whenever a friendly <b>Taunt</b> minion is attacked, gain +2/+2 permanently."
+    },
+    "寒芒克洛丝": {
+      "sourceId": "BGS_112",
+      "name": "其拉传令官",
+      "nameEn": "Qiraji Harbinger",
+      "normal": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+2/+2。",
+      "elite": "在一个友方<b>嘲讽</b>随从死亡后，使其相邻的随从获得+4/+4。",
+      "normalEn": "After a friendly minion with <b>Taunt</b> dies, give its neighbors +2/+2.",
+      "eliteEn": "After a friendly minion with <b>Taunt</b> dies, give its neighbors +4/+4."
+    },
+    "缄默德克萨斯": {
+      "sourceId": "BGS_113",
+      "name": "无面酒客",
+      "nameEn": "Faceless Taverngoer",
+      "normal": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的原始版\n复制。",
+      "elite": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的金色复制。",
+      "normalEn": "[x]<b>Battlecry:</b> Choose a minion\nin Bob's Tavern. Transform\ninto a plain copy of it.",
+      "eliteEn": "[x]<b>Battlecry:</b> Choose a minion\nin Bob's Tavern. Transform\ninto a Golden copy of it."
+    },
+    "九色鹿": {
+      "sourceId": "BGS_115",
+      "name": "商贩元素",
+      "nameEn": "Sellemental",
+      "normal": "当你出售该随从时，将一张2/2的元素牌置入你的手牌。",
+      "elite": "当你出售该随从时，将两张2/2的元素牌置入你的手牌。",
+      "normalEn": "[x]When you sell this,\nadd a 2/2 Elemental\nto your hand.",
+      "eliteEn": "[x]When you sell this,\nadd two 2/2 Elementals\nto your hand."
+    },
+    "清流": {
+      "sourceId": "BGS_116",
+      "name": "刷新畸体",
+      "nameEn": "Refreshing Anomaly",
+      "normal": "<b>战吼：</b>你下一次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
+      "elite": "<b>战吼：</b>你下两次<b>刷新</b>酒馆的消耗为（0）枚铸币。",
+      "normalEn": "[x]<b>Battlecry:</b> Your next\n<b>Refresh</b> costs (0).",
+      "eliteEn": "[x]<b>Battlecry:</b> Your next two\n <b>Refreshes</b> cost (0)."
+    },
+    "惊蛰": {
+      "sourceId": "BGS_119",
+      "name": "爆裂飓风",
+      "nameEn": "Crackling Cyclone",
+      "normal": "<b>圣盾，风怒</b>",
+      "elite": "<b>圣盾，超级风怒</b>",
+      "normalEn": "<b>Divine Shield</b>\n<b>Windfury</b>",
+      "eliteEn": "<b>Divine Shield</b>\n<b>Mega-Windfury</b>"
+    },
+    "风絮": {
+      "sourceId": "BGS_120",
+      "name": "派对元素",
+      "nameEn": "Party Elemental",
+      "normal": "在你使用一张元素牌后，随机使另一个友方元素获得+1/+1。",
+      "elite": "在你使用一张元素牌后，随机使另一个友方元素获得+1/+1，触发两次。",
+      "normalEn": "After you play an Elemental, give another random friendly Elemental +1/+1.",
+      "eliteEn": "After you play an Elemental, give another random friendly Elemental +1/+1 twice."
+    },
+    "令": {
+      "sourceId": "BGS_121",
+      "name": "温和的灯神",
+      "nameEn": "Gentle Djinni",
+      "normal": "<b>嘲讽，亡语：</b>随机召唤一个其他元素，并将召唤的元素的复制置入你的手牌。",
+      "elite": "<b>嘲讽，亡语：</b>随机召唤两个其他元素，并将召唤的元素的复制置入你的手牌。",
+      "normalEn": "<b>Taunt</b>. <b>Deathrattle:</b> Summon another random Elemental and add a copy of it to your hand.",
+      "eliteEn": "<b>Taunt</b>. <b>Deathrattle:</b> Summon two other random Elementals and add copies of them to your hand."
+    },
+    "万顷": {
+      "sourceId": "BGS_122",
+      "name": "静滞元素",
+      "nameEn": "Stasis Elemental",
+      "normal": "<b>战吼：</b>随机在鲍勃的酒馆中添加一个其他元素并使其<b>冻结</b>。",
+      "elite": "<b>战吼：</b>随机在鲍勃的酒馆中添加两个其他元素并使其<b>冻结</b>。",
+      "normalEn": "<b>Battlecry:</b> Add another random Elemental to Bob's Tavern and <b>Freeze</b> it.",
+      "eliteEn": "<b>Battlecry:</b> Add two other random Elementals to Bob's Tavern and <b>Freeze</b> them."
+    },
+    "夕": {
+      "sourceId": "BGS_123",
+      "name": "酒馆旋风",
+      "nameEn": "Tavern Tempest",
+      "normal": "<b>战吼：</b>随机将一张其他元素牌置入你的\n手牌。",
+      "elite": "<b>战吼：</b>随机将两张其他元素牌置入你的\n手牌。",
+      "normalEn": "<b>Battlecry:</b> Add another random Elemental to your hand.",
+      "eliteEn": "<b>Battlecry:</b> Add two other random Elementals to your hand."
+    },
+    "黍": {
+      "sourceId": "BGS_124",
+      "name": "炎魔副官加尔",
+      "nameEn": "Lieutenant Garr",
+      "normal": "<b>嘲讽</b>\n在你使用一张元素牌后，你每有一个元素，便获得+1生命值。",
+      "elite": "<b>嘲讽</b>\n在你使用一张元素牌后，你每有一个元素，便获得+2生命值。",
+      "normalEn": "<b>Taunt</b>. After you play an Elemental, gain +1 Health for each Elemental you have.",
+      "eliteEn": "<b>Taunt</b>. After you play an Elemental, gain +2 Health for each Elemental you have."
+    },
+    "仇白": {
+      "sourceId": "BGS_126",
+      "name": "野火元素",
+      "nameEn": "Wildfire Elemental",
+      "normal": "在该随从攻击并消灭一个随从后，随机对一个相邻的随从造成超过目标生命值的伤害。",
+      "elite": "在该随从攻击并消灭一个随从后，对相邻的随从均造成超过目标生命值的伤害。",
+      "normalEn": "After this attacks and kills\na minion, deal excess damage to a random adjacent minion.",
+      "eliteEn": "After this attacks and kills\na minion, deal excess damage to both adjacent minions."
+    },
+    "小满": {
+      "sourceId": "BGS_127",
+      "name": "熔融岩石",
+      "nameEn": "Molten Rock",
+      "normal": "<b>嘲讽</b>\n在你使用一张元素牌后，获得+1生命值。",
+      "elite": "<b>嘲讽</b>\n在你使用一张元素牌后，获得+2生命值。",
+      "normalEn": "<b>Taunt</b>. After you play an Elemental, gain +1 Health.",
+      "eliteEn": "<b>Taunt</b>. After you play an Elemental, gain +2 Health."
+    },
+    "录武官": {
+      "sourceId": "BGS_128",
+      "name": "奥术助手",
+      "nameEn": "Arcane Assistant",
+      "normal": "<b>战吼：</b>使你的其他元素获得+1/+1。",
+      "elite": "<b>战吼：</b>使你的其他元素获得+2/+2。",
+      "normalEn": "<b>Battlecry:</b> Give your other Elementals +1/+1.",
+      "eliteEn": "<b>Battlecry:</b> Give your other Elementals +2/+2."
+    },
+    "妮芙": {
+      "sourceId": "BGS_131",
+      "name": "致命的孢子",
+      "nameEn": "Deadly Spore",
+      "normal": "<b>剧毒</b>",
+      "elite": "<b>剧毒</b>",
+      "normalEn": "<b>Poisonous</b>",
+      "eliteEn": "<b>Poisonous</b>"
+    },
+    "幽灵鲨": {
+      "sourceId": "BGS_200",
+      "name": "古神的卫士",
+      "nameEn": "Warden of Old",
+      "normal": "<b>亡语：</b>将一枚铸币置入你的手牌。",
+      "elite": "<b>亡语：</b>将两枚铸币置入你的手牌。",
+      "normalEn": "<b>Deathrattle:</b> Add a Gold Coin to your hand.",
+      "eliteEn": "<b>Deathrattle:</b> Add 2 Gold Coins to your hand."
+    },
+    "泡泡": {
+      "sourceId": "BGS_201",
+      "name": "被折磨的祭师",
+      "nameEn": "Tormented Ritualist",
+      "normal": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+1/+1。",
+      "elite": "<b>嘲讽</b>\n每当该随从受到攻击时，使相邻的随从获得+2/+2。",
+      "normalEn": "[x]<b>Taunt</b>\nWhenever this is attacked,\ngive adjacent minions\n+1/+1.",
+      "eliteEn": "[x]<b>Taunt</b>\nWhenever this is attacked,\ngive adjacent minions\n+2/+2."
+    },
+    "塑心": {
+      "sourceId": "BGS_202",
+      "name": "拆解者米斯拉克斯",
+      "nameEn": "Mythrax the Unraveler",
+      "normal": "在你的回合结束时，你每控制一个随从类型的随从，便获得+1/+2。",
+      "elite": "在你的回合结束时，你每控制一个随从类型的随从，便获得+2/+4。",
+      "normalEn": "[x]At the end of your turn,\ngain +1/+2 for each\n  minion type you control.",
+      "eliteEn": "[x]At the end of your turn,\ngain +2/+4 for each\n  minion type you control."
+    },
+    "史尔特尔": {
+      "sourceId": "BGS_205",
+      "name": "永恒者艾丽斯特拉",
+      "nameEn": "Elistra the Immortal",
+      "normal": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
+      "elite": "<b>圣盾</b>，<b>复生</b>\n每当一个友方<b>嘲讽</b>随从受到攻击时，改为该随从受到攻击。",
+      "normalEn": "[x]<b>Divine Shield</b>. <b>Reborn</b>.\nWhenever a friendly <b>Taunt</b>\nminion is attacked, this\n  gets attacked instead.",
+      "eliteEn": "[x]<b>Divine Shield</b>. <b>Reborn</b>.\nWhenever a friendly <b>Taunt</b>\nminion is attacked, this\n  gets attacked instead."
+    },
+    "罗宾": {
+      "sourceId": "BOT_218",
+      "name": "安保巡游者",
+      "nameEn": "Security Rover",
+      "normal": "每当该随从受到伤害，召唤一个2/3并具有<b>嘲讽</b>的机械。",
+      "elite": "每当该随从受到伤害，召唤一个4/6并具有<b>嘲讽</b>的机械。",
+      "normalEn": "[x]Whenever this minion\ntakes damage, summon a\n2/3 Mech with <b>Taunt</b>.",
+      "eliteEn": "[x]Whenever this minion\ntakes damage, summon a\n4/6 Mech with <b>Taunt</b>."
+    },
+    "赫默": {
+      "sourceId": "BOT_312",
+      "name": "量产型恐吓机",
+      "nameEn": "Replicating Menace",
+      "normal": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
+      "elite": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
+      "normalEn": "<b>Magnetic</b>\n<b>Deathrattle:</b> Summon three 1/1 Microbots.",
+      "eliteEn": "<b>Magnetic</b>\n<b>Deathrattle:</b> Summon three 2/2 Microbots."
+    },
+    "多萝西": {
+      "sourceId": "BOT_537",
+      "name": "机械蛋",
+      "nameEn": "Mechano-Egg",
+      "normal": "<b>亡语：</b>召唤一个8/8的机械暴龙。",
+      "elite": "<b>亡语：</b>召唤一个16/16的机械暴龙。",
+      "normalEn": "<b>Deathrattle:</b> Summon an 8/8 Robosaur.",
+      "eliteEn": "<b>Deathrattle:</b> Summon a 16/16 Robosaur."
+    },
+    "杰西卡": {
+      "sourceId": "BOT_606",
+      "name": "爆爆机器人",
+      "nameEn": "Kaboom Bot",
+      "normal": "<b>亡语：</b>随机对一个敌方随从造成4点伤害。",
+      "elite": "<b>亡语：</b>随机对一个敌方随从造成4点伤害，触发两次。",
+      "normalEn": "<b>Deathrattle:</b> Deal 4 damage to a random enemy minion.",
+      "eliteEn": "<b>Deathrattle:</b> Deal 4 damage to a random enemy minion twice."
+    },
+    "蛇屠箱": {
+      "sourceId": "BOT_911",
+      "name": "吵吵模组",
+      "nameEn": "Annoy-o-Module",
+      "normal": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+      "elite": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+      "normalEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+      "eliteEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>"
+    },
+    "红云": {
+      "sourceId": "CFM_315",
+      "name": "雄斑虎",
+      "nameEn": "Alleycat",
+      "normal": "<b>战吼：</b>召唤一个1/1的雌斑虎。",
+      "elite": "<b>战吼：</b>召唤一头2/2的雌斑虎。",
+      "normalEn": "<b>Battlecry:</b> Summon a 1/1 Cat.",
+      "eliteEn": "<b>Battlecry:</b> Summon a 2/2 Cat."
+    },
+    "伺夜": {
+      "sourceId": "CFM_316",
+      "name": "瘟疫鼠群",
+      "nameEn": "Rat Pack",
+      "normal": "<b>亡语：</b>召唤若干个1/1的老鼠，数量等同于该随从的攻击力。",
+      "elite": "<b>亡语：</b>召唤若干个2/2的老鼠，数量等同于该随从的攻击力。",
+      "normalEn": "[x]<b>Deathrattle:</b> Summon a\nnumber of 1/1 Rats equal\n to this minion's Attack.",
+      "eliteEn": "[x]<b>Deathrattle:</b> Summon a\nnumber of 2/2 Rats equal\n to this minion's Attack."
+    },
+    "海霓": {
+      "sourceId": "CFM_816",
+      "name": "兔妖教头",
+      "nameEn": "Virmen Sensei",
+      "normal": "<b>战吼：</b>使一个友方野兽获得+2/+2。",
+      "elite": "<b>战吼：</b>使一个友方野兽获得+4/+4。",
+      "normalEn": "<b>Battlecry:</b> Give a friendly Beast +2/+2.",
+      "eliteEn": "<b>Battlecry:</b> Give a friendly Beast +4/+4."
+    },
+    "风丸": {
+      "sourceId": "DAL_575",
+      "name": "卡德加",
+      "nameEn": "Khadgar",
+      "normal": "你的召唤随从的卡牌召唤数量翻倍。",
+      "elite": "你的召唤随从的卡牌召唤数量变为三倍。",
+      "normalEn": "Your cards that summon minions summon twice as many.",
+      "eliteEn": "Your cards that summon minions summon three times as many."
+    },
+    "歌蕾蒂娅": {
+      "sourceId": "DS1_070",
+      "name": "驯兽师",
+      "nameEn": "Houndmaster",
+      "normal": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
+      "elite": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。",
+      "normalEn": "<b>Battlecry:</b> Give a friendly Beast +2/+2 and <b>Taunt</b>.",
+      "eliteEn": "<b>Battlecry:</b> Give a friendly Beast +4/+4 and <b>Taunt</b>."
+    },
+    "泥岩": {
+      "sourceId": "EX1_093",
+      "name": "阿古斯防御者",
+      "nameEn": "Defender of Argus",
+      "normal": "<b>战吼：</b>使相邻的随从获得+1/+1和<b>嘲讽</b>。",
+      "elite": "<b>战吼：</b>使相邻的随从获得+2/+2和<b>嘲讽</b>。",
+      "normalEn": "<b>Battlecry:</b> Give adjacent minions +1/+1 and <b>Taunt</b>.",
+      "eliteEn": "<b>Battlecry:</b> Give adjacent minions +2/+2 and <b>Taunt</b>."
+    },
+    "普罗旺斯": {
+      "sourceId": "EX1_531",
+      "name": "食腐土狼",
+      "nameEn": "Scavenging Hyena",
+      "normal": "每当一个友方野兽死亡，便获得+2/+1。",
+      "elite": "每当一个友方野兽死亡，便获得+4/+2。",
+      "normalEn": "Whenever a friendly Beast dies, gain +2/+1.",
+      "eliteEn": "Whenever a friendly Beast dies, gain +4/+2."
+    },
+    "布洛卡": {
+      "sourceId": "EX1_534",
+      "name": "长鬃草原狮",
+      "nameEn": "Savannah Highmane",
+      "normal": "<b>亡语：</b>召唤两只2/2的土狼。",
+      "elite": "<b>亡语：</b>召唤两只4/4的土狼。",
+      "normalEn": "<b>Deathrattle:</b> Summon two 2/2 Hyenas.",
+      "eliteEn": "<b>Deathrattle:</b> Summon two 4/4 Hyenas."
+    },
+    "松果": {
+      "sourceId": "EX1_556",
+      "name": "麦田傀儡",
+      "nameEn": "Harvest Golem",
+      "normal": "<b>亡语：</b>召唤一个2/1的损坏的傀儡。",
+      "elite": "<b>亡语：</b>召唤一个4/2的损坏的傀儡。",
+      "normalEn": "<b>Deathrattle:</b> Summon a 2/1 Damaged Golem.",
+      "eliteEn": "<b>Deathrattle:</b> Summon a 4/2 Damaged Golem."
+    },
+    "贝洛内": {
+      "sourceId": "FP1_010",
+      "name": "迈克斯纳",
+      "nameEn": "Maexxna",
+      "normal": "<b>剧毒</b>",
+      "elite": "<b>剧毒</b>",
+      "normalEn": "<b>Poisonous</b>",
+      "eliteEn": "<b>Poisonous</b>"
+    },
+    "蜜蜡": {
+      "sourceId": "FP1_024",
+      "name": "蹒跚的食尸鬼",
+      "nameEn": "Unstable Ghoul",
+      "normal": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害。",
+      "elite": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害，触发两次。",
+      "normalEn": "<b>Taunt</b>. <b>Deathrattle:</b> Deal 1 damage to all minions.",
+      "eliteEn": "<b>Taunt</b>\n<b>Deathrattle:</b> Deal 1 damage to all minions twice."
+    },
+    "巫恋": {
+      "sourceId": "FP1_031",
+      "name": "瑞文戴尔男爵",
+      "nameEn": "Baron Rivendare",
+      "normal": "你的随从的<b>亡语</b>将触发两次。",
+      "elite": "你的随从的<b>亡语</b>将触发三次。",
+      "normalEn": "Your minions trigger their <b>Deathrattles</b> twice.",
+      "eliteEn": "Your minions trigger their <b>Deathrattles</b> three times."
+    },
+    "白面鸮": {
+      "sourceId": "GVG_027",
+      "name": "钢铁武道家",
+      "nameEn": "Iron Sensei",
+      "normal": "在你的回合结束时，使另一个友方机械获得+2/+2。",
+      "elite": "在你的回合结束时，使另一个友方机械获得+4/+4。",
+      "normalEn": "At the end of your turn, give another friendly Mech +2/+2.",
+      "eliteEn": "At the end of your turn, give another friendly Mech +4/+4."
+    },
+    "酸糖": {
+      "sourceId": "GVG_048",
+      "name": "金刚刃牙兽",
+      "nameEn": "Metaltooth Leaper",
+      "normal": "<b>战吼：</b>使你的其他机械获得+2攻击力。",
+      "elite": "<b>战吼：</b>使你的其他机械获得+4攻击力。",
+      "normalEn": "<b>Battlecry:</b> Give your other Mechs +2 Attack.",
+      "eliteEn": "<b>Battlecry:</b> Give your other Mechs +4 Attack."
+    },
+    "蒂比": {
+      "sourceId": "GVG_055",
+      "name": "废旧螺栓机甲",
+      "nameEn": "Screwjank Clunker",
+      "normal": "<b>战吼：</b>使一个友方机械获得+2/+2。",
+      "elite": "<b>战吼：</b>使一个友方机械获得+4/+4。",
+      "normalEn": "<b>Battlecry:</b> Give a friendly Mech +2/+2.",
+      "eliteEn": "<b>Battlecry:</b> Give a friendly Mech +4/+4."
+    },
+    "山": {
+      "sourceId": "GVG_106",
+      "name": "回收机器人",
+      "nameEn": "Junkbot",
+      "normal": "每当一个友方机械死亡，便获得+2/+2。",
+      "elite": "每当一个友方机械死亡，便获得+4/+4。",
+      "normalEn": "Whenever a friendly Mech dies, gain +2/+2.",
+      "eliteEn": "Whenever a friendly Mech dies, gain +4/+4."
+    },
+    "涤火杰西卡": {
+      "sourceId": "GVG_113",
+      "name": "死神4000型",
+      "nameEn": "Foe Reaper 4000",
+      "normal": "同时对其攻击目标相邻的随从造成伤害。",
+      "elite": "同时对其攻击目标相邻的随从造成伤害。",
+      "normalEn": "Also damages the minions next to whomever it attacks.",
+      "eliteEn": "Also damages the minions next to whomever it attacks."
+    },
+    "灰毫": {
+      "sourceId": "ICC_029",
+      "name": "深蓝刃鳞龙人",
+      "nameEn": "Cobalt Scalebane",
+      "normal": "在你的回合结束时，随机使另一个友方随从获得+3攻击力。",
+      "elite": "在你的回合结束时，随机使另一个友方随从获得+6攻击力。",
+      "normalEn": "At the end of your turn, give another random friendly minion +3 Attack.",
+      "eliteEn": "At the end of your turn, give another random friendly minion +6 Attack."
+    },
+    "烛煌": {
+      "sourceId": "ICC_807",
+      "name": "硬壳清道夫",
+      "nameEn": "Strongshell Scavenger",
+      "normal": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+2/+2。",
+      "elite": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+4/+4。",
+      "normalEn": "<b>Battlecry:</b> Give your <b>Taunt</b> minions +2/+2.",
+      "eliteEn": "<b>Battlecry:</b> Give your <b>Taunt</b> minions +4/+4."
+    },
+    "空弦": {
+      "sourceId": "ICC_858",
+      "name": "浴火者伯瓦尔",
+      "nameEn": "Bolvar, Fireblood",
+      "normal": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+2攻击力。",
+      "elite": "<b>圣盾</b>\n在一个友方随从失去<b>圣盾</b>后，获得+4攻击力。",
+      "normalEn": "<b>Divine Shield</b>\nAfter a friendly minion loses <b>Divine Shield</b>, gain +2 Attack.",
+      "eliteEn": "<b>Divine Shield</b>\nAfter a friendly minion loses <b>Divine Shield</b>, gain +4 Attack."
+    },
+    "奥斯塔": {
+      "sourceId": "KAR_005",
+      "name": "慈祥的外婆",
+      "nameEn": "Kindly Grandmother",
+      "normal": "<b>亡语：</b>召唤一只3/2的大灰狼。",
+      "elite": "<b>亡语：</b>召唤一只6/4的大灰狼。",
+      "normalEn": "<b>Deathrattle:</b> Summon a 3/2 Big Bad Wolf.",
+      "eliteEn": "<b>Deathrattle:</b> Summon a 6/4 Big Bad Wolf."
+    },
+    "隐德来希": {
+      "sourceId": "LOE_077",
+      "name": "布莱恩·铜须",
+      "nameEn": "Brann Bronzebeard",
+      "normal": "你的<b>战吼</b>会触发\n两次。",
+      "elite": "你的<b>战吼</b>会触发\n三次。",
+      "normalEn": "Your <b>Battlecries</b> trigger twice.",
+      "eliteEn": "Your <b>Battlecries</b> trigger three times."
+    },
+    "拉普兰德": {
+      "sourceId": "LOOT_078",
+      "name": "洞穴多头蛇",
+      "nameEn": "Cave Hydra",
+      "normal": "同时对其攻击目标相邻的随从造成伤害。",
+      "elite": "同时对其攻击目标相邻的随从造成伤害。",
+      "normalEn": "Also damages the minions next to whomever\nthis attacks.",
+      "eliteEn": "Also damages the minions next to whomever\nthis attacks."
+    },
+    "因陀罗": {
+      "sourceId": "NEW1_027",
+      "name": "南海船长",
+      "nameEn": "Southsea Captain",
+      "normal": "你的其他海盗获得+1/+1。",
+      "elite": "你的其他海盗获得+2/+2。",
+      "normalEn": "Your other Pirates have +1/+1.",
+      "eliteEn": "Your other Pirates have +2/+2."
+    },
+    "复奏": {
+      "sourceId": "OG_216",
+      "name": "寄生恶狼",
+      "nameEn": "Infested Wolf",
+      "normal": "<b>亡语：</b>召唤两只1/1的蜘蛛。",
+      "elite": "<b>亡语：</b>召唤两只2/2的蜘蛛。",
+      "normalEn": "<b>Deathrattle:</b> Summon two 1/1 Spiders.",
+      "eliteEn": "<b>Deathrattle:</b> Summon two 2/2 Spiders."
+    },
+    "见行者": {
+      "sourceId": "OG_221",
+      "name": "无私的英雄",
+      "nameEn": "Selfless Hero",
+      "normal": "<b>亡语：</b>随机使一个友方随从获得<b>圣盾</b>。",
+      "elite": "<b>亡语：</b>随机使两个友方随从获得<b>圣盾</b>。",
+      "normalEn": "<b>Deathrattle:</b> Give a random friendly minion <b>Divine Shield</b>.",
+      "eliteEn": "<b>Deathrattle:</b> Give 2 random friendly minions <b>Divine Shield</b>."
+    },
+    "华法琳": {
+      "sourceId": "OG_256",
+      "name": "恩佐斯的子嗣",
+      "nameEn": "Spawn of N'Zoth",
+      "normal": "<b>亡语：</b>使你的所有随从获得+1/+1。",
+      "elite": "<b>亡语：</b>使你的所有随从获得+2/+2。",
+      "normalEn": "<b>Deathrattle:</b> Give your minions +1/+1.",
+      "eliteEn": "<b>Deathrattle:</b> Give your minions +2/+2."
+    },
+    "斥罪": {
+      "sourceId": "TRL_232",
+      "name": "铁皮恐角龙",
+      "nameEn": "Ironhide Direhorn",
+      "normal": "<b>超杀：</b>召唤一个5/5的铁皮小恐龙。",
+      "elite": "<b>超杀：</b>召唤一个10/10的铁皮小恐龙。",
+      "normalEn": "<b>Overkill:</b> Summon a 5/5 Ironhide Runt.",
+      "eliteEn": "<b>Overkill:</b> Summon a 10/10 Ironhide Runt."
+    },
+    "罗比菈塔": {
+      "sourceId": "ULD_217",
+      "name": "微型木乃伊",
+      "nameEn": "Micro Mummy",
+      "normal": "<b>复生</b>\n在你的回合结束时，随机使另一个友方随从获得+1攻击力。",
+      "elite": "<b>复生</b>\n在你的回合结束时，随机使另一个友方随从获得+2攻击力。",
+      "normalEn": "[x]<b>Reborn</b>\nAt the end of your turn, give\nanother random friendly\nminion +1 Attack.",
+      "eliteEn": "[x]<b>Reborn</b>\nAt the end of your turn, give\nanother random friendly\nminion +2 Attack."
+    }
+  }
+}

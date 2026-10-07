@@ -12,10 +12,17 @@ const args = Object.fromEntries(process.argv.slice(2).map((x, i, a) => x.startsW
 const rosterPath = path.resolve(args.roster || path.join(repo, '..', 'growth-destination-20261008', 'data', 'independent-roster-plan.json'));
 const sourcePath = path.resolve(args.source || 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/bg-translation-20261007/darkmoon-candidate-inventory.json');
 const outPath = path.resolve(args.out || path.join(repo, 'data', 'independent-darkmoon-blueprints.json'));
+const designPath = path.resolve(args.design || path.join(repo, 'data', 'independent-design.json'));
+const designAddonPath = path.resolve(args.designAddon || path.join(repo, 'data', 'independent-darkmoon-design-addon.json'));
+const gameTextPath = path.resolve(args.gameText || path.join(repo, 'data', 'independent-game-text.json'));
+const gameTextAddonPath = path.resolve(args.gameTextAddon || path.join(repo, 'data', 'independent-darkmoon-game-text-addon.json'));
 const reportPath = path.resolve(args.report || 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/darkmoon/blueprint-coverage.json');
 
 const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
 const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+const design = JSON.parse(fs.readFileSync(designPath, 'utf8'));
+const gameText = JSON.parse(fs.readFileSync(gameTextPath, 'utf8'));
+const nativeByName = new Map(design.operators.map(x => [x.name, x]));
 const byName = new Map(source.cards.map(c => [c.name_zh, c]));
 // Explicit source-id keyed semantic rules for mechanics where a tempting generic
 // implementation would materially change the original target or trigger scope.
@@ -152,6 +159,7 @@ const report = {
   source: sourcePath,
   roster: rosterPath,
   rosterUniqueSourceCards: entries.length,
+  sourceIds: entries.map(x=>x.sourceId),
   expectedSourceCards: 101,
   counts,
   mainFactions: Object.fromEntries(Object.entries(roster.groups).filter(([k]) => k !== 'NEUTRAL').map(([k,v]) => [k, v.pairs.length])),
@@ -161,10 +169,37 @@ const report = {
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
   unsupportedSourceIds: entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation!=='supported') || x.metadata.op.effectDelivery.elite.some(e=>e.implementation!=='supported')).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal[0].unsupportedReason})),
   sourceSpecificSemanticRules: entries.filter(x=>SOURCE_RULES[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:x.authoredRule.mechanic,status:x.authoredRule.status})),
+  nativeDefinitionMatches: entries.filter(x=>nativeByName.has(x.operator)).length,
+  nativeDefinitionPending: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({id:x.sourceId,name:x.name,operator:x.operator,reason:'No matching operator definition in the currently checked-in design input; no native body is fabricated.'})),
   caveats: ['This compiler records source text and an initial fixed-recipient interpretation; it does not claim mechanics execution.', 'Text-derived descriptors are compile-time metadata only; runtime must use source-id-keyed authored rules, never parse localized source text.', 'All entries remain unsupported until a matching native behavior is wired and ordinary/elite trigger, target, duration, and reset are tested.']
 };
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, JSON.stringify({ schema:'stronghold.darkmoon-blueprints/v1', sourceBuild: roster.sourceBuild, rosterCommit: roster.sourceCommit, entries }, null, 2) + '\n');
+// Emit non-conflicting add-ons, never overwrite the project's canonical design/game-text files.
+const designAddon = {
+  schema: 'stronghold.darkmoon-design-addon/v1',
+  sourceBuild: roster.sourceBuild,
+  basedOnDesign: path.basename(designPath),
+  operators: entries.filter(x=>nativeByName.has(x.operator)).map(x=>({
+    name:x.operator,
+    chessId:nativeByName.get(x.operator).chessId,
+    sourceId:x.sourceId,
+    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
+    authoredRule:x.authoredRule,
+    modeEffects:null
+  })),
+  pendingNativeDefinitions: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({name:x.operator,sourceId:x.sourceId}))
+};
+const gameTextAddon = {
+  schema:'stronghold.darkmoon-game-text-addon/v1',
+  sourceBuild:roster.sourceBuild,
+  basedOnGameText:path.basename(gameTextPath),
+  operators:Object.fromEntries(entries.map(x=>[x.operator,{sourceId:x.sourceId,name:x.name,nameEn:x.nameEn,normal:x.sourceTexts.normal,elite:x.sourceTexts.elite,normalEn:x.sourceTextsEn.normal,eliteEn:x.sourceTextsEn.elite}]))
+};
+for (const [p, value] of [[designAddonPath,designAddon],[gameTextAddonPath,gameTextAddon]]) {
+  fs.mkdirSync(path.dirname(p), { recursive:true });
+  fs.writeFileSync(p,JSON.stringify(value,null,2)+'\n');
+}
 fs.mkdirSync(path.dirname(reportPath), { recursive: true });
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
-console.log(JSON.stringify({ blueprint: outPath, report: reportPath, cards: entries.length, counts, executable: report.executableByNative }, null, 2));
+console.log(JSON.stringify({ blueprint: outPath, designAddon:designAddonPath, gameTextAddon:gameTextAddonPath, report: reportPath, cards: entries.length, nativeDefinitionMatches:designAddon.operators.length, counts, executable: report.executableByNative }, null, 2));
