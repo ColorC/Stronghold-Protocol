@@ -4,7 +4,7 @@ import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, Button, Modal, MicroLabel, TierChip, DifficultyTag } from '../ui/components.js';
 import { copyComponentLink } from './componentLinks.js';
 import { Img, CoinGlyph, UnitThumb, LpTower, Sprite } from '../ui/gameComponents.js';
-import { chessPortraitUrl, enemyIconUrl, uiUrl, pageAssetUrl } from '../ui/assetUrls.js';
+import { chessAvatarUrl, chessPortraitUrl, enemyIconUrl, uiUrl, pageAssetUrl } from '../ui/assetUrls.js';
 import { audio } from '../audio.js';
 import { data } from '../data.js';
 import { TraitGlyphs } from './hud.js';
@@ -188,7 +188,7 @@ function OperatorChoice({ chessId, catalog, onPick, busy }) {
   const op = catalog.operators[chessId] || {};
   const c = data.lookup('chess', chessId);
   return html`<button type="button" class="ix-choice ix-choice--op" disabled=${busy} onClick=${onPick}>
-    <${Img} src=${chessPortraitUrl(data.get('assets'), c)} class="ix-choice__art" />
+    <${Img} src=${chessPortraitUrl(data.get('assets'), c) || chessAvatarUrl(data.get('assets'), c)} alt=${op.name || chessId} class="ix-choice__art" />
     <span class="ix-choice__head"><${TierChip} tier=${op.tier || 1} size="sm" /><b>${op.name || chessId}</b></span>
     <${TraitGlyphs} summary=${op.summary} catalog=${catalog} />
     <p><${GameText} text=${op.traitTexts?.normal} catalog=${catalog} /></p>
