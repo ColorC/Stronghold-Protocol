@@ -352,11 +352,14 @@ async function inspectReferenceCard(piece, kind) {
   const bounds = await page.evaluate((n) => globalThis.__SP_VIEW__?.pieceScreenRect?.(n) || null, pieceNumber(piece.uid));
   if (!bounds?.width || !bounds?.height) return diagnoseFailure('干员画面范围不可用');
   await page.mouse.click(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); await pause(400);
-  if (!await page.$('[data-testid="ix-detail"]')) {
+  const correctDetailOpen = async () => page.$eval('[data-testid="ix-detail"]', (e, name) => (e.innerText || '').includes(name), piece.name).catch(() => false);
+  if (!await correctDetailOpen()) {
     // Fallback to the same visible, copyable component route used by the game's own links.
     await page.evaluate((uid) => { location.hash = `piece-${uid}`; }, piece.uid);
-    try { await page.waitForSelector('[data-testid="ix-detail"]', { timeout: 5000 }); }
-    catch { return diagnoseFailure('干员详情面板未通过可见点击或组件链接打开'); }
+    try { await page.waitForFunction((name) => {
+      const detail = document.querySelector('[data-testid="ix-detail"]'); return !!detail && (detail.innerText || '').includes(name);
+    }, { timeout: 5000 }, piece.name); }
+    catch { return diagnoseFailure('可见点击先打开了其它面板，组件链接也未定位到目标干员'); }
   }
   const tabs = await page.$$('[data-testid="ix-detail"] [role="tab"]');
   for (const tab of tabs) {
@@ -374,6 +377,15 @@ async function inspectReferenceCard(piece, kind) {
   report.references ||= []; report.references.push(evidence);
   await screenshot(`${kind}-original-card`);
   await note(kind === 'elite' ? '精锐形态会展示对应的完整卡面文字，方便核对强化后的能力。' : '这里展示对应炉石原卡的普通与金色效果，可对照卫戍特质的转换。', '.ix-original-card', `${kind}-original-reference`);
+  if (kind === 'ordinary' && piece.nativeTrait) {
+    const trait = String(piece.nativeTrait).replace(/\s+/g, ' ').trim();
+    const explanation = /退场时召唤/.test(trait)
+      ? `${piece.name}退场时会召唤作战支援单位；对应原卡的亡语会成为战场增援。`
+      : /回合开始/.test(trait)
+        ? `${piece.name}的特质会在回合开始时生效，持续留场就能逐轮发挥。`
+        : `${piece.name}的特质会这样生效：${trait}`;
+    await note(explanation, '[data-testid="ix-detail"]', 'first-native-mechanic');
+  }
   if (!await clickText('[data-testid="ix-detail"] button', (s) => s === '关闭')) await page.keyboard.press('Escape');
   return true;
 }
