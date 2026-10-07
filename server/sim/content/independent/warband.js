@@ -3,7 +3,8 @@ import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../../shared/warba
 const live = u => !!u && u.side === 'ally' && u.alive && u.deployed && !u.removed;
 const stable = (a,b) => String(a.uid ?? a.id).localeCompare(String(b.uid ?? b.id));
 const STAT = { attackPercent:'atkPct',maxHpPercent:'hpPct',attackSpeedFlat:'aspd' };
-const mods = (stats,n=1) => Object.fromEntries(Object.entries(stats || {}).map(([k,v])=>[STAT[k],v*n]));
+const mods = (stats,n=1,target=null) => Object.fromEntries(Object.entries(stats || {}).map(([k,v])=>
+  k==='baseAttackPercent'?['atkFlat',Number(target?.base?.atk||0)*v*n]:k==='damageDealtPercent'?['dmgDealtMul',1+v*n]:[STAT[k],v*n]));
 const nativeAttack = (u,event) => event.attacker === u && !event.isSkill && !u.mem.independentExtraAttack && !(event.profile?.tags || []).includes('independentEquipment');
 const reasons = new Set(['killed','retreat','merchant','raid']);
 
@@ -58,9 +59,8 @@ export function installWarband(battle,{catalog,pieces}) {
     const members=faction => battle.allyUnits.filter(u=>live(u)&&eligible(u,unit,faction)).sort(stable);
     if(p.buff)for(const target of members(p.buff.faction)) {
       const buffKey=`${key}:buff:${target.id}`;
-      const old=target.findBuff(buffKey)?.mods || {};
-      const add=mods(p.buff.stats);
-      battle.addBuff(target,{key:buffKey,mods:Object.fromEntries(Object.keys(add).map(k=>[k,Number(old[k]||0)+add[k]])),persist:true,allowDead:true,refresh:'replace'});
+      const stacks=(entry.buffStacks ||= new Map());const n=(stacks.get(target.id)||0)+1;stacks.set(target.id,n);
+      battle.addBuff(target,{key:buffKey,mods:mods(p.buff.stats,n,target),persist:true,allowDead:true,refresh:'replace'});
     }
     if(p.shield)for(const target of members(p.shield.faction))shield(target,`${key}:shield:${target.id}`,p.shield.layers,unit);
     if(p.summon) {
@@ -113,7 +113,7 @@ export function installWarband(battle,{catalog,pieces}) {
           const n=stacks.get(target.id)||0;
           if(n>=p.maxStacks||battle.time<(last.get(target.id)??-Infinity)+p.cooldownSeconds)continue;
           stacks.set(target.id,n+1);last.set(target.id,battle.time);
-          if(p.stats)battle.addBuff(target,{key:`${key}:event:${target.id}`,mods:mods(p.stats,n+1),persist:true,allowDead:true,refresh:'replace'});
+          if(p.stats)battle.addBuff(target,{key:`${key}:event:${target.id}`,mods:mods(p.stats,n+1,target),persist:true,allowDead:true,refresh:'replace'});
           if(p.shieldLayers)shield(target,`${key}:layers:${target.id}`,p.shieldLayers,unit);
         }
       },{owner:unit});

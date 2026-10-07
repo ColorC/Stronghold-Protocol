@@ -132,7 +132,7 @@ test('client engine import closure includes the pure new modules without Node-on
 test('new schema rejects malformed keys/triggers/counts/cooldowns and trait summaries expose the authored moments',()=>{
   const good=[retirement(),reaction('badge'),rule('attack','deathrattleEcho',{faction:'叙拉古',every:12,perBattle:3}),rule('passive','retirementMultiplier',{extra:2}),event('summon')];
   for(const r of good){assert.equal(validateWarbandRule(r),true);const source={modeEffects:{normal:{prep:r.behavior==='factionReaction'?[r]:[],combat:r.behavior==='factionReaction'?[]:[r]},elite:{prep:[],combat:[]}}};assert.ok(nativeEffectFor('synthetic',source));}
-  for(const r of [reaction('badge',{count:0}),event('attack',{cooldownSeconds:.5}),event('attack',{stats:{damageDealtPercent:.1}}),retirement({perBattle:0}),rule('passive','retirementMultiplier',{extra:3}),{...retirement(),trigger:'hit'}])assert.throws(()=>validateWarbandRule(r));
+  for(const r of [reaction('badge',{count:0}),event('attack',{cooldownSeconds:.5}),event('attack',{stats:{madeUpMultiplier:.1}}),retirement({perBattle:0}),rule('passive','retirementMultiplier',{extra:3}),{...retirement(),trigger:'hit'}])assert.throws(()=>validateWarbandRule(r));
   assert.equal(TRAIT_WHEN.allyGain,'友方获得时');assert.equal(TRAIT_WHEN.retiring,'退场时');assert.equal(traitSummary({combat:[retirement()]})[0].when,'retiring');
 });
 
@@ -153,4 +153,15 @@ test('firstWaveStrike accepts its real descriptor and uses the existing strike o
   const h=battle([piece('striker',[strike])]),enemy=h.spawn('dummy',{pos:[10,7]});
   const before=enemy.hp;h.run(1.1);assert.equal(Math.round(before-enemy.hp),100);h.run(2);assert.equal(Math.round(before-enemy.hp),100);
   assert.ok(traitSummary({combat:[strike,retirement()] }).every(x=>x.description&&!x.description.includes('未知')));
+});
+
+test('temporary white attack enters atkFlat before existing skill +100%, while damage enters the existing dealt bucket',()=>{
+  const h=battle([piece('reactor',[event('damaged',{stats:{baseAttackPercent:.2,damageDealtPercent:.1},maxStacks:2})])]);
+  const target=h.unit('reactor'),enemy=h.spawn('dummy',{pos:[10,7]});
+  h.b.addBuff(target,{key:'original-skill',mods:{atkPct:1},persist:true});assert.equal(target.s.atk,200);
+  h.b.dealDamage(enemy,target,{amount:1,type:'true'});assert.equal(target.s.atk,240);
+  assert.equal(target.s.dmgDealtMul,1.1);assert.equal(target.base.atk,100);assert.equal(h.pieces[0].equipment.length,0);
+  h.run(1.1);h.b.dealDamage(enemy,target,{amount:1,type:'true'});assert.equal(target.s.atk,280);assert.equal(target.s.dmgDealtMul,1.2);
+  const r=battle([piece('fallen',[retirement({buff:{faction:'叙拉古',stats:{baseAttackPercent:.2,damageDealtPercent:.1},duration:'battle'}})]),piece('recipient')]);
+  r.b.addBuff(r.unit('recipient'),{key:'skill',mods:{atkPct:1},persist:true});r.b.kill(r.unit('fallen'));r.step(1);assert.equal(r.unit('recipient').s.atk,240);assert.equal(r.unit('recipient').s.dmgDealtMul,1.1);
 });

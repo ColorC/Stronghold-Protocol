@@ -3,7 +3,7 @@ const keys = (x, allowed) => object(x) && Object.keys(x).every(k => allowed.incl
 const text = x => typeof x === 'string' && !!x.trim() && !['__proto__','constructor','prototype'].includes(x);
 const integer = x => Number.isInteger(x) && x > 0;
 const positive = x => typeof x === 'number' && Number.isFinite(x) && x > 0;
-const stats = x => keys(x, ['attackPercent','maxHpPercent','attackSpeedFlat']) && Object.keys(x).length > 0 && Object.values(x).every(positive);
+const stats = x => keys(x, ['attackPercent','baseAttackPercent','maxHpPercent','attackSpeedFlat','damageDealtPercent']) && Object.keys(x).length > 0 && Object.values(x).every(positive);
 const fail = behavior => { throw new Error(`BAD_WARBAND_RULE:${behavior}`); };
 export const WARBAND_BEHAVIORS = Object.freeze(['factionReaction','retiringEffect','deathrattleEcho','retirementMultiplier','warbandEvent']);
 export function validateWarbandRule(rule) {
