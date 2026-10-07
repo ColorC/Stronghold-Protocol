@@ -333,6 +333,7 @@ export async function runImport(opts) {
       { charId: 'char_385_finlpp', skillId: 'skchr_finlpp_1', case: 'source heal scale on next healing attack', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
       { charId: 'char_4119_wanqin', skillId: 'skcom_assist_cost[3]', case: 'native timed command DP total', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
       { charId: 'char_4019_ncdeer', skillId: 'skchr_ncdeer_1', case: 'native ATK buff and low-HP ally protection aura', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
+      { charId: 'char_2024_chyue', skillId: 'skchr_chyue_1', case: 'three-charge triple strike and target damage mark', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
     ],
     tokenAudit: { importedTokenDefinitions: [], unresolvedTokenIds: candidates.filter(c => !c.inCurrentChess).flatMap(c => c.tokenIds.map(tokenId => ({ charId: c.charId, tokenId }))) },
     assetAudit: {

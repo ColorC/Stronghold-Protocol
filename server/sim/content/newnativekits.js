@@ -1,6 +1,7 @@
 // Source-backed native kits that do not replace the existing pool's hand-authored tier kits.
 // Values are read only from normalized native operator/skill blackboards; descriptions are never parsed.
 import { COLS } from '../constants.js';
+import { applyDamageIncrease } from '../../../shared/damageIncrease.js';
 
 const number = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
@@ -11,6 +12,7 @@ export const NATIVE_SKILL_SUPPORT = Object.freeze({
   char_385_finlpp: Object.freeze(['skchr_finlpp_1']),
   char_4119_wanqin: Object.freeze(['skcom_assist_cost[3]']),
   char_4019_ncdeer: Object.freeze(['skchr_ncdeer_1']),
+  char_2024_chyue: Object.freeze(['skchr_chyue_1']),
 });
 export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_240_wyvern: 'skchr_wyvern_1',
@@ -19,6 +21,7 @@ export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_385_finlpp: 'skchr_finlpp_1',
   char_4119_wanqin: 'skcom_assist_cost[3]',
   char_4019_ncdeer: 'skchr_ncdeer_1',
+  char_2024_chyue: 'skchr_chyue_1',
 });
 
 const spTypeOf = (value) => ({ INCREASE_WITH_TIME: 'time', INCREASE_WHEN_ATTACK: 'attack', INCREASE_WHEN_TAKEN: 'hurt', NOT_RECOVER: 'none', time: 'time', attack: 'attack', hurt: 'hurt', none: 'none' })[value] ?? null;
@@ -145,6 +148,37 @@ function nineColoredDeer(bb, chess) {
   };
 }
 
+function chongyue(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_chyue_1');
+  const atkScale = number(x?.s.bb?.atk_scale), hits = Math.max(1, Math.floor(number(x?.s.bb?.times) ?? 1));
+  if (!x || !(atkScale > 1)) return null;
+  const firstTalent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const secondTalent = chess?.talents?.find((item) => item.index === 1)?.bb ?? {};
+  const proc = number(firstTalent.prob), damageScale = number(firstTalent.damage_scale), markDuration = number(firstTalent.up_duration);
+  const skillSp = number(secondTalent.sp) ?? 0;
+  return {
+    skills: { skchr_chyue_1: { id: 'skchr_chyue_1', kind: 'charges', spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, charges: Math.max(1, Math.floor(number(x.s.maxCharges) ?? 1)), trigger: 'DEFAULT', attack: { atkScale, hits } } },
+    talents: [{ install(battle, unit) {
+      const marks = new Map();
+      battle.on('hit', (ctx) => {
+        if (ctx.source !== unit || !ctx.target || ctx.target.side !== 'enemy' || !ctx.dmg?.isAttack || ctx.dmg.isSkill) return;
+        const until = marks.get(ctx.target.id) ?? 0;
+        if (until > battle.time) applyDamageIncrease(battle, unit, ctx.dmg, damageScale);
+        else if (proc > 0 && battle.rng() < proc) marks.set(ctx.target.id, battle.time + markDuration);
+      }, { owner: unit });
+      if (skillSp > 0) {
+        battle.on('skillStart', (ctx) => { if (ctx.unit === unit && ctx.skill?.id === 'skchr_chyue_1') unit.mem.nativeChyueSkillReadyForKill = true; }, { owner: unit });
+        battle.on('skillEnd', (ctx) => { if (ctx.unit === unit && ctx.skill?.id === 'skchr_chyue_1') unit.mem.nativeChyueSkillReadyForKill = false; }, { owner: unit });
+        battle.on('kill', (ctx) => {
+          if (ctx.killer !== unit || !unit.mem.nativeChyueSkillReadyForKill) return;
+          unit.mem.nativeChyueSkillReadyForKill = false;
+          unit.skill?.gainSp?.(skillSp, 'talent');
+        }, { owner: unit });
+      }
+    } }],
+  };
+}
+
 
 export default Object.freeze({
   chess_native_char_240_wyvern: vanilla,
@@ -153,4 +187,5 @@ export default Object.freeze({
   chess_native_char_385_finlpp: qingliu,
   chess_native_char_4119_wanqin: wanqing,
   chess_native_char_4019_ncdeer: nineColoredDeer,
+  chess_native_char_2024_chyue: chongyue,
 });

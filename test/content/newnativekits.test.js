@@ -19,6 +19,8 @@ const wanqingId = 'chess_native_char_4119_wanqin_a';
 const wanqingRecord = chessData[wanqingId];
 const nineColoredDeerId = 'chess_native_char_4019_ncdeer_a';
 const nineColoredDeerRecord = chessData[nineColoredDeerId];
+const chongyueId = 'chess_native_char_2024_chyue_a';
+const chongyueRecord = chessData[chongyueId];
 
 test('native Jessica S1: native blackboard powers attack-recovery next-hit multiplier in battle', () => {
   assert.ok(record?.nativeGrowth?.phases?.length);
@@ -142,5 +144,21 @@ test('native Nine-Colored Deer S1 and low-HP ally protection read source blackbo
   assert.ok(ally.buffs.some((buff) => buff.key === `native:ncdeer:${h.unit(nineColoredDeerId).id}`));
   h.run(20);
   assert.ok(h.unit(nineColoredDeerId).skill.activations > 0);
+  h.invariants();
+});
+
+test('native Chongyue S1 executes its three-charge triple strike from native blackboards', () => {
+  const data = new DataSource({ chess: { [chongyueId]: chongyueRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(chongyueId);
+  assert.equal(def.skill.id, 'skchr_chyue_1');
+  assert.equal(def.skill.bb.atk_scale, chongyueRecord.skill.bb.atk_scale);
+  assert.equal(def.skill.bb.times, chongyueRecord.skill.bb.times);
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: chongyueId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
+  h.run(45);
+  const unit = h.unit(chongyueId);
+  assert.ok(unit.skill.activations > 0);
+  const hits = h.eventsOf('dmg').filter((event) => event[1] === h.enemy('enemy_dummy').id && event[4] === unit.id);
+  assert.ok(hits.length >= 6);
   h.invariants();
 });
