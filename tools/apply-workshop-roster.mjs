@@ -57,6 +57,8 @@ const KEYWORD_ADAPTERS = Object.freeze({
 });
 
 function triggerOf(text) {
+  if (/your Battlecries trigger|your minions trigger their Deathrattles|cards that summon minions summon/i.test(text)) return 'passiveMultiplier';
+  if (/Magnetic/i.test(text)) return 'playAttach';
   if (/Start of Combat/i.test(text)) return 'combatStart';
   if (/Deathrattle/i.test(text)) return 'death';
   if (/Battlecry/i.test(text)) return 'battlecry';
@@ -71,6 +73,12 @@ function triggerOf(text) {
 }
 function recipientOf(text) {
   const t = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').toLowerCase();
+  if (/your battlecries trigger/.test(t)) return 'eligibleBattlecryOutputs';
+  if (/your minions trigger their deathrattles/.test(t)) return 'eligibleDeathrattleOutputs';
+  if (/cards that summon minions/.test(t)) return 'summonedUnitOutputs';
+  if (/magnetic/.test(t)) return 'chosenFriendlyMech';
+  if (/deal .* damage to all minions/.test(t)) return 'allCombatants';
+  if (/taunt minions/.test(t)) return 'eligibleTaggedFriendly';
   if (/bob's tavern|tavern/.test(t)) return 'shop';
   if (/to your hand|add .* to your hand/.test(t)) return 'hand';
   if (/gain .* gold|your hero|upgrade bob|refresh/.test(t)) return 'playerResource';
@@ -88,7 +96,7 @@ function recipientOf(text) {
   if (/this minion|this gets|gain \+|gain .* attack|gain .* health|this attacks/.test(t)) return 'self';
   if (/enemy minion|enemy/.test(t)) return 'enemy';
   if (/summon/.test(t)) return 'combatBoardSummon';
-  return 'selfOrBoard';
+  return 'unresolved';
 }
 function durationOf(text, recipient) {
   const t = text.toLowerCase();
@@ -135,7 +143,8 @@ function effectDeliveries(card, variant) {
     const descriptor = STATIC_KEYWORD_GEAR[tag];
     return { trigger:'gain', sourceTrigger:'staticCombat', recipient:'self', duration:'permanentWornGear', kind:'keywordGear', text:`<b>${descriptor.label}</b>`, textEn:tag, tags:[tag], params:{}, adapter:[`independent:${descriptor.gear}`], implementation:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'dispatched-pending-gear-landing-verification' : 'unsupported', unsupportedReason:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.' : 'Static keyword has no source-id-specific delivery rule wired.' };
   });
-  const textWithoutTags=(variant.text_en||'').replace(/<b>(?:Taunt|Divine Shield|Reborn|Poisonous|Windfury|Mega-Windfury)<\/b>/gi,'').replace(/\[x\]/gi,'').replace(/<[^>]*>/g,'').replace(/[\s\n.,:;]+/g,'');
+  if (/\bMagnetic\b/i.test(variant.text_en || '')) rows.push({ trigger:'playAttach', sourceTrigger:'magnetic', recipient:'chosenFriendlyMech', duration:'game', kind:'magneticAttachment', text:'磁力', textEn:'Magnetic', tags:['magnetic'], params:{}, implementation:'unsupported', unsupportedReason:'Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested.' });
+  const textWithoutTags=(variant.text_en||'').replace(/<b>(?:Taunt|Divine Shield|Reborn|Poisonous|Windfury|Mega-Windfury)<\/b>/gi,'').replace(/\bMagnetic\b/gi,'').replace(/\[x\]/gi,'').replace(/<[^>]*>/g,'').replace(/[\s\n.,:;]+/g,'');
   const hasMainText=Boolean(textWithoutTags);
   if (hasMainText) {
     if (KEYWORD_ADAPTERS[card.id] && found.length===0) {
@@ -199,6 +208,8 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
 if (missing.length) throw new Error(`source names missing: ${missing.join(', ')}`);
 entries.sort((a,b) => a.sourceId.localeCompare(b.sourceId));
 const counts = Object.fromEntries(Object.entries(roster.groups).map(([k,v]) => [k, v.pairs.length]));
+const recipientCounts = variant => Object.fromEntries(Object.entries(entries.flatMap(x=>x.metadata.op.effectDelivery[variant]).reduce((acc,e)=>{acc[e.recipient]=(acc[e.recipient]||0)+1;return acc;},{})).sort(([a],[b])=>a.localeCompare(b)));
+const durationCounts = variant => Object.fromEntries(Object.entries(entries.flatMap(x=>x.metadata.op.effectDelivery[variant]).reduce((acc,e)=>{acc[e.duration]=(acc[e.duration]||0)+1;return acc;},{})).sort(([a],[b])=>a.localeCompare(b)));
 const report = {
   schema: 'stronghold.darkmoon-blueprint-coverage/v1',
   source: sourcePath,
@@ -210,6 +221,9 @@ const report = {
   mainFactions: Object.fromEntries(Object.entries(roster.groups).filter(([k]) => k !== 'NEUTRAL').map(([k,v]) => [k, v.pairs.length])),
   neutral: counts.NEUTRAL,
   exactSourceBodyCoverage: entries.length === 101 && new Set(entries.map(x=>x.name)).size === 101 && new Set(entries.map(x=>x.sourceId)).size === 101,
+  unresolvedRecipientEffectCount:entries.flatMap(x=>[...x.metadata.op.effectDelivery.normal,...x.metadata.op.effectDelivery.elite]).filter(e=>e.recipient==='unresolved').length,
+  recipients:{normal:recipientCounts('normal'),elite:recipientCounts('elite')},
+  durations:{normal:durationCounts('normal'),elite:durationCounts('elite')},
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
   nativeDispatchedPendingLanding: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
   totalNormalEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.normal.length,0),

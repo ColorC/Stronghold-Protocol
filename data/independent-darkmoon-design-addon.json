@@ -3973,9 +3973,24 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
+                "tags": [
+                  "magnetic"
+                ],
+                "params": {},
+                "implementation": "unsupported",
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
+              },
+              {
+                "trigger": "playAttach",
+                "sourceTrigger": "playAttach",
+                "recipient": "chosenFriendlyMech",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -3999,9 +4014,24 @@
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
+                "tags": [
+                  "magnetic"
+                ],
+                "params": {},
+                "implementation": "unsupported",
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
+              },
+              {
+                "trigger": "playAttach",
+                "sourceTrigger": "playAttach",
+                "recipient": "chosenFriendlyMech",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -4089,22 +4119,19 @@
                 "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
-                "params": {
-                  "numericLiterals": []
-                },
-                "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
-                "textEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
                 "tags": [
-                  "taunt",
-                  "divineShield"
+                  "magnetic"
                 ],
+                "params": {},
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
               }
             ],
             "elite": [
@@ -4145,22 +4172,19 @@
                 "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
-                "params": {
-                  "numericLiterals": []
-                },
-                "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
-                "textEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
                 "tags": [
-                  "taunt",
-                  "divineShield"
+                  "magnetic"
                 ],
+                "params": {},
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
               }
             ]
           }
@@ -4355,10 +4379,10 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
+                "trigger": "passiveMultiplier",
+                "sourceTrigger": "passiveMultiplier",
+                "recipient": "summonedUnitOutputs",
+                "duration": "game",
                 "kind": "combatBoardAction",
                 "params": {
                   "numericLiterals": []
@@ -4372,10 +4396,10 @@
             ],
             "elite": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
+                "trigger": "passiveMultiplier",
+                "sourceTrigger": "passiveMultiplier",
+                "recipient": "summonedUnitOutputs",
+                "duration": "game",
                 "kind": "combatBoardAction",
                 "params": {
                   "numericLiterals": []
@@ -4829,7 +4853,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "selfOrBoard",
+                "recipient": "allCombatants",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -4870,7 +4894,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "selfOrBoard",
+                "recipient": "allCombatants",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -4931,7 +4955,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "allFriendly",
+                "recipient": "eligibleDeathrattleOutputs",
                 "duration": "combat",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -4950,7 +4974,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "allFriendly",
+                "recipient": "eligibleDeathrattleOutputs",
                 "duration": "combat",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -5319,7 +5343,7 @@
               {
                 "trigger": "battlecry",
                 "sourceTrigger": "battlecry",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleTaggedFriendly",
                 "duration": "combat",
                 "kind": "combatKeyword",
                 "params": {
@@ -5364,7 +5388,7 @@
               {
                 "trigger": "battlecry",
                 "sourceTrigger": "battlecry",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleTaggedFriendly",
                 "duration": "combat",
                 "kind": "combatKeyword",
                 "params": {
@@ -5541,7 +5565,7 @@
               {
                 "trigger": "combatPassive",
                 "sourceTrigger": "combatPassive",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleBattlecryOutputs",
                 "duration": "game",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -5558,7 +5582,7 @@
               {
                 "trigger": "combatPassive",
                 "sourceTrigger": "combatPassive",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleBattlecryOutputs",
                 "duration": "game",
                 "kind": "statOrCombatBuff",
                 "params": {

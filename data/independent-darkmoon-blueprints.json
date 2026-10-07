@@ -8881,9 +8881,24 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
+                "tags": [
+                  "magnetic"
+                ],
+                "params": {},
+                "implementation": "unsupported",
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
+              },
+              {
+                "trigger": "playAttach",
+                "sourceTrigger": "playAttach",
+                "recipient": "chosenFriendlyMech",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -8907,9 +8922,24 @@
             ],
             "elite": [
               {
-                "trigger": "death",
-                "sourceTrigger": "death",
-                "recipient": "combatBoardSummon",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
+                "tags": [
+                  "magnetic"
+                ],
+                "params": {},
+                "implementation": "unsupported",
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
+              },
+              {
+                "trigger": "playAttach",
+                "sourceTrigger": "playAttach",
+                "recipient": "chosenFriendlyMech",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -8942,9 +8972,17 @@
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "death",
-            "sourceTrigger": "death",
-            "recipient": "combatBoardSummon",
+            "trigger": "playAttach",
+            "sourceTrigger": "magnetic",
+            "recipient": "chosenFriendlyMech",
+            "duration": "game",
+            "text": "磁力",
+            "params": {}
+          },
+          {
+            "trigger": "playAttach",
+            "sourceTrigger": "playAttach",
+            "recipient": "chosenFriendlyMech",
             "duration": "combat",
             "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
             "params": {
@@ -8961,9 +8999,17 @@
         ],
         "elite": [
           {
-            "trigger": "death",
-            "sourceTrigger": "death",
-            "recipient": "combatBoardSummon",
+            "trigger": "playAttach",
+            "sourceTrigger": "magnetic",
+            "recipient": "chosenFriendlyMech",
+            "duration": "game",
+            "text": "磁力",
+            "params": {}
+          },
+          {
+            "trigger": "playAttach",
+            "sourceTrigger": "playAttach",
+            "recipient": "chosenFriendlyMech",
             "duration": "combat",
             "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
             "params": {
@@ -9288,22 +9334,19 @@
                 "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
-                "params": {
-                  "numericLiterals": []
-                },
-                "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
-                "textEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
                 "tags": [
-                  "taunt",
-                  "divineShield"
+                  "magnetic"
                 ],
+                "params": {},
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
               }
             ],
             "elite": [
@@ -9344,22 +9387,19 @@
                 "unsupportedReason": "Static keyword has no source-id-specific delivery rule wired."
               },
               {
-                "trigger": "staticCombat",
-                "sourceTrigger": "staticCombat",
-                "recipient": "selfOrBoard",
-                "duration": "combat",
-                "kind": "combatKeyword",
-                "params": {
-                  "numericLiterals": []
-                },
-                "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
-                "textEn": "<b>Magnetic</b>\n<b>Divine Shield</b>\n<b>Taunt</b>",
+                "trigger": "playAttach",
+                "sourceTrigger": "magnetic",
+                "recipient": "chosenFriendlyMech",
+                "duration": "game",
+                "kind": "magneticAttachment",
+                "text": "磁力",
+                "textEn": "Magnetic",
                 "tags": [
-                  "taunt",
-                  "divineShield"
+                  "magnetic"
                 ],
+                "params": {},
                 "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "unsupportedReason": "Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested."
               }
             ]
           }
@@ -9389,14 +9429,12 @@
             "params": {}
           },
           {
-            "trigger": "staticCombat",
-            "sourceTrigger": "staticCombat",
-            "recipient": "selfOrBoard",
-            "duration": "combat",
-            "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
-            "params": {
-              "numericLiterals": []
-            }
+            "trigger": "playAttach",
+            "sourceTrigger": "magnetic",
+            "recipient": "chosenFriendlyMech",
+            "duration": "game",
+            "text": "磁力",
+            "params": {}
           }
         ],
         "elite": [
@@ -9417,14 +9455,12 @@
             "params": {}
           },
           {
-            "trigger": "staticCombat",
-            "sourceTrigger": "staticCombat",
-            "recipient": "selfOrBoard",
-            "duration": "combat",
-            "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
-            "params": {
-              "numericLiterals": []
-            }
+            "trigger": "playAttach",
+            "sourceTrigger": "magnetic",
+            "recipient": "chosenFriendlyMech",
+            "duration": "game",
+            "text": "磁力",
+            "params": {}
           }
         ]
       }
@@ -9826,10 +9862,10 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
+                "trigger": "passiveMultiplier",
+                "sourceTrigger": "passiveMultiplier",
+                "recipient": "summonedUnitOutputs",
+                "duration": "game",
                 "kind": "combatBoardAction",
                 "params": {
                   "numericLiterals": []
@@ -9843,10 +9879,10 @@
             ],
             "elite": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "combatBoardSummon",
-                "duration": "combat",
+                "trigger": "passiveMultiplier",
+                "sourceTrigger": "passiveMultiplier",
+                "recipient": "summonedUnitOutputs",
+                "duration": "game",
                 "kind": "combatBoardAction",
                 "params": {
                   "numericLiterals": []
@@ -9879,10 +9915,10 @@
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "combatPassive",
-            "sourceTrigger": "combatPassive",
-            "recipient": "combatBoardSummon",
-            "duration": "combat",
+            "trigger": "passiveMultiplier",
+            "sourceTrigger": "passiveMultiplier",
+            "recipient": "summonedUnitOutputs",
+            "duration": "game",
             "text": "你的召唤随从的卡牌召唤数量翻倍。",
             "params": {
               "numericLiterals": []
@@ -9891,10 +9927,10 @@
         ],
         "elite": [
           {
-            "trigger": "combatPassive",
-            "sourceTrigger": "combatPassive",
-            "recipient": "combatBoardSummon",
-            "duration": "combat",
+            "trigger": "passiveMultiplier",
+            "sourceTrigger": "passiveMultiplier",
+            "recipient": "summonedUnitOutputs",
+            "duration": "game",
             "text": "你的召唤随从的卡牌召唤数量变为三倍。",
             "params": {
               "numericLiterals": []
@@ -10818,7 +10854,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "selfOrBoard",
+                "recipient": "allCombatants",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -10859,7 +10895,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "selfOrBoard",
+                "recipient": "allCombatants",
                 "duration": "combat",
                 "kind": "combatBoardAction",
                 "params": {
@@ -10899,7 +10935,7 @@
           {
             "trigger": "death",
             "sourceTrigger": "death",
-            "recipient": "selfOrBoard",
+            "recipient": "allCombatants",
             "duration": "combat",
             "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害。",
             "params": {
@@ -10922,7 +10958,7 @@
           {
             "trigger": "death",
             "sourceTrigger": "death",
-            "recipient": "selfOrBoard",
+            "recipient": "allCombatants",
             "duration": "combat",
             "text": "<b>嘲讽，亡语：</b>对所有随从造成1点伤害，触发两次。",
             "params": {
@@ -10965,7 +11001,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "allFriendly",
+                "recipient": "eligibleDeathrattleOutputs",
                 "duration": "combat",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -10984,7 +11020,7 @@
               {
                 "trigger": "death",
                 "sourceTrigger": "death",
-                "recipient": "allFriendly",
+                "recipient": "eligibleDeathrattleOutputs",
                 "duration": "combat",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -11022,7 +11058,7 @@
           {
             "trigger": "death",
             "sourceTrigger": "death",
-            "recipient": "allFriendly",
+            "recipient": "eligibleDeathrattleOutputs",
             "duration": "combat",
             "text": "你的随从的<b>亡语</b>将触发两次。",
             "params": {
@@ -11034,7 +11070,7 @@
           {
             "trigger": "death",
             "sourceTrigger": "death",
-            "recipient": "allFriendly",
+            "recipient": "eligibleDeathrattleOutputs",
             "duration": "combat",
             "text": "你的随从的<b>亡语</b>将触发三次。",
             "params": {
@@ -11839,7 +11875,7 @@
               {
                 "trigger": "battlecry",
                 "sourceTrigger": "battlecry",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleTaggedFriendly",
                 "duration": "combat",
                 "kind": "combatKeyword",
                 "params": {
@@ -11884,7 +11920,7 @@
               {
                 "trigger": "battlecry",
                 "sourceTrigger": "battlecry",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleTaggedFriendly",
                 "duration": "combat",
                 "kind": "combatKeyword",
                 "params": {
@@ -11928,7 +11964,7 @@
           {
             "trigger": "battlecry",
             "sourceTrigger": "battlecry",
-            "recipient": "selfOrBoard",
+            "recipient": "eligibleTaggedFriendly",
             "duration": "combat",
             "text": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+2/+2。",
             "params": {
@@ -11955,7 +11991,7 @@
           {
             "trigger": "battlecry",
             "sourceTrigger": "battlecry",
-            "recipient": "selfOrBoard",
+            "recipient": "eligibleTaggedFriendly",
             "duration": "combat",
             "text": "<b>战吼：</b>使你具有<b>嘲讽</b>的随从获得+4/+4。",
             "params": {
@@ -12302,7 +12338,7 @@
               {
                 "trigger": "combatPassive",
                 "sourceTrigger": "combatPassive",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleBattlecryOutputs",
                 "duration": "game",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -12319,7 +12355,7 @@
               {
                 "trigger": "combatPassive",
                 "sourceTrigger": "combatPassive",
-                "recipient": "selfOrBoard",
+                "recipient": "eligibleBattlecryOutputs",
                 "duration": "game",
                 "kind": "statOrCombatBuff",
                 "params": {
@@ -12355,7 +12391,7 @@
           {
             "trigger": "combatPassive",
             "sourceTrigger": "combatPassive",
-            "recipient": "selfOrBoard",
+            "recipient": "eligibleBattlecryOutputs",
             "duration": "game",
             "text": "你的<b>战吼</b>会触发\n两次。",
             "params": {
@@ -12367,7 +12403,7 @@
           {
             "trigger": "combatPassive",
             "sourceTrigger": "combatPassive",
-            "recipient": "selfOrBoard",
+            "recipient": "eligibleBattlecryOutputs",
             "duration": "game",
             "text": "你的<b>战吼</b>会触发\n三次。",
             "params": {

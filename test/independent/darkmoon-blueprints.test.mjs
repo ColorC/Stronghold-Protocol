@@ -18,6 +18,7 @@ test('blueprint is an exact 101-name roster slice with original 19.2 texts and b
   assert.equal(blueprints.entries.length, 101);
   assert.equal(new Set(blueprints.entries.map(x => x.sourceId)).size, 101);
   assert.equal(new Set(blueprints.entries.map(x => x.operator)).size, 101);
+  assert.ok(blueprints.entries.flatMap(x=>[...x.metadata.op.effectDelivery.normal,...x.metadata.op.effectDelivery.elite]).every(e=>e.recipient!=='unresolved'));
   const counts = Object.groupBy(blueprints.entries, x => x.rosterTribe);
   assert.deepEqual(Object.fromEntries(Object.entries(counts).map(([k,v]) => [k,v.length])), {
     MECHANICAL:16, PIRATE:14, ELEMENTAL:12, DRAGON:13, BEAST:14, NEUTRAL:32
