@@ -50,6 +50,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.equal(designAddon.pendingNativeDefinitions.length, 34);
   assert.ok(designAddon.operators.every(x => x.chessId && x.modeEffects === null));
   assert.equal(Object.keys(gameTextAddon.operators).length, 101);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal[0].implementation==='dispatched-pending-gear-landing-verification').length,7);
+  assert.equal(blueprints.entries.filter(x=>x.metadata.op.effectDelivery.normal[0].implementation==='unsupported').length,94);
   assert.equal(gameTextAddon.operators['风丸'].sourceId, 'DAL_575');
   assert.equal(gameTextAddon.operators['远牙'].sourceId, 'BGS_043');
 });
