@@ -36,7 +36,7 @@ function sources(catalog) {
     else if (v && typeof v === 'object') Object.values(v).forEach((x) => walk(x, name, random));
   };
   for (const op of Object.values(catalog.operators)) {
-    if (op.elite) continue;
+    if (op.elite || op.active === false) continue;
     for (const r of [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat]) {
       const pool = r.params?.poolId ? catalog.pools?.[r.params.poolId] : null;
       if (pool) walk(pool, op.name, true);
