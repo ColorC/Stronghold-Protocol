@@ -112,8 +112,8 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonAdjacentGrowth': return `招募获得或首次上阵时，相邻友方干员各获得${growth(attack, secondary, variant)}${p.extraGear?.length ? `，并永久装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : ''}。`;
     case 'darkmoonTaggedGrowth': return `招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonMagneticMerge': return sourceId === 'BOT_911'
-      ? `招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并获得攻击与职业副属性各${qty(attack)}成长。`
-      : `招募获得或首次上阵时，可直接招募；也可消耗此干员，将其退场效果附加给你选择的一名友方哥伦比亚干员，本体不进入阵容。`;
+      ? `招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章${qty(attack)}及职业副属性成长徽章${qty(secondary)}；本体不进入阵容。`
+      : `招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章${qty(attack)}及职业副属性成长徽章${qty(secondary)}；本体不进入阵容。`;
     case 'darkmoonSummonSupport': return `招募获得或首次上阵时，免费将一个猫形支援单位（攻击${variant === 'elite' ? 240 : 120}、生命${variant === 'elite' ? 700 : 350}）放入整备区；可部署，本体不可商店招募。`;
     case 'darkmoonTransformFromShop': return `招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为${variant === 'elite' ? '进阶' : '普通'}形态并招募。`;
     case 'darkmoonRosterTribePurchaseFunds': return `购买维多利亚阵营干员时，获得${amount}枚金币。`;
