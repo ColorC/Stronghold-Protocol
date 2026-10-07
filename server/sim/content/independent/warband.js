@@ -47,7 +47,7 @@ export function installWarband(battle,{catalog,pieces}) {
     const clean=structuredClone(def); clean.stats={...clean.stats};
     for(const key of ['atk','maxHp']) {
       const scaled=Number(clean.stats[key] || 1)*ratio;
-      clean.stats[key]=Math.max(1,original ? scaled : Math.floor(scaled));
+      clean.stats[key]=Math.max(1,original && ratio === 1 ? scaled : Math.floor(scaled));
     }
     clean.skill=null; clean.skills=[]; clean.talents=[]; clean.trait=''; clean.traitBb={};
     const out=[];
