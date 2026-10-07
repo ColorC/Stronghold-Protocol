@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const addon = JSON.parse(fs.readFileSync(path.resolve(here, '../../../data/independent-darkmoon-design-addon.json'), 'utf8'));
-const sourceIdByName = new Map(addon.operators.map(x => [x.name, x.sourceId]));
+const blueprints = JSON.parse(fs.readFileSync(path.resolve(here, '../../../data/independent-darkmoon-blueprints.json'), 'utf8'));
+const sourceIdByName = new Map(blueprints.entries.map(x => [x.operator, x.sourceId]));
 const gear = id => ({ id: `independent:${id}`, normal: 1, elite: 1 });
 const grantSelf = (...items) => ({ trigger:'gain', behavior:'grantEquipment', params:{ landOn:'self', outputs:items } });
 
