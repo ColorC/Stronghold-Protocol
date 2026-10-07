@@ -50,6 +50,15 @@ function sourceCardRefs(op) {
   return cards.filter((x) => x && typeof x === 'object' && (x.text || x.textElite || x.name || x.sourceUrl));
 }
 
+function TemporaryGrowth({live,catalog}) {
+  const entries=live?.temporaryGrowth||[];
+  if(!entries.length)return null;
+  return html`<section class="ix-detail__text"><b>本场临时增益</b>${entries.map((entry,index)=>{
+    const source=Object.values(catalog.operators||{}).find(op=>op.sourceRefs?.darkmoon19_2?.id===entry.sourceId);
+    return html`<p key=${index}>${source?.name?`${source.name}：`:''}${entry.trainingLevels!=null?`训练额度 ${entry.trainingLevels} 级，按自身等级上限生效`:`攻击徽章×${entry.attackUnits||0}${entry.secondaryUnits?`，职业副属性装备×${entry.secondaryUnits}`:''}`}。本场结束后消失。</p>`;
+  })}</section>`;
+}
+
 function readableCardText(value) {
   return String(value || '').replace(/<br\s*\/?\s*>/gi, '\n').replace(/<\/(?:p|div|li|tr|h[1-6])\s*>/gi, '\n')
     .replace(/<[^>]*>/g, '').replace(/&nbsp;|&#160;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<')
@@ -214,7 +223,7 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
   const loadout = piece ? { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } } : null;
   const gear = piece
     ? html`<${GearSection} key="equip" items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${state} sourcePiece=${piece}
-        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />`
+        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} /><${TemporaryGrowth} live=${live} catalog=${catalog} />`
     : html`<${GearSection} key="equip" items=${[...(opBase?.permitGear ? [{ id: opBase.permitGear, uid: 'permit', quantity: 1 }] : []), ...(slot.equipment || []).map((x, i) => ({ ...x, uid: `c${i}` }))]}
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,

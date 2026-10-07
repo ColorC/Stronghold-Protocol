@@ -4,6 +4,7 @@
 import { COLS } from '../constants.js';
 import { absoluteRangeKeys } from '../targeting.js';
 import { applyDamageIncrease } from '../../../shared/damageIncrease.js';
+import { rotateOffset } from '../dir.js';
 
 const n = (x, fallback = null) => typeof x === 'number' && Number.isFinite(x) ? x : fallback;
 const spTypeOf = (s) => ({ INCREASE_WITH_TIME: 'time', INCREASE_WHEN_ATTACK: 'attack', INCREASE_WHEN_TAKEN: 'hurt', INCREASE_WHEN_ATTACKED: 'hurt', NOT_RECOVER: 'none', ON_DEPLOY: 'none' })[s] || s;
@@ -70,7 +71,7 @@ function ironmn(_bb, chess) {
   return { skill: durationSkill(s.skillId, 'duration', s, {}, { attack: { atkScale: n(s.bb?.['attack@atk_scale'], 1) } }), talents: [], install(battle, unit) {
     const create = () => {
       if (!token) return null;
-      const candidates = [[unit.tileR, unit.tileC + 1], [unit.tileR + 1, unit.tileC], [unit.tileR - 1, unit.tileC], [unit.tileR, unit.tileC - 1]];
+      const candidates = [[0,1],[1,0],[-1,0],[0,-1]].map(([dr,dc])=>rotateOffset(dr,dc,unit.dir)).map(([dr,dc])=>[unit.tileR+dr,unit.tileC+dc]);
       for (const [r, c] of candidates) {
         const kit = { talents: [{ install(b, device) {
           const base = n(device.def?.talents?.[0]?.bb?.atk, 0);
@@ -78,7 +79,7 @@ function ironmn(_bb, chess) {
             if (!device.alive || !device.deployed) return;
             const distance = (a) => Math.abs(a.tileR - device.tileR) + Math.abs(a.tileC - device.tileC);
             const boost = unit.skill?.active ? n(device.def?.skill?.bb?.talent_scale, 1) : 1;
-            const target = b.alliesFor(device).filter((a) => a.kind === 'op' && a.alive && a.deployed && distance(a) <= 1 && !b.alliesFor(device).some((other) => other !== device && other.kind === 'token' && other.ownerUnit === unit && other.alive && other.findBuff(`ironmn:platform:${other.id}`)?.source === other && other.findBuff(`ironmn:platform:${other.id}`)?.targetId === a.id))
+            const target = b.alliesFor(device).filter((a) => a.kind === 'op' && a.alive && a.deployed && unit.alive && unit.deployed && distance(a) <= 1)
               .sort((a, z) => distance(a) - distance(z))[0];
             if (target) b.addBuff(target, { key: `ironmn:platform:${device.id}`, duration: 0.75, source: device, data: { targetId: target.id }, mods: { atkPct: base * boost }, tags: ['talent', 'token'] });
           };
@@ -87,11 +88,11 @@ function ironmn(_bb, chess) {
         } }] };
         const device = battle.spawnToken(unit, token, r, c, { kit });
         if (device) {
-          if (recycle > 0) battle.on('kill', (ctx) => {
-            if (ctx.victim !== device || ctx.victim.side !== 'ally') return;
-            const grid = talent(chess, 1).rangeGrid;
+          if (recycle > 0) battle.on('death', (ctx) => {
+            if (ctx.unit !== device || !unit.alive || !unit.deployed || !['killed','skillEnd','retreat'].includes(ctx.reason)) return;
+            const grid = chess.talents?.find(t=>t.index===1)?.rangeGrid;
             if (Array.isArray(grid) && !new Set(absoluteRangeKeys(grid, unit.tileR, unit.tileC, unit.dir)).has(device.tileR * COLS + device.tileC)) return;
-            if (battle.rng() < recycle) unit.mem.nativeIronmnUses = Math.min(carry, (unit.mem.nativeIronmnUses || 0) + Math.max(1, n(talent(chess, 1).cnt, 1)));
+            if (battle.rng() < recycle) unit.mem.nativeIronmnUses = Math.max(0,(unit.mem.nativeIronmnUses || 0) - Math.max(1, n(talent(chess, 1).cnt, 1)));
           }, { owner: unit });
           const base = n(device.def?.talents?.[0]?.bb?.atk, 0);
           const platformCandidates = battle.alliesFor(device);
@@ -105,7 +106,7 @@ function ironmn(_bb, chess) {
     };
     battle.on('deploy', (ctx) => {
       if (ctx.unit !== unit) return;
-      unit.mem.nativeIronmnUses ||= 0;
+      unit.mem.nativeIronmnUses = 0;
       unit.mem.nativeIronmnDevices = (unit.mem.nativeIronmnDevices || []).filter((device) => device?.alive);
       if (!unit.mem.nativeIronmnDevices.length && unit.mem.nativeIronmnUses < carry) {
         const device = create();
@@ -115,7 +116,9 @@ function ironmn(_bb, chess) {
     battle.on('skillStart', (ctx) => {
       if (ctx.unit !== unit || ctx.skill?.id !== s.skillId) return;
       unit.mem.nativeIronmnDevices ||= [];
-      unit.mem.nativeIronmnUses ||= 0;
+      // S1 grants one fresh device on every activation, including after the
+      // initially carried devices have been consumed.
+      unit.mem.nativeIronmnUses = Math.max(0,(unit.mem.nativeIronmnUses||0)-1);
       unit.mem.nativeIronmnDevices = unit.mem.nativeIronmnDevices.filter((device) => device?.alive);
       if (unit.mem.nativeIronmnDevices.length < maxDeployed && unit.mem.nativeIronmnUses < carry) {
         const device = create();
@@ -129,8 +132,15 @@ function ironmn(_bb, chess) {
         battle.retreat(device, { reason: 'skillEnd', permanent: true });
       }
       unit.mem.nativeIronmnDevices = [];
-      if (recycle > 0 && battle.rng() < recycle) unit.mem.nativeIronmnUses = Math.max(0, (unit.mem.nativeIronmnUses || 0) - 1);
     }, { owner: unit });
+    battle.on('death',({unit:who})=>{
+      if(who!==unit)return;
+      for(const device of unit.mem.nativeIronmnDevices||[])if(device?.alive){
+        for(const ally of battle.alliesFor(unit))battle.removeBuff(ally,`ironmn:platform:${device.id}`);
+        battle.retreat(device,{reason:'ownerExit',permanent:true});
+      }
+      unit.mem.nativeIronmnDevices=[];
+    },{owner:unit});
   } };
 }
 function jnight(_bb, chess) {
@@ -169,7 +179,7 @@ export const NATIVE_KIT_READY = Object.freeze(Object.fromEntries(Object.keys(NAT
   const requiresSkill = NATIVE_SKILL_SUPPORT[charId].length > 0;
   const requiresToken = charId === 'char_4072_ironmn';
   const skillReady = !requiresSkill || NATIVE_SKILL_SUPPORT[charId].every((id) => typeof id === 'string');
-  const tokenReady = !requiresToken || requiresToken;
+  const tokenReady = !requiresToken || ['char_4072_ironmn'].includes(charId);
   const talentReady = true;
   return [charId, Object.freeze({ ready: talentReady && skillReady && tokenReady, talentReady, requiresSkill, skillReady, requiresToken, tokenReady, supportedSkillIds: NATIVE_SKILL_SUPPORT[charId] })];
 })));

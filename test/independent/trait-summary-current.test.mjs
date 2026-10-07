@@ -7,9 +7,9 @@ import { cardTable } from '../../tools/independent-card-table.mjs';
 
 const quiet = { warn() {}, error() {}, info() {} };
 
-test('all 240 current operator forms have one classified summary per authored rule and actual event labels', () => {
+test('all 311 current operator forms have one classified summary per authored rule and actual event labels', () => {
   const catalog = getCatalog(getData({ log: quiet }));
-  assert.equal(Object.keys(catalog.operators).length, 240);
+  assert.equal(Object.keys(catalog.operators).length, 311);
   const gearIds = new Set([...Object.keys(catalog.badges), ...Object.keys(catalog.equipment)]);
   for (const op of Object.values(catalog.operators)) {
     const rules = [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat];

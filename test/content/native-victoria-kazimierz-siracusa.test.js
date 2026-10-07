@@ -22,6 +22,25 @@ const expectedDefaults = {
   char_4065_judge: 'skchr_judge_1', char_4037_demetr: 'skchr_demetr_1', char_4155_talr: 'skchr_talr_1',
 };
 
+for(const suffix of ['a','b'])test(`Whiteiron ${suffix} resupplies later S1 casts and removes devices with its owner`,()=>{
+  const chessId=`chess_native_char_4072_ironmn_${suffix}`,chess=structuredClone(pool[chessId]);
+  const skillIndex=chess.skills.find(s=>s.skillId==='skchr_ironmn_1').index;
+  const h=makeBattle({defs:{chess:{[chessId]:chess}},units:[{chessId,skillIndex,row:10,col:5}],kits:nativeKits,autoFinish:false,timeLimit:120});
+  h.run(.2);const unit=h.unit(chessId),devices=()=>h.b.allyUnits.filter(t=>t.kind==='token'&&t.ownerUnit===unit&&t.alive&&t.deployed);
+  h.b.rng=()=>1; // no E2 recycling: later stock must come from S1 itself.
+  assert.equal(devices().length,1);
+  for(let i=0;i<4;i++){
+    assert.equal(unit.skill.activate('native-stock-test',{free:true}),true);h.run(.1);
+    assert.ok(devices().length>=1,'every S1 grants a fresh usable device after the initial stock');
+    assert.ok(devices().length<=2,'owner-wide source deployment limit stays two');
+    unit.skill.end('duration');h.run(.1);assert.equal(devices().length,0);
+  }
+  assert.equal(unit.skill.activate('native-stock-test',{free:true}),true);h.run(.1);
+  assert.ok(devices().length);
+  h.b.retreat(unit);h.run(.1);assert.equal(devices().length,0,'withdrawn owner leaves no persistent device aura');
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));h.invariants();
+});
+
 test('Victoria/Kazimierz/Siracusa imports expose explicit source-ID default kits for normal and elite forms', () => {
   assert.equal(operators.length, 19);
   for (const [charId, name] of operators) {
