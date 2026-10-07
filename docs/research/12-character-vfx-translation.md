@@ -14,4 +14,4 @@
 2. 原始 shader/vertex stream 无法由 atlas 表达时，列为 `procedural`，同时给出原始 prefab 结构和代码入口；
 3. 暂时不能解出的挂点或表现列为 `unresolved`，进入运行时覆盖诊断，不能默认为完成。
 
-运行时 `OriginalVfxPlayer.coverage()` 会记录 requested / loaded / missing / procedural 四组集合。验收不能只看画面；必须检查动作事件计数、资源加载集合、挂点状态和 unresolved 数量。tile/range 特效必须用整数行列投影；packed atlas 的锚点和显示宽度按颜色半帧计算，不能按颜色+遮罩的打包宽度计算。
+运行时 `OriginalVfxPlayer.coverage()` 会记录 requested / loaded / missing / procedural / unresolved 五组集合。验收不能只看画面；必须检查动作事件计数、资源加载集合、挂点状态和 unresolved 数量。tile/range 特效必须用整数行列投影；packed atlas 的锚点和显示宽度按颜色半帧计算，不能按颜色+遮罩的打包宽度计算。
