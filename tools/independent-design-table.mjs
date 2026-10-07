@@ -11,15 +11,17 @@ const ROOT = resolve(import.meta.dirname, '..');
 const DESIGN = resolve(ROOT, 'data/independent-design.json');
 const DOC = resolve(ROOT, 'docs/independent-mode/design.md');
 
-/** The 交接凭证 line of an operator row (design operators[].inheritance; most operators have none). */
+/**
+ * The 交接凭证 line of an operator row: only the twelve operators that bring one have it (user 10-07: 「交接的相关文字只放在
+ * 交接相关的干员里面……哪有把废话复制上百遍的？」). The shared rules live once in the doc's rules section.
+ */
 export function permitLine(op) {
   const p = op.inheritance;
-  if (!p) return '没有交接凭证；若对方的交接凭证允许，仍可交接。';
+  if (!p) return '';
   const who = p.limit.replace(/^只能(被|继承)/, '').replace(/(继承)?。$/, '');
-  return p.direction === '给予' ? `获得时自带交接凭证「${p.gear}」：可将装备交接给${who}（凭证不随交接转移）。`
-    : `获得时自带交接凭证「${p.gear}」：可接收${who}交接的装备（凭证不随交接转移）。`;
+  return p.direction === '给予' ? `交接凭证「${p.gear}」：装备可交给${who}。` : `交接凭证「${p.gear}」：可接收${who}的装备。`;
 }
-export const operatorRow = (op) => `| ${op.name} · 科技等级${op.tier}<br>原技能：${op.skill} | 普通：${op.nativeTrait.normal}<br>精锐：${op.nativeTrait.elite} | ${op.role}<br>${permitLine(op)}<br>自有特质属于本体。 |`;
+export const operatorRow = (op) => `| ${op.name} · 科技等级${op.tier}<br>原技能：${op.skill} | 普通：${op.nativeTrait.normal}<br>精锐：${op.nativeTrait.elite} | ${op.role}${permitLine(op) ? `<br>${permitLine(op)}` : ''} |`;
 
 /** Rows of the doc that differ from the data: [{ name, doc, data }] (doc null when the operator has no row). */
 export function tableDiff(design = JSON.parse(readFileSync(DESIGN, 'utf8')), doc = readFileSync(DOC, 'utf8')) {
