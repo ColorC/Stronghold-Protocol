@@ -230,7 +230,9 @@ async function equipVisibleItem(state) {
   return false;
 }
 async function buyOne(state) {
-  const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds));
+  const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
+  const reserve = deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
+  const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve);
   const counts = new Map(); for (const p of state.pieces || []) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
   viable.sort((a, b) => {
     const ca = counts.get(a.s.id) || 0, cb = counts.get(b.s.id) || 0;
@@ -452,7 +454,8 @@ try {
     if (ordinary && !report.references?.some((x) => x.kind === 'ordinary')) { await inspectReferenceCard(ordinary, 'ordinary'); continue; }
     const elite = (state.pieces || []).find((p) => p.elite && Number.isInteger(p.row));
     if (elite && !report.references?.some((x) => x.kind === 'elite')) { await inspectReferenceCard(elite, 'elite'); continue; }
-    const desired = Math.min(8, Math.max(1, Math.ceil(Number(state.round || 1) / 2)));
+    const nonTemporary = (state.pieces || []).filter((p) => !p.temp).length;
+    const desired = Math.min(8, Math.max(1, nonTemporary));
     if (deployed < desired) {
       const bench = (state.pieces || []).find((p) => !Number.isInteger(p.row) && !p.temp);
       if (bench && await deployPiece(state, bench)) {

@@ -180,8 +180,8 @@ export function RecordingControls({ sessionId }) {
   const playback = recordId ? new URL(`independent-replay.html?recording=${encodeURIComponent(recordId)}`, location.href).href : '';
   return html`<aside class="ix-recording" aria-live="polite">
     <span class=${recording ? 'ix-recording__dot is-live' : 'ix-recording__dot'}></span>
-    <span>${message || (recording ? '正在记录本局' : '录制已结束')}</span>
-    ${recording ? html`<button type="button" onClick=${stop}>结束并生成回放</button>` : null}
-    ${playback ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
+    <span>${message || (recording ? '正在录制' : '录制已结束')}</span>
+    ${recording ? html`<button type="button" onClick=${stop}>结束录制</button>` : null}
+    ${playback && !recording ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
   </aside>`;
 }
