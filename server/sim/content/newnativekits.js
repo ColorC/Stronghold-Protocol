@@ -13,6 +13,7 @@ export const NATIVE_SKILL_SUPPORT = Object.freeze({
   char_385_finlpp: Object.freeze(['skchr_finlpp_1']),
   char_4119_wanqin: Object.freeze(['skcom_assist_cost[3]']),
   char_4019_ncdeer: Object.freeze(['skchr_ncdeer_1']),
+  char_2025_shu: Object.freeze(['skchr_shu_1']),
   char_2024_chyue: Object.freeze(['skchr_chyue_1']),
 });
 export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
@@ -22,6 +23,7 @@ export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_385_finlpp: 'skchr_finlpp_1',
   char_4119_wanqin: 'skcom_assist_cost[3]',
   char_4019_ncdeer: 'skchr_ncdeer_1',
+  char_2025_shu: 'skchr_shu_1',
   char_2024_chyue: 'skchr_chyue_1',
 });
 
@@ -180,6 +182,46 @@ function nineColoredDeer(bb, chess) {
   };
 }
 
+function shu(bb, chess, def) {
+  const x = sourceSkill(chess, 'skchr_shu_1');
+  const healScale = number(x?.s.bb?.heal_scale);
+  if (!x || !(healScale > 0)) return null;
+  const talent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const regen = number(talent.hp_recovery_per_sec), resistance = number(talent.damage_resistance);
+  return {
+    trait: { attack: 'ranged', dmgType: 'heal', projectile: 'none', heal: { mode: 'single', hpAtMost: 0.5 } },
+    skills: { skchr_shu_1: {
+      id: 'skchr_shu_1', kind: 'instant', spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, charges: Math.max(1, Math.floor(number(x.s.maxCharges) ?? 1)),
+      trigger: { rule: 'DEFAULT', grid: def?.skill?.rangeGrid, allies: true, hpAtMost: 0.5 }, targeting: { rangeGrid: def?.skill?.rangeGrid },
+      heal: true, attack: { dmgType: 'heal', heal: { mode: 'single', hpAtMost: 0.5 }, healScale, projectile: 'none' },
+    } },
+    talents: [{ install(battle, unit) {
+      if (!(regen > 0 && resistance >= 0)) return;
+      if (def?.skill?.rangeGrid) { unit.rangeGrid = def.skill.rangeGrid; battle.refreshRange(unit); }
+      const planted = new Set();
+      const effectKey = `native:shu:seed:${unit.id}`;
+      const plant = (target) => {
+        const row = target.tileR, col = target.tileC;
+        for (const [dr, dc] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const r = row + dr, c = col + dc;
+          if (r >= 0 && c >= 0) planted.add(r * COLS + c);
+        }
+      };
+      battle.on('heal', ({ source, target, opts }) => {
+        if (source === unit && target?.kind === 'op' && !opts?.tags?.includes(effectKey)) plant(target);
+      }, { owner: unit });
+      battle.every(1, () => {
+        if (!unit.alive || !unit.deployed || !planted.size) return;
+        for (const ally of battle.alliesFor(unit)) {
+          if (ally.kind !== 'op' || !planted.has(ally.tileR * COLS + ally.tileC)) continue;
+          battle.heal(unit, ally, regen, { tags: [effectKey] });
+          battle.addBuff(ally, { key: effectKey, duration: 1.1, source: unit, mods: { dmgTakenMul: 1 - resistance }, tags: ['aura', 'talent'] });
+        }
+      }, { owner: unit });
+    } }],
+  };
+}
+
 function chongyue(bb, chess) {
   const x = sourceSkill(chess, 'skchr_chyue_1');
   const atkScale = number(x?.s.bb?.atk_scale), hits = Math.max(1, Math.floor(number(x?.s.bb?.times) ?? 1));
@@ -219,5 +261,6 @@ export default Object.freeze({
   chess_native_char_385_finlpp: qingliu,
   chess_native_char_4119_wanqin: wanqing,
   chess_native_char_4019_ncdeer: nineColoredDeer,
+  chess_native_char_2025_shu: shu,
   chess_native_char_2024_chyue: chongyue,
 });

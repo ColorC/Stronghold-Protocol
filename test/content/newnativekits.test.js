@@ -19,6 +19,8 @@ const wanqingId = 'chess_native_char_4119_wanqin_a';
 const wanqingRecord = chessData[wanqingId];
 const nineColoredDeerId = 'chess_native_char_4019_ncdeer_a';
 const nineColoredDeerRecord = chessData[nineColoredDeerId];
+const shuId = 'chess_native_char_2025_shu_a';
+const shuRecord = chessData[shuId];
 const chongyueId = 'chess_native_char_2024_chyue_a';
 const chongyueRecord = chessData[chongyueId];
 
@@ -148,6 +150,23 @@ test('native Nine-Colored Deer S1 and low-HP ally protection read source blackbo
   assert.ok(ally.buffs.some((buff) => buff.key === `native:ncdeer:${h.unit(nineColoredDeerId).id}`));
   h.run(20);
   assert.ok(h.unit(nineColoredDeerId).skill.activations > 0);
+  h.invariants();
+});
+
+test('native Shu S1 heals from its source scale and plants the source regen/protection around the healed ally', () => {
+  const data = new DataSource({ chess: { [shuId]: shuRecord, chess_char_1_01_a: chessData.chess_char_1_01_a }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(shuId);
+  assert.equal(def.skill.id, 'skchr_shu_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: shuId, row: 10, col: 5 }, { chessId: 'chess_char_1_01_a', row: 10, col: 6 }], enemies: [{ key: 'enemy_dummy', pos: [10, 11] }] });
+  const shuUnit = h.unit(shuId), ally = h.unit('chess_char_1_01_a');
+  h.run(6);
+  ally.hp = ally.s.maxHp * 0.4;
+  h.run(4);
+  assert.ok(shuUnit.skill.activations > 0);
+  assert.ok(h.eventsOf('heal').some((event) => event[1] === ally.id && event[2] > 0), 'source heal scale restores an ally');
+  assert.ok(ally.buffs.some((buff) => buff.key === `native:shu:seed:${shuUnit.id}`), 'seeded tile grants source damage protection');
+  assert.ok(ally.hp > ally.s.maxHp * 0.4, 'seeded area applies its source HP recovery');
   h.invariants();
 });
 
