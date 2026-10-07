@@ -437,6 +437,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const target=roster(state).find(x=>x.uid===event.magneticTargetUid),owner=piece.playerId??piece.ownerId;
         if(!target || !isPresent(target) || (target.playerId??target.ownerId)!==owner || !nativeFactions(target,services.catalog).includes(p.faction))throw new Error('DARKMOON_MAGNETIC_TARGET_INVALID');
         if(p.sourceId==='BOT_312') {
+          darkmoonGrowth(state,piece,target,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
           target.attachments||=[];
           const sourceOp=services.catalog?.operators?.[chessIdOf(piece)];
           const name=sourceOp?.name||'回收机器人', combat=darkmoonCombatMetadata(p.sourceId,isEliteForm(piece));

@@ -411,10 +411,12 @@ test('Magnetic purchases can stay normal or consume into an explicit deployed Co
     assert.equal(bad.error.code,'MAGNETIC_TARGET_MUST_BE_DEPLOYED_COLUMBIA');
     assert.equal(bad.state.funds,invalid.funds,'target validation happens before spending or drawing the source');
   }
-  const source={...sourceOp,nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id:'BOT_312'}}},catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...source,nativeTrait:{...sourceOp.nativeTrait,effect:nativeEffectFor(sourceOp.chessId,source,false)}}}};
-  const ordinary=createSession({seed:312,catalog});ordinary.funds=20;ordinary.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
-  const bought=applyAction(ordinary,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
-  assert.ok(bought.state.pieces.some(x=>x.chessId===sourceOp.chessId),'choosing ordinary buy leaves the magnetic operator in the roster');
+  for(const id of ['BOT_312','BOT_911']) {
+    const source={...sourceOp,nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id}}},catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...source,nativeTrait:{...sourceOp.nativeTrait,effect:nativeEffectFor(sourceOp.chessId,source,false)}}}};
+    const ordinary=createSession({seed:id==='BOT_312'?312:911,catalog});ordinary.funds=20;ordinary.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
+    const bought=applyAction(ordinary,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
+    assert.ok(bought.state.pieces.some(x=>x.chessId===sourceOp.chessId),`${id} ordinary buy leaves the magnetic source in the roster`);
+  }
 });
 
 test('CFM 315 and BGS 115 use actual non-shop, non-merge support prototypes, including native levels and battle simulation',()=>{
@@ -902,16 +904,21 @@ test('magnetic Columbia source actions preserve normal/golden attachments, gear,
       catalog={...base,operators:{...base.operators,[holderOp.chessId]:{...holderSource,nativeTrait:{...holderOp.nativeTrait,effect}},[targetOp.chessId]:targetOp,[wrongOp.chessId]:wrongOp}},
       holder={uid:'source',chessId:holderOp.chessId,ownerId:'p1',elite,nativeState:{},row:0,col:0,equipment:[]},target={uid:'target',chessId:targetOp.chessId,ownerId:'p1',nativeState:{},row:0,col:1,equipment:[],attachments:[]},wrong={uid:'wrong',chessId:wrongOp.chessId,ownerId:'p1',nativeState:{},row:0,col:2,equipment:[],attachments:[]},
       state={round:1,pieces:[holder,target,wrong],inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
+    runNativeHook(state,'gain',{piece:holder,source:'buy'},services);
+    assert.deepEqual(target.equipment,[]);assert.deepEqual(target.attachments,[]);assert.equal(state.pieces.includes(holder),true,`${id} ${elite?'golden':'normal'} with no selected recipient stays on the ordinary non-fusion path`);
     runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:target.uid},services);
     if(id==='BOT_312') {
       assert.equal(target.attachments.length,1);assert.equal(target.attachments[0].state.sourceId,id);assert.equal(target.attachments[0].state.elite,elite,`BOT_312 ${elite?'golden':'normal'} preserves its combat variant on the consumed magnetic attachment`);
-      assert.deepEqual(target.equipment,[],'BOT_312 is a combat attachment and grants no prep inventory');
+      const [atk,secondary]=darkmoonGrowthBadges(target,catalog);
+      assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,elite?6:3],[secondary,elite?2:1]].sort((a,b)=>a[0].localeCompare(b[0])),`BOT_312 ${elite?'golden':'normal'} transfers its printed ${elite?'6/2':'3/1'} body stats as permanent growth, alongside its deathrattle attachment`);
     } else {
       const [atk,secondary]=darkmoonGrowthBadges(target,catalog);
-      assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[['independent:坚守盟约',1],['independent:护盾发生器',1],[atk,elite?2:1],[secondary,elite?2:1]].sort((a,b)=>a[0].localeCompare(b[0])),`BOT_911 ${elite?'golden':'normal'} installs both authored gears and profession-mapped growth on the Columbia recipient`);
+      assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[['independent:坚守盟约',1],['independent:护盾发生器',1],[atk,elite?4:2],[secondary,elite?8:4]].sort((a,b)=>a[0].localeCompare(b[0])),`BOT_911 ${elite?'golden':'normal'} transfers its printed ${elite?'4/8':'2/4'} body stats and installs both authored gears on the Columbia recipient exactly once`);
       assert.equal(state.inventory.length,0);
     }
     assert.deepEqual(wrong.equipment,[]);assert.deepEqual(wrong.attachments,[]);
     assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:wrong.uid},services),/DARKMOON_MAGNETIC_TARGET_INVALID/);
+    const foreign={...target,uid:'foreign-owner',ownerId:'p2',equipment:[],attachments:[]};state.pieces.push(foreign);
+    assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:foreign.uid},services),/DARKMOON_MAGNETIC_TARGET_INVALID/);
   }
 });

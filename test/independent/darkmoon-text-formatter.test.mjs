@@ -74,4 +74,17 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /战吼效果共触发2次/);
   assert.match(card('LOE_077').elite, /战吼效果共触发3次/);
+  assert.match(card('BOT_312').normal, /亡语.*攻击成长徽章×3及职业副属性成长徽章×1/);
+  assert.match(card('BOT_312').elite, /亡语.*攻击成长徽章×6及职业副属性成长徽章×2/);
+  assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击成长徽章×2及职业副属性成长徽章×4/);
+  assert.match(card('BOT_911').elite, /坚守盟约和护盾发生器.*攻击成长徽章×4及职业副属性成长徽章×8/);
+  for (const [id,normal,elite] of [['BOT_312',[3,1],[6,2]],['BOT_911',[2,4],[4,8]]]) {
+    const rows=byId.get(id).metadata.op.effectDelivery;
+    for (const [variant,expected] of [['normal',normal],['elite',elite]]) {
+      const merge=rows[variant].find(x=>x.kind==='magneticAttachment');
+      assert.deepEqual([merge.params.attackUnits[variant],merge.params.secondaryUnits[variant]],expected,`${id} ${variant} metadata retains source body stats`);
+      const rule=darkmoonPrepRulesFor({darkmoonSourceId:id},variant==='elite').find(x=>x.behavior==='darkmoonMagneticMerge');
+      assert.deepEqual([rule?.params?.attackUnits?.[variant],rule?.params?.secondaryUnits?.[variant]],expected,`${id} ${variant} runtime parameters match printed body stats`);
+    }
+  }
 });
