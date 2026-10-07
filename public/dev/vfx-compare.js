@@ -20,6 +20,24 @@ let cursor = 0;
 let timeline = [];
 let last = performance.now();
 
+const VFX_PRELOAD = Object.freeze({
+  rosmon: Object.freeze([
+    'rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_A_range',
+    'rosmon_attack_B_start', 'rosmon_attack_B_hit_01', 'rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02', 'rosmon_skill_01_A_hit_01',
+    'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_A_range', 'rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02',
+    'rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_01_stone', 'rosmon_skill_03_range',
+  ]),
+  blkkgt: Object.freeze(['blkkgt_attack_start_01', 'blkkgt_skill_03_start_01', 'blkkgt_skill_03_hit_1', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04']),
+});
+
+async function preloadCurrentOperator() {
+  const original = after?.debug?.fx?.originalVfx;
+  if (!original?.preload) return;
+  const names = VFX_PRELOAD[operator] || [];
+  $('status').innerHTML = '<strong>准备素材中</strong>：首次播放会预先解码当前场景的特效';
+  await original.preload(names);
+}
+
 window.addEventListener('error', (e) => { errors.push(e.message || '页面错误'); renderErrors(); });
 window.addEventListener('unhandledrejection', (e) => { errors.push(String(e.reason?.message || e.reason || '异步错误')); renderErrors(); });
 
@@ -168,15 +186,17 @@ function renderErrors() { $('errors').textContent = errors.length ? `错误：${
 function wireControls() {
   const toggle = document.querySelector('[data-action="toggle"]');
   const restart = document.querySelector('[data-action="restart"]');
-  for (const b of document.querySelectorAll('[data-scenario]')) b.onclick = () => {
+  for (const b of document.querySelectorAll('[data-scenario]')) b.onclick = async () => {
     const blakkScenario = b.dataset.scenario.startsWith('skchr_blkkgt_');
     if ((operator === 'blkkgt') !== blakkScenario) return;
     scenario = b.dataset.scenario;
     document.querySelectorAll('[data-scenario]').forEach((x) => x.classList.toggle('is-on', x === b));
-    running = true;
+    running = false;
     resetBattle();
+    await preloadCurrentOperator();
+    running = true;
   };
-  for (const b of document.querySelectorAll('[data-operator]')) b.onclick = () => {
+  for (const b of document.querySelectorAll('[data-operator]')) b.onclick = async () => {
     operator = b.dataset.operator;
     scenario = operator === 'blkkgt' ? 'skchr_blkkgt_3' : 'full';
     document.querySelectorAll('[data-operator]').forEach((x) => x.classList.toggle('is-on', x === b));
@@ -185,8 +205,10 @@ function wireControls() {
       x.hidden = isBlakk !== (operator === 'blkkgt');
       x.classList.toggle('is-on', x.dataset.scenario === scenario);
     });
-    running = true;
+    running = false;
     resetBattle();
+    await preloadCurrentOperator();
+    running = true;
   };
   toggle.onclick = () => { running = !running; toggle.textContent = running ? '❚❚' : '▶'; };
   restart.onclick = () => { running = true; toggle.textContent = '❚❚'; resetBattle(); };
@@ -203,6 +225,7 @@ async function main() {
     ]);
     wireControls();
     document.querySelectorAll('[data-scenario]').forEach((x) => { const isBlakk = x.dataset.scenario.startsWith('skchr_blkkgt_'); x.hidden = isBlakk; });
+    await preloadCurrentOperator();
     resetBattle();
     window.__vfxCompare = { before, after, reset: resetBattle, stats: () => ({ before: before.stats(), after: after.stats() }),
       coverage: () => after?.debug?.fx?.originalVfx?.coverage?.() || after?.stats?.()?.originalCoverage || null };

@@ -42,7 +42,7 @@ test('character VFX coverage manifest has no silent omissions', () => {
 
 test('packed colour/coverage atlas keeps logical frame width and anchor', () => {
   const p = framePlacement({ cellW: 200, cellH: 100, originX: 50, originY: 80 });
-  assert.equal(p.anchorX, 0.125);
+  assert.equal(p.anchorX, 0.25);
   assert.equal(p.anchorY, 0.8);
   assert.equal(p.scaleX, 0.5);
   assert.equal(p.scaleY, 1);

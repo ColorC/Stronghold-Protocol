@@ -15,10 +15,13 @@ export function framePlacement(entry, scaleAtPoint = 1) {
   const originX = Number(entry?.originX);
   const originY = Number(entry?.originY);
   return {
-    // The atlas stores two logical images side by side.  Sprite geometry still
-    // spans the packed width, so the anchor is measured in packed pixels and
-    // the x scale below is halved when the shader samples the left image.
-    anchorX: (Number.isFinite(originX) ? originX : cellW / 2) / (cellW * 2),
+    // The atlas stores two logical images side by side, but `originPx` was
+    // recorded after the extractor cropped one logical frame.  It is therefore
+    // measured in logical (colour-half) pixels.  The sprite is laid out at the
+    // packed width and then scaled to half width for the filter, so the
+    // normalized anchor uses the logical cell width (the x scale below still
+    // halves the packed geometry).
+    anchorX: (Number.isFinite(originX) ? originX : cellW / 2) / cellW,
     anchorY: (Number.isFinite(originY) ? originY : cellH) / cellH,
     scaleX: (Number(scaleAtPoint) || 1) * 0.5,
     scaleY: Number(scaleAtPoint) || 1,
@@ -155,6 +158,19 @@ export class OriginalVfxPlayer {
     const entry = { meta, base, textures, cellW, cellH, fps: Math.max(1, asFinite(meta.fps, 30)), originX: asFinite(meta.originPx?.[0], cellW / 2), originY: asFinite(meta.originPx?.[1], cellH) };
     this.entries.set(prefab, entry);
     return entry;
+  }
+
+  /** Warm the atlas decode/cache before a battle event requests its first frame.
+   * The source exports can be several megabytes each; decoding them inside the
+   * first `play()` callback is visible as a one-frame hitch even when the
+   * subsequent Pixi draw stays within budget. Callers pass only the prefabs
+   * needed by the current action so this does not turn into a full bundle load.
+   */
+  async preload(prefabs = []) {
+    const names = [...new Set(Array.isArray(prefabs) ? prefabs.filter(Boolean).map(String) : [])];
+    const results = await Promise.allSettled(names.map((prefab) => this._entry(prefab)));
+    for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
+    return results;
   }
 
   async _meshEntry(prefab) {
