@@ -14,21 +14,21 @@ const gameText = read('independent-game-text.json');
 const chessData = read('chess.json');
 const sourceReference = read('independent-source-reference.json');
 const catalog = getCatalog();
-const table = buildTable({ design, gameText, chessData, catalog, sourceReference });
+const table = buildTable({ design, gameText, chessData, catalog, sourceReference, nativePower:read('independent-native-power.json') });
 const bySection = (name) => table.rows.filter((row) => row.section === name);
 
 test('concentrated table cites original cards, complete native text and probe limits', () => {
-  assert.equal(table.columns.length, 11);
+  assert.equal(table.columns.length, 15);
   assert.equal(bySection('干员').length, 101);
   assert.equal(bySection('七人阵容').length, 5);
   assert.ok(table.rows.filter((row) => row.section !== '敌人').every((row) => row.reference && row.reference !== '原卡来源待补'));
-  assert.ok(bySection('干员').every((row) => row.nativePower.includes('90秒静止木桩') && row.nativePower.includes('不等同通用强度')));
+  assert.ok(bySection('干员').every((row) => row.nativePower.includes('实跑90秒') && row.nativePower.includes('控制、保护、阻挡和经济价值') && row.sourceNormal && row.sourceElite && row.levels && row.landing));
   assert.ok(table.rows.every((row) => !/(?:chess_(?:char|item)_|skchr_|independent:|token_\d+_|single_0_0|single_800_40|four_0_0|[0-9a-f]{40})/i.test(Object.values(row).join(' '))));
 
-  const matterhorn = bySection('干员').find((row) => row.name === '角峰');
-  const native = chessData[design.operators.find((op) => op.name === '角峰').chessId];
-  for (const skill of native.skills) assert.ok(matterhorn.native.includes(skill.desc));
-  for (const talent of native.talents) assert.ok(matterhorn.native.includes(talent.desc));
+  const matterhorn = bySection('干员').find((row) => row.name === '白铁');
+  const native = chessData[design.operators.find((op) => op.name === '白铁').chessId];
+  for (const skill of native.skills) assert.ok(matterhorn.native.includes(String(skill.desc).replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim()));
+  for (const talent of native.talents) assert.ok(matterhorn.native.includes(String(talent.desc).replace(/<[^>]*>/g,'')));
 
   const warbands = bySection('七人阵容');
   for (const row of warbands) {
@@ -39,7 +39,7 @@ test('concentrated table cites original cards, complete native text and probe li
     assert.ok(row.basis.includes(archetype.chain));
     assert.ok(row.reference.includes('；'));
   }
-  const victoria = warbands.find((row) => row.name === '维多利亚商店成长');
+  const victoria = warbands.find((row) => row.name === '炎国商店与招募成长');
   assert.ok(victoria.native.includes('安洁莉娜（科技5；中立成员'));
   assert.ok(victoria.basis.includes('中立成员（阵营按本体资料）：安洁莉娜'));
 });
@@ -47,15 +47,15 @@ test('concentrated table cites original cards, complete native text and probe li
 test('new games show only the two active auto-issued handover permits', () => {
   const permits = bySection('交接凭证');
   assert.deepEqual(permits.map((row) => [row.name, row.level]).sort(), [
-    ['深海遗物托付书', '科技3'], ['重装器械适配单', '科技4'],
+    ['医疗装置交接单', '科技3'], ['重装器械适配单', '科技4'],
   ]);
   assert.ok(permits.every((row) => row.normal.includes('交出方或接收方') && row.upgrade.includes('无需凭证')));
   const wolf = table.rows.find((row) => row.name === '叙拉古狼嚎哨');
   assert.match(wolf.basis, /12次普通攻击.*0\.75秒.*8秒/);
   const melt = table.rows.find((row) => row.name === '便携式融毁教学仪');
   const airdrop = table.rows.find((row) => row.name === '反冲空降仓');
-  assert.match(melt.basis, /科技6史尔特尔带来/);
-  assert.match(airdrop.basis, /科技6蕾缪安带来/);
+  assert.match(melt.basis, /六本装备/);
+  assert.match(airdrop.basis, /六本装备/);
 });
 
 test('current table omits retired and unassigned equipment while keeping catalog-eligible legacy flags', () => {

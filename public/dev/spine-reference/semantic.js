@@ -1,4 +1,4 @@
-import {landmarks,connections,partFor} from './profiles.js';
+import {landmarks,connections,partFor,subpartFor} from './profiles.js';
 export const schemaVersion='spine-reference/0.1';
 const validPoint=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);
 export function observe(raw,profile,{animation=null,time=0}={}) {
@@ -37,7 +37,7 @@ export function observe(raw,profile,{animation=null,time=0}={}) {
   Object.keys(landmarks).forEach(resolve);
   const origin=points.pelvis.position;
   for(const p of Object.values(points))if(p.position&&origin)p.normalized=p.position.map((v,i)=>(v-origin[i])/profile.normalizer);
-  const parts=raw.slots.map(s=>({id:s.id,semanticPart:partFor(profile,s),sourceBone:s.bone,attachment:s.attachment?.name||null,rendered:Boolean(s.alpha>.01&&s.attachment?.points?.length),alpha:s.alpha,drawOrder:s.drawOrder,geometry:s.attachment?.points||[],weighted:s.attachment?.weighted||false,status:partFor(profile,s)==='unmapped'?'unknown':'asset-specific-binding'}));
+  const parts=raw.slots.map(s=>({id:s.id,semanticPart:partFor(profile,s),subpart:subpartFor(profile,s),sourceBone:s.bone,attachment:s.attachment?.name||null,rendered:Boolean(s.alpha>.01&&s.attachment?.points?.length),alpha:s.alpha,drawOrder:s.drawOrder,geometry:s.attachment?.points||[],weighted:s.attachment?.weighted||false,status:partFor(profile,s)==='unmapped'?'unknown':'asset-specific-binding'}));
   const grip=points['weapon.grip'].position,tip=points['weapon.tip'].position;
   return {schemaVersion,source:profile.id,view:profile.view,animation,time,form:transformed?'unsupported-transformed':'normal',coordinateSystem:{...raw.coordinateSystem,normalizedOrigin:'pelvis',fixedScale:profile.normalizer,normalization:'fixed reference height; not a per-frame bounding box'},sideConvention:{basis:'stable source L/R identifiers',anatomicalLaterality:'unverified',screenXSorting:false},landmarks:points,connections,parts,contacts:{'leg.L.sole':{state:'unknown',reason:'没有接触标注，位置不能证明踩实'},'leg.R.sole':{state:'unknown',reason:'没有接触标注，位置不能证明踩实'}},orientation:{weaponAxis:grip&&tip?Math.atan2(tip[1]-grip[1],tip[0]-grip[0]):null,palmFacing:'unknown',bladeEdgeFacing:'unknown'},occlusion:{renderOrderAvailable:true,pointVisibility:'unknown; draw order alone does not prove coverage'},unmappedVisibleParts:parts.filter(p=>p.rendered&&p.semanticPart==='unmapped').map(p=>p.id)};
 }

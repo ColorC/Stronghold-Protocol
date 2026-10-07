@@ -175,7 +175,7 @@ export class FxSystem {
     const P = ctx.P;
     this.ctx = ctx;
     this.P = P;
-    this.originalVfx = ctx.originalVfx ? new OriginalVfxPlayer({ P, layers: ctx.layers, cam: ctx.cam, view: ctx.view, root: ctx.originalVfx.root }) : null;
+    this.originalVfx = ctx.originalVfx ? new OriginalVfxPlayer({ P, layers: ctx.layers, cam: ctx.cam, view: ctx.view, root: ctx.originalVfx.root, cacheKey: ctx.originalVfx.cacheKey }) : null;
     this.atlas = fxAtlas();
     this.tex = this.atlas.tex;
     ensureDamageFonts();

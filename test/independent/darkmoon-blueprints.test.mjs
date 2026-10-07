@@ -12,6 +12,7 @@ import { createSession, applyAction, viewSession } from '../../server/modes/inde
 import { runIndependentBattle } from '../../server/modes/independent/battle.js';
 import { operatorGrowthInfo, grantGrowthLevels } from '../../shared/independentGrowth.js';
 import { nativeFactions } from '../../shared/independentRules.js';
+import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from '../../public/js/independent/targetSelection.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -47,6 +48,8 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('BGS_104').metadata.op.effectDelivery.normal[0].recipient, 'matchingTribeShopOffers');
   assert.equal(byId.get('BGS_037').metadata.op.effectDelivery.normal[0].recipient, 'currentShopOffers');
   assert.equal(byId.get('BGS_046').metadata.op.effectDelivery.normal[0].recipient, 'hand');
+  assert.equal(byId.get('BGS_105').metadata.op.effectDelivery.normal[0].recipientLabel, '最左侧友方干员');
+  assert.equal(byId.get('BGS_009').metadata.op.effectDelivery.normal[0].recipientLabel, '每个阵营各一名随机友方干员');
   assert.equal(blueprints.entries.filter(x => x.metadata.op.effectDelivery.normal.some(e=>e.kind==='keywordGear' && e.implementation==='supported')).length, 20);
   assert.equal(byId.get('BGS_043').authoredRule.normal.adapter, 'darkmoonLastWarbandRecruit');
   assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'darkmoonCombat');
@@ -71,8 +74,8 @@ test('compiler add-ons link only existing native definitions and preserve all so
   assert.equal(designAddon.operators.length, 67);
   assert.equal(designAddon.pendingNativeDefinitions.length, 34);
   const levelsText=gameTextAddon.operators[byId.get('BGS_111').operator];
-  assert.match(levelsText.normalLevels,/攻击训练等级×1/);
-  assert.match(levelsText.eliteLevels,/攻击训练等级×2/);
+  assert.match(levelsText.normalLevels,/训练等级×2/);
+  assert.match(levelsText.eliteLevels,/训练等级×4/);
   assert.notEqual(levelsText.normal,byId.get('BGS_111').sourceTexts.normal);
   assert.equal(levelsText.sourceRefs.cards[0].text,byId.get('BGS_111').sourceTexts.normal);
   assert.ok(!levelsText.normal.includes(byId.get('BGS_111').sourceTexts.normal),'player-facing text must describe the executed adaptation, not repeat the source card text');
@@ -243,22 +246,23 @@ test('shop growth remains a fixed shop recipient and purchase grants growth dire
 });
 
 test('original Battlecry buffs inspect the acquired source tag and wear permanent growth only on the fixed tribe targets',()=>{
-  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false);
-  for(const [id,tribe,elite,count,badges] of [['BGS_041','DRAGON',false,1,['precision','vitality']],['BGS_053','PIRATE',true,6,['precision']],['BGS_128','ELEMENTAL',false,1,['precision','vitality']]]) {
-    const holderOp=normal.find(x=>x.source?.normalChess?.profession==='TANK'&&x.name!==byId.get(id).operator), otherOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator), gainOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
-    const holderRef={id,rosterTribe:tribe}, otherRef={id:'TEST_TARGET',rosterTribe:tribe}, gainedRef={id:'TEST_BATTLECRY',battlecry:true,rosterTribe:'NEUTRAL'};
-    const faction={BGS_041:'卡西米尔',BGS_053:'维多利亚',BGS_128:'炎'}[id];
-    const holder={...holderOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:holderRef}};
-    const effect=nativeEffectFor(holderOp.chessId,holder,elite);
-    const catalog={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,nativeFactionTags:[faction],sourceRefs:holder.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect}},[otherOp.chessId]:{...otherOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:otherRef}},[gainOp.chessId]:{...gainOp,sourceRefs:{darkmoon19_2:gainedRef}}}};
+  const base=getCatalog(),specs=[['BGS_041','DRAGON',1,2,['precision','vitality']],['BGS_053','PIRATE',3,6,['precision']],['BGS_128','ELEMENTAL',1,2,['precision','vitality']]];
+  for(const [id,tribe,normalCount,goldenCount] of specs)for(const elite of [false,true]) {
+    const ops=Object.values(base.operators).filter(x=>Boolean(x.elite)===elite&&x.recruitable!==false);
+    const holderOp=ops.find(x=>x.source?.normalChess?.profession==='TANK'&&x.name!==byId.get(id).operator),otherOp=ops.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator),gainOp=ops.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
+    const holderRef={id,rosterTribe:tribe},otherRef={id:'TEST_TARGET',rosterTribe:tribe},gainedRef={id:'TEST_BATTLECRY',battlecry:true,rosterTribe:'NEUTRAL'};
+    const faction={BGS_041:'卡西米尔',BGS_053:'维多利亚',BGS_128:'炎'}[id],holder={...holderOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:holderRef}};
+    const effect=nativeEffectFor(holderOp.chessId,holder,elite),catalog={...base,operators:{...base.operators,
+      [holderOp.chessId]:{...holderOp,nativeFactionTags:[faction],sourceRefs:holder.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect}},
+      [otherOp.chessId]:{...otherOp,nativeFactionTags:[faction],sourceRefs:{darkmoon19_2:otherRef}},[gainOp.chessId]:{...gainOp,sourceRefs:{darkmoon19_2:gainedRef}}}};
     const state={round:1,shop:{level:1,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
-    const host={uid:'host',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:0,col:0,equipment:[]},other={uid:'other',chessId:otherOp.chessId,ownerId:'p1',nativeState:{},row:0,col:1,equipment:[]},gained={uid:'gained',chessId:gainOp.chessId,ownerId:'p1',nativeState:{},equipment:[]};state.pieces.push(host,other);
+    const host={uid:'host',chessId:holderOp.chessId,ownerId:'p1',elite,nativeState:{},row:0,col:0,equipment:[]},other={uid:'other',chessId:otherOp.chessId,ownerId:'p1',nativeState:{},row:0,col:1,equipment:[]},gained={uid:'gained',chessId:gainOp.chessId,ownerId:'p1',nativeState:{},equipment:[]};state.pieces.push(host,other);
     const services={catalog,data:{},rng:()=>0,grantEquipment:(s,badge,n,extra)=>grantEquipment(s,catalog,badge,n,extra),grantChess(){},addOffer(){},record(){}};
-    const recipientBadges=id==='BGS_053'?['precision']:darkmoonGrowthBadges(other,catalog);
+    const count=elite?goldenCount:normalCount,recipientBadges=id==='BGS_053'?['precision']:darkmoonGrowthBadges(other,catalog);
     runNativeHook(state,'gain',{piece:gained,source:'buy',paid:true},services);
-    assert.deepEqual(host.equipment.map(x=>x.id).sort(),(id==='BGS_041'?badges:[]).sort(),`${id} applies only to eligible self if the original says all Dragons`);
-    assert.deepEqual(other.equipment.map(x=>x.id).sort(),recipientBadges.slice().sort(),`${id} grants its fixed friendly tribe recipient using that recipient's profession`);
-    assert.ok(other.equipment.every(x=>x.quantity===count),`${id} normal/elite authored output amount is direct gear growth`);
+    assert.deepEqual(host.equipment.map(x=>x.id).sort(),(id==='BGS_041'?['precision','vitality']:[]).sort(),`${id} ${elite?'golden':'normal'} applies to self only when the source says all Dragons`);
+    assert.deepEqual(other.equipment.map(x=>x.id).sort(),recipientBadges.slice().sort(),`${id} ${elite?'golden':'normal'} grants the fixed tribe recipient's profession-mapped output`);
+    assert.ok(other.equipment.every(x=>x.quantity===count),`${id} ${elite?'golden':'normal'} uses its printed quantity`);
     assert.equal(state.inventory.length,0,`${id} fixed target growth never spills into free inventory`);
   }
 });
@@ -395,7 +399,7 @@ test('Magnetic purchases can stay normal or consume into an explicit deployed Co
     assert.equal(result.state.pieces.some(x=>x.chessId===sourceOp.chessId),false,'fusion consumes the magnetic source and it cannot merge into the ordinary roster');
     const fused=result.state.pieces.find(x=>x.uid==='selected-columbia');
     if(id==='BOT_312') {
-      assert.deepEqual(fused.attachments,[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:false,sourceName:sourceOp.name,sourceEffect:byId.get('BOT_312').metadata.op.effectDelivery.normal.find(x=>x.kind==='sourceSpecificCombat').text}}]);
+      assert.deepEqual(fused.attachments,[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:false,sourceName:sourceOp.name,sourceEffect:darkmoonCombatMetadata('BOT_312',false).text}}]);
       assert.ok(catalog.attachments['darkmoon-magnetic'].name&&catalog.attachments['darkmoon-magnetic'].effect,'the attachment always has a display definition');
     } else {
       assert.ok(fused.equipment.some(x=>x.id==='independent:坚守盟约'));
@@ -407,10 +411,12 @@ test('Magnetic purchases can stay normal or consume into an explicit deployed Co
     assert.equal(bad.error.code,'MAGNETIC_TARGET_MUST_BE_DEPLOYED_COLUMBIA');
     assert.equal(bad.state.funds,invalid.funds,'target validation happens before spending or drawing the source');
   }
-  const source={...sourceOp,nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id:'BOT_312'}}},catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...source,nativeTrait:{...sourceOp.nativeTrait,effect:nativeEffectFor(sourceOp.chessId,source,false)}}}};
-  const ordinary=createSession({seed:312,catalog});ordinary.funds=20;ordinary.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
-  const bought=applyAction(ordinary,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
-  assert.ok(bought.state.pieces.some(x=>x.chessId===sourceOp.chessId),'choosing ordinary buy leaves the magnetic operator in the roster');
+  for(const id of ['BOT_312','BOT_911']) {
+    const source={...sourceOp,nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id}}},catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...source,nativeTrait:{...sourceOp.nativeTrait,effect:nativeEffectFor(sourceOp.chessId,source,false)}}}};
+    const ordinary=createSession({seed:id==='BOT_312'?312:911,catalog});ordinary.funds=20;ordinary.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
+    const bought=applyAction(ordinary,{type:'buy',slot:0},{catalog});assert.equal(bought.ok,true,JSON.stringify(bought.error));
+    assert.ok(bought.state.pieces.some(x=>x.chessId===sourceOp.chessId),`${id} ordinary buy leaves the magnetic source in the roster`);
+  }
 });
 
 test('CFM 315 and BGS 115 use actual non-shop, non-merge support prototypes, including native levels and battle simulation',()=>{
@@ -709,5 +715,210 @@ test('remaining 19.2 prep adapters cause normal and golden effects only on their
       assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(friend),[[attack,3*mult]]);
       assert.deepEqual(grants(rival),[],`ICC_029 ${elite?'golden':'normal'} is limited to another friendly recipient and attack growth`);
     }
+  }
+});
+
+test('source-specific normal and golden delivery preserves timing, target class, owner, and written quantities',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false);
+  const make=(id,op,elite)=>{const source={...op,sourceRefs:{darkmoon19_2:{id}},nativeTrait:{...op.nativeTrait,effect:nativeEffectFor(op.chessId,{...op,sourceRefs:{darkmoon19_2:{id}}},elite)}};return source;};
+  const servicesFor=catalog=>({catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}});
+  const grants=p=>p.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0]));
+  const piece=(uid,op,ownerId='p1',row=0,col=0,elite=false)=>({uid,chessId:op.chessId,ownerId,elite,row,col,nativeState:{},equipment:[]});
+  for(const elite of [false,true]) {
+    const mult=elite?2:1,sourceOp=normal.find(x=>x.source?.normalChess?.profession==='TANK'),aOp=normal.find(x=>x.chessId!==sourceOp.chessId),bOp=normal.find(x=>x.chessId!==sourceOp.chessId&&x.chessId!==aOp.chessId);
+
+    // BGS 009 chooses one actual friendly recipient per distinct roster tribe at turn end.
+    {
+      const source={...make('BGS_009',sourceOp,elite),nativeFactionTags:['哥伦比亚']},holder=piece('holder',source,'p1',0,0,elite),a={...aOp,nativeFactionTags:['卡西米尔']},b={...bOp,nativeFactionTags:['炎']};
+      const first=piece('first',a,'p1',0,1),second=piece('second',b,'p1',0,2),rival=piece('rival',{...normal[5],nativeFactionTags:['维多利亚']},'p2',0,3);
+      const catalog={...base,operators:{...base.operators,[source.chessId]:source,[a.chessId]:a,[b.chessId]:b,[rival.chessId]:{...normal[5],nativeFactionTags:['维多利亚']}}},state={round:1,pieces:[holder,first,second,rival],inventory:[]};
+      runNativeHook(state,'prepEnd',{round:1},servicesFor(catalog));
+      const grown=state.pieces.filter(x=>grants(x).length);
+      assert.equal(grown.length,3,`BGS_009 ${elite?'golden':'normal'} buffs one unit in each of three friendly tribes`);
+      for(const target of grown){const [atk,health]=darkmoonGrowthBadges(target,catalog);assert.deepEqual(grants(target),[[atk,2*mult],[health,2*mult]].sort((x,y)=>x[0].localeCompare(y[0])));}
+      assert.deepEqual(grants(rival),[],'BGS_009 cannot grow a rival');
+    }
+
+    // BGS 033 grows itself only after the prior combat was won.
+    {
+      const source=make('BGS_033',sourceOp,elite),holder=piece('holder',source,'p1',0,0,elite),catalog={...base,operators:{...base.operators,[source.chessId]:source}},state={round:1,lastCombatWon:false,pieces:[holder],inventory:[]};
+      runNativeHook(state,'roundStart',{round:2},servicesFor(catalog));assert.deepEqual(grants(holder),[],`BGS_033 ${elite?'golden':'normal'} does nothing after a loss`);
+      state.lastCombatWon=true;state.round=2;runNativeHook(state,'roundStart',{round:2},servicesFor(catalog));
+      const [atk,health]=darkmoonGrowthBadges(holder,catalog);assert.deepEqual(grants(holder),[[atk,2*mult],[health,2*mult]].sort((x,y)=>x[0].localeCompare(y[0])),'winning grants the source-authored self growth');
+    }
+
+    // BGS 037 buffs only offers already in the shop for this sale; BGS 104 keeps matching Elemental shop buffs persistent.
+    for(const [id,hook,persistent] of [['BGS_037','sold',false],['BGS_104','bought',true]]) {
+      const source=make(id,sourceOp,elite),elem={...aOp,nativeFactionTags:['炎']},other={...bOp,nativeFactionTags:['哥伦比亚']};
+      const catalog={...base,operators:{...base.operators,[source.chessId]:source,[elem.chessId]:elem,[other.chessId]:other}};
+      const holder=piece('holder',source,'p1',0,0,elite),slots=[{kind:'chess',id:elem.chessId,sold:false,equipment:[]},{kind:'chess',id:other.chessId,sold:false,equipment:[]}],state={pieces:[holder],shop:{slots},playerEffects:[],inventory:[]};
+      runNativeHook(state,hook,{piece:id==='BGS_037'?holder:piece('elemental-buy',elem,'p1')},servicesFor(catalog));
+      assert.deepEqual(slots.map(x=>x.darkmoonGrowth?[x.darkmoonGrowth.attack,x.darkmoonGrowth.health]:null),id==='BGS_037'?[[mult,mult],[mult,mult]]:[[mult,mult],null],`${id} ${elite?'golden':'normal'} reaches only its source-defined live Elemental/current shop recipient`);
+      assert.equal(state.playerEffects.some(x=>x.type==='darkmoonShopGrowth'),persistent,`${id} persistent lifetime follows its printed duration`);
+      if(persistent) { const future=[{kind:'chess',id:elem.chessId,sold:false,equipment:[]},{kind:'chess',id:other.chessId,sold:false,equipment:[]}];decorateDarkmoonShopSlots(state,catalog,future);assert.ok(future[0].darkmoonGrowth);assert.equal(future[1].darkmoonGrowth,undefined,'future non-Elemental offers are excluded'); }
+      if(id==='BGS_104') { const negative={pieces:[holder],shop:{slots:[{kind:'chess',id:elem.chessId,sold:false,equipment:[]}]},playerEffects:[],inventory:[]};runNativeHook(negative,'bought',{piece:piece('wrong-buy',other,'p1')},servicesFor(catalog));assert.equal(negative.shop.slots[0].darkmoonGrowth,undefined,'non-Elemental purchases cannot trigger Nomi growth');assert.deepEqual(negative.playerEffects,[]); }
+    }
+
+    // Printed Beast Battlecries choose a friendly Siracusa beast, and DS1_070 also attaches Taunt.
+    for(const id of ['CFM_816','DS1_070']) {
+      const source=make(id,sourceOp,elite),beast={...aOp,nativeFactionTags:['叙拉古']},wrong={...bOp,nativeFactionTags:['维多利亚']};
+      const catalog={...base,operators:{...base.operators,[source.chessId]:source,[beast.chessId]:beast,[wrong.chessId]:wrong}},holder=piece('holder',source,'p1',0,0,elite),target=piece('beast',beast,'p1',0,1),bad=piece('wrong',wrong,'p1',0,2),state={pieces:[holder,target,bad],inventory:[]},services=servicesFor(catalog);
+      runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:target.uid},services);
+      const [atk,health]=darkmoonGrowthBadges(target,catalog);assert.deepEqual(grants(target).filter(([id])=>id!=='independent:坚守盟约'),[[atk,2*mult],[health,2*mult]].sort((x,y)=>x[0].localeCompare(y[0])));
+      if(id==='DS1_070')assert.ok(target.equipment.some(x=>x.id==='independent:坚守盟约'),'DS1_070 keeps its separate Taunt output on the selected Beast');
+      assert.deepEqual(grants(bad),[],`${id} ${elite?'golden':'normal'} rejects an ineligible non-Beast recipient`);
+      assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:bad.uid},services),/DARKMOON_TARGET_REQUIRED/);
+    }
+
+    // EX1 093 affects both adjacent seats only, including a Taunt output, not distant/rival units.
+    {
+      const source=make('EX1_093',sourceOp,elite),left=piece('left',aOp,'p1',0,1),right=piece('right',bOp,'p1',0,3),distant=piece('distant',normal[4],'p1',0,4),rival=piece('rival',normal[5],'p2',0,-1);
+      const holder=piece('holder',source,'p1',0,2,elite),catalog={...base,operators:{...base.operators,[source.chessId]:source}},state={pieces:[holder,left,right,distant,rival],inventory:[]};
+      runNativeHook(state,'gain',{piece:holder,source:'buy'},servicesFor(catalog));
+      for(const target of [left,right]){const [atk,health]=darkmoonGrowthBadges(target,catalog);assert.deepEqual(grants(target).filter(([id])=>id!=='independent:坚守盟约'),[[atk,mult],[health,mult]].sort((x,y)=>x[0].localeCompare(y[0])));assert.ok(target.equipment.some(x=>x.id==='independent:坚守盟约'));}
+      assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(distant),[]);assert.deepEqual(grants(rival),[]);
+    }
+
+    // ICC 807 requires an existing Taunt wearer; it doesn't create the keyword by matching its own text.
+    {
+      const source=make('ICC_807',sourceOp,elite),taunter=piece('taunter',aOp),plain=piece('plain',bOp),catalog={...base,operators:{...base.operators,[source.chessId]:source}},
+        holder=piece('holder',source,'p1',0,0,elite),state={pieces:[holder,taunter,plain],inventory:[]};
+      taunter.equipment=[{id:'independent:坚守盟约',quantity:1}];
+      runNativeHook(state,'gain',{piece:holder,source:'buy'},servicesFor(catalog));
+      const [atk,health]=darkmoonGrowthBadges(taunter,catalog);assert.deepEqual(grants(taunter).filter(([id])=>id!=='independent:坚守盟约'),[[atk,2*mult],[health,2*mult]].sort((x,y)=>x[0].localeCompare(y[0])));
+      assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(plain),[],`ICC_807 ${elite?'golden':'normal'} cannot grant Taunt to an untagged unit`);
+    }
+  }
+});
+
+test('golden Murozond delivers a golden prior-warband copy while normal stays ordinary',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=normal[0],candidate=normal.find(x=>x.chessId!==sourceOp.chessId&&x.eliteChessId);
+  assert.ok(candidate?.eliteChessId,'fixture has an upgradeable prior-warband candidate');
+  for(const elite of [false,true]) {
+    const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_043',battlecry:true}}},effect=nativeEffectFor(sourceOp.chessId,source,elite),catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect}}}};
+    const holder={uid:'murozond',chessId:sourceOp.chessId,ownerId:'p1',elite,nativeState:{}},state={pieces:[holder],previousRoundWarband:[{chessId:candidate.chessId}],offers:[],nextUid:1};let recruited,grantOptions;
+    const services={catalog,data:{},rng:()=>0,grantEquipment(){},grantChess(_state,id,options){grantOptions=options;recruited={uid:'copy',chessId:id,elite:false,darkmoonPendingPlay:Boolean(options.deferNativeGain)};state.pieces.push(recruited);return recruited;},addOffer(){},record(){}};
+    runNativeHook(state,'gain',{piece:holder,source:'buy'},services);
+    assert.equal(recruited.chessId,elite?candidate.eliteChessId:candidate.chessId,`BGS_043 ${elite?'golden':'normal'} creates the source-authored copy variant`);
+    assert.equal(recruited.elite,elite,'golden status is represented on the copied chess, not only its source descriptor');
+    assert.equal(recruited.darkmoonPendingPlay,true,'the copy stays a hand reward and does not replay its native hooks');
+    assert.equal(grantOptions.poolTaken,true);assert.equal(grantOptions.deferNativeGain,true);assert.equal(grantOptions.poolCopies,1);
+  }
+});
+
+test('golden Lil Rag repeats its Elemental-tier growth twice and rejects missing targets before purchase spend',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=normal[0],buyerOp=normal[1],targetOp=normal.find(x=>x.chessId!==sourceOp.chessId&&x.chessId!==buyerOp.chessId);
+  const growth=(piece)=>piece.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0]));
+  for(const elite of [false,true]) {
+    const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},effect=nativeEffectFor(sourceOp.chessId,source,elite),
+      buyer={...buyerOp,nativeFactionTags:['炎']},targetDef={...targetOp,nativeFactionTags:['卡西米尔']},
+      catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect}},[buyerOp.chessId]:buyer,[targetOp.chessId]:targetDef}},
+      holder={uid:'rag',chessId:sourceOp.chessId,ownerId:'p1',elite,row:0,col:0,nativeState:{},equipment:[]},target={uid:'selected',chessId:targetOp.chessId,ownerId:'p1',row:0,col:1,equipment:[]},
+      state={round:1,pieces:[holder,target],inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
+    runNativeHook(state,'bought',{piece:{uid:'bought',chessId:buyerOp.chessId,ownerId:'p1'},targetUid:target.uid},services);
+    const times=elite?2:1,tier=Number(buyerOp.tier||1),[attackBadge,secondaryBadge]=darkmoonGrowthBadges(target,catalog);
+    assert.deepEqual(growth(target),[[attackBadge,tier*times],[secondaryBadge,tier*times]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_100 ${elite?'golden':'normal'} repeats the tier-sized effect ${times} time(s)`);
+    assert.deepEqual(growth(holder),[],'growth stays on the explicitly selected friendly target');
+    const wrong={uid:'wrong',chessId:targetOp.chessId,ownerId:'p2',row:0,col:2,equipment:[]};state.pieces.push(wrong);
+    assert.throws(()=>runNativeHook(state,'bought',{piece:{uid:'bought2',chessId:buyerOp.chessId,ownerId:'p1'},targetUid:wrong.uid},services),/DARKMOON_TARGET_REQUIRED/);
+  }
+
+  const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},sourceEffect=nativeEffectFor(sourceOp.chessId,source,false),buyer={...buyerOp,nativeFactionTags:['炎']};
+  const catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect:sourceEffect}},[buyerOp.chessId]:buyer}};
+  const state=createSession({seed:100,catalog});state.funds=20;state.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
+  const sourceBuy=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(sourceBuy.ok,true,JSON.stringify(sourceBuy.error));
+  const holder=sourceBuy.state.pieces.find(x=>x.chessId===sourceOp.chessId),tile=viewSession(sourceBuy.state,{catalog}).pieces.find(x=>x.uid===holder.uid).legalTiles[0].split(',').map(Number),deployed=applyAction(sourceBuy.state,{type:'move',uid:holder.uid,row:tile[0],col:tile[1]},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
+  deployed.state.funds=12;deployed.state.shop.slots[0]={kind:'chess',id:buyerOp.chessId,price:3,sold:false,equipment:[]};
+  const funds=deployed.state.funds,pool=deployed.state.pool[buyerOp.chessId].left,result=applyAction(deployed.state,{type:'buy',slot:0},{catalog});
+  assert.equal(result.ok,false,'missing target is rejected as an invalid purchase action');assert.equal(result.error?.message,'DARKMOON_TARGET_REQUIRED');
+  assert.equal(deployed.state.funds,funds,'target validation runs before funds are spent');assert.equal(deployed.state.pool[buyerOp.chessId].left,pool,'target validation runs before the shop copy is consumed');
+});
+
+test('golden source triggers preserve authored counts for sold tokens, played Elementals, and Uldum end-turn attack',()=>{
+  const base=getCatalog(),ops=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=ops[0],targetOp=ops[1],playedOp=ops[2];
+  const make=(id,elite,op=sourceOp)=>{const source={...op,sourceRefs:{darkmoon19_2:{id,rosterTribe:id==='BGS_120'?'ELEMENTAL':undefined,faction:id==='BGS_120'?'炎':undefined}}};return {...source,nativeTrait:{...op.nativeTrait,effect:nativeEffectFor(op.chessId,source,elite)}};};
+  const servicesFor=catalog=>({catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}});
+  const piece=(uid,op,ownerId='p1',col=0,elite=false)=>({uid,chessId:op.chessId,ownerId,elite,row:0,col,nativeState:{},equipment:[]});
+  for(const elite of [false,true]) {
+    const mult=elite?2:1;
+    // BGS 115 emits the source-counted number of support-elemental hand choices on sale only.
+    {
+      const source=make('BGS_115',elite),holder=piece('holder',source,'p1',0,elite),catalog={...base,operators:{...base.operators,[source.chessId]:source}},state={round:1,pieces:[holder],offers:[],nextUid:1};
+      runNativeHook(state,'selling',{piece:holder},servicesFor(catalog));assert.equal(state.offers.length,0,'sell trigger occurs after sale, not at sale preparation');
+      runNativeHook(state,'sold',{piece:holder},servicesFor(catalog));
+      assert.equal(state.offers.length,mult,`BGS_115 ${elite?'golden':'normal'} creates its printed one/two hand offers`);
+      assert.ok(state.offers.every(x=>x.choices[0]==='darkmoon:support-elemental-2-2'&&x.deferNativeGain&&x.poolTaken&&x.poolCopies===0&&x.noMerge));
+    }
+    // BGS 120 fires once/twice but always excludes the just-played card as a recipient.
+    {
+      const source={...make('BGS_120',elite),nativeFactionTags:['哥伦比亚']},target={...targetOp,nativeFactionTags:['炎']},played={...playedOp,nativeFactionTags:['炎']},
+        catalog={...base,operators:{...base.operators,[source.chessId]:source,[target.chessId]:target,[played.chessId]:played}},holder=piece('holder',source,'p1',0,elite),friend=piece('friend',target,'p1',1),play=piece('played',played,'p1',2),state={round:1,pieces:[holder,friend,play],inventory:[]};
+      runNativeHook(state,'gain',{piece:play,source:'buy'},servicesFor(catalog));
+      const [atk,health]=darkmoonGrowthBadges(friend,catalog);assert.deepEqual(friend.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,mult],[health,mult]].sort((a,b)=>a[0].localeCompare(b[0])));
+      assert.deepEqual(holder.equipment,[]);assert.deepEqual(play.equipment,[],'played Elemental is not eligible as the other friendly recipient');
+    }
+    // BGS 124 receives only its own profession-mapped health output, while ULD 217 gives attack to another friend.
+    {
+      const source={...make('BGS_124',elite),nativeFactionTags:['炎']},uld=make('ULD_217',elite,ops[3]),elemental={...targetOp,nativeFactionTags:['炎']},
+        catalog={...base,operators:{...base.operators,[source.chessId]:source,[uld.chessId]:uld,[elemental.chessId]:elemental}},holder=piece('holder',source,'p1',0,elite),endHolder=piece('uld',uld,'p1',1,elite),friend=piece('friend',elemental,'p1',2),played=piece('played',elemental,'p1',3),state={round:1,pieces:[holder,endHolder,friend,played],inventory:[]};
+      runNativeHook(state,'gain',{piece:played,source:'buy'},servicesFor(catalog));
+      const [,secondary]=darkmoonGrowthBadges(holder,catalog);assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),[[secondary,3*mult]],`BGS_124 ${elite?'golden':'normal'} counts all three owned Elementals including the one played`);
+      runNativeHook(state,'prepEnd',{round:1},servicesFor(catalog));
+      const [attack]=darkmoonGrowthBadges(friend,catalog),grown=state.pieces.filter(x=>x.uid!==endHolder.uid&&x.equipment.some(item=>item.id===attack));
+      assert.equal(grown.length,1,`ULD_217 ${elite?'golden':'normal'} affects exactly one random other friend`);assert.equal(grown[0].equipment.find(x=>x.id===attack).quantity,mult);
+      assert.deepEqual(endHolder.equipment,[],'ULD 217 cannot redirect its random other-friendly effect to itself');
+    }
+  }
+});
+
+test('remaining explicitly targeted Pirate Battlecries and support summons preserve both source variants',()=>{
+  const base=getCatalog(),ops=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=ops[0],targetOp=ops[1],wrongOp=ops[2];
+  for(const elite of [false,true]) {
+    // BGS 048's printed per-Pirate amount applies to the chosen friendly Pirate only.
+    {
+      const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_048',rosterTribe:'PIRATE',battlecry:true}}},effect=nativeEffectFor(sourceOp.chessId,source,elite),
+        targetDef={...targetOp,nativeFactionTags:['维多利亚']},wrongDef={...wrongOp,nativeFactionTags:['叙拉古']},catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect}},[targetOp.chessId]:targetDef,[wrongOp.chessId]:wrongDef}},
+        holder={uid:'source',chessId:sourceOp.chessId,ownerId:'p1',elite,row:0,col:0,equipment:[]},target={uid:'pirate',chessId:targetOp.chessId,ownerId:'p1',row:0,col:1,equipment:[]},wrong={uid:'wrong',chessId:wrongOp.chessId,ownerId:'p1',row:0,col:2,equipment:[]},state={round:1,pieces:[holder,target,wrong],counters:{factionBought:{维多利亚:2}},inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
+      runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:target.uid},services);
+      const [atk,health]=darkmoonGrowthBadges(target,catalog),amount=2*(elite?2:1);
+      assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,amount],[health,amount]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_048 ${elite?'golden':'normal'} applies its per-purchase amount to the selected Pirate`);
+      assert.deepEqual(holder.equipment,[]);assert.deepEqual(wrong.equipment,[]);
+      assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:wrong.uid},services),/DARKMOON_TARGET_REQUIRED/);
+    }
+    // CFM 315 uses distinct real support prototype IDs and never substitutes a shop operator.
+    {
+      const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'CFM_315'}}},effect=nativeEffectFor(sourceOp.chessId,source,elite),catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect}}}},
+        holder={uid:'source',chessId:sourceOp.chessId,ownerId:'p1',elite,row:0,col:0,equipment:[]},state={round:1,pieces:[holder]},calls=[];
+      runNativeHook(state,'gain',{piece:holder,source:'buy'},{catalog,data:{},rng:()=>0,grantEquipment(){},grantChess(_s,id,options){calls.push({id,...options});return null;},addOffer(){},record(){}});
+      assert.equal(calls.length,1);assert.equal(calls[0].id,elite?'darkmoon:support-cat-2-2':'darkmoon:support-cat-1-1');
+      assert.equal(calls[0].poolTaken,true);assert.equal(calls[0].poolCopies,0);assert.equal(calls[0].noMerge,true);
+    }
+  }
+});
+
+test('magnetic Columbia source actions preserve normal/golden attachments, gear, and direct growth',()=>{
+  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false);
+  for(const id of ['BOT_312','BOT_911'])for(const elite of [false,true]) {
+    const holderOp=normal.find(x=>x.source?.normalChess?.profession==='TANK'),targetBase=normal.find(x=>x.chessId!==holderOp.chessId),wrongBase=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==targetBase.chessId);
+    const holderSource={...holderOp,nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id}}},effect=nativeEffectFor(holderOp.chessId,holderSource,elite),targetOp={...targetBase,nativeFactionTags:['哥伦比亚']},wrongOp={...wrongBase,nativeFactionTags:['叙拉古']},
+      catalog={...base,operators:{...base.operators,[holderOp.chessId]:{...holderSource,nativeTrait:{...holderOp.nativeTrait,effect}},[targetOp.chessId]:targetOp,[wrongOp.chessId]:wrongOp}},
+      holder={uid:'source',chessId:holderOp.chessId,ownerId:'p1',elite,nativeState:{},row:0,col:0,equipment:[]},target={uid:'target',chessId:targetOp.chessId,ownerId:'p1',nativeState:{},row:0,col:1,equipment:[],attachments:[]},wrong={uid:'wrong',chessId:wrongOp.chessId,ownerId:'p1',nativeState:{},row:0,col:2,equipment:[],attachments:[]},
+      state={round:1,pieces:[holder,target,wrong],inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
+    runNativeHook(state,'gain',{piece:holder,source:'buy'},services);
+    assert.deepEqual(target.equipment,[]);assert.deepEqual(target.attachments,[]);assert.equal(state.pieces.includes(holder),true,`${id} ${elite?'golden':'normal'} with no selected recipient stays on the ordinary non-fusion path`);
+    runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:target.uid},services);
+    if(id==='BOT_312') {
+      assert.equal(target.attachments.length,1);assert.equal(target.attachments[0].state.sourceId,id);assert.equal(target.attachments[0].state.elite,elite,`BOT_312 ${elite?'golden':'normal'} preserves its combat variant on the consumed magnetic attachment`);
+      const [atk,secondary]=darkmoonGrowthBadges(target,catalog);
+      assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,elite?6:3],[secondary,elite?2:1]].sort((a,b)=>a[0].localeCompare(b[0])),`BOT_312 ${elite?'golden':'normal'} transfers its printed ${elite?'6/2':'3/1'} body stats as permanent growth, alongside its deathrattle attachment`);
+    } else {
+      const [atk,secondary]=darkmoonGrowthBadges(target,catalog);
+      assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[['independent:坚守盟约',1],['independent:护盾发生器',1],[atk,elite?4:2],[secondary,elite?8:4]].sort((a,b)=>a[0].localeCompare(b[0])),`BOT_911 ${elite?'golden':'normal'} transfers its printed ${elite?'4/8':'2/4'} body stats and installs both authored gears on the Columbia recipient exactly once`);
+      assert.equal(state.inventory.length,0);
+    }
+    assert.deepEqual(wrong.equipment,[]);assert.deepEqual(wrong.attachments,[]);
+    assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:wrong.uid},services),/DARKMOON_MAGNETIC_TARGET_INVALID/);
+    const foreign={...target,uid:'foreign-owner',ownerId:'p2',equipment:[],attachments:[]};state.pieces.push(foreign);
+    assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:foreign.uid},services),/DARKMOON_MAGNETIC_TARGET_INVALID/);
   }
 });

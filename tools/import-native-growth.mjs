@@ -7,7 +7,7 @@ import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { safeName } from './assets/sources.mjs';
-import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList, tokenVariant } from './build-data.mjs';
+import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList, tokenVariant, resolveTrigger } from './build-data.mjs';
 import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT, NATIVE_KIT_READY } from '../server/sim/content/newnativekits.js';
 import { NATIVE_DEFAULT_SKILL_IDS as VKS_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT as VKS_SKILL_SUPPORT } from '../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
 import * as VKS_MANIFEST from '../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
@@ -141,7 +141,8 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
   const stem = `chess_native_${charId}`;
   for (const x of levels) {
     const phase = x.phase;
-    const level = Math.min(x.level, char.phases[phase].maxLevel);
+    const presetLevel=x.suffix==='b'&&levels[0].phase===phase?Math.max(levels[0].level,x.level):x.level;
+    const level = Math.min(presetLevel, char.phases[phase].maxLevel);
     const attrs = interpolateAttrs(char, phase, level);
     const stats = statsFrom(attrs);
     const trait = traitRecord(ctx, char, phase, level, [], `${stem}_${x.suffix}`);
@@ -149,7 +150,7 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
     const sourceSkills = (char.skills || []).map((s, index) => {
       if (!s?.skillId) return null;
       const rec = buildSkill(ctx, s.skillId, x.skillLevel, null, `${stem}_${x.suffix}`);
-      return rec ? { ...rec, index, isDefault: s.skillId === configuredSkillId, overrideTokenKey: s.overrideTokenKey || null } : null;
+      return rec ? { ...rec, trigger:resolveTrigger(ctx,char,charId,index,rec,{operator:true,chessId:stem+'_a'}), index, isDefault: s.skillId === configuredSkillId, overrideTokenKey: s.overrideTokenKey || null } : null;
     }).filter(Boolean);
     const supportedSkillIds = (ALL_NATIVE_SKILL_SUPPORT[charId] || []);
     // Keep the complete source record; UI and server validation expose only supported IDs.
@@ -364,7 +365,9 @@ export async function runImport(opts) {
   const updated = structuredClone(chess);
   const updatedAssets = structuredClone(assets);
   const updatedTokens = structuredClone(tokenTable);
-  const ctx = { skillTable, rangeTable, charTable, ac: { skillRangeDict: {}, skillTriggerDataList: {} } };
+  const triggerSource = JSON.parse(await readFile(resolve(ROOT,'data/native-skill-trigger-source.json'),'utf8'));
+  const ctx = { skillTable, rangeTable, charTable, ac: triggerSource };
+  if(!Array.isArray(triggerSource.skillTriggerDataList))throw new Error('Missing official native autoChess triggers');
   let attached = 0;
   const missingIds = [];
   for (const rec of Object.values(updated)) {
@@ -381,8 +384,16 @@ export async function runImport(opts) {
       if (defaultSkillId && !supportedSkillIds.includes(defaultSkillId)) throw new Error(`${rec.charId}: selected native loadout ${defaultSkillId} has no complete kit`);
       const sourceSkills = rec.skills || [];
       rec.nativeSourceSkillIds = sourceNativeSkillIds;
-      rec.skills = sourceSkills.map((skill) => ({ ...skill, isDefault: skill.skillId === defaultSkillId }));
-      rec.skill = defaultSkillId ? rec.skills.find((skill) => skill.skillId === defaultSkillId) ?? null : null;
+      rec.skills = sourceSkills.map((skill) => ({ ...skill, trigger:resolveTrigger(ctx,c,rec.charId,skill.index,skill,{operator:true,chessId:rec.chessId.replace(/_b$/,'_a')}), isDefault: skill.skillId === defaultSkillId }));
+      const normal=updated[rec.chessId.replace(/_b$/,'_a')];
+      if(rec.isGolden&&normal&&rec.status.phase===normal.status.phase&&rec.status.level<normal.status.level){
+        rec.status.level=normal.status.level;rec.stats=statsFrom(interpolateAttrs(c,rec.status.phase,rec.status.level));
+        const traits=traitRecord(ctx,c,rec.status.phase,rec.status.level,[],rec.chessId);
+        rec.trait=traits.trait;Object.assign(rec,traits.classify);rec.talents=baseTalentList(ctx,c,rec.status.phase,rec.status.level,rec.chessId);
+      }
+      const selectedNativeSkill = defaultSkillId ? rec.skills.find((skill) => skill.skillId === defaultSkillId) ?? null : null;
+      rec.skill = selectedNativeSkill ? { ...selectedNativeSkill } : null;
+      if(rec.skill) delete rec.skill.isDefault;
       const e2Art = !NO_E2_ART.has(rec.charId);
       rec.assets = {
         avatar: `${rec.charId}${rec.isGolden && e2Art ? '_2' : ''}`,
