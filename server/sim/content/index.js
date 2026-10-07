@@ -139,7 +139,7 @@ export function syncUnitLoadout(battle, unit) {
     const owner = unit.ownerUnit;
     syncUnitLoadout(battle, owner);
     if (!owner.def || !owner.def.loadout) return;
-    const want = battle.data.getToken(unit.def.id, owner.def.id, owner.def.loadout);
+    const want = battle.data.getToken(unit.def.id, owner.def.id, owner.def.loadout, unit.nativeOwnerGrowth ?? owner.nativeGrowthStatus ?? null);
     if (want && want !== unit.def && want.id === unit.def.id) swapDef(unit, want);
   }
 }
