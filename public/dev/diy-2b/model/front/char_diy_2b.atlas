@@ -1,0 +1,138 @@
+char_diy_2b.png
+size: 1024,2048
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+sword
+  rotate: false
+  xy: 2, 2
+  size: 622, 387
+  orig: 622, 387
+  offset: 0, 0
+  index: -1
+hair_a
+  rotate: false
+  xy: 626, 2
+  size: 300, 342
+  orig: 300, 342
+  offset: 0, 0
+  index: -1
+hair_b
+  rotate: false
+  xy: 2, 391
+  size: 338, 342
+  orig: 338, 342
+  offset: 0, 0
+  index: -1
+pod
+  rotate: false
+  xy: 342, 391
+  size: 210, 223
+  orig: 210, 223
+  offset: 0, 0
+  index: -1
+skirt
+  rotate: false
+  xy: 554, 391
+  size: 354, 221
+  orig: 354, 221
+  offset: 0, 0
+  index: -1
+upperarm_r
+  rotate: false
+  xy: 2, 735
+  size: 184, 202
+  orig: 184, 202
+  offset: 0, 0
+  index: -1
+face
+  rotate: false
+  xy: 188, 735
+  size: 163, 194
+  orig: 163, 194
+  offset: 0, 0
+  index: -1
+torso
+  rotate: false
+  xy: 353, 735
+  size: 166, 191
+  orig: 166, 191
+  offset: 0, 0
+  index: -1
+shin_l
+  rotate: false
+  xy: 521, 735
+  size: 102, 188
+  orig: 102, 188
+  offset: 0, 0
+  index: -1
+shin_r
+  rotate: false
+  xy: 625, 735
+  size: 116, 182
+  orig: 116, 182
+  offset: 0, 0
+  index: -1
+upperarm_l
+  rotate: false
+  xy: 743, 735
+  size: 166, 176
+  orig: 166, 176
+  offset: 0, 0
+  index: -1
+thigh_r
+  rotate: false
+  xy: 2, 939
+  size: 118, 164
+  orig: 118, 164
+  offset: 0, 0
+  index: -1
+thigh_l
+  rotate: false
+  xy: 122, 939
+  size: 104, 150
+  orig: 104, 150
+  offset: 0, 0
+  index: -1
+foot_r
+  rotate: false
+  xy: 228, 939
+  size: 150, 137
+  orig: 150, 137
+  offset: 0, 0
+  index: -1
+foot_l
+  rotate: false
+  xy: 380, 939
+  size: 172, 128
+  orig: 172, 128
+  offset: 0, 0
+  index: -1
+forearm_r
+  rotate: false
+  xy: 554, 939
+  size: 81, 88
+  orig: 81, 88
+  offset: 0, 0
+  index: -1
+hand_r
+  rotate: false
+  xy: 637, 939
+  size: 82, 78
+  orig: 82, 78
+  offset: 0, 0
+  index: -1
+hand_l
+  rotate: false
+  xy: 721, 939
+  size: 98, 76
+  orig: 98, 76
+  offset: 0, 0
+  index: -1
+forearm_l
+  rotate: false
+  xy: 821, 939
+  size: 86, 66
+  orig: 86, 66
+  offset: 0, 0
+  index: -1
