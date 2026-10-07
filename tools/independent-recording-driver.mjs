@@ -11,6 +11,7 @@ import { createReadStream } from 'node:fs';
 import { startServer } from '../server/index.js';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const chessCatalog = JSON.parse(await fs.readFile(path.join(repo, 'data/chess.json'), 'utf8'));
 const canonical = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const runtime = path.join(canonical, 'runtime/growth-destination-20261008/recording');
 const tmp = path.join(canonical, '.omni/tmp/growth-destination-20261008/recording');
@@ -25,7 +26,7 @@ const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
   seed, maxRounds, startedAt: new Date().toISOString(), baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
-  actions: [], notes: [], rounds: [], screenshots: [], errors: [],
+  actions: [], notes: [], rounds: [], screenshots: [], errors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
 let server; let assetProxy; let browser; let page; let hardTimer; let recordingId = ''; let sessionId = '';
@@ -241,12 +242,34 @@ async function equipVisibleItem(state) {
 }
 async function buyOne(state) {
   const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
-  const reserve = deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
+  const roster = (state.pieces || []).filter((p) => !p.temp);
+  const reserve = roster.length >= 4 && deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
   const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve);
   const counts = new Map(); for (const p of state.pieces || []) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
+  const roleCounts = roster.reduce((out, p) => {
+    const card = chessCatalog[p.chessId] || {};
+    if (card.profession === 'MEDIC') out.medic += 1;
+    if (card.position === 'MELEE') out.melee += 1;
+    if (card.position === 'RANGED') out.ranged += 1;
+    return out;
+  }, { medic: 0, melee: 0, ranged: 0 });
   viable.sort((a, b) => {
     const ca = counts.get(a.s.id) || 0, cb = counts.get(b.s.id) || 0;
-    return (cb > 0 && cb < 3 ? 1 : 0) - (ca > 0 && ca < 3 ? 1 : 0) || a.s.price - b.s.price || a.i - b.i;
+    const score = ({ s }, duplicateCount) => {
+      const card = chessCatalog[s.id] || {};
+      let value = 0;
+      if (!roleCounts.medic && card.profession === 'MEDIC') value += 100;
+      if (roleCounts.melee < 2 && card.position === 'MELEE') value += 60;
+      if (roleCounts.ranged < 2 && card.position === 'RANGED') value += 50;
+      if (roster.length < 4 && duplicateCount === 0) value += 24;
+      if (roster.length >= 4 && duplicateCount === 2) value += 40;
+      const currentTier = Number(state.shop?.level) || 1;
+      if (currentTier >= 4 && Number(card.tier) >= 4) value += 30;
+      const sharedBonds = new Set(roster.flatMap((p) => chessCatalog[p.chessId]?.bonds || []));
+      value += (card.bonds || []).filter((bond) => sharedBonds.has(bond)).length * 4;
+      return value;
+    };
+    return score(b, cb) - score(a, ca) || a.s.price - b.s.price || a.i - b.i;
   });
   for (const { s, i } of viable) {
     const card = await page.$(`[data-testid="ix-shop-${i}"]`); if (!card) continue;
@@ -266,13 +289,14 @@ async function buyOne(state) {
   return false;
 }
 async function maybeUpgrade(state) {
-  if (state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
+  if ((state.pieces || []).filter((p) => !p.temp).length < 4 || state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
   const button = await page.$('[data-testid="ix-upgrade"]'); if (!button) return false;
   const before = state.revision; await button.click(); await pause(200); await button.click();
   try { await waitRevision(before); } catch { return false; }
   const next = await readState(); report.actions.push({ type: 'upgrade-dispatch' }); await annotateObservedChanges(state, next); return true;
 }
 async function triggerRefresh(state) {
+  if ((state.pieces || []).filter((p) => !p.temp).length < 4) return false;
   const button = await page.$('.ix-shop button[title^="刷新商店"]'); if (!button || await button.evaluate((e) => e.disabled)) return false;
   await button.click(); report.actions.push({ type: 'refresh-shop' }); await pause(600); return true;
 }
@@ -487,6 +511,12 @@ try {
       continue;
     }
     const state = await readState();
+    if (state.phase === 'prep' && !report.preparationSnapshots.some((x) => x.revision === state.revision)) {
+      const roster = (state.pieces || []).filter((p) => !p.temp);
+      const roles = roster.map((p) => ({ name: p.name, profession: chessCatalog[p.chessId]?.profession || '', position: chessCatalog[p.chessId]?.position || '' }));
+      report.preparationSnapshots.push({ round: state.round, revision: state.revision, funds: state.funds, shopLevel: state.shop?.level,
+        upgradePrice: state.shop?.upgradePrice, roster: roles, slots: (state.shop?.slots || []).map((s, i) => ({ i, kind: s.kind, name: chessCatalog[s.id]?.name || s.id, price: s.price, sold: s.sold })) });
+    }
     if (state.phase !== 'prep') { lastPrepRevision = null; sameRevisionSince = Date.now(); }
     else if (state.revision !== lastPrepRevision) { lastPrepRevision = state.revision; sameRevisionSince = Date.now(); }
     else if (Date.now() - sameRevisionSince > 60000) {
