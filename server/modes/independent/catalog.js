@@ -5,7 +5,9 @@ import { getData } from '../../data.js';
 import { nativeEffectFor } from './native.js';
 import { EQUIPMENT_CAPACITY, INVENTORY_CAPACITY } from './equipment.js';
 
-const DESIGN_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
+const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
+  ? path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
 
 const BADGE_IDS = Object.freeze({

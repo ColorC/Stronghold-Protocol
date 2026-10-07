@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Default data directory. */
-export const DATA_DIR = path.join(ROOT, 'data');
+export const DATA_DIR = process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data');
 
 /** Files the game expects (a warning lists the missing ones). */
 export const DATA_FILES = Object.freeze([
