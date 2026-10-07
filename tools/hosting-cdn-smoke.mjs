@@ -40,13 +40,18 @@ await new Promise((resolve, reject) => { cdn.once('error', reject); cdn.listen(0
 const staticBase = `https://127.0.0.1:${cdn.address().port}/${revision}`;
 let exitCode = 1;
 try {
-  exitCode = await new Promise((resolve) => {
-    const child = spawn(process.execPath, [path.join(root, 'tools/client-compute-browser-smoke.mjs'), '--output', path.join(output, 'browser'), '--install-dir', root],
+  for (const [script, batch, additional] of [
+    ['client-compute-browser-smoke.mjs', 'browser', ['--install-dir', root]],
+    ['independent-browser-smoke.mjs', 'ui-browser', []],
+  ]) {
+    exitCode = await new Promise((resolve) => {
+    const child = spawn(process.execPath, [path.join(root, 'tools', script), '--output', path.join(output, batch), ...additional],
       { cwd: root, windowsHide: true, stdio: ['ignore', 'inherit', 'inherit'], timeout: 240000,
         env: { ...process.env, SP_STATIC_BASE: staticBase, SP_INDEPENDENT_EXECUTION: 'client', SP_INDEPENDENT_MAX_ACTIVE: '50', SP_TEST_IGNORE_HTTPS: '1' } });
     child.once('error', () => resolve(1)); child.once('close', (code) => resolve(code ?? 1));
-  });
-  assert.equal(exitCode, 0, 'the same browser gameplay checks pass with static requests on the external HTTPS origin');
+    });
+    assert.equal(exitCode, 0, `${script} passes with static requests on the external HTTPS origin`);
+  }
   assert.equal(network.failures.length, 0);
   for (const group of ['js', 'assets', 'fonts', 'vendor', 'data']) assert.ok(network.byTopDir[group] > 0, `${group} downloaded from CDN`);
 } catch (error) { console.error(error.stack || error.message); exitCode = 1; }
@@ -57,6 +62,7 @@ finally {
     staticBase, network, artifacts: [{ path: receiptPath, role: 'cross-origin static delivery receipt' },
       { path: path.join(output, 'browser/browser-receipt.json'), role: 'real Chrome game and persistence verification' },
       { path: path.join(output, 'browser/client-workshop.png'), role: 'real Chrome default workshop screenshot' },
+      { path: path.join(output, 'ui-browser/browser-receipt.json'), role: 'real Chrome mouse drag, battle rendering and result verification' },
       { path: cert, role: 'test-only local HTTPS certificate' }, { path: key, role: 'test-only local HTTPS key' }] };
   await writeFile(receiptPath, JSON.stringify(receipt, null, 2) + '\n'); console.log(JSON.stringify(receipt, null, 2)); process.exitCode = exitCode;
 }

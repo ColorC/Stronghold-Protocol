@@ -30,7 +30,8 @@ try {
   artifacts.push({ path: profile, role: 'isolated temporary headless Chrome profile' });
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', userDataDir: profile, headless: true,
     // software WebGL so the 3D board and Spine render without a GPU
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+    args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist',
+      ...(process.env.SP_TEST_IGNORE_HTTPS === '1' ? ['--ignore-certificate-errors'] : [])] });
   const page = await browser.newPage();
   await page.setViewport({ width: 1600, height: 900 });
   page.on('pageerror', (error) => errors.push(error.message));
