@@ -20,6 +20,8 @@
 - 锏的 24 个 prefab 已用修正后的 Unity shader/coverage 批次接入正式资源；正式 manifest 为 24 项，未移植 shader 为 0。
 - 锏技能 2 的探针确认 `skill_02_hit_1` 以 followId 20/21 等敌方目标播放，施法起手效果 followId 为 1、anchor 为 root；资源帧尺寸已从旧 atlas 更新到新批次。
 - 对比页加入批次缓存键并把 atlas 预热改为两项一批，避免旧 atlas 与新 manifest 混用，也避免首次播放把全部纹理上传集中到一个长任务。
+- 锏技能 2 命中层曾被原始采集图直接证明存在 premultiplied 违规：颜色半幅出现整块橙色，而 coverage 半幅仍是斩击形状。转换器现在在写 atlas 前按 coverage 约束颜色，正式资源已重烘 `blkkgt_skill_02_hit_1`；逐层 isolate 复验确认隐藏命中层会移除目标侧斩击，施法者侧扇形仍来自起手层。
+- 最新浏览器取证写入 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\.omni\tmp\vfx-final-verify-20261008\browser-evidence.json`：pageerror、console error、网络失败和 longtask 均为 0，16 个锏技能 2 资源 requested/loaded 一致；逐层证据写入 `E:\WindowsWorkspace\webworks\apps\stronghold-protocol\.omni\tmp\vfx-isolate-effects-20261008\isolate-result-robust.json`。
 - 36 名其它高本干员仍处于 `needs-source-extraction`。已有动画证据不等于已有 VFX prefab 证据；在拿到对应原始 bundle 前不生成猜测性的正式特效。
 
 ## 完成判据
