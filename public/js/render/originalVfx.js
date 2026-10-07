@@ -137,7 +137,10 @@ export class OriginalVfxPlayer {
       grid: Array.isArray(grid) ? grid.filter((p) => Array.isArray(p) && Number.isFinite(Number(p[0])) && Number.isFinite(Number(p[1]))).map((p) => [Number(p[0]), Number(p[1])]) : null,
       dir: typeof dir === 'string' ? dir.toUpperCase() : 'RIGHT', graphics: new this.P.Graphics() };
     record.graphics.visible = false;
-    (this.layers.groundFx || this.layers.fxNormal || this.layers.fxAdd).addChild(record.graphics);
+    // The source `range_line` is a map Mesh drawn over the ground and the cast
+    // pass. Keep the procedural equivalent above the atlas pass so the exact
+    // 13-cell footprint remains inspectable while the cast streaks are active.
+    (this.layers.fxAdd || this.layers.fxNormal || this.layers.groundFx).addChild(record.graphics);
     this.active.add(record);
     this._placeGroundFrame(record);
     return true;
@@ -155,7 +158,9 @@ export class OriginalVfxPlayer {
     const record = { kind: 'groundSheathe', x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, followId, group,
       elapsed: 0, delay: Math.max(0, Number(delay) || 0), life: Math.max(0.1, Number(life) || 1.55), dead: false, graphics: new this.P.Graphics() };
     record.graphics.visible = false;
-    (this.layers.groundFx || this.layers.fxNormal || this.layers.fxAdd).addChild(record.graphics);
+    // The sheathe is also a tile-bound map pass. It must sit above the cast
+    // atlas so the mesh replacement cannot be mistaken for a second billboard.
+    (this.layers.fxAdd || this.layers.fxNormal || this.layers.groundFx).addChild(record.graphics);
     this.active.add(record);
     this._placeGroundSheathe(record);
     return true;
