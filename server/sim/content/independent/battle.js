@@ -10,6 +10,7 @@ import { INDEPENDENT_BADGE_STATS, independentBadgeMod } from '../../../../shared
 import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 import { installWarband } from './warband.js';
 import { WARBAND_BEHAVIORS } from '../../../../shared/warbandSchema.js';
+import { installDarkmoonCombat } from './darkmoonCombat.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
 // 干员特质 v4 (2026-10-07, 方舟化) adds: aura 在场光环 · rangeDebuff 攻击范围内敌人状态 · statusOnHit 命中上状态 · healedBuff 被治疗者
@@ -2208,6 +2209,7 @@ function installEvents(battle, catalog, pieces, emit) {
   installNativeCombat(battle, catalog, pieces, emit);
   installEquipmentMechanisms(battle, catalog, pieces, emit);
   installWarband(battle,{catalog,pieces});
+  installDarkmoonCombat(battle,{catalog,pieces});
 }
 
 /** Install the isolated battle-only mechanics for a real Battle instance. */

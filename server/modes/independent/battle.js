@@ -239,5 +239,7 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     bossId: prepared.bossId ?? null, tick: TICK, snapEvery: REPLAY_SNAP_EVERY, duration: Math.round(battle.time * 100) / 100,
     field, frames,
   };
-  return { result, rewards, pieceStates, samples, diagnostics, replay };
+  return { result, rewards, pieceStates, samples, diagnostics, replay,
+    darkmoonResults: structuredClone(battle.independentDarkmoonResults ?? {growth:[],recruits:[],coins:[]}),
+    darkmoonTrace: structuredClone(battle.independentDarkmoonTrace ?? []) };
 }
