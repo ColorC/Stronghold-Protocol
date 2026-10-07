@@ -32,9 +32,11 @@ test('write replaces stale active data, adds missing rows and preserves non-tabl
   assert.deepEqual(tableDiff(design, out), []);
 });
 
-test('handover table tracks the active twelve, including 崖心 and 惊蛰 tier 2–4', () => {
+test('handover table tracks the two automatic permits and preserves retired IDs', () => {
   const out = writeOperatorTable(design, readFileSync(docPath, 'utf8'));
-  assert.match(out, /\| 崖心 · 可继承其他干员 \| 独行者借装许可。只能继承科技等级2或3的干员。 \|/);
-  assert.match(out, /惊蛰 · 可被继承 \| 天师器械封签。只能被科技等级2至4/);
-  assert.doesNotMatch(out, /\| 宴 · 可继承其他干员/);
+  const automatic=design.operators.filter(x=>x.inheritance&&x.inheritance.autoGrant!==false).map(x=>[x.name,x.tier]).sort();
+  assert.deepEqual(automatic,[['幽灵鲨',3],['蛇屠箱',4]]);
+  assert.equal(design.operators.filter(x=>x.inheritance).length,12);
+  assert.match(out,/幽灵鲨/);
+  assert.match(out,/蛇屠箱/);
 });

@@ -1,6 +1,7 @@
+// Historical authored roster fixture; all mechanics still execute the live implementation.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { getCatalog } from './helpers/preWarbandCatalog.js';
 import { inheritanceQualification, attachmentAccepted, nativeFactions, tavernFactions, nativeBodyStats } from '../../shared/independentRules.js';
 
 const catalog=getCatalog();

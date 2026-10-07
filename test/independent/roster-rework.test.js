@@ -1,6 +1,7 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getData } from '../../server/data.js';
@@ -18,8 +19,9 @@ const CATALOG = getCatalog(DATA);
 const ACTIVE_IDS = [...DESIGN.rules.activeRosterIds];
 const ACTIVE_SET = new Set(ACTIVE_IDS);
 const BATTLE_RECEIPTS = [];
-const EXPECTED_TIERS = { 1: 13, 2: 19, 3: 20, 4: 18, 5: 18, 6: 13 };
-const EXPECTED_ROLES = { '临时战斗': 10, '成长': 54, '联动': 10, '经济': 5, '生成': 18, '一次性工具': 4 };
+const SOURCE_COMMIT=execFileSync('git',['-C',path.dirname(DESIGN_PATH),'rev-parse','HEAD'],{encoding:'utf8'}).trim();
+const EXPECTED_TIERS = { 1: 11, 2: 19, 3: 21, 4: 18, 5: 18, 6: 14 };
+const EXPECTED_ROLES = { '临时战斗': 14, '成长': 41, '联动': 22, '经济': 5, '生成': 13, '一次性工具': 6 };
 const PRODUCED_GEAR = ['坚守盟约','护盾发生器','突袭盟约','巨锤盟约','精准盟约','不屈盟约','爆破部署台','反冲空降仓','便携式融毁教学仪'];
 
 function tally(list, key) {
@@ -31,7 +33,7 @@ function fillReport() {
   if (!target) return;
   mkdirSync(path.dirname(path.resolve(target)), { recursive: true });
   writeFileSync(path.resolve(target), JSON.stringify({
-    baseCommit: '9d4c79c6b8087dad21a1f91d0690c9ffde3bfc1c',
+    baseCommit: SOURCE_COMMIT,
     candidatePath: path.resolve(DESIGN_PATH),
     rosterCount: ACTIVE_IDS.length,
     tierCounts: tally(ACTIVE_IDS.map((id) => CATALOG.operators[id]), (x) => x.tier),
@@ -66,7 +68,7 @@ test('the compiled roster has 101 unique bodies and the approved tier/role struc
     }
   }
   const highTier = sources.filter((op) => op.tier >= 5);
-  assert.equal(highTier.length, 31);
+  assert.equal(highTier.length, 32);
   for (const op of highTier) assert.ok(op.role?.trim() && !/定位待定|待补|暂无/.test(op.role), `${op.name} T${op.tier} has a concrete role rationale`);
 });
 

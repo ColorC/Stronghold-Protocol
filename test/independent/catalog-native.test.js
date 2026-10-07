@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
 import { tavernFactions } from '../../shared/independentRules.js';
+import { preWarbandCatalog } from './helpers/preWarband.js';
 import { preV3Catalog } from './helpers/preV3.js';
 import { preV4Catalog } from './helpers/preV4.js';
 
 // rule mechanics through the operators that carried them before 干员表 v3 (helpers/preV3.js) and before 干员特质 v4 (helpers/preV4.js)
-const catalog = preV3Catalog(preV4Catalog(getCatalog()));
+const catalog = preV3Catalog(preV4Catalog(preWarbandCatalog()));
 const all = Object.values(catalog.operators);
 
 function fixture() {

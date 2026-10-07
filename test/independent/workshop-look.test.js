@@ -53,7 +53,7 @@ describe('the workshop page and the original page', () => {
 
 describe('TierPips (components.js)', () => {
   test('the tier as that many pips, with the tier, size and elite classes; roman is the default look', async () => {
-    const { TierPips, tierLookOf, setTierLook } = await import('../../public/js/ui/components.js');
+    const { TierPips, tierLookOf, setTierLook } = await import(process.env.SP_DATA_DIR ? new URL('../public/js/ui/components.js', new URL('file:///' + process.env.SP_DATA_DIR.replaceAll('\\','/') + '/')).href : '../../public/js/ui/components.js');
     assert.equal(tierLookOf(), 'roman');
     for (const t of [1, 2, 3, 4, 5, 6]) {
       const v = TierPips({ tier: t, size: 'sm' });

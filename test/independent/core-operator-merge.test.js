@@ -1,8 +1,9 @@
+// Historical authored roster fixture; all mechanics still execute the live implementation.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
+import { createSession, applyAction, viewSession } from './helpers/preWarbandSession.js';
 import { getData } from '../../server/data.js';
-import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { getCatalog } from './helpers/preWarbandCatalog.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const data = getData({ log: quiet });

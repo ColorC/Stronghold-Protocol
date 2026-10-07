@@ -1,10 +1,11 @@
+// Historical authored roster fixture; all mechanics still execute the live implementation.
 // 交接凭证: the twelve inheritance permissions are gear the operator brings when gained. It is worn from the gain on,
 // never sold in the shop or drawn at random, folds into one copy when three copies merge, and never moves in a
 // handover (the donor's is lost with it). Only worn 交接凭证 decide who may hand over to whom.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, applyAction, validateSession, viewSession } from '../../server/modes/independent/session.js';
-import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { createSession, applyAction, validateSession, viewSession } from './helpers/preWarbandSession.js';
+import { getCatalog } from './helpers/preWarbandCatalog.js';
 import { getData } from '../../server/data.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/http.js';
 import { getIndependentField } from '../../server/modes/independent/battle.js';

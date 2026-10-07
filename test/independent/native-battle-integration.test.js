@@ -1,9 +1,10 @@
+// Historical authored roster fixture; all mechanics still execute the live implementation.
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { getData } from '../../server/data.js';
-import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { getCatalog } from './helpers/preWarbandCatalog.js';
 import { DataSource } from '../../server/sim/simdata.js';
 import { installIndependentBattle } from '../../server/sim/content/independent/battle.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';

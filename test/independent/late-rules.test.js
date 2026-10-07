@@ -25,7 +25,7 @@ test('legacy permit records stay available, autoGrant false suppresses new grant
   assert.equal(inheritanceQualification(holder,partner,catalog).allowed,true);assert.equal(inheritanceQualification(partner,holder,catalog).allowed,true);
   purchase.state.pieces[0].equipment.push(holder.equipment[0]);
   assert.ok(viewSession(purchase.state,{data,catalog}).pieces[0].equipment.some(x=>x.uid==='old-permit'),'restoring a retired permit keeps the old asset');
-  const legacy=getCatalog(data,design);assert.equal(legacy.operators[source.chessId].permitGearId,id,'missing autoGrant keeps old behavior');
+  const missingFlag=structuredClone(design);delete missingFlag.operators.find(x=>x.chessId===source.chessId).inheritance.autoGrant;const legacy=getCatalog(data,missingFlag);assert.equal(legacy.operators[source.chessId].permitGearId,id,'missing autoGrant keeps old behavior');
 });
 
 test('forgeFactionTierPair operators counts three same-technology members, while default keeps one distinct tier',()=>{

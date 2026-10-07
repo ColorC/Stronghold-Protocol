@@ -38,7 +38,7 @@ test('writer rebuilds only tier table blocks, removes inactive/missing rows, and
 test('canonical candidate generates 101 active rows in expected tiers without writing the document', { skip: !process.env.SP_INDEPENDENT_DESIGN_PATH }, () => {
   const design = JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH, 'utf8'));
   const source = readFileSync(new URL('../../docs/independent-mode/design.md', import.meta.url), 'utf8');
-  const expected = [13, 19, 20, 18, 18, 13];
+  const expected = [11, 19, 21, 18, 18, 14];
   assert.equal(design.operators.filter((entry) => entry.active !== false).length, 101);
   assert.deepEqual(expected.map((_, i) => design.operators.filter((entry) => entry.active !== false && Number(entry.tier) === i + 1).length), expected);
   const regenerated = writeOperatorTable(design, source);

@@ -1,9 +1,10 @@
+// Historical authored roster fixture; all mechanics still execute the live implementation.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, applyAction } from '../../server/modes/independent/session.js';
+import { createSession, applyAction } from './helpers/preWarbandSession.js';
 import { makePrizeOffer } from '../../server/modes/independent/prizes.js';
 import { getData } from '../../server/data.js';
-import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { getCatalog } from './helpers/preWarbandCatalog.js';
 import { getIndependentField } from '../../server/modes/independent/battle.js';
 import { tavernFactions } from '../../shared/independentRules.js';
 

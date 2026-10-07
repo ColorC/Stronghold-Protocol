@@ -119,7 +119,7 @@ test('old oversized save, purchase, equip, use-item and symmetric view aliases u
   assert.equal(state.inventory.reduce((n, x) => n + x.quantity, 0), 2000);
   assert.equal(inventoryTiles(state, real), 3);
   assert.deepEqual(validateSession(state), []);
-  const names = ['角峰', '送葬人'];
+  const names = ['斯卡蒂', '幽灵鲨']; // current automatic permit; retired IDs remain covered by synthetic legacy fixtures
   for (const name of names) {
     const op = Object.values(real.operators).find(x => !x.elite && x.name === name);
     state.shop.slots[0] = { kind: 'chess', id: op.chessId, price: 3, sold: false, equipment: [] };

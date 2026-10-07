@@ -7,7 +7,8 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
 import { preV4Catalog } from './helpers/preV4.js';
 
-const catalog = getCatalog();
+import {preWarbandCatalog} from './helpers/preWarband.js';
+const catalog = preWarbandCatalog();
 const idOf = (name, elite = false) => {
   const op = Object.values(catalog.operators).find((x) => !x.elite && x.name === name);
   return elite ? op.eliteChessId : op.chessId;
@@ -25,7 +26,7 @@ function fixture(useCatalog = catalog) {
 const piece = (uid, name, row = null, col = null, elite = false) => ({ uid, chessId: idOf(name, elite), elite, row, col, dir: 'RIGHT', nativeState: {}, equipment: [], attachments: [] });
 const sum = (granted, id, filter = () => true) => granted.filter((x) => x.id === id && filter(x)).reduce((n, x) => n + x.quantity, 0);
 
-test('the fixed active roster follows the approved tier distribution', () => {
+test('historical v4 roster retains its native Git tier distribution', () => {
   const counts = {};
   for (const op of Object.values(catalog.operators).filter((x) => !x.elite && x.recruitable)) counts[op.tier] = (counts[op.tier] || 0) + 1;
   assert.deepEqual(counts, { 1: 13, 2: 19, 3: 20, 4: 18, 5: 18, 6: 13 });

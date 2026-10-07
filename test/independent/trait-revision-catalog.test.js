@@ -9,8 +9,9 @@ import { DataSource } from '../../server/sim/simdata.js';
 import { nativeBodyStats, nativeRecord, tavernFactions } from '../../shared/independentRules.js';
 import { makeBattle, enemyRec } from '../helpers/battleHarness.js';
 
-// This suite consumes the canonical authored catalog, never the editing script or a temporary specification.
-const data=getData(), catalog=getCatalog(data);
+// Historical pure mechanism assertions retain their authored native Git version.
+import {preWarbandCatalog} from './helpers/preWarband.js';
+const data=getData(), catalog=preWarbandCatalog(data);
 const active=catalog.config.activeRosterIds.map(id=>catalog.operators[id]);
 const op=(name,elite=false)=>{const n=active.find(o=>o.name===name);assert.ok(n,`active ${name}`);return elite?catalog.operators[n.eliteChessId]:n;};
 const piece=(name,uid='w',elite=false,row=10,col=3,extra={})=>({uid,chessId:op(name,elite).chessId,elite,row,col,dir:'RIGHT',moduleId:'none',skillIndex:0,equipment:[],attachments:[],nativeState:{},...extra});

@@ -24,7 +24,7 @@ test('all 240 current operator forms have one classified summary per authored ru
         for (const n of [item.normal, item.elite]) if (n !== undefined && n !== null) assert.ok(Number.isFinite(n) && n >= 0, `${op.name}: bad item quantity`);
       }
       const rule = rules[i];
-      assert.equal(entry.when, rule.trigger);
+      assert.equal(entry.when, rule.behavior==='warbandEvent'?({death:'allyDeath',damaged:'allyDamaged',kill:'allyKill'}[rule.params.event]||rule.params.event):rule.behavior==='retiringEffect'?'retiring':rule.trigger);
       if (rule.behavior === 'grantEquipment' || (rule.behavior === 'eventProduction' && !rule.params.copyOutputFromEvent)
         || ['forgePerGainedChess', 'forgeBenchCount'].includes(rule.behavior)) {
         assert.ok(entry.items?.length, `${op.name}: ${rule.behavior} should expose its known item(s)`);
