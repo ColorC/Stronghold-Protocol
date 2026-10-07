@@ -37,9 +37,10 @@ function operatorPool(state, catalog, gd) {
   const out = {};
   for (const [id, op] of Object.entries(ops(catalog))) {
     if (!safeId(id) || op.elite || op.isElite || id.endsWith('_b')) continue;
-    // copies by the tier the operator has in this mode (干员表 v3 moved some), unless the data names this operator
-    const override = gd.economy?.poolCopiesOverrides?.[id]; const perTier = gd.economy?.poolCopies?.[op.tier];
-    const cap = Math.max(0, Number(Number.isInteger(override) ? override : (catalog.config?.poolCopies?.[op.tier] ?? (Number.isInteger(perTier) ? perTier : gd.poolCopies(id)))) || 0);
+    // copies by the tier the operator has in this mode: the mode's own table (design rules.poolCopies, Battlegrounds'
+    // 15/15/13/11/9/7 since 2026-10-07) wins over the original's per-operator overrides
+    const own = catalog.config?.poolCopies?.[op.tier]; const override = gd.economy?.poolCopiesOverrides?.[id]; const perTier = gd.economy?.poolCopies?.[op.tier];
+    const cap = Math.max(0, Number(own ?? (Number.isInteger(override) ? override : (Number.isInteger(perTier) ? perTier : gd.poolCopies(id)))) || 0);
     if (cap) out[id] = { cap, left: cap, tier: Number(op.tier || 1) };
   }
   return out;

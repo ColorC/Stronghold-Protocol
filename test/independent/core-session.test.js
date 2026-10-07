@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSession, applyAction, validateSession, viewSession } from '../../server/modes/independent/session.js';
+import { getCatalog } from '../../server/modes/independent/catalog.js';
 
 test('session JSON round-trip keeps deterministic RNG, pool, counters, and action state', () => {
   const first = createSession({ seed: 821 }); const restored = JSON.parse(JSON.stringify(first));
@@ -72,4 +73,13 @@ test('short-run round 4 offers the start-stage prize before the next preparation
   assert.equal(ready.state.round, 4);
   assert.equal(ready.state.phase, 'prize');
   assert.equal(ready.state.offers.some((x) => x.type === 'prize' && x.tier === 'start'), true);
+});
+
+test('pool copies follow Battlegrounds by tier (15/15/13/11/9/7), by the tier an operator has in this mode', () => {
+  const state = createSession({ seed: 5, difficulty: 'NORMAL' });
+  const catalog = getCatalog();
+  const want = { 1: 15, 2: 15, 3: 13, 4: 11, 5: 9, 6: 7 };
+  for (const [id, p] of Object.entries(state.pool)) assert.equal(p.cap, want[catalog.operators[id].tier], id);
+  const skadi = Object.values(catalog.operators).find((x) => !x.elite && x.name === '斯卡蒂');
+  assert.equal(state.pool[skadi.chessId].cap, 15, 'moved to tier 1');
 });

@@ -13598,7 +13598,15 @@
     "shop": "operators only; every piece of gear comes through operators (traits), 工程部特供 prizes or 交接凭证",
     "equipmentCapacity": 999,
     "inventory": "20 tiles: one per item and grade, stacks unlimited; gear needing a 21st tile is not stored (ledger lost); kept prizes take no tile",
-    "badgeLanding": "self"
+    "badgeLanding": "self",
+    "poolCopies": {
+      "1": 15,
+      "2": 15,
+      "3": 13,
+      "4": 11,
+      "5": 9,
+      "6": 7
+    }
   },
   "check": {
     "pass": true,
@@ -13728,6 +13736,10 @@
     {
       "date": "2026-10-07",
       "what": "干员表 v3：纯战斗 24 名（斯卡蒂下放一阶，能天使、银灰下放二阶；刺玫、折桠升三阶，蒂比升四阶）、临时战斗 34 名；五件特殊战斗装备取代十件数值装备；干员自己产出的徽章直接穿在身上。"
+    },
+    {
+      "date": "2026-10-07",
+      "what": "卡池份数对齐酒馆战棋（hearthstone.wiki.gg）：每张干员按科技等级 15/15/13/11/9/7 份（原 12/14/18/16/8/5）。"
     }
   ]
 }
