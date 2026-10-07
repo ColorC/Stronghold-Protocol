@@ -11,6 +11,7 @@ import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, darkmoonGrowthBadge
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 import { runIndependentBattle } from '../../server/modes/independent/battle.js';
 import { operatorGrowthInfo, grantGrowthLevels } from '../../shared/independentGrowth.js';
+import { nativeFactions } from '../../shared/independentRules.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from '../../public/js/independent/targetSelection.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -593,4 +594,117 @@ test('BGS 113 consumes the explicitly selected shop slot and creates a normal or
   const eliteCatalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,sourceRefs:source.sourceRefs,nativeTrait:{effect:eliteEffect}}}};
   runNativeHook(eliteState,'gain',{piece:eliteSource,source:'buy',shopSlots:[0],buySlot:1},{catalog:eliteCatalog,data:{},rng:()=>0,transformPiece:(_s,_p,slot,golden)=>selected.push({id:slot.id,golden}),grantEquipment(){},grantChess(){},addOffer(){},record(){}});
   assert.deepEqual(selected,[{id:targetOp.chessId,golden:true}],'elite Battlecry requests a golden copy of the selected offer once');
+});
+
+test('remaining 19.2 prep adapters cause normal and golden effects only on their source-defined recipients',()=>{
+  const base=getCatalog(),ops=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false);
+  const withRule=(op,id,elite,extra={})=>{
+    const source={...op,...extra,sourceRefs:{darkmoon19_2:{id,...(extra.ref||{})}}};
+    const effect=nativeEffectFor(op.chessId,source,elite);
+    return {...source,nativeTrait:{...op.nativeTrait,effect}};
+  };
+  const makeServices=(catalog,rng=()=>0)=>({catalog,data:{},rng,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}});
+  const grants=(piece)=>piece.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0]));
+  const playerPiece=(uid,op,ownerId='p1',col=0,elite=false)=>({uid,chessId:op.chessId,ownerId,elite,row:0,col,nativeState:{},equipment:[]});
+
+  for(const elite of [false,true]) {
+    const mult=elite?2:1,holderOp=Object.values(base.operators).find(x=>Boolean(x.elite)===elite);
+    const [attack,secondary]=darkmoonGrowthBadges(playerPiece('h',holderOp,'p1',0,elite),base);
+
+    // BGS 066 requires at least one golden unit, then grows only its own permanent stats.
+    {
+      const holderSource=withRule(holderOp,'BGS_066',elite),holder=playerPiece('h',holderSource,'p1',0,elite),goldOp=Object.values(base.operators).find(x=>x.elite&&x.chessId!==holder.chessId);
+      const catalog={...base,operators:{...base.operators,[holder.chessId]:holderSource}};
+      const noGolden=playerPiece('h-no-gold',holderSource,'p1',0,elite),negative={round:1,pieces:[noGolden],inventory:[]};
+      runNativeHook(negative,'prepEnd',{round:1},makeServices(catalog));
+      if(!elite) assert.deepEqual(grants(noGolden),[],`BGS_066 normal does nothing without a golden ally`);
+      else assert.deepEqual(grants(noGolden),[[attack,2*mult],[secondary,2*mult]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_066 golden self satisfies its golden condition`);
+      const goldenHolder=playerPiece('h-gold',holderSource,'p1',0,elite),gold=playerPiece('gold',goldOp,'p1',1,true),positive={round:1,pieces:elite?[goldenHolder]:[goldenHolder,gold],inventory:[]};
+      runNativeHook(positive,'prepEnd',{round:1},makeServices(catalog));
+      assert.deepEqual(grants(goldenHolder),[[attack,2*mult],[secondary,2*mult]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_066 ${elite?'golden':'normal'} grows self when a golden ally exists`);
+      assert.deepEqual(grants(gold),[],'BGS_066 never transfers its self growth to the golden condition unit');
+    }
+
+    // BGS 081 listens to a same-owner Victoria purchase; an unrelated faction cannot trigger it.
+    {
+      const holderSource=withRule(holderOp,'BGS_081',elite),holder=playerPiece('h',holderSource,'p1',0,elite),buyerOp=ops[1],wrongOp=ops[2];
+      const holderCatalog={...base,operators:{...base.operators,[holder.chessId]:holderSource,[buyerOp.chessId]:{...buyerOp,nativeFactionTags:['维多利亚']},[wrongOp.chessId]:{...wrongOp,nativeFactionTags:['叙拉古']}}};
+      const state={pieces:[holder],inventory:[]},services=makeServices(holderCatalog);
+      runNativeHook(state,'bought',{piece:playerPiece('wrong',wrongOp)},services);
+      assert.deepEqual(grants(holder),[],`BGS_081 ${elite?'golden':'normal'} ignores a non-Victoria purchase`);
+      runNativeHook(state,'bought',{piece:playerPiece('buyer',buyerOp)},services);
+      assert.deepEqual(grants(holder),[[attack,mult],[secondary,mult]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_081 ${elite?'golden':'normal'} grows its owner on a Victoria purchase`);
+    }
+
+    // BGS 082/083 choose three distinct native factions, never three units from one faction.
+    for(const [id,units] of [['BGS_082',1],['BGS_083',2]]) {
+      const holderSource={...withRule(holderOp,id,elite),nativeFactionTags:['炎']},holder=playerPiece('h',holderSource,'p1',0,elite);
+      const factions=['炎','叙拉古','哥伦比亚','卡西米尔'];
+      const friends=ops.slice(1,4).map((op,i)=>playerPiece(`f${i}`,{...op,nativeFactionTags:[factions[i+1]]},'p1',i+1));
+      const rival=playerPiece('rival',{...ops[5],nativeFactionTags:['维多利亚']},'p2',5);
+      const operators={...base.operators,[holderSource.chessId]:holderSource,[ops[1].chessId]:{...ops[1],nativeFactionTags:[factions[1]]},[ops[2].chessId]:{...ops[2],nativeFactionTags:[factions[2]]},[ops[3].chessId]:{...ops[3],nativeFactionTags:[factions[3]]},[ops[5].chessId]:{...ops[5],nativeFactionTags:['维多利亚']}};
+      const catalog={...base,operators},state={pieces:[holder,...friends,rival],inventory:[]};
+      runNativeHook(state,'gain',{piece:holder,source:'buy'},makeServices(catalog,()=>0));
+      const recipients=state.pieces.filter(x=>grants(x).length);
+      assert.equal(recipients.length,3,`${id} ${elite?'golden':'normal'} grows exactly three recipients`);
+      assert.equal(new Set(recipients.map(x=>nativeFactions(x,catalog)[0])).size,3,`${id} chooses three distinct factions`);
+      assert.ok(recipients.every(x=>grants(x).some(([,n])=>n===units*mult)),`${id} applies its authored normal/golden amount`);
+      assert.deepEqual(grants(rival),[],`${id} never crosses to another player's roster`);
+    }
+
+    // BGS 202 counts distinct owned factions, not duplicate operators, and grows only itself.
+    {
+      const source={...withRule(holderOp,'BGS_202',elite),nativeFactionTags:['炎']},holder=playerPiece('h',source,'p1',0,elite),friendOp=ops[1],otherOp=ops[2];
+      const same=playerPiece('same',{...friendOp,nativeFactionTags:['炎']},'p1',1),other=playerPiece('other',{...otherOp,nativeFactionTags:['叙拉古']},'p1',2);
+      const catalog={...base,operators:{...base.operators,[source.chessId]:source,[friendOp.chessId]:{...friendOp,nativeFactionTags:['炎']},[otherOp.chessId]:{...otherOp,nativeFactionTags:['叙拉古']}}};
+      const state={round:1,pieces:[holder,same,other],inventory:[]};
+      runNativeHook(state,'prepEnd',{round:1},makeServices(catalog));
+      assert.deepEqual(grants(holder),[[attack,2*mult],[secondary,4*mult]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_202 ${elite?'golden':'normal'} scales with its two distinct factions`);
+      assert.deepEqual(grants(same),[]);assert.deepEqual(grants(other),[]);
+      state.pieces=[holder,same];holder.equipment=[];holder.nativeState={};state.round=2;
+      runNativeHook(state,'prepEnd',{round:2},makeServices(catalog));
+      assert.deepEqual(grants(holder),[[attack,mult],[secondary,2*mult]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_202 duplicate faction units count once`);
+    }
+
+    // GVG 027 selects a different Columbia operator; wrong factions and self are excluded.
+    {
+      const source=withRule(holderOp,'GVG_027',elite),holder=playerPiece('h',source,'p1',0,elite),targetOp={...ops[1],nativeFactionTags:['哥伦比亚']},wrongOp={...ops[2],nativeFactionTags:['炎']};
+      const target=playerPiece('target',targetOp,'p1',1),wrong=playerPiece('wrong',wrongOp,'p1',2);
+      const catalog={...base,operators:{...base.operators,[source.chessId]:source,[targetOp.chessId]:targetOp,[wrongOp.chessId]:wrongOp}};
+      const state={round:1,pieces:[holder,target,wrong],inventory:[]};
+      runNativeHook(state,'prepEnd',{round:1},makeServices(catalog));
+      const [targetAttack,targetSecondary]=darkmoonGrowthBadges(target,catalog);
+      assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(target),[[targetAttack,2*mult],[targetSecondary,2*mult]].sort((a,b)=>a[0].localeCompare(b[0])));
+      assert.deepEqual(grants(wrong),[],`GVG_027 ${elite?'golden':'normal'} rejects a non-Columbia recipient`);
+    }
+
+    // GVG 048 affects other eligible Battlecry holders only; GVG 055 requires an explicit matching target.
+    {
+      const source=withRule(holderOp,'GVG_048',elite),holder=playerPiece('h',source,'p1',0,elite),aOp={...ops[1],nativeFactionTags:['哥伦比亚']},bOp={...ops[2],nativeFactionTags:['哥伦比亚']},wrongOp={...ops[3],nativeFactionTags:['叙拉古']};
+      const a=playerPiece('a',aOp,'p1',1),b=playerPiece('b',bOp,'p1',2),wrong=playerPiece('wrong',wrongOp,'p1',3),rival=playerPiece('rival',{...ops[4],nativeFactionTags:['哥伦比亚']},'p2',4);
+      const operators={...base.operators,[source.chessId]:source,[aOp.chessId]:aOp,[bOp.chessId]:bOp,[wrongOp.chessId]:wrongOp,[ops[4].chessId]:{...ops[4],nativeFactionTags:['哥伦比亚']},[ops[5].chessId]:{...ops[5],sourceRefs:{darkmoon19_2:{id:'TEST_BATTLECRY',battlecry:true}}}};
+      const catalog={...base,operators},state={pieces:[holder,a,b,wrong,rival],inventory:[]};
+      runNativeHook(state,'gain',{piece:playerPiece('played',ops[5]),source:'buy'},makeServices(catalog));
+      assert.deepEqual(grants(holder),[],`GVG_048 ${elite?'golden':'normal'} excludes its own source`);
+      assert.deepEqual(grants(a),[[attack,(elite?4:2)]].sort());assert.deepEqual(grants(b),[[attack,(elite?4:2)]].sort());
+      assert.deepEqual(grants(wrong),[]);assert.deepEqual(grants(rival),[],'GVG_048 is owner-scoped');
+    }
+    {
+      const source=withRule(holderOp,'GVG_055',elite),holder=playerPiece('h',source,'p1',0,elite),targetOp={...ops[1],nativeFactionTags:['哥伦比亚']},wrongOp={...ops[2],nativeFactionTags:['叙拉古']};
+      const target=playerPiece('target',targetOp,'p1',1),wrong=playerPiece('wrong',wrongOp,'p1',2),catalog={...base,operators:{...base.operators,[source.chessId]:source,[targetOp.chessId]:targetOp,[wrongOp.chessId]:wrongOp}},state={pieces:[holder,target,wrong],inventory:[]},services=makeServices(catalog);
+      runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:target.uid},services);
+      const [targetAttack,targetSecondary]=darkmoonGrowthBadges(target,catalog);
+      assert.deepEqual(grants(target),[[targetAttack,2*mult],[targetSecondary,2*mult]].sort((a,b)=>a[0].localeCompare(b[0])));
+      assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:wrong.uid},services),/DARKMOON_TARGET_REQUIRED/,`GVG_055 ${elite?'golden':'normal'} rejects the wrong faction target`);
+    }
+
+    // ICC 029 grants attack growth to one other friendly unit, never to itself or a rival.
+    {
+      const source=withRule(holderOp,'ICC_029',elite),holder=playerPiece('h',source,'p1',0,elite),friend=playerPiece('friend',ops[1],'p1',1),rival=playerPiece('rival',ops[2],'p2',2);
+      const catalog={...base,operators:{...base.operators,[source.chessId]:source}},state={round:1,pieces:[holder,friend,rival],inventory:[]};
+      runNativeHook(state,'prepEnd',{round:1},makeServices(catalog));
+      assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(friend),[[attack,3*mult]]);
+      assert.deepEqual(grants(rival),[],`ICC_029 ${elite?'golden':'normal'} is limited to another friendly recipient and attack growth`);
+    }
+  }
 });
