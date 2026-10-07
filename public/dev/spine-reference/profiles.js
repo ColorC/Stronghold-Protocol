@@ -72,3 +72,14 @@ export function partFor(profile,slot) {
   }
   return 'unmapped';
 }
+export function subpartFor(profile,slot) {
+  if(partFor(profile,slot)==='unmapped')return null;
+  const n=slot.id;
+  if(/hand/i.test(n))return 'hand';
+  if(/forearm/i.test(n))return 'forearm';
+  if(/upperarm|_[LR]_Arm/i.test(n))return 'upperarm';
+  if(/foot/i.test(n))return 'foot';
+  if(/shin|calf/i.test(n))return 'calf';
+  if(/thigh|_[LR]_Leg/i.test(n))return 'thigh';
+  return null;
+}

@@ -9,7 +9,7 @@
 <div id="error"></div><div class="grid">
 <section class="panel"><h2>原素材 <span class="caption">橙点对应当前部位</span></h2><div class="stage" id="sourceStage"><svg id="sourceOverlay" viewBox="-270 -410 600 680" style="pointer-events:none;z-index:1"></svg></div></section>
 <section class="panel"><h2>统一参考 <span class="caption">点击参考点查看绑定</span></h2><div class="stage"><svg id="skeleton" viewBox="-270 -410 600 680"></svg></div></section>
-<section class="panel aside"><h3>查看部件</h3><div id="parts" class="chips"></div><h3>定位部位</h3><div id="points" class="landmarks"></div><h3 id="selectedTitle">参考点</h3><div id="detail"></div><div class="buttons"><button id="pointLink">复制部位链接</button><button id="partLink">复制部件链接</button></div><p id="formNote" class="small"></p><details><summary>原始数据与绑定依据</summary><pre id="raw"></pre></details></section>
+<section class="panel aside"><h3>查看部件</h3><div id="parts" class="chips"></div><label id="subpartControl" hidden>单独查看 <select id="subpart"></select></label><h3>定位部位</h3><div id="points" class="landmarks"></div><h3 id="selectedTitle">参考点</h3><div id="detail"></div><div class="buttons"><button id="pointLink">复制部位链接</button><button id="partLink">复制部件链接</button></div><p id="formNote" class="small"></p><details><summary>原始数据与绑定依据</summary><pre id="raw"></pre></details></section>
 </div><footer>位置与旋转分别表达；绘制层级与遮挡分别表达。选择动作并拖动时间，可检查同一部位的连续轨迹。</footer>
 <details><summary>本轮校准范围</summary><p>这是现有骨架的语义适配原型。部件归属已按素材建立映射；骨原点映射是候选关节，头中心、脚底和 2B 剑尖是局部偏移候选，胸和骨盆是虚拟参考点。史尔特尔变身形态、掌心、真实接触、人体左右、手掌与剑刃朝向保留为未知。世界坐标不含查看相机，归一化使用固定参考高度。</p></details>
 </main><script src="../../vendor/pixi.min.js"></script><script src="../../vendor/pixi-spine.js"></script><script type="module" src="./viewer.js"></script></body></html>
