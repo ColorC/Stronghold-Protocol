@@ -11,6 +11,7 @@ import { TraitGlyphs } from './hud.js';
 import { GearIcon, GameText, TermNotes } from './text.js';
 import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, inheritedLevel, permitsOf } from './model.js';
 import { badgeEffectText } from './badgeText.js';
+import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -37,6 +38,19 @@ export function HammerPicker({ g, item, busy, catalog, onSave }) {
 
 
 export const PRODUCTION_BADGES = ['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery'];
+
+function GearRecipients({ gear, state, catalog, source }) {
+  if (!source || !gear || !(gear.params?.targets || gear.params?.match || gear.params?.requiresFactionOnField || gear.params?.scope === 'boardonly')) return null;
+  const effect = { behavior: gear.mechanism || 'gear', params: gear.params || {}, effectDelivery: gear.effectDelivery };
+  const eligible = eligiblePiecesForEffect(effect, { pieces: state?.pieces || [], catalog, source });
+  const recipient = gear.effectDelivery?.recipients || gear.effectDelivery?.recipient;
+  const recipients = { self: '自身', target: '指定对象', other: '其他干员', all: '全部干员', inventory: '库存', shop: '商店', player: '玩家' };
+  const note = typeof gear.effectDelivery === 'string' ? gear.effectDelivery
+    : [recipients[recipient] || recipient, gear.effectDelivery?.duration || gear.effectDelivery?.term, gear.effectDelivery?.text].filter(Boolean).join(' · ');
+  return html`<details class="ix-effect-targets__item"><summary>当前符合条件 ${eligible.length} 名</summary>
+    ${note ? html`<p>${note}</p>` : null}<ul>${eligible.map((piece) => html`<li key=${piece.uid} onContextMenu=${(e) => copyComponentLink(e, `piece-${piece.uid}`)}>${formEntry(catalog, piece)?.name || piece.uid}</li>`)}
+      ${eligible.length ? null : html`<li class="ix-muted">当前没有符合条件的干员</li>`}</ul></details>`;
+}
 
 /** Both forms' trait texts (the current one lit) and, under them, every item and term they name. */
 export function TraitTexts({ op, elite, catalog }) {
@@ -144,6 +158,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
         ${s ? html`<header class="ix-inv__head"><${GearIcon} id=${s.id} catalog=${catalog} plain=${true} />
             <div class="ix-inv__text"><b>${s.name}</b><span class="num">${!s.badge && !s.used && s.level != null ? `${s.level}级 · ` : ''}×${s.count}</span></div></header>
           <p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>
+          <${GearRecipients} gear=${g} state=${state} catalog=${catalog} source=${target} />
           <${TermNotes} texts=${[s.text]} catalog=${catalog} exclude=${s.name} />
           ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} />` : null}
           <div class="ix-inv__act">

@@ -17,6 +17,7 @@ import { TraitGlyphs, mergeHintOf } from './hud.js';
 import { GameText, TermNotes, GearIcon } from './text.js';
 import { groupEquipment, permitsOf, isDeployed } from './model.js';
 import { TraitTexts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } from './panels.js';
+import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const FACTION_BOND = Object.fromEntries(Object.entries(TAVERN_FACTIONS).map(([bond, name]) => [name, bond]));
@@ -29,27 +30,112 @@ const TAB_OF = { garrison: 'traits', trait: 'skill', stats: 'stats', skill: 'ski
 function FactionChips({ factions, level, catalog }) {
   return html`<div class="dbonds dbonds--top ix-dchips" role="list" aria-label="所属阵营">
     ${(factions || []).map((f) => html`<span key=${f} role="listitem" class="dbond is-active">
-      ${FACTION_BOND[f] ? html`<${BondGlyph} bondId=${FACTION_BOND[f]} class="dbond__icon" />` : null}<span class="dbond__name">${f}</span></span>`)}
+      <${FactionIcon} faction=${f} catalog=${catalog} /><span class="dbond__name">${f}</span></span>`)}
     ${level != null ? html`<span class="ix-dchips__lv"><${GameText} text="装备总等级" catalog=${catalog} /> <b class="num">${level}</b></span>` : null}
   </div>`;
 }
 
+function FactionIcon({ faction, catalog }) {
+  const detail = catalog?.factionDetails?.[faction];
+  const iconUrl = detail?.iconUrl || detail?.url;
+  if (iconUrl) return html`<img class="dbond__icon ix-faction-icon" src=${iconUrl} alt="" loading="lazy" />`;
+  return FACTION_BOND[faction] ? html`<${BondGlyph} bondId=${FACTION_BOND[faction]} class="dbond__icon" />` : null;
+}
+
+function sourceCardRefs(op) {
+  const refs = op?.sourceRefs?.cards;
+  if (!refs) return [];
+  const cards = Array.isArray(refs) ? refs : [refs];
+  return cards.filter((x) => x && typeof x === 'object' && (x.text || x.textElite || x.name || x.sourceUrl));
+}
+
+function readableCardText(value) {
+  return String(value || '').replace(/<br\s*\/?\s*>/gi, '\n').replace(/<\/(?:p|div|li|tr|h[1-6])\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, '').replace(/&nbsp;|&#160;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").trim();
+}
+
+function OriginalCardRefs({ op, piece, linkAnchor = null }) {
+  const refs = sourceCardRefs(op);
+  if (!refs.length) return null;
+  const anchor = linkAnchor || (piece ? `piece-${piece.uid}` : null);
+  return html`<details class="ix-original-card" onContextMenu=${(e) => anchor && copyComponentLink(e, anchor)}>
+    <summary>参考原卡</summary>
+    ${refs.map((ref, index) => html`<article class="ix-original-card__item" key=${index}>
+      <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>版本 ${ref.version}</span>` : null}${ref.tier != null ? html`<span>Tier ${ref.tier}</span>` : null}
+        ${ref.sourceUrl ? html`<a href=${ref.sourceUrl} target="_blank" rel="noreferrer">來源卡片</a>` : null}</header>
+      ${ref.text ? html`<section><h4>普通</h4><pre>${readableCardText(ref.text)}</pre></section>` : null}
+      ${ref.textElite ? html`<section><h4>精锐</h4><pre>${readableCardText(ref.textElite)}</pre></section>` : null}
+    </article>`)}
+  </details>`;
+}
+
+function EffectTargets({ op, piece, state, catalog, elite = false }) {
+  if (!piece) return null;
+  const rules = elite ? op?.summaryElite || op?.summary || [] : op?.summary || [];
+  const conditional = rules.filter((entry) => entry.rule && (
+    ['teamForge', 'allyConditionStats'].includes(entry.rule.behavior) || entry.rule.params?.targets
+    || entry.rule.params?.match || entry.rule.params?.requiresFactionOnField));
+  if (!conditional.length) return null;
+  return html`<div class="ix-effect-targets" aria-label="当前效果接收者">
+    ${conditional.map((entry, index) => {
+      const rule = entry.rule;
+      return html`<${EffectTargetInfo} key=${index} effect=${rule} source=${piece} state=${state} catalog=${catalog}
+        delivery=${entry.effectDelivery || (elite ? op.effectDeliveryElite : op.effectDelivery)} anchor=${`piece-${piece.uid}`} />`;
+    })}
+  </div>`;
+}
+
+function deliveryText(delivery) {
+  if (typeof delivery === 'string') return delivery;
+  if (!delivery || typeof delivery !== 'object') return '';
+  const recipients = { self: '自身', target: '指定对象', other: '其他干员', all: '全部干员', inventory: '库存', shop: '商店', player: '玩家' };
+  const who = delivery.recipient || delivery.recipients || delivery.receiver || delivery.target;
+  return [recipients[who] || who, delivery.duration || delivery.term || delivery.until, delivery.text || delivery.description || delivery.message]
+    .filter((x) => typeof x === 'string' && x.trim()).join(' · ');
+}
+
+function EffectTargetInfo({ effect, source, state, catalog, delivery = null, anchor = null }) {
+  const params = effect?.params || {};
+  const conditional = effect && (['teamForge', 'allyConditionStats'].includes(effect.behavior) || params.targets || params.match
+    || params.requiresFactionOnField || params.scope === 'boardonly');
+  if (!conditional) return null;
+  const eligible = eligiblePiecesForEffect(effect, { pieces: state?.pieces || [], catalog, source });
+  const text = deliveryText(delivery || effect.effectDelivery);
+  return html`<details class="ix-effect-targets__item" onContextMenu=${(e) => anchor && copyComponentLink(e, anchor)}>
+    <summary>当前符合条件 ${eligible.length} 名</summary>
+    ${text ? html`<p>${text}</p>` : null}
+    <ul>${eligible.map((target) => html`<li key=${target.uid} onContextMenu=${(e) => copyComponentLink(e, `piece-${target.uid}`)}>${catalog.operators?.[target.chessId]?.name || target.name || target.uid}</li>`)}
+      ${eligible.length ? null : html`<li class="ix-muted">当前没有符合条件的干员</li>`}</ul>
+  </details>`;
+}
+
 /** The mode's 特质 (the original card's 特质 slot): the summary glyphs, both forms' texts and the terms they name. */
-function TraitSection({ op, elite, catalog, piece, busy, prep, onAct }) {
+function TraitSection({ op, elite, catalog, piece, state, busy, prep, onAct, linkAnchor }) {
   return html`<section key="garrison" class="dgarrison ix-dtrait" aria-label="特质">
     <div class="dgarrison__head"><span class="dgarrison__k">特质</span><${TraitGlyphs} summary=${op?.summary} elite=${elite} catalog=${catalog} max=${4} /></div>
     <${TraitTexts} op=${op} elite=${elite} catalog=${catalog} />
+    <${EffectTargets} op=${op} piece=${piece} state=${state} catalog=${catalog} elite=${elite} />
+    <${OriginalCardRefs} op=${op} piece=${piece} linkAnchor=${linkAnchor} />
     ${piece && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
       ${PRODUCTION_BADGES.map((id) => html`<button type="button" key=${id} class=${cx('ix-chip', (piece.preferences?.productionBadge || 'precision') === id && 'is-on')} disabled=${busy || !prep}
         onClick=${() => onAct({ type: 'configure', uid: piece.uid, productionBadge: id })}>${catalog.gear[id]?.name || ''}</button>`)}</div>` : null}
   </section>`;
 }
 
+function GrowthInfo({ piece }) {
+  if (!piece || piece.growthLevel == null) return null;
+  const stats = piece.growthStats || piece.growthAttributes || {};
+  const labels = { attack: '攻击', atk: '攻击', maxHp: '生命', hp: '生命', defense: '防御', def: '防御', attackSpeed: '攻速', aspd: '攻速' };
+  return html`<section class="ix-growth-info" aria-label="等级成长"><b>成长等级 ${piece.growthLevel}</b>
+    ${Object.entries(stats).map(([key, value]) => html`<span key=${key}>${labels[key] || key} ${Number(value) >= 0 ? '+' : ''}${value}</span>`)}</section>`;
+}
+
 /**
  * Worn gear as tiles (one per item; badges merged per kind) with the chosen tile's text under them — a long list of
  * gear never makes the card scroll. Attachments and the 交接凭证 note follow.
  */
-function GearSection({ items, attachments = [], catalog, busy, onConfigure, title, note }) {
+function GearSection({ items, attachments = [], catalog, busy, onConfigure, title, note, state = null, sourcePiece = null }) {
   const rows = groupEquipment(items, catalog);
   const [pick, setPick] = useState(null);
   const row = rows.find((r) => r.uids[0] === pick) || rows[0] || null;
@@ -65,6 +151,7 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
       </button>`)}</div>
       <div class="ix-dgear__text"><b>${row.name}</b>${row.permit ? html`<span class="ix-perm"><${GameText} text="交接凭证" catalog=${catalog} /></span>` : null}
         <${GameText} text=${row.badge && row.count > 1 ? (badgeTotal(g, row.count) || g.normal) : g.normal} catalog=${catalog} />
+        ${state && sourcePiece ? html`<${EffectTargetInfo} effect=${{ behavior: g.mechanism, params: g.params || {}, effectDelivery: g.effectDelivery }} source=${sourcePiece} state=${state} catalog=${catalog} anchor=${`piece-${sourcePiece.uid}`} />` : null}
         ${onConfigure && g.steamOptions?.length ? html`<${HammerPicker} g=${g} item=${item} busy=${busy} catalog=${catalog} onSave=${(ids) => onConfigure(item.uid, ids)} />` : null}</div>`
       : html`<p class="t-dim dempty">${note || '尚未穿戴装备：把库存格子拖到干员身上即可穿戴'}</p>`}
     ${attachments.length ? html`<div class="ix-dgear__att"><b>附加效果</b>${attachments.map((a) => html`<span key=${a.id}><${GameText} text=${catalog.attachments?.[a.id]?.name || ''} catalog=${catalog} /></span>`)}</div>` : null}
@@ -106,7 +193,7 @@ function ModuleChoice({ base, golden, piece, busy, prep, onAct }) {
  * An operator — own piece (prep or battle) or shop card — as the original card's blocks in tabs. `live`: the stats
  * entry it shows (start of battle / live) or null for the record's; `snapHp`: its HP in a battle (`inBattle`).
  */
-function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, inBattle = false, onAct, footer = null }) {
+function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, inBattle = false, onAct, footer = null, linkAnchor = null }) {
   const [tab, setTab] = useState('traits');
   const prep = state.phase === 'prep' && !inBattle;
   const opBase = catalog.operators[piece ? piece.chessId : slot.id];
@@ -120,14 +207,14 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
   const chess = Number.isInteger(tier) && tier !== record.tier ? { ...record, tier } : record;
   const loadout = piece ? { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } } : null;
   const gear = piece
-    ? html`<${GearSection} key="equip" items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备"
+    ? html`<${GearSection} key="equip" items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${state} sourcePiece=${piece}
         onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />`
     : html`<${GearSection} key="equip" items=${[...(opBase?.permitGear ? [{ id: opBase.permitGear, uid: 'permit', quantity: 1 }] : []), ...(slot.equipment || []).map((x, i) => ({ ...x, uid: `c${i}` }))]}
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,
-    chips: html`<${FactionChips} factions=${piece ? piece.factions : (data.lookup('chess', slot.id)?.bonds || []).map((b) => TAVERN_FACTIONS[b]).filter(Boolean)}
+    chips: html`<${FactionChips} factions=${piece ? piece.factions : catalog.operators?.[slot.id]?.nativeFactions || (data.lookup('chess', slot.id)?.bonds || []).map((b) => TAVERN_FACTIONS[b]).filter(Boolean)}
       level=${piece ? piece.equipmentLevel ?? 0 : null} catalog=${catalog} />`,
-    overrides: { garrison: html`<${TraitSection} key="garrison" op=${opBase} elite=${!!piece?.elite} catalog=${catalog} piece=${piece} busy=${busy} prep=${prep} onAct=${onAct} />`, equip: gear, actions: null } });
+    overrides: { garrison: html`<${TraitSection} key="garrison" op=${opBase} elite=${!!piece?.elite} catalog=${catalog} piece=${piece} state=${state} busy=${busy} prep=${prep} onAct=${onAct} linkAnchor=${linkAnchor} />`, equip: gear, actions: null } });
   const head = blocks.find((b) => b?.key === 'head');
   const panes = { traits: [], stats: [], skill: [], talent: [], gear: [] };
   for (const b of blocks) if (b && b.key !== 'head' && TAB_OF[b.key]) panes[TAB_OF[b.key]].push(b);
@@ -135,17 +222,18 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
     panes.skill.unshift(html`<${SkillChoice} key="skillchoice" base=${base} golden=${golden} piece=${piece} busy=${busy} prep=${prep} onAct=${onAct} />`);
     panes.talent.unshift(html`<${ModuleChoice} key="modulechoice" base=${base} golden=${golden} piece=${piece} busy=${busy} prep=${prep} onAct=${onAct} />`);
     if (piece.bodyPenaltyApplied) panes.stats.push(html`<p key="penalty" class="ix-note"><${GameText} text="已承受接装损耗：原生攻击力与最大生命值为80%" catalog=${catalog} /></p>`);
+    if (piece.growthLevel != null) panes.stats.push(html`<${GrowthInfo} key="growth" piece=${piece} />`);
   }
   const shown = TABS.filter(([k]) => panes[k].length);
   const cur = shown.some(([k]) => k === tab) ? tab : shown[0]?.[0];
   // two columns on a wide screen (head + stats | tabs + pane + actions), one column elsewhere (css .ix-dop)
   return html`<div class="ix-dop"><div class="ix-dop__main">
     <div class="ix-dpanel__head">${head}</div>
-    ${panes.stats.length ? html`<div class="ix-dpanel__stats">${panes.stats}</div>` : null}
+    ${panes.stats.length ? html`<div class="ix-dpanel__stats" onContextMenu=${(e) => linkAnchor && copyComponentLink(e, linkAnchor)}>${panes.stats}</div>` : null}
     </div><div class="ix-dop__side">
     <div class="ix-dtabs" role="tablist">${shown.map(([k, label]) => html`<button type="button" key=${k} role="tab" aria-selected=${cur === k ? 'true' : 'false'}
       class=${cx('ix-dtabs__tab', cur === k && 'is-on')} onClick=${() => setTab(k)}>${label}${k === 'gear' && piece ? html`<span class="num">${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}</span>` : null}</button>`)}</div>
-    <div class="ix-dpanel__pane" role="tabpanel">${panes[cur]}</div>
+    <div class="ix-dpanel__pane" role="tabpanel" onContextMenu=${(e) => linkAnchor && copyComponentLink(e, linkAnchor)}>${panes[cur]}</div>
     ${footer}</div></div>`;
 }
 
@@ -159,7 +247,8 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   useEffect(() => setConfirmSell(false), [target?.uid, target?.slot]);
   useTicker(battle && target ? 250 : 0);
   if (!target) return null;
-  const anchor = target.kind === 'piece' ? `piece-${target.uid}` : target.kind === 'shop' ? `shop-${target.slot}` : target.kind === 'gear' ? `gear-${target.id}` : null;
+  const anchor = target.kind === 'piece' ? `piece-${target.uid}` : target.kind === 'shop' ? `shop-${target.slot}`
+    : target.kind === 'gear' ? `gear-${target.id}` : target.kind === 'unit' && target.unit?.uid ? `piece-${target.unit.uid}` : null;
   const frame = (body, kind) => html`<aside class=${cx('dpanel', 'brackets', 'dpanel--right', shopOpen && 'is-shop', 'ix-dpanel', `ix-dpanel--${kind}`)} data-testid="ix-detail" role="dialog" aria-label="详情"
     onContextMenu=${anchor ? (e) => copyComponentLink(e, anchor) : null}>
     <button type="button" class="dpanel__close" aria-label="关闭" onClick=${onClose}><${Icon} name="close" /></button>
@@ -184,7 +273,7 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
     const liveEntry = live ? { ...live, src: 'battle' } : null;
     if (u.side === 'enemy') { const en = data.lookup('enemies', u.defId); return en ? frame(html`<${EnemyDetail} enemy=${en} snapHp=${hp} live=${liveEntry} />`, 'enemy') : null; }
     const piece = state.pieces.find((p) => p.uid === u.uid);
-    if (piece) return frame(html`<${OperatorCard} piece=${piece} state=${state} catalog=${catalog} busy=${busy} live=${liveEntry} snapHp=${hp} inBattle=${true} onAct=${onAct} />`, 'chess');
+    if (piece) return frame(html`<${OperatorCard} piece=${piece} state=${state} catalog=${catalog} busy=${busy} live=${liveEntry} snapHp=${hp} inBattle=${true} onAct=${onAct} linkAnchor=${anchor} />`, 'chess');
     const tok = data.lookup('tokens', u.defId);
     return tok ? frame(html`<${TokenDetail} token=${tok} snapHp=${hp} live=${liveEntry} />`, 'token') : null;
   }
@@ -207,5 +296,5 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
         : html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => setConfirmSell(true)} title="装备与附加效果会一起失去">出售 +${catalog.rules?.sellPrice ?? 1}<//>`}` : null}
   </footer>`;
   return frame(html`<${OperatorCard} key=${piece ? piece.uid : `s${target.slot}`} piece=${piece} slot=${slot} state=${state} catalog=${catalog} busy=${busy} live=${live}
-    onAct=${onAct} footer=${footer} />`, 'chess');
+    onAct=${onAct} footer=${footer} linkAnchor=${anchor} />`, 'chess');
 }

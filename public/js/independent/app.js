@@ -9,6 +9,8 @@ import { toast } from '../ui/toasts.js';
 import { api } from './api.js';
 import { GameScreen } from './game.js';
 
+const cx = (...parts) => parts.flat().filter(Boolean).join(' ');
+
 const LAST_KEY = 'ix:lastSession';
 const remember = (id) => { try { localStorage.setItem(LAST_KEY, id); } catch { /* private mode */ } };
 const lastSession = () => { try { return localStorage.getItem(LAST_KEY); } catch { return null; } };
@@ -65,13 +67,14 @@ function StartScreen({ catalog, onStart, onResume, last }) {
   const [settings, setSettings] = useState(false);
   useEffect(() => { audio.playBgm('lobby'); }, []);
   const [seed, setSeed] = useState('');
+  const [growthMode, setGrowthMode] = useState('levels');
   const go = async (mode) => {
     if (busy) return;
     setBusy(mode.roundLimit);
     const typed = seed.trim();
     // no seed typed: a random one; a typed seed replays the same shops and waves
     const value = typed && Number.isFinite(Number(typed)) ? Math.trunc(Number(typed)) : Math.floor(Math.random() * 2 ** 31);
-    try { await onStart({ seed: value, difficulty: mode.difficulty, roundLimit: mode.roundLimit }); } finally { setBusy(null); }
+    try { await onStart({ seed: value, difficulty: mode.difficulty, roundLimit: mode.roundLimit, growthMode }); } finally { setBusy(null); }
   };
   return html`<main class="ix-start">
     <header class="ix-start__head">
@@ -86,6 +89,15 @@ function StartScreen({ catalog, onStart, onResume, last }) {
         ${busy === mode.roundLimit ? html`<${Spinner} />` : null}
       </button>`)}
     </div>
+    <fieldset class="ix-growth-mode" aria-label="成长方案">
+      <legend>成长方案</legend>
+      <button type="button" role="radio" aria-checked=${growthMode === 'levels' ? 'true' : 'false'} class=${cx('ix-growth-mode__option', growthMode === 'levels' && 'is-on')} onClick=${() => setGrowthMode('levels')}>
+        <b>等级成长</b><span>干员随等级提升属性</span>
+      </button>
+      <button type="button" role="radio" aria-checked=${growthMode === 'badges' ? 'true' : 'false'} class=${cx('ix-growth-mode__option', growthMode === 'badges' && 'is-on')} onClick=${() => setGrowthMode('badges')}>
+        <b>徽章成长</b><span>以徽章强化干员</span>
+      </button>
+    </fieldset>
     <div class="ix-start__foot">
       <${TextField} class="ix-seed" label="对局编号（留空则随机）" value=${seed} onInput=${setSeed} placeholder="例如 20261006"
         maxLength=${10} transform=${(v) => v.replace(/[^0-9]/g, '')} />

@@ -19,7 +19,7 @@ async function call(path, init = {}) {
 
 const serverApi = {
   catalog: () => call('catalog'),
-  create: ({ seed, difficulty, roundLimit }) => call('sessions', { method: 'POST', body: JSON.stringify({ seed, difficulty, roundLimit }) }),
+  create: ({ seed, difficulty, roundLimit, growthMode = 'levels' }) => call('sessions', { method: 'POST', body: JSON.stringify({ seed, difficulty, roundLimit, growthMode }) }),
   load: (id) => call(`sessions/${encodeURIComponent(id)}?catalog=0`),
   act: (id, expectedRevision, action) => call(`sessions/${encodeURIComponent(id)}/actions`, { method: 'POST', body: JSON.stringify({ expectedRevision, action, catalog: false }) }),
   async replay(id, round) {
