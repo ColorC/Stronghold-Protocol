@@ -10,6 +10,7 @@ const chessData = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', im
 const tokenData = JSON.parse(fs.readFileSync(new URL('../../data/tokens.json', import.meta.url), 'utf8'));
 const id = 'chess_native_char_235_jesica_a';
 const record = chessData[id];
+const meleeId = 'chess_char_1_02_a';
 const normalized = new DataSource({ chess: { [id]: record } }, getDefaultSource()).getChess(id);
 const vanillaId = 'chess_native_char_240_wyvern_a';
 const vanillaRecord = chessData[vanillaId];
@@ -200,13 +201,23 @@ test('native Chongyue S1 executes its three-charge triple strike from native bla
 });
 
 test('native Roberta S1 applies source ATK and DEF buffs during its duration', () => {
-  const data = new DataSource({ chess: { [robertaId]: robertaRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const data = new DataSource({ chess: { [robertaId]: robertaRecord, [meleeId]: chessData[meleeId] }, tokens: { [miboTokenId]: miboTokenRecord, token_10018_robrta_mach: tokenData.token_10018_robrta_mach }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
   const def = data.getChess(robertaId);
   assert.equal(def.skill.id, 'skchr_robrta_1');
   assert.equal(skillSpecSource(def), 'skills');
-  const h = makeBattle({ data, units: [{ chessId: robertaId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
+  const h = makeBattle({ data, units: [{ chessId: robertaId, row: 10, col: 5 }, { chessId: meleeId, row: 10, col: 6 }], enemies: [{ key: 'enemy_dummy', pos: [10, 8] }] });
+  const robertaUnit = h.unit(robertaId), ally = h.unit(meleeId);
+  h.run(0.6);
+  const machine = h.b.spawnToken(robertaUnit, 'token_10018_robrta_mach', 10, 7, { dir: 'LEFT' });
+  assert.ok(machine, 'the source token can be deployed in range of the selected melee ally');
+  h.run(0.3);
+  const talent = machine.def.talents[0].bb;
+  assert.ok(Math.abs(ally.s.def - ally.base.def * (1 + talent.def)) < 1e-8);
+  assert.ok(ally.buffs.some((buff) => buff.key.startsWith(`native:robrta:shield:${machine.id}`) && buff.shieldHits === 1));
   h.run(40);
-  const unit = h.unit(robertaId);
+  const unit = robertaUnit;
+  unit.skill.setSpTotal(unit.skill.spCost);
+  assert.equal(unit.skill.activate('manual'), true, 'the native manual skill activates when ready');
   assert.ok(unit.skill.activations > 0);
   assert.ok(unit.skill.active);
   assert.ok(unit.s.atk > unit.base.atk);

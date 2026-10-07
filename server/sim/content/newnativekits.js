@@ -33,6 +33,15 @@ export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_242_otter: 'skchr_otter_1',
 });
 
+// Only candidates with a complete default loadout, source talent and required token behavior are workshop-playable.
+// Remaining raw skills stay attached for research and are filtered out by supportedSkillIds.
+export const NATIVE_KIT_READY = Object.freeze([
+  'char_240_wyvern', 'char_235_jesica', 'char_366_acdrop',
+  'char_385_finlpp', 'char_4119_wanqin', 'char_4019_ncdeer',
+  'char_2025_shu', 'char_2024_chyue', 'char_4222_taraxa', 'char_242_otter',
+  'char_484_robrta',
+]);
+
 const spTypeOf = (value) => ({ INCREASE_WITH_TIME: 'time', INCREASE_WHEN_ATTACK: 'attack', INCREASE_WHEN_TAKEN: 'hurt', NOT_RECOVER: 'none', time: 'time', attack: 'attack', hurt: 'hurt', none: 'none' })[value] ?? null;
 const talentMods = (chess, fields) => {
   const source = chess?.talents?.find((talent) => talent.index === 0)?.bb ?? {};
@@ -290,7 +299,26 @@ function roberta(bb, chess) {
   const x = sourceSkill(chess, 'skchr_robrta_1');
   const atkPct = number(x?.s.bb?.atk), defPct = number(x?.s.bb?.def), duration = number(x?.s.duration);
   if (!x || atkPct == null || defPct == null || !(duration > 0)) return null;
-  return { skills: { skchr_robrta_1: { id: 'skchr_robrta_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { atkPct, defPct } } } };
+  return {
+    skills: { skchr_robrta_1: { id: 'skchr_robrta_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { atkPct, defPct } } },
+    talents: [{ install(battle, unit) {
+      const tokenId = 'token_10018_robrta_mach';
+      battle.every(0.25, () => {
+        for (const token of battle.alliesFor(unit)) {
+          if (token.kind !== 'token' || token.defId !== tokenId || token.ownerUnit !== unit || token.mem.nativeRobertaApplied) continue;
+          const targetKeys = new Set(absoluteRangeKeys(token.def?.rangeGrid || [[0, 0]], token.tileR, token.tileC, token.dir, 0));
+          const target = battle.alliesFor(unit).find((ally) => ally.kind === 'op' && ally !== unit && ally.def?.position === 'MELEE' && targetKeys.has(ally.tileR * COLS + ally.tileC) && !ally.buffs.some((buff) => buff.key.startsWith('native:robrta:def:')));
+          if (!target) continue;
+          const effect = token.def?.talents?.[0]?.bb ?? {};
+          const defPct = number(effect.def), effectDuration = number(effect.duration);
+          if (!(defPct > 0 && effectDuration > 0)) continue;
+          token.mem.nativeRobertaApplied = target.id;
+          battle.addBuff(target, { key: `native:robrta:def:${token.id}`, duration: effectDuration, source: unit, mods: { defPct }, tags: ['talent'] });
+          battle.addBuff(target, { key: `native:robrta:shield:${token.id}`, duration: effectDuration, source: unit, shieldHits: unit.def?.phase >= 2 ? 2 : 1, visible: true, tags: ['talent'] });
+        }
+      }, { owner: unit, immediate: true });
+    } }],
+  };
 }
 
 function taraxacum(bb, chess) {
