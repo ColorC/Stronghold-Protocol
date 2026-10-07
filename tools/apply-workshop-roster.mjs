@@ -59,10 +59,19 @@ const KEYWORD_ADAPTERS = Object.freeze({
 // Descriptors are written from the source effect, with ordinary/golden parameters kept distinct.
 const PREP_ADAPTERS = Object.freeze({
   BGS_027: { trigger:'roundStart', sourceTrigger:'turnStart', recipient:'self', duration:'permanentWornGear', kind:'badgeGrowth', effect:{ normal:1, elite:2 }, adapter:'grantEquipment', params:{ landOn:'self', outputs:[{id:'precision',normal:1,elite:2}] } },
+  BGS_037: { trigger:'sold', sourceTrigger:'sell', recipient:'currentShopOffers', duration:'currentShopOnly', kind:'shopGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonShopGrowth', params:{rosterTribe:'*',persistent:false} },
   BGS_049: { trigger:'sold', sourceTrigger:'sell', recipient:'playerResource', duration:'immediateOnSale', kind:'gold', effect:{ normal:3, elite:6 }, adapter:'factionReaction', params:{ mode:'funds',targets:'all',maxEventsPerPrep:1 }, runtimeParams:{normal:{count:2},elite:{count:5}}, note:'Base sell already grants 1 gold; adapter adds 2/5 immediately to reach original 3/6 total.' },
-  BGS_055: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shopUpgradeCost', duration:'nextUpgrade', kind:'upgradeDiscount', effect:{ normal:1, elite:2 }, adapter:'factionReaction', params:{ mode:'discount',targets:'self',count:{normal:1,elite:2},excludeSelf:false,maxEventsPerPrep:1 } },
-  BGS_072: { trigger:'bought', sourceTrigger:'buyMatchingRace', recipient:'playerResource', duration:'thisTurnOnly', kind:'gold', effect:{ normal:1, elite:2 }, adapter:'darkmoonRacePurchaseFunds', params:{ race:'PIRATE' }, runtimeParams:{normal:{count:1},elite:{count:2}} },
+  BGS_055: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shopUpgradeCost', duration:'nextUpgrade', kind:'upgradeDiscount', effect:{ normal:1, elite:2 }, adapter:'factionReaction', params:{ mode:'discount',targets:'self',count:{normal:1,elite:2},excludeSelf:false,maxEventsPerPrep:3 } },
+  BGS_072: { trigger:'bought', sourceTrigger:'buyMatchingRosterTribe', recipient:'playerResource', duration:'thisTurnOnly', kind:'gold', effect:{ normal:1, elite:2 }, adapter:'darkmoonRosterTribePurchaseFunds', params:{ rosterTribe:'PIRATE',faction:'维多利亚' }, runtimeParams:{normal:{count:1},elite:{count:2}} },
+  BGS_104: { trigger:'bought', sourceTrigger:'buyMatchingRosterTribe', recipient:'matchingTribeShopOffers', duration:'permanent', kind:'shopGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonShopGrowth', params:{rosterTribe:'ELEMENTAL',faction:'炎',persistent:true} },
+  BGS_113: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'selectedShopMinion', duration:'permanentTransformation', kind:'transform', effect:{normal:1,elite:1}, adapter:'darkmoonTransformFromShop', params:{eliteCopy:false}, runtimeParams:{normal:{eliteCopy:false},elite:{eliteCopy:true}} },
+  BGS_041: { trigger:'gain', sourceTrigger:'otherBattlecryOnGain', recipient:'allFriendlyDragonOperators', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonBattlecryFactionGrowth', params:{rosterTribe:'DRAGON',outputs:['precision','vitality']} },
+  BGS_053: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'otherFriendlyPirates', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:3,elite:6}, adapter:'darkmoonBattlecryFactionGrowth', params:{rosterTribe:'PIRATE',outputs:['precision'],excludeSelf:true} },
+  BGS_128: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'otherFriendlyElementals', duration:'permanentWornGrowth', kind:'badgeGrowth', effect:{normal:1,elite:2}, adapter:'darkmoonBattlecryFactionGrowth', params:{rosterTribe:'ELEMENTAL',outputs:['precision','vitality'],excludeSelf:true} },
+  BGS_122: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'shop', duration:'frozenUntilPurchase', kind:'shopOffer', effect:{normal:1,elite:2}, adapter:'darkmoonAddTribeShopOffer', params:{rosterTribe:'ELEMENTAL'} },
+  BGS_123: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'hand', duration:'untilRecruited', kind:'recruitOffer', effect:{normal:1,elite:2}, adapter:'darkmoonRecruitTribeToHand', params:{rosterTribe:'ELEMENTAL'} },
   BGS_116: { trigger:'gain', sourceTrigger:'battlecryOnGain', recipient:'playerResource', duration:'nextRefreshes', kind:'freeRefresh', effect:{ normal:1, elite:2 }, adapter:'freeRefresh', params:{ normal:1, elite:2 } },
+  LOE_077: { trigger:'battlecryMultiplier', sourceTrigger:'battlecry', recipient:'originalBattlecryOutputs', duration:'whileOwnerOnField', kind:'triggerMultiplier', effect:{normal:2,elite:3}, adapter:'triggerMultiplier', params:{hook:'gain',filter:'darkmoonBattlecry'}, runtimeParams:{normal:{extraRuns:1},elite:{extraRuns:2}} },
 });
 
 function triggerOf(text) {
@@ -79,6 +88,10 @@ function triggerOf(text) {
   if (/Whenever|After you|When you|When this|After this/i.test(text)) return 'conditionalEvent';
   if (/^\s*(?:\[x\])?(?:<[^>]+>\s*)+(?:\n|$)/i.test(text) || /<b>(?:Taunt|Divine Shield|Reborn|Poisonous|Windfury|Mega-Windfury)<\/b>/i.test(text)) return 'staticCombat';
   return 'combatPassive';
+}
+function hasOwnBattlecry(text) {
+  const plain=String(text||'').replace(/<[^>]*>/g,'');
+  return /(?:^|[\r\n])\s*Battlecry\s*:/i.test(plain);
 }
 function recipientOf(text) {
   const t = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').toLowerCase();
@@ -152,7 +165,7 @@ function effectDeliveries(card, variant, isElite = false) {
   if (/Also damages the minions next to whom(?:ever)? this attacks/i.test(variant.text_en || '')) found.push('cleave');
   const rows = found.map(tag => {
     const descriptor = STATIC_KEYWORD_GEAR[tag];
-    return { trigger:'gain', sourceTrigger:'staticCombat', recipient:'self', duration:'permanentWornGear', kind:'keywordGear', text:`<b>${descriptor.label}</b>`, textEn:tag, tags:[tag], params:{}, adapter:[`independent:${descriptor.gear}`], implementation:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'dispatched-pending-gear-landing-verification' : 'unsupported', unsupportedReason:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.' : 'Static keyword has no source-id-specific delivery rule wired.' };
+    return { trigger:'gain', sourceTrigger:'staticCombat', recipient:'self', duration:'permanentWornGear', kind:'keywordGear', text:`<b>${descriptor.label}</b>`, textEn:tag, tags:[tag], params:{}, adapter:[`independent:${descriptor.gear}`], implementation:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? 'supported' : 'unsupported', unsupportedReason:KEYWORD_ADAPTERS[card.id]?.includes(descriptor.gear) ? null : 'Static keyword has no source-id-specific delivery rule wired.' };
   });
   if (/\bMagnetic\b/i.test(variant.text_en || '')) rows.push({ trigger:'playAttach', sourceTrigger:'magnetic', recipient:'chosenFriendlyMech', duration:'game', kind:'magneticAttachment', text:'磁力', textEn:'Magnetic', tags:['magnetic'], params:{}, implementation:'unsupported', unsupportedReason:'Magnetic requires an explicit friendly Mech attachment/merge rule; no native adapter has been tested.' });
   const textWithoutTags=(variant.text_en||'').replace(/<b>(?:Taunt|Divine Shield|Reborn|Poisonous|Windfury|Mega-Windfury)<\/b>/gi,'').replace(/\bMagnetic\b/gi,'').replace(/\[x\]/gi,'').replace(/<[^>]*>/g,'').replace(/[\s\n.,:;]+/g,'');
@@ -160,7 +173,7 @@ function effectDeliveries(card, variant, isElite = false) {
   if (hasMainText) {
     if (KEYWORD_ADAPTERS[card.id] && found.length===0) {
       const names=KEYWORD_ADAPTERS[card.id];
-      Object.assign(base,{trigger:'gain',recipient:'self',duration:'permanentWornGear',kind:'keywordGear',adapter:names.map(n=>`independent:${n}`),implementation:'dispatched-pending-gear-landing-verification',unsupportedReason:'Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.'});
+      Object.assign(base,{trigger:'gain',recipient:'self',duration:'permanentWornGear',kind:'keywordGear',adapter:names.map(n=>`independent:${n}`),implementation:'supported',unsupportedReason:null});
     }
     rows.push(base);
   }
@@ -207,8 +220,8 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
         mechanic:'keywordGearGrant',
         normal:{trigger:'gain',recipient:'self',duration:'permanentWornGear',outputs:KEYWORD_ADAPTERS[card.id].map(name=>({id:`independent:${name}`,quantity:1}))},
         elite:{trigger:'gain',recipient:'self',duration:'permanentWornGear',outputs:KEYWORD_ADAPTERS[card.id].map(name=>({id:`independent:${name}`,quantity:1}))},
-        status:'pending-gear-landing',
-        reason:'Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification.'
+        status:'supported',
+        reason:null
       } : {
         sourceId: card.id,
         status: 'unsupported',
@@ -241,7 +254,7 @@ const report = {
   recipients:{normal:recipientCounts('normal'),elite:recipientCounts('elite')},
   durations:{normal:durationCounts('normal'),elite:durationCounts('elite')},
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
-  nativeDispatchedPendingLanding: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
+  nativeDispatchedKeywordGear: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).length,
   sourceSpecificPrepAdapters:entries.filter(x=>PREP_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:PREP_ADAPTERS[x.sourceId].kind,status:'supported',normal:x.metadata.op.effectDelivery.normal,elite:x.metadata.op.effectDelivery.elite})),
   totalNormalEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.normal.length,0),
   totalEliteEffects:entries.reduce((n,x)=>n+x.metadata.op.effectDelivery.elite.length,0),
@@ -251,7 +264,7 @@ const report = {
   },
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
   unsupportedSourceIds: entries.filter(x=>[...x.metadata.op.effectDelivery.normal,...x.metadata.op.effectDelivery.elite].some(e=>e.implementation==='unsupported')).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal.find(e=>e.implementation==='unsupported')?.unsupportedReason || 'At least one variant effect is unsupported.'})),
-  pendingGearLandingSourceIds: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,gear:KEYWORD_ADAPTERS[x.sourceId]})),
+  verifiedKeywordGearSourceIds: entries.filter(x=>KEYWORD_ADAPTERS[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,gear:KEYWORD_ADAPTERS[x.sourceId]})),
   sourceSpecificSemanticRules: entries.filter(x=>SOURCE_RULES[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:x.authoredRule.mechanic,status:x.authoredRule.status})),
   nativeDefinitionMatches: entries.filter(x=>nativeByName.has(x.operator)).length,
   nativeDefinitionPending: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({id:x.sourceId,name:x.name,operator:x.operator,reason:'No matching operator definition in the currently checked-in design input; no native body is fabricated.'})),
@@ -268,7 +281,7 @@ const designAddon = {
     name:x.operator,
     chessId:nativeByName.get(x.operator).chessId,
     sourceId:x.sourceId,
-    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, originalRaces:x.originalRaces, version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
+    sourceRefs:{ darkmoon19_2:{ id:x.sourceId, name:x.name, nameEn:x.nameEn, tier:x.originalTier, rosterTribe:x.rosterTribe, faction:x.faction, nationId:x.nationId, originalRaces:x.originalRaces, battlecry:hasOwnBattlecry(x.sourceTextsEn.normal), version:x.sourceVersion, type:'Battlegrounds', sourceUrl:x.sourceUrl } },
     authoredRule:x.authoredRule,
     metadata:{op:{effectDelivery:x.metadata.op.effectDelivery}},
     modeEffects:null

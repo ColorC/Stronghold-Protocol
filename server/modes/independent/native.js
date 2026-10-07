@@ -3,6 +3,7 @@ import { tavernFactions as sharedTavernFactions, nativeBodyStats, nativeRecord }
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
 import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
+import { addDarkmoonShopGrowth } from './darkmoonShop.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
@@ -11,7 +12,7 @@ const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
 const PREP_TRIGGERS = new Set(['aura','gain','bought','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
 const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','damaged','death','deploy','dodge','dollSwap','elementBurst','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
-const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonRacePurchaseFunds','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
+const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonBattlecryFactionGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
 const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
 PREP_BEHAVIORS.add('teamForge');
 COMBAT_BEHAVIORS.add('allyConditionStats');
@@ -64,6 +65,7 @@ function finiteJson(value, seen = new Set()) {
 function authoredModeEffects(source, isElite) {
   const all = source?.modeEffects;
   if (!all || typeof all !== 'object' || Array.isArray(all)) throw new Error(`BAD_MODE_EFFECTS:${source?.chessId}`);
+  if (source?.sourceRefs?.darkmoon19_2?.id) return { prep:darkmoonPrepRulesFor(source,isElite), combat:[], unsupported:[] };
   const variant = all[isElite ? 'elite' : 'normal'];
   if (!variant || typeof variant !== 'object' || Array.isArray(variant) || !Array.isArray(variant.prep) || !Array.isArray(variant.combat)) throw new Error(`BAD_MODE_EFFECTS_VARIANT:${source?.chessId}:${isElite ? 'elite' : 'normal'}`);
   for (const [kind, rules, triggers, behaviors] of [['prep', variant.prep, PREP_TRIGGERS, PREP_BEHAVIORS], ['combat', variant.combat, COMBAT_TRIGGERS, COMBAT_BEHAVIORS]]) {
@@ -244,6 +246,7 @@ function combatRules(name, elite) {
 }
 
 export function nativeEffectFor(_chessId, source, isElite = false) {
+  if (source?.sourceRefs?.darkmoon19_2?.id && !Object.hasOwn(source || {}, 'modeEffects')) return { prep:darkmoonPrepRulesFor(source,isElite), combat:[], unsupported:[] };
   if (Object.hasOwn(source || {}, 'modeEffects')) return authoredModeEffects(source, isElite);
   const rules = PREP[source?.name] || [];
   const prep = [...rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) })), ...darkmoonPrepRulesFor(source,isElite)];
@@ -297,12 +300,15 @@ function bonus(p, piece, state, isElite) {
 // the hooks a doubler (an 'aura' rule, behavior triggerMultiplier) repeats: 获得时 / 休整结束时 / 出售时
 const DOUBLED_HOOKS = new Set(['gain', 'prepEnd', 'sold']);
 /** Extra runs of a hook's effects: the strongest doubler on the field for it (doublers do not stack). */
-function extraRuns(state, hook, services) {
+function extraRuns(state, hook, services, event = {}) {
   let extra = 0;
   for (const p of roster(state)) {
     if (!isPresent(p)) continue;
     for (const r of traitFor(p, services)?.effect?.prep || []) {
-      if (r.trigger === 'aura' && r.behavior === 'triggerMultiplier' && r.params?.hook === hook) extra = Math.max(extra, pick(r.params.extra, isEliteForm(p)));
+      if (r.trigger === 'aura' && r.behavior === 'triggerMultiplier' && r.params?.hook === hook) {
+        if (r.params.filter === 'darkmoonBattlecry' && !services.catalog?.operators?.[chessIdOf(event.piece)]?.sourceRefs?.darkmoon19_2?.battlecry) continue;
+        extra = Math.max(extra, pick(r.params.extra, isEliteForm(p)));
+      }
     }
   }
   return extra;
@@ -334,14 +340,53 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     ruleServices.__nativeCopied = Boolean(replay || event.replay);
     // where this rule's badges land (equipment.js landingPiece); the field's largest faction is the one this rule's recipe reads
     ruleServices.__landOn = p.landOn === 'dominantFactionLowest' ? `faction:${dominantFaction(state, services, piece) || ''}` : (p.landOn || null);
-    const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services) : 0);
+    const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services, event) : 0);
     for (let run = 0; run < runs; run++) {
     switch (r.behavior) {
       case 'factionReaction': runFactionReaction(state,piece,event,r,ruleServices); break;
-      case 'darkmoonRacePurchaseFunds': {
+      case 'darkmoonRosterTribePurchaseFunds': {
         const buyer=event.piece;
         const ref=services.catalog?.operators?.[chessIdOf(buyer)]?.sourceRefs?.darkmoon19_2;
-        if(buyer && (buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId) && ref?.originalRaces?.includes(p.race)) state.funds=Number(state.funds||0)+Number(p.count||0);
+        if(buyer && (buyer.playerId??buyer.ownerId)===(piece.playerId??piece.ownerId) && ref?.rosterTribe===p.rosterTribe && ref?.faction===p.faction) state.funds=Number(state.funds||0)+Number(p.count||0);
+        break;
+      }
+      case 'darkmoonShopGrowth':
+        addDarkmoonShopGrowth(state,services.catalog,{sourceId:services.catalog?.operators?.[chessIdOf(piece)]?.sourceRefs?.darkmoon19_2?.id, ...p},Boolean(p.persistent));
+        break;
+      case 'darkmoonTransformFromShop': {
+        const slotIndex=event.shopSlots?.[run] ?? (run===0?event.shopSlot:undefined);
+        const slot=Number.isInteger(slotIndex)?state.shop?.slots?.[slotIndex]:null;
+        if(!slot||slot.sold||!slot.id||slotIndex===event.buySlot) throw new Error('NATIVE_SHOP_TARGET_REQUIRED');
+        if(typeof services.transformPiece!=='function') throw new Error('NATIVE_TRANSFORM_UNAVAILABLE');
+        services.transformPiece(state,piece,slot,Boolean(p.eliteCopy));
+        break;
+      }
+      case 'darkmoonBattlecryFactionGrowth': {
+        const gained=event.piece, ref=services.catalog?.operators?.[chessIdOf(gained)]?.sourceRefs?.darkmoon19_2;
+        if(!gained || (gained.playerId??gained.ownerId)!==(piece.playerId??piece.ownerId) || !ref?.battlecry || !isPresent(piece)) break;
+        for(const target of roster(state).filter(x=>isPresent(x) && (x.playerId??x.ownerId)===(piece.playerId??piece.ownerId) && (!p.excludeSelf || x.uid!==piece.uid) && services.catalog?.operators?.[chessIdOf(x)]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe)) {
+          for(const id of p.outputs||[]) services.grantEquipment(state,id,Number(p.count||0),{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
+        }
+        break;
+      }
+      case 'darkmoonAddTribeShopOffer': {
+        const amount=Math.max(0,Math.floor(Number(p.count||0)));
+        const excluded=String(piece.chessId).replace(/_b$/,'_a');
+        const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && services.catalog?.operators?.[id]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe).map(([id])=>id).sort();
+        for(let i=0;i<amount&&eligible.length;i++) {
+          const id=eligible[Math.floor(services.rng()*eligible.length)];
+          state.shop.slots.push({kind:'chess',id,elite:false,price:3,sold:false,equipment:[],frozen:true});
+        }
+        break;
+      }
+      case 'darkmoonRecruitTribeToHand': {
+        const amount=Math.max(0,Math.floor(Number(p.count||0)));
+        const excluded=String(piece.chessId).replace(/_b$/,'_a');
+        const eligible=Object.entries(state.pool||{}).filter(([id,pool])=>id!==excluded&&pool.left>0 && services.catalog?.operators?.[id]?.sourceRefs?.darkmoon19_2?.rosterTribe===p.rosterTribe).map(([id])=>id).sort();
+        for(let i=0;i<amount&&eligible.length;i++) {
+          const id=eligible[Math.floor(services.rng()*eligible.length)];
+          state.offers.push({id:`o${state.nextUid++}`,type:'recruit',choices:[id],source:'darkmoon-hand-reward'});
+        }
         break;
       }
       case 'grantEquipment':
@@ -785,6 +830,7 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
     if (hook === 'gain' && piece && !event.replay) for (const holder of roster(state)) {
       if (isPresent(holder)) fire(state,'allyGain',holder,event,services,false,null,(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='allyGain'&&r.behavior==='factionReaction'));
+      if (hook==='gain' && holder.uid!==piece.uid && isPresent(holder)) fire(state,'gain',holder,event,services,false,null,(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='gain'&&r.behavior==='darkmoonBattlecryFactionGrowth'));
     }
   } else {
     // a rule that grows (params.growth) counts the prep phases its operator began on the field

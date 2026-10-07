@@ -1579,8 +1579,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -1597,8 +1597,8 @@
                 "adapter": [
                   "independent:不屈盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
@@ -1617,8 +1617,8 @@
                 "adapter": [
                   "independent:护盾发生器"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -1635,8 +1635,8 @@
                 "adapter": [
                   "independent:不屈盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -1675,8 +1675,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
@@ -1995,50 +1995,46 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
-                },
+                "trigger": "sold",
+                "sourceTrigger": "sell",
+                "recipient": "currentShopOffers",
+                "duration": "currentShopOnly",
+                "kind": "shopGrowth",
                 "text": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+1/+1。",
                 "textEn": "When you sell this minion, give all minions in Bob's Tavern +1/+1.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "rosterTribe": "*",
+                  "persistent": false,
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonShopGrowth"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
-                },
+                "trigger": "sold",
+                "sourceTrigger": "sell",
+                "recipient": "currentShopOffers",
+                "duration": "currentShopOnly",
+                "kind": "shopGrowth",
                 "text": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+2/+2。",
                 "textEn": "When you sell this minion, give all minions in Bob's Tavern +2/+2.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "rosterTribe": "*",
+                  "persistent": false,
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonShopGrowth"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -2046,45 +2042,56 @@
       },
       "authoredRule": {
         "sourceId": "BGS_037",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "shopGrowth",
+        "normal": {
+          "trigger": "sold",
+          "recipient": "currentShopOffers",
+          "duration": "currentShopOnly",
+          "adapter": "darkmoonShopGrowth",
+          "params": {
+            "rosterTribe": "*",
+            "persistent": false
+          }
+        },
+        "elite": {
+          "trigger": "sold",
+          "recipient": "currentShopOffers",
+          "duration": "currentShopOnly",
+          "adapter": "darkmoonShopGrowth",
+          "params": {
+            "rosterTribe": "*",
+            "persistent": false
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "sold",
+            "sourceTrigger": "sell",
+            "recipient": "currentShopOffers",
+            "duration": "currentShopOnly",
             "text": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+1/+1。",
             "params": {
-              "statDeltas": {
-                "attack": 1,
-                "health": 1
-              },
-              "numericLiterals": [
-                1,
-                1
-              ]
+              "rosterTribe": "*",
+              "persistent": false,
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "sold",
+            "sourceTrigger": "sell",
+            "recipient": "currentShopOffers",
+            "duration": "currentShopOnly",
             "text": "当你出售该随从时，使鲍勃的酒馆中的所有随从获得+2/+2。",
             "params": {
-              "statDeltas": {
-                "attack": 2,
-                "health": 2
-              },
-              "numericLiterals": [
-                2,
-                2
-              ]
+              "rosterTribe": "*",
+              "persistent": false,
+              "amount": 2
             }
           }
         ]
@@ -2317,8 +2324,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
@@ -2337,8 +2344,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -2369,8 +2376,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
@@ -2578,54 +2585,52 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "otherBattlecryOnGain",
+                "recipient": "allFriendlyDragonOperators",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "在你使用一张<b>战吼</b>随从牌后，使你的龙获得+1/+1。",
                 "textEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +1/+1.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "DRAGON",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonBattlecryFactionGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "otherBattlecryOnGain",
+                "recipient": "allFriendlyDragonOperators",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "在你使用一张<b>战吼</b>随从牌后，使你的所有龙获得+2/+2。",
                 "textEn": "After you play a minion with <b>Battlecry</b>, give your Dragons +2/+2.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "DRAGON",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonBattlecryFactionGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -2633,45 +2638,68 @@
       },
       "authoredRule": {
         "sourceId": "BGS_041",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "badgeGrowth",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "allFriendlyDragonOperators",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryFactionGrowth",
+          "params": {
+            "rosterTribe": "DRAGON",
+            "outputs": [
+              "precision",
+              "vitality"
+            ]
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "allFriendlyDragonOperators",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryFactionGrowth",
+          "params": {
+            "rosterTribe": "DRAGON",
+            "outputs": [
+              "precision",
+              "vitality"
+            ]
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "game",
+            "trigger": "gain",
+            "sourceTrigger": "otherBattlecryOnGain",
+            "recipient": "allFriendlyDragonOperators",
+            "duration": "permanentWornGrowth",
             "text": "在你使用一张<b>战吼</b>随从牌后，使你的龙获得+1/+1。",
             "params": {
-              "statDeltas": {
-                "attack": 1,
-                "health": 1
-              },
-              "numericLiterals": [
-                1,
-                1
-              ]
+              "rosterTribe": "DRAGON",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "game",
+            "trigger": "gain",
+            "sourceTrigger": "otherBattlecryOnGain",
+            "recipient": "allFriendlyDragonOperators",
+            "duration": "permanentWornGrowth",
             "text": "在你使用一张<b>战吼</b>随从牌后，使你的所有龙获得+2/+2。",
             "params": {
-              "statDeltas": {
-                "attack": 2,
-                "health": 2
-              },
-              "numericLiterals": [
-                2,
-                2
-              ]
+              "rosterTribe": "DRAGON",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "amount": 2
             }
           }
         ]
@@ -3408,50 +3436,52 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 3
-                  },
-                  "numericLiterals": [
-                    3
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "otherFriendlyPirates",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "<b>战吼：</b>使你的其他海盗获得+3攻击力。",
                 "textEn": "<b>Battlecry</b>: Give your other Pirates +3 Attack.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "PIRATE",
+                  "outputs": [
+                    "precision"
+                  ],
+                  "excludeSelf": true,
+                  "amount": 3
+                },
+                "adapter": [
+                  "darkmoonBattlecryFactionGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 6
-                  },
-                  "numericLiterals": [
-                    6
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "otherFriendlyPirates",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "<b>战吼：</b>使你的其他海盗获得+6攻击力。",
                 "textEn": "<b>Battlecry</b>: Give your other Pirates +6 Attack.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "PIRATE",
+                  "outputs": [
+                    "precision"
+                  ],
+                  "excludeSelf": true,
+                  "amount": 6
+                },
+                "adapter": [
+                  "darkmoonBattlecryFactionGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -3459,41 +3489,68 @@
       },
       "authoredRule": {
         "sourceId": "BGS_053",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "badgeGrowth",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "otherFriendlyPirates",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryFactionGrowth",
+          "params": {
+            "rosterTribe": "PIRATE",
+            "outputs": [
+              "precision"
+            ],
+            "excludeSelf": true
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "otherFriendlyPirates",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryFactionGrowth",
+          "params": {
+            "rosterTribe": "PIRATE",
+            "outputs": [
+              "precision"
+            ],
+            "excludeSelf": true
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "game",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "otherFriendlyPirates",
+            "duration": "permanentWornGrowth",
             "text": "<b>战吼：</b>使你的其他海盗获得+3攻击力。",
             "params": {
-              "statDeltas": {
-                "attack": 3
-              },
-              "numericLiterals": [
-                3
-              ]
+              "rosterTribe": "PIRATE",
+              "outputs": [
+                "precision"
+              ],
+              "excludeSelf": true,
+              "amount": 3
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "game",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "otherFriendlyPirates",
+            "duration": "permanentWornGrowth",
             "text": "<b>战吼：</b>使你的其他海盗获得+6攻击力。",
             "params": {
-              "statDeltas": {
-                "attack": 6
-              },
-              "numericLiterals": [
-                6
-              ]
+              "rosterTribe": "PIRATE",
+              "outputs": [
+                "precision"
+              ],
+              "excludeSelf": true,
+              "amount": 6
             }
           }
         ]
@@ -3545,7 +3602,7 @@
                     "elite": 2
                   },
                   "excludeSelf": false,
-                  "maxEventsPerPrep": 1,
+                  "maxEventsPerPrep": 3,
                   "amount": 1
                 },
                 "adapter": [
@@ -3573,7 +3630,7 @@
                     "elite": 2
                   },
                   "excludeSelf": false,
-                  "maxEventsPerPrep": 1,
+                  "maxEventsPerPrep": 3,
                   "amount": 2
                 },
                 "adapter": [
@@ -3599,7 +3656,7 @@
             "targets": "self",
             "count": 1,
             "excludeSelf": false,
-            "maxEventsPerPrep": 1
+            "maxEventsPerPrep": 3
           }
         },
         "elite": {
@@ -3612,7 +3669,7 @@
             "targets": "self",
             "count": 2,
             "excludeSelf": false,
-            "maxEventsPerPrep": 1
+            "maxEventsPerPrep": 3
           }
         },
         "status": "supported",
@@ -3634,7 +3691,7 @@
                 "elite": 2
               },
               "excludeSelf": false,
-              "maxEventsPerPrep": 1,
+              "maxEventsPerPrep": 3,
               "amount": 1
             }
           }
@@ -3654,7 +3711,7 @@
                 "elite": 2
               },
               "excludeSelf": false,
-              "maxEventsPerPrep": 1,
+              "maxEventsPerPrep": 3,
               "amount": 2
             }
           }
@@ -4578,7 +4635,7 @@
             "normal": [
               {
                 "trigger": "bought",
-                "sourceTrigger": "buyMatchingRace",
+                "sourceTrigger": "buyMatchingRosterTribe",
                 "recipient": "playerResource",
                 "duration": "thisTurnOnly",
                 "kind": "gold",
@@ -4586,11 +4643,12 @@
                 "textEn": "After you buy a Pirate,\ngain 1 Gold this turn\nonly.",
                 "tags": [],
                 "params": {
-                  "race": "PIRATE",
+                  "rosterTribe": "PIRATE",
+                  "faction": "维多利亚",
                   "amount": 1
                 },
                 "adapter": [
-                  "darkmoonRacePurchaseFunds"
+                  "darkmoonRosterTribePurchaseFunds"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null
@@ -4599,7 +4657,7 @@
             "elite": [
               {
                 "trigger": "bought",
-                "sourceTrigger": "buyMatchingRace",
+                "sourceTrigger": "buyMatchingRosterTribe",
                 "recipient": "playerResource",
                 "duration": "thisTurnOnly",
                 "kind": "gold",
@@ -4607,11 +4665,12 @@
                 "textEn": "After you buy a Pirate,\ngain 2 Gold this turn\nonly.",
                 "tags": [],
                 "params": {
-                  "race": "PIRATE",
+                  "rosterTribe": "PIRATE",
+                  "faction": "维多利亚",
                   "amount": 2
                 },
                 "adapter": [
-                  "darkmoonRacePurchaseFunds"
+                  "darkmoonRosterTribePurchaseFunds"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null
@@ -4627,9 +4686,10 @@
           "trigger": "bought",
           "recipient": "playerResource",
           "duration": "thisTurnOnly",
-          "adapter": "darkmoonRacePurchaseFunds",
+          "adapter": "darkmoonRosterTribePurchaseFunds",
           "params": {
-            "race": "PIRATE",
+            "rosterTribe": "PIRATE",
+            "faction": "维多利亚",
             "count": 1
           }
         },
@@ -4637,9 +4697,10 @@
           "trigger": "bought",
           "recipient": "playerResource",
           "duration": "thisTurnOnly",
-          "adapter": "darkmoonRacePurchaseFunds",
+          "adapter": "darkmoonRosterTribePurchaseFunds",
           "params": {
-            "race": "PIRATE",
+            "rosterTribe": "PIRATE",
+            "faction": "维多利亚",
             "count": 2
           }
         },
@@ -4650,12 +4711,13 @@
         "normal": [
           {
             "trigger": "bought",
-            "sourceTrigger": "buyMatchingRace",
+            "sourceTrigger": "buyMatchingRosterTribe",
             "recipient": "playerResource",
             "duration": "thisTurnOnly",
             "text": "在你购买一个海盗后，在本回合中获得一枚铸币。",
             "params": {
-              "race": "PIRATE",
+              "rosterTribe": "PIRATE",
+              "faction": "维多利亚",
               "amount": 1
             }
           }
@@ -4663,12 +4725,13 @@
         "elite": [
           {
             "trigger": "bought",
-            "sourceTrigger": "buyMatchingRace",
+            "sourceTrigger": "buyMatchingRosterTribe",
             "recipient": "playerResource",
             "duration": "thisTurnOnly",
             "text": "在你购买一个海盗后，在本回合中获得两枚铸币。",
             "params": {
-              "race": "PIRATE",
+              "rosterTribe": "PIRATE",
+              "faction": "维多利亚",
               "amount": 2
             }
           }
@@ -5653,50 +5716,48 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
-                },
+                "trigger": "bought",
+                "sourceTrigger": "buyMatchingRosterTribe",
+                "recipient": "matchingTribeShopOffers",
+                "duration": "permanent",
+                "kind": "shopGrowth",
                 "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+1/+1。",
                 "textEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +1/+1 for the rest\nof the game.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "faction": "炎",
+                  "persistent": true,
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonShopGrowth"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "prepEvent",
-                "sourceTrigger": "prepEvent",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
-                },
+                "trigger": "bought",
+                "sourceTrigger": "buyMatchingRosterTribe",
+                "recipient": "matchingTribeShopOffers",
+                "duration": "permanent",
+                "kind": "shopGrowth",
                 "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+2/+2。",
                 "textEn": "[x]After you play an Elemental,\nElementals in Bob's Tavern\nhave +2/+2 for the rest\nof the game.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "faction": "炎",
+                  "persistent": true,
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonShopGrowth"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -5704,45 +5765,60 @@
       },
       "authoredRule": {
         "sourceId": "BGS_104",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "shopGrowth",
+        "normal": {
+          "trigger": "bought",
+          "recipient": "matchingTribeShopOffers",
+          "duration": "permanent",
+          "adapter": "darkmoonShopGrowth",
+          "params": {
+            "rosterTribe": "ELEMENTAL",
+            "faction": "炎",
+            "persistent": true
+          }
+        },
+        "elite": {
+          "trigger": "bought",
+          "recipient": "matchingTribeShopOffers",
+          "duration": "permanent",
+          "adapter": "darkmoonShopGrowth",
+          "params": {
+            "rosterTribe": "ELEMENTAL",
+            "faction": "炎",
+            "persistent": true
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "bought",
+            "sourceTrigger": "buyMatchingRosterTribe",
+            "recipient": "matchingTribeShopOffers",
+            "duration": "permanent",
             "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+1/+1。",
             "params": {
-              "statDeltas": {
-                "attack": 1,
-                "health": 1
-              },
-              "numericLiterals": [
-                1,
-                1
-              ]
+              "rosterTribe": "ELEMENTAL",
+              "faction": "炎",
+              "persistent": true,
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "prepEvent",
-            "sourceTrigger": "prepEvent",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "bought",
+            "sourceTrigger": "buyMatchingRosterTribe",
+            "recipient": "matchingTribeShopOffers",
+            "duration": "permanent",
             "text": "在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+2/+2。",
             "params": {
-              "statDeltas": {
-                "attack": 2,
-                "health": 2
-              },
-              "numericLiterals": [
-                2,
-                2
-              ]
+              "rosterTribe": "ELEMENTAL",
+              "faction": "炎",
+              "persistent": true,
+              "amount": 2
             }
           }
         ]
@@ -5913,8 +5989,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -5931,8 +6007,8 @@
                 "adapter": [
                   "independent:不屈盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
@@ -5951,8 +6027,8 @@
                 "adapter": [
                   "independent:坚守盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               },
               {
                 "trigger": "gain",
@@ -5969,8 +6045,8 @@
                 "adapter": [
                   "independent:不屈盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -6009,8 +6085,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
@@ -6608,40 +6684,44 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "selectedShopMinion",
+                "duration": "permanentTransformation",
+                "kind": "transform",
                 "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的原始版\n复制。",
                 "textEn": "[x]<b>Battlecry:</b> Choose a minion\nin Bob's Tavern. Transform\ninto a plain copy of it.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "eliteCopy": false,
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonTransformFromShop"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "selectedShopMinion",
+                "duration": "permanentTransformation",
+                "kind": "transform",
                 "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的金色复制。",
                 "textEn": "[x]<b>Battlecry:</b> Choose a minion\nin Bob's Tavern. Transform\ninto a Golden copy of it.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "eliteCopy": false,
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonTransformFromShop"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -6649,31 +6729,52 @@
       },
       "authoredRule": {
         "sourceId": "BGS_113",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "transform",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "selectedShopMinion",
+          "duration": "permanentTransformation",
+          "adapter": "darkmoonTransformFromShop",
+          "params": {
+            "eliteCopy": false
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "selectedShopMinion",
+          "duration": "permanentTransformation",
+          "adapter": "darkmoonTransformFromShop",
+          "params": {
+            "eliteCopy": true
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "selectedShopMinion",
+            "duration": "permanentTransformation",
             "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的原始版\n复制。",
             "params": {
-              "numericLiterals": []
+              "eliteCopy": false,
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "selectedShopMinion",
+            "duration": "permanentTransformation",
             "text": "<b>战吼：</b>选择一个鲍勃的酒馆中的随从，变形成为它的金色复制。",
             "params": {
-              "numericLiterals": []
+              "eliteCopy": false,
+              "amount": 1
             }
           }
         ]
@@ -7329,40 +7430,44 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
                 "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "duration": "frozenUntilPurchase",
+                "kind": "shopOffer",
                 "text": "<b>战吼：</b>随机在鲍勃的酒馆中添加一个其他元素并使其<b>冻结</b>。",
                 "textEn": "<b>Battlecry:</b> Add another random Elemental to Bob's Tavern and <b>Freeze</b> it.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonAddTribeShopOffer"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
                 "recipient": "shop",
-                "duration": "untilShopRefreshOrPurchase",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "duration": "frozenUntilPurchase",
+                "kind": "shopOffer",
                 "text": "<b>战吼：</b>随机在鲍勃的酒馆中添加两个其他元素并使其<b>冻结</b>。",
                 "textEn": "<b>Battlecry:</b> Add two other random Elementals to Bob's Tavern and <b>Freeze</b> them.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonAddTribeShopOffer"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -7370,31 +7475,52 @@
       },
       "authoredRule": {
         "sourceId": "BGS_122",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "shopOffer",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "shop",
+          "duration": "frozenUntilPurchase",
+          "adapter": "darkmoonAddTribeShopOffer",
+          "params": {
+            "rosterTribe": "ELEMENTAL"
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "shop",
+          "duration": "frozenUntilPurchase",
+          "adapter": "darkmoonAddTribeShopOffer",
+          "params": {
+            "rosterTribe": "ELEMENTAL"
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
             "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "duration": "frozenUntilPurchase",
             "text": "<b>战吼：</b>随机在鲍勃的酒馆中添加一个其他元素并使其<b>冻结</b>。",
             "params": {
-              "numericLiterals": []
+              "rosterTribe": "ELEMENTAL",
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
             "recipient": "shop",
-            "duration": "untilShopRefreshOrPurchase",
+            "duration": "frozenUntilPurchase",
             "text": "<b>战吼：</b>随机在鲍勃的酒馆中添加两个其他元素并使其<b>冻结</b>。",
             "params": {
-              "numericLiterals": []
+              "rosterTribe": "ELEMENTAL",
+              "amount": 2
             }
           }
         ]
@@ -7430,40 +7556,44 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
                 "recipient": "hand",
-                "duration": "untilPlayedOrSold",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "duration": "untilRecruited",
+                "kind": "recruitOffer",
                 "text": "<b>战吼：</b>随机将一张其他元素牌置入你的\n手牌。",
                 "textEn": "<b>Battlecry:</b> Add another random Elemental to your hand.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonRecruitTribeToHand"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
                 "recipient": "hand",
-                "duration": "untilPlayedOrSold",
-                "kind": "resourceOrShopState",
-                "params": {
-                  "numericLiterals": []
-                },
+                "duration": "untilRecruited",
+                "kind": "recruitOffer",
                 "text": "<b>战吼：</b>随机将两张其他元素牌置入你的\n手牌。",
                 "textEn": "<b>Battlecry:</b> Add two other random Elementals to your hand.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonRecruitTribeToHand"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -7471,31 +7601,52 @@
       },
       "authoredRule": {
         "sourceId": "BGS_123",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "recruitOffer",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "hand",
+          "duration": "untilRecruited",
+          "adapter": "darkmoonRecruitTribeToHand",
+          "params": {
+            "rosterTribe": "ELEMENTAL"
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "hand",
+          "duration": "untilRecruited",
+          "adapter": "darkmoonRecruitTribeToHand",
+          "params": {
+            "rosterTribe": "ELEMENTAL"
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
             "recipient": "hand",
-            "duration": "untilPlayedOrSold",
+            "duration": "untilRecruited",
             "text": "<b>战吼：</b>随机将一张其他元素牌置入你的\n手牌。",
             "params": {
-              "numericLiterals": []
+              "rosterTribe": "ELEMENTAL",
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
             "recipient": "hand",
-            "duration": "untilPlayedOrSold",
+            "duration": "untilRecruited",
             "text": "<b>战吼：</b>随机将两张其他元素牌置入你的\n手牌。",
             "params": {
-              "numericLiterals": []
+              "rosterTribe": "ELEMENTAL",
+              "amount": 2
             }
           }
         ]
@@ -7974,54 +8125,54 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 1,
-                    "health": 1
-                  },
-                  "numericLiterals": [
-                    1,
-                    1
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "otherFriendlyElementals",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "<b>战吼：</b>使你的其他元素获得+1/+1。",
                 "textEn": "<b>Battlecry:</b> Give your other Elementals +1/+1.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "excludeSelf": true,
+                  "amount": 1
+                },
+                "adapter": [
+                  "darkmoonBattlecryFactionGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "battlecry",
-                "sourceTrigger": "battlecry",
-                "recipient": "eligibleFriendlyTribe",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "statDeltas": {
-                    "attack": 2,
-                    "health": 2
-                  },
-                  "numericLiterals": [
-                    2,
-                    2
-                  ]
-                },
+                "trigger": "gain",
+                "sourceTrigger": "battlecryOnGain",
+                "recipient": "otherFriendlyElementals",
+                "duration": "permanentWornGrowth",
+                "kind": "badgeGrowth",
                 "text": "<b>战吼：</b>使你的其他元素获得+2/+2。",
                 "textEn": "<b>Battlecry:</b> Give your other Elementals +2/+2.",
-                "tags": [
-                  "battlecry"
+                "tags": [],
+                "params": {
+                  "rosterTribe": "ELEMENTAL",
+                  "outputs": [
+                    "precision",
+                    "vitality"
+                  ],
+                  "excludeSelf": true,
+                  "amount": 2
+                },
+                "adapter": [
+                  "darkmoonBattlecryFactionGrowth"
                 ],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -8029,45 +8180,72 @@
       },
       "authoredRule": {
         "sourceId": "BGS_128",
-        "status": "unsupported",
-        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+        "mechanic": "badgeGrowth",
+        "normal": {
+          "trigger": "gain",
+          "recipient": "otherFriendlyElementals",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryFactionGrowth",
+          "params": {
+            "rosterTribe": "ELEMENTAL",
+            "outputs": [
+              "precision",
+              "vitality"
+            ],
+            "excludeSelf": true
+          }
+        },
+        "elite": {
+          "trigger": "gain",
+          "recipient": "otherFriendlyElementals",
+          "duration": "permanentWornGrowth",
+          "adapter": "darkmoonBattlecryFactionGrowth",
+          "params": {
+            "rosterTribe": "ELEMENTAL",
+            "outputs": [
+              "precision",
+              "vitality"
+            ],
+            "excludeSelf": true
+          }
+        },
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "game",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "otherFriendlyElementals",
+            "duration": "permanentWornGrowth",
             "text": "<b>战吼：</b>使你的其他元素获得+1/+1。",
             "params": {
-              "statDeltas": {
-                "attack": 1,
-                "health": 1
-              },
-              "numericLiterals": [
-                1,
-                1
-              ]
+              "rosterTribe": "ELEMENTAL",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "excludeSelf": true,
+              "amount": 1
             }
           }
         ],
         "elite": [
           {
-            "trigger": "battlecry",
-            "sourceTrigger": "battlecry",
-            "recipient": "eligibleFriendlyTribe",
-            "duration": "game",
+            "trigger": "gain",
+            "sourceTrigger": "battlecryOnGain",
+            "recipient": "otherFriendlyElementals",
+            "duration": "permanentWornGrowth",
             "text": "<b>战吼：</b>使你的其他元素获得+2/+2。",
             "params": {
-              "statDeltas": {
-                "attack": 2,
-                "health": 2
-              },
-              "numericLiterals": [
-                2,
-                2
-              ]
+              "rosterTribe": "ELEMENTAL",
+              "outputs": [
+                "precision",
+                "vitality"
+              ],
+              "excludeSelf": true,
+              "amount": 2
             }
           }
         ]
@@ -8115,8 +8293,8 @@
                 "adapter": [
                   "independent:精准盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
@@ -8135,8 +8313,8 @@
                 "adapter": [
                   "independent:精准盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -8167,8 +8345,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
@@ -10915,8 +11093,8 @@
                 "adapter": [
                   "independent:精准盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
@@ -10935,8 +11113,8 @@
                 "adapter": [
                   "independent:精准盟约"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test."
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -10967,8 +11145,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
@@ -11810,8 +11988,8 @@
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "implementation": "supported",
+                "unsupportedReason": null,
                 "adapter": [
                   "independent:巨锤盟约"
                 ]
@@ -11832,8 +12010,8 @@
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "implementation": "supported",
+                "unsupportedReason": null,
                 "adapter": [
                   "independent:巨锤盟约"
                 ]
@@ -11867,8 +12045,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [
@@ -12523,36 +12701,46 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "eligibleBattlecryOutputs",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "numericLiterals": []
-                },
+                "trigger": "battlecryMultiplier",
+                "sourceTrigger": "battlecry",
+                "recipient": "originalBattlecryOutputs",
+                "duration": "whileOwnerOnField",
+                "kind": "triggerMultiplier",
                 "text": "你的<b>战吼</b>会触发\n两次。",
                 "textEn": "Your <b>Battlecries</b> trigger twice.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "hook": "gain",
+                  "filter": "darkmoonBattlecry",
+                  "amount": 2
+                },
+                "adapter": [
+                  "triggerMultiplier"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ],
             "elite": [
               {
-                "trigger": "combatPassive",
-                "sourceTrigger": "combatPassive",
-                "recipient": "eligibleBattlecryOutputs",
-                "duration": "game",
-                "kind": "statOrCombatBuff",
-                "params": {
-                  "numericLiterals": []
-                },
+                "trigger": "battlecryMultiplier",
+                "sourceTrigger": "battlecry",
+                "recipient": "originalBattlecryOutputs",
+                "duration": "whileOwnerOnField",
+                "kind": "triggerMultiplier",
                 "text": "你的<b>战吼</b>会触发\n三次。",
                 "textEn": "Your <b>Battlecries</b> trigger three times.",
                 "tags": [],
-                "implementation": "unsupported",
-                "unsupportedReason": "No source-id-specific native behavior has yet been implemented and exercised."
+                "params": {
+                  "hook": "gain",
+                  "filter": "darkmoonBattlecry",
+                  "amount": 3
+                },
+                "adapter": [
+                  "triggerMultiplier"
+                ],
+                "implementation": "supported",
+                "unsupportedReason": null
               }
             ]
           }
@@ -12576,25 +12764,29 @@
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "combatPassive",
-            "sourceTrigger": "combatPassive",
-            "recipient": "eligibleBattlecryOutputs",
-            "duration": "game",
+            "trigger": "battlecryMultiplier",
+            "sourceTrigger": "battlecry",
+            "recipient": "originalBattlecryOutputs",
+            "duration": "whileOwnerOnField",
             "text": "你的<b>战吼</b>会触发\n两次。",
             "params": {
-              "numericLiterals": []
+              "hook": "gain",
+              "filter": "darkmoonBattlecry",
+              "amount": 2
             }
           }
         ],
         "elite": [
           {
-            "trigger": "combatPassive",
-            "sourceTrigger": "combatPassive",
-            "recipient": "eligibleBattlecryOutputs",
-            "duration": "game",
+            "trigger": "battlecryMultiplier",
+            "sourceTrigger": "battlecry",
+            "recipient": "originalBattlecryOutputs",
+            "duration": "whileOwnerOnField",
             "text": "你的<b>战吼</b>会触发\n三次。",
             "params": {
-              "numericLiterals": []
+              "hook": "gain",
+              "filter": "darkmoonBattlecry",
+              "amount": 3
             }
           }
         ]
@@ -12643,8 +12835,8 @@
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "implementation": "supported",
+                "unsupportedReason": null,
                 "adapter": [
                   "independent:巨锤盟约"
                 ]
@@ -12665,8 +12857,8 @@
                 "tags": [
                   "cleave"
                 ],
-                "implementation": "dispatched-pending-gear-landing-verification",
-                "unsupportedReason": "Native gain dispatch is implemented; full execution awaits the authorized landOn:self fix for non-badge gear and its concrete grant test.",
+                "implementation": "supported",
+                "unsupportedReason": null,
                 "adapter": [
                   "independent:巨锤盟约"
                 ]
@@ -12700,8 +12892,8 @@
             }
           ]
         },
-        "status": "pending-gear-landing",
-        "reason": "Source-id keyed native gain dispatch is implemented; full execution awaits concrete non-badge landOn:self verification."
+        "status": "supported",
+        "reason": null
       },
       "sourceEffect": {
         "normal": [

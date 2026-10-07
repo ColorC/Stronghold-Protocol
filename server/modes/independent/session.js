@@ -11,6 +11,7 @@ import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, normalizeGearF
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { shopCarryApplies } from './warbandPrep.js';
+import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth } from './darkmoonShop.js';
 import { GROWTH_MODES, operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
@@ -122,13 +123,13 @@ function slotsFor(state, gd, catalog, rng) {
   for (let i = 0; i < counts.chess + counts.item; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
   // 商店预增益 (native shopCarry): every new offer carries what the game has built up so far
   for (const fx of state.playerEffects || []) if (fx.type === 'shopCarry' && fx.quantity > 0) for (const slot of slots) if (shopCarryApplies(fx,slot,catalog)) slot.equipment.push({ id: fx.id, quantity: fx.quantity, origin: 'shopCarry' });
-  return slots;
+  return decorateDarkmoonShopSlots(state,catalog,slots);
 }
 function advanceShop(state, gd, catalog, rng) {
   const next = slotsFor(state, gd, catalog, rng);
-  if (!state.shop.frozen) return next;
   const current = state.shop.slots || [];
-  return next.map((slot, i) => current[i] && !current[i].sold ? current[i] : slot);
+  return [...next.map((slot, i) => current[i] && !current[i].sold && (state.shop.frozen || current[i].frozen) ? current[i] : slot),
+    ...current.slice(next.length).filter(slot=>!slot.sold&&(state.shop.frozen||slot.frozen))];
 }
 function invokeHook(state, hook, event, services) {
   const outer = services.phase; services.phase = hook;
@@ -142,6 +143,7 @@ function servicesFor(state, data, catalog, rng) {
   const services = { data, catalog, rng, phase: null,
     // the running hook names the production ledger's phase (equipment.js recordProduction)
     grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, { phase: services.phase, ...extra }),
+    transformPiece: (draft, piece, slot, makeGolden = false) => transformPieceIntoShopCopy(draft, catalog, piece, slot, makeGolden),
     grantChess: (draft, chessId, extra = {}) => { const room = roomFor(draft, catalog, chessId, { allowTemp: true }); if (!room) { pushEvent(draft, { type: 'no-room', chessId }); return null; } const piece = gainChess(draft, catalog, chessId, extra); if (room === 'temp') piece.temp = true; invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); maybeMergeOperator(draft, catalog, chessId); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
     recordProduction: (draft, entry) => recordProduction(draft, { phase: services.phase, ...entry }),
@@ -201,6 +203,21 @@ function lacksPermit(piece, catalog) {
 function ensurePermit(piece, catalog) {
   const id = lacksPermit(piece, catalog);
   if (id) piece.equipment.push({ uid: `permit-${piece.uid}`, id, quantity: 1, state: {}, sourceId: id });
+}
+function transformPieceIntoShopCopy(state,catalog,piece,slot,makeGolden=false) {
+  if(!slot||slot.kind!=='chess'||slot.sold||!slot.id||!opFor(catalog,slot.id)) throw new Error('BAD_SHOP_TARGET');
+  const sourceId=piece.chessId,targetBase=baseId(slot.id),target=opFor(catalog,targetBase);
+  const chosenId=makeGolden?(target?.eliteChessId||target?.eliteId):targetBase;
+  if(!chosenId||!opFor(catalog,chosenId)) throw new Error(makeGolden?'GOLDEN_SHOP_TARGET_UNAVAILABLE':'BAD_SHOP_TARGET');
+  const chosenPool=poolFor(state,targetBase);if(!chosenPool?.left)throw new Error('SOLD_OUT');
+  safeCopyPool(state,sourceId,piece.poolCopies||1);chosenPool.left--;
+  const chosen=opFor(catalog,chosenId);
+  piece.chessId=chosenId;piece.elite=Boolean(makeGolden);piece.poolCopies=1;
+  piece.skillIndex=Number((chosen.source?.normalChess||{}).skill?.index??chosen.defaultSkillIndex??0);
+  piece.moduleId='none';piece.equipment=[];piece.attachments=[];piece.bodyPenaltyApplied=false;
+  piece.nativeState={preferences:{productionBadge:'precision',factionPriority:Object.values(TAVERN_FACTIONS)}};
+  if(state.growthMode==='levels'){piece.growthMode='levels';piece.growthLevel=1;operatorGrowthInfo(piece,catalog);}else{delete piece.growthMode;delete piece.growthLevel;}
+  ensurePermit(piece,catalog);return piece;
 }
 /** A save from before 交接凭证 were gear: give each of the twelve operators the one it brings (no-op otherwise). */
 function ensurePermits(state, catalog) { for (const piece of state.pieces || []) ensurePermit(piece, catalog); }
@@ -533,7 +550,8 @@ export function applyAction(state, action, options = {}) {
         if (!roomFor(work, catalog, slot.id, { allowTemp: false })) throw new Error('BENCH_FULL');
         work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; addTotal(work, 'bought'); addTotal(work, 'spent', slot.price); invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
-        invokeHook(work, 'gain', { piece, source: 'buy', paid: true }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
+        applyDarkmoonShopGrowth(work,slot,piece,services);
+        invokeHook(work, 'gain', { piece, source: 'buy', paid: true, shopSlots: action.shopSlots, shopSlot: action.shopSlot, buySlot: action.slot }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
         for (const carried of slot.equipment || []) {
           const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item);
           equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1);
@@ -554,7 +572,7 @@ export function applyAction(state, action, options = {}) {
       if (free) work.shop.freeRefreshes--;
       else { if (work.funds < 1) throw new Error('NO_FUNDS'); work.funds--; work.counters.spent++; work.counters.paidRefreshes++; invokeHook(work, 'spend', { amount: 1, source: 'refresh' }, services); }
       work.counters.refreshes = (work.counters.refreshes || 0) + 1; addTotal(work, 'refreshes'); if (!free) addTotal(work, 'spent');
-      work.shop.slots = slotsFor(work, gd, catalog, rng); invokeHook(work, 'refresh', { free }, services);
+      work.shop.slots = advanceShop(work, gd, catalog, rng); invokeHook(work, 'refresh', { free }, services);
       events.push({ type: 'refresh' });
     } else if (act === 'freeze') {
       ensurePrep(work); work.shop.frozen = !work.shop.frozen; events.push({ type: 'freeze', value: work.shop.frozen });
