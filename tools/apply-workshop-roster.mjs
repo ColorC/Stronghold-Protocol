@@ -403,8 +403,8 @@ const designAddon = {
   })),
   pendingNativeDefinitions: entries.filter(x=>!nativeByName.has(x.operator)).map(x=>({name:x.operator,sourceId:x.sourceId})),
   supportOperators:[
-    {id:'darkmoon:support-cat-1-1',name:'召唤猫',attack:1,health:1,faction:null,sourceId:'CFM_315',recruitable:false,mergeable:false,freePoolCopy:true},
-    {id:'darkmoon:support-cat-2-2',name:'强化召唤猫',attack:2,health:2,faction:null,sourceId:'CFM_315',recruitable:false,mergeable:false,freePoolCopy:true},
+    {id:'darkmoon:support-cat-1-1',name:'召唤猫',attack:1,health:1,faction:'叙拉古',sourceId:'CFM_315',recruitable:false,mergeable:false,freePoolCopy:true},
+    {id:'darkmoon:support-cat-2-2',name:'强化召唤猫',attack:2,health:2,faction:'叙拉古',sourceId:'CFM_315',recruitable:false,mergeable:false,freePoolCopy:true},
     {id:'darkmoon:support-elemental-2-2',name:'炎阵营支援单位',attack:2,health:2,faction:'炎',sourceId:'BGS_115',recruitable:false,mergeable:false,freePoolCopy:true}
   ]
 };

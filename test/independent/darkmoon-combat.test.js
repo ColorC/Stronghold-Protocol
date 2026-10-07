@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { getData } from '../../server/data.js';
 import { makeBattle,chessRec,enemyRec } from '../helpers/battleHarness.js';
 import { installDarkmoonCombat,DARKMOON_COMBAT_RULES,darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
+import { levelBodyStats } from '../../shared/independentGrowth.js';
 
 const tribes={MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'};
 function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[]) {
@@ -108,7 +109,7 @@ test('temporary training from multiple sources follows one native curve and neve
   assert.equal(unit.s.atk,190);assert.equal(unit.s.def,90);assert.equal(unit.s.res,9);
   assert.deepEqual(installed.results.growth,[]);
 });
-test('random original copies keep the actual native kit, talent and skill activation instead of becoming empty stat bodies',()=>{
+for(const growthMode of ['badges','levels'])test(`random original copies keep the native kit and pristine ${growthMode} body`,()=>{
   const raw=structuredClone(getData().chess.chess_native_char_235_jesica_a);
   raw.nativeImport.playable=true;
   const source=chessRec({id:'source_shredder_a',skill:null,stats:{cost:0,atk:100,maxHp:10000}});
@@ -117,10 +118,11 @@ test('random original copies keep the actual native kit, talent and skill activa
     [source.chessId]:{chessId:source.chessId,tier:6,source:{normalChess:source},nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id:'BGS_023'}}},
     [raw.chessId]:{chessId:raw.chessId,tier:2,source:{normalChess:raw},nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id:'BOT_606'}}},
   }};
-  const h=makeBattle({defs:{chess:{[source.chessId]:source,[raw.chessId]:raw},enemies:{probe:enemyRec({key:'probe',hp:1e8,atk:0,def:0,speed:0})}},units:pieces,content:'none',autoFinish:false,extraContent:[b=>installDarkmoonCombat(b,{catalog,pieces})]});
+  const h=makeBattle({defs:{chess:{[source.chessId]:source,[raw.chessId]:raw},enemies:{probe:enemyRec({key:'probe',hp:1e8,atk:0,def:0,speed:0})}},units:pieces,content:'none',autoFinish:false,extraContent:[b=>installDarkmoonCombat(b,{catalog,pieces,state:{growthMode}})]});
   h.run(.2);const enemy=h.spawn('probe',{pos:[10,7]});h.b.retreat(h.unit('source'));h.run(.1);
   const copy=h.b.allyUnits.find(u=>u.kind==='token');assert.ok(copy);
   assert.equal(copy.def.raw.darkmoonNativeChessId,raw.chessId);assert.equal(copy.skill.id,raw.skill.skillId);
+  assert.equal(copy.base.atk,levelBodyStats({chessId:raw.chessId,growthMode,growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw).atk,'pristine copies do not inherit preset max-level stats in training mode');
   assert.ok(copy.s.aspd>copy.base.aspd,'the original native talent remains installed');
   for(let i=0;i<12;i++){h.b.forceAttack(copy,[enemy]);h.run(.3);}
   assert.ok(copy.skill.activations>0,JSON.stringify({reason:'the native attack-recovery skill must activate',position:[copy.x,copy.y],sp:copy.skill.sp,cost:copy.skill.spCost,kind:copy.skill.kind,attacks:copy.stats.attacks,skill:copy.def.skill}));

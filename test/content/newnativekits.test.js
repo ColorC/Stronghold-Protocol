@@ -6,6 +6,7 @@ import { skillSpecSource } from '../../server/sim/content/index.js';
 import { DataSource, getDefaultSource } from '../../server/sim/simdata.js';
 import { COLS } from '../../server/sim/constants.js';
 import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_KIT_READY, NATIVE_SKILL_SUPPORT } from '../../server/sim/content/newnativekits.js';
+import { NATIVE_KIT_READY as VKS_READY } from '../../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
 
 const chessData = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const tokenData = JSON.parse(fs.readFileSync(new URL('../../data/tokens.json', import.meta.url), 'utf8'));
@@ -45,11 +46,12 @@ const miboTokenId = 'token_10004_otter_motter';
 const miboTokenRecord = tokenData[miboTokenId];
 
 test('native importer marks only complete default kits Workshop-playable while preserving global hidden status', () => {
-  const readyIds = new Set(NATIVE_KIT_READY);
+  const readyIds = new Set([...NATIVE_KIT_READY,...Object.entries(VKS_READY).filter(([,r])=>r.ready&&r.talentReady&&r.skillReady&&r.tokenReady).map(([id])=>id)]);
   const candidates = Object.values(chessData).filter((rec) => rec.chessType === 'NATIVE_IMPORT_CANDIDATE');
   for (const rec of candidates) {
     assert.equal(rec.visible, false);
     assert.equal(rec.isHidden, true);
+    assert.equal(rec.nativeImport.playable,readyIds.has(rec.charId),`${rec.charId} eligibility matches the explicit tested-kit manifest`);
     if (rec.nativeImport.playable) {
       assert.ok(readyIds.has(rec.charId), `${rec.charId} source data cannot mark an unregistered native kit ready`);
       assert.equal(rec.nativeImport.playable, true, `${rec.charId} complete default kit is independent-only playable`);

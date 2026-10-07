@@ -4,12 +4,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { makeDarkmoonSupport } from '../server/modes/independent/catalog.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const args=process.argv.slice(2),value=(flag,fallback)=>{const i=args.indexOf(flag);return i>=0?path.resolve(args[i+1]):path.join(root,fallback);};
 const load=p=>JSON.parse(fs.readFileSync(p,'utf8'));
 const designPath=value('--design','data/independent-design.json'),textPath=value('--game-text','data/independent-game-text.json');
+const chessPath=value('--chess','data/chess.json');
 const design=load(designPath),gameText=load(textPath),plan=load(value('--plan','data/independent-roster-plan.json')),
-  chess=load(value('--chess','data/chess.json')),affiliations=load(value('--factions','data/native-factions.json')),
+  chess=load(chessPath),affiliations=load(value('--factions','data/native-factions.json')),
   blueprints=load(value('--blueprints','data/independent-darkmoon-blueprints.json')),
   addon=load(value('--addon','data/independent-darkmoon-design-addon.json')),
   textAddon=load(value('--text-addon','data/independent-darkmoon-game-text-addon.json'));
@@ -39,7 +41,7 @@ for(const name of selected){
   operator={...(operator||{}),name,chessId:raw.chessId,charId:raw.charId,tier,nativeFactionTags:tags,
     sourceRefs:{...(extra?.sourceRefs||{}),darkmoon19_2:{id:blueprint.sourceId,name:blueprint.name,nameEn:blueprint.nameEn,tier:blueprint.originalTier,
       rosterTribe:blueprint.rosterTribe,faction:blueprint.faction,nationId:blueprint.nationId,originalRaces:blueprint.originalRaces,
-      battlecry:/Battlecry:/i.test(blueprint.sourceTextsEn.normal),version:blueprint.sourceVersion,type:'Battlegrounds',sourceUrl:blueprint.sourceUrl},cards:[cardRef]},effectDelivery:blueprint.metadata.op.effectDelivery,
+      battlecry:/Battlecry:/i.test(blueprint.sourceTextsEn.normal),deathrattle:/Deathrattle:/i.test(blueprint.sourceTextsEn.normal),version:blueprint.sourceVersion,type:'Battlegrounds',sourceUrl:blueprint.sourceUrl},cards:[cardRef]},effectDelivery:blueprint.metadata.op.effectDelivery,
     nativeTrait:{normal:t.normal,elite:t.elite,inheritable:false,origin:'operator body'},
     modeEffects:null,inheritance:null,tierReason:plan.tierOverrides?.[name]?.reason||'按原卡科技与功能安排',
     defaultSkillIndex:raw.skill?.index??0,skills:(raw.skills||[]).map(s=>s.skillId),talents:raw.talents||[],
@@ -54,11 +56,12 @@ design.operators=[...old.values()];
 design.rules={...design.rules,activeRosterIds:active,factionIdentityEquipment:false,tavernFactions:[...new Set(receipts.flatMap(o=>o.nativeFactions))]};
 design.rules.factionDetails=Object.fromEntries(affiliations.operators.flatMap(o=>Object.values(o.factions).filter(Boolean).map(f=>[f.name,{name:f.name,iconUrl:f.iconPath,type:Object.entries(o.factions).find(([,x])=>x===f)?.[0]}])));
 design.status='implemented';
+for(const support of addon.supportOperators||[])chess[support.id]=makeDarkmoonSupport(support).source.normalChess;
 const report={operators:receipts,tierCounts:receipts.reduce((a,o)=>(a[o.tier]=(a[o.tier]||0)+1,a),{}),factionCounts:receipts.reduce((a,o)=>{for(const f of o.nativeFactions)a[f]=(a[f]||0)+1;return a;},{}),pending};
 const reportArg=args.indexOf('--report');if(reportArg<0||!args[reportArg+1])throw new Error('Absolute --report is required');
 const reportPath=path.resolve(args[reportArg+1]);fs.mkdirSync(path.dirname(reportPath),{recursive:true});fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');
 if(args.includes('--write')){
   if(pending.length)throw new Error(`ROSTER_NOT_READY:${pending.length}; see ${reportPath}`);
-  fs.writeFileSync(designPath,JSON.stringify(design,null,2)+'\n');fs.writeFileSync(textPath,JSON.stringify(gameText,null,2)+'\n');
+  fs.writeFileSync(designPath,JSON.stringify(design,null,2)+'\n');fs.writeFileSync(textPath,JSON.stringify(gameText,null,2)+'\n');fs.writeFileSync(chessPath,JSON.stringify(chess)+'\n');
 }
 console.log(JSON.stringify({report:reportPath,ready:pending.length===0,roster:receipts.length,tierCounts:report.tierCounts,pending:pending.length,written:args.includes('--write')}));
