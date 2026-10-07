@@ -65,7 +65,6 @@
       "charId": "char_240_wyvern",
       "name": "香草",
       "appellation": "Vanilla",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -95,13 +94,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_484_robrta",
       "name": "罗比菈塔",
       "appellation": "Roberta",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -124,13 +125,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_235_jesica",
       "name": "杰西卡",
       "appellation": "Jessica",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -160,13 +163,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_440_pinecn",
       "name": "松果",
       "appellation": "Pinecone",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -189,13 +194,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_366_acdrop",
       "name": "酸糖",
       "appellation": "Aciddrop",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -218,13 +225,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_108_silent",
       "name": "赫默",
       "appellation": "Silence",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -254,13 +263,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_107_liskam",
       "name": "雷蛇",
       "appellation": "Liskarm",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -290,13 +301,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_242_otter",
       "name": "梅尔",
       "appellation": "Mayer",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -326,13 +339,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_128_plosis",
       "name": "白面鸮",
       "appellation": "Ptilopsis",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -362,13 +377,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_4191_tippi",
       "name": "蒂比",
       "appellation": "Tippi",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -391,13 +408,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_451_robin",
       "name": "罗宾",
       "appellation": "Robin",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -420,13 +439,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_4048_doroth",
       "name": "多萝西",
       "appellation": "Dorothy",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -456,13 +477,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_150_snakek",
       "name": "蛇屠箱",
       "appellation": "Cuora",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -485,13 +508,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_202_demkni",
       "name": "塞雷娅",
       "appellation": "Saria",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -521,13 +546,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_264_f12yin",
       "name": "山",
       "appellation": "Mountain",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -550,13 +577,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_1034_jesca2",
       "name": "涤火杰西卡",
       "appellation": "Jessica the Liberated",
-      "tag": "mechanical",
       "tagLabel": "哥伦比亚",
       "sourceFields": {
         "nationId": "columbia",
@@ -586,13 +615,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "mechanical"
+      ]
     },
     {
       "charId": "char_4162_cathy",
       "name": "凯瑟琳",
       "appellation": "Catherine",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -615,13 +646,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_494_vendla",
       "name": "刺玫",
       "appellation": "Vendela",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -644,13 +677,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_220_grani",
       "name": "格拉尼",
       "appellation": "Grani",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -673,13 +708,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_4017_puzzle",
       "name": "谜图",
       "appellation": "Puzzle",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -702,13 +739,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_155_tiger",
       "name": "因陀罗",
       "appellation": "Indra",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -738,13 +777,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_388_mint",
       "name": "薄绿",
       "appellation": "Mint",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -767,13 +808,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_4040_rockr",
       "name": "洛洛",
       "appellation": "Rockrock",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -796,13 +839,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_4045_heidi",
       "name": "海蒂",
       "appellation": "Heidi",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -825,13 +870,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_154_morgan",
       "name": "摩根",
       "appellation": "Morgan",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -861,13 +908,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_4039_horn",
       "name": "号角",
       "appellation": "Horn",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -890,13 +939,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_222_bpipe",
       "name": "风笛",
       "appellation": "Bagpipe",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -919,13 +970,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_112_siege",
       "name": "推进之王",
       "appellation": "Siege",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -955,13 +1008,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_4072_ironmn",
       "name": "白铁",
       "appellation": "Stainless",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -984,13 +1039,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_1019_siege2",
       "name": "维娜·维多利亚",
       "appellation": "Vina Victoria",
-      "tag": "pirate",
       "tagLabel": "维多利亚",
       "sourceFields": {
         "nationId": "victoria",
@@ -1013,13 +1070,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "pirate"
+      ]
     },
     {
       "charId": "char_385_finlpp",
       "name": "清流",
       "appellation": "Purestream",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1042,13 +1101,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4019_ncdeer",
       "name": "九色鹿",
       "appellation": "Nine-Colored Deer",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1071,13 +1132,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4122_grabds",
       "name": "小满",
       "appellation": "Grain Buds",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1100,13 +1163,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4222_taraxa",
       "name": "风絮",
       "appellation": "Taraxacum",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1129,13 +1194,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_306_leizi",
       "name": "惊蛰",
       "appellation": "Leizi",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1158,13 +1225,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4119_wanqin",
       "name": "万顷",
       "appellation": "Wanqing",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1187,13 +1256,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4196_reckpr",
       "name": "录武官",
       "appellation": "Record Keeper",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1216,13 +1287,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4082_qiubai",
       "name": "仇白",
       "appellation": "Qiubai",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1245,13 +1318,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_2015_dusk",
       "name": "夕",
       "appellation": "Dusk",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1281,13 +1356,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_2023_ling",
       "name": "令",
       "appellation": "Ling",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1317,13 +1394,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_2025_shu",
       "name": "黍",
       "appellation": "Shu",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1353,13 +1432,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_2024_chyue",
       "name": "重岳",
       "appellation": "Chongyue",
-      "tag": "elemental",
       "tagLabel": "炎",
       "sourceFields": {
         "nationId": "yan",
@@ -1389,13 +1470,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "elemental"
+      ]
     },
     {
       "charId": "char_4000_jnight",
       "name": "正义骑士号",
       "appellation": "\"Justice Knight\"",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1425,13 +1508,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_237_gravel",
       "name": "砾",
       "appellation": "Gravel",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1454,13 +1539,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_496_wildmn",
       "name": "野鬃",
       "appellation": "Wild Mane",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1490,13 +1577,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_4032_provs",
       "name": "但书",
       "appellation": "Proviso",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1519,13 +1608,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_126_shotst",
       "name": "流星",
       "appellation": "Meteor",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1548,13 +1639,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_265_sophia",
       "name": "鞭刃",
       "appellation": "Whislash",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1577,13 +1670,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_204_platnm",
       "name": "白金",
       "appellation": "Platinum",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1606,13 +1701,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_420_flamtl",
       "name": "焰尾",
       "appellation": "Flametail",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1642,13 +1739,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_423_blemsh",
       "name": "瑕光",
       "appellation": "Blemishine",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1671,13 +1770,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_431_ashlok",
       "name": "灰毫",
       "appellation": "Ashlock",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1707,13 +1808,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_430_fartth",
       "name": "远牙",
       "appellation": "Fartooth",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1743,13 +1846,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_4064_mlynar",
       "name": "玛恩纳",
       "appellation": "Młynar",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1772,13 +1877,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_1014_nearl2",
       "name": "耀骑士临光",
       "appellation": "Nearl the Radiant Knight",
-      "tag": "dragon",
       "tagLabel": "卡西米尔",
       "sourceFields": {
         "nationId": "kazimierz",
@@ -1801,13 +1908,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "dragon"
+      ]
     },
     {
       "charId": "char_190_clour",
       "name": "红云",
       "appellation": "Vermeil",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -1830,13 +1939,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_145_prove",
       "name": "普罗旺斯",
       "appellation": "Provence",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -1859,13 +1970,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_446_aroma",
       "name": "阿罗玛",
       "appellation": "Aroma",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -1888,13 +2001,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_346_aosta",
       "name": "奥斯塔",
       "appellation": "Aosta",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -1924,13 +2039,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_349_chiave",
       "name": "贾维",
       "appellation": "Chiave",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -1960,13 +2077,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_427_vigil",
       "name": "伺夜",
       "appellation": "Vigil",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -1989,13 +2108,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_4031_liesel",
       "name": "复奏",
       "appellation": "Ripresa",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2018,13 +2139,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_140_whitew",
       "name": "拉普兰德",
       "appellation": "Lappland",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2047,13 +2170,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_356_broca",
       "name": "布洛卡",
       "appellation": "Broca",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2083,13 +2208,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_358_lisa",
       "name": "铃兰",
       "appellation": "Suzuran",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2112,13 +2239,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_4065_judge",
       "name": "斥罪",
       "appellation": "Penance",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2141,13 +2270,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_1038_whitw2",
       "name": "荒芜拉普兰德",
       "appellation": "Lappland the Decadenza",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2170,13 +2301,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_4037_demetr",
       "name": "贝洛内",
       "appellation": "Bellone",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2199,13 +2332,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_4155_talr",
       "name": "裁度",
       "appellation": "Figurino",
-      "tag": "beast",
       "tagLabel": "叙拉古",
       "sourceFields": {
         "nationId": "siracusa",
@@ -2228,13 +2363,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "beast"
+      ]
     },
     {
       "charId": "char_469_indigo",
       "name": "深靛",
       "appellation": "Indigo",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "iberia",
@@ -2257,13 +2394,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_258_podego",
       "name": "波登可",
       "appellation": "Podenco",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2286,13 +2425,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4051_akkord",
       "name": "协律",
       "appellation": "Akkord",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "leithanien",
@@ -2315,13 +2456,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_181_flower",
       "name": "调香师",
       "appellation": "Perfumer",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2344,13 +2487,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_381_bubble",
       "name": "泡泡",
       "appellation": "Bubble",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "sargon",
@@ -2373,13 +2518,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_344_beewax",
       "name": "蜜蜡",
       "appellation": "Beeswax",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "sargon",
@@ -2402,13 +2549,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4036_forcer",
       "name": "见行者",
       "appellation": "Enforcer",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "laterano",
@@ -2431,13 +2580,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_171_bldsk",
       "name": "华法琳",
       "appellation": "Warfarin",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2460,13 +2611,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_491_humus",
       "name": "休谟斯",
       "appellation": "Humus",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2489,13 +2642,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_143_ghost",
       "name": "幽灵鲨",
       "appellation": "Specter",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "egir",
@@ -2525,13 +2680,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4016_kazema",
       "name": "风丸",
       "appellation": "Kazemaru",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "higashi",
@@ -2554,13 +2711,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_474_glady",
       "name": "歌蕾蒂娅",
       "appellation": "Gladiia",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "egir",
@@ -2590,13 +2749,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_213_mostma",
       "name": "莫斯提马",
       "appellation": "Mostima",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "laterano",
@@ -2619,13 +2780,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_308_swire",
       "name": "诗怀雅",
       "appellation": "Swire",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "lungmen",
@@ -2655,13 +2818,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_437_mizuki",
       "name": "水月",
       "appellation": "Mizuki",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "higashi",
@@ -2684,13 +2849,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_1021_kroos2",
       "name": "寒芒克洛丝",
       "appellation": "Kroos the Keen Glint",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2713,13 +2880,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4079_haini",
       "name": "海霓",
       "appellation": "Lucilla",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "egir",
@@ -2742,13 +2911,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_311_mudrok",
       "name": "泥岩",
       "appellation": "Mudrock",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2771,13 +2942,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_332_archet",
       "name": "空弦",
       "appellation": "Archetto",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "laterano",
@@ -2800,13 +2973,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_1012_skadi2",
       "name": "浊心斯卡蒂",
       "appellation": "Skadi the Corrupting Heart",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "egir",
@@ -2829,13 +3004,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_291_aglina",
       "name": "安洁莉娜",
       "appellation": "Angelina",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "siracusa",
@@ -2858,13 +3035,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_1028_texas2",
       "name": "缄默德克萨斯",
       "appellation": "Texas the Omertosa",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "lungmen",
@@ -2894,13 +3073,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4146_nymph",
       "name": "妮芙",
       "appellation": "Nymph",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -2923,13 +3104,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_245_cello",
       "name": "塑心",
       "appellation": "Virtuosa",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "laterano",
@@ -2952,13 +3135,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_254_vodfox",
       "name": "巫恋",
       "appellation": "Shamare",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "siracusa",
@@ -2981,13 +3166,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_1040_blaze2",
       "name": "烛煌",
       "appellation": "Blaze the Igniting Spark",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -3017,13 +3204,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4010_etlchi",
       "name": "隐德来希",
       "appellation": "Entelechia",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -3046,13 +3235,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_249_mlyss",
       "name": "缪尔赛思",
       "appellation": "Muelsyse",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "columbia",
@@ -3082,13 +3273,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_1032_excu2",
       "name": "圣约送葬人",
       "appellation": "Executor the Ex Foedere",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "laterano",
@@ -3111,13 +3304,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_1046_sbell2",
       "name": "圣聆初雪",
       "appellation": "Pramanix the Prerita",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "kjerag",
@@ -3140,13 +3335,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_4058_pepe",
       "name": "佩佩",
       "appellation": "Pepe",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "sargon",
@@ -3169,13 +3366,15 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     },
     {
       "charId": "char_350_surtr",
       "name": "史尔特尔",
       "appellation": "Surtr",
-      "tag": "neutral",
       "tagLabel": null,
       "sourceFields": {
         "nationId": "rhodes",
@@ -3198,7 +3397,10 @@
         "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
         "handbookTeamTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/handbook_team_table.json",
         "characterTableRevision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
-      }
+      },
+      "tags": [
+        "neutral"
+      ]
     }
   ],
   "iconCoverage": {
