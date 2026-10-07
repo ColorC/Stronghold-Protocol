@@ -218,6 +218,33 @@ export class OriginalVfxPlayer {
     return results;
   }
 
+  /** Warm mesh-particle JSON and its source textures before a map-bound effect starts. */
+  async preloadMesh(prefabs = []) {
+    const names = [...new Set(Array.isArray(prefabs) ? prefabs.filter(Boolean).map(String) : [])];
+    const results = await Promise.allSettled(names.map(async (prefab) => {
+      const data = await this._meshEntry(prefab);
+      const files = new Set();
+      for (const node of data.nodes || []) {
+        for (const material of Array.isArray(node?.materials) ? node.materials : []) {
+          const info = material?.sourceTexture || material?.texture;
+          if (info?.file) files.add(info.file);
+          for (const tex of Object.values(material?.textures || {})) if (tex?.file) files.add(tex.file);
+        }
+      }
+      if (!this.meshTextures) this.meshTextures = new Map();
+      await Promise.all([...files].map(async (file) => {
+        const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`;
+        let texture = this.meshTextures.get(url);
+        if (!texture) { texture = this.P.Texture.from(url); this.meshTextures.set(url, texture); }
+        const base = texture.baseTexture || texture;
+        if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
+      }));
+      return data;
+    }));
+    for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
+    return results;
+  }
+
   async _meshEntry(prefab) {
     if (!this.meshEntries) this.meshEntries = new Map();
     if (this.meshEntries.has(prefab)) return this.meshEntries.get(prefab);

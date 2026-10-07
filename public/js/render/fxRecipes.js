@@ -656,11 +656,17 @@ function rosmonDamage(fx, c, next) {
   for (const [i, prefab] of [...spec.reach, ...spec.hit].entries()) targetMount(fx, c.view, prefab, i * 0.015);
 }
 
-// 锏's [uc]skills actions name all S1/S2 cast and target-hit effects.  S3's server-side action emits the same
-// semantic sequence as the extracted client slots: `skill` → repeated `fx:slash` + `dmg` → `fx:finale` + `dmg`.
+// 锏's charpack/[uc]skills actions name every normal/S1/S2 cast and target-hit slot.  S3's server-side action emits
+// the same semantic sequence as the extracted client slots: `skill` → repeated `fx:slash` + `dmg` → `fx:finale` + `dmg`.
 const BLKKGT_CHAR = 'char_4116_blkkgt';
+const BLKKGT_NORMAL = Object.freeze({ starts: ['blkkgt_attack_start_01'], hits: ['blkkgt_attack_hit_1', 'blkkgt_attack_hit_2'] });
 const BLKKGT_SKILLS = Object.freeze({
+  // S1 has three owner cast effects and two target hit groups. The extracted action has `_additionalTimes: 1`, so
+  // the second target hit is a separate hit group, not a second copy of the cast pass.
   skchr_blkkgt_1: Object.freeze({ starts: ['blkkgt_skill_01_start_01', 'blkkgt_skill_01_start_02', 'blkkgt_skill_01_start_03'], hits: ['blkkgt_skill_01_hit_01', 'blkkgt_skill_01_hit_02'] }),
+  // S2's `_directionType: 3` slot contains four directional variants. The runtime selects one horizontal/vertical
+  // prefab from that slot; it does not play all four at once. `skill_02_hit_2` exists in the bundle but is not named
+  // by the extracted action and is intentionally excluded here.
   skchr_blkkgt_2: Object.freeze({ starts: ['blkkgt_skill_02_start_01', 'blkkgt_skill_02_start_02', 'blkkgt_skill_02_start_03', 'blkkgt_skill_02_start_05', 'blkkgt_skill_02_start_06'], hits: ['blkkgt_skill_02_hit_1'] }),
   skchr_blkkgt_3: Object.freeze({ starts: ['blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02'], hits: ['blkkgt_skill_03_hit_1'], endStarts: ['blkkgt_skill_03_end', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04'], endHits: ['blkkgt_skill_03_hit_2'] }),
 });
@@ -678,11 +684,14 @@ function blkkgtSkill(fx, c) {
     if (skill === 'skchr_blkkgt_3') {
       // Raw prefab evidence: start_01/start_02/end have _spawnLocation 5
       // (ground), while start_03/04 are owner-held (_spawnLocation 8/11).
-      // The exported atlas for start_02 is the authored map pass: it contains
-      // the five range-cell children and range_line, so keep it as a tile-bound
-      // source prefab instead of replacing it with guessed Graphics squares.
+      // The atlas is the authored particle pass. The separate `range_line` Unity
+      // Mesh child is attached just below, so neither part is replaced by guessed
+      // Graphics squares.
       groundMount(fx, c.view, 'blkkgt_skill_03_start_01', 0, group);
       groundMount(fx, c.view, 'blkkgt_skill_03_start_02', 0.02, group);
+      // start_02 also owns a Unity Mesh child (`range_line`). Keep the atlas
+      // particles and attach the exported mesh at the same tile anchor.
+      fx.playOriginalMesh?.('blkkgt_skill_03_start_02', { followId: c.view.id, group, delay: 0.02, life: 4 });
     }
     return;
   }
@@ -698,7 +707,7 @@ function blkkgtAttack(fx, c, next) {
   const binding = skill ? BLKKGT_SKILLS[skill] : null;
   // S3 has no ordinary `atk` event: its loop and finisher are emitted as `fx`/`dmg` by the server skill.
   if (skill === 'skchr_blkkgt_3') return;
-  const prefabs = binding?.starts || ['blkkgt_attack_start_01'];
+  const prefabs = binding?.starts || BLKKGT_NORMAL.starts;
   for (const [i, prefab] of prefabs.entries()) sourceMount(fx, c.src, prefab, i * 0.035);
   if (skill === 'skchr_blkkgt_2') {
     const vertical = c.src.dir === 'UP' || c.src.dir === 'DOWN';
@@ -738,7 +747,7 @@ function blkkgtDamage(fx, c, next) {
   const activeRecord = owner ? BLKKGT_ACTIVE.get(owner.id) : null;
   const active = activeRecord?.view === owner ? activeRecord.skill : null;
   const skill = active || (c.isSkill ? c.who?.skill : null);
-  const binding = skill ? BLKKGT_SKILLS[skill] : null;
+  const binding = skill ? BLKKGT_SKILLS[skill] : BLKKGT_NORMAL;
   if (!binding?.hits?.length) { next(); return; }
   if (skill === 'skchr_blkkgt_3' && owner && BLKKGT_S3_FINAL.has(owner.id)) {
     for (const prefab of binding.endHits || []) targetMount(fx, c.view, prefab);
@@ -747,7 +756,9 @@ function blkkgtDamage(fx, c, next) {
     // the first victim made the other victims lose the sheathe impact.
     return;
   }
-  const key = `${c.src?.id ?? c.attacker?.id ?? ''}:${c.attackId ?? ''}`;
+  // Hit groups reset for every target. A multi-target S1 attack therefore gives each target hit_01 → hit_02;
+  // indexing only by attackId incorrectly assigned hit_02 to the second victim and lost the first group's order.
+  const key = `${c.src?.id ?? c.attacker?.id ?? ''}:${c.attackId ?? ''}:${c.view.id}`;
   const hitIndex = BLKKGT_HIT_INDEX.get(key) || 0;
   BLKKGT_HIT_INDEX.set(key, hitIndex + 1);
   const prefab = binding.hits[Math.min(hitIndex, binding.hits.length - 1)];

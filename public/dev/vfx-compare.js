@@ -20,22 +20,30 @@ let cursor = 0;
 let timeline = [];
 let last = performance.now();
 
+// Decode only the slots used by the selected scenario. Loading every Rosmontis atlas (including unused A/B and
+// range variants) at once caused a large texture-decode burst and made the first playable frame hitch on weaker
+// browsers. The lists mirror the extracted action bindings in render/fxRecipes.js.
 const VFX_PRELOAD = Object.freeze({
-  rosmon: Object.freeze([
-    'rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_A_range',
-    'rosmon_attack_B_start', 'rosmon_attack_B_hit_01', 'rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02', 'rosmon_skill_01_A_hit_01',
-    'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_A_range', 'rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02',
-    'rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_01_stone', 'rosmon_skill_03_range',
-  ]),
-  blkkgt: Object.freeze(['blkkgt_attack_start_01', 'blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02', 'blkkgt_skill_03_hit_1', 'blkkgt_skill_03_end', 'blkkgt_skill_03_hit_2', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04']),
+  rosmon: Object.freeze({
+    full: ['rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_A_range', 'rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02'],
+    skchr_rosmon_1: ['rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_A_range', 'rosmon_skill_01_A_start', 'rosmon_skill_01_A_start_02', 'rosmon_skill_01_A_hit_01', 'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_A_range'],
+    skchr_rosmon_2: ['rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_A_range', 'rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02'],
+    skchr_rosmon_3: ['rosmon_attack_A_start', 'rosmon_attack_A_start_02', 'rosmon_attack_A_hit_01', 'rosmon_attack_A_hit_02', 'rosmon_attack_A_range', 'rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_01_stone', 'rosmon_skill_03_range'],
+  }),
+  blkkgt: Object.freeze({
+    skchr_blkkgt_1: ['blkkgt_attack_start_01', 'blkkgt_attack_hit_1', 'blkkgt_attack_hit_2', 'blkkgt_skill_01_start_01', 'blkkgt_skill_01_start_02', 'blkkgt_skill_01_start_03', 'blkkgt_skill_01_hit_01', 'blkkgt_skill_01_hit_02'],
+    skchr_blkkgt_2: ['blkkgt_attack_start_01', 'blkkgt_attack_hit_1', 'blkkgt_attack_hit_2', 'blkkgt_skill_02_start_01', 'blkkgt_skill_02_start_02', 'blkkgt_skill_02_start_03', 'blkkgt_skill_02_start_04_h', 'blkkgt_skill_02_start_04_v', 'blkkgt_skill_02_start_05', 'blkkgt_skill_02_start_06', 'blkkgt_skill_02_hit_1'],
+    skchr_blkkgt_3: ['blkkgt_attack_start_01', 'blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02', 'blkkgt_skill_03_hit_1', 'blkkgt_skill_03_end', 'blkkgt_skill_03_hit_2', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04'],
+  }),
 });
 
 async function preloadCurrentOperator() {
   const original = after?.debug?.fx?.originalVfx;
   if (!original?.preload) return;
-  const names = VFX_PRELOAD[operator] || [];
+  const names = VFX_PRELOAD[operator]?.[scenario] || [];
   $('status').innerHTML = '<strong>准备素材中</strong>：首次播放会预先解码当前场景的特效';
-  await original.preload(names);
+  const meshNames = operator === 'blkkgt' && scenario === 'skchr_blkkgt_3' ? ['blkkgt_skill_03_start_02', 'blkkgt_skill_03_end'] : [];
+  await Promise.all([original.preload(names), original.preloadMesh?.(meshNames)]);
 }
 
 window.addEventListener('error', (e) => { errors.push(e.message || '页面错误'); renderErrors(); });
@@ -100,17 +108,30 @@ function makeTimeline(kind) {
       add(finale + 0.58, ['skill', 1, 0, skillId]);
       return a;
     }
-    // S1/S2 retain the extracted action-slot comparison: cast effects plus target hit groups.
+    // S1/S2 retain the extracted action-slot comparison: cast effects plus target hit groups. The normal attack
+    // also has two target hit groups in the charpack, so it is included before the skill instead of being reduced
+    // to a single generic damage flash.
     add(0.15, ['deploy', 1]);
     add(0.9, ['atk', 1, 20, 'none', 11, 0]);
-    add(1.2, ['dmg', 20, 620, 'phys', 1, 11]);
+    add(1.3, ['dmg', 20, 620, 'phys', 1, 11]);
+    add(1.567, ['dmg', 20, 620, 'phys', 1, 11]);
     add(1.65, ['skill', 1, 1, skillId]);
     add(2.05, ['atk', 1, 20, 'none', 21, 1]);
-    add(2.28, ['dmg', 20, 980, 'phys', 1, 21]);
-    add(2.55, ['dmg', 20, 980, 'phys', 1, 21]);
-    add(2.9, ['atk', 1, 21, 'none', 22, 1]);
-    add(3.15, ['dmg', 21, 980, 'phys', 1, 22]);
-    add(3.42, ['dmg', 21, 980, 'phys', 1, 22]);
+    const victims = [20, 21, 22];
+    if (skillId === 'skchr_blkkgt_1') {
+      // S1's extracted action has two hit groups and the sim allows up to five targets in the 3×3 skill grid.
+      for (const [j, target] of victims.entries()) {
+        add(2.517 + j * 0.012, ['dmg', target, 980, 'phys', 1, 21]);
+        add(2.583 + j * 0.012, ['dmg', target, 980, 'phys', 1, 21]);
+      }
+    } else {
+      // S2's action names one target hit effect; the upstream skill deals two slashes to an unblocked target.
+      // Reuse that exact target slot for each damage event instead of inventing a second hit prefab.
+      for (const [j, target] of victims.entries()) {
+        add(2.383 + j * 0.12, ['dmg', target, 980, 'phys', 1, 21]);
+        add(2.55 + j * 0.12, ['dmg', target, 980, 'phys', 1, 21]);
+      }
+    }
     add(4.5, ['skill', 1, 0, skillId]);
     return a;
   }

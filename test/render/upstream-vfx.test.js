@@ -36,8 +36,13 @@ test('character VFX coverage manifest has no silent omissions', () => {
   for (const prefab of ['blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02', 'blkkgt_skill_03_hit_1', 'blkkgt_skill_03_end', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04', 'blkkgt_skill_03_hit_2']) {
     assert.ok(raw[prefab]?.bindingState, `binding state missing for ${prefab}`);
   }
-  assert.equal(raw.blkkgt_skill_03_start_02.bindingState, 'procedural');
-  assert.equal(raw.blkkgt_skill_03_start_03.bindingState, 'unresolved');
+  assert.equal(raw.blkkgt_skill_03_start_02.bindingState, 'translated');
+  assert.equal(raw.blkkgt_skill_03_start_02.meshChildState, 'mesh');
+  assert.equal(raw.blkkgt_skill_03_start_03.bindingState, 'translated');
+  assert.deepEqual(doc.operators.char_4116_blkkgt.normal.hit, ['blkkgt_attack_hit_1', 'blkkgt_attack_hit_2']);
+  assert.deepEqual(doc.operators.char_4116_blkkgt.skills.skchr_blkkgt_1.hit, ['blkkgt_skill_01_hit_01', 'blkkgt_skill_01_hit_02']);
+  assert.deepEqual(doc.operators.char_4116_blkkgt.skills.skchr_blkkgt_2.hit, ['blkkgt_skill_02_hit_1']);
+  assert.equal(doc.operators.char_4116_blkkgt.skills.skchr_blkkgt_2.action.directionType3.length, 4);
 });
 
 test('packed colour/coverage atlas keeps logical frame width and anchor', () => {
