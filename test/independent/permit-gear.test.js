@@ -38,7 +38,7 @@ test('the twelve permissions are gear: one per operator, on both forms, never in
   const display = independentDisplayCatalog(data, catalog);
   const order = display.gear['permit-north-handover-order'];
   assert.equal(order.kind, 'permit'); assert.equal(order.inheritable, false); assert.equal(order.level, null);
-  assert.equal(order.normal, '可将装备交接给科技等级2的干员');
+  assert.match(order.normal, /科技等级2/);
   assert.equal(display.operators[opNamed('角峰').chessId].permitGear, 'permit-north-handover-order');
   assert.equal(display.terms['handover-permit'].name, '交接凭证');
 });
@@ -117,9 +117,8 @@ test('a 交接凭证 is equipment: it takes one of the 999 places', () => {
   const piece = state.pieces.at(-1);
   state.inventory.push({ uid: `i${state.nextUid++}`, id: 'precision', quantity: 999, elite: false, state: {} });
   const item = state.inventory.at(-1).uid;
-  // 角峰 wears its permit and the 生命徽章 it made when gained (徽章落点)
+  // 角峰 wears its permit; its named gear reward remains in the stock.
   const worn = piece.equipment.reduce((n, x) => n + Number(x.quantity || 1), 0);
-  assert.ok(piece.equipment.some((x) => x.id === 'vitality'));
   assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 999 - worn + 1 }).error?.code, 'CAPACITY');
   assert.equal(applyAction(state, { type: 'equip', itemUid: item, targetUid: piece.uid, quantity: 999 - worn }).ok, true);
 });

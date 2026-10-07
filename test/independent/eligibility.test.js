@@ -9,7 +9,7 @@ const piece=(name)=>{const op=Object.values(catalog.operators).find(x=>!x.elite 
 
 test('inheritance accepts the 交接凭证 of either side while respecting tier, faction and profession',()=>{
   assert.equal(inheritanceQualification(piece('角峰'),piece('送葬人'),catalog).allowed,true);
-  assert.equal(inheritanceQualification(piece('宴'),piece('崖心'),catalog).allowed,true);
+  assert.equal(inheritanceQualification(piece('送葬人'),piece('崖心'),catalog).allowed,true);
   assert.equal(inheritanceQualification(piece('幽灵鲨'),piece('泡泡'),catalog).allowed,false);
   assert.equal(inheritanceQualification(piece('幽灵鲨'),piece('乌尔比安'),catalog).allowed,true);
   assert.equal(inheritanceQualification(piece('古米'),piece('星熊'),catalog).allowed,false);

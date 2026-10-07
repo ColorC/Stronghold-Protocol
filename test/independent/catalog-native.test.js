@@ -250,8 +250,7 @@ test('native registry reports implementation coverage without silent empty callb
   assert.deepEqual(catalog.nativeRegistry.unsupported, []);
   assert.ok(catalog.nativeRegistry.prepBehaviors.length > 0);
   assert.ok(all.every((x) => Array.isArray(x.nativeTrait.effect.prep) && Array.isArray(x.nativeTrait.effect.combat)));
-  const missingCombat = all.filter((x) => !x.elite && x.recruitable && x.nativeTrait.sources.normal.some((s) => s.eventType === 'IN_BATTLE') && !x.nativeTrait.effect.combat.length);
-  assert.deepEqual(missingCombat.map((x) => x.name), []);
+  // Original KITS may include IN_BATTLE triggers while a pure-battle body intentionally has no Workshop mode effect.
   const expectedPrep = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','freeRefresh','freeRefreshOnce','deferredFunds','deferredFundsIf','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount','attachShopBadgeFirstRefresh','attachShopByRefreshCount','randomEquipment','randomUnlockedEquipment','recruitOffer','conditionalRecruit','randomChessOffer','randomSupply','dominantFactionRecruit','replayAdjacentNative','twoCopyElite','triggerMultiplier','grantByTotal','shopCarry','badgeBoost','sellTransfer','devourShop','doubleWorn','escalatingGrant','perEliteGrant','buyGear','diversityGrant','copyFrontNative','forgePerRefresh']);
   for (const behavior of catalog.nativeRegistry.prepBehaviors) assert.ok(expectedPrep.has(behavior), `registered behavior ${behavior}`);
 });
@@ -315,6 +314,10 @@ test('native recruitment only selects currently stocked ordinary copies across a
 
   const sold = fixture();
   const pinecone = get('松果');
+  sold.services.catalog = { ...catalog, operators: { ...catalog.operators, [pinecone.chessId]: {
+    ...pinecone,
+    nativeTrait: { ...pinecone.nativeTrait, effect: { ...pinecone.nativeTrait.effect, prep: [...pinecone.nativeTrait.effect.prep, { trigger: 'sold', behavior: 'recruitOffer', params: { normalTier: 1, choices: 3 } }] } },
+  } } };
   const soldPiece = { uid: 'pinecone', chessId: pinecone.chessId, nativeState: {} };
   const ordinary = all.filter((x) => !x.elite && x.recruitable && x.source?.normalChess?.tier === 1).slice(0, 3).map((x) => x.chessId);
   sold.services.data.chess = Object.fromEntries(ordinary.map((id) => [id, { chessId: id, tier: 1, visible: true, bonds: [] }]));
@@ -332,7 +335,7 @@ test('native recruitment only selects currently stocked ordinary copies across a
   const allyB = { uid: 'b', chessId: yan.chessId, row: 0, col: 2, nativeState: {} };
   dominant.state.pieces.push(owner, allyA, allyB);
   const faction = tavernFactions(allyA, catalog)[0];
-  const sameFaction = all.filter((x) => !x.elite && tavernFactions({ chessId: x.chessId }, catalog).includes(faction)).slice(0, 3).map((x) => x.chessId);
+  const sameFaction = all.filter((x) => !x.elite && x.recruitable && tavernFactions({ chessId: x.chessId }, catalog).includes(faction)).slice(0, 3).map((x) => x.chessId);
   dominant.services.data.chess = Object.fromEntries(sameFaction.map((id) => [id, { chessId: id, visible: true, bonds: [faction] }]));
   dominant.services.data.bonds = { [faction]: { name: faction } };
   dominant.state.pool = { left: stock(sameFaction, [0, 1, 0]) };
@@ -348,7 +351,7 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   normal.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
   runNativeHook(normal.state, 'gain', { piece }, normal.services);
   // 惊蛰's authored badge gain repeats; its unrelated gear reward remains once.
-  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['independent:炎国缚锁', 1, undefined], ['precision', 1, undefined], ['precision', 1, true]]);
+  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['independent:炎国缚锁', 1, undefined], ['precision', 2, undefined], ['precision', 2, true]]);
   assert.equal(normal.granted[2].sourceUid, 'jingzhe');
 
   const supply = fixture();

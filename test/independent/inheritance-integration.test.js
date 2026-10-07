@@ -49,7 +49,7 @@ test('inheritance is reachable from a deployed donor to a benched receiver and n
 });
 
 test('qualification can come from the receiver and noneligible attached abilities are explicitly lost',()=>{
-  const state=fixture('送葬人','宴');const [donor,receiver]=state.pieces;
+  const state=fixture('送葬人','崖心');const [donor,receiver]=state.pieces;
   donor.attachments=[{id:'ammo-recovery',state:{ammo:11,spent:2}}];
   const preview=applyAction(state,{type:'inherit-preview',donorUid:donor.uid,receiverUid:receiver.uid});
   assert.equal(preview.ok,true);

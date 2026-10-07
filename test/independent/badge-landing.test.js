@@ -54,7 +54,7 @@ test('a trait rule names where its badges land (params.landOn)', () => {
   const catalog = landing('self');
   const op = catalog.operators.chess_char_1_03_a; // 惊蛰: a native gain badge is directed to the front operator
   const rules = op.nativeTrait.effect.prep.map((r) => ({ ...r, params: { ...r.params, landOn: 'front' } }));
-  const custom = { ...catalog, operators: { ...catalog.operators, chess_char_1_02_a: { ...op, nativeTrait: { ...op.nativeTrait, effect: { ...op.nativeTrait.effect, prep: rules } } } } };
+  const custom = { ...catalog, operators: { ...catalog.operators, chess_char_1_03_a: { ...op, nativeTrait: { ...op.nativeTrait, effect: { ...op.nativeTrait.effect, prep: rules } } } } };
   const maker = piece('a', 'chess_char_1_03_a', 10, 3);
   const front = piece('b', 'chess_char_1_06_a', 10, 4);
   const state = stateWith([maker, front]);

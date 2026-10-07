@@ -72,7 +72,7 @@ test('the display catalog carries the hand-written texts, the new name and no in
   const yan = Object.values(display.operators).find((x) => x.name === '角峰' && !x.elite);
   assert.equal(yan.traitTexts.normal, text.operators[yan.chessId].normal);
   const yanElite = display.operators[yan.eliteChessId];
-  assert.equal(yanElite.traitTexts.elite, text.operators[yanElite.chessId].elite);
+  assert.equal(yanElite.traitTexts.elite, text.operators[yan.chessId].elite);
   assert.equal(display.gear.precision.normal, text.gear.precision.normal);
   assert.match(display.gear.precision.normal, /2%/);
   assert.ok(display.terms['basic-badge'].name === '基础徽章');

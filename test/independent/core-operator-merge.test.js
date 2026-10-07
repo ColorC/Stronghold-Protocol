@@ -31,9 +31,8 @@ test('three ordinary purchases merge to same-base elite; copies and gain hooks r
   assert.equal(state.pieces[0].chessId, op.eliteChessId);
   assert.equal(state.counters.gained, 3);
   assert.equal(state.pool[op.chessId].left, state.pool[op.chessId].cap - 3);
-  // each 角峰 wore the 生命徽章 it made (徽章落点); the elite keeps what its copies wore
-  assert.equal(state.pieces[0].equipment.filter((x) => x.id === 'vitality').reduce((n, x) => n + x.quantity, 0), 3);
-  assert.equal(state.inventory.filter((x) => x.id === 'vitality').length, 0);
+  // 角峰's current trait grants one item to inventory per gain; the three copies merge without losing those rewards.
+  assert.equal(state.inventory.filter((x) => x.id === 'independent:坚守盟约').reduce((n, x) => n + x.quantity, 0), 3);
 });
 
 test('Windflit two-copy rule upgrades after two copies through public buys', () => {

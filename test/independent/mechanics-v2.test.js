@@ -16,7 +16,18 @@ import { preV4Catalog } from './helpers/preV4.js';
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 // the second-wave behaviors through the operators that carried them before 干员表 v3 (helpers/preV3.js) and before 干员特质 v4
 // (helpers/preV4.js: growth, doublers, totals, shop carry, badge boosts … are no operator's trait since v4)
-const catalog = preV3Catalog(preV4Catalog(getCatalog(data)));
+const legacy = preV3Catalog(preV4Catalog(getCatalog(data)));
+// These dispatcher cases intentionally exercise retired operator effects, so activate only their test bodies in this fixture.
+const legacyNames = new Set(['折桠', '宴', '隐现']);
+const catalog = (() => {
+  const operators = { ...legacy.operators };
+  const activeRosterIds = [...(legacy.config.activeRosterIds || [])];
+  for (const op of Object.values(operators).filter((x) => !x.elite && legacyNames.has(x.name))) {
+    operators[op.chessId] = { ...op, recruitable: true };
+    activeRosterIds.push(op.chessId);
+  }
+  return { ...legacy, operators, config: { ...legacy.config, activeRosterIds: [...new Set(activeRosterIds)] } };
+})();
 const idOf = (name, elite = false) => {
   const op = Object.values(catalog.operators).find((x) => !x.elite && x.name === name);
   return elite ? op.eliteChessId : op.chessId;
@@ -57,10 +68,11 @@ test('铃兰 makes 获得时 effects run twice (elite: three times); a doubler o
   for (const [elite, field, expected] of [[false, true, 2], [true, true, 3], [false, false, 1]]) {
     const { state, services, granted } = fixture();
     state.pieces.push(piece('lily', '铃兰', field ? 0 : null, field ? 0 : null, { elite }));
-    const corner = piece('corner', '角峰');
-    state.pieces.push(corner);
-    runNativeHook(state, 'gain', { piece: corner }, services);
-    assert.equal(sum(granted, 'vitality'), expected, `elite ${elite} field ${field}`);
+    const maker = piece('maker', '惊蛰');
+    state.pieces.push(maker);
+    runNativeHook(state, 'gain', { piece: maker }, services);
+    const expectedPrecision = elite ? 9 : 4;
+    assert.equal(sum(granted, 'precision'), field ? expectedPrecision : (elite ? 3 : 2), `elite ${elite} field ${field}`);
   }
 });
 

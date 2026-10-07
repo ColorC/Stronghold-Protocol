@@ -5,17 +5,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
+import { preV4Catalog } from './helpers/preV4.js';
 
 const catalog = getCatalog();
 const idOf = (name, elite = false) => {
   const op = Object.values(catalog.operators).find((x) => !x.elite && x.name === name);
   return elite ? op.eliteChessId : op.chessId;
 };
-function fixture() {
+function fixture(useCatalog = catalog) {
   const state = { round: 1, shop: { level: 3, freeRefreshes: 0, slots: [] }, pieces: [], counters: { gained: 0, spent: 0, refreshes: 0, paidRefreshes: 0 }, pendingFunds: 0, nextUid: 100, inventory: [], playerEffects: [], totals: {} };
   const granted = [];
   const services = {
-    catalog, data: {}, rng: () => 0.25,
+    catalog: useCatalog, data: {}, rng: () => 0.25,
     grantEquipment(_state, id, quantity, extra) { granted.push({ id, quantity, ...extra }); },
     grantChess() {}, addOffer() {}, record() {}, recordProduction() {},
   };
@@ -66,7 +67,8 @@ test('铃兰 triggers one 获得时 trait of the operator in front when the prep
 });
 
 test('泥岩 sold: its own funds and the 售出时 trait of the operator in front', () => {
-  const { state, services } = fixture();
+  // Generic sold-hook regression uses its pre-v4 rule fixture; 泥岩 no longer owns this mode effect.
+  const { state, services } = fixture(preV4Catalog(catalog));
   const mud = piece('mud', '泥岩', 1, 1); const grey = piece('grey', '格雷伊', 1, 2);
   state.pieces.push(grey);
   runNativeHook(state, 'sold', { piece: mud }, services);
