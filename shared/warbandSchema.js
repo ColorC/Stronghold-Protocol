@@ -10,10 +10,11 @@ export function validateWarbandRule(rule) {
   const b = rule?.behavior, p = rule?.params;
   if (!keys(rule, ['trigger','behavior','params']) || !object(p)) return fail(b);
   if (b === 'factionReaction') {
-    if (!keys(p, ['faction','mode','targets','excludeSelf','count','outputs','perTier','requireGainTrait','maxEventsPerPrep'])
+    if (!keys(p, ['faction','targetFaction','targetAnyFaction','anyGainFaction','mode','targets','excludeSelf','count','outputs','perTier','requireGainTrait','maxEventsPerPrep'])
         || !['allyGain','bought','gain','sold'].includes(rule.trigger) || !['badge','shop','refund','discount','funds'].includes(p.mode)
         || !['self','all','front','leastEquipment'].includes(p.targets) || !integer(p.count) || !integer(p.maxEventsPerPrep)
-        || ['excludeSelf','perTier','requireGainTrait'].some(k => p[k] !== undefined && typeof p[k] !== 'boolean')
+        || ['excludeSelf','perTier','requireGainTrait','targetAnyFaction','anyGainFaction'].some(k => p[k] !== undefined && typeof p[k] !== 'boolean')
+        || (p.targetFaction !== undefined && !text(p.targetFaction))
         || (!['discount','funds'].includes(p.mode) && !text(p.faction))
         || (p.faction !== undefined && !text(p.faction))
         || (['badge','shop'].includes(p.mode) && (!Array.isArray(p.outputs) || !p.outputs.length || !p.outputs.every(o => keys(o,['id','quantity']) && text(o.id) && integer(o.quantity))))
@@ -30,9 +31,10 @@ export function validateWarbandRule(rule) {
   } else if (b === 'retirementMultiplier') {
     if (rule.trigger !== 'passive' || !keys(p,['extra']) || ![1,2].includes(p.extra)) return fail(b);
   } else if (b === 'warbandEvent') {
-    if (!keys(p,['event','faction','targets','targetFaction','stats','shieldLayers','cooldownSeconds','maxStacks'])
+    if (!keys(p,['event','faction','targets','targetFaction','selfOnly','stats','shieldLayers','cooldownSeconds','maxStacks'])
         || !['death','summon','shieldLayersBroken','attack','damaged','kill'].includes(p.event) || rule.trigger !== (p.event === 'summon' ? 'deploy' : p.event)
         || !text(p.faction) || !['self','actor','all'].includes(p.targets) || (p.targetFaction !== undefined && !text(p.targetFaction))
+        || (p.selfOnly !== undefined && typeof p.selfOnly !== 'boolean')
         || !integer(p.maxStacks) || !positive(p.cooldownSeconds) || p.cooldownSeconds < 1
         || (p.stats !== undefined && !stats(p.stats)) || (p.shieldLayers !== undefined && !integer(p.shieldLayers)) || (!p.stats && !p.shieldLayers)) return fail(b);
   } else return fail(b);

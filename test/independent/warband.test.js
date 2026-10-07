@@ -54,13 +54,14 @@ test('gain propagation fires only allyGain; faction shop/refund/badge isolation,
   runNativeHook(state,'sold',{piece:holder},services);assert.equal(state.funds,9);
 });
 
-test('native death and retirement count once per deployment, strongest multiplier doubles only retiring actions, echo runs once without loops',()=>{
+test('native death and retirement count once per deployment, strongest multiplier doubles retiring and echo actions without loops',()=>{
   const h=battle([piece('fallen',[retirement()]),piece('buffed'),piece('double',[rule('passive','retirementMultiplier',{extra:1})]),piece('weak',[rule('passive','retirementMultiplier',{extra:1})]),piece('echo',[rule('attack','deathrattleEcho',{faction:'叙拉古',every:12,perBattle:3})])]);
   const target=h.unit('buffed'),fallen=h.unit('fallen'),echo=h.unit('echo');const e=h.spawn('dummy',{pos:[10,8]});
-  attacks(h,echo,e,12);assert.equal(Math.round(target.s.atk),110,'echo executes one action, not multiplier');
-  h.b.retreat(fallen);h.step(1);assert.equal(Math.round(target.s.atk),130,'retreating + death is one retirement multiplied twice');
-  h.b.redeploy(fallen,{free:true});fallen.atkCd=1e9;h.b.kill(fallen);h.step(1);assert.equal(Math.round(target.s.atk),150);
-  h.b.redeploy(fallen,{free:true});h.b.kill(fallen);h.step(1);assert.equal(Math.round(target.s.atk),150,'real retirement cap is independent of echo');
+  attacks(h,echo,e,12);assert.equal(Math.round(target.s.atk),120,'one echo invocation enjoys the strongest live multiplier');
+  assert.equal(Math.round(fallen.s.atk),120,'the live echoed holder also receives the friendly buff');
+  h.b.retreat(fallen);h.step(1);assert.equal(Math.round(target.s.atk),140,'retreating + death is one retirement multiplied twice');
+  h.b.redeploy(fallen,{free:true});fallen.atkCd=1e9;h.b.kill(fallen);h.step(1);assert.equal(Math.round(target.s.atk),160);
+  h.b.redeploy(fallen,{free:true});h.b.kill(fallen);h.step(1);assert.equal(Math.round(target.s.atk),160,'real retirement cap is independent of echo');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 
@@ -164,4 +165,81 @@ test('temporary white attack enters atkFlat before existing skill +100%, while d
   h.run(1.1);h.b.dealDamage(enemy,target,{amount:1,type:'true'});assert.equal(target.s.atk,280);assert.equal(target.s.dmgDealtMul,1.2);
   const r=battle([piece('fallen',[retirement({buff:{faction:'叙拉古',stats:{baseAttackPercent:.2,damageDealtPercent:.1},duration:'battle'}})]),piece('recipient')]);
   r.b.addBuff(r.unit('recipient'),{key:'skill',mods:{atkPct:1},persist:true});r.b.kill(r.unit('fallen'));r.step(1);assert.equal(r.unit('recipient').s.atk,240);assert.equal(r.unit('recipient').s.dmgDealtMul,1.1);
+});
+
+test('all reactions benefit every Workshop faction member; self/any-target and any-gain preserve separate scopes',()=>{
+  const holder=piece('holder',[],[reaction('badge',{faction:'维多利亚',count:1,maxEventsPerPrep:9})],'炎');
+  const one=piece('one',[],[],'维多利亚'),two=piece('two',[],[],'维多利亚'),other=piece('other',[],[],'炎'),tin=piece('tin',[],[],'炎'),identity=piece('identity',[],[],'炎');
+  identity.equipment=[{id:'identity',quantity:1,state:{faction:'维多利亚'}}];
+  const pieces=[holder,one,two,other,tin,identity],{catalog}=catalogFor(pieces);
+  catalog.config.tavernFactions=['维多利亚','谢拉格','炎'];catalog.operators[tin.chessId].tavernFactionProxy='ALL';
+  catalog.equipment.identity={id:'identity',mechanism:'identityTag',kind:'equipment'};
+  const state={round:1,nextUid:1,pieces,inventory:[],funds:0,shop:{slots:[]}};
+  const services={catalog,grantEquipment:(s,id,q,x)=>grantEquipment(s,catalog,id,q,x)};
+  const badge=p=>(p.equipment||[]).filter(x=>x.id==='precision').reduce((n,x)=>n+x.quantity,0);
+  runNativeHook(state,'gain',{piece:one},services);
+  assert.deepEqual([one,two,tin,identity].map(badge),[1,1,1,1],'all is not count=1 and Workshop identities participate');
+  assert.equal(badge(other),0);assert.equal(badge(holder),0);
+  runNativeHook(state,'gain',{piece:identity},services);assert.equal(badge(two),2,'gain source Workshop identity also participates');
+  catalog.operators[holder.chessId].nativeTrait.effect.prep=[reaction('badge',{faction:'维多利亚',targets:'self'})];
+  runNativeHook(state,'gain',{piece:one},services);assert.equal(badge(holder),1,'neutral holder self growth is allowed');
+  catalog.operators[holder.chessId].nativeTrait.effect.prep=[reaction('badge',{faction:'谢拉格',targetFaction:'谢拉格',anyGainFaction:true,targets:'all'})];
+  catalog.operators[two.chessId].nativeFactionTags=['谢拉格'];
+  runNativeHook(state,'gain',{piece:other},services);assert.equal(badge(two),2,'anyGainFaction still requires a real gain trait');
+  catalog.operators[other.chessId].nativeTrait.effect.prep=[rule('gain','grantEquipment',{outputs:[{id:'precision',normal:1,elite:1}]})];
+  runNativeHook(state,'gain',{piece:other},services);assert.equal(badge(two),3);assert.equal(badge(one),2,'beneficiary faction stays narrow');
+  catalog.operators[holder.chessId].nativeTrait.effect.prep=[reaction('badge',{faction:'维多利亚',targets:'leastEquipment',targetAnyFaction:true,count:1})];
+  other.equipment=[];runNativeHook(state,'gain',{piece:one},services);assert.equal(badge(other),1,'explicit any target may choose another faction');
+});
+
+test('ten broken layers apply two groups immediately; groups during cooldown survive and apply once it expires',()=>{
+  const h=battle([piece('reactor',[event('shieldLayersBroken',{stats:{attackSpeedFlat:10},maxStacks:9})]),piece('actor')]);
+  const reactor=h.unit('reactor'),actor=h.unit('actor');
+  h.b.emit('shieldLayersBroken',{unit:actor,layers:10});assert.equal(reactor.s.aspd,120);
+  h.b.emit('shieldLayersBroken',{unit:actor,layers:10});assert.equal(reactor.s.aspd,120);
+  h.run(1.1);assert.equal(reactor.s.aspd,140,'cooldown queues both groups instead of consuming them');
+  h.run(1.1);assert.equal(reactor.s.aspd,140,'queued groups apply once');
+});
+
+test('self-only kill excludes allied actors and capped Deflect stats continue refreshing broken shields',()=>{
+  const h=battle([piece('deflect',[event('summon',{targets:'self',stats:{attackPercent:.04},shieldLayers:2,maxStacks:1}),event('kill',{selfOnly:true,stats:{maxHpPercent:.1}})]),piece('owner')]);
+  const deflect=h.unit('deflect'),owner=h.unit('owner');
+  h.b.spawnToken(owner,'one',12,3,{def:{stats:{atk:1,maxHp:1}},kit:{},anySource:true});assert.equal(deflect.s.atk,104);
+  const layerBuff=deflect.buffs.find(b=>b.key.includes(':layers:'));assert.equal(layerBuff.shieldHits,2);
+  const hitter=h.spawn('dummy',{pos:[10,7]});h.b.dealDamage(hitter,deflect,{amount:100,type:'phys'});h.b.dealDamage(hitter,deflect,{amount:100,type:'phys'});
+  assert.equal(deflect.buffs.reduce((n,b)=>n+(b.shieldHits||0),0),0,'real damage consumed both shield layers');
+  h.run(1.1);h.b.spawnToken(owner,'two',12,4,{def:{stats:{atk:1,maxHp:1}},kit:{},anySource:true});
+  assert.equal(deflect.s.atk,104);assert.equal(deflect.findBuff(layerBuff.key).shieldHits,2,'stat cap does not block fresh shield layers');
+  const enemy=h.spawn('dummy',{pos:[10,7]});h.b.kill(enemy,owner);assert.equal(deflect.s.maxHp,1000);
+  const enemy2=h.spawn('dummy',{pos:[10,7]});h.b.kill(enemy2,deflect);assert.equal(deflect.s.maxHp,1100);
+});
+
+test('summoning bypasses an occupied first in-range candidate and stays on near legal ground',()=>{
+  const h=battle([piece('maker',[retirement({buff:undefined,summon:{count:2,statRatio:.5,durationSeconds:15}})]),piece('blocker')]);
+  const maker=h.unit('maker'),blocked=h.unit('blocker');
+  assert.equal(blocked.tileR,maker.tileR);assert.equal(blocked.tileC,maker.tileC+1);
+  h.b.kill(maker);h.step(1);const tokens=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive);
+  assert.equal(tokens.length,2);assert.ok(tokens.every(t=>!(t.tileR===blocked.tileR&&t.tileC===blocked.tileC)));
+  assert.ok(tokens.every(t=>h.b.grid.canStand(t.tileR,t.tileC,{ranged:false})&&h.b.grid.groundPassable(t.tileR,t.tileC,true)));
+  assert.ok(tokens.every(t=>Math.hypot(t.tileR-maker.tileR,t.tileC-maker.tileC)<=2),'fallback remains near the active board');
+});
+
+test('summoned tokens inherit their owner Workshop identity and all-faction proxy for event filtering',()=>{
+  const owner=piece('owner',[],[],'炎');owner.equipment=[{id:'identity',quantity:1,state:{faction:'叙拉古'}}];
+  const observer=piece('observer',[event('summon',{targets:'actor',stats:{baseAttackPercent:.4},maxStacks:1})]);
+  const pieces=[observer,owner],{catalog,chess}=catalogFor(pieces);catalog.equipment.identity={id:'identity',kind:'equipment',mechanism:'identityTag'};
+  catalog.config.tavernFactions=['叙拉古','炎'];
+  const h=makeBattle({units:pieces.map((p,i)=>({uid:p.uid,chessId:p.chessId,row:10,col:3+i})),defs:{chess},content:'none',autoFinish:false,extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})]});h.step(1);
+  const token=h.b.spawnToken(h.unit('owner'),'proxy-token',12,3,{def:{stats:{atk:10,maxHp:100}},kit:{},anySource:true});assert.equal(token.s.atk,14);
+  owner.equipment=[];catalog.operators[owner.chessId].tavernFactionProxy='ALL';
+  const second=h.b.spawnToken(h.unit('owner'),'all-token',12,4,{def:{stats:{atk:10,maxHp:100}},kit:{},anySource:true});assert.equal(second.s.atk,14);
+});
+
+test('real shield absorption emits all ten broken layers and queued threshold growth reaches two stacks',()=>{
+  const h=battle([piece('reactor',[event('shieldLayersBroken',{stats:{attackSpeedFlat:10},maxStacks:9})]),piece('shielded')]);
+  const target=h.unit('shielded'),reactor=h.unit('reactor'),enemy=h.spawn('dummy',{pos:[10,7]});let broken=0;
+  h.b.on('shieldLayersBroken',e=>{if(e.unit===target)broken+=e.layers;});
+  h.b.addBuff(target,{key:'ten-shield-layers',shieldHits:10,persist:true,source:reactor});
+  for(let i=0;i<10;i++)h.b.dealDamage(enemy,target,{amount:100,type:'phys'});
+  assert.equal(broken,10);assert.equal(reactor.s.aspd,110);h.run(1.1);assert.equal(reactor.s.aspd,120);
 });

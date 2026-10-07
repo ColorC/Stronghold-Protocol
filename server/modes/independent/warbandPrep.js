@@ -1,4 +1,4 @@
-import { nativeFactions, tavernFactions } from '../../../shared/independentRules.js';
+import { tavernFactions } from '../../../shared/independentRules.js';
 import { validateWarbandRule } from '../../../shared/warbandSchema.js';
 const present = p => p && p.row != null && p.col != null && !p.removed && !p.deleted;
 const owner = p => p?.playerId ?? p?.ownerId;
@@ -11,8 +11,8 @@ export function runFactionReaction(state, holder, event, rule, services) {
   const p = rule.params, gained = event.piece, catalog = services.catalog;
   if (!gained || owner(gained) !== owner(holder)) return;
   if (['gain','sold'].includes(rule.trigger) && gained.uid !== holder.uid) return;
-  if (!['discount','funds'].includes(p.mode) && !nativeFactions(gained,catalog).includes(p.faction)) return;
-  if (p.requireGainTrait && !(catalog.operators?.[gained.chessId]?.nativeTrait?.effect?.prep || []).some(r => r.trigger === 'gain')) return;
+  if (!['discount','funds'].includes(p.mode) && !p.anyGainFaction && !tavernFactions(gained,catalog).includes(p.faction)) return;
+  if ((p.requireGainTrait||p.anyGainFaction) && !(catalog.operators?.[gained.chessId]?.nativeTrait?.effect?.prep || []).some(r => r.trigger === 'gain')) return;
   const memo = ((holder.nativeState ||= {}).warbandReactions ||= {});
   const key = JSON.stringify(rule);
   if (memo[key]?.round !== state.round) memo[key] = { round: state.round, count: 0 };
@@ -34,11 +34,12 @@ export function runFactionReaction(state, holder, event, rule, services) {
     return;
   }
   let targets = (state.pieces || []).filter(x => present(x) && (!x.kind || x.kind === 'op') && owner(x) === owner(holder) && (!p.excludeSelf || x.uid !== holder.uid));
+  if(p.targets!=='self'&&!p.targetAnyFaction)targets=targets.filter(x=>tavernFactions(x,catalog).includes(p.targetFaction||p.faction));
   if (p.targets === 'self') targets = targets.filter(x => x.uid === holder.uid);
   if (p.targets === 'front') {
     const [dr,dc] = { RIGHT:[0,1],LEFT:[0,-1],UP:[-1,0],DOWN:[1,0] }[holder.dir || 'RIGHT'];
     targets = targets.filter(x => x.row === holder.row + dr && x.col === holder.col + dc);
   }
   targets.sort(p.targets === 'leastEquipment' ? (a,b) => (a.equipment || []).reduce((n,x)=>n+(x.quantity||1),0) - (b.equipment || []).reduce((n,x)=>n+(x.quantity||1),0) || uidOrder(a,b) : uidOrder);
-  for (const target of targets.slice(0,p.count)) for (const output of p.outputs) services.grantEquipment(state,output.id,output.quantity*scale,{ origin:'native',sourceUid:holder.uid,targetUid:target.uid,landOn:`uid:${target.uid}` });
+  for (const target of p.targets==='all'?targets:targets.slice(0,p.count)) for (const output of p.outputs) services.grantEquipment(state,output.id,output.quantity*scale,{ origin:'native',sourceUid:holder.uid,targetUid:target.uid,landOn:`uid:${target.uid}` });
 }
