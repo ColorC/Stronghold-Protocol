@@ -203,14 +203,16 @@ async function deployPiece(state, piece) {
     // Choose the visible right-facing arrow with a real pointer click, using the rendered wheel geometry.
     const facingTarget = await page.$eval('.fwheel__dia', (e) => {
       const r = e.getBoundingClientRect();
-      return { x: r.left + r.width * 0.82, y: r.top + r.height * 0.5, width: r.width, height: r.height };
+      return { center: { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }, target: { x: r.left + r.width * 0.82, y: r.top + r.height * 0.5 }, width: r.width, height: r.height };
     });
     const facingHit = await page.evaluate(({ x, y }) => {
       const e = document.elementFromPoint(x, y);
       return { tag: e?.tagName || '', className: typeof e?.className === 'string' ? e.className : '', wheel: !!e?.closest?.('.fwheel') };
-    }, facingTarget);
+    }, facingTarget.target);
     if (!facingHit.wheel) throw new Error(`朝向按钮未命中可见轮盘：${JSON.stringify({ facingTarget, facingHit })}`);
-    await page.mouse.click(facingTarget.x, facingTarget.y);
+    // The visible wheel commits on pointer-up after the pointer leaves its center dead-zone;
+    // a click merely cancels it, so use an ordinary mouse drag through the rendered geometry.
+    await dragPointer(facingTarget.center, facingTarget.target);
     try { await page.waitForSelector('.fwheel[role="dialog"]', { hidden: true, timeout: 10000 }); } catch { /* preserve the diagnostic and continue to state verification */ }
     await pause(500);
     const after = await readState();
@@ -512,14 +514,20 @@ async function stopRecording() {
       buttonStyle: style(button), centerHit: at ? { tag: at.tagName, className: typeof at.className === 'string' ? at.className : '', text: (at.innerText || '').slice(0, 120) } : null };
   });
   await writeFile(path.join(output, 'recording-control-diagnostic.json'), JSON.stringify(report.recordingControlBeforeStop, null, 2));
-  const button = await page.$('.ix-recording button');
-  if (!button || !(await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled))) {
-    report.recordingStopError = 'The visible recorder stop button was not available.';
-    return;
+  const stopDeadline = Math.min(Date.now() + 6 * 60 * 1000, processStartedAt + hardLimitMs);
+  let attempts = 0;
+  while (Date.now() < stopDeadline) {
+    const panelText = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => '');
+    if (/录制已结束/.test(panelText)) { report.recordingStopAttempts = attempts; delete report.recordingStopError; return; }
+    const button = await page.$('.ix-recording button');
+    const available = button && await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled);
+    if (!available) { await pause(1000); continue; }
+    attempts += 1; await button.click();
+    try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 10000 }); }
+    catch { await pause(1500); }
   }
-  await button.click();
-  try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 30000 }); }
-  catch { report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion'); }
+  report.recordingStopAttempts = attempts;
+  report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion');
 }
 const mime = (file) => ({ '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.otf': 'font/otf', '.ttf': 'font/ttf', '.skel': 'application/octet-stream', '.atlas': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.mp4': 'video/mp4' }[path.extname(file).toLowerCase()] || 'application/octet-stream');
 async function serveCanonicalAsset(req, res, pathname) {
