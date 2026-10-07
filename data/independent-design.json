@@ -1240,15 +1240,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 468.5（本体468.5+召唤物0.0；攻击力强化·β型）；单体800防/40抗最佳总DPS 23.4（本体23.4+召唤物0.0；攻击力强化·β型）；四目标0防/0抗最佳总DPS 468.5（本体468.5+召唤物0.0；攻击力强化·β型）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每有一名其他【萨尔贡】友方干员在场，自身最大生命值+8%，至多计三名；仅在满足条件的友方在场时生效",
+        "elite": "每有一名其他【萨尔贡】友方干员在场，自身最大生命值+16%，至多计三名；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "萨尔贡"
@@ -1256,16 +1256,48 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "萨尔贡"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "maxHpPercent": 0.08
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "萨尔贡"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "maxHpPercent": 0.16
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "周围敌人倒下按最大生命回复，族群生命加成增强持续接敌而非重复造装备",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -1620,15 +1652,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 352.8（本体352.8+召唤物0.0；光影迷宫）；单体800防/40抗最佳总DPS 211.7（本体211.7+召唤物0.0；光影迷宫）；四目标0防/0抗最佳总DPS 354.0（本体354.0+召唤物0.0；光影迷宫）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "其他在场术师与辅助每有一种不同职业，自身攻速+8，至多计两种；仅在满足条件的友方在场时生效",
+        "elite": "其他在场术师与辅助每有一种不同职业，自身攻速+16，至多计两种；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "伊比利亚"
@@ -1636,16 +1668,54 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "professions": [
+                    "CASTER",
+                    "SUPPORT"
+                  ]
+                },
+                "countBy": "professions",
+                "maxCount": 2,
+                "stats": {
+                  "attackSpeedFlat": 8
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "professions": [
+                    "CASTER",
+                    "SUPPORT"
+                  ]
+                },
+                "countBy": "professions",
+                "maxCount": 2,
+                "stats": {
+                  "attackSpeedFlat": 16
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "束缚型秘术师需要攻击频率；术辅协作提高控制覆盖，候补不提供加成",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -3102,15 +3172,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 469.0（本体469.0+召唤物0.0；固废切割）；单体800防/40抗最佳总DPS 42.5（本体42.5+召唤物0.0；固废切割）；四目标0防/0抗最佳总DPS 1875.9（本体1875.9+召唤物0.0；固废切割）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每有一名其他装备【坚守盟约】的友方干员在场，自身攻击力+10%，至多计三名；仅在满足条件的友方在场时生效",
+        "elite": "每有一名其他装备【坚守盟约】的友方干员在场，自身攻击力+20%，至多计三名；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛",
@@ -3119,16 +3189,48 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "keywordGear": "坚守盟约"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackPercent": 0.1
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "keywordGear": "坚守盟约"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackPercent": 0.2
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "收割者不能接受通常治疗，承伤盟约分摊压力后由攻击恢复续航；参考19.2帝国之手的友方嘲讽联动",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -3963,15 +4065,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 423.2（本体423.2+召唤物0.0；狼魂）；单体800防/40抗最佳总DPS 112.7（本体112.7+召唤物0.0；狼魂）；四目标0防/0抗最佳总DPS 589.7（本体589.7+召唤物0.0；狼魂）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每有一名其他【叙拉古】友方干员在场，自身攻速+8，至多计三名；仅在满足条件的友方在场时生效",
+        "elite": "每有一名其他【叙拉古】友方干员在场，自身攻速+16，至多计三名；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
@@ -3979,16 +4081,48 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "叙拉古"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackSpeedFlat": 8
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "叙拉古"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackSpeedFlat": 16
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "攻击回复技力与沉默共同受益于攻速；二阶成为叙拉古战斗组件",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -4553,15 +4687,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 1034.5（本体1034.5+召唤物0.0；过载模式）；单体800防/40抗最佳总DPS 51.7（本体51.7+召唤物0.0；过载模式）；四目标0防/0抗最佳总DPS 1034.5（本体1034.5+召唤物0.0；过载模式）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每有一名原生基础防御力至少为自身两倍的其他重装友方在场，自身攻击力+12%，至多计两名；仅在满足条件的友方在场时生效",
+        "elite": "每有一名原生基础防御力至少为自身两倍的其他重装友方在场，自身攻击力+24%，至多计两名；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "龙门",
@@ -4571,16 +4705,52 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "profession": "TANK",
+                  "baseStat": "def",
+                  "minBaseStatRatioToSelf": 2
+                },
+                "countBy": "operators",
+                "maxCount": 2,
+                "stats": {
+                  "attackPercent": 0.12
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "profession": "TANK",
+                  "baseStat": "def",
+                  "minBaseStatRatioToSelf": 2
+                },
+                "countBy": "operators",
+                "maxCount": 2,
+                "stats": {
+                  "attackPercent": 0.24
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "高频多段依赖前排保护，补中段火力但不赋予无条件穿甲；增益与原生技能攻击加算",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -5117,15 +5287,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 846.7（本体846.7+召唤物0.0；涌潮悲歌）；单体800防/40抗最佳总DPS 313.3（本体313.3+召唤物0.0；涌潮悲歌）；四目标0防/0抗最佳总DPS 846.7（本体846.7+召唤物0.0；涌潮悲歌）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每有一名其他【深海猎人】友方干员在场，自身攻击力与最大生命值各+10%，至多计三名；仅在满足条件的友方在场时生效",
+        "elite": "每有一名其他【深海猎人】友方干员在场，自身攻击力与最大生命值各+20%，至多计三名；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "阿戈尔",
@@ -5134,16 +5304,50 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "深海猎人"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackPercent": 0.1,
+                  "maxHpPercent": 0.1
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "深海猎人"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackPercent": 0.2,
+                  "maxHpPercent": 0.2
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "原生猎人攻击支援与再部署形成阵营前排，提升需真实同阵营队友投入",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -7155,15 +7359,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 854.0（本体854.0+召唤物0.0；箭矢·暴风）；单体800防/40抗最佳总DPS 42.7（本体42.7+召唤物0.0；箭矢·暴风）；四目标0防/0抗最佳总DPS 1480.3（本体1480.3+召唤物0.0；箭矢·暴风）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每有一名其他装备【护盾发生器】的友方干员在场，自身攻速+10，至多计三名；仅在满足条件的友方在场时生效",
+        "elite": "每有一名其他装备【护盾发生器】的友方干员在场，自身攻速+20，至多计三名；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "拉特兰"
@@ -7171,16 +7375,48 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "keywordGear": "护盾发生器"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackSpeedFlat": 10
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "keywordGear": "护盾发生器"
+                },
+                "countBy": "operators",
+                "maxCount": 3,
+                "stats": {
+                  "attackSpeedFlat": 20
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "原生护盾与狙击技力支持联系护盾编队；一名友方持多件仍只计一名，参考偏折机器人的护盾族群联动",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -9799,15 +10035,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 564.6（本体564.6+召唤物0.0；真银斩）；单体800防/40抗最佳总DPS 125.9（本体125.9+召唤物0.0；真银斩）；四目标0防/0抗最佳总DPS 1378.1（本体1378.1+召唤物0.0；真银斩）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "其他在场【谢拉格】干员每有一种不同职业，自身攻击力+12%，至多计三种；仅在满足条件的友方在场时生效",
+        "elite": "其他在场【谢拉格】干员每有一种不同职业，自身攻击力+24%，至多计三种；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "谢拉格",
@@ -9816,16 +10052,48 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "谢拉格"
+                },
+                "countBy": "professions",
+                "maxCount": 3,
+                "stats": {
+                  "attackPercent": 0.12
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "谢拉格"
+                },
+                "countBy": "professions",
+                "maxCount": 3,
+                "stats": {
+                  "attackPercent": 0.24
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "领袖支援和真银斩依赖谢拉格职业组合，不以本体爆发为拒绝特质的理由",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -9930,15 +10198,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 841.3（本体841.3+召唤物0.0；丛林之魂）；单体800防/40抗最佳总DPS 166.1（本体166.1+召唤物0.0；链锯强袭）；四目标0防/0抗最佳总DPS 841.3（本体841.3+召唤物0.0；丛林之魂）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "其他在场【罗德岛】干员每有一种不同职业，自身防御力+8%、攻速+5，至多计四种；仅在满足条件的友方在场时生效",
+        "elite": "其他在场【罗德岛】干员每有一种不同职业，自身防御力+16%、攻速+10，至多计四种；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "罗德岛",
@@ -9947,16 +10215,50 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "罗德岛"
+                },
+                "countBy": "professions",
+                "maxCount": 4,
+                "stats": {
+                  "defensePercent": 0.08,
+                  "attackSpeedFlat": 5
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "faction": "罗德岛"
+                },
+                "countBy": "professions",
+                "maxCount": 4,
+                "stats": {
+                  "defensePercent": 0.16,
+                  "attackSpeedFlat": 10
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "挡人、受疗与群攻前排依赖多职业协作；用19.2多样性收益替代孤立白板",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       }
     },
     {
@@ -10560,15 +10862,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 845.4（本体845.4+召唤物0.0；圣约决裁）；单体800防/40抗最佳总DPS 246.6（本体246.6+召唤物0.0；圣约决裁）；四目标0防/0抗最佳总DPS 3381.6（本体3381.6+召唤物0.0；圣约决裁）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "自身每累计消耗二十四发原生技能弹药，战斗结束后获得两枚攻击徽章与一枚生命徽章；每场攻击徽章至多四枚、生命徽章至多四枚",
+        "elite": "自身每累计消耗二十四发原生技能弹药，战斗结束后获得四枚攻击徽章与两枚生命徽章；每场攻击徽章至多八枚、生命徽章至多八枚",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "拉特兰"
@@ -10576,16 +10878,68 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "ammoUsed",
+              "behavior": "eventProduction",
+              "params": {
+                "counterEvent": "ammoUsed",
+                "counterEvery": 24,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "quantity": 2
+                  },
+                  {
+                    "id": "vitality",
+                    "quantity": 1
+                  }
+                ],
+                "capPerOutput": 4,
+                "filter": {
+                  "actor": "self",
+                  "selectedAmmoSkill": true,
+                  "nativeOnly": true
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "ammoUsed",
+              "behavior": "eventProduction",
+              "params": {
+                "counterEvent": "ammoUsed",
+                "counterEvery": 24,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "quantity": 4
+                  },
+                  {
+                    "id": "vitality",
+                    "quantity": 2
+                  }
+                ],
+                "capPerOutput": 8,
+                "filter": {
+                  "actor": "self",
+                  "selectedAmmoSkill": true,
+                  "nativeOnly": true
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "拉特兰原生弹药上限联动延伸为高阶攻击与生存成长；弹药按实际消费数量累计而非多段命中次数",
+        "traitRevision": "19.2卡雷苟斯与诺米的事件成长改写",
+        "reference": "19.2卡雷苟斯与诺米的事件成长改写"
       }
     },
     {
@@ -10995,7 +11349,7 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 1113.6（本体1113.6+召唤物0.0；必须开辟的通路）；单体800防/40抗最佳总DPS 775.8（本体775.8+召唤物0.0；必须开辟的通路）；四目标0防/0抗最佳总DPS 1996.0（本体1996.0+召唤物0.0；必须开辟的通路）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": {
         "name": "乌尔比安",
         "direction": "接收",
@@ -11005,12 +11359,12 @@
         "donorFaction": "阿戈尔"
       },
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "整备结束时，场上装备最少的三名【深海猎人】干员各获得一枚攻击徽章与两枚生命徽章",
+        "elite": "整备结束时，场上装备最少的三名【深海猎人】干员各获得两枚攻击徽章与四枚生命徽章",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "阿戈尔",
@@ -11018,17 +11372,65 @@
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "faction:深海猎人",
+                "count": 3,
+                "sort": "leastEquipment",
+                "excludeSelf": false,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "vitality",
+                    "normal": 2,
+                    "elite": 4
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "faction:深海猎人",
+                "count": 3,
+                "sort": "leastEquipment",
+                "excludeSelf": false,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "vitality",
+                    "normal": 2,
+                    "elite": 4
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生击杀成长与猎人共享延伸为深海成长核心，生命侧高于攻击侧；可包含自身",
+        "traitRevision": "19.2拉佐格尔的族群成长与戈德林的族群分配合并改写",
+        "reference": "19.2拉佐格尔的族群成长与戈德林的族群分配合并改写"
       }
     },
     {
@@ -11148,15 +11550,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 2368.1（本体2368.1+召唤物0.0；灵与欲的惜别）；单体800防/40抗最佳总DPS 724.1（本体724.1+召唤物0.0；灵与欲的惜别）；四目标0防/0抗最佳总DPS 8217.6（本体8217.6+召唤物0.0；灵与欲的惜别）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "自身在场时，友方干员的获得时特质额外触发一次；同类效果只取最高，复制特质不形成重复链",
+        "elite": "自身在场时，友方干员的获得时特质额外触发两次；同类效果只取最高，复制特质不形成重复链",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "联动",
       "active": true,
       "nativeFactionTags": [
         "罗德岛",
@@ -11164,17 +11566,37 @@
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "aura",
+              "behavior": "triggerMultiplier",
+              "params": {
+                "hook": "gain",
+                "extra": 1
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "aura",
+              "behavior": "triggerMultiplier",
+              "params": {
+                "hook": "gain",
+                "extra": 2
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "synergy",
+        "basis": "本体持续削减敌人生命上限与高额群攻确有输出优势，但仍给予六阶资源重演功能；倍率不叠乘",
+        "traitRevision": "19.2布莱恩铜须的触发倍率改写",
+        "reference": "19.2布莱恩铜须的触发倍率改写"
       }
     },
     {
@@ -11276,15 +11698,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 641.1（本体641.1+召唤物0.0；熔核巨影）；单体800防/40抗最佳总DPS 512.9（本体512.9+召唤物0.0；熔核巨影）；四目标0防/0抗最佳总DPS 1509.9（本体1509.9+召唤物0.0；黄昏）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "自身装备的攻击徽章与攻击加成徽章效果变为两倍",
+        "elite": "自身装备的攻击徽章与攻击加成徽章效果变为三倍",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "联动",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -11292,16 +11714,42 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "badgeAmplifier",
+              "params": {
+                "badgeIds": [
+                  "precision",
+                  "assault"
+                ],
+                "multiplier": 2
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "badgeAmplifier",
+              "params": {
+                "badgeIds": [
+                  "precision",
+                  "assault"
+                ],
+                "multiplier": 3
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "synergy",
+        "basis": "原生法抗穿透与短时间高倍率输出适合作为装备放大终端；放大已有徽章，不能凭空叠攻击",
+        "traitRevision": "高本构筑核心的倍率收益；以徽章替代额外原生攻击身材",
+        "reference": "高本构筑核心的倍率收益；以徽章替代额外原生攻击身材"
       }
     },
     {
@@ -11396,32 +11844,80 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 470.6（本体470.6+召唤物0.0；暴风号令）；单体800防/40抗最佳总DPS 167.8（本体167.8+召唤物0.0；暴风号令）；四目标0防/0抗最佳总DPS 1495.1（本体1495.1+召唤物0.0；照明榴弹）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "整备结束时，场上装备最少的两名重装干员各获得一枚攻击徽章与一枚防御徽章",
+        "elite": "整备结束时，场上装备最少的两名重装干员各获得两枚攻击徽章与两枚防御徽章",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "维多利亚"
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "profession:TANK",
+                "count": 2,
+                "sort": "leastEquipment",
+                "excludeSelf": false,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "defense",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "profession:TANK",
+                "count": 2,
+                "sort": "leastEquipment",
+                "excludeSelf": false,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "defense",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生重装攻击支援扩大为长期重装养成；目标可包含自身，实际未满两人则按现有目标结算",
+        "traitRevision": "19.2钢铁武道家的回合结束队友成长改写",
+        "reference": "19.2钢铁武道家的回合结束队友成长改写"
       }
     },
     {
@@ -12258,32 +12754,60 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 575.3（本体575.3+召唤物0.0；变革已至）；单体800防/40抗最佳总DPS 49.9（本体49.9+召唤物0.0；御敌的锋锐）；四目标0防/0抗最佳总DPS 1706.2（本体1706.2+召唤物0.0；变革已至）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "整备结束时，本局所有友方的攻速徽章与技力徽章效果额外提高25%，可累计至额外150%",
+        "elite": "整备结束时，本局所有友方的攻速徽章与技力徽章效果额外提高50%，可累计至额外300%",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "联动",
       "active": true,
       "nativeFactionTags": [
         "谢拉格"
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "badgeBoost",
+              "params": {
+                "badgeIds": [
+                  "agility",
+                  "recovery"
+                ],
+                "percent": 0.25,
+                "max": 1.5
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "badgeBoost",
+              "params": {
+                "badgeIds": [
+                  "agility",
+                  "recovery"
+                ],
+                "percent": 0.5,
+                "max": 3
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "synergy",
+        "basis": "原生谢拉格防护、部署回转和初始技力支持扩展成全队回转的永久科技；加成提高徽章效力而非凭空提供自然技力",
+        "traitRevision": "19.2诺米的本局成长转为队伍徽章倍率科技",
+        "reference": "19.2诺米的本局成长转为队伍徽章倍率科技"
       }
     },
     {
@@ -12691,32 +13215,70 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 488.4（本体488.4+召唤物0.0；未照耀的荣光）；单体800防/40抗最佳总DPS 292.8（本体292.8+召唤物0.0；未照耀的荣光）；四目标0防/0抗最佳总DPS 2036.3（本体2036.3+召唤物0.0；未照耀的荣光）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "整备结束时，场上原生基础攻击力最高的两名其他友方干员各获得两枚攻击徽章",
+        "elite": "整备结束时，场上原生基础攻击力最高的两名其他友方干员各获得四枚攻击徽章",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "卡西米尔"
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "all",
+                "count": 2,
+                "sort": "highestBaseAttack",
+                "excludeSelf": true,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 2,
+                    "elite": 4
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "all",
+                "count": 2,
+                "sort": "highestBaseAttack",
+                "excludeSelf": true,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 2,
+                    "elite": 4
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "嘲讽承伤与卡西米尔保护者定位延伸为保护主力的六阶队伍成长；不以暂时技能爆发选目标",
+        "traitRevision": "19.2光牙执行者的持续队伍培养；按原生主力属性重新选目标",
+        "reference": "19.2光牙执行者的持续队伍培养；按原生主力属性重新选目标"
       }
     },
     {
@@ -13126,15 +13688,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 596.6（本体596.6+召唤物0.0；怵然震爆）；单体800防/40抗最佳总DPS 340.3（本体340.3+召唤物0.0；心防溃决）；四目标0防/0抗最佳总DPS 1163.5（本体1163.5+召唤物0.0；怵然震爆）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "场上每有一名敌人凋亡损伤爆发，战斗结束后自身获得一枚攻击加成徽章与一枚技力徽章，每种每场至多四枚",
+        "elite": "场上每有一名敌人凋亡损伤爆发，战斗结束后自身获得两枚攻击加成徽章与两枚技力徽章，每种每场至多八枚",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "罗德岛"
@@ -13142,16 +13704,66 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "elementBurst",
+              "behavior": "eventProduction",
+              "params": {
+                "counterEvent": "elementBurst",
+                "counterEvery": 1,
+                "outputs": [
+                  {
+                    "id": "assault",
+                    "quantity": 1
+                  },
+                  {
+                    "id": "recovery",
+                    "quantity": 1
+                  }
+                ],
+                "capPerOutput": 4,
+                "filter": {
+                  "element": "necrosis",
+                  "targetSide": "enemy"
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "elementBurst",
+              "behavior": "eventProduction",
+              "params": {
+                "counterEvent": "elementBurst",
+                "counterEvery": 1,
+                "outputs": [
+                  {
+                    "id": "assault",
+                    "quantity": 2
+                  },
+                  {
+                    "id": "recovery",
+                    "quantity": 2
+                  }
+                ],
+                "capPerOutput": 8,
+                "filter": {
+                  "element": "necrosis",
+                  "targetSide": "enemy"
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生凋亡爆发叠攻延伸为两条永久成长，队伍可协作触发但不把普通伤害当元素爆发",
+        "traitRevision": "19.2诺米的元素事件永久成长改写",
+        "reference": "19.2诺米的元素事件永久成长改写"
       }
     },
     {
@@ -14256,11 +14868,11 @@
           ]
         }
       ],
-      "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：获得时，获得1件增压臂铠；技能持续期间每击倒1名敌人，周围四格友方技力+1。规则动作：普通整备gain触发授予装备；普通战斗kill触发onKillSp；进阶整备gain触发授予装备；进阶战斗kill触发onKillSp。本体依据：WARRIOR/撼地者，MELEE，范围1-1；原生攻击1083、攻速100、攻击间隔1.8秒、生命2223；选用「时光震荡」Lv4，SP消耗57/初始30（INCREASE_WITH_TIME）：“攻击间隔略微增大，攻击力+150%，攻击使命中的目标晕眩0.8秒，对主目标提升至1秒，每次攻击后使溅射范围扩大且攻击力额外+13%，最多叠加4层”。探针依据：单体0防/0抗最佳总DPS 1100.3（本体1100.3+召唤物0.0；时光震荡）；单体800防/40抗最佳总DPS 682.6（本体682.6+召唤物0.0；时光震荡）；四目标0防/0抗最佳总DPS 2750.8（本体2750.8+召唤物0.0；时光震荡）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件增压臂铠；技能持续期间每击倒1名敌人，周围四格友方技力+1",
-        "elite": "获得时，获得2件增压臂铠；技能持续期间每击倒1名敌人，周围四格友方技力+2",
+        "normal": "获得时，获得1件增压臂铠；技能持续期间每击倒1名敌人，周围四格友方技力+1；整备结束时，周围四格装备最少的两名其他友方干员各获得一枚攻击徽章与一枚技力徽章",
+        "elite": "获得时，获得2件增压臂铠；技能持续期间每击倒1名敌人，周围四格友方技力+2；整备结束时，周围四格装备最少的两名其他友方干员各获得两枚攻击徽章与两枚技力徽章",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -14279,6 +14891,28 @@
                 "outputs": [
                   {
                     "id": "independent:增压臂铠",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            },
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "adjacent",
+                "count": 2,
+                "sort": "leastEquipment",
+                "excludeSelf": true,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "recovery",
                     "normal": 1,
                     "elite": 2
                   }
@@ -14313,6 +14947,28 @@
                   }
                 ]
               }
+            },
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "adjacent",
+                "count": 2,
+                "sort": "leastEquipment",
+                "excludeSelf": true,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "recovery",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
             }
           ],
           "combat": [
@@ -14331,7 +14987,9 @@
       },
       "sourceRefs": {
         "darkmoonFamily": "growth",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "保留原有增压臂铠和技能击杀回技力，补充与近邻协作的永久成长以支撑六阶定位",
+        "traitRevision": "19.2钢铁武道家的邻位成长改写",
+        "reference": "19.2钢铁武道家的邻位成长改写"
       }
     },
     {
@@ -15253,15 +15911,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 679.4（本体679.4+召唤物0.0；“如你所愿”）；单体800防/40抗最佳总DPS 128.9（本体128.9+召唤物0.0；“如你所愿”）；四目标0防/0抗最佳总DPS 1116.6（本体1116.6+召唤物0.0；末梢阻断）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "整备结束时，自身所在行装备最少的三名其他友方干员各获得一枚攻击徽章与一枚防御徽章",
+        "elite": "整备结束时，自身所在行装备最少的三名其他友方干员各获得两枚攻击徽章与两枚防御徽章",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "罗德岛",
@@ -15270,17 +15928,65 @@
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "row",
+                "count": 3,
+                "sort": "leastEquipment",
+                "excludeSelf": true,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "defense",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "row",
+                "count": 3,
+                "sort": "leastEquipment",
+                "excludeSelf": true,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "defense",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生与术师配对攻击、战术装备协同延伸为同一行的成长阵地；由站位约束收益",
+        "traitRevision": "19.2光牙执行者与钢铁武道家的长期队友成长改写",
+        "reference": "19.2光牙执行者与钢铁武道家的长期队友成长改写"
       }
     },
     {
@@ -15708,15 +16414,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 567.4（本体567.4+召唤物0.0；留羽）；单体800防/40抗最佳总DPS 207.6（本体207.6+召唤物0.0；问雪）；四目标0防/0抗最佳总DPS 1168.8（本体1168.8+召唤物0.0；问雪）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "己方原生技能或天赋每累计六次使敌人新进入束缚或停顿状态，战斗结束后自身获得一枚攻击徽章与一枚攻速徽章，每种每场至多四枚",
+        "elite": "己方原生技能或天赋每累计六次使敌人新进入束缚或停顿状态，战斗结束后自身获得两枚攻击徽章与两枚攻速徽章，每种每场至多八枚",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "炎"
@@ -15724,16 +16430,78 @@
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "statusApplied",
+              "behavior": "eventProduction",
+              "params": {
+                "counterEvent": "statusApplied",
+                "counterEvery": 6,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "quantity": 1
+                  },
+                  {
+                    "id": "agility",
+                    "quantity": 1
+                  }
+                ],
+                "capPerOutput": 4,
+                "filter": {
+                  "actor": "team",
+                  "status": [
+                    "bind",
+                    "slow"
+                  ],
+                  "entered": true,
+                  "targetSide": "enemy",
+                  "nativeOnly": true
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "statusApplied",
+              "behavior": "eventProduction",
+              "params": {
+                "counterEvent": "statusApplied",
+                "counterEvery": 6,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "quantity": 2
+                  },
+                  {
+                    "id": "agility",
+                    "quantity": 2
+                  }
+                ],
+                "capPerOutput": 8,
+                "filter": {
+                  "actor": "team",
+                  "status": [
+                    "bind",
+                    "slow"
+                  ],
+                  "entered": true,
+                  "targetSide": "enemy",
+                  "nativeOnly": true
+                }
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生受控目标追加法伤与自身束缚延伸为控制组合成长；同状态续期不重复计数，装备控制不计入",
+        "traitRevision": "19.2卡雷苟斯的友方事件长期成长改写",
+        "reference": "19.2卡雷苟斯的友方事件长期成长改写"
       }
     },
     {
@@ -16179,7 +16947,7 @@
           ]
         }
       ],
-      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件护盾发生器。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：WARRIOR/无畏者，MELEE，范围1-1；原生攻击883、攻速100、攻击间隔1.5秒、生命2698；选用「耀阳颔首」Lv4，SP消耗55/初始15（INCREASE_WITH_TIME）：“在周围四格可部署地面召唤一把\"耀阳\"对周围敌人造成90%耀骑士临光攻击力的真实伤害并晕眩3秒，自身攻击范围扩大，攻击力+70%、防御力+40%，攻击自身与\"耀阳\"阻挡的单位时伤害类型变为真实”。探针依据：单体0防/0抗最佳总DPS 738.2（本体705.4+召唤物32.8；耀阳颔首）；单体800防/40抗最佳总DPS 415.6（本体385.4+召唤物30.2；耀阳颔首）；四目标0防/0抗最佳总DPS 828.3（本体705.4+召唤物122.9；耀阳颔首）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "生成",
       "inheritance": {
         "name": "耀骑士临光",
         "direction": "接收",
@@ -16189,8 +16957,8 @@
         "donorFaction": "卡西米尔"
       },
       "nativeTrait": {
-        "normal": "获得时，获得1件护盾发生器",
-        "elite": "获得时，获得2件护盾发生器",
+        "normal": "获得时，获得1件护盾发生器；每次部署时，使两名护盾层数最少的其他在场友方各获得两层护盾，此效果提供的护盾每名友方至多两层",
+        "elite": "获得时，获得2件护盾发生器；每次部署时，使三名护盾层数最少的其他在场友方各获得两层护盾，此效果提供的护盾每名友方至多两层",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -16218,7 +16986,19 @@
               }
             }
           ],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "deploy",
+              "behavior": "shieldAllies",
+              "params": {
+                "on": "deploy",
+                "targets": "all",
+                "excludeSelf": true,
+                "count": 2,
+                "layers": 2
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [
@@ -16236,12 +17016,26 @@
               }
             }
           ],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "deploy",
+              "behavior": "shieldAllies",
+              "params": {
+                "on": "deploy",
+                "targets": "all",
+                "excludeSelf": true,
+                "count": 3,
+                "layers": 2
+              }
+            }
+          ]
         }
       },
       "sourceRefs": {
         "darkmoonFamily": "generation",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "保留获得时护盾发生器，将原生部署护盾与救援天赋延伸为重复部署的队伍保护，不再只有一次供货",
+        "traitRevision": "19.2无私的英雄与红衣纳迪娜的友方护盾分配改写",
+        "reference": "19.2无私的英雄与红衣纳迪娜的友方护盾分配改写"
       }
     },
     {
@@ -16355,32 +17149,80 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 850.1（本体850.1+召唤物0.0；终幕·浩劫）；单体800防/40抗最佳总DPS 510.1（本体510.1+召唤物0.0；终幕·浩劫）；四目标0防/0抗最佳总DPS 1035.1（本体1035.1+召唤物0.0；终幕·浩劫）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "整备结束时，场上装备最少的三名【叙拉古】干员各获得一枚攻击徽章与一枚技力徽章",
+        "elite": "整备结束时，场上装备最少的三名【叙拉古】干员各获得两枚攻击徽章与两枚技力徽章",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "叙拉古"
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "faction:叙拉古",
+                "count": 3,
+                "sort": "leastEquipment",
+                "excludeSelf": false,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "recovery",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "prepEnd",
+              "behavior": "teamForge",
+              "params": {
+                "targets": "faction:叙拉古",
+                "count": 3,
+                "sort": "leastEquipment",
+                "excludeSelf": false,
+                "outputs": [
+                  {
+                    "id": "precision",
+                    "normal": 1,
+                    "elite": 2
+                  },
+                  {
+                    "id": "recovery",
+                    "normal": 1,
+                    "elite": 2
+                  }
+                ]
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生叙拉古初始技力支持延伸为阵营长线输出与回转，成为五阶阵营引擎",
+        "traitRevision": "19.2光牙执行者的分配成长改写",
+        "reference": "19.2光牙执行者的分配成长改写"
       }
     },
     {
@@ -16522,15 +17364,15 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 1131.9（本体1131.9+召唤物0.0；归于宁静）；单体800防/40抗最佳总DPS 266.8（本体266.8+召唤物0.0；归于宁静）；四目标0防/0抗最佳总DPS 2240.7（本体2240.7+召唤物0.0；归于宁静）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
+      "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "每购买一名其他干员，该干员获得一枚攻击徽章；此特质每触发一次，下次多给予一枚，单次至多八枚",
+        "elite": "每购买一名其他干员，该干员获得两枚攻击徽章；此特质每触发一次，下次多给予两枚，单次至多十六枚",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "成长",
       "active": true,
       "nativeFactionTags": [
         "谢拉格",
@@ -16540,17 +17382,41 @@
       ],
       "modeEffects": {
         "normal": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "bought",
+              "behavior": "buyGear",
+              "params": {
+                "id": "precision",
+                "start": 1,
+                "step": 1,
+                "max": 8
+              }
+            }
+          ],
           "combat": []
         },
         "elite": {
-          "prep": [],
+          "prep": [
+            {
+              "trigger": "bought",
+              "behavior": "buyGear",
+              "params": {
+                "id": "precision",
+                "start": 2,
+                "step": 2,
+                "max": 16
+              }
+            }
+          ],
           "combat": []
         }
       },
       "sourceRefs": {
-        "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "darkmoonFamily": "growth",
+        "basis": "原生战栗与穿防仍承担战斗，六阶补充招募链成长核心；只统计购入成功，不统计免费招募与召唤",
+        "traitRevision": "商店/购入成长类机制改写；不声称是19.2逐卡等同翻译",
+        "reference": "商店/购入成长类机制改写；不声称是19.2逐卡等同翻译"
       }
     },
     {
@@ -16793,31 +17659,65 @@
           ]
         }
       ],
-      "role": "定位依据：本体技能/天赋直接作战；保留原生战斗套件，不追加模式规则。单体0防/0抗最佳总DPS 547.6（本体547.6+召唤物0.0；槌音）；单体800防/40抗最佳总DPS 75.7（本体75.7+召唤物0.0；槌音）；四目标0防/0抗最佳总DPS 547.6（本体547.6+召唤物0.0；槌音）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。 原生资料补全：默认技能「槌音」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=32；initSp=0；duration字段=22）：攻击间隔略微增大，攻击力+120%；原生天赋：蛮力穿刺：攻击时，10%几率当次攻击的攻击力+50%。技能中这个几率提高到30%。",
+      "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "没有额外特质。",
-        "elite": "没有额外特质。",
+        "normal": "有其他友方干员的原生基础攻击力不低于自身的120%时，自身攻击力+15%；仅在满足条件的友方在场时生效",
+        "elite": "有其他友方干员的原生基础攻击力不低于自身的120%时，自身攻击力+30%；仅在满足条件的友方在场时生效",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "纯战斗",
+      "roster": "临时战斗",
       "active": true,
       "nativeFactionTags": [
         "哥伦比亚"
       ],
       "sourceRefs": {
         "darkmoonFamily": "combat",
-        "basis": "Functional-family reference only; not a one-to-one source-card mapping."
+        "basis": "击杀型先锋借主力输出协同清杂；一阶只给单档开关，不随人数放大",
+        "traitRevision": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写",
+        "reference": "19.2老瞎眼的友方族群计数；职业、属性与关键词条件按干员定位改写"
       },
       "modeEffects": {
         "normal": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "baseStat": "atk",
+                  "minBaseStatRatioToSelf": 1.2
+                },
+                "countBy": "operators",
+                "maxCount": 1,
+                "stats": {
+                  "attackPercent": 0.15
+                }
+              }
+            }
+          ]
         },
         "elite": {
           "prep": [],
-          "combat": []
+          "combat": [
+            {
+              "trigger": "passive",
+              "behavior": "allyConditionStats",
+              "params": {
+                "match": {
+                  "baseStat": "atk",
+                  "minBaseStatRatioToSelf": 1.2
+                },
+                "countBy": "operators",
+                "maxCount": 1,
+                "stats": {
+                  "attackPercent": 0.3
+                }
+              }
+            }
+          ]
         }
       }
     },
