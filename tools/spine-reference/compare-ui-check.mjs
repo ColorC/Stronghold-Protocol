@@ -46,13 +46,17 @@ try{
  report.checks.progressDrag=drag;
  await page.evaluate(()=>{document.querySelector('#align').value='seconds';document.querySelector('#align').dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#time').value='.25';document.querySelector('#time').dispatchEvent(new Event('input',{bubbles:true}));});
  report.checks.secondsAlignment=await page.evaluate(()=>({align:document.querySelector('#align').value,time:window.compare.getTime(),url:new URL(location.href).searchParams.get('align')}));
+ await page.evaluate(()=>{const z=document.querySelector('#zoom');z.value='1.25';z.dispatchEvent(new Event('input',{bubbles:true}));});
  const link=await page.evaluate(()=>location.href);
  await Promise.race([page.goto(link,{waitUntil:'networkidle0',timeout:60000}),timeout]);
  await Promise.race([page.waitForFunction(()=>window.__ready===true||window.__error,{timeout:60000}),timeout]);
- report.checks.urlRoundTrip=await page.evaluate(()=>({ready:window.__ready,align:document.querySelector('#align').value,t:new URL(location.href).searchParams.get('t'),columns:document.querySelectorAll('.col').length}));
+ report.checks.urlRoundTrip=await page.evaluate(()=>({ready:window.__ready,align:document.querySelector('#align').value,t:new URL(location.href).searchParams.get('t'),zoom:new URL(location.href).searchParams.get('zoom'),columns:document.querySelectorAll('.col').length}));
  if(!report.checks.urlRoundTrip.ready)throw new Error('URL 回载失败');
+ if(report.checks.urlRoundTrip.zoom!=='1.25')throw new Error('缩放值没有经 URL 往返');
  await page.evaluate(()=>{document.querySelector('#original').checked=true;document.querySelector('#original').dispatchEvent(new Event('change',{bubbles:true}));});
  report.checks.originalOverlay=await page.evaluate(()=>({checked:document.querySelector('#original').checked,canvases:[...document.querySelectorAll('.col canvas')].map(c=>({hidden:c.classList.contains('hide'),width:c.width,height:c.height})),svgVisible:[...document.querySelectorAll('.col svg')].every(s=>!s.classList.contains('hide'))}));
+ report.checks.pixelAlignment=await page.evaluate(()=>[...window.compare.states].flatMap(([id,s])=>['arm.L.wrist','leg.L.knee'].map(point=>{const data=s.pose.landmarks[point],circle=s.svg.querySelector(`[data-point="${point}"]`),box=circle.getBoundingClientRect(),svgPoint={x:(box.left+box.right)/2,y:(box.top+box.bottom)/2},global=s.sp.toGlobal(new PIXI.Point(data.position[0],-data.position[1])),canvas=s.article.querySelector('canvas'),rect=canvas.getBoundingClientRect(),pixiPoint={x:rect.left+global.x*rect.width/canvas.width,y:rect.top+global.y*rect.height/canvas.height};return{source:id,point,svgPoint,pixiPoint,deltaPx:Math.hypot(svgPoint.x-pixiPoint.x,svgPoint.y-pixiPoint.y)};})));
+ if(report.checks.pixelAlignment.some(x=>!Number.isFinite(x.deltaPx)||x.deltaPx>2))throw new Error('原图与语义 SVG 的腕/膝坐标偏差超过 2px');
  await page.evaluate(()=>document.querySelectorAll('.col svg').forEach(s=>s.style.visibility='hidden'));
  await page.screenshot({path:path.join(out,'canvas-only.png'),fullPage:true});
  report.files.canvasOnly=path.join(out,'canvas-only.png');
