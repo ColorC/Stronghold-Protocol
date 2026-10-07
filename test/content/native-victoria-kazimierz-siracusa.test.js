@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import nativeKits, { NATIVE_DEFAULT_SKILL_IDS, NATIVE_KIT_READY, NATIVE_SKILL_SUPPORT } from '../../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 import { skillSpecSource } from '../../server/sim/content/index.js';
+import { COLS } from '../../server/sim/constants.js';
+import { absoluteRangeKeys } from '../../server/sim/targeting.js';
 
 const pool = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const operators = [
@@ -25,7 +27,7 @@ test('Victoria/Kazimierz/Siracusa imports expose explicit source-ID default kits
   for (const [charId, name] of operators) {
     const ids = NATIVE_SKILL_SUPPORT[charId];
     assert.ok(Array.isArray(ids), `${name} declares supported skill IDs`);
-    assert.deepEqual(NATIVE_KIT_READY[charId], { ready: true, talentReady: true, skillReady: ids.length > 0, tokenReady: charId === 'char_4072_ironmn', supportedSkillIds: ids }, `${name} has an explicit complete-kit readiness record`);
+    assert.deepEqual(NATIVE_KIT_READY[charId], { ready: true, talentReady: true, requiresSkill: ids.length > 0, skillReady: true, requiresToken: charId === 'char_4072_ironmn', tokenReady: true, supportedSkillIds: ids }, `${name} has an explicit complete-kit readiness record`);
     assert.equal(ids.length, name === '正义骑士号' ? 0 : 1, `${name} only advertises authored options`);
     if (ids.length) {
       assert.equal(NATIVE_DEFAULT_SKILL_IDS[charId], expectedDefaults[charId], `${name} chooses its source-backed default`);
@@ -170,6 +172,10 @@ test('Aosta refreshes one independent bleed timer per unblocked target', () => {
   const unit = h.unit(chessId); h.run(0.25); const enemy = h.enemy('enemy_dummy');
   h.b.forceAttack(unit, [enemy]); h.b.forceAttack(unit, [enemy]); h.run(0.5);
   assert.equal(h.b._sched.filter((scheduled) => scheduled.owner === unit).length, 1, 'repeated hits refresh a single DOT timer rather than scheduling parallel ticks');
+  enemy.blockedBy = unit;
+  const hp = enemy.hp;
+  h.run(1.1);
+  assert.ok(enemy.hp < hp, 'a bleed already applied continues even if the target is blocked afterward');
   assert.equal(h.b.errorCount, 0);
 });
 
@@ -179,6 +185,7 @@ test('Liesel applies her source damage increase when three enemies occupy the tr
   const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_4031_liesel);
   const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 100000, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], kits: nativeKits, timeLimit: 10 });
   const unit = h.unit(chessId); h.run(0.25);
+  assert.equal(unit.skill.maxCharges, chess.skills[skillIndex].maxChargeTime, 'Liesel uses source maxChargeTime for her two charges');
   const primary = h.b.spawnEnemy('enemy_dummy', { pos: [10, 7] });
   h.b.spawnEnemy('enemy_dummy', { pos: [10, 8] });
   h.b.spawnEnemy('enemy_dummy', { pos: [11, 7] });
@@ -188,6 +195,50 @@ test('Liesel applies her source damage increase when three enemies occupy the tr
   h.b.forceAttack(unit, [primary]);
   h.run(0.5);
   assert.ok(observed.some((multiplier) => multiplier >= chess.talents[0].bb.damage_scale), 'the real hit carries the source talent multiplier through the shared damage helper');
+  assert.equal(h.b.errorCount, 0);
+});
+
+test('Chiave speeds up Support Mechs and gains ATK/DEF per deployed Support Mech', () => {
+  for (const suffix of ['a', 'b']) {
+    const chessId = `chess_native_char_349_chiave_${suffix}`;
+    const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+    const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_349_chiave);
+    const robot = chessRec({ id: `test_support_mech_${suffix}`, profession: 'SUPPORTER', subProf: 'notchar1', stats: { atk: 100, def: 100, respawnTime: 40 } });
+    const h = makeBattle({ defs: { chess: { [chessId]: chess, [robot.chessId]: robot } }, units: [{ chessId, skillIndex, row: 10, col: 5 }, { chessId: robot.chessId, row: 10, col: 6 }], kits: nativeKits, timeLimit: 10 });
+    const unit = h.unit(chessId), mech = h.unit(robot.chessId); h.run(0.5);
+    assert.equal(mech.s.redeployMul, 1 - chess.talents[0].bb.respawn_time, `Chiave ${suffix} applies the source redeploy modifier`);
+    assert.equal(unit.s.atk, unit.base.atk * (1 + chess.talents[0].bb.atk), `Chiave ${suffix} gains source ATK per deployed Support Mech`);
+    assert.equal(unit.s.def, unit.base.def * (1 + chess.talents[0].bb.def), `Chiave ${suffix} gains source DEF per deployed Support Mech`);
+    assert.equal(h.b.errorCount, 0);
+  }
+});
+
+test('Demetr elite dodge starts at the deployed value and decays to its source baseline', () => {
+  const chessId = 'chess_native_char_4037_demetr_b';
+  const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+  const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_4037_demetr);
+  const h = makeBattle({ defs: { chess: { [chessId]: chess } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], kits: nativeKits, timeLimit: 30 });
+  const unit = h.unit(chessId); h.run(0.25);
+  const key = `demetr:dodge:${unit.id}`;
+  assert.equal(unit.findBuff(key)?.mods?.dodgePhys, chess.talents[1].bb.init_prob, 'elite deploy begins at the authored 80% dodge');
+  h.run(chess.talents[1].bb.trig_cnt);
+  assert.ok(Math.abs(unit.findBuff(key)?.mods?.dodgeArts - (chess.talents[1].bb.init_prob - chess.talents[1].bb.dec_prob * chess.talents[1].bb.trig_cnt)) < 1e-6, 'elite dodge decays by the source amount over its authored period');
+  assert.equal(h.b.errorCount, 0);
+});
+
+test('Siege elite restores SP when any enemy dies in her four-tile talent range', () => {
+  const chessId = 'chess_native_char_112_siege_b';
+  const chess = structuredClone(pool[chessId]); chess.visible = true; chess.isHidden = false; chess.chessType = 'PRESET';
+  const skillIndex = chess.skills.findIndex((skill) => skill.skillId === NATIVE_DEFAULT_SKILL_IDS.char_112_siege);
+  const h = makeBattle({ defs: { chess: { [chessId]: chess }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1, speed: 0 }) } }, units: [{ chessId, skillIndex, row: 10, col: 5 }], kits: nativeKits, timeLimit: 10 });
+  const unit = h.unit(chessId); h.run(0.25);
+  const range = absoluteRangeKeys(chess.talents[1].rangeGrid, unit.tileR, unit.tileC, unit.dir);
+  const tile = range.find((key) => key !== unit.tileR * COLS + unit.tileC);
+  const enemy = h.b.spawnEnemy('enemy_dummy', { pos: [Math.floor(tile / COLS), tile % COLS] });
+  assert.ok(range.includes(enemy.tileR * COLS + enemy.tileC), 'the death victim is positioned on an authored neighboring talent tile');
+  const before = unit.skill.sp;
+  h.b.kill(enemy, null);
+  assert.equal(unit.skill.sp, Math.min(unit.skill.spCost, before + chess.talents[1].bb.sp), 'death event awards talent SP without requiring Siege to be the killer');
   assert.equal(h.b.errorCount, 0);
 });
 
@@ -204,6 +255,15 @@ test('Judge S1 keeps a physical normal attack and adds the source-scaled arts hi
     assert.ok(seen.some((dmg) => dmg.type === 'phys'), `Judge ${suffix} retains her physical basic hit`);
     const arts = seen.find((dmg) => dmg.type === 'arts' && dmg.tags?.includes('judgeS1'));
     assert.equal(arts?.amount, unit.s.atk * chess.skills[skillIndex].bb.atk_scale_2, `Judge ${suffix} adds the native arts hit`);
+    unit.skill.charges = unit.skill.maxCharges;
+    assert.equal(unit.skill.activate('native-judge-s1-charged', { free: true }), true, `Judge ${suffix} can cast her charged use`);
+    assert.equal(unit.mem.nativeJudgeCharged, true, `Judge ${suffix} recognizes spending her full charge reserve`);
+    const charged = [];
+    h.b.on('hit', (ctx) => { if (ctx.source === unit && ctx.target === enemy && ctx.dmg?.type === 'phys') charged.push(ctx.dmg); });
+    assert.equal(h.b.forceAttack(unit, [enemy]), true);
+    h.run(0.25);
+    assert.ok(charged.some((dmg) => dmg.mul >= chess.skills[skillIndex].bb['judge_s_1_enhance_checker.atk_scale']), `Judge ${suffix} applies the full-charge source attack multiplier`);
+    assert.equal(enemy.s.flags.stun, true, `Judge ${suffix} applies the source charged stun`);
     assert.equal(h.b.errorCount, 0);
   }
 });
