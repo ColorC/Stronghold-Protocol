@@ -1,0 +1,5 @@
+<!doctype html><html><meta charset="utf-8"><title>Rig scout</title><script src="../../vendor/pixi.min.js"></script><script src="../../vendor/pixi-spine.js"></script><script type="module">
+import {loadRig,poseRig,readRig} from './runtime.js';
+const assets=['4116_blkkgt','4064_mlynar','263_skadi','1014_nearl2'];window.inventory={};window.rigs={};
+try {for(const id of assets){const sp=await loadRig(`/assets/spine/op/char_${id}/front/char_${id}.skel`);window.rigs[id]=sp;poseRig(sp,'Idle',.15);window.inventory[id]=readRig(sp);}window.__ready=true;}catch(e){window.__error=String(e.stack);}
+</script></html>
