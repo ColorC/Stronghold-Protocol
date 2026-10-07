@@ -1,82 +1,42 @@
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { getCatalog } from './catalog.js';
-import { traitSummary, TRAIT_WHEN } from './summary.js';
 import { createSession, applyAction, viewSession, validateSession } from './session.js';
-import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
+import { independentDisplayCatalog, independentSessionView } from './display.js';
+export { independentDisplayCatalog } from './display.js';
 
 const PREFIX = '/independent/api/';
 /** The hand-written player texts (data/independent-game-text.json); the design texts stay the rules' source. */
-const GAME_TEXT = JSON.parse(readFileSync(new URL('../../../data/independent-game-text.json', import.meta.url), 'utf8'));
-/** The three prize draws (design 起步 / 成型 / 兑现) as the player meets them. */
-const PRIZE_STAGE = { 起步: '起步', 成型: '成型', 兑现: '决胜' };
-const baseChessId = (id) => String(id).replace(/_b$/, '_a');
 const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const MAX_BODY = 64 * 1024;
-const BADGE_STATS = { attackFlat: '基础攻击力', attackPercent: '攻击力', maxLifeFlat: '基础最大生命值', maxLifePercent: '最大生命值', defenceFlat: '基础防御力', attackSpeedFlat: '攻击速度', naturalSkillRecoveryFlat: '每秒自然技力恢复', artsResistanceFlat: '法术抗性', initialSkillPointsFlat: '初始技力', physicalAndArtsDodge: '物理与法术闪避率', lifeRecoveryFlat: '每秒生命恢复', healingDealtPercent: '治疗量', physicalAndArtsDamageReduction: '物理与法术伤害减免', redeployTimeReduction: '再部署时间缩减', normalAttackDamagePercent: '普通攻击伤害' };
-const BADGE_RATIOS = new Set(['attackPercent', 'maxLifePercent', 'physicalAndArtsDodge', 'healingDealtPercent', 'physicalAndArtsDamageReduction', 'redeployTimeReduction', 'normalAttackDamagePercent']);
+const MAX_ACTION_BODY = 64 * 1024;
+const MAX_CHECKPOINT_BODY = 2 * 1024 * 1024;
 
-function gearDescription(record) {
-  if (record.normal || record.effect) return record.normal || record.effect;
-  const stat = BADGE_STATS[record.stat];
-  if (stat && typeof record.value === 'number') return `${stat}增加${BADGE_RATIOS.has(record.stat) ? `${Number((record.value * 100).toFixed(4))}%` : record.value}。${record.note || ''}`;
-  return record.note || '';
+// The rules validator predates public untrusted snapshots and assumes nested arrays contain records.
+// Keep its rule semantics intact while turning malformed external JSON shapes into a normal 422.
+function validateExternalSession(state) {
+  try { return validateSession(state); }
+  catch { return ['BAD_SHAPE']; }
 }
 
-/** Only display data and action options cross the HTTP boundary; the session owns the rules. */
-export function independentDisplayCatalog(data, catalog) {
-  const operators = Object.fromEntries(Object.entries(catalog.operators).map(([id, op]) => {
-    const raw = op.elite ? op.source.eliteChess || op.source.normalChess : op.source.normalChess;
-    return [id, { name: op.name, tier: op.tier, elite: op.elite, position: raw.position, profession: raw.profession,
-      eliteChessId: op.eliteChessId || null, baseChessId: op.chessId || id,
-      avatar: chessAvatarUrl(data.assets, raw), nativeTrait: op.nativeTrait.text, permitGear: op.permitGearId || null,
-      traitTexts: GAME_TEXT.operators[baseChessId(id)] ? { normal: GAME_TEXT.operators[baseChessId(id)].normal, elite: GAME_TEXT.operators[baseChessId(id)].elite }
-        : { normal: op.nativeTrait.normalText, elite: op.nativeTrait.eliteText },
-      summary: traitSummary(op.nativeTrait.effect),
-      skills: raw.skills || [], modules: (raw.modules || []).map((x) => ({ ...x, id: x.uniEquipId || x.id })) }];
-  }));
-  const gear = Object.fromEntries([...Object.entries(catalog.badges), ...Object.entries(catalog.equipment)].map(([id, d]) => {
-    const steam = d.params?.effects?.find((x) => x.behavior === 'steamGearUpgrade');
-    const text = GAME_TEXT.gear[id];
-    // gear has one form only (owner 2026-10-07 「装备不再有精锐形态」): one level, one text
-    const steamLimit = steam ? steam.params.chooseVariantsOnEquip : undefined;
-    return [id, { name: d.newName || d.name, level: d.level,
-      normal: text ? text.normal : gearDescription(d), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
-      sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds,
-      steamLimit: steamLimit && typeof steamLimit === 'object' ? steamLimit.normal : (steamLimit ?? (steam ? steam.params.choose ?? 1 : undefined)),
-      identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,
-      ...(d.kind === 'badge' ? { stat: d.stat, value: d.value, statName: BADGE_STATS[d.stat] || null, ratio: BADGE_RATIOS.has(d.stat) } : {}),
-      // how many shop slots / operators a supply asks for when used (prizes.js useInventoryItem)
-      ...(d.params?.normalCount != null ? { useCount: Number(d.params.normalCount) } : {}) }];
-  }));
-  const prizes = Object.fromEntries(Object.entries(catalog.prizes).map(([id, d]) => [id, { name: d.name, effect: GAME_TEXT.prizes[id]?.text ?? d.effect, mechanism: d.mechanism, stage: PRIZE_STAGE[d.stage] || null }]));
-  // the fallback offer when no prize can be drawn (prizes.js choosePrize fallback-procurement-*)
-  for (const [id, t] of Object.entries(GAME_TEXT.prizes)) if (!prizes[id]) prizes[id] = { name: t.name, effect: t.text, mechanism: 'fallback', stage: null };
-  const attachments = Object.fromEntries(Object.entries(catalog.attachments).map(([id, d]) => [id, { name: d.name, effect: GAME_TEXT.attachments[id]?.text ?? d.effect, mechanism: d.mechanism }]));
-  return { name: catalog.name, operators, gear, prizes, attachments, terms: GAME_TEXT.terms,
-    factions: catalog.config.tavernFactions,
-    // numbers the page shows instead of hard-coding them (the 20 % 接装损耗 = 1 − these ratios)
-    rules: { purchasePrice: catalog.config.purchasePrice, sellPrice: catalog.config.sellPrice, refreshPrice: catalog.config.refreshPrice,
-      equipmentCapacity: catalog.config.equipmentCapacity, inventoryCapacity: catalog.config.inventoryCapacity, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
-    traitWhen: TRAIT_WHEN,
-    modes: [{ name: '短局', difficulty: 'FUNNY', roundLimit: 9 }, { name: '标准局', difficulty: 'NORMAL', roundLimit: 14 }, { name: '追加挑战', difficulty: 'NORMAL', roundLimit: 15 }] };
+function safeCheckpointChanges(changes) {
+  if (!changes || typeof changes !== 'object' || Array.isArray(changes) || Object.getPrototypeOf(changes) !== Object.prototype) return false;
+  return Object.keys(changes).every((key) => key !== '__proto__' && key !== 'prototype' && key !== 'constructor');
 }
 
 function reply(res, status, payload) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(payload));
 }
-async function bodyOf(req) {
+async function bodyOf(req, maxBody = MAX_ACTION_BODY) {
   let bytes = 0;
   const chunks = [];
   for await (const chunk of req) {
     bytes += chunk.length;
-    if (bytes <= MAX_BODY) chunks.push(chunk);
+    if (bytes <= maxBody) chunks.push(chunk);
   }
-  if (bytes > MAX_BODY) throw Object.assign(new Error('请求过大'), { status: 413, code: 'BODY_LIMIT' });
+  if (bytes > maxBody) throw Object.assign(new Error('请求过大'), { status: 413, code: 'BODY_LIMIT' });
   let body;
   try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
   catch { throw Object.assign(new Error('请求格式无效'), { status: 400, code: 'BAD_JSON' }); }
@@ -88,7 +48,7 @@ export function createIndependentHttp({ data, directory }) {
   let catalog, display;
   const locks = new Map();
   const definitions = () => {
-    if (!catalog) { catalog = getCatalog(data); display = independentDisplayCatalog(data, catalog); }
+    if (!catalog) { catalog = getCatalog(data); display = independentDisplayCatalog(data, catalog, data['independent-game-text']); }
     return { data, catalog };
   };
   const file = (id) => path.join(directory, `${id}.json`);
@@ -116,7 +76,7 @@ export function createIndependentHttp({ data, directory }) {
   async function load(id) {
     try {
       const state = JSON.parse(await readFile(file(id), 'utf8'));
-      const errors = validateSession(state);
+      const errors = validateExternalSession(state);
       if (errors.length) throw new Error(`Invalid persisted independent session: ${errors.join(',')}`);
       return state;
     } catch (error) {
@@ -132,12 +92,7 @@ export function createIndependentHttp({ data, directory }) {
   }
   // withCatalog false: the page fetched GET catalog once and only needs the state (body.catalog === false / ?catalog=0)
   function packet(id, state, events = [], withCatalog = true) {
-    const view = viewSession(state, definitions());
-    const { pool, history, catalog: ignoredCatalog, ...thin } = view;
-    thin.lastBattle = history.findLast((x) => x.type === 'battle') || null;
-    thin.pieces = thin.pieces.map((piece) => ({ ...piece,
-      equipmentDetails: piece.equipmentDetails.map((item) => ({ ...item, record: display.gear[item.id] })),
-      attachmentDetails: piece.attachmentDetails.map((item) => ({ ...item, record: display.attachments[item.id] })) }));
+    const thin = independentSessionView(state, { ...definitions(), display, viewSession });
     return withCatalog ? { ok: true, id, state: thin, catalog: display, events } : { ok: true, id, state: thin, events };
   }
   async function exclusive(id, task) {
@@ -158,17 +113,59 @@ export function createIndependentHttp({ data, directory }) {
         definitions(); reply(res, 200, { ok: true, catalog: display }); return true;
       }
       if (relative === 'sessions' && req.method === 'POST') {
-        const body = await bodyOf(req);
+        const body = await bodyOf(req, MAX_CHECKPOINT_BODY);
+        if (body.rawState !== undefined) {
+          const errors = validateExternalSession(body.rawState);
+          if (errors.length || body.rawState.revision !== 0) { reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效', details: errors.length ? errors : ['revision'] } }); return true; }
+          const id = randomUUID();
+          await save(id, body.rawState);
+          reply(res, 201, { ok: true, id, rawState: body.rawState });
+          return true;
+        }
         const state = createSession({ seed: body.seed, difficulty: body.difficulty, roundLimit: body.roundLimit, ...definitions() });
         const id = randomUUID(); await save(id, state); reply(res, 201, packet(id, state)); return true;
       }
       const parts = relative.split('/');
       const replayRoute = parts.length === 4 && parts[2] === 'replays' && /^[1-9][0-9]?$/.test(parts[3]);
-      if (parts[0] !== 'sessions' || !SESSION_ID.test(parts[1] || '') || parts.length > 4 || (parts.length === 3 && parts[2] !== 'actions') || (parts.length === 4 && !replayRoute)) {
+      const checkpointRoute = parts.length === 3 && parts[2] === 'checkpoint';
+      if (parts[0] !== 'sessions' || !SESSION_ID.test(parts[1] || '') || parts.length > 4 || (parts.length === 3 && parts[2] !== 'actions' && !checkpointRoute) || (parts.length === 4 && !replayRoute)) {
         reply(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: '这一局不存在或已过期' } }); return true;
       }
       const id = parts[1];
-      if (parts.length === 2 && req.method === 'GET') { reply(res, 200, packet(id, await load(id), [], !/[?&]catalog=0(&|$)/.test(req.url || ''))); return true; }
+      if (parts.length === 2 && req.method === 'GET') {
+        const state = await load(id);
+        const raw = /[?&]raw=1(&|$)/.test(req.url || '');
+        reply(res, 200, raw ? { ok: true, id, rawState: state } : packet(id, state, [], !/[?&]catalog=0(&|$)/.test(req.url || '')));
+        return true;
+      }
+      if (checkpointRoute && req.method === 'POST') {
+        const body = await bodyOf(req, MAX_CHECKPOINT_BODY);
+        await exclusive(id, async () => {
+          const current = await load(id);
+          if (body.expectedRevision !== current.revision) {
+            reply(res, 409, { ok: false, error: { code: 'REVISION', message: '对局已更新，请重试当前操作' }, rawState: current });
+            return;
+          }
+          const delta = body.changes !== undefined;
+          if (delta && !safeCheckpointChanges(body.changes)) {
+            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效' } });
+            return;
+          }
+          if (!delta && (!body.state || typeof body.state !== 'object' || Array.isArray(body.state))) {
+            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效' } });
+            return;
+          }
+          const nextState = delta ? { ...current, ...body.changes } : body.state;
+          const errors = validateExternalSession(nextState);
+          if (errors.length || nextState.revision !== current.revision + 1) {
+            reply(res, 422, { ok: false, error: { code: 'INVALID_SESSION', message: '对局存档无效', details: errors.length ? errors : ['revision'] } });
+            return;
+          }
+          await save(id, nextState);
+          reply(res, 200, { ok: true, id, revision: nextState.revision });
+        });
+        return true;
+      }
       if (replayRoute && (req.method === 'GET' || req.method === 'HEAD')) { await sendReplay(req, res, id, Number(parts[3])); return true; }
       if (parts.length === 3 && req.method === 'POST') {
         const body = await bodyOf(req);
