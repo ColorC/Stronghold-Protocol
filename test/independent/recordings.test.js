@@ -56,6 +56,15 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   assert.deepEqual(Buffer.from(await mediaRead.arrayBuffer()), Buffer.concat([chunk1, Buffer.from([8, 9])]));
   const metadata = await fetch(`${base}/${created.id}`).then((r) => r.json());
   assert.equal(metadata.meta.mediaChunks, 2); assert.equal(metadata.meta.mediaStartedAt, new Date(1700000000000).toISOString());
+  const resumedMedia=await post(`${base}/start`,{sessionId,recordingId:created.id}).then(r=>r.json());
+  assert.equal(resumedMedia.nextMediaSeq,3,'refresh resumes acknowledged media sequence');
+  const secondSegment=await fetch(`${base}/${created.id}/media/3`,{method:'POST',headers:{...mediaHeaders,'x-media-started-at':'1700000010000','x-media-time-ms':'1000'},body:chunk1});
+  assert.deepEqual(await secondSegment.json(),{ok:true,ack:3});
+  const afterRefresh=await fetch(`${base}/${created.id}`).then(r=>r.json());
+  assert.equal(afterRefresh.meta.mediaSegments.length,2);
+  assert.equal(afterRefresh.meta.mediaLastTimeMs,11000,'separate capture timestamps preserve the wall-clock gap');
+  assert.deepEqual(await readFile(path.join(records,created.id,'canvas-2.webm')),chunk1,'a new WebM header starts its own playable segment');
+  assert.deepEqual(await readFile(path.join(records,created.id,'canvas.webm')),Buffer.concat([chunk1,Buffer.from([8,9])]),'refresh cannot corrupt the first segment');
   const ended = await post(`${base}/${created.id}/stop`, {}); assert.equal(ended.status, 200);
   const recordDirectory = path.join(records, created.id);
   await writeFile(path.join(recordDirectory, 'canvas-playback.webm'), Buffer.from('seekable-webm'));
@@ -65,7 +74,7 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   const range = await fetch(`${base}/${created.id}/media/playback`, { headers: { range: 'bytes=2-5' } });
   assert.equal(range.status, 206); assert.equal(range.headers.get('accept-ranges'), 'bytes');
   assert.equal(range.headers.get('content-range'), 'bytes 2-5/13'); assert.equal(await range.text(), 'ekab');
-  const mediaAfterStop = await fetch(`${base}/${created.id}/media/3`, { method: 'POST', headers: mediaHeaders, body: Buffer.from([1]) });
+  const mediaAfterStop = await fetch(`${base}/${created.id}/media/4`, { method: 'POST', headers: mediaHeaders, body: Buffer.from([1]) });
   assert.equal(mediaAfterStop.status, 409);
   const rejected = await post(`${base}/${created.id}/events`, { events: [{ seq: 5, ts: 3000, kind: 'caption', p: {} }] });
   assert.equal(rejected.status, 409);

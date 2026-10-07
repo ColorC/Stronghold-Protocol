@@ -23,7 +23,7 @@ export function RecordingControls({ sessionId }) {
     if (!enabled) return undefined;
     let active = true; let timer;
     const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
-      mediaSeq: 0, mediaStartedAt: 0, mediaRecorder: null, mediaObserver: null, mediaPush: Promise.resolve(), mediaError: false };
+      mediaSeq: 0, mediaStartedAt: 0, mediaRecorder: null, mediaObserver: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false };
     ctx.current = state;
     const event = (kind, p) => {
       if (state.stopped || !state.id) return;
@@ -57,8 +57,21 @@ export function RecordingControls({ sessionId }) {
       if (key) state.seen.add(key);
       let rect = null;
       try { const r = anchor?.getBoundingClientRect(); if (r && r.width && r.height) rect = { x: r.x, y: r.y, width: r.width, height: r.height }; } catch { /* detached */ }
-      event('caption', { text, rect, viewport: { width: innerWidth, height: innerHeight } });
+      event('caption', { text, rect, key, viewport: { width: innerWidth, height: innerHeight } });
     };
+    const flushMedia=async()=>{
+      if(state.mediaPushing)return;state.mediaPushing=true;
+      try{while(state.mediaPending.length){
+        const item=state.mediaPending[0];let response;
+        for(let attempt=0;attempt<3;attempt++){
+          try{response=await api.recordingMedia(state.id,item.seq,item.blob,item.startedAt,item.timeMs);if(response.ok)break;}catch{/* retry exact sequence */}
+          await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));
+        }
+        if(!response?.ok){state.mediaError=true;setMessage('画面正在等待上传');break;}
+        state.mediaPending.shift();state.mediaError=false;
+      }}finally{state.mediaPushing=false;}
+    };
+    globalThis.__SP_RECORD_NOTE__=(text,selector,key)=>caption(text,typeof selector==='string'?document.querySelector(selector):selector,key);
     globalThis.__SP_RECORD_ACTION__ = (action, result) => {
       event('server-action', { action: action?.type || 'unknown', revision: result?.state?.revision, eventTypes: (result?.events || []).map((item) => item.type).filter(Boolean), occurredAt: Date.now() });
       const label = MECHANIC_TEXT[action?.type];
@@ -81,6 +94,7 @@ export function RecordingControls({ sessionId }) {
         const started = await api.recordingStart(sessionId, url.searchParams.get('recording') || null, { width: innerWidth, height: innerHeight });
         if (!active || !started.ok) { setMessage('录制暂时不可用'); return; }
         state.id = started.id; state.seq = Number(started.nextSeq) - 1 || 0;
+        state.mediaSeq=(Number(started.nextMediaSeq)||1)-1;state.seen=new Set(started.seenMechanisms||[]);
         try {
           const buffered = JSON.parse(sessionStorage.getItem(`sp:recording-buffer:${state.id}`) || '[]');
           state.queue = Array.isArray(buffered) ? buffered.filter((item) => item.seq >= started.nextSeq) : [];
@@ -92,7 +106,7 @@ export function RecordingControls({ sessionId }) {
         const rr = globalThis.rrweb;
         if (!rr?.record) { setMessage('页面记录模块未载入'); return; }
         state.rrwebStop = rr.record({ emit: (item) => event('rrweb', item), checkoutEveryNms: 30000,
-          recordCanvas: true, sampling: { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' },
+          recordCanvas: false, sampling: { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' },
           maskAllInputs: true, maskInputOptions: { color: true, date: true, 'datetime-local': true, email: true, month: true, number: true, password: true, search: true, tel: true, text: true, time: true, url: true, week: true },
           slimDOMOptions: { script: true, comment: true, headFavicon: true, headWhitespace: true, headMetaDesc: true, headMetaSocial: true, headMetaRobots: true, headMetaHttpEquiv: true, headMetaAuthorship: true, headMetaVerification: true },
         });
@@ -102,7 +116,7 @@ export function RecordingControls({ sessionId }) {
             (item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game'));
           if (!canvas?.captureStream) return;
           try {
-            const stream = canvas.captureStream(12);
+            const stream = canvas.captureStream(24);
             const mimeType = ['video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
             if (!mimeType) { stream.getTracks().forEach((track) => track.stop()); return; }
             state.mediaStartedAt = Date.now();
@@ -110,10 +124,8 @@ export function RecordingControls({ sessionId }) {
             recorder.addEventListener('dataavailable', (e) => {
               if (!e.data?.size || !state.id) return;
               const seq = ++state.mediaSeq; const timeMs = Number.isFinite(e.timecode) ? e.timecode : (seq - 1) * 1000;
-              state.mediaPush = state.mediaPush.then(async () => {
-                const response = await api.recordingMedia(state.id, seq, e.data, state.mediaStartedAt, timeMs);
-                if (!response.ok) state.mediaError = true;
-              }).catch(() => { state.mediaError = true; });
+              state.mediaPending.push({seq,blob:e.data,startedAt:state.mediaStartedAt,timeMs});
+              state.mediaPush = state.mediaPush.then(flushMedia).catch(() => { state.mediaError = true; });
             });
             recorder.addEventListener('error', () => { state.mediaError = true; });
             recorder.start(1000);
@@ -123,7 +135,7 @@ export function RecordingControls({ sessionId }) {
         captureCanvas();
         state.mediaObserver = new MutationObserver(captureCanvas); state.mediaObserver.observe(document.body, { childList: true, subtree: true });
         state.observer = new MutationObserver(bindDetails); state.observer.observe(document.body, { childList: true, subtree: true }); bindDetails();
-        timer = state.timer = setInterval(() => { void flush(); }, 1000);
+        timer = state.timer = setInterval(() => { void flush();state.mediaPush=state.mediaPush.then(flushMedia); }, 1000);
         event('custom', { tag: 'recording-start', sessionId, viewport: { width: innerWidth, height: innerHeight } });
       } catch { setMessage('录制暂时不可用'); }
     };
@@ -135,6 +147,7 @@ export function RecordingControls({ sessionId }) {
       state.rrwebStop?.(); state.observer?.disconnect(); state.mediaObserver?.disconnect();
       try { state.mediaRecorder?.stream?.getTracks().forEach((track) => track.stop()); } catch { /* disposed with the page */ }
       if (globalThis.__SP_RECORD_ACTION__) delete globalThis.__SP_RECORD_ACTION__;
+      delete globalThis.__SP_RECORD_NOTE__;
       ctx.current = null;
     };
   }, [sessionId]);
@@ -149,10 +162,13 @@ export function RecordingControls({ sessionId }) {
       try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
       await Promise.race([state.mediaPush, new Promise((resolve) => setTimeout(resolve, 8000))]);
     }
+    if(state.mediaPending.length||state.mediaPushing){setMessage('画面仍在上传，请稍后再结束录制');return;}
     const drained = await new Promise((resolve) => { const wait = setInterval(() => { if (!state.queue.length && !state.pushing) { clearInterval(wait); resolve(true); } }, 100); setTimeout(() => { clearInterval(wait); resolve(!state.queue.length && !state.pushing); }, 5000); });
     if (!drained) { setMessage('网络恢复后请再次结束录制，未发送的记录仍在等待'); return; }
     clearInterval(state.timer);
-    state.stopped = true; await api.recordingStop(state.id); setRecording(false);
+    const stopped=await api.recordingStop(state.id);
+    if(!stopped.ok){setMessage('生成回放失败，请再次结束录制');return;}
+    state.stopped = true;setRecording(false);
     try { sessionStorage.removeItem(`sp:recording-buffer:${state.id}`); } catch { /* private mode */ }
     const url = new URL(location.href); url.searchParams.delete('record'); history.replaceState(null, '', url); setMessage('录制已结束');
   };
@@ -160,7 +176,7 @@ export function RecordingControls({ sessionId }) {
   const playback = recordId ? new URL(`independent-replay.html?recording=${encodeURIComponent(recordId)}`, location.href).href : '';
   return html`<aside class="ix-recording" aria-live="polite">
     <span class=${recording ? 'ix-recording__dot is-live' : 'ix-recording__dot'}></span>
-    <span>${recording ? '正在记录本局' : message || '录制已结束'}</span>
+    <span>${message || (recording ? '正在记录本局' : '录制已结束')}</span>
     ${recording ? html`<button type="button" onClick=${stop}>结束并生成回放</button>` : null}
     ${playback ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
   </aside>`;

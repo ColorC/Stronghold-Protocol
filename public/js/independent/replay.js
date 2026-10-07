@@ -6,6 +6,30 @@ const API = new URL('independent/api/', location.href);
 let player; let items = []; let cues = []; let duration = 0; let baseTimestamp = 0; let baseWall = 0; let mediaVideo; let mediaStartSecond = Infinity; let mediaReady = Promise.resolve(); let mediaDuration = 0;
 let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let selecting = false; let drag = null;
 let zoomRect = null;
+let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
+let mediaSegments=[];let activeMediaIndex=0;
+function paintMediaLayer() {
+  if (!mediaVideo) return;
+  const frame = stage.querySelector('iframe') || player?.iframe;
+  const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
+  if (!canvas || !frame) { mediaVideo.hidden = true; return; }
+  const fb = frame.getBoundingClientRect(), sb = stage.getBoundingClientRect(), cb = canvas.getBoundingClientRect();
+  const outerScale = sb.width / Math.max(1, stage.clientWidth), sx = fb.width / Math.max(1, frame.clientWidth), sy = fb.height / Math.max(1, frame.clientHeight);
+  Object.assign(mediaVideo.style, { left: `${(fb.left-sb.left+cb.left*sx)/outerScale}px`, top: `${(fb.top-sb.top+cb.top*sy)/outerScale}px`, width: `${cb.width*sx/outerScale}px`, height: `${cb.height*sy/outerScale}px` });
+  // Keep the recorded HUD above the native video. A WebM inside the replay iframe
+  // does not composite reliably on software WebGL, so only the canvas pixels live outside it.
+  frame.style.position = 'relative'; frame.style.zIndex = '5';
+  for(let node=frame.parentElement;node&&node!==stage;node=node.parentElement){node.style.position='relative';node.style.zIndex='5';node.style.background='transparent';}
+  canvas.style.visibility = 'hidden';
+  for(let node=canvas.parentElement;node;node=node.parentElement){node.style.backgroundColor='transparent';node.style.backgroundImage='none';}
+  doc.documentElement.style.background='transparent';
+  mediaVideo.hidden = Number(timeline.value) < mediaStartSecond;
+}
+function fitReplay() {
+  const frame = stage.querySelector('iframe') || player?.iframe;
+  if(frame){frame.style.transform=`scale(${stage.clientWidth/Math.max(1,parseFloat(frame.style.width)||frame.clientWidth)})`;}
+  paintMediaLayer();
+}
 const fmt = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const paintCue = (second) => {
   const cue = cues.find((x) => second >= x.at && second < x.at + 5);
@@ -28,21 +52,31 @@ const paintCue = (second) => {
 function position(second) {
   timeline.value = String(second); clock.textContent = `${fmt(second)} / ${fmt(duration)}`; paintCue(second);
   if (mediaVideo && !playing) syncMediaTime(second);
+  paintMediaLayer();
 }
 function syncMediaTime(second) {
-  if (!mediaVideo || second < mediaStartSecond) { if (mediaVideo) mediaVideo.pause(); return; }
-  const time = Math.max(0, (second - mediaStartSecond));
+  if (!mediaVideo) return;
+  const segment=[...mediaSegments].reverse().find(x=>second>=x.at)||mediaSegments[0];
+  if(segment&&activeMediaIndex!==segment.index){
+    activeMediaIndex=segment.index;
+    mediaReady=new Promise(resolve=>{const done=()=>{mediaDuration=Number.isFinite(mediaVideo.duration)?mediaVideo.duration:segment.duration;resolve();syncMediaTime(Number(timeline.value));if(playing)void mediaVideo.play().catch(()=>{});};mediaVideo.addEventListener('loadedmetadata',done,{once:true});mediaVideo.addEventListener('error',resolve,{once:true});});
+    mediaVideo.src=new URL(`recordings/${encodeURIComponent(mediaId)}/media/playback/${segment.index}`,API).href;
+    mediaVideo.load();
+  }
+  if(second<mediaStartSecond){mediaVideo.pause();return;}
+  const time = Math.max(0, (second - (segment?.at??mediaStartSecond)));
   if (mediaDuration > 0 && time < mediaDuration) {
     try { if (Math.abs(mediaVideo.currentTime - time) > 0.4) mediaVideo.currentTime = time; } catch { /* metadata may still be loading */ }
   }
 }
 function attachCanvasMedia(id) {
+  mediaId=id;
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
   if (!canvas) return;
   if (!mediaVideo || mediaVideo.ownerDocument !== document) {
     mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
-    Object.assign(mediaVideo.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', zIndex: '4', background: '#08090c' });
+    Object.assign(mediaVideo.style, { position: 'absolute', objectFit: 'fill', pointerEvents: 'none', zIndex: '4', background: '#08090c' });
     mediaReady = new Promise((resolve) => {
       const done = () => { mediaDuration = Number.isFinite(mediaVideo.duration) ? mediaVideo.duration : mediaDuration; resolve(); };
       mediaVideo.addEventListener('loadedmetadata', done, { once: true }); mediaVideo.addEventListener('error', done, { once: true });
@@ -50,20 +84,31 @@ function attachCanvasMedia(id) {
   }
   if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
   canvas.style.visibility = 'hidden';
-  if (!mediaVideo.src) mediaVideo.src = new URL(`recordings/${encodeURIComponent(id)}/media/playback`, API).href;
   syncMediaTime(Number(timeline.value));
+  fitReplay();
 }
 function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : Number(timeline.value); }
 function tick() {
   if (!playing) return;
-  const now = offset(); position(now);
+  const now = offset(); position(now);syncMediaTime(now);
+  const cue = cues.find((x)=>!explained.has(x.key||x.text)&&now>=x.at&&now<x.at+1);
+  if(cue&&$('narration')?.checked){
+    explained.add(cue.key||cue.text);pause();narrating=true;
+    if(cue.rect){const vw=cue.viewport?.width||1280,vh=cue.viewport?.height||720;
+      const w=stage.clientWidth,h=stage.clientHeight,rect={localX:cue.rect.x*w/vw,localY:cue.rect.y*h/vh,width:cue.rect.width*w/vw,height:cue.rect.height*h/vh};
+      zoomArea(rect);paintCue(now);
+    }
+    caption.textContent=cue.text;caption.hidden=false;
+    narrationTimer=setTimeout(()=>{narrating=false;resetZoom();play();},Math.max(4000,Math.min(8000,cue.text.length*110)));
+    return;
+  }
   if (now >= duration) { pause(); return; }
   raf = requestAnimationFrame(tick);
 }
 function play() {
   if (playing || !player) return;
   playing = true; startedAt = performance.now(); startedSecond = Number(timeline.value);
-  player.play(startedSecond * 1000); if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
+  player.play(Math.max(0,startedSecond-rrOffset) * 1000); syncMediaTime(startedSecond);if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
   playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
 function pause() {
@@ -73,7 +118,8 @@ function pause() {
 async function seek(value) {
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
   const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause();
-  timeline.value = String(second); position(second); player?.play(second * 1000);
+  clearTimeout(narrationTimer);narrating=false;resetZoom();
+  timeline.value = String(second); position(second); player?.play(Math.max(0,second-rrOffset) * 1000);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   player?.pause(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
   if (mediaVideo && second >= mediaStartSecond) {
@@ -83,10 +129,18 @@ async function seek(value) {
   }
   if (resume) { playing = false; play(); }
 }
-playButton.addEventListener('click', () => playing ? pause() : play());
+playButton.addEventListener('click', () => {if(narrating){clearTimeout(narrationTimer);narrating=false;resetZoom();play();}else playing ? pause() : play();});
 timeline.addEventListener('input', () => { if (playing) pause(); void seek(timeline.value); });
 $('zoom').addEventListener('click', () => { selecting = true; status.textContent = '在画面上拖动，框选要放大的区域。'; });
-$('reset').addEventListener('click', () => { zoomRect = null; stage.style.transform = ''; stage.style.transformOrigin = ''; selection.hidden = true; selecting = false; status.textContent = ''; });
+function resetZoom(){zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();}
+function zoomArea(rect){
+  zoomRect=rect;const w=stage.clientWidth,h=stage.clientHeight;
+  const scale=Math.min(2,Math.max(1.15,Math.min(w*.8/Math.max(1,rect.width),h*.8/Math.max(1,rect.height))));
+  const tx=Math.max(w*(1-scale),Math.min(0,w/2-(rect.localX+rect.width/2)*scale));
+  const ty=Math.max(h*(1-scale),Math.min(0,h/2-(rect.localY+rect.height/2)*scale));
+  stage.style.transformOrigin='0 0';stage.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;paintMediaLayer();
+}
+$('reset').addEventListener('click', () => {resetZoom();status.textContent='';});
 stage.parentElement.addEventListener('pointerdown', (e) => {
   if (!selecting) return; const rect = stage.getBoundingClientRect();
   drag = { x: e.clientX, y: e.clientY, rect }; selection.hidden = false; selection.style.left = `${e.clientX - rect.left}px`; selection.style.top = `${e.clientY - rect.top}px`; selection.style.width = '0'; selection.style.height = '0';
@@ -100,7 +154,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   if (!drag) return; const x = Math.min(Math.max(e.clientX, drag.rect.left), drag.rect.right); const y = Math.min(Math.max(e.clientY, drag.rect.top), drag.rect.bottom);
   const width = Math.abs(x - drag.x); const height = Math.abs(y - drag.y); const localX = Math.min(drag.x, x) - drag.rect.left; const localY = Math.min(drag.y, y) - drag.rect.top;
   drag = null; selecting = false;
-  if (width > 12 && height > 12) { zoomRect = { localX, localY, width, height }; stage.style.transformOrigin = `${localX}px ${localY}px`; stage.style.transform = 'scale(2)'; status.textContent = '放大查看中，可点「还原画面」回到全景。'; }
+  if (width > 12 && height > 12) {zoomArea({localX,localY,width,height});status.textContent='放大查看中，可点「还原画面」回到全景。';}
 });
 
 (async () => {
@@ -114,17 +168,20 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   baseTimestamp = Math.min(...items.map((e) => e.timestamp).filter(Number.isFinite));
   const last = Math.max(...items.map((e) => e.timestamp).filter(Number.isFinite));
   const wallEnd = records.length ? Math.max(...records.map((e) => e.ts || 0)) : Date.parse(packet.meta.startedAt);
-  baseWall = Date.parse(packet.meta.startedAt); duration = Math.max(1, (wallEnd - baseWall) / 1000, (last - baseTimestamp) / 1000);
+  baseWall = Date.parse(packet.meta.startedAt); duration = Math.max(1, (wallEnd - baseWall) / 1000, (last - baseTimestamp) / 1000,(Date.parse(packet.meta.endedAt||packet.meta.startedAt)-baseWall)/1000);
+  rrOffset=(baseTimestamp-baseWall)/1000;
   if (packet.meta.mediaStartedAt) mediaStartSecond = Math.max(0, (Date.parse(packet.meta.mediaStartedAt) - baseWall) / 1000);
   mediaDuration = (Number(packet.meta.mediaLastTimeMs) || 0) / 1000;
+  const validSegments=(packet.meta.mediaSegments||[]).filter(x=>Number.isInteger(x.index)&&typeof x.startedAt==='string');
+  mediaSegments=(validSegments.length?validSegments:packet.meta.mediaStartedAt?[{index:1,startedAt:packet.meta.mediaStartedAt,lastTimeMs:packet.meta.mediaLastTimeMs}]:[]).map(x=>({...x,at:Math.max(0,(Date.parse(x.startedAt)-baseWall)/1000),duration:(x.lastTimeMs||0)/1000}));
   timeline.max = String(duration); timeline.step = '0.05';
   const width = packet.meta.viewport?.width || 1280; const height = packet.meta.viewport?.height || 720;
   stage.style.aspectRatio = `${width} / ${height}`; stage.style.setProperty('--ix-frame-width', `${width}px`); stage.style.setProperty('--ix-frame-height', `${height}px`);
   player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: true });
   // Replayer construction sets up its sandbox but does not paint the full snapshot until the timeline advances.
   // Render the first recorded frame before enabling controls so a replay link never opens on a blank stage.
-  const firstVisibleSecond = Number.isFinite(mediaStartSecond) ? Math.min(duration, mediaStartSecond + 0.7) : 0;
-  player.play(firstVisibleSecond * 1000);
+  const firstVisibleSecond = 0;
+  player.play(Math.max(0,firstVisibleSecond-rrOffset) * 1000);
   // Let CSS transitions present in the captured page finish while the replay clock advances.
   await new Promise((resolve) => setTimeout(resolve, 900));
   player.pause();
@@ -137,6 +194,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
     }
   }
   status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
+  new ResizeObserver(fitReplay).observe(stage.parentElement);
 })().catch((error) => { status.textContent = error.message || '回放载入失败'; });
 
-window.addEventListener('pagehide', () => { cancelAnimationFrame(raf); player?.pause(); });
+window.addEventListener('pagehide', () => {cancelAnimationFrame(raf);clearTimeout(narrationTimer);player?.pause();mediaVideo?.pause();});

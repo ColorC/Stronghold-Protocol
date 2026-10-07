@@ -28,8 +28,9 @@ async function readMediaChunk(req) {
   if (size > MAX_MEDIA_CHUNK) throw Object.assign(new Error('MEDIA_LIMIT'), { status: 413 });
   return Buffer.concat(chunks);
 }
-async function remuxPlayback(dir) {
-  const input = path.join(dir, 'canvas.webm'); const output = path.join(dir, 'canvas-playback.webm'); const pending = path.join(dir, 'canvas-playback.pending.webm');
+async function remuxPlayback(dir, index=1) {
+  const stem=index===1?'canvas':`canvas-${index}`;
+  const input = path.join(dir, `${stem}.webm`); const output = path.join(dir, `${stem}-playback.webm`); const pending = path.join(dir, `${stem}-playback.pending.webm`);
   try {
     await execFileAsync(process.env.SP_FFMPEG_PATH || 'ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', input, '-map', '0:v:0', '-c:v', 'copy', '-cues_to_front', '1', pending],
       { timeout: 25000, windowsHide: true, maxBuffer: 1024 * 1024 });
@@ -68,21 +69,21 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
         try { await readFile(path.join(sessionDirectory, `${body.sessionId}.json`)); }
         catch { return json(res, 404, { ok: false, error: 'SESSION_NOT_FOUND' }), true; }
         const id = body.recordingId || randomUUID();
-        let nextSeq = 1; let endedAt = null;
+        let nextSeq = 1; let nextMediaSeq = 1;let endedAt = null;let seenMechanisms=[];
         await exclusive(id, async () => {
           let meta;
           try { meta = await loadMeta(id); } catch (e) { if (e.code !== 'ENOENT') throw e; }
           if (meta && meta.sessionId !== body.sessionId) throw Object.assign(new Error('RECORDING_SESSION_MISMATCH'), { status: 409 });
-          if (meta) { nextSeq = meta.nextSeq; endedAt = meta.endedAt; }
+          if (meta) { nextSeq = meta.nextSeq; nextMediaSeq=meta.nextMediaSeq||1; endedAt = meta.endedAt;seenMechanisms=(meta.captions||[]).map(x=>x.key).filter(Boolean); }
           if (!meta) {
             await mkdir(dirOf(id), { recursive: true });
             meta = { id, sessionId: body.sessionId, startedAt: new Date().toISOString(), endedAt: null, viewport: body.viewport || null, nextSeq: 1, captions: [] };
             await saveMeta(id, meta); await writeFile(eventsFile(id), '', { flag: 'wx' });
           } else if (!meta.endedAt) await saveMeta(id, { ...meta, resumedAt: new Date().toISOString() });
         });
-        return json(res, 200, { ok: true, id, nextSeq, endedAt }), true;
+        return json(res, 200, { ok: true, id, nextSeq, nextMediaSeq, endedAt,seenMechanisms }), true;
       }
-      const mediaMatch = relative.match(/^([0-9a-f-]{36})\/media(?:\/(playback|\d+))?$/i);
+      const mediaMatch = relative.match(/^([0-9a-f-]{36})\/media(?:\/(playback|\d+))?(?:\/(\d+))?$/i);
       if (mediaMatch && UUID.test(mediaMatch[1])) {
         const id = mediaMatch[1]; const mediaFile = path.join(dirOf(id), 'canvas.webm');
         if (mediaMatch[2] && /^\d+$/.test(mediaMatch[2]) && req.method === 'POST') {
@@ -97,10 +98,16 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
             if (seq > next) return { error: 'OUT_OF_ORDER', ack: next - 1 };
             const mime = String(req.headers['x-media-mime-type'] || 'video/webm').slice(0, 100);
             if (!mime.startsWith('video/webm')) return { error: 'INVALID_MEDIA_TYPE' };
-            await appendFile(mediaFile, chunk);
+            const segmentStartedAt=new Date(startedAt).toISOString();
+            const segments=structuredClone((meta.mediaSegments||[]).filter(x=>Number.isInteger(x.index)&&typeof x.startedAt==='string'));
+            if(!segments.length&&meta.mediaBytes)segments.push({index:1,startedAt:meta.mediaStartedAt,bytes:meta.mediaBytes,lastTimeMs:meta.mediaLastTimeMs||0,playbackReady:false});
+            let segment=segments.at(-1);
+            if(!segment||segment.startedAt!==segmentStartedAt){segment={index:segments.length+1,startedAt:segmentStartedAt,bytes:0,lastTimeMs:0,playbackReady:false};segments.push(segment);}
+            const segmentFile=path.join(dirOf(id),segment.index===1?'canvas.webm':`canvas-${segment.index}.webm`);
+            await appendFile(segmentFile,chunk);segment.bytes+=chunk.length;segment.lastTimeMs=timeMs;
             await saveMeta(id, { ...meta, nextMediaSeq: next + 1, mediaStartedAt: meta.mediaStartedAt || new Date(startedAt).toISOString(),
               mediaMimeType: mime, mediaBytes: (Number(meta.mediaBytes) || 0) + chunk.length,
-              mediaChunks: (Number(meta.mediaChunks) || 0) + 1, mediaLastTimeMs: timeMs });
+              mediaChunks: (Number(meta.mediaChunks) || 0) + 1, mediaSegments:segments,mediaLastTimeMs:startedAt-Date.parse(meta.mediaStartedAt||segmentStartedAt)+timeMs });
             return { ack: next };
           });
           return json(res, result.error ? (result.error === 'ENDED' ? 409 : 409) : 200, { ok: !result.error, ...result }), true;
@@ -108,14 +115,17 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
         if (!mediaMatch[2] && req.method === 'GET') {
           const meta = await loadMeta(id);
           if (!meta.mediaBytes) return json(res, 404, { ok: false, error: 'MEDIA_NOT_FOUND' }), true;
-          res.writeHead(200, { 'Content-Type': meta.mediaMimeType || 'video/webm', 'Content-Length': String(meta.mediaBytes), 'Cache-Control': 'private, no-store',
-            'X-Media-Started-At': meta.mediaStartedAt || '', 'X-Media-Duration-Ms': String(meta.mediaLastTimeMs || 0) });
+          const first=meta.mediaSegments?.find(x=>x.index===1&&typeof x.startedAt==='string');
+          res.writeHead(200, { 'Content-Type': meta.mediaMimeType || 'video/webm', 'Content-Length': String(first?.bytes||meta.mediaBytes), 'Cache-Control': 'private, no-store',
+            'X-Media-Started-At': meta.mediaStartedAt || '', 'X-Media-Duration-Ms': String(first?.lastTimeMs||meta.mediaLastTimeMs || 0) });
           createReadStream(mediaFile).pipe(res); return true;
         }
         if (mediaMatch[2] === 'playback' && req.method === 'GET') {
           const meta = await loadMeta(id);
-          if (!meta.mediaPlaybackReady) return json(res, 409, { ok: false, error: 'MEDIA_NOT_FINALIZED' }), true;
-          const file = path.join(dirOf(id), 'canvas-playback.webm'); const info = await stat(file); const range = req.headers.range;
+          const index=Number(mediaMatch[3]||1),segment=meta.mediaSegments?.find(x=>x.index===index&&typeof x.startedAt==='string');
+          if(index!==1&&!segment)return json(res,404,{ok:false,error:'MEDIA_NOT_FOUND'}),true;
+          if (!segment?.playbackReady&&!meta.mediaPlaybackReady) return json(res, 409, { ok: false, error: 'MEDIA_NOT_FINALIZED' }), true;
+          const file = path.join(dirOf(id), index===1?'canvas-playback.webm':`canvas-${index}-playback.webm`); const info = await stat(file); const range = req.headers.range;
           const match = typeof range === 'string' ? range.match(/^bytes=(\d*)-(\d*)$/) : null;
           if (range && !match) { res.writeHead(416, { 'Content-Range': `bytes */${info.size}` }); res.end(); return true; }
           let start = 0; let end = info.size - 1;
@@ -154,14 +164,19 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
       if (action === 'stop' && req.method === 'POST') {
           let meta = await exclusive(id, async () => { const current = await loadMeta(id); if (current.endedAt) return current; const done = { ...current, endedAt: new Date().toISOString() }; await saveMeta(id, done); return done; });
           if (meta.mediaBytes && !meta.mediaPlaybackReady) {
-            const playback = await remuxPlayback(dirOf(id));
-            if (playback.ready) meta = await exclusive(id, async () => { const current = await loadMeta(id); const next = { ...current, mediaPlaybackReady: true, mediaPlaybackBytes: playback.bytes }; await saveMeta(id, next); return next; });
+            const validSegments=(meta.mediaSegments||[]).filter(x=>Number.isInteger(x.index)&&typeof x.startedAt==='string');
+            const segments=structuredClone(validSegments.length?validSegments:[{index:1,startedAt:meta.mediaStartedAt,bytes:meta.mediaBytes,lastTimeMs:meta.mediaLastTimeMs}]);
+            for(const segment of segments)if(!segment.playbackReady){const playback=await remuxPlayback(dirOf(id),segment.index);segment.playbackReady=playback.ready;segment.playbackBytes=playback.bytes;}
+            meta = await exclusive(id, async () => { const current = await loadMeta(id); const next = { ...current, mediaSegments:segments,mediaPlaybackReady:segments.every(x=>x.playbackReady),mediaPlaybackBytes:segments.reduce((sum,x)=>sum+(x.playbackBytes||0),0) }; await saveMeta(id, next); return next; });
           }
           return json(res, 200, { ok: true, endedAt: meta.endedAt, mediaPlaybackReady: !!meta.mediaPlaybackReady }), true;
       }
       if (action === 'read' && req.method === 'GET') {
         const meta = await loadMeta(id); const lines = (await readFile(eventsFile(id), 'utf8')).split(/\r?\n/).filter(Boolean);
-        return json(res, 200, { ok: true, meta, events: lines.map((line) => JSON.parse(line)) }), true;
+        // Actual canvas pixels come from native media. Replaying the redundant
+        // WebGL command stream adds texture copies and can stall a long recording.
+        const events=lines.map(line=>JSON.parse(line)).filter(e=>!(meta.mediaBytes&&e.kind==='rrweb'&&e.p?.type===3&&e.p?.data?.source===9));
+        return json(res, 200, { ok: true, meta, events }), true;
       }
       return json(res, 405, { ok: false, error: 'METHOD' }), true;
     } catch (error) {

@@ -163,6 +163,7 @@ const clientApi = {
   },
   recordingStart: (...args) => serverApi.recordingStart(...args),
   recordingEvents: (...args) => serverApi.recordingEvents(...args),
+  recordingMedia: (...args) => serverApi.recordingMedia(...args),
   recordingStop: (...args) => serverApi.recordingStop(...args),
   recordingLoad: (...args) => serverApi.recordingLoad(...args),
 };
