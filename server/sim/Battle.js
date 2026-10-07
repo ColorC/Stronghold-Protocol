@@ -1855,7 +1855,10 @@ export class Battle {
     if (!Number.isInteger(row) || !Number.isInteger(col) || !this.grid.inRect(row, col)) return null;
     const occ = this._occ[row * COLS + col];
     if (occ && occ.alive) return null;
-    if (this.downOn(row, col)) return null;
+    // `overBody`: the device of the operator lying there (独立模式 不屈部署支架 — it stands on its wearer's body until
+    // the wearer redeploys; the gear removes it first, so the redeploy is never held up)
+    const down = this.downOn(row, col);
+    if (down && !(opts.overBody && opts.overBody === down)) return null;
     const hp = fin(opts.hp, 100);
     const bat = fin(opts.bat, 1), aspd = fin(opts.aspd, 100);
     const def = {

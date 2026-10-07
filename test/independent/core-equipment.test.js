@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { grantEquipment, equipItem, mergeItems, pieceEquipmentCount, totalEquipmentLevel } from '../../server/modes/independent/equipment.js';
+import { grantEquipment, equipItem, normalizeGearForms, pieceEquipmentCount, totalEquipmentLevel } from '../../server/modes/independent/equipment.js';
 
 const catalog = {
   badges: { precision: { id: 'precision', kind: '徽章', level: 1, unique: false, slotCost: 1 } },
@@ -23,13 +23,21 @@ test('inventory is uncapped, per-operator equipped quantity is capped, and uniqu
   assert.equal(s.pieces[1].equipment.length, 1);
 });
 
-test('same-stack and two-stack items merge into an elite item without losing leftovers', () => {
-  const s = state(); grantEquipment(s, catalog, 'gear-b', 3);
-  const stack = s.inventory[0]; const elite = mergeItems(s, catalog, stack.uid, stack.uid);
-  assert.equal(stack.quantity, 1);
-  assert.equal(elite.id, 'gear-b'); assert.equal(elite.elite, true);
-  assert.equal(s.inventory.reduce((n, x) => n + x.quantity, 0), 2);
-  assert.equal(totalEquipmentLevel({ equipment: [{ id: elite.id, elite: true, quantity: 1 }] }, catalog), 3);
+test('gear has one form only: no elite copies, one stack per item, the level is the item level (owner 2026-10-07)', () => {
+  const s = state(); grantEquipment(s, catalog, 'gear-b', 3); grantEquipment(s, catalog, 'gear-b', 1, { elite: true });
+  assert.equal(s.inventory.length, 1);
+  assert.equal(s.inventory[0].quantity, 4);
+  assert.ok(!s.inventory[0].elite);
+  // an old item still flagged elite counts its normal level
+  assert.equal(totalEquipmentLevel({ equipment: [{ id: 'gear-b', elite: true, quantity: 2 }] }, catalog), 2);
+  // an old save: elite copies become the normal item with the same quantity, same-id stacks merge (a unique item stays)
+  const old = state();
+  old.inventory = [{ uid: 'a', id: 'gear-b', quantity: 2 }, { uid: 'b', id: 'gear-b', elite: true, quantity: 1 }, { uid: 'c', id: 'gear-a', elite: true, quantity: 1 }];
+  old.pieces[0].equipment = [{ uid: 'd', id: 'gear-a', elite: true, quantity: 1 }];
+  assert.equal(normalizeGearForms(old, catalog), true);
+  assert.deepEqual(old.inventory, [{ uid: 'a', id: 'gear-b', quantity: 3 }, { uid: 'c', id: 'gear-a', quantity: 1 }]);
+  assert.deepEqual(old.pieces[0].equipment, [{ uid: 'd', id: 'gear-a', quantity: 1 }]);
+  assert.equal(normalizeGearForms(old, catalog), false);
 });
 
 test('wearer equipment capacity counts items rather than slotCost', () => {

@@ -448,7 +448,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
       else if (hash.startsWith('shop-') && st.shop.slots[Number(hash.slice(5))]) {
         const i = Number(hash.slice(5)); const s = st.shop.slots[i];
-        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id, elite: s.elite });
+        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id });
       } else if (hash.startsWith('item-')) { setPanelUid(null); setPanel('inventory'); }
     };
     follow();
@@ -527,7 +527,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const piece = state.pieces.find((p) => p.uid === uid); if (!piece || state.phase !== 'prep') return;
     const item = stack.items[0]; const g = catalog.gear[stack.id] || {};
     if (stack.used) {
-      const need = USE_NEEDS[stack.mechanism]; const count = (stack.elite ? g.useCount?.elite : g.useCount?.normal) || 1;
+      const need = USE_NEEDS[stack.mechanism]; const count = Number(g.useCount) || 1;
       if (!need) act({ type: 'use-item', itemUid: item.uid });
       else if (need === 'target') act({ type: 'use-item', itemUid: item.uid, targetUid: uid });
       else if (need === 'source') act({ type: 'use-item', itemUid: item.uid, sourceUid: uid });
@@ -571,16 +571,16 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         pen=${pen} onPen=${() => setPen((x) => !x)} />
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
-          onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id, elite: s.elite }))} onDrop=${dropFromStock} />
+          onTap=${(s) => (s.used ? openInventory(null, s.key) : setDetail({ kind: 'gear', id: s.id }))} onDrop=${dropFromStock} />
         <${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />
         <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
         ${state.phase === 'prep' && !pen ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
-          onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id, elite: slot.elite }); }}
+          onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id }); }}
           onBuy=${buy} onUpgrade=${() => { setArmed(null); act({ type: 'upgrade' }); }} onRefresh=${() => { setArmed(null); act({ type: 'refresh' }); }}
           onFreeze=${() => act({ type: 'freeze' })} collapsed=${shopCollapsed} onCollapse=${(v) => { setShopCollapsed(v); if (v) setArmed(null); }}
-          onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id, elite: s.elite }); }} />` : null}
+          onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id }); }} />` : null}
       ` : html`<${DpCounter} dp=${battle.hud?.dp} />
       <div class="ix-battlebar" data-testid="ix-battlebar">
         ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}

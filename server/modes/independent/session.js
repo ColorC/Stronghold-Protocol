@@ -7,7 +7,7 @@ import { getCatalog } from './catalog.js';
 import { runNativeHook, runEquipmentPrepEnd } from './native.js';
 import { runIndependentBattle, getIndependentField, previewUnitStats } from './battle.js';
 import { previewOf } from '../../match/waves.js';
-import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, mergeItems, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets, recordProduction } from './equipment.js';
+import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, normalizeGearForms, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets, recordProduction } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
@@ -134,7 +134,7 @@ function lacksPermit(piece, catalog) {
 }
 function ensurePermit(piece, catalog) {
   const id = lacksPermit(piece, catalog);
-  if (id) piece.equipment.push({ uid: `permit-${piece.uid}`, id, elite: false, quantity: 1, state: {}, sourceId: id });
+  if (id) piece.equipment.push({ uid: `permit-${piece.uid}`, id, quantity: 1, state: {}, sourceId: id });
 }
 /** A save from before 交接凭证 were gear: give each of the twelve operators the one it brings (no-op otherwise). */
 function ensurePermits(state, catalog) { for (const piece of state.pieces || []) ensurePermit(piece, catalog); }
@@ -146,7 +146,7 @@ function handleGainEquipment(state, catalog) {
     const effect = def?.params?.effects?.find((x) => x.behavior === 'gainBattleStats' && x.params?.deferredFunds);
     if (!effect || !piece.equipment.some((x) => (x.sourceId || equipmentRecord(catalog, x.id)?.sourceId) === effect.params.pairedSourceId)) continue;
     if (item.state?.deferredFundsRound === state.round) continue;
-    const amount = Number(item.elite ? effect.params.deferredFunds.elite : effect.params.deferredFunds.normal);
+    const amount = Number(effect.params.deferredFunds?.normal ?? effect.params.deferredFunds);
     if (amount > 0) { state.pendingFunds += amount; item.state = { ...(item.state || {}), deferredFundsRound: state.round }; }
   }
   }
@@ -254,7 +254,7 @@ function handleSaleEquipment(state, catalog) {
       if (def?.mechanism !== 'saleThresholdRecruit') continue;
       const used = Number(item.state?.saleTriggersThisPrep || 0);
       if (used >= Number(def.params?.maxPerPrep || 1)) continue;
-      const threshold = Number(item.elite ? def.params.eliteSaleThreshold : def.params.normalSaleThreshold);
+      const threshold = Number(def.params.normalSaleThreshold);
       if (state.counters.sold < threshold) continue;
       const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.tier <= tier && tavernFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
       if (!candidates.length) continue;
@@ -331,6 +331,8 @@ export function matchStats(state) {
 export function viewSession(state, options = {}) {
   const data = sessionData(options); const catalog = sessionCatalog(data, options);
   if (state.pieces.some((p) => lacksPermit(p, catalog))) { state = clone(state); ensurePermits(state, catalog); }
+  // gear has one form only: an old save's elite gear shows as the normal item, same quantity (applyAction saves it so)
+  if ([...state.inventory, ...state.pieces.flatMap((p) => p.equipment || [])].some((x) => x?.elite)) { state = clone(state); normalizeGearForms(state, catalog); }
   let field = null;
   try { field = getIndependentField(state, { data, catalog }); } catch { /* keep the raw state visible when content lookup is unavailable */ }
   const deployCells = field && state.phase === 'prep' ? [...(field.deployMap || new Map()).keys()] : [];
@@ -351,7 +353,7 @@ export function viewSession(state, options = {}) {
       // whom it may hand its gear to (give) and take gear from (take) under the 交接凭证 worn on either side
       handover: state.phase === 'prep' ? handoverPartners(state, p, catalog) : undefined };
   });
-    return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'merge-item', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
+    return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()], bossId: field.bossId, factions: field.factions,
       bossRound: state.roundLimit === 9 ? 9 : 14 } : null, battleSummary: state.battleSummary, matchStats: matchStats(state),
     forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null,
@@ -389,6 +391,8 @@ export function applyAction(state, action, options = {}) {
   let work;
   try { work = clone(state); } catch { return { ok: false, error: { code: 'INVALID_STATE', message: 'State is not serializable.' }, state }; }
   const data = sessionData(options); const catalog = sessionCatalog(data, options); const gd = gdFor(work, data);
+  // an old save's elite gear becomes the normal item, same quantity (owner 2026-10-07 「装备不再有精锐形态」)
+  normalizeGearForms(work, catalog);
   ensurePermits(work, catalog);
   const rng = createRng(work.rngState); const events = [];
   const elitesBefore = Number(work.totals?.elites || 0); // every elite this action forms earns a 晋升奖励 (below)
@@ -417,7 +421,7 @@ export function applyAction(state, action, options = {}) {
         if (offer.type === 'recruit') {
           const op = opFor(catalog, offer.choices[action.index]); if (!op) throw new Error('BAD_CHOICE');
           const piece = gainChess(work, catalog, op.chessId, {}); invokeHook(work, 'gain', { piece, source: offer.source || 'choice' }, services);
-          for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
+          for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
           handleGainEquipment(work, catalog, piece);
           work.offers.splice(work.offers.indexOf(offer), 1);
           for (const merged of maybeMergeOperator(work, catalog, op.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
@@ -442,7 +446,7 @@ export function applyAction(state, action, options = {}) {
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
         invokeHook(work, 'gain', { piece, source: 'buy', paid: true }, services); events.push({ type: 'buy', uid: piece.uid, chessId: piece.chessId });
         for (const carried of slot.equipment || []) {
-          const item = makeItem(work, carried.id, carried.quantity || 1, { elite: !!carried.elite, sourceId: carried.sourceId }); work.inventory.push(item);
+          const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item);
           equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1);
         }
         handleGainEquipment(work, catalog, piece);
@@ -452,7 +456,7 @@ export function applyAction(state, action, options = {}) {
       } else {
         // an equipment place left in a shop saved before the shop stopped selling gear (gone at the next refresh)
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
-        grantEquipment(work, catalog, slot.id, 1, { elite: !!slot.elite, origin: 'shop', phase: 'shop' }); events.push({ type: 'buy-equipment', id: slot.id });
+        grantEquipment(work, catalog, slot.id, 1, { origin: 'shop', phase: 'shop' }); events.push({ type: 'buy-equipment', id: slot.id });
       }
       slot.sold = true;
     } else if (act === 'refresh') {
@@ -518,13 +522,11 @@ export function applyAction(state, action, options = {}) {
       const allowed = steam.params.sourceIds;
       const selected = action.hammerSourceIds;
       const limits = steam.params.chooseVariantsOnEquip;
-      const limit = Number(item.elite ? limits?.elite : limits?.normal);
+      const limit = Number(limits && typeof limits === 'object' ? limits.normal : (limits ?? steam.params.choose ?? 1));
       if (!Number.isInteger(limit) || limit < 1) throw new Error('BAD_EQUIPMENT_RULE');
       if (!Array.isArray(selected) || selected.length > limit || new Set(selected).size !== selected.length || selected.some((id) => !allowed.includes(id) || !piece.equipment.some((x) => (x.sourceId || equipmentRecord(catalog, x.id)?.sourceId) === id))) throw new Error('BAD_HAMMER_SELECTION');
       item.state = { ...(item.state || {}), hammerSourceIds: [...selected] };
       events.push({ type: 'configure-equipment', targetUid: piece.uid, itemUid: item.uid, hammerSourceIds: [...selected] });
-    } else if (act === 'merge-item') {
-      ensurePrep(work); const item = mergeItems(work, catalog, action.firstUid, action.secondUid); invokeHook(work, 'merge', { item, copiesConsumed: 2 }, services); events.push({ type: 'merge-item', itemId: item.id });
     } else if (act === 'use-item') {
       ensurePrep(work); events.push(useInventoryItem(work, catalog, action.itemUid, action, data));
     } else if (act === 'inherit-preview') {

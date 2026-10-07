@@ -74,22 +74,13 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(catalog.equipment['chess_item_4_01_e_a'].params.eliteTierDelta, 1);
   assert.equal(catalog.equipment['chess_item_5_05_e_a'].params.eliteCount, 2);
   assert.equal(catalog.equipment['chess_item_5_06_e_a'].params.eliteCount, 2);
-  const statCases = [
-    ['chess_item_1_05_e_a', 'attackPercent', 0.2, 0.3], ['chess_item_2_01_e_a', 'maxHpPercent', -0.15, -0.2],
-    ['chess_item_2_03_e_a', 'attackPercent', 0.1, 0.2], ['chess_item_2_04_e_a', 'spRecovery', 0.1, 0.2],
-    ['chess_item_3_01_e_a', 'attackSpeedFlat', 8, 16], ['chess_item_3_06_e_a', 'maxHpPercent', 0.15, 0.25],
-    ['chess_item_3_07_e_a', 'attackPercent', 0.2, 0.35], ['chess_item_3_08_e_a', 'resistance', 10, 20],
-    ['chess_item_3_10_e_a', 'attackSpeedFlat', 10, 20], ['chess_item_4_02_e_a', 'maxHpPercent', 0.2, 0.35],
-    ['chess_item_4_09_e_a', 'attackPercent', 0.15, 0.25], ['chess_item_5_09_e_a', 'maxHpPercent', 0.2, 0.35],
-    ['chess_item_6_01_e_a', 'attackPercent', 0.2, 0.35], ['chess_item_6_02_e_a', 'attackPercent', 0.2, 0.35],
-    ['chess_item_6_03_e_a', 'maxHpPercent', 0.2, 0.35], ['chess_item_6_05_e_a', 'attackSpeedFlat', 15, 25],
-    ['chess_item_6_06_e_a', 'resistance', 15, 25], ['chess_item_6_07_e_a', 'initialSp', 10, 20],
-    ['chess_item_6_10_e_a', 'redeployTimeReduction', 0.15, 0.25], ['chess_item_6_11_e_a', 'spRecovery', 0.1, 0.2],
-  ];
-  for (const [id, stat, normal, elite] of statCases) {
-    assert.equal(catalog.equipment[id].stats?.[stat]?.normal, normal, `${id} normal ${stat}`);
-    assert.equal(catalog.equipment[id].stats?.[stat]?.elite, elite, `${id} elite ${stat}`);
+  // gear v4 (2026-10-07, user: 「装备不再有精锐形态」): one form, no elite level; special combat gear carries no numbers
+  // (those belong to the badges) beyond 诱敌蜂鸣器's 更容易受到敌人攻击; retired pieces keep their normal stats for old saves
+  for (const x of Object.values(catalog.equipment).filter((d) => d.mechanism === 'combatEquipment' && !d.retired)) {
+    for (const stat of Object.keys(x.stats || {})) assert.equal(stat, 'tauntLevel', `${x.newName || x.name} carries ${stat}`);
   }
+  assert.deepEqual(catalog.equipment['chess_item_3_07_e_a'].stats, { attackPercent: 0.2, attackSpeedFlat: -5 });
+  assert.ok(Object.values(catalog.equipment).every((x) => x.eliteLevel == null), 'no gear has an elite level');
   assert.equal(catalog.config.purchasePrice, 3);
   assert.equal(catalog.config.sellPrice, 1);
   assert.equal(catalog.config.refreshPrice, 1);
