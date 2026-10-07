@@ -17,6 +17,33 @@ const reportPath = path.resolve(args.report || 'E:/WindowsWorkspace/webworks/app
 const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
 const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
 const byName = new Map(source.cards.map(c => [c.name_zh, c]));
+// Explicit source-id keyed semantic rules for mechanics where a tempting generic
+// implementation would materially change the original target or trigger scope.
+const SOURCE_RULES = Object.freeze({
+  BGS_043: {
+    mechanic: 'lastWarbandRecruit',
+    adaptation: { trigger: 'gainOnce', recipient: 'hand', duration: 'untilPlayedOrSold', source: 'randomFriendlyOperatorFromPreviousRound' },
+    status: 'unsupported', reason: 'No PvP opponent warband exists in this co-op mode; implement the approved previous-round friendly copy source, never an invented enemy.'
+  },
+  DAL_575: {
+    mechanic: 'summonMultiplier',
+    normal: { trigger: 'summon', recipient: 'combatBoardSummons', multiplier: 2 },
+    elite: { trigger: 'summon', recipient: 'combatBoardSummons', multiplier: 3 },
+    status: 'unsupported', reason: 'This multiplies summoned units; it must not copy, duplicate, or grant equipment/badges.'
+  },
+  LOE_077: {
+    mechanic: 'battlecryMultiplier',
+    normal: { trigger: 'battlecryOnGain', recipient: 'originalBattlecryOutput', multiplier: 2 },
+    elite: { trigger: 'battlecryOnGain', recipient: 'originalBattlecryOutput', multiplier: 3 },
+    status: 'unsupported', reason: 'Only the source minion Battlecry output repeats on recruitment; unrelated gain hooks do not.'
+  },
+  FP1_031: {
+    mechanic: 'deathrattleMultiplier',
+    normal: { trigger: 'retiringEffect', recipient: 'deathrattleOutputs', multiplier: 2 },
+    elite: { trigger: 'retiringEffect', recipient: 'deathrattleOutputs', multiplier: 3 },
+    status: 'unsupported', reason: 'Only eligible retiring/deathrattle outputs repeat; this does not multiply all combat gains.'
+  }
+});
 
 function triggerOf(text) {
   if (/Start of Combat/i.test(text)) return 'combatStart';
@@ -105,6 +132,11 @@ for (const [tribe, group] of Object.entries(roster.groups)) {
       sourceTextsEn: { normal: card.text_en || '', elite: card.golden?.text_en || card.text_en || '' },
       sourceUrl: `https://api.hearthstonejson.com/v1/68600/zhCN/cards.json`,
       metadata: { op: { effectDelivery: { normal: [normal], elite: [elite] } } },
+      authoredRule: SOURCE_RULES[card.id] ? structuredClone(SOURCE_RULES[card.id]) : {
+        sourceId: card.id,
+        status: 'unsupported',
+        reason: 'Needs a source-specific adapter rule and matching ordinary/elite trigger test.'
+      },
       sourceEffect: {
         normal: { trigger: normal.trigger, recipient: normal.recipient, duration: normal.duration, text: normal.text },
         elite: { trigger: elite.trigger, recipient: elite.recipient, duration: elite.duration, text: elite.text }
@@ -128,6 +160,7 @@ const report = {
   ordinaryAndEliteEffectsPresent: entries.every(x => x.metadata.op.effectDelivery.normal.length > 0 && x.metadata.op.effectDelivery.elite.length > 0),
   executableByNative: entries.filter(x => x.metadata.op.effectDelivery.normal.every(e=>e.implementation==='supported') && x.metadata.op.effectDelivery.elite.every(e=>e.implementation==='supported')).length,
   unsupportedSourceIds: entries.filter(x=>x.metadata.op.effectDelivery.normal.some(e=>e.implementation!=='supported') || x.metadata.op.effectDelivery.elite.some(e=>e.implementation!=='supported')).map(x=>({id:x.sourceId,name:x.name,reason:x.metadata.op.effectDelivery.normal[0].unsupportedReason})),
+  sourceSpecificSemanticRules: entries.filter(x=>SOURCE_RULES[x.sourceId]).map(x=>({id:x.sourceId,name:x.name,mechanic:x.authoredRule.mechanic,status:x.authoredRule.status})),
   caveats: ['This compiler records source text and an initial fixed-recipient interpretation; it does not claim mechanics execution.', 'Text-derived descriptors are compile-time metadata only; runtime must use source-id-keyed authored rules, never parse localized source text.', 'All entries remain unsupported until a matching native behavior is wired and ordinary/elite trigger, target, duration, and reset are tested.']
 };
 fs.mkdirSync(path.dirname(outPath), { recursive: true });

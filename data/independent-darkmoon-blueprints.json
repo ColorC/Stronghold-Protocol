@@ -64,6 +64,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_006",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -140,6 +145,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_008",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -209,6 +219,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_009",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -284,6 +299,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_012",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -353,6 +373,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_017",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -430,6 +455,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_018",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -502,6 +532,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_019",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "combatStart",
@@ -573,6 +608,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_021",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -647,6 +687,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_022",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -724,6 +769,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_023",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -795,6 +845,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_027",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -868,6 +923,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_032",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "overkill",
@@ -939,6 +999,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_033",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1018,6 +1083,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_034",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "staticCombat",
@@ -1087,6 +1157,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_035",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1160,6 +1235,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_036",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "turnEnd",
@@ -1231,6 +1311,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_037",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1310,6 +1395,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_038",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -1385,6 +1475,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_039",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1462,6 +1557,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_040",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -1537,6 +1637,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_041",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1614,6 +1719,17 @@
           }
         }
       },
+      "authoredRule": {
+        "mechanic": "lastWarbandRecruit",
+        "adaptation": {
+          "trigger": "gainOnce",
+          "recipient": "hand",
+          "duration": "untilPlayedOrSold",
+          "source": "randomFriendlyOperatorFromPreviousRound"
+        },
+        "status": "unsupported",
+        "reason": "No PvP opponent warband exists in this co-op mode; implement the approved previous-round friendly copy source, never an invented enemy."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -1685,6 +1801,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_045",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1758,6 +1879,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_046",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "attack",
@@ -1829,6 +1955,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_047",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -1906,6 +2037,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_048",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -1977,6 +2113,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_049",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -2054,6 +2195,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_053",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -2130,6 +2276,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_055",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -2201,6 +2352,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_056",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -2278,6 +2434,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_060",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "conditionalEvent",
@@ -2354,6 +2515,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_061",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -2425,6 +2591,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_066",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -2502,6 +2673,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_067",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "staticCombat",
@@ -2578,6 +2754,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_071",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "prepEvent",
@@ -2649,6 +2830,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_072",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -2726,6 +2912,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_075",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -2802,6 +2993,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_078",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -2875,6 +3071,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_079",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -2952,6 +3153,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_080",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "overkill",
@@ -3023,6 +3229,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_081",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -3098,6 +3309,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_082",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -3172,6 +3388,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_083",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -3244,6 +3465,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_100",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "prepEvent",
@@ -3314,6 +3540,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_104",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "prepEvent",
@@ -3383,6 +3614,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_105",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -3460,6 +3696,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_106",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "staticCombat",
@@ -3533,6 +3774,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_110",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -3608,6 +3854,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_111",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "conditionalEvent",
@@ -3681,6 +3932,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_112",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -3756,6 +4012,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_113",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -3827,6 +4088,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_115",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -3903,6 +4169,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_116",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -3982,6 +4253,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_119",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "staticCombat",
@@ -4053,6 +4329,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_120",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -4132,6 +4413,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_121",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -4207,6 +4493,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_122",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -4284,6 +4575,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_123",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -4360,6 +4656,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_124",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "prepEvent",
@@ -4431,6 +4732,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_126",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -4508,6 +4814,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_127",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "prepEvent",
@@ -4584,6 +4895,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_128",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -4657,6 +4973,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_131",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -4732,6 +5053,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_200",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -4806,6 +5132,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_201",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "conditionalEvent",
@@ -4875,6 +5206,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BGS_202",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -4954,6 +5290,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BGS_205",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "conditionalEvent",
@@ -5029,6 +5370,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BOT_218",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -5106,6 +5452,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BOT_312",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -5182,6 +5533,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BOT_537",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -5257,6 +5613,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "BOT_606",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -5336,6 +5697,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "BOT_911",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "staticCombat",
@@ -5411,6 +5777,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "CFM_315",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -5488,6 +5859,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "CFM_316",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -5562,6 +5938,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "CFM_816",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -5631,6 +6012,21 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "mechanic": "summonMultiplier",
+        "normal": {
+          "trigger": "summon",
+          "recipient": "combatBoardSummons",
+          "multiplier": 2
+        },
+        "elite": {
+          "trigger": "summon",
+          "recipient": "combatBoardSummons",
+          "multiplier": 3
+        },
+        "status": "unsupported",
+        "reason": "This multiplies summoned units; it must not copy, duplicate, or grant equipment/badges."
       },
       "sourceEffect": {
         "normal": {
@@ -5708,6 +6104,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "DS1_070",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -5784,6 +6185,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "EX1_093",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -5855,6 +6261,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "EX1_531",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -5932,6 +6343,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "EX1_534",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -6007,6 +6423,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "EX1_556",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -6084,6 +6505,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "FP1_010",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "staticCombat",
@@ -6160,6 +6586,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "FP1_024",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -6234,6 +6665,21 @@
           }
         }
       },
+      "authoredRule": {
+        "mechanic": "deathrattleMultiplier",
+        "normal": {
+          "trigger": "retiringEffect",
+          "recipient": "deathrattleOutputs",
+          "multiplier": 2
+        },
+        "elite": {
+          "trigger": "retiringEffect",
+          "recipient": "deathrattleOutputs",
+          "multiplier": 3
+        },
+        "status": "unsupported",
+        "reason": "Only eligible retiring/deathrattle outputs repeat; this does not multiply all combat gains."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -6305,6 +6751,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "GVG_027",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -6382,6 +6833,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "GVG_048",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -6458,6 +6914,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "GVG_055",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -6529,6 +6990,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "GVG_106",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -6606,6 +7072,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "GVG_113",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "combatPassive",
@@ -6677,6 +7148,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "ICC_029",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -6754,6 +7230,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "ICC_807",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "battlecry",
@@ -6827,6 +7308,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "ICC_858",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -6904,6 +7390,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "KAR_005",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -6973,6 +7464,21 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "mechanic": "battlecryMultiplier",
+        "normal": {
+          "trigger": "battlecryOnGain",
+          "recipient": "originalBattlecryOutput",
+          "multiplier": 2
+        },
+        "elite": {
+          "trigger": "battlecryOnGain",
+          "recipient": "originalBattlecryOutput",
+          "multiplier": 3
+        },
+        "status": "unsupported",
+        "reason": "Only the source minion Battlecry output repeats on recruitment; unrelated gain hooks do not."
       },
       "sourceEffect": {
         "normal": {
@@ -7050,6 +7556,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "LOOT_078",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "combatPassive",
@@ -7121,6 +7632,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "NEW1_027",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -7198,6 +7714,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "OG_216",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -7274,6 +7795,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "OG_221",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -7348,6 +7874,11 @@
           }
         }
       },
+      "authoredRule": {
+        "sourceId": "OG_256",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
+      },
       "sourceEffect": {
         "normal": {
           "trigger": "death",
@@ -7419,6 +7950,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "TRL_232",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {
@@ -7495,6 +8031,11 @@
             ]
           }
         }
+      },
+      "authoredRule": {
+        "sourceId": "ULD_217",
+        "status": "unsupported",
+        "reason": "Needs a source-specific adapter rule and matching ordinary/elite trigger test."
       },
       "sourceEffect": {
         "normal": {

@@ -34,4 +34,8 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   assert.equal(byId.get('BGS_104').metadata.op.effectDelivery.normal[0].recipient, 'shop');
   assert.equal(byId.get('BGS_046').metadata.op.effectDelivery.normal[0].recipient, 'hand');
   assert.ok(blueprints.entries.every(x => x.metadata.op.effectDelivery.normal[0].implementation === 'unsupported'));
+  assert.equal(byId.get('BGS_043').authoredRule.adaptation.source, 'randomFriendlyOperatorFromPreviousRound');
+  assert.equal(byId.get('DAL_575').authoredRule.mechanic, 'summonMultiplier');
+  assert.equal(byId.get('LOE_077').authoredRule.normal.trigger, 'battlecryOnGain');
+  assert.equal(byId.get('FP1_031').authoredRule.normal.trigger, 'retiringEffect');
 });
