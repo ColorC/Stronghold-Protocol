@@ -3,6 +3,7 @@ import { findRaidLanding, raidRedeploy } from '../bonds/addon/battle.js';
 import { KEYWORD_GEAR_BY_ID } from '../../../modes/independent/keywordGear.js';
 import { COLS } from '../../constants.js';
 import { bodyKeys } from '../../body.js';
+import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 
 const entryArray = (v) => Array.isArray(v) ? v : [];
 const idOf = (item) => item && typeof item === 'object' ? (item.id ?? item.sourceId ?? item.canonicalId) : item;
@@ -31,6 +32,39 @@ function gearGroupsFor(piece, catalog) {
     else groups.set(gearId, { rec, quantity: gearQuantity(item) });
   }
   return groups;
+}
+
+function installDeferredRedeployGate(battle) {
+  if (battle.keywordGearDeferredRedeployOriginal) return;
+  const originalRedeploy = battle.redeploy.bind(battle);
+  battle.keywordGearDeferredRedeployOriginal = originalRedeploy;
+  battle.redeploy = (unit, opts = {}) => {
+    const gate = unit?.mem?.keywordGearDeferredRedeploy;
+    if (!gate || unit.alive || unit.removed || battle.time + 1e-9 >= gate.until) return originalRedeploy(unit, opts);
+    // The first caller wins; raid's home fallback must not replace its chosen raid tile.
+    if (!gate.options) gate.options = { ...opts, ...(opts.tile ? { tile: [...opts.tile] } : {}) };
+    if (gate.polling) return false;
+    unit.respawnAt = Infinity; // prevent an early paid automatic return while this free/raid return is deferred
+    gate.polling = true;
+    const retry = () => {
+      if (unit.alive || unit.removed) { delete unit.mem.keywordGearDeferredRedeploy; return; }
+      if (battle.time + 1e-9 < gate.until) { battle.after(0.1, retry, { owner: unit }); return; }
+      const request = gate.options ?? { free: true };
+      unit.respawnAt = battle.time;
+      delete unit.mem.keywordGearDeferredRedeploy;
+      let returned = originalRedeploy(unit, request);
+      if (!returned && request.tile) returned = originalRedeploy(unit, { ...request, tile: null });
+      if (returned) {
+        if (gate.targetId) battle.fx('blink', { x: unit.x, y: unit.y, id: unit.id, gear: 'portable-meltdown-trainer', target: gate.targetId });
+        return;
+      }
+      unit.respawnAt = Infinity;
+      unit.mem.keywordGearDeferredRedeploy = gate;
+      battle.after(0.1, retry, { owner: unit });
+    };
+    battle.after(0.1, retry, { owner: unit });
+    return false;
+  };
 }
 
 /** Install only on independent Battle instances. Stack counts are total worn pieces, including `quantity`. */
@@ -111,7 +145,11 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
           if (battle.time - since < idle - 1e-9) return;
           const found = findRaidLanding(battle, unit, unit.ownerId);
           if (!found) return;
-          if (!raidRedeploy(battle, unit, found.tile[0], found.tile[1])) return;
+          if (!raidRedeploy(battle, unit, found.tile[0], found.tile[1])) {
+            const pending = unit.mem.keywordGearDeferredRedeploy;
+            if (pending) pending.targetId = found.target.id;
+            return;
+          }
           unit.mem[`${key}:lastDeploy`] = battle.time;
           battle.fx('blink', { x: unit.x, y: unit.y, id: unit.id, gear: gearId, target: found.target.id });
         }, { owner: unit });
@@ -124,12 +162,15 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
         const ratio = base + inc * (quantity - 1);
         const radius = Number(p.radius ?? 0.9);
         battle.on('attack', ({ attacker, targets, isSkill }) => {
-          if (attacker !== unit || isSkill || unit.mem.independentExtraAttack || ratio <= 0) return;
+          if (attacker !== unit || ratio <= 0) return;
           const primary = targets?.[0];
           if (!primary || primary.side !== 'enemy') return;
           for (const enemy of battle.enemies) {
-            if (enemy === primary || !live(enemy) || pointDistance(enemy, primary) > radius) continue;
-            battle.dealDamage(unit, enemy, { amount: unit.s.atk * ratio, type: 'phys', isSplash: true, tags: ['independentEquipment', 'keywordGear', gearId] });
+            if (!live(enemy) || pointDistance(enemy, primary) > radius) continue;
+            battle.dealDamage(unit, enemy, {
+              amount: unit.s.atk * ratio, type: 'phys', isAttack: true, isSkill,
+              isSplash: enemy !== primary, tags: ['independentEquipment', 'keywordGear', gearId],
+            });
           }
         }, { owner: unit });
         break;
@@ -192,11 +233,13 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
         break;
       }
       case 'portable-meltdown-trainer': {
+        installDeferredRedeployGate(battle);
         if (unit.mem[`${key}:installed`]) break;
         unit.mem[`${key}:installed`] = true;
         unit.mem[`${key}:attacked`] = new Set();
         unit.mem[`${key}:snapshot`] = null;
         unit.mem[`${key}:used`] = false;
+        battle.on('deploy', ({ unit: who }) => { if (who === unit) delete unit.mem.keywordGearDeferredRedeploy; }, { owner: unit, priority: -10 });
         battle.on('attack', ({ attacker, targets }) => {
           if (attacker?.side !== 'enemy' || !targets?.includes(unit)) return;
           unit.mem[`${key}:attacked`].add(attacker.id);
@@ -214,14 +257,17 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
           const attacked = unit.mem[`${key}:attacked`];
           const redeployMul = Number(p.redeployTimeMultiplier ?? 2);
           unit.respawnAt = unit.deathAt + Math.max(0, unit.respawnAt - unit.deathAt) * redeployMul;
+          unit.mem.keywordGearDeferredRedeploy = { until: unit.respawnAt, options: null, polling: false };
           for (const enemy of battle.enemies) if (live(enemy)) {
-            battle.dealDamage(unit, enemy, {
-              amount: base * (attacked.has(enemy.id) ? multiplier : 1) * snapshot.dmgDealtMul,
+            const damage = battle.makeDamage({
+              amount: base * (attacked.has(enemy.id) ? multiplier : 1),
               type: p.damageType ?? 'true', sourceless: true,
               tags: ['independentEquipment', 'keywordGear', gearId],
             });
+            applyDamageIncrease(battle, unit, damage, snapshot.dmgDealtMul);
+            battle.dealDamage(unit, enemy, damage);
           }
-        }, { owner: unit, priority: 5 });
+        }, { owner: unit, priority: 15 });
         break;
       }
       default: throw new Error(`unimplemented keyword gear ${gearId}`);

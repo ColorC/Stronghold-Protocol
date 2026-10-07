@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installKeywordGear } from '../../server/sim/content/independent/keywordGear.js';
 import { installIndependentBattle } from '../../server/sim/content/independent/battle.js';
+import { performAttack } from '../../server/sim/ai.js';
 import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 
@@ -103,16 +104,29 @@ test('突袭盟约 waits for idle, reuses legal raid landing and the deploy even
   assert.equal(h.b.errorCount, 0);
 });
 
-test('巨锤盟约 uses one normal attack action and excludes skill attacks from adjacent splash', () => {
-  const catalog = { equipment: { ...gearDefs, 'hammer:test': { ...gearDefs['test:hammer-oath'], id: 'hammer:test', params: { ...gearDefs['test:hammer-oath'].params, baseAtkRatio: 0.5, perPieceAtkRatio: 0.25 } } } };
+test('融毁延迟压住突袭盟约的同次即时跳转，到期后仍跳到合法目标位置', () => {
+  const h = setup([{ uid: 'w', chessId: 'w', row: 10, col: 3, equipment: [worn('assault-oath'), worn('portable-meltdown-trainer')] }], { enemyHp: 200000 });
+  const w = h.unit('w'); enemy(h, [10, 10]);
+  h.run(10.2);
+  assert.equal(w.alive, false, 'the idle-triggered raid cannot immediately redeploy through the trainer delay');
+  assert.ok(w.respawnAt > h.b.time);
+  h.run(39.5);
+  assert.equal(w.alive, false, 'no return happens before the doubled timer');
+  h.run(0.8);
+  assert.ok(w.alive && w.deployed, 'the queued raid returns once the doubled timer expires');
+  assert.notEqual(w.tileC, 3, 'the deferred redeploy retains its legal raid landing tile');
+});
+
+test('巨锤盟约 adds one primary-centered splash per attack action, including skill multi-hit actions', () => {
+  const catalog = { equipment: { ...gearDefs, 'hammer:test': { ...gearDefs['test:hammer-oath'], id: 'hammer:test', params: { ...gearDefs['test:hammer-oath'].params, baseAtkRatio: 0.5, perPieceAtkRatio: 0.1 } } } };
   const pieces = [{ uid: 'w', chessId: 'w', row: 10, col: 3, equipment: [{ id: 'hammer:test', quantity: 2 }] }];
-  const h = setup(pieces, { catalog });
-  const w = h.unit('w'); const primary = enemy(h, [10, 10]); const near = enemy(h, [10, 10.8]);
-  h.b.emit('attack', { attacker: w, targets: [primary], isSkill: false });
-  assert.ok(Math.abs(lost(near) - 75) < 1e-6);
-  const before = lost(near);
-  h.b.emit('attack', { attacker: w, targets: [primary], isSkill: true });
-  assert.equal(lost(near), before);
+  const h = setup(pieces, { catalog, atk: 100 });
+  const w = h.unit('w'); const primary = enemy(h, [10, 10]); const near = enemy(h, [10, 10.8]); const outside = enemy(h, [10, 11]);
+  outside.x = primary.x + 0.91; // preserve the exact 0.91 test distance instead of tile-position normalization
+  performAttack(h.b, w, { isSkill: true, attack: 'melee', dmgType: 'phys', hits: 3 }, [primary]);
+  assert.ok(Math.abs(lost(primary) - 360) < 1e-6, `three native hits plus one 60% gear splash (${lost(primary)})`);
+  assert.ok(Math.abs(lost(near) - 60) < 1e-6, 'the in-radius enemy gets exactly one 60% splash');
+  assert.equal(lost(outside), 0, 'the enemy at 0.91 tiles is outside the 0.9 radius');
 });
 
 test('精准盟约 uses the native DEF/RES ignore fields with capped per-piece growth', () => {
@@ -140,18 +154,22 @@ test('不屈盟约 revives once per real ground retreat; random tile airdrop cho
 
 test('爆破部署台 and 融毁教学仪 scale damage by quantity; trainer triggers on retreat, not death, once per battle', () => {
   const h = setup([{ uid: 'w', chessId: 'w', row: 10, col: 3, equipment: [worn('blast-deploy-platform', 2), worn('portable-meltdown-trainer', 2)] }], { enemyHp: 200000 });
+  h.b.flags.independent = true;
   const w = h.unit('w'); const local = enemy(h, [10, 6]); const far = enemy(h, [10, 19]);
   h.b.emit('deploy', { unit: w, initial: false });
   assert.ok(Math.abs(lost(local) - 1300) < 1e-6, 'each deploy burst is in 4 tiles and scales to 1300');
   assert.equal(lost(far), 0, 'deploy blast does not hit beyond radius four');
   // A tracked attack counts even though no damage event is emitted.
   h.b.emit('attack', { attacker: far, targets: [w], isSkill: false });
+  h.b.addBuff(w, { key: 'source-increase-test', mods: { dmgDealtMul: 1.6 }, persist: true });
   const before = local.hp;
   h.b.retreat(w, { reason: 'retreat' });
-  assert.ok(Math.abs(before - local.hp - 13000) < 1e-6, 'untracked enemies take 10000+3000 true damage');
-  assert.ok(Math.abs(far.s.maxHp - far.hp - 26000) < 1e-6, 'attacker-tagged enemy takes 2× (10000+3000) true damage');
+  assert.ok(Math.abs(before - local.hp - 20800) < 1e-6, 'untracked enemies take (10000+3000) × the source 1.6 damage increase');
+  assert.ok(Math.abs(far.s.maxHp - far.hp - 41600) < 1e-6, 'attacker-tagged enemy takes 2 × (10000+3000) × the source 1.6 increase exactly once');
   const after = local.hp;
-  h.b.redeploy(w, { free: true });
+  assert.equal(h.b.redeploy(w, { free: true }), false, 'trainer delays even a free redeploy requested before the doubled timer');
+  h.run(40.5);
+  assert.ok(w.alive, 'the deferred free redeploy executes when the doubled timer expires');
   const afterNextDeploy = local.hp;
   h.b.retreat(w, { reason: 'retreat' });
   assert.equal(local.hp, afterNextDeploy, 'duplicate pieces add damage, not per-departure uses');
@@ -169,8 +187,10 @@ test('融毁教学仪 ignores a kill; when combined with 不屈, the retreat bla
   h.b.rng = () => 0;
   h.b.emit('attack', { attacker: enemyHit, targets: [w], isSkill: false });
   h.b.retreat(w, { reason: 'retreat' });
-  assert.ok(w.alive && w.deployed && w.deploySeq > beforeDeploys, `不屈 returns (alive=${w.alive}, removed=${w.removed}, seq=${w.deploySeq}/${beforeDeploys}, errors=${JSON.stringify(h.b.errors)})`);
-  assert.equal(h.hooksOf('deploy').filter((ctx) => ctx.unit === w && !ctx.initial).length, 1, 'the exit causes exactly one immediate return deployment');
+  assert.ok(!w.alive && w.respawnAt > h.b.time, '融毁 delay prevents the free return from bypassing doubled redeploy time');
+  h.run(40.5);
+  assert.ok(w.alive && w.deployed && w.deploySeq > beforeDeploys, 'the banked free return redeploys when the doubled timer expires');
+  assert.equal(h.hooksOf('deploy').filter((ctx) => ctx.unit === w && !ctx.initial).length, 1, 'the exit causes exactly one deferred return deployment');
   assert.equal(Math.round(enemyHit.s.maxHp - enemyHit.hp), 26000, 'trainer blast precedes the unyielding return roll');
   assert.equal(Math.round(w.stats.dmg), 26000, 'the departed wearer keeps damage credit through sourceless stat bypass');
 });

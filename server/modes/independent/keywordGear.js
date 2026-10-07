@@ -13,8 +13,8 @@ export const KEYWORD_GEAR = Object.freeze([
     idleSeconds: 10, attackSpeedBase: 30, attackSpeedPerPiece: 20,
     durationBase: 10, durationPerPiece: 1, durationCap: 30, pollSeconds: 0.1,
   }),
-  // The owner supplies the final ratio in independent-design.json. Zero here is an explicit unset parameter, not a balance value.
-  gear('hammer-oath', '巨锤盟约', { radius: 0.9, baseAtkRatio: 0, perPieceAtkRatio: 0 }),
+  // Provisional root-side balance values; final player clarification may replace them in the design data.
+  gear('hammer-oath', '巨锤盟约', { radius: 0.9, baseAtkRatio: 0.5, perPieceAtkRatio: 0.1 }),
   gear('precision-oath', '精准盟约', { ignoreBase: 0.20, ignorePerPiece: 0.03, ignoreCap: 0.80 }),
   gear('unyielding-oath', '不屈盟约', { baseProbability: 0.18, probabilityPerPiece: 0.004, probabilityCap: 1 }),
   gear('blast-deploy-platform', '爆破部署台', { damageBase: 1000, damagePerPiece: 300, radius: 4, damageType: 'true' }),
