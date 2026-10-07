@@ -14,6 +14,7 @@ const G = (name) => {
 };
 // 隐现 is 拉特兰, 普罗旺斯 叙拉古, 跃跃 / 深靛 have no faction; none has a combat trait (干员表 v3)
 const OPS = { lateran: 'chess_char_1_01_a', syracusa: 'chess_char_1_07_a', a: 'chess_char_1_09_a', b: 'chess_char_1_17_a' };
+const FACTION_OPS = { victoria:'chess_char_1_06_a', aegir:'chess_char_2_07_a', sargon:'chess_char_2_08_a', kazimierz:'chess_char_1_19_a', yan:'chess_char_1_03_a', yan2:'chess_char_2_04_a' };
 const RANGE = [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [-1, 1], [1, 2], [-1, 2]];
 const tag = (faction) => ({ id: 'chess_item_1_04_e_a', state: { faction } }); // 调和识别牌: an extra faction
 
@@ -217,8 +218,8 @@ test('disarmOnHit with 战栗 (战栗维式重锤); 蒸汽之心 强化 shortens
   const e = h.spawn('dummy', { pos: [10, 4] });
   attacks(h, h.unit('w'), e);
   assert.ok(e.s.flags.tremble);
-  const cd = (equipment) => {
-    const hh = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment }]);
+  const cd = (equipment,chessId=OPS.a) => {
+    const hh = setup([{ uid: 'w', chessId, row: 10, col: 3, equipment }]);
     const t = hh.spawn('dummy', { pos: [10, 4] });
     attacks(hh, hh.unit('w'), t);
     hh.b.removeBuff(t, 'tremble');
@@ -227,7 +228,7 @@ test('disarmOnHit with 战栗 (战栗维式重锤); 蒸汽之心 强化 shortens
     return !!t.s.flags.tremble;
   };
   assert.equal(cd([G('战栗维式重锤')]), false, '8 s cooldown');
-  assert.equal(cd([G('战栗维式重锤'), tag('维多利亚'), { id: G('维多利亚蒸汽之心'), state: { hammerSourceIds: ['chess_item_2_03_e_a'] } }]), true, '强化: 5 s');
+  assert.equal(cd([G('战栗维式重锤'), { id: G('维多利亚蒸汽之心'), state: { hammerSourceIds: ['chess_item_2_03_e_a'] } }],FACTION_OPS.victoria), true, '强化: 5 s');
 });
 
 test('spChargeMode (萨尔贡行军浓茶): each normal attack gives 1 SP', () => {
@@ -393,8 +394,8 @@ test('controlledSplash (罗德岛处置预案): hitting a stunned enemy hits the
 
 test('skillStartTeamStrike (炎国天师古鼎): the other 炎 operators’ next normal attack hits every enemy in their range', () => {
   const h = setup([
-    { uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('炎'), G('炎国天师古鼎')] },
-    { uid: 'y', chessId: OPS.b, row: 12, col: 3, equipment: [tag('炎')] },
+    { uid: 'w', chessId: FACTION_OPS.yan, row: 10, col: 3, equipment: [G('炎国天师古鼎')] },
+    { uid: 'y', chessId: FACTION_OPS.yan2, row: 12, col: 3, equipment: [] },
   ], { skill: SKILL });
   const a = h.spawn('dummy', { pos: [12, 4] });
   const b = h.spawn('dummy', { pos: [12, 6] });
@@ -406,7 +407,7 @@ test('skillStartTeamStrike (炎国天师古鼎): the other 炎 operators’ next
 });
 
 test('damageReductionAndRetaliation paired splash (阿戈尔海沟实验体 + 裂潮重刃)', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('阿戈尔'), G('阿戈尔海沟实验体'), G('阿戈尔裂潮重刃')] }]);
+  const h = setup([{ uid: 'w', chessId: FACTION_OPS.aegir, row: 10, col: 3, equipment: [G('阿戈尔海沟实验体'), G('阿戈尔裂潮重刃')] }]);
   const w = h.unit('w');
   const src = h.spawn('hitter', { pos: [10, 4] });
   const by = h.spawn('dummy', { pos: [11, 4] });
@@ -415,10 +416,30 @@ test('damageReductionAndRetaliation paired splash (阿戈尔海沟实验体 + �
   assert.ok(near(w.s.maxHp - w.hp, 100), 'no flat reduction any more');
 });
 
+test('阿戈尔海沟实验体 retaliates directly without the paired splash blade',()=>{
+  const h=setup([{uid:'w',chessId:FACTION_OPS.aegir,row:10,col:3,equipment:[G('阿戈尔海沟实验体')]}]);
+  const w=h.unit('w'),source=h.spawn('hitter',{pos:[10,4]}),nearby=h.spawn('dummy',{pos:[11,4]});
+  h.b.dealDamage(source,w,{amount:100,type:'phys'});
+  assert.ok(near(lost(source),40),`${lost(source)}`);assert.equal(lost(nearby),0);assert.ok(near(lost(w),100));
+});
+
+test('阿戈尔裂潮重刃 splashes its own normal-attack hit without the paired retaliation gear',()=>{
+  const h=setup([{uid:'w',chessId:OPS.a,row:10,col:3,equipment:[G('阿戈尔裂潮重刃')]}]);
+  const main=h.spawn('dummy',{pos:[10,4]}),nearby=h.spawn('dummy',{pos:[11,4]});
+  attacks(h,h.unit('w'),main);
+  assert.ok(near(lost(main),100));assert.ok(near(lost(nearby),40),`${lost(nearby)}`);
+});
+
+test('萨尔贡行军浓茶 grants its wearer SP on normal attacks without a compass',()=>{
+  const h=setup([{uid:'w',chessId:FACTION_OPS.sargon,row:10,col:3,equipment:[G('萨尔贡行军浓茶')]}],{skill:{...SKILL,spCost:99}});
+  const w=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,4]});w.skill.sp=0;
+  attacks(h,w,enemy);assert.ok(w.skill.sp>=1-1e-6,`SP=${w.skill.sp}`);
+});
+
 test('skillRecast (萨尔贡黄沙罗盘): the first skill starts again for free; paired 行军浓茶 gives other 萨尔贡 SP', () => {
   const h = setup([
-    { uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('萨尔贡'), G('萨尔贡黄沙罗盘'), G('萨尔贡行军浓茶')] },
-    { uid: 's', chessId: OPS.b, row: 12, col: 3, equipment: [tag('萨尔贡')] },
+    { uid: 'w', chessId: FACTION_OPS.sargon, row: 10, col: 3, equipment: [G('萨尔贡黄沙罗盘'), G('萨尔贡行军浓茶')] },
+    { uid: 's', chessId: 'chess_char_4_05_a', row: 12, col: 3, equipment: [] },
   ], { skill: { ...SKILL, durationType: 'NONE', duration: 2 } });
   const w = h.unit('w');
   w.skill.gainSp(99); assert.ok(w.skill.activate('manual'));
@@ -430,8 +451,13 @@ test('skillRecast (萨尔贡黄沙罗盘): the first skill starts again for free
   assert.ok(h.unit('s').skill.sp >= 4 - 1e-6, `other 萨尔贡 got SP: ${h.unit('s').skill.sp}`);
 });
 
+test('萨尔贡黄沙罗盘 alone recasts its first ended skill once',()=>{
+  const h=setup([{uid:'w',chessId:FACTION_OPS.sargon,row:10,col:3,equipment:[G('萨尔贡黄沙罗盘')]}],{skill:{...SKILL,duration:2}});
+  const w=h.unit('w');assert.ok(cast(w));h.run(2.5);assert.equal(w.skill.activations,2);h.run(3);assert.equal(w.skill.activations,2);
+});
+
 test('skillEndRedeploy (卡西米尔骑士戒律 + 竞技旗): the wearer redeploys on its tile when its skill ends and charges again', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [tag('卡西米尔'), G('卡西米尔骑士戒律'), G('卡西米尔竞技旗')] }], { skill: { ...SKILL, duration: 2 } });
+  const h = setup([{ uid: 'w', chessId: FACTION_OPS.kazimierz, row: 10, col: 3, equipment: [G('卡西米尔骑士戒律'), G('卡西米尔竞技旗')] }], { skill: { ...SKILL, duration: 2 } });
   const w = h.unit('w');
   const e = h.spawn('dummy', { pos: [10, 5] });
   const seq = w.deploySeq;
@@ -442,6 +468,18 @@ test('skillEndRedeploy (卡西米尔骑士戒律 + 竞技旗): the wearer redepl
   assert.ok(near(lost(e), 150), `the charge again: ${lost(e)}`);
   assert.equal(h.gear.filter((x) => x.target === e).length, 1);
   assert.equal(w.tileR, 10); assert.equal(w.tileC, 3);
+});
+
+test('卡西米尔骑士戒律 alone slows only enemies in the wearer attack range when a skill starts',()=>{
+  const h=setup([{uid:'w',chessId:FACTION_OPS.kazimierz,row:10,col:3,equipment:[G('卡西米尔骑士戒律')]}],{skill:SKILL});
+  const nearEnemy=h.spawn('dummy',{pos:[10,5]}),farEnemy=h.spawn('dummy',{pos:[10,9]});
+  assert.ok(cast(h.unit('w')));assert.ok(nearEnemy.findBuff('independent:skillWindowSlow:w'));assert.equal(farEnemy.findBuff('independent:skillWindowSlow:w'),null);
+});
+
+test('卡西米尔竞技旗 alone charges on redeployment and strikes in range',()=>{
+  const h=setup([{uid:'w',chessId:FACTION_OPS.kazimierz,row:10,col:3,equipment:[G('卡西米尔竞技旗')]}]);
+  const w=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,5]});assert.equal(lost(enemy),0);
+  assert.equal(h.b.moveRedeploy(w,w.tileR,w.tileC),true);assert.ok(near(lost(enemy),150),`${lost(enemy)}`);
 });
 
 test('工程部特供 mechanisms: 重装防护套件 stuns a blocked attacker sometimes; 战备箱 gives SP on a kill', () => {
