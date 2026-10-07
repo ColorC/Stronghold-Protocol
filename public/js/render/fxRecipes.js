@@ -683,7 +683,6 @@ function blkkgtSkill(fx, c) {
     BLKKGT_ACTIVE.set(c.view.id, { view: c.view, skill: skill || null });
     BLKKGT_S3_FINAL.delete(c.view.id);
     if (skill === 'skchr_blkkgt_3') {
-      c.view.setOriginalVfxHidden?.(true);
       // Raw prefab evidence: start_01/start_02/end have _spawnLocation 5
       // (ground), while start_03/04 are owner-held (_spawnLocation 8/11) and
       // explicitly request mount types 5/9.  The two hand-weapon bones are
