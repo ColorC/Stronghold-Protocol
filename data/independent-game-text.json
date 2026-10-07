@@ -926,51 +926,51 @@
     },
     "permit-north-handover-order": {
       "name": "北境战备交接令",
-      "normal": "可将装备交接给科技等级2的干员"
+      "normal": "只能被科技等级2的干员继承。"
     },
     "permit-tianshi-seal": {
       "name": "天师器械封签",
-      "normal": "可将装备交接给科技等级2或3的【炎】干员"
+      "normal": "只能被科技等级2至4、原生阵营为炎的干员继承。"
     },
     "permit-ursus-logistics-slip": {
       "name": "乌萨斯后勤交接单",
-      "normal": "可将装备交接给科技等级不高于3的重装干员"
+      "normal": "只能被科技等级不高于3的重装干员继承。"
     },
     "permit-smith-receipt": {
       "name": "锻锤师交工凭证",
-      "normal": "可将装备交接给科技等级不高于3的【维多利亚】干员"
+      "normal": "只能被科技等级不高于3、原生阵营为维多利亚的干员继承。"
     },
     "permit-deepsea-entrustment": {
       "name": "深海遗物托付书",
-      "normal": "可将装备交接给科技等级不高于4的【阿戈尔】干员"
+      "normal": "只能被科技等级不高于4、原生阵营为阿戈尔的干员继承。"
     },
     "permit-rural-transfer-slip": {
       "name": "乡野器械移交单",
-      "normal": "可将装备交接给科技等级2的干员"
+      "normal": "只能被科技等级2的干员继承。"
     },
     "permit-knight-custody": {
       "name": "骑士装备托管证",
-      "normal": "可将装备交接给科技等级不高于4的【卡西米尔】干员"
+      "normal": "只能被科技等级不高于4、原生阵营为卡西米尔的干员继承。"
     },
     "permit-loner-loan": {
       "name": "独行者借装许可",
-      "normal": "可接收科技等级2或3的干员交接的装备"
+      "normal": "只能继承科技等级2或3的干员。"
     },
     "permit-heavy-adapter": {
       "name": "重装器械适配单",
-      "normal": "可接收科技等级不高于4的重装干员交接的装备"
+      "normal": "只能继承科技等级不高于4的重装干员。"
     },
     "permit-seaborn-vessel": {
       "name": "海嗣遗物容器",
-      "normal": "可接收科技等级不高于3的【阿戈尔】干员交接的装备"
+      "normal": "只能继承科技等级不高于3、原生阵营为阿戈尔的干员。"
     },
     "permit-hunter-succession": {
       "name": "猎人旧装承接书",
-      "normal": "可接收科技等级不高于4的【阿戈尔】干员交接的装备"
+      "normal": "只能继承科技等级不高于4、原生阵营为阿戈尔的干员。"
     },
     "permit-radiant-edict": {
       "name": "耀骑士接装敕令",
-      "normal": "可接收科技等级不高于4的【卡西米尔】干员交接的装备"
+      "normal": "只能继承科技等级不高于4、原生阵营为卡西米尔的干员。"
     },
     "independent:熔铸模具": {
       "name": "熔铸模具",
