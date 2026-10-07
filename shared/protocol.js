@@ -221,6 +221,7 @@ export function unitStatsEntry(u, s = null) {
     ...(range ? { range } : {}),
     // the enemy card greys a SILENCE-format line (折射) from this; absent flags ⇒ not silenced
     silenced: !!(cur.flags && cur.flags.silence),
+    ...(u?.mem?.darkmoonTemporaryEquipment?{temporaryGrowth:Object.values(u.mem.darkmoonTemporaryEquipment).map(x=>({...x}))}:{}),
   };
 }
 
