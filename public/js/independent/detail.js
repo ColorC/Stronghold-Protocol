@@ -17,7 +17,7 @@ import { TraitGlyphs, mergeHintOf } from './hud.js';
 import { GameText, TermNotes, GearIcon } from './text.js';
 import { groupEquipment, permitsOf, isDeployed } from './model.js';
 import { TraitTexts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } from './panels.js';
-import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
+import { eligiblePiecesForEffect, hasConditionalTargets } from '../../../shared/independentEligibility.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from './targetSelection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -81,17 +81,15 @@ function OriginalCardRefs({ op, piece, linkAnchor = null }) {
 }
 
 function EffectTargets({ op, piece, state, catalog, elite = false }) {
-  if (!piece) return null;
+  const source = piece || { chessId: op?.chessId, elite, growthMode: state?.growthMode, growthLevel: 1 };
   const rules = elite ? op?.summaryElite || op?.summary || [] : op?.summary || [];
-  const conditional = rules.filter((entry) => entry.rule && (
-    ['teamForge', 'allyConditionStats'].includes(entry.rule.behavior) || entry.rule.params?.targets
-    || entry.rule.params?.match || entry.rule.params?.requiresFactionOnField));
+  const conditional = rules.filter(entry => hasConditionalTargets(entry.rule));
   if (!conditional.length) return null;
   return html`<div class="ix-effect-targets" aria-label="当前效果接收者">
     ${conditional.map((entry, index) => {
       const rule = entry.rule;
-      return html`<${EffectTargetInfo} key=${index} effect=${rule} source=${piece} state=${state} catalog=${catalog}
-        delivery=${entry.effectDelivery || (elite ? op.effectDeliveryElite : op.effectDelivery)} anchor=${`piece-${piece.uid}`} />`;
+      return html`<${EffectTargetInfo} key=${index} effect=${rule} source=${source} state=${state} catalog=${catalog}
+        delivery=${entry.effectDelivery || (elite ? op.effectDeliveryElite : op.effectDelivery)} anchor=${piece ? `piece-${piece.uid}` : `operator-${op?.chessId}`} />`;
     })}
   </div>`;
 }
@@ -101,14 +99,13 @@ function deliveryText(delivery) {
   if (!delivery || typeof delivery !== 'object') return '';
   const recipients = { self: '自身', target: '指定对象', other: '其他干员', all: '全部干员', inventory: '库存', shop: '商店', player: '玩家' };
   const who = delivery.recipient || delivery.recipients || delivery.receiver || delivery.target;
-  return [recipients[who] || who, delivery.duration || delivery.term || delivery.until, delivery.text || delivery.description || delivery.message]
+  return [delivery.recipientLabel || recipients[who] || who, delivery.durationLabel || delivery.duration || delivery.term || delivery.until, delivery.text || delivery.description || delivery.message]
     .filter((x) => typeof x === 'string' && x.trim()).join(' · ');
 }
 
 function EffectTargetInfo({ effect, source, state, catalog, delivery = null, anchor = null }) {
   const params = effect?.params || {};
-  const conditional = effect && (['teamForge', 'allyConditionStats'].includes(effect.behavior) || params.targets || params.match
-    || params.requiresFactionOnField || params.scope === 'boardonly');
+  const conditional = hasConditionalTargets(effect);
   if (!conditional) return null;
   const eligible = eligiblePiecesForEffect(effect, { pieces: state?.pieces || [], catalog, source });
   const text = deliveryText(delivery || effect.effectDelivery);
@@ -302,8 +299,8 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   const live = piece?.startStats ? { ...piece.startStats, src: 'prep' } : null;
   const hint = isShop && !slot.sold ? mergeHintOf(state, catalog, slot.id) : null;
   const buySpec=isShop?buyTargetSpec(slot,catalog):null;
-  const buyChoices=buySelection?.slot===target.slot?buySelection.choices:[];
-  const selectedBuyChoices=buySelection?.slot===target.slot?buySelection.selected:[];
+  const buyChoices=buySelection&&buySelection.slot===target.slot?buySelection.choices:[];
+  const selectedBuyChoices=buySelection&&buySelection.slot===target.slot?buySelection.selected:[];
   const startBuy=()=>{
     if(!buySpec){onBuy(target.slot,{});return;}
     const choices=buyTargetChoices(buySpec,state,catalog,target.slot);

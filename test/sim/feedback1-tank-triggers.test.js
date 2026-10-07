@@ -22,6 +22,7 @@ import { absoluteRangeKeys } from '../../server/sim/targeting.js';
 
 const CHESS = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const ds = getDefaultSource();
+const OFFICIAL_TRIGGER_ROWS=JSON.parse(fs.readFileSync(new URL('../../data/native-skill-trigger-source.json',import.meta.url),'utf8')).skillTriggerDataList;
 
 /** [normal chess id, skill id] — both records (normal + elite) of each chess. */
 const DEVIATED = [
@@ -101,7 +102,9 @@ test('data: the six deviated 重装 skills are DEFAULT and 余 S2 is SKILL_RANGE
     for (const s of c.skills || []) {
       if (isDeviated(c, s.skillId)) continue;
       if (s.trigger.rawRule === 'TAKE_DAMAGE') assert.equal(s.trigger.rule, 'TAKE_DAMAGE', `${c.chessId} ${s.skillId}`);
-      if (c.profession === 'TANK' && s.skillType === 'MANUAL' && s.trigger.rawRule !== 'CUSTOM_RANGE_SEARCH_ENEMY') assert.equal(s.trigger.rule, 'TAKE_DAMAGE', `${c.chessId} ${s.skillId}`);
+      const explicit=OFFICIAL_TRIGGER_ROWS.find(r=>r.charId===c.charId&&(r.skillIndex===s.index||r.skillIndex===-1));
+      if(explicit)assert.equal(s.trigger.rawRule,explicit.skillTriggerType, c.chessId+' '+s.skillId+' explicit native override');
+      if (c.profession === 'TANK' && s.skillType === 'MANUAL' && !explicit) assert.equal(s.trigger.rule, 'TAKE_DAMAGE', `${c.chessId} ${s.skillId}`);
     }
   }
   for (const id of both('chess_char_1_04_a')) assert.equal(CHESS[id].skills.find((s) => s.skillId === 'skchr_udflow_1').trigger.rule, 'TAKE_DAMAGE', `${id} 深巡 S1`);

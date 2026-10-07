@@ -68,24 +68,30 @@ function installDeferredRedeployGate(battle) {
 }
 
 /** Install only on independent Battle instances. Stack counts are total worn pieces, including `quantity`. */
-export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
+export function installKeywordGear(battle, { catalog, pieces = [], units = null } = {}) {
   if (!battle || typeof battle.on !== 'function') throw new TypeError('installKeywordGear requires a Battle');
   const byUid = new Map(entryArray(pieces).map((p) => [p.uid, p]));
-  const installed = [];
-  for (const unit of battle.allyUnits) {
-    if (unit.kind !== 'op') continue;
+  const installed = battle.independentKeywordInstallations ||= [];
+  const added = [];
+  for (const unit of units || battle.allyUnits) {
+    if (!units && unit.kind !== 'op') continue;
     const piece = byUid.get(unit.uid);
     if (!piece) continue;
-    for (const [gearId, group] of gearGroupsFor(piece, catalog)) installed.push({ unit, gearId, quantity: group.quantity, rec: group.rec });
+    for (const [gearId, group] of gearGroupsFor(piece, catalog)) {
+      if (installed.some(x => x.unit === unit && x.gearId === gearId)) continue;
+      const entry = { unit, gearId, quantity: group.quantity, rec: group.rec };
+      installed.push(entry); added.push(entry);
+    }
   }
 
-  const oathWearers = installed.filter((x) => x.gearId === 'oath-cover');
-  if (oathWearers.length) {
+  // Original copies created during combat join the same damage-sharing group.
+  if (!battle.independentKeywordCoverHookInstalled) {
+    battle.independentKeywordCoverHookInstalled = true;
     battle.independentPostMitigationDamage = (source, target, amount, dmg, api) => {
       if (!(amount > 0) || target?.side !== 'ally') return null;
       const ownerId = target.ownerId ?? target.ownerUnit?.ownerId;
       if (ownerId == null) return null;
-      const active = oathWearers.filter((x) => x.unit.ownerId === ownerId && live(x.unit));
+      const active = installed.filter((x) => x.gearId === 'oath-cover' && x.unit.ownerId === ownerId && live(x.unit));
       const guardOf = (x) => clamp(Number(x.rec.params.wearerGuardBase ?? 0.10) + Number(x.rec.params.wearerGuardPerPiece ?? 0.05) * (x.quantity - 1), 0, Number(x.rec.params.wearerGuardCap ?? 0.95));
       const apply = (recipient, finalAmount, useShield = true) => api.applyHpLoss(battle, source, recipient, useShield ? api.absorbShields(battle, recipient, Math.max(0, finalAmount)) : Math.max(0, finalAmount), dmg);
       if (!active.length) return null;
@@ -103,7 +109,7 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
     };
   }
 
-  for (const { unit, gearId, quantity, rec } of installed) {
+  for (const { unit, gearId, quantity, rec } of added) {
     const p = rec.params ?? {};
     const key = `independent:keywordGear:${gearId}:${unit.uid}`;
     switch (gearId) {
@@ -123,12 +129,13 @@ export function installKeywordGear(battle, { catalog, pieces = [] } = {}) {
             battle.emit('shieldLayersThreshold', { unit, gearId, threshold: state.threshold, triggerIndex: state.triggers, layersBrokenTotal: state.triggers * state.threshold });
           }
         }, { owner: unit });
-        battle.on('deploy', ({ unit: who }) => {
-          if (who !== unit) return;
+        const deployShield = () => {
           const buffKey = `${key}:layers`;
           const current = Number(unit.findBuff(buffKey)?.shieldHits ?? 0);
           battle.addBuff(unit, { key: buffKey, shieldHits: current + layers, duration: Infinity, persist: true, allowDead: true, refresh: 'replace' });
-        }, { owner: unit });
+        };
+        battle.on('deploy', ({ unit: who }) => { if (who === unit) deployShield(); }, { owner: unit });
+        if (live(unit)) deployShield();
         break;
       }
       case 'assault-oath': {

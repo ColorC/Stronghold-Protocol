@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { eligiblePiecesForEffect } from '../../shared/independentEligibility.js';
+import { eligiblePiecesForEffect, hasConditionalTargets } from '../../shared/independentEligibility.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
 
 const mkOp = (id, profession, faction, atk = 100) => ({ chessId: id, tier: 3, profession, nativeFactionTags: [faction], nativeFactions: [faction], nativeStats: { atk },
@@ -81,4 +81,24 @@ test('display projection retains normal and elite original-card text plus struct
   assert.equal(view.summaryElite[0].rule.params.targets, 'row');
   assert.equal(view.summary[0].effectDelivery.recipient, 'target');
   assert.equal(view.summaryElite[0].effectDelivery.recipient, 'all');
+});
+
+
+test('source-card target growth uses the deployed native faction and reports same-owner candidates only',()=>{
+  const effect={behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'炎',attackUnits:{normal:2,elite:4}}};
+  assert.equal(hasConditionalTargets(effect),true);
+  assert.deepEqual(ids(effect),['maker','adjacent']);
+  assert.deepEqual(ids({behavior:'darkmoonBoughtTribeTargetGrowth',params:{triggerFaction:'炎'}}),['maker','adjacent','row','bench']);
+});
+test('end-turn source effects distinguish other allies, active elites, count parameters and exact adjacent cells',()=>{
+  assert.deepEqual(ids({behavior:'darkmoonEndTurnGrowth',params:{mode:'randomOtherFaction',faction:'炎'}}),['adjacent']);
+  assert.deepEqual(ids({behavior:'darkmoonEndTurnGrowth',params:{mode:'randomDistinctFaction',targets:{normal:3,elite:3}}}),['maker','adjacent','row']);
+  const roster=pieces();roster[1].elite=true;roster[3].elite=true;
+  assert.deepEqual(ids({behavior:'darkmoonEndTurnGrowth',params:{mode:'selfIfGolden'}},roster),['adjacent']);
+  assert.deepEqual(ids({behavior:'darkmoonAdjacentGrowth',params:{}}),['adjacent']);
+});
+test('purchase-faction conditions count currently owned native members including the bench without adding identity gear',()=>{
+  const catalog=realCatalog();catalog.config.factionIdentityEquipment=false;
+  assert.deepEqual(ids({behavior:'darkmoonShopGrowth',params:{faction:'炎'}},pieces(),catalog),['maker','adjacent','bench']);
+  assert.deepEqual(ids({behavior:'darkmoonRosterTribePurchaseFunds',params:{faction:'维多利亚'}},pieces(),catalog),[]);
 });

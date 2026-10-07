@@ -7,6 +7,8 @@ import { pathToFileURL } from 'node:url';
 import { getCatalog } from '../server/modes/independent/catalog.js';
 import { cardTable } from './independent-card-table.mjs';
 import { TRAIT_WHEN } from '../server/modes/independent/summary.js';
+import { DARKMOON_COMBAT_RULES } from '../server/sim/content/independent/darkmoonCombat.js';
+import { levelBodyStats } from '../shared/independentGrowth.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DATA_DIR = path.resolve(process.env.SP_DATA_DIR || path.join(ROOT, 'data'));
@@ -17,7 +19,7 @@ const SOURCE_REFERENCE_PATH = path.resolve(process.env.SP_INDEPENDENT_SOURCE_REF
 const DEFAULT_OUTPUT = path.resolve(ROOT, 'docs/independent-mode/roster-rework-table.json');
 
 const read = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
-const clean = (v) => String(v ?? '').replace(/\r\n|\r|\n/g, ' ').replace(/\s+/g, ' ').trim();
+const clean = (v) => String(v ?? '').replace(/<[^>]*>/g, '').replaceAll('[x]', '').replace(/\r\n|\r|\n/g, ' ').replace(/\s+/g, ' ').trim();
 const ID_PATTERN = /(?:chess_(?:char|item)_|skchr_|independent:|token_\d+_)/;
 
 const gearNotes = {
@@ -28,9 +30,9 @@ const gearNotes = {
   '精准盟约': '攻击1000对800防御：一件使单次200→360；零防御无收益。40法抗伤害倍率0.60→0.68。',
   '不屈盟约': '一/二/五件概率18%/18.4%/19.6%。沿用适用退场条件和替身免费复归，不补虚构技力。',
   '爆破部署台': '一/二/五件每个范围内目标1000/1300/2200真伤。只有部署时有效。',
-  '反冲空降仓': '六本装备；部署时选合法格，优先有敌人的格，对格上敌人造成15000法术伤害，每多一件加500。科技6蕾缪安带来。',
-  '便携式融毁教学仪': '六本装备；每战限一次，指定离场时全场10000真实伤害，每多一件加3000；攻击过携带者的敌人双倍；再部署时间翻倍。科技6史尔特尔带来。',
-  '叙拉古狼嚎哨': '同一干员唯一；每发动12次普通攻击使主目标恐惧0.75秒，冷却8秒。新局由科技4拉普兰德带来。',
+  '反冲空降仓': '六本装备；部署时选合法格，优先有敌人的格，对格上敌人造成15000法术伤害，每多一件加500。',
+  '便携式融毁教学仪': '六本装备；每战限一次，指定离场时全场10000真实伤害，每多一件加3000；攻击过携带者的敌人双倍；再部署时间翻倍。',
+  '叙拉古狼嚎哨': '同一干员唯一；每发动12次普通攻击使主目标恐惧0.75秒，冷却8秒。可以从装备商店获得。',
 };
 
 function nativeSummary(chess) {
@@ -81,21 +83,58 @@ function roleBasis(op, moments) {
   return [roleText, citation, timing].filter(Boolean).join('；');
 }
 
-export function buildTable({ design, gameText, chessData, catalog, sourceReference }) {
+
+function functionalRole(op) {
+  const r=DARKMOON_COMBAT_RULES[op.sourceRefs?.darkmoon19_2?.id];
+  if(r?.retire?.fallen)return '原始复生';
+  if(r?.retire?.random||r?.retire?.token)return '退场召唤';
+  if(r?.retire?.buff)return '退场团队增益';
+  if(r?.retireMultiplier)return '重复退场效果';
+  if(r?.summonMultiplier)return '倍增召唤';
+  if(r?.echo)return '重放退场效果';
+  if(r?.aura)return '在场光环';
+  if(r?.windfury)return '连续攻击';
+  if(r?.overkill)return '超杀联动';
+  if(r?.intercept)return '拦截保护';
+  if(r?.recruitOnKill)return '击杀招募';
+  const delivery=op.effectDelivery?.normal||[];
+  return delivery.map(e=>[e.triggerLabel||e.trigger,e.recipientLabel||e.recipient,e.durationLabel||e.duration].filter(Boolean).join('／')).join('；')||'本体与关键词联动';
+}
+function levelsSummary(op,catalog) {
+  const compiled=catalog.operators[op.chessId];
+  return ['normal','elite'].map(form=>{
+    const raw=compiled.source[form==='elite'?'eliteChess':'normalChess']||compiled.source.normalChess;
+    const maximum=raw.nativeGrowth?.phases?.[raw.status?.phase??0]?.maxLevel;
+    if(!maximum)return '';
+    const base={chessId:op.chessId,elite:form==='elite',growthMode:'levels',skillIndex:raw.skill?.index??0,moduleId:'none'};
+    const a=levelBodyStats({...base,growthLevel:1},catalog,raw),b=levelBodyStats({...base,growthLevel:maximum},catalog,raw);
+    return (form==='elite'?'进阶':'普通')+'：等级1→'+maximum+'，攻击'+a.atk+'→'+b.atk+'，生命'+a.maxHp+'→'+b.maxHp+'，防御'+a.def+'→'+b.def+'，法抗'+a.res+'→'+b.res;
+  }).filter(Boolean).join('；');
+}
+function measuredPower(op,power) {
+  const measured=power?.operators?.find(x=>x.name===op.name);
+  if(!measured)return nativePowerSummary(op);
+  return measured.forms.map(f=>(f.elite?'进阶':'普通')+'：DPS '+f.dps+'，治疗量'+f.healing+'，技能发动'+f.skillActivations+'次').join('；')+'。四个静止目标，防御300、法抗30，实跑90秒；不计额外特质与装备。此场景无法单独衡量控制、保护、阻挡和经济价值。';
+}
+
+export function buildTable({ design, gameText, chessData, catalog, sourceReference, nativePower = null }) {
   const rows = [];
-  const ops = design.operators.filter((op) => op.active !== false).sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name, 'zh-CN'));
+  const activeIds=new Set(design.rules.activeRosterIds||[]);
+  const ops = design.operators.filter((op) => activeIds.size?activeIds.has(op.chessId):op.active!==false).sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name, 'zh-CN'));
   for (const op of ops) {
     const chess = chessData[op.chessId];
     const text = gameText.operators?.[op.chessId];
     if (!chess || !text) throw new Error(`${op.name}: missing canonical chess or game-text record`);
     const forms = op.modeEffects || {};
     const rules = ['normal', 'elite'].flatMap((form) => [...(forms[form]?.prep || []), ...(forms[form]?.combat || [])]);
-    const moments = [...new Set(rules.map((rule) => TRAIT_WHEN[rule.trigger]).filter(Boolean))].join('、');
+    const moments = (op.effectDelivery?.normal||[]).map(e=>[e.trigger,e.recipient,e.duration].filter(Boolean).join('→')).join('；') || [...new Set(rules.map((rule) => TRAIT_WHEN[rule.trigger]).filter(Boolean))].join('、');
     rows.push({
-      section: '干员', level: `科技${op.tier}`, name: op.name, role: op.roster || op.role,
+      section: '干员', level: `科技${op.tier}`, name: op.name, role: functionalRole(op),
       faction: (op.nativeFactionTags || []).join('、'), reference: sourceCardSummary(op.sourceRefs),
-      native: nativeSummary(chess), nativePower: nativePowerSummary(op),
-      normal: clean(text.normal), upgrade: clean(text.elite), basis: roleBasis(op, moments),
+      native: nativeSummary(chess), nativePower: measuredPower(op,nativePower),
+      sourceNormal: (op.sourceRefs?.cards||[]).map(c=>c.text).filter(Boolean).join('；'), sourceElite: (op.sourceRefs?.cards||[]).map(c=>c.textElite||c.goldenText).filter(Boolean).join('；'),
+      levels: levelsSummary(op,catalog), landing:moments,
+      normal: clean(text.normal), upgrade: clean(text.elite), basis: op.tierReason,
     });
   }
   for (const [id, badge] of Object.entries(catalog.badges)) rows.push({
@@ -149,7 +188,7 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
   const columns = [
     ['section', '内容', 95], ['level', '科技／等级', 100], ['name', '名称', 140], ['role', '主要功能', 105],
     ['faction', '原生阵营', 170], ['reference', '参考原卡', 360], ['native', '完整本体能力／获得来源', 660],
-    ['nativePower', '90秒木桩证据与限定', 440], ['normal', '普通效果', 460],
+    ['sourceNormal', '原卡普通效果', 360], ['sourceElite', '原卡金色效果', 360], ['levels', '等级成长曲线', 400], ['landing', '获得时机／对象／持续范围', 380], ['nativePower', '本体输出与功能分析', 440], ['normal', '普通效果', 460],
     ['upgrade', '进阶／重复获得', 430], ['basis', '分配与数值依据', 380],
   ].map(([key, title, width]) => ({ key, title, width, type: 'text' }));
   for (const row of rows) for (const column of columns) {
@@ -169,17 +208,18 @@ function main() {
   if (!outputInput || !path.isAbsolute(outputInput)) throw new Error(`absolute output path required: ${outputInput || '(missing)'}`);
   const output = path.resolve(outputInput);
   for (const p of [DATA_DIR, DESIGN_PATH, TEXT_PATH, CHESS_PATH, SOURCE_REFERENCE_PATH]) if (!path.isAbsolute(p)) throw new Error(`absolute source path required: ${p}`);
-  const table = buildTable({ design: read(DESIGN_PATH), gameText: read(TEXT_PATH), chessData: read(CHESS_PATH), catalog: getCatalog(), sourceReference: read(SOURCE_REFERENCE_PATH) });
+  const table = buildTable({ design: read(DESIGN_PATH), gameText: read(TEXT_PATH), chessData: read(CHESS_PATH), catalog: getCatalog(), sourceReference: read(SOURCE_REFERENCE_PATH), nativePower: read(path.join(DATA_DIR,'independent-native-power.json')) });
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, `${JSON.stringify(table, null, 2)}\n`, 'utf8');
   const counts = table.rows.reduce((out, row) => (out[row.section] = (out[row.section] || 0) + 1, out), {});
-  const roleCounts = opsRoleCounts(read(DESIGN_PATH).operators);
+  const installed=read(DESIGN_PATH);
+  const roleCounts = opsRoleCounts(installed.operators.filter(op=>installed.rules.activeRosterIds.includes(op.chessId)));
   console.log(JSON.stringify({ ok: true, output, rows: table.rows.length, columns: table.columns.length, counts, roleCounts }));
 }
 
 function opsRoleCounts(operators) {
   return operators.filter((op) => op.active !== false).reduce((out, op) => {
-    const role = op.roster || op.role || '未分类'; out[role] = (out[role] || 0) + 1; return out;
+    const role = functionalRole(op); out[role] = (out[role] || 0) + 1; return out;
   }, {});
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

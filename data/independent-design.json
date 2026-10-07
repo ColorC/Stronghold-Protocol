@@ -2796,7 +2796,31 @@
         }
       ],
       "role": "联动",
-      "inheritance": null,
+      "inheritance": {
+        "name": "赫默",
+        "gear": "医疗装置交接单",
+        "partnerFaction": "哥伦比亚",
+        "partnerMaxTier": 4,
+        "limit": "可以与科技等级不高于4的哥伦比亚干员交接，对方无需凭证。",
+        "autoGrant": true,
+        "sourceRefs": {
+          "cards": [
+            {
+              "id": "BOT_312",
+              "name": "量产型恐吓机",
+              "dbfId": 48536,
+              "tier": 3,
+              "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
+              "textElite": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
+              "goldenText": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
+              "version": "19.2.0.68600",
+              "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+              "type": "Battlegrounds"
+            }
+          ],
+          "basis": "磁力的可选设备整合提供双向装备交接；另一方无需凭证。"
+        }
+      },
       "nativeTrait": {
         "normal": "招募时可直接进入阵容；也可消耗此干员，将其退场效果附加到你选择的一名哥伦比亚友方干员，本体不进入阵容。\n退场时召唤3个作战支援单位。",
         "elite": "招募时可直接进入阵容；也可消耗此干员，将其退场效果附加到你选择的一名哥伦比亚友方干员，本体不进入阵容。\n退场时召唤3个作战支援单位。",
@@ -7987,7 +8011,32 @@
         }
       ],
       "role": "一次性工具",
-      "inheritance": null,
+      "inheritance": {
+        "name": "蛇屠箱",
+        "gear": "重装器械适配单",
+        "partnerFaction": "哥伦比亚",
+        "partnerProfession": "TANK",
+        "partnerMaxTier": 4,
+        "limit": "可以与科技等级不高于4的哥伦比亚重装干员交接，对方无需凭证。",
+        "autoGrant": true,
+        "sourceRefs": {
+          "cards": [
+            {
+              "id": "BOT_911",
+              "name": "吵吵模组",
+              "dbfId": 48993,
+              "tier": 4,
+              "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+              "textElite": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+              "goldenText": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+              "version": "19.2.0.68600",
+              "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+              "type": "Battlegrounds"
+            }
+          ],
+          "basis": "磁力的可选设备整合提供双向装备交接；另一方无需凭证。"
+        }
+      },
       "nativeTrait": {
         "normal": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名哥伦比亚友方干员永久装备坚守盟约与护盾发生器，并获得攻击与职业副属性各×1成长。\n招募获得或首次上阵时，自身永久装备嘲讽。\n招募获得或首次上阵时，自身永久装备圣盾。",
         "elite": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名哥伦比亚友方干员永久装备坚守盟约与护盾发生器，并获得攻击与职业副属性各×2成长。\n招募获得或首次上阵时，自身永久装备嘲讽。\n招募获得或首次上阵时，自身永久装备圣盾。",
@@ -27447,48 +27496,54 @@
   ],
   "permissions": [
     {
-      "name": "幽灵鲨",
-      "gear": "深海遗物托付书",
-      "limit": "可以与科技等级不高于4、阿戈尔干员交接，对方无需凭证。",
-      "autoGrant": true,
-      "partnerFaction": "阿戈尔",
+      "name": "赫默",
+      "gear": "医疗装置交接单",
+      "partnerFaction": "哥伦比亚",
       "partnerMaxTier": 4,
+      "limit": "可以与科技等级不高于4的哥伦比亚干员交接，对方无需凭证。",
+      "autoGrant": true,
       "sourceRefs": {
         "cards": [
           {
             "id": "BOT_312",
             "name": "量产型恐吓机",
-            "nameEn": "Replicating Menace",
+            "dbfId": 48536,
             "tier": 3,
+            "text": "<b>磁力</b>\n<b>亡语：</b>召唤三个1/1的微型机器人。",
+            "textElite": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
+            "goldenText": "<b>磁力</b>\n<b>亡语：</b>召唤三个2/2的微型机器人。",
             "version": "19.2.0.68600",
-            "type": "Battlegrounds",
-            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "type": "Battlegrounds"
           }
         ],
-        "basis": "磁力的设备整合转为双向交接范围；旧凭证保留，仅两名中本干员提供新凭证。"
+        "basis": "磁力的可选设备整合提供双向装备交接；另一方无需凭证。"
       }
     },
     {
-      "name": "泡泡",
+      "name": "蛇屠箱",
       "gear": "重装器械适配单",
-      "limit": "可以与科技等级不高于4、哥伦比亚、重装干员交接，对方无需凭证。",
-      "autoGrant": true,
       "partnerFaction": "哥伦比亚",
-      "partnerMaxTier": 4,
       "partnerProfession": "TANK",
+      "partnerMaxTier": 4,
+      "limit": "可以与科技等级不高于4的哥伦比亚重装干员交接，对方无需凭证。",
+      "autoGrant": true,
       "sourceRefs": {
         "cards": [
           {
             "id": "BOT_911",
             "name": "吵吵模组",
-            "nameEn": "Annoy-o-Module",
+            "dbfId": 48993,
             "tier": 4,
+            "text": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+            "textElite": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
+            "goldenText": "<b>磁力</b>\n<b>圣盾</b>\n<b>嘲讽</b>",
             "version": "19.2.0.68600",
-            "type": "Battlegrounds",
-            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
+            "type": "Battlegrounds"
           }
         ],
-        "basis": "磁力的设备整合转为双向交接范围；旧凭证保留，仅两名中本干员提供新凭证。"
+        "basis": "磁力的可选设备整合提供双向装备交接；另一方无需凭证。"
       }
     }
   ],
@@ -30797,7 +30852,7 @@
     {
       "name": "反冲空降仓",
       "level": 6,
-      "shopTier": 4,
+      "shopTier": 6,
       "effect": "每次部署时选择一个合法格子，优先选择有敌人的格子，再随机选取；格子上的敌人受到15000点法术伤害，每多装备1件增加500点。",
       "mechanism": "keywordGear",
       "keywordGearId": "recoil-airdrop",
@@ -30830,7 +30885,7 @@
     {
       "name": "便携式融毁教学仪",
       "level": 6,
-      "shopTier": 5,
+      "shopTier": 6,
       "effect": "每场战斗限一次：携带者撤退、被商人带走或执行空降撤离时，对全体敌人造成10000点真实伤害；每多装备1件增加3000点。此前攻击过携带者的敌人受到双倍伤害；携带者再部署时间翻倍。",
       "mechanism": "keywordGear",
       "keywordGearId": "portable-meltdown-trainer",
