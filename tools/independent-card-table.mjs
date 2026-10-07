@@ -56,7 +56,9 @@ function operatorRows(catalog) {
 function bringers(catalog) {
   const out = new Map();
   for (const op of Object.values(catalog.operators)) {
-    if (op.elite) continue;
+    // The table shows sources for the live roster only. Retired ordinary forms stay in saved
+    // catalog data, but must not make a current gear card look obtainable from an inactive unit.
+    if (op.elite || op.recruitable === false) continue;
     for (const r of [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat]) {
       for (const id of [...(r.params?.outputs || []).map((x) => x.id), ...(r.params?.ids || []), r.params?.id].filter(Boolean)) {
         if (!out.has(id)) out.set(id, new Set());
