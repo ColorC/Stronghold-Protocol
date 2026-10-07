@@ -648,7 +648,10 @@ test('remaining 19.2 prep adapters cause normal and golden effects only on their
       const recipients=state.pieces.filter(x=>grants(x).length);
       assert.equal(recipients.length,3,`${id} ${elite?'golden':'normal'} grows exactly three recipients`);
       assert.equal(new Set(recipients.map(x=>nativeFactions(x,catalog)[0])).size,3,`${id} chooses three distinct factions`);
-      assert.ok(recipients.every(x=>grants(x).some(([,n])=>n===units*mult)),`${id} applies its authored normal/golden amount`);
+      for(const recipient of recipients) {
+        const [recipientAttack,recipientSecondary]=darkmoonGrowthBadges(recipient,catalog);
+        assert.deepEqual(grants(recipient),[[recipientAttack,units*mult],[recipientSecondary,units*mult]].sort((a,b)=>a[0].localeCompare(b[0])),`${id} applies both authored growth outputs to the selected recipient`);
+      }
       assert.deepEqual(grants(rival),[],`${id} never crosses to another player's roster`);
     }
 
