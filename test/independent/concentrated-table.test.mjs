@@ -1,0 +1,55 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildTable } from '../../tools/independent-concentrated-table.mjs';
+import { getCatalog } from '../../server/modes/independent/catalog.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const DATA_DIR = path.resolve(process.env.SP_DATA_DIR || path.join(ROOT, 'data'));
+const read = (name) => JSON.parse(fs.readFileSync(path.join(DATA_DIR, name), 'utf8'));
+const design = read('independent-design.json');
+const gameText = read('independent-game-text.json');
+const chessData = read('chess.json');
+const sourceReference = read('independent-source-reference.json');
+const table = buildTable({ design, gameText, chessData, catalog: getCatalog(), sourceReference });
+const bySection = (name) => table.rows.filter((row) => row.section === name);
+
+test('concentrated table cites original cards, complete native text and probe limits', () => {
+  assert.equal(table.columns.length, 11);
+  assert.equal(bySection('干员').length, 101);
+  assert.equal(bySection('七人阵容').length, 5);
+  assert.ok(table.rows.filter((row) => row.section !== '敌人').every((row) => row.reference && row.reference !== '原卡来源待补'));
+  assert.ok(bySection('干员').every((row) => row.nativePower.includes('90秒静止木桩') && row.nativePower.includes('不等同通用强度')));
+  assert.ok(table.rows.every((row) => !/(?:chess_(?:char|item)_|skchr_|independent:|token_\d+_|single_0_0|single_800_40|four_0_0|[0-9a-f]{40})/i.test(Object.values(row).join(' '))));
+
+  const matterhorn = bySection('干员').find((row) => row.name === '角峰');
+  const native = chessData[design.operators.find((op) => op.name === '角峰').chessId];
+  for (const skill of native.skills) assert.ok(matterhorn.native.includes(skill.desc));
+  for (const talent of native.talents) assert.ok(matterhorn.native.includes(talent.desc));
+
+  const warbands = bySection('七人阵容');
+  for (const row of warbands) {
+    const archetype = sourceReference.archetypes.find((item) => item.name === row.name);
+    assert.ok(archetype);
+    assert.equal(archetype.operators.length, 7);
+    for (const member of archetype.operators) assert.ok(row.native.includes(member));
+    assert.ok(row.basis.includes(archetype.chain));
+    assert.ok(row.reference.includes('；'));
+  }
+});
+
+test('new games show only the two active auto-issued handover permits', () => {
+  const permits = bySection('交接凭证');
+  assert.deepEqual(permits.map((row) => [row.name, row.level]).sort(), [
+    ['深海遗物托付书', '科技3'], ['重装器械适配单', '科技4'],
+  ]);
+  assert.ok(permits.every((row) => row.normal.includes('交出方或接收方') && row.upgrade.includes('无需凭证')));
+  const wolf = table.rows.find((row) => row.name === '叙拉古狼嚎哨');
+  assert.match(wolf.basis, /12次普通攻击.*0\.75秒.*8秒/);
+  const melt = table.rows.find((row) => row.name === '便携式融毁教学仪');
+  const airdrop = table.rows.find((row) => row.name === '反冲空降仓');
+  assert.match(melt.basis, /科技6史尔特尔带来/);
+  assert.match(airdrop.basis, /科技6蕾缪安带来/);
+});
