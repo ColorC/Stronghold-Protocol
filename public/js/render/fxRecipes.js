@@ -679,8 +679,8 @@ function blkkgtSkill(fx, c) {
       c.view.setOriginalVfxHidden?.(true);
       // Raw prefab evidence: start_01/start_02/end have _spawnLocation 5
       // (ground), while start_03/04 are owner-held (_spawnLocation 8/11) and
-      // explicitly request mount types 5/9.  The latter resolve to the two
-      // authored hand-weapon bones in the Blakk Spine skeleton.
+      // explicitly request mount types 5/9.  The two hand-weapon bones are
+      // preview candidates only; the numeric enum mapping remains unresolved.
       groundMount(fx, c.view, 'blkkgt_skill_03_start_01', 0, group);
       fx.markOriginalVfxProcedural?.('blkkgt_skill_03_start_02');
       fx.playOriginalGroundFrame({ followId: c.view.id, group, life: 1.6 });
@@ -721,6 +721,8 @@ function blkkgtFx(fx, c, next) {
     const owner = c.extra?.id != null ? fx._viewOf(c.extra.id) : c.unit;
     if (owner) {
       groundMount(fx, owner, 'blkkgt_skill_03_end');
+      fx.markOriginalVfxUnresolved?.('blkkgt_skill_03_start_03');
+      fx.markOriginalVfxUnresolved?.('blkkgt_skill_03_start_04');
       sourceMount(fx, owner, 'blkkgt_skill_03_start_03', 0.035, { anchor: 'bone', bone: 'F_R_Handweapon' });
       sourceMount(fx, owner, 'blkkgt_skill_03_start_04', 0.07, { anchor: 'bone', bone: 'F_L_Handweapon' });
     }
