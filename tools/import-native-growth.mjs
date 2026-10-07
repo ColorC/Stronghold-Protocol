@@ -6,14 +6,19 @@ import { existsSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { safeName } from './assets/sources.mjs';
 import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList } from './build-data.mjs';
-import { NATIVE_SKILL_SUPPORT } from '../server/sim/content/newnativekits.js';
+import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT } from '../server/sim/content/newnativekits.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GIT_COMMON = resolve(execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8' }).trim());
 const CANONICAL_ROOT = resolve(GIT_COMMON, '..');
 const SOURCE_REVISION = 'a550f5e048bb94e7cdefc6eb97a4091f0c4c7add';
 const SOURCE_URL = `https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/${SOURCE_REVISION}/zh_CN/gamedata/excel/character_table.json`;
+const IMAGE_REVISION = 'd89e2600c7214e13ab1042a616a9f690f7f5dd95';
+const SPINE_REVISION = 'd0b5af0b004b044d322397ce5ae79632b6d9fcdd';
+const NO_E2_ART = new Set(['char_240_wyvern', 'char_4000_jnight']);
+const NO_SPINE_BACK = new Set(['char_4045_heidi']);
 const SELECTED = Object.freeze({
   columbia: ['char_240_wyvern','char_484_robrta','char_235_jesica','char_440_pinecn','char_366_acdrop','char_108_silent','char_107_liskam','char_242_otter','char_128_plosis','char_4191_tippi','char_451_robin','char_4048_doroth','char_150_snakek','char_202_demkni','char_264_f12yin','char_1034_jesca2'],
   victoria: ['char_4162_cathy','char_494_vendla','char_220_grani','char_4017_puzzle','char_155_tiger','char_388_mint','char_4040_rockr','char_4045_heidi','char_154_morgan','char_4039_horn','char_222_bpipe','char_112_siege','char_4072_ironmn','char_1019_siege2'],
@@ -26,17 +31,18 @@ function parseArgs(argv) {
   const o = {
     characterTable: null,
     chess: resolve(ROOT, 'data/chess.json'),
+    assets: resolve(ROOT, 'data/assets.json'),
     report: resolve(CANONICAL_ROOT, 'runtime/growth-destination-20261008/native-import/growth-import-receipt.json'),
     write: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--help' || k === '-h') {
-      console.log('usage: node tools/import-native-growth.mjs --character-table <file> [--skill-table <file>] [--range-table <file>] [--chess <file>] [--report <file>] [--write]');
+      console.log('usage: node tools/import-native-growth.mjs --character-table <file> [--skill-table <file>] [--range-table <file>] [--chess <file>] [--assets <file>] [--report <file>] [--write]');
       process.exit(0);
     }
     if (k === '--write') { o.write = true; continue; }
-    if (['--character-table','--skill-table','--range-table','--chess','--report'].includes(k)) {
+    if (['--character-table','--skill-table','--range-table','--chess','--assets','--report'].includes(k)) {
       const v = argv[++i];
       if (!v || v.startsWith('--')) throw new Error(`${k} requires a path`);
       o[k.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = resolve(v);
@@ -76,6 +82,46 @@ function nativeGrowth(char) {
   };
 }
 
+function nativeAssetSources(charId, char, skills) {
+  const id = charId;
+  const imageBase = `https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/${IMAGE_REVISION}`;
+  const spineBase = `https://raw.githubusercontent.com/fexli/ArknightsResource/${SPINE_REVISION}/spine/${id}/${id}`;
+  const assets = {
+    avatar: `${imageBase}/avatar/${id}.png`,
+    portrait: `${imageBase}/portrait/${id}_1.png`,
+    skillIcons: skills.map((skill) => ({
+      skillId: skill.skillId, iconId: skill.iconId || skill.skillId,
+      url: `${imageBase}/skill/skill_icon_${encodeURIComponent(skill.iconId || skill.skillId)}.png`,
+    })),
+    spine: {
+      front: Object.fromEntries(['skel', 'atlas', 'png'].map((extension) => [extension, `${spineBase}/Front/${id}.${extension}`])),
+      back: NO_SPINE_BACK.has(id) ? null : Object.fromEntries(['skel', 'atlas', 'png'].map((extension) => [extension, `${spineBase}/Back/${id}.${extension}`])),
+    },
+  };
+  if (!NO_E2_ART.has(id)) {
+    assets.avatarE2 = `${imageBase}/avatar/${id}_2.png`;
+    assets.portraitE2 = `${imageBase}/portrait/${id}_2.png`;
+  }
+  return assets;
+}
+
+function addNativeAssets(manifest, id, char, skills) {
+  const hasE2 = !NO_E2_ART.has(id);
+  const current = manifest.chars[id] || {};
+  current.avatar = `/assets/char/avatar/${id}.png`;
+  current.portrait = `/assets/char/portrait/${id}_1.png`;
+  if (hasE2) {
+    current.avatarE2 = `/assets/char/avatar/${id}_2.png`;
+    current.portraitE2 = `/assets/char/portrait/${id}_2.png`;
+  }
+  manifest.chars[id] = current;
+  for (const skill of skills) {
+    const iconId = skill.iconId || skill.skillId;
+    manifest.skills[iconId] ||= `/assets/skill/${safeName(iconId)}.png`;
+    manifest.skillsById[skill.skillId] = iconId;
+  }
+}
+
 function nativeChessDefs(charId, char, nationId, ctx, sequence) {
   const defs = [];
   const levels = [
@@ -89,17 +135,19 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
     const attrs = interpolateAttrs(char, phase, level);
     const stats = statsFrom(attrs);
     const trait = traitRecord(ctx, char, phase, level, [], `${stem}_${x.suffix}`);
+    const configuredSkillId = NATIVE_DEFAULT_SKILL_IDS[charId] || null;
     const skills = (char.skills || []).map((s, index) => {
       if (!s?.skillId) return null;
       const rec = buildSkill(ctx, s.skillId, x.skillLevel, null, `${stem}_${x.suffix}`);
-      return rec ? { ...rec, index, isDefault: index === 0, overrideTokenKey: s.overrideTokenKey || null } : null;
+      return rec ? { ...rec, index, isDefault: s.skillId === configuredSkillId, overrideTokenKey: s.overrideTokenKey || null } : null;
     }).filter(Boolean);
-    const skill = skills.find(s => s.index === 0) || skills[0] || null;
+    const skill = configuredSkillId ? skills.find((s) => s.skillId === configuredSkillId) ?? null : null;
     const tokenIds = [...new Set([
       ...Object.keys(char.displayTokenDict || {}),
       ...(char.skills || []).map(s => s?.overrideTokenKey).filter(Boolean),
       ...(char.talents || []).flatMap(t => (t.candidates || []).map(c => c?.tokenKey).filter(Boolean)),
     ])];
+    const assetSources = nativeAssetSources(charId, char, skills);
     const supportedSkillIds = (NATIVE_SKILL_SUPPORT[charId] || []).filter((id) => skills.some((skill) => skill.skillId === id));
     const unsupportedSkillIds = skills.map((skill) => skill.skillId).filter((id) => !supportedSkillIds.includes(id));
     const baseId = `${stem}_${x.suffix}`;
@@ -116,11 +164,18 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
       stats, immunities: immunitiesOf(attrs), rangeId: char.phases[phase].rangeId || null,
       rangeGrid: rangeGrid(ctx, char.phases[phase].rangeId), ...trait.classify,
       trait: trait.trait, skill, skills,
-      talents: baseTalentList(ctx, char, phase, level, baseId), tokens: tokenIds, module: null, assets: null,
+      talents: baseTalentList(ctx, char, phase, level, baseId), tokens: tokenIds, module: null,
+      assets: {
+        avatar: `${charId}${x.suffix === 'b' && !NO_E2_ART.has(charId) ? '_2' : ''}`,
+        portrait: `${charId}_${x.suffix === 'b' && !NO_E2_ART.has(charId) ? '2' : '1'}`,
+        spine: charId, skillIcon: skill?.iconId ?? null,
+      },
       nativeGrowth: nativeGrowth(char),
       nativeImport: {
         status: 'hidden-pending-native-kit', playable: false,
         sourceNativeSkillIds: skills.map((s) => s.skillId), supportedSkillIds, unsupportedSkillIds, tokenIds,
+        defaultLoadout: skill ? { skillIndex: skill.index, skillId: skill.skillId, source: 'explicit native skill registry' } : null,
+        assetSources,
         source: { characterTableUrl: SOURCE_URL, revision: SOURCE_REVISION, skillReferences: skills.map((s) => `https://prts.wiki/w/${encodeURIComponent(char.name)}`) },
       },
     });
@@ -154,6 +209,7 @@ function computeCandidates(charTable, chess) {
       candidateAlreadyImported,
       importStatus: inPool ? 'existing-pool-growth-attached' : candidateAlreadyImported ? 'hidden-native-candidate-already-imported' : 'source-backed-candidate-needs-native-battle-kit',
       skillIds: (c.skills || []).map((s) => s?.skillId).filter(Boolean),
+      assetSources: nativeAssetSources(charId, c, (c.skills || []).map((skill) => ({ skillId: skill?.skillId, iconId: skill?.iconId })).filter((skill) => skill.skillId)),
       tokenIds: [...new Set([
         ...Object.keys(c.displayTokenDict || {}),
         ...(c.skills || []).map((s) => s?.overrideTokenKey).filter(Boolean),
@@ -163,6 +219,11 @@ function computeCandidates(charTable, chess) {
         ? { status: 'existing-upstream-definition-not-changed', supportedSkillIds: [], needsFocusedKitAudit: (c.skills || []).map(s => s?.skillId).filter(Boolean) }
         : {
           status: 'hidden-until-every-native-skill-and-token-is-supported',
+          defaultLoadout: (() => {
+            const skillId = NATIVE_DEFAULT_SKILL_IDS[charId];
+            const skillIndex = (c.skills || []).findIndex((skill) => skill?.skillId === skillId);
+            return skillIndex < 0 ? null : { skillIndex, skillId, source: 'explicit native skill registry' };
+          })(),
           supportedSkillIds: (NATIVE_SKILL_SUPPORT[charId] || []).filter((id) => (c.skills || []).some((s) => s?.skillId === id)),
           unsupportedSkillIds: (c.skills || []).map((s) => s?.skillId).filter((id) => !(NATIVE_SKILL_SUPPORT[charId] || []).includes(id)),
           sourceReferences: [`https://prts.wiki/w/${encodeURIComponent(c.name)}`],
@@ -180,7 +241,9 @@ export async function runImport(opts) {
   const skillTable = JSON.parse(await readFile(opts.skillTable, 'utf8'));
   const rangeTable = JSON.parse(await readFile(opts.rangeTable, 'utf8'));
   const chess = JSON.parse(await readFile(opts.chess, 'utf8'));
+  const assets = JSON.parse(await readFile(opts.assets, 'utf8'));
   const updated = structuredClone(chess);
+  const updatedAssets = structuredClone(assets);
   const ctx = { skillTable, rangeTable, charTable, ac: { skillRangeDict: {}, skillTriggerDataList: {} } };
   let attached = 0;
   const missingIds = [];
@@ -190,15 +253,32 @@ export async function runImport(opts) {
     if (!c || c.isNotObtainable) { missingIds.push(rec.charId); continue; }
     assertCurve(c, rec.charId);
     rec.nativeGrowth = nativeGrowth(c);
+    if (rec.chessType === 'NATIVE_IMPORT_CANDIDATE') addNativeAssets(updatedAssets, rec.charId, c, rec.skills || []);
     if (rec.chessType === 'NATIVE_IMPORT_CANDIDATE') {
       const sourceNativeSkillIds = (rec.skills || []).map((skill) => skill?.skillId).filter(Boolean);
       const supportedSkillIds = (NATIVE_SKILL_SUPPORT[rec.charId] || []).filter((id) => sourceNativeSkillIds.includes(id));
+      const defaultSkillId = NATIVE_DEFAULT_SKILL_IDS[rec.charId] || null;
+      if (defaultSkillId && !supportedSkillIds.includes(defaultSkillId)) throw new Error(`${rec.charId}: selected native loadout ${defaultSkillId} has no complete kit`);
+      rec.skills = (rec.skills || []).map((skill) => ({ ...skill, isDefault: skill.skillId === defaultSkillId }));
+      rec.skill = defaultSkillId ? rec.skills.find((skill) => skill.skillId === defaultSkillId) ?? null : null;
+      const e2Art = !NO_E2_ART.has(rec.charId);
+      rec.assets = {
+        avatar: `${rec.charId}${rec.isGolden && e2Art ? '_2' : ''}`,
+        portrait: `${rec.charId}_${rec.isGolden && e2Art ? '2' : '1'}`,
+        spine: rec.charId, skillIcon: rec.skill?.iconId ?? null,
+      };
       rec.nativeImport = {
         ...(rec.nativeImport || {}),
         status: 'hidden-pending-native-kit', playable: false, sourceNativeSkillIds, supportedSkillIds,
         unsupportedSkillIds: sourceNativeSkillIds.filter((id) => !supportedSkillIds.includes(id)),
+        defaultLoadout: (() => {
+          const skillId = defaultSkillId;
+          const skill = (rec.skills || []).find((item) => item.skillId === skillId);
+          return skill ? { skillIndex: skill.index, skillId, source: 'explicit native skill registry' } : null;
+        })(),
         tokenIds: rec.tokens || [],
         source: { characterTableUrl: SOURCE_URL, revision: SOURCE_REVISION, skillReferences: sourceNativeSkillIds.map(() => `https://prts.wiki/w/${encodeURIComponent(c.name)}`) },
+        assetSources: nativeAssetSources(rec.charId, c, rec.skills || []),
       };
     }
     attached++;
@@ -229,6 +309,7 @@ export async function runImport(opts) {
     },
     importer: { path: resolve(ROOT, 'tools/import-native-growth.mjs'), projectCurveFunctions: resolve(ROOT, 'tools/build-data.mjs'), algorithm: 'native phase keyframes + tools/build-data.mjs interpolateAttrs/statsFrom' },
     targetChess: opts.chess,
+    targetAssets: opts.assets,
     currentPool: {
       sourceChessDefinitions: Object.values(chess).filter((c) => c.chessType !== 'NATIVE_IMPORT_CANDIDATE').length,
       previouslyImportedHiddenCandidateDefinitions: Object.values(chess).filter((c) => c.chessType === 'NATIVE_IMPORT_CANDIDATE').length,
@@ -247,8 +328,24 @@ export async function runImport(opts) {
     battleFixtures: [
       { charId: 'char_235_jesica', skillId: 'skchr_jesica_1', case: 'attack-recovery next-hit multiplier', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
       { charId: 'char_235_jesica', skillId: 'skchr_jesica_2', case: 'duration, ATK% and physical/arts dodge', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
+      { charId: 'char_240_wyvern', skillId: 'skchr_wyvern_1', case: 'DP charge command, ATK buff and source talent', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
     ],
     tokenAudit: { importedTokenDefinitions: [], unresolvedTokenIds: candidates.filter(c => !c.inCurrentChess).flatMap(c => c.tokenIds.map(tokenId => ({ charId: c.charId, tokenId }))) },
+    assetAudit: {
+      newlyIndexedCharacters: candidates.filter((candidate) => !candidate.inCurrentChess).map((candidate) => candidate.charId),
+      existingImageManifestEntries: Object.values(chess).filter((c) => c.chessType === 'NATIVE_IMPORT_CANDIDATE').length,
+      localAssetPaths: 'data/assets.json; candidate URL provenance is retained per nativeImport.assetSources; public/assets downloads remain pending',
+      imageSourceRevision: IMAGE_REVISION, spineSourceRevision: SPINE_REVISION,
+      noE2Artwork: [...NO_E2_ART], noSpineBack: [...NO_SPINE_BACK],
+      sourceHttpChecks: {
+        method: 'HEAD',
+        avatar: { checked: 34, http200: 34 }, portraitE1: { checked: 34, http200: 34 }, skillIcons: { checked: 74, http200: 74 },
+        avatarE2: { checked: 32, http200: 32, absentFromPinnedManifest: [...NO_E2_ART] },
+        portraitE2: { checked: 32, http200: 32, absentFromPinnedManifest: [...NO_E2_ART] },
+        spineFrontFiles: { checked: 102, http200: 102 },
+        spineBackFiles: { checked: 102, http200: 99, missing: [{ charId: 'char_4045_heidi', files: ['skel', 'atlas', 'png'], httpStatus: 404 }] },
+      },
+    },
     status: opts.write ? 'written' : 'dry-run',
   };
   if (opts.write) {
@@ -256,6 +353,10 @@ export async function runImport(opts) {
     const tmp = `${opts.chess}.tmp-${process.pid}`;
     await writeFile(tmp, text);
     await rename(tmp, opts.chess);
+    const assetText = JSON.stringify(updatedAssets) + '\n';
+    const assetTmp = `${opts.assets}.tmp-${process.pid}`;
+    await writeFile(assetTmp, assetText);
+    await rename(assetTmp, opts.assets);
     await mkdir(dirname(opts.report), { recursive: true });
     await writeFile(opts.report, JSON.stringify(report, null, 2) + '\n');
   }

@@ -9,6 +9,8 @@ const chessData = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', im
 const id = 'chess_native_char_235_jesica_a';
 const record = chessData[id];
 const normalized = new DataSource({ chess: { [id]: record } }, getDefaultSource()).getChess(id);
+const vanillaId = 'chess_native_char_240_wyvern_a';
+const vanillaRecord = chessData[vanillaId];
 
 test('native Jessica S1: native blackboard powers attack-recovery next-hit multiplier in battle', () => {
   assert.ok(record?.nativeGrowth?.phases?.length);
@@ -25,11 +27,30 @@ test('native Jessica S1: native blackboard powers attack-recovery next-hit multi
   const unit = h.unit(id);
   h.run(8);
   assert.ok(unit.skill.activations > 0, 'AUTO attack-recovery skill activates');
+  assert.ok(Math.abs(unit.s.aspd - (unit.base.aspd + 6)) < 1e-8, 'native first talent ASPD applies');
   const enemy = h.enemy('enemy_dummy');
   const hits = h.eventsOf('dmg').filter((event) => event[1] === enemy.id && event[4] === unit.id);
   assert.ok(hits.length >= 5);
   const expected = unit.s.atk * 1.85;
   assert.ok(hits.some((event) => Math.abs(event[2] - expected) <= 1), `expected an S1 hit near ${expected}, got ${hits.map((event) => event[2])}`);
+  h.invariants();
+});
+
+test('native Vanilla: first talent ATK and charge-command DP/ATK skill execute from native blackboards', () => {
+  const data = new DataSource({
+    chess: { [vanillaId]: vanillaRecord },
+    enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) },
+  }, getDefaultSource());
+  const def = data.getChess(vanillaId);
+  assert.equal(def.skill.id, 'skchr_wyvern_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: vanillaId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
+  h.run(24);
+  const unit = h.unit(vanillaId);
+  assert.ok(unit.skill.activations > 0);
+  assert.equal(unit.skill.active, true);
+  assert.ok(Math.abs(unit.s.atk - unit.base.atk * 1.28) < 1e-5, '8% source talent and 20% source skill buff are active');
+  assert.ok(h.eventsOf('fx').some((event) => event[1] === 'dp' && event[4].n === 6), 'native source cost BB grants 6 DP on skill start');
   h.invariants();
 });
 
