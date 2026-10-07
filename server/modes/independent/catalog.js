@@ -12,6 +12,7 @@ const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
 
 const BADGE_IDS = Object.freeze({
+  伤害徽章: 'damage',
   攻击徽章: 'precision', 攻速徽章: 'agility', 生命徽章: 'vitality', 防御徽章: 'defense',
   攻击加成徽章: 'assault', 技力徽章: 'recovery', 法抗徽章: 'arcane', 初始技力徽章: 'foresight',
   闪避徽章: 'miracle', 回复徽章: 'investor', 生命加成徽章: 'unyielding', 治疗徽章: 'harmony',
@@ -143,7 +144,7 @@ const PRIZE_MECHANISMS = Object.freeze({
   应急营养补给: ['grantItems', { outputs: [{ id: 'precision', quantity: 3 }, { id: 'vitality', quantity: 3 }] }],
   额外采购配额: ['grantItems', { outputs: [{ id: 'chess_item_1_03_e_a', quantity: 2 }] }],
   新人征调令: ['recruitOffer', { tier: 1, elite: false, choices: 3, applyGainTrait: true }],
-  全队战备支援: ['grantItemsPerPiece', { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], cap: 8 }],
+  全队战备支援: ['grantAllOperators', { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], cap: 8 }],
   标准战备升级: ['futureShopEquipment', { id: 'vitality', quantity: 1, shopChessOnly: true, currentUnclaimed: true, noDuplicateOnFreeze: true }],
   紧急情报更新: ['freeRefreshes', { count: 3, expires: 'prepEnd' }],
   便携锻造站: ['grantGear', { gearId: 'rhodes-portable-forge' }],
@@ -251,6 +252,10 @@ export function getCatalog(data = getData(), design = DESIGN) {
 
   const badges = keyed(design.badges, (x) => BADGE_IDS[x.name], (x, id) => ({ ...clone(x), id, kind: 'badge', sourceId: null }));
   const equipment = Object.create(null);
+  equipment['growth-training-record'] = { id: 'growth-training-record', sourceId: 'growth-training-record',
+    name: '训练记录', level: 1, kind: 'equipment', mechanism: 'growthTraining', params: { levels: 1 },
+    effect: '使用后，目标干员的原生成长等级提升一级；属性按该干员的成长曲线计算。',
+    available: true, inheritable: false, unique: false, availableModes: ['levels'] };
   for (const item of design.legacy || []) {
     const canonicalId = STOPPED_LEGACY_NAMES.has(item.oldName) ? IDENTITY_CANONICAL : item.sourceId;
     const upstreamEliteId = item.sourceId.endsWith('_a') ? `${item.sourceId.slice(0, -2)}_b` : null;

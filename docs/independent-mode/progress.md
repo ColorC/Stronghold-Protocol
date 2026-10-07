@@ -65,3 +65,13 @@
 2026-10-07：五套普通/进阶实际联动链通过，101名两种原生形态202场无机制错误。Victoria按原生阵营修正凯瑟琳1与刺玫1，安洁莉娜按Nomi中立引擎；原始召唤物复制保持精确白值。具名来源消失的十概念装备退出新发放，旧持有兼容。文档两块同步通过，最终集中表186行11列。最终30局公开动作验收休闲15/15、标准14轮8/15完成，均无机制错误；回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/trait-revision-20261007/whole-balance-final/runner-receipt.json。全仓/新客户端编译与浏览器/发布尚待收口。
 
 2026-10-08：本轮全部收口。原生核心版86f9475eb059f6d0fd8d205f90cb1c81f1857486，全仓4402/4390pass/0fail/12skip；202真实形态及五阵容十链通过。apex不可变CF部署fb272973-7401-42e9-ba64-70b4bd34d934、VPS同版规则design/text override续修后两执行模式真实Chrome通过；Workshop release18e9d981保留417VFX、PID499088两模式通过。集中表186x11共2046cells回读同值，总览同一card更新并核对正文，旧附件保留、新桌面与touch图上传。3个任务WT原生收回，317自生成QA文件确认producer后保全至独立tmp，archive native tags保留，未删玩家或QA存档。总回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/trait-revision-20261007/final-receipt.json；公网发布 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/trait-revision-20261007/publication-86f9475e/publication-final-receipt.json。
+
+## 2026-10-08 成长、原卡目标与完整游玩讲解
+
+用户追加要求两种成长方案、真实阵营与重排科技/比例、原卡效果面板、条件名单、自然重叠小字号跳字、发现头像裁切修复，并明确由Agent自行完整游玩录制讲解及录制中修错。已创建无限定token预算的active goal，保留改前标签workshop-before-growth-destination-20261008。当前源码基线7d9c82dc；并行源树都先no-checkout再稀疏检出，未复制runtime/玩家数据。
+
+原卡101岗位映射正式草案 data/independent-roster-plan.json：哥伦比亚机械16、维多利亚海盗14、炎元素12、卡西米尔龙13、叙拉古野兽14，32通用支持仍保留真实阵营；101原卡与101不同名字完整匹配。科技还需真实原生能力与功能校准，未以草案宣称已上线。新原生内容仅完整实现/测试者入池。
+
+已修蒂比原生必闪只发视觉fx不发dodge事件（tier2.js），并补independent actor解析；普通和精锐真实原生技能测试2/2通过。UI首批a9e0281268222c4ca003b67f8dcf30422a25cb8d、跳字1e54350637cf9e930f5554a31ff50a74192c5976已产出，待root复核融合。研究原始表版本a550f5e048bb94e7cdefc6eb97a4091f0c4c7add含429可获取对象/1236成长phase。审计暂存E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/growth-destination-20261008/audit/gain-destinations.json与native-growth-factions.json；前者native garrison附录不构成炉石对齐依据，正式判断按具名炉石text与实际执行。
+
+后续：root完成真正等级模型与装备固定落点/期限；native-roster负责原生导入与真实技能/资源；darkmoon-blueprints实现每具名原卡的结构化机制；growth-ui接记录真实DOM/画布及动作时间、介绍播放器，发现布局纳入实际浏览器；全量因果测试、完整游玩、发布/表格回读及worktree保全收尾。

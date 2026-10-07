@@ -3,7 +3,7 @@ import { tavernFactions as sharedTavernFactions, nativeBodyStats, nativeRecord }
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
-const ALL_BADGES = Object.freeze(['precision','agility','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
+const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
 const REPEATABLE_BADGE_FORGES = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });

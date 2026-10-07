@@ -126,7 +126,7 @@ export function createIndependentHttp({ data, directory }) {
           reply(res, 201, { ok: true, id, rawState: body.rawState });
           return true;
         }
-        const state = createSession({ seed: body.seed, difficulty: body.difficulty, roundLimit: body.roundLimit, ...definitions() });
+        const state = createSession({ seed: body.seed, difficulty: body.difficulty, roundLimit: body.roundLimit, growthMode: body.growthMode, ...definitions() });
         const id = randomUUID(); await save(id, state); reply(res, 201, packet(id, state)); return true;
       }
       const parts = relative.split('/');

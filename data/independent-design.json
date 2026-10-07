@@ -21625,6 +21625,35 @@
         ],
         "basis": "参考此原卡的属性、关键词或联动主干，按方舟伤害/技力/部署机制分解。"
       }
+    },
+    {
+      "name": "伤害徽章",
+      "shopTier": 1,
+      "level": 1,
+      "effect": "每枚使造成伤害提高2%，与技能及天赋的伤害加成在同一乘区加算。",
+      "stat": "damageDealtPercent",
+      "value": 0.02,
+      "note": "可重复装备。",
+      "inheritable": true,
+      "upgrade": null,
+      "slotCost": 1,
+      "basic": true,
+      "unique": false,
+      "regularProduction": true,
+      "sourceRefs": {
+        "cards": [
+          {
+            "id": "BGS_082",
+            "name": "展馆茶杯",
+            "nameEn": "Menagerie Mug",
+            "tier": 2,
+            "version": "19.2.0.68600",
+            "type": "Battlegrounds",
+            "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json"
+          }
+        ],
+        "basis": "参考此原卡的属性、关键词或联动主干，按方舟伤害/技力/部署机制分解。"
+      }
     }
   ],
   "legacy": [
@@ -24746,8 +24775,8 @@
     {
       "stage": "起步",
       "name": "全队战备支援",
-      "effect": "领取时，按本方场上干员数量，为每名干员锻造1件一级攻击徽章和1件一级生命徽章，放入装备库存；最多按八名干员计算，由玩家分配。",
-      "intent": "铺场出口；不自动把装备塞进满槽干员。",
+      "effect": "领取时，直接为场上每名干员装备1枚攻击徽章和1枚生命徽章，收益固定在各自干员身上。",
+      "intent": "对应暴风城之力的全体随从永久增益；不生成可重新分配的手牌资源。",
       "referenceCardId": "BGS_Treasures_007",
       "referenceBuild": "68600",
       "historicalTier": 1,
@@ -25513,7 +25542,15 @@
           "bossHpMul": 0.9
         }
       ]
-    }
+    },
+    "defaultGrowthMode": "badges",
+    "growthModes": [
+      "badges",
+      "levels"
+    ],
+    "levelsPerBadge": 1,
+    "growthLevelStart": 1,
+    "growthLevelCap": "native phase maxLevel"
   },
   "check": {
     "pass": true,

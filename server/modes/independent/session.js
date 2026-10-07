@@ -11,6 +11,7 @@ import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, normalizeGearF
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { shopCarryApplies } from './warbandPrep.js';
+import { GROWTH_MODES, operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
 
@@ -184,6 +185,7 @@ function gainChess(state, catalog, chessId, extra = {}) {
   if (!extra.poolTaken) { if (!stock?.left) throw new Error('SOLD_OUT'); stock.left--; }
   const uid = `p${state.nextUid++}`; const sourceChess = def.source?.normalChess || {};
   const piece = { uid, chessId, elite: false, row: null, col: null, dir: 'RIGHT', skillIndex: Number(sourceChess.skill?.index ?? def.defaultSkillIndex ?? 0), moduleId: 'none', equipment: [], attachments: [], nativeState: { preferences: { productionBadge: 'precision', factionPriority: Object.values(TAVERN_FACTIONS) } }, bodyPenaltyApplied: false, poolCopies: extra.poolCopies ?? 1 };
+  if (state.growthMode === 'levels') { piece.growthMode = 'levels'; piece.growthLevel = 1; operatorGrowthInfo(piece, catalog); }
   ensurePermit(piece, catalog);
   state.pieces.push(piece); state.counters.gained = (state.counters.gained || 0) + 1; addTotal(state, 'gained');
   return piece;
@@ -277,7 +279,12 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
     }
   };
   for (const p of group) if (p !== survivor) mergeMarkers(survivor.nativeState ||= {}, p.nativeState);
+  const combinedGrowth = 1 + group.reduce((sum, p) => sum + Math.max(0, Number(p.growthLevel || 1) - 1), 0);
   survivor.chessId = op.eliteChessId; survivor.elite = true; addTotal(state, 'elites'); survivor.equipment = worn; survivor.attachments = keptAttachments;
+  if (state.growthMode === 'levels') {
+    survivor.growthMode = 'levels'; survivor.growthLevel = combinedGrowth;
+    survivor.growthLevel = operatorGrowthInfo(survivor, catalog).level;
+  }
   survivor.bodyPenaltyApplied = penaltyApplied;
   survivor.poolCopies = copies;
   for (const p of group) if (p !== survivor) state.pieces.splice(state.pieces.indexOf(p), 1);
@@ -338,13 +345,15 @@ export function createSession(options = {}) {
   if (!['FUNNY', 'NORMAL', 'HARD', 'ABYSS'].includes(difficulty)) throw new Error('BAD_DIFFICULTY');
   const roundLimit = Number(options.roundLimit || (difficulty === 'FUNNY' ? 9 : 14));
   if (![9, 14, 15].includes(roundLimit)) throw new Error('BAD_ROUND_LIMIT');
+  const growthMode = options.growthMode ?? catalog.config?.defaultGrowthMode ?? 'badges';
+  if (!GROWTH_MODES.includes(growthMode)) throw new Error('BAD_GROWTH_MODE');
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) >>> 0 : 1;
   const rng = createRng(seed); const gd = new GameData(data, modeIdFor('solo', difficulty.toLowerCase()));
   const income = baseIncomeFor(1, gd, catalog);
   // New sessions include all real factions. Existing saves may still carry openFactions for legacy decoding.
   const openFactions = null;
   const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
-    difficulty, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
+    difficulty, growthMode, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
     shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
     incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0 }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
@@ -355,6 +364,7 @@ export function createSession(options = {}) {
 
 export function validateSession(state) {
   const e = [];
+  if (state?.growthMode !== undefined && !GROWTH_MODES.includes(state.growthMode)) e.push('BAD_GROWTH_MODE');
   if (!isRecord(state) || state.schemaVersion !== 1 || state.modeId !== 'independent') return ['BAD_SCHEMA'];
   for (const k of ['seed', 'rngState', 'nextUid', 'revision', 'round', 'roundLimit', 'funds', 'pendingFunds', 'lp', 'deployCap']) if (!Number.isFinite(state[k])) e.push(`BAD_${k.toUpperCase()}`);
   if (!['prep', 'prize', 'finished'].includes(state.phase)) e.push('BAD_PHASE');
@@ -373,6 +383,7 @@ export function validateSession(state) {
   }
   for (const p of state.pieces || []) {
     if (!safeId(p.uid) || !safeId(p.chessId) || !Array.isArray(p.equipment) || !Array.isArray(p.attachments) || !isRecord(p.nativeState)) e.push('BAD_PIECE');
+    if (state.growthMode === 'levels' && (p.growthMode !== 'levels' || !Number.isInteger(p.growthLevel) || p.growthLevel < 1)) e.push('BAD_GROWTH_LEVEL');
     if ((p.row === null) !== (p.col === null) || (p.row !== null && (!inField(p.row, p.col) || !inField(p.row, p.col)))) e.push('BAD_POSITION');
     for (const attachment of p.attachments || []) if (!safeId(attachment.id) || (attachment.state !== undefined && !isRecord(attachment.state))) e.push('BAD_ATTACHMENT');
   }
@@ -420,6 +431,8 @@ export function viewSession(state, options = {}) {
       // the body's own numbers: after the 接装损耗 when it applies, and before it (the detail card shows both)
       bodyStats: nativeBodyStats(p, catalog), rawBodyStats: p.bodyPenaltyApplied ? nativeBodyStats({ ...p, bodyPenaltyApplied: false }, catalog) : undefined,
       factions: tavernFactions(p, catalog), startStats: startStats[p.uid],
+      ...(state.growthMode === 'levels' ? { growthMode: 'levels', growthLevel: operatorGrowthInfo(p, catalog).level,
+        growthStats: operatorGrowthInfo(p, catalog).stats, growthMaximum: operatorGrowthInfo(p, catalog).maximum } : {}),
       // whom it may hand its gear to (give) and take gear from (take) under the 交接凭证 worn on either side
       handover: state.phase === 'prep' ? handoverPartners(state, p, catalog) : undefined };
   });
@@ -579,7 +592,7 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work); const piece = work.pieces.find((x) => x.uid === action.uid); if (!piece) throw new Error('BAD_TARGET');
       const preference = { ...(piece.nativeState.preferences || {}) };
       if (action.productionBadge !== undefined) {
-        if (!['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery'].includes(action.productionBadge)) throw new Error('BAD_PRODUCTION_BADGE');
+        if (!['precision', 'agility', 'damage', 'recovery', 'vitality', 'defense', 'assault'].includes(action.productionBadge)) throw new Error('BAD_PRODUCTION_BADGE');
         preference.productionBadge = action.productionBadge;
       }
       if (action.factionPriority !== undefined) {

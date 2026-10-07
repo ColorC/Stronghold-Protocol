@@ -14,6 +14,8 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
     if (stat && typeof record.value === 'number') return `${stat}增加${BADGE_RATIOS.has(record.stat) ? `${Number((record.value * 100).toFixed(4))}%` : record.value}。${record.note || ''}`;
     return record.note || '';
   };
+  BADGE_STATS.damageDealtPercent = '造成伤害';
+  BADGE_RATIOS.add('damageDealtPercent');
   const operators = Object.fromEntries(Object.entries(catalog.operators).map(([id, op]) => {
     const raw = op.elite ? op.source.eliteChess || op.source.normalChess : op.source.normalChess;
     const rules = [...(op.nativeTrait.effect?.prep || []), ...(op.nativeTrait.effect?.combat || [])];

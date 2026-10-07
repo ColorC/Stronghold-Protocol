@@ -1,5 +1,6 @@
 // Badge descriptions shown in the workshop mirror the battle adapter's semantic badge IDs.
 const TEXT = Object.freeze({
+  damage: ['造成伤害（与技能和天赋同区加算）', 0.02],
   precision: ['原生基础攻击力白值', 0.02], agility: ['原生基础攻击速度', 0.02],
   vitality: ['原生基础最大生命白值', 0.03], defense: ['原生基础防御白值', 0.02],
   assault: ['攻击力', 0.02], recovery: ['自然技力回复', 0.02], arcane: ['受到的法术伤害减免', 0.005],

@@ -37,7 +37,7 @@ export function HammerPicker({ g, item, busy, catalog, onSave }) {
 }
 
 
-export const PRODUCTION_BADGES = ['precision', 'agility', 'vitality', 'defense', 'assault', 'recovery'];
+export const PRODUCTION_BADGES = ['precision', 'agility', 'damage', 'recovery'];
 
 function GearRecipients({ gear, state, catalog, source }) {
   if (!source || !gear || !(gear.params?.targets || gear.params?.match || gear.params?.requiresFactionOnField || gear.params?.scope === 'boardonly')) return null;

@@ -22,7 +22,7 @@ export function makePrizeOffer(state, catalog, tier = 'start', source = 'round',
     if (p.mechanism === 'repeatNativeForging' && state.playerEffects?.some((x) => x.type === 'repeatNativeForging' && x.expiresRound === state.round)) return false;
     return true;
   });
-  const general = (id) => ['grantItems', 'grantItemsPerPiece', 'grantGear', 'freeRefreshes', 'facilityIncome', 'futureShopEquipment', 'replaceCurrentShop', 'activeFundTopUp'].includes(catalog.prizes[id]?.mechanism);
+  const general = (id) => ['grantItems', 'grantItemsPerPiece', 'grantAllOperators', 'grantGear', 'freeRefreshes', 'facilityIncome', 'futureShopEquipment', 'replaceCurrentShop', 'activeFundTopUp'].includes(catalog.prizes[id]?.mechanism);
   const fallbacks = ['fallback-procurement-three', 'fallback-procurement-two', 'fallback-procurement-one'];
   if (!available.some(general)) available.unshift(fallbacks[0]);
   while (available.length < 3) available.push(fallbacks.find((id) => !available.includes(id)));
@@ -58,7 +58,11 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
   const rule = { type: prize.mechanism, ...(prize.params || {}) };
   const grant = (itemId, n = 1, extra = {}) => grantEquipment(state, catalog, itemId, n, { origin: 'prize', phase: 'prize', prizeId: id, ...extra });
   const outputs = (rule.outputs || []).map((x) => ({ id: x.id, quantity: x.quantity || 1 }));
-  if (rule.type === 'grantItems' || rule.type === 'grantItemsPerPiece') {
+  if (rule.type === 'grantAllOperators') {
+    for (const target of state.pieces.filter((p) => p.row != null && p.col != null).slice(0, rule.cap || 8)) {
+      for (const out of outputs) grant(out.id, out.quantity, { landOn: `uid:${target.uid}`, targetUid: target.uid });
+    }
+  } else if (rule.type === 'grantItems' || rule.type === 'grantItemsPerPiece') {
     const multiplier = rule.type === 'grantItemsPerPiece' ? Math.min(rule.cap || 8, state.pieces.filter((x) => x.row !== null && x.col !== null).length) : 1;
     for (const out of outputs) grant(out.id, out.quantity * multiplier);
   } else if (rule.type === 'grantGear' || rule.type === 'conditionalGrantGear') {

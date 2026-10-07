@@ -2,6 +2,7 @@ import { weaknessType, WEAKNESS_PRIORITY } from '../garrisons/battle.js';
 import { frontOf } from '../../dir.js';
 import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../shared/independentRules.js';
 import { loadoutRecord } from '../../../../shared/loadoutRecord.js';
+import { levelBodyStats } from '../../../../shared/independentGrowth.js';
 import { mitigate } from '../../damage.js';
 import { installKeywordGear } from './keywordGear.js';
 import { validateAllyConditionStats } from '../../../modes/independent/native.js';
@@ -769,6 +770,7 @@ function adjacentInDirection(owner, actor, direction) {
 }
 
 function getActor(event, trigger) {
+  if (trigger === 'dodge' || trigger === 'damaged') return event.target ?? null;
   if (trigger === 'skillStart' || trigger === 'skillEnd' || trigger === 'deploy' || trigger === 'dollSwap' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
   if (trigger === 'shieldLayersGained' || trigger === 'shieldLayersBroken') return event.unit ?? null;
   if (trigger === 'kill') return event.killer ?? null;
@@ -1043,8 +1045,15 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     const rules = rulesOf(catalog, piece.chessId);
     // Unit.base already reflects the selected native skill/module loadout. Preserve it before
     // applying a handover penalty so badge percentages never shrink with the inherited body.
-    const nativeBaseStats = { ...unit.base };
     const nativeRecordForStats = nativeRecord(piece, catalog);
+    if (piece.growthMode === 'levels') {
+      const original = loadoutRecord(nativeRecordForStats, piece)?.stats ?? nativeRecordForStats?.stats;
+      const grown = levelBodyStats(piece, catalog);
+      for (const field of ['atk', 'maxHp', 'def', 'res']) {
+        unit.base[field] += Number(grown[field] || 0) - Number(original?.[field] || 0);
+      }
+    }
+    const nativeBaseStats = { ...unit.base };
     const rawNativeStats = loadoutRecord(nativeRecordForStats, piece)?.stats ?? nativeRecordForStats?.stats ?? {};
     for (const [field, aliases] of Object.entries({
       atk: ['atk', 'attack'], maxHp: ['maxHp', 'maxHP'], def: ['def', 'defense'], aspd: ['aspd', 'attackSpeed'], spRecovery: ['spRecovery', 'spRecoveryPerSec'],
@@ -1055,7 +1064,7 @@ function installNativeCombat(battle, catalog, pieces, emit) {
     unit.mem.independentState = { counters: {}, active: true, preferences: structuredClone(piece.nativeState?.preferences ?? {}) };
     if (piece.bodyPenaltyApplied) {
       const record = nativeRecord(piece, catalog);
-      const before = loadoutRecord(record, piece)?.stats ?? record?.stats;
+      const before = levelBodyStats(piece, catalog, record);
       const after = nativeBodyStats(piece, catalog);
       if (!before || !after) throw new Error(`bodyPenaltyApplied piece ${piece.uid} lacks native base stats`);
       for (const [field, statKey] of [['atk', 'atk'], ['maxHp', 'maxHp']]) {
