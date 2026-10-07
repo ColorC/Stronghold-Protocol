@@ -1,6 +1,8 @@
 // Actual Spine runtime contact/gesture checks and separate-part screenshots.
-import fs from 'node:fs';import path from 'node:path';import {createRequire} from 'node:module';
-const [url,out,candidate]=process.argv.slice(2);
+import fs from 'node:fs';import path from 'node:path';import {createRequire} from 'node:module';import {pathToFileURL} from 'node:url';
+export const STUDY_USAGE='Usage: node tools/diy2b/study-test.mjs <url> <absolute-output-directory> [candidate-checkout]';
+export async function runStudyTest(url,out,candidate){
+if(typeof url!=='string'||!url.trim()||typeof out!=='string'||!out.trim())throw new TypeError(STUDY_USAGE);
 const puppeteer=createRequire('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/package.json')('puppeteer-core');
 fs.mkdirSync(out,{recursive:true});let browser;const deadline=setTimeout(()=>{browser?.close().finally(()=>process.exit(124))},120000);
 const report={url,candidate:candidate||null,errors:[],clips:[],screens:[]};
@@ -31,4 +33,14 @@ for(const part of ['all','legs','arms','blade']){const visible=await page.evalua
 const linked=new URL(url);linked.searchParams.set('side','back');linked.searchParams.set('action','Skill_1');linked.searchParams.set('part','legs');linked.searchParams.set('t','.7');await page.goto(linked.href,{waitUntil:'networkidle2',timeout:30000});await page.waitForFunction(()=>window.__motion?.ready,{timeout:15000});const deep=await page.evaluate(()=>({paused:document.querySelector('#pause').textContent==='播放',time:document.querySelector('#time').textContent,link:document.querySelector('#frameLink').href}));if(!deep.paused||!deep.time.startsWith('0.70'))report.errors.push('Exact-frame link did not restore paused pose');report.deepLink=deep;
 report.passed=!report.errors.length;
 }catch(e){report.errors.push(e.stack);report.passed=false;}
-finally{clearTimeout(deadline);await browser?.close();fs.writeFileSync(path.join(out,'receipt.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({path:path.resolve(out,'receipt.json'),passed:report.passed,errors:report.errors,clips:report.clips.map(({frames,...c})=>c)},null,2));if(!report.passed)process.exitCode=1}
+finally{clearTimeout(deadline);await browser?.close();fs.writeFileSync(path.join(out,'receipt.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({path:path.resolve(out,'receipt.json'),passed:report.passed,errors:report.errors,clips:report.clips.map(({frames,...c})=>c)},null,2));}
+return report;
+}
+
+const isMain=process.argv[1]&&pathToFileURL(path.resolve(process.argv[1])).href===import.meta.url;
+// Node test discovery executes matching *-test files as entrypoints; it must never launch this browser CLI.
+if(isMain&&!process.env.NODE_TEST_CONTEXT){
+const [url,out,candidate]=process.argv.slice(2);
+if(!url?.trim()||!out?.trim()){console.error(STUDY_USAGE);process.exitCode=2;}
+else{try{const report=await runStudyTest(url,out,candidate);if(!report.passed)process.exitCode=1;}catch(error){console.error(error.stack||error.message);process.exitCode=1;}}
+}
