@@ -376,7 +376,7 @@ describe('operator battle voice', () => {
 
 // ---- fake Web Audio -------------------------------------------------------------------------------------
 
-function fakeWindow() {
+function fakeWindow(decodeAudioData = (ab, ok) => ok({ duration: 1.5 })) {
   const listeners = new Map();
   const made = { sources: 0, started: 0 };
   class Param { constructor() { this.value = 1; } setValueAtTime(v) { this.value = v; } linearRampToValueAtTime(v) { this.value = v; } setTargetAtTime(v) { this.value = v; } cancelScheduledValues() {} }
@@ -387,7 +387,7 @@ function fakeWindow() {
     constructor() { this.currentTime = 0; this.state = 'running'; this.destination = new Node(); }
     createGain() { return new Gain(); }
     createBufferSource() { return new Src(); }
-    decodeAudioData(ab, ok) { ok({ duration: 1.5 }); }
+    decodeAudioData(ab, ok, fail) { decodeAudioData(ab, ok, fail); }
     resume() { return Promise.resolve(); }
     suspend() { return Promise.resolve(); }
   }
@@ -574,6 +574,57 @@ describe('AudioManager', () => {
         assert.ok(urls.includes(media));
         assert.ok(!urls.includes(raw), 'audio/* 就是成功，不该再回退');
         assert.equal(cancelled, 0);
+      } finally { globalThis.fetch = origFetch; }
+    }
+
+    // A static CDN can label extensionless bytes as octet-stream. Web Audio validates them; successful decode avoids
+    // the extra extension-bearing request.
+    {
+      const fw = fakeWindow();
+      const urls = [];
+      const origFetch = globalThis.fetch;
+      globalThis.fetch = async (u) => {
+        urls.push(u);
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: (n) => (n.toLowerCase() === 'content-type' ? 'application/octet-stream' : null) },
+          arrayBuffer: async () => new ArrayBuffer(8),
+        };
+      };
+      try {
+        const a = new AudioManager({ win: fw.win, getManifest: () => manifest });
+        a.install();
+        fw.fire('pointerdown');
+        a.playBgm('prep');
+        await new Promise((r) => setTimeout(r, 25));
+        assert.deepEqual(urls, [media], 'decodable extensionless bytes do not fall back to the .mp3 URL');
+        assert.ok(fw.made.started > 0, 'Web Audio decoded and started the buffer');
+      } finally { globalThis.fetch = origFetch; }
+    }
+
+    // If an octet-stream response is not a decodable audio container, retry the manifest URL and decode that response.
+    {
+      const fw = fakeWindow((ab, ok, fail) => ab.byteLength === 2 ? fail(new Error('invalid audio bytes')) : ok({ duration: 1.5 }));
+      const urls = [];
+      const origFetch = globalThis.fetch;
+      globalThis.fetch = async (u) => {
+        urls.push(u);
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: (n) => (n.toLowerCase() === 'content-type' ? (u === media ? 'application/octet-stream' : 'audio/mpeg') : null) },
+          arrayBuffer: async () => new ArrayBuffer(u === media ? 2 : 3),
+        };
+      };
+      try {
+        const a = new AudioManager({ win: fw.win, getManifest: () => manifest });
+        a.install();
+        fw.fire('pointerdown');
+        a.playBgm('prep');
+        await new Promise((r) => setTimeout(r, 25));
+        assert.deepEqual(urls, [media, raw], 'failed byte decode retries the original manifest URL');
+        assert.ok(fw.made.started > 0, 'the fallback audio decoded and started');
       } finally { globalThis.fetch = origFetch; }
     }
   });
