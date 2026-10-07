@@ -17,6 +17,7 @@ export const NATIVE_SKILL_SUPPORT = Object.freeze({
   char_2024_chyue: Object.freeze(['skchr_chyue_1']),
   char_484_robrta: Object.freeze(['skchr_robrta_1']),
   char_4222_taraxa: Object.freeze(['skchr_taraxa_1']),
+  char_242_otter: Object.freeze(['skchr_otter_1']),
 });
 export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_240_wyvern: 'skchr_wyvern_1',
@@ -29,6 +30,7 @@ export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_2024_chyue: 'skchr_chyue_1',
   char_484_robrta: 'skchr_robrta_1',
   char_4222_taraxa: 'skchr_taraxa_1',
+  char_242_otter: 'skchr_otter_1',
 });
 
 const spTypeOf = (value) => ({ INCREASE_WITH_TIME: 'time', INCREASE_WHEN_ATTACK: 'attack', INCREASE_WHEN_TAKEN: 'hurt', NOT_RECOVER: 'none', time: 'time', attack: 'attack', hurt: 'hurt', none: 'none' })[value] ?? null;
@@ -330,6 +332,29 @@ function taraxacum(bb, chess) {
   };
 }
 
+function mel(bb, chess) {
+  const skill = chess?.skill;
+  if ((skill?.id ?? skill?.skillId) !== 'skchr_otter_1') return null;
+  const dodge = number(skill.bb?.prob);
+  const tokenId = 'token_10004_otter_motter';
+  if (!(dodge > 0 && dodge <= 1)) return null;
+  return {
+    skills: { skchr_otter_1: { id: 'skchr_otter_1', kind: 'passive' } },
+    talents: [{ install(battle, unit) {
+      battle.every(0.25, () => {
+        for (const token of battle.alliesFor(unit)) {
+          if (token.kind !== 'token' || token.defId !== tokenId || token.ownerUnit !== unit) continue;
+          battle.addBuff(token, { key: `native:mibo:dodge:${unit.id}`, duration: 0.35, source: unit, mods: { dodgePhys: dodge, dodgeArts: dodge }, tags: ['talent', 'skill'] });
+          const slow = number(token.def?.talents?.[0]?.bb?.attack_speed);
+          if (slow) for (const enemy of token.blocking || []) {
+            battle.addBuff(enemy, { key: `native:mibo:slow:${token.id}`, duration: 0.35, source: token, mods: { aspd: slow }, tags: ['talent'] });
+          }
+        }
+      }, { owner: unit, immediate: true });
+    } }],
+  };
+}
+
 
 export default Object.freeze({
   chess_native_char_240_wyvern: vanilla,
@@ -342,4 +367,5 @@ export default Object.freeze({
   chess_native_char_2024_chyue: chongyue,
   chess_native_char_484_robrta: roberta,
   chess_native_char_4222_taraxa: taraxacum,
+  chess_native_char_242_otter: mel,
 });

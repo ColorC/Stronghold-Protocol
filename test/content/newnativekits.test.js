@@ -7,6 +7,7 @@ import { DataSource, getDefaultSource } from '../../server/sim/simdata.js';
 import { COLS } from '../../server/sim/constants.js';
 
 const chessData = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
+const tokenData = JSON.parse(fs.readFileSync(new URL('../../data/tokens.json', import.meta.url), 'utf8'));
 const id = 'chess_native_char_235_jesica_a';
 const record = chessData[id];
 const normalized = new DataSource({ chess: { [id]: record } }, getDefaultSource()).getChess(id);
@@ -28,6 +29,10 @@ const robertaId = 'chess_native_char_484_robrta_a';
 const robertaRecord = chessData[robertaId];
 const taraxaId = 'chess_native_char_4222_taraxa_a';
 const taraxaRecord = chessData[taraxaId];
+const melId = 'chess_native_char_242_otter_a';
+const melRecord = chessData[melId];
+const miboTokenId = 'token_10004_otter_motter';
+const miboTokenRecord = tokenData[miboTokenId];
 
 test('native Jessica S1: native blackboard powers attack-recovery next-hit multiplier in battle', () => {
   assert.ok(record?.nativeGrowth?.phases?.length);
@@ -229,5 +234,25 @@ test('native Taraxacum S1 heals faster while airborne and her talent protects ai
   assert.ok(unit.skill.activations > 0);
   assert.ok(unit.s.flags.liftoff && unit.s.flags.blockFly, 'the active S1 grants native lift-off and air blocking');
   assert.ok(h.eventsOf('heal').some((event) => event[1] === ally.id && event[2] > 0));
+  h.invariants();
+});
+
+test('native Mayer S1 grants source physical and arts evasion to her source-scaled Mibo token', () => {
+  assert.ok(miboTokenRecord?.variants?.[melId]);
+  assert.equal(miboTokenRecord.variants[melId].stats.deployLimit, 4);
+  assert.ok(miboTokenRecord.placeable);
+  assert.ok(miboTokenRecord.variants[melId].sources.includes('talent'));
+  const data = new DataSource({ chess: { [melId]: melRecord }, tokens: { [miboTokenId]: miboTokenRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(melId);
+  assert.equal(def.skill.id, 'skchr_otter_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: melId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 8] }] });
+  const owner = h.unit(melId);
+  h.run(0.6);
+  const token = h.b.spawnToken(owner, miboTokenId, 10, 6);
+  assert.ok(token);
+  h.run(0.5);
+  assert.equal(token.s.dodgePhys, melRecord.skill.bb.prob);
+  assert.equal(token.s.dodgeArts, melRecord.skill.bb.prob);
   h.invariants();
 });

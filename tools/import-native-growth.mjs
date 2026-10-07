@@ -7,7 +7,7 @@ import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { safeName } from './assets/sources.mjs';
-import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList } from './build-data.mjs';
+import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList, tokenVariant } from './build-data.mjs';
 import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT } from '../server/sim/content/newnativekits.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -32,17 +32,18 @@ function parseArgs(argv) {
     characterTable: null,
     chess: resolve(ROOT, 'data/chess.json'),
     assets: resolve(ROOT, 'data/assets.json'),
+    tokens: resolve(ROOT, 'data/tokens.json'),
     report: resolve(CANONICAL_ROOT, 'runtime/growth-destination-20261008/native-import/growth-import-receipt.json'),
     write: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--help' || k === '-h') {
-      console.log('usage: node tools/import-native-growth.mjs --character-table <file> [--skill-table <file>] [--range-table <file>] [--chess <file>] [--assets <file>] [--report <file>] [--write]');
+      console.log('usage: node tools/import-native-growth.mjs --character-table <file> [--skill-table <file>] [--range-table <file>] [--chess <file>] [--assets <file>] [--tokens <file>] [--report <file>] [--write]');
       process.exit(0);
     }
     if (k === '--write') { o.write = true; continue; }
-    if (['--character-table','--skill-table','--range-table','--chess','--assets','--report'].includes(k)) {
+    if (['--character-table','--skill-table','--range-table','--chess','--assets','--tokens','--report'].includes(k)) {
       const v = argv[++i];
       if (!v || v.startsWith('--')) throw new Error(`${k} requires a path`);
       o[k.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = resolve(v);
@@ -236,14 +237,78 @@ function computeCandidates(charTable, chess) {
   return rows;
 }
 
+function nativeTokenSources(owner, tokenId) {
+  const sources = [];
+  if (owner.displayTokenDict?.[tokenId]) sources.push('display');
+  if ((owner.talents || []).some((talent) => (talent.candidates || []).some((candidate) => candidate.tokenKey === tokenId))) sources.push('talent');
+  if ((owner.skills || []).some((skill) => skill.overrideTokenKey === tokenId)) sources.push('skill');
+  return sources;
+}
+
+function attachNativeTokens(tokenTable, candidates, charTable, ctx) {
+  const ownersByToken = new Map();
+  for (const rec of candidates) for (const tokenId of rec.tokens || []) {
+    if (!ownersByToken.has(tokenId)) ownersByToken.set(tokenId, []);
+    ownersByToken.get(tokenId).push(rec);
+  }
+  const attached = [];
+  for (const [tokenId, owners] of ownersByToken) {
+    const tokenChar = charTable[tokenId];
+    if (!tokenChar || tokenChar.isNotObtainable || !Array.isArray(tokenChar.phases) || !tokenChar.phases.length) continue;
+    const variants = {};
+    const ownerIds = [];
+    for (const ownerRec of owners) {
+      const ownerChar = charTable[ownerRec.charId];
+      if (!ownerChar) continue;
+      const sources = nativeTokenSources(ownerChar, tokenId);
+      const built = tokenVariant(ctx, tokenId, tokenChar, {
+        phase: ownerRec.status.phase, level: ownerRec.status.level,
+        skillIndex: ownerRec.nativeImport?.defaultLoadout?.skillIndex ?? 0,
+        skillLevel: ownerRec.status.skillLevel, modulePhase: null, moduleTokenParts: [],
+        label: `native token ${tokenId}@${ownerRec.chessId}`,
+      });
+      const deployLimit = built.talents?.reduce((max, talent) => Math.max(max, Number(talent.bb?.max_deploy_count) || 0), 0) || built.stats.deployLimit || 1;
+      built.stats.deployLimit = deployLimit;
+      variants[ownerRec.chessId] = { ...built, count: deployLimit, sources };
+      ownerIds.push(ownerRec.chessId);
+    }
+    if (!ownerIds.length) continue;
+    const first = variants[ownerIds[0]], existing = tokenTable[tokenId] || {};
+    const sourceKinds = [...new Set(Object.values(variants).flatMap((v) => v.sources))];
+    tokenTable[tokenId] = {
+      ...existing,
+      tokenId, kind: 'summon', name: tokenChar.name, appellation: tokenChar.appellation || null,
+      desc: tokenChar.description || tokenChar.trait?.candidates?.[0]?.overrideDescripton || '',
+      descRaw: tokenChar.description || null, profession: tokenChar.profession || 'TOKEN',
+      subProfessionId: tokenChar.subProfessionId || null, position: tokenChar.position || 'MELEE',
+      displayType: existing.displayType || 'DEFAULT',
+      placeable: existing.placeable ?? sourceKinds.some((kind) => kind === 'display' || kind === 'talent'),
+      ownerRange: existing.ownerRange || /只能部署在\S*攻击范围内/.test(tokenChar.description || ''),
+      owners: [...new Set([...(existing.owners || []), ...ownerIds])],
+      stats: existing.stats || first.stats, rangeGrid: existing.rangeGrid || first.rangeGrid,
+      dmgType: existing.dmgType || first.dmgType, attackKind: existing.attackKind || first.attackKind,
+      projectile: existing.projectile || first.projectile, canHitFly: existing.canHitFly ?? first.canHitFly,
+      skill: existing.skill || first.skill, deployLimit: Math.max(existing.deployLimit || 1, ...Object.values(variants).map((v) => v.stats.deployLimit || 1)),
+      count: Math.max(existing.count || 1, ...Object.values(variants).map((v) => v.count || 1)),
+      abnormal: existing.abnormal || [], variants: { ...(existing.variants || {}), ...variants },
+      assets: existing.assets || { avatar: tokenId, spine: tokenId },
+      source: { table: 'character_table.json', revision: SOURCE_REVISION, url: SOURCE_URL },
+    };
+    attached.push(tokenId);
+  }
+  return attached;
+}
+
 export async function runImport(opts) {
   const charTable = JSON.parse(await readFile(opts.characterTable, 'utf8'));
   const skillTable = JSON.parse(await readFile(opts.skillTable, 'utf8'));
   const rangeTable = JSON.parse(await readFile(opts.rangeTable, 'utf8'));
   const chess = JSON.parse(await readFile(opts.chess, 'utf8'));
   const assets = JSON.parse(await readFile(opts.assets, 'utf8'));
+  const tokenTable = JSON.parse(await readFile(opts.tokens, 'utf8'));
   const updated = structuredClone(chess);
   const updatedAssets = structuredClone(assets);
+  const updatedTokens = structuredClone(tokenTable);
   const ctx = { skillTable, rangeTable, charTable, ac: { skillRangeDict: {}, skillTriggerDataList: {} } };
   let attached = 0;
   const missingIds = [];
@@ -296,6 +361,7 @@ export async function runImport(opts) {
       newDefs++;
     }
   }
+  const nativeTokenIds = attachNativeTokens(updatedTokens, Object.values(updated).filter((rec) => rec.chessType === 'NATIVE_IMPORT_CANDIDATE'), charTable, ctx);
   const noGrowthRefs = Object.values(updated).filter((c) => c.charId && c.visible && !c.nativeGrowth).map((c) => c.charId);
   if (noGrowthRefs.length) throw new Error(`growth join incomplete: ${noGrowthRefs.slice(0, 10).join(', ')}`);
   const phaseCount = candidates.reduce((n, c) => n + c.nativeGrowth.phases.length, 0);
@@ -310,6 +376,7 @@ export async function runImport(opts) {
     importer: { path: resolve(ROOT, 'tools/import-native-growth.mjs'), projectCurveFunctions: resolve(ROOT, 'tools/build-data.mjs'), algorithm: 'native phase keyframes + tools/build-data.mjs interpolateAttrs/statsFrom' },
     targetChess: opts.chess,
     targetAssets: opts.assets,
+    targetTokens: opts.tokens,
     currentPool: {
       sourceChessDefinitions: Object.values(chess).filter((c) => c.chessType !== 'NATIVE_IMPORT_CANDIDATE').length,
       previouslyImportedHiddenCandidateDefinitions: Object.values(chess).filter((c) => c.chessType === 'NATIVE_IMPORT_CANDIDATE').length,
@@ -335,7 +402,7 @@ export async function runImport(opts) {
       { charId: 'char_4019_ncdeer', skillId: 'skchr_ncdeer_1', case: 'native ATK buff and low-HP ally protection aura', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
       { charId: 'char_2024_chyue', skillId: 'skchr_chyue_1', case: 'three-charge triple strike and target damage mark', fixtureFile: resolve(ROOT, 'test/content/newnativekits.test.js') },
     ],
-    tokenAudit: { importedTokenDefinitions: [], unresolvedTokenIds: candidates.filter(c => !c.inCurrentChess).flatMap(c => c.tokenIds.map(tokenId => ({ charId: c.charId, tokenId }))) },
+    tokenAudit: { importedTokenDefinitions: nativeTokenIds, unresolvedTokenIds: candidates.filter(c => !c.inCurrentChess).flatMap(c => c.tokenIds.filter(tokenId => !updatedTokens[tokenId]).map(tokenId => ({ charId: c.charId, tokenId }))) },
     assetAudit: {
       newlyIndexedCharacters: candidates.filter((candidate) => !candidate.inCurrentChess).map((candidate) => candidate.charId),
       existingImageManifestEntries: Object.values(chess).filter((c) => c.chessType === 'NATIVE_IMPORT_CANDIDATE').length,
@@ -362,6 +429,10 @@ export async function runImport(opts) {
     const assetTmp = `${opts.assets}.tmp-${process.pid}`;
     await writeFile(assetTmp, assetText);
     await rename(assetTmp, opts.assets);
+    const tokenText = JSON.stringify(updatedTokens) + '\n';
+    const tokenTmp = `${opts.tokens}.tmp-${process.pid}`;
+    await writeFile(tokenTmp, tokenText);
+    await rename(tokenTmp, opts.tokens);
     await mkdir(dirname(opts.report), { recursive: true });
     await writeFile(opts.report, JSON.stringify(report, null, 2) + '\n');
   }
