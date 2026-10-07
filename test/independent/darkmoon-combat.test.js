@@ -5,7 +5,7 @@ import { makeBattle,chessRec,enemyRec } from '../helpers/battleHarness.js';
 import { installDarkmoonCombat,DARKMOON_COMBAT_RULES,darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
 
 const tribes={MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'};
-function fixture(sourceId,elite=false,extraSources=[],state=null) {
+function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[]) {
   const r=DARKMOON_COMBAT_RULES[sourceId],faction=tribes[r.faction||r.retire?.faction||r.retire?.fallen||r.retire?.random||r.startStrike||r.aura?.faction]||'叙拉古';
   const definitions={};const pieces=[];const operators={};
   for(const [index,id]of [sourceId,...extraSources,'fixture'].entries()){
@@ -15,7 +15,7 @@ function fixture(sourceId,elite=false,extraSources=[],state=null) {
       rec.status={phase:0,level:1};
       rec.nativeGrowth={phases:[{maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:100,maxHp:10000,def:0,magicResistance:0}},{level:10,data:{atk:190,maxHp:10090,def:90,magicResistance:9}}]}]};
     }
-    pieces.push({uid,chessId,elite:index===0&&elite,row:10+Math.floor(index/3),col:5+index%3,equipment:[{id:'cover',quantity:1}],attachments:[],nativeState:{}});
+    pieces.push({uid,chessId,elite:index===0&&elite,row:10+Math.floor(index/3),col:5+index%3,equipment:[{id:'cover',quantity:1}],attachments:index===0?attachments:[],nativeState:{}});
     operators[chessId]={chessId,name:uid,tier:index===0?6:2,elite:false,nativeFactionTags:[faction],source:{normalChess:rec},sourceRefs:{darkmoon19_2:{id}}};
   }
   const catalog={operators,config:{maxShopLevel:6},equipment:{cover:{params:{gearId:'oath-cover'}}}};
@@ -151,4 +151,14 @@ test('advanced shield gift chooses two different allies and advanced bomber real
   const hp=bomber.enemy.hp;bomber.b.addBuff(bomber.enemy,{key:'two-layer-probe',shieldHits:2});
   bomber.b.retreat(bomber.unit);bomber.h.run(.1);
   assert.equal(bomber.enemy.hp,hp);assert.equal(bomber.enemy.findBuff('two-layer-probe')?.shieldHits||0,0);
+});
+test('magnetic modules retain their own source quality and stack distinct retirement effects on the recipient',()=>{
+  const attachments=[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:false}},{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:true}}];
+  const {h,b,unit,ally,installed}=fixture('BGS_045',false,[],null,attachments);
+  assert.equal(b.relocate(ally,12,2),true);
+  b.retreat(unit);h.run(.1);
+  const tokens=b.allyUnits.filter(u=>u.kind==='token');
+  assert.equal(tokens.length,6);assert.equal(tokens.filter(u=>u.base.atk===120).length,3);assert.equal(tokens.filter(u=>u.base.atk===240).length,3);
+  assert.equal(installed.trace.filter(t=>t.kind==='retire'&&t.sourceId==='BOT_312').length,2);
+  assert.equal(b.errorCount,0,JSON.stringify(b.errors));
 });

@@ -116,10 +116,12 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   const enemies=()=>battle.enemies.filter(alive).sort((a,b)=>a.x-b.x||a.id-b.id);
   const pick=a=>a.length?a[Math.floor(battle.rng()*a.length)]:null;
   const hasCover=u=>u?.mem?.darkmoonCover || (byUid.get(u?.uid)?.equipment||[]).some(x=>catalog.equipment[x.id]?.params?.gearId==='oath-cover');
-  const entries=battle.allyUnits.filter(u=>u.kind==='op').map(unit=>{
-    const op=sourceOf(unit),id=op?.sourceRefs?.darkmoon19_2?.id;
-    return rules[id]?{unit,id,rule:rules[id],elite:!!(byUid.get(unit.uid)?.elite||op.elite),last:-Infinity,uses:0,retireUses:0,seen:new Set(),stacks:new Map()}:null;
-  }).filter(Boolean);
+  const entries=battle.allyUnits.filter(u=>u.kind==='op').flatMap(unit=>{
+    const op=sourceOf(unit),piece=byUid.get(unit.uid);
+    const sources=[{id:op?.sourceRefs?.darkmoon19_2?.id,elite:!!(piece?.elite||op?.elite),instanceKey:''},
+      ...(piece?.attachments||[]).flatMap((a,index)=>a.id==='darkmoon-magnetic'&&a.state?.sourceId==='BOT_312'?[{id:a.state.sourceId,elite:!!a.state.elite,instanceKey:`:magnetic:${index}`}]:[])];
+    return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,seen:new Set(),stacks:new Map()}));
+  });
   const results=battle.independentDarkmoonResults={growth:[],recruits:[],coins:[]};
   const trace=battle.independentDarkmoonTrace=[];
   const note=(e,kind,targets=[])=>{trace.push({sourceId:e.id,sourceUid:e.unit.uid,kind,time:battle.time,targets:targets.map(u=>u.uid??u.id)});battle.emit('darkmoonEffect',{sourceId:e.id,source:e.unit,kind,targets});};
@@ -154,13 +156,13 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   };
   const equipment=(e,u,a,h,persistent=false)=>{
     if(!u)return;
-    const m=scale(e),key=`darkmoon:${e.unit.uid}:${e.id}:${u.id}`;
+    const m=scale(e),key=`darkmoon:${e.unit.uid}:${e.id}${e.instanceKey||''}:${u.id}`;
     const v=e.stacks.get(u.id)||{a:0,h:0};v.a+=a*m;v.h+=h*m;e.stacks.set(u.id,v);
     applyGrowth(u,key,v.a,v.h);
     (u.mem.darkmoonTemporaryEquipment||={})[key]={sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,...(state?.growthMode==='levels'?{trainingLevels:(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1)}:{}),expires:'battleEnd'};
     if(persistent&&u.kind==='op')results.growth.push({sourceUid:e.unit.uid,targetUid:u.uid,attackUnits:a*m,secondaryUnits:h*m});
   };
-  const shield=(e,u,layers)=>{const key=`darkmoon:shield:${e.unit.uid}:${u.id}`,n=Number(u.findBuff(key)?.shieldHits||0);battle.addBuff(u,{key,shieldHits:n+layers,source:e.unit,duration:Infinity,persist:true,allowDead:true,refresh:'replace'});};
+  const shield=(e,u,layers)=>{const key=`darkmoon:shield:${e.unit.uid}${e.instanceKey||''}:${u.id}`,n=Number(u.findBuff(key)?.shieldHits||0);battle.addBuff(u,{key,shieldHits:n+layers,source:e.unit,duration:Infinity,persist:true,allowDead:true,refresh:'replace'});};
   const auras=[];
   const fallen=[];
   const summonEntries=entries.filter(e=>e.rule.summonMultiplier);
