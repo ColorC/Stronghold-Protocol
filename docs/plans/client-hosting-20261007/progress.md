@@ -42,3 +42,9 @@ assets/client子任务工作副本与分支已原生收尾，原始client诊断9
 - a7叠加仅hosting映射的后端提交1de已在VPS运行；fixture测试先因稀疏checkout假设失败，改用独立public fixture后7/7；修正提交1bac合入master7cdf，未改游戏。首次安装尾部健康校验用了错误字段maxActive，实际服务已启动；改读limit后复核通过，未重复安装。
 - no-checkout工作副本初始index为空导致cherry-pick失败；配置稀疏后read-tree尊重范围补齐，再cherry成功，没有完整checkout data/runtime。原生清理后端与未推送Pages候选worktree，报告branch保留Git恢复点。
 - 证据索引：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\artifact-index.json。公网回执：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\public-browser-final\browser-receipt.json；固定部署：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-deploy-20261007\pinned-browser\receipt.json。首轮失败日志保留，不当成功计数。
+
+### 2026-10-07 游玩时服务器监测
+- 首次即时样本（12:57UTC）CPU1.25%、MemAvailable2847215616B、工坊cgroup50810880B，出口18726bit/s，2活跃租约、0等待、NRestarts0。后续采样无活跃租约，已异步询问用户使用新入口或旧Workshop入口；不把无请求时的null延迟算作0。
+- 已有sysstat与云Agent；新部署分钟级sampler、匿名Nginx时延、1MiB两份轮转及只读实时页面，game原PID326997未重启。采样0.0989秒CPU/次，64MiB和0.1核上限，保留6小时历史。
+- Python真实host fixture窗口/5xx/空值测试通过；Chrome fixture1/1通过，真实HTTPS读取数据及copy链接通过，截图已检查。初次监测alias斜线导致500，诊断Nginx index拼接后改显式HTML路线；原游戏没有变更。
+- 产物与入口回执：E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\deployment.json，真实浏览器E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\server-monitor-20261007\public-browser-final\receipt.json。
