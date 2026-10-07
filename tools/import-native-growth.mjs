@@ -165,7 +165,7 @@ function nativeChessDefs(charId, char, nationId, ctx, sequence) {
     const unsupportedSkillIds = sourceSkills.map((skill) => skill.skillId).filter((id) => !supportedSkillIds.includes(id));
     const baseId = `${stem}_${x.suffix}`;
     defs.push({
-      chessId: baseId, baseId, goldenId: `${stem}_b`, isGolden: x.suffix === 'b', tier: null,
+      chessId: baseId, baseId: `${stem}_a`, goldenId: `${stem}_b`, isGolden: x.suffix === 'b', tier: null,
       identifier: 90000 + sequence * 2 + (x.suffix === 'b' ? 1 : 0), isHidden: true, isDiy: false, visible: false,
       chessType: 'NATIVE_IMPORT_CANDIDATE', shopSortId: null, charId, name: char.name,
       appellation: char.appellation || null, rarity: Number(String(char.rarity).replace('TIER_', '')) || null,
@@ -378,6 +378,7 @@ export async function runImport(opts) {
     rec.nativeGrowth = nativeGrowth(c);
     if (rec.chessType === 'NATIVE_IMPORT_CANDIDATE') addNativeAssets(updatedAssets, rec.charId, c, rec.skills || []);
     if (rec.chessType === 'NATIVE_IMPORT_CANDIDATE') {
+      rec.baseId=rec.chessId.replace(/_b$/, '_a');
       const sourceNativeSkillIds = (rec.skills || []).map((skill) => skill?.skillId).filter(Boolean);
       const supportedSkillIds = (ALL_NATIVE_SKILL_SUPPORT[rec.charId] || []).filter((id) => sourceNativeSkillIds.includes(id));
       const defaultSkillId = ALL_NATIVE_DEFAULT_SKILL_IDS[rec.charId] || null;
@@ -497,6 +498,8 @@ export async function runImport(opts) {
     const tmp = `${opts.chess}.tmp-${process.pid}`;
     await writeFile(tmp, text);
     await rename(tmp, opts.chess);
+    // Structural counts follow imported entries; byte/file totals are maintained by the asset pipeline.
+    updatedAssets.stats = {...updatedAssets.stats, chars:Object.keys(updatedAssets.chars||{}).length, charsWithBack:Object.values(updatedAssets.chars||{}).filter(x=>x.spine?.back).length, tokens:Object.keys(updatedAssets.tokens||{}).length, tokensWithSpine:Object.values(updatedAssets.tokens||{}).filter(x=>x.spine).length, skills:Object.keys(updatedAssets.skills||{}).length, ui:Object.keys(updatedAssets.ui||{}).length, spineModels:new Set([...Object.values(updatedAssets.chars||{}).flatMap(x=>Object.values(x.spine||{})),...Object.values(updatedAssets.enemies||{}).map(x=>x.spine),...Object.values(updatedAssets.tokens||{}).map(x=>x.spine)].filter(Boolean).map(x=>x.skel)).size};
     const assetText = JSON.stringify(updatedAssets) + '\n';
     const assetTmp = `${opts.assets}.tmp-${process.pid}`;
     await writeFile(assetTmp, assetText);

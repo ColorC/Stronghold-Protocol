@@ -8,6 +8,7 @@ test('each of the 34 new native bodies has an explicit playable default skill an
   assert.equal(rows.length,68);
   for(const row of rows){
     assert.equal(row.nativeImport.playable,true,row.name);
+    assert.equal(row.baseId,row.chessId.replace(/_b$/,'_a'),`${row.name} resolves to its ordinary body`);
     assert.ok(row.nativeGrowth.phases.length);
     if(row.skill){assert.ok(row.nativeImport.supportedSkillIds.includes(row.skill.skillId));assert.ok(row.skills.some(s=>s.isDefault&&s.skillId===row.skill.skillId));}
     for(const id of row.nativeImport.sourceNativeSkillIds)assert.ok(row.skills.some(s=>s.skillId===id));

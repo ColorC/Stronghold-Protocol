@@ -240,7 +240,7 @@
         "enemy_1504_cqbw": [1,0,1,0,490],
         "enemy_2009_csaudc": [1,0,1,0,490]
       },
-      "hooks": [1,56,3296,431,431,1432,1451,182,23,50,17,17,0,10435,29,27,36,27,1,31,0,2,0],
+      "hooks": [1,56,3296,431,431,1432,1451,182,23,50,17,17,0,10435,29,27,36,27,1,31,0,2,3],
       "events": {"atk":493,"bounty":1,"deploy":17,"die":23,"dmg":1384,"engage":11,"fx":20,"heal":182,"leak":27,"skill":34,"spawn":52,"status":161},
       "fx": {"aoe":4,"burst":2,"camouflage":2,"dodge":3,"dollEnd":1,"liberate":1,"overload":1,"shield":2,"shieldBreak":1,"substitute":1,"summon":1,"takeoff":1},
       "snaps": "f188aea7 a6afe0e2 586473b0 64a602b4 a28a4c01 c2e6f731 0fc56c2d 9e21f4c3 795ab8db 9dbb7b5b 6f022b9b"
@@ -352,7 +352,7 @@
         "enemy_1511_mdrock": [1,1,0,1871,43242],
         "enemy_2017_csphts": [1,1,0,1838,9600]
       },
-      "hooks": [1,90,4200,372,372,658,640,177,77,77,22,22,0,20005,55,36,78,0,1,77,1,0,4],
+      "hooks": [1,90,4200,372,372,658,640,177,77,77,22,22,0,20005,55,36,78,0,1,77,1,0,9],
       "events": {"atk":383,"bounty":5,"deploy":12,"die":77,"dmg":640,"engage":8,"fx":33,"heal":115,"layer":1,"skill":46,"spawn":90,"status":35},
       "fx": {"aoe":2,"buff":1,"coin":3,"dodge":9,"explode":2,"garrison":1,"phase":2,"shieldBreak":1,"sp":2,"takeoff":3,"zone":7},
       "snaps": "7e2ad48a 6bd6d5ab b9d597a4 5d6f961e 1e4c04e2 525f85c6 9bf96317 42a8fa26 f1af39d5 66b9f6f3 bca33a7f 56cc754e 896ae641 1111820a"

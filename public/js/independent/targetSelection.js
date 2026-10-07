@@ -1,10 +1,10 @@
-import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
+import { eligiblePiecesForEffect, reactiveBuyTargetSpec } from '../../../shared/independentEligibility.js';
 
-export function buyTargetSpec(slot, catalog) {
+export function buyTargetSpec(slot, catalog, state) {
   const op=catalog?.operators?.[slot?.id];
   const delivery=op?.effectDelivery||op?.metadata?.op?.effectDelivery||op?.sourceRefs?.darkmoon19_2?.effectDelivery;
   const rows=[...(delivery?.normal||[]),...(delivery?.elite||[])];
-  return rows.find(row=>row.targetSelection)?.targetSelection||null;
+  return rows.find(row=>row.targetSelection)?.targetSelection||reactiveBuyTargetSpec(slot,state,catalog);
 }
 
 export function buyTargetChoices(spec, state, catalog, buySlot) {
@@ -12,7 +12,7 @@ export function buyTargetChoices(spec, state, catalog, buySlot) {
   if(spec.kind==='shopSlot')return (state?.shop?.slots||[]).map((slot,index)=>({slot,index})).filter(x=>x.index!==buySlot&&!x.slot.sold&&x.slot.id).map(x=>({kind:'shopSlot',slot:x.index,id:x.slot.id}));
   if(spec.kind==='friendly'||spec.kind==='magnetic') {
     const faction=spec.faction;
-    return eligiblePiecesForEffect({behavior:'teamForge',params:{targets:`faction:${faction}`,excludeSelf:false}}, {pieces:state?.pieces||[],catalog}).map(piece=>({kind:'friendly',uid:piece.uid,chessId:piece.chessId,name:catalog?.operators?.[piece.chessId]?.name||piece.name||piece.chessId}));
+    return eligiblePiecesForEffect({behavior:spec.scope==='all'?'darkmoonBoughtTribeTargetGrowth':'teamForge',params:{targets:faction?`faction:${faction}`:'all',excludeSelf:false}}, {pieces:state?.pieces||[],catalog}).map(piece=>({kind:'friendly',uid:piece.uid,chessId:piece.chessId,name:catalog?.operators?.[piece.chessId]?.name||piece.name||piece.chessId}));
   }
   return [];
 }
