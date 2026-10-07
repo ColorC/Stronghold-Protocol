@@ -68,7 +68,11 @@ for(const elite of [false,true]){
   const h=battle(pieces),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;h.b.kill(h.by('松果'));h.step(1);
   const first=h.b.allyUnits.find(u=>u.kind==='token'&&u.alive);assert.ok(first);assert.ok(deflect.buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=2);assert.ok(growth.s.atk>before);
   const original={atk:first.base.atk,maxHp:first.base.maxHp};h.b.addBuff(first,{key:'probe-temporary',mods:{atkPct:5},persist:true});h.b.kill(first);h.step(1);h.b.kill(h.by('缪尔赛思'));h.step(1);
-  const copies=h.b.allyUnits.filter(u=>u.kind==='token'&&u.mem.warbandOriginalCopy);assert.ok(copies.length>0);near(copies[0].base.atk,original.atk);near(copies[0].base.maxHp,original.maxHp);assert.deepEqual(copies[0].items,[]);
+  const sourceCopies=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.uid?.startsWith('darkmoon-copy:')&&u.mem.darkmoonSummon);
+  const copiedOriginal=sourceCopies.find(u=>u.defId==='token_tactician_reinforce'&&u.base.atk===original.atk&&u.base.maxHp===original.maxHp);
+  const mlyssSummons=h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_012'&&e.kind==='summon');
+  assert.ok(copiedOriginal,JSON.stringify({original,sourceCopies:sourceCopies.map(u=>({uid:u.uid,defId:u.defId,rawSource:u.def.raw?.darkmoonNativeChessId,atk:u.base.atk,hp:u.base.maxHp,items:u.items})),mlyssSummons,trace:h.b.independentDarkmoonTrace,errors:h.b.errors}));
+  assert.ok(mlyssSummons.some(e=>e.targets.includes(copiedOriginal.uid)),'BGS_012 summoned the source-native projection');assert.deepEqual(copiedOriginal.items,[]);
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
  test(`current Kazimierz seven ${form}: funds refund cap and attack white-stat team growth`,()=>{
