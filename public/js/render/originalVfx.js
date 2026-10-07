@@ -15,9 +15,12 @@ export function framePlacement(entry, scaleAtPoint = 1) {
   const originX = Number(entry?.originX);
   const originY = Number(entry?.originY);
   return {
-    anchorX: (Number.isFinite(originX) ? originX : cellW / 2) / cellW,
+    // The atlas stores two logical images side by side.  Sprite geometry still
+    // spans the packed width, so the anchor is measured in packed pixels and
+    // the x scale below is halved when the shader samples the left image.
+    anchorX: (Number.isFinite(originX) ? originX : cellW / 2) / (cellW * 2),
     anchorY: (Number.isFinite(originY) ? originY : cellH) / cellH,
-    scaleX: Number(scaleAtPoint) || 1,
+    scaleX: (Number(scaleAtPoint) || 1) * 0.5,
     scaleY: Number(scaleAtPoint) || 1,
   };
 }
@@ -36,6 +39,60 @@ void main(void) {
   float alpha = max(max(coverage.r, coverage.g), coverage.b);
   gl_FragColor = vec4(colour.rgb, alpha);
 }`;
+
+// Unity's dissolve materials are not ordinary textured quads.  In the source
+// shader the dissolve map gates the main texture with a per-particle amount;
+// using MeshMaterial directly leaves the whole 64px smoke plane opaque and is
+// the square shadow visible in the compare page.
+const MESH_VERT = `
+precision highp float;
+attribute vec2 aVertexPosition;
+attribute vec2 aTextureCoord;
+uniform mat3 projectionMatrix;
+uniform mat3 translationMatrix;
+varying vec2 vTextureCoord;
+void main(void) {
+  gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
+  vTextureCoord = aTextureCoord;
+}`;
+const DISSOLVE_FRAG = `
+precision mediump float;
+varying vec2 vTextureCoord;
+uniform sampler2D uSampler;
+uniform sampler2D uDissolveTex;
+uniform vec4 uColor;
+uniform vec2 uDissolveScale;
+uniform vec2 uDissolveOffset;
+uniform float uAmount;
+uniform float uBorderWidth;
+uniform float uAlpha;
+void main(void) {
+  vec4 c = texture2D(uSampler, vTextureCoord);
+  vec2 duv = vec2(vTextureCoord.x * uDissolveScale.x + uDissolveOffset.x,
+    1.0 - ((1.0 - vTextureCoord.y) * uDissolveScale.y + uDissolveOffset.y));
+  float d = texture2D(uDissolveTex, duv).r;
+  float rounded = floor(uAmount + 1.0);
+  float k = 1.0 - rounded;
+  float edge = clamp((d - uAmount + uBorderWidth * k) / max(uBorderWidth, 0.0001), 0.0, 1.0);
+  float a = c.a * uColor.a * 2.0 * edge * uAlpha;
+  gl_FragColor = vec4(c.rgb * uColor.rgb * 2.0, a);
+}`;
+
+function curveValue(curve, t, fallback = 0) {
+  const keys = Array.isArray(curve?.keys) ? curve.keys : [];
+  if (!keys.length) return fallback;
+  const x = Math.max(0, Math.min(1, Number(t) || 0));
+  if (x <= Number(keys[0]?.[0] ?? 0)) return Number(keys[0]?.[1]) || 0;
+  for (let i = 1; i < keys.length; i++) {
+    const a = keys[i - 1], b = keys[i];
+    const at = Number(a?.[0]) || 0, bt = Number(b?.[0]) || 1;
+    if (x <= bt) {
+      const k = (x - at) / Math.max(1e-6, bt - at);
+      return (Number(a?.[1]) || 0) + ((Number(b?.[1]) || 0) - (Number(a?.[1]) || 0)) * k;
+    }
+  }
+  return Number(keys[keys.length - 1]?.[1]) || 0;
+}
 
 /**
  * A small, deliberately optional player. It is absent from the fake Pixi/unit-test contexts and is enabled by
@@ -133,29 +190,63 @@ export class OriginalVfxPlayer {
         const raw = node?.mesh;
         const material = Array.isArray(node?.materials) ? node.materials.find((m) => m?.texture?.file) : null;
         if (!raw || !Array.isArray(raw.vertices) || !raw.vertices.length || !Array.isArray(raw.indices) || !raw.indices.length || !material) continue;
-        const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(material.texture.file)}`;
-        let texture = this.meshTextures?.get(url);
-        if (!texture) {
-          if (!this.meshTextures) this.meshTextures = new Map();
-          texture = this.P.Texture.from(url);
-          this.meshTextures.set(url, texture);
-          // Texture.from returns a Texture wrapper; the load lifecycle belongs
-          // to its BaseTexture. Waiting on the wrapper leaves mesh prefabs in
-          // a permanently pending state in Pixi 6, so the coverage report
-          // shows the prefab as requested but never loaded.
-          const base = texture.baseTexture || texture;
-          if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
-        }
+        const loadTexture = async (info) => {
+          if (!info?.file) return null;
+          const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(info.file)}`;
+          let texture = this.meshTextures?.get(url);
+          if (!texture) {
+            if (!this.meshTextures) this.meshTextures = new Map();
+            texture = this.P.Texture.from(url);
+            this.meshTextures.set(url, texture);
+            // Texture.from returns a Texture wrapper; the load lifecycle belongs
+            // to its BaseTexture. Waiting on the wrapper leaves mesh prefabs in
+            // a permanently pending state in Pixi 6, so the coverage report
+            // shows the prefab as requested but never loaded.
+            const base = texture.baseTexture || texture;
+            if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
+          }
+          return texture;
+        };
+        // The baked smoke texture is retained as an extraction fallback, but
+        // when the source dissolve map is available use the source pair and
+        // evaluate ArkDissolve in the fragment shader. This removes the opaque
+        // plane that a static grayscale alpha creates between dissolve frames.
+        const source = material.sourceTexture || material.texture;
+        const texture = await loadTexture(source);
+        if (!texture) continue;
+        const dissolveInfo = material.textures?.DissolveTex;
+        const dissolveTexture = dissolveInfo ? await loadTexture(dissolveInfo) : null;
         const vtx = new Float32Array(raw.vertices.length * 2);
         const uv = new Float32Array(raw.vertices.length * 2);
         const IndexArray = raw.vertices.length > 65535 ? Uint32Array : Uint16Array;
         const idx = new IndexArray(raw.indices);
-        const geometry = new this.P.MeshGeometry(vtx, uv, idx);
-        const mesh = new this.P.Mesh(geometry, new this.P.MeshMaterial(texture));
         const color = material.color || [1, 1, 1, 1];
-        mesh.tint = ((Math.max(0, Math.min(1, Number(color[0]) || 0)) * 255) << 16)
-          | ((Math.max(0, Math.min(1, Number(color[1]) || 0)) * 255) << 8)
-          | (Math.max(0, Math.min(1, Number(color[2]) || 0)) * 255);
+        const rgba = new Float32Array([
+          Math.max(0, Math.min(1, Number(color[0]) || 0)),
+          Math.max(0, Math.min(1, Number(color[1]) || 0)),
+          Math.max(0, Math.min(1, Number(color[2]) || 0)),
+          Math.max(0, Math.min(1, Number(color[3]) || 0)),
+        ]);
+        const geometry = new this.P.MeshGeometry(vtx, uv, idx);
+        let uniforms = null;
+        let materialInstance;
+        if (dissolveTexture && this.P.Shader && this.P.Program) {
+          uniforms = {
+            uSampler: texture,
+            uDissolveTex: dissolveTexture,
+            uColor: rgba,
+            uDissolveScale: new Float32Array(dissolveInfo.scale || [1, 1]),
+            uDissolveOffset: new Float32Array(dissolveInfo.offset || [0, 0]),
+            uAmount: Number(material.floats?._DissolveIntensity) || 0,
+            uBorderWidth: Number(material.floats?._BorderWidth) || 0.1,
+            uAlpha: 1,
+          };
+          materialInstance = new this.P.Shader(this.P.Program.from(MESH_VERT, DISSOLVE_FRAG), uniforms);
+        } else {
+          materialInstance = new this.P.MeshMaterial(texture);
+        }
+        const mesh = new this.P.Mesh(geometry, materialInstance);
+        mesh.tint = ((rgba[0] * 255) << 16) | ((rgba[1] * 255) << 8) | (rgba[2] * 255);
         mesh.blendMode = material.additive ? (this.P.BLEND_MODES?.ADD ?? 1) : (this.P.BLEND_MODES?.NORMAL ?? 0);
         mesh.visible = false;
         this.layers.fxAdd.addChild(mesh);
@@ -164,11 +255,13 @@ export class OriginalVfxPlayer {
         for (let i = 0; i < raw.vertices.length; i++) {
           const p = raw.uv0?.[i] || [0, 0];
           // Unity UVs are bottom-left based; Pixi textures are top-left based.
-          uv[i * 2] = Number(p[0]) * Number(texScale[0] ?? 1) + Number(texOffset[0] ?? 0);
-          uv[i * 2 + 1] = 1 - (Number(p[1]) * Number(texScale[1] ?? 1) + Number(texOffset[1] ?? 0));
+          // Dissolve materials apply the second texture's transform in their
+          // fragment shader, so their main UV remains unmodified.
+          uv[i * 2] = dissolveTexture ? Number(p[0]) : Number(p[0]) * Number(texScale[0] ?? 1) + Number(texOffset[0] ?? 0);
+          uv[i * 2 + 1] = dissolveTexture ? 1 - Number(p[1]) : 1 - (Number(p[1]) * Number(texScale[1] ?? 1) + Number(texOffset[1] ?? 0));
         }
         geometry.getBuffer('aTextureCoord').update(uv);
-        parts.push({ mesh, geometry, positions: vtx, uv, node, material, colorAlpha: Math.max(0, Math.min(1, Number(color[3]) || 0)) });
+        parts.push({ mesh, geometry, positions: vtx, uv, node, material, uniforms, colorAlpha: rgba[3] });
       }
       if (record.dead) { for (const p of parts) p.mesh.destroy({ children: true }); return; }
       record.parts = parts;
@@ -277,11 +370,12 @@ export class OriginalVfxPlayer {
     record.sprite.position.set(sx, sy);
     const s = Math.max(0.01, (p.s || 1) * record.scale / Math.max(1, record.entry.meta.pxPerUnit || 96));
     const facing = followed && record.mirror ? (followed.isEnemy ? -1 : 1) * (Number(followed.visFacing ?? followed.facing) < 0 ? -1 : 1) : 1;
-    // The shader maps the packed pair back to one logical frame.  The sprite
-    // geometry is therefore scaled by `s` (not `s/2`); the old factor halved
-    // the effect and, together with the packed anchor, put hits behind the
-    // target/operator.
-    record.sprite.scale.set(s * facing, s);
+    // The fragment shader samples the left half of a packed colour/coverage
+    // texture, but Pixi still lays out the sprite at the packed width.  Keep
+    // the visible frame at its logical width; using `s` here doubles every
+    // hit and shifts the anchor by the same amount.
+    const logical = framePlacement(record.entry);
+    record.sprite.scale.set(s * logical.scaleX * facing, s * logical.scaleY);
     record.sprite.zIndex = Number.isFinite(depth) ? -depth : 0;
   }
 
@@ -468,7 +562,15 @@ export class OriginalVfxPlayer {
             depth += Number(projected.depth) || 0;
           }
           part.geometry.getBuffer('aVertexPosition').update(part.positions);
-          part.mesh.alpha = alpha;
+          if (part.uniforms) {
+            const curves = particle.customCurves || {};
+            const dissolve = curves.vector1_0;
+            const baseAmount = Number(part.material.floats?._DissolveIntensity) || 0;
+            part.uniforms.uAmount = (dissolve ? curveValue(dissolve, t, 0) : 0) + baseAmount;
+            part.uniforms.uAlpha = fadeIn * fadeOut;
+          } else {
+            part.mesh.alpha = alpha;
+          }
           part.mesh.visible = alpha > 0.001;
           part.mesh.zIndex = Number.isFinite(depth) ? -(depth / Math.max(1, raw.vertices.length)) : 0;
         }
