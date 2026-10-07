@@ -26,3 +26,11 @@
 旧外源测试先发现模块相对路径越过版本根、变量动态import和CSS自定义属性从CDN根解析的问题，已修复；中间catalog字符串比较失败在精确版本复测不再出现，诊断增强记录语义首差异，未改Worker或游戏数据来消除检测误报。原服务器方式Chrome整轮通过，回执E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/integration/legacy-browser/browser-receipt.json。
 
 assets/client子任务工作副本与分支已原生收尾，原始client诊断9d9fcc保留merge ancestry。client自产失败generated目录此前被工具policy拦截删除，未重试；改为保全迁移至E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/client-hosting-20261007/preserved-client-generated，再原生worktree remove，无force。实际收尾回执E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/client-hosting-20261007/asset-distribution/worktree-cleanup.json与client-compute/worktree-cleanup.json。
+
+2026-10-07 后续：用户追加FIFO排队、磁盘清理、主页轻量收窄和VPS试部署，少量回滚即可。queue delivery ddd0be49已合入，MAX_ACTIVE50/MAX_WAITING200，25秒长轮询；音频octet-stream兼容ac810b1已合入。真实VPS以冻结a7b493b14e3ea2529d376352735d082a71bba685最小发布安装Node22.23.3/ws8.22.0并启用独立sp-workshop服务，监听127.0.0.1:18010，CPUQuota100%/MemoryMax512M，空闲内存约49MB。首包漏assetUrls和独立design路径导致两次启动失败，保留日志；packager ea2d895和显式SP_INDEPENDENT_DESIGN_PATH修正后启动成功。未开放公网游戏入口。
+
+真实VPS隔离50/100/200矩阵均0失败，checkpoint p95 388.75/392.08/385.51ms；700份合成存档，共27,889,050B，0服务器录像。回执 E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/server-deploy-20261007/vps-capacity.json；真实生产后端租约50+200/第251个503/FIFO提升/释放全部通过，queue-live-test.log；两者不代表完整公网游戏最大容量。五字体下载三并发出口实测3.501Mbps，network/outbound.json，只是链路样本非套餐上限。
+
+主机72份旧tar私有单一归档到/mnt/datadisk0/colorc-backup-archive/colorc.cc-historical-deploy-backups.tar，72/72 byte cmp通过、精确unlink70份，系统盘腾出2,279,821,312B，留两个有效回滚；不销毁含私人内容的唯一历史来源。主页27c72996合入默认轻量白名单/窄回滚/留2、canonical dry-run包15,747,582B与Linux三次演练通过，现网正文不发布。VPS gzip/静态缓存已上线且安全头保留，首页25,081到9,810B；实际Chrome首页启动无JS错误。系统盘装Node后剩6.60GB。
+
+外源包a7已构建557,798,758B/9,900资源，Pages候选orphan commit d80374aa06fede039c1dbeb12c330bbfc99514c2逐blob对比9,902项0差异，专属-text属性防二进制换行转换；仅本地准备，等待用户确认external git push（omnicompany/AGENTS.md第38行），未修改远端。外源可达后才启用拟定https://colorc.cc/stronghold/independent.html并实际公网整局验收。所有本批产物与作用由runtime/server-deploy-20261007/artifact-index.json列出，Workshop沿用同两张结果卡。
