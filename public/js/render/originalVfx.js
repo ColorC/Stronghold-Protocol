@@ -233,7 +233,14 @@ export class OriginalVfxPlayer {
     // the skill's x-1 range (13 tiles); the old fallback rendered five guessed
     // squares and therefore put the map effect in the wrong places.
     const localGrid = record.grid?.length ? record.grid : [[0, 0], [-2, 0], [2, 0], [0, -2], [0, 2]];
-    const cells = localGrid.map(([dr, dc]) => { const [rr, cc] = rotate(dr, dc); return [tx + rr, ty + cc]; });
+    // Combat view positions are (column, row), while an Arknights range grid
+    // is authored as [rowOffset, columnOffset]. Keep that distinction here;
+    // using (row, column) directly makes the telegraph disagree with the
+    // actual target tiles whenever the range is not symmetric on the diagonal.
+    const cells = localGrid.map(([dr, dc]) => {
+      const [rr, cc] = rotate(dr, dc);
+      return [tx + cc, ty + rr];
+    });
     const seen = new Set(cells.map(([rr, cc]) => `${rr},${cc}`));
     const q = 0.46;
     const alpha = Math.min(0.8, fade * pulse);
@@ -257,7 +264,8 @@ export class OriginalVfxPlayer {
     ];
     for (const [cx, cy] of cells) {
       for (const [[a, b], [c, d], [ndr, ndc]] of edges) {
-        if (seen.has(`${cx + ndr},${cy + ndc}`)) continue;
+        const [nrr, nrc] = rotate(ndr, ndc);
+        if (seen.has(`${cx + nrc},${cy + nrr}`)) continue;
         const v1 = cam.project(cx + a, cy + b, z + 0.029, {});
         const v2 = cam.project(cx + c, cy + d, z + 0.029, {});
         g.moveTo(v1.x, v1.y); g.lineTo(v2.x, v2.y);
