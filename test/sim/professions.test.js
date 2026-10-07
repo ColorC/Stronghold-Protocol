@@ -17,7 +17,7 @@ test('every subProfessionId in the visible pool has a dedicated profile entry', 
   const seen = new Set();
   for (const id of ds.chessIds()) {
     const raw = ds.rawChess(id);
-    if (!raw || raw.isDiy || raw.chessType === 'DIY') continue;
+    if (!raw || raw.visible === false || raw.chessType === 'NATIVE_IMPORT_CANDIDATE' || raw.isDiy || raw.chessType === 'DIY') continue;
     const c = ds.getChess(id);
     if (!c.subProf) continue;
     seen.add(c.subProf);
@@ -29,7 +29,7 @@ test('every subProfessionId in the visible pool has a dedicated profile entry', 
 
 test('every visible chess (normal & elite) fights in a real battle without errors', () => {
   const ds = getDefaultSource();
-  const ids = ds.chessIds().filter((id) => { const r = ds.rawChess(id); return r && !r.isDiy && r.chessType !== 'DIY' && r.stats; });
+  const ids = ds.chessIds().filter((id) => { const r = ds.rawChess(id); return r && r.visible !== false && r.chessType !== 'NATIVE_IMPORT_CANDIDATE' && !r.isDiy && r.chessType !== 'DIY' && r.stats; });
   let silent = [];
   for (const id of ids) {
     const h = makeBattle({

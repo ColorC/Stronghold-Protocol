@@ -350,7 +350,7 @@ async function loadManifest() {
 // ===== shared game-object helpers ===============================================================
 
 /** Range grid [[dRow,dCol]…] of a range_table id (facing right), or null. */
-function rangeGrid(ctx, rangeId) {
+export function rangeGrid(ctx, rangeId) {
   if (!rangeId) return null;
   const r = ctx.rangeTable[rangeId];
   if (!r) { warn(`unknown rangeId ${rangeId}`); return null; }
@@ -415,7 +415,7 @@ export function statsFrom(attrs, bonus = {}) {
 }
 
 /** Immunity flags of a character/enemy attribute object. */
-function immunitiesOf(attrs) {
+export function immunitiesOf(attrs) {
   return {
     stun: !!attrs?.stunImmune, silence: !!attrs?.silenceImmune, sleep: !!attrs?.sleepImmune,
     frozen: !!attrs?.frozenImmune, levitate: !!attrs?.levitateImmune,
@@ -473,7 +473,7 @@ const TRIGGER_DEVIATIONS = Object.freeze({
  * @param {{operator?: boolean, chessId?: string}} opts operator = a chess (the 技能范围 strategy is written for 干员;
  *   summons keep DEFAULT); chessId = the chess's NORMAL id (TRIGGER_DEVIATIONS key)
  */
-function resolveTrigger(ctx, char, charId, skillIdx, skill, { operator = false, chessId = null } = {}) {
+export function resolveTrigger(ctx, char, charId, skillIdx, skill, { operator = false, chessId = null } = {}) {
   const rows = Object.values(ctx.ac.skillTriggerDataList || {});
   const manual = skill.skillType === 'MANUAL';
   const pick =
@@ -508,7 +508,7 @@ const SP_TYPE_NAMES = { 1: 'INCREASE_WITH_TIME', 2: 'INCREASE_WHEN_ATTACK', 4: '
  * Build a skill record (default skill of a chess or a token) at a given level.
  * @returns {object|null}
  */
-function buildSkill(ctx, skillId, level, trigger, label) {
+export function buildSkill(ctx, skillId, level, trigger, label) {
   if (!skillId) return null;
   const s = ctx.skillTable[skillId];
   if (!s) { warn(`${label}: skill ${skillId} missing from skill_table`); return null; }
@@ -581,7 +581,7 @@ function applyModuleTraitParts(parts, phase, level, traitBB, template, rangeId, 
  * combat classification derived from its text.
  * @returns {{ trait: object, classify: object }}
  */
-function traitRecord(ctx, char, phase, level, opParts, chessId) {
+export function traitRecord(ctx, char, phase, level, opParts, chessId) {
   const tc = bestCandidate(char.trait?.candidates, phase, level);
   const traitBB = flattenBB(tc?.blackboard, `${chessId} trait`);
   const traitMod = applyModuleTraitParts(opParts, phase, level, traitBB,
@@ -626,7 +626,7 @@ function buildTalents(ctx, char, phase, level, moduleParts, label, modPhase = ph
 }
 
 /** The character's own talents at (phase, level), unfiltered (no module). */
-function baseTalentList(ctx, char, phase, level, label) {
+export function baseTalentList(ctx, char, phase, level, label) {
   const talents = [];
   (char.talents || []).forEach((t, index) => {
     const c = bestCandidate(t.candidates, phase, level);

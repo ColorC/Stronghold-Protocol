@@ -34,7 +34,7 @@ describe('assetUrls', () => {
   test('every visible chess (normal + golden) has avatar, portrait and skill icon', () => {
     let n = 0;
     for (const c of Object.values(chess)) {
-      if (!c.charId || c.isDiy) continue;
+      if (!c.charId || c.isDiy || c.visible === false || c.chessType === 'NATIVE_IMPORT_CANDIDATE') continue;
       const a = chessAvatarUrl(m, c);
       const p = chessPortraitUrl(m, c);
       assert.ok(a && inManifest(a), `avatar ${c.chessId}`);
