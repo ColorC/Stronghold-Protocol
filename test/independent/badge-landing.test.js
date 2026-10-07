@@ -62,5 +62,6 @@ test('a trait rule names where its badges land (params.landOn)', () => {
   runNativeHook(state, 'gain', { piece: maker }, services);
   assert.deepEqual(front.equipment.map((x) => x.id), ['vitality']);
   assert.equal(maker.equipment.length, 0);
-  assert.equal(state.inventory.length, 0);
+  // 角峰 also brings 谢拉格冰爪 (装备 v4): gear goes to the stock, never onto anyone
+  assert.deepEqual(state.inventory.map((x) => x.id), ['independent:谢拉格冰爪']);
 });

@@ -49,7 +49,7 @@ test('the operator wears its 交接凭证 from the gain on, without drawing a ui
   const piece = after.pieces.at(-1);
   assert.deepEqual(piece.equipment.filter((x) => x.id.startsWith('permit-')), [{ uid: `permit-${piece.uid}`, id: 'permit-north-handover-order', quantity: 1, state: {}, sourceId: 'permit-north-handover-order' }]);
   const plain = buy(start, '隐现'); // brings nothing when gained
-  assert.equal(after.nextUid - start.nextUid, plain.nextUid - start.nextUid + 1, 'only 角峰\'s 生命徽章 draws one more uid');
+  assert.equal(after.nextUid - start.nextUid, plain.nextUid - start.nextUid + 2, '角峰\'s 生命徽章 and 谢拉格冰爪 draw one uid each');
   assert.ok(!plain.pieces.at(-1).equipment.length);
   assert.deepEqual(validateSession(after), []);
 });

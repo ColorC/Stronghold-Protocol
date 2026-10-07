@@ -98,16 +98,16 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   const normalPiece = { uid: 'a', chessId: 'chess_char_1_02_a', elite: false, nativeState: {} };
   normal.state.pieces.push(normalPiece);
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'player' }, normal.services);
-  assert.deepEqual(normal.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 1 }]);
+  assert.deepEqual(normal.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:谢拉格冰爪', quantity: 1 }, { id: 'vitality', quantity: 1 }]);
 
   const elite = fixture();
   const elitePiece = { uid: 'b', chessId: 'chess_char_1_02_b', elite: true, nativeState: {} };
   elite.state.pieces.push(elitePiece);
   runNativeHook(elite.state, 'gain', { piece: elitePiece, origin: 'player' }, elite.services);
-  assert.deepEqual(elite.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'vitality', quantity: 2 }]);
+  assert.deepEqual(elite.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'independent:谢拉格冰爪', quantity: 2 }, { id: 'vitality', quantity: 2 }]);
 
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'native', sourceUid: 'a' }, normal.services);
-  assert.equal(normal.granted.length, 1);
+  assert.equal(normal.granted.length, 2, 'a gain from a native source adds nothing to the first gain (谢拉格冰爪 and 生命徽章)');
 });
 
 test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
@@ -119,7 +119,8 @@ test('白面鸮 replays the front operator\'s 获得时 effect once at the end o
   state.pieces.push(owl, donor);
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
   runNativeHook(state, 'prepEnd', { origin: 'player' }, services);
-  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'vitality', quantity: 1, sourceUid: 'owl' }]);
+  // the first 获得时 rule of the front operator (角峰 brings 谢拉格冰爪 first since 装备 v4)
+  assert.deepEqual(granted.map(({ id, quantity, sourceUid }) => ({ id, quantity, sourceUid })), [{ id: 'independent:谢拉格冰爪', quantity: 1, sourceUid: 'owl' }]);
 });
 
 test('round-end effects require a fielded owner except approved bench-active makers', () => {
@@ -343,8 +344,9 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   normal.state.pieces.push(piece);
   normal.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
   runNativeHook(normal.state, 'gain', { piece }, normal.services);
-  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['vitality', 1, undefined], ['vitality', 1, true]]);
-  assert.equal(normal.granted[1].sourceUid, 'corner');
+  // the badge is forged twice, the gear 角峰 brings only once
+  assert.deepEqual(normal.granted.map((x) => [x.id, x.quantity, x.repeated]), [['independent:谢拉格冰爪', 1, undefined], ['vitality', 1, undefined], ['vitality', 1, true]]);
+  assert.equal(normal.granted[2].sourceUid, 'corner');
 
   const supply = fixture();
   const swire = all.find((x) => x.name === '诗怀雅' && !x.elite);
@@ -358,13 +360,14 @@ test('repeatNativeForging duplicates eligible badge gain and copy output once wi
   // the copier is 白面鸮 since 2026-10-07 (it replays a 获得时 effect at 休整期结束时)
   const copy = fixture();
   const owl = all.find((x) => x.name === '白面鸮' && !x.elite);
-  const donor = { uid: 'donor', chessId: corner.chessId, row: 0, col: 1, dir: 'RIGHT', nativeState: {} };
+  // a donor whose first 获得时 rule forges a badge (野鬃 under the pre-v3 rules: 攻速徽章)
+  const donor = { uid: 'donor', chessId: 'chess_char_1_19_a', row: 0, col: 1, dir: 'RIGHT', nativeState: {} };
   const copier = { uid: 'owl', chessId: owl.chessId, row: 0, col: 0, dir: 'RIGHT', nativeState: {} };
   copy.state.pieces.push(copier, donor);
   copy.state.playerEffects = [{ type: 'repeatNativeForging', source: 'repeat-inspection-license', extraRepeats: 1, expiresRound: 1 }];
   runNativeHook(copy.state, 'prepEnd', {}, copy.services);
   assert.equal(copy.granted.length, 2);
-  assert.ok(copy.granted.every((x) => x.id === 'vitality' && x.sourceUid === 'owl' && x.copied === true));
+  assert.ok(copy.granted.every((x) => x.id === 'agility' && x.sourceUid === 'owl' && x.copied === true));
   assert.equal(copy.granted.filter((x) => x.repeated === true).length, 1);
 });
 

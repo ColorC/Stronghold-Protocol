@@ -182,8 +182,8 @@
         ]
       },
       "nativeTrait": {
-        "normal": "获得时，自身获得1枚生命徽章",
-        "elite": "获得时，自身获得2枚生命徽章",
+        "normal": "获得时，获得1件谢拉格冰爪，自身获得1枚生命徽章",
+        "elite": "获得时，获得2件谢拉格冰爪，自身获得2枚生命徽章",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -278,8 +278,8 @@
         "receiverFaction": "炎"
       },
       "nativeTrait": {
-        "normal": "获得时，自身获得攻击徽章，数量为调度中心等级的一半（向上取整）",
-        "elite": "获得时，自身获得攻击徽章，数量等于调度中心等级",
+        "normal": "获得时，获得1件炎国缚锁，自身获得攻击徽章，数量为调度中心等级的一半（向上取整）",
+        "elite": "获得时，获得2件炎国缚锁，自身获得攻击徽章，数量等于调度中心等级",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -615,8 +615,8 @@
       "role": "出售型周转；继承售卖也结算一次，本体效果随后消失。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "售出时，获得1次免费刷新",
-        "elite": "售出时，获得2次免费刷新",
+        "normal": "获得时，获得1件叙拉古狼嚎哨；售出时，获得1次免费刷新",
+        "elite": "获得时，获得2件叙拉古狼嚎哨；售出时，获得2次免费刷新",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -1002,8 +1002,8 @@
       "role": "天赋「园丁」（在场时，所有辅助干员攻击力+5%），照料范围从辅助扩到身边",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "在场时，周围四格友方攻击力+8%",
-        "elite": "在场时，周围四格友方攻击力+16%",
+        "normal": "获得时，获得1件工程部标定信标；在场时，周围四格友方攻击力+8%",
+        "elite": "获得时，获得2件工程部标定信标；在场时，周围四格友方攻击力+16%",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -1082,8 +1082,8 @@
       "role": "原卫戍特质原样",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "售出时，下个休整期额外获得1采购资金",
-        "elite": "售出时，下个休整期额外获得2采购资金",
+        "normal": "获得时，获得1件源石促效溶剂；售出时，下个休整期额外获得1采购资金",
+        "elite": "获得时，获得2件源石促效溶剂；售出时，下个休整期额外获得2采购资金",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -1466,8 +1466,8 @@
       "role": "天赋「战术防御」（受到攻击时回复技力）；原卫戍特质【不屈】",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "战斗中，自身每受到20次攻击，战斗结束后获得1枚防御徽章（每场至多3枚）",
-        "elite": "战斗中，自身每受到20次攻击，战斗结束后获得2枚防御徽章（每场至多6枚）",
+        "normal": "获得时，获得1件黑钢双联弹匣；战斗中，自身每受到20次攻击，战斗结束后获得1枚防御徽章（每场至多3枚）",
+        "elite": "获得时，获得2件黑钢双联弹匣；战斗中，自身每受到20次攻击，战斗结束后获得2枚防御徽章（每场至多6枚）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -1648,8 +1648,8 @@
       "role": "天赋「强化注射」（在场时所有医疗干员攻速+6），改成注射给被治疗的人；把治疗换成输出",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件医疗护盾无人机；被自身治疗的友方攻击速度+10，持续5秒",
-        "elite": "获得时，获得2件医疗护盾无人机；被自身治疗的友方攻击速度+20，持续5秒",
+        "normal": "被自身治疗的友方攻击速度+10，持续5秒",
+        "elite": "被自身治疗的友方攻击速度+20，持续5秒",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -2164,8 +2164,8 @@
         "donorProfession": "TANK"
       },
       "nativeTrait": {
-        "normal": "自身持有的生命徽章与防御徽章每满5枚，防御力额外+2%",
-        "elite": "自身持有的生命徽章与防御徽章每满5枚，防御力额外+4%",
+        "normal": "获得时，获得1件萨尔贡流沙符；自身持有的生命徽章与防御徽章每满5枚，防御力额外+2%",
+        "elite": "获得时，获得2件萨尔贡流沙符；自身持有的生命徽章与防御徽章每满5枚，防御力额外+4%",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -2731,8 +2731,8 @@
       "role": "治疗徽章（治疗量）去掉；阵营徽章直接补给最弱的同阵营干员",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "休整期结束时，场上人数最多的阵营里，装备最少的干员获得2枚该阵营徽章；在整备区时也生效",
-        "elite": "休整期结束时，场上人数最多的阵营里，装备最少的干员获得4枚该阵营徽章；在整备区时也生效",
+        "normal": "获得时，获得1件莱塔尼亚共鸣音叉；休整期结束时，场上人数最多的阵营里，装备最少的干员获得2枚该阵营徽章；在整备区时也生效",
+        "elite": "获得时，获得2件莱塔尼亚共鸣音叉；休整期结束时，场上人数最多的阵营里，装备最少的干员获得4枚该阵营徽章；在整备区时也生效",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -2985,8 +2985,8 @@
       "role": "要塞的群体炮击；天赋「炮术研习」",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "攻击使目标受到的物理伤害提升10%，持续3秒",
-        "elite": "攻击使目标受到的物理伤害提升20%，持续3秒",
+        "normal": "获得时，获得1件卡西米尔破甲箭簇；攻击使目标受到的物理伤害提升10%，持续3秒",
+        "elite": "获得时，获得2件卡西米尔破甲箭簇；攻击使目标受到的物理伤害提升20%，持续3秒",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -3978,8 +3978,8 @@
       "role": "天赋「测绘器材的奇用」（只对非精英和领袖敌人生效），像模组一样补上精英和领袖",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "攻击范围内的精英和领袖敌人受到8%的脆弱",
-        "elite": "攻击范围内的精英和领袖敌人受到16%的脆弱",
+        "normal": "获得时，获得1件阿戈尔神经毒棘；攻击范围内的精英和领袖敌人受到8%的脆弱",
+        "elite": "获得时，获得2件阿戈尔神经毒棘；攻击范围内的精英和领袖敌人受到16%的脆弱",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -5568,8 +5568,8 @@
       "role": "天赋「中的」（20%几率攻击力150%并晕眩0.2秒）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "被「中的」晕眩的敌人，之后3秒内受到的物理伤害提升15%",
-        "elite": "被「中的」晕眩的敌人，之后3秒内受到的物理伤害提升30%",
+        "normal": "获得时，获得1件精准狙击镜；被「中的」晕眩的敌人，之后3秒内受到的物理伤害提升15%",
+        "elite": "获得时，获得2件精准狙击镜；被「中的」晕眩的敌人，之后3秒内受到的物理伤害提升30%",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -5881,8 +5881,8 @@
       "role": "天赋「起泡性能测试」（首次攻击使目标浮空2.5秒）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "攻击范围内浮空的敌人受到15%的法术脆弱",
-        "elite": "攻击范围内浮空的敌人受到30%的法术脆弱",
+        "normal": "获得时，获得1件叙拉古处决令；攻击范围内浮空的敌人受到15%的法术脆弱",
+        "elite": "获得时，获得2件叙拉古处决令；攻击范围内浮空的敌人受到30%的法术脆弱",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -6098,8 +6098,8 @@
       "role": "恢复同一行三人→深海招募；不是承伤产装引擎。礼物取原三名普通干员，来源池数量不足时按合法候选重抽。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡",
-        "elite": "进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡，重复2次",
+        "normal": "获得时，获得1件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡",
+        "elite": "获得时，获得2件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或深巡，重复2次",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -6579,8 +6579,8 @@
       "role": "原卫戍特质（售出时资金）；原版「身前一格」联动写法（铃兰、白面鸮）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件后勤回收协议；售出时，下个休整期额外获得2采购资金，并触发身前一格友方的售出时特质",
-        "elite": "获得时，获得2件后勤回收协议；售出时，下个休整期额外获得4采购资金，并触发身前一格与身前两格友方的售出时特质",
+        "normal": "获得时，获得1件后勤回收协议；售出时，下个休整期额外获得2采购资金，并触发身前一格友方的售出时，特质",
+        "elite": "获得时，获得2件后勤回收协议；售出时，下个休整期额外获得4采购资金，并触发身前一格与身前两格友方的售出时，特质",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -6850,8 +6850,8 @@
       "role": "原卫戍特质原样（触发身前获得时本是铃兰的原特质）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "身前一格友方若有进入休整期时特质，自身拥有相同特质",
-        "elite": "身前一格友方若有进入休整期时特质，自身拥有相同的精锐特质",
+        "normal": "身前一格友方若有进入休整期时，特质，自身拥有相同特质",
+        "elite": "身前一格友方若有进入休整期时，特质，自身拥有相同的精锐特质",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -7174,8 +7174,8 @@
       "role": "保留获得作战粮；装备部署技力与采购资金分开。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件迅捷作战口粮",
-        "elite": "获得时，获得2件迅捷作战口粮",
+        "normal": "获得时，获得1件萨尔贡链雷护符",
+        "elite": "获得时，获得2件萨尔贡链雷护符",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -7540,8 +7540,8 @@
       "role": "恢复原7发节拍和七次上限；多段命中不重复记弹药。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "战斗中，自身每消耗7发弹药，战斗结束后获得1枚攻速徽章与1枚技力徽章（每场每种至多7枚）",
-        "elite": "战斗中，自身每消耗7发弹药，战斗结束后获得2枚攻速徽章与2枚技力徽章（每场每种至多14枚）",
+        "normal": "获得时，获得1件拉特兰速射扳机；战斗中，自身每消耗7发弹药，战斗结束后获得1枚攻速徽章与1枚技力徽章（每场每种至多7枚）",
+        "elite": "获得时，获得2件拉特兰速射扳机；战斗中，自身每消耗7发弹药，战斗结束后获得2枚攻速徽章与2枚技力徽章（每场每种至多14枚）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -7997,8 +7997,8 @@
       "role": "天赋「萃血」（攻击使目标每秒受到200点法术伤害，持续5秒）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "攻击使目标受到10%的法术脆弱，持续5秒",
-        "elite": "攻击使目标受到20%的法术脆弱，持续5秒",
+        "normal": "获得时，获得1件罗德岛处置预案；攻击使目标受到10%的法术脆弱，持续5秒",
+        "elite": "获得时，获得2件罗德岛处置预案；攻击使目标受到20%的法术脆弱，持续5秒",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8208,8 +8208,8 @@
       "role": "天赋「军事要塞」（在场时所有重装干员攻击力+20%），扩到维多利亚",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件应急浓缩嗅盐；在场时，场上【维多利亚】干员攻击力+10%（与军事要塞不叠加）",
-        "elite": "获得时，获得2件应急浓缩嗅盐；在场时，场上【维多利亚】干员攻击力+20%（与军事要塞不叠加）",
+        "normal": "在场时，场上【维多利亚】干员攻击力+10%（与军事要塞不叠加）",
+        "elite": "在场时，场上【维多利亚】干员攻击力+20%（与军事要塞不叠加）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8309,8 +8309,8 @@
       "role": "原卫戍特质原样",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "进入休整期时，触发身前一格友方的一项获得时特质",
-        "elite": "进入休整期时，触发身前一格与身前两格友方的一项获得时特质",
+        "normal": "获得时，获得1件叙拉古仪仗正装；进入休整期时，触发身前一格友方的一项获得时，特质",
+        "elite": "获得时，获得2件叙拉古仪仗正装；进入休整期时，触发身前一格与身前两格友方的一项获得时，特质",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8403,8 +8403,8 @@
       "role": "原卫戍特质原样",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件双模机械臂；身前一格友方若有休整期结束时特质，自身拥有相同特质",
-        "elite": "获得时，获得2件双模机械臂；身前一格友方若有休整期结束时特质，自身拥有相同的精锐特质",
+        "normal": "获得时，获得1件双模机械臂；身前一格友方若有休整期结束时，特质，自身拥有相同特质",
+        "elite": "获得时，获得2件双模机械臂；身前一格友方若有休整期结束时，特质，自身拥有相同的精锐特质",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -8507,8 +8507,8 @@
       "role": "天赋「化境」（夕与小自在击杀敌人时攻击力+2%）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "战斗中，夕与「小自在」每击倒2名敌人，战斗结束后自身获得1枚攻击加成徽章（每场至多5枚）",
-        "elite": "战斗中，夕与「小自在」每击倒2名敌人，战斗结束后自身获得2枚攻击加成徽章（每场至多10枚）",
+        "normal": "获得时，获得1件炎国点睛笔；战斗中，夕与「小自在」每击倒2名敌人，战斗结束后自身获得1枚攻击加成徽章（每场至多5枚）",
+        "elite": "获得时，获得2件炎国点睛笔；战斗中，夕与「小自在」每击倒2名敌人，战斗结束后自身获得2枚攻击加成徽章（每场至多10枚）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -9354,8 +9354,8 @@
       "role": "天赋「生于冰寒」（在战场停留20秒后攻击力+15%并获得抵抗）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "在场20秒后，攻击范围内的敌人受到10%的法术脆弱",
-        "elite": "在场20秒后，攻击范围内的敌人受到20%的法术脆弱",
+        "normal": "获得时，获得1件萨米凋亡枝；在场20秒后，攻击范围内的敌人受到10%的法术脆弱",
+        "elite": "获得时，获得2件萨米凋亡枝；在场20秒后，攻击范围内的敌人受到20%的法术脆弱",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -10696,8 +10696,8 @@
       "role": "提供调和识别牌以补充酒馆阵营标签；原流形技能保留，不能因此绕过继承的原生阵营限制。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "获得时，获得1件调和识别牌",
-        "elite": "获得时，获得2件调和识别牌（每名干员只能装备一件）",
+        "normal": "获得时，获得1件莱茵生命浮空发生器与1件调和识别牌",
+        "elite": "获得时，获得2件莱茵生命浮空发生器与2件调和识别牌（每名干员只能装备一件）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -11267,8 +11267,8 @@
       "role": "保留消费驱动；资金券领取、免费招募与退款不是花费。另产出回复徽章（生命恢复）。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "休整期结束时，本次休整期每花费3采购资金，自身获得1枚技力徽章与1枚回复徽章（每种至多6枚）",
-        "elite": "休整期结束时，本次休整期每花费3采购资金，自身获得2枚技力徽章与2枚回复徽章（每种至多12枚）",
+        "normal": "获得时，获得1件工程部节拍校准器；休整期结束时，本次休整期每花费3采购资金，自身获得1枚技力徽章与1枚回复徽章（每种至多6枚）",
+        "elite": "获得时，获得2件工程部节拍校准器；休整期结束时，本次休整期每花费3采购资金，自身获得2枚技力徽章与2枚回复徽章（每种至多12枚）",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -12343,8 +12343,7 @@
       "normal": "普通攻击命中时，主目标累积侵蚀损伤，数值为携带者攻击力的10%",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true,
-      "unassigned": true
+      "unique": true
     },
     {
       "sourceId": "chess_item_2_01_e_a",
@@ -12464,8 +12463,7 @@
       "normal": "每次部署时获得隐匿，首次普通攻击后解除",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true,
-      "unassigned": true
+      "unique": true
     },
     {
       "sourceId": "chess_item_3_02_e_a",
@@ -12480,8 +12478,7 @@
       "normal": "普通攻击优先攻击范围内生命值最低的敌人",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true,
-      "unassigned": true
+      "unique": true
     },
     {
       "sourceId": "chess_item_3_03_e_a",
@@ -12604,8 +12601,7 @@
       "normal": "普通攻击命中时中等力度地击退主目标（冷却4秒）",
       "inheritable": false,
       "slotCost": 1,
-      "unique": true,
-      "unassigned": true
+      "unique": true
     },
     {
       "sourceId": "chess_item_3_11_e_a",
@@ -13299,8 +13295,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "炎国缚锁",
@@ -13310,8 +13305,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "萨尔贡流沙符",
@@ -13321,8 +13315,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "工程部标定信标",
@@ -13332,8 +13325,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "拉特兰速射扳机",
@@ -13343,8 +13335,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "阿戈尔神经毒棘",
@@ -13354,8 +13345,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "叙拉古狼嚎哨",
@@ -13365,8 +13355,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "卡西米尔破甲箭簇",
@@ -13376,8 +13365,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "莱塔尼亚共鸣音叉",
@@ -13387,8 +13375,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "阿戈尔深潜锚钩",
@@ -13398,8 +13385,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "莱茵生命浮空发生器",
@@ -13409,8 +13395,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "叙拉古处决令",
@@ -13420,8 +13405,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "炎国点睛笔",
@@ -13431,8 +13415,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "萨尔贡链雷护符",
@@ -13442,8 +13425,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "黑钢双联弹匣",
@@ -13453,8 +13435,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "萨米凋亡枝",
@@ -13464,8 +13445,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "工程部节拍校准器",
@@ -13475,8 +13455,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     },
     {
       "name": "罗德岛处置预案",
@@ -13486,8 +13465,7 @@
       "inheritable": false,
       "slotCost": 1,
       "unique": true,
-      "upgrade": null,
-      "unassigned": true
+      "upgrade": null
     }
   ],
   "identityGear": {
