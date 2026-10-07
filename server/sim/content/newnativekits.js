@@ -15,6 +15,8 @@ export const NATIVE_SKILL_SUPPORT = Object.freeze({
   char_4019_ncdeer: Object.freeze(['skchr_ncdeer_1']),
   char_2025_shu: Object.freeze(['skchr_shu_1']),
   char_2024_chyue: Object.freeze(['skchr_chyue_1']),
+  char_484_robrta: Object.freeze(['skchr_robrta_1']),
+  char_4222_taraxa: Object.freeze(['skchr_taraxa_1']),
 });
 export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_240_wyvern: 'skchr_wyvern_1',
@@ -25,6 +27,8 @@ export const NATIVE_DEFAULT_SKILL_IDS = Object.freeze({
   char_4019_ncdeer: 'skchr_ncdeer_1',
   char_2025_shu: 'skchr_shu_1',
   char_2024_chyue: 'skchr_chyue_1',
+  char_484_robrta: 'skchr_robrta_1',
+  char_4222_taraxa: 'skchr_taraxa_1',
 });
 
 const spTypeOf = (value) => ({ INCREASE_WITH_TIME: 'time', INCREASE_WHEN_ATTACK: 'attack', INCREASE_WHEN_TAKEN: 'hurt', NOT_RECOVER: 'none', time: 'time', attack: 'attack', hurt: 'hurt', none: 'none' })[value] ?? null;
@@ -259,6 +263,52 @@ function chongyue(bb, chess) {
   };
 }
 
+function roberta(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_robrta_1');
+  const atkPct = number(x?.s.bb?.atk), defPct = number(x?.s.bb?.def), duration = number(x?.s.duration);
+  if (!x || atkPct == null || defPct == null || !(duration > 0)) return null;
+  return { skills: { skchr_robrta_1: { id: 'skchr_robrta_1', kind: 'duration', duration, spCost: x.spCost, initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', mods: { atkPct, defPct } } } };
+}
+
+function taraxacum(bb, chess) {
+  const x = sourceSkill(chess, 'skchr_taraxa_1');
+  const healScale = number(x?.s.bb?.['attack@heal_scale']);
+  const attackIntervalFactor = number(x?.s.bb?.['attack@base_attack_time']);
+  const duration = number(x?.s.duration);
+  if (!x || !(healScale > 0) || !(attackIntervalFactor > 0 && attackIntervalFactor < 1) || !(duration > 0)) return null;
+  const talent = chess?.talents?.find((item) => item.index === 0)?.bb ?? {};
+  const damageResistance = number(talent.damage_resistance);
+  const blockCnt = number(talent.block_cnt);
+  return {
+    skills: { skchr_taraxa_1: {
+      id: 'skchr_taraxa_1', kind: 'duration', duration, spCost: x.spCost,
+      initSp: number(x.s.initSp) ?? 0, spType: x.spType, trigger: 'DEFAULT', heal: true,
+      mods: { batPct: attackIntervalFactor - 1 },
+      attack: { healScale },
+      flags: { liftoff: true, blockFly: true },
+    } },
+    talents: [{ install(battle, unit) {
+      if (!(damageResistance > 0 && blockCnt > 0)) return;
+      const key = `native:taraxa:${unit.id}`;
+      battle.every(0.5, () => {
+        const up = unit.alive && unit.deployed;
+        const range = up ? unit.rangeKeySet : null;
+        for (const ally of battle.alliesFor(unit)) {
+          const inRange = ally.kind === 'op' && range?.has(ally.tileR * COLS + ally.tileC);
+          const canBlockFly = !!(ally.profile?.blockFly || ally.s.flags?.blockFly);
+          if (inRange && canBlockFly) {
+            battle.addBuff(ally, { key, duration: 0.6, source: unit, mods: { blockCnt }, tags: ['aura', 'talent'] });
+            battle.addBuff(ally, { key: `${key}:resist`, duration: 0.6, source: unit, mods: { dmgTakenMul: 1 - damageResistance }, tags: ['aura', 'talent'] });
+          } else {
+            if (ally.findBuff(key)) battle.removeBuff(ally, key);
+            if (ally.findBuff(`${key}:resist`)) battle.removeBuff(ally, `${key}:resist`);
+          }
+        }
+      }, { owner: unit, immediate: true });
+    } }],
+  };
+}
+
 
 export default Object.freeze({
   chess_native_char_240_wyvern: vanilla,
@@ -269,4 +319,6 @@ export default Object.freeze({
   chess_native_char_4019_ncdeer: nineColoredDeer,
   chess_native_char_2025_shu: shu,
   chess_native_char_2024_chyue: chongyue,
+  chess_native_char_484_robrta: roberta,
+  chess_native_char_4222_taraxa: taraxacum,
 });

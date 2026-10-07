@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { makeBattle, enemyRec } from '../helpers/battleHarness.js';
 import { skillSpecSource } from '../../server/sim/content/index.js';
 import { DataSource, getDefaultSource } from '../../server/sim/simdata.js';
+import { COLS } from '../../server/sim/constants.js';
 
 const chessData = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const id = 'chess_native_char_235_jesica_a';
@@ -23,6 +24,10 @@ const shuId = 'chess_native_char_2025_shu_a';
 const shuRecord = chessData[shuId];
 const chongyueId = 'chess_native_char_2024_chyue_a';
 const chongyueRecord = chessData[chongyueId];
+const robertaId = 'chess_native_char_484_robrta_a';
+const robertaRecord = chessData[robertaId];
+const taraxaId = 'chess_native_char_4222_taraxa_a';
+const taraxaRecord = chessData[taraxaId];
 
 test('native Jessica S1: native blackboard powers attack-recovery next-hit multiplier in battle', () => {
   assert.ok(record?.nativeGrowth?.phases?.length);
@@ -183,5 +188,43 @@ test('native Chongyue S1 executes its three-charge triple strike from native bla
   assert.ok(unit.skill.activations > 0);
   const hits = h.eventsOf('dmg').filter((event) => event[1] === h.enemy('enemy_dummy').id && event[4] === unit.id);
   assert.ok(hits.length >= 6);
+  h.invariants();
+});
+
+test('native Roberta S1 applies source ATK and DEF buffs during its duration', () => {
+  const data = new DataSource({ chess: { [robertaId]: robertaRecord }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(robertaId);
+  assert.equal(def.skill.id, 'skchr_robrta_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: robertaId, row: 10, col: 5 }], enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
+  h.run(40);
+  const unit = h.unit(robertaId);
+  assert.ok(unit.skill.activations > 0);
+  assert.ok(unit.skill.active);
+  assert.ok(unit.s.atk > unit.base.atk);
+  assert.ok(unit.s.def > unit.base.def);
+  h.invariants();
+});
+
+test('native Taraxacum S1 heals faster while airborne and her talent protects air blockers in range', () => {
+  const data = new DataSource({ chess: { [taraxaId]: taraxaRecord, chess_char_1_01_a: chessData.chess_char_1_01_a }, enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 1e7, speed: 0 }) } }, getDefaultSource());
+  const def = data.getChess(taraxaId);
+  assert.equal(def.skill.id, 'skchr_taraxa_1');
+  assert.equal(skillSpecSource(def), 'skills');
+  const h = makeBattle({ data, units: [{ chessId: taraxaId, row: 10, col: 5 }, { chessId: 'chess_char_1_01_a', row: 10, col: 7 }], enemies: [{ key: 'enemy_dummy', pos: [10, 8] }] });
+  const unit = h.unit(taraxaId), ally = h.unit('chess_char_1_01_a');
+  h.run(0.6);
+  assert.ok(unit.rangeKeySet?.has(ally.tileR * COLS + ally.tileC), 'ally is in the source attack range');
+  h.b.addBuff(ally, { key: 'test:blockFly', persist: true, flags: { blockFly: true } });
+  h.run(0.6);
+  assert.equal(ally.s.blockCnt, ally.base.blockCnt + taraxaRecord.talents[0].bb.block_cnt);
+  assert.ok(Math.abs(ally.s.dmgTakenMul - (1 - taraxaRecord.talents[0].bb.damage_resistance)) < 1e-8);
+  ally.hp = ally.s.maxHp * 0.25;
+  unit.skill.setSpTotal(unit.skill.spCost);
+  assert.equal(unit.skill.activate('manual'), true, 'manual source skill can be activated when ready');
+  h.run(2);
+  assert.ok(unit.skill.activations > 0);
+  assert.ok(unit.s.flags.liftoff && unit.s.flags.blockFly, 'the active S1 grants native lift-off and air blocking');
+  assert.ok(h.eventsOf('heal').some((event) => event[1] === ally.id && event[2] > 0));
   h.invariants();
 });
