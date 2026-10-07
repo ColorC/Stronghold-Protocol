@@ -61,17 +61,17 @@
           "elite": true,
           "provisional": false,
           "phase": 1,
-          "nativeLevel": 50,
+          "nativeLevel": 55,
           "skillId": "skchr_wyvern_1",
           "skillSpecSource": "skills",
           "base": {
-            "atk": 345,
-            "maxHp": 1246,
-            "def": 235,
+            "atk": 355,
+            "maxHp": 1270,
+            "def": 240,
             "res": 0
           },
-          "damage": 8620,
-          "dps": 96,
+          "damage": 10816,
+          "dps": 120,
           "healing": 0,
           "attacks": 85,
           "skillActivations": 3,
@@ -1025,7 +1025,7 @@
         {
           "chessId": "chess_native_char_220_grani_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_grani_2",
@@ -1049,7 +1049,7 @@
         {
           "chessId": "chess_native_char_220_grani_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_grani_2",
@@ -1080,7 +1080,7 @@
         {
           "chessId": "chess_native_char_4017_puzzle_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_puzzle_1",
@@ -1104,7 +1104,7 @@
         {
           "chessId": "chess_native_char_4017_puzzle_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_puzzle_1",
@@ -1135,7 +1135,7 @@
         {
           "chessId": "chess_native_char_155_tiger_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_tiger_1",
@@ -1159,7 +1159,7 @@
         {
           "chessId": "chess_native_char_155_tiger_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_tiger_1",
@@ -1300,7 +1300,7 @@
         {
           "chessId": "chess_native_char_4045_heidi_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_heidi_1",
@@ -1324,7 +1324,7 @@
         {
           "chessId": "chess_native_char_4045_heidi_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_heidi_1",
@@ -1355,7 +1355,7 @@
         {
           "chessId": "chess_native_char_154_morgan_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_morgan_1",
@@ -1379,7 +1379,7 @@
         {
           "chessId": "chess_native_char_154_morgan_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_morgan_1",
@@ -1520,7 +1520,7 @@
         {
           "chessId": "chess_native_char_112_siege_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_siege_2",
@@ -1544,7 +1544,7 @@
         {
           "chessId": "chess_native_char_112_siege_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_siege_2",
@@ -1586,14 +1586,14 @@
             "def": 329,
             "res": 0
           },
-          "damage": 13402,
-          "dps": 149,
+          "damage": 16435,
+          "dps": 183,
           "healing": 0,
           "attacks": 60,
           "skillActivations": 1,
           "deaths": 0,
           "dp": 99,
-          "summons": 1,
+          "summons": 2,
           "errors": []
         },
         {
@@ -1610,14 +1610,14 @@
             "def": 391,
             "res": 0
           },
-          "damage": 24227,
-          "dps": 269,
+          "damage": 28698,
+          "dps": 319,
           "healing": 0,
           "attacks": 60,
           "skillActivations": 2,
           "deaths": 0,
           "dp": 99,
-          "summons": 2,
+          "summons": 3,
           "errors": []
         }
       ]
@@ -2345,7 +2345,7 @@
         {
           "chessId": "chess_native_char_4000_jnight_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 0,
           "nativeLevel": 30,
           "skillId": null,
@@ -2369,7 +2369,7 @@
         {
           "chessId": "chess_native_char_4000_jnight_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 0,
           "nativeLevel": 30,
           "skillId": null,
@@ -2510,7 +2510,7 @@
         {
           "chessId": "chess_native_char_4032_provs_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_provs_1",
@@ -2534,7 +2534,7 @@
         {
           "chessId": "chess_native_char_4032_provs_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_provs_1",
@@ -2620,7 +2620,7 @@
         {
           "chessId": "chess_native_char_265_sophia_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_sophia_2",
@@ -2644,7 +2644,7 @@
         {
           "chessId": "chess_native_char_265_sophia_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_sophia_2",
@@ -2675,7 +2675,7 @@
         {
           "chessId": "chess_native_char_204_platnm_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skcom_atk_up[3]",
@@ -2699,7 +2699,7 @@
         {
           "chessId": "chess_native_char_204_platnm_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skcom_atk_up[3]",
@@ -3060,7 +3060,7 @@
         {
           "chessId": "chess_native_char_190_clour_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_clour_2",
@@ -3084,7 +3084,7 @@
         {
           "chessId": "chess_native_char_190_clour_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_clour_2",
@@ -3225,7 +3225,7 @@
         {
           "chessId": "chess_native_char_346_aosta_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skcom_quickattack[3]",
@@ -3249,7 +3249,7 @@
         {
           "chessId": "chess_native_char_346_aosta_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skcom_quickattack[3]",
@@ -3280,7 +3280,7 @@
         {
           "chessId": "chess_native_char_349_chiave_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skcom_charge_cost[3]",
@@ -3304,7 +3304,7 @@
         {
           "chessId": "chess_native_char_349_chiave_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skcom_charge_cost[3]",
@@ -3390,7 +3390,7 @@
         {
           "chessId": "chess_native_char_4031_liesel_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_liesel_1",
@@ -3414,7 +3414,7 @@
         {
           "chessId": "chess_native_char_4031_liesel_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_liesel_1",
@@ -3425,11 +3425,11 @@
             "def": 117,
             "res": 20
           },
-          "damage": 20120,
-          "dps": 224,
+          "damage": 20533,
+          "dps": 228,
           "healing": 0,
           "attacks": 31,
-          "skillActivations": 10,
+          "skillActivations": 11,
           "deaths": 0,
           "dp": 99,
           "summons": 0,
@@ -3500,7 +3500,7 @@
         {
           "chessId": "chess_native_char_356_broca_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_broca_1",
@@ -3524,7 +3524,7 @@
         {
           "chessId": "chess_native_char_356_broca_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_broca_1",
@@ -3610,7 +3610,7 @@
         {
           "chessId": "chess_native_char_4065_judge_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_judge_1",
@@ -3621,11 +3621,11 @@
             "def": 436,
             "res": 10
           },
-          "damage": 28616,
-          "dps": 318,
+          "damage": 30729,
+          "dps": 341,
           "healing": 0,
           "attacks": 57,
-          "skillActivations": 14,
+          "skillActivations": 17,
           "deaths": 0,
           "dp": 99,
           "summons": 0,
@@ -3634,7 +3634,7 @@
         {
           "chessId": "chess_native_char_4065_judge_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_judge_1",
@@ -3645,11 +3645,11 @@
             "def": 552,
             "res": 10
           },
-          "damage": 70069,
-          "dps": 779,
+          "damage": 74045,
+          "dps": 823,
           "healing": 0,
           "attacks": 57,
-          "skillActivations": 18,
+          "skillActivations": 22,
           "deaths": 0,
           "dp": 99,
           "summons": 0,
@@ -3720,7 +3720,7 @@
         {
           "chessId": "chess_native_char_4037_demetr_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_demetr_1",
@@ -3744,7 +3744,7 @@
         {
           "chessId": "chess_native_char_4037_demetr_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_demetr_1",
@@ -3775,7 +3775,7 @@
         {
           "chessId": "chess_native_char_4155_talr_a",
           "elite": false,
-          "provisional": true,
+          "provisional": false,
           "phase": 1,
           "nativeLevel": 55,
           "skillId": "skchr_talr_1",
@@ -3799,7 +3799,7 @@
         {
           "chessId": "chess_native_char_4155_talr_b",
           "elite": true,
-          "provisional": true,
+          "provisional": false,
           "phase": 2,
           "nativeLevel": 50,
           "skillId": "skchr_talr_1",

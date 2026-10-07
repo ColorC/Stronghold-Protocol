@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {observe,motionBetween} from '../public/dev/spine-reference/semantic.js';
 import {profiles,landmarks} from '../public/dev/spine-reference/profiles.js';
+import {analyzeMotion} from '../public/dev/spine-reference/motion-analysis.js';
 const fixture={bones:[{id:'a',matrix:[1,0,0,1,-5,20]},{id:'b',matrix:[1,0,0,1,7,21]}],slots:[],coordinateSystem:{cameraExcluded:true}};
 const profile={id:'test',normalizer:10,bindings:{'leg.L.hip':{kind:'bone-local',bone:'a',local:[0,0]},'leg.R.hip':{kind:'bone-local',bone:'b',local:[0,0]},'head.center':{kind:'bone-local',bone:'a',local:[3,5]},pelvis:{kind:'blend',ids:['leg.L.hip','leg.R.hip'],weights:[.5,.5]}}};
 test('all rigs expose the same semantic vocabulary, with explicit unknowns',()=>{
@@ -39,4 +40,12 @@ test('multiple active hand variants preserve ambiguity',()=>{
   const p={...profile,bindings:{...profile.bindings,'arm.L.wrist':{kind:'active-slot',candidates:[{slot:'hand1',bone:'a'},{slot:'hand2',bone:'b'}]}}};
   const raw={...fixture,slots:['hand1','hand2'].map(id=>({id,alpha:1,attachment:{points:[[1,2]]}}))};
   assert.equal(observe(raw,p).landmarks['arm.L.wrist'].position,null);
+});
+test('angular comparisons unwrap across the seam and preserve missing angles',()=>{
+  const frame=degrees=>({time:degrees===179?0:1,landmarks:{pelvis:{position:[0,0]},'arm.L.shoulder':{position:[0,0]},'arm.L.elbow':{position:[Math.cos(degrees*Math.PI/180),Math.sin(degrees*Math.PI/180)]}}});
+  const a=analyzeMotion({frames:[frame(179),frame(-179)],animation:'fixture',duration:1},{id:'fixture',normalizer:1,weaponSide:'L'});
+  assert.ok(Math.abs(a.arms.L.upperArmAngleSpan-2)<1e-8);
+  assert.equal(a.arms.R.upperArmAngleSpan,null);
+  assert.equal(a.feet.L.sole.travel,null);
+  assert.equal(a.weaponAngleSpan,null);
 });

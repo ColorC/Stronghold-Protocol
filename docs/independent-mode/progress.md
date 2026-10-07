@@ -95,3 +95,6 @@
 回放修复c181c087/44666321：rrweb暂停冻结入口动画导致游戏根节点opacity0，已修复；iframe交互恢复、框选时临时交给外层，录制原origin资源重定位允许跨hostname发布。图像验收 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\recording\replay-hostname-mismatch.png 与同名JSON。旧小片段只验证播放器，不是完整整局成果；录制agent正在最终池真实UI driver中自主排错。
 
 双模式公共动作矩阵首60局：短局各15/15成功；标准局徽章3/15、等级0/15，中后段压力偏高，需先修pilot漏用预算/目标选择并根据数据调整。原始报告 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\balance-qa\all-runs.json。prep源对照61卡122份文本与新增9卡18形态因果测试必须区分，agent继续逐卡查金色副效果，已发现Murozond金色体遗漏及Ragnaros双次候选。完整影片、公开发布、集中表更新、全量回归及工作副本收尾尚未完成，goal保持active。
+
+
+2026-10-08：整合101卡中文规则生成器、完整复制体源能力/原始成长/装备、官方技能触发与原生进阶不降级、两种有限双向交接及商店条件人数。实际143项相关测试全过（完整日志 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\integrated-source-regression.log）；重新测量101干员202形态原生能力，缺实现0、战斗错误0（E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-power-final.json，日志同目录native-power-final.log）。记录期间发现详情购买选择null引用两处并修复。当前标准14轮唯一30局：徽章6/15、等级4/15，继续分析防御路线及完成终局录像。全套回归进行中，不宣称完成。
