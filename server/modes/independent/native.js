@@ -397,7 +397,8 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
           const faction = r.behavior === 'forgeDominantFactionTierCount' ? dominantFaction(state, services, piece) : p.faction;
         if (r.behavior === 'forgeDominantFactionTierCount' && !faction && hasAnyFaction(state, services)) throw new Error('Dominant faction could not be resolved from the catalog faction order');
         const ranks = roster(state).filter((x) => isPresent(x) && hasFaction(x, faction, services)).map((x) => services.catalog.operators[chessIdOf(x)]?.tier || 0);
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, new Set(ranks).size * value(p, elite));
+        const count = r.behavior === 'forgeFactionTierPair' && p.countBy === 'operators' ? ranks.length : new Set(ranks).size;
+        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, count * value(p, elite));
         if (r.behavior === 'forgeFactionTierPair') for (const id of p.ids) output(ruleServices, state, id, amount, piece);
         else output(ruleServices, state, p.id, amount, piece);
         break;

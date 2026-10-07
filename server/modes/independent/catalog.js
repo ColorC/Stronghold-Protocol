@@ -50,7 +50,7 @@ const EQUIPMENT_RULES = Object.freeze({
   '拉特兰速射扳机': ce('attack', 'doubleStrike', { counterEvery: 5 }),
   '阿戈尔神经毒棘': ce('hit', 'elementOnHit', { element: 'neural', atkPercent: 0.12 }),
   '战栗维式重锤': ce('attack', 'disarmOnHit', { status: 'tremble', durationSeconds: 4, cooldownSeconds: 8, steam: { cooldownSeconds: 5 } }),
-  '叙拉古狼嚎哨': ce('attack', 'countedStatus', { status: 'fear', counterEvery: 6, durationSeconds: 1.5, target: 'primary' }),
+  '叙拉古狼嚎哨': ce('attack', 'countedStatus', { status: 'fear', counterEvery: 12, durationSeconds: .75, cooldownSeconds: 8, target: 'primary' }),
   '萨尔贡行军浓茶': ce('attack', 'spChargeMode', { onAttack: 1 }),
   '卡西米尔破甲箭簇': ce('attack', 'countedStatus', { status: 'defDown', value: 0.2, counterEvery: 1, durationSeconds: 3, target: 'primary' }),
   '不屈部署支架': ce('death', 'deviceOnDown', { maxHpPercent: 0.5, blockCnt: 1 }),
@@ -293,12 +293,20 @@ export function getCatalog(data = getData(), design = DESIGN) {
     const id = PERMIT_GEAR_IDS[permission.gear];
     if (!id || Object.hasOwn(equipment, id)) throw new Error(`Independent permit gear has a missing or duplicate id: ${permission.gear}`);
     const op = operators[source.chessId];
+    const autoGrant = permission.autoGrant !== false;
     equipment[id] = { id, sourceId: id, canonicalId: id, uniqueKey: id, name: permission.gear, kind: 'permit', mechanism: 'inheritancePermit',
       params: Object.fromEntries(PERMIT_LIMIT_KEYS.filter((k) => permission[k] !== undefined).map((k) => [k, clone(permission[k])])), stats: null,
       level: null, eliteLevel: null, eliteId: null, unique: true, inheritable: false, available: true, shopEligible: false,
-      effect: permission.limit, ownerChessId: source.chessId, ownerName: source.name };
-    op.permitGearId = id;
-    if (op.eliteChessId) operators[op.eliteChessId].permitGearId = id;
+      effect: String(permission.limit || '').replaceAll('被继承','接收').replaceAll('继承','交接'), ownerChessId: source.chessId, ownerName: source.name,
+      ...(!autoGrant ? { legacyOnly:true, retired:true } : {}),
+      ...(permission.sourceRefs ? {sourceRefs:{cards:clone(Array.isArray(permission.sourceRefs) ? permission.sourceRefs : permission.sourceRefs.cards || [])}} : {}) };
+    if(autoGrant) {
+      op.permitGearId = id;
+      if (op.eliteChessId) operators[op.eliteChessId].permitGearId = id;
+    } else {
+      delete op.permitGearId;
+      if (op.eliteChessId) delete operators[op.eliteChessId].permitGearId;
+    }
   }
   for (const op of Object.values(operators)) delete op.inheritance;
   const attachments = keyed(design.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));

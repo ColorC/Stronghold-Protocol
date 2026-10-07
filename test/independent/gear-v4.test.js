@@ -146,8 +146,8 @@ test('targetPriority (精准狙击镜): the lowest-HP enemy in range is attacked
   assert.ok(near(b.hp, 400), `${b.hp}`);
 });
 
-test('countedStatus: 恐惧 (狼嚎哨) every 6th attack, and the feared enemy runs; 浮空; 束缚; 停顿', () => {
-  for (const [name, status, n, flag] of [['叙拉古狼嚎哨', 'fear', 6, 'fear'], ['莱茵生命浮空发生器', 'levitate', 6, 'levitate'], ['炎国缚锁', 'bind', 6, 'bind']]) {
+test('countedStatus: 恐惧 (狼嚎哨) every 12th attack, and the feared enemy runs; 浮空; 束缚; 停顿', () => {
+  for (const [name, status, n, flag] of [['叙拉古狼嚎哨', 'fear', 12, 'fear'], ['莱茵生命浮空发生器', 'levitate', 6, 'levitate'], ['炎国缚锁', 'bind', 6, 'bind']]) {
     const h = setup([{ uid: 'w', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G(name)] }]);
     const e = h.spawn(status === 'fear' ? 'walker' : 'dummy', { pos: [10, 4] });
     attacks(h, h.unit('w'), e, n - 1);
@@ -156,9 +156,10 @@ test('countedStatus: 恐惧 (狼嚎哨) every 6th attack, and the feared enemy r
     assert.ok(e.s.flags[flag], `${name} applies ${status}`);
     if (status === 'fear') {
       const x0 = e.x, y0 = e.y;
-      h.run(1);
+      h.run(.5);
       assert.ok(Math.hypot(e.x - x0, e.y - y0) > 0.05, 'a feared enemy runs');
       assert.ok(!e.blockedBy, 'a feared enemy is not blocked');
+      h.run(.3);assert.ok(!e.s.flags.fear,'wolf whistle fear expires after .75 seconds');
     }
   }
   const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('萨尔贡流沙符')] }]);
@@ -184,6 +185,17 @@ test('脆弱 / 法术脆弱 / 防御力降低 from gear are their own effects: t
   h2.b.dealDamage(h2.unit('w'), e2, { amount: 100, type: 'arts' });
   h2.b.applyStatus(e2, 'artsFragile', { duration: 10, value: 0.2 });
   assert.ok(near(e2.s.artsTakenMul, 1.15 * 1.2, 1e-6), `${e2.s.artsTakenMul}`);
+});
+
+test('wolf whistle uses the effective unique 12-attack / .75-second / eight-second rule with real counters',()=>{
+  const def=catalog.equipment[G('叙拉古狼嚎哨')],params=def.params.effects[0].params;
+  assert.equal(def.unique,true);assert.equal(params.counterEvery,12);assert.equal(params.durationSeconds,.75);assert.equal(params.cooldownSeconds,8);
+  const h=setup([{uid:'w',chessId:OPS.syracusa,row:10,col:3,equipment:[def.id]}]);
+  const unit=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,4]});
+  attacks(h,unit,enemy,11);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy);assert.ok(enemy.s.flags.fear);
+  h.run(.8);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy,24);assert.ok(!enemy.s.flags.fear,'extra twelve-attack cycles during cooldown cannot retrigger');
+  h.run(7.3);unit.atkCd=1e9;attacks(h,unit,enemy,12);assert.ok(enemy.s.flags.fear,'a full cycle after eight seconds triggers again');
+  h.run(.8);assert.ok(!enemy.s.flags.fear);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 
 test('deployFirstHitStatus perDeploy (谢拉格冰爪): the first normal attack after each deployment chills', () => {
