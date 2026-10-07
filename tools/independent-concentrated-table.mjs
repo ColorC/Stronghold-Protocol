@@ -178,12 +178,14 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
       reference: members.map((op) => `${op.name}：${sourceCardSummary(op.sourceRefs)}`).join('；'), nativePower: '',
       normal: '', upgrade: '', basis: `${warband.chain}${neutralMembers.size ? `；中立成员（阵营按本体资料）：${[...neutralMembers].join('、')}` : ''}` });
   }
-  for (const [difficulty, phases] of Object.entries(design.rules.enemyBalance || {})) for (const phase of phases) rows.push({
-    section: '敌人', level: `第${phase.fromRound}轮起`, name: difficulty === 'FUNNY' ? '休闲局' : '标准局', role: '波次倍率', faction: '',
+  const enemyTracks = Object.entries(design.rules.enemyBalance || {}).filter(([difficulty]) => !Object.values(design.rules.enemyBalanceByGrowthMode || {}).some(mode => mode[difficulty])).map(([difficulty, phases]) => ({ difficulty, phases, mode: null }));
+  for (const [mode, difficulties] of Object.entries(design.rules.enemyBalanceByGrowthMode || {})) for (const [difficulty, phases] of Object.entries(difficulties)) enemyTracks.push({ difficulty, phases, mode });
+  for (const { difficulty, phases, mode } of enemyTracks) for (const phase of phases) rows.push({
+    section: '敌人', level: `第${phase.fromRound}轮起`, name: difficulty === 'FUNNY' ? '休闲局' : `标准局${mode === 'levels' ? ' · 等级' : mode === 'badges' ? ' · 徽章' : ''}`, role: '波次倍率', faction: '',
     reference: '无原卡来源：敌方波次规则', nativePower: '',
     native: '防御、法抗、免疫、路线与出场时间沿用原波次',
     normal: `生命×${phase.hpMul}；攻击×${phase.atkMul}；领袖生命×${phase.bossHpMul ?? 1}`, upgrade: '',
-    basis: '休闲维持较高通过率；标准局减轻前中期压力，保留后期挑战',
+    basis: mode === 'levels' ? '按原生低等级起步的成长曲线调整敌方生命与攻击，保留后期压力' : '按当前成长模式的完整标准局实测调整，保留构筑与输出要求',
   });
   const columns = [
     ['section', '内容', 95], ['level', '科技／等级', 100], ['name', '名称', 140], ['role', '主要功能', 105],

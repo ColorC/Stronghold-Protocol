@@ -25,6 +25,10 @@ export function framePlacement(entry, scaleAtPoint = 1) {
 }
 
 const asFinite = (v, fallback) => Number.isFinite(Number(v)) ? Number(v) : fallback;
+const yieldToBrowser = () => new Promise((resolve) => {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(() => resolve(), { timeout: 50 });
+  else setTimeout(resolve, 0);
+});
 const FRAME_FRAG = `
 precision highp float;
 varying vec2 vTextureCoord;
@@ -58,6 +62,19 @@ void main(void) {
   vTextureCoord = aTextureCoord;
 }`;
 
+// `Program.from` compiles/linkes a WebGL program on first use. Creating one for
+// every target hit made the compare page compile the same two programs over and
+// over during a skill, which shows up as main-thread stalls and repeated
+// texture/program binds in the browser. Keep the immutable programs per Pixi
+// namespace; each effect still receives its own Shader uniforms below.
+const PROGRAM_CACHE = new WeakMap();
+function sharedProgram(P, key, vertex, fragment) {
+  let cache = PROGRAM_CACHE.get(P);
+  if (!cache) { cache = new Map(); PROGRAM_CACHE.set(P, cache); }
+  if (!cache.has(key)) cache.set(key, P.Program.from(vertex, fragment));
+  return cache.get(key);
+}
+
 function setAtlasFrame(mesh, entry, index) {
   const count = Math.max(1, entry?.textures?.length || 1);
   const i = Math.max(0, Math.min(count - 1, Number(index) | 0));
@@ -90,7 +107,7 @@ function createAtlasFrame(P, entry, index = 0) {
     new Uint16Array([0, 1, 2, 0, 2, 3]),
   );
   const atlas = entry.atlas || new P.Texture(entry.base);
-  const shader = new P.Shader(P.Program.from(MESH_VERT, FRAME_FRAG), {
+  const shader = new P.Shader(sharedProgram(P, 'atlas-frame', MESH_VERT, FRAME_FRAG), {
     uSampler: atlas,
     uFrame: new Float32Array(4),
     uTexel: new Float32Array([1 / baseW, 1 / baseH]),
@@ -146,12 +163,15 @@ function curveValue(curve, t, fallback = 0) {
  * render/app.js only when the local extracted VFX directory is present.
  */
 export class OriginalVfxPlayer {
-  constructor({ P, layers, cam, view, root = DEFAULT_ROOT }) {
+  constructor({ P, layers, cam, view, root = DEFAULT_ROOT, cacheKey = null }) {
     this.P = P;
     this.layers = layers;
     this.cam = cam;
     this.view = typeof view === 'function' ? view : () => null;
     this.root = String(root || DEFAULT_ROOT).replace(/\/$/, '');
+    // Atlas files are replaceable runtime assets. Keep a batch key so a
+    // browser cannot silently combine a new manifest with an old atlas.
+    this.cacheKey = cacheKey == null || cacheKey === '' ? null : String(cacheKey);
     this.manifest = null;
     this.manifestPromise = null;
     this.entries = new Map();
@@ -163,10 +183,15 @@ export class OriginalVfxPlayer {
     this.unresolved = new Set();
   }
 
+  _assetUrl(path) {
+    const url = String(path || '');
+    return this.cacheKey ? `${url}${url.includes('?') ? '&' : '?'}vfx=${encodeURIComponent(this.cacheKey)}` : url;
+  }
+
   _manifest() {
     if (this.manifest) return Promise.resolve(this.manifest);
     if (!this.manifestPromise) {
-      this.manifestPromise = fetch(`${this.root}/index.json`, { cache: 'force-cache' })
+      this.manifestPromise = fetch(this._assetUrl(`${this.root}/index.json`), { cache: 'no-store' })
         .then((r) => { if (!r.ok) throw new Error(`original VFX manifest ${r.status}`); return r.json(); })
         .then((m) => {
           // Empty Unity control nodes are kept in the manifest for coverage, but have no atlas to request.
@@ -183,7 +208,7 @@ export class OriginalVfxPlayer {
     const manifest = await this._manifest();
     const meta = manifest?.get(prefab);
     if (!meta) { this.missing.add(prefab); return null; }
-    const atlasUrl = `${this.root}/${encodeURIComponent(prefab)}/atlas.webp`;
+    const atlasUrl = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/atlas.webp`);
     // The extractor's atlas is a premultiplied-colour / coverage pair.  The reference player samples it with
     // nearest filtering and premultiplied blending; linear filtering smears the narrow sword/trail cells into the
     // black padding and is the reason the otherwise-correct 锏 trail looked muddy.
@@ -213,8 +238,16 @@ export class OriginalVfxPlayer {
    */
   async preload(prefabs = []) {
     const names = [...new Set(Array.isArray(prefabs) ? prefabs.filter(Boolean).map(String) : [])];
-    const results = await Promise.allSettled(names.map((prefab) => this._entry(prefab)));
-    for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
+    const results = [];
+    // Decoding ten to twenty atlases in one Promise.all burst blocks the
+    // compare page while Pixi uploads every texture. Two at a time keeps the
+    // event loop responsive without changing which source slots are warmed.
+    for (let i = 0; i < names.length; i += 2) {
+      const batch = await Promise.allSettled(names.slice(i, i + 2).map((prefab) => this._entry(prefab)));
+      results.push(...batch);
+      for (let j = 0; j < batch.length; j++) if (batch[j].status === 'rejected') this.missing.add(names[i + j]);
+      await yieldToBrowser();
+    }
     return results;
   }
 
@@ -232,13 +265,16 @@ export class OriginalVfxPlayer {
         }
       }
       if (!this.meshTextures) this.meshTextures = new Map();
-      await Promise.all([...files].map(async (file) => {
-        const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`;
+      const textureResults = [];
+      for (const file of files) {
+        const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`);
         let texture = this.meshTextures.get(url);
         if (!texture) { texture = this.P.Texture.from(url); this.meshTextures.set(url, texture); }
         const base = texture.baseTexture || texture;
-        if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
-      }));
+        textureResults.push(base.valid ? Promise.resolve() : new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); }));
+        if (textureResults.length >= 2) { await Promise.allSettled(textureResults.splice(0)); await yieldToBrowser(); }
+      }
+      if (textureResults.length) { await Promise.allSettled(textureResults); await yieldToBrowser(); }
       return data;
     }));
     for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
@@ -248,7 +284,7 @@ export class OriginalVfxPlayer {
   async _meshEntry(prefab) {
     if (!this.meshEntries) this.meshEntries = new Map();
     if (this.meshEntries.has(prefab)) return this.meshEntries.get(prefab);
-    const promise = fetch(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`, { cache: 'force-cache' })
+    const promise = fetch(this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`), { cache: 'no-store' })
       .then((r) => { if (!r.ok) throw new Error(`mesh VFX ${r.status}`); return r.json(); })
       .then((data) => {
         if (!data || data.format !== 1 || !Array.isArray(data.nodes)) throw new Error('invalid mesh VFX export');
@@ -280,7 +316,7 @@ export class OriginalVfxPlayer {
         if (!raw || !Array.isArray(raw.vertices) || !raw.vertices.length || !Array.isArray(raw.indices) || !raw.indices.length || !material) continue;
         const loadTexture = async (info) => {
           if (!info?.file) return null;
-          const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(info.file)}`;
+          const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(info.file)}`);
           let texture = this.meshTextures?.get(url);
           if (!texture) {
             if (!this.meshTextures) this.meshTextures = new Map();
@@ -329,7 +365,7 @@ export class OriginalVfxPlayer {
             uBorderWidth: Number(material.floats?._BorderWidth) || 0.1,
             uAlpha: 1,
           };
-          materialInstance = new this.P.Shader(this.P.Program.from(MESH_VERT, DISSOLVE_FRAG), uniforms);
+          materialInstance = new this.P.Shader(sharedProgram(this.P, 'mesh-dissolve', MESH_VERT, DISSOLVE_FRAG), uniforms);
         } else {
           materialInstance = new this.P.MeshMaterial(texture);
         }

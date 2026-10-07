@@ -7,15 +7,20 @@ const cache=new Map(),views=new Map(), app=new PIXI.Application({width:600,heigh
 $('zoom').value=params.get('zoom')||1;
 $('sourceStage').append(app.view);
 const partLabels={all:'整体',head:'头部',torso:'躯干','arm.L':'手臂 L链','arm.R':'手臂 R链','leg.L':'腿 L链','leg.R':'腿 R链',weapon:'武器',accessory:'饰物',unmapped:'未映射'};
+if(!Object.hasOwn(landmarks,selected))selected='leg.L.knee';
+function rootPart(){return part.split('.').slice(0,part.startsWith('arm.')||part.startsWith('leg.')?2:1).join('.');}
+if(!Object.hasOwn(partLabels,rootPart()))part='all';
+function setPart(id){part=id;const root=rootPart();selected=root.startsWith('arm.')?root+'.wrist':root.startsWith('leg.')?root+'.knee':root==='head'?'head.center':root==='weapon'?'weapon.grip':root==='torso'?'chest':selected;render();syncURL();}
+function matchesPart(record){return part==='all'||record.semanticPart===part||(record.semanticPart===rootPart()&&record.subpart===part.split('.')[2]);}
 const statusLabels={'joint-candidate':'候选关节（控制骨原点）','offset-candidate':'校准候选（骨局部偏移）','virtual-reference':'虚拟参考点',unknown:'未知'};
 for(const p of Object.values(profiles))$('source').add(new Option(p.title,p.id));
-for(const [id,label]of Object.entries(partLabels)){const b=document.createElement('button');b.textContent=label;b.dataset.part=id;b.onclick=()=>{part=id;render();syncURL();};$('parts').append(b);}
+for(const [id,label]of Object.entries(partLabels)){const b=document.createElement('button');b.textContent=label;b.dataset.part=id;b.onclick=()=>setPart(id);$('parts').append(b);}
 for(const [id,label]of Object.entries(landmarks)){const a=document.createElement('a');a.textContent=label;a.dataset.point=id;a.href=makeURL({point:id});a.onclick=e=>{e.preventDefault();selectPoint(id);};$('points').append(a);}
 function makeURL(overrides={}) {const url=new URL(location.href);const values={source:profile?.id||$('source').value,animation:$('animation').value||'Idle',t:Number($('time').value||.15).toFixed(3),point:selected,part,zoom:$('zoom').value,...overrides};for(const [k,v]of Object.entries(values))url.searchParams.set(k,v);return url.href;}
 function syncURL(){history.replaceState(null,'',makeURL());$('fullscreen').href=makeURL();for(const a of $('points').children)a.href=makeURL({point:a.dataset.point});}
 async function copyURL(overrides,button){const value=makeURL(overrides);try{await navigator.clipboard.writeText(value);button.textContent='已复制';setTimeout(()=>button.textContent=button.dataset.label,1300);}catch{const input=document.createElement('textarea');input.value=value;document.body.append(input);input.select();document.execCommand('copy');input.remove();}}
 for(const [button,changes]of [['frameLink',{}],['pointLink',{point:selected}],['partLink',{part}]]){$(button).dataset.label=$(button).textContent;$(button).onclick=()=>copyURL(button==='pointLink'?{point:selected}:button==='partLink'?{part}: {},$(button));}
-function selectPoint(id){if(!landmarks[id])return;selected=id;render();syncURL();}
+function selectPoint(id){if(!landmarks[id])return;selected=id;if(part!=='all'&&rootPart()!==pointGroup({id}))part='all';render();syncURL();}
 function sample(animation,time){poseRig(sp,animation,time);return observe(readRig(sp),profile,{animation,time});}
 async function loadSource(id,animation,time){playing=false;$('play').textContent='播放';profile=profiles[id];if(!profile)throw Error('没有该素材');if(!cache.has(id))cache.set(id,await loadRig(profile.url));sp=cache.get(id);app.stage.removeChildren();sp.scale.set(1);sp.position.set(270,410);app.stage.addChild(sp);$('source').value=id;$('animation').replaceChildren();for(const a of sp.spineData.animations)$('animation').add(new Option(a.name,a.name));$('animation').value=sp.spineData.findAnimation(animation)?animation:'Idle';setDuration();$('time').value=Math.min(time,Number($('time').max));render();syncURL();}
 function setDuration(){$('time').max=sp.spineData.findAnimation($('animation').value)?.duration||.001;}
@@ -30,10 +35,12 @@ function applyView(){const animation=$('animation').value,key=profile.id+':'+ani
 }
 function pointGroup(p){if(p.id.startsWith('arm.'))return p.id.split('.').slice(0,2).join('.');if(p.id.startsWith('leg.'))return p.id.split('.').slice(0,2).join('.');if(p.id.startsWith('weapon.'))return 'weapon';return p.id==='head.center'||p.id==='neck'?'head':'torso';}
 function render(){if(!sp)return;applyView();const t=Number($('time').value);pose=sample($('animation').value,t);
-  for(let i=0;i<sp.skeleton.slots.length;i++){const record=pose.parts[i];if(sp.slotContainers[i])sp.slotContainers[i].visible=record.rendered&&(part==='all'||record.semanticPart===part);}
+  for(let i=0;i<sp.skeleton.slots.length;i++){const record=pose.parts[i];if(sp.slotContainers[i])sp.slotContainers[i].visible=record.rendered&&matchesPart(record);}
   app.renderer.render(app.stage);
   $('clock').textContent=`${t.toFixed(3)} / ${Number($('time').max).toFixed(3)} 秒`;
-  for(const b of $('parts').children)b.setAttribute('aria-pressed',String(b.dataset.part===part));
+  for(const b of $('parts').children)b.setAttribute('aria-pressed',String(b.dataset.part===rootPart()));
+  const subparts=rootPart().startsWith('arm.')?{upperarm:'上臂',forearm:'前臂',hand:'手部附件'}:rootPart().startsWith('leg.')?{thigh:'大腿',calf:'小腿',foot:'脚部附件'}:{};
+  $('subpartControl').style.display=Object.keys(subparts).length?'flex':'none';$('subpart').replaceChildren(new Option('整个部件','all'));for(const [id,name]of Object.entries(subparts))$('subpart').add(new Option(name,id));$('subpart').value=part.split('.')[2]||'all';
   for(const a of $('points').children){const p=pose.landmarks[a.dataset.point];a.className=(selected===p.id?'selected ':'')+(p.status==='unknown'?'unknown':'');}
   const trajectory=$('trail').checked?Array.from({length:16},(_,i)=>sample($('animation').value,Math.max(0,t-.8)+Math.min(t,.8)*i/15).landmarks[selected].position).filter(Boolean):[];
   poseRig(sp,$('animation').value,t);
@@ -49,7 +56,7 @@ function render(){if(!sp)return;applyView();const t=Number($('time').value);pose
   $('raw').textContent=JSON.stringify({point:queryPose(pose,selected),motion,matchedParts:pose.parts.filter(v=>v.semanticPart===pointGroup(p)),orientation:pose.orientation,contacts:pose.contacts,sideConvention:pose.sideConvention},null,2);
   $('formNote').textContent=pose.form==='normal'?profile.notes:'当前为变身形态：人体参考点全部保留未知，避免读到隐藏的常态骨架。';
   // Restore isolation after the prior-frame read; poseRig restores native slots.
-  for(let i=0;i<pose.parts.length;i++)if(sp.slotContainers[i])sp.slotContainers[i].visible=pose.parts[i].rendered&&(part==='all'||pose.parts[i].semanticPart===part);
+  for(let i=0;i<pose.parts.length;i++)if(sp.slotContainers[i])sp.slotContainers[i].visible=pose.parts[i].rendered&&matchesPart(pose.parts[i]);
   app.renderer.render(app.stage);
   window.currentPose=pose;
 }
@@ -60,7 +67,8 @@ $('source').onchange=()=>loadSource($('source').value,$('animation').value,Numbe
 $('animation').onchange=()=>{setDuration();$('time').value=0;render();syncURL();};$('time').oninput=()=>{render();syncURL();};$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'暂停':'播放';last=performance.now();};
 $('trail').onchange=render;
 $('zoom').oninput=()=>{render();syncURL();};
+$('subpart').onchange=()=>setPart(rootPart()+($('subpart').value==='all'?'':'.'+$('subpart').value));
 function tick(now){if(playing&&sp){$('time').value=(Number($('time').value)+(now-last)/1000)%Number($('time').max);render();}last=now;requestAnimationFrame(tick);}requestAnimationFrame(tick);
 function showError(e){$('error').textContent=String(e.stack||e);window.__error=String(e.stack||e);}
-window.reference={loadSource,exportClip,sample,query:id=>queryPose(pose,id),selectPoint,setPart:id=>{part=id;render();syncURL();},setTime:t=>{$('time').value=t;render();syncURL();},getRig:()=>sp,getProfile:()=>profile};
+window.reference={loadSource,exportClip,sample,query:id=>queryPose(pose,id),selectPoint,setPart,setTime:t=>{$('time').value=t;render();syncURL();},getRig:()=>sp,getProfile:()=>profile};
 try{await loadSource(params.get('source')||'2b-front',params.get('animation')||'Idle',Number(params.get('t')||.15));window.__ready=true;}catch(e){showError(e);}
