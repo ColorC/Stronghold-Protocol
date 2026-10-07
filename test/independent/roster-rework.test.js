@@ -10,6 +10,7 @@ import { createSession, applyAction } from '../../server/modes/independent/sessi
 import { getIndependentField, runIndependentBattle } from '../../server/modes/independent/battle.js';
 import { canPlace, positionClass } from '../../server/match/board.js';
 import { matchesInheritancePermission, nativeFactions, tavernFactions } from '../../shared/independentRules.js';
+import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from '../../public/js/independent/targetSelection.js';
 
 const DATA = getData();
 const REPO_DATA_DESIGN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../data/independent-design.json');
@@ -43,6 +44,38 @@ function fillReport() {
     battleComplete: BATTLE_RECEIPTS.length === ACTIVE_IDS.length * 2,
     battles: BATTLE_RECEIPTS,
   }, null, 2), 'utf8');
+}
+
+function legalPurchaseTarget(state, chessId, buySlot) {
+  const spec=buyTargetSpec({id:chessId},CATALOG,state);
+  if(!spec)return {};
+  // Magnetic source targeting is optional. These all-roster purchase fixtures recruit the source normally;
+  // fusion is exercised by the dedicated magnetic causal tests.
+  if(spec.kind==='magnetic'&&spec.optional)return {};
+  const sourceSlot=state.shop.slots[buySlot];
+  let choices=buyTargetChoices(spec,state,CATALOG,buySlot);
+  const required=buyTargetCount(spec,state,CATALOG,sourceSlot);
+  if(spec.kind==='friendly') {
+    let serial=0;
+    while(choices.length<required) {
+      const targetId=ACTIVE_IDS.find(id=>id!==chessId&&(!spec.faction||nativeFactions({chessId:id},CATALOG).includes(spec.faction))
+        &&!state.pieces.some(piece=>piece.chessId===id&&piece.uid?.startsWith(`source-target-${chessId}-`)));
+      assert.ok(targetId,`${chessId} has a legal ${spec.faction} target`);
+      const target={uid:`source-target-${chessId}-${serial}`,chessId:targetId,row:9,col:2+serial++,equipment:[],attachments:[],nativeState:{}};
+      state.pieces.push(target);choices=buyTargetChoices(spec,state,CATALOG,buySlot);
+    }
+  } else if(spec.kind==='shopSlot'&&!choices.length) {
+    const targetId=ACTIVE_IDS.find(id=>id!==chessId);
+    assert.ok(targetId,`${chessId} has a legal shop-copy target`);
+    const targetSlot=buySlot===0?1:0;
+    state.shop.slots[targetSlot]={kind:'chess',id:targetId,price:3,sold:false,equipment:[]};
+    choices=buyTargetChoices(spec,state,CATALOG,buySlot);
+  }
+  assert.ok(choices.length>=required,`${chessId} exposes ${required} legal source-authored purchase target(s)`);
+  if(spec.kind==='shopSlot')return {shopSlots:choices.slice(0,required).map(choice=>choice.slot)};
+  if(spec.kind==='friendly')return {targetUid:choices[0].uid};
+  assert.equal(buyRequiresTarget(spec),false,`${chessId} unsupported target kind remains optional`);
+  return {};
 }
 after(fillReport);
 
@@ -105,14 +138,14 @@ test('20 seeds use one exact 101-ID pool, have no random faction ban, and never 
     assert.ok(state.shop.slots.every((slot) => !slot.id || ACTIVE_SET.has(slot.id)));
   }
 
-  const tripleSource = DESIGN.operators.find((op) => ACTIVE_SET.has(op.chessId) && op.name === '红豆');
-  assert.ok(tripleSource, 'the merge fixture uses a named active operator');
+  const tripleSource = DESIGN.operators.find((op) => ACTIVE_SET.has(op.chessId) && !buyTargetSpec({id:op.chessId},CATALOG));
+  assert.ok(tripleSource, 'the merge fixture uses an active source without a target prompt');
   let state = createSession({ data: DATA, catalog: CATALOG, seed: 909 });
   state.funds = 100;
   const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
   for (let copy = 0; copy < 3; copy++) {
     state.shop.slots[slot] = { kind: 'chess', id: tripleSource.chessId, elite: false, price: 3, sold: false, equipment: [] };
-    const result = applyAction(state, { type: 'buy', slot }, { data: DATA, catalog: CATALOG });
+    const result = applyAction(state, { type: 'buy', slot, ...legalPurchaseTarget(state,tripleSource.chessId,slot) }, { data: DATA, catalog: CATALOG });
     assert.equal(result.ok, true, result.error?.message);
     state = result.state;
   }
@@ -135,13 +168,21 @@ test('every selected body in normal and elite form runs through the real Battle 
       state.difficulty = 'FUNNY';
       const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
       const copies = elite ? 3 : 1;
+      const purchasedUids=[];
       for (let copy = 0; copy < copies; copy++) {
         state.shop.slots[slot] = { kind: 'chess', id: baseId, elite: false, price: 3, sold: false, equipment: [] };
-        const bought = applyAction(state, { type: 'buy', slot }, { data: DATA, catalog: CATALOG });
+        const bought = applyAction(state, { type: 'buy', slot, ...legalPurchaseTarget(state,baseId,slot) }, { data: DATA, catalog: CATALOG });
         assert.equal(bought.ok, true, `${source.name} ${elite ? 'elite' : 'normal'} purchase: ${bought.error?.message}`);
+        purchasedUids.push(...(bought.events||[]).filter(event=>event.type==='buy').map(event=>event.uid));
         state = bought.state;
       }
-      const piece = state.pieces.find((x) => x.chessId === chessId);
+      let piece = state.pieces.find((x) => x.chessId === chessId);
+      if(!piece&&source.sourceRefs?.darkmoon19_2?.id==='BGS_113') {
+        // Faceless Taverngoer transforms its purchased body into the explicitly selected real shop copy.
+        // The transformed copy is the native body that can enter this battle; the source-card action has its own causal test.
+        piece=purchasedUids.map(uid=>state.pieces.find(x=>x.uid===uid)).filter(Boolean).find(x=>elite?x.elite:!x.elite);
+        assert.ok(piece,`${chessId} transformed into a purchased native shop copy`);
+      }
       assert.ok(piece, `${chessId} exists as a purchased native piece`);
       const field = getIndependentField(state, { data: DATA, catalog: CATALOG });
       const placement = positionClass(DATA.chess[chessId]);
@@ -154,14 +195,14 @@ test('every selected body in normal and elite form runs through the real Battle 
       assert.deepEqual(input, beforeBattle, `${chessId} battle input was not mutated`);
       assert.equal(out.diagnostics.errorCount, 0, `${chessId} simulation/content errors`);
       assert.equal(out.diagnostics.kind, 'normal');
-      assert.ok(out.result.perPlayer.independent.unitStats.some((unit) => unit.defId === chessId), `${chessId} used its real native body/kit`);
+      assert.ok(out.result.perPlayer.independent.unitStats.some((unit) => unit.defId === piece.chessId), `${chessId} purchase result ${piece.chessId} used its real native body/kit`);
       for (const reward of out.rewards) {
         assert.ok(Number.isInteger(reward.quantity) && reward.quantity > 0, `${chessId} reward has a positive integral quantity`);
         assert.ok(CATALOG.equipment[reward.id] || CATALOG.badges[reward.id], `${chessId} reward ${reward.id} is registered`);
         assert.ok(['native', 'equipment'].includes(reward.origin), `${chessId} reward has a registered source category`);
         assert.equal(reward.sourceUid, piece.uid, `${chessId} reward is attributed to its producer`);
       }
-      BATTLE_RECEIPTS.push({ chessId, form: elite ? 'elite' : 'normal', ticks: out.diagnostics.ticks, capped: out.diagnostics.capped, reason: out.result.reason, attacks: out.result.perPlayer.independent.unitStats.find((unit) => unit.defId === chessId)?.attacks || 0, rewardCount: out.rewards.length });
+      BATTLE_RECEIPTS.push({ sourceId:CATALOG.operators[chessId]?.sourceRefs?.darkmoon19_2?.id||null,sourceChessId:chessId,sourceUid:piece.uid,chessId:piece.chessId,form: elite ? 'elite' : 'normal', ticks: out.diagnostics.ticks, capped: out.diagnostics.capped, reason: out.result.reason, attacks: out.result.perPlayer.independent.unitStats.find((unit) => unit.defId === piece.chessId)?.attacks || 0, rewardCount: out.rewards.length });
       serial++;
       if (serial % 10 === 0) fillReport();
     }

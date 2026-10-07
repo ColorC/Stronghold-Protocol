@@ -819,6 +819,11 @@ test('golden Lil Rag repeats its Elemental-tier growth twice and rejects missing
     const times=elite?2:1,tier=Number(buyerOp.tier||1),[attackBadge,secondaryBadge]=darkmoonGrowthBadges(target,catalog);
     assert.deepEqual(growth(target),[[attackBadge,tier*times],[secondaryBadge,tier*times]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_100 ${elite?'golden':'normal'} repeats the tier-sized effect ${times} time(s)`);
     assert.deepEqual(growth(holder),[],'growth stays on the explicitly selected friendly target');
+    const uiState={pieces:[holder,target],shop:{slots:[]}},uiSpec=buyTargetSpec({id:buyerOp.chessId},catalog,uiState);
+    assert.equal(uiSpec.kind,'friendly','a deployed Rag dynamically opens the eligible recipient picker for a newly bought Yan operator');
+    assert.deepEqual(buyTargetChoices(uiSpec,uiState,catalog,0).map(x=>x.uid),['rag','selected'],'the picker lists current friendly recipients');
+    const nonYan={...buyerOp,nativeFactionTags:['卡西米尔']};
+    assert.equal(buyTargetSpec({id:nonYan.chessId}, {...catalog,operators:{...catalog.operators,[nonYan.chessId]:nonYan}},uiState),null,'a non-Yan purchase does not request a Rag recipient');
     const wrong={uid:'wrong',chessId:targetOp.chessId,ownerId:'p2',row:0,col:2,equipment:[]};state.pieces.push(wrong);
     assert.throws(()=>runNativeHook(state,'bought',{piece:{uid:'bought2',chessId:buyerOp.chessId,ownerId:'p1'},targetUid:wrong.uid},services),/DARKMOON_TARGET_REQUIRED/);
   }
@@ -826,6 +831,7 @@ test('golden Lil Rag repeats its Elemental-tier growth twice and rejects missing
   const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},sourceEffect=nativeEffectFor(sourceOp.chessId,source,false),buyer={...buyerOp,nativeFactionTags:['炎']};
   const catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect:sourceEffect}},[buyerOp.chessId]:buyer}};
   const state=createSession({seed:100,catalog});state.funds=20;state.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
+  assert.equal(buyTargetSpec({id:buyerOp.chessId},catalog,state),null,'buying the first Rag never requires a pre-existing growth target');
   const sourceBuy=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(sourceBuy.ok,true,JSON.stringify(sourceBuy.error));
   const holder=sourceBuy.state.pieces.find(x=>x.chessId===sourceOp.chessId),tile=viewSession(sourceBuy.state,{catalog}).pieces.find(x=>x.uid===holder.uid).legalTiles[0].split(',').map(Number),deployed=applyAction(sourceBuy.state,{type:'move',uid:holder.uid,row:tile[0],col:tile[1]},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
   deployed.state.funds=12;deployed.state.shop.slots[0]={kind:'chess',id:buyerOp.chessId,price:3,sold:false,equipment:[]};
