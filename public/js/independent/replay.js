@@ -39,8 +39,8 @@ function syncMediaTime(second) {
 function attachCanvasMedia(id) {
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
   if (!canvas) return;
-  if (!mediaVideo || mediaVideo.ownerDocument !== doc) {
-    mediaVideo = doc.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
+  if (!mediaVideo || mediaVideo.ownerDocument !== document) {
+    mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
     Object.assign(mediaVideo.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', zIndex: '4', background: '#08090c' });
     mediaReady = new Promise((resolve) => {
@@ -48,7 +48,7 @@ function attachCanvasMedia(id) {
       mediaVideo.addEventListener('loadedmetadata', done, { once: true }); mediaVideo.addEventListener('error', done, { once: true });
     });
   }
-  if (!mediaVideo.isConnected) canvas.parentElement?.insertBefore(mediaVideo, canvas.nextSibling);
+  if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
   canvas.style.visibility = 'hidden';
   if (!mediaVideo.src) mediaVideo.src = new URL(`recordings/${encodeURIComponent(id)}/media/playback`, API).href;
   syncMediaTime(Number(timeline.value));
