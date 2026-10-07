@@ -4,6 +4,7 @@ import path from 'node:path';
 import { getData } from '../../data.js';
 import { nativeEffectFor } from './native.js';
 import { EQUIPMENT_CAPACITY, INVENTORY_CAPACITY } from './equipment.js';
+import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 
 const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH)
@@ -183,6 +184,8 @@ function makeOperator(source, chess, data, eliteVariant = false) {
   return {
     ...clone(source),
     chessId: source.chessId,
+    tier: Number(source.tier ?? normal.techLevel ?? normal.tier ?? 1),
+    ...(source.nativeFactionTags === undefined ? {} : { nativeFactionTags: [...source.nativeFactionTags] }),
     eliteChessId: eid,
     nativeTrait: {
       ...clone(source.nativeTrait),
@@ -216,10 +219,27 @@ function keyed(list, idFn, mapFn) {
 }
 
 /** Build a stable, queryable catalog. data is the upstream GameData/SharedPool object. */
-export function getCatalog(data = getData()) {
+export function getCatalog(data = getData(), design = DESIGN) {
+  const activeRosterIds = design.rules?.activeRosterIds;
+  if (activeRosterIds !== undefined) {
+    const ids = design.operators.map((x) => x.chessId);
+    if (!Array.isArray(activeRosterIds) || activeRosterIds.some((x) => typeof x !== 'string' || !ids.includes(x) || !x.endsWith('_a')) || new Set(activeRosterIds).size !== activeRosterIds.length) {
+      throw new Error('BAD_ACTIVE_ROSTER_IDS');
+    }
+  }
+  const validFactions = new Set(Object.values(TAVERN_FACTIONS));
+  for (const source of design.operators) {
+    if (source.nativeFactionTags !== undefined && (!Array.isArray(source.nativeFactionTags) || source.nativeFactionTags.some((f) => !validFactions.has(f)) || new Set(source.nativeFactionTags).size !== source.nativeFactionTags.length)) throw new Error(`BAD_NATIVE_FACTION_TAGS:${source.chessId}`);
+    const tier = Number(source.tier ?? recordById(data?.chess, source.chessId)?.techLevel ?? recordById(data?.chess, source.chessId)?.tier ?? 1);
+    if (!Number.isInteger(tier) || tier < 1 || tier > 6) throw new Error(`BAD_OPERATOR_TIER:${source.chessId}`);
+  }
+  const configuredTavernFactions = design.rules?.tavernFactions;
+  if (configuredTavernFactions !== undefined && (!Array.isArray(configuredTavernFactions) || configuredTavernFactions.some((f) => !validFactions.has(f)) || new Set(configuredTavernFactions).size !== configuredTavernFactions.length)) throw new Error('BAD_TAVERN_FACTIONS');
+  const activeSet = activeRosterIds === undefined ? null : new Set(activeRosterIds);
   const operators = Object.create(null);
-  for (const source of DESIGN.operators) {
+  for (const source of design.operators) {
     const op = makeOperator(source, recordById(data?.chess, source.chessId), data || {});
+    op.recruitable = activeSet === null || activeSet.has(source.chessId);
     operators[op.chessId] = op;
     if (op.eliteChessId) operators[op.eliteChessId] = {
       ...clone(op), chessId: op.eliteChessId, baseChessId: op.chessId, elite: true,
@@ -230,9 +250,9 @@ export function getCatalog(data = getData()) {
     operators[op.chessId].nativeTrait.sourceRecords = clone(op.nativeTrait.sources.normal);
   }
 
-  const badges = keyed(DESIGN.badges, (x) => BADGE_IDS[x.name], (x, id) => ({ ...clone(x), id, kind: 'badge', sourceId: null }));
+  const badges = keyed(design.badges, (x) => BADGE_IDS[x.name], (x, id) => ({ ...clone(x), id, kind: 'badge', sourceId: null }));
   const equipment = Object.create(null);
-  for (const item of DESIGN.legacy || []) {
+  for (const item of design.legacy || []) {
     const canonicalId = STOPPED_LEGACY_NAMES.has(item.oldName) ? IDENTITY_CANONICAL : item.sourceId;
     const upstreamEliteId = item.sourceId.endsWith('_a') ? `${item.sourceId.slice(0, -2)}_b` : null;
     const rule = item.kind === '徽章' || item.kind === '停用' ? null : resolvedEquipmentRule(item.newName, item.kind === '停用');
@@ -242,31 +262,31 @@ export function getCatalog(data = getData()) {
       available: item.kind !== '停用', kind: item.kind,
       badgeId: BADGE_IDS[item.newName] || null,
       mechanism: item.kind === '徽章' ? 'badge' : item.kind === '停用' ? 'disabled' : rule.mechanism,
-      params: clone(rule?.params || (BADGE_IDS[item.newName] ? { stat: DESIGN.badges.find((x) => x.name === item.newName)?.stat, value: DESIGN.badges.find((x) => x.name === item.newName)?.value } : {})),
+      params: clone(rule?.params || (BADGE_IDS[item.newName] ? { stat: design.badges.find((x) => x.name === item.newName)?.stat, value: design.badges.find((x) => x.name === item.newName)?.value } : {})),
       stats: clone(rule?.stats || null),
       upstream: clone(recordById(data?.chess, item.sourceId)),
       upstreamGarrisons: clone((recordById(data?.chess, item.sourceId)?.garrisonIds || []).map((gid) => recordById(data?.garrisons, gid)).filter(Boolean)),
     };
   }
-  for (const item of DESIGN.extraGear || []) {
+  for (const item of design.extraGear || []) {
     const id = `independent:${item.name}`;
     const rule = resolvedEquipmentRule(item.name);
     equipment[id] = { ...clone(item), id, sourceId: id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'equipment', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
-  const identity = DESIGN.identityGear;
+  const identity = design.identityGear;
   if (identity) {
     const id = 'chess_item_identity_gear';
     const rule = resolvedEquipmentRule(identity.name);
     equipment[id] = { ...clone(identity), id, sourceId: id, canonicalId: IDENTITY_CANONICAL, uniqueKey: IDENTITY_CANONICAL, eliteId: null, available: true, kind: 'equipment', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
-  for (const item of DESIGN.prizeGear || []) {
+  for (const item of design.prizeGear || []) {
     const id = PRIZE_GEAR_IDS[item.name];
     const rule = resolvedEquipmentRule(item.name);
     equipment[id] = { ...clone(item), id, sourceId: item.source || id, canonicalId: id, uniqueKey: id, eliteId: null, available: true, kind: 'prizeGear', mechanism: rule.mechanism, params: rule.params, stats: rule.stats };
   }
 
   // a permission is gear the operator brings when gained (session.js gainChess); it never moves in a handover
-  for (const source of DESIGN.operators) {
+  for (const source of design.operators) {
     const permission = source.inheritance; if (!permission) continue;
     const id = PERMIT_GEAR_IDS[permission.gear];
     if (!id || Object.hasOwn(equipment, id)) throw new Error(`Independent permit gear has a missing or duplicate id: ${permission.gear}`);
@@ -279,8 +299,8 @@ export function getCatalog(data = getData()) {
     if (op.eliteChessId) operators[op.eliteChessId].permitGearId = id;
   }
   for (const op of Object.values(operators)) delete op.inheritance;
-  const attachments = keyed(DESIGN.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
-  const prizes = keyed(DESIGN.prizes, (x) => PRIZE_IDS[x.name], (x, id) => ({
+  const attachments = keyed(design.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
+  const prizes = keyed(design.prizes, (x) => PRIZE_IDS[x.name], (x, id) => ({
     ...clone(x), id,
     mechanism: PRIZE_MECHANISMS[x.name][0], params: clone(PRIZE_MECHANISMS[x.name][1]),
     gearIds: Object.keys(PRIZE_GEAR_IDS).filter((name) => x.effect?.includes(name)).map((name) => PRIZE_GEAR_IDS[name]),
@@ -289,16 +309,17 @@ export function getCatalog(data = getData()) {
   return {
     id: 'independent', name: '卫戍协议：工坊',
     config: {
-      ...clone(DESIGN.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
+      ...clone(design.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
       balance: { incomeBonusFromRound: 8, incomeBonus: 1 },
       equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: 15, regularProductionBadgeCount: 6,
-      rareInheritanceOperators: 12, bodyPenalty: clone(DESIGN.rules?.bodyPenalty),
-      badgeRecipes: clone(DESIGN.badgeRecipes || DESIGN.recipes || {}),
+      rareInheritanceOperators: 12, bodyPenalty: clone(design.rules?.bodyPenalty),
+      badgeRecipes: clone(design.badgeRecipes || design.recipes || {}),
       factionRecipes: {
         炎: ['precision'], 维多利亚: ['precision', 'vitality'], 拉特兰: ['agility'], 阿戈尔: ['vitality'],
         谢拉格: ['assault'], 萨尔贡: ['recovery'], 叙拉古: ['precision', 'assault'], 卡西米尔: ['defense', 'agility'],
       },
-      tavernFactions: ['炎', '维多利亚', '拉特兰', '阿戈尔', '谢拉格', '萨尔贡', '叙拉古', '卡西米尔'],
+      tavernFactions: clone(design.rules?.tavernFactions || ['炎', '维多利亚', '拉特兰', '阿戈尔', '谢拉格', '萨尔贡', '叙拉古', '卡西米尔']),
+      ...(activeRosterIds === undefined ? {} : { activeRosterIds: [...activeRosterIds] }),
       professionRecipes: { PIONEER: ['precision'], WARRIOR: ['precision'], SNIPER: ['precision'], SPECIAL: ['precision'], TANK: ['defense'], MEDIC: ['vitality'], CASTER: ['assault'], SUPPORT: ['recovery'] },
     },
     operators, badges, equipment, attachments, prizes,
@@ -313,7 +334,7 @@ export function getCatalog(data = getData()) {
       unsupported: [],
     },
     pools: Object.fromEntries(['pool_equip_rockr','pool_equip_pepe','pool_char_pinus','pool_equip_normal'].filter((id) => own(data?.choices?.pools,id)).map((id) => [id, clone(data.choices.pools[id])])),
-    source: clone(DESIGN.source),
+    source: clone(design.source),
   };
 }
 

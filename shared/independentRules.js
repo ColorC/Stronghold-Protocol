@@ -14,6 +14,8 @@ export function nativeRecord(piece, catalog) {
 }
 
 export function nativeFactions(piece, catalog) {
+  const configured = catalog?.operators?.[piece?.chessId]?.nativeFactionTags;
+  if (Array.isArray(configured)) return configured.filter(id => Object.values(TAVERN_FACTIONS).includes(id));
   return (nativeRecord(piece,catalog)?.bonds || []).filter(id=>Object.hasOwn(TAVERN_FACTIONS,id)).map(id=>TAVERN_FACTIONS[id]);
 }
 

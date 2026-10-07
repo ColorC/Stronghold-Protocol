@@ -5,6 +5,36 @@ const ALL_BADGES = Object.freeze(['precision','agility','vitality','defense','as
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
 const REPEATABLE_BADGE_FORGES = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
+const PREP_TRIGGERS = new Set(['aura','gain','bought','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
+const COMBAT_TRIGGERS = new Set(['ammoUsed','battleStart','death','deploy','dollSwap','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
+const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
+const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
+const COMBAT_BEHAVIORS = new Set(['aura','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
+function finiteJson(value, seen = new Set()) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'object' || seen.has(value)) return false;
+  seen.add(value);
+  const ok = Array.isArray(value)
+    ? value.every((item) => finiteJson(item, seen))
+    : Object.getPrototypeOf(value) === Object.prototype && Object.entries(value).every(([key, item]) => !['__proto__','prototype','constructor'].includes(key) && finiteJson(item, seen));
+  seen.delete(value);
+  return ok;
+}
+function authoredModeEffects(source, isElite) {
+  const all = source?.modeEffects;
+  if (!all || typeof all !== 'object' || Array.isArray(all)) throw new Error(`BAD_MODE_EFFECTS:${source?.chessId}`);
+  const variant = all[isElite ? 'elite' : 'normal'];
+  if (!variant || typeof variant !== 'object' || Array.isArray(variant) || !Array.isArray(variant.prep) || !Array.isArray(variant.combat)) throw new Error(`BAD_MODE_EFFECTS_VARIANT:${source?.chessId}:${isElite ? 'elite' : 'normal'}`);
+  for (const [kind, rules, triggers, behaviors] of [['prep', variant.prep, PREP_TRIGGERS, PREP_BEHAVIORS], ['combat', variant.combat, COMBAT_TRIGGERS, COMBAT_BEHAVIORS]]) {
+    for (const r of rules) {
+      if (!r || typeof r !== 'object' || Array.isArray(r) || !triggers.has(r.trigger) || typeof r.behavior !== 'string' || !r.behavior || !finiteJson(r.params) || !r.params || typeof r.params !== 'object' || Array.isArray(r.params)) throw new Error(`BAD_MODE_EFFECT_RULE:${source?.chessId}:${kind}`);
+      if (!behaviors.has(r.behavior)) throw new Error(`UNSUPPORTED_MODE_EFFECT_BEHAVIOR:${source?.chessId}:${kind}:${r.behavior}`);
+      if (r.behavior === 'eventProduction' && !COUNTER_EVENTS.has(r.params.counterEvent)) throw new Error(`BAD_MODE_EFFECT_COUNTER_EVENT:${source?.chessId}:${kind}:${r.params.counterEvent}`);
+    }
+  }
+  return { prep: structuredClone(variant.prep), combat: structuredClone(variant.combat), unsupported: [] };
+}
 // what 铃兰 replays of a 获得时 trait and 泥岩 of a 售出时 one (gear, funds, refreshes, recruits; never another copier)
 const GAIN_COPYABLE = Object.freeze(['grantEquipment', 'grantEquipmentByTier', 'randomEquipment', 'randomSupply', 'deferredFunds', 'freeRefresh', 'randomChessOffer']);
 const SOLD_COPYABLE = Object.freeze(['deferredFunds', 'freeRefresh', 'recruitOffer']);
@@ -163,6 +193,7 @@ function combatRules(name, elite) {
 }
 
 export function nativeEffectFor(_chessId, source, isElite = false) {
+  if (Object.hasOwn(source || {}, 'modeEffects')) return authoredModeEffects(source, isElite);
   const rules = PREP[source?.name] || [];
   const prep = rules.map((r) => ({ trigger: r.trigger, behavior: r.behavior, params: structuredClone(r.params) }));
   for (const r of prep) {
@@ -362,7 +393,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'conditionalRecruit':
         if (p.condition !== 'sameRowCount>=3' || roster(state).filter((x) => isPresent(x) && x.row === piece.row).length >= 3) {
           for (let i = 0; i < value(p, elite); i++) {
-            const candidate = choose((p.choices || []).filter((id) => hasPoolStock(state, id)), services);
+            const candidate = choose((p.choices || []).filter((id) => recruitable(services, id) && hasPoolStock(state, id)), services);
             if (candidate) services.grantChess(state, candidate, { origin: 'native', sourceUid: piece.uid });
           }
         }
@@ -384,7 +415,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         if (!needsRow || roster(state).filter((x) => isPresent(x) && x.row === piece.row).length >= 3) {
           const faction = dominantFaction(state, services, piece);
           if (faction) {
-            const pool = Object.values(services.data?.chess || {}).filter((x) => x.chessId?.endsWith('_a') && x.visible !== false && hasPoolStock(state, x.chessId) && (x.bonds || []).some((b) => (services.data?.bonds?.[b]?.name || b) === faction));
+            const pool = Object.values(services.catalog?.operators || {}).filter((x) => x.chessId?.endsWith('_a') && x.recruitable !== false && hasPoolStock(state, x.chessId) && sharedTavernFactions({ chessId: x.chessId }, services.catalog).includes(faction));
             const pick = choose(pool, services);
             if (pick) services.grantChess(state, pick.chessId, { origin: 'native', sourceUid: piece.uid, ordinary: true });
           }
@@ -556,16 +587,20 @@ function hasPoolStock(state, chessId) {
   const entry = state.pool?.[chessId]?.left != null && typeof state.pool[chessId] === 'object' ? state.pool[chessId] : state.pool?.left?.[chessId];
   return Number(entry?.left || 0) > 0;
 }
+function recruitable(services, chessId) {
+  const op = services.catalog?.operators?.[chessId];
+  return Boolean(op && !op.elite && !op.isElite && op.recruitable !== false);
+}
 function chooseAvailablePool(pool, state, services, elite = false) {
   if (!pool) throw new Error('Missing upstream SharedPool definition for native effect');
   const original = pool.weighted;
   if (original) {
     let entries = original;
     if (elite && Array.isArray(pool.goldenWeights)) entries = original.map(([id], i) => [id, pool.goldenWeights[i]]);
-    entries = entries.filter(([id]) => hasPoolStock(state, id));
+    entries = entries.filter(([id]) => recruitable(services, id) && hasPoolStock(state, id));
     return entries.length ? choosePool({ ...pool, weighted: entries, goldenWeights: undefined }, services, false) : null;
   }
-  const items = (pool.items || []).filter((id) => hasPoolStock(state, id));
+  const items = (pool.items || []).filter((id) => recruitable(services, id) && hasPoolStock(state, id));
   return choose(items, services);
 }
 function dominantFaction(state, services, piece = null) {
@@ -637,7 +672,7 @@ function attachShopEquipment(state, id, quantity, sourcePiece, spread = false) {
   }
 }
 function addRecruitOffer(state, services, opts) {
-  const all = Object.values(services.data?.chess || {}).filter((x) => x.chessId?.endsWith('_a') && x.visible !== false && x.tier != null && hasPoolStock(state, x.chessId) && (!opts.tiers || opts.tiers.includes(x.tier)) && (!opts.tierMax || x.tier <= opts.tierMax) && (!opts.faction || (x.bonds || []).some((b) => (services.data?.bonds?.[b]?.name || b) === opts.faction)));
+  const all = Object.values(services.catalog?.operators || {}).filter((x) => x.chessId?.endsWith('_a') && x.recruitable !== false && x.tier != null && hasPoolStock(state, x.chessId) && (!opts.tiers || opts.tiers.includes(x.tier)) && (!opts.tierMax || x.tier <= opts.tierMax) && (!opts.faction || sharedTavernFactions({ chessId: x.chessId }, services.catalog).includes(opts.faction)));
   const choices = [];
   const pool = [...all];
   for (let i = 0; i < (opts.choices || 3) && pool.length; i++) { const selected = choose(pool, services); choices.push(selected.chessId); pool.splice(pool.indexOf(selected), 1); }

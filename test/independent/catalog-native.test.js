@@ -278,27 +278,28 @@ test('native recruitment only selects currently stocked ordinary copies across a
   const idFor = (name) => get(name).chessId;
   const stock = (ids, counts) => Object.fromEntries(ids.map((id, i) => [id, { cap: counts[i], left: counts[i], tier: catalog.operators[id]?.tier }]));
   const rowAllies = (piece) => [0, 1].map((n) => ({ uid: `row-${n}`, chessId: idFor('角峰'), row: piece.row, col: n, nativeState: {} }));
+  const candidates = ['chess_char_5_04_a','chess_char_2_07_a','chess_char_1_04_a'];
 
   for (const elite of [false, true]) {
     const { state, services, offers } = fixture();
     const gratia = get('歌蕾蒂娅');
     const piece = { uid: 'gratia', chessId: elite ? gratia.eliteChessId : gratia.chessId, elite, row: 0, col: 4, nativeState: {} };
-    const candidates = ['chess_char_5_04_a','chess_char_2_07_a','chess_char_1_04_a'];
     state.pool = { left: stock(candidates, [1, 0, 1]) };
     state.pieces.push(piece, ...rowAllies(piece));
+    const eligibleCandidates = candidates.filter((id) => catalog.operators[id] && catalog.operators[id].recruitable !== false && state.pool.left[id]?.left > 0);
     runNativeHook(state, 'roundStart', {}, services);
-    assert.equal(offers.length, elite ? 2 : 1);
+    assert.equal(offers.length, Math.min(elite ? 2 : 1, eligibleCandidates.length));
     assert.ok(offers.every((x) => state.pool.left[x.chessId]?.cap > 0));
     assert.equal(new Set(offers.map((x) => x.chessId)).size, offers.length);
   }
   const oneLeft = fixture();
   const gratia = get('歌蕾蒂娅');
   const eliteGratia = { uid: 'elite-gratia', chessId: gratia.eliteChessId, elite: true, row: 0, col: 4, nativeState: {} };
-  const onlyCandidate = 'chess_char_5_04_a';
-  oneLeft.state.pool = { left: stock([onlyCandidate], [1]) };
+  const onlyCandidate = candidates.find((id) => catalog.operators[id] && catalog.operators[id].recruitable !== false);
+  oneLeft.state.pool = { left: stock(onlyCandidate ? [onlyCandidate] : [], onlyCandidate ? [1] : []) };
   oneLeft.state.pieces.push(eliteGratia, ...rowAllies(eliteGratia));
   runNativeHook(oneLeft.state, 'roundStart', {}, oneLeft.services);
-  assert.deepEqual(oneLeft.offers.map((x) => x.chessId), [onlyCandidate], 'second elite grant quietly skips when finite stock is exhausted');
+  assert.deepEqual(oneLeft.offers.map((x) => x.chessId), onlyCandidate ? [onlyCandidate] : [], 'only active, currently stocked candidates can be recruited');
 
   const random = fixture();
   const tail = get('焰尾');
