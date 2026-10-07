@@ -287,7 +287,10 @@ export class Battle {
   _tokenDef(tokenId, owner, inline, ownerGrowth = null) {
     if (inline) return normalizeToken(tokenId, inline);
     if (!this.data.getToken) return null;
-    if (owner && typeof owner === 'object') return this.data.getToken(tokenId, owner.defId ?? null, owner.def?.loadout ?? null, ownerGrowth ?? owner.nativeGrowthStatus ?? null);
+    if (owner && typeof owner === 'object') {
+      const ownerChessId = owner.def?.raw?.darkmoonNativeChessId ?? owner.defId ?? null;
+      return this.data.getToken(tokenId, ownerChessId, owner.def?.loadout ?? null, ownerGrowth ?? owner.nativeGrowthStatus ?? null);
+    }
     return this.data.getToken(tokenId, owner ?? null, null, ownerGrowth);
   }
 
@@ -1837,8 +1840,11 @@ export class Battle {
     const occ = this._occ[row * COLS + col];
     if (occ && occ.alive && !opts.force) return null;
     const dir = opts.dir != null ? normDir(opts.dir) : opts.facing != null ? normDir(opts.facing) : ownerUnit ? ownerUnit.dir : ps ? ps.dir : 'RIGHT';
-    const u = this._makeAlly(ps, def, 'token', row, col, { ownerUnit, dir });
-    u.nativeOwnerGrowth = opts.ownerGrowth ?? ownerUnit?.nativeGrowthStatus ?? null;
+    const u = this._makeAlly(ps, def, 'token', row, col, {
+      ownerUnit, dir,
+      nativeGrowthStatus: opts.nativeGrowthStatus ?? null,
+      nativeOwnerGrowth: opts.ownerGrowth ?? ownerUnit?.nativeGrowthStatus ?? null,
+    });
     if (opts.stats) for (const [k, v] of Object.entries(opts.stats)) if (Number.isFinite(v)) u.base[k] = v;
     this._setupUnit(u, opts.kit ?? null);
     if (opts.untargetable) this.addBuff(u, { key: 'trait:untargetable', flags: { untargetable: true }, persist: true, allowDead: true });

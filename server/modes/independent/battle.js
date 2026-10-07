@@ -11,6 +11,7 @@ import { installIndependentBattle } from '../../sim/content/independent/battle.j
 import { getCatalog } from './catalog.js';
 import { independentEnemyBalance, balanceIndependentWave } from './enemyBalance.js';
 import { unitStatsEntry } from '../../../shared/protocol.js';
+import { operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 
 const PLAYER_ID = 'independent';
 const SAMPLE_LIMIT = 24;
@@ -78,7 +79,7 @@ export function getIndependentField(state, { data = null, catalog = null } = {})
   };
 }
 
-function battleUnits(state) {
+function battleUnits(state, catalog) {
   const pieces = Array.isArray(state?.pieces) ? state.pieces : [];
   const units = [];
   for (const piece of pieces) {
@@ -93,6 +94,7 @@ function battleUnits(state) {
       dir: piece.dir ?? 'RIGHT',
       skillIndex: piece.skillIndex ?? 0,
       moduleId: piece.moduleId ?? 'none',
+      ...(piece.growthMode==='levels'?{nativeGrowthStatus:(({phase,level})=>({phase,level}))(operatorGrowthInfo(piece,catalog))}:{}),
     });
   }
   return units;
@@ -125,7 +127,7 @@ function sampleBattle(battle) {
  */
 function buildBattle(input, source, catalog, { preview = false } = {}) {
   const prepared = prepare(input, source, catalog);
-  const units = battleUnits(input);
+  const units = battleUnits(input,catalog);
   const supportChess=Object.fromEntries(Object.entries(catalog?.operators||{}).filter(([,op])=>op?.darkmoonSupport&&op.source?.normalChess).map(([id,op])=>[id,op.source.normalChess]));
   const battleData=Object.keys(supportChess).length?{...source,chess:{...(source.chess||{}),...supportChess}}:source;
   const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1) * (prepared.tuning?.bossHpMul ?? 1)));

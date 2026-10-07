@@ -648,12 +648,18 @@ export class DataSource {
       const level = ownerGrowth?.level ?? ownerRecord?.status?.level ?? variant.level;
       const grownStats = interpolateNativeTokenStats(r.nativeGrowth, phase, level);
       if (grownStats) {
-        const oldStats = baseVariant?.stats ?? r.stats ?? {};
-        const selectedStats = variant.stats ?? oldStats;
-        const stats = { ...grownStats };
+        // Keep generated variant adjustments (e.g. talent deploy-count overrides and module attributes) relative to
+        // the native table baseline at the same preset phase/level. The prebuilt variant stats are not pure table
+        // attrs, so subtracting them directly would erase or misapply those adjustments at a new runtime level.
+        const basePhase = baseVariant?.phase ?? phase;
+        const baseLevel = baseVariant?.level ?? level;
+        const tableBaseline = interpolateNativeTokenStats(r.nativeGrowth, basePhase, baseLevel) ?? r.stats ?? {};
+        const selectedStats = variant.stats ?? baseVariant?.stats ?? r.stats ?? {};
+        const stats = { ...selectedStats, ...grownStats };
         for (const key of Object.keys(stats)) {
-          const delta = Number(selectedStats[key]) - Number(oldStats[key]);
-          if (Number.isFinite(delta) && delta) stats[key] += delta;
+          const selected = Number(selectedStats[key]);
+          const baseline = Number(tableBaseline[key]);
+          if (Number.isFinite(selected) && Number.isFinite(baseline)) stats[key] += selected - baseline;
         }
         variant = { ...variant, stats };
       }
