@@ -3,9 +3,8 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
-import { startServer } from '../server/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function options(argv) {
@@ -13,6 +12,7 @@ function options(argv) {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--output') values.output = argv[++i];
     else if (argv[i] === '--install-dir') values.installDir = argv[++i];
+    else if (argv[i] === '--source-root') values.sourceRoot = argv[++i];
     else throw new Error(`Unknown argument: ${argv[i]}`);
   }
   return values;
@@ -21,6 +21,8 @@ const opts = options(process.argv.slice(2));
 if (opts.output && !path.isAbsolute(opts.output)) throw new Error('--output must be an absolute path');
 const OUTPUT = path.resolve(opts.output || process.env.SP_TEST_ARTIFACT_DIR || path.join(ROOT, '.omni', 'tmp', 'client-compute-browser-smoke'));
 const INSTALL_DIR = path.resolve(opts.installDir || process.env.STRONGHOLD_INSTALL_DIR || ROOT);
+const SOURCE_ROOT = path.resolve(opts.sourceRoot || ROOT);
+const { startServer } = await import(pathToFileURL(path.join(SOURCE_ROOT, 'server', 'index.js')).href);
 await mkdir(OUTPUT, { recursive: true });
 const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, independentDirectory: path.join(OUTPUT, 'sessions'), installDir: INSTALL_DIR });
 const base = new URL('independent.html?execution=client', server.url).href;
@@ -30,6 +32,28 @@ const receipt = { ok: false, url: base, artifacts: [{ path: receiptPath, role: '
 const errors = [];
 let browser;
 let page;
+function firstDifference(client, server, at = '$') {
+  if (client === server) return null;
+  if (client === null || server === null || typeof client !== typeof server) return { path: at, client, server };
+  if (typeof client !== 'object') return { path: at, client, server };
+  if (Array.isArray(client) !== Array.isArray(server)) return { path: at, client, server };
+  if (Array.isArray(client)) {
+    if (client.length !== server.length) return { path: `${at}.length`, client: client.length, server: server.length };
+    for (let index = 0; index < client.length; index++) {
+      const diff = firstDifference(client[index], server[index], `${at}[${index}]`);
+      if (diff) return diff;
+    }
+    return null;
+  }
+  const keys = [...new Set([...Object.keys(client), ...Object.keys(server)])].sort();
+  for (const key of keys) {
+    if (!Object.hasOwn(client, key) || !Object.hasOwn(server, key)) return { path: `${at}.${key}`,
+      client: Object.hasOwn(client, key) ? client[key] : '<missing>', server: Object.hasOwn(server, key) ? server[key] : '<missing>' };
+    const diff = firstDifference(client[key], server[key], `${at}.${key}`);
+    if (diff) return diff;
+  }
+  return null;
+}
 try {
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist',
@@ -65,9 +89,15 @@ try {
     const { api, executionMode } = await import('/js/independent/api.js');
     const server = await fetch('/independent/api/catalog').then((response) => response.json());
     const local = await api.catalog();
-    return { executionMode, apiType: typeof api.act, catalogsMatch: JSON.stringify(local.catalog) === JSON.stringify(server.catalog) };
+    return { executionMode, apiType: typeof api.act, clientWire: JSON.parse(JSON.stringify(local.catalog)), serverWire: server.catalog,
+      stringifiedCatalogsMatch: JSON.stringify(local.catalog) === JSON.stringify(server.catalog) };
   });
-  assert.deepEqual(apiResult, { executionMode: 'client', apiType: 'function', catalogsMatch: true });
+  const catalogDiff = firstDifference(apiResult.clientWire, apiResult.serverWire);
+  receipt.checks.catalogComparison = { matches: catalogDiff === null, stringifiedCatalogsMatch: apiResult.stringifiedCatalogsMatch, firstDifference: catalogDiff };
+  try { assert.deepEqual(apiResult.clientWire, apiResult.serverWire, 'client worker wire catalog must match /catalog'); }
+  catch { throw new Error('client worker wire catalog differs from /catalog; see checks.catalogComparison.firstDifference'); }
+  assert.equal(apiResult.executionMode, 'client');
+  assert.equal(apiResult.apiType, 'function');
   receipt.checks.mode = apiResult.executionMode;
   receipt.checks.engineView = await page.evaluate(() => ({ kind: globalThis.__SP_VIEW__.kind, board3d: !!globalThis.__SP_VIEW__.raw?.stats?.().board3d?.on }));
   assert.equal(receipt.checks.engineView.kind, 'engine');
