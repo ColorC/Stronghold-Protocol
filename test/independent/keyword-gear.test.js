@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { installKeywordGear } from '../../server/sim/content/independent/keywordGear.js';
+import { installIndependentBattle } from '../../server/sim/content/independent/battle.js';
 import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 
@@ -67,6 +68,27 @@ test('护盾发生器 grants 5 + 3(N−1) hit layers per deploy; native shields 
   assert.equal(h.b.testShieldBroken, 5, 'all hit shields report one broken layer per absorbed hit');
   assert.equal(h.b.testShieldThreshold, 1, 'the configured five-layer threshold fires once, not once per broken layer');
   assert.equal(w.hp, w.s.maxHp, 'hit-negating layers prevent HP loss');
+});
+
+test('independent eventProduction counts shield layer quantities across native hit shields', () => {
+  const h = setup([{ uid: 'w', chessId: 'w', row: 10, col: 3 }]);
+  const rule = (counterEvent, id) => ({ trigger: counterEvent, behavior: 'eventProduction', params: {
+    counterEvent, counterEvery: 5, outputs: [{ id, quantity: 1 }], filter: { actor: 'self' },
+  } });
+  const catalog = {
+    operators: { w: { nativeTrait: { effect: { combat: [rule('shieldLayersGained', 'gainBadge'), rule('shieldLayersBroken', 'breakBadge')] } } } },
+    equipment: {}, badges: { gainBadge: { id: 'gainBadge' }, breakBadge: { id: 'breakBadge' } },
+  };
+  installIndependentBattle(h.b, { catalog, state: { pieces: [{ uid: 'w', chessId: 'w', equipment: [], attachments: [] }] } });
+  const w = h.unit('w');
+  h.b.addBuff(w, { key: 'native-hit-shield', shieldHits: 3, duration: 20 });
+  h.b.addBuff(w, { key: 'gear-hit-shield', shieldHits: 2, duration: 20 });
+  assert.equal(h.b.independentRewards.filter((r) => r.id === 'gainBadge').reduce((n, r) => n + r.quantity, 0), 1,
+    'five gained layers from separate native and equipment sources produce one badge');
+  const shot = enemy(h, [10, 19]);
+  for (let i = 0; i < 5; i++) h.b.dealDamage(shot, w, { amount: 100, type: 'true' });
+  assert.equal(h.b.independentRewards.filter((r) => r.id === 'breakBadge').reduce((n, r) => n + r.quantity, 0), 1,
+    'five broken native/equipment hit layers produce one badge');
 });
 
 test('突袭盟约 waits for idle, reuses legal raid landing and the deploy event grants its timed ASPD', () => {

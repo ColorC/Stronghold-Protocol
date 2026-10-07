@@ -690,6 +690,7 @@ function adjacentInDirection(owner, actor, direction) {
 
 function getActor(event, trigger) {
   if (trigger === 'skillStart' || trigger === 'skillEnd' || trigger === 'deploy' || trigger === 'dollSwap' || trigger === 'ammoUsed' || trigger === 'heal') return event.unit ?? event.source ?? null;
+  if (trigger === 'shieldLayersGained' || trigger === 'shieldLayersBroken') return event.unit ?? null;
   if (trigger === 'kill') return event.killer ?? null;
   if (trigger === 'death') return event.unit ?? null;
   if (trigger === 'statusApplied') return event.source ?? null;
@@ -902,7 +903,14 @@ function installProductionRule(battle, owner, rule, origin, sourceId, emit) {
     if (p.firstOnly && eventCount > 0) return;
     if (p.firstN != null && eventCount >= Number(p.firstN)) return;
     if (Number(p.probability) > 0 && battle.rng() >= Number(p.probability)) return;
-    const delta = trigger === 'ammoUsed' ? Number(event.amount ?? event.consumed ?? 1) : 1;
+    // Hit-negating shields expose layer counts, not just callback counts. This lets
+    // independent eventProduction express e.g. one badge per five native or gear
+    // shield layers gained/broken, while HP shields remain outside this event path.
+    const delta = trigger === 'ammoUsed'
+      ? Number(event.amount ?? event.consumed ?? 1)
+      : (trigger === 'shieldLayersGained' || trigger === 'shieldLayersBroken')
+        ? Number(event.layers ?? 1)
+        : 1;
     if (!(delta > 0)) return;
     owner.mem.independentState.counters[`${countKey}:events`] = eventCount + 1;
     owner.mem.independentState.counters[countKey] += delta;
