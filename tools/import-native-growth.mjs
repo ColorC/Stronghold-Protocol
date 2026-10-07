@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Attach official native level curves to the existing chess pool without downloading or rewriting
 // any source tables. New operators are reported separately until their complete battle kits exist.
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, copyFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { safeName } from './assets/sources.mjs';
+import { processModels } from './assets/spine.mjs';
+import { atlasInfo } from './assets/atlas.mjs';
+import { pngSize } from './assets/formats.mjs';
 import { interpolateAttrs, statsFrom, buildSkill, rangeGrid, immunitiesOf, traitRecord, baseTalentList, tokenVariant, resolveTrigger } from './build-data.mjs';
 import { NATIVE_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT, NATIVE_KIT_READY } from '../server/sim/content/newnativekits.js';
 import { NATIVE_DEFAULT_SKILL_IDS as VKS_DEFAULT_SKILL_IDS, NATIVE_SKILL_SUPPORT as VKS_SKILL_SUPPORT } from '../server/sim/content/nativeVictoriaKazimierzSiracusa.js';
@@ -43,16 +46,20 @@ function parseArgs(argv) {
     assets: resolve(ROOT, 'data/assets.json'),
     tokens: resolve(ROOT, 'data/tokens.json'),
     report: resolve(CANONICAL_ROOT, 'runtime/growth-destination-20261008/native-import/growth-import-receipt.json'),
+    spineAssets: resolve(CANONICAL_ROOT, 'public/assets'),
+    spineCache: resolve(CANONICAL_ROOT, 'runtime/growth-destination-20261008/balance-qa/native-spine-cache.json'),
     write: false,
+    writeAssetsOnly: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--help' || k === '-h') {
-      console.log('usage: node tools/import-native-growth.mjs --character-table <file> [--skill-table <file>] [--range-table <file>] [--chess <file>] [--assets <file>] [--tokens <file>] [--report <file>] [--write]');
+      console.log('usage: node tools/import-native-growth.mjs --character-table <file> [--skill-table <file>] [--range-table <file>] [--chess <file>] [--assets <file>] [--tokens <file>] [--report <file>] [--spine-assets <public/assets>] [--spine-cache <file>] [--write | --write-assets-only]');
       process.exit(0);
     }
     if (k === '--write') { o.write = true; continue; }
-    if (['--character-table','--skill-table','--range-table','--chess','--assets','--tokens','--report'].includes(k)) {
+    if (k === '--write-assets-only') { o.writeAssetsOnly = true; continue; }
+    if (['--character-table','--skill-table','--range-table','--chess','--assets','--tokens','--report','--spine-assets','--spine-cache'].includes(k)) {
       const v = argv[++i];
       if (!v || v.startsWith('--')) throw new Error(`${k} requires a path`);
       o[k.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = resolve(v);
@@ -65,6 +72,100 @@ function parseArgs(argv) {
   o.skillTable ||= join(excelDir, 'skill_table.json');
   o.rangeTable ||= join(excelDir, 'range_table.json');
   return o;
+}
+
+function nativeSpineModelKey(kind, id, side = '') { return `${kind}:${id}${side ? `:${side}` : ''}`; }
+
+/**
+ * Build Spine metadata from the already downloaded canonical files. processModels may normalize an atlas or remove
+ * an invalid skeleton, so it runs against a task-owned staging copy; the source assets stay read-only.
+ */
+async function nativeSpineEntries({ spineAssets, spineCache, report }, candidateRows, tokenIds) {
+  const chars = new Map();
+  for (const row of candidateRows) {
+    if (row.chessType !== 'NATIVE_IMPORT_CANDIDATE' || !row.charId) continue;
+    const prior = chars.get(row.charId);
+    if (!prior || (!row.isGolden && prior.isGolden)) chars.set(row.charId, row);
+  }
+  if (chars.size !== 34) throw new Error(`expected 34 native character models, found ${chars.size}`);
+  await mkdir(dirname(report), { recursive: true });
+  const stageRoot = join(dirname(report), `native-spine-stage-${process.pid}`);
+  await mkdir(stageRoot, { recursive: false });
+  const models = new Map();
+  const refs = new Map();
+  const addModel = async (kind, id, side, skillIndices, allowMissing = false) => {
+    const group = kind === 'op' ? `spine/op/${id}/${side}` : `spine/token/${id}`;
+    const sourceDir = join(spineAssets, group);
+    const stagedDir = join(stageRoot, group);
+    const stem = kind === 'op' ? id : id;
+    const suffixes = ['skel', 'atlas'];
+    const sourcePaths = Object.fromEntries(suffixes.map((ext) => [ext, join(sourceDir, `${stem}.${ext}`)]));
+    const found = await Promise.all(Object.values(sourcePaths).map((p) => existsSync(p)));
+    if (!found.some(Boolean) && allowMissing) return null;
+    if (!found.every(Boolean)) throw new Error(`${id}${side ? ` ${side}` : ''}: partial Spine skeleton/atlas in ${sourceDir}`);
+    const atlasText = await readFile(sourcePaths.atlas, 'utf8');
+    const pages = atlasInfo(atlasText).pages;
+    if (!pages.length) throw new Error(`${id}${side ? ` ${side}` : ''}: atlas has no texture pages`);
+    const files = [
+      [`${stem}.skel`, sourcePaths.skel], [`${stem}.atlas`, sourcePaths.atlas],
+      ...pages.map((page) => [safeName(page), join(sourceDir, page)]),
+    ];
+    await mkdir(stagedDir, { recursive: true });
+    for (const [name, source] of files) {
+      if (!existsSync(source)) throw new Error(`${id}${side ? ` ${side}` : ''}: missing canonical Spine file ${source}`);
+      if (name.endsWith('.png') || pages.includes(name)) {
+        const size = pngSize(await readFile(source));
+        if (!size) throw new Error(`${id}${side ? ` ${side}` : ''}: invalid Spine texture ${source}`);
+      }
+      await copyFile(source, join(stagedDir, name));
+    }
+    const key = nativeSpineModelKey(kind, id, side);
+    const dir = `${group}/`;
+    models.set(key, {
+      key, kind, dir, pma: false, skillIndices,
+      skel: { rel: `${dir}${stem}.skel` }, atlas: { rel: `${dir}${stem}.atlas`, mutable: true, urls: [] },
+      pngs: pages.map((page) => ({ rel: `${dir}${safeName(page)}` })),
+    });
+    refs.set(key, { kind, id, side });
+    return key;
+  };
+  let frontCount = 0, backCount = 0, tokenCount = 0;
+  try {
+    for (const [id, row] of chars) {
+      const selected = ALL_NATIVE_SKILL_SUPPORT[id] || [];
+      const skillIndices = (row.skills || []).filter((s) => selected.includes(s.skillId)).map((s) => s.index);
+      await addModel('op', id, 'front', skillIndices);
+      frontCount++;
+      if (!NO_SPINE_BACK.has(id)) {
+        await addModel('op', id, 'back', skillIndices);
+        backCount++;
+      }
+    }
+    for (const id of new Set(tokenIds)) {
+      const key = await addModel('token', id, '', [0], true);
+      if (key) tokenCount++;
+    }
+    const { entries, problems } = await processModels(models, {
+      root: stageRoot, cachePath: spineCache, download: false, log: () => {},
+    });
+    if (problems.length) throw new Error(`native Spine model processing failed: ${problems.slice(0, 8).join('; ')}`);
+    if (entries.size !== models.size) throw new Error(`native Spine parsed ${entries.size}/${models.size} models`);
+    const result = { chars: {}, tokens: {}, frontCount, backCount, tokenCount, modelCount: entries.size };
+    for (const [key, meta] of entries) {
+      const ref = refs.get(key);
+      if (ref.kind === 'op') {
+        result.chars[ref.id] ||= {};
+        result.chars[ref.id][ref.side] = meta;
+      } else result.tokens[ref.id] = meta;
+    }
+    return result;
+  } finally {
+    const runtimeRoot = resolve(dirname(report));
+    const safeStage = resolve(stageRoot);
+    if (safeStage.startsWith(`${runtimeRoot}/`) || safeStage.startsWith(`${runtimeRoot}\\`)) {
+      await rm(safeStage, { recursive: true, force: true });
+    } else throw new Error(`refusing to remove Spine staging outside task runtime: ${safeStage}`);
+  }
 }
 
 function assertCurve(char, charId) {
@@ -364,6 +465,8 @@ export async function runImport(opts) {
   const tokenTable = JSON.parse(await readFile(opts.tokens, 'utf8'));
   const updated = structuredClone(chess);
   const updatedAssets = structuredClone(assets);
+  // DIY placeholders have no character identity and must not become a shared "undefined" asset record.
+  delete updatedAssets.chars?.undefined;
   const updatedTokens = structuredClone(tokenTable);
   const triggerSource = JSON.parse(await readFile(resolve(ROOT,'data/native-skill-trigger-source.json'),'utf8'));
   const ctx = { skillTable, rangeTable, charTable, ac: triggerSource };
@@ -433,7 +536,21 @@ export async function runImport(opts) {
   const nativeTokenIds = attachNativeTokens(updatedTokens, Object.values(updated).filter((rec) => rec.chessType === 'NATIVE_IMPORT_CANDIDATE'), charTable, ctx);
   for(const tokenId of nativeTokenIds){
     const owner=Object.values(updated).find(rec=>rec.chessType==='NATIVE_IMPORT_CANDIDATE'&&rec.tokens?.includes(tokenId))?.charId;
-    updatedAssets.tokens||={};updatedAssets.tokens[tokenId]={...(updatedAssets.tokens[tokenId]||{}),owner,avatar:`/assets/token/avatar/${tokenId}.png`};
+    updatedAssets.tokens||={};
+    const tokenAsset = { ...(updatedAssets.tokens[tokenId] || {}), owner };
+    const avatarPath = `/assets/token/avatar/${tokenId}.png`;
+    if (existsSync(join(opts.spineAssets, 'token', 'avatar', `${tokenId}.png`))) tokenAsset.avatar = avatarPath;
+    else if (tokenAsset.avatar === avatarPath) delete tokenAsset.avatar;
+    updatedAssets.tokens[tokenId] = tokenAsset;
+  }
+  const nativeSpine = await nativeSpineEntries(opts, Object.values(updated), nativeTokenIds);
+  for (const [charId, sides] of Object.entries(nativeSpine.chars)) {
+    const current = updatedAssets.chars[charId] || {};
+    current.spine = { ...(current.spine || {}), ...sides };
+    updatedAssets.chars[charId] = current;
+  }
+  for (const [tokenId, spine] of Object.entries(nativeSpine.tokens)) {
+    updatedAssets.tokens[tokenId] = { ...(updatedAssets.tokens[tokenId] || {}), spine };
   }
   const noGrowthRefs = Object.values(updated).filter((c) => c.charId && c.visible && !c.nativeGrowth).map((c) => c.charId);
   if (noGrowthRefs.length) throw new Error(`growth join incomplete: ${noGrowthRefs.slice(0, 10).join(', ')}`);
@@ -482,6 +599,11 @@ export async function runImport(opts) {
       localAssetPaths: resolve(CANONICAL_ROOT,'public/assets'),
       imageSourceRevision: IMAGE_REVISION, spineSourceRevision: SPINE_REVISION,
       noE2Artwork: [...NO_E2_ART], noSpineBack: [...NO_SPINE_BACK],
+      parsedNativeSpine: {
+        charsWithFront: nativeSpine.frontCount, charsWithBack: nativeSpine.backCount,
+        tokensWithSpine: nativeSpine.tokenCount, parsedModels: nativeSpine.modelCount,
+        heidiBackFallback: 'spineEntry resolves Front when no Back entry is present',
+      },
       sourceHttpChecks: {
         method: 'HEAD',
         avatar: { checked: 34, http200: 34 }, portraitE1: { checked: 34, http200: 34 }, skillIcons: { checked: 74, http200: 74 },
@@ -491,23 +613,27 @@ export async function runImport(opts) {
         spineBackFiles: { checked: 102, http200: 99, missing: [{ charId: 'char_4045_heidi', files: ['skel', 'atlas', 'png'], httpStatus: 404 }] },
       },
     },
-    status: opts.write ? 'written' : 'dry-run',
+    status: opts.write || opts.writeAssetsOnly ? 'written' : 'dry-run',
   };
-  if (opts.write) {
-    const text = JSON.stringify(updated);
-    const tmp = `${opts.chess}.tmp-${process.pid}`;
-    await writeFile(tmp, text);
-    await rename(tmp, opts.chess);
+    if (opts.write || opts.writeAssetsOnly) {
+      if (opts.write) {
+        const text = JSON.stringify(updated);
+        const tmp = `${opts.chess}.tmp-${process.pid}`;
+        await writeFile(tmp, text);
+        await rename(tmp, opts.chess);
+      }
     // Structural counts follow imported entries; byte/file totals are maintained by the asset pipeline.
     updatedAssets.stats = {...updatedAssets.stats, chars:Object.keys(updatedAssets.chars||{}).length, charsWithBack:Object.values(updatedAssets.chars||{}).filter(x=>x.spine?.back).length, tokens:Object.keys(updatedAssets.tokens||{}).length, tokensWithSpine:Object.values(updatedAssets.tokens||{}).filter(x=>x.spine).length, skills:Object.keys(updatedAssets.skills||{}).length, ui:Object.keys(updatedAssets.ui||{}).length, spineModels:new Set([...Object.values(updatedAssets.chars||{}).flatMap(x=>Object.values(x.spine||{})),...Object.values(updatedAssets.enemies||{}).map(x=>x.spine),...Object.values(updatedAssets.tokens||{}).map(x=>x.spine)].filter(Boolean).map(x=>x.skel)).size};
     const assetText = JSON.stringify(updatedAssets) + '\n';
     const assetTmp = `${opts.assets}.tmp-${process.pid}`;
     await writeFile(assetTmp, assetText);
     await rename(assetTmp, opts.assets);
-    const tokenText = JSON.stringify(updatedTokens) + '\n';
-    const tokenTmp = `${opts.tokens}.tmp-${process.pid}`;
-    await writeFile(tokenTmp, tokenText);
-    await rename(tokenTmp, opts.tokens);
+    if (opts.write) {
+      const tokenText = JSON.stringify(updatedTokens) + '\n';
+      const tokenTmp = `${opts.tokens}.tmp-${process.pid}`;
+      await writeFile(tokenTmp, tokenText);
+      await rename(tokenTmp, opts.tokens);
+    }
     await mkdir(dirname(opts.report), { recursive: true });
     await writeFile(opts.report, JSON.stringify(report, null, 2) + '\n');
   }
