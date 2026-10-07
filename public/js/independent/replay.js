@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const stage = $('stage'); const status = $('status'); const caption = $('caption');
+const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
 const API = new URL('independent/api/', location.href);
@@ -11,6 +11,16 @@ const paintCue = (second) => {
   const cue = cues.find((x) => second >= x.at && second < x.at + 5);
   caption.textContent = cue?.text || '';
   caption.hidden = !cue;
+  anchor.hidden = !cue?.rect;
+  if (cue?.rect) {
+    const frame = stage.querySelector('iframe'); const screen = stage.parentElement.getBoundingClientRect(); const bounds = frame?.getBoundingClientRect();
+    const vw = cue.viewport?.width || 1280; const vh = cue.viewport?.height || 720;
+    if (bounds) {
+      const sx = bounds.width / vw; const sy = bounds.height / vh;
+      anchor.style.left = `${bounds.left - screen.left + cue.rect.x * sx}px`; anchor.style.top = `${bounds.top - screen.top + cue.rect.y * sy}px`;
+      anchor.style.width = `${cue.rect.width * sx}px`; anchor.style.height = `${cue.rect.height * sy}px`;
+    } else anchor.hidden = true;
+  }
   if (!cue || !cue.rect || !zoomRect) {
     document.documentElement.style.removeProperty('--ix-cue-x'); document.documentElement.style.removeProperty('--ix-cue-y');
   }
@@ -28,7 +38,7 @@ function tick() {
 function play() {
   if (playing || !player) return;
   playing = true; startedAt = performance.now(); startedSecond = Number(timeline.value);
-  player.play(baseTimestamp + startedSecond * 1000); playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
+  player.play(startedSecond * 1000); playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
 function pause() {
   if (!playing) return;
@@ -37,7 +47,7 @@ function pause() {
 async function seek(value) {
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
   const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause();
-  timeline.value = String(second); position(second); player?.play(baseTimestamp + second * 1000);
+  timeline.value = String(second); position(second); player?.play(second * 1000);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   player?.pause();
   if (resume) { playing = false; play(); }
@@ -78,7 +88,13 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const width = packet.meta.viewport?.width || 1280; const height = packet.meta.viewport?.height || 720;
   stage.style.aspectRatio = `${width} / ${height}`; stage.style.setProperty('--ix-frame-width', `${width}px`); stage.style.setProperty('--ix-frame-height', `${height}px`);
   player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: true });
-  player.pause(); position(0); status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
+  // Replayer construction sets up its sandbox but does not paint the full snapshot until the timeline advances.
+  // Render the first recorded frame before enabling controls so a replay link never opens on a blank stage.
+  player.play(0);
+  // Let CSS transitions present in the captured page finish while the replay clock advances.
+  await new Promise((resolve) => setTimeout(resolve, 700));
+  player.pause();
+  timeline.value = String(Math.min(duration, 0.7)); position(Number(timeline.value)); status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
 })().catch((error) => { status.textContent = error.message || '回放载入失败'; });
 
 window.addEventListener('pagehide', () => { cancelAnimationFrame(raf); player?.pause(); });
