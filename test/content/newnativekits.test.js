@@ -165,7 +165,7 @@ test('native Shu S1 heals from its source scale and plants the source regen/prot
   h.run(4);
   assert.ok(shuUnit.skill.activations > 0);
   assert.ok(h.eventsOf('heal').some((event) => event[1] === ally.id && event[2] > 0), 'source heal scale restores an ally');
-  assert.ok(ally.buffs.some((buff) => buff.key === `native:shu:seed:${shuUnit.id}`), 'seeded tile grants source damage protection');
+  assert.ok(ally.buffs.some((buff) => buff.key === 'native:shu:seed' && buff.mods.hpRegen === shuRecord.talents[0].bb.hp_recovery_per_sec), 'seeded tile grants source HP regeneration and protection');
   assert.ok(ally.hp > ally.s.maxHp * 0.4, 'seeded area applies its source HP recovery');
   h.invariants();
 });

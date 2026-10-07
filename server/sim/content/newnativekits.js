@@ -199,7 +199,11 @@ function shu(bb, chess, def) {
       if (!(regen > 0 && resistance >= 0)) return;
       if (def?.skill?.rangeGrid) { unit.rangeGrid = def.skill.rangeGrid; battle.refreshRange(unit); }
       const planted = new Set();
-      const effectKey = `native:shu:seed:${unit.id}`;
+      const effectKey = 'native:shu:seed';
+      const clear = () => {
+        planted.clear();
+        for (const ally of battle.alliesFor(unit)) if (ally.findBuff(effectKey)) battle.removeBuff(ally, effectKey);
+      };
       const plant = (target) => {
         const row = target.tileR, col = target.tileC;
         for (const [dr, dc] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -210,12 +214,14 @@ function shu(bb, chess, def) {
       battle.on('heal', ({ source, target, opts }) => {
         if (source === unit && target?.kind === 'op' && !opts?.tags?.includes(effectKey)) plant(target);
       }, { owner: unit });
+      battle.on('retreating', ({ unit: leaving }) => { if (leaving === unit) clear(); }, { owner: unit });
+      battle.on('death', ({ unit: fallen }) => { if (fallen === unit) clear(); }, { owner: unit });
       battle.every(1, () => {
         if (!unit.alive || !unit.deployed || !planted.size) return;
         for (const ally of battle.alliesFor(unit)) {
-          if (ally.kind !== 'op' || !planted.has(ally.tileR * COLS + ally.tileC)) continue;
-          battle.heal(unit, ally, regen, { tags: [effectKey] });
-          battle.addBuff(ally, { key: effectKey, duration: 1.1, source: unit, mods: { dmgTakenMul: 1 - resistance }, tags: ['aura', 'talent'] });
+          if (ally.kind === 'op' && planted.has(ally.tileR * COLS + ally.tileC)) {
+            battle.applyStrongest(ally, effectKey, { duration: 1.1, value: resistance, source: unit, mods: () => ({ hpRegen: regen, dmgTakenMul: 1 - resistance }) });
+          } else if (ally.findBuff(effectKey)) battle.removeBuff(ally, effectKey);
         }
       }, { owner: unit });
     } }],
