@@ -12,7 +12,7 @@ const BADGE_IDS = Object.freeze({
   攻击徽章: 'precision', 攻速徽章: 'agility', 生命徽章: 'vitality', 防御徽章: 'defense',
   攻击加成徽章: 'assault', 技力徽章: 'recovery', 法抗徽章: 'arcane', 初始技力徽章: 'foresight',
   闪避徽章: 'miracle', 回复徽章: 'investor', 生命加成徽章: 'unyielding', 治疗徽章: 'harmony',
-  减伤徽章: 'coordination', 再部署徽章: 'solitary', 普攻徽章: 'mastery',
+  减伤徽章: 'coordination', 再部署徽章: 'solitary', 普通攻击徽章: 'mastery',
 });
 const ATTACHMENT_IDS = Object.freeze({ 军需备品: 'quartermaster-kit', 弹药回收: 'ammo-recovery', 寒区记录: 'cold-region-log', 医疗整备: 'medical-readiness' });
 const PRIZE_IDS = Object.freeze({
