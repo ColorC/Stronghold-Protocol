@@ -2644,7 +2644,7 @@
                 "recipient": "selectedFriendlyDragon",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2702,7 +2702,7 @@
                 "recipient": "selectedFriendlyDragon",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -11900,7 +11900,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -11937,7 +11937,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12222,7 +12222,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留；成长永久保留，并永久装备坚守盟约。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留，并永久装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12262,7 +12262,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留；成长永久保留，并永久装备坚守盟约。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留，并永久装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -13826,7 +13826,7 @@
                 "recipient": "selectedFriendlyMechanical",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -13863,7 +13863,7 @@
                 "recipient": "selectedFriendlyMechanical",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -14968,7 +14968,7 @@
                 "recipient": "originalBattlecryOutputs",
                 "duration": "whileOwnerOnField",
                 "kind": "triggerMultiplier",
-                "text": "在场时，你的战吼效果共触发2次；不重复其他整备效果。",
+                "text": "在场时，你的获得时效果共触发2次；不重复其他整备效果。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -14981,8 +14981,8 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "recipientLabel": "原战吼产生的效果目标",
-                "triggerLabel": "原战吼触发时",
+                "recipientLabel": "获得时效果的目标",
+                "triggerLabel": "获得时效果触发时",
                 "durationLabel": "持有干员在场时生效"
               }
             ],
@@ -14993,7 +14993,7 @@
                 "recipient": "originalBattlecryOutputs",
                 "duration": "whileOwnerOnField",
                 "kind": "triggerMultiplier",
-                "text": "在场时，你的战吼效果共触发3次；不重复其他整备效果。",
+                "text": "在场时，你的获得时效果共触发3次；不重复其他整备效果。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -15006,8 +15006,8 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "recipientLabel": "原战吼产生的效果目标",
-                "triggerLabel": "原战吼触发时",
+                "recipientLabel": "获得时效果的目标",
+                "triggerLabel": "获得时效果触发时",
                 "durationLabel": "持有干员在场时生效"
               }
             ]

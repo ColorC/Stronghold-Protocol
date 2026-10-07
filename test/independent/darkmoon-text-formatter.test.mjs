@@ -72,8 +72,8 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('BGS_100').elite, /效果触发2次.*所购干员星级/);
   assert.match(card('GVG_113').normal, /巨锤盟约/);
   assert.match(card('FP1_010').normal, /精准盟约/);
-  assert.match(card('LOE_077').normal, /战吼效果共触发2次/);
-  assert.match(card('LOE_077').elite, /战吼效果共触发3次/);
+  assert.match(card('LOE_077').normal, /获得时效果共触发2次/);
+  assert.match(card('LOE_077').elite, /获得时效果共触发3次/);
   assert.match(card('BOT_312').normal, /亡语.*攻击成长徽章×3及职业副属性成长徽章×1/);
   assert.match(card('BOT_312').elite, /亡语.*攻击成长徽章×6及职业副属性成长徽章×2/);
   assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击成长徽章×2及职业副属性成长徽章×4/);

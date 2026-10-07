@@ -28,12 +28,12 @@ const recipientNames = Object.freeze({
   allFriendlyWithTaunt: '所有装备坚守盟约的友方干员', allFriendlyDragonOperators: '所有友方卡西米尔干员',
   allOtherFriendlyMappedFaction: '所有其他友方哥伦比亚干员', otherFriendlyElementals: '其他友方炎阵营干员',
   otherFriendlyPirates: '其他友方维多利亚干员', adjacentFriendlyOperators: '相邻友方干员', friendlyWarbandSupport: '友方阵容中的整备区',
-  combatSummonAndHand: '战斗召唤单位与整备区手牌', originalBattlecryOutputs: '原战吼产生的效果目标',
+  combatSummonAndHand: '战斗召唤单位与整备区手牌', originalBattlecryOutputs: '获得时效果的目标',
   oneRandomOtherFriendly: '一名随机的其他友方干员', '卡西米尔友方': '卡西米尔友方干员', '叙拉古友方': '叙拉古友方干员',
   '战场': '战场单位', '所有友方': '所有友方干员', '自身': '自身', '自身附近的友方': '自身附近的友方干员',
   '触发效果的友方': '触发效果的友方干员', '退场干员附近的友方': '退场干员附近的友方干员', '随机友方': '随机一名友方干员',
 });
-const triggerNames = Object.freeze({ gain: '招募获得或首次上阵时', bought: '购买时', sold: '出售时', prepEnd: '每回合休整结束时', roundStart: '每回合休整开始时', combatStart: '战斗开始时', battlecryMultiplier: '原战吼触发时' });
+const triggerNames = Object.freeze({ gain: '招募获得或首次上阵时', bought: '购买时', sold: '出售时', prepEnd: '每回合休整结束时', roundStart: '每回合休整开始时', combatStart: '战斗开始时', battlecryMultiplier: '获得时效果触发时' });
 const durationNames = Object.freeze({
   currentShopOnly: '仅当前商店有效', frozenUntilPurchase: '购买前保持冻结', immediateOnSale: '出售时立即结算', nextRefreshes: '后续刷新期间生效',
   nextUpgrade: '下次酒馆升级前生效', permanent: '永久生效', permanentAttachment: '本局永久附加', permanentTransformation: '本局永久转化',
@@ -91,7 +91,7 @@ function prepText(sourceId, rule, variant) {
       const parts = [];
       if (p.outputs?.includes('precision')) parts.push(`攻击成长徽章${qty(amount)}`);
       if (p.outputs?.some(x => x !== 'precision')) parts.push(`职业副属性成长徽章${qty(amount)}`);
-      return `友方战吼干员获得时，${who}各获得${parts.join('与')}；成长永久保留。`;
+      return `具有获得时效果的友方干员入队时，${who}各获得${parts.join('与')}；成长永久保留。`;
     }
     case 'darkmoonBattlecryTargetGrowth': {
       if (p.perTribeBought) {
@@ -101,7 +101,7 @@ function prepText(sourceId, rule, variant) {
       const count = p.fixedCount !== undefined ? pick(p.fixedCount, variant) : p.perTribeBought ? `${pick(p.perTribeBought, variant)}枚每名已购买${factionText(p.faction)}干员` : null;
       const n = (p.attackUnits !== undefined || p.secondaryUnits !== undefined) ? growth(attack, secondary, variant) : `${p.outputs?.includes('precision') ? `攻击成长徽章${qty(count)}` : ''}${p.outputs?.some(x => x !== 'precision') ? `与职业副属性成长徽章${qty(count)}` : ''}`;
       const bonus = p.extraGear?.length ? `，并永久装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : '';
-      return `${when}，${selected(p.faction)}获得${n}；成长永久保留${bonus}。`;
+      return `${when}，${selected(p.faction)}获得${n}${n.includes('成长永久保留')?'':'；成长永久保留'}${bonus}。`;
     }
     case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员星级等量的攻击成长徽章和职业副属性成长徽章，永久保留。`;
     case 'darkmoonBoughtSelfGrowth': return `${when}，购买${factionText(p.faction)}干员时，自身获得${growth(attack, secondary, variant)}。`;
@@ -126,7 +126,7 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonLastWarbandRecruit': return `招募获得或首次上阵时，从上一回合友方阵容中随机招募一名干员；${variant === 'elite' ? '以进阶形态' : '以普通形态'}加入，保留其原生效果。`;
     case 'factionReaction': return p.mode === 'funds' ? `出售时获得${amount}枚金币。` : `招募获得或首次上阵时，下次酒馆升级费用减少${amount}金币；每回合最多触发3次。`;
     case 'freeRefresh': return `招募获得或首次上阵时，立即免费刷新酒馆${pick(p, variant)}次。`;
-    case 'triggerMultiplier': return `在场时，你的战吼效果共触发${1 + pick(p.extra, variant)}次；不重复其他整备效果。`;
+    case 'triggerMultiplier': return `在场时，你的获得时效果共触发${1 + pick(p.extra, variant)}次；不重复其他整备效果。`;
     case 'darkmoonSummonSupport': return '招募获得或首次上阵时，召唤猫形支援单位加入整备区。';
     default: return '';
   }
