@@ -159,12 +159,15 @@ function curveValue(curve, t, fallback = 0) {
  * render/app.js only when the local extracted VFX directory is present.
  */
 export class OriginalVfxPlayer {
-  constructor({ P, layers, cam, view, root = DEFAULT_ROOT }) {
+  constructor({ P, layers, cam, view, root = DEFAULT_ROOT, cacheKey = null }) {
     this.P = P;
     this.layers = layers;
     this.cam = cam;
     this.view = typeof view === 'function' ? view : () => null;
     this.root = String(root || DEFAULT_ROOT).replace(/\/$/, '');
+    // Atlas files are replaceable runtime assets. Keep a batch key so a
+    // browser cannot silently combine a new manifest with an old atlas.
+    this.cacheKey = cacheKey == null || cacheKey === '' ? null : String(cacheKey);
     this.manifest = null;
     this.manifestPromise = null;
     this.entries = new Map();
@@ -176,10 +179,15 @@ export class OriginalVfxPlayer {
     this.unresolved = new Set();
   }
 
+  _assetUrl(path) {
+    const url = String(path || '');
+    return this.cacheKey ? `${url}${url.includes('?') ? '&' : '?'}vfx=${encodeURIComponent(this.cacheKey)}` : url;
+  }
+
   _manifest() {
     if (this.manifest) return Promise.resolve(this.manifest);
     if (!this.manifestPromise) {
-      this.manifestPromise = fetch(`${this.root}/index.json`, { cache: 'force-cache' })
+      this.manifestPromise = fetch(this._assetUrl(`${this.root}/index.json`), { cache: 'no-store' })
         .then((r) => { if (!r.ok) throw new Error(`original VFX manifest ${r.status}`); return r.json(); })
         .then((m) => {
           // Empty Unity control nodes are kept in the manifest for coverage, but have no atlas to request.
@@ -196,7 +204,7 @@ export class OriginalVfxPlayer {
     const manifest = await this._manifest();
     const meta = manifest?.get(prefab);
     if (!meta) { this.missing.add(prefab); return null; }
-    const atlasUrl = `${this.root}/${encodeURIComponent(prefab)}/atlas.webp`;
+    const atlasUrl = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/atlas.webp`);
     // The extractor's atlas is a premultiplied-colour / coverage pair.  The reference player samples it with
     // nearest filtering and premultiplied blending; linear filtering smears the narrow sword/trail cells into the
     // black padding and is the reason the otherwise-correct 锏 trail looked muddy.
@@ -246,7 +254,7 @@ export class OriginalVfxPlayer {
       }
       if (!this.meshTextures) this.meshTextures = new Map();
       await Promise.all([...files].map(async (file) => {
-        const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`;
+        const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`);
         let texture = this.meshTextures.get(url);
         if (!texture) { texture = this.P.Texture.from(url); this.meshTextures.set(url, texture); }
         const base = texture.baseTexture || texture;
@@ -261,7 +269,7 @@ export class OriginalVfxPlayer {
   async _meshEntry(prefab) {
     if (!this.meshEntries) this.meshEntries = new Map();
     if (this.meshEntries.has(prefab)) return this.meshEntries.get(prefab);
-    const promise = fetch(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`, { cache: 'force-cache' })
+    const promise = fetch(this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`), { cache: 'no-store' })
       .then((r) => { if (!r.ok) throw new Error(`mesh VFX ${r.status}`); return r.json(); })
       .then((data) => {
         if (!data || data.format !== 1 || !Array.isArray(data.nodes)) throw new Error('invalid mesh VFX export');
@@ -293,7 +301,7 @@ export class OriginalVfxPlayer {
         if (!raw || !Array.isArray(raw.vertices) || !raw.vertices.length || !Array.isArray(raw.indices) || !raw.indices.length || !material) continue;
         const loadTexture = async (info) => {
           if (!info?.file) return null;
-          const url = `${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(info.file)}`;
+          const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(info.file)}`);
           let texture = this.meshTextures?.get(url);
           if (!texture) {
             if (!this.meshTextures) this.meshTextures = new Map();
