@@ -19,7 +19,7 @@ const ACTIVE_IDS = [...DESIGN.rules.activeRosterIds];
 const ACTIVE_SET = new Set(ACTIVE_IDS);
 const BATTLE_RECEIPTS = [];
 const EXPECTED_TIERS = { 1: 13, 2: 19, 3: 20, 4: 18, 5: 18, 6: 13 };
-const EXPECTED_ROLES = { '纯战斗': 22, '成长': 45, '生成': 18, '联动': 7, '经济': 5, '一次性工具': 4 };
+const EXPECTED_ROLES = { '临时战斗': 10, '成长': 54, '联动': 10, '经济': 5, '生成': 18, '一次性工具': 4 };
 const PRODUCED_GEAR = ['坚守盟约','护盾发生器','突袭盟约','巨锤盟约','精准盟约','不屈盟约','爆破部署台','反冲空降仓','便携式融毁教学仪'];
 
 function tally(list, key) {
@@ -52,20 +52,22 @@ test('the compiled roster has 101 unique bodies and the approved tier/role struc
   assert.equal(new Set(sources.map((op) => op.charId)).size, 101, 'each selected chess maps to a distinct character');
   assert.deepEqual(tally(sources, (op) => op.tier), EXPECTED_TIERS);
   assert.deepEqual(tally(sources, (op) => op.roster), EXPECTED_ROLES);
-  assert.equal(sources.filter((op) => op.roster === '纯战斗').length, 22);
   for (const op of sources) {
     assert.deepEqual(Object.keys(op.modeEffects || {}).sort(), ['elite', 'normal'], `${op.name} authors ordinary and elite rules`);
+    assert.ok(op.nativeTrait?.normal?.trim() && op.nativeTrait?.elite?.trim(), `${op.name} has ordinary and elite trait text`);
+    assert.ok(!/白板|无(?:额外)?特质|没有(?:额外)?特质|凭自身技能作战|纯战斗/.test(`${op.nativeTrait.normal} ${op.nativeTrait.elite}`), `${op.name} is not a blank-trait placeholder`);
+    assert.ok(op.sourceRefs?.traitRevision || op.sourceRefs?.basis, `${op.name} has a design basis/source reference`);
     for (const form of ['normal', 'elite']) {
       assert.ok(Array.isArray(op.modeEffects[form].prep));
       assert.ok(Array.isArray(op.modeEffects[form].combat));
+      assert.ok(op.modeEffects[form].prep.length + op.modeEffects[form].combat.length > 0, `${op.name} ${form} has a configured mode effect`);
       const registered = CATALOG.operators[form === 'elite' ? CATALOG.operators[op.chessId].eliteChessId : op.chessId].nativeTrait.effect;
       assert.deepEqual(registered.unsupported, [], `${op.name} ${form} has no unsupported rules`);
     }
-    if (op.roster === '纯战斗') {
-      assert.deepEqual(op.modeEffects.normal, { prep: [], combat: [] }, `${op.name} normal rules stay empty`);
-      assert.deepEqual(op.modeEffects.elite, { prep: [], combat: [] }, `${op.name} elite rules stay empty`);
-    }
   }
+  const highTier = sources.filter((op) => op.tier >= 5);
+  assert.equal(highTier.length, 31);
+  for (const op of highTier) assert.ok(op.role?.trim() && !/定位待定|待补|暂无/.test(op.role), `${op.name} T${op.tier} has a concrete role rationale`);
 });
 
 test('each of the nine core supply gears has at least one active normal or elite producer', () => {
@@ -101,8 +103,8 @@ test('20 seeds use one exact 101-ID pool, have no random faction ban, and never 
     assert.ok(state.shop.slots.every((slot) => !slot.id || ACTIVE_SET.has(slot.id)));
   }
 
-  const tripleSource = DESIGN.operators.find((op) => ACTIVE_SET.has(op.chessId) && op.roster === '纯战斗');
-  assert.ok(tripleSource);
+  const tripleSource = DESIGN.operators.find((op) => ACTIVE_SET.has(op.chessId) && op.name === '红豆');
+  assert.ok(tripleSource, 'the merge fixture uses a named active operator');
   let state = createSession({ data: DATA, catalog: CATALOG, seed: 909 });
   state.funds = 100;
   const slot = state.shop.slots.findIndex((x) => x.kind === 'chess');
