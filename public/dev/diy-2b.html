@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>2B · 动作演示</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230c0f0e'/%3E%3Cpath fill='%234ed8af' d='M5 3h3v2h2V3h4v2h2V3h3v5l-2 2v7l2 2v2H5v-2l2-2v-7L5 8z'/%3E%3C/svg%3E" />
+  <!-- dev/diy-2b.html — online battle demo of the DIY operator 2B (draft). Served under /stronghold/ on the public
+       host, so every URL here and in diy-2b/demo.js is RELATIVE (never root-absolute). PixiJS 7 + pixi-spine 4 are
+       the game's vendored classic scripts (globals PIXI / PIXI.spine). -->
+  <script src="../vendor/pixi.min.js"></script>
+  <script src="../vendor/pixi-spine.js"></script>
+  <style>
+    @font-face { font-family: 'Bender'; font-weight: 400; font-display: swap; src: url('../fonts/bender-regular.woff2') format('woff2'); }
+    @font-face { font-family: 'Novecento Wide'; font-weight: 400; font-display: swap; src: url('../fonts/novecento-wide-normal.woff2') format('woff2'); }
+    :root {
+      --bg-0: #0a0e0d; --glass: rgba(13, 17, 16, .86); --glass-2: rgba(22, 28, 26, .9);
+      --line: #2f3a35; --line-2: #3e4b45; --line-3: #58675f;
+      --mint: #4ed8af; --mint-hi: #59f4ca; --mint-a15: rgba(78, 216, 175, .15); --mint-a35: rgba(78, 216, 175, .35);
+      --gold: #ffc600; --orange: #ff8a3d; --pink: #ff5ad7; --red: #ff5454; --ice: #9fd4ff;
+      --text-hi: #f2f2f2; --text-md: #c3cbc7; --text-lo: #8a948f; --text-dim: #5d6863;
+      --cjk: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', system-ui, sans-serif;
+      --num: 'Bender', 'Oxanium', ui-monospace, monospace;
+      --panel-w: 344px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg-0); overflow: hidden; overscroll-behavior: none; color: var(--text-md); font: 13px/1.45 var(--cjk); -webkit-text-size-adjust: 100%; }
+    body { position: fixed; inset: 0; touch-action: none; user-select: text; -webkit-user-select: text; }
+    #field { position: fixed; inset: 0; }
+    #field canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    #field canvas.is-dragging { cursor: grabbing; }
+    button { font: inherit; color: inherit; }
+    .micro { font: 11px/1 var(--num); letter-spacing: .14em; text-transform: uppercase; color: var(--mint); }
+
+    /* ---- title (top-left) ------------------------------------------------------------------------------- */
+    #hud { position: fixed; left: 16px; top: 14px; z-index: 4; pointer-events: none; max-width: calc(100vw - var(--panel-w) - 48px); }
+    #hud h1 { margin: 0; font: 700 21px/1.25 var(--cjk); color: var(--text-hi); letter-spacing: .02em; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+    #hud h1 b { color: var(--mint); font-weight: 700; }
+    #hud .note { margin-top: 3px; font-size: 12px; color: var(--text-lo); text-shadow: 0 1px 4px rgba(0,0,0,.9); }
+    #hud .status { margin-top: 8px; display: inline-flex; gap: 14px; padding: 5px 10px; background: rgba(10,14,13,.66); border-left: 2px solid var(--mint); font: 12px/1.3 var(--cjk); color: var(--text-md); }
+    #hud .status b { font: 14px/1 var(--num); color: var(--text-hi); font-weight: 400; margin-left: 4px; }
+
+    /* ---- view controls (top-right of the field) -------------------------------------------------------------- */
+    #viewctl { position: fixed; top: 14px; right: calc(var(--panel-w) + 26px); z-index: 4; display: flex; gap: 6px; align-items: center; }
+    body.panel-closed #viewctl { right: 16px; }
+    .chip { background: var(--glass); border: 1px solid var(--line-2); color: var(--text-hi); padding: 6px 10px; cursor: pointer; font-size: 12px; line-height: 1; backdrop-filter: blur(6px); }
+    .chip:hover { border-color: var(--mint); color: var(--mint); }
+    .chip.num { font-family: var(--num); min-width: 54px; text-align: center; cursor: default; color: var(--text-md); }
+    .chip.num:hover { border-color: var(--line-2); color: var(--text-md); }
+
+    /* ---- side panel ------------------------------------------------------------------------------------------ */
+    #panel { position: fixed; right: 12px; top: 12px; bottom: 12px; width: var(--panel-w); z-index: 5; display: flex; flex-direction: column;
+      background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(8px); touch-action: pan-y; user-select: text; }
+    #panel::before { content: ''; position: absolute; left: -1px; top: -1px; width: 56px; height: 3px; background: var(--mint); }
+    body.panel-closed #panel { display: none; }
+    .p-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 8px; border-bottom: 1px solid var(--line); }
+    .p-body { overflow-y: auto; padding: 4px 12px 14px; flex: 1; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .p-body::-webkit-scrollbar { width: 6px; } .p-body::-webkit-scrollbar-thumb { background: var(--line-2); }
+    .sec { padding: 10px 0 8px; border-bottom: 1px dashed var(--line); }
+    .sec:last-child { border-bottom: 0; }
+    .sec > .micro { display: block; margin-bottom: 8px; }
+    .x-btn { background: none; border: 1px solid var(--line-2); color: var(--text-md); width: 26px; height: 26px; cursor: pointer; font-size: 14px; line-height: 1; }
+    .x-btn:hover { color: var(--mint); border-color: var(--mint); }
+
+    .op-top { display: flex; gap: 10px; align-items: stretch; }
+    .op-ava { width: 74px; height: 74px; flex: none; background: linear-gradient(160deg, #26302c, #121715); border: 1px solid var(--line-2); position: relative; overflow: hidden; display: grid; place-items: center; }
+    .op-ava img { width: 100%; height: 100%; object-fit: cover; }
+    .op-ava .glyph { font: 30px/1 'Novecento Wide', var(--num); color: #d9d4c3; letter-spacing: .04em; }
+    .op-ava::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, #ffde6a, #ff9f1c); }
+    .op-name { font: 700 22px/1.1 var(--cjk); color: var(--text-hi); }
+    .op-app { font: 12px/1.3 var(--num); color: var(--text-lo); letter-spacing: .06em; margin-top: 2px; }
+    .stars { color: var(--gold); letter-spacing: 1px; font-size: 13px; margin-top: 3px; text-shadow: 0 0 6px rgba(255,198,0,.35); }
+    .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+    .tag { font-size: 11px; line-height: 1; padding: 3px 5px; border: 1px solid var(--line-2); color: var(--text-md); background: rgba(255,255,255,.03); }
+    .tag.mint { border-color: var(--mint-a35); color: var(--mint); background: var(--mint-a15); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 10px; }
+    .stat { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.05); padding: 2px 0; }
+    .stat span { color: var(--text-lo); font-size: 12px; } .stat b { font: 14px/1.2 var(--num); color: var(--text-hi); font-weight: 400; }
+    .range-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+    .rgrid { display: grid; gap: 2px; }
+    .rgrid i { width: 12px; height: 12px; border: 1px solid transparent; display: block; }
+    .rgrid i.on { border-color: var(--text-md); }
+    .rgrid i.self { background: var(--mint); border-color: var(--mint); }
+    .blk { margin-top: 8px; }
+    .blk h4 { margin: 0 0 2px; font: 700 13px/1.35 var(--cjk); color: var(--text-hi); }
+    .blk p { margin: 0; font-size: 12px; color: var(--text-md); }
+    .skill { display: flex; gap: 8px; margin-top: 8px; }
+    .s-ico { width: 40px; height: 40px; flex: none; border: 1px solid var(--line-2); background: #151b19; display: grid; place-items: center; font: 18px/1 var(--num); color: var(--text-hi); position: relative; overflow: hidden; }
+    .s-ico img { width: 100%; height: 100%; object-fit: cover; }
+    .s-meta { display: flex; gap: 4px; flex-wrap: wrap; margin: 2px 0 3px; }
+
+    .ctl-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
+    .ctl-row label { color: var(--text-lo); font-size: 12px; min-width: 52px; }
+    .btn { background: #1b2220; border: 1px solid var(--line-2); color: var(--text-hi); padding: 5px 9px; cursor: pointer; font-size: 12px; line-height: 1.2; }
+    .btn:hover { border-color: var(--line-3); }
+    .btn.on { border-color: var(--mint); color: var(--mint); background: var(--mint-a15); }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 8px 4px 4px; border: 1px solid var(--line-2); background: #1b2220; color: var(--text-hi); font-size: 12px; }
+    .switch i { width: 26px; height: 14px; border-radius: 7px; background: #3a4541; position: relative; transition: background .15s; }
+    .switch i::after { content: ''; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #c3cbc7; transition: left .15s, background .15s; }
+    .switch.on { border-color: var(--mint-a35); }
+    .switch.on i { background: var(--mint-a35); } .switch.on i::after { left: 14px; background: var(--mint); }
+    input[type=range] { flex: 1; min-width: 90px; accent-color: var(--mint); }
+    .speed-val { font: 13px/1 var(--num); color: var(--text-hi); min-width: 42px; text-align: right; }
+    .anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; }
+    .anims .btn { text-align: left; font: 12px/1.2 var(--num); letter-spacing: .02em; padding: 5px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .anims .btn.missing { opacity: .35; text-decoration: line-through; cursor: default; }
+    .anim-sub { font-size: 11px; color: var(--text-lo); margin: 8px 0 4px; }
+    .now { font: 12px/1.5 var(--num); color: var(--text-md); background: rgba(0,0,0,.25); border: 1px solid var(--line); padding: 6px 8px; margin-top: 8px; white-space: pre-wrap; word-break: break-all; min-height: 3.2em; }
+    .now .bar { height: 3px; background: #26302c; margin-top: 5px; position: relative; }
+    .now .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--mint); }
+    .hint { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+
+    /* ---- skill bar (bottom) --------------------------------------------------------------------------------- */
+    #skills { position: fixed; left: 16px; bottom: 16px; z-index: 4; display: flex; gap: 8px; max-width: calc(100vw - var(--panel-w) - 48px); }
+    body.panel-closed #skills { max-width: calc(100vw - 32px); }
+    .sk { width: 184px; display: flex; gap: 8px; padding: 7px 8px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(6px); cursor: default; position: relative; text-align: left; color: var(--text-md); }
+    .sk .s-ico { width: 46px; height: 46px; }
+    .sk .s-ico .sp-fill { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(78,216,175,.28); pointer-events: none; }
+    .sk .s-ico .n { position: relative; z-index: 1; }
+    .sk .s-name { font: 700 12px/1.3 var(--cjk); color: var(--text-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sk .s-info { font: 11px/1.3 var(--cjk); color: var(--text-lo); }
+    .sk .s-sp { font: 12px/1.2 var(--num); color: var(--text-md); margin-top: 2px; }
+    .sk .s-bar { height: 4px; background: #222a27; margin-top: 4px; position: relative; overflow: hidden; }
+    .sk .s-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #b4e05a; }
+    .sk.manual { cursor: pointer; }
+    .sk.ready { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint-a35), 0 0 16px rgba(78,216,175,.35); }
+    .sk.ready .s-bar i { background: var(--mint); }
+    .sk.ready .s-sp { color: var(--mint); }
+    .sk.active { border-color: #ffb547; box-shadow: 0 0 14px rgba(255,170,60,.3); }
+    .sk.active .s-bar i { background: #ffb547; }
+    .sk.ready::after { content: '可释放'; position: absolute; right: 6px; top: -9px; font-size: 10px; line-height: 1; padding: 2px 4px; color: #06110d; background: var(--mint); animation: pulse 1s ease-in-out infinite alternate; }
+    .sk.active::after { content: '持续中'; position: absolute; right: 6px; top: -9px; font-size: 10px; line-height: 1; padding: 2px 4px; color: #1a0d00; background: #ffb547; }
+    @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
+
+    #panelToggle { display: none; }
+    body.panel-closed #panelToggle { display: inline-block; }
+    #loading { position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: var(--bg-0); color: var(--text-md); font-size: 14px; }
+    #loading .micro { display: block; text-align: center; margin-bottom: 8px; }
+    #loading.err { color: var(--red); white-space: pre-wrap; padding: 24px; }
+    #loading.gone { display: none; }
+
+    /* ---- phones: the panel becomes a bottom sheet, closed by default ---------------------------------------- */
+    @media (max-width: 760px) {
+      :root { --panel-w: 0px; }
+      #hud { left: 12px; top: 10px; max-width: calc(100vw - 120px); }
+      #hud h1 { font-size: 16px; }
+      #hud .note { font-size: 11px; }
+      #hud .status { gap: 10px; font-size: 11px; margin-top: 6px; }
+      #viewctl, body.panel-closed #viewctl { right: 12px; top: 10px; flex-direction: column; align-items: flex-end; }
+      #panelToggle { display: inline-block; }
+      #panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 64vh; border-left: 0; border-right: 0; border-bottom: 0; z-index: 6; }
+      #skills, body.panel-closed #skills { left: 8px; right: 8px; bottom: 10px; max-width: none; gap: 6px; }
+      .sk { flex: 1; width: auto; min-width: 0; padding: 5px; gap: 6px; }
+      .sk .s-ico { width: 34px; height: 34px; font-size: 15px; }
+      .sk .s-info { display: none; }
+      .sk .s-name { font-size: 11px; }
+      .sk.ready::after, .sk.active::after { top: -14px; right: -1px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="field"></div>
+
+  <div id="hud">
+    <h1><b>2B</b> · 动作演示</h1>
+    <div class="note">拖动平移，滚轮或双指缩放；点技能释放，打开动作面板逐段观看。</div>
+    <div class="status" id="status"><span>波次<b id="stWave">0</b></span><span>击倒<b id="stKills">0</b></span><span>漏怪<b id="stLeak">0</b></span><span>动作<b id="stAnim">—</b></span></div>
+  </div>
+
+  <div id="viewctl">
+    <span class="chip num" id="zoomVal">100%</span>
+    <button class="chip" id="resetView" type="button">复位视角</button>
+    <button class="chip" id="panelToggle" type="button">动作面板</button>
+    <a class="chip" href="diy-2b.html" target="_blank" rel="noopener" onclick="this.href=location.href">全屏打开</a>
+  </div>
+
+  <aside id="panel" aria-label="干员信息与控制">
+    <div class="p-head"><span class="micro">Operator · DIY Draft</span><button class="x-btn" id="panelClose" type="button" title="收起">✕</button></div>
+    <div class="p-body">
+      <section class="sec" id="opCard"></section>
+      <section class="sec">
+        <span class="micro">Battle · 演示控制</span>
+        <div class="ctl-row">
+          <span class="switch on" id="swAuto" role="switch" aria-checked="true" tabindex="0"><i></i>自动战斗</span>
+          <span class="switch on" id="swCast" role="switch" aria-checked="true" tabindex="0" title="关闭后 SP 满了由你点下方技能按钮释放"><i></i>自动释放技能</span>
+        </div>
+        <div class="ctl-row">
+          <button class="btn" id="btnPause" type="button">暂停</button>
+          <button class="btn" id="btnStep" type="button" title="暂停时前进 1/30 秒">单步</button>
+          <button class="btn" id="btnReset" type="button">重置战斗</button>
+        </div>
+        <div class="ctl-row"><label for="speed">播放速度</label><input id="speed" type="range" min="0.25" max="2" step="0.25" value="1" /><span class="speed-val" id="speedVal">1.00×</span></div>
+        <div class="ctl-row">
+          <span class="switch" id="swBones" role="switch" aria-checked="false" tabindex="0"><i></i>显示骨骼</span>
+          <span class="switch on" id="swRange" role="switch" aria-checked="true" tabindex="0"><i></i>攻击范围</span>
+          <span class="switch on" id="swNums" role="switch" aria-checked="true" tabindex="0"><i></i>伤害数字</span>
+        </div>
+        <div class="ctl-row" id="modelRow" hidden><label>模型</label><button class="btn on" id="btnFront" type="button">正面</button><button class="btn" id="btnBack" type="button">背面</button></div>
+      </section>
+      <section class="sec">
+        <span class="micro">Animations · 动作</span>
+        <div class="hint">点击任一动作即停止自动战斗并循环播放；Pod 动作在第 1 轨叠加播放。</div>
+        <div class="hint" id="contract" style="color:var(--text-lo)"></div>
+        <div class="anim-sub">身体（第 0 轨）</div>
+        <div class="anims" id="animsBody"></div>
+        <div class="anim-sub">Pod（第 1 轨）</div>
+        <div class="anims" id="animsPod"></div>
+        <div class="now" id="nowInfo">—</div>
+      </section>
+    </div>
+  </aside>
+
+  <div id="skills"></div>
+  <div id="loading"><div><span class="micro">Loading</span>加载干员模型…</div></div>
+
+  <script type="module" src="diy-2b/demo.js"></script>
+</body>
+</html>
