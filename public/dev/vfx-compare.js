@@ -27,7 +27,7 @@ const VFX_PRELOAD = Object.freeze({
     'rosmon_skill_01_A_hit_02', 'rosmon_skill_01_A_range', 'rosmon_skill_02_start', 'rosmon_skill_02_range', 'rosmon_skill_02_range_02',
     'rosmon_skill_03_start', 'rosmon_skill_03_start_02', 'rosmon_skill_03_B_hit_01', 'rosmon_skill_03_B_hit_01_stone', 'rosmon_skill_03_range',
   ]),
-  blkkgt: Object.freeze(['blkkgt_attack_start_01', 'blkkgt_skill_03_start_01', 'blkkgt_skill_03_hit_1', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04']),
+  blkkgt: Object.freeze(['blkkgt_attack_start_01', 'blkkgt_skill_03_start_01', 'blkkgt_skill_03_start_02', 'blkkgt_skill_03_hit_1', 'blkkgt_skill_03_end', 'blkkgt_skill_03_hit_2', 'blkkgt_skill_03_start_03', 'blkkgt_skill_03_start_04']),
 });
 
 async function preloadCurrentOperator() {
