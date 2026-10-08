@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import http from 'node:http';
 import net from 'node:net';
-import { createReadStream } from 'node:fs';
+import { createReadStream, appendFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/index.js';
 import { hasDamageDealer, upgradeReserve } from './independent-recording-strategy.mjs';
@@ -22,8 +22,9 @@ const output = path.resolve(process.env.SP_RECORD_DRIVER_OUTPUT || path.join(run
 const runLog = path.join(tmp, `independent-recording-driver-${path.basename(output)}.log`);
 const processStartedAt = Date.now();
 const sourcePickTest = process.env.SP_RECORD_DRIVER_SOURCE_PICK_TEST === '1';
+const firstBuyOnly = process.env.SP_RECORD_DRIVER_FIRST_BUY_ONLY === '1';
 const sourcePickTestUid = sourcePickTest ? Math.max(1, Number(process.env.SP_RECORD_DRIVER_SOURCE_PICK_UID) || 3) : 3;
-const defaultHardLimitMs = (process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' || sourcePickTest) ? 3 * 60 * 1000 : 30 * 60 * 1000;
+const defaultHardLimitMs = firstBuyOnly ? 2 * 60 * 1000 : (process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' || sourcePickTest) ? 3 * 60 * 1000 : 30 * 60 * 1000;
 const requestedHardLimitMs = Number(process.env.SP_RECORD_DRIVER_HARD_TIMEOUT_MS || defaultHardLimitMs);
 const hardLimitMs = Number.isFinite(requestedHardLimitMs) && requestedHardLimitMs > 0
   ? Math.max(60 * 1000, Math.min(100 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
@@ -37,14 +38,20 @@ const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
   requestedSeed: process.env.SP_RECORD_DRIVER_SEED ? seed : null, maxRounds, growthModeRequested: growthMode,
-  sourcePickDiagnosticOnly: sourcePickTest, sourcePickTestUid: sourcePickTest ? sourcePickTestUid : null,
+  sourcePickDiagnosticOnly: sourcePickTest, sourcePickTestUid: sourcePickTest ? sourcePickTestUid : null, firstBuyOnly,
   startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
   actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
 let server; let assetProxy; let browser; let page; let hardTimer; let recordingTelemetryTimer; let recordingTelemetryBusy = false; let recordingId = ''; let sessionId = '';
-let proxyDiagnosticsFile = '';
+let proxyDiagnosticsFile = ''; let serverStderrFile = '';
 const pendingActionRequests = new WeakMap();
+function captureServerLog(level, values) {
+  if (!serverStderrFile) return;
+  const message = values.map((value) => value instanceof Error ? (value.stack || value.message)
+    : typeof value === 'string' ? value : JSON.stringify(value)).join(' ');
+  appendFileSync(serverStderrFile, `${JSON.stringify({ at: new Date().toISOString(), level, message })}\n`, 'utf8');
+}
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function bounded(promise, timeoutMs, label) {
@@ -588,7 +595,11 @@ async function buyOne(state, { triplesOnly = false } = {}) {
       const choices = await page.$$('.ix-buy-targets__choice[aria-pressed="false"]'); if (choices.length) await choices[0].click();
       await clickText('.ix-buy-targets__actions button', (t) => /确认目标|消耗合体/.test(t));
     }
-    try { await waitRevision(before); } catch { await clickText('[data-testid="ix-detail"] button', (t) => t === '关闭'); continue; }
+    try { await waitRevision(before); } catch (error) {
+      const failedAction = report.uiActionRequests?.at(-1);
+      if (firstBuyOnly) throw new Error(`首次真实UI购买未推进revision：slot=${i} request=${JSON.stringify(failedAction || null)}; ${error?.message || error}`);
+      await clickText('[data-testid="ix-detail"] button', (t) => t === '关闭'); continue;
+    }
     report.actions.push({ type: 'buy-operator', slot: i, name: await card.evaluate((e) => e.innerText.trim()) });
     const next = await readState(); await annotateObservedChanges(state, next); await pause(500); return true;
   }
@@ -888,10 +899,13 @@ async function startAssetProxy(backendPort) {
 try {
   await mkdir(output, { recursive: true }); await mkdir(tmp, { recursive: true });
   proxyDiagnosticsFile = path.join(output, 'proxy-http.jsonl');
+  serverStderrFile = path.join(output, 'server-stderr.jsonl');
+  await writeFile(serverStderrFile, '', 'utf8');
   await writeFile(path.join(output, 'driver-process-start.json'), JSON.stringify({ pid: process.pid,
     argv: process.argv, cwd: process.cwd(), startedAt: report.startedAt, output, runLog }, null, 2));
   server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, publicDir: path.join(repo, 'public'), dataDir: path.join(repo, 'data'), sharedDir: path.join(repo, 'shared'),
-    independentDirectory: path.join(runtime, 'sessions'), recordingDirectory: path.join(runtime, 'recordings'), recordingDiagnosticsPath: path.join(output, 'recording-http.jsonl') });
+    independentDirectory: path.join(runtime, 'sessions'), recordingDirectory: path.join(runtime, 'recordings'), recordingDiagnosticsPath: path.join(output, 'recording-http.jsonl'),
+    log: { info: () => {}, warn: (...values) => captureServerLog('warn', values), error: (...values) => captureServerLog('error', values), debug: (...values) => captureServerLog('debug', values) } });
   const origin = await startAssetProxy(server.port);
   browser = await puppeteer.launch({ executablePath: chromePath, headless: true, args: ['--no-sandbox', '--no-proxy-server', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--disable-gpu-sandbox'] });
   page = await browser.newPage();
@@ -902,7 +916,8 @@ try {
     if (request.method() === 'POST' && /\/independent\/api\/sessions\/[^/]+\/actions$/.test(pathname)) {
       let body = {}; try { body = JSON.parse(request.postData() || '{}'); } catch { /* preserve malformed requests in diagnostics */ }
       const entry = { requestedAt: new Date().toISOString(), url: request.url(), expectedRevision: body.expectedRevision,
-        action: body.action ? { type: body.action.type, uid: body.action.uid, targetUid: body.action.targetUid, row: body.action.row, col: body.action.col, dir: body.action.dir } : null };
+        action: body.action ? { type: body.action.type, uid: body.action.uid, targetUid: body.action.targetUid, slot: body.action.slot,
+          row: body.action.row, col: body.action.col, dir: body.action.dir } : null };
       pendingActionRequests.set(request, entry); (report.uiActionRequests ||= []).push(entry);
     }
     if (request.method() === 'POST' && /\/independent\/api\/sessions\/?$/.test(pathname)) {
@@ -1057,7 +1072,14 @@ try {
     if (await equipVisibleItem(state)) { idle = 0; continue; }
     if (await attemptHandover(state)) { idle = 0; continue; }
     const rosterSize = (state.pieces || []).filter((p) => !p.temp).length;
-    if (rosterSize < 10 && await buyOne(state)) { idle = 0; continue; }
+    if (rosterSize < 10) {
+      const bought = await buyOne(state);
+      if (firstBuyOnly && (report.uiActionRequests || []).some((entry) => entry.action?.type === 'buy')) {
+        report.firstBuyDiagnosticState = await readState(); report.prepDiagnosticComplete = true;
+        await screenshot('first-buy-diagnostic-state'); break;
+      }
+      if (bought) { idle = 0; continue; }
+    }
     if (deployed >= 8 && rosterSize >= 10) {
       if (await buyOne(state, { triplesOnly: true })) { idle = 0; continue; }
       const replacement = highTierReplacement(state);
@@ -1104,7 +1126,7 @@ try {
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
-  if (!sourcePickTest || process.env.SP_RECORD_DRIVER_VERIFY_SHORT_REPLAY === '1') {
+  if (!firstBuyOnly && (!sourcePickTest || process.env.SP_RECORD_DRIVER_VERIFY_SHORT_REPLAY === '1')) {
     report.replayVisualProof = await verifyNarratedReplay(recording, { requireFullActionSamples: !sourcePickTest });
   }
   report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption' || e.kind === 'custom').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
