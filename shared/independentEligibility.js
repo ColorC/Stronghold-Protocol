@@ -151,5 +151,5 @@ export function reactiveBuyTargetSpec(slot, state, catalog) {
   const buyerFactions=factionsFor({chessId:slot.id},catalog);
   const holders=state.pieces.filter(piece=>realOperator(piece,catalog)&&deployed(piece)
     && (catalog.operators[piece.chessId]?.nativeTrait?.effect?.prep||catalog.operators[piece.chessId]?.effectRules?.prep||[]).some(rule=>rule.trigger==='bought' && rule.behavior==='darkmoonBoughtTribeTargetGrowth' && buyerFactions.includes(rule.params?.triggerFaction)));
-  return holders.length ? {kind:'friendly',count:1,scope:'all',sourceUids:holders.map(piece=>piece.uid)} : null;
+  return holders.length ? {kind:'friendly',count:1,scope:'boardonly',sourceUids:holders.map(piece=>piece.uid)} : null;
 }

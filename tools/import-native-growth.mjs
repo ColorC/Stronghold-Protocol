@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Attach official native level curves to the existing chess pool without downloading or rewriting
 // any source tables. New operators are reported separately until their complete battle kits exist.
-import { readFile, writeFile, mkdir, rename, copyFile, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, copyFile, rm, lstat, realpath } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -88,8 +88,13 @@ async function nativeSpineEntries({ spineAssets, spineCache, report }, candidate
     if (!prior || (!row.isGolden && prior.isGolden)) chars.set(row.charId, row);
   }
   if (chars.size !== 34) throw new Error(`expected 34 native character models, found ${chars.size}`);
-  await mkdir(dirname(report), { recursive: true });
-  const stageRoot = join(dirname(report), `native-spine-stage-${process.pid}`);
+  const stageBase = resolve(CANONICAL_ROOT, '.omni/tmp/growth-destination-20261008/native-import');
+  await mkdir(stageBase, { recursive: true });
+  for (const dir of [CANONICAL_ROOT, resolve(CANONICAL_ROOT, '.omni'), resolve(CANONICAL_ROOT, '.omni/tmp'), resolve(CANONICAL_ROOT, '.omni/tmp/growth-destination-20261008'), stageBase]) {
+    const info = await lstat(dir);
+    if (!info.isDirectory() || info.isSymbolicLink()) throw new Error(`refusing Spine staging under non-directory or linked path: ${dir}`);
+  }
+  const stageRoot = join(stageBase, `spine-stage-${process.pid}`);
   await mkdir(stageRoot, { recursive: false });
   const models = new Map();
   const refs = new Map();
@@ -160,11 +165,15 @@ async function nativeSpineEntries({ spineAssets, spineCache, report }, candidate
     }
     return result;
   } finally {
-    const runtimeRoot = resolve(dirname(report));
     const safeStage = resolve(stageRoot);
-    if (safeStage.startsWith(`${runtimeRoot}/`) || safeStage.startsWith(`${runtimeRoot}\\`)) {
-      await rm(safeStage, { recursive: true, force: true });
-    } else throw new Error(`refusing to remove Spine staging outside task runtime: ${safeStage}`);
+    const safeBase = resolve(stageBase);
+    const rel = safeStage.slice(safeBase.length).replace(/^[/\\]/, '');
+    const info = await lstat(safeStage);
+    const [realBase, realStage] = await Promise.all([realpath(safeBase), realpath(safeStage)]);
+    if (!rel || rel.includes('/') || rel.includes('\\') || info.isSymbolicLink() || !realStage.startsWith(`${realBase}/`) && !realStage.startsWith(`${realBase}\\`)) {
+      throw new Error(`refusing to remove Spine staging outside task temporary directory: ${safeStage}`);
+    }
+    await rm(safeStage, { recursive: true, force: false });
   }
 }
 

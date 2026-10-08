@@ -71,7 +71,7 @@ export function landingPiece(state, catalog, source, how = 'self') {
     return target;
   }
   if (!source || how === 'self') return source;
-  if (!onField(source)) return null;
+  if (!onField(source)) return how === 'front' || how === 'adjacent' ? source : null;
   const others = (state.pieces || []).filter((p) => p !== source && onField(p));
   let target = null;
   if (how === 'front') {
@@ -88,7 +88,7 @@ export function landingPiece(state, catalog, source, how = 'self') {
     const f = String(how).slice(8);
     target = fewestWorn([source, ...others].filter((p) => tavernFactions(p, catalog).includes(f)));
   } else throw new Error(`BAD_LANDING ${how}`);
-  return target;
+  return target || (how === 'front' || how === 'adjacent' ? source : null);
 }
 
 export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {

@@ -18,7 +18,7 @@ const data = getData({ log: { info() {}, warn() {}, error() {} } });
 // (helpers/preV4.js: growth, doublers, totals, shop carry, badge boosts … are no operator's trait since v4)
 const legacy = preV3Catalog(preV4Catalog(getCatalog(data)));
 // These dispatcher cases intentionally exercise retired operator effects, so activate only their test bodies in this fixture.
-const legacyNames = new Set(['折桠', '宴', '隐现', '野鬃']);
+const legacyNames = new Set(['折桠', '宴', '隐现', '野鬃', '史尔特尔', '星熊', '锏', '塑心', '佩佩', '角峰']);
 const catalog = (() => {
   const operators = { ...legacy.operators };
   const activeRosterIds = [...(legacy.config.activeRosterIds || [])];
@@ -67,6 +67,9 @@ test('雷蛇 grows: every prep phase it begins on the field adds one more 助力
 test('铃兰 makes 获得时 effects run twice (elite: three times); a doubler on the bench does nothing', () => {
   for (const [elite, field, expected] of [[false, true, 2], [true, true, 3], [false, false, 1]]) {
     const { state, services, granted } = fixture();
+    const makerId = idOf('惊蛰');
+    catalog.operators[makerId] = { ...catalog.operators[makerId], nativeTrait: { ...catalog.operators[makerId].nativeTrait,
+      effect: { prep: [{ trigger: 'gain', behavior: 'grantEquipment', params: { outputs: [{ id: 'precision', normal: 2, elite: 2 }] } }], combat: [] } } };
     state.pieces.push(piece('lily', '铃兰', field ? 0 : null, field ? 0 : null, { elite }));
     const maker = piece('maker', '惊蛰');
     state.pieces.push(maker);
@@ -121,11 +124,12 @@ test('伊内丝 raises every 攻击徽章 of the team for the rest of the game, 
 });
 
 test('a badge boost and 熔铸模具 show in the operator\'s battle stats; 星熊 doubles its own 助力 in battle', () => {
-  let state = createSession({ seed: 5, difficulty: 'NORMAL', openFactions: null });
+  let state = createSession({ seed: 5, difficulty: 'NORMAL', openFactions: null, data, catalog });
   state.funds = 99;
+  state.shop.level = 6;
   for (const name of ['史尔特尔', '星熊']) {
     state.shop.slots[0] = { kind: 'chess', id: idOf(name), elite: false, price: 3, sold: false, equipment: [] };
-    const r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+    const r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
   }
   const field = getIndependentField(state, { data, catalog });
   const cells = [...field.deployMap.keys()];
@@ -222,6 +226,7 @@ test('烛煌 counts the elite operators on the field', () => {
 test('锏 on the field puts agility badges onto every operator bought, one more each time, up to 5', () => {
   let state = createSession({ seed: 19, difficulty: 'NORMAL', openFactions: null, data, catalog });
   state.funds = 99;
+  state.shop.level = 6;
   state.shop.slots[0] = { kind: 'chess', id: idOf('锏'), elite: false, price: 3, sold: false, equipment: [] };
   let r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
   const jian = state.pieces[0];
@@ -252,6 +257,7 @@ test('塑心 doubles the battle yield; 增压臂铠 doubles its 精准 every pre
   const run = (withSuxin) => {
     let state = createSession({ seed: 13, difficulty: 'NORMAL', openFactions: null, data, catalog });
     state.funds = 99;
+    state.shop.level = 6;
     for (const name of withSuxin ? ['锏', '塑心'] : ['锏']) {
       state.shop.slots[0] = { kind: 'chess', id: idOf(name), elite: false, price: 3, sold: false, equipment: [] };
       const r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
@@ -273,6 +279,7 @@ test('塑心 doubles the battle yield; 增压臂铠 doubles its 精准 every pre
 
   let state = createSession({ seed: 17, difficulty: 'NORMAL', openFactions: null, data, catalog });
   state.funds = 99;
+  state.shop.level = 6;
   state.shop.slots[0] = { kind: 'chess', id: idOf('佩佩'), elite: false, price: 3, sold: false, equipment: [] };
   let r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); state = r.state;
   const pepe = state.pieces[0];
@@ -294,11 +301,12 @@ test('塑心 doubles the battle yield; 增压臂铠 doubles its 精准 every pre
 });
 
 test('three copies make an elite and bring the original 晋升奖励: a free pick of three operators one tier up', () => {
-  let state = createSession({ seed: 29, difficulty: 'NORMAL', openFactions: null });
+  let state = createSession({ seed: 29, difficulty: 'NORMAL', openFactions: null, data, catalog });
   state.funds = 99;
+  state.shop.level = 6;
   for (let i = 0; i < 3; i++) {
     state.shop.slots[0] = { kind: 'chess', id: idOf('角峰'), elite: false, price: 3, sold: false, equipment: [] };
-    const r = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(r.ok, true, r.error?.message); state = r.state;
+    const r = applyAction(state, { type: 'buy', slot: 0 }, { data, catalog }); assert.equal(r.ok, true, r.error?.message); state = r.state;
   }
   assert.ok(state.pieces.some((p) => p.elite), 'the third copy makes an elite');
   const offer = state.offers.find((o) => o.type === 'recruit' && o.source === 'merge');

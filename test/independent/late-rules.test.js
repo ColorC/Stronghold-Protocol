@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { getData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
@@ -8,9 +9,13 @@ import { runNativeHook } from '../../server/modes/independent/native.js';
 
 const data=getData();
 const design=structuredClone(data['independent-design']);
+// This retired source-card record is frozen from the pre-Warband Git design fixture; it is not the current 101-piece pool.
+const historicalPermit=JSON.parse(readFileSync(new URL('./fixtures/pre-warband-permit.json',import.meta.url),'utf8'));
 
 test('legacy permit records stay available, autoGrant false suppresses new grants and source-card references survive',()=>{
-  const source=design.operators.find(x=>x.name==='角峰'),old=structuredClone(source.inheritance),candidate=structuredClone(design);
+  const old=structuredClone(historicalPermit.operator.inheritance),candidate=structuredClone(design);
+  const source=candidate.operators.find(x=>x.chessId===historicalPermit.operator.chessId);
+  candidate.rules.activeRosterIds=[...new Set([...(candidate.rules.activeRosterIds||[]),source.chessId])];
   const edited=candidate.operators.find(x=>x.chessId===source.chessId);
   edited.inheritance={...old,autoGrant:false,sourceRefs:[{game:'original',card:'controlled-fixture'}],limit:'继承伙伴及被继承条件'};
   const catalog=getCatalog(data,candidate),op=catalog.operators[source.chessId],id='permit-north-handover-order';

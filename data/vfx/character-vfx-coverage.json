@@ -51,7 +51,15 @@
         "blkkgt_skill_03_end": {"spawnLocation": 5, "meshChildren": ["light", "dark", "edge", "smoke_line"], "anchor": "tile", "bindingState": "mesh", "meshExport": "public/assets/vfx/blkkgt/blkkgt_skill_03_end/mesh.json", "reason": "Unity Mesh particle renderers are rebuilt from exported vertices, UVs, materials and tile-relative transforms"},
         "blkkgt_skill_03_start_03": {"spawnLocation": 8, "holdByOwner": 1, "mountPointType": 5, "anchor": "F_R_Handweapon", "bindingState": "translated"},
         "blkkgt_skill_03_start_04": {"spawnLocation": 11, "holdByOwner": 1, "mountPointType": 9, "anchor": "F_L_Handweapon", "bindingState": "translated"},
-        "blkkgt_skill_03_hit_2": {"spawnLocation": 2, "holdByOwner": 0, "anchor": "target root", "bindingState": "translated"}
+        "blkkgt_skill_03_hit_2": {"spawnLocation": 2, "holdByOwner": 0, "anchor": "target root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_01": {"spawnLocation": 8, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_02": {"spawnLocation": 9, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_03": {"spawnLocation": 10, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_04_h": {"rotateType": 1, "spawnLocation": 1, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_04_v": {"rotateType": 1, "spawnLocation": 1, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_start_05": {"rotateType": 2, "spawnLocation": 5, "holdByOwner": 0, "anchor": "tile", "bindingState": "translated", "children": ["rotation_z", "sharp", "sharp_dark", "speedline", "flow_ground_1", "flow_ground_2", "ptc"]},
+        "blkkgt_skill_02_start_06": {"spawnLocation": 11, "holdByOwner": 1, "anchor": "owner root", "bindingState": "translated"},
+        "blkkgt_skill_02_hit_1": {"rotateType": 1, "spawnLocation": 2, "holdByOwner": 0, "anchor": "target root", "bindingState": "translated", "children": ["ray_1", "ray_2", "glow", "dark", "ray", "ray_dark", "star", "ptc"]}
       },
       "animationEvidence": {"normal": {"anim": "Attack", "hitCount": 2, "hitTimes": [0.4, 0.667]}, "skchr_blkkgt_1": {"anim": "Skill_1", "hitCount": 2, "hitTimes": [0.467, 0.533]}, "skchr_blkkgt_2": {"anim": "Skill_2", "hitCount": 8, "hitTimes": [0.333, 0.5, 0.667, 0.833, 1, 1.167, 1.333, 1.5]}, "loop": "Skill_3_Loop", "loopHitCount": 10, "loopHitInterval": 0.333, "finisher": "Skill_3_End"}
     }

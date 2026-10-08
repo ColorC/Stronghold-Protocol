@@ -37,6 +37,7 @@ function choose(id,extra={}) {
   return {state:result.state,before:state};
 }
 const quantity=(state,id)=>state.inventory.filter(x=>x.id===id).reduce((sum,x)=>sum+x.quantity,0);
+const wornQuantity=(state,id)=>state.pieces.reduce((sum,p)=>sum+(p.equipment||[]).filter(x=>x.id===id).reduce((n,x)=>n+x.quantity,0),0);
 
 for(const prize of Object.values(catalog.prizes))test(`prize ${prize.name} resolves through the public action without an unsupported branch`,()=>{
   const {state}=choose(prize.id);
@@ -45,8 +46,10 @@ for(const prize of Object.values(catalog.prizes))test(`prize ${prize.name} resol
 
 test('team support counts deployed bodies while nutrition grants exact independent badge quantities',()=>{
   const team=choose('team-readiness-support').state;
-  assert.equal(quantity(team,'precision'),2);
-  assert.equal(quantity(team,'vitality'),2);
+  assert.equal(wornQuantity(team,'precision'),3, 'the first deployed operator keeps its pre-existing badge and both deployed operators gain one');
+  assert.equal(wornQuantity(team,'vitality'),2);
+  assert.equal(quantity(team,'precision'),0, 'fixed-recipient prize gains do not become movable inventory');
+  assert.equal(quantity(team,'vitality'),0);
   const food=choose('emergency-rations').state;
   assert.equal(quantity(food,'precision'),3);
   assert.equal(quantity(food,'vitality'),3);

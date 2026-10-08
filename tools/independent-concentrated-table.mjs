@@ -42,7 +42,9 @@ function nativeSummary(chess) {
     .filter(([, value]) => Number.isFinite(value)).map(([label, value]) => `${label}${value}`).join('、');
   if (rawStats) parts.push(`本体白值：${rawStats}`);
   if (chess.trait?.desc) parts.push(`本体特性：${clean(chess.trait.desc)}`);
-  const skills = Array.isArray(chess.skills) && chess.skills.length ? [...chess.skills] : (chess.skill ? [chess.skill] : []);
+  const skills = chess.nativeImport?.playable
+    ? (chess.skills || []).filter((skill) => (chess.nativeImport.selectableSkillIds || []).includes(skill.skillId))
+    : Array.isArray(chess.skills) && chess.skills.length ? [...chess.skills] : (chess.skill ? [chess.skill] : []);
   const listedSkillIds = new Set(skills.map((skill) => skill.skillId).filter(Boolean));
   if (chess.skill?.desc && !listedSkillIds.has(chess.skill.skillId)) skills.push(chess.skill);
   if (skills.length) parts.push(`原生技能：${skills.map((skill) => `《${clean(skill.name || '技能')}》${skill.level ? `Lv${skill.level}` : ''}：${clean(skill.desc)}`).join('；')}`);
@@ -111,10 +113,15 @@ function levelsSummary(op,catalog) {
     return (form==='elite'?'进阶':'普通')+'：等级1→'+maximum+'，攻击'+a.atk+'→'+b.atk+'，生命'+a.maxHp+'→'+b.maxHp+'，防御'+a.def+'→'+b.def+'，法抗'+a.res+'→'+b.res;
   }).filter(Boolean).join('；');
 }
-function measuredPower(op,power) {
+function measuredPower(op,power,chess) {
   const measured=power?.operators?.find(x=>x.name===op.name);
   if(!measured)return nativePowerSummary(op);
-  return measured.forms.map(f=>(f.elite?'进阶':'普通')+'：DPS '+f.dps+'，治疗量'+f.healing+'，技能发动'+f.skillActivations+'次').join('；')+'。四个静止目标，防御300、法抗30，实跑90秒；不计额外特质与装备。此场景无法单独衡量控制、保护、阻挡和经济价值。';
+  const type=({phys:'物理',arts:'法术',true:'真实',heal:'治疗'})[chess.dmgType]||chess.dmgType||'未标记';
+  const skill=chess.skill?.name?`默认技能《${clean(chess.skill.name)}》${chess.skill.level?`Lv${chess.skill.level}`:''}`:'无主动技能';
+  const s=power.scenario;
+  const context=`${s.enemyCount}个静止目标、${s.enemyDefense}防御/${s.enemyResistance}法抗，实跑${s.seconds}秒`;
+  const forms=measured.forms.map(f=>(f.elite?'进阶':'普通')+`：总伤${f.damage}、DPS ${f.dps}、治疗量${f.healing}、攻击${f.attacks}次、技能发动${f.skillActivations}次`).join('；');
+  return `本体普攻伤害类型${type}；${skill}。${context}：${forms}。场景无装备、无工坊特质；该探针只量化本体伤害与治疗，控制、保护、阻挡和经济价值需结合对应规则文本判断。`;
 }
 
 export function buildTable({ design, gameText, chessData, catalog, sourceReference, nativePower = null }) {
@@ -131,7 +138,7 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
     rows.push({
       section: '干员', level: `科技${op.tier}`, name: op.name, role: functionalRole(op),
       faction: (op.nativeFactionTags || []).join('、'), reference: sourceCardSummary(op.sourceRefs),
-      native: nativeSummary(chess), nativePower: measuredPower(op,nativePower),
+      native: nativeSummary(chess), nativePower: measuredPower(op,nativePower,chess),
       sourceNormal: (op.sourceRefs?.cards||[]).map(c=>c.text).filter(Boolean).join('；'), sourceElite: (op.sourceRefs?.cards||[]).map(c=>c.textElite||c.goldenText).filter(Boolean).join('；'),
       levels: levelsSummary(op,catalog), landing:moments,
       normal: clean(text.normal), upgrade: clean(text.elite), basis: op.tierReason,

@@ -1,0 +1,14 @@
+{
+  "source": "data/independent-design.json at Git commit 4ce0539d",
+  "operator": {
+    "name": "角峰",
+    "chessId": "chess_char_1_02_a",
+    "inheritance": {
+      "name": "角峰",
+      "direction": "给予",
+      "gear": "北境战备交接令",
+      "limit": "只能被科技等级2的干员继承。",
+      "receiverTiers": [2]
+    }
+  }
+}
