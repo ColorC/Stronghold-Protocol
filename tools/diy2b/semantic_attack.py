@@ -29,8 +29,23 @@ HIP_X = [(0,0),(.16,-2),(.28,-3),(.36,2),(.43,7),(.52,4),(.60,-1),(.71,8),(.80,5
 HIP_Y = [(0,0),(.14,-3),(.28,-5),(.43,-7),(.52,-5),(.59,-3),(.71,-8),(.83,-4),(DURATION,0)]
 SUPPORT = [(0,0),(.22,-8),(.31,-6),(.46,12),(.56,4),(.63,-6),(.75,10),(.88,4),(DURATION,0)]
 
-def build(model, side):
+CLEARANCE = {
+    'front': [(0,0),(.12,14),(.22,50),(.30,60),(.34,60),(.46,0),(.56,-4),(.70,0),(DURATION,0)],
+    'back': [(0,0),(.12,22),(.22,75),(.30,90),(.34,90),(.46,12),(.56,8),(.70,0),(DURATION,0)],
+    'flex': [(0,0),(.12,4),(.22,10),(.30,10),(.34,10),(.46,0),(.56,0),(DURATION,0)],
+    'wrist': [(0,0),(.22,1),(.34,2),(.46,8),(.56,12),(.70,6),(DURATION,0)],
+    'torso': [(0,0),(.20,3),(.30,4),(.34,4),(.46,-8),(.55,-8),(.70,-3),(DURATION,0)],
+    'hip_x': [(0,0),(.22,-2),(.34,-2),(.46,5),(.56,5),(.75,2),(DURATION,0)],
+    'hip_y': [(0,0),(.22,-3),(.34,-4),(.46,-6),(.56,-5),(.75,-2),(DURATION,0)],
+    'support': [(0,0),(.30,-5),(.46,8),(.70,3),(DURATION,0)],
+}
+
+def build(model, side, motion='reference'):
     sk = copy.deepcopy(model); bones = {b['name']: b for b in sk['bones']}
+    clearance=motion=='clearance'
+    upper_keys,flex_keys=(CLEARANCE[side],CLEARANCE['flex']) if clearance else (UPPER,FLEX)
+    wrist_keys,torso_keys=(CLEARANCE['wrist'],CLEARANCE['torso']) if clearance else (WRIST,TORSO)
+    hip_x_keys,hip_y_keys,support_keys=(CLEARANCE['hip_x'],CLEARANCE['hip_y'],CLEARANCE['support']) if clearance else (HIP_X,HIP_Y,SUPPORT)
     def rotate(v,a):
         c,s=math.cos(math.radians(a)),math.sin(math.radians(a));return (v[0]*c-v[1]*s,v[0]*s+v[1]*c)
     def fk(pose):
@@ -56,11 +71,11 @@ def build(model, side):
             raise ValueError('This study requires the calibrated unit-scale 2B chain: '+name)
     q=rest['hip'][1]/174.94
     def primary_controls(t):
-        upper,flex=sample(UPPER,t),sample(FLEX,t)
+        upper,flex=sample(upper_keys,t),sample(flex_keys,t)
         # This back-view artwork is not a planar mirror: its hand, elbow and
         # shorter blade have their own offsets. Calibrate the preparation so
         # the sword stays beside the large head instead of disappearing in it.
-        if side=='back':upper=upper if upper<=20 else 20+(upper-20)*.2;flex*=.52
+        if side=='back' and not clearance:upper=upper if upper<=20 else 20+(upper-20)*.2;flex*=.52
         return upper,flex
     def planted(pose,s):
         upper,lower,end='thigh_'+s,'shin_'+s,'foot_'+s
@@ -79,42 +94,46 @@ def build(model, side):
         pose[end]={'angle':rest[end][2]-fk(pose)[lower][2]-bones[end].get('rotation',0)}
     tracks={};frames=[]
     for i in range(139):
-        t=min(DURATION,i/120);tor=sample(TORSO,t);upper,flex=primary_controls(t)
-        pose={'hip':{'x':sample(HIP_X,t)*q,'y':sample(HIP_Y,t)*q},'torso':{'angle':tor},
+        t=min(DURATION,i/120);tor=sample(torso_keys,t);upper,flex=primary_controls(t)
+        pose={'hip':{'x':sample(hip_x_keys,t)*q,'y':sample(hip_y_keys,t)*q},'torso':{'angle':tor},
               'head':{'angle':-tor*.4},'upperarm_r':{'angle':upper},
-              'forearm_r':{'angle':arm_sign['r']*flex},'hand_r':{'angle':sample(WRIST,t)},'sword':{'angle':0},
-              'upperarm_l':{'angle':sample(SUPPORT,t)},
+              'forearm_r':{'angle':arm_sign['r']*flex},'hand_r':{'angle':sample(wrist_keys,t)},'sword':{'angle':0},
+              'upperarm_l':{'angle':sample(support_keys,t)},
               'forearm_l':{'angle':arm_sign['l']*min(5,flex*.05)},'hand_l':{'angle':0}}
         for s in 'rl':planted(pose,s)
         tail=1-sample([(.92,0),(DURATION,1)],t)
-        pose['skirt']={'angle':-sample(TORSO,max(0,t-.04))*.18*tail}
+        pose['skirt']={'angle':-sample(torso_keys,max(0,t-.04))*.18*tail}
         for suffix in ['a','b']:
             for extension,gain,lag in [('',.08,.045),('2',.10,.065),('3',.12,.085)]:
                 name='hair_'+suffix+extension
-                if name in bones:pose[name]={'angle':-sample(TORSO,max(0,t-lag))*gain*tail}
+                if name in bones:pose[name]={'angle':-sample(torso_keys,max(0,t-lag))*gain*tail}
         for bone,channels in pose.items():
             dest=tracks.setdefault(bone,{})
             if 'angle' in channels:dest.setdefault('rotate',[]).append({'time':round(t,6),'angle':round(channels['angle'],6)})
             if 'x' in channels:dest.setdefault('translate',[]).append({'time':round(t,6),'x':round(channels['x'],6),'y':round(channels['y'],6)})
         w=fk(pose)
-        frames.append({'time':t,'points':{n:list(w[n][:2]) for n in ['hip','head','upperarm_r','forearm_r','hand_r','upperarm_l','forearm_l','hand_l','sword','sword_tip','thigh_r','shin_r','foot_r','thigh_l','shin_l','foot_l']},'controls':{'torso':tor,'primaryUpper':upper,'primaryFlexIncrement':flex,'wristLocalDelta':sample(WRIST,t)}})
+        frames.append({'time':t,'points':{n:list(w[n][:2]) for n in ['hip','head','upperarm_r','forearm_r','hand_r','upperarm_l','forearm_l','hand_l','sword','sword_tip','thigh_r','shin_r','foot_r','thigh_l','shin_l','foot_l']},'controls':{'torso':tor,'primaryUpper':upper,'primaryFlexIncrement':flex,'wristLocalDelta':sample(wrist_keys,t)}})
     old=model['animations']['Attack'];modified=set(tracks)
     for bone,channels in old.get('bones',{}).items():
         if bone not in modified:tracks[bone]=copy.deepcopy(channels)
     # Setup draw order keeps the head in front of the sword during preparation.
     # Open secondary hand stays in the original attachment throughout.
-    sk['animations']['Attack']={'bones':tracks,'events':copy.deepcopy(old.get('events',[]))}
+    events=copy.deepcopy(old.get('events',[]))
+    if clearance:
+        events=events[:1]
+        if events:events[0]['time']=.42
+    sk['animations']['Attack']={'bones':tracks,'events':events}
     if any(sk[k]!=model[k] for k in model if k!='animations'):raise AssertionError('Rig or art changed')
     if any(v!=sk['animations'][k] for k,v in model['animations'].items() if k!='Attack'):raise AssertionError('Other clip changed')
-    return sk,{'side':side,'armWinding':arm_sign,'legWinding':leg_sign,'duration':DURATION,'frames':frames,'unchangedOtherClips':len(model['animations'])-1}
+    return sk,{'side':side,'motion':motion,'armWinding':arm_sign,'legWinding':leg_sign,'duration':DURATION,'frames':frames,'unchangedOtherClips':len(model['animations'])-1}
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--repo',required=True);p.add_argument('--out',required=True);p.add_argument('--artifacts',required=True);p.add_argument('--seed',default='67bb26c2d3d6b9e5db12282a147759a3a7b84867');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',required=True);p.add_argument('--out',required=True);p.add_argument('--artifacts',required=True);p.add_argument('--seed',default='67bb26c2d3d6b9e5db12282a147759a3a7b84867');p.add_argument('--motion',choices=['reference','clearance'],default='reference');args=p.parse_args()
     outputs=[]
     for side,name in [('front','char_diy_2b'),('back','char_diy_2b_back')]:
         rel=f'public/dev/diy-2b/model/{side}/{name}.json'
         original=json.loads(subprocess.check_output(['git','-C',args.repo,'show',args.seed+':'+rel]))
-        candidate,report=build(original,side);file=pathlib.Path(args.out)/rel;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(json.dumps(candidate,separators=(',',':')),encoding='utf-8');report['model']=str(file.resolve());outputs.append(report)
+        candidate,report=build(original,side,args.motion);file=pathlib.Path(args.out)/rel;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(json.dumps(candidate,separators=(',',':')),encoding='utf-8');report['model']=str(file.resolve());outputs.append(report)
     artifact=pathlib.Path(args.artifacts);artifact.mkdir(parents=True,exist_ok=True);file=artifact/'authored-attack.json';file.write_text(json.dumps({'sourceCommit':args.seed,'outputs':outputs},indent=2),encoding='utf-8');print(json.dumps({'models':[x['model'] for x in outputs],'evidence':str(file.resolve())}))
 
 if __name__=='__main__':main()
