@@ -1,7 +1,6 @@
 // Semantic checks for a front/back single-hand Attack using the real Pixi Spine runtime.
 // The measurements report mechanical continuity and movement; they do not judge art quality.
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
@@ -9,29 +8,15 @@ import { pathToFileURL } from 'node:url';
 const PROJECT = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const BROWSER = 'C:/Users/lilithgames/AppData/Local/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-win64/chrome-headless-shell.exe';
 const TIME_LIMIT_MS = 180_000;
-const USAGE = 'Usage: node tools/diy2b/semantic-study.mjs <absolute-output-directory> <absolute-candidate-root>';
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.atlas': 'text/plain', '.png': 'image/png', '.webp': 'image/webp' };
+const USAGE = 'Usage: node tools/diy2b/semantic-study.mjs <motion-page-url> <absolute-output-directory> <absolute-candidate-root>';
 const JOINTS = ['upperarm_r', 'forearm_r', 'hand_r', 'thigh_r', 'shin_r', 'foot_r', 'thigh_l', 'shin_l', 'foot_l', 'sword', 'sword_tip'];
 
 function must(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function createStaticServer() {
-  const root = path.join(PROJECT, 'public');
-  return http.createServer((req, res) => {
-    const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
-    const target = path.resolve(root, `.${pathname}`);
-    if (!target.startsWith(`${root}${path.sep}`)) { res.writeHead(403).end(); return; }
-    fs.readFile(target, (error, body) => {
-      if (error) { res.writeHead(404).end(String(error)); return; }
-      res.writeHead(200, { 'content-type': MIME[path.extname(target)] || 'application/octet-stream', 'cache-control': 'no-store' });
-      res.end(body);
-    });
-  });
-}
-
-async function run(outputDir, candidateRoot) {
+async function run(baseUrl, outputDir, candidateRoot) {
+  must(typeof baseUrl === 'string' && new URL(baseUrl).pathname.endsWith('/dev/diy-2b/motion.html'), USAGE);
   must(path.isAbsolute(outputDir) && path.isAbsolute(candidateRoot), USAGE);
   must(fs.existsSync(BROWSER), `Chromium executable missing: ${BROWSER}`);
   const candidateFiles = {
@@ -42,14 +27,11 @@ async function run(outputDir, candidateRoot) {
   fs.mkdirSync(outputDir, { recursive: true });
   const profile = path.join(PROJECT, '.omni/tmp/spine-attack-validation-20261008/browser-profile');
   fs.mkdirSync(profile, { recursive: true });
-  const report = { candidateRoot, runtime: 'PixiJS + pixi-spine through public/dev/diy-2b/motion.html', startedAt: new Date().toISOString(), checks: [], errors: [], screenshots: [], results: [], interaction: null, artQualityVerdict: 'not assessed by numeric checks' };
-  const server = createStaticServer();
+  const report = { baseUrl, candidateRoot, runtime: 'PixiJS + pixi-spine through public/dev/diy-2b/motion.html', startedAt: new Date().toISOString(), checks: [], errors: [], screenshots: [], results: [], interaction: null, artQualityVerdict: 'not assessed by numeric checks' };
   let browser;
   let timeout;
   const work = (async () => {
-    await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
-    const address = server.address();
-    const pageUrl = `http://127.0.0.1:${address.port}/dev/diy-2b/motion.html`;
+    const pageUrl = baseUrl;
     const puppeteer = createRequire(path.join(PROJECT, 'package.json'))('puppeteer-core');
     browser = await puppeteer.launch({ executablePath: BROWSER, headless: true, userDataDir: profile, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
     const page = await browser.newPage();
@@ -200,7 +182,6 @@ async function run(outputDir, candidateRoot) {
   finally {
     clearTimeout(timeout);
     await browser?.close().catch(error => report.errors.push(`browser close: ${error.message}`));
-    await new Promise(resolve => server.close(resolve));
     report.finishedAt = new Date().toISOString();
     report.passed = report.passed === true && report.errors.length === 0 && !report.checks.some(check => !check.passed);
     const receipt = path.join(outputDir, 'semantic-study.json');
@@ -212,7 +193,7 @@ async function run(outputDir, candidateRoot) {
 
 const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
 if (isMain && !process.env.NODE_TEST_CONTEXT) {
-  const [outputDir, candidateRoot] = process.argv.slice(2);
-  if (!outputDir || !candidateRoot) { console.error(USAGE); process.exitCode = 2; }
-  else { const report = await run(outputDir, candidateRoot); if (!report.passed) process.exitCode = 1; }
+  const [baseUrl, outputDir, candidateRoot] = process.argv.slice(2);
+  if (!baseUrl || !outputDir || !candidateRoot) { console.error(USAGE); process.exitCode = 2; }
+  else { const report = await run(baseUrl, outputDir, candidateRoot); if (!report.passed) process.exitCode = 1; }
 }
