@@ -657,7 +657,7 @@ export async function startServer(opts = {}) {
   const independentHttp = createIndependentHttp({ data, directory: independentDirectory });
   const recordingDirectory = opts.recordingDirectory ?? process.env.SP_RECORDING_DIRECTORY ?? path.join(independentDirectory, 'recordings');
   if (!path.isAbsolute(recordingDirectory)) throw new Error('SP_RECORDING_DIRECTORY must be an absolute canonical runtime path');
-  const recordingHttp = createRecordingHttp({ directory: recordingDirectory, sessionDirectory: independentDirectory });
+  const recordingHttp = createRecordingHttp({ directory: recordingDirectory, sessionDirectory: independentDirectory, diagnosticsPath: opts.recordingDiagnosticsPath || '' });
   const independentExecution = opts.independentExecution ?? process.env.SP_INDEPENDENT_EXECUTION ?? 'server';
   let network;
   const admission = createAdmission({ maxActive: opts.independentMaxActive ?? Number(process.env.SP_INDEPENDENT_MAX_ACTIVE || 0),

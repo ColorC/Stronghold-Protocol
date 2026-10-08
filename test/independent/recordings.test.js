@@ -67,11 +67,15 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   assert.equal(afterRefresh.meta.mediaLastTimeMs,11000,'separate capture timestamps preserve the wall-clock gap');
   assert.deepEqual(await readFile(path.join(records,created.id,'canvas-2.webm')),chunk1,'a new WebM header starts its own playable segment');
   assert.deepEqual(await readFile(path.join(records,created.id,'canvas.webm')),Buffer.concat([chunk1,Buffer.from([8,9])]),'refresh cannot corrupt the first segment');
-  const ended = await post(`${base}/${created.id}/stop`, {}); assert.equal(ended.status, 200);
+  const ended = await post(`${base}/${created.id}/stop`, { mediaCaptureStoppedAt: 1700000011000, mediaCaptureLastTimeMs: 1000,
+    mediaCaptureLastPaintedAt: 1700000010900, mediaCaptureFinalSeq: 3 }); assert.equal(ended.status, 200);
   const recordDirectory = path.join(records, created.id);
   await writeFile(path.join(recordDirectory, 'canvas-playback.webm'), Buffer.from('seekable-webm'));
   const metaPath = path.join(recordDirectory, 'meta.json');
-  const finalMeta = JSON.parse(await readFile(metaPath, 'utf8')); finalMeta.mediaPlaybackReady = true;
+  const finalMeta = JSON.parse(await readFile(metaPath, 'utf8'));
+  assert.equal(finalMeta.mediaCaptureStopValidation.accepted, true);
+  assert.equal(finalMeta.mediaCaptureFinalSeq, finalMeta.nextMediaSeq - 1);
+  assert.equal(finalMeta.mediaCaptureStoppedAt, new Date(1700000011000).toISOString()); finalMeta.mediaPlaybackReady = true;
   await writeFile(metaPath, JSON.stringify(finalMeta));
   const range = await fetch(`${base}/${created.id}/media/playback`, { headers: { range: 'bytes=2-5' } });
   assert.equal(range.status, 206); assert.equal(range.headers.get('accept-ranges'), 'bytes');
@@ -82,4 +86,13 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   assert.equal(rejected.status, 409);
   const resumed = await post(`${base}/start`, { sessionId, recordingId: created.id });
   assert.equal((await resumed.json()).endedAt !== null, true);
+  const invalidCapture = await post(`${base}/start`, { sessionId }); const invalidPacket = await invalidCapture.json();
+  assert.equal(invalidPacket.ok, true);
+  const falseFinalSeq = await post(`${base}/${invalidPacket.id}/stop`, { mediaCaptureStoppedAt: Date.now(), mediaCaptureLastTimeMs: 0,
+    mediaCaptureLastPaintedAt: Date.now() - 5, mediaCaptureFinalSeq: 1 });
+  assert.equal(falseFinalSeq.status, 200);
+  const invalidMeta = await fetch(`${base}/${invalidPacket.id}?meta=1`).then((r) => r.json());
+  assert.equal(invalidMeta.meta.mediaCaptureStopValidation.accepted, false);
+  assert.equal(invalidMeta.meta.mediaCaptureStopValidation.captureStopChecks.allChunksAcknowledged, false);
+  assert.equal('mediaCaptureStoppedAt' in invalidMeta.meta, false);
 });

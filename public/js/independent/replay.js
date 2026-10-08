@@ -1,3 +1,4 @@
+import { rebaseRecordedAssets, timestampRange } from './replayAssets.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
@@ -15,32 +16,6 @@ function keepReplayAnimationsVisible() {
   const style = doc.createElement('style'); style.id = 'sp-replay-animation-playback';
   style.textContent = 'html.rrweb-paused *, html.rrweb-paused *::before, html.rrweb-paused *::after { animation-play-state: running !important; }';
   doc.head.append(style);
-}
-function rebaseRecordedAssets(events) {
-  const href = events.find((event) => event?.type === 4 && typeof event.data?.href === 'string')?.data.href;
-  if (!href) return;
-  let recorded;
-  try { recorded = new URL(href); } catch { return; }
-  const isLocalAsset = (url) => url.origin === recorded.origin && /^\/(?:assets|fonts|css|vendor)\//.test(url.pathname);
-  const rebase = (raw, base) => {
-    try {
-      const url = new URL(raw, base);
-      return isLocalAsset(url) ? `${location.origin}${url.pathname}${url.search}${url.hash}` : raw;
-    } catch { return raw; }
-  };
-  const visit = (value) => {
-    if (!value || typeof value !== 'object') return;
-    if (Array.isArray(value)) { for (const item of value) visit(item); return; }
-    for (const [key, current] of Object.entries(value)) {
-      if (typeof current === 'string') {
-        let next = current.replace(/https?:\/\/[^\s"'()<>]+/g, (raw) => rebase(raw, recorded.href));
-        if (['src', 'href', 'poster', 'xlink:href'].includes(key)) next = rebase(next, recorded.href);
-        if (next !== current) value[key] = next;
-      }
-    }
-    for (const item of Object.values(value)) visit(item);
-  };
-  visit(events);
 }
 function paintMediaLayer() {
   const frame = stage.querySelector('iframe') || player?.iframe;
@@ -200,10 +175,12 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const records = packet.events || []; items = records.filter((e) => e.kind === 'rrweb').map((e) => e.p); rebaseRecordedAssets(items);
   cues = records.filter((e) => e.kind === 'caption' && e.p?.text).map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), ...e.p }));
   if (!items.length || !globalThis.rrweb?.Replayer) throw new Error('这段记录还没有可播放的画面');
-  baseTimestamp = Math.min(...items.map((e) => e.timestamp).filter(Number.isFinite));
-  const last = Math.max(...items.map((e) => e.timestamp).filter(Number.isFinite));
-  const wallEnd = records.length ? Math.max(...records.map((e) => e.ts || 0)) : Date.parse(packet.meta.startedAt);
-  baseWall = Date.parse(packet.meta.startedAt); duration = Math.max(1, (wallEnd - baseWall) / 1000, (last - baseTimestamp) / 1000,(Date.parse(packet.meta.endedAt||packet.meta.startedAt)-baseWall)/1000);
+  const visibleRecords = records.filter((event) => !(event.kind === 'custom' && event.p?.tag === 'canvas-media-stopped'));
+  const { min: firstTimestamp, max: last } = timestampRange(items, (event) => event.timestamp);
+  baseTimestamp = firstTimestamp;
+  const wallEnd = visibleRecords.length ? timestampRange(visibleRecords, (event) => event.ts || 0).max : Date.parse(packet.meta.startedAt);
+  const captureEnd = Date.parse(packet.meta.mediaCaptureStoppedAt || packet.meta.endedAt || packet.meta.startedAt);
+  baseWall = Date.parse(packet.meta.startedAt); duration = Math.max(1, (wallEnd - baseWall) / 1000, (last - baseTimestamp) / 1000,(captureEnd-baseWall)/1000);
   rrOffset=(baseTimestamp-baseWall)/1000;
   if (packet.meta.mediaStartedAt) mediaStartSecond = Math.max(0, (Date.parse(packet.meta.mediaStartedAt) - baseWall) / 1000);
   mediaDuration = (Number(packet.meta.mediaLastTimeMs) || 0) / 1000;

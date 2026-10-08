@@ -23,11 +23,12 @@ export function RecordingControls({ sessionId }) {
     if (!enabled) return undefined;
     let active = true; let timer;
     const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
-      mediaSeq: 0, mediaStartedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false };
+      mediaSeq: 0, mediaStartedAt: 0, mediaLastTimeMs: 0, mediaCaptureStoppedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false };
     state.captureFrames = 0; state.lastCaptureAt = 0; state.lastMediaAckAt = 0; state.lastMediaAckSeq = 0;
     globalThis.__SP_RECORDING_STATUS__ = () => ({ eventSeq: state.seq, queuedEvents: state.queue.length, pushingEvents: state.pushing,
       mediaSeq: state.mediaSeq, queuedMedia: state.mediaPending.length, pushingMedia: state.mediaPushing, mediaError: state.mediaError,
       recorderState: state.mediaRecorder?.state || null, mediaStartedAt: state.mediaStartedAt || null,
+      mediaLastTimeMs: state.mediaLastTimeMs, mediaCaptureStoppedAt: state.mediaCaptureStoppedAt || null,
       captureFrames: state.captureFrames, lastCaptureAt: state.lastCaptureAt || null,
       lastMediaAckSeq: state.lastMediaAckSeq, lastMediaAckAt: state.lastMediaAckAt || null });
     ctx.current = state;
@@ -37,6 +38,7 @@ export function RecordingControls({ sessionId }) {
       try { sessionStorage.setItem(`sp:recording-buffer:${state.id}`, JSON.stringify(state.queue)); } catch { /* in-memory retry remains available */ }
       if (state.queue.length > 50) void flush();
     };
+    state.emit = event;
     const flush = async (keepalive = false) => {
       if (!state.id || state.pushing || !state.queue.length) return;
       state.pushing = true;
@@ -146,11 +148,12 @@ export function RecordingControls({ sessionId }) {
               if (!e.data?.size || !state.id) return;
               const seq = ++state.mediaSeq; const elapsedMs = Date.now() - state.mediaStartedAt;
               const timeMs = Math.max(Number.isFinite(e.timecode) ? e.timecode : 0, elapsedMs);
+              state.mediaLastTimeMs = timeMs;
               state.mediaPending.push({seq,blob:e.data,startedAt:state.mediaStartedAt,timeMs});
               state.mediaPush = state.mediaPush.then(flushMedia).catch(() => { state.mediaError = true; });
             });
             recorder.addEventListener('error', () => { state.mediaError = true; });
-            recorder.start(1000);
+            recorder.start(5000);
             const captureFrame = () => {
               try { captureContext.drawImage(canvas, 0, 0, captureSurface.width, captureSurface.height); videoTrack.requestFrame(); state.captureFrames += 1; state.lastCaptureAt = Date.now(); }
               catch { state.mediaError = true; }
@@ -189,16 +192,23 @@ export function RecordingControls({ sessionId }) {
     if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
       const recorder = state.mediaRecorder;
       clearInterval(state.mediaCaptureTimer); state.mediaCaptureTimer = null;
+      state.mediaCaptureStoppedAt = Date.now();
       await new Promise((resolve) => { recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); } });
       try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
+      state.emit?.('custom', { tag: 'canvas-media-stopped', captureStoppedAt: state.mediaCaptureStoppedAt,
+        lastPaintedAt: state.lastCaptureAt, mediaLastTimeMs: state.mediaLastTimeMs, mediaFinalSeq: state.mediaSeq });
       await Promise.race([state.mediaPush, new Promise((resolve) => setTimeout(resolve, 8000))]);
     }
     if(state.mediaPending.length||state.mediaPushing){setMessage('画面仍在上传，请稍后再结束录制');return;}
     const drained = await new Promise((resolve) => { const wait = setInterval(() => { if (!state.queue.length && !state.pushing) { clearInterval(wait); resolve(true); } }, 100); setTimeout(() => { clearInterval(wait); resolve(!state.queue.length && !state.pushing); }, 5000); });
     if (!drained) { setMessage('网络恢复后请再次结束录制，未发送的记录仍在等待'); return; }
     clearInterval(state.timer);
-    const stopped=await api.recordingStop(state.id);
+    const stopped=await api.recordingStop(state.id, state.mediaCaptureStoppedAt ? {
+      mediaCaptureStoppedAt: state.mediaCaptureStoppedAt, mediaCaptureLastTimeMs: state.mediaLastTimeMs,
+      mediaCaptureLastPaintedAt: state.lastCaptureAt, mediaCaptureFinalSeq: state.mediaSeq,
+    } : {});
     if(!stopped.ok){setMessage('生成回放失败，请再次结束录制');return;}
+    if(state.mediaSeq && !stopped.mediaPlaybackReady){setMessage('录制画面正在整理，请稍后再次结束录制');return;}
     state.stopped = true;setRecording(false);
     try { sessionStorage.removeItem(`sp:recording-buffer:${state.id}`); } catch { /* private mode */ }
     const url = new URL(location.href); url.searchParams.delete('record'); history.replaceState(null, '', url); setMessage('录制已结束');
