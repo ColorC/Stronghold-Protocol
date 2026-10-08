@@ -496,7 +496,7 @@ export class SkillRuntime {
       // an extra attack that spends no bullet
     } else if (this.active && this.kind === 'ammo') {
       this.ammoLeft--;
-      if (b._hooks.ammoUsed) b.emit('ammoUsed', { unit: this.unit, left: this.ammoLeft, skill: this });
+      if (b._hooks.ammoUsed) b.emit('ammoUsed', { unit: this.unit, left: this.ammoLeft, skill: this, targets: targets.slice() });
       if (this.ammoLeft <= 0) this.end('ammo');
     } else if (usedOverride && this.pending && !this.isTimed) {
       this.pending = false;

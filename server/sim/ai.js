@@ -169,7 +169,8 @@ export function performAttack(b, u, prof, targets, opts = null) {
     const t = targets[i];
     // ['atk', src, tgt, projKind, attackId, isSkill 1|0] (shared/protocol.js EV): the renderer's FX registry keys on them
     b._ev(['atk', u.id, t.id, vis, attackId, isSkill ? 1 : 0]);
-    const info = { isSkill, index: i, attackId };
+    // Freeze ammo-skill provenance at attack launch so impact-time ammo depletion cannot erase it.
+    const info = { isSkill, index: i, attackId, tags: u.skill?.active && u.skill.kind === 'ammo' ? ['ammoSkill'] : [] };
     if (isHeal) { doHeal(b, u, prof, t, info); continue; }
     if (ranged && t.side === 'enemy' && prof.projectile === 'boomerang') {
       throwBoomerang(b, u, prof, t, info);
@@ -234,7 +235,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
     const hits = prof.hitsFn ? prof.hitsFn(b, u) : Math.max(1, prof.hits || 1);
     let dealtMain = 0;
     for (let h = 0; h < hits && target.alive; h++) {
-      dealtMain += b.dealDamage(u, target, { amount: atk * scale * mulT, type: baseType, isAttack: true, isSkill: info.isSkill, tags: prof.tags || [], attackId });
+      dealtMain += b.dealDamage(u, target, { amount: atk * scale * mulT, type: baseType, isAttack: true, isSkill: info.isSkill, tags: [...(prof.tags || []), ...(info.tags || [])], attackId });
     }
     dealtTotal += dealtMain;
     if (prof.onHitStatus && target.alive) b.applyStatus(target, prof.onHitStatus.key, { duration: prof.onHitStatus.duration, source: u, value: prof.onHitStatus.value });
@@ -250,7 +251,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
       if (prof.groundOnly && e.isFlying) continue;
       if (!prof.canHitFly && e.isFlying && !prof.splashHitsFly) continue;
       if (e.s.flags.untargetable) continue;
-      const d = b.dealDamage(u, e, { amount: atk * scale * sc * skillMul, type: baseType, isAttack: true, isSplash: true, isSkill: info.isSkill, attackId });
+      const d = b.dealDamage(u, e, { amount: atk * scale * sc * skillMul, type: baseType, isAttack: true, isSplash: true, isSkill: info.isSkill, tags: [...(prof.tags || []), ...(info.tags || [])], attackId });
       dealtTotal += d;
       if (each) each(e, d, 'splash');
     }
@@ -270,7 +271,7 @@ export function resolveHit(b, u, prof, target, info, x, y) {
       if (!best) break;
       hit.add(best.id);
       b._ev(['atk', prev.id, best.id, 'chain', attackId, info.isSkill ? 1 : 0]);
-      const d = b.dealDamage(u, best, { amount: atk * scale * skillMul * Math.pow(1 - (prof.chain.falloff ?? 0.15), k), type: baseType, isAttack: true, isSkill: info.isSkill, tags: ['chain'], attackId });
+      const d = b.dealDamage(u, best, { amount: atk * scale * skillMul * Math.pow(1 - (prof.chain.falloff ?? 0.15), k), type: baseType, isAttack: true, isSkill: info.isSkill, tags: ['chain', ...(info.tags || [])], attackId });
       dealtTotal += d;
       if (prof.chain.sluggish && best.alive) b.applyStatus(best, 'sluggish', { duration: prof.chain.sluggish, source: u });
       if (each) each(best, d, 'chain');

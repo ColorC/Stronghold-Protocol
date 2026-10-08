@@ -128,6 +128,7 @@ import { layoutPen, penSignature } from './pen.js';
 import { IDENTITY, bossPrepField, tilesToDisp, leaderStand } from './prepfield.js';
 import { pickOnTile, pickBattle, hitRectAt, hitTiles } from './pick.js';
 import { promotionsOf } from './promote.js';
+import { ResonanceFloorRenderer } from './resonanceFloors.js';
 
 const VENDOR = { pixi: '/vendor/pixi.min.js', spine: '/vendor/pixi-spine.js' };
 const PIECE_DIRS = new Set(['UP', 'RIGHT', 'DOWN', 'LEFT']);
@@ -556,6 +557,7 @@ export async function createFieldView(host, options = {}) {
     surfaceLayer: (row) => tiles.surfaceLayer(row),
   };
   const tiles = new TileField({ ground: layers.ground, overlay: layers.overlay, props: layers.units, anim: layers.anim });
+  const resonanceFloors = new ResonanceFloorRenderer(P, layers.overlay);
   const fxIds = new WeakMap();  // UnitInfo → its FX registry identity (ctx.identify)
   const fx = new FxSystem({
     P, layers, cam: () => cam, settings, assets, heightAt, redVignette: bg.red, surfaceLayer: ctx.surfaceLayer,
@@ -858,6 +860,7 @@ export async function createFieldView(host, options = {}) {
     if (!st || typeof st !== 'object' || !Array.isArray(st.rows)) return false;
     stageRec = st;
     tiles.setStage(st);
+    resonanceFloors.invalidate();
     tiles.setBattleRect(mode === 'battle' && battleMeta ? battleMeta.rect : null);
     if (board3d) { board3d.setStage(st); board3d.setBattleRect(mode === 'battle' && battleMeta ? battleMeta.rect : null); }
     tiles.project(cam, true);
@@ -1051,6 +1054,7 @@ export async function createFieldView(host, options = {}) {
     gone.clear();
     battleMeta = null;
     interp.reset();
+    resonanceFloors.clear();
     fx.clear();
     fxCues.reset();
     consumedIds.clear();
@@ -1469,6 +1473,8 @@ export async function createFieldView(host, options = {}) {
     clearHl();
     renderT0Battle = null;
     mode = 'battle';
+    resonanceFloors.setStatic(meta.resonanceFloors);
+    resonanceFloors.setDynamic(null);
     const rect = meta.rect ? normRect(meta.rect) : (meta.kind === 'boss' || meta.kind === 'hidden' ? { ...GEO.BOSS_RECT } : meta.kind === 'unite' ? { ...GEO.UNITE_RECT } : { ...GEO.NORMAL_RECT });
     // prep: true = a read-only scouting board (a teammate's lineup during prep): prep-style pieces, no bars
     battleMeta = { fieldId: meta.fieldId ?? null, kind: meta.kind || 'normal', rect, stageId: meta.stageId ?? null, prep: meta.prep === true };
@@ -1805,12 +1811,15 @@ export async function createFieldView(host, options = {}) {
       updateBackdrop(clock);
       if (mode === 'battle') {
         const renderT = interp.update(now / 1000);
+        resonanceFloors.setDynamic(Number.isFinite(renderT) ? interp.resonanceFloorsAt(renderT) : null);
+        resonanceFloors.update(Number.isFinite(renderT) ? renderT : 0, cam, heightAt, (r, c) => tiles.tile(r, c).drawn);
         if (Number.isFinite(renderT)) {
           processEvents(renderT);
           syncBattle(renderT);
           windUpAttacks(renderT);
         }
       } else if (mode === 'prep') {
+        resonanceFloors.update(0, cam, heightAt, (r, c) => tiles.tile(r, c).drawn);
         for (const [key, pd] of pending) {
           if (now - pd.t > DROP_PENDING_MS) {
             pending.delete(key);
@@ -2043,6 +2052,7 @@ export async function createFieldView(host, options = {}) {
       clearPen();
       holdScene(false); // no scene any more: the quiet budget may free the skeletons (lobby / room / result)
       try { fx.destroy(); } catch { /* ignore */ }
+      try { resonanceFloors.destroy(); } catch { /* ignore */ }
       try { tiles.destroy(); } catch { /* ignore */ }
       try { impostors.destroy(); } catch { /* ignore */ }
       listeners.clear();

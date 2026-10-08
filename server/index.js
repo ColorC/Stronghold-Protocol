@@ -46,6 +46,7 @@ import { PROTOCOL_VERSION, APP_VERSION } from '../shared/constants.js';
 import { MEDIA_PREFIX, AUDIO_EXTS } from '../shared/media.js';
 import { createIndependentHttp } from './modes/independent/http.js';
 import { createRecordingHttp } from './modes/independent/recordings.js';
+import { createResonanceHttp } from './modes/resonance/http.js';
 import { createAdmission } from './hosting/admission.js';
 import { createStaticDelivery, loadAssetSourceMap } from './hosting/staticDelivery.js';
 
@@ -647,7 +648,9 @@ export async function startServer(opts = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new RangeError(`invalid PORT ${port}`);
   const log = opts.log || makeLogger(!!opts.quiet);
   const publicDir = opts.publicDir || path.join(ROOT, 'public');
-  const dataDir = opts.dataDir || (process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data'));
+  const worktreeIndex = path.resolve(ROOT).split(path.sep).lastIndexOf('.worktrees');
+  const canonicalProjectRoot = worktreeIndex >= 0 ? path.resolve(ROOT, ...Array.from({ length: path.resolve(ROOT).split(path.sep).length - worktreeIndex }, () => '..')) : ROOT;
+  const dataDir = opts.dataDir || (process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(canonicalProjectRoot, 'data'));
   const sharedDir = opts.sharedDir || path.join(ROOT, 'shared');
 
   // The process-wide singleton serves the default data dir; a custom dir (tests) gets its own copy.
@@ -655,6 +658,9 @@ export async function startServer(opts = {}) {
   const independentDirectory = opts.independentDirectory ?? process.env.SP_INDEPENDENT_DIRECTORY ?? path.join(ROOT, 'runtime', 'independent-sessions');
   if (!path.isAbsolute(independentDirectory)) throw new Error('SP_INDEPENDENT_DIRECTORY must be an absolute canonical runtime path');
   const independentHttp = createIndependentHttp({ data, directory: independentDirectory });
+  const resonanceDirectory = opts.resonanceDirectory ?? process.env.SP_RESONANCE_DIRECTORY ?? path.join(canonicalProjectRoot, 'runtime', 'resonance');
+  if (!path.isAbsolute(resonanceDirectory)) throw new Error('SP_RESONANCE_DIRECTORY must be an absolute canonical runtime path');
+  const resonanceHttp = createResonanceHttp({ data, directory: resonanceDirectory });
   const recordingDirectory = opts.recordingDirectory ?? process.env.SP_RECORDING_DIRECTORY ?? path.join(independentDirectory, 'recordings');
   if (!path.isAbsolute(recordingDirectory)) throw new Error('SP_RECORDING_DIRECTORY must be an absolute canonical runtime path');
   const recordingHttp = createRecordingHttp({ directory: recordingDirectory, sessionDirectory: independentDirectory, diagnosticsPath: opts.recordingDiagnosticsPath || '' });
@@ -708,6 +714,7 @@ export async function startServer(opts = {}) {
     }
     if (await recordingHttp(req, res, parts.rawPath)) return;
     if (await independentHttp(req, res, parts.rawPath)) return;
+    if (await resonanceHttp(req, res, parts.rawPath)) return;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
       sendError(req, res, 405, '不支持的请求方法 · Method not allowed');

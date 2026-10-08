@@ -84,8 +84,12 @@ export class Battle {
     this.modeId = opts.modeId ?? null;
     this.round = opts.round ?? 0;
     this.fieldId = opts.fieldId ?? null;
-    this.logger = opts.logger ?? console;
     this.recordEvents = opts.recordEvents !== false;
+    // Optional content-owned floor metadata. Resonance static snow is emitted once in fieldMeta; only active dynamic
+    // areas are copied into snapshots so recording:false battles do not allocate full visualization state per frame.
+    this.resonanceFloors = Array.isArray(opts.resonanceFloors) ? opts.resonanceFloors : null;
+    this.resonanceDynamicFloors = this.recordEvents ? [] : null;
+    this.logger = opts.logger ?? console;
     /** When false the battle only ends by time limit / boss pool / forceEnd (tests, sandboxes). */
     this.autoFinish = opts.autoFinish !== false;
     this.data = toDataSource(opts.data);
@@ -413,7 +417,12 @@ export class Battle {
       this._phase('scheduled', () => this._runScheduled());
       this._phase('spawns', () => this._processSpawns());
       this._phase('dp', () => {
-        for (const ps of this.players) ps.dp = Math.min(this.flags.dpMax, ps.dp + this.flags.dpPerSec * dt);
+        for (const ps of this.players) {
+          const previous = ps.dp;
+          ps.dp = Math.min(this.flags.dpMax, ps.dp + this.flags.dpPerSec * dt);
+          const gained = ps.dp - previous;
+          if (gained > 0) this.emit('dpGained', { playerId: ps.playerId, amount: gained, source: 'natural' });
+        }
       });
       this._phase('buffs', () => this._tickBuffs(dt));
       this._phase('enemies', () => {
@@ -1096,6 +1105,12 @@ export class Battle {
   /** Leak: an enemy reached its goal. */
   leak(e) {
     if (!e || !e.alive || e.side !== 'enemy') return;
+    // Content may adjust only this leak's loss before it is recorded. With no listeners this preserves the native path.
+    if (this._hooks.beforeEnemyLeak) {
+      const event = { enemy: e, loss: e.lpr ?? 1 };
+      this.emit('beforeEnemyLeak', event);
+      e.lpr = event.loss;
+    }
     this._recordLeak(e, false);
     this._remove(e, 'leak');
     this._ev(['leak', e.id]);
@@ -2230,10 +2245,13 @@ export class Battle {
     return set;
   }
 
-  addDp(playerId, n) {
+  addDp(playerId, n, { source = 'addDp', sourceUnitId = null } = {}) {
     const ps = this.getPlayer(playerId);
     if (!ps || !Number.isFinite(n)) return 0;
+    const previous = ps.dp;
     ps.dp = Math.max(0, Math.min(this.flags.dpMax, ps.dp + n));
+    const gained = Math.max(0, ps.dp - previous);
+    if (gained > 0) this.emit('dpGained', { playerId, amount: gained, source, ...(sourceUnitId == null ? {} : { sourceUnitId }) });
     return ps.dp;
   }
 
@@ -2382,6 +2400,9 @@ export class Battle {
       if (v) (elem || (elem = [])).push([u.id, v[0], v[1], v[2], v[3]]);
     }
     if (elem) snap.elem = elem;
+    if (this.resonanceDynamicFloors?.length) snap.resonanceFloors = this.resonanceDynamicFloors.slice(0, 12).map((f) => ({
+      id: f.id, kind: f.kind, owner: f.owner, tiles: f.tiles, until: f.until,
+    }));
     return snap;
   }
 
@@ -2423,6 +2444,7 @@ export class Battle {
     return {
       fieldId: this.fieldId, kind: this.kind, rect: { ...this.rect }, stageId: this.stageId,
       units: this.units.filter((u) => (u.alive && u.deployed && !u.hidden) || this.isDown(u)).map(unitInfo),
+      ...(this.resonanceFloors ? { resonanceFloors: this.resonanceFloors } : null),
     };
   }
 

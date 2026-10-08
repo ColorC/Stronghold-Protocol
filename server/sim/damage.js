@@ -343,7 +343,7 @@ export function applyHpLoss(battle, source, target, amount, dmg) {
     // ['dmg', target, amount, type, sourceId | null, attackId] (shared/protocol.js EV): the unit credited with it, the attack
     battle._ev(['dmg', target.id, Math.round(amount), shown, source && source.id != null ? source.id : null, dmg.attackId || 0]);
   }
-  if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, type: dmg ? dmg.type : 'true', dmg, credit: source });
+  if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, dealt, type: dmg ? dmg.type : 'true', dmg, credit: source });
   if (target.side === 'ally' && target.skill && dmg && !dmg.noSp && dmg.type !== 'element') battle._skills.onDamaged(target);
   const dead = target.bossPool ? target.bossPool.hp <= 0 : target.hp <= 0;
   if (dead && target.alive) battle.kill(target, source);
@@ -423,10 +423,12 @@ export function applyElement(battle, source, target, dmg) {
   // 元素损伤倍率 × max(5 %, 1 − 损伤抵抗 %) — official EP_RESISTANCE = data epResistance
   let amt = dmg.amount * dmg.mul * elementIntake(target);
   if (!(amt > 0) || !Number.isFinite(amt)) return 0;
-  target.elem[el] = Math.min(max, target.elem[el] + amt);
+  const before = target.elem[el];
+  target.elem[el] = Math.min(max, before + amt);
+  const dealt = target.elem[el] - before;
   battle._ev(['dmg', target.id, Math.round(amt), el, source && source.id != null ? source.id : null, dmg.attackId || 0]);
   if (source) source.stats.elem = (source.stats.elem ?? 0) + amt;
-  if (battle._hooks.damaged) battle.emit('damaged', { source, target, amount: amt, type: 'element', dmg });
+  if (battle._hooks.damaged) battle.emit('damaged', { source, target, amount: amt, dealt, type: 'element', dmg });
   if (target.elem[el] >= max && target.alive) elementBurst(battle, source, target, el);
   return amt;
 }
@@ -566,6 +568,7 @@ export function heal(battle, source, target, amount, opts = {}) {
     source.stats.heal += actual;
     if (source.side === 'ally' && source.ownerId != null) { const pp = battle._pp(source.ownerId); if (pp) pp.healingDone += actual; }
   }
+  if (actual > 0 && battle._hooks.healed) battle.emit('healed', { source, target, amount: actual, opts });
   if (actual >= 0.5 && !opts.silent) battle._ev(['heal', target.id, Math.round(actual)]);
   return actual;
 }

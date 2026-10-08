@@ -17,6 +17,7 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   const response = res(); handler(req, response, '/js/independent/client-worker.js'); assert.equal(response.status, 200);
   assert.equal(response.body, `import "${base}/js/independent/client-worker.js";\n`);
   for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js']) assert.equal(handler(req, res(), path), false);
+  for(const path of ['/resonance.html','/resonance/api/catalog','/js/resonance/main.js','/css/resonance.css','/js/render/app.js','/js/render/interp.js','/js/render/resonanceFloors.js'])assert.equal(handler(req,res(),path),false,'new control code must resolve from its actual release, not the older asset deployment');
   assert.equal(handler({ method: 'POST' }, res(), '/assets/x.png'), false);
   assert.equal(createStaticDelivery()(req, res(), '/assets/x.png'), false);
 });

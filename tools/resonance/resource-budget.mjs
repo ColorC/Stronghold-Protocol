@@ -5,6 +5,7 @@ import path from 'node:path';
 const WORKTREE = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/resonance/stronghold-protocol';
 const CANONICAL = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const LIMIT_BYTES = 2_000_000_000;
+const BASE_COMMIT = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const DEFAULTS = [
   { role: 'worktree-full-tree', path: WORKTREE, note: '本职责簇工作树全量，包含.git文件；所有文件和节点模块均计入。' },
   { role: 'canonical-reference-input', path: `${CANONICAL}/data/resonance-reference`, note: '本路线使用的正式参考输入，全量计入。' },
@@ -149,9 +150,70 @@ for (const entry of entries) {
   } else entry.budgetContribution = 'missing-zero';
 }
 
+function scanGitMetadata(rootPath) {
+  const result = { path: rootPath, bytes: 0, files: 0, links: [], hardlinks: [] };
+  function visit(target) {
+    const stat = existsLstat(target);
+    if (!stat) return;
+    if (stat.isSymbolicLink()) {
+      const record = { path: target, bytes: stat.size, nlink: stat.nlink, entryType: 'link' };
+      result.links.push(record); result.bytes += stat.size; result.files++;
+      linksObserved++; filesObserved++; totalBytes += stat.size;
+      diagnostics.push({ code: 'reparse-or-symlink', path: target, bytes: stat.size, action: 'not-followed' });
+      return;
+    }
+    if (stat.isFile()) {
+      const record = { path: target, bytes: stat.size, nlink: stat.nlink, entryType: 'file' };
+      result.bytes += stat.size; result.files++; filesObserved++; totalBytes += stat.size;
+      if (stat.nlink > 1) {
+        result.hardlinks.push(record); hardlinkFilesObserved++;
+        diagnostics.push({ code: 'hardlink-nlink-greater-than-one', path: target, bytes: stat.size, nlink: stat.nlink, accounting: 'logical-path-bytes-counted-in-full' });
+      }
+      return;
+    }
+    if (stat.isDirectory()) for (const name of readdirSync(target)) visit(path.join(target, name));
+  }
+  visit(rootPath);
+  return result;
+}
+
+const gitStorage = {
+  baselineCommit: BASE_COMMIT,
+  worktreeGitDir: null,
+  commonGitDir: null,
+  deltaObjects: 0,
+  deltaObjectDiskBytes: 0,
+  objectAccounting: 'native git rev-list BASE..HEAD object difference, sized by git cat-file --batch-check=%(objectname) %(objectsize:disk)',
+  worktreeMetadata: null,
+  error: null,
+};
+try {
+  gitStorage.worktreeGitDir = runGit(['rev-parse', '--absolute-git-dir']);
+  gitStorage.commonGitDir = runGit(['rev-parse', '--path-format=absolute', '--git-common-dir']);
+  const objectLines = runGit(['rev-list', '--objects', `${BASE_COMMIT}..HEAD`]).split(/\r?\n/).filter(Boolean);
+  const objectIds = [...new Set(objectLines.map((line) => line.trim().split(/\s+/, 1)[0]).filter(Boolean))];
+  if (objectIds.length) {
+    const sized = execFileSync('git', ['-C', WORKTREE, 'cat-file', '--batch-check=%(objectname) %(objectsize:disk)'], {
+      input: `${objectIds.join('\n')}\n`, encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024,
+    });
+    for (const line of sized.split(/\r?\n/).filter(Boolean)) {
+      const [, diskSize] = line.trim().split(/\s+/);
+      if (!/^\d+$/.test(diskSize ?? '')) throw new Error(`Git对象存储大小无法解析：${line}`);
+      gitStorage.deltaObjectDiskBytes += Number(diskSize);
+    }
+  }
+  gitStorage.deltaObjects = objectIds.length;
+  totalBytes += gitStorage.deltaObjectDiskBytes;
+  filesObserved += objectIds.length;
+  gitStorage.worktreeMetadata = scanGitMetadata(gitStorage.worktreeGitDir);
+} catch (error) {
+  gitStorage.error = error.message;
+  diagnostics.push({ code: 'native-git-storage-accounting-failed', message: error.message });
+}
+
 const overLimit = totalBytes > LIMIT_BYTES;
 const result = {
-  schema: 'resonance-resource-budget/v2',
+  schema: 'resonance-resource-budget/v3',
   generatedAt: new Date().toISOString(),
   limitBytes: LIMIT_BYTES,
   totalBytes,
@@ -161,6 +223,7 @@ const result = {
   linksObserved,
   hardlinkFilesObserved,
   git,
+  gitStorage,
   missingPaths: entries.filter((entry) => !entry.exists).map((entry) => ({ role: entry.role, path: entry.path })),
   paths: entries.map((entry) => ({
     role: entry.role,
@@ -177,7 +240,7 @@ const result = {
   })),
   diagnostics,
   overLimit,
-  auditStatus: overLimit ? 'over-limit' : linksObserved ? 'links-found' : git.error ? 'git-identity-unavailable' : 'within-limit',
+  auditStatus: overLimit ? 'over-limit' : linksObserved ? 'links-found' : git.error || gitStorage.error ? 'git-identity-unavailable' : 'within-limit',
 };
 console.log(JSON.stringify(result, null, 2));
-if (overLimit || linksObserved || git.error) process.exitCode = 2;
+if (overLimit || linksObserved || git.error || gitStorage.error) process.exitCode = 2;

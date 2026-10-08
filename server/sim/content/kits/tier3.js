@@ -797,7 +797,7 @@ const KITS = {
         battle.on('deploy', (ctx) => {
           // ranged position = not a ground tile (a high tile, or a platform that elevates it: unit.ground false)
           if (ctx.unit !== unit || ctx.initial || unit.ground) return;
-          battle.addDp(unit.ownerId, unit.base.cost * num(tb.value));
+          battle.addDp(unit.ownerId, unit.base.cost * num(tb.value), { sourceUnitId: unit.id });
           fx(battle, 'dp', unit, { n: unit.base.cost * num(tb.value) });
         }, { owner: unit });
       };
@@ -1330,7 +1330,7 @@ const KITS = {
           battle.removeBuff(unit, CAMOU_KEY);
           unit.mem.vulpisKill = false;
           const dp = num(bb.cost, 0);
-          if (dp > 0) { battle.addDp(unit.ownerId, dp); fx(battle, 'dp', unit, { n: dp }); }
+          if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n: dp }); }
           battle.addBuff(unit, { key: 'skill:vulpis_aspd', mods: { aspd: aspd0 } });
           unit.mem.vulpisDur = skill.timeLeft;
         },
@@ -1353,7 +1353,7 @@ const KITS = {
           attack: { onHit({ battle, unit, target }) {
             if (target && target.alive) battle.dealDamage(unit, target, { amount: unit.s.atk * num(s.bb.extra_damage_ratio), type: 'arts', isSkill: true, tags: ['skill', 'vulpisPunish'] });
             const dp = num(s.bb.cost, 0);
-            if (dp > 0) { battle.addDp(unit.ownerId, dp); fx(battle, 'dp', unit, { n: dp }); }
+            if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n: dp }); }
           } },
         }),
         skchr_vulpis_2: (s) => { // 坠刃拷问 — air units too (PRTS 备注 "※可对空"); data trigger SKILL_RANGE (its 3-12 range)
@@ -1363,7 +1363,7 @@ const KITS = {
             kind: instantKindOf(s),
             onStart({ battle, unit }) {
               const dp = num(s.bb.cost, 0);
-              if (dp > 0) { battle.addDp(unit.ownerId, dp); fx(battle, 'dp', unit, { n: dp }); }
+              if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n: dp }); }
               const list = enemiesOn(battle, unit, gridKeys(grid ?? unit.rangeGrid, unit), n);
               for (const e of list) {
                 const was = !!e.findBuff('sluggish'); // "若敌人已经处于停顿状态" (before this cast)
@@ -1403,7 +1403,7 @@ const KITS = {
           const regen = num(t1['vulpis_t_2[heal][interval].hp_recovery_per_sec_by_max_hp_ratio'], 0);
           battle.on('tick', (ctx) => {
             if (!alive(unit)) return;
-            if (bonus > 0 && isLeader(battle, unit, 'vulpisDp')) battle.addDp(unit.ownerId, battle.flags.dpPerSec * ctx.dt * bonus);
+            if (bonus > 0 && isLeader(battle, unit, 'vulpisDp')) battle.addDp(unit.ownerId, battle.flags.dpPerSec * ctx.dt * bonus, { sourceUnitId: unit.id });
             const on = battle.time - unit.lastHitAt >= quiet && regen > 0;
             const has = !!unit.findBuff('talent:vulpis_regen');
             if (on && !has) battle.addBuff(unit, { key: 'talent:vulpis_regen', mods: { hpRegenRatio: regen } });
@@ -1525,7 +1525,7 @@ const KITS = {
       fx(battle, 'summon', w, { src: vigil.id, wolves: w.mem.shadows });
       return true;
     };
-    const dpGain = (battle, unit, n) => { if (n > 0) { battle.addDp(unit.ownerId, n); fx(battle, 'dp', unit, { n }); } };
+    const dpGain = (battle, unit, n) => { if (n > 0) { battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id }); fx(battle, 'dp', unit, { n }); } };
     // S2: the pack's empowered next attack (armed by the cast; ×scale on its hits; a kill pays once)
     const installGift = (battle, unit) => {
       battle.on('beforeAttack', (ctx) => {
@@ -1591,13 +1591,13 @@ const KITS = {
           while (unit.mem.vigilAcc >= iv - 1e-9 && unit.mem.vigilDp + step <= cap + 1e-9) {
             unit.mem.vigilAcc -= iv;
             unit.mem.vigilDp += step;
-            battle.addDp(unit.ownerId, step);
+            battle.addDp(unit.ownerId, step, { sourceUnitId: unit.id });
           }
         },
         onEnd({ battle, unit, reason }) {
           // the whole `value` is granted over a full duration (精锐: 11 × 1.364 s ends a hair after 15 s)
           const rest = num(bb.value, 0) - (unit.mem.vigilDp ?? 0);
-          if (reason === 'duration' && rest > 1e-9) { battle.addDp(unit.ownerId, rest); unit.mem.vigilDp += rest; }
+          if (reason === 'duration' && rest > 1e-9) { battle.addDp(unit.ownerId, rest, { sourceUnitId: unit.id }); unit.mem.vigilDp += rest; }
           fx(battle, 'dp', unit, { n: unit.mem.vigilDp ?? 0 });
         },
       },

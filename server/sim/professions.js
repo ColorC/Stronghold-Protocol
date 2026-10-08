@@ -141,7 +141,7 @@ const installMerchant = (battle, unit) => {
 
 const installCharger = (battle, unit) => {
   battle.on('kill', (ctx) => {
-    if (ctx.killer === unit && ctx.victim.side === 'enemy') battle.addDp(unit.ownerId, unit.profile.dpOnKill ?? 1);
+    if (ctx.killer === unit && ctx.victim.side === 'enemy') battle.addDp(unit.ownerId, unit.profile.dpOnKill ?? 1, { sourceUnitId: unit.id });
   }, { owner: unit });
 };
 
@@ -290,7 +290,9 @@ const installLibrator = (battle, unit) => {
 
 const installPhalanx = (battle, unit) => {
   const apply = () => {
-    if (unit.skill?.active) battle.removeBuff(unit, 'trait:phalanxGuard');
+    const raw=unit.def?.raw??unit.def??{};
+    const resonanceKeepGuard=unit.resonanceKeepGuard===true || (raw.charId==='char_1046_sbell2'&&Number(raw.resonanceStar)===3);
+    if (unit.skill?.active && !resonanceKeepGuard) battle.removeBuff(unit, 'trait:phalanxGuard');
     else battle.addBuff(unit, { key: 'trait:phalanxGuard', mods: { defPct: unit.profile.guardDef ?? 2, resFlat: unit.profile.guardRes ?? 20 } });
   };
   battle.on('deploy', (ctx) => { if (ctx.unit === unit) apply(); }, { owner: unit });

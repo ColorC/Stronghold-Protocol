@@ -72,7 +72,7 @@ function vanilla(bb, chess, def) {
     skills: { skchr_wyvern_1: {
       id: 'skchr_wyvern_1', kind: 'duration', duration, spCost, initSp: number(skill.initSp) ?? 0,
       spType, trigger: skill.trigger?.rule ?? 'DEFAULT', mods: { atkPct },
-      onStart({ battle, unit }) { if (dp > 0) { battle.addDp(unit.ownerId, dp); battle.fx('dp', { x: unit.x, y: unit.y, id: unit.id, n: dp }); } },
+      onStart({ battle, unit }) { if (dp > 0) { battle.addDp(unit.ownerId, dp, { sourceUnitId: unit.id }); battle.fx('dp', { x: unit.x, y: unit.y, id: unit.id, n: dp }); } },
     } },
     talents: talentMods(chess, [['atk', 'atkPct']]),
   };
@@ -287,12 +287,12 @@ function wanqing(bb, chess) {
       const state = unit.mem.nativeWanqingDp;
       if (!state) return;
       state.elapsed += dt;
-      while (state.elapsed + 1e-9 >= interval && state.gained < ticks) { state.elapsed -= interval; state.gained++; battle.addDp(unit.ownerId, perTick); }
+      while (state.elapsed + 1e-9 >= interval && state.gained < ticks) { state.elapsed -= interval; state.gained++; battle.addDp(unit.ownerId, perTick, { sourceUnitId: unit.id }); }
     },
     onEnd({ battle, unit, reason }) {
       const state = unit.mem.nativeWanqingDp;
       unit.mem.nativeWanqingDp = null;
-      if (state && reason === 'duration' && state.gained < ticks) battle.addDp(unit.ownerId, (ticks - state.gained) * perTick);
+      if (state && reason === 'duration' && state.gained < ticks) battle.addDp(unit.ownerId, (ticks - state.gained) * perTick, { sourceUnitId: unit.id });
     },
   } }, talents: [{ install(battle, unit) {
     if (!(hpCommon > 0) || !Array.isArray(talentGrid) || !talentGrid.length) return;

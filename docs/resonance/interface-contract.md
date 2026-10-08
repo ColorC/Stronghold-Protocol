@@ -16,13 +16,13 @@
 
 ## 策略、后勤与奖励
 
-经营节点开始时先处理固定补给和策略，未领取奖励保留在状态，不塞爆背包/备战区，不静默转币。一次操作可以建立次级选择（例选择策略→选择装备/转职/目标），完成后继续整备。容量不足可直接穿戴、合成、卖牌、回收，处理后领取原奖励；不得创建无上限临时备战区。FUNNY奇数节点显示“领取后勤并继续”，走权威后勤结算，不播放伪战斗；其余节点准备后“开始战斗”。
+经营节点开始时先处理固定补给和策略，未领取奖励保留在状态，不塞爆背包/备战区，不静默转币。一次操作可以建立次级选择（例选择策略→选择装备/转职/目标；装备熔炉拆卸→选择现有材料可合成的配方），完成后继续整备。容量不足可直接穿戴、合成、卖牌、回收，处理后领取原奖励；不得创建无上限临时备战区。FUNNY奇数节点显示“领取后勤并继续”，走权威后勤结算，不播放伪战斗；其余节点准备后“开始战斗”。
 
 所有策略显示实际生效时点/条件/次数，延迟援军与任务显示进度与剩余节点。前提不满足的策略不进入三选一；在选择后因卖牌等行为失去前提时按配置替代收益处理，不假触发。任务由权威Battle小聚合计数推进，断线恢复不能重复兑现。
 
 状态增量：`pendingChoices`有稳定uid、type、source、remaining、options；`consumables`有uid/kind（smallCopy/universalCopy）和来源；`strategyState`按strategyId保存次数/任务值/到期节点/选中目标；`claimedNodes`保存已供给节点避免重复领取；`activeOperatorIds`可从已保存环境+seed确定性重建但存档需验证相同池。history为紧凑经营摘要，战斗replay独立持有，不能整帧塞进session。
 
-动作接口除现有经营动作增加：`move(pieceUid,row,col,dir)`、`advanceSupply`、`chooseStrategy(choiceUid,strategyId,targets?)`、`claimReward(choiceUid,optionIds)`、`useCopy(consumableUid,pieceUid)`、`disassemble(itemUid)`、`setSummonOrder(pieceUid,tokenId,row,col)`。非法/过期动作原子拒绝，state不变。`choice`阶段允许部署、卖牌、穿拆合回收等容量整理；只禁止战斗或后勤推进跨过未决选择。
+动作接口除现有经营动作增加：`move(pieceUid,row,col,dir)`、`advanceSupply`、`chooseStrategy(choiceUid,strategyId,targets?)`、`claimReward(choiceUid,optionIds)`、`useCopy(consumableUid,pieceUid)`、`disassemble(itemUid)`、`setSummonOrder(pieceUid,tokenId,row,col)`、`clearSummonOrder(pieceUid,tokenId?)`。非法/过期动作原子拒绝，state不变。`choice`阶段允许部署、卖牌、穿拆合回收等容量整理；只禁止战斗或后勤推进跨过未决选择。
 
 ## 战斗与结束
 

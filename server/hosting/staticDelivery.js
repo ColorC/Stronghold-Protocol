@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const PREFIXES = ['/js/', '/css/', '/vendor/', '/fonts/', '/assets/', '/data/', '/shared/', '/sim/', '/media/'];
 const LOCAL_BOOTSTRAP = '/js/hostingBootstrap.js';
+const LOCAL_RESONANCE = new Set(['/css/resonance.css','/js/render/app.js','/js/render/interp.js','/js/render/resonanceFloors.js']);
 const WORKER = '/js/independent/client-worker.js';
 const GIT_REVISION = /^[a-f0-9]{40}$/;
 
@@ -78,6 +79,7 @@ export function createStaticDelivery({ base = '', assetSources = {} } = {}) {
   return function handle(req, res, pathname) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return false;
     if (pathname === LOCAL_BOOTSTRAP) return false;
+    if(pathname.startsWith('/js/resonance/')||LOCAL_RESONANCE.has(pathname))return false;
     if (pathname !== '/data.js' && !PREFIXES.some((p) => pathname.startsWith(p))) return false;
     let decoded;
     try { decoded = decodeURIComponent(pathname); } catch { decoded = null; }

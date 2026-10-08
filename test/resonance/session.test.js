@@ -14,6 +14,7 @@ const catalog = {
   operators,
   equipment,
   recipes:[{parts:['part-a','part-b'],resultId:'finished'}],
+  campaign:{supply:{components:{nodes:[4],countPerNode:2,kind:'component'}},strategyNodes:[],nodeSchedule:{FUNNY:{oddNodeGold:5,oddNodeXp:2}}},
   config:{starterIds:['m1','m2','r1'],starterEquipmentIds:['part-a','part-b']},
 };
 const fields = () => ({deployMap:new Map([['0,0','melee'],['0,1','ranged'],['0,2','melee'],['1,0','melee'],['1,1','ranged'],['1,2','melee'],['2,0','melee'],['2,1','ranged'],['2,2','melee']])});
@@ -280,4 +281,252 @@ test('malformed entries and critical capacities return validation errors without
   assert.ok(validateSession(wrongPhase,{catalog}).errors.some((error)=>error.code==='BAD_PHASE'));
   const prematureComplete=session(57);prematureComplete.phase='complete';
   assert.ok(validateSession(prematureComplete,{catalog}).errors.some((error)=>error.code==='BAD_PHASE_TERMINAL'));
+});
+
+test('supply choices are idempotent, block fighting, and preserve a full reward until claimed',()=>{
+  let state=deployOne(session(310));
+  const runner=()=>({won:true,hpLoss:0,result:{reason:'cleared'},diagnostics:{errorCount:0},metrics:{}});
+  state=act(state,{type:'fight'},{battleRunner:runner}).state;
+  state=act(state,{type:'advanceSupply'}).state;
+  state=act(state,{type:'fight'},{battleRunner:runner}).state;
+  state.round=4;state.nodeStarted=false;state.claimedNodes=[1,2,3];
+  state=act(state,{type:'advanceSupply'}).state;
+  assert.equal(state.phase,'choice');
+  const choice=state.pendingChoices.find((entry)=>entry.type==='components');assert.ok(choice);
+  const denied=applyAction(state,{type:'fight'},{catalog,battleRunner:runner,fieldResolver:fields});assert.equal(denied.error,'CHOICES_PENDING');
+  assert.deepEqual(denied.state,state);
+  const filled=structuredClone(state);filled.inventory=Array.from({length:20},(_,index)=>({uid:`full-${index}`,itemId:'part-a'}));
+  const rejected=applyAction(filled,{type:'claimReward',choiceUid:choice.uid,optionIds:[choice.options[0],choice.options[1]]},{catalog});
+  assert.equal(rejected.error,'INVENTORY_CAPACITY');assert.deepEqual(rejected.state,filled);
+  const claimed=act(state,{type:'claimReward',choiceUid:choice.uid,optionIds:[choice.options[0]]}).state;
+  assert.equal(claimed.pendingChoices[0].remaining,1);
+  const completed=act(claimed,{type:'claimReward',choiceUid:choice.uid,optionIds:[choice.options[1]]}).state;
+  assert.equal(completed.phase,'prep');assert.equal(completed.pendingChoices.length,0);assert.equal(completed.inventory.length,4);
+});
+
+test('FUNNY odd nodes reject fight before runner and settle logistics while retaining streak',()=>{
+  let state=deployOne(session(311,'FUNNY'));let calls=0;
+  const runner=()=>{calls++;return {won:true,hpLoss:0,result:{reason:'cleared'},diagnostics:{errorCount:0},metrics:{}};};
+  const beforeOddFight=structuredClone(state);
+  const oddFight=applyAction(state,{type:'fight'},{catalog,battleRunner:runner,fieldResolver:fields});
+  assert.equal(oddFight.ok,false);assert.equal(oddFight.error,'FUNNY_LOGISTICS_NODE');
+  assert.equal(calls,0);assert.deepEqual(oddFight.state,beforeOddFight);
+  const startingGold=state.gold,startingXp=state.xp,startingStreak=state.winStreak;
+  state=act(state,{type:'advanceSupply'}).state;
+  assert.equal(state.round,2);assert.equal(state.gold,startingGold+5);assert.equal(state.xp,startingXp+2);
+  assert.equal(state.winStreak,startingStreak);assert.equal(calls,0);
+  state=act(state,{type:'fight'},{battleRunner:runner}).state;
+  assert.equal(calls,1);
+  assert.equal(state.round,3);
+  const beforeThirdNode={gold:state.gold,xp:state.xp,streak:state.winStreak};
+  state=act(state,{type:'advanceSupply'}).state;
+  assert.equal(state.round,4);assert.equal(state.gold,beforeThirdNode.gold+5+Math.min(5,Math.floor(beforeThirdNode.gold/10)));
+  assert.equal(state.level,4);assert.equal(state.xp,0);assert.equal(state.winStreak,beforeThirdNode.streak);
+  assert.equal(calls,1);assert.ok(state.history.some((entry)=>entry.type==='logistics-settled'&&entry.round===1));
+  assert.ok(state.history.some((entry)=>entry.type==='logistics-settled'&&entry.round===3));
+});
+
+test('copy consumable consumes exactly one available pool copy into an independent one-star piece',()=>{
+  const state=session(312);const target=state.pieces[0];const before=state.poolRemaining[target.operatorId];
+  state.consumables.push({uid:'copy-test',kind:'smallCopy',source:'test'});
+  const copied=act(state,{type:'useCopy',consumableUid:'copy-test',pieceUid:target.uid}).state;
+  assert.equal(copied.poolRemaining[target.operatorId],before-1);
+  assert.equal(copied.pieces.filter((piece)=>piece.operatorId===target.operatorId).length,2);
+  assert.ok(copied.pieces.some((piece)=>piece.uid!==target.uid&&piece.star===1));
+  assert.equal(copied.consumables.length,0);assertPoolConserved(copied);
+});
+
+test('eligible strategy choice applies interest-cap rule and ineligible choice uses configured fallback',()=>{
+  const strategies={
+    interest:{id:'interest',group:'economy',condition:{kind:'always'},mutuallyExclusive:[],unique:true,effects:[{kind:'interest_cap',params:{amount:2}}],invalidFallback:{kind:'gold',params:{amount:6}}},
+    risk:{id:'risk',group:'risk',condition:{kind:'current_hp_above',value:20},mutuallyExclusive:[],unique:true,effects:[{kind:'risk_exchange',params:{hpCost:15,gold:15,minHpExclusive:20}}],invalidFallback:{kind:'gold',params:{amount:6}}},
+  };
+  const withStrategies={...catalog,strategies,campaign:{strategyNodes:[3],economy:{interest:{perGold:10,cap:5}}}};
+  const made=createSession({seed:313,difficulty:'NORMAL',catalog:withStrategies});assert.equal(made.ok,true,made.error);
+  let state=structuredClone(made.state);state.round=3;state.nodeStarted=false;state.claimedNodes=[1,2];
+  let result=applyAction(state,{type:'advanceSupply'},{catalog:withStrategies});assert.equal(result.ok,true,result.error);state=result.state;
+  const choice=state.pendingChoices.find((entry)=>entry.type==='strategy');assert.ok(choice);
+  result=applyAction(state,{type:'chooseStrategy',choiceUid:choice.uid,strategyId:'interest'},{catalog:withStrategies});assert.equal(result.ok,true,result.error);state=result.state;
+  assert.equal(state.strategyState.interest.amount,2);
+  state.gold=100;
+  let piece=state.pieces[0];result=applyAction(state,{type:'deploy',pieceUid:piece.uid,row:0,col:0,dir:'RIGHT'},{catalog:withStrategies,fieldResolver:fields});assert.equal(result.ok,true,result.error);state=result.state;
+  result=applyAction(state,{type:'fight'},{catalog:withStrategies,fieldResolver:fields,battleRunner:()=>({won:true,hpLoss:0,diagnostics:{errorCount:0},metrics:{}})});
+  assert.equal(result.ok,true,result.error);assert.equal(result.events.find((event)=>event.type==='fight-settled').interest,7);
+});
+
+test('refresh cadence makes the third refresh free without charging or counting that free use',()=>{
+  const refresh={id:'refresh',group:'economy',condition:{kind:'always'},mutuallyExclusive:[],effects:[{kind:'refresh_discount',params:{paidRefreshEvery:3}}],invalidFallback:{kind:'gold',params:{amount:6}}};
+  const refreshCatalog={...catalog,strategies:{refresh}};let state=session(314);state.strategies=[{id:'refresh'}];state.strategyState.refresh={paidRefreshEvery:3,paidCount:0};state.gold=20;
+  const costs=[];for(let index=0;index<4;index++){const result=applyAction(state,{type:'refresh'},{catalog:refreshCatalog});assert.equal(result.ok,true,result.error);state=result.state;costs.push(result.events[0].cost);}
+  assert.deepEqual(costs,[2,2,0,2]);assert.equal(state.strategyState.refresh.paidCount,1);
+});
+
+test('delayed income withholds two base incomes and releases both plus eight on the third node',()=>{
+  const delayed={id:'delay',group:'risk',condition:{kind:'always'},mutuallyExclusive:[],effects:[{kind:'delayed_income',params:{holdNodes:2,releaseNode:3,bonus:8}}],invalidFallback:{kind:'gold',params:{amount:6}}};
+  const delayedCatalog={...catalog,strategies:{delay:delayed},campaign:{supply:{components:{nodes:[],countPerNode:2}},strategyNodes:[3]}};
+  let made=createSession({seed:315,difficulty:'NORMAL',catalog:delayedCatalog});assert.equal(made.ok,true,made.error);let state=made.state;
+  state.round=3;state.nodeStarted=false;state.claimedNodes=[1,2];state.gold=0;
+  let result=applyAction(state,{type:'advanceSupply'},{catalog:delayedCatalog});assert.equal(result.ok,true,result.error);state=result.state;
+  const choice=state.pendingChoices.find((entry)=>entry.type==='strategy');assert.ok(choice);
+  result=applyAction(state,{type:'chooseStrategy',choiceUid:choice.uid,strategyId:'delay'},{catalog:delayedCatalog});assert.equal(result.ok,true,result.error);state=result.state;
+  const resolver=fields,runner=()=>({won:true,hpLoss:0,diagnostics:{errorCount:0},metrics:{}});
+  const piece=state.pieces[0];result=applyAction(state,{type:'deploy',pieceUid:piece.uid,row:0,col:0,dir:'RIGHT'},{catalog:delayedCatalog,fieldResolver:resolver});assert.equal(result.ok,true,result.error);state=result.state;
+  result=applyAction(state,{type:'fight'},{catalog:delayedCatalog,fieldResolver:resolver,battleRunner:runner});assert.equal(result.ok,true,result.error);state=result.state;
+  assert.equal(result.events.find((event)=>event.type==='fight-settled').income,0);
+  result=applyAction(state,{type:'advanceSupply'},{catalog:delayedCatalog});assert.equal(result.ok,true,result.error);state=result.state;
+  result=applyAction(state,{type:'fight'},{catalog:delayedCatalog,fieldResolver:resolver,battleRunner:runner});assert.equal(result.ok,true,result.error);state=result.state;
+  assert.equal(result.events.find((event)=>event.type==='fight-settled').income,0);
+  result=applyAction(state,{type:'advanceSupply'},{catalog:delayedCatalog});assert.equal(result.ok,true,result.error);state=result.state;
+  result=applyAction(state,{type:'fight'},{catalog:delayedCatalog,fieldResolver:resolver,battleRunner:runner});assert.equal(result.ok,true,result.error);state=result.state;
+  assert.equal(result.events.find((event)=>event.type==='fight-settled').income,5);
+  assert.equal(state.gold,28,'two withheld five-gold incomes return with the configured eight-gold bonus');
+});
+
+test('strategy eligibility is rechecked at selection and applies its explicit fallback',()=>{
+  const risk={id:'risk',group:'risk',condition:{kind:'current_hp_above',value:20},mutuallyExclusive:[],effects:[{kind:'risk_exchange',params:{hpCost:15,gold:15,minHpExclusive:20}}],invalidFallback:{kind:'gold',params:{amount:6}}};
+  const riskCatalog={...catalog,strategies:{risk},campaign:{strategyNodes:[3],supply:{components:{nodes:[],countPerNode:2}}}};
+  const made=createSession({seed:316,difficulty:'NORMAL',catalog:riskCatalog});let state=made.state;state.round=3;state.nodeStarted=false;state.claimedNodes=[1,2];
+  let result=applyAction(state,{type:'advanceSupply'},{catalog:riskCatalog});assert.equal(result.ok,true,result.error);state=result.state;
+  const choice=state.pendingChoices.find((entry)=>entry.type==='strategy');assert.ok(choice?.options.includes('risk'));
+  state.hp=20;const beforeGold=state.gold;
+  result=applyAction(state,{type:'chooseStrategy',choiceUid:choice.uid,strategyId:'risk'},{catalog:riskCatalog});assert.equal(result.ok,true,result.error);
+  assert.equal(result.state.hp,20);assert.equal(result.state.gold,beforeGold+6);assert.equal(result.state.strategyState.risk.fallbackApplied,true);
+});
+
+test('XP discount is bounded to configured purchases and never permits negative gold',()=>{
+  const discount={id:'discount',group:'economy',condition:{kind:'always'},mutuallyExclusive:[],effects:[{kind:'xp_discount',params:{uses:2,amount:1}}],invalidFallback:{kind:'gold',params:{amount:6}}};
+  const discountCatalog={...catalog,strategies:{discount}};let state=session(317);state.strategies=[{id:'discount'}];state.strategyState.discount={uses:2,amount:1};state.gold=7;
+  let result=applyAction(state,{type:'buyXp'},{catalog:discountCatalog});assert.equal(result.ok,true,result.error);state=result.state;assert.equal(state.gold,4);assert.equal(state.strategyState.discount.uses,1);
+  result=applyAction(state,{type:'buyXp'},{catalog:discountCatalog});assert.equal(result.ok,true,result.error);state=result.state;assert.equal(state.gold,1);assert.equal(state.strategyState.discount.uses,0);
+  result=applyAction(state,{type:'buyXp'},{catalog:discountCatalog});assert.equal(result.ok,false);assert.equal(result.error,'NOT_ENOUGH_GOLD');assert.equal(result.state.gold,1);
+});
+
+test('battle growth has independent producer caps and battle gold cannot earn same-node interest',()=>{
+  let state=deployOne(session(701));state.gold=9;const piece=state.pieces.find(piece=>piece.row!==null);
+  const result=act(state,{type:'fight'},{battleRunner:()=>({won:true,hpLoss:0,diagnostics:{errorCount:0},growth:[
+    {pieceUid:piece.uid,key:'bolivar:atk',amount:80,cap:100},
+    {pieceUid:piece.uid,key:'bolivar:atk',amount:80,cap:100},
+    {pieceUid:piece.uid,key:'babel:atk',amount:12,cap:120},
+  ],coins:[{amount:3,source:'lungmen'}]})});
+  const grown=result.state.pieces.find(entry=>entry.uid===piece.uid);
+  assert.deepEqual(grown.growth,{'bolivar:atk':100,'babel:atk':12});
+  assert.equal(result.events.find(event=>event.type==='fight-settled').interest,1);
+  assert.equal(result.events.find(event=>event.type==='fight-settled').battleGold,3);
+  const bad=applyAction(state,{type:'fight'},{catalog,fieldResolver:fields,battleRunner:()=>({won:true,hpLoss:0,growth:[{pieceUid:piece.uid,key:'x:atk',amount:-1}]})});
+  assert.equal(bad.error,'BAD_GROWTH_RESULT');assert.deepEqual(bad.state,state);
+});
+
+test('forging persists across battles, caps progress per node and preserves pending reward at capacity',()=>{
+  let state=deployOne(session(702));const runner=()=>({won:true,hpLoss:0,forge:[{source:'rim',progress:1,threshold:5},{source:'rim',progress:1,threshold:5}]});
+  state.forgeProgress={rim:4};state.inventory=Array.from({length:20},(_,i)=>({uid:`forge-full-${i}`,itemId:'part-a'}));
+  const fought=act(state,{type:'fight'},{battleRunner:runner});state=fought.state;
+  assert.equal(state.forgeProgress.rim,0);assert.equal(state.pendingChoices.length,1);
+  const choice=state.pendingChoices[0];assert.equal(choice.source,'rim');
+  const rejected=applyAction(state,{type:'claimReward',choiceUid:choice.uid,optionIds:[choice.options[0]]},{catalog});
+  assert.equal(rejected.error,'INVENTORY_CAPACITY');assert.deepEqual(rejected.state,state);
+});
+
+test('FUNNY logistics pays interest and shared economy rules once while preserving combat streak',()=>{
+  const delayed={id:'delay',effects:[{kind:'delayed_income',params:{holdNodes:1,releaseNode:2,bonus:3}}]};
+  const bench={id:'bench',effects:[{kind:'bench_capacity_and_gold',params:{capacity:7,postBattleGold:2}}]};
+  const rules={...catalog,strategies:{delay:delayed,bench},campaign:{...catalog.campaign,supply:{components:{nodes:[],countPerNode:2}}}};
+  let state=createSession({seed:703,difficulty:'FUNNY',catalog:rules}).state;state.gold=50;state.winStreak=2;
+  state.strategies=[{id:'delay'},{id:'bench'}];state.strategyState={delay:{held:0},bench:{}};
+  let next=applyAction(state,{type:'advanceSupply'},{catalog:rules});assert.equal(next.ok,true,next.error);state=next.state;
+  assert.equal(state.gold,57);assert.equal(state.winStreak,2);assert.equal(state.strategyState.delay.held,5);
+  state=applyAction(state,{type:'deploy',pieceUid:state.pieces[0].uid,row:0,col:0,dir:'RIGHT'},{catalog:rules,fieldResolver:fields}).state;
+  next=applyAction(state,{type:'fight'},{catalog:rules,fieldResolver:fields,battleRunner:()=>({won:true,hpLoss:0})});assert.equal(next.ok,true,next.error);
+  assert.equal(next.events.find(event=>event.type==='fight-settled').delayedBonus,8);
+  assert.equal(next.state.strategyState.delay.released,true);
+});
+
+test('risk exchange pays its eligible effect and fallback strategies do not retain shop rules',()=>{
+  const risk={id:'risk',condition:{kind:'always'},effects:[{kind:'risk_exchange',params:{hpCost:15,gold:15,minHpExclusive:20}}],invalidFallback:{kind:'gold',params:{amount:6}}};
+  const rule={...catalog,strategies:{risk},campaign:{strategyNodes:[3],supply:{components:{nodes:[],countPerNode:2}}}};
+  let state=createSession({seed:704,catalog:rule}).state;state.round=3;state.nodeStarted=false;state.claimedNodes=[1,2];
+  let next=applyAction(state,{type:'advanceSupply'},{catalog:rule});assert.equal(next.ok,true,next.error);state=next.state;
+  const before=state.gold;next=applyAction(state,{type:'chooseStrategy',choiceUid:state.pendingChoices[0].uid,strategyId:'risk'},{catalog:rule});
+  assert.equal(next.ok,true,next.error);assert.equal(next.state.hp,85);assert.equal(next.state.gold,before+15);
+  const refresh={id:'refresh',effects:[{kind:'refresh_discount',params:{paidRefreshEvery:3}}]};
+  state=session(705);state.gold=10;state.strategies=[{id:'refresh'}];state.strategyState={refresh:{fallbackApplied:true}};
+  const fallbackCatalog={...catalog,strategies:{refresh}};
+  for(let i=0;i<3;i++){next=applyAction(state,{type:'refresh'},{catalog:fallbackCatalog});assert.equal(next.ok,true,next.error);assert.equal(next.events[0].cost,2);state=next.state;}
+});
+
+test('environment component candidates are distinct, Sargon adds a choice and Rim adds its own pending reward',()=>{
+ const items=Object.fromEntries(Array.from({length:8},(_,i)=>[`part-${i}`,{id:`part-${i}`,kind:'component'}]));
+ const envs={origin_sargon:{rule:{kind:'environment_component_choice',params:{extraOptions:1}}},origin_rim:{rule:{kind:'environment_component_supply',params:{everyNode:8,count:1}}}};
+ const rules={...catalog,equipment:items,recipes:[],environments:envs,config:{starterIds:['m1','m2','r1']},campaign:{supply:{components:{nodes:[4,8],optionCount:3,countPerNode:2}},strategyNodes:[]}};
+ for(const [env,round,counts]of [['origin_sargon',4,[4]],['origin_rim',8,[3,3]]]) {
+  let state=createSession({seed:706,catalog:rules,environmentId:env}).state;state.round=round;state.nodeStarted=false;state.claimedNodes=[1];
+  const next=applyAction(state,{type:'advanceSupply'},{catalog:rules});assert.equal(next.ok,true,next.error);
+  assert.deepEqual(next.state.pendingChoices.map(x=>x.options.length),counts);
+  for(const choice of next.state.pendingChoices)assert.equal(new Set(choice.options).size,choice.options.length);
+  assert.deepEqual(next.state.pendingChoices.map(x=>x.remaining),env==='origin_sargon'?[2]:[2,1]);
+ }
+});
+
+test('single-battle task totals reset, award once and consecutive wins retain their separate scope',()=>{
+ const task={id:'task',effects:[{kind:'metric_reward',params:{metric:'ammoSpent',scope:'battle',threshold:60,reward:'gold',amount:12}}]};
+ const streak={id:'streak',effects:[{kind:'metric_reward',params:{metric:'winNoLeakStreak',scope:'streak',threshold:2,reward:'xp',amount:12}}]};
+ const rules={...catalog,strategies:{task,streak},campaign:{supply:{components:{nodes:[]}},strategyNodes:[]}};
+ let state=deployOne(session(707));state.strategies=[{id:'task'},{id:'streak'}];state.strategyState={task:{progress:0},streak:{progress:0}};
+ const fight=(ammo,won=true)=>{const result=applyAction(state,{type:'fight'},{catalog:rules,fieldResolver:fields,battleRunner:()=>({won,hpLoss:0,metrics:{ammoSpent:ammo,leaked:0}})});assert.equal(result.ok,true,result.error);state=result.state;};
+ const advance=()=>{const result=applyAction(state,{type:'advanceSupply'},{catalog:rules});assert.equal(result.ok,true,result.error);state=result.state;};
+ fight(40);assert.equal(state.strategyState.task.progress,40);assert.equal(state.strategyState.task.rewarded,undefined);assert.equal(state.strategyState.streak.progress,1);
+ advance();fight(30);assert.equal(state.strategyState.task.progress,30,'previous battle cannot complete a single-battle task');assert.equal(state.strategyState.task.rewarded,undefined);assert.equal(state.strategyState.streak.rewarded,true);
+ advance();fight(60);assert.equal(state.strategyState.task.rewarded,true);const awardGold=state.gold;
+ advance();const expected=calculateRoundIncome({gold:awardGold,round:4,won:true,winStreak:4,lossStreak:0});fight(60);assert.equal(state.gold,expected.goldAfter,'completed task cannot pay twice');
+});
+
+test('view action costs expose the next free refresh, bounded XP discount and shop-lock rules',()=>{
+ const strategies={refresh:{id:'refresh',effects:[{kind:'refresh_discount',params:{paidRefreshEvery:3}}]},xp:{id:'xp',effects:[{kind:'xp_discount',params:{uses:1,amount:1}}]},shop:{id:'shop',effects:[{kind:'shop_rule',params:{lockDisabled:true,refreshCost:1}}]},interest:{id:'interest',effects:[{kind:'interest_cap',params:{amount:2}}]}};
+ const rules={...catalog,strategies};const state=session(708);state.strategies=Object.keys(strategies).map(id=>({id}));state.strategyState={refresh:{paidCount:2,paidRefreshEvery:3},xp:{uses:1,amount:1},shop:{lockDisabled:true,refreshCost:1},interest:{amount:2}};
+ assert.deepEqual(viewSession(state,{catalog:rules}).actionCosts,{refreshGold:0,xpGold:3,canLockShop:false,interestCap:7});
+});
+
+test('summon orders respect the fixed skill, summon deployment class and rotated owner range',()=>{
+ const summoner={...operators.m1,stars:{1:{record:{tokens:['token-old','token-active'],skill:{overrideTokenKey:'token-active'},rangeGrid:[[0,0],[0,1]]}}}};
+ const rules={...catalog,operators:{...operators,m1:summoner}};
+ const field={deployMap:new Map([['9,5','melee'],['9,6','melee'],['9,7','melee'],['10,6','ranged']]),resolveToken:()=>({position:'MELEE',placeable:true,ownerRange:true})};
+ let state=createSession({seed:709,catalog:rules}).state;const piece=state.pieces.find(p=>p.operatorId==='m1');
+ let out=applyAction(state,{type:'deploy',pieceUid:piece.uid,row:9,col:5,dir:'RIGHT'},{catalog:rules,fieldResolver:()=>field});assert.equal(out.ok,true,out.error);state=out.state;
+ const set=(tokenId,row,col)=>applyAction(state,{type:'setSummonOrder',pieceUid:piece.uid,tokenId,row,col},{catalog:rules,fieldResolver:()=>field});
+ assert.equal(set('token-old',9,6).error,'TOKEN_NOT_OWNED');
+ assert.equal(set('token-active',9,7).error,'ILLEGAL_SUMMON_POSITION');
+ assert.equal(set('token-active',10,6).error,'ILLEGAL_SUMMON_POSITION');
+ out=set('token-active',9,6);assert.equal(out.ok,true,out.error);assert.deepEqual(out.state.pieces.find(p=>p.uid===piece.uid).summonOrders,[{tokenId:'token-active',row:9,col:6}]);state=out.state;
+ out=applyAction(state,{type:'clearSummonOrder',pieceUid:piece.uid,tokenId:'token-old'},{catalog:rules});assert.equal(out.error,'TOKEN_NOT_OWNED');assert.deepEqual(out.state,state);
+ out=applyAction(state,{type:'clearSummonOrder',pieceUid:piece.uid,tokenId:'token-active'},{catalog:rules});assert.equal(out.ok,true,out.error);assert.deepEqual(out.state.pieces.find(p=>p.uid===piece.uid).summonOrders,[]);
+ out=applyAction(state,{type:'clearSummonOrder',pieceUid:piece.uid},{catalog:rules});assert.equal(out.ok,true,out.error);assert.deepEqual(out.state.pieces.find(p=>p.uid===piece.uid).summonOrders,[]);
+});
+
+test('the double-emblem recipe keeps a pending identity selection and preserves its item identity',()=>{
+ const items={...equipment,universal:{id:'universal',kind:'emblem',effects:[{kind:'choose_identity_transfer'}]},transfer_aegir:{id:'transfer_aegir',kind:'emblem',effects:[{kind:'transfer_pact',params:{pactId:'aegir'}}]}};
+ const rules={...catalog,equipment:items,recipes:[{parts:['part-a','part-b'],resultId:'universal'}],pacts:{aegir:{id:'aegir'}},environments:{origin_aegir:{identityPactId:'aegir'}}};
+ let state=session(710);const ids=state.inventory.map(item=>item.uid);
+ let out=applyAction(state,{type:'combine',itemUids:ids},{catalog:rules});assert.equal(out.ok,true,out.error);state=out.state;
+ assert.equal(state.phase,'choice');assert.equal(state.pendingChoices[0].type,'identity_transfer');const uid=state.inventory[0].uid;
+ assert.equal(state.pendingChoices[0].itemUid,uid);assert.deepEqual(state.pendingChoices[0].options,['aegir']);
+ out=applyAction(state,{type:'claimReward',choiceUid:state.pendingChoices[0].uid,optionIds:['aegir']},{catalog:rules});assert.equal(out.ok,true,out.error);
+ assert.deepEqual(out.state.inventory,[{uid,itemId:'transfer_aegir'}]);assert.equal(out.state.pendingChoices.length,0);assert.equal(out.state.phase,'prep');
+ const recycled=applyAction(state,{type:'recycleEquipment',itemUid:uid},{catalog:rules});assert.equal(recycled.ok,true,recycled.error);assert.equal(recycled.state.pendingChoices.length,0,'explicitly destroying the unresolved emblem also removes its selection');
+});
+
+test('equipment furnace follows disassembly with a material-backed recipe choice and consumes the chosen pair',()=>{
+ const rules={...catalog,equipment:{...equipment,alternate:{id:'alternate',kind:'completed'}},recipes:[...catalog.recipes,{parts:['part-a','part-c'],resultId:'alternate'}],strategies:{furnace:{id:'furnace',effects:[{kind:'free_disassemble_and_recipe',params:{everyNodes:4}}]}}};
+ let state=session(712);let out=applyAction(state,{type:'combine',itemUids:state.inventory.map(item=>item.uid)},{catalog:rules});assert.equal(out.ok,true,out.error);state=out.state;
+ state.round=4;state.strategies=[{id:'furnace'}];state.strategyState={furnace:{}};state.inventory.push({uid:'extra-component',itemId:'part-c'});
+ out=applyAction(state,{type:'disassemble',itemUid:state.inventory.find(item=>item.itemId==='finished').uid},{catalog:rules});assert.equal(out.ok,true,out.error);state=out.state;
+ assert.equal(state.phase,'choice');assert.equal(state.pendingChoices[0].type,'recipe');assert.deepEqual(state.pendingChoices[0].options,['finished','alternate']);
+ out=applyAction(state,{type:'claimReward',choiceUid:state.pendingChoices[0].uid,optionIds:['alternate']},{catalog:rules});assert.equal(out.ok,true,out.error);state=out.state;
+ assert.equal(state.phase,'prep');assert.deepEqual(state.inventory.map(item=>item.itemId).sort(),['alternate','part-b']);assert.equal(state.strategyState.furnace.lastUsedNode,4);
+ assert.equal(applyAction(state,{type:'disassemble',itemUid:state.inventory.find(item=>item.itemId==='alternate').uid},{catalog:rules}).error,'DISASSEMBLE_NOT_AVAILABLE');
+});
+
+test('emblems from both transfer kinds count only deployed distinct identities for procurement rewards',()=>{
+ const rules={...catalog,operators:Object.fromEntries(Object.entries(operators).map(([id,op])=>[id,{...op,pacts:[]}])),equipment:{...equipment,emblem:{id:'emblem',kind:'emblem',effects:[{kind:'transfer_pact',params:{pactId:'aegir'}}]}},strategies:{procure:{id:'procure',effects:[{kind:'pact_set_reward',params:{threshold:2,gold:8}}]}}};
+ let state=session(711);state.strategies=[{id:'procure'}];state.strategyState={procure:{}};state.pieces[0].equipment=[{uid:'mark1',itemId:'emblem'}];state.pieces[1].equipment=[{uid:'mark2',itemId:'emblem'}];const gold=state.gold;
+ let out=applyAction(state,{type:'deploy',pieceUid:state.pieces[0].uid,row:0,col:0,dir:'RIGHT'},{catalog:rules,fieldResolver:fields});assert.equal(out.ok,true,out.error);state=out.state;assert.equal(state.gold,gold,'bench emblem cannot complete the reward');
+ out=applyAction(state,{type:'deploy',pieceUid:state.pieces[1].uid,row:0,col:2,dir:'RIGHT'},{catalog:rules,fieldResolver:fields});assert.equal(out.ok,true,out.error);assert.equal(out.state.gold,gold+8);assert.equal(out.state.strategyState.procure.rewardedPact,true);
 });
