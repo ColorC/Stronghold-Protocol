@@ -53,7 +53,7 @@ function equipmentEffectText(effect) {
   const p=effect.params??{};
   switch(effect.kind) {
     case 'component_stat': return Object.entries(p).map(([k,v])=>({atk:`攻击力+${nfmt(v)}`,aspd:`攻速+${nfmt(v)}`,def:`防御力+${nfmt(v)}`,res:`法术抗性+${nfmt(v)}`,hp:`生命上限+${nfmt(v)}`,maxHp:`生命上限+${nfmt(v)}`,sp:`技力自然回复每秒+${nfmt(v)}`,initialSp:`初始技力+${nfmt(v)}`,initSp:`初始技力+${nfmt(v)}`}[k]??null)).filter(Boolean).join('，') || '无基础属性';
-    case 'giant_slayer': return `攻击生命高于${p.healthAbove}的敌人时伤害提高${p.damageBonus}%。`;
+    case 'giant_slayer': return `攻击最大生命高于${p.healthAbove}的敌人时伤害提高${p.damageBonus}%。`;
     case 'resistance_shred': return `攻击使目标法术抗性降低${p.resReduction}，持续${p.duration}秒。`;
     case 'fifth_strike': return `每第${p.every}次攻击追加${p.damage}%攻击力物理伤害。`;
     case 'armor_pierce': return `攻击无视目标${p.defensePenetration}%防御。`;
@@ -64,13 +64,13 @@ function equipmentEffectText(effect) {
     case 'skill_damage': return `技能伤害提高${p.skillDamageBonus}%。`;
     case 'chain_lightning': return `每第${p.every}次攻击对${p.radius}格内敌人造成${p.damage}%攻击力法术伤害。`;
     case 'counter_magic': return `受击时造成自身防御力${p.damageFromDef}%法术伤害，冷却${p.cooldown}秒。`;
-    case 'spell_vulnerability': return `法术抗性+${p.resBonus}；技能目标受到的法术伤害提高${p.targetArtsVulnerability}%，持续${p.duration}秒。`;
-    case 'periodic_heal': return p.healFromAtk?`每${p.interval}秒治疗生命最低的友方${p.healFromAtk}%攻击力生命。`:`每${p.interval}秒治疗${p.range}格内最多${p.healTargetCount}名友方各${p.healMaxHp}%最大生命，不触发共生。`;
+    case 'spell_vulnerability': return `法术抗性+${p.resBonus}；技能造成伤害后，被命中的敌人受到的法术伤害提高${p.targetArtsVulnerability}%，持续${p.duration}秒。`;
+    case 'periodic_heal': return p.healFromAtk?`每${p.interval}秒为生命最低的友方恢复${p.healFromAtk}%攻击力的生命。`:`每${p.interval}秒为${p.range}格内最多${p.healTargetCount}名友方各恢复${p.healMaxHp}%最大生命，不触发共生。`;
     case 'cast_stack': return `每次施法攻击提高${p.atkPercentPerCast}%，本场最多提高${p.maxPercent}%。`;
     case 'attack_stack': return `每次攻击攻速+${p.aspdPerAttack}，最多+${p.maxAspd}。`;
     case 'death_save': return `本场首次受到致死伤害时免于倒下${p.duration}秒。`;
     case 'evasion': return `获得${p.physicalDodge}%物理闪避和${p.artsDodge}%法术闪避。`;
-    case 'splash_strike': return `每第${p.every}次攻击对最近另一敌人造成${p.otherTargetDamage}%攻击力物理伤害。`;
+    case 'splash_strike': return `每第${p.every}次攻击，对攻击范围内最近的另一名可选敌人造成${p.otherTargetDamage}%攻击力物理伤害。`;
     case 'attack_sp': return `每次攻击恢复${p.spPerAttack}技力，每秒最多${p.perSecondCap}。`;
     case 'thorns': return `受敌人攻击时对${p.radius}格内敌人造成自身防御力${p.damageFromDef}%物理伤害，冷却${p.cooldown}秒。`;
     case 'block_stack': return `每阻挡一名敌人防御+${p.defPerBlock}、法抗+${p.resPerBlock}，最多${p.maxStacks}层。`;

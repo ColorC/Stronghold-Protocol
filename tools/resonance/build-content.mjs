@@ -77,7 +77,7 @@ profiles('breaker','breaker_front',[{defPen:10,blockedBonus:15,eliteAspd:20},{de
 profiles('burn','burn_spread',[{burn:10,burst:30},{burn:18,burst:60},{burn:30,burst:100}],{targetCooldown:3,noPropagation:true});
 profiles('necrosis','necrosis_burst',[{bonus:20,firstBurstSp:3,dps:50},{bonus:40,firstBurstSp:6,dps:90},{bonus:70,firstBurstSp:10,dps:150}],{duration:5,noSameSourceStack:true});
 profiles('holyGun','holy_gun',[{byStar:{1:{chance:15,damage:60,cap:100,factor:.005,radius:1.5},2:{chance:25,damage:100,cap:150,factor:.008,radius:1.5},3:{chance:100,damage:500,cap:500,factor:.02,radius:2}}}],{actionCooldown:.4,bombCount:15,skillId:'skchr_angel2_2'});
-profiles('yela','yela_breath',[{byStar:{1:{tileCooldown:3,coldDuration:1.5,perColdSp:.2,skillAtk:10,skillAspd:10},2:{tileCooldown:2,coldDuration:2,perColdSp:.2,skillAtk:10,skillAspd:10},3:{tileCooldown:1,coldDuration:3,perColdSp:.2,skillAtk:10,skillAspd:10}}}],{tileCoverage:'walkable-and-objective',starThreeDoubleHit:500,paralysis:1,permanentSkillAt:3});
+profiles('yela','yela_breath',[{byStar:{1:{tileCooldown:3,coldDuration:1.5,perColdSp:.2,skillAtk:10,skillAspd:10},2:{tileCooldown:2,coldDuration:2,perColdSp:.2,skillAtk:10,skillAspd:10},3:{tileCooldown:3,coldDuration:1.5,perColdSp:.2,skillAtk:10,skillAspd:10}}}],{tileCoverage:'walkable-and-objective',starThreeDoubleHit:500,paralysis:1,permanentSkillAt:3});
 profiles('sui','sui_shadow',[{barrier:20,summonEvery:10,summonAtk:80,summonHp:150},{barrier:30,summonEvery:8,summonAtk:120,summonHp:200},{barrier:50,summonEvery:6,summonAtk:200,summonHp:300}],{barrierOnFirstCast:true,summonDuration:8,maxSummons:1,visible:true});
 profiles('crown','crown_memory',[{byStar:{1:{perCast:3},2:{perCast:5},3:{perCast:10}}}],{maxStacks:30,battleOnly:true});
 
@@ -154,17 +154,26 @@ const environments=Object.fromEntries(environmentEffect.map(([name,pactId,rule])
 const supply={
   components:{nodes:[4,8,12,16,20,24],optionCount:3,countPerNode:2,kind:'basic-component'},
   copies:[{node:10,count:1,kind:'minor',costMax:3},{node:18,count:1,kind:'universal'},{node:24,count:1,kind:'universal'}],
-  transfers:[{node:12,count:1,selection:'main-or-viable-pact'},{node:22,count:1,selection:'main-or-viable-pact'}],
+  transfers:[{node:12,count:1,selection:'main-or-viable-pact'},{node:22,count:1,selection:'main-or-viable-pact'},{node:26,count:1,selection:'main-or-viable-pact'}],
   xp:[{node:14,amount:8},{node:20,amount:8}],acceleratedStrategy:{node:26,count:1},
   delivery:'next-prep-before-fight',lastRoundNoPostBattleSupply:true,requiresCapacityCheck:true,pendingRewardDraftOnFull:true,
 };
 const campaign={
+  terminalTimeLimitSeconds:180,
   poolByCost:{1:14,2:13,3:14,4:14,5:10},copiesByCost:{1:30,2:25,3:18,4:10,5:9},
   opening:{level:3,population:3,starterCount:3,gold:5,basicComponents:2,componentKind:'basic'},
   economy:{xpOnBattleEnd:2,xpPurchase:{gold:4,xp:4},xpToLevel:{3:6,4:10,5:20,6:36,7:56,8:68,9:68},maxLevel:10,shopSize:5,paidRefreshGold:2,firstBattleBaseGold:4,laterBaseGold:5,victoryGold:1,interest:{perGold:10,cap:5},streakBonus:{2:1,3:1,4:1,5:2,6:3},benchCapacity:9,inventoryCapacity:20},
   shopOdds:{3:[75,25,0,0,0],4:[55,30,15,0,0],5:[45,33,20,2,0],6:[30,40,25,5,0],7:[16,30,43,10,1],8:[15,20,32,30,3],9:[10,17,25,33,15],10:[5,10,20,40,25]},
   supply,rounds:{FUNNY:28,NORMAL:28,HARD:28,ABYSS:30},nodeSchedule:{FUNNY:{nodes:28,battleOnEvenNodes:true,battleCount:14,oddNodeGold:5,oddNodeXp:2,keepStreak:true},NORMAL:{nodes:28,bossNode:28},HARD:{nodes:28,bossNode:28},ABYSS:{nodes:30,baseBossNode:28,eliteNode:29,hiddenBossNode:30},regularWave:{formula:'ceil(node/2)',max:13,bossWave:14,hiddenBossWave:15}},strategyNodes:[3,9,15,21],shopSize:5,starterCount:3,
-  enemyBalance:{source:'native-wave',difficultyMultiplier:1,nodeScaling:'native-stage'},
+  enemyBalance:{
+    regular:{hpMultiplier:.8,atkMultiplier:.9,defMultiplier:.5},
+    terminal:{hpMultiplier:.85,atkMultiplier:.9,defMultiplier:.5,bossPoolMultiplier:.75},
+    byDifficulty:{
+      FUNNY:{regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.6}},
+      HARD:{regular:{hpMultiplier:.9,atkMultiplier:1,defMultiplier:.65},terminal:{hpMultiplier:.95,atkMultiplier:1,defMultiplier:.65,bossPoolMultiplier:.9}},
+      ABYSS:{regular:{hpMultiplier:1,atkMultiplier:1,defMultiplier:1},terminal:{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,bossPoolMultiplier:1}},
+    },
+  },
 };
 
 const pactFromNation = (operator) => {
@@ -187,7 +196,7 @@ const skillText = (skill) => `${skill?.name??''} ${skill?.desc??''}`;
 const roleOverrides={
   '万顷':'damage','送葬人':'damage','松果':'damage','奥斯塔':'damage','雷蛇':'frontline','乌尔比安':'frontline','余':'frontline','耀骑士临光':'frontline',
   '德克萨斯':'control','波登可':'control','深巡':'control','薄绿':'control','铃兰':'control','初雪':'damage','海霓':'damage','锡人':'damage','地灵':'control',
-  '九色鹿':'support','流明':'healer','浊心斯卡蒂':'support','新约能天使':'damage','圣聆初雪':'control','烛煌':'damage','塑心':'damage','魔王':'damage',
+  '九色鹿':'support','流明':'healer','浊心斯卡蒂':'support','新约能天使':'damage','圣聆初雪':'control','烛煌':'damage','塑心':'damage','魔王':'support',
   '贝洛内':'damage','迷迭香':'damage','耀骑士临光':'frontline',
 };
 const mechanismOverrides={
@@ -199,6 +208,7 @@ const frontlineSubProfessions=new Set(['protector','guardian','centurion','unyie
 function roleFor(op, chosen) {
   const sub=op.sourceNormalChess.subProfessionId??''; const prof=op.sourceNormalChess.profession;
   if(roleOverrides[op.name])return roleOverrides[op.name];
+  if(sub==='bard')return 'support';
   if(frontlineSubProfessions.has(sub)) return 'frontline';
   if(prof==='MEDIC'&&!/incantationmedic/.test(sub)) return 'healer';
   if(/寒冷|冻结|眩|晕|束缚|沉睡|浮空|战栗|推开|推回|击退|拉拽|停顿|减速/.test(skillText(chosen))) return 'control';
@@ -229,7 +239,7 @@ function hasSelectedSkillTokenSource(op, chosen) {
     return Array.isArray(token?.sources)&&token.sources.some((source)=>source==='skill'||source==='talent');
   });
 }
-const specialSkills=new Map([['万顷','skchr_wanqin_2'],['白金','skchr_platnm_2'],['灰毫','skchr_ashlok_2'],['奥斯塔','skchr_aosta_2'],['贾维','skchr_chiave_2'],['令','skchr_ling_3'],['黍','skchr_shu_3']]);
+const specialSkills=new Map([['万顷','skchr_wanqin_2'],['白金','skchr_platnm_2'],['灰毫','skchr_ashlok_2'],['奥斯塔','skchr_aosta_2'],['贾维','skchr_chiave_2'],['令','skchr_ling_3'],['黍','skchr_shu_3'],['耀骑士临光','skchr_nearl2_3']]);
 const specialTiming={
   '白金':{spCost:24,initSp:8,spType:'INCREASE_WITH_TIME',duration:-1},
   '万顷':{spCost:26,initSp:10,spType:'INCREASE_WITH_TIME'},
@@ -253,7 +263,7 @@ const passiveProfiles={
 };
 const fiveStarProfiles={
   '新约能天使':{kind:'star3_holyGun',params:{airstrikeChance:100,airstrikeMultiplier:500,ammoMultiplierCap:500,ammoScale:.02,airstrikeRadius:2,skillBombs:15,skillTargeting:'randomBattleTiles',ammoSkillVulnerability:50},description:'每个拉特兰攻击动作必定呼叫空袭；空袭攻击倍率为500%，弹药消耗加成最高500枚。技能随机投放15枚弹药，命中目标获得持续本场的弹药技能易伤50%。'},
-  '圣聆初雪':{kind:'star3_yela',params:{perColdAttack:10,perColdAspd:10,perColdSp:.2,tileCooldown:1,coldDuration:3,phalanxDefenseRetained:true,permanentSkill:true,singleTargetExtraHits:2,hitDamage:500,paralysisStacks:1},description:'技能永久保持；铺雪持续造成寒冷。每个寒冷或冻结敌人提高10%攻击和10攻速。单体攻击追加两次500%攻击力法伤并施加1层麻痹。'},
+  '圣聆初雪':{kind:'star3_yela',params:{perColdAttack:10,perColdAspd:10,perColdSp:.2,tileCooldown:3,coldDuration:1.5,phalanxDefenseRetained:true,permanentSkill:true,singleTargetExtraHits:2,hitDamage:500,paralysisStacks:1},description:'技能永久保持；铺雪持续造成寒冷。每个寒冷或冻结敌人提高10%攻击和10攻速。单体攻击追加两次500%攻击力法伤并施加1层麻痹。'},
   '凛御银灰':{kind:'star3_silverash',params:{allyInterval:2,allyDamage:10,hawkAntiAir:true},description:'每2秒对技能范围内所有敌人造成自身攻击力10%的额外物理伤害，并召唤可攻击空中单位的风雪鹰。'},
   '蕾缪安':{kind:'star3_lemuen',params:{chargedExtraTargets:1,splashDamage:80},description:'每次蓄力射击额外贯穿1个目标，并对溅射范围造成本次伤害的80%。'},
   '乌尔比安':{kind:'star3_ulpius',params:{hitGrowthHp:50,hitGrowthAtk:5,starThreeMultiplier:2,battleGrowthCap:20,anchorAntiAir:true},description:'每场最多20次受击成长，每次永久增加50生命和5攻击；三星效果翻倍，锚击波可命中空中敌人。'},

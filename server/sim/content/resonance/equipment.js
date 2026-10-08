@@ -1,4 +1,6 @@
 import { ADD_KEYS, MUL_KEYS } from '../../buffs.js';
+import { COLS } from '../../constants.js';
+import { canTargetEnemy } from '../../targeting.js';
 
 const n = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const contentOf = (catalog) => catalog?.resonanceContent ?? catalog ?? {};
@@ -43,6 +45,7 @@ function statMods(rows, unit) {
     const p = row.params ?? {};
     if (row.kind === 'armor_pierce') mods.defIgnorePct = n(p.defensePenetration, 25) / 100;
     if (row.kind === 'evasion') { mods.dodgePhys = n(p.physicalDodge, 15) / 100; mods.dodgeArts = n(p.artsDodge, 15) / 100; }
+    if (row.kind === 'spell_vulnerability') mods.resFlat = (mods.resFlat ?? 0) + n(p.resBonus, 0);
     if (row.kind === 'regeneration') mods.hpPct = (mods.hpPct ?? 0) + n(p.maxHpBonus, 25) / 100;
     if (row.kind === 'death_barrier') mods.hpPct = (mods.hpPct ?? 0) + n(p.baseHpBonus, 15) / 100;
     if (row.kind === 'resistance_cleanse') mods.resFlat = (mods.resFlat ?? 0) + n(p.extraRes, 0);
@@ -66,8 +69,11 @@ function uniqueNonComponent(rows) {
   const seen = new Set();
   return rows.filter((row) => {
     if (row.kind === 'component_stat' || row.kind === 'pact_transfer' || row.kind === 'transfer_pact') return true;
-    if (seen.has(row.kind)) return false;
-    seen.add(row.kind); return true;
+    // The same named unique item only contributes its passive once. Different item
+    // identities may each own an effect of the same kind (for example both heals).
+    const key = `${row.itemId}:${row.kind}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
   });
 }
 function assertCoverage(content) {
@@ -95,7 +101,7 @@ export function installResonanceEquipment(battle, { catalog, state } = {}) {
     const source=event?.source,target=event?.target,dmg=event?.dmg;
     if(source?.side!=='ally'||target?.side!=='enemy'||!dmg)return;
     const giant=effectFor(source,'giant_slayer');if(giant&&target.s?.maxHp>n(giant.params?.healthAbove,5000))dmg.mul=(dmg.mul??1)*(1+n(giant.params?.damageBonus,25)/100);
-    const vulnerability=effectFor(source,'spell_vulnerability');if(vulnerability&&dmg.type==='arts'&&target.mem.resonanceEquipmentSpellVulnUntil>battle.time){dmg.mul=(dmg.mul??1)*(1+n(vulnerability.params?.targetArtsVulnerability,15)/100);}
+    if(dmg.type==='arts'&&target.mem.resonanceEquipmentSpellVulnUntil>battle.time){dmg.mul=(dmg.mul??1)*(1+n(target.mem.resonanceEquipmentSpellVulnPercent,15)/100);}
     const skill=effectFor(source,'skill_damage');if(skill&&dmg.isSkill)dmg.mul=(dmg.mul??1)*(1+n(skill.params?.skillDamageBonus,25)/100);
   },{owner:battle});
 
@@ -104,7 +110,7 @@ export function installResonanceEquipment(battle, { catalog, state } = {}) {
     const target=(event.targets??[]).find((row)=>row?.side==='enemy'&&row.alive);if(!target)return;
     const fifth=effectFor(unit,'fifth_strike');if(fifth){unit.mem.gearFifth=(unit.mem.gearFifth??0)+1;const p=fifth.params??{};if(unit.mem.gearFifth%n(p.every,5)===0)deal(battle,unit,target,unit.s.atk*n(p.damage,80)/100,p.damageType==='physical'?'phys':p.damageType??'phys');}
     const chain=effectFor(unit,'chain_lightning');if(chain){unit.mem.gearChain=(unit.mem.gearChain??0)+1;const p=chain.params??{};if(unit.mem.gearChain%n(p.every,4)===0){const secondary=enemies(battle,target.x,target.y,n(p.radius,1.5)).filter((row)=>row!==target);for(const enemy of secondary)deal(battle,unit,enemy,unit.s.atk*n(p.damage,80)/100,p.damageType==='arts'?'arts':p.damageType??'arts');}}
-    const splash=effectFor(unit,'splash_strike');if(splash){unit.mem.gearSplash=(unit.mem.gearSplash??0)+1;const p=splash.params??{};if(unit.mem.gearSplash%n(p.every,3)===0){const other=enemies(battle,target.x,target.y,1).find((row)=>row!==target);if(other)deal(battle,unit,other,unit.s.atk*n(p.otherTargetDamage,60)/100,'phys');}}
+    const splash=effectFor(unit,'splash_strike');if(splash){unit.mem.gearSplash=(unit.mem.gearSplash??0)+1;const p=splash.params??{};if(unit.mem.gearSplash%n(p.every,3)===0){if(battle.rangeChanged?.(unit))battle._refreshRange?.(unit);const profile=event.profile??battle.effectiveProfile(unit),range=new Set(unit.rangeKeys??[]);const candidates=(battle.enemies??[]).filter((row)=>row!==target&&row.alive&&row.deployed&&!row.hidden&&range.has(Math.round(row.y)*COLS+Math.round(row.x))&&canTargetEnemy(unit,row,profile));candidates.sort((a,z)=>Math.hypot(a.x-unit.x,a.y-unit.y)-Math.hypot(z.x-unit.x,z.y-unit.y)||a.id-z.id);const other=candidates[0];if(other)deal(battle,unit,other,unit.s.atk*n(p.otherTargetDamage,60)/100,'phys');}}
     const attackStack=effectFor(unit,'attack_stack');if(attackStack){unit.mem.gearAttackStack=(unit.mem.gearAttackStack??0)+n(attackStack.params?.aspdPerAttack,3);const value=Math.min(n(attackStack.params?.maxAspd,45),unit.mem.gearAttackStack);battle.addBuff(unit,{key:`resonance:equipment:attack-stack:${unit.id}`,persist:true,allowDead:true,mods:{aspd:value},tags:['resonance','equipment']});}
     const attackSp=effectFor(unit,'attack_sp');if(attackSp){const p=attackSp.params??{};const bucket=Math.floor(battle.time),key=`gearAttackSp:${unit.id}:${bucket}`;unit.mem[key]=(unit.mem[key]??0)+1;if(unit.mem[key]<=n(p.perSecondCap,2))unit.skill?.gainSp?.(n(p.spPerAttack,1),'resonanceGearAttack');}
   },{owner:battle});
@@ -135,31 +141,55 @@ export function installResonanceEquipment(battle, { catalog, state } = {}) {
     const unit=event?.unit;if(unit?.side!=='ally'||unit.kind!=='op')return;
     const cast=effectFor(unit,'cast_sp');if(cast&&cast.params?.trigger==='skillEnd')unit.skill?.gainSp?.(n(cast.params?.sp,4),'resonanceGearCast');
     const skill=effectFor(unit,'skill_sp');if(skill&&!cooldown(unit,'skillSpAt',battle.time,n(skill.params?.cooldown,3)))unit.skill?.gainSp?.(n(skill.params?.sp,5),'resonanceGearSkill');
-    const vuln=effectFor(unit,'spell_vulnerability');if(vuln){const duration=n(vuln.params?.duration,3);for(const target of enemies(battle,unit.x,unit.y,8))target.mem.resonanceEquipmentSpellVulnUntil=battle.time+duration;}
   },{owner:battle});
 
-  battle.on('healed',(event)=>{
-    const source=event?.source;if(source?.side!=='ally'||source.kind!=='op')return;
-    if(event?.opts?.noSymbiosisRecursion)return;
-    const spring=effectFor(source,'periodic_heal');if(!spring)return;const target=event.target;if(target?.side!=='ally'||target===source)return;
-    const p=spring.params??{};const key=`spring:${source.id}`,count=source.mem[key]??0;source.mem[key]=count+1;
-    if(count===0&&p.healFromAtk)battle.heal(source,target,source.s.atk*n(p.healFromAtk,80)/100,{tags:['resonance','equipment']});
+  battle.on('damaged',(event)=>{
+    const source=event?.source,target=event?.target,dmg=event?.dmg;
+    if(source?.side!=='ally'||source.kind!=='op'||target?.side!=='enemy'||!(event.dealt>0)||!dmg?.isSkill)return;
+    const vuln=effectFor(source,'spell_vulnerability');if(!vuln)return;
+    target.mem.resonanceEquipmentSpellVulnUntil=battle.time+n(vuln.params?.duration,3);
+    target.mem.resonanceEquipmentSpellVulnPercent=n(vuln.params?.targetArtsVulnerability,15);
   },{owner:battle});
 
   battle.on('tick',({dt})=>{
     for(const unit of battle.allyUnits.filter((row)=>row.kind==='op'&&row.alive&&row.deployed)){
-      const spring=effectFor(unit,'periodic_heal');if(spring){unit.mem.gearHealElapsed=(unit.mem.gearHealElapsed??0)+dt;const p=spring.params??{};if(unit.mem.gearHealElapsed>=n(p.interval,5)){unit.mem.gearHealElapsed%=n(p.interval,5);const count=Math.max(1,Math.floor(n(p.healTargetCount,3)));const targets=allies(battle,unit.x,unit.y,n(p.range,Infinity)).filter((target)=>target.hp<target.s.maxHp).sort((a,z)=>a.hpRatio-z.hpRatio||a.id-z.id).slice(0,count);for(const target of targets){const amount=p.healMaxHp?target.s.maxHp*n(p.healMaxHp,6)/100:unit.s.atk*n(p.healFromAtk,80)/100;battle.heal(unit,target,amount,{tags:['resonance','equipment'],noSymbiosisRecursion:p.noSymbiosisRecursion!==false});}}}
+      for(const spring of effectList(unit).filter((row)=>row.kind==='periodic_heal')){
+        const p=spring.params??{},timerKey=`gearHealElapsed:${spring.itemId}`;
+        unit.mem[timerKey]=(unit.mem[timerKey]??0)+dt;
+        if(unit.mem[timerKey]>=n(p.interval,5)){
+          unit.mem[timerKey]%=n(p.interval,5);
+          const targets=allies(battle,unit.x,unit.y,n(p.range,Infinity)).filter((target)=>target.hp<target.s.maxHp)
+            .sort((a,z)=>a.hpRatio-z.hpRatio||a.id-z.id);
+          const selected=p.healMaxHp
+            ? targets.slice(0,Math.max(1,Math.floor(n(p.healTargetCount,1))))
+            : targets.slice(0,1);
+          for(const target of selected){
+            const amount=p.healMaxHp?target.s.maxHp*n(p.healMaxHp,6)/100:unit.s.atk*n(p.healFromAtk,80)/100;
+            battle.heal(unit,target,amount,{tags:['resonance','equipment'],noSymbiosisRecursion:p.noSymbiosisRecursion===true});
+          }
+        }
+      }
+      for(const cleanse of effectList(unit).filter((row)=>row.kind==='resistance_cleanse')){
+        const p=cleanse.params??{},timerKey=`gearCleanseElapsed:${cleanse.itemId}`;
+        unit.mem[timerKey]=(unit.mem[timerKey]??0)+dt;
+        if(unit.mem[timerKey]>=n(p.interval,5)){
+          unit.mem[timerKey]%=n(p.interval,5);
+          for(const status of p.cleanses??[])battle.removeStatus?.(unit,status);
+        }
+      }
       const regen=effectFor(unit,'regeneration');if(regen){unit.mem.gearRegenElapsed=(unit.mem.gearRegenElapsed??0)+dt;const p=regen.params??{};if(unit.mem.gearRegenElapsed>=1){unit.mem.gearRegenElapsed-=1;battle.heal(unit,unit,unit.s.maxHp*n(p.healMaxHpPerSecond,.6)/100,{tags:['resonance','equipment']});}}
-      const block=effectFor(unit,'block_stack');if(block){const stacks=Math.min(n(block.params?.maxStacks,3),unit.blocking?.length??0);if(stacks>0)battle.addBuff(unit,{key:`resonance:equipment:block-stack:${unit.id}`,persist:true,allowDead:true,mods:{defFlat:stacks*n(block.params?.defPerBlock,20),resFlat:stacks*n(block.params?.resPerBlock,4)},tags:['resonance','equipment']});}
+      const block=effectFor(unit,'block_stack');if(block){const key=`resonance:equipment:block-stack:${unit.id}`,stacks=Math.min(n(block.params?.maxStacks,3),unit.blocking?.length??0);if(stacks>0)battle.addBuff(unit,{key,persist:true,allowDead:true,mods:{defFlat:stacks*n(block.params?.defPerBlock,20),resFlat:stacks*n(block.params?.resPerBlock,4)},tags:['resonance','equipment']});else battle.removeBuff(unit,key);}
     }
   });
   battle.on('fatal',(event)=>{
     const unit=event?.unit;if(unit?.side!=='ally'||unit.kind!=='op')return;
     const barrier=effectFor(unit,'death_barrier'),save=effectFor(unit,'death_save');
-    const selected=barrier??save;if(!selected||unit.mem.resonanceEquipmentDeathUsed)return;
-    unit.mem.resonanceEquipmentDeathUsed=true;event.prevented=true;unit.hp=Math.max(1,unit.hp);
-    if(barrier){const p=barrier.params??{};battle.addBuff(unit,{key:`resonance:equipment:death-barrier:${unit.id}`,shield:unit.s.maxHp*n(p.hpPercent,15)/100,duration:Infinity,tags:['resonance','equipment']});}
-    else battle.addBuff(unit,{key:`resonance:equipment:death-save:${unit.id}`,duration:n(save.params?.duration,2),flags:{invulnerable:true},tags:['resonance','equipment']});
+    const useBarrier=barrier&&!unit.mem.resonanceEquipmentDeathBarrierUsed;
+    const useSave=save&&!unit.mem.resonanceEquipmentDeathSaveUsed;
+    if(!useBarrier&&!useSave)return;
+    event.prevented=true;unit.hp=Math.max(1,unit.hp);
+    if(useBarrier){unit.mem.resonanceEquipmentDeathBarrierUsed=true;const p=barrier.params??{};battle.addBuff(unit,{key:`resonance:equipment:death-barrier:${unit.id}`,shield:unit.s.maxHp*n(p.hpPercent,15)/100,duration:Infinity,tags:['resonance','equipment']});}
+    if(useSave){unit.mem.resonanceEquipmentDeathSaveUsed=true;battle.addBuff(unit,{key:`resonance:equipment:death-save:${unit.id}`,duration:n(save.params?.duration,2),flags:{invulnerable:true},tags:['resonance','equipment']});}
   },{owner:battle});
   return { units: units.length, effects: units.reduce((sum,unit)=>sum+effectList(unit).length,0) };
 }

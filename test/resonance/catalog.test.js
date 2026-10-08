@@ -75,7 +75,10 @@ test('published operator catalog preserves all 154 source identities and explici
     2:{chance:25,damage:100,cap:150,factor:0.008,radius:1.5},
     3:{chance:100,damage:500,cap:500,factor:0.02,radius:2},
   });
-  assert.deepEqual([1,2,3].map((star)=>pactEffect('yela').byStar[star].tileCooldown),[3,2,1]);
+  assert.deepEqual([1,2,3].map((star)=>pactEffect('yela').byStar[star].tileCooldown),[3,2,3]);
+  assert.ok(pactEffect('yela').byStar[3].coldDuration<pactEffect('yela').byStar[3].tileCooldown,'permanent snow must leave enemies a movement window');
+  assert.equal(byName['圣聆初雪'].stars[3].passive.params.coldDuration,pactEffect('yela').byStar[3].coldDuration);
+  assert.deepEqual(resonanceContent.campaign.supply.transfers.map(x=>x.node),[12,22,26]);
   assert.deepEqual([1,2,3].map((star)=>pactEffect('crown').byStar[star].perCast),[3,5,10]);
   assert.equal(pactEffect('crown').maxStacks,30);
 });

@@ -16,8 +16,16 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   const handler = createStaticDelivery({ base });
   const response = res(); handler(req, response, '/js/independent/client-worker.js'); assert.equal(response.status, 200);
   assert.equal(response.body, `import "${base}/js/independent/client-worker.js";\n`);
-  for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js']) assert.equal(handler(req, res(), path), false);
-  for(const path of ['/resonance.html','/resonance/api/catalog','/js/resonance/main.js','/css/resonance.css','/js/render/app.js','/js/render/interp.js','/js/render/resonanceFloors.js'])assert.equal(handler(req,res(),path),false,'new control code must resolve from its actual release, not the older asset deployment');
+  for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js', '/resonance-references.zip']) assert.equal(handler(req, res(), path), false);
+  for (const path of ['/resonance.html', '/resonance/api/catalog', '/js/resonance/main.js', '/css/resonance.css',
+    '/js/ui/fieldHost.js', '/js/ui/fallbackField.js', '/js/render/app.js', '/js/render/interp.js',
+    '/js/render/resonanceFloors.js', '/js/render/board3d/scene.js']) {
+    assert.equal(handler(req, res(), path), false, 'resonance host, fallback, and renderer modules must resolve from the active release');
+  }
+  for (const path of ['/js/ui/settings.js', '/js/independent/game.js']) {
+    const response = res(); assert.equal(handler(req, response, path), true); assert.equal(response.status, 307);
+    assert.equal(response.headers.Location, base + path, 'unrelated workshop/UI modules keep their existing CDN route');
+  }
   assert.equal(handler({ method: 'POST' }, res(), '/assets/x.png'), false);
   assert.equal(createStaticDelivery()(req, res(), '/assets/x.png'), false);
 });

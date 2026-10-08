@@ -11,9 +11,16 @@ test('HTTP exact asset source, media fallback, worker bootstrap, admission UI, a
   const fixtureDir = await mkdtemp(path.join(os.tmpdir(), 'stronghold-static-routing-'));
   const designPath = path.join(fixtureDir, 'independent-design.json');
   const sourceMapPath = path.join(fixtureDir, 'asset-sources.json');
+  const localModulePaths = ['js/ui/fieldHost.js', 'js/ui/fallbackField.js', 'js/render/app.js', 'js/render/board3d/scene.js'];
   const previousDesignPath = process.env.SP_INDEPENDENT_DESIGN_PATH;
   const previousSourceMapPath = process.env.SP_ASSET_SOURCE_MAP;
   await writeFile(designPath, '{}');
+  await writeFile(path.join(fixtureDir, 'resonance-references.zip'), 'test archive payload');
+  for (const relative of localModulePaths) {
+    const target = path.join(fixtureDir, ...relative.split('/'));
+    await import('node:fs/promises').then(({ mkdir }) => mkdir(path.dirname(target), { recursive: true }));
+    await writeFile(target, `// ${relative}\n`);
+  }
   await writeFile(sourceMapPath, JSON.stringify({ version: 1, applicationRevision: 'a'.repeat(40),
     assets: { '/assets/sprites/operator.png': direct } }));
   process.env.SP_INDEPENDENT_DESIGN_PATH = designPath;
@@ -45,6 +52,15 @@ test('HTTP exact asset source, media fallback, worker bootstrap, admission UI, a
     const worker = await fetch(new URL('/js/independent/client-worker.js', server.url), { redirect: 'manual' });
     assert.equal(worker.status, 200);
     assert.equal(await worker.text(), `import "${base}/js/independent/client-worker.js";\n`);
+    for (const pathname of localModulePaths.map((relative) => `/${relative}`)) {
+      const localModule = await fetch(new URL(pathname, server.url), { redirect: 'manual' });
+      assert.equal(localModule.status, 200, `${pathname} should be served by the active release`);
+      assert.equal(localModule.headers.has('location'), false);
+    }
+    const references = await fetch(new URL('/resonance-references.zip', server.url), { redirect: 'manual' });
+    assert.equal(references.status, 200);
+    assert.equal(references.headers.has('location'), false);
+    assert.equal(await references.text(), 'test archive payload');
 
     const active = await fetch(new URL('/independent.html?execution=client', server.url));
     assert.equal(active.status, 404); // isolated fixture intentionally has no public page files

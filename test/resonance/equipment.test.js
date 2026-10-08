@@ -11,6 +11,8 @@ const [{ getData }, { getResonanceCatalog }, { Battle }, { installResonanceEquip
   import('../../server/sim/content/resonance/pacts.js'),
 ]);
 const { performAttack } = await import('../../server/sim/ai.js');
+const { COLS } = await import('../../server/sim/constants.js');
+const { canTargetEnemy } = await import('../../server/sim/targeting.js');
 const { enemyRec, flatStage } = await import('../helpers/battleHarness.js');
 const data=getData();
 const catalog=getResonanceCatalog(data,{environmentId:'origin_laterano',seed:420});
@@ -87,12 +89,13 @@ test('equipment with an unknown effect kind fails explicitly',()=>{
   assert.throws(()=>installResonanceEquipment(battle,{catalog:malformed,state:{pieces:[]}}),/UNKNOWN_RESONANCE_EQUIPMENT_EFFECT:rapidBlade:missing_effect/);
 });
 
-test('received hits stack Titan Armor, Arcane Mantle marks enemies, and lifesteal only counts physical or arts damage',()=>{
-  const operator=Object.values(catalog.operators)[0];
-  const {battle,unit}=makeBattle(operator,['titanArmor','arcaneMantle','vampBlade'],{skillHarness:true});
+test('received hits stack Titan Armor, actual skill damage marks its target for every ally, and lifesteal counts only physical or arts damage',()=>{
+  const operator=Object.values(catalog.operators)[0],friend=Object.values(catalog.operators).find((row)=>row.id!==operator.id);assert.ok(friend);
+  const {battle,unit}=makeBattle(operator,['titanArmor','arcaneMantle','vampBlade'],{skillHarness:true,party:[{operator:friend}]});
   battle.start();
   const enemy=spawnDummy(battle,[unit.y,unit.x+1]);assert.ok(enemy);
   const attacker=battle.enemies[0];unit.hp=Math.floor(unit.s.maxHp/2);
+  assert.equal(unit.s.res,unit.base.res+28,'Arcane Mantle contributes its two component resistance and configured +12 RES alongside the other cloak component');
   battle.dealDamage(attacker,unit,{amount:10,type:'phys',canDodge:false});
   assert.equal(unit.mem.gearHitStacks,1,'incoming enemy damage, rather than outgoing damage, increments stacks');
   const beforeHp=unit.hp;
@@ -100,41 +103,63 @@ test('received hits stack Titan Armor, Arcane Mantle marks enemies, and lifestea
   assert.equal(unit.hp,beforeHp,'true damage does not trigger physical/arts lifesteal');
   const dealt=battle.dealDamage(unit,enemy,{amount:30,type:'phys',canDodge:false});
   assert.ok(Math.abs(unit.hp-(beforeHp+dealt*.1))<1e-8,'lifesteal uses actual physical HP damage, after mitigation and overkill clamping');
-  enemy.x=unit.x+1;enemy.y=unit.y;enemy.hp=enemy.s.maxHp;
-  cast(battle,unit);
-  assert.ok(enemy.mem.resonanceEquipmentSpellVulnUntil>battle.time,'the completed runtime skill marks its actual nearby target');
-  enemy.s.res=0;enemy.base.res=0;enemy.hp=enemy.s.maxHp;
-  const artsDamage=battle.dealDamage(unit,enemy,{amount:30,type:'arts',canDodge:false});
-  assert.ok(artsDamage>0,'the marked target receives a real arts hit through Battle damage resolution');
-  const unmarked=spawnDummy(battle,[unit.y,unit.x+2]);assert.ok(unmarked);
-  const noVuln=battle.dealDamage(unit,unmarked,{amount:30,type:'arts',canDodge:false});
-  assert.ok(noVuln<=30,'the marker does not apply to unrelated unmarked enemies');
+  enemy.x=unit.x+1;enemy.y=unit.y;enemy.hp=enemy.s.maxHp;enemy.s.res=0;enemy.base.res=0;
+  battle.dealDamage(unit,enemy,{amount:0,type:'arts',isSkill:true,canDodge:false});
+  assert.equal(enemy.mem.resonanceEquipmentSpellVulnUntil,undefined,'a skill that deals no damage does not apply vulnerability');
+  battle.dealDamage(unit,enemy,{amount:20,type:'arts',isSkill:false,canDodge:false});
+  assert.equal(enemy.mem.resonanceEquipmentSpellVulnUntil,undefined,'non-skill damage does not apply vulnerability');
+  enemy.hp=enemy.s.maxHp;
+  const skillDealt=battle.dealDamage(unit,enemy,{amount:20,type:'phys',isSkill:true,canDodge:false});
+  assert.ok(skillDealt>0&&enemy.mem.resonanceEquipmentSpellVulnUntil>battle.time,'a successfully damaging wearer skill marks only its hit target');
+  const teammate=battle.allyUnits.find((row)=>row.kind==='op'&&row!==unit);assert.ok(teammate);
+  const baseline=spawnDummy(battle,[unit.y,unit.x+3]);assert.ok(baseline);baseline.s.res=0;baseline.base.res=0;
+  const allyArts=battle.dealDamage(teammate,enemy,{amount:30,type:'arts',canDodge:false});
+  const plainArts=battle.dealDamage(teammate,baseline,{amount:30,type:'arts',canDodge:false});
+  assert.ok(allyArts>plainArts,'the marked target takes amplified arts damage from a different ally');
   assert.equal(battle.errorCount,0);
 });
 
-test('periodic healing restores up to three injured allies once without symbiosis recursion',()=>{
+test('Life Spring heals only the lowest-health friend once per five seconds, with no extra heal-on-heal',()=>{
   const operators=Object.values(catalog.operators).slice(0,4);const {battle,unit}=makeBattle(operators[0],['lifeSpring'],{party:operators.slice(1).map((operator)=>({operator}))});
   battle.start();const allies=battle.allyUnits.filter((row)=>row.kind==='op');assert.equal(allies.length,4);for(const ally of allies)ally.hp=ally.s.maxHp-100;
+  const lowest=allies.slice().sort((a,z)=>a.hpRatio-z.hpRatio||a.deploySeq-z.deploySeq)[0];
   const healEvents=[];battle.on('healed',(event)=>healEvents.push(event));
   advance(battle,5.2);
-  const healed=allies.filter((ally)=>ally.hp>ally.s.maxHp-100);assert.equal(healed.length,3,'the data-default count is three, and the lowest-health tie resolves deterministically');
-  assert.ok(healed.every((ally)=>Math.abs(ally.hp-(ally.s.maxHp-100+Math.min(100,unit.s.atk*.8)))<1e-8),'each target receives the configured 80%-ATK heal, clamped by missing HP');
-  assert.equal(healEvents.length,3);assert.ok(healEvents.every((event)=>event.opts?.noSymbiosisRecursion===true),'noSymbiosisRecursion is carried through each real heal event');
+  const healed=allies.filter((ally)=>ally.hp>ally.s.maxHp-100);assert.equal(healed.length,1,'only the lowest-health eligible friend is healed');
+  assert.equal(healed[0],lowest,'the lowest current HP ratio is selected');
+  assert.ok(Math.abs(healed[0].hp-(healed[0].s.maxHp-100+Math.min(100,unit.s.atk*.8)))<1e-8,'the target receives one configured 80%-ATK heal, clamped by missing HP');
+  assert.equal(healEvents.length,1,'healing does not recursively add an unconfigured bonus heal');
+  assert.equal(healEvents[0].opts?.noSymbiosisRecursion,false,'Life Spring still allows normal symbiosis response');
   assert.equal(battle.errorCount,0);
 });
 
-test('holy cloak adds its configured resistance and cleanses cold/freeze on its five-second received-hit cooldown',()=>{
+test('Life Spring and Redemption Cloak keep separate item timers and configured target rules',()=>{
+  const operators=Object.values(catalog.operators).slice(0,4);const {battle,unit}=makeBattle(operators[0],['lifeSpring','redemptionCloak'],{party:operators.slice(1).map((operator)=>({operator}))});
+  battle.start();const allies=battle.allyUnits.filter((row)=>row.kind==='op');for(const ally of allies)ally.hp=ally.s.maxHp-200;
+  const distant=allies.at(-1);distant.x=unit.x+5;distant.y=unit.y;distant.hp=1;
+  const healed=[];battle.on('healed',(event)=>healed.push({target:event.target,amount:event.amount,opts:event.opts}));
+  advance(battle,5.2);
+  assert.equal(healed.length,1,'Life Spring fires at five seconds even when Redemption has a separate eight-second timer');
+  assert.equal(healed[0].target,distant,'Life Spring selects the lowest-health friend without inheriting Redemption range');
+  advance(battle,2.9);
+  const redemptionHeals=healed.slice(1);assert.equal(redemptionHeals.length,2,'Redemption heals at most two eligible friends at eight seconds');
+  assert.ok(redemptionHeals.every((row)=>row.target!==distant&&Math.abs(row.amount-row.target.s.maxHp*.06)<1e-8),'Redemption is limited to two tiles and heals six percent maximum HP');
+  assert.ok(redemptionHeals.every((row)=>row.opts?.noSymbiosisRecursion===true),'Redemption suppresses recursive symbiosis');
+  assert.equal(battle.errorCount,0);
+});
+
+test('Holy Cloak adds its configured resistance and automatically cleanses cold/freeze every five seconds',()=>{
   const operator=Object.values(catalog.operators)[0];const {battle,unit}=makeBattle(operator,['holyCloak']);
   battle.start();assert.equal(unit.s.res,unit.base.res+28,'two cloak components and the effect add their full resistance');
   const enemy=spawnDummy(battle,[unit.y,unit.x+1]);assert.ok(enemy);
   battle.applyStatus(unit,'cold',{duration:20,source:enemy});battle.applyStatus(unit,'freeze',{duration:20,source:enemy});
-  battle.dealDamage(enemy,unit,{amount:1,type:'phys',canDodge:false,isAttack:true});
-  assert.equal(unit.buffs.some((row)=>row.status==='cold'||row.status==='freeze'),false,'the first qualifying hit removes both configured status keys');
-  battle.applyStatus(unit,'cold',{duration:20,source:enemy});battle.applyStatus(unit,'freeze',{duration:20,source:enemy});
-  advance(battle,4.9);battle.dealDamage(enemy,unit,{amount:1,type:'phys',canDodge:false,isAttack:true});
+  advance(battle,4.9);
   assert.ok(unit.buffs.some((row)=>row.status==='cold')&&unit.buffs.some((row)=>row.status==='freeze'),'the cleanse does not refresh before five seconds');
-  advance(battle,.1);battle.dealDamage(enemy,unit,{amount:1,type:'phys',canDodge:false,isAttack:true});
+  advance(battle,.2);
   assert.equal(unit.buffs.some((row)=>row.status==='cold'||row.status==='freeze'),false,'the next cooldown boundary cleanses again');
+  battle.applyStatus(unit,'cold',{duration:20,source:enemy});battle.applyStatus(unit,'freeze',{duration:20,source:enemy});
+  advance(battle,5.2);
+  assert.equal(unit.buffs.some((row)=>row.status==='cold'||row.status==='freeze'),false,'the automatic timer repeats without requiring a received hit');
   assert.equal(battle.errorCount,0);
 });
 
@@ -148,16 +173,21 @@ test('counter, thorns, and hit-SP effects resolve from one genuine enemy damage 
   assert.equal(battle.errorCount,0);
 });
 
-test('death barrier and death save prevent the first lethal Battle hit once per holder',()=>{
+test('Death Barrier and Death Save each trigger on the same first lethal hit; duplicate same-item saves remain unique',()=>{
   const operator=Object.values(catalog.operators)[0];
-  const barrier=makeBattle(operator,['guardianPlate']);barrier.battle.start();const enemy=spawnDummy(barrier.battle,[barrier.unit.y,barrier.unit.x+1]);assert.ok(enemy);
-  barrier.unit.hp=1;barrier.battle.dealDamage(enemy,barrier.unit,{amount:1000,type:'true',canDodge:false});
-  assert.equal(barrier.unit.alive,true);assert.ok(barrier.unit.buffs.some((row)=>row.key==='resonance:equipment:death-barrier:'+barrier.unit.id&&row.shield>0));
-  barrier.battle.dealDamage(enemy,barrier.unit,{amount:1000,type:'true',canDodge:false});assert.equal(barrier.unit.alive,false,'a consumed unique barrier cannot prevent a second lethal hit');
-  const saved=makeBattle(operator,['ironWing']);saved.battle.start();const attacker=spawnDummy(saved.battle,[saved.unit.y,saved.unit.x+1]);saved.unit.hp=1;
-  saved.battle.dealDamage(attacker,saved.unit,{amount:1000,type:'true',canDodge:false});
-  assert.equal(saved.unit.alive,true);assert.equal(saved.unit.s.flags.invulnerable,true,'death-save grants its configured temporary invulnerability');
-  assert.equal(saved.battle.errorCount,0);assert.equal(barrier.battle.errorCount,0);
+  const combined=makeBattle(operator,['guardianPlate','ironWing','ironWing']);combined.battle.start();
+  assert.equal(combined.unit.mem.resonanceEquipmentEffects.filter((row)=>row.kind==='death_save').length,1,'duplicate copies of the same unique item do not duplicate its passive');
+  const enemy=spawnDummy(combined.battle,[combined.unit.y,combined.unit.x+1]);assert.ok(enemy);
+  combined.unit.hp=1;combined.battle.dealDamage(enemy,combined.unit,{amount:1000,type:'true',canDodge:false});
+  assert.equal(combined.unit.alive,true,'both first-lethal effects cooperate to prevent the same hit');
+  assert.ok(combined.unit.buffs.some((row)=>row.key==='resonance:equipment:death-barrier:'+combined.unit.id&&row.shield>0),'Guardian Plate grants its shield');
+  assert.equal(combined.unit.s.flags.invulnerable,true,'Iron Wing independently grants its temporary invulnerability');
+  combined.battle.step(2.1);combined.unit.hp=1;
+  for(const buff of combined.unit.buffs.filter((row)=>row.key==='resonance:equipment:death-barrier:'+combined.unit.id))combined.battle.removeBuff(combined.unit,buff.key);
+  combined.unit.s.flags.invulnerable=false;combined.unit.s.shield=0;
+  combined.battle.dealDamage(enemy,combined.unit,{amount:1000,type:'true',canDodge:false});
+  assert.equal(combined.unit.alive,false,'each distinct passive has one use and neither refreshes on later lethal damage');
+  assert.equal(combined.battle.errorCount,0);
 });
 
 test('cast stun, first-cast haste, cast-stack, and two skill-end SP effects use the SkillRuntime lifecycle',()=>{
@@ -211,22 +241,40 @@ test('Golem Armor scales defense from the real native blocking list and respects
   assert.equal(unit.blocking.length,4,'Battle owns all four block references');
   assert.equal(unit.s.def,def+60,'the native blocked hook caps defense at three stacks');
   assert.equal(unit.s.res,res+12,'the native blocked hook caps resistance at the same three stacks');
+  for(const enemy of enemies)battle.kill(enemy,unit);advance(battle,.1);
+  assert.equal(unit.blocking.length,0,'all native block references clear after their enemies leave');
+  assert.equal(unit.s.def,def,'zero blockers remove the previous defense bonus instead of retaining it');
+  assert.equal(unit.s.res,res,'zero blockers also remove the previous resistance bonus');
   assert.equal(battle.errorCount,0);
 });
 
-test('chain and splash attacks use core attack targets while giant-slayer and shred modify actual damage',()=>{
+test('chain and Hurricane select secondary enemies in the wearer attack range; giant-slayer and shred modify actual damage',()=>{
   const operator=Object.values(catalog.operators)[0];
   const {battle,unit}=makeBattle(operator,['thunderRing','hurricane','giantSlayer','spellblade']);battle.start();
-  const primary=spawnDummy(battle,[unit.y,unit.x+1],{res:50}),secondary=spawnDummy(battle,[unit.y,unit.x+2]);assert.ok(primary&&secondary);
-  secondary.s.res=0;secondary.base.res=0;
-  const secondaryHp=secondary.hp;
+  const rangeKeys=new Set(unit.rangeKeys);const primaryKey=[...rangeKeys].filter((key)=>key!==unit.tileR*COLS+unit.tileC).sort((a,b)=>Math.hypot((b%COLS)-unit.x,((b/COLS)|0)-unit.y)-Math.hypot((a%COLS)-unit.x,((a/COLS)|0)-unit.y))[0];
+  assert.notEqual(primaryKey,undefined,'test operator has a native attack tile');
+  const [pr,pc]=[(primaryKey/COLS)|0,primaryKey%COLS];
+  const otherKeys=[...rangeKeys].filter((key)=>key!==primaryKey&&Math.hypot((key%COLS)-pc,((key/COLS)|0)-pr)>1).sort((a,b)=>Math.hypot((a%COLS)-unit.x,((a/COLS)|0)-unit.y)-Math.hypot((b%COLS)-unit.x,((b/COLS)|0)-unit.y));
+  const [flyKey,secondaryKey]=otherKeys;assert.notEqual(secondaryKey,undefined,'test operator has two other native range tiles beyond one tile from the primary');
+  const nearOutside=Array.from({length:(battle.rect.r1-battle.rect.r0+1)*(battle.rect.c1-battle.rect.c0+1)},(_,index)=>[battle.rect.r0+Math.floor(index/(battle.rect.c1-battle.rect.c0+1)),battle.rect.c0+index%(battle.rect.c1-battle.rect.c0+1)])
+    .filter(([r,c])=>!rangeKeys.has(r*COLS+c)).sort((a,z)=>Math.hypot(a[0]-pr,a[1]-pc)-Math.hypot(z[0]-pr,z[1]-pc))[0];
+  assert.ok(nearOutside,'test stage provides an adjacent tile outside the native attack range');
+  const primary=spawnDummy(battle,[pr,pc],{res:50}),flyer=spawnDummy(battle,[(flyKey/COLS)|0,flyKey%COLS],{motion:'FLY'}),secondary=spawnDummy(battle,[(secondaryKey/COLS)|0,secondaryKey%COLS]),outside=spawnDummy(battle,nearOutside);assert.ok(primary&&flyer&&secondary&&outside);
+  assert.ok(rangeKeys.has(Math.round(secondary.y)*COLS+Math.round(secondary.x)),'the test secondary occupies a native attack-range tile');
+  assert.ok(battle.enemies.filter((row)=>row!==primary&&rangeKeys.has(Math.round(row.y)*COLS+Math.round(row.x))&&canTargetEnemy(unit,row,battle.effectiveProfile(unit))).includes(secondary),'native targetability keeps the secondary eligible');
+  const profile=battle.effectiveProfile(unit),expectedSecondary=canTargetEnemy(unit,flyer,profile)?flyer:secondary;
+  expectedSecondary.s.res=0;expectedSecondary.base.res=0;
+  const secondaryHp=expectedSecondary.hp,outsideHp=outside.hp,flyerHp=flyer.hp;
   for(let index=0;index<2;index++)performAttack(battle,unit,battle.effectiveProfile(unit),[primary]);
-  assert.equal(secondary.hp,secondaryHp,'chain/splash effects wait for their configured attack intervals');
+  assert.equal(expectedSecondary.hp,secondaryHp,'chain/splash effects wait for their configured attack intervals');
   performAttack(battle,unit,battle.effectiveProfile(unit),[primary]);
-  assert.ok(secondary.hp<secondaryHp,'the third core attack triggers the configured splash strike');
-  const afterSplash=secondary.hp;
+  assert.equal(unit.mem.gearSplash,3,'Hurricane counts three actual attack hooks');
+  assert.ok(expectedSecondary.hp<secondaryHp,'the third core attack triggers Hurricane against the nearest targetable enemy in native attack range');
+  assert.equal(flyer.hp<flyerHp,canTargetEnemy(unit,flyer,profile),'Hurricane preserves the wearer native airborne-target rule');
+  assert.equal(outside.hp,outsideHp,'Hurricane cannot hit a closer enemy outside the wearer attack range');
+  const outsideAfterHurricane=outside.hp;
   performAttack(battle,unit,battle.effectiveProfile(unit),[primary]);
-  assert.ok(secondary.hp<afterSplash,'the fourth core attack triggers the configured chain-lightning interval');
+  assert.ok(outside.hp<outsideAfterHurricane,'the fourth core attack triggers chain lightning around its primary target independently of Hurricane range selection');
   const beforeShred=primary.s.res;
   const baseline=unit.mem.resonanceEquipmentEffects;
   unit.mem.resonanceEquipmentEffects=baseline.filter((row)=>row.kind!=='giant_slayer');

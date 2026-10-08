@@ -4,7 +4,7 @@ import { Camera } from '../../public/js/render/projection.js';
 import { SnapshotBuffer, normalizeSnapshot } from '../../public/js/render/interp.js';
 import { detailHash } from '../../public/js/resonance/model.js';
 import {
-  activeDynamicFloors, floorTilePolygon, normalizeDynamicFloors, normalizeStaticFloors, resonanceFloorStyle,
+  activeDynamicFloors, floorTilePolygon, normalizeDynamicFloors, normalizeStaticFloors, resonanceFloorStyle, resonanceFloorTileIndex, resonanceFloorsForTile,
   ResonanceFloorRenderer,
 } from '../../public/js/render/resonanceFloors.js';
 
@@ -23,6 +23,19 @@ test('dynamic snapshot protocol keeps compact bounded regions and expires on gam
   assert.deepEqual(activeDynamicFloors(normalized, 8), []);
   assert.equal(resonanceFloorStyle('snow').color, 0x9fe8ff);
   assert.notEqual(resonanceFloorStyle('planting').color, resonanceFloorStyle('firewall').color);
+});
+
+test('DOM fallback uses the shared static and expiring dynamic floor contract', () => {
+  const staticFloors = [[9, 2], [9, 2]];
+  const dynamicFloors = [{ id: 'wall', kind: 'firewall', owner: 'p1', tiles: [[9, 3]], until: 4 }];
+  assert.equal(resonanceFloorsForTile(staticFloors, dynamicFloors, 2, 9, 2).static, true);
+  assert.equal(resonanceFloorsForTile(staticFloors, dynamicFloors, 2, 9, 3).dynamic[0].kind, 'firewall');
+  assert.deepEqual(resonanceFloorsForTile(staticFloors, dynamicFloors, 4, 9, 3).dynamic, [], 'expiry is inclusive at until');
+  assert.equal(resonanceFloorsForTile(undefined, undefined, 4, 9, 2).static, false, 'legacy fields have no overlays');
+  const index = resonanceFloorTileIndex(staticFloors, dynamicFloors, 2);
+  assert.equal(index.get('9,2').static, true);
+  assert.equal(index.get('9,3').dynamic[0].kind, 'firewall');
+  assert.equal(resonanceFloorTileIndex(staticFloors, dynamicFloors, 4).has('9,3'), false);
 });
 
 test('normalized snapshots carry floor metadata while old snapshots clear it at their timeline position', () => {

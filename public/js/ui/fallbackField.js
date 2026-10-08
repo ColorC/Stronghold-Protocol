@@ -25,6 +25,7 @@ import { GEO } from '../../../shared/constants.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
 import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
 import { CRIT_FONT_SCALE, CRIT_SCALE, CRIT_Y, POPUP_ROWS, lerpKeys, popupAlpha, popupPosition, popupWaypoints } from '../render/dmgNumbers.js';
+import { normalizeStaticFloors, normalizeDynamicFloors, resonanceFloorTileIndex, resonanceFloorStyle } from '../render/resonanceFloors.js';
 
 const DRAG_PX = 6;
 const DMG_TTL = 1500;
@@ -60,6 +61,12 @@ export function fallbackTileClass(stage, row, col) {
   return 'floor';
 }
 
+function floorOverlayStyle(kind, alpha = 0.34) {
+  const style = resonanceFloorStyle(kind);
+  const color = Number(style.color) >>> 0;
+  return `background-image:linear-gradient(rgba(${(color >> 16) & 255},${(color >> 8) & 255},${color & 255},${Math.min(alpha, style.alpha)}),rgba(${(color >> 16) & 255},${(color >> 8) & 255},${color & 255},${Math.min(alpha, style.alpha)}));box-shadow:inset 0 0 0 1px rgba(${(Number(style.line) >>> 16) & 255},${(Number(style.line) >>> 8) & 255},${Number(style.line) & 255},.75)`;
+}
+
 /**
  * Create the DOM fallback view.
  * @param {HTMLElement} host
@@ -77,7 +84,8 @@ export function createFallbackView(host, opts = {}) {
   const st = {
     stage: null, camera: 'prep', rect: { ...GEO.NORMAL_RECT }, side: 'L', deployField: 'normal',
     mode: 'prep', priv: null, editable: false, canPlace: null,
-    field: null, units: new Map(), snapUnits: new Map(), highlight: new Map(), hlGroups: new Map(), held: new Map(), dirs: new Map(),
+    field: null, staticFloors: [], dynamicFloors: [], floorTime: 0, floorTiles: new Map(),
+    units: new Map(), snapUnits: new Map(), highlight: new Map(), hlGroups: new Map(), held: new Map(), dirs: new Map(),
     drag: null, hoverTarget: null, floats: [], critMarks: [], settings: { damageNumbers: true, ...(opts.settings || {}) },
     size: { w: 0, h: 0 }, destroyed: false, pen: [],
   };
@@ -311,10 +319,15 @@ export function createFallbackView(host, opts = {}) {
         let hl = st.highlight.get(k);
         for (const g of st.hlGroups.values()) if (g.tiles.has(k)) hl = g.name;
         const hov = st.hoverTarget?.area === 'board' && st.hoverTarget.row === row && st.hoverTarget.col === col ? dropState(st.hoverTarget) : null;
+        const key = `${row},${col}`;
+        const floorState = st.mode === 'battle' ? st.floorTiles.get(key) : null;
+        const floor = floorState?.dynamic.at(-1);
+        const floorStyle = floor ? floorOverlayStyle(floor.kind, floor.style.alpha)
+          : floorState?.static ? floorOverlayStyle('snow', 0.3) : '';
         tiles.push(html`<div key=${k} class=${cx('ff-tile', `ff-tile--${tileClass(row, col)}`, hl && `is-${hl}`, hov && `is-hover-${hov}`)}
           data-drop="board" data-row=${row} data-col=${col}
           onPointerDown=${(e) => { if (e.button === 0) emit('tileClick', { row, col, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
-          style=${`transform:translate(${p.x}px,${p.y}px);width:${L.tile}px;height:${L.tile}px`}></div>`);
+          style=${`transform:translate(${p.x}px,${p.y}px);width:${L.tile}px;height:${L.tile}px;${floorStyle}`}></div>`);
       }
     }
     const pieces = [];
@@ -425,6 +438,10 @@ export function createFallbackView(host, opts = {}) {
     enterBattle(field) {
       st.mode = 'battle';
       st.field = field || null;
+      st.staticFloors = normalizeStaticFloors(field?.resonanceFloors);
+      st.dynamicFloors = [];
+      st.floorTime = 0;
+      st.floorTiles = resonanceFloorTileIndex(st.staticFloors, st.dynamicFloors, st.floorTime);
       // a scouted teammate's prep board brings their pen; a real battle empties it
       st.pen = field?.prep && Array.isArray(field.nextEnemies) ? field.nextEnemies : [];
       st.units.clear();
@@ -440,6 +457,9 @@ export function createFallbackView(host, opts = {}) {
     pushSnapshot(snap) {
       if (st.mode !== 'battle' || !snap || !Array.isArray(snap.units)) return;
       if (st.field && snap.fieldId && st.field.fieldId && snap.fieldId !== st.field.fieldId) return;
+      st.dynamicFloors = normalizeDynamicFloors(snap.resonanceFloors);
+      st.floorTime = Number.isFinite(snap.t) ? snap.t : st.floorTime;
+      st.floorTiles = resonanceFloorTileIndex(st.staticFloors, st.dynamicFloors, st.floorTime);
       const seen = new Set();
       for (const t of snap.units) {
         if (!Array.isArray(t) || t.length < 9) continue;

@@ -22,6 +22,59 @@ const REPLAY_STATS_EVERY = Math.round(1 / TICK);
 const MAX_TICKS = Math.ceil(MAX_BATTLE_TIME / TICK) + 1;
 const noopLogger = Object.freeze({ warn() {}, error() {}, info() {}, log() {} });
 const starChessId = (operatorId, star) => `resonance_${operatorId}_star${star}`;
+const ENEMY_BALANCE_FIELDS=Object.freeze({hpMultiplier:'hpMul',atkMultiplier:'atkMul',defMultiplier:'defMul',resMultiplier:'resMul',speedMultiplier:'speedMul',bossPoolMultiplier:null});
+const ENEMY_BALANCE_ONE=Object.freeze({hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+const DIFFICULTIES=new Set(['FUNNY','NORMAL','HARD','ABYSS']);
+
+function mergeBalanceProfile(base,override,label){
+  const out={...base};
+  if(override==null)return out;
+  if(typeof override!=='object'||Array.isArray(override))throw new TypeError(`invalid resonance enemy balance profile: ${label}`);
+  for(const [key,value] of Object.entries(override)){
+    if(!Object.hasOwn(ENEMY_BALANCE_FIELDS,key))throw new TypeError(`unknown resonance enemy balance field: ${label}.${key}`);
+    if(!Number.isFinite(value)||value<=0)throw new TypeError(`resonance enemy balance must be finite and > 0: ${label}.${key}`);
+    out[key]=value;
+  }
+  return out;
+}
+
+/** Resolve authored campaign.enemyBalance for one node; missing fields preserve native multiplier 1. */
+export function resolveEnemyBalance(enemyBalance,difficulty,nodeKind){
+  if(enemyBalance==null)return {...ENEMY_BALANCE_ONE};
+  if(typeof enemyBalance!=='object'||Array.isArray(enemyBalance))throw new TypeError('invalid resonance campaign.enemyBalance');
+  for(const key of Object.keys(enemyBalance))if(!['regular','terminal','byDifficulty','source','difficultyMultiplier','nodeScaling'].includes(key))throw new TypeError(`unknown resonance enemy balance section: ${key}`);
+  if(enemyBalance.source!=null&&enemyBalance.source!=='native-wave')throw new TypeError('unsupported legacy resonance enemy balance source');
+  if(enemyBalance.difficultyMultiplier!=null&&enemyBalance.difficultyMultiplier!==1)throw new TypeError('unsupported legacy resonance enemy difficulty multiplier');
+  if(enemyBalance.nodeScaling!=null&&enemyBalance.nodeScaling!=='native-stage')throw new TypeError('unsupported legacy resonance enemy node scaling');
+  const regular=mergeBalanceProfile(ENEMY_BALANCE_ONE,enemyBalance.regular,'regular');
+  const terminal=mergeBalanceProfile(ENEMY_BALANCE_ONE,enemyBalance.terminal,'terminal');
+  const scope=nodeKind==='boss'||nodeKind==='hidden'?'terminal':'regular',base=scope==='terminal'?terminal:regular;
+  if(enemyBalance.byDifficulty==null)return base;
+  if(typeof enemyBalance.byDifficulty!=='object'||Array.isArray(enemyBalance.byDifficulty))throw new TypeError('invalid resonance campaign.enemyBalance.byDifficulty');
+  for(const [key,override] of Object.entries(enemyBalance.byDifficulty)){
+    if(!DIFFICULTIES.has(key))throw new TypeError(`invalid resonance enemy balance difficulty: ${key}`);
+    if(typeof override!=='object'||override===null||Array.isArray(override))throw new TypeError(`invalid resonance enemy balance byDifficulty.${key}`);
+    for(const name of Object.keys(override))if(!['regular','terminal'].includes(name))throw new TypeError(`unknown resonance enemy balance scope: byDifficulty.${key}.${name}`);
+    mergeBalanceProfile(regular,override.regular,`byDifficulty.${key}.regular`);
+    mergeBalanceProfile(terminal,override.terminal,`byDifficulty.${key}.terminal`);
+  }
+  return mergeBalanceProfile(base,enemyBalance.byDifficulty[difficulty]?.[scope],`byDifficulty.${difficulty}.${scope}`);
+}
+
+function scaleWaveSpawnMods(wave,multipliers){
+  if(Object.values(multipliers).every(value=>value===1))return wave;
+  const spawns=(wave.spawns??[]).map(spawn=>{
+    const mods={...(spawn.mods??{})};
+    for(const [field,modKey] of Object.entries(ENEMY_BALANCE_FIELDS)){
+      if(!modKey||multipliers[field]===1)continue;
+      const native=mods[modKey]??1,scaled=native*multipliers[field];
+      if(!Number.isFinite(scaled)||scaled<=0)throw new TypeError(`invalid scaled native wave modifier: ${modKey}`);
+      mods[modKey]=scaled;
+    }
+    return {...spawn,mods:Object.keys(mods).length?mods:undefined};
+  });
+  return {...wave,spawns};
+}
 
 export function resonanceBattleWon(result,nodeKind,{capped=false}={}) {
   if (capped) return false;
@@ -39,6 +92,22 @@ function catalogFor(state, source, catalog) {
     environmentId: state?.environmentId ?? 'origin_laterano',
     seed: state?.seed ?? 1,
   });
+}
+
+function effectiveTimeLimit(prepared, catalog) {
+  if (!['boss', 'hidden'].includes(prepared.nodeKind)) return prepared.wave.timeLimit;
+  const cap = Number(catalog?.campaign?.terminalTimeLimitSeconds);
+  if (!(Number.isFinite(cap) && cap > 0)) return prepared.wave.timeLimit;
+  const source = Number(prepared.wave.timeLimit);
+  return Math.min(Number.isFinite(source) && source > 0 ? source : MAX_BATTLE_TIME, cap);
+}
+
+export function finishResonanceTerminalIfEscaped(battle, nodeKind) {
+  if (!['boss', 'hidden'].includes(nodeKind) || battle.finished || !battle.started || battle._spawnSeq <= 0) return false;
+  if (!(battle.sharedBoss?.hp > 0) || (battle._pending?.length ?? 0) > 0 || battle.enemies.some(enemy => enemy.alive && enemy.deployed)) return false;
+  if (battle._hasPendingEnemySchedules()) return false;
+  battle.forceEnd('leader-escaped');
+  return battle.finished;
 }
 
 function battleNode(state) {
@@ -71,15 +140,18 @@ function prepare(state, data, catalog) {
   const isBossRound = node.nodeKind === 'boss' || isHiddenRound;
   const field = isBossRound ? 'bossL' : 'normal';
   const bossId = isHiddenRound ? setup.hiddenBossId : isBossRound ? setup.bossId : null;
-  const wave = isBossRound
+  const nativeWave = isBossRound
     ? buildBossWave(gd, rng, setup, node.waveRound, { bossId, solo: true })
     : buildNormalWave(gd, rng, setup, node.waveRound);
+  const enemyBalance=resolveEnemyBalance(catalog?.campaign?.enemyBalance,node.difficulty,node.nodeKind);
+  const wave=scaleWaveSpawnMods(nativeWave,enemyBalance);
+  const tuning=Object.values(enemyBalance).every(value=>value===1)?'native-wave':'resonance';
   const stageId = setup.stageId ?? wave.templateId ?? null;
   const stage = gd.stage(stageId);
   if (!stage) throw new Error(`resonance wave ${node.waveRound} has no resolvable stage (stageId=${stageId ?? 'null'})`);
   if (!wave.templateId) throw new Error(`resonance wave ${node.waveRound} has no upstream wave template`);
   if (isBossRound && (!bossId || !gd.boss(bossId))) throw new Error(`resonance ${node.nodeKind} wave has no upstream leader`);
-  return { ...node, modeId, waveModeId, gd, setup, wave, stageId, stage, bossId, field, tuning: catalog?.campaign?.enemyBalance ?? null };
+  return { ...node, modeId, waveModeId, gd, setup, wave, stageId, stage, bossId, field, enemyBalance, tuning };
 }
 
 /** The authoritative source stage and deploy legality for the current resonance node. */
@@ -102,6 +174,9 @@ export function getResonanceField(state, { data = null, catalog = null } = {}) {
     battleRound: prepared.battleRound,
     waveRound: prepared.waveRound,
     nodeKind: prepared.nodeKind,
+    enemyBalance: prepared.enemyBalance,
+    tuning: prepared.tuning,
+    timeLimit: effectiveTimeLimit(prepared, catalog),
     resolveToken:(tokenId,operatorId,skillIndex)=>toDataSource(source).getToken(tokenId,operatorId,{skillIndex,moduleId:'none'}),
   };
 }
@@ -254,7 +329,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
   const battleData = starData.data;
   const sharedBoss = preview || !['boss', 'hidden'].includes(prepared.nodeKind)
     ? null
-    : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1)));
+    : new SharedBossPool(Math.max(1,Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1)*prepared.enemyBalance.bossPoolMultiplier)));
   const resonanceKits = createResonanceKits(catalog, input, battleData);
   const battle = new Battle({
     seed: deriveSeed(Number(input.seed) >>> 0, `resonance:${preview ? 'preview' : 'battle'}:${prepared.battleRound}:${prepared.modeId}`),
@@ -262,7 +337,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
     modeId: prepared.modeId,
     round: prepared.battleRound,
     stage: prepared.stage,
-    timeLimit: preview ? 60 : prepared.wave.timeLimit,
+    timeLimit: preview ? 60 : effectiveTimeLimit(prepared, catalog),
     players: [{ playerId: PLAYER_ID, seat: 0, side: 'L', colOffset: 0, units, bonds: {} }],
     spawns: preview ? [] : prepared.wave.spawns,
     routes: [...(prepared.wave.routes || []), ...(prepared.wave.extraRoutes || [])],
@@ -294,6 +369,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
     }],
   });
   battle.resonanceSummonAnchors = inputUnitData.summonAnchors;
+  battle.resonanceEnemyBalance = prepared.enemyBalance;
   battle.resonanceSummonAnchorGaps = [...inputUnitData.summonAnchorGaps, ...starData.summonVariantGaps];
   return { battle, prepared };
 }
@@ -345,6 +421,7 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
   let field = null;
   while (!battle.finished && battle.tickCount < MAX_TICKS) {
     battle.step();
+    finishResonanceTerminalIfEscaped(battle, prepared.nodeKind);
     if (recording) {
       if (!field) field = battle.fieldMeta();
       if (battle.tickCount % REPLAY_SNAP_EVERY === 0) {
@@ -382,7 +459,8 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
     ticks: battle.tickCount,
     tickLimit: MAX_TICKS,
     capped,
-    tuning: prepared.tuning?.source ?? 'native-wave',
+    tuning: prepared.tuning,
+    enemyBalance: structuredClone(prepared.enemyBalance),
     summonAnchors: structuredClone(battle.resonanceSummonAnchors ?? []),
     summonAnchorGaps: structuredClone(battle.resonanceSummonAnchorGaps ?? []),
     errorCount: battle.errorCount,

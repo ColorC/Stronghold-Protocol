@@ -164444,7 +164444,7 @@ export const resonanceContent = {
       "cost": 5,
       "position": "RANGED",
       "canDeployHighGround": true,
-      "role": "damage",
+      "role": "support",
       "fixedSkillIndex": 2,
       "fixedSkillId": "skchr_cetsyr_3",
       "pacts": [
@@ -228248,8 +228248,8 @@ export const resonanceContent = {
               "perColdAttack": 10,
               "perColdAspd": 10,
               "perColdSp": 0.2,
-              "tileCooldown": 1,
-              "coldDuration": 3,
+              "tileCooldown": 3,
+              "coldDuration": 1.5,
               "phalanxDefenseRetained": true,
               "permanentSkill": true,
               "singleTargetExtraHits": 2,
@@ -319750,7 +319750,7 @@ export const resonanceContent = {
       "cost": 3,
       "position": "RANGED",
       "canDeployHighGround": true,
-      "role": "damage",
+      "role": "support",
       "fixedSkillIndex": 0,
       "fixedSkillId": "skchr_heidi_1",
       "pacts": [
@@ -379681,8 +379681,8 @@ export const resonanceContent = {
                     "skillAspd": 10
                   },
                   "3": {
-                    "tileCooldown": 1,
-                    "coldDuration": 3,
+                    "tileCooldown": 3,
+                    "coldDuration": 1.5,
                     "perColdSp": 0.2,
                     "skillAtk": 10,
                     "skillAspd": 10
@@ -383659,6 +383659,7 @@ export const resonanceContent = {
     }
   },
   "campaign": {
+    "terminalTimeLimitSeconds": 180,
     "poolByCost": {
       "1": 14,
       "2": 13,
@@ -383816,6 +383817,11 @@ export const resonanceContent = {
           "node": 22,
           "count": 1,
           "selection": "main-or-viable-pact"
+        },
+        {
+          "node": 26,
+          "count": 1,
+          "selection": "main-or-viable-pact"
         }
       ],
       "xp": [
@@ -383882,9 +383888,58 @@ export const resonanceContent = {
     "shopSize": 5,
     "starterCount": 3,
     "enemyBalance": {
-      "source": "native-wave",
-      "difficultyMultiplier": 1,
-      "nodeScaling": "native-stage"
+      "regular": {
+        "hpMultiplier": 0.8,
+        "atkMultiplier": 0.9,
+        "defMultiplier": 0.5
+      },
+      "terminal": {
+        "hpMultiplier": 0.85,
+        "atkMultiplier": 0.9,
+        "defMultiplier": 0.5,
+        "bossPoolMultiplier": 0.75
+      },
+      "byDifficulty": {
+        "FUNNY": {
+          "regular": {
+            "hpMultiplier": 0.65,
+            "atkMultiplier": 0.85,
+            "defMultiplier": 0.35
+          },
+          "terminal": {
+            "hpMultiplier": 0.75,
+            "atkMultiplier": 0.85,
+            "defMultiplier": 0.35,
+            "bossPoolMultiplier": 0.6
+          }
+        },
+        "HARD": {
+          "regular": {
+            "hpMultiplier": 0.9,
+            "atkMultiplier": 1,
+            "defMultiplier": 0.65
+          },
+          "terminal": {
+            "hpMultiplier": 0.95,
+            "atkMultiplier": 1,
+            "defMultiplier": 0.65,
+            "bossPoolMultiplier": 0.9
+          }
+        },
+        "ABYSS": {
+          "regular": {
+            "hpMultiplier": 1,
+            "atkMultiplier": 1,
+            "defMultiplier": 1
+          },
+          "terminal": {
+            "hpMultiplier": 1,
+            "atkMultiplier": 1,
+            "defMultiplier": 1,
+            "bossPoolMultiplier": 1
+          }
+        }
+      }
     }
   },
   "playerText": {
@@ -386394,7 +386449,7 @@ export const resonanceContent = {
         "levels": [
           {
             "threshold": 1,
-            "description": "全行走格与保护目标铺雪；按圣聆初雪一星/二星/三星，每格冷却3/2/1秒，寒冷持续1.5/2/3秒。未开技能时每个寒冷或冻结敌人提供每秒0.2独立技力；技能期间每个此类敌人提供攻击+10%、攻速+10。三星技能永久持续，保留防御与法抗加成；攻击仅命中单一目标时追加两次500%攻击力法术伤害，施加1层麻痹。"
+            "description": "全行走格与保护目标铺雪；按圣聆初雪一星/二星/三星，每格冷却3/2/3秒，寒冷持续1.5/2/1.5秒。未开技能时每个寒冷或冻结敌人提供每秒0.2独立技力；技能期间每个此类敌人提供攻击+10%、攻速+10。三星技能永久持续，保留防御与法抗加成；攻击仅命中单一目标时追加两次500%攻击力法术伤害，施加1层麻痹。"
           }
         ]
       },
@@ -386449,7 +386504,7 @@ export const resonanceContent = {
         "description": "无基础属性"
       },
       "giantSlayer": {
-        "description": "攻击力+15 攻击力+15 攻击生命高于5000的敌人时伤害提高25%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+15 攻击力+15 攻击最大生命高于5000的敌人时伤害提高25%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "spellblade": {
         "description": "攻击力+15 攻击力+10，技力自然回复每秒+0.1 攻击使目标法术抗性降低12，持续3秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
@@ -386482,10 +386537,10 @@ export const resonanceContent = {
         "description": "攻击力+10，技力自然回复每秒+0.1 防御力+40 受击时造成自身防御力40%法术伤害，冷却1秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "arcaneMantle": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 法术抗性+8 法术抗性+12；技能目标受到的法术伤害提高15%，持续3秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+10，技力自然回复每秒+0.1 法术抗性+8 法术抗性+12；技能造成伤害后，被命中的敌人受到的法术伤害提高15%，持续3秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "lifeSpring": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 生命上限+150 每5秒治疗生命最低的友方80%攻击力生命。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+10，技力自然回复每秒+0.1 生命上限+150 每5秒为生命最低的友方恢复80%攻击力的生命。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "archangelStaff": {
         "description": "攻击力+10，技力自然回复每秒+0.1 初始技力+5 每次施法攻击提高8%，本场最多提高40%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
@@ -386503,7 +386558,7 @@ export const resonanceContent = {
         "description": "攻速+10 法术抗性+8 获得15%物理闪避和15%法术闪避。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "hurricane": {
-        "description": "攻速+10 生命上限+150 每第3次攻击对最近另一敌人造成60%攻击力物理伤害。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻速+10 生命上限+150 每第3次攻击，对攻击范围内最近的另一名可选敌人造成60%攻击力物理伤害。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "quickCharger": {
         "description": "攻速+10 初始技力+5 每次攻击恢复1技力，每秒最多2。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
@@ -386530,7 +386585,7 @@ export const resonanceContent = {
         "description": "法术抗性+8 法术抗性+8 法术抗性额外+12；每5秒清除寒冷或冻结。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "redemptionCloak": {
-        "description": "法术抗性+8 生命上限+150 每8秒治疗2格内最多2名友方各6%最大生命，不触发共生。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "法术抗性+8 生命上限+150 每8秒为2格内最多2名友方各恢复6%最大生命，不触发共生。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
       },
       "quietCape": {
         "description": "法术抗性+8 初始技力+5 技能结束时恢复4技力，冷却秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"

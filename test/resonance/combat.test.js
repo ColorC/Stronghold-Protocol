@@ -4,6 +4,11 @@ import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 import { installResonanceBattle } from '../../server/sim/content/resonance/battle.js';
 import { createResonanceKits } from '../../server/sim/content/resonance/kits.js';
 import { resonanceContent } from '../../shared/resonance/catalog.js';
+import { loadData } from '../../server/data.js';
+import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
+import { buildResonanceBattle } from '../../server/modes/resonance/battle.js';
+import { ARCHETYPES, DATA_DIR, SCENARIO_CONFIGS, buildScenario } from '../../tools/resonance/archetype-balance.mjs';
+import { COLS } from '../../server/sim/constants.js';
 
 const unit = (id) => chessRec({ id, charId: id, profession: 'WARRIOR', stats: { maxHp: 2000, atk: 500, def: 100, blockCnt: 1 }, rangeGrid: [[0,0],[0,1]], skill: null });
 const pactCatalog = {
@@ -152,6 +157,44 @@ test('Holy Gun counts real ammoUsed globally and the fixed skill creates fifteen
   h.b.rng=()=>((index+.01)/tiles.length);const before=target.hp;
   h.b.emit('skillStart',{unit:exu});
   assert.equal(target.hp,before-15*exu.s.atk*5,'the fixed skill makes fifteen 500% strikes on the selected random battlefield tile');
+});
+
+test('canonical resonance bridge keeps star-three Yela active beyond sixty seconds and retains real phalanx guard', () => {
+  const data = loadData(DATA_DIR, { log: { warn() {}, error() {} } });
+  const definition = ARCHETYPES.find(row => row.id === 'snow');
+  const config = SCENARIO_CONFIGS.find(row => row.round === 20 && row.level === 8);
+  const catalog = getResonanceCatalog(data, { environmentId: definition.env, seed: 2 });
+  const { state } = buildScenario({ data, catalog, definition, config, coreStar: 3, seed: 1823756035 });
+  const { battle } = buildResonanceBattle(state, { data, catalog, recording: false });
+  battle.start();
+  const owner = battle.allyUnits.find(row => row.uid === state.pieces[0].uid);
+  assert.ok(owner);
+  assert.equal(owner.skill.resonancePermanentDuration, true, 'the fixed star-three kit uses the explicit permanent-duration sentinel');
+  assert.equal(owner.skill.duration, -1);
+  assert.equal(owner.skill.timeLeft, Infinity, 'activating the sentinel skill produces infinite remaining duration');
+  const startsAtBattleStart = owner.skill.activations;
+  while (!battle.finished && battle.time < 65) battle.step();
+  assert.ok(battle.time > 60, 'the canonical battle remains live across the sixty-second boundary');
+  assert.equal(owner.skill.active, true, 'the fixed skill has not fallen back to its source thirty-second duration');
+  assert.equal(owner.skill.activations, startsAtBattleStart, 'the permanent skill does not end and recast');
+  assert.equal(owner.skill.timeLeft, Infinity);
+  const guard = owner.findBuff('trait:phalanxGuard');
+  assert.ok(guard, 'the native phalanx guard buff remains installed throughout the permanent skill');
+  const durableNativeEnemy = Object.values(data.enemies ?? {}).find(row => String(row.rank).toUpperCase() === 'BOSS' && (row.stats?.maxHp ?? 0) > owner.s.atk * 100);
+  assert.ok(durableNativeEnemy, 'canonical data contains an unmodified native leader record durable enough to remain targetable after one hit');
+  const inRangeTile = [...owner.rangeKeys].map(key => [Math.floor(key / COLS), key % COLS]).find(([r, c]) => battle.grid.walkable(r, c));
+  assert.ok(inRangeTile, 'the native operator range includes a walkable tile');
+  const target = battle.spawnEnemy(durableNativeEnemy.key, { pos: inRangeTile, routeIndex: 0, countInTotal: false });
+  assert.ok(target?.alive);
+  const hpBefore = target.hp;
+  const attacksBefore = owner.stats.attacks;
+  const signaturesBefore = battle.resonanceMetrics.triggers.signature_yela_single_target ?? 0;
+  assert.equal(battle.forceAttack(owner, [target]), true, 'the engine attack API resolves against a native enemy record and legal current attack tile');
+  assert.equal(owner.stats.attacks, attacksBefore + 1);
+  assert.equal(battle.resonanceMetrics.triggers.signature_yela_single_target, signaturesBefore + 1, 'one additional single-target attack activates the two-hit signature once, independently of preceding natural attacks');
+  assert.ok(target.hp < hpBefore, 'the real attack and its signature damage reach the enemy through Battle damage handling');
+  assert.equal(battle.recordEvents, false);
+  assert.equal(battle.resonanceDynamicFloors, null);
 });
 
 test('Holy Gun action cooldown is per Laterano attacker, so two operators can proc in the same instant',()=>{

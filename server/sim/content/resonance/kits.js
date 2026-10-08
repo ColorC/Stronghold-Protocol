@@ -187,7 +187,7 @@ export function createResonanceKits(catalog, state, data) {
       const selectedId = resolved?.skill?.id ?? resolved?.skill?.skillId ?? skillId;
       const star=starFor(op,state,resolved);
       let picked = authoredSpec(resolved, selectedId, native) ?? signatureKit(op, recordForStar(op, state, resolved), star);
-      if(yelaPermanent&&star>=3){picked??=nativeKit.skills?.[selectedId]??nativeKit.skill;if(picked)picked={...picked,duration:Infinity};}
+      if(yelaPermanent&&star>=3){picked??=nativeKit.skills?.[selectedId]??nativeKit.skill;if(picked)picked={...picked,duration:-1,tags:[...(picked.tags??[]),'resonanceYelaPermanent']};}
       if (!picked) return nativeKit;
       const talents=[...(nativeKit.talents??[]),...(picked.talents??[])].filter((t,i,a)=>a.findIndex(x=>x===t||(typeof t?.install==='function'&&x?.install===t.install))===i);
       return { ...nativeKit, ...(talents.length?{talents}:{}), skills: { ...(nativeKit.skills ?? {}), [selectedId]: picked }, skill: picked };

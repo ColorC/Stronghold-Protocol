@@ -77,7 +77,10 @@ export class SkillRuntime {
     this.id = s.id ?? d.id ?? 'skill';
     this.name = s.name ?? d.name ?? '';
     this.kind = s.kind ?? 'instant';
-    this.duration = Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
+    // Resonance's explicitly tagged permanent Yela skill uses -1 as a native sentinel; keep this exception
+    // narrowly scoped so an authored Infinity does not silently fall back to the source skill's finite duration.
+    this.resonancePermanentDuration = s.duration === -1 && Array.isArray(s.tags) && s.tags.includes('resonanceYelaPermanent');
+    this.duration = this.resonancePermanentDuration ? -1 : Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
     this.ammo = Math.max(0, Math.floor(+s.ammo || 0));
     this.baseSpCost = Math.max(0, Number.isFinite(+s.spCost) ? +s.spCost : (d.spCost ?? 0));
     this.initSp = Math.max(0, Number.isFinite(+s.initSp) ? +s.initSp : (d.initSp ?? 0));
@@ -453,7 +456,7 @@ export class SkillRuntime {
     if (this.manual) this.opReadyAt = b.time + AUTO_OP_COOLDOWN;
     if (this.isTimed) {
       this.active = true;
-      this.timeLeft = this.kind === 'duration' ? Math.max(0.01, this.duration) : (this.kind === 'ammo' && this.duration > 0 ? this.duration : Infinity);
+      this.timeLeft = this.kind === 'duration' ? (this.resonancePermanentDuration ? Infinity : Math.max(0.01, this.duration)) : (this.kind === 'ammo' && this.duration > 0 ? this.duration : Infinity);
       this.ammoLeft = this.kind === 'ammo' ? Math.max(1, this.ammo) : 0;
       this.ammoMax = this.ammoLeft;
       this._applyMods();

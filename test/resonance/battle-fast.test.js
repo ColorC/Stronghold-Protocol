@@ -3,12 +3,135 @@ import assert from 'node:assert/strict';
 
 process.env.SP_DATA_DIR = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data';
 
-const [{ getData }, { getResonanceCatalog }, { getResonanceField, buildResonanceBattle, runResonanceBattle, resonanceBattleWon }, { Battle }] = await Promise.all([
+const [{ getData }, { getResonanceCatalog }, { getResonanceField, buildResonanceBattle, runResonanceBattle, resonanceBattleWon, finishResonanceTerminalIfEscaped, resolveEnemyBalance }, { Battle }, { SharedBossPool }, { makeBattle, enemyRec, chessRec }] = await Promise.all([
   import('../../server/data.js'),
   import('../../server/modes/resonance/catalog.js'),
   import('../../server/modes/resonance/battle.js'),
   import('../../server/sim/Battle.js'),
+  import('../../server/match/finalAssault.js'),
+  import('../helpers/battleHarness.js'),
 ]);
+
+test('resonance enemy balance validates profiles and applies legal difficulty overrides',()=>{
+  assert.deepEqual(resolveEnemyBalance(null,'NORMAL','normal'),{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance({regular:{hpMultiplier:0.8},terminal:{hpMultiplier:0.85,bossPoolMultiplier:0.75},byDifficulty:{NORMAL:{regular:{hpMultiplier:0.6},terminal:{bossPoolMultiplier:0.5}}}},'NORMAL','normal'),{hpMultiplier:0.6,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance({terminal:{hpMultiplier:0.85,bossPoolMultiplier:0.75},byDifficulty:{NORMAL:{terminal:{hpMultiplier:0.7}}}},'NORMAL','boss'),{hpMultiplier:0.7,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.75});
+  assert.equal(resolveEnemyBalance({byDifficulty:{FUNNY:{regular:{atkMultiplier:0.9}},HARD:{regular:{defMultiplier:0.8}},ABYSS:{terminal:{bossPoolMultiplier:0.6}}}},'FUNNY','normal').atkMultiplier,0.9);
+  assert.equal(resolveEnemyBalance({byDifficulty:{FUNNY:{regular:{atkMultiplier:0.9}},HARD:{regular:{defMultiplier:0.8}},ABYSS:{terminal:{bossPoolMultiplier:0.6}}}},'HARD','normal').defMultiplier,0.8);
+  assert.equal(resolveEnemyBalance({byDifficulty:{FUNNY:{regular:{atkMultiplier:0.9}},HARD:{regular:{defMultiplier:0.8}},ABYSS:{terminal:{bossPoolMultiplier:0.6}}}},'ABYSS','boss').bossPoolMultiplier,0.6);
+  assert.throws(()=>resolveEnemyBalance({regular:{hpMultiplier:0}},'NORMAL','normal'),/finite and > 0/);
+  assert.throws(()=>resolveEnemyBalance({regular:{atkMultiplier:Infinity}},'NORMAL','normal'),/finite and > 0/);
+  assert.throws(()=>resolveEnemyBalance({terminal:{defMultiplier:0}},'NORMAL','normal'),/finite and > 0/,'all authored scopes are validated even outside the active node');
+  assert.throws(()=>resolveEnemyBalance({byDifficulty:{ABYSS:{terminal:{speedMultiplier:-1}}}},'NORMAL','normal'),/finite and > 0/,'inactive difficulty overrides are also validated');
+  assert.throws(()=>resolveEnemyBalance({byDifficulty:{UNKNOWN:{regular:{}}}},'NORMAL','normal'),/invalid resonance enemy balance difficulty/);
+});
+
+test('compiled campaign enemy balance resolves the approved four difficulty profiles',()=>{
+  const data=getData(),catalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:1}),config=catalog.campaign.enemyBalance;
+  assert.deepEqual(resolveEnemyBalance(config,'NORMAL','normal'),{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance(config,'NORMAL','boss'),{hpMultiplier:0.85,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.75});
+  assert.deepEqual(resolveEnemyBalance(config,'FUNNY','normal'),{hpMultiplier:0.65,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance(config,'FUNNY','boss'),{hpMultiplier:0.75,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.6});
+  assert.deepEqual(resolveEnemyBalance(config,'HARD','normal'),{hpMultiplier:0.9,atkMultiplier:1,defMultiplier:0.65,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance(config,'HARD','boss'),{hpMultiplier:0.95,atkMultiplier:1,defMultiplier:0.65,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.9});
+  assert.deepEqual(resolveEnemyBalance(config,'ABYSS','normal'),{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance(config,'ABYSS','boss'),{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+});
+
+test('resonance enemy balance scales native spawn mods once and boss pool independently',()=>{
+  const data=getData();
+  const baseCatalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:777});
+  const nativeCatalog=structuredClone(baseCatalog);nativeCatalog.campaign={...(nativeCatalog.campaign??{}),enemyBalance:null};
+  const candidate=structuredClone(nativeCatalog);
+  candidate.campaign.enemyBalance={regular:{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1},terminal:{hpMultiplier:0.85,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.75}};
+  const baseNormal={seed:612345,difficulty:'NORMAL',round:12,roundLimit:28,environmentId:'origin_aegir',pieces:[]};
+  const baseNormalField=getResonanceField(baseNormal,{data,catalog:nativeCatalog});
+  assert.equal(baseNormalField.tuning,'native-wave');
+  assert.deepEqual(baseNormalField.enemyBalance,{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  const allOne=structuredClone(nativeCatalog);allOne.campaign.enemyBalance={regular:{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1},terminal:{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1}};
+  assert.deepEqual(getResonanceField(baseNormal,{data,catalog:allOne}).wave.spawns,baseNormalField.wave.spawns,'all-one tuning preserves exact native spawn values');
+  const scaledField=getResonanceField(baseNormal,{data,catalog:candidate});
+  assert.equal(scaledField.tuning,'resonance');
+  assert.deepEqual(scaledField.enemyBalance,{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  const nativeSpawn=baseNormalField.wave.spawns.find(spawn=>spawn.enemyKey),scaledSpawn=scaledField.wave.spawns.find(spawn=>spawn.enemyKey);
+  assert.ok(nativeSpawn&&scaledSpawn);
+  for(const [key,multiplier] of [['hpMul',0.8],['atkMul',0.9],['defMul',0.5],['resMul',1],['speedMul',1]])assert.equal(scaledSpawn.mods?.[key]??1,(nativeSpawn.mods?.[key]??1)*multiplier,`${key} composes with native spawn mods`);
+  const nativeBuilt=buildResonanceBattle(baseNormal,{data,catalog:nativeCatalog});
+  const scaledBuilt=buildResonanceBattle(baseNormal,{data,catalog:candidate});
+  const nativeOutcome=runResonanceBattle(baseNormal,{data,catalog:nativeCatalog,recording:false});
+  const scaledOutcome=runResonanceBattle(baseNormal,{data,catalog:candidate,recording:false});
+  assert.equal(nativeOutcome.diagnostics.tuning,'native-wave');
+  assert.deepEqual(nativeOutcome.diagnostics.enemyBalance,{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.equal(scaledOutcome.diagnostics.tuning,'resonance');
+  assert.deepEqual(scaledOutcome.diagnostics.enemyBalance,{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(scaledBuilt.prepared.wave.spawns,scaledField.wave.spawns,'field preview and constructed Battle share scaled spawns');
+  const nativeEnemy=nativeBuilt.battle.spawnEnemy(nativeSpawn.enemyKey,{...nativeSpawn});
+  const scaledEnemy=scaledBuilt.battle.spawnEnemy(scaledSpawn.enemyKey,{...scaledSpawn});
+  for(const key of ['maxHp','atk','def','res','moveSpeed'])assert.ok(Math.abs(scaledEnemy.base[key]-nativeEnemy.base[key]*({maxHp:0.8,atk:0.9,def:0.5,res:1,moveSpeed:1}[key]))<1e-8,`actual Battle ${key} honors configured spawn mods`);
+  const baseTerminal={...baseNormal,round:28},baseTerminalBattle=buildResonanceBattle(baseTerminal,{data,catalog:nativeCatalog}),scaledTerminalBattle=buildResonanceBattle(baseTerminal,{data,catalog:candidate});
+  const baseBossSpawn=baseTerminalBattle.prepared.wave.spawns.find(spawn=>spawn.tag==='boss'),scaledBossSpawn=scaledTerminalBattle.prepared.wave.spawns.find(spawn=>spawn.tag==='boss');
+  assert.ok(baseBossSpawn&&scaledBossSpawn);
+  assert.equal(scaledBossSpawn.mods?.hpMul??1,(baseBossSpawn.mods?.hpMul??1)*0.85,'leader native hpMul receives terminal HP once');
+  assert.equal(scaledBossSpawn.mods?.atkMul??1,(baseBossSpawn.mods?.atkMul??1)*0.9);
+  assert.equal(scaledTerminalBattle.battle.sharedBoss.hp,Math.round(baseTerminalBattle.battle.sharedBoss.hp*0.75),'shared boss pool uses its independent multiplier');
+});
+
+test('terminal resonance bridge applies the configured 180 second upper bound', () => {
+  const data = getData();
+  const catalog = getResonanceCatalog(data, { environmentId: 'origin_aegir', seed: 1 });
+  const state = { seed: 4099526727, difficulty: 'NORMAL', round: 28, roundLimit: 28, environmentId: 'origin_aegir', pieces: [] };
+  const field = getResonanceField(state, { data, catalog });
+  assert.equal(field.nodeKind, 'boss');
+  assert.equal(field.timeLimit, 180);
+  const built = buildResonanceBattle(state, { data, catalog, recording: false });
+  assert.equal(built.battle.timeLimit, 180);
+  const outcome = runResonanceBattle(state, { data, catalog, recording: false });
+  assert.ok(outcome.result.time <= 180);
+  assert.ok(outcome.diagnostics.ticks <= 180 * 30 + 1);
+  assert.equal(outcome.won, outcome.result.bossHpLeft <= 0);
+});
+
+test('terminal empty closure preserves a real leader leak and waits for pending native schedules', () => {
+  const pool = new SharedBossPool(5000);
+  const h = makeBattle({ kind: 'boss', sharedBoss: pool, autoFinish: false, recordEvents: false,
+    defs: { enemies: { leader: enemyRec({ key: 'leader', rank: 'BOSS', hp: 5000, speed: 0 }) } } });
+  const b = h.battle;
+  b.start();
+  const leader = b.spawnEnemy('leader', { tag: 'boss', pos: [2, 3] });
+  assert.ok(leader?.isBoss);
+  const pending = b.after(0.2, () => {}, { holdsBattle: true });
+  b.leak(leader);
+  assert.equal(b.result().perPlayer.p1.leaked.length, 1, 'the leak remains in the native battle result');
+  assert.equal(finishResonanceTerminalIfEscaped(b, 'boss'), false, 'a pending holdsBattle schedule prevents early closure');
+  assert.equal(b.finished, false);
+  while (!pending.cancelled && b.time < 1) b.step();
+  assert.equal(b._hasPendingEnemySchedules(), false);
+  assert.equal(finishResonanceTerminalIfEscaped(b, 'boss'), true);
+  assert.equal(b.result().reason, 'forced');
+  assert.equal(resonanceBattleWon(b.result(), 'boss'), false);
+  assert.equal(b.result().perPlayer.p1.leaked.length, 1);
+});
+
+test('terminal closure does not preempt a live shared-pool victory', () => {
+  const pool = new SharedBossPool(1000);
+  const h = makeBattle({ kind: 'boss', sharedBoss: pool, autoFinish: false, recordEvents: false,
+    defs: { chess: { attacker: chessRec({ id: 'attacker', stats: { atk: 100 } }) }, enemies: { leader: enemyRec({ key: 'leader', rank: 'BOSS', hp: 1000, speed: 0 }) } },
+    units: [{ chessId: 'attacker', uid: 'attacker', row: 2, col: 5 }] });
+  const b = h.battle;
+  b.start();
+  const leader = b.spawnEnemy('leader', { tag: 'boss', pos: [2, 3] });
+  assert.ok(leader?.isBoss);
+  const attacker = b.allyUnits[0];
+  for (let i = 0; i < 20 && pool.hp > 0; i++) {
+    assert.ok(b.dealDamage(attacker, leader, { amount: 100, type: 'true', canDodge: false }) > 0);
+  }
+  assert.equal(pool.hp, 0);
+  b.step();
+  assert.equal(b.finished, true);
+  assert.equal(b.result().reason, 'cleared');
+  assert.equal(finishResonanceTerminalIfEscaped(b, 'boss'), false);
+  assert.equal(resonanceBattleWon(b.result(), 'boss'), true);
+});
 
 test('a zero-loss leak still loses the battle; uncounted parts and defeated boss follow their own outcome',()=>{
   const result={reason:'cleared',perPlayer:{resonance:{leaked:[{counted:true,lpr:0}]}},bossHpLeft:100};
@@ -161,6 +284,10 @@ test('all twenty five-cost star-three signatures trigger through canonical bridg
     const operator = Object.values(catalog.operators).find((row) => row.name === name);
     assert.ok(operator, `catalog identity exists for ${name}`);
     assert.equal(operator.cost, 5, `${name} is the canonical five-cost operator`);
+    if(name==='耀骑士临光'){
+      assert.equal(operator.fixedSkillId,'skchr_nearl2_3','Nearl uses the fixed S3 signature skill');
+      assert.equal(operator.stars[3].record.skill?.skillId,'skchr_nearl2_3','star-three native record resolves the configured S3');
+    }
     const state = {
       schemaVersion: 1, seed: 400 + index, revision: 0, round: 26, roundLimit: 28, difficulty: 'NORMAL',
       environmentId: 'origin_laterano', phase: 'prep', level: 3, xp: 0, gold: 5, hp: 100,

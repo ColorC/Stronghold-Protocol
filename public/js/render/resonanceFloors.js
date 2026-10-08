@@ -48,6 +48,30 @@ export function activeDynamicFloors(value, time) {
   return normalizeDynamicFloors(value).filter((floor) => floor.until > time);
 }
 
+/** Tile-level floor lookup shared by simplified renderers that cannot use the projected Pixi overlay. */
+export function resonanceFloorsForTile(staticValue, dynamicValue, time, row, col) {
+  const staticFloor = normalizeStaticFloors(staticValue).some(([r, c]) => r === row && c === col);
+  const dynamic = activeDynamicFloors(dynamicValue, time)
+    .filter((floor) => floor.tiles.some(([r, c]) => r === row && c === col));
+  return { static: staticFloor, dynamic };
+}
+
+/** Pre-index overlays for a flat DOM board so each tile avoids re-normalizing the protocol. */
+export function resonanceFloorTileIndex(staticValue, dynamicValue, time) {
+  const tiles = new Map();
+  const entry = (row, col) => {
+    const key = `${row},${col}`;
+    let value = tiles.get(key);
+    if (!value) { value = { static: false, dynamic: [] }; tiles.set(key, value); }
+    return value;
+  };
+  for (const [row, col] of normalizeStaticFloors(staticValue)) entry(row, col).static = true;
+  for (const floor of activeDynamicFloors(dynamicValue, time)) {
+    for (const [row, col] of floor.tiles) entry(row, col).dynamic.push(floor);
+  }
+  return tiles;
+}
+
 /** World-projected top corners shared by the Pixi overlay and the board's 2D/3D camera. */
 export function floorTilePolygon(cam, heightAt, row, col, inset = 0.06) {
   if (!cam || !validTile(row, col)) return null;
