@@ -304,7 +304,7 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   const startBuy=()=>{
     if(!buySpec){onBuy(target.slot,{});return;}
     const choices=buyTargetChoices(buySpec,state,catalog,target.slot);
-    if(!choices.length&&!buyRequiresTarget(buySpec)){onBuy(target.slot,{});return;}
+    if(!choices.length&&!buyRequiresTarget(buySpec,choices)){onBuy(target.slot,{});return;}
     setBuySelection({slot:target.slot,spec:buySpec,required:buyTargetCount(buySpec,state,catalog,slot),choices,selected:[]});
   };
   const chooseBuyTarget=(choice)=>setBuySelection(current=>{

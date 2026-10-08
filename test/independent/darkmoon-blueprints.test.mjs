@@ -378,7 +378,8 @@ test('purchase target spec requires explicit eligible friendly or shop targets a
   assert.deepEqual(buyTargetChoices(magneticSpec,{pieces:[{uid:'c',chessId:'columbia',row:0,col:0},{uid:'w',chessId:'wrongFaction',row:0,col:1}]},catalog,0).map(x=>x.uid),['c']);
   const noEligible=buyTargetChoices(friendSpec,{pieces:[{uid:'wrong',chessId:'wrong',ownerId:'p',row:0,col:0}]},catalog,0);
   assert.equal(noEligible.length,0);
-  assert.equal(buyRequiresTarget(friendSpec),true,'UI must keep a required-target purchase open and disabled when no legal recipient exists');
+  assert.equal(buyRequiresTarget(friendSpec,noEligible),false,'recruitment stays legal when there is no eligible friendly battlecry target');
+  assert.equal(buyRequiresTarget(friendSpec,[{uid:'f'}]),true,'an existing eligible recipient still requires a deliberate choice');
   for(const id of ['BOT_312','BOT_911']) {
     const entry=byId.get(id),generated={id,metadata:{op:entry.metadata.op},sourceRefs:{darkmoon19_2:{id}}};
     const actual=buyTargetSpec({id}, {operators:{[id]:generated}});
@@ -927,4 +928,14 @@ test('magnetic Columbia source actions preserve normal/golden attachments, gear,
     const foreign={...target,uid:'foreign-owner',ownerId:'p2',equipment:[],attachments:[]};state.pieces.push(foreign);
     assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',magneticTargetUid:foreign.uid},services),/DARKMOON_MAGNETIC_TARGET_INVALID/);
   }
+});
+
+
+test('a friendly-target source can be recruited onto an empty field without inventing a buff or inventory item',()=>{
+ const catalog=getCatalog(),op=Object.values(catalog.operators).find(x=>!x.elite&&x.sourceRefs?.darkmoon19_2?.id==='GVG_055');
+ const state=createSession({seed:55,catalog});state.funds=10;state.shop.slots[0]={kind:'chess',id:op.chessId,price:3,sold:false,equipment:[]};
+ const choices=buyTargetChoices(buyTargetSpec(state.shop.slots[0],catalog,state),state,catalog,0);
+ assert.equal(choices.length,0);assert.equal(buyRequiresTarget(buyTargetSpec(state.shop.slots[0],catalog,state),choices),false);
+ const result=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(result.ok,true,JSON.stringify(result.error));
+ const bought=result.state.pieces.find(p=>p.chessId===op.chessId);assert.ok(bought);assert.equal(bought.equipment.length,0);assert.equal(result.state.inventory.length,0);assert.equal(result.state.funds,7);
 });
