@@ -8,11 +8,12 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-const HELP = `Usage: node tools/assets/build-static-site.mjs --source-root=<canonical checkout> --out=<new absolute directory> [--revision=<git commit>] [--base-path=/<prefix>/<commit>]
+const HELP = `Usage: node tools/assets/build-static-site.mjs --source-root=<canonical checkout> --out=<new absolute directory> [--revision=<git commit>] [--base-path=/<prefix>/<commit>] [--resource-root=<canonical public directory>] [--local-assets=<canonical manifest file>]
 
 Builds <out>/<full-git-commit>/{js,css,vendor,fonts,assets,data,shared,sim,media} and Pages _headers.
 The source checkout must be clean for tracked static code/data. Ignored generated public/assets, public/fonts,
-public/vendor and data/local-assets.json are read from that checkout as-is. No network, deploy, or push occurs.`;
+public/vendor, audio aliases and data/local-assets.json are read from --resource-root / --local-assets when supplied,
+or from the source checkout by default. No network, deploy, or push occurs.`;
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_FILES = 20_000;
 const DATA_FILES = new Set([
@@ -29,7 +30,7 @@ function parseArgs(argv) {
     const i = arg.indexOf('=');
     if (i < 0) throw new Error(`unknown option: ${arg}`);
     const key = arg.slice(0, i), value = arg.slice(i + 1);
-    if (!['--source-root', '--out', '--revision', '--base-path'].includes(key) || !value) throw new Error(`invalid option: ${arg}`);
+    if (!['--source-root', '--out', '--revision', '--base-path', '--resource-root', '--local-assets'].includes(key) || !value) throw new Error(`invalid option: ${arg}`);
     opts[key.slice(2)] = value;
   }
   if (!opts.help && (!opts['source-root'] || !opts.out)) throw new Error('both --source-root and --out are required');
@@ -112,7 +113,13 @@ async function main() {
   if (opts.help) { console.log(HELP); return 0; }
   const sourceRoot = path.resolve(opts['source-root']);
   const outputRoot = path.resolve(opts.out);
-  if (!path.isAbsolute(opts['source-root']) || !path.isAbsolute(opts.out)) throw new Error('--source-root and --out must be absolute paths');
+  if (!path.isAbsolute(opts['source-root']) || !path.isAbsolute(opts.out)
+      || (opts['resource-root'] && !path.isAbsolute(opts['resource-root']))
+      || (opts['local-assets'] && !path.isAbsolute(opts['local-assets']))) {
+    throw new Error('--source-root, --out, --resource-root and --local-assets paths must be absolute');
+  }
+  const resourceRoot = path.resolve(opts['resource-root'] || path.join(sourceRoot, 'public'));
+  const localAssetsPath = path.resolve(opts['local-assets'] || path.join(sourceRoot, 'data', 'local-assets.json'));
   if (!existsSync(path.join(sourceRoot, '.git')) && !existsSync(path.join(sourceRoot, '.git', 'worktrees'))) throw new Error(`not a Git checkout: ${sourceRoot}`);
   const revision = opts.revision || git(sourceRoot, 'rev-parse', 'HEAD');
   if (!/^[0-9a-f]{40}$/i.test(revision)) throw new Error('--revision must be a full 40-character Git commit');
@@ -122,6 +129,20 @@ async function main() {
   if (existsSync(outputRoot)) throw new Error(`output already exists; choose a new runtime batch path: ${outputRoot}`);
   await ensureNoReparseAncestors(outputRoot);
   await ensureNoReparseAncestors(sourceRoot);
+  await ensureNoReparseAncestors(resourceRoot);
+  const resourceRootInfo = await lstat(resourceRoot);
+  if (!resourceRootInfo.isDirectory() || resourceRootInfo.isSymbolicLink() || resourceRootInfo.isReparsePoint?.()) {
+    throw new Error(`resource root must be a plain directory: ${resourceRoot}`);
+  }
+  const hasLocalAssets = existsSync(localAssetsPath);
+  if (opts['local-assets'] && !hasLocalAssets) throw new Error(`local assets manifest is missing: ${localAssetsPath}`);
+  if (hasLocalAssets) {
+    await ensureNoReparseAncestors(localAssetsPath);
+    const localAssetsInfo = await lstat(localAssetsPath);
+    if (!localAssetsInfo.isFile() || localAssetsInfo.isSymbolicLink() || localAssetsInfo.isReparsePoint?.()) {
+      throw new Error(`local assets manifest must be a plain file: ${localAssetsPath}`);
+    }
+  }
 
   const trackedStatic = [
     ...trackedFiles(sourceRoot, 'public/js/').map((p) => ({ source: p, target: p.replace(/^public\//, '') })),
@@ -129,10 +150,10 @@ async function main() {
     ...trackedFiles(sourceRoot, 'shared/'),
     ...trackedFiles(sourceRoot, 'server/sim/').filter((p) => p.toLowerCase().endsWith('.js') && path.posix.basename(p).toLowerCase() !== 'nodedata.js')
       .map((p) => ({ source: p, target: p.replace(/^server\/sim\//, 'sim/') })),
-    ...[...DATA_FILES].filter((name) => existsSync(path.join(sourceRoot, 'data', name)) && (name !== 'local-assets.json' || existsSync(path.join(sourceRoot, 'data', name))))
-      .filter((name) => name !== 'local-assets.json' || existsSync(path.join(sourceRoot, 'data', name)))
+    ...[...DATA_FILES].filter((name) => name !== 'local-assets.json' && existsSync(path.join(sourceRoot, 'data', name)))
       .map((name) => `data/${name}`),
   ].map((entry) => typeof entry === 'string' ? ({ source: entry, target: entry }) : entry);
+  if (hasLocalAssets) trackedStatic.push({ source: 'data/local-assets.json', externalInput: localAssetsPath, target: 'data/local-assets.json' });
   const engineRel = 'public/js/independent/engine';
   const enginePath = path.join(sourceRoot, engineRel);
   const needsEngine = existsSync(path.join(sourceRoot, 'public/js/independent/client-worker.js'));
@@ -157,9 +178,9 @@ async function main() {
   const stats = { files: 0, bytes: 0, byTopDir: {}, oversized: [], maxFileBytes: 0 };
   const copies = [...trackedStatic];
   for (const [src, dest] of [
-    ['public/assets', 'assets'], ['public/fonts', 'fonts'], ['public/vendor', 'vendor'],
+    ['assets', 'assets'], ['fonts', 'fonts'], ['vendor', 'vendor'],
   ]) {
-    const abs = path.join(sourceRoot, src);
+    const abs = path.join(resourceRoot, src);
     if (!existsSync(abs)) throw new Error(`required static source directory is missing: ${abs}`);
     const files = await walkFiles(abs);
     for (const rel of files) copies.push({ target: `${dest}/${rel}` });
@@ -172,7 +193,9 @@ async function main() {
   }
 
   for (const { source: sourceRel, target: rel } of trackedStatic) {
-    const source = path.join(sourceRoot, ...sourceRel.split('/'));
+    const source = sourceRel === 'data/local-assets.json' && hasLocalAssets
+      ? localAssetsPath
+      : path.join(sourceRoot, ...sourceRel.split('/'));
     const dest = path.join(staticRoot, ...rel.split('/'));
     const info = await lstat(source);
     if (!info.isFile() || info.isSymbolicLink() || info.isReparsePoint?.()) throw new Error(`static input must be a plain file: ${source}`);
@@ -189,10 +212,10 @@ async function main() {
     stats.byTopDir[rel.split('/')[0]] = (stats.byTopDir[rel.split('/')[0]] || 0) + emittedBytes;
     if (emittedBytes > MAX_FILE_BYTES) stats.oversized.push({ path: rel, bytes: emittedBytes });
   }
-  for (const [src, dest] of [['public/assets', 'assets'], ['public/fonts', 'fonts'], ['public/vendor', 'vendor']]) {
-    for (const rel of await walkFiles(path.join(sourceRoot, src))) {
+  for (const [src, dest] of [['assets', 'assets'], ['fonts', 'fonts'], ['vendor', 'vendor']]) {
+    for (const rel of await walkFiles(path.join(resourceRoot, src))) {
       const target = `${dest}/${rel}`;
-      const abs = path.join(sourceRoot, src, ...rel.split('/'));
+      const abs = path.join(resourceRoot, src, ...rel.split('/'));
       const info = await lstat(abs);
       const out = path.join(staticRoot, ...target.split('/'));
       await mkdir(path.dirname(out), { recursive: true });
@@ -221,7 +244,7 @@ async function main() {
 
   // The browser asks /media/<audio-relative-path-without-extension>. Copy the MP3 bytes under that path,
   // preserving the extensionless route and MIME type that suppresses download-manager popups.
-  const audioRoot = path.join(sourceRoot, 'public', 'assets', 'audio');
+  const audioRoot = path.join(resourceRoot, 'assets', 'audio');
   const audioFiles = await walkFiles(audioRoot);
   for (const rel of audioFiles) {
     const ext = path.posix.extname(rel).toLowerCase();
@@ -250,6 +273,8 @@ async function main() {
   const report = {
     version: 1,
     sourceRevision: revision,
+    resourceRoot,
+    localAssetsPath: hasLocalAssets ? localAssetsPath : null,
     clientEngineRevision: engineBuild?.sourceRevision || null,
     immutablePrefix: `${basePath}/`,
     files: stats.files,

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -74,4 +74,74 @@ test('static builder pins a safe path-only package and copies extensionless audi
   assert.match(headers, /immutable/);
   assert.match(headers, /Content-Type: audio\/mpeg/);
   assert.match(headers, new RegExp(`${basePath.replaceAll('/', '\\/')}\\/media/\\*`));
+});
+
+test('static builder reads ignored assets and local manifest from explicit absolute roots', async (t) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'stronghold-static-external-'));
+  const resolvedTemp = path.resolve(tempRoot);
+  assert.ok(resolvedTemp.startsWith(path.resolve(os.tmpdir()) + path.sep), 'fixture must remain under the OS temp root');
+  t.after(async () => rm(resolvedTemp, { recursive: true, force: true }));
+  const source = path.join(tempRoot, 'source');
+  const resources = path.join(tempRoot, 'canonical-resources');
+  const manifest = path.join(tempRoot, 'canonical-data', 'local-assets.json');
+  const output = path.join(tempRoot, 'upload');
+  for (const dir of ['public/js', 'public/css', 'data', 'shared', 'server/sim', 'assets/audio/bgm', 'fonts', 'vendor']) {
+    await mkdir(path.join(source, dir), { recursive: true });
+  }
+  for (const dir of ['assets/audio/bgm', 'fonts', 'vendor']) await mkdir(path.join(resources, dir), { recursive: true });
+  await mkdir(path.dirname(manifest), { recursive: true });
+  await writeFile(path.join(source, 'public/js/main.js'), 'export {};\n');
+  await writeFile(path.join(source, 'public/css/main.css'), 'body {}\n');
+  await writeFile(path.join(source, 'data/chess.json'), '{"fixture":true}\n');
+  await writeFile(path.join(source, 'server/index.js'), 'export const DATA_SHIM_JS = "export {};\\n";\n');
+  await writeFile(path.join(resources, 'assets/sentinel.bin'), Buffer.from([10, 20, 30]));
+  await writeFile(path.join(resources, 'assets/audio/bgm/external.mp3'), Buffer.from([0x49, 0x44, 3, 9]));
+  await writeFile(path.join(resources, 'fonts/external.woff2'), Buffer.from([40, 50]));
+  await writeFile(path.join(resources, 'vendor/external.js'), 'export const external = true;\n');
+  await writeFile(manifest, '{"externalManifest":true}\n');
+  command('git', ['init', '-q'], source);
+  command('git', ['config', 'user.email', 'fixture@example.invalid'], source);
+  command('git', ['config', 'user.name', 'Static fixture'], source);
+  command('git', ['add', 'public/js', 'public/css', 'data/chess.json', 'server/index.js'], source);
+  command('git', ['commit', '-qm', 'fixture'], source);
+  const revision = command('git', ['rev-parse', 'HEAD'], source);
+  const basePath = `/external/${revision}`;
+  const built = spawnSync(process.execPath, [
+    BUILDER,
+    `--source-root=${source}`,
+    `--resource-root=${resources}`,
+    `--local-assets=${manifest}`,
+    `--revision=${revision}`,
+    `--base-path=${basePath}`,
+    `--out=${output}`,
+  ], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(built.status, 0, `${built.stdout}\n${built.stderr}`);
+  const staticRoot = path.join(output, 'external', revision);
+  const report = JSON.parse(await readFile(path.join(output, 'static-build.json'), 'utf8'));
+  assert.equal(report.sourceRevision, revision);
+  assert.equal(report.resourceRoot, resources);
+  assert.equal(report.localAssetsPath, manifest);
+  assert.deepEqual(await readFile(path.join(staticRoot, 'assets/sentinel.bin')), Buffer.from([10, 20, 30]));
+  assert.deepEqual(await readFile(path.join(staticRoot, 'media/bgm/external')), Buffer.from([0x49, 0x44, 3, 9]));
+  assert.deepEqual(await readFile(path.join(staticRoot, 'fonts/external.woff2')), Buffer.from([40, 50]));
+  assert.equal(await readFile(path.join(staticRoot, 'vendor/external.js'), 'utf8'), 'export const external = true;\n');
+  assert.equal(await readFile(path.join(staticRoot, 'data/local-assets.json'), 'utf8'), '{"externalManifest":true}\n');
+
+  const missingRootOutput = path.join(tempRoot, 'missing-root-output');
+  const missingRoot = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, `--resource-root=${path.join(tempRoot, 'missing')}`, `--out=${missingRootOutput}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(missingRoot.status, 1);
+  assert.match(missingRoot.stderr, /ENOENT|no such file|cannot find/i);
+
+  const linkedResources = path.join(tempRoot, 'resource-junction');
+  await symlink(resources, linkedResources, 'junction');
+  const linkedOutput = path.join(tempRoot, 'linked-output');
+  const linkedRoot = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, `--resource-root=${linkedResources}`, `--out=${linkedOutput}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(linkedRoot.status, 1);
+  assert.match(linkedRoot.stderr, /reparse point/i);
+
+  const linkedManifestDir = path.join(tempRoot, 'manifest-junction');
+  await symlink(path.dirname(manifest), linkedManifestDir, 'junction');
+  const linkedManifest = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, `--resource-root=${resources}`, `--local-assets=${path.join(linkedManifestDir, path.basename(manifest))}`, `--out=${path.join(tempRoot, 'linked-manifest-output')}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(linkedManifest.status, 1);
+  assert.match(linkedManifest.stderr, /reparse point/i);
 });
