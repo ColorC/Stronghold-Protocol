@@ -55,6 +55,7 @@ test('static builder pins a safe path-only package and copies extensionless audi
   const staticRoot = path.join(output, 'static', 'releases', revision);
   const report = JSON.parse(await readFile(path.join(output, 'static-build.json'), 'utf8'));
   assert.equal(report.sourceRevision, revision);
+  assert.equal(report.dataRoot, path.join(source, 'data'));
   assert.equal(report.mediaAliasFiles, 1);
   assert.equal(report.mediaAliasBytes, 5);
   assert.deepEqual(await readFile(path.join(staticRoot, 'media/bgm/track')), Buffer.from([0x49, 0x44, 0x33, 4, 5]));
@@ -93,6 +94,9 @@ test('static builder reads ignored assets and local manifest from explicit absol
   await writeFile(path.join(source, 'public/js/main.js'), 'export {};\n');
   await writeFile(path.join(source, 'public/css/main.css'), 'body {}\n');
   await writeFile(path.join(source, 'data/chess.json'), '{"fixture":true}\n');
+  await writeFile(path.join(path.dirname(manifest), 'chess.json'), '{"externalRules":true}\n');
+  await writeFile(path.join(path.dirname(manifest), 'tokens.json'), '{"externalTokens":true}\n');
+  await writeFile(path.join(path.dirname(manifest), 'private-unlisted.json'), '{"mustNotCopy":true}\n');
   await writeFile(path.join(source, 'server/index.js'), 'export const DATA_SHIM_JS = "export {};\\n";\n');
   await writeFile(path.join(resources, 'assets/sentinel.bin'), Buffer.from([10, 20, 30]));
   await writeFile(path.join(resources, 'assets/audio/bgm/external.mp3'), Buffer.from([0x49, 0x44, 3, 9]));
@@ -110,6 +114,7 @@ test('static builder reads ignored assets and local manifest from explicit absol
     BUILDER,
     `--source-root=${source}`,
     `--resource-root=${resources}`,
+    `--data-root=${path.dirname(manifest)}`,
     `--local-assets=${manifest}`,
     `--revision=${revision}`,
     `--base-path=${basePath}`,
@@ -120,7 +125,11 @@ test('static builder reads ignored assets and local manifest from explicit absol
   const report = JSON.parse(await readFile(path.join(output, 'static-build.json'), 'utf8'));
   assert.equal(report.sourceRevision, revision);
   assert.equal(report.resourceRoot, resources);
+  assert.equal(report.dataRoot, path.dirname(manifest));
   assert.equal(report.localAssetsPath, manifest);
+  assert.equal(await readFile(path.join(staticRoot, 'data/chess.json'), 'utf8'), '{"externalRules":true}\n');
+  assert.equal(await readFile(path.join(staticRoot, 'data/tokens.json'), 'utf8'), '{"externalTokens":true}\n');
+  await assert.rejects(readFile(path.join(staticRoot, 'data/private-unlisted.json')));
   assert.deepEqual(await readFile(path.join(staticRoot, 'assets/sentinel.bin')), Buffer.from([10, 20, 30]));
   assert.deepEqual(await readFile(path.join(staticRoot, 'media/bgm/external')), Buffer.from([0x49, 0x44, 3, 9]));
   assert.deepEqual(await readFile(path.join(staticRoot, 'fonts/external.woff2')), Buffer.from([40, 50]));
@@ -132,12 +141,27 @@ test('static builder reads ignored assets and local manifest from explicit absol
   assert.equal(missingRoot.status, 1);
   assert.match(missingRoot.stderr, /ENOENT|no such file|cannot find/i);
 
+  const missingDataOutput = path.join(tempRoot, 'missing-data-output');
+  const missingData = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, `--data-root=${path.join(tempRoot, 'missing-rules')}`, `--out=${missingDataOutput}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(missingData.status, 1);
+  assert.match(missingData.stderr, /data root must be an existing plain directory/i);
+  assert.match(missingData.stderr, new RegExp(path.join(tempRoot, 'missing-rules').replaceAll('\\', '\\\\')));
+
+  const relativeData = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, '--data-root=rules', `--out=${path.join(tempRoot, 'relative-data-output')}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(relativeData.status, 1);
+  assert.match(relativeData.stderr, /--data-root.*paths must be absolute/i);
+
   const linkedResources = path.join(tempRoot, 'resource-junction');
   await symlink(resources, linkedResources, 'junction');
   const linkedOutput = path.join(tempRoot, 'linked-output');
   const linkedRoot = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, `--resource-root=${linkedResources}`, `--out=${linkedOutput}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
   assert.equal(linkedRoot.status, 1);
   assert.match(linkedRoot.stderr, /reparse point/i);
+
+  const linkedDataOutput = path.join(tempRoot, 'linked-data-output');
+  const linkedData = spawnSync(process.execPath, [BUILDER, `--source-root=${source}`, `--data-root=${linkedResources}`, `--out=${linkedDataOutput}`], { cwd: ROOT, encoding: 'utf8', windowsHide: true });
+  assert.equal(linkedData.status, 1);
+  assert.match(linkedData.stderr, /reparse point/i);
 
   const linkedManifestDir = path.join(tempRoot, 'manifest-junction');
   await symlink(path.dirname(manifest), linkedManifestDir, 'junction');

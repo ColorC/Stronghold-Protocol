@@ -8,12 +8,12 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-const HELP = `Usage: node tools/assets/build-static-site.mjs --source-root=<canonical checkout> --out=<new absolute directory> [--revision=<git commit>] [--base-path=/<prefix>/<commit>] [--resource-root=<canonical public directory>] [--local-assets=<canonical manifest file>]
+const HELP = `Usage: node tools/assets/build-static-site.mjs --source-root=<canonical checkout> --out=<new absolute directory> [--revision=<git commit>] [--base-path=/<prefix>/<commit>] [--resource-root=<canonical public directory>] [--data-root=<canonical rules directory>] [--local-assets=<canonical manifest file>]
 
 Builds <out>/<full-git-commit>/{js,css,vendor,fonts,assets,data,shared,sim,media} and Pages _headers.
-The source checkout must be clean for tracked static code/data. Ignored generated public/assets, public/fonts,
-public/vendor, audio aliases and data/local-assets.json are read from --resource-root / --local-assets when supplied,
-or from the source checkout by default. No network, deploy, or push occurs.`;
+The source checkout must be clean for tracked static code/data. Generated assets are read from --resource-root
+when supplied or from the source checkout; data/local-assets.json is read from --local-assets or source checkout.
+Allow-listed rule JSON is read from --data-root or source checkout/data. No network, deploy, or push occurs.`;
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_FILES = 20_000;
 const DATA_FILES = new Set([
@@ -30,7 +30,7 @@ function parseArgs(argv) {
     const i = arg.indexOf('=');
     if (i < 0) throw new Error(`unknown option: ${arg}`);
     const key = arg.slice(0, i), value = arg.slice(i + 1);
-    if (!['--source-root', '--out', '--revision', '--base-path', '--resource-root', '--local-assets'].includes(key) || !value) throw new Error(`invalid option: ${arg}`);
+    if (!['--source-root', '--out', '--revision', '--base-path', '--resource-root', '--data-root', '--local-assets'].includes(key) || !value) throw new Error(`invalid option: ${arg}`);
     opts[key.slice(2)] = value;
   }
   if (!opts.help && (!opts['source-root'] || !opts.out)) throw new Error('both --source-root and --out are required');
@@ -115,10 +115,12 @@ async function main() {
   const outputRoot = path.resolve(opts.out);
   if (!path.isAbsolute(opts['source-root']) || !path.isAbsolute(opts.out)
       || (opts['resource-root'] && !path.isAbsolute(opts['resource-root']))
+      || (opts['data-root'] && !path.isAbsolute(opts['data-root']))
       || (opts['local-assets'] && !path.isAbsolute(opts['local-assets']))) {
-    throw new Error('--source-root, --out, --resource-root and --local-assets paths must be absolute');
+    throw new Error('--source-root, --out, --resource-root, --data-root and --local-assets paths must be absolute');
   }
   const resourceRoot = path.resolve(opts['resource-root'] || path.join(sourceRoot, 'public'));
+  const dataRoot = path.resolve(opts['data-root'] || path.join(sourceRoot, 'data'));
   const localAssetsPath = path.resolve(opts['local-assets'] || path.join(sourceRoot, 'data', 'local-assets.json'));
   if (!existsSync(path.join(sourceRoot, '.git')) && !existsSync(path.join(sourceRoot, '.git', 'worktrees'))) throw new Error(`not a Git checkout: ${sourceRoot}`);
   const revision = opts.revision || git(sourceRoot, 'rev-parse', 'HEAD');
@@ -133,6 +135,18 @@ async function main() {
   const resourceRootInfo = await lstat(resourceRoot);
   if (!resourceRootInfo.isDirectory() || resourceRootInfo.isSymbolicLink() || resourceRootInfo.isReparsePoint?.()) {
     throw new Error(`resource root must be a plain directory: ${resourceRoot}`);
+  }
+  if (opts['data-root'] || existsSync(dataRoot)) {
+    await ensureNoReparseAncestors(dataRoot);
+    let dataRootInfo;
+    try { dataRootInfo = await lstat(dataRoot); }
+    catch (err) {
+      if (err.code === 'ENOENT') throw new Error(`data root must be an existing plain directory: ${dataRoot}`);
+      throw err;
+    }
+    if (!dataRootInfo.isDirectory() || dataRootInfo.isSymbolicLink() || dataRootInfo.isReparsePoint?.()) {
+      throw new Error(`data root must be a plain directory: ${dataRoot}`);
+    }
   }
   const hasLocalAssets = existsSync(localAssetsPath);
   if (opts['local-assets'] && !hasLocalAssets) throw new Error(`local assets manifest is missing: ${localAssetsPath}`);
@@ -150,8 +164,8 @@ async function main() {
     ...trackedFiles(sourceRoot, 'shared/'),
     ...trackedFiles(sourceRoot, 'server/sim/').filter((p) => p.toLowerCase().endsWith('.js') && path.posix.basename(p).toLowerCase() !== 'nodedata.js')
       .map((p) => ({ source: p, target: p.replace(/^server\/sim\//, 'sim/') })),
-    ...[...DATA_FILES].filter((name) => name !== 'local-assets.json' && existsSync(path.join(sourceRoot, 'data', name)))
-      .map((name) => `data/${name}`),
+    ...[...DATA_FILES].filter((name) => name !== 'local-assets.json' && existsSync(path.join(dataRoot, name)))
+      .map((name) => ({ source: `data/${name}`, externalInput: path.join(dataRoot, name), target: `data/${name}` })),
   ].map((entry) => typeof entry === 'string' ? ({ source: entry, target: entry }) : entry);
   if (hasLocalAssets) trackedStatic.push({ source: 'data/local-assets.json', externalInput: localAssetsPath, target: 'data/local-assets.json' });
   const engineRel = 'public/js/independent/engine';
@@ -192,10 +206,10 @@ async function main() {
     seen.add(target);
   }
 
-  for (const { source: sourceRel, target: rel } of trackedStatic) {
+  for (const { source: sourceRel, externalInput, target: rel } of trackedStatic) {
     const source = sourceRel === 'data/local-assets.json' && hasLocalAssets
       ? localAssetsPath
-      : path.join(sourceRoot, ...sourceRel.split('/'));
+      : externalInput || path.join(sourceRoot, ...sourceRel.split('/'));
     const dest = path.join(staticRoot, ...rel.split('/'));
     const info = await lstat(source);
     if (!info.isFile() || info.isSymbolicLink() || info.isReparsePoint?.()) throw new Error(`static input must be a plain file: ${source}`);
@@ -274,6 +288,7 @@ async function main() {
     version: 1,
     sourceRevision: revision,
     resourceRoot,
+    dataRoot,
     localAssetsPath: hasLocalAssets ? localAssetsPath : null,
     clientEngineRevision: engineBuild?.sourceRevision || null,
     immutablePrefix: `${basePath}/`,
