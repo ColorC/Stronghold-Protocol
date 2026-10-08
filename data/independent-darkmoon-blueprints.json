@@ -2506,7 +2506,7 @@
                 "recipient": "currentShopOffers",
                 "duration": "currentShopOnly",
                 "kind": "shopGrowth",
-                "text": "出售干员时，当前酒馆所有在售干员获得攻击与生命各+1；只影响当前商店。",
+                "text": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。只影响当前商店。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2531,7 +2531,7 @@
                 "recipient": "currentShopOffers",
                 "duration": "currentShopOnly",
                 "kind": "shopGrowth",
-                "text": "出售干员时，当前酒馆所有在售干员获得攻击与生命各+2；只影响当前商店。",
+                "text": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。只影响当前商店。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6906,7 +6906,7 @@
                 "recipient": "matchingTribeShopOffers",
                 "duration": "permanent",
                 "kind": "shopGrowth",
-                "text": "购买炎阵营元素干员时，本局后续酒馆中的元素干员获得攻击与生命各+1的永久成长。",
+                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6932,7 +6932,7 @@
                 "recipient": "matchingTribeShopOffers",
                 "duration": "permanent",
                 "kind": "shopGrowth",
-                "text": "购买炎阵营元素干员时，本局后续酒馆中的元素干员获得攻击与生命各+2的永久成长。",
+                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {

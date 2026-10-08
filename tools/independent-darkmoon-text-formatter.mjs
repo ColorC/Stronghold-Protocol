@@ -117,9 +117,12 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonSummonSupport': return `招募获得或首次上阵时，免费将一个猫形支援单位（攻击${variant === 'elite' ? 240 : 120}、生命${variant === 'elite' ? 700 : 350}）放入整备区；可部署，本体不可商店招募。`;
     case 'darkmoonTransformFromShop': return `招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为${variant === 'elite' ? '进阶' : '普通'}形态并招募。`;
     case 'darkmoonRosterTribePurchaseFunds': return `购买维多利亚阵营干员时，获得${amount}枚金币。`;
-    case 'darkmoonShopGrowth': return p.persistent
-      ? `购买炎阵营元素干员时，本局后续酒馆中的元素干员获得攻击与生命各+${pick(p.attack, variant)}的永久成长。`
-      : `出售干员时，当前酒馆所有在售干员获得攻击与生命各+${pick(p.attack, variant)}；只影响当前商店。`;
+    case 'darkmoonShopGrowth': {
+      const reward = `购买后直接获得${growth(pick(p.attack, variant), pick(p.health, variant), variant)}。`;
+      return p.persistent
+        ? `在场时，每购买一名${factionText(p.faction)}干员，使当前及本局后续酒馆中的${factionText(p.faction)}干员累加以下成长：${reward}`
+        : `出售自身时，使当前酒馆所有未售出的干员累加以下成长：${reward}只影响当前商店。`;
+    }
     case 'darkmoonAddTribeShopOffer': return `招募获得或首次上阵时，将${amount}名随机炎阵营干员加入酒馆并冻结。`;
     case 'darkmoonRecruitTribeToHand': return `招募获得或首次上阵时，生成${amount}次随机炎阵营干员的招募选择，供整备时选择。`;
     case 'darkmoonElementalTokenOffer': return `出售时，将${amount}个炎阵营元素支援单位（每个攻击240、生命700）加入整备区手牌；可部署，本体不可商店招募。`;

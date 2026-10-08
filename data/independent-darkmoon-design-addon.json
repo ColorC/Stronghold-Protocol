@@ -5373,7 +5373,7 @@
                 "recipient": "matchingTribeShopOffers",
                 "duration": "permanent",
                 "kind": "shopGrowth",
-                "text": "购买时，符合条件的酒馆在售干员获得酒馆成长：攻击与生命各+1；本局后续酒馆持续生效。",
+                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -5396,7 +5396,7 @@
                 "recipient": "matchingTribeShopOffers",
                 "duration": "permanent",
                 "kind": "shopGrowth",
-                "text": "购买时，符合条件的酒馆在售干员获得酒馆成长：攻击与生命各+2；本局后续酒馆持续生效。",
+                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -5423,7 +5423,7 @@
             "recipient": "matchingTribeShopOffers",
             "duration": "permanent",
             "kind": "shopGrowth",
-            "text": "购买时，符合条件的酒馆在售干员获得酒馆成长：攻击与生命各+1；本局后续酒馆持续生效。",
+            "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
             "textEn": "",
             "tags": [],
             "params": {
@@ -5446,7 +5446,7 @@
             "recipient": "matchingTribeShopOffers",
             "duration": "permanent",
             "kind": "shopGrowth",
-            "text": "购买时，符合条件的酒馆在售干员获得酒馆成长：攻击与生命各+2；本局后续酒馆持续生效。",
+            "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
             "textEn": "",
             "tags": [],
             "params": {

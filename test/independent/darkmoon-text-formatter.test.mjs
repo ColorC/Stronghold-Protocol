@@ -88,3 +88,35 @@ test('source-specific text states tested quantities, recipient and elite multipl
     }
   }
 });
+
+
+test('shop-growth text describes direct purchased-operator badges and combined native training levels', async () => {
+  const { applyDarkmoonShopGrowth } = await import('../../server/modes/independent/darkmoonShop.js');
+  const { getCatalog } = await import('../../server/modes/independent/catalog.js');
+  const catalog = getCatalog();
+  const recipient = { uid: 'shop-growth-recipient', chessId: 'chess_char_5_20_a', equipment: [] };
+  for (const id of ['BGS_037', 'BGS_104']) for (const variant of ['normal', 'elite']) {
+    const row = byAddonId.get(id);
+    const rule = darkmoonPrepRulesFor({ darkmoonSourceId: id }, variant === 'elite')[0];
+    const calls = [];
+    const state = { pieces: [recipient], growthMode: 'badges' };
+    const grants = applyDarkmoonShopGrowth(state, { darkmoonGrowth: { attack: rule.params.attack, health: rule.params.health } }, recipient, {
+      catalog, grantEquipment: (_state, badge, quantity, extra) => calls.push({ badge, quantity, extra }),
+    });
+    assert.deepEqual(grants.map(g => g.quantity), [rule.params.attack, rule.params.health]);
+    assert.ok(calls.every(call => call.extra.targetUid === recipient.uid && call.extra.landOn === 'self'));
+    assert.match(row[variant], new RegExp(`购买后直接获得攻击成长徽章×${grants[0].quantity}与职业副属性成长徽章×${grants[1].quantity}`));
+    assert.match(row[`${variant}Levels`], new RegExp(`购买后直接获得训练等级×${grants.reduce((sum,g) => sum + g.quantity, 0)}`));
+    assert.doesNotMatch(row[variant], /攻击与生命各|元素干员/);
+    assert.doesNotMatch(row[`${variant}Levels`], /徽章|攻击与生命各/);
+    if (id === 'BGS_037') {
+      assert.match(row[variant], /^出售自身时.*当前酒馆所有未售出的干员/);
+      assert.match(row[variant], /只影响当前商店/);
+      assert.equal(rule.params.persistent, false);
+    } else {
+      assert.match(row[variant], /^在场时，每购买一名炎阵营干员/);
+      assert.match(row[variant], /当前及本局后续酒馆中的炎阵营干员/);
+      assert.equal(rule.params.persistent, true);
+    }
+  }
+});
