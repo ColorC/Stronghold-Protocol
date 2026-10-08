@@ -229,11 +229,32 @@ async function run(baseUrl, outputDir, candidateRoot) {
     const degreeDelta = (to, from) => { let value = to - from; while (value > 180) value -= 360; while (value < -180) value += 360; return value; };
     const frontLeftDelta = sourceFront && degreeDelta(sourceFront.attack0.limbs.arm_l.signedTurnDegrees, sourceFront.idle0.limbs.arm_l.signedTurnDegrees);
     const frontRightDelta = sourceFront && degreeDelta(sourceFront.attack0.limbs.arm_r.signedTurnDegrees, sourceFront.idle0.limbs.arm_r.signedTurnDegrees);
+    const bodyMidlineX = sourceFront && (sourceFront.attack0.limbs.arm_l.points.proximal[0] + sourceFront.attack0.limbs.arm_r.points.proximal[0]) / 2;
+    const elbowOffsetFromChord = limb => {
+      const { proximal, joint, distal } = sourceFront.attack0.limbs[limb].points;
+      const chord = [distal[0] - proximal[0], distal[1] - proximal[1]];
+      const elbow = [joint[0] - proximal[0], joint[1] - proximal[1]];
+      const signedOffset = (chord[0] * elbow[1] - chord[1] * elbow[0]) / Math.hypot(...chord);
+      const sideSign = Math.sign(proximal[0] - bodyMidlineX);
+      return { signedPerpendicularOffset: signedOffset, relativeToBodySide: signedOffset * sideSign };
+    };
+    const leftElbowOffset = sourceFront && elbowOffsetFromChord('arm_l');
+    const rightElbowOffset = sourceFront && elbowOffsetFromChord('arm_r');
     report.baselineDiscovery = sourceFront ? {
       frontAttack0ArmFoldDeltas: { arm_l: frontLeftDelta, arm_r: frontRightDelta },
       frontAttack0SignedTurns: { arm_l: sourceFront.attack0.limbs.arm_l.signedTurnDegrees, arm_r: sourceFront.attack0.limbs.arm_r.signedTurnDegrees },
       elbowDirectionsDifferIdle0ToAttack0: Math.sign(frontLeftDelta) !== Math.sign(frontRightDelta),
       elbowDirectionsDifferAtAttack0: Math.sign(sourceFront.attack0.limbs.arm_l.signedTurnDegrees) !== Math.sign(sourceFront.attack0.limbs.arm_r.signedTurnDegrees),
+      elbowFoldAnglesDifferAtAttack0: Math.abs(sourceFront.attack0.limbs.arm_l.signedTurnDegrees - sourceFront.attack0.limbs.arm_r.signedTurnDegrees) > 0.01,
+      elbowFoldAngleSeparationDegrees: Math.abs(sourceFront.attack0.limbs.arm_l.signedTurnDegrees - sourceFront.attack0.limbs.arm_r.signedTurnDegrees),
+      elbowLeanRelativeToBodySide: { bodyMidlineX, arm_l: leftElbowOffset, arm_r: rightElbowOffset },
+      elbowLeanDirectionsDifferRelativeToBodyMidline: Math.sign(leftElbowOffset.relativeToBodySide) !== Math.sign(rightElbowOffset.relativeToBodySide),
+      idle0ElbowFoldDegrees: { arm_l: sourceFront.idle0.limbs.arm_l.signedTurnDegrees, arm_r: sourceFront.idle0.limbs.arm_r.signedTurnDegrees },
+      attack0ElbowInteriorAnglesDegrees: { arm_l: sourceFront.attack0.limbs.arm_l.interiorAngleDegrees, arm_r: sourceFront.attack0.limbs.arm_r.interiorAngleDegrees },
+      shoulderWristElbowTransitionDisplacement: {
+        arm_l: { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_l, elbow: sourceFront.endpointDisplacements.attack0.forearm_l, wrist: sourceFront.endpointDisplacements.attack0.hand_l },
+        arm_r: { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_r, elbow: sourceFront.endpointDisplacements.attack0.forearm_r, wrist: sourceFront.endpointDisplacements.attack0.hand_r }
+      },
       shoulders: { arm_l: sourceFront.attack0.limbs.arm_l.points.proximal, arm_r: sourceFront.attack0.limbs.arm_r.points.proximal },
       elbows: { arm_l: sourceFront.attack0.limbs.arm_l.points.joint, arm_r: sourceFront.attack0.limbs.arm_r.points.joint },
       wrists: { arm_l: sourceFront.attack0.limbs.arm_l.points.distal, arm_r: sourceFront.attack0.limbs.arm_r.points.distal }
