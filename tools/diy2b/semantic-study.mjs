@@ -27,7 +27,7 @@ async function run(baseUrl, outputDir, candidateRoot) {
   fs.mkdirSync(outputDir, { recursive: true });
   const profile = path.join(PROJECT, '.omni/tmp/spine-attack-validation-20261008/browser-profile');
   fs.mkdirSync(profile, { recursive: true });
-  const report = { baseUrl, candidateRoot, runtime: 'PixiJS + pixi-spine through public/dev/diy-2b/motion.html', startedAt: new Date().toISOString(), checks: [], errors: [], screenshots: [], results: [], interaction: null, artQualityVerdict: 'not assessed by numeric checks' };
+  const report = { baseUrl, candidateRoot, candidateFiles, candidateInterceptions: {}, runtime: 'PixiJS + pixi-spine through public/dev/diy-2b/motion.html', startedAt: new Date().toISOString(), checks: [], errors: [], screenshots: [], results: [], interaction: null, artQualityVerdict: 'not assessed by numeric checks' };
   let browser;
   let timeout;
   const work = (async () => {
@@ -36,13 +36,18 @@ async function run(baseUrl, outputDir, candidateRoot) {
     browser = await puppeteer.launch({ executablePath: BROWSER, headless: true, userDataDir: profile, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
     const page = await browser.newPage();
     await page.setViewport({ width: 1120, height: 850, deviceScaleFactor: 1 });
+    await page.setCacheEnabled(false);
     page.on('pageerror', error => report.errors.push(`pageerror: ${error.message}`));
     page.on('response', response => { if (response.status() >= 400) report.errors.push(`HTTP ${response.status()} ${response.url()}`); });
     await page.setRequestInterception(true);
     let useCandidate = false;
     page.on('request', request => {
       const candidate = useCandidate && candidateFiles[new URL(request.url()).pathname];
-      if (candidate) return request.respond({ status: 200, contentType: 'application/json', body: fs.readFileSync(candidate) });
+      if (candidate) {
+        const pathname = new URL(request.url()).pathname;
+        report.candidateInterceptions[pathname] = (report.candidateInterceptions[pathname] || 0) + 1;
+        return request.respond({ status: 200, contentType: 'application/json', body: fs.readFileSync(candidate) });
+      }
       return request.continue();
     });
 
@@ -66,6 +71,7 @@ async function run(baseUrl, outputDir, candidateRoot) {
           const u = [a[0] - joint[0], a[1] - joint[1]], v = [c[0] - joint[0], c[1] - joint[1]];
           return Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1]) * 180 / Math.PI;
         };
+        const wrapAngle = angle => { let value = angle; while (value > Math.PI) value -= 2 * Math.PI; while (value < -Math.PI) value += 2 * Math.PI; return value; };
         const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
         const point = name => {
           const bone = skeleton.findBone(name);
@@ -86,6 +92,10 @@ async function run(baseUrl, outputDir, candidateRoot) {
         for (let i = 0; i <= frameCount; i++) {
           if (i) tick(duration / frameCount);
           const bones = Object.fromEntries(jointNames.map(name => [name, point(name)]));
+          const hand = skeleton.findBone('hand_r').matrix, sword = skeleton.findBone('sword').matrix;
+          const determinant = hand.a * hand.d - hand.b * hand.c;
+          const dx = sword.tx - hand.tx, dy = sword.ty - hand.ty;
+          const gripRelative = [(hand.d * dx - hand.c * dy) / determinant, (-hand.b * dx + hand.a * dy) / determinant, wrapAngle(Math.atan2(sword.b, sword.a) - Math.atan2(hand.b, hand.a))];
           const slots = {};
           for (const name of ['foot_r', 'foot_l']) {
             const slot = skeleton.slots.find(item => item.data.name === name);
@@ -94,7 +104,7 @@ async function run(baseUrl, outputDir, candidateRoot) {
               slots[name] = [bounds.x, bounds.y, bounds.width, bounds.height];
             }
           }
-          frames.push({ t: Math.min(duration, i * duration / frameCount), bones, slots });
+          frames.push({ t: Math.min(duration, i * duration / frameCount), bones, slots, gripRelative });
         }
         const attackEnd = frames.at(-1).bones;
         spine.state.setAnimation(0, 'Idle', true);
@@ -106,9 +116,6 @@ async function run(baseUrl, outputDir, candidateRoot) {
         const kneeFold = frames.map(frame => signedFold(frame.bones.thigh_r, frame.bones.shin_r, frame.bones.foot_r));
         const range = values => Math.max(...values) - Math.min(...values);
         const swordLengths = frames.map(frame => distance(frame.bones.sword, frame.bones.sword_tip));
-        const gripOffsets = frames.map(frame => [frame.bones.sword[0] - frame.bones.hand_r[0], frame.bones.sword[1] - frame.bones.hand_r[1]]);
-        const gripAngles = gripOffsets.map(offset => Math.atan2(offset[1], offset[0]));
-        const wrapAngle = angle => { let value = angle; while (value > Math.PI) value -= 2 * Math.PI; while (value < -Math.PI) value += 2 * Math.PI; return value; };
         const tipY = frames.map(frame => frame.bones.sword_tip[1]);
         return {
           duration, frames,
@@ -122,8 +129,8 @@ async function run(baseUrl, outputDir, candidateRoot) {
             return origin ? frames.map(frame => frame.slots[name] ? Math.hypot(frame.slots[name][0] - origin[0], frame.slots[name][1] - origin[1]) : 0) : [0];
           })),
           swordLengthRange: range(swordLengths),
-          gripOffsetRange: range(gripOffsets.map(offset => Math.hypot(...offset))),
-          gripAngleRangeDegrees: range(gripAngles.map(wrapAngle)) * 180 / Math.PI,
+          gripOffsetRange: Math.max(range(frames.map(frame => frame.gripRelative[0])), range(frames.map(frame => frame.gripRelative[1]))),
+          gripAngleRangeDegrees: range(frames.map(frame => frame.gripRelative[2])) * 180 / Math.PI,
           minSwordTipY: Math.min(...tipY),
           endDiscontinuity,
           endToIdlePose: Object.fromEntries(jointNames.map(name => [name, distance(attackEnd[name], idlePose[name])])),
@@ -156,25 +163,32 @@ async function run(baseUrl, outputDir, candidateRoot) {
       report.results.push(sampled);
     }
 
-    const interaction = await page.evaluate(async () => {
-      const pause = document.querySelector('#pause');
-      const slider = document.querySelector('#progress');
-      pause.click();
-      const paused = pause.textContent === '播放';
-      slider.value = '0.37';
-      slider.dispatchEvent(new Event('input', { bubbles: true }));
+    await page.reload({ waitUntil: 'networkidle2', timeout: 25_000 });
+    await page.waitForFunction(() => window.__motion?.ready, { timeout: 20_000 });
+    await page.click('#pause');
+    const paused = await page.$eval('#pause', button => button.textContent === '播放');
+    const slider = await page.$('#progress');
+    const box = await slider.boundingBox();
+    await page.mouse.move(box.x + box.width * 0.1, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.37, box.y + box.height / 2, { steps: 8 });
+    await page.mouse.up();
+    const interaction = await page.evaluate(() => {
       const seekTime = document.querySelector('#time').textContent;
       const duration = window.__motion.sp().spineData.findAnimation('Attack').duration;
       const normalizedSeek = Number.parseFloat(seekTime) / duration;
-      return { pauseButtonWorks: paused, seekControlWorks: Math.abs(normalizedSeek - 0.37) < 0.01, seekTime, normalizedSeek, frameLink: document.querySelector('#frameLink').href };
+      return { pauseButtonWorks: document.querySelector('#pause').textContent === '播放', seekControlWorks: Math.abs(normalizedSeek - 0.37) < 0.01, seekTime, normalizedSeek, frameLink: document.querySelector('#frameLink').href };
     });
+    interaction.pauseButtonWorks = paused && interaction.pauseButtonWorks;
     report.interaction = interaction;
     report.checks.push({ id: 'pause-and-drag-seek-operable', passed: interaction.pauseButtonWorks && interaction.seekControlWorks, detail: JSON.stringify(interaction) });
+    const interceptedBothCandidates = Object.values(candidateFiles).every((file, index) => report.candidateInterceptions[Object.keys(candidateFiles)[index]] > 0);
+    report.checks.push({ variant: 'candidate', id: 'front-back-candidate-json-intercepted', passed: interceptedBothCandidates, detail: JSON.stringify(report.candidateInterceptions) });
     report.url = pageUrl;
     const candidateChecks = report.checks.filter(check => check.variant === 'candidate');
     report.baselineFindings = report.checks.filter(check => check.variant === 'source' && !check.passed);
     report.baselineIdleAttackFoldEndpoint = report.results.filter(result => result.variant === 'source').map(result => ({ side: result.side, idleArmRightDegrees: result.folds.idleArmRightDegrees, attackArmDeltaRangeDegrees: result.folds.armSignedRange, idleKneeRightDegrees: result.folds.idleKneeRightDegrees, attackKneeDeltaRangeDegrees: result.folds.kneeSignedRange, entryDisplacement: result.startDiscontinuity, returnDisplacement: result.endDiscontinuity }));
-    report.passed = !candidateChecks.some(check => !check.passed) && interaction.pauseButtonWorks && interaction.seekControlWorks && report.errors.length === 0;
+    report.passed = !candidateChecks.some(check => !check.passed) && interaction.pauseButtonWorks && interaction.seekControlWorks && interceptedBothCandidates && report.errors.length === 0;
   })();
   const deadline = new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error(`Hard deadline reached after ${TIME_LIMIT_MS} ms`)), TIME_LIMIT_MS); });
   try { await Promise.race([work, deadline]); }
