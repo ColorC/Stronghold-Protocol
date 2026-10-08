@@ -35,7 +35,7 @@ const serverApi = {
       headers: { 'content-type': 'application/octet-stream', 'x-media-mime-type': blob.type || 'video/webm', 'x-media-started-at': String(startedAt), 'x-media-time-ms': String(timeMs) }, body: blob })
       .then(async (response) => ({ ...(await response.json()), status: response.status }));
   },
-  recordingStop(id) { return call(`recordings/${encodeURIComponent(id)}/stop`, { method: 'POST', body: '{}' }); },
+  recordingStop(id, mediaCapture = {}) { return call(`recordings/${encodeURIComponent(id)}/stop`, { method: 'POST', body: JSON.stringify(mediaCapture) }); },
   recordingLoad(id) { return call(`recordings/${encodeURIComponent(id)}`); },
 };
 

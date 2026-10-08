@@ -5,6 +5,7 @@ import { stat, unlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // A rrweb full snapshot can carry a lossless canvas data URL as one indivisible event. Keep the request bounded while
@@ -42,7 +43,7 @@ async function remuxPlayback(dir, index=1) {
 }
 
 /** Server-side rrweb event store. Recording IDs are opaque UUIDs and never become session state. */
-export function createRecordingHttp({ directory, sessionDirectory }) {
+export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPath = '' }) {
   if (!path.isAbsolute(directory) || !path.isAbsolute(sessionDirectory)) throw new Error('Recording and session directories must be absolute');
   const root = path.resolve(directory);
   const locks = new Map();
@@ -54,6 +55,10 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
     try { return await current; } finally { if (locks.get(id) === current) locks.delete(id); }
   }
   async function loadMeta(id) { return JSON.parse(await readFile(metaFile(id), 'utf8')); }
+  async function writeDiagnostic(entry) {
+    if (!diagnosticsPath) return;
+    await appendFile(diagnosticsPath, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`, 'utf8').catch(() => {});
+  }
   async function saveMeta(id, meta) {
     const pending = `${metaFile(id)}.${randomUUID()}.pending`;
     await writeFile(pending, JSON.stringify(meta), { flag: 'wx' }); await rename(pending, metaFile(id));
@@ -87,11 +92,16 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
       if (mediaMatch && UUID.test(mediaMatch[1])) {
         const id = mediaMatch[1]; const mediaFile = path.join(dirOf(id), 'canvas.webm');
         if (mediaMatch[2] && /^\d+$/.test(mediaMatch[2]) && req.method === 'POST') {
+          const requestStarted = performance.now();
           const seq = Number(mediaMatch[2]); const startedAt = Number(req.headers['x-media-started-at']);
           const timeMs = Number(req.headers['x-media-time-ms']);
           if (!Number.isSafeInteger(seq) || seq < 1 || !Number.isFinite(startedAt) || !Number.isFinite(timeMs) || timeMs < 0) return json(res, 422, { ok: false, error: 'INVALID_MEDIA_CHUNK' }), true;
+          const readStarted = performance.now();
           const chunk = await readMediaChunk(req); if (!chunk.length) return json(res, 422, { ok: false, error: 'EMPTY_MEDIA_CHUNK' }), true;
+          const bodyReadMs = performance.now() - readStarted;
+          const lockQueuedAt = performance.now(); let lockAcquiredAt = lockQueuedAt; let appendMs = 0; let metadataWriteMs = 0;
           const result = await exclusive(id, async () => {
+            lockAcquiredAt = performance.now();
             const meta = await loadMeta(id); if (meta.endedAt) return { error: 'ENDED' };
             const next = Number(meta.nextMediaSeq) || 1;
             if (seq < next) return { ack: next - 1 };
@@ -104,12 +114,17 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
             let segment=segments.at(-1);
             if(!segment||segment.startedAt!==segmentStartedAt){segment={index:segments.length+1,startedAt:segmentStartedAt,bytes:0,lastTimeMs:0,playbackReady:false};segments.push(segment);}
             const segmentFile=path.join(dirOf(id),segment.index===1?'canvas.webm':`canvas-${segment.index}.webm`);
-            await appendFile(segmentFile,chunk);segment.bytes+=chunk.length;segment.lastTimeMs=timeMs;
-            await saveMeta(id, { ...meta, nextMediaSeq: next + 1, mediaStartedAt: meta.mediaStartedAt || new Date(startedAt).toISOString(),
+            const appendStarted = performance.now(); await appendFile(segmentFile,chunk); appendMs = performance.now() - appendStarted; segment.bytes+=chunk.length;segment.lastTimeMs=timeMs;
+            const metadataStarted = performance.now(); await saveMeta(id, { ...meta, nextMediaSeq: next + 1, mediaStartedAt: meta.mediaStartedAt || new Date(startedAt).toISOString(),
               mediaMimeType: mime, mediaBytes: (Number(meta.mediaBytes) || 0) + chunk.length,
               mediaChunks: (Number(meta.mediaChunks) || 0) + 1, mediaSegments:segments,mediaLastTimeMs:startedAt-Date.parse(meta.mediaStartedAt||segmentStartedAt)+timeMs });
+            metadataWriteMs = performance.now() - metadataStarted;
             return { ack: next };
           });
+          await writeDiagnostic({ type: 'media-post', recordingId: id, seq, requestBytes: chunk.length,
+            status: result.error ? 409 : 200, ack: result.ack ?? null, error: result.error || null,
+            bodyReadMs, exclusiveWaitMs: lockAcquiredAt - lockQueuedAt, appendMs, metadataWriteMs,
+            totalMs: performance.now() - requestStarted });
           return json(res, result.error ? (result.error === 'ENDED' ? 409 : 409) : 200, { ok: !result.error, ...result }), true;
         }
         if (!mediaMatch[2] && req.method === 'GET') {
@@ -162,7 +177,40 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
         return json(res, ack.error ? 409 : 200, { ok: !ack.error, ...ack }), true;
       }
       if (action === 'stop' && req.method === 'POST') {
-          let meta = await exclusive(id, async () => { const current = await loadMeta(id); if (current.endedAt) return current; const done = { ...current, endedAt: new Date().toISOString() }; await saveMeta(id, done); return done; });
+          const stopInfo = await readBody(req);
+          const captureStoppedAt = Number(stopInfo.mediaCaptureStoppedAt);
+          const captureLastTimeMs = Number(stopInfo.mediaCaptureLastTimeMs);
+          const captureLastPaintedAt = Number(stopInfo.mediaCaptureLastPaintedAt);
+          const captureFinalSeq = Number(stopInfo.mediaCaptureFinalSeq);
+          let meta = await exclusive(id, async () => { const current = await loadMeta(id); if (current.endedAt) return current;
+            const endedAt = new Date().toISOString(); const segments = (current.mediaSegments || []).filter((item) => Number.isInteger(item.index) && typeof item.startedAt === 'string');
+            const lastSegment = segments.at(-1) || null;
+            const lastSegmentWall = lastSegment ? Date.parse(lastSegment.startedAt) + Number(lastSegment.lastTimeMs || 0) : 0;
+            const serverFinalSeq = Math.max(0, (Number(current.nextMediaSeq) || 1) - 1);
+            const captureStopChecks = {
+              timestampValid: Number.isSafeInteger(captureStoppedAt) && captureStoppedAt > 0 && captureStoppedAt <= Date.now() + 30000,
+              afterCaptureStart: !current.mediaStartedAt || captureStoppedAt >= Date.parse(lastSegment?.startedAt || current.mediaStartedAt) - 1000,
+              afterLastDeclaredFrame: !lastSegment || captureStoppedAt >= lastSegmentWall - 1000,
+              lastChunkTimeMatches: !lastSegment || (Number.isFinite(captureLastTimeMs) && Math.abs(captureLastTimeMs - Number(lastSegment.lastTimeMs || 0)) <= 1500),
+              lastCanvasPaintedNearStop: Number.isSafeInteger(captureLastPaintedAt) && captureLastPaintedAt > 0
+                && captureLastPaintedAt <= captureStoppedAt && captureStoppedAt - captureLastPaintedAt <= 1250,
+              allChunksAcknowledged: Number.isSafeInteger(captureFinalSeq) && captureFinalSeq === serverFinalSeq,
+            };
+            const validCaptureStop = Object.values(captureStopChecks).every(Boolean);
+            const done = { ...current, endedAt,
+              ...(validCaptureStop ? { mediaCaptureStoppedAt: new Date(captureStoppedAt).toISOString(), mediaCaptureLastTimeMs: Math.max(0, captureLastTimeMs),
+                mediaCaptureLastPaintedAt: new Date(captureLastPaintedAt).toISOString(), mediaCaptureFinalSeq: captureFinalSeq } : {}),
+              mediaCaptureStopValidation: { accepted: validCaptureStop, captureStopChecks,
+                serverFinalSeq, declaredCaptureFinalSeq: Number.isSafeInteger(captureFinalSeq) ? captureFinalSeq : null,
+                lastSegmentWall: lastSegmentWall || null } };
+            await saveMeta(id, done); return done; });
+          if (meta.mediaCaptureStoppedAt) await writeDiagnostic({ type: 'media-capture-stop', recordingId: id,
+            captureStoppedAt: meta.mediaCaptureStoppedAt, mediaCaptureLastTimeMs: meta.mediaCaptureLastTimeMs,
+            mediaCaptureLastPaintedAt: meta.mediaCaptureLastPaintedAt,
+            mediaCaptureFinalSeq: meta.mediaCaptureFinalSeq, finalizeAt: meta.endedAt,
+            finalizeDelayMs: Date.parse(meta.endedAt) - Date.parse(meta.mediaCaptureStoppedAt) });
+          else if (meta.mediaCaptureStopValidation) await writeDiagnostic({ type: 'media-capture-stop-rejected', recordingId: id,
+            validation: meta.mediaCaptureStopValidation });
           if (meta.mediaBytes && !meta.mediaPlaybackReady) {
             const validSegments=(meta.mediaSegments||[]).filter(x=>Number.isInteger(x.index)&&typeof x.startedAt==='string');
             const segments=structuredClone(validSegments.length?validSegments:[{index:1,startedAt:meta.mediaStartedAt,bytes:meta.mediaBytes,lastTimeMs:meta.mediaLastTimeMs}]);

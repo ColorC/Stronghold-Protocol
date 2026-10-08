@@ -11,6 +11,7 @@ import { createReadStream } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/index.js';
 import { hasDamageDealer, upgradeReserve } from './independent-recording-strategy.mjs';
+import { pieceSourceCandidates, verifiedPieceHit } from './independent-recording-pick.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const chessCatalog = JSON.parse(await fs.readFile(path.join(repo, 'data/chess.json'), 'utf8'));
@@ -20,7 +21,9 @@ const tmp = path.join(canonical, '.omni/tmp/growth-destination-20261008/recordin
 const output = path.resolve(process.env.SP_RECORD_DRIVER_OUTPUT || path.join(runtime, 'driver-run'));
 const runLog = path.join(tmp, `independent-recording-driver-${path.basename(output)}.log`);
 const processStartedAt = Date.now();
-const defaultHardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 30 * 60 * 1000;
+const sourcePickTest = process.env.SP_RECORD_DRIVER_SOURCE_PICK_TEST === '1';
+const sourcePickTestUid = sourcePickTest ? Math.max(1, Number(process.env.SP_RECORD_DRIVER_SOURCE_PICK_UID) || 3) : 3;
+const defaultHardLimitMs = (process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' || sourcePickTest) ? 3 * 60 * 1000 : 30 * 60 * 1000;
 const requestedHardLimitMs = Number(process.env.SP_RECORD_DRIVER_HARD_TIMEOUT_MS || defaultHardLimitMs);
 const hardLimitMs = Number.isFinite(requestedHardLimitMs) && requestedHardLimitMs > 0
   ? Math.max(60 * 1000, Math.min(100 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
@@ -34,14 +37,21 @@ const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
   requestedSeed: process.env.SP_RECORD_DRIVER_SEED ? seed : null, maxRounds, growthModeRequested: growthMode,
+  sourcePickDiagnosticOnly: sourcePickTest, sourcePickTestUid: sourcePickTest ? sourcePickTestUid : null,
   startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
   actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
-let server; let assetProxy; let browser; let page; let hardTimer; let recordingId = ''; let sessionId = '';
+let server; let assetProxy; let browser; let page; let hardTimer; let recordingTelemetryTimer; let recordingTelemetryBusy = false; let recordingId = ''; let sessionId = '';
+let proxyDiagnosticsFile = '';
 const pendingActionRequests = new WeakMap();
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function bounded(promise, timeoutMs, label) {
+  let timer;
+  try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label}超过${timeoutMs}ms`)), timeoutMs); })]); }
+  finally { clearTimeout(timer); }
+}
 const slug = (s) => String(s || 'state').normalize('NFKD').replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-|-$/g, '').slice(0, 42) || 'state';
 async function screenshot(name) {
   const file = path.join(output, `${String(report.screenshots.length + 1).padStart(3, '0')}-${slug(name)}.png`);
@@ -81,12 +91,30 @@ async function readRecordingMeta() {
     if (!r.ok) return null; return r.json();
   }, recordingId);
 }
-async function verifyNarratedReplay(recording) {
+async function captureRecordingTelemetry() {
+  if (!page || page.isClosed() || recordingTelemetryBusy) return;
+  recordingTelemetryBusy = true;
+  try {
+    const status = await bounded(page.evaluate(() => globalThis.__SP_RECORDING_STATUS__?.() || null), 15000, '读取录制队列诊断');
+    report.recordingTelemetry ||= [];
+    report.recordingTelemetry.push({ at: new Date().toISOString(), status });
+    await writeFile(path.join(output, 'recording-telemetry.json'), JSON.stringify(report.recordingTelemetry, null, 2));
+  } catch (error) {
+    report.recordingTelemetryErrors ||= []; report.recordingTelemetryErrors.push({ at: new Date().toISOString(), error: String(error) });
+  } finally { recordingTelemetryBusy = false; }
+}
+async function verifyNarratedReplay(recording, { requireFullActionSamples = true } = {}) {
   const meta = recording?.meta;
   const cue = (recording?.events || []).find((event) => event.kind === 'caption' && event.p?.key === 'first-native-mechanic');
   if (!meta?.endedAt || !cue?.ts) throw new Error('录制结束或首次干员机制讲解字幕缺失，无法验收回放');
+  if (!meta.mediaCaptureStoppedAt || !meta.mediaCaptureStopValidation?.accepted
+    || meta.mediaCaptureFinalSeq !== Number(meta.nextMediaSeq) - 1) {
+    throw new Error(`录制未通过服务端采集停止时间/最后画帧/媒体ACK序号核验：${JSON.stringify(meta.mediaCaptureStopValidation || null)}`);
+  }
   const cueSecond = Math.max(0, (cue.ts - Date.parse(meta.startedAt)) / 1000);
-  const replayUrl = new URL(`/independent-replay.html?recording=${encodeURIComponent(recordingId)}`, page.url()).href;
+  const replayPrefix = String(process.env.SP_RECORD_DRIVER_REPLAY_PREFIX || '/').replace(/^\/+|\/+$/g, '');
+  const replayPath = `${replayPrefix ? `${replayPrefix}/` : '/'}independent-replay.html?recording=${encodeURIComponent(recordingId)}`;
+  const replayUrl = new URL(replayPath, page.url()).href;
   await page.goto(replayUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('#status')?.textContent === '记录已结束', { timeout: 45000 });
   await page.evaluate((second) => {
@@ -117,6 +145,8 @@ async function verifyNarratedReplay(recording) {
       cardText: text, ordinaryFullText: /普通[\s\S]{5,}/.test(text), eliteFullText: /精锐[\s\S]{5,}/.test(text),
       webglMediaVisible: visible(video), mediaReadyState: video?.readyState ?? 0,
       canvasWidth: video?.videoWidth ?? 0, canvasHeight: video?.videoHeight ?? 0,
+      iframeUrl: iframe?.src || '',
+      resourceUrls: [...(doc?.querySelectorAll('img[src],link[href],script[src],source[src]') || [])].map((node) => node.src || node.href).filter(Boolean),
       stageText: doc?.body?.innerText?.slice(0, 1200) || '',
     };
   });
@@ -137,7 +167,7 @@ async function verifyNarratedReplay(recording) {
   const ffprobe = process.env.SP_FFPROBE_PATH || 'ffprobe';
   const probedSegments = [];
   for (const segment of timelineSegments) {
-    const mediaUrl = new URL(`/independent/api/recordings/${encodeURIComponent(recordingId)}/media/playback/${segment.index}`, page.url());
+    const mediaUrl = new URL(`independent/api/recordings/${encodeURIComponent(recordingId)}/media/playback/${segment.index}`, page.url());
     const response = await fetch(mediaUrl);
     if (!response.ok) throw new Error(`录制媒体下载失败：segment=${segment.index} HTTP ${response.status}`);
     const mediaFile = path.join(output, `canvas-segment-${String(segment.index).padStart(3, '0')}.webm`);
@@ -188,8 +218,8 @@ async function verifyNarratedReplay(recording) {
   }
   const actionEvents = (recording.events || []).filter((event) => event.kind === 'server-action'
     && Number.isFinite(Number(event.ts)) && event.p?.action).sort((a, b) => a.ts - b.ts);
-  if (actionEvents.length < 3) throw new Error(`完整录制只有${actionEvents.length}个可对齐UI动作事件，至少需要3个时间点`);
-  const actionIndexes = [...new Set([0, Math.floor((actionEvents.length - 1) / 2), actionEvents.length - 1])].filter((i) => i >= 0);
+  if (requireFullActionSamples && actionEvents.length < 3) throw new Error(`完整录制只有${actionEvents.length}个可对齐UI动作事件，至少需要3个时间点`);
+  const actionIndexes = actionEvents.length ? [...new Set([0, Math.floor((actionEvents.length - 1) / 2), actionEvents.length - 1])].filter((i) => i >= 0) : [];
   const actionSamples = [];
   for (let i = 0; i < actionIndexes.length; i++) {
     const event = actionEvents[actionIndexes[i]];
@@ -225,22 +255,32 @@ async function verifyNarratedReplay(recording) {
     return metaSegment.at + segment.firstPtsSeconds;
   }));
   const mediaStartedWallSecond = meta.mediaStartedAt ? (Date.parse(meta.mediaStartedAt) - wallStart) / 1000 : mediaStart;
-  const endedWallSecond = (Date.parse(meta.endedAt) - wallStart) / 1000;
-  const coverageGapSeconds = endedWallSecond - encodedEnd;
+  const captureStoppedWallSecond = (Date.parse(meta.mediaCaptureStoppedAt) - wallStart) / 1000;
+  const finalizedWallSecond = (Date.parse(meta.endedAt) - wallStart) / 1000;
+  const captureLastPaintedAt = Date.parse(meta.mediaCaptureLastPaintedAt || 0);
+  const lastActionAt = Math.max(0, ...(recording.events || []).filter((event) => event.kind === 'server-action').map((event) => Number(event.ts) || 0));
+  const lastDomEventAt = Math.max(0, ...(recording.events || []).filter((event) => event.kind === 'rrweb').map((event) => Number(event.ts) || 0));
+  const coverageGapSeconds = captureStoppedWallSecond - encodedEnd;
   const startGapSeconds = encodedStart - mediaStartedWallSecond;
-  if (Math.abs(startGapSeconds) > 1.25 || Math.abs(coverageGapSeconds) > 1.25) {
-    throw new Error(`ffprobe视频PTS与录制wall边界不符：首帧差${startGapSeconds.toFixed(3)}秒、尾帧差${coverageGapSeconds.toFixed(3)}秒；检查帧缺失或停止队列未flush`);
+  const actionBeyondCaptureMs = Math.max(0, lastActionAt - Date.parse(meta.mediaCaptureStoppedAt));
+  const domBeyondCaptureMs = Math.max(0, lastDomEventAt - Date.parse(meta.mediaCaptureStoppedAt));
+  const paintBeforeStopMs = Date.parse(meta.mediaCaptureStoppedAt) - captureLastPaintedAt;
+  const staleRecordedUrls = [...(visibleProof.resourceUrls || []), visibleProof.iframeUrl].filter((url) => /https?:\/\/localhost(?::\d+)?\//i.test(url));
+  if (Math.abs(startGapSeconds) > 1.25 || Math.abs(coverageGapSeconds) > 1.25 || paintBeforeStopMs < 0 || paintBeforeStopMs > 1250
+    || actionBeyondCaptureMs > 1250 || domBeyondCaptureMs > 1250) {
+    throw new Error(`ffprobe PTS与真实采集停止边界/最后UI对齐失败：首帧差${startGapSeconds.toFixed(3)}s，采集尾帧差${coverageGapSeconds.toFixed(3)}s，最后画帧距停止${paintBeforeStopMs}ms，最后动作越界${actionBeyondCaptureMs}ms，最后DOM越界${domBeyondCaptureMs}ms`);
   }
-  result.mediaTimeline = { startedAt: meta.mediaStartedAt, endedAt: meta.endedAt,
-    wallDurationSeconds: (Date.parse(meta.endedAt) - wallStart) / 1000,
+  result.mediaTimeline = { startedAt: meta.mediaStartedAt, mediaCaptureStoppedAt: meta.mediaCaptureStoppedAt, finalizedAt: meta.endedAt,
+    wallDurationSeconds: (Date.parse(meta.mediaCaptureStoppedAt) - wallStart) / 1000,
+    finalizationDelayMs: Date.parse(meta.endedAt) - Date.parse(meta.mediaCaptureStoppedAt),
     mediaWallStartSecond: mediaStart, mediaWallEndSecond: mediaEnd,
     metaMediaLastTimeMs: meta.mediaLastTimeMs, segments: timelineSegments.map(({ index, at, duration, playbackBytes }) => ({ index, at, duration, playbackBytes })),
     ffprobe: { executable: ffprobe, segments: probedSegments, encodedWallEndSecond: encodedEnd,
-      encodedWallStartSecond: encodedStart, mediaStartedWallSecond,
-      endedWallSecond, startGapSeconds, coverageGapSeconds }, samples: timelineSamples, actionSamples };
+      encodedWallStartSecond: encodedStart, mediaStartedWallSecond, captureStoppedWallSecond, finalizedWallSecond,
+      startGapSeconds, coverageGapSeconds, paintBeforeStopMs, lastActionAt, lastDomEventAt, actionBeyondCaptureMs, domBeyondCaptureMs }, samples: timelineSamples, actionSamples };
   await writeFile(path.join(output, 'replay-media-timeline-proof.json'), JSON.stringify(result.mediaTimeline, null, 2));
   await writeFile(path.join(output, 'replay-visual-proof.json'), JSON.stringify(result, null, 2));
-  if (timelineSamples.some((sample) => !sample.videoVisible || !sample.iframeVisible || sample.readyState < 2
+  if (staleRecordedUrls.length || timelineSamples.some((sample) => !sample.videoVisible || !sample.iframeVisible || sample.readyState < 2
     || !sample.videoWidth || sample.ptsErrorSeconds >= 0.7) || actionSamples.some((sample) => sample.readyState < 2
     || !sample.videoWidth || !sample.iframeText || sample.ptsErrorSeconds >= 0.7)) {
     throw new Error(`整局回放媒体wall/PTS覆盖、动作点视频和HUD校验失败：${JSON.stringify({ timelineSamples, actionSamples, coverageGapSeconds })}`);
@@ -277,10 +317,27 @@ async function piecePoint(piece, state = null) {
     }
   }
   if (!Number.isInteger(row) || !Number.isInteger(col) || col < 0) return null;
-  return page.evaluate(([r, c]) => {
+  const fallback = await page.evaluate(([r, c]) => {
     const t = globalThis.__SP_VIEW__?.tileScreen?.(r, c);
     return t ? { x: t.x, y: t.y + t.s * 0.25, tile: t } : null;
   }, [row, col]);
+  const number = pieceNumber(piece.uid);
+  const rect = await page.evaluate((n) => globalThis.__SP_VIEW__?.pieceScreenRect?.(n) || null, number);
+  const candidates = pieceSourceCandidates(rect, fallback);
+  const observations = await page.evaluate(({ points, uid }) => points.map((point) => {
+    const top = document.elementFromPoint(point.x, point.y);
+    const canvas = document.querySelector('.gm__field canvas[data-render-surface="game"]') || document.querySelector('.gm__field canvas');
+    return { ...point, hit: globalThis.__SP_VIEW__?.pieceAtClient?.(point.x, point.y) || null,
+      topTag: top?.tagName || '', topClass: typeof top?.className === 'string' ? top.className : '',
+      topText: (top?.innerText || top?.getAttribute?.('aria-label') || '').slice(0, 120),
+      isGameCanvas: !!canvas && (top === canvas || top?.closest?.('.gm__field') && top.tagName === 'CANVAS'),
+      viewport: { width: innerWidth, height: innerHeight }, uid };
+  }), { points: candidates, uid: piece.uid });
+  const evidence = { uid: piece.uid, number, rect, fallback, candidates: observations };
+  report.sourcePicks ||= []; report.sourcePicks.push(evidence);
+  const picked = observations.find((item) => verifiedPieceHit(piece.uid, number, item.hit, item.topTag, item.isGameCanvas));
+  if (!picked) { report.sourcePickFailures ||= []; report.sourcePickFailures.push(evidence); return null; }
+  return { x: picked.x, y: picked.y, tile: fallback?.tile || null, verifiedSource: picked };
 }
 async function tilePoint(row, col) {
   return page.evaluate(([r, c]) => {
@@ -301,7 +358,14 @@ async function deployPiece(state, piece) {
   const failure = { uid: piece.uid, name: piece.name, row: piece.row ?? null, col: piece.col ?? null,
     legalTiles: piece.legalTiles || [], attempts: [], revision: state.revision, funds: state.funds };
   const from = await piecePoint(piece, state);
-  if (!from) { failure.reason = 'hand geometry unavailable'; report.deployFailures ||= []; report.deployFailures.push(failure); return false; }
+  if (!from) {
+    failure.reason = 'visible piece source hit could not be verified';
+    failure.sourcePick = report.sourcePickFailures?.at(-1) || null;
+    failure.screenshot = await screenshot(`source-hit-failed-${piece.uid}`);
+    report.deployFailures ||= []; report.deployFailures.push(failure);
+    await writeFile(path.join(output, 'deploy-source-failure.json'), JSON.stringify(failure, null, 2));
+    return false;
+  }
   const occupied = new Set((state.pieces || []).filter((p) => Number.isInteger(p.row) && Number.isInteger(p.col)).map((p) => `${p.row},${p.col}`));
   const legal = (piece.legalTiles || []).map(tileTuple).filter((t) => t && t.every(Number.isFinite) && !occupied.has(`${t[0]},${t[1]}`));
   const candidates = [];
@@ -310,24 +374,49 @@ async function deployPiece(state, piece) {
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   failure.from = from; failure.occupied = [...occupied]; failure.candidates = candidates.map(({ row, col, x, y }) => ({ row, col, x, y })); failure.viewport = viewport;
   for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height)) {
-    await dragPointer(from, target);
-    const diagnostic = await page.evaluate(({ from, target, legalCount }) => {
+    const attempt = { row: target.row, col: target.col, from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y },
+      legalTileCount: legal.length, startedAt: new Date().toISOString() };
+    attempt.preflight = await page.evaluate(({ from, target }) => {
       const describe = (x, y) => {
         const e = document.elementFromPoint(x, y);
-        return e ? { tag: e.tagName, id: e.id, className: typeof e.className === 'string' ? e.className : '', text: (e.innerText || e.getAttribute('aria-label') || '').slice(0, 160), html: e.outerHTML.slice(0, 800) } : null;
+        return e ? { tag: e.tagName, id: e.id, className: typeof e.className === 'string' ? e.className : '',
+          text: (e.innerText || e.getAttribute('aria-label') || '').slice(0, 160), html: e.outerHTML.slice(0, 500) } : null;
       };
       return {
-        from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, row: target.row, col: target.col, legalTiles: legalCount,
+        from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, row: target.row, col: target.col,
         viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
         elementFromPoint: { from: describe(from.x, from.y), to: describe(target.x, target.y) },
-        wheelVisible: !!document.querySelector('.fwheel[role="dialog"]'),
+        pickedPieceAtFrom: globalThis.__SP_VIEW__?.pieceAtClient?.(from.x, from.y) || null,
+        detailOpen: !!document.querySelector('[data-testid="ix-detail"]'), wheelVisible: !!document.querySelector('.fwheel[role="dialog"]'),
       };
-    }, { from, target, legalCount: legal.length });
+    }, { from, target });
+    failure.attempts.push(attempt); report.lastDeployAttempt = attempt;
+    await writeFile(path.join(output, 'deploy-attempt-diagnostic.json'), JSON.stringify({ uid: piece.uid, name: piece.name, revision: state.revision, attempt }, null, 2));
+    await bounded(dragPointer(from, target), 30000, `干员${piece.uid}部署指针操作(${target.row},${target.col})`);
+    attempt.droppedAt = new Date().toISOString();
+    if (!report.firstDeployDiagnostic || piece.uid !== report.firstDeployDiagnostic.uid) {
+      attempt.dropScreenshot = await screenshot(`deploy-${piece.uid}-drop-${target.row}-${target.col}`);
+    }
     if (!report.firstDeployDiagnostic) {
-      report.firstDeployDiagnostic = { ...diagnostic, screenshot: await screenshot('first-deploy-after-drop') };
+      report.firstDeployDiagnostic = { ...attempt, screenshot: attempt.dropScreenshot || await screenshot('first-deploy-after-drop') };
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
     }
-    try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 1200 }); } catch { continue; }
+    try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 5000 }); }
+    catch {
+      const after = await readState();
+      attempt.wheelVisible = false; attempt.revisionAfter = after.revision;
+      attempt.movedPiece = (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null;
+      attempt.readyReason = (await visibleText('[data-testid="ready-why"]')).join(' ');
+      attempt.gameToasts = (await visibleText('.toast-host, .toast__text')).join(' ');
+      attempt.pointerTrace = await page.evaluate(() => window.__spFacingTrace || []);
+      attempt.completedAt = new Date().toISOString();
+      await writeFile(path.join(output, 'deploy-attempt-diagnostic.json'), JSON.stringify({ uid: piece.uid, name: piece.name, revision: state.revision, attempt }, null, 2));
+      if ((after.pieces || []).some((p) => p.uid === piece.uid && Number.isInteger(p.row))) {
+        report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag without facing prompt' });
+        return true;
+      }
+      continue;
+    }
     if (report.firstDeployDiagnostic?.row === target.row && report.firstDeployDiagnostic?.col === target.col) {
       report.firstDeployDiagnostic.wheelVisibleAfterWait = true;
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
@@ -367,10 +456,12 @@ async function deployPiece(state, piece) {
       report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + facing-wheel click' });
       return true;
     }
-    failure.attempts.push({ row: target.row, col: target.col, wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
+    Object.assign(attempt, { wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
       revisionAfter: after.revision, movedPiece: (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null,
       readyReason: (await visibleText('[data-testid="ready-why"]')).join(' '),
-      gameToasts: (await visibleText('.toast-host, .toast__text')).join(' '), facingTarget, facingHit, pointerTrace });
+      gameToasts: (await visibleText('.toast-host, .toast__text')).join(' '), facingTarget, facingHit, pointerTrace,
+      completedAt: new Date().toISOString() });
+    await writeFile(path.join(output, 'deploy-attempt-diagnostic.json'), JSON.stringify({ uid: piece.uid, name: piece.name, revision: state.revision, attempt }, null, 2));
     state = after;
   }
   failure.reason = failure.legalTiles.length ? 'all rendered legal positions rejected' : 'server supplied no legal tiles for this bench piece';
@@ -583,7 +674,7 @@ async function attemptHandover(state) {
   await screenshot('handover-preview');
   const ok = await clickText('.ix-inherit button', (s) => s === '确认交接');
   if (!ok) { await page.keyboard.press('Escape'); return false; }
-  await note('交接会把一名干员的装备移交给有凭证的队友，并预先展示属性变化与损耗。', '.ix-inherit', 'handover-transfer');
+  await note('符合交接范围的干员可以双向转移装备；只有一方带凭证也可以，确认前会显示属性变化与损耗。', '.ix-inherit', 'handover-transfer');
   await pause(800); report.actions.push({ type: 'inherit-through-visible-preview', donor: pair.donor.uid, receiver: pair.receiver.uid }); return true;
 }
 async function inspectReferenceCard(piece, kind) {
@@ -659,6 +750,8 @@ async function waitBattleResult(round) {
   if (summary.button === '查看结算') { await screenshot('terminal-result'); }
 }
 async function stopRecording() {
+  report.recorderStatusBeforeStop = await page.evaluate(() => globalThis.__SP_RECORDING_STATUS__?.() || null).catch(() => null);
+  await writeFile(path.join(output, 'recording-queue-before-stop.json'), JSON.stringify(report.recorderStatusBeforeStop, null, 2));
   report.recordingControlBeforeStop = await page.evaluate(() => {
     const panel = document.querySelector('.ix-recording'); const button = panel?.querySelector('button');
     const rect = (node) => { const r = node?.getBoundingClientRect(); return r ? r.toJSON() : null; };
@@ -694,9 +787,12 @@ async function stopRecording() {
     const button = await page.$('.ix-recording button');
     const available = button && await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled);
     if (!available) { await pause(1000); continue; }
+    const queueAtAttempt = await page.evaluate(() => globalThis.__SP_RECORDING_STATUS__?.() || null).catch(() => null);
     attempts += 1; await button.click();
     try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 10000 }); }
     catch { await pause(1500); }
+    (report.recorderStopQueueObservations ||= []).push({ attempt: attempts, at: new Date().toISOString(), before: queueAtAttempt,
+      statusText: await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'panel unavailable') });
   }
   report.recordingStopAttempts = attempts;
   report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion');
@@ -735,23 +831,49 @@ async function serveCanonicalMedia(req, res, pathname) {
   }
   res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end();
 }
-function proxyUpstream(req, res, backendPort) {
-  const upstream = http.request({ hostname: '127.0.0.1', port: backendPort, path: req.url, method: req.method, headers: req.headers }, (answer) => {
+function proxyUpstream(req, res, backendPort, pathOverride = req.url) {
+  const startedAt = Date.now(); let requestBytes = 0; let responseBytes = 0; const responseChunks = [];
+  const record = (entry) => {
+    if (!proxyDiagnosticsFile) return;
+    void fs.appendFile(proxyDiagnosticsFile, `${JSON.stringify({ at: new Date().toISOString(), method: req.method, path: req.url,
+      requestBytes, responseBytes, durationMs: Date.now() - startedAt, ...entry })}\n`, 'utf8').catch(() => {});
+  };
+  req.on('data', (chunk) => { requestBytes += chunk.length; });
+  const upstream = http.request({ hostname: '127.0.0.1', port: backendPort, path: pathOverride, method: req.method, headers: req.headers }, (answer) => {
     const headers = { ...answer.headers }; delete headers.connection; delete headers['keep-alive']; delete headers['proxy-authenticate']; delete headers['proxy-authorization']; delete headers.te; delete headers.trailer; delete headers['transfer-encoding']; delete headers.upgrade;
-    res.writeHead(answer.statusCode || 502, headers); answer.pipe(res);
+    res.writeHead(answer.statusCode || 502, headers);
+    answer.on('data', (chunk) => { responseBytes += chunk.length; if (responseBytes <= 16384) responseChunks.push(chunk); });
+    answer.on('end', () => {
+      const body = Buffer.concat(responseChunks).toString('utf8'); let parsed = null;
+      try { parsed = JSON.parse(body); } catch { /* response may be non-JSON */ }
+      record({ status: answer.statusCode || 502, ack: parsed?.ack ?? null, error: parsed?.error?.code || parsed?.error || null });
+    });
+    answer.on('error', (error) => record({ status: answer.statusCode || 502, responseError: { code: error.code || '', message: error.message } }));
+    answer.pipe(res);
   });
-  upstream.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
+  const stopRequest = /\/recordings\/[0-9a-f-]+\/stop(?:\?|$)/i.test(req.url || '');
+  const timeoutMs = stopRequest ? 60000 : 15000;
+  upstream.setTimeout(timeoutMs, () => upstream.destroy(Object.assign(new Error(`upstream request timed out after ${timeoutMs}ms`), { code: 'ETIMEDOUT' })));
+  upstream.on('error', (error) => {
+    record({ status: 502, upstreamError: { code: error.code || '', message: error.message } });
+    if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    if (!res.destroyed) res.end(JSON.stringify({ ok: false, error: { code: error.code || 'UPSTREAM', message: error.message } }));
+  });
   req.pipe(upstream);
 }
 async function startAssetProxy(backendPort) {
   assetProxy = http.createServer(async (req, res) => {
-    const pathname = new URL(req.url || '/', 'http://local').pathname;
+    const route = new URL(req.url || '/', 'http://local');
+    if (route.pathname.startsWith('/stronghold/')) route.pathname = route.pathname.slice('/stronghold'.length);
+    const pathname = route.pathname;
+    const upstreamPath = `${route.pathname}${route.search}`;
     if (pathname.startsWith('/assets/') || pathname.startsWith('/fonts/')) { await serveCanonicalAsset(req, res, pathname); return; }
     if (pathname.startsWith('/media/')) { await serveCanonicalMedia(req, res, pathname); return; }
-    proxyUpstream(req, res, backendPort);
+    proxyUpstream(req, res, backendPort, upstreamPath);
   });
   assetProxy.on('upgrade', (req, socket, head) => {
-    const upstream = http.request({ hostname: '127.0.0.1', port: backendPort, path: req.url, headers: req.headers });
+    const upstreamPath = (req.url || '/').replace(/^\/stronghold(?=\/)/, '');
+    const upstream = http.request({ hostname: '127.0.0.1', port: backendPort, path: upstreamPath, headers: req.headers });
     upstream.on('upgrade', (res, peer, peerHead) => {
       socket.write(`HTTP/1.1 ${res.statusCode} ${res.statusMessage}\r\n${Object.entries(res.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n')}\r\n\r\n`);
       if (peerHead.length) socket.write(peerHead); if (head.length) peer.write(head);
@@ -765,8 +887,11 @@ async function startAssetProxy(backendPort) {
 
 try {
   await mkdir(output, { recursive: true }); await mkdir(tmp, { recursive: true });
+  proxyDiagnosticsFile = path.join(output, 'proxy-http.jsonl');
+  await writeFile(path.join(output, 'driver-process-start.json'), JSON.stringify({ pid: process.pid,
+    argv: process.argv, cwd: process.cwd(), startedAt: report.startedAt, output, runLog }, null, 2));
   server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, publicDir: path.join(repo, 'public'), dataDir: path.join(repo, 'data'), sharedDir: path.join(repo, 'shared'),
-    independentDirectory: path.join(runtime, 'sessions'), recordingDirectory: path.join(runtime, 'recordings') });
+    independentDirectory: path.join(runtime, 'sessions'), recordingDirectory: path.join(runtime, 'recordings'), recordingDiagnosticsPath: path.join(output, 'recording-http.jsonl') });
   const origin = await startAssetProxy(server.port);
   browser = await puppeteer.launch({ executablePath: chromePath, headless: true, args: ['--no-sandbox', '--no-proxy-server', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--disable-gpu-sandbox'] });
   page = await browser.newPage();
@@ -797,9 +922,12 @@ try {
     if (actionEntry) {
       actionEntry.status = response.status();
       try {
-        const body = await response.json(); const state = body.state;
-        actionEntry.result = { ok: body.ok, error: body.error?.code || body.error || null, revision: state?.revision,
-          pieces: (state?.pieces || []).map((p) => ({ uid: p.uid, row: p.row ?? null, col: p.col ?? null })) };
+        const text = await response.text(); let body = null;
+        try { body = JSON.parse(text); } catch { /* retain bounded response text for API failure diagnosis */ }
+        const state = body?.state;
+        actionEntry.result = { ok: body?.ok, error: body?.error?.code || body?.error || null, revision: state?.revision,
+          pieces: (state?.pieces || []).map((p) => ({ uid: p.uid, row: p.row ?? null, col: p.col ?? null })),
+          ...(response.status() >= 400 ? { responseText: text.slice(0, 2000) } : {}) };
         actionEntry.respondedAt = new Date().toISOString();
       } catch { actionEntry.result = { unreadable: true }; }
     }
@@ -829,6 +957,8 @@ try {
   const url = new URL(page.url()); sessionId = url.searchParams.get('session'); recordingId = url.searchParams.get('recording');
   if (!sessionId || !recordingId) throw new Error('UI 创建对局或录制未完成');
   await page.waitForFunction(() => document.querySelector('.ix-recording__dot.is-live'), { timeout: 30000 });
+  await captureRecordingTelemetry();
+  recordingTelemetryTimer = setInterval(() => { void captureRecordingTelemetry(); }, 60000);
   const initial = await readState(); report.sessionId = sessionId; report.recordingId = recordingId; report.growthMode = initial.growthMode; report.roundLimit = initial.roundLimit;
   await screenshot('first-preparation');
   let roundsDriven = 0; let idle = 0; let lastPrepRevision = null; let sameRevisionSince = Date.now();
@@ -846,6 +976,21 @@ try {
       continue;
     }
     const state = await readState();
+    if (sourcePickTest && state.phase === 'prep') {
+      const target = (state.pieces || []).find((piece) => !piece.temp && !Number.isInteger(piece.row) && pieceNumber(piece.uid) === sourcePickTestUid);
+      if (target) {
+        if (!await inspectReferenceCard(target, 'ordinary')) throw new Error(`真实界面的干员 ${target.uid} 原卡检查失败，无法继续源点击验收`);
+        const source = await piecePoint(target, state);
+        report.sourcePickTest = { uid: target.uid, name: target.name, revision: state.revision,
+          pieces: (state.pieces || []).map((piece) => ({ uid: piece.uid, name: piece.name, row: piece.row ?? null, col: piece.col ?? null })),
+          evidence: report.sourcePicks?.at(-1) || null, verified: !!source?.verifiedSource };
+        report.sourcePickTest.screenshot = await screenshot(source ? `source-hit-p${sourcePickTestUid}-verified` : `source-hit-p${sourcePickTestUid}-failed`);
+        await writeFile(path.join(output, 'source-pick-real-ui.json'), JSON.stringify(report.sourcePickTest, null, 2));
+        if (!source?.verifiedSource) throw new Error(`真实界面拾取未命中 ${target.uid} 本体，已保存候选点和截图`);
+        report.prepDiagnosticComplete = true;
+        break;
+      }
+    }
     if (state.phase === 'prep' && !report.preparationSnapshots.some((x) => x.revision === state.revision)) {
       const roster = (state.pieces || []).filter((p) => !p.temp);
       const roles = roster.map((p) => ({ name: p.name, profession: chessCatalog[p.chessId]?.profession || '', position: chessCatalog[p.chessId]?.position || '' }));
@@ -959,7 +1104,9 @@ try {
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
-  report.replayVisualProof = await verifyNarratedReplay(recording);
+  if (!sourcePickTest || process.env.SP_RECORD_DRIVER_VERIFY_SHORT_REPLAY === '1') {
+    report.replayVisualProof = await verifyNarratedReplay(recording, { requireFullActionSamples: !sourcePickTest });
+  }
   report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption' || e.kind === 'custom').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
   report.actions = report.recording?.events?.filter((e) => e.kind === 'server-action').map((e) => ({ at: e.ts, ...e.p })) || report.actions;
   report.artifacts = { screenshots: report.screenshots, log: runLog, json: path.join(output, 'driver-run.json') };
@@ -970,13 +1117,27 @@ try {
   if (!recording?.meta?.endedAt || !recording?.meta?.mediaSegments?.length || report.errors.length || report.recordingStopError) process.exitCode = 1;
 } catch (error) {
   report.failure = error?.stack || String(error); report.endedAt = new Date().toISOString();
-  try { if (page && !page.isClosed()) { await screenshot('driver-failure'); await stopRecording(); const stopped = await readRecording(); report.recordingMeta = stopped?.meta || null; } } catch { /* include original failure */ }
+  try {
+    if (page && !page.isClosed()) {
+      await screenshot('driver-failure');
+      const shouldStop = await page.evaluate(() => {
+        const status = globalThis.__SP_RECORDING_STATUS__?.();
+        return status?.recorderState === 'recording' || status?.recorderState === 'paused';
+      }).catch(() => false);
+      if (shouldStop) await bounded(stopRecording(), 6 * 60 * 1000, '失败路径结束录制并刷新媒体');
+      const stopped = await readRecording(); report.recordingMeta = stopped?.meta || null;
+    }
+  } catch (finalizeError) { report.failureFinalizeError = String(finalizeError?.stack || finalizeError); }
   const file = path.join(output, 'driver-run-failure.json'); await writeFile(file, JSON.stringify(report, null, 2)).catch(() => {});
   const log = runLog; await writeFile(log, `${report.startedAt}\nFAILED ${error?.stack || error}\n`, 'utf8').catch(() => {});
   console.error(JSON.stringify({ failure: error?.message || String(error), report: file, log, screenshots: report.screenshots }, null, 2)); process.exitCode = 1;
 } finally {
   clearTimeout(hardTimer);
+  clearInterval(recordingTelemetryTimer);
   if (browser) await browser.close().catch(() => {});
   if (assetProxy) await new Promise((resolve) => { assetProxy.closeAllConnections?.(); assetProxy.close(resolve); }).catch(() => {});
   if (server) { server.closeAllConnections?.(); await server.close().catch(() => {}); }
+  await writeFile(path.join(output, 'driver-process-receipt.json'), JSON.stringify({ pid: process.pid,
+    argv: process.argv, cwd: process.cwd(), startedAt: report.startedAt, finishedAt: new Date().toISOString(),
+    exitCode: process.exitCode || 0, sessionId, recordingId, output, runLog }, null, 2)).catch(() => {});
 }
