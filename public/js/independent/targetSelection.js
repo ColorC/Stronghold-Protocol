@@ -33,6 +33,6 @@ export function buyTargetCount(spec, state, catalog, slot) {
   return requested+extra;
 }
 
-export function buyRequiresTarget(spec) {
-  return !!spec && !spec.optional;
+export function buyRequiresTarget(spec, choices = undefined) {
+  return !!spec && !spec.optional && !(spec.kind==='friendly' && Array.isArray(choices) && choices.length===0);
 }

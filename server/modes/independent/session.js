@@ -575,7 +575,7 @@ export function applyAction(state, action, options = {}) {
       let magneticTarget=null;
       if(reactiveBuyTargetSpec(slot,work,catalog)) {
         const target=work.pieces.find(x=>x.uid===action.targetUid);
-        if(!target||target.deleted||target.removed)throw new Error('DARKMOON_TARGET_REQUIRED');
+        if(!target||!inField(target.row,target.col)||target.deleted||target.removed)throw new Error('DARKMOON_TARGET_REQUIRED');
       }
       if(action.magneticTargetUid!==undefined) {
         if(!['BOT_312','BOT_911'].includes(sourceId))throw new Error('NOT_MAGNETIC_SOURCE');
