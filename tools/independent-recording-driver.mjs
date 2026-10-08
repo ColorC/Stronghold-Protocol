@@ -11,6 +11,7 @@ import { createReadStream } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/index.js';
 import { hasDamageDealer, upgradeReserve } from './independent-recording-strategy.mjs';
+import { pieceSourceCandidates, verifiedPieceHit } from './independent-recording-pick.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const chessCatalog = JSON.parse(await fs.readFile(path.join(repo, 'data/chess.json'), 'utf8'));
@@ -20,7 +21,8 @@ const tmp = path.join(canonical, '.omni/tmp/growth-destination-20261008/recordin
 const output = path.resolve(process.env.SP_RECORD_DRIVER_OUTPUT || path.join(runtime, 'driver-run'));
 const runLog = path.join(tmp, `independent-recording-driver-${path.basename(output)}.log`);
 const processStartedAt = Date.now();
-const defaultHardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 30 * 60 * 1000;
+const sourcePickTest = process.env.SP_RECORD_DRIVER_SOURCE_PICK_TEST === '1';
+const defaultHardLimitMs = (process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' || sourcePickTest) ? 3 * 60 * 1000 : 30 * 60 * 1000;
 const requestedHardLimitMs = Number(process.env.SP_RECORD_DRIVER_HARD_TIMEOUT_MS || defaultHardLimitMs);
 const hardLimitMs = Number.isFinite(requestedHardLimitMs) && requestedHardLimitMs > 0
   ? Math.max(60 * 1000, Math.min(100 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
@@ -34,6 +36,7 @@ const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
   requestedSeed: process.env.SP_RECORD_DRIVER_SEED ? seed : null, maxRounds, growthModeRequested: growthMode,
+  sourcePickDiagnosticOnly: sourcePickTest,
   startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
   actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
@@ -294,10 +297,27 @@ async function piecePoint(piece, state = null) {
     }
   }
   if (!Number.isInteger(row) || !Number.isInteger(col) || col < 0) return null;
-  return page.evaluate(([r, c]) => {
+  const fallback = await page.evaluate(([r, c]) => {
     const t = globalThis.__SP_VIEW__?.tileScreen?.(r, c);
     return t ? { x: t.x, y: t.y + t.s * 0.25, tile: t } : null;
   }, [row, col]);
+  const number = pieceNumber(piece.uid);
+  const rect = await page.evaluate((n) => globalThis.__SP_VIEW__?.pieceScreenRect?.(n) || null, number);
+  const candidates = pieceSourceCandidates(rect, fallback);
+  const observations = await page.evaluate(({ points, uid }) => points.map((point) => {
+    const top = document.elementFromPoint(point.x, point.y);
+    const canvas = document.querySelector('.gm__field canvas[data-render-surface="game"]') || document.querySelector('.gm__field canvas');
+    return { ...point, hit: globalThis.__SP_VIEW__?.pieceAtClient?.(point.x, point.y) || null,
+      topTag: top?.tagName || '', topClass: typeof top?.className === 'string' ? top.className : '',
+      topText: (top?.innerText || top?.getAttribute?.('aria-label') || '').slice(0, 120),
+      isGameCanvas: !!canvas && (top === canvas || top?.closest?.('.gm__field') && top.tagName === 'CANVAS'),
+      viewport: { width: innerWidth, height: innerHeight }, uid };
+  }), { points: candidates, uid: piece.uid });
+  const evidence = { uid: piece.uid, number, rect, fallback, candidates: observations };
+  report.sourcePicks ||= []; report.sourcePicks.push(evidence);
+  const picked = observations.find((item) => verifiedPieceHit(piece.uid, number, item.hit, item.topTag, item.isGameCanvas));
+  if (!picked) { report.sourcePickFailures ||= []; report.sourcePickFailures.push(evidence); return null; }
+  return { x: picked.x, y: picked.y, tile: fallback?.tile || null, verifiedSource: picked };
 }
 async function tilePoint(row, col) {
   return page.evaluate(([r, c]) => {
@@ -318,7 +338,14 @@ async function deployPiece(state, piece) {
   const failure = { uid: piece.uid, name: piece.name, row: piece.row ?? null, col: piece.col ?? null,
     legalTiles: piece.legalTiles || [], attempts: [], revision: state.revision, funds: state.funds };
   const from = await piecePoint(piece, state);
-  if (!from) { failure.reason = 'hand geometry unavailable'; report.deployFailures ||= []; report.deployFailures.push(failure); return false; }
+  if (!from) {
+    failure.reason = 'visible piece source hit could not be verified';
+    failure.sourcePick = report.sourcePickFailures?.at(-1) || null;
+    failure.screenshot = await screenshot(`source-hit-failed-${piece.uid}`);
+    report.deployFailures ||= []; report.deployFailures.push(failure);
+    await writeFile(path.join(output, 'deploy-source-failure.json'), JSON.stringify(failure, null, 2));
+    return false;
+  }
   const occupied = new Set((state.pieces || []).filter((p) => Number.isInteger(p.row) && Number.isInteger(p.col)).map((p) => `${p.row},${p.col}`));
   const legal = (piece.legalTiles || []).map(tileTuple).filter((t) => t && t.every(Number.isFinite) && !occupied.has(`${t[0]},${t[1]}`));
   const candidates = [];
@@ -814,6 +841,8 @@ async function startAssetProxy(backendPort) {
 
 try {
   await mkdir(output, { recursive: true }); await mkdir(tmp, { recursive: true });
+  await writeFile(path.join(output, 'driver-process-start.json'), JSON.stringify({ pid: process.pid,
+    argv: process.argv, cwd: process.cwd(), startedAt: report.startedAt, output, runLog }, null, 2));
   server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, publicDir: path.join(repo, 'public'), dataDir: path.join(repo, 'data'), sharedDir: path.join(repo, 'shared'),
     independentDirectory: path.join(runtime, 'sessions'), recordingDirectory: path.join(runtime, 'recordings') });
   const origin = await startAssetProxy(server.port);
@@ -897,6 +926,20 @@ try {
       continue;
     }
     const state = await readState();
+    if (sourcePickTest && state.phase === 'prep') {
+      const target = (state.pieces || []).find((piece) => !piece.temp && !Number.isInteger(piece.row) && pieceNumber(piece.uid) === 3);
+      if (target) {
+        const source = await piecePoint(target, state);
+        report.sourcePickTest = { uid: target.uid, name: target.name, revision: state.revision,
+          pieces: (state.pieces || []).map((piece) => ({ uid: piece.uid, name: piece.name, row: piece.row ?? null, col: piece.col ?? null })),
+          evidence: report.sourcePicks?.at(-1) || null, verified: !!source?.verifiedSource };
+        report.sourcePickTest.screenshot = await screenshot(source ? 'source-hit-p3-verified' : 'source-hit-p3-failed');
+        await writeFile(path.join(output, 'source-pick-real-ui.json'), JSON.stringify(report.sourcePickTest, null, 2));
+        if (!source?.verifiedSource) throw new Error(`真实界面拾取未命中 ${target.uid} 本体，已保存候选点和截图`);
+        report.prepDiagnosticComplete = true;
+        break;
+      }
+    }
     if (state.phase === 'prep' && !report.preparationSnapshots.some((x) => x.revision === state.revision)) {
       const roster = (state.pieces || []).filter((p) => !p.temp);
       const roles = roster.map((p) => ({ name: p.name, profession: chessCatalog[p.chessId]?.profession || '', position: chessCatalog[p.chessId]?.position || '' }));
@@ -1010,7 +1053,7 @@ try {
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
-  report.replayVisualProof = await verifyNarratedReplay(recording);
+  if (!sourcePickTest) report.replayVisualProof = await verifyNarratedReplay(recording);
   report.recording = recording ? { meta: recording.meta, events: (recording.events || []).filter((e) => e.kind === 'server-action' || e.kind === 'caption' || e.kind === 'custom').map((e) => ({ ts: e.ts, kind: e.kind, p: e.p })) } : null;
   report.actions = report.recording?.events?.filter((e) => e.kind === 'server-action').map((e) => ({ at: e.ts, ...e.p })) || report.actions;
   report.artifacts = { screenshots: report.screenshots, log: runLog, json: path.join(output, 'driver-run.json') };
@@ -1031,4 +1074,7 @@ try {
   if (browser) await browser.close().catch(() => {});
   if (assetProxy) await new Promise((resolve) => { assetProxy.closeAllConnections?.(); assetProxy.close(resolve); }).catch(() => {});
   if (server) { server.closeAllConnections?.(); await server.close().catch(() => {}); }
+  await writeFile(path.join(output, 'driver-process-receipt.json'), JSON.stringify({ pid: process.pid,
+    argv: process.argv, cwd: process.cwd(), startedAt: report.startedAt, finishedAt: new Date().toISOString(),
+    exitCode: process.exitCode || 0, sessionId, recordingId, output, runLog }, null, 2)).catch(() => {});
 }
