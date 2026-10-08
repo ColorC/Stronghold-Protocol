@@ -135,7 +135,8 @@ function analyzeReport(sourceReport, sourceReportPath) {
 
 async function reanalyzeJson(sourcePath, outputPath) {
   must(path.isAbsolute(sourcePath) && path.isAbsolute(outputPath), REANALYSIS_USAGE);
-  const sourceReport = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+  const savedReport = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+  const sourceReport = savedReport.rawSampling || savedReport;
   const result = analyzeReport(sourceReport, sourcePath);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), { flag: 'wx' });
@@ -334,6 +335,7 @@ async function run(baseUrl, outputDir, candidateRoot) {
     try {
       finalReport = analyzeReport(report, receipt);
       finalReport.samplingSource.finishedAt = report.finishedAt;
+      finalReport.rawSampling = structuredClone(report);
     } catch (error) {
       finalReport = { analysisMode: 'browser-run-shared-analysis', passed: false, analyzedAt: new Date().toISOString(), errors: [...report.errors, error.stack || String(error)], failedChecks: [{ scope: 'browser-sampling', id: 'complete-source-and-candidate-samples-required', passed: false, detail: 'Shared analysis could not run because browser sampling failed or required samples were incomplete.' }], samplingSource: { sourceReportPath: receipt, browserUrl: report.baseUrl, candidateRoot: report.candidateRoot, candidateFiles, candidateInterceptions: report.candidateInterceptions, startedAt: report.startedAt, finishedAt: report.finishedAt, screenshots: report.screenshots, browserErrors: report.errors, interaction: report.interaction }, partialResults: report.results };
     }
