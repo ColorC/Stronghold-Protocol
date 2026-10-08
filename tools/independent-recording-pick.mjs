@@ -11,7 +11,8 @@ export function pieceSourceCandidates(rect, fallback) {
 }
 
 export function verifiedPieceHit(uid, pieceNumber, hit, topTag, isGameCanvas) {
-  const exactUid = String(hit?.uid || '') === String(uid);
+  const exactUid = String(hit?.uid ?? '') === String(uid)
+    || (Number.isInteger(pieceNumber) && Number(hit?.uid) === pieceNumber);
   const exactNumber = Number.isInteger(pieceNumber) && Number(hit?.n) === pieceNumber;
   return (exactUid || exactNumber) && String(topTag || '').toUpperCase() === 'CANVAS' && !!isGameCanvas;
 }

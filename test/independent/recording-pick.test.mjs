@@ -11,6 +11,7 @@ test('source candidates prefer the drawn body and retain a legal tile fallback',
 
 test('source validation requires the exact piece and unobstructed game canvas', () => {
   assert.equal(verifiedPieceHit('p3', 3, { uid: 'p3', area: 'hand' }, 'CANVAS', true), true);
+  assert.equal(verifiedPieceHit('p3', 3, { uid: 3, area: 'hand' }, 'CANVAS', true), true);
   assert.equal(verifiedPieceHit('p3', 3, { uid: 'p4' }, 'CANVAS', true), false);
   assert.equal(verifiedPieceHit('p3', 3, { uid: 'p3' }, 'BUTTON', false), false);
   assert.equal(verifiedPieceHit('p3', 3, { n: 3 }, 'CANVAS', true), true);
