@@ -108,3 +108,12 @@
 - 修正录像采样为独立二维采集面，并加入最终化等待。15秒静止画面实验只证明该实验，不代表整局已同步；完整尝试至第6轮真实败局，但30分钟硬关闭抢断收尾，录像未结束，不能交付。完整失败证据 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/driver-run/full-game-543b9ddd-20261008/driver-run-failure.json`、终局画面 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/driver-run/full-game-543b9ddd-20261008/025-terminal-finished.png`。采购留资过早导致军队不足，继续修驾驶策略与有界收尾，再录完整成型局。
 - 发现14件已实现补充装备失去当前卡池获取来源，决定通过专项战备授训按科技发现并永久直接装备到指定干员；不添加干员或替换101张原卡主干。正在补完整领奖、选择、落点和展示回归。
 - 已保存原版Git恢复点；两个远端入口、同一集中表和完整视频尚未最终发布，不宣称完成。
+
+## 2026-10-08 收尾验收（进行中）
+- 固定提交 3007261bd593ea03ab34953788117349cdd546d6 的完整测试有可信终态：399 个文件、4670 条测试，4634 通过、16 失败、20 跳过，历时697.807秒，实际测试PID322192，结束后工作树干净。失败正在按真实生产缺口与过时夹具区分处理，不能声明全套通过。回执：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/full-suite-3007261b-result.json；日志：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/full-suite-3007261b.log。
+- 原集中表已原卡更新并只读回查：revision201，182行15列；101名干员、8种当前徽章、33装备、5特供装备、2交接凭证、19工程部特供、5阵容、9敌人阶段。历史v1-v3保留。回执：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/concentrated-table-readback-final.json。此前摘要中189行/15徽章并非当前可获得内容计数，以本次回读为准。
+- 中断合并的空catalog.js已从300原生Git版本恢复。canonical锁保留，未绕过被拒绝的删除；已在独立稀疏发布副本原生合并48e1dfc9的同期VFX，候选dc9eca8ac3cd9a2ddf991e811a48f433b03c84fd干净、包含两条历史。构建工具直接读取canonical资源绝对路径，无运行数据副本或可写链接。报告：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/growth-destination-20261008/merge-recovery/publication-worktree-report.json。
+- dc9渲染相关单测和真实Chrome验证通过：锏S2四方向、较小自然重叠跳字，未见控制台/HTTP/资源缺失错误；root已查看实际截图。报告：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/final-publication-qa/renderer-qa.json。
+- 录制已实际修正可见Spine身体拾取；短录查出磁盘分片保存抖动和捕获结束/上传结束时间混淆，正在补真实停止时刻、5秒分片、子目录回放资源重定位和长事件流读取；没有合格完整视频。
+- 完整阵容测试发现德克萨斯攻击回声识别不到新版伺夜退场来源，已在source worker修共用退场adapter，等待完整组合与全套复验，最终整局须包含此修复。
+- VPS已通过原生dnf安装ffmpeg/ffprobe7.0.2，现有服务PID384944仍运行旧86f9475e。实查ProtectSystem=strict，仅sessions/logs可写；发布脚本已准备单独允许recordings，尚未激活新版本。安装日志：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/vps-dnf-media-install.log。
