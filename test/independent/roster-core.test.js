@@ -16,6 +16,7 @@ function tailoredDesign() {
   const second = design.operators.find((x) => x !== active);
   design.rules.activeRosterIds = [active.chessId, second.chessId];
   design.rules.tavernFactions = ['萨尔贡', '拉特兰'];
+  design.rules.factionIdentityEquipment = true;
   active.tier = 4;
   active.nativeFactionTags = ['萨尔贡'];
   active.modeEffects = {
@@ -97,6 +98,7 @@ test('inactive operators do not enter a random recruit offer even if an old save
 test('native faction tags replace upstream bonds while identity gear adds a tavern-only tag', () => {
   const { design, active } = tailoredDesign();
   const catalog = getCatalog(data, design);
+  assert.equal(catalog.config.factionIdentityEquipment,true,'this isolated fixture enables the current optional identity-gear mechanic');
   const proxyGear = Object.values(catalog.equipment).find((x) => x.mechanism === 'identityTag');
   const piece = { chessId: active.chessId, equipment: [{ id: proxyGear.id, state: { faction: '炎' } }] };
   assert.deepEqual(nativeFactions(piece, catalog), ['萨尔贡']);

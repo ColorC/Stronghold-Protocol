@@ -5,6 +5,7 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getIndependentField } from '../../server/modes/independent/battle.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
 import { trainingChoiceOptions, drawTrainingChoices } from '../../shared/independentTrainingChoice.js';
+import { makePrizeOffer } from '../../server/modes/independent/prizes.js';
 import { installIndependentBattle } from '../../server/sim/content/independent/battle.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 import { cardTable } from '../../tools/independent-card-table.mjs';
@@ -13,19 +14,21 @@ const catalog = getCatalog();
 const whistleId = 'independent:叙拉古狼嚎哨';
 const blastId = 'independent:爆破部署台';
 const meltdownId = 'independent:便携式融毁教学仪';
+const assaultId = 'independent:突袭盟约';
+const recoilId = 'independent:反冲空降仓';
 
-function fixture(level = 3) {
+function fixture(level = 3, elite = false) {
   const state = createSession({ seed: 91, difficulty: 'FUNNY' });
   const op = Object.values(catalog.operators).find((x) => !x.elite && x.name === '普罗旺斯');
   const tile = [...getIndependentField(state).deployMap].find(([, cls]) => cls === 'MELEE' || cls === 'melee');
   assert.ok(op && tile);
   const [row, col] = tile[0].split(',').map(Number);
   const piece = { uid: `p${state.nextUid++}`, chessId: op.chessId, elite: false, row, col, dir: 'RIGHT', skillIndex: 0,
-    moduleId: 'none', equipment: [], attachments: [], nativeState: {}, bodyPenaltyApplied: false, poolCopies: 0 };
+    moduleId: 'none', elite, equipment: [], attachments: [], nativeState: {}, bodyPenaltyApplied: false, poolCopies: 0 };
   state.pieces.push(piece);
   state.shop.level = level;
   state.phase = 'prize';
-  state.offers = [{ id: 'training-prize', type: 'prize', choices: ['special-readiness-training'], source: 'fixture' }];
+  state.offers = [];
   return { state, piece };
 }
 
@@ -35,13 +38,22 @@ function seedRevealing(id, options) {
 }
 
 function openTraining(state, piece, id) {
-  const options = trainingChoiceOptions(state, catalog, piece);
-  state.rngState = seedRevealing(id, options);
-  const result = applyAction(state, { type: 'choose', offerId: 'training-prize', index: 0, targetUid: piece.uid });
+  let prizeOffer;
+  for (let seed = 1; seed < 10000; seed++) {
+    const candidate = structuredClone(state); candidate.rngState = seed; candidate.offers = [];
+    const generated = makePrizeOffer(candidate, catalog, 'build', 'causal-test');
+    if (generated.choices.includes('special-readiness-training')) { state = candidate; prizeOffer = generated; break; }
+  }
+  assert.ok(prizeOffer, 'the real build-stage prize generator offers training for this deployed target');
+  const index = prizeOffer.choices.indexOf('special-readiness-training');
+  assert.notEqual(index, -1);
+  state.rngState = seedRevealing(id, trainingChoiceOptions(state, catalog, piece));
+  const result = applyAction(state, { type: 'choose', offerId: prizeOffer.id, index, targetUid: piece.uid });
   assert.equal(result.ok, true, result.error?.message);
   const offer = result.state.offers.find((x) => x.type === 'attachment');
   assert.ok(offer?.trainingChoice);
-  return { state: result.state, offer };
+  assert.equal(offer.targetUid, piece.uid);
+  return { state: result.state, offer, prizeOffer };
 }
 
 test('专项战备授训 directly equips a selected item, records its prize source and recipient, then its gear works in battle', () => {
@@ -107,6 +119,58 @@ test('training revalidates a stale unique item and a full target without consumi
   assert.deepEqual(full.state, before2, 'capacity failure does not consume the offer or mutate the target');
 });
 
+test('training prize causally equips assault oath and recoil airdrop for normal and golden operators', () => {
+  for (const id of [assaultId, recoilId]) for (const elite of [false, true]) {
+    const level = id === recoilId ? 6 : 2;
+    const { state, piece } = fixture(level, elite);
+    const opened = openTraining(state, piece, id);
+    const index = opened.offer.choices.indexOf(id);
+    assert.notEqual(index, -1, id + ' is discovered for ' + (elite ? 'golden' : 'normal') + ' operator');
+    const picked = applyAction(opened.state, { type: 'choose', offerId: opened.offer.id, index });
+    assert.equal(picked.ok, true, picked.error?.message);
+    const wearer = picked.state.pieces.find((p) => p.uid === piece.uid);
+    assert.equal(wearer.elite, elite);
+    assert.equal(wearer.equipment.filter((x) => x.id === id).reduce((n, x) => n + x.quantity, 0), 1);
+    assert.equal(picked.state.inventory.some((x) => x.id === id), false);
+    assert.deepEqual(picked.state.production.at(-1), { round: picked.state.round, revision: picked.state.revision, id, quantity: 1,
+      origin: 'prize', phase: 'prize', prizeId: 'special-readiness-training', worn: true, targetUid: wearer.uid });
+
+    const pieces = [structuredClone(wearer)];
+    const chessId = wearer.chessId;
+    const h = makeBattle({
+      units: [{ uid: wearer.uid, chessId, row: wearer.row, col: wearer.col, dir: wearer.dir }],
+      defs: { chess: { [chessId]: chessRec({ id: chessId, rangeGrid: [[0, 0], [0, 1]], stats: { atk: 100, maxHp: 1000, def: 0, res: 0, aspd: 100, respawnTime: 20, blockCnt: 1 } }) },
+        enemies: { dummy: enemyRec({ key: 'dummy', hp: 40000, def: 0, res: 0, speed: 0 }) } },
+      autoFinish: false, content: 'independent', flags: { independent: { catalog, pieces } },
+      extraContent: [(battle) => installIndependentBattle(battle, { catalog, state: picked.state })],
+    });
+    h.step(1);
+    assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors));
+    const unit = h.unit(wearer.uid);
+    if (id === assaultId) {
+      const target = h.spawn('dummy', { pos: [10, 10] });
+      unit.atkCd = 1e9;
+      const deploys = unit.deploySeq;
+      assert.ok(unit.findBuff('independent:keywordGear:assault-oath:' + unit.uid + ':aspd'), 'gear gives its attack-speed effect on deployment');
+      h.run(9.8);
+      assert.equal(unit.deploySeq, deploys, 'the target-seeking redeploy waits for ten seconds without an ordinary attack');
+      h.run(0.5);
+      assert.ok(unit.deploySeq > deploys, 'after ten seconds it performs the real legal raid redeploy');
+      assert.ok(unit.findBuff('independent:keywordGear:assault-oath:' + unit.uid + ':aspd'), 'the redeploy refreshes the attack-speed effect');
+      assert.ok(target.alive);
+    } else {
+      const target = h.spawn('dummy', { pos: [10, 10] });
+      const before = target.hp;
+      h.b.rng = () => 0;
+      h.b.retreat(unit, { reason: 'gear-causal-redeploy' });
+      h.b.redeploy(unit, { free: true });
+      assert.ok(before - target.hp >= 15000, 'the real redeploy event fires the airdrop against its occupied tile');
+      assert.ok(h.eventsOf('keywordGearRandomTile').length > 0, 'battle records the airdrop target tile');
+    }
+    assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors));
+  }
+});
+
 test('training prize requires a deployed legal target and technology-six meltdown stays locked below six', () => {
   const { state, piece } = fixture(2);
   assert.ok(!trainingChoiceOptions(state, catalog, piece).includes(meltdownId));
@@ -124,10 +188,10 @@ test('training prize requires a deployed legal target and technology-six meltdow
   assert.deepEqual(badTarget.state, before);
 });
 
-test('all fourteen configured supplementary items have a live direct-equip training source and clear table attribution', () => {
+test('all sixteen configured supplementary items have a live direct-equip training source and clear table attribution', () => {
   const ids = catalog.config.trainingGearIds;
-  assert.equal(ids.length, 14);
-  assert.equal(new Set(ids).size, 14);
+  assert.equal(ids.length, 16);
+  assert.equal(new Set(ids).size, 16);
   for (const id of ids) {
     const item = catalog.equipment[id];
     assert.ok(item, `catalog includes ${id}`);

@@ -126,7 +126,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   const byUid=new Map(pieces.map(p=>[p.uid,p]));
   const sourceOf=u=>catalog.operators?.[u?.def?.raw?.darkmoonNativeChessId] || (u?.kind==='token'?sourceOf(u.ownerUnit):catalog.operators?.[byUid.get(u?.uid)?.chessId]);
   const identity=u=>u?.mem?.darkmoonFactionTags || u?.def?.raw?.darkmoonFactionTags || (u?.kind==='token'?identity(u.ownerUnit):nativeFactions(byUid.get(u?.uid)||{chessId:u?.defId},catalog));
-  const eligible=(u,owner,tribe=null)=>!!u&&u.side==='ally'&&own(u,owner)&&['op','token'].includes(u.kind)&&(!tribe||identity(u).includes(FACTIONS[tribe]));
+  const eligible=(u,owner,tribe=null)=>!!u&&u.side==='ally'&&own(u,owner)&&['op','token'].includes(u.kind)&&(!tribe||identity(u).includes(FACTIONS[tribe]||tribe));
   const members=(owner,tribe=null)=>battle.allyUnits.filter(u=>alive(u)&&eligible(u,owner,tribe)).sort(order);
   const enemies=()=>battle.enemies.filter(alive).sort((a,b)=>a.x-b.x||a.id-b.id);
   const pick=a=>a.length?a[Math.floor(battle.rng()*a.length)]:null;
@@ -261,6 +261,19 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     }
     note(e,echo?'retireEcho':'retire',targets);
   };
+  // Deathrattle echo adapters must execute the exact same retirement payload
+  // as a real retirement, while leaving the chosen operator alive. Keep
+  // selection, faction ownership, per-candidate echo cap, and the live Baron
+   // multiplier here with the native retirement entries.
+  battle.echoDarkmoonRetirement=(owner,faction=null)=>{
+    const e=entries.filter(x=>x.unit!==owner&&x.rule.retire&&alive(x.unit)&&eligible(x.unit,owner,faction)&&Number(x.echoes||0)<6)
+      .sort((a,b)=>order(a.unit,b.unit)||String(a.id).localeCompare(String(b.id)))[0];
+    if(!e)return null;
+    e.echoes=(e.echoes||0)+1;
+    const repetitions=retireMultiplier(e.unit);
+    for(let i=0;i<repetitions;i++)retireAction(e,true);
+    return {unit:e.unit,repetitions};
+   };
   battle.on('death',({unit,reason})=>{
     if(reason!=='killed'||unit.side!=='ally'||!['op','token'].includes(unit.kind))return;
     if(fallen.some(x=>x.unit.id===unit.id))return;
