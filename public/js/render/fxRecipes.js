@@ -601,8 +601,14 @@ function sourceMount(fx, view, prefab, delay = 0, options = {}) {
   return fx.playOriginalVfx(prefab, { followId: view.id, anchor: options.anchor || 'root', bone: options.bone || null, mirror: options.mirror ?? true, delay });
 }
 
-function groundMount(fx, view, prefab, delay = 0, group = null) {
-  return fx.playOriginalVfx(prefab, { followId: view.id, anchor: 'tile', mirror: false, delay, group });
+function groundMount(fx, view, prefab, delay = 0, group = null, options = {}) {
+  return fx.playOriginalVfx(prefab, {
+    followId: view.id,
+    anchor: 'tile',
+    mirror: options.mirror ?? false,
+    delay,
+    group,
+  });
 }
 
 /** Skill start is an ability-level effect only for Rosmontis S3. S1/S2 are action cast effects below. */
@@ -721,7 +727,16 @@ function blkkgtAttack(fx, c, next) {
   // S3 has no ordinary `atk` event: its loop and finisher are emitted as `fx`/`dmg` by the server skill.
   if (skill === 'skchr_blkkgt_3') return;
   const prefabs = binding?.starts || BLKKGT_NORMAL.starts;
-  for (const [i, prefab] of prefabs.entries()) sourceMount(fx, c.src, prefab, i * 0.035);
+  // The extracted S2 prefab `start_05` is `_spawnLocation: 5` with `_holdByOwner: 0`.
+  // Its flow_ground/sharp/speedline children are tile-relative; mounting the packed atlas on
+  // the operator root turns the authored fan into a large translucent square at the wrong point.
+  for (const [i, prefab] of prefabs.entries()) {
+    if (skill === 'skchr_blkkgt_2' && prefab === 'blkkgt_skill_02_start_05') {
+      groundMount(fx, c.src, prefab, i * 0.035, null, { mirror: true });
+      continue;
+    }
+    sourceMount(fx, c.src, prefab, i * 0.035);
+  }
   if (skill === 'skchr_blkkgt_2') {
     const vertical = c.src.dir === 'UP' || c.src.dir === 'DOWN';
     sourceMount(fx, c.src, vertical ? 'blkkgt_skill_02_start_04_v' : 'blkkgt_skill_02_start_04_h', 0.105);

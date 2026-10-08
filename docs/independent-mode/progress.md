@@ -98,3 +98,13 @@
 
 
 2026-10-08：整合101卡中文规则生成器、完整复制体源能力/原始成长/装备、官方技能触发与原生进阶不降级、两种有限双向交接及商店条件人数。实际143项相关测试全过（完整日志 E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\integrated-source-regression.log）；重新测量101干员202形态原生能力，缺实现0、战斗错误0（E:\WindowsWorkspace\webworks\apps\stronghold-protocol\runtime\growth-destination-20261008\native-power-final.json，日志同目录native-power-final.log）。记录期间发现详情购买选择null引用两处并修复。当前标准14轮唯一30局：徽章6/15、等级4/15，继续分析防御路线及完成终局录像。全套回归进行中，不宣称完成。
+
+## 2026-10-08 原卡落点、原生输出与录制复核
+
+- 集成逐卡分配依据和真实原生输出表；四项科技升档为普罗旺斯、松果、号角、隐德来希，未按白板批量判断。普通/进阶共202次原卡机制真实战斗验证通过。
+- 修正酸糖最低伤害的输入反推：物理最低伤害两个成立路径取较小输入门槛，避免低防目标被放大约十倍。精确回归55项通过，正式 native power 表重测；日志 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-aciddrop-floor-exact-regression.log`，测量回执 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/native-power-corrected-floor.json`。
+- 修正无合格友方时的合法购买，以及小拉格反应式增益只接受在场受益者；自动 front/adjacent 无目标按既有约定回落自身，显式 UID 继续严格验证。版本 `5bcd8fbe6b951cd59240d32d50346b1068a255cc`；source34项通过，旧惊蛰fixture另行同步。
+- 新增34份正面与33份背面原生模型后，596份模型实际加载检查通过。集成同期正式特效改动至 `63d7d8e784b26f2a706d0aeca909d1942383f580`，根集成版本 `088d659ac6f99b3b9af73b32fab52dbc92585986`；特效/录制接口/集中表7项通过，日志 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/integrated-vfx-recording-table-regression.log`。
+- 修正录像采样为独立二维采集面，并加入最终化等待。15秒静止画面实验只证明该实验，不代表整局已同步；完整尝试至第6轮真实败局，但30分钟硬关闭抢断收尾，录像未结束，不能交付。完整失败证据 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/driver-run/full-game-543b9ddd-20261008/driver-run-failure.json`、终局画面 `E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/driver-run/full-game-543b9ddd-20261008/025-terminal-finished.png`。采购留资过早导致军队不足，继续修驾驶策略与有界收尾，再录完整成型局。
+- 发现14件已实现补充装备失去当前卡池获取来源，决定通过专项战备授训按科技发现并永久直接装备到指定干员；不添加干员或替换101张原卡主干。正在补完整领奖、选择、落点和展示回归。
+- 已保存原版Git恢复点；两个远端入口、同一集中表和完整视频尚未最终发布，不宣称完成。

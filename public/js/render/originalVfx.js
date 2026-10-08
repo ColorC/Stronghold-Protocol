@@ -29,6 +29,28 @@ const yieldToBrowser = () => new Promise((resolve) => {
   if (typeof requestIdleCallback === 'function') requestIdleCallback(() => resolve(), { timeout: 50 });
   else setTimeout(resolve, 0);
 });
+// Pixi's BaseTexture normally emits `loaded`/`error`, but a failed or aborted
+// image decode can leave an invalid texture without either event. Never let a
+// warmup promise hold the whole compare page in “preparing” forever; the play
+// path will retry the same URL lazily after this bounded wait.
+const waitBaseTexture = (base, timeout = 4500) => {
+  if (!base || base.valid) return Promise.resolve(base);
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const finish = (fn, value) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { base.off?.('loaded', onLoad); base.off?.('error', onError); } catch { /* optional Pixi event API */ }
+      fn(value);
+    };
+    const onLoad = () => finish(resolve, base);
+    const onError = (err) => finish(reject, err instanceof Error ? err : new Error('VFX texture decode failed'));
+    const timer = setTimeout(() => finish(reject, new Error('VFX texture decode timeout')), timeout);
+    base.once?.('loaded', onLoad);
+    base.once?.('error', onError);
+  });
+};
 const FRAME_FRAG = `
 precision highp float;
 varying vec2 vTextureCoord;
@@ -213,7 +235,7 @@ export class OriginalVfxPlayer {
     // nearest filtering and premultiplied blending; linear filtering smears the narrow sword/trail cells into the
     // black padding and is the reason the otherwise-correct 锏 trail looked muddy.
     const base = this.P.BaseTexture.from(atlasUrl, { scaleMode: this.P.SCALE_MODES?.NEAREST });
-    if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
+    await waitBaseTexture(base);
     const cellW = Math.max(1, Math.floor(asFinite(meta.cell?.[0], base.width / Math.max(1, meta.cols || 1) / 2)));
     const cellH = Math.max(1, Math.floor(asFinite(meta.cell?.[1], base.height / Math.max(1, Math.ceil(meta.frames / Math.max(1, meta.cols || 1))))));
     const cols = Math.max(1, Math.floor(asFinite(meta.cols, Math.floor(base.width / (cellW * 2)))));
@@ -271,7 +293,7 @@ export class OriginalVfxPlayer {
         let texture = this.meshTextures.get(url);
         if (!texture) { texture = this.P.Texture.from(url); this.meshTextures.set(url, texture); }
         const base = texture.baseTexture || texture;
-        textureResults.push(base.valid ? Promise.resolve() : new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); }));
+        textureResults.push(waitBaseTexture(base));
         if (textureResults.length >= 2) { await Promise.allSettled(textureResults.splice(0)); await yieldToBrowser(); }
       }
       if (textureResults.length) { await Promise.allSettled(textureResults); await yieldToBrowser(); }
@@ -327,7 +349,7 @@ export class OriginalVfxPlayer {
             // a permanently pending state in Pixi 6, so the coverage report
             // shows the prefab as requested but never loaded.
             const base = texture.baseTexture || texture;
-            if (!base.valid) await new Promise((resolve, reject) => { base.once('loaded', resolve); base.once('error', reject); });
+            await waitBaseTexture(base);
           }
           return texture;
         };
