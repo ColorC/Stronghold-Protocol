@@ -23,7 +23,7 @@ export function RecordingControls({ sessionId }) {
     if (!enabled) return undefined;
     let active = true; let timer;
     const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
-      mediaSeq: 0, mediaStartedAt: 0, mediaRecorder: null, mediaObserver: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false };
+      mediaSeq: 0, mediaStartedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false };
     ctx.current = state;
     const event = (kind, p) => {
       if (state.stopped || !state.id) return;
@@ -120,10 +120,17 @@ export function RecordingControls({ sessionId }) {
             || canvases.find((item) => item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game');
           if (!canvas?.captureStream) return;
           try {
-            const stream = canvas.captureStream(24);
+            // Ask for explicit frames so the media timeline continues while WebGL is visually static.
+            // Canvas captureStream(24) only emits when the renderer paints; long static intervals then
+            // shorten WebM timecodes relative to the rrweb/HUD event clock.
+            const stream = canvas.captureStream(0);
+            const videoTrack = stream.getVideoTracks()[0];
+            if (typeof videoTrack?.requestFrame !== 'function') {
+              stream.getTracks().forEach((track) => track.stop());
+              return;
+            }
             const mimeType = ['video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
             if (!mimeType) { stream.getTracks().forEach((track) => track.stop()); return; }
-            state.mediaStartedAt = Date.now();
             const recorder = state.mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1800000, videoKeyFrameIntervalDuration: 1000 });
             recorder.addEventListener('dataavailable', (e) => {
               if (!e.data?.size || !state.id) return;
@@ -133,6 +140,9 @@ export function RecordingControls({ sessionId }) {
             });
             recorder.addEventListener('error', () => { state.mediaError = true; });
             recorder.start(1000);
+            state.mediaStartedAt = Date.now();
+            try { videoTrack.requestFrame(); } catch { state.mediaError = true; }
+            state.mediaCaptureTimer = setInterval(() => { try { videoTrack.requestFrame(); } catch { state.mediaError = true; } }, 1000 / 24);
             event('custom', { tag: 'canvas-media-start', width: canvas.width, height: canvas.height, mimeType });
           } catch { state.mediaError = true; }
         };
@@ -149,6 +159,7 @@ export function RecordingControls({ sessionId }) {
     return () => {
       active = false; clearInterval(timer); window.removeEventListener('pagehide', onHide); document.removeEventListener('click', onClick, true);
       state.rrwebStop?.(); state.observer?.disconnect(); state.mediaObserver?.disconnect();
+      clearInterval(state.mediaCaptureTimer);
       try { state.mediaRecorder?.stream?.getTracks().forEach((track) => track.stop()); } catch { /* disposed with the page */ }
       if (globalThis.__SP_RECORD_ACTION__) delete globalThis.__SP_RECORD_ACTION__;
       delete globalThis.__SP_RECORD_NOTE__;
@@ -162,6 +173,7 @@ export function RecordingControls({ sessionId }) {
     state.rrwebStop?.(); state.rrwebStop = null;
     if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
       const recorder = state.mediaRecorder;
+      clearInterval(state.mediaCaptureTimer); state.mediaCaptureTimer = null;
       await new Promise((resolve) => { recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); } });
       try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
       await Promise.race([state.mediaPush, new Promise((resolve) => setTimeout(resolve, 8000))]);
