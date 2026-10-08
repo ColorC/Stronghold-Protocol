@@ -922,9 +922,12 @@ try {
     if (actionEntry) {
       actionEntry.status = response.status();
       try {
-        const body = await response.json(); const state = body.state;
-        actionEntry.result = { ok: body.ok, error: body.error?.code || body.error || null, revision: state?.revision,
-          pieces: (state?.pieces || []).map((p) => ({ uid: p.uid, row: p.row ?? null, col: p.col ?? null })) };
+        const text = await response.text(); let body = null;
+        try { body = JSON.parse(text); } catch { /* retain bounded response text for API failure diagnosis */ }
+        const state = body?.state;
+        actionEntry.result = { ok: body?.ok, error: body?.error?.code || body?.error || null, revision: state?.revision,
+          pieces: (state?.pieces || []).map((p) => ({ uid: p.uid, row: p.row ?? null, col: p.col ?? null })),
+          ...(response.status() >= 400 ? { responseText: text.slice(0, 2000) } : {}) };
         actionEntry.respondedAt = new Date().toISOString();
       } catch { actionEntry.result = { unreadable: true }; }
     }
