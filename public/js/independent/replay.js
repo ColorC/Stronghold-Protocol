@@ -1,5 +1,6 @@
 import { rebaseRecordedAssets, timestampRange } from './replayAssets.js';
 import { recordingCanvasElements, recordingCanvasField } from './recordingCanvas.js';
+import { createReplayCueState } from './replayCueState.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
@@ -11,6 +12,7 @@ let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let 
 let zoomRect = null;
 let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let activeMediaIndex=0;
+const cueState = createReplayCueState(() => cues);
 function keepReplayAnimationsVisible() {
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument;
   if (!doc?.head || doc.getElementById('sp-replay-animation-playback')) return;
@@ -43,7 +45,7 @@ function fitReplay() {
 }
 const fmt = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const paintCue = (second) => {
-  const cue = cues.find((x) => second >= x.at && second < x.at + 5);
+  const cue = cueState.current(second);
   caption.textContent = cue?.text || '';
   caption.hidden = !cue;
   anchor.hidden = !cue?.rect;
@@ -102,15 +104,15 @@ function offset() { return playing ? Math.min(duration, startedSecond + (perform
 function tick() {
   if (!playing) return;
   const now = offset(); position(now);syncMediaTime(now);
-  const cue = cues.find((x)=>!explained.has(x.key||x.text)&&now>=x.at&&now<x.at+1);
+  const cue = cueState.narration(now, explained);
   if(cue&&$('narration')?.checked){
-    explained.add(cue.key||cue.text);pause();narrating=true;
+    explained.add(cue.key||cue.text);cueState.activate(cue);narrating=true;pause();
     if(cue.rect){const vw=cue.viewport?.width||1280,vh=cue.viewport?.height||720;
       const w=stage.clientWidth,h=stage.clientHeight,rect={localX:cue.rect.x*w/vw,localY:cue.rect.y*h/vh,width:cue.rect.width*w/vw,height:cue.rect.height*h/vh};
       zoomArea(rect);paintCue(now);
     }
     caption.textContent=cue.text;caption.hidden=false;
-    narrationTimer=setTimeout(()=>{narrating=false;resetZoom();play();},Math.max(4000,Math.min(8000,cue.text.length*110)));
+    narrationTimer=setTimeout(()=>{resetZoom();play();},Math.max(4000,Math.min(8000,cue.text.length*110)));
     return;
   }
   if (now >= duration) { pause(); return; }
@@ -140,10 +142,10 @@ async function seek(value) {
   }
   if (resume) { playing = false; play(); }
 }
-playButton.addEventListener('click', () => {if(narrating){clearTimeout(narrationTimer);narrating=false;resetZoom();play();}else playing ? pause() : play();});
+playButton.addEventListener('click', () => {if(narrating){resetZoom();play();}else playing ? pause() : play();});
 timeline.addEventListener('input', () => { if (playing) pause(); void seek(timeline.value); });
 $('zoom').addEventListener('click', () => { selecting = true; paintMediaLayer(); status.textContent = '在画面上拖动，框选要放大的区域。'; });
-function resetZoom(){zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();}
+function resetZoom(){clearTimeout(narrationTimer);narrationTimer=0;narrating=false;cueState.clear();zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();paintCue(Number(timeline.value));}
 function zoomArea(rect){
   zoomRect=rect;const w=stage.clientWidth,h=stage.clientHeight;
   const scale=Math.min(2,Math.max(1.15,Math.min(w*.8/Math.max(1,rect.width),h*.8/Math.max(1,rect.height))));
