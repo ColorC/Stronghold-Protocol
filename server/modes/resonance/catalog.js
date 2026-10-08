@@ -45,6 +45,8 @@ export function getResonanceCatalog(data = getData(), { environmentId = 'origin_
     for (const star of [1, 2, 3]) {
       const spec = configured.stars[star];
       const record = clone(normalChess);
+      record.tier = configured.cost;
+      record.resonanceStar = star;
       record.stats = { ...normalChess.stats, ...spec.stats };
       record.skill = selectedSkill ? { ...clone(selectedSkill), ...spec.skillOverrides, skillId: configured.fixedSkillId, index: configured.fixedSkillIndex ?? 0 } : null;
       record.skills = record.skill

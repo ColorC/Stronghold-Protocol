@@ -4,7 +4,7 @@ export const isDeployed = (piece) => piece?.row != null && piece?.col != null;
 export function prepView(state,catalog) {
   const bench = (state?.pieces || []).filter((piece) => !isDeployed(piece));
   const toRender = (piece) => ({ uid: pieceNum(piece.uid), kind: 'chess', id: piece.operatorId,
-    tier: catalog?.operators?.[piece.operatorId]?.cost ?? 1, items: [], ...(isDeployed(piece) ? { row: piece.row, col: piece.col, dir: piece.dir || 'RIGHT' } : {}) });
+    tier: catalog?.operators?.[piece.operatorId]?.cost ?? 1, resonanceStar: Number(piece.star), items: [], ...(isDeployed(piece) ? { row: piece.row, col: piece.col, dir: piece.dir || 'RIGHT' } : {}) });
   return { hand: Array.from({ length: 9 }, (_, i) => bench[i] ? toRender(bench[i]) : null), temp: [],
     board: (state?.pieces || []).filter(isDeployed).map(toRender), nextEnemies: state?.nextEnemies || [] };
 }

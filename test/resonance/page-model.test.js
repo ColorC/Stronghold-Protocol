@@ -5,7 +5,9 @@ import { actionErrorText,adjacentDeployedPairs,choiceDescription,choiceLabel,det
 test('page model maps session identities to stable renderer ids without changing the source state',()=>{
  const state={pieces:[{uid:'p42',operatorId:'op_a',star:2,row:3,col:4,dir:'LEFT'},{uid:'p55',operatorId:'op_b',star:1,row:null,col:null}],nextEnemies:[{name:'敌人'}]};
  const before=structuredClone(state);const view=prepView(state);
- assert.deepEqual(view.board,[{uid:42,kind:'chess',id:'op_a',tier:1,items:[],row:3,col:4,dir:'LEFT'}]);
+ assert.deepEqual(view.board,[{uid:42,kind:'chess',id:'op_a',tier:1,resonanceStar:2,items:[],row:3,col:4,dir:'LEFT'}]);
+ assert.equal(view.board[0].id,state.pieces[0].operatorId,'prep projection preserves the source operator identity');
+ assert.equal(view.board[0].resonanceStar,state.pieces[0].star,'prep projection preserves the authored star');
  assert.equal(view.hand[0].uid,55);assert.equal(view.nextEnemies[0].name,'敌人');assert.deepEqual(state,before);
  assert.equal(pieceNum('p7'),7);assert.equal(isDeployed(state.pieces[0]),true);assert.equal(isDeployed(state.pieces[1]),false);
 });

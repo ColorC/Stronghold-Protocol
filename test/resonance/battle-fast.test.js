@@ -11,6 +11,7 @@ const [{ getData }, { getResonanceCatalog }, { getResonanceField, buildResonance
   import('../../server/match/finalAssault.js'),
   import('../helpers/battleHarness.js'),
 ]);
+const { unitInfo } = await import('../../server/sim/snapshot.js');
 
 test('resonance enemy balance validates profiles and applies legal difficulty overrides',()=>{
   assert.deepEqual(resolveEnemyBalance(null,'NORMAL','normal'),{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
@@ -189,7 +190,10 @@ test('same native operator at 1★ and 3★ keeps isolated star records and owne
   for (const [index, owner] of owners.entries()) {
     const piece = state.pieces[index];
     const starRecord = operator.stars[piece.star].record;
+    assert.equal(starRecord.tier, operator.cost, 'the displayed tier follows resonance cost, not the native workshop tier');
     assert.equal(owner.defId, `resonance_${operator.id}_star${piece.star}`);
+    assert.equal(owner.def.tier, operator.cost);
+    assert.equal(owner.def.resonanceStar, piece.star);
     assert.equal(owner.def.raw.id, operator.id);
     assert.equal(owner.def.raw.resonanceOperatorId, operator.id);
     assert.equal(owner.def.raw.resonanceStar, piece.star);
@@ -222,6 +226,36 @@ test('same native operator at 1★ and 3★ keeps isolated star records and owne
   assert.equal(owners[0].s.atk, operator.stars[1].record.stats.atk + 15, 'the real battle stat receives the equipped blade component');
   assert.ok(owners[0].mem.resonancePacts?.has('aegir'), 'the real battle installs the equipped pact transfer');
   assert.equal(battle.errorCount, 0);
+});
+
+test('recorded resonance field and spawn metadata carry cost tier and star while legacy units omit star metadata', () => {
+  const data = getData();
+  const catalog = getResonanceCatalog(data, { environmentId: 'origin_laterano', seed: 8831 });
+  const operator = Object.values(catalog.operators).find((entry) => entry.cost === 1 && entry.role === 'frontline');
+  assert.ok(operator);
+  const state = {
+    schemaVersion: 1, seed: 8831, revision: 0, round: 1, roundLimit: 28, difficulty: 'NORMAL',
+    environmentId: 'origin_laterano', phase: 'prep', level: 3, xp: 0, gold: 5, hp: 100,
+    winStreak: 0, lossStreak: 0, shop: { offers: [], locked: false }, inventory: [], strategies: [],
+    poolRemaining: {}, nextUid: 2, history: [], pacts: [],
+    pieces: [{ uid: 'star-metadata-owner', operatorId: operator.id, star: 3, equipment: [], growth: {}, row: null, col: null, dir: 'RIGHT' }],
+  };
+  const field = getResonanceField(state, { data, catalog });
+  const legal = [...field.deployMap].find(([, type]) => type === 'melee');
+  assert.ok(legal, 'native field has a legal frontline tile');
+  [state.pieces[0].row, state.pieces[0].col] = legal[0].split(',').map(Number);
+  const outcome = runResonanceBattle(state, { data, catalog, recording: true });
+  const unit = outcome.replay.field.units.find((entry) => entry.uid === 'star-metadata-owner');
+  assert.ok(unit, 'recorded field includes the deployed operator');
+  assert.equal(unit.tier, operator.cost);
+  assert.equal(unit.resonanceStar, 3);
+  const spawn = outcome.replay.frames.flatMap((frame) => frame.ev ?? [])
+    .find((event) => Array.isArray(event) && event[0] === 'spawn' && event[1]?.uid === 'star-metadata-owner');
+  assert.ok(spawn, 'recording contains the native spawn event');
+  assert.equal(spawn[1].tier, operator.cost);
+  assert.equal(spawn[1].resonanceStar, 3);
+  const legacy = unitInfo({ id: 7, kind: 'op', side: 'ally', defId: 'legacy', def: { tier: 6 }, s: { maxHp: 1 } });
+  assert.equal(Object.hasOwn(legacy, 'resonanceStar'), false, 'legacy mode snapshots keep their old shape');
 });
 
 test('recording:false runs the real Battle without frame, field, or event-recording calls', () => {

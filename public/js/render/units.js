@@ -313,6 +313,8 @@ export class UnitView {
     this.modelK = this.isEnemy ? enemyModelScale(ctx.lookupDef ? ctx.lookupDef(info) : null) : 1;
     this.isToken = info.kind === 'token';
     this.golden = !!info.golden;
+    this.resonanceStar = Number.isInteger(Number(info.resonanceStar)) && Number(info.resonanceStar) >= 1 && Number(info.resonanceStar) <= 3
+      ? Number(info.resonanceStar) : null;
     this.tier = clamp(Number(info.tier) || 1, 1, 6);
     this.x = Number(info.x) || 0; this.y = Number(info.y) || 0; this.z = 0;
     this.zTarget = null;          // battle: standing height the feet ease towards (tile top under the unit)
@@ -582,11 +584,20 @@ export class UnitView {
     // nothing shows until the first HUD update decides (a culled or prep view never draws bars)
     for (const b of [this.hpBg, this.hpGhost, this.hpFill, this.shieldBar, this.spBg, this.spFill, this.spGlow]) b.visible = false;
     this.chip = null;
+    this.resonanceStarText = null;
     // operators only: summon tokens have no tier (hand and field alike)
     if (!this.isEnemy && !this.isToken && this.info.kind !== 'device') {
       this.chip = new P.Sprite(tierChip(this.tier, this.golden));
       this.chip.anchor.set(0.5);
       h.addChild(this.chip);
+      if (this.resonanceStar) {
+        this.resonanceStarText = new P.Text('★'.repeat(this.resonanceStar), {
+          fontFamily: 'Bender, Oxanium, sans-serif', fontSize: 13, fontWeight: '900',
+          fill: '#ffe17a', stroke: '#111713', strokeThickness: 3,
+        });
+        this.resonanceStarText.anchor.set(0, 0.5);
+        h.addChild(this.resonanceStarText);
+      }
     }
     this.icons = [];
     for (let i = 0; i < 4; i++) {
@@ -1131,6 +1142,13 @@ export class UnitView {
       this.chip.visible = this.alive;
       if (prep) this.chip.position.set(x, y - this.chip.height / 2 + 2);
       else this.chip.position.set(x0 - this.chip.width / 2 - 1, cy + (showSp ? spH / 2 : 0));
+      if (this.resonanceStarText) {
+        this.resonanceStarText.visible = this.alive;
+        this.resonanceStarText.position.set(
+          prep ? x + this.chip.width / 2 + 2 : this.chip.x + this.chip.width / 2 + 2,
+          prep ? this.chip.y : this.chip.y,
+        );
+      }
     }
     // status icons row above the bars
     const icons = this._iconKeys();

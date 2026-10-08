@@ -172,6 +172,8 @@ export function normalizeChess(rec) {
     name: rec.name ?? id,
     charId: rec.charId ?? null,
     tier: num(rec.tier, 1),
+    resonanceStar: Number.isInteger(Number(rec.resonanceStar)) && Number(rec.resonanceStar) >= 1 && Number(rec.resonanceStar) <= 3
+      ? Number(rec.resonanceStar) : undefined,
     rarity: num(rec.rarity, 4),
     profession: String(rec.profession ?? 'WARRIOR').toUpperCase(),
     subProf: rec.subProfessionId ?? rec.subProfession ?? rec.subProf ?? null,

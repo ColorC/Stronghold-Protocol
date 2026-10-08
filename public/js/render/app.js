@@ -298,6 +298,8 @@ export function renderInfo(u) {
     // DESIGN §16 loadout of an ally (UnitInfo.skillIndex / moduleId): the Spine actor plays that skill's clip, and a
     // tap hands them to the detail card (a teammate's unit shows its owner's skill / module)
     skillIndex: Number.isInteger(u.skillIndex) ? u.skillIndex : undefined,
+    // Resonance's authored star is display metadata; legacy modes omit the key and keep their old HUD.
+    ...(Number.isInteger(u.resonanceStar) && u.resonanceStar >= 1 && u.resonanceStar <= 3 ? { resonanceStar: u.resonanceStar } : {}),
     moduleId: typeof u.moduleId === 'string' ? u.moduleId : undefined,
     // the ally's equipped item ids (UnitInfo.items, DESIGN §16 / §21.11): the detail card needs them for a teammate's
     // unit (resolveDetail `unitItems` → the read-only 装备 section and the 变形同构体 pairing chips); the owner's own
@@ -907,7 +909,9 @@ export async function createFieldView(host, options = {}) {
       spine: rec?.assets?.spine || rec?.charId || null, avatar: rec?.assets?.avatar || rec?.charId || null,
       // the piece's own tier first: a mode with its own roster (卫戍协议：工坊) tiers operators differently from the
       // chess record; the original's server sends the record's tier anyway
-      tier: piece.tier || rec?.tier || 1, golden: !!(piece.golden || rec?.isGolden), dir,
+      tier: piece.tier || rec?.tier || 1, golden: !!(piece.golden || rec?.isGolden),
+      ...(Number.isInteger(piece.resonanceStar) && piece.resonanceStar >= 1 && piece.resonanceStar <= 3 ? { resonanceStar: piece.resonanceStar } : {}),
+      dir,
     };
   }
 
@@ -982,7 +986,7 @@ export async function createFieldView(host, options = {}) {
       const key = 'p:' + e.uid;
       e.key = key;
       const info = pieceInfo(e.piece, e.area);
-      const sig = `${info.kind}|${info.defId}|${info.golden ? 1 : 0}`;
+      const sig = `${info.kind}|${info.defId}|${info.golden ? 1 : 0}|${info.resonanceStar ?? ''}`;
       let v = views.get(key);
       if (v && v._sig !== sig) { dropView(key); v = null; }
       const w = slotWorld(e);

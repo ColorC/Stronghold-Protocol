@@ -147,6 +147,7 @@ export function createFallbackView(host, opts = {}) {
     const dragging = st.drag?.uid === p.uid && st.drag.moved;
     const golden = !!p.golden;
     const tier = p.tier || lookup('chess', p.id)?.tier || lookup('items', p.id)?.tier;
+    const resonanceStar = Number.isInteger(Number(p.resonanceStar)) && Number(p.resonanceStar) >= 1 && Number(p.resonanceStar) <= 3 ? Number(p.resonanceStar) : 0;
     const dir = st.dirs.get(p.uid) || (typeof p.dir === 'string' ? p.dir.toUpperCase() : 'RIGHT');
     const wedge = (area === 'board' || st.held.has(p.uid)) && p.kind !== 'item';
     return html`<div class=${cx('ff-piece', `ff-piece--${p.kind}`, golden && 'is-golden', dragging && 'is-lifted', st.editable && 'is-draggable', area === 'temp' && 'is-temp', wedge && `ff-dir--${dir.toLowerCase()}`)}
@@ -156,6 +157,7 @@ export function createFallbackView(host, opts = {}) {
         title=${pieceName(p)}>
       <div class="ff-piece__art">${src ? html`<img src=${src} alt="" draggable=${false} />` : html`<span>${[...pieceName(p)][0]}</span>`}</div>
       ${tier && p.kind !== 'token' ? html`<${TierChip} tier=${tier} golden=${golden} size="sm" class="ff-piece__tier" />` : null}
+      ${p.kind === 'chess' && resonanceStar ? html`<b aria-label=${`${resonanceStar}星`} style="position:absolute;right:2%;top:0;color:#ffe17a;font-size:calc(var(--tile) * .16);line-height:1;text-shadow:0 1px 3px #000;pointer-events:none">${'★'.repeat(resonanceStar)}</b>` : null}
       ${p.kind === 'chess' && Array.isArray(p.items) && p.items.length ? html`<div class="ff-piece__items">${p.items.slice(0, 2).map((it) => html`<i key=${it.uid}></i>`)}</div>` : null}
       ${p.kind === 'token' && p.count > 1 ? html`<b class="ff-piece__count">×${p.count}</b>` : null}
       ${wedge ? html`<i class="ff-piece__dir" aria-hidden="true"></i>` : null}
@@ -247,6 +249,7 @@ export function createFallbackView(host, opts = {}) {
     const px = (x - st.rect.c0 + 0.5) * L.tile;
     const py = (st.rect.r1 - y + 0.5) * L.tile;
     const enemy = info.side === 'enemy';
+    const resonanceStar = Number.isInteger(Number(info.resonanceStar)) && Number(info.resonanceStar) >= 1 && Number(info.resonanceStar) <= 3 ? Number(info.resonanceStar) : 0;
     const size = info.boss ? L.tile * 1.3 : L.tile * 0.86;
     const src = unitArt(m(), info);
     const dead = anim === 4;
@@ -258,6 +261,7 @@ export function createFallbackView(host, opts = {}) {
         onPointerDown=${(e) => { if (e.button === 0) emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
         onContextMenu=${(e) => { e.preventDefault(); emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 2, clientX: e.clientX, clientY: e.clientY }); }}>
       <div class="ff-unit__art">${src ? html`<img src=${src} alt="" draggable=${false} />` : html`<span>${[...(info.name || '?')][0]}</span>`}</div>
+      ${!enemy && resonanceStar ? html`<b aria-label=${`${resonanceStar}星`} style="position:absolute;right:0;top:0;color:#ffe17a;font-size:calc(var(--tile) * .16);line-height:1;text-shadow:0 1px 3px #000;pointer-events:none">${'★'.repeat(resonanceStar)}</b>` : null}
       <div class="ff-unit__bars"><i class="hp" style=${`width:${hpPct}%`}></i>${!enemy && spMax > 0 ? html`<i class="sp" style=${`width:${spPct}%`}></i>` : null}</div>
     </div>`;
   }
