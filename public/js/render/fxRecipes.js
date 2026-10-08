@@ -605,6 +605,8 @@ function groundMount(fx, view, prefab, delay = 0, group = null, options = {}) {
     followId: view.id,
     anchor: 'tile',
     mirror: options.mirror ?? false,
+    direction: options.direction || null,
+    rotation: options.rotation || 0,
     delay,
     group,
   });
@@ -731,7 +733,7 @@ function blkkgtAttack(fx, c, next) {
   // the operator root turns the authored fan into a large translucent square at the wrong point.
   for (const [i, prefab] of prefabs.entries()) {
     if (skill === 'skchr_blkkgt_2' && prefab === 'blkkgt_skill_02_start_05') {
-      groundMount(fx, c.src, prefab, i * 0.035, null, { mirror: true });
+      groundMount(fx, c.src, prefab, i * 0.035, null, { direction: c.src.dir });
       continue;
     }
     sourceMount(fx, c.src, prefab, i * 0.035);

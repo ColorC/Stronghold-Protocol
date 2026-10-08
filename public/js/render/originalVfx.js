@@ -417,12 +417,14 @@ export class OriginalVfxPlayer {
     return true;
   }
 
-  play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', bone = null, mirror = false, offsetZ = 0 } = {}) {
+  play(prefab, { x = 0, y = 0, z = 0, scale = 1, followId = null, group = null, loop = false, life = null, delay = 0, anchor = 'ground', bone = null, mirror = false, rotation = 0, direction = null, offsetZ = 0 } = {}) {
     if (!prefab || typeof document === 'undefined' || !this.P?.MeshGeometry || !this.P?.Shader || !this.P?.Program || !this.P?.Mesh) return false;
     this.requested.add(prefab);
     const record = { prefab, x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0, scale: Number(scale) || 1, followId, group, loop, elapsed: 0, delay: Math.max(0, Number(delay) || 0), ready: false, dead: false, sprite: null, entry: null, life,
       anchor: anchor === 'bone' ? 'bone' : anchor === 'root' ? 'root' : anchor === 'chest' ? 'chest' : anchor === 'tile' ? 'tile' : 'ground',
-      bone: typeof bone === 'string' && bone ? bone : null, mirror: mirror === true, offsetZ: Number(offsetZ) || 0 };
+      bone: typeof bone === 'string' && bone ? bone : null, mirror: mirror === true,
+      rotation: Number(rotation) || 0, direction: typeof direction === 'string' ? direction.toUpperCase() : null,
+      offsetZ: Number(offsetZ) || 0 };
     this.active.add(record);
     this._entry(prefab).then((entry) => {
       if (record.dead || !entry) return;
@@ -513,6 +515,19 @@ export class OriginalVfxPlayer {
     const s = Math.max(0.01, (p.s || 1) * record.scale / Math.max(1, record.entry.meta.pxPerUnit || 96));
     const facing = followed && record.mirror ? (followed.isEnemy ? -1 : 1) * (Number(followed.visFacing ?? followed.facing) < 0 ? -1 : 1) : 1;
     record.sprite.scale.set(s * facing, s);
+    let angle = record.rotation;
+    // `_rotateType: 2` effects are oriented in the combat plane. Derive the
+    // screen-space angle from the projected neighbour tile instead of rotating
+    // by a fixed screen angle; this keeps the fan aligned with the isometric
+    // board for all four attack directions.
+    if (record.anchor === 'tile' && record.direction && followed) {
+      const delta = ({ RIGHT: [1, 0], LEFT: [-1, 0], UP: [0, -1], DOWN: [0, 1] })[record.direction];
+      if (delta) {
+        const q = this.cam()?.project(x + delta[0], y + delta[1], z, {});
+        if (q && Number.isFinite(q.x) && Number.isFinite(q.y)) angle += Math.atan2(q.y - p.y, q.x - p.x);
+      }
+    }
+    record.sprite.rotation = angle;
     record.sprite.zIndex = Number.isFinite(depth) ? -depth : 0;
   }
 
