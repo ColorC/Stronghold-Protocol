@@ -12,6 +12,7 @@ import { GearIcon, GameText, TermNotes } from './text.js';
 import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, inheritedLevel, permitsOf } from './model.js';
 import { badgeEffectText } from './badgeText.js';
 import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
+import { trainingChoiceOptions } from '../../../shared/independentTrainingChoice.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -213,7 +214,9 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
     const chosen = prizeIndex != null ? catalog.prizes[offer.choices[prizeIndex]] : null;
     const need = chosen ? PRIZE_TARGET[chosen.mechanism] : null;
     if (need) {
-      const eligible = state.pieces.filter((p) => (need === 'deployed' ? isDeployed(p) : !p.elite));
+      const eligible = state.pieces.filter((p) => (need === 'deployed'
+        ? (chosen.mechanism === 'attachmentOffer' ? trainingChoiceOptions(state, catalog, p).length > 0 : isDeployed(p))
+        : !p.elite));
       body = html`<p class="ix-note">${chosen.name}：选择一名${need === 'deployed' ? '场上' : '普通'}干员</p>
         <div class="ix-choices ix-choices--pieces">${eligible.map((p) => html`<button type="button" key=${p.uid} class="ix-choice ix-choice--piece" disabled=${busy}
           onClick=${() => onChoose({ type: 'choose', offerId: offer.id, index: prizeIndex, targetUid: p.uid })}>
@@ -236,11 +239,14 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
   } else if (offer.type === 'attachment') {
     title = '专项战备授训'; micro = 'ATTACHMENT';
     const target = state.pieces.find((p) => p.uid === offer.targetUid);
-    body = html`<p class="ix-note">为${formEntry(catalog, target || {})?.name || '干员'}选择一项附加效果（永久生效，不占装备栏）</p>
+    body = html`<p class="ix-note">${offer.trainingChoice
+      ? `为${formEntry(catalog, target || {})?.name || '干员'}选择一项永久附加效果，或将一件装备直接配发给该干员`
+      : `为${formEntry(catalog, target || {})?.name || '干员'}选择一项附加效果（永久生效，不占装备栏）`}</p>
       <div class="ix-choices">${offer.choices.map((id, i) => html`<button type="button" key=${id} class="ix-choice" disabled=${busy}
-        onClick=${() => onChoose({ type: 'choose', offerId: offer.id, index: i })}><b>${catalog.attachments?.[id]?.name || ''}</b>
-        <p><${GameText} text=${catalog.attachments?.[id]?.effect} catalog=${catalog} /></p>
-        <${TermNotes} texts=${[catalog.attachments?.[id]?.effect]} catalog=${catalog} /></button>`)}</div>`;
+        onClick=${() => onChoose({ type: 'choose', offerId: offer.id, index: i })}><${GearIcon} id=${id} catalog=${catalog} plain=${true} />
+        <b>${catalog.attachments?.[id]?.name || catalog.gear?.[id]?.name || catalog.equipment?.[id]?.name || ''}</b>
+        <p><${GameText} text=${catalog.attachments?.[id]?.effect || catalog.gear?.[id]?.effect || catalog.equipment?.[id]?.effect} catalog=${catalog} /></p>
+        <${TermNotes} texts=${[catalog.attachments?.[id]?.effect || catalog.gear?.[id]?.effect || catalog.equipment?.[id]?.effect]} catalog=${catalog} /></button>`)}</div>`;
   } else if (offer.type === 'operatorMerge') {
     title = '晋升精锐'; micro = 'PROMOTION';
     const owner = (uid) => formEntry(catalog, state.pieces.find((p) => p.uid === uid) || {})?.name || '';

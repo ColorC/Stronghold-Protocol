@@ -116,7 +116,7 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
     }
     if (isBadge && state.growthMode === 'levels') {
       const growth = grantGrowthLevels(state, catalog, target, quantity);
-      recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid,
+      recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId,
         worn: true, targetUid: target.uid, growthLevels: growth.added, growthLevel: growth.level });
       return { id, quantity, worn: target.uid, growth };
     }
@@ -129,12 +129,12 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
       const stack = (target.equipment ||= []).find((x) => x.id === id);
       if (stack) stack.quantity = Number(stack.quantity || 1) + add;
       else target.equipment.push(makeItem(state, id, add));
-      recordProduction(state, { id, quantity: add, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, copied: extra.copied, repeated: extra.repeated, worn: true, targetUid: target.uid });
+      recordProduction(state, { id, quantity: add, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId, copied: extra.copied, repeated: extra.repeated, worn: true, targetUid: target.uid });
     }
     // A fixed-target buff is never converted into a freely assignable hand resource on overflow.
     const lost = quantity - add;
     if (lost) recordProduction(state, { id, quantity: lost, origin: extra.origin, phase: extra.phase,
-      sourceUid: extra.sourceUid, targetUid: target.uid, worn: true, lost: true });
+      sourceUid: extra.sourceUid, prizeId: extra.prizeId, targetUid: target.uid, worn: true, lost: true });
     return { id, quantity: add, worn: target.uid, ...(lost ? { lost } : {}) };
   }
   if (state.growthMode === 'levels' && isBadge) { id = 'growth-training-record'; def = equipmentRecord(catalog, id); }
