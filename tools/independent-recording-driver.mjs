@@ -125,6 +125,51 @@ async function verifyNarratedReplay(recording) {
   if (!result.playbackPaused || !result.zoomTransform || !result.iframeVisible || !result.detailVisible || !result.cardVisible || !result.ordinaryFullText || !result.eliteFullText || !result.webglMediaVisible || result.mediaReadyState < 2 || !result.canvasWidth || !result.canvasHeight) {
     throw new Error(`回放字幕/原卡/HUD/WebGL像素的同帧可见性验收失败：${JSON.stringify(result)}`);
   }
+  const validSegments = (meta.mediaSegments || []).filter((segment) => Number.isInteger(segment.index)
+    && segment.startedAt && Number(segment.lastTimeMs) > 0 && segment.playbackReady && Number(segment.playbackBytes) > 0);
+  if (!validSegments.length) throw new Error('完整回放没有可核验的已完成媒体分段');
+  const wallStart = Date.parse(meta.startedAt);
+  const timelineSegments = validSegments.map((segment) => ({ ...segment,
+    at: Math.max(0, (Date.parse(segment.startedAt) - wallStart) / 1000),
+    duration: Number(segment.lastTimeMs) / 1000,
+  }));
+  const mediaStart = Math.min(...timelineSegments.map((segment) => segment.at));
+  const mediaEnd = Math.max(...timelineSegments.map((segment) => segment.at + segment.duration));
+  const sampleSeconds = [mediaStart + 1, (mediaStart + mediaEnd) / 2, Math.max(mediaStart + 1, mediaEnd - 1)];
+  const sampleNames = ['start', 'middle', 'end'];
+  const timelineSamples = [];
+  for (let i = 0; i < sampleSeconds.length; i++) {
+    const timelineSecond = Math.min(mediaEnd, sampleSeconds[i]);
+    const segment = [...timelineSegments].reverse().find((item) => timelineSecond >= item.at) || timelineSegments[0];
+    const expectedPts = Math.max(0, timelineSecond - segment.at);
+    await page.evaluate((second) => {
+      const timeline = document.querySelector('#timeline'); timeline.value = String(second);
+      timeline.dispatchEvent(new Event('input', { bubbles: true }));
+    }, timelineSecond);
+    await page.waitForFunction((expected) => {
+      const video = document.querySelector('#stage video[data-sp-canvas-media]');
+      return video && video.readyState >= 2 && Math.abs(video.currentTime - expected) < 0.7;
+    }, { timeout: 30000 }, expectedPts);
+    const observation = await page.evaluate(() => {
+      const video = document.querySelector('#stage video[data-sp-canvas-media]');
+      const frame = document.querySelector('#stage iframe'); const doc = frame?.contentDocument;
+      const visible = (node) => { if (!node) return false; const r = node.getBoundingClientRect(); const s = getComputedStyle(node); return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden' && Number(s.opacity) > 0; };
+      return { videoVisible: visible(video), iframeVisible: visible(frame), currentTime: video?.currentTime ?? null,
+        duration: video?.duration ?? null, readyState: video?.readyState ?? 0, videoWidth: video?.videoWidth ?? 0,
+        videoHeight: video?.videoHeight ?? 0, hudText: (doc?.body?.innerText || '').slice(0, 1000) };
+    });
+    const image = await screenshot(`replay-timeline-${sampleNames[i]}`);
+    timelineSamples.push({ label: sampleNames[i], timelineSecond, segmentIndex: segment.index, expectedPts,
+      ptsErrorSeconds: Math.abs(Number(observation.currentTime) - expectedPts), image, ...observation });
+  }
+  result.mediaTimeline = { startedAt: meta.mediaStartedAt, endedAt: meta.endedAt,
+    wallDurationSeconds: (Date.parse(meta.endedAt) - wallStart) / 1000,
+    mediaWallStartSecond: mediaStart, mediaWallEndSecond: mediaEnd,
+    metaMediaLastTimeMs: meta.mediaLastTimeMs, segments: timelineSegments.map(({ index, at, duration, playbackBytes }) => ({ index, at, duration, playbackBytes })),
+    samples: timelineSamples };
+  await writeFile(path.join(output, 'replay-media-timeline-proof.json'), JSON.stringify(result.mediaTimeline, null, 2));
+  if (timelineSamples.some((sample) => !sample.videoVisible || !sample.iframeVisible || sample.readyState < 2
+    || !sample.videoWidth || sample.ptsErrorSeconds >= 0.7)) throw new Error(`整局回放起中终视频时轴或HUD校验失败：${JSON.stringify(timelineSamples)}`);
   return result;
 }
 async function waitRevision(revision) {
