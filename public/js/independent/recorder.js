@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html } from '../ui/components.js';
 import { api } from './api.js';
+import { drawRecordingCanvasFrame, recordingCanvasLayout } from './recordingCanvas.js';
 
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
@@ -120,20 +121,18 @@ export function RecordingControls({ sessionId }) {
         });
         const captureCanvas = () => {
           if (state.mediaRecorder || typeof MediaRecorder !== 'function') return;
-          // recordCanvas:false deliberately avoids duplicating every WebGL frame into rrweb DOM events, so rrweb does not
-          // necessarily attach its __context marker. The original Pixi canvas is the one mounted in this game's field.
-          const canvases = [...document.querySelectorAll('canvas')].filter((item) => item.width > 0 && item.height > 0);
-          const canvas = document.querySelector('.gm__field canvas[data-render-surface="game"]')
-            || document.querySelector('.gm__field canvas')
-            || canvases.find((item) => item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game');
-          if (!canvas?.captureStream) return;
+          // rrweb owns the HUD; the native media track composites the field's visible
+          // render layers (3D board below Pixi when enabled) into one 2D surface.
+          const field = document.querySelector('.gm__field');
+          const layout = recordingCanvasLayout(field);
+          if (!layout) return;
           try {
-            // Copy each real WebGL frame into a dedicated 2D surface. requestFrame() alone still
+            // Copy each visible canvas frame into a dedicated 2D surface. requestFrame() alone still
             // depends on a source-canvas paint, so copying first keeps the media clock advancing
-            // during visually static game states without changing any pixels in the game canvas.
+            // during visually static game states without changing pixels in the game canvases.
             const captureSurface = document.createElement('canvas');
-            captureSurface.width = canvas.width; captureSurface.height = canvas.height;
-            const captureContext = captureSurface.getContext('2d', { alpha: false });
+            captureSurface.width = layout.width; captureSurface.height = layout.height;
+            const captureContext = captureSurface.getContext('2d');
             if (!captureContext) return;
             const stream = captureSurface.captureStream(0);
             const videoTrack = stream.getVideoTracks()[0];
@@ -155,12 +154,15 @@ export function RecordingControls({ sessionId }) {
             recorder.addEventListener('error', () => { state.mediaError = true; });
             recorder.start(5000);
             const captureFrame = () => {
-              try { captureContext.drawImage(canvas, 0, 0, captureSurface.width, captureSurface.height); videoTrack.requestFrame(); state.captureFrames += 1; state.lastCaptureAt = Date.now(); }
+              try {
+                if (!drawRecordingCanvasFrame(field, captureContext, captureSurface.width, captureSurface.height)) return;
+                videoTrack.requestFrame(); state.captureFrames += 1; state.lastCaptureAt = Date.now();
+              }
               catch { state.mediaError = true; }
             };
             captureFrame(); state.mediaStartedAt = Date.now();
             state.mediaCaptureTimer = setInterval(captureFrame, 1000 / 24);
-            event('custom', { tag: 'canvas-media-start', width: canvas.width, height: canvas.height, mimeType });
+            event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height, mimeType });
           } catch { state.mediaError = true; }
         };
         captureCanvas();

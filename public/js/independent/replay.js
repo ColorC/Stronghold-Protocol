@@ -1,4 +1,5 @@
 import { rebaseRecordedAssets, timestampRange } from './replayAssets.js';
+import { recordingCanvasElements, recordingCanvasField } from './recordingCanvas.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
@@ -21,17 +22,17 @@ function paintMediaLayer() {
   const frame = stage.querySelector('iframe') || player?.iframe;
   if (frame) frame.style.pointerEvents = selecting ? 'none' : 'auto';
   if (!mediaVideo) return;
-  const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
-  if (!canvas || !frame) { mediaVideo.hidden = true; return; }
-  const fb = frame.getBoundingClientRect(), sb = stage.getBoundingClientRect(), cb = canvas.getBoundingClientRect();
+  const doc = frame?.contentDocument; const field = recordingCanvasField(doc);
+  if (!field || !frame) { mediaVideo.hidden = true; return; }
+  const fb = frame.getBoundingClientRect(), sb = stage.getBoundingClientRect(), cb = field.getBoundingClientRect();
   const outerScale = sb.width / Math.max(1, stage.clientWidth), sx = fb.width / Math.max(1, frame.clientWidth), sy = fb.height / Math.max(1, frame.clientHeight);
   Object.assign(mediaVideo.style, { left: `${(fb.left-sb.left+cb.left*sx)/outerScale}px`, top: `${(fb.top-sb.top+cb.top*sy)/outerScale}px`, width: `${cb.width*sx/outerScale}px`, height: `${cb.height*sy/outerScale}px` });
   // Keep the recorded HUD above the native video. A WebM inside the replay iframe
   // does not composite reliably on software WebGL, so only the canvas pixels live outside it.
   frame.style.position = 'relative'; frame.style.zIndex = '5';
   for(let node=frame.parentElement;node&&node!==stage;node=node.parentElement){node.style.position='relative';node.style.zIndex='5';node.style.background='transparent';}
-  canvas.style.visibility = 'hidden';
-  for(let node=canvas.parentElement;node;node=node.parentElement){node.style.backgroundColor='transparent';node.style.backgroundImage='none';}
+  for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
+  for(let node=field;node;node=node.parentElement){node.style.backgroundColor='transparent';node.style.backgroundImage='none';}
   doc.documentElement.style.background='transparent';
   mediaVideo.hidden = Number(timeline.value) < mediaStartSecond;
 }
@@ -81,8 +82,8 @@ function syncMediaTime(second) {
 }
 function attachCanvasMedia(id) {
   mediaId=id;
-  const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const canvas = doc?.querySelector('canvas');
-  if (!canvas) return;
+  const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const field = recordingCanvasField(doc);
+  if (!field) return;
   if (!mediaVideo || mediaVideo.ownerDocument !== document) {
     mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
@@ -93,7 +94,7 @@ function attachCanvasMedia(id) {
     });
   }
   if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
-  canvas.style.visibility = 'hidden';
+  for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
   syncMediaTime(Number(timeline.value));
   fitReplay();
 }
