@@ -5,7 +5,7 @@
 ## 工具与目录
 
 - `tools/assets/official-bundle-evidence.py`：按官方原生资源版本目录下载指定 bundle，保留原始包与 typetree；回执记录来源 URL 和实际绝对文件路径。不使用自算摘要判断版本。
-- `tools/assets/character-vfx-evidence.py`：沿 GameObject 和组件的本地引用遍历角色、技能和投射物。保留每个 MonoBehaviour 的全部业务字段和嵌套字段路径；不再只取第一个同名字段，Buff 的 `overrideEffectKey` 也在清单内。缺少根、引用或素材均明确报告。
+- `tools/assets/character-vfx-evidence.py`：沿 GameObject 和组件的本地引用遍历角色、技能和投射物。保留每个 MonoBehaviour 的全部业务字段和嵌套字段路径；不再只取第一个同名字段，Buff 的 `overrideEffectKey` 也在清单内。Buff blackboard 的 `key: projectile` 与同级 `valueStr` 同样按精确 prefab 名追踪；音频信号使用相同前缀不构成投射物引用。缺少根、引用或素材均明确报告。
 - `tools/assets/ark-vfx/`：Unity 批量录制器与源 Shader 的 HLSL 移植。除了既有移植，加入 Ram/Add、Ram/AlphaBlend（主纹理与 Ram 纹理相乘，以及源 sprite-sheet 变体）和 L2D Dissolve(CustomData)（UV 速度取 frac、CustomData 通道和源混合状态）。
 - `tools/assets/record-vfx.ps1`：新建本批独立的最小 Unity 工程，不借用其它项目的运行工程。输入通过显式绝对路径读取，输出限定本批 frames 树；拒绝非空输出和未核验目录链接。按进程真实启动计算最长等待，到点停止自己启动的进程并写回执。
 - `tools/assets/vfx-atlas-post.py`：把源帧转成 `[颜色 | 覆盖度]` atlas，可用 `--source-manifest` 接入多个批次的明确源路径。声明帧缺失或 Shader 未支持时，拒绝把它提升为有效 atlas。
@@ -65,6 +65,6 @@ python tools/assets/vfx-atlas-post.py <existing-atlas-root> <new-paged-output> -
 
 ## 继续接入的边界
 
-角色包不能省略。五名样板仅看 `[uc]skills` 与投射物时能追到 27 个特效，加入各自 charpack 后才能追到 98 个：其中包含普通攻击、技能模式中的攻击、Buff、地图与召唤物相关字段。没有技能显式 cast 字段，不代表该技能没有表现；它可能通过模式切换或 Buff 驱动。
+角色包不能省略。五名样板仅看 `[uc]skills` 与投射物时能追到 27 个特效，加入各自 charpack 和 Buff blackboard 投射物引用后能追到 99 个：其中包含普通攻击、技能模式中的攻击、Buff、地图与召唤物相关字段。仇白技能一的额外投射物进一步引用爆发特效，省略 blackboard 会漏掉这一链路。没有技能显式 cast 字段，不代表该技能没有表现；它可能通过模式切换或 Buff 驱动。
 
 现有浏览器对比页仍只有迷迭香与锏。新 atlas、source-evidence-only 清单和 Shader 编译成功不得标成“干员已还原”；需要把这些来源编译为带事件、持续时间和挂点语义的运行时契约，并以源画面与真实浏览器验收。

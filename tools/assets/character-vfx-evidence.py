@@ -117,13 +117,24 @@ def build(bundles, root_requests, effect_names):
                         effects.append({'prefab': effect, 'root': name, 'bundle': label,
                                         'nodeId': component['pathId'], 'field': entry['path'],
                                         'assetFound': effect in effect_names})
-                if 'projectile' in entry['field'].lower():
-                    for key in strings(entry['value']):
-                        matches = [b for b in projectile_bundles if key in b.roots]
-                        if matches:
-                            todo.extend((b.label, key) for b in matches)
-                        elif key.startswith('projectile_'):
-                            missing_roots.append({'bundle': 'projectiles', 'prefab': key})
+            # Blackboard entries store their key and string value as siblings;
+            # `key: projectile, valueStr: ...` is not a projectile-named field.
+            # Read those sibling pairs without treating audio signals that use
+            # the same prefix as missing projectile prefabs.
+            projectile_keys = set()
+            for path, field, value in fields(component['fields']):
+                if 'projectile' in field.lower():
+                    projectile_keys.update(strings(value))
+                if isinstance(value, dict) and value.get('key') == 'projectile':
+                    key = value.get('valueStr')
+                    if isinstance(key, str) and key:
+                        projectile_keys.add(key)
+            for key in sorted(projectile_keys):
+                matches = [b for b in projectile_bundles if key in b.roots]
+                if matches:
+                    todo.extend((b.label, key) for b in matches)
+                elif key.startswith('projectile_'):
+                    missing_roots.append({'bundle': 'projectiles', 'prefab': key})
     return {'schemaVersion': 1, 'status': 'source-evidence-only',
             'sources': [{'label': b.label, 'path': str(b.path)} for b in bundles],
             'roots': reports, 'effects': effects,
