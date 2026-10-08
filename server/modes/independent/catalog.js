@@ -356,8 +356,8 @@ export function getCatalog(data = getData(), design = DESIGN) {
     config: {
       ...clone(design.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
       balance: { incomeBonusFromRound: 8, incomeBonus: 1 },
-      equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: 15, regularProductionBadgeCount: 6,
-      rareInheritanceOperators: 12, bodyPenalty: clone(design.rules?.bodyPenalty),
+      equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: Object.values(badges).filter(b => b.available !== false && !b.retired && !b.unassigned).length, regularProductionBadgeCount: Object.values(badges).filter(b => b.regularProduction && b.available !== false && !b.retired && !b.unassigned).length,
+      rareInheritanceOperators: Object.values(operators).filter(op => !op.elite && op.recruitable && op.permitGearId).length, bodyPenalty: clone(design.rules?.bodyPenalty),
       badgeRecipes: clone(design.badgeRecipes || design.recipes || {}),
       factionRecipes: {
         炎: ['precision'], 维多利亚: ['precision', 'vitality'], 拉特兰: ['agility'], 阿戈尔: ['vitality'],

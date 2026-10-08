@@ -82,6 +82,12 @@ test('concentrated table cites source rules, default-only native skills, 90-seco
 
 test('new games show only the two active auto-issued handover permits', () => {
   const permits = bySection('交接凭证');
+  assert.equal(catalog.config.rareInheritanceOperators, permits.length);
+  assert.ok(!bySection('徽章').some(row => row.name === '普通攻击徽章'));
+  assert.equal(catalog.config.basicBadgeCount, bySection('徽章').length);
+  const training = bySection('工程部特供').find(row => row.name === '专项战备授训');
+  assert.equal(training.normal, catalog.prizes['special-readiness-training'].effect);
+  assert.match(training.normal, /直接/);
   assert.deepEqual(permits.map((row) => [row.name, row.level]).sort(), [
     ['医疗装置交接单', '科技3'], ['重装器械适配单', '科技4'],
   ]);

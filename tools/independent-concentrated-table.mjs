@@ -144,7 +144,7 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
       normal: clean(text.normal), upgrade: clean(text.elite), basis: op.tierReason,
     });
   }
-  for (const [id, badge] of Object.entries(catalog.badges)) rows.push({
+  for (const [id, badge] of Object.entries(catalog.badges).filter(([, badge]) => badge.available !== false && !badge.retired && !badge.unassigned)) rows.push({
     section: '徽章', level: `装备${badge.level}`, name: badge.name, role: badge.regularProduction ? '基础成长' : '特殊成长', faction: '',
     reference: sourceCardSummary(badge.sourceRefs), native: '按件数线性叠加比例', nativePower: '', normal: clean(gameText.gear?.[id]?.normal),
     upgrade: '每多一枚增加相同百分比或百分点；现有上限仍生效', basis: badge.retired ? '旧版装备兼容；新局不再产出' : '原生白值、技能加攻、造伤、治疗和回复分别结算',
@@ -171,7 +171,7 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
   }
   for (const [id, prize] of Object.entries(catalog.prizes)) rows.push({ section: '工程部特供', level: prize.stage || '', name: prize.name,
     role: '阶段奖品', faction: '', reference: sourceCardSummary(prize.sourceRefs, prize.historicalTier), native: '沿用已有工坊奖品规则', nativePower: '',
-    normal: clean(gameText.prizes?.[id]?.text), upgrade: '', basis: '完整暗月奖品译稿与当前已实装奖品目录分开标明' });
+    normal: clean(prize.effect || gameText.prizes?.[id]?.text), upgrade: '', basis: '完整暗月奖品译稿与当前已实装奖品目录分开标明' });
   const operatorByName = new Map(ops.map((op) => [op.name, op]));
   for (const warband of sourceReference?.archetypes || []) {
     const neutralMembers = new Set(warband.neutralOperators || []);
