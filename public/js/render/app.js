@@ -1843,7 +1843,10 @@ export async function createFieldView(host, options = {}) {
   // render-cost probe (PIXI renders at UPDATE_PRIORITY.LOW = -25)
   let renderT0 = 0, renderMs = 0;
   const preRender = () => { renderT0 = performance.now(); };
-  const postRender = () => { if (renderT0) renderMs = renderMs * 0.9 + (performance.now() - renderT0) * 0.1; };
+  const postRender = () => {
+    if (renderT0) renderMs = renderMs * 0.9 + (performance.now() - renderT0) * 0.1;
+    emit('framePainted');
+  };
   app.ticker.add(preRender, null, -24);
   app.ticker.add(postRender, null, -26);
 

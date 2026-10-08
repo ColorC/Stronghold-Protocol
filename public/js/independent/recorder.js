@@ -24,13 +24,15 @@ export function RecordingControls({ sessionId }) {
     if (!enabled) return undefined;
     let active = true; let timer;
     const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
-      mediaSeq: 0, mediaStartedAt: 0, mediaLastTimeMs: 0, mediaCaptureStoppedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false };
-    state.captureFrames = 0; state.lastCaptureAt = 0; state.lastMediaAckAt = 0; state.lastMediaAckSeq = 0;
+      mediaSeq: 0, mediaStartedAt: 0, mediaLastTimeMs: 0, mediaCaptureStoppedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false,
+      mediaBoundView: null, mediaViewOff: null, lastCompositeAt: 0, hasPaintedFrame: false };
+    state.captureFrames = 0; state.lastCaptureAt = 0; state.nativeFrameCopies = 0; state.lastNativeFrameAt = 0; state.lastMediaAckAt = 0; state.lastMediaAckSeq = 0;
     globalThis.__SP_RECORDING_STATUS__ = () => ({ eventSeq: state.seq, queuedEvents: state.queue.length, pushingEvents: state.pushing,
       mediaSeq: state.mediaSeq, queuedMedia: state.mediaPending.length, pushingMedia: state.mediaPushing, mediaError: state.mediaError,
       recorderState: state.mediaRecorder?.state || null, mediaStartedAt: state.mediaStartedAt || null,
       mediaLastTimeMs: state.mediaLastTimeMs, mediaCaptureStoppedAt: state.mediaCaptureStoppedAt || null,
       captureFrames: state.captureFrames, lastCaptureAt: state.lastCaptureAt || null,
+      nativeFrameCopies: state.nativeFrameCopies, lastNativeFrameAt: state.lastNativeFrameAt || null,
       lastMediaAckSeq: state.lastMediaAckSeq, lastMediaAckAt: state.lastMediaAckAt || null });
     ctx.current = state;
     const event = (kind, p) => {
@@ -119,7 +121,25 @@ export function RecordingControls({ sessionId }) {
           maskAllInputs: true, maskInputOptions: { color: true, date: true, 'datetime-local': true, email: true, month: true, number: true, password: true, search: true, tel: true, text: true, time: true, url: true, week: true },
           slimDOMOptions: { script: true, comment: true, headFavicon: true, headWhitespace: true, headMetaDesc: true, headMetaSocial: true, headMetaRobots: true, headMetaHttpEquiv: true, headMetaAuthorship: true, headMetaVerification: true },
         });
+        const bindViewFrames = () => {
+          const view = globalThis.__SP_VIEW__;
+          if (!view?.on || state.mediaBoundView === view) return;
+          state.mediaViewOff?.();
+          state.mediaBoundView = view;
+          state.mediaViewOff = view.on('framePainted', () => {
+            if (!state.mediaRecorder || state.stopped || state.mediaRecorder.state === 'inactive') return;
+            const now = performance.now();
+            if (now - state.lastCompositeAt < 1000 / 24) return;
+            try {
+              if (!drawRecordingCanvasFrame(state.captureField, state.frameCacheContext, state.frameCache.width, state.frameCache.height)) return;
+              const snapshot = state.frameCacheContext.getImageData(0, 0, state.frameCache.width, state.frameCache.height);
+              state.frameCacheContext.putImageData(snapshot, 0, 0);
+              state.lastCompositeAt = now; state.lastNativeFrameAt = Date.now(); state.nativeFrameCopies += 1; state.hasPaintedFrame = true;
+            } catch { state.mediaError = true; }
+          });
+        };
         const captureCanvas = () => {
+          bindViewFrames();
           if (state.mediaRecorder || typeof MediaRecorder !== 'function') return;
           // rrweb owns the HUD; the native media track composites the field's visible
           // render layers (3D board below Pixi when enabled) into one 2D surface.
@@ -132,16 +152,26 @@ export function RecordingControls({ sessionId }) {
             // during visually static game states without changing pixels in the game canvases.
             const captureSurface = document.createElement('canvas');
             captureSurface.width = layout.width; captureSurface.height = layout.height;
-            const captureContext = captureSurface.getContext('2d');
-            if (!captureContext) return;
+            const frameCache = document.createElement('canvas');
+            frameCache.width = layout.width; frameCache.height = layout.height;
+            captureSurface.setAttribute('aria-hidden', 'true');
+            Object.assign(captureSurface.style, { position: 'fixed', left: '0', top: '0', zIndex: '-1', opacity: '0', pointerEvents: 'none' });
+            document.body.appendChild(captureSurface);
+            state.captureSurface = captureSurface;
+            const captureContext = captureSurface.getContext('2d', { alpha: false });
+            const frameCacheContext = frameCache.getContext('2d', { willReadFrequently: true, alpha: false });
+            if (!captureContext || !frameCacheContext) { captureSurface.remove(); return; }
+            state.captureField = field; state.captureSurface = captureSurface; state.captureContext = captureContext;
+            state.frameCache = frameCache; state.frameCacheContext = frameCacheContext;
             const stream = captureSurface.captureStream(0);
             const videoTrack = stream.getVideoTracks()[0];
             if (typeof videoTrack?.requestFrame !== 'function') {
               stream.getTracks().forEach((track) => track.stop());
+              captureSurface.remove();
               return;
             }
             const mimeType = ['video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
-            if (!mimeType) { stream.getTracks().forEach((track) => track.stop()); return; }
+            if (!mimeType) { stream.getTracks().forEach((track) => track.stop()); captureSurface.remove(); return; }
             const recorder = state.mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1800000, videoKeyFrameIntervalDuration: 1000 });
             recorder.addEventListener('dataavailable', (e) => {
               if (!e.data?.size || !state.id) return;
@@ -155,7 +185,8 @@ export function RecordingControls({ sessionId }) {
             recorder.start(5000);
             const captureFrame = () => {
               try {
-                if (!drawRecordingCanvasFrame(field, captureContext, captureSurface.width, captureSurface.height)) return;
+                if (!state.hasPaintedFrame) return;
+                state.captureContext.drawImage(state.frameCache, 0, 0, state.captureSurface.width, state.captureSurface.height);
                 videoTrack.requestFrame(); state.captureFrames += 1; state.lastCaptureAt = Date.now();
               }
               catch { state.mediaError = true; }
@@ -163,12 +194,12 @@ export function RecordingControls({ sessionId }) {
             captureFrame(); state.mediaStartedAt = Date.now();
             state.mediaCaptureTimer = setInterval(captureFrame, 1000 / 24);
             event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height, mimeType });
-          } catch { state.mediaError = true; }
+          } catch { state.captureSurface?.remove(); state.mediaError = true; }
         };
         captureCanvas();
         state.mediaObserver = new MutationObserver(captureCanvas); state.mediaObserver.observe(document.body, { childList: true, subtree: true });
         state.observer = new MutationObserver(bindDetails); state.observer.observe(document.body, { childList: true, subtree: true }); bindDetails();
-        timer = state.timer = setInterval(() => { void flush();state.mediaPush=state.mediaPush.then(flushMedia); }, 1000);
+        timer = state.timer = setInterval(() => { bindViewFrames(); void flush();state.mediaPush=state.mediaPush.then(flushMedia); }, 1000);
         event('custom', { tag: 'recording-start', sessionId, viewport: { width: innerWidth, height: innerHeight } });
       } catch { setMessage('录制暂时不可用'); }
     };
@@ -177,9 +208,10 @@ export function RecordingControls({ sessionId }) {
     window.addEventListener('pagehide', onHide);
     return () => {
       active = false; clearInterval(timer); window.removeEventListener('pagehide', onHide); document.removeEventListener('click', onClick, true);
-      state.rrwebStop?.(); state.observer?.disconnect(); state.mediaObserver?.disconnect();
+      state.rrwebStop?.(); state.observer?.disconnect(); state.mediaObserver?.disconnect(); state.mediaViewOff?.(); state.mediaViewOff = null; state.mediaBoundView = null;
       clearInterval(state.mediaCaptureTimer);
       try { state.mediaRecorder?.stream?.getTracks().forEach((track) => track.stop()); } catch { /* disposed with the page */ }
+      state.captureSurface?.remove();
       if (globalThis.__SP_RECORD_ACTION__) delete globalThis.__SP_RECORD_ACTION__;
       if (globalThis.__SP_RECORDING_STATUS__) delete globalThis.__SP_RECORDING_STATUS__;
       delete globalThis.__SP_RECORD_NOTE__;
@@ -190,6 +222,7 @@ export function RecordingControls({ sessionId }) {
   const stop = async () => {
     const state = ctx.current;
     if (!state?.id || state.stopped) return;
+    state.mediaViewOff?.(); state.mediaViewOff = null; state.mediaBoundView = null;
     state.rrwebStop?.(); state.rrwebStop = null;
     if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
       const recorder = state.mediaRecorder;
@@ -197,6 +230,7 @@ export function RecordingControls({ sessionId }) {
       state.mediaCaptureStoppedAt = Date.now();
       await new Promise((resolve) => { recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); } });
       try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
+      state.captureSurface?.remove();
       state.emit?.('custom', { tag: 'canvas-media-stopped', captureStoppedAt: state.mediaCaptureStoppedAt,
         lastPaintedAt: state.lastCaptureAt, mediaLastTimeMs: state.mediaLastTimeMs, mediaFinalSeq: state.mediaSeq });
       await Promise.race([state.mediaPush, new Promise((resolve) => setTimeout(resolve, 8000))]);

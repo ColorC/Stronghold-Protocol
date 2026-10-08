@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { drawRecordingCanvasFrame, recordingCanvasElements, recordingCanvasLayout } from '../../public/js/independent/recordingCanvas.js';
+
+test('render exposes the frame signal after Pixi and the recorder samples it synchronously', () => {
+  const renderer = readFileSync(new URL('../../public/js/render/app.js', import.meta.url), 'utf8');
+  const recorder = readFileSync(new URL('../../public/js/independent/recorder.js', import.meta.url), 'utf8');
+  assert.match(renderer, /const postRender = \(\) => \{[\s\S]*?emit\('framePainted'\);[\s\S]*?\};\s*app\.ticker\.add\(preRender, null, -24\);\s*app\.ticker\.add\(postRender, null, -26\);/);
+  assert.match(recorder, /view\.on\('framePainted', \(\) => \{[\s\S]*?drawRecordingCanvasFrame\(state\.captureField, state\.frameCacheContext/);
+  assert.match(recorder, /state\.captureContext\.drawImage\(state\.frameCache, 0, 0, state\.captureSurface\.width, state\.captureSurface\.height\);[\s\S]*?videoTrack\.requestFrame\(\); state\.captureFrames \+= 1; state\.lastCaptureAt = Date\.now\(\);/);
+});
 
 function canvas(width, height, bounds, { zIndex = 'auto', display = 'block', visibility = 'visible', opacity = '1' } = {}) {
   return { width, height, style: {}, getBoundingClientRect: () => ({ ...bounds }),
