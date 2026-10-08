@@ -4,6 +4,11 @@ const COOKIE = 'sp_ix_lease';
 const MESSAGE = '工坊已满，请稍后再试';
 const ROUTE = '/independent/api/admission';
 const MAX_WAIT_MS = 25000;
+const RECORDING_READ_PATH = /^\/independent\/api\/recordings\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/media(?:\/\d+|\/playback(?:\/\d+)?)?)?$/i;
+
+function isReadOnlyRecordingRequest(req, pathname) {
+  return (req.method === 'GET' || req.method === 'HEAD') && RECORDING_READ_PATH.test(pathname);
+}
 
 function cookieToken(req) {
   const part = String(req.headers.cookie || '').split(';').find((x) => x.trim().startsWith(`${COOKIE}=`));
@@ -260,6 +265,7 @@ export function createAdmission({
       return true;
     }
     if (pathname.startsWith('/independent/api/')) {
+      if (isReadOnlyRecordingRequest(req, pathname)) return false;
       pump();
       if (!leases.has(cookieToken(req))) {
         json(res, 403, { ok: false, error: { code: 'ADMISSION_REQUIRED', message: '请重新进入工坊' } }); return true;

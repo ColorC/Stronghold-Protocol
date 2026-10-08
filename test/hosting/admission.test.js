@@ -47,6 +47,43 @@ test('cross-origin renewals rejected and invalid configuration fails boot', () =
   assert.throws(() => createAdmission({ maxActive: NaN }), /SP_INDEPENDENT_MAX_ACTIVE/);
 });
 
+test('recording and media reads bypass admission at capacity while writes and unrelated APIs remain protected', () => {
+  const gate = createAdmission({ maxActive: 1 });
+  const occupied = response(); gate.handle(request('', 'POST', endpoint), occupied, endpoint);
+  assert.equal(occupied.status, 200); assert.equal(gate.stats().active, 1);
+  const id = '9961b111-50a4-4339-a324-1318a9eaf2d1';
+  const readable = [
+    `/independent/api/recordings/${id}`,
+    `/independent/api/recordings/${id}?meta=1`,
+    `/independent/api/recordings/${id}/media`,
+    `/independent/api/recordings/${id}/media/2`,
+    `/independent/api/recordings/${id}/media/playback`,
+    `/independent/api/recordings/${id}/media/playback/2`,
+  ];
+  for (const url of readable) {
+    for (const method of ['GET', 'HEAD']) {
+      const req = request('', method, url); const res = response();
+      assert.equal(gate.handle(req, res, new URL(url, 'http://localhost').pathname), false, `${method} ${url}`);
+      assert.equal(res.status, undefined);
+    }
+  }
+  for (const [method, url] of [
+    ['POST', `/independent/api/recordings/${id}`], ['POST', `/independent/api/recordings/${id}/events`],
+    ['POST', `/independent/api/recordings/${id}/media/2`], ['POST', '/independent/api/recordings/start'],
+    ['DELETE', `/independent/api/recordings/${id}`], ['PUT', `/independent/api/recordings/${id}`],
+    ['GET', '/independent/api/catalog'], ['GET', '/independent/api/sessions'],
+    ['GET', '/independent/api/recordings/not-a-uuid'],
+    ['GET', `/independent/api/recordings/${id}/events`], ['GET', `/independent/api/recordings/${id}/media/abc`],
+    ['GET', `/independent/api/recordings/${id}/media/playback/2/3`],
+  ]) {
+    const res = response(); assert.equal(gate.handle(request('', method, url), res, new URL(url, 'http://localhost').pathname), true, `${method} ${url}`);
+    assert.equal(res.status, 403, `${method} ${url}`);
+    assert.equal(JSON.parse(res.body).error.code, 'ADMISSION_REQUIRED');
+  }
+  assert.equal(gate.stats().active, 1);
+  gate.close();
+});
+
 test('FIFO queue is bounded, newcomers cannot cut, cancellation releases the next place', () => {
   const gate = createAdmission({ maxActive: 1, maxWaiting: 2 });
   const active = response(); gate.handle(request(), active, endpoint); const activeCookie = token(active);
