@@ -2,6 +2,8 @@ import { rebaseRecordedAssets, timestampRange } from './replayAssets.js';
 import { recordingCanvasElements, recordingCanvasField } from './recordingCanvas.js';
 import { createReplayCueState } from './replayCueState.js';
 import { clampReplayMediaTime } from './replayMediaTime.js';
+import { applyReplayNarration } from './replayNarration.js';
+import { workshopShowcaseNarration } from './workshopShowcaseNarration.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
@@ -178,7 +180,8 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const response = await fetch(new URL(`recordings/${encodeURIComponent(id)}`, API), { credentials: 'same-origin' });
   const packet = await response.json(); if (!response.ok || !packet.ok) throw new Error('无法载入本局回放');
   const records = packet.events || []; items = records.filter((e) => e.kind === 'rrweb').map((e) => e.p); rebaseRecordedAssets(items);
-  cues = records.filter((e) => e.kind === 'caption' && e.p?.text).map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), ...e.p }));
+  const recordedCues = records.filter((e) => e.kind === 'caption' && e.p?.text).map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), ...e.p }));
+  cues = applyReplayNarration(id, recordedCues, workshopShowcaseNarration);
   if (!items.length || !globalThis.rrweb?.Replayer) throw new Error('这段记录还没有可播放的画面');
   const visibleRecords = records.filter((event) => !(event.kind === 'custom' && event.p?.tag === 'canvas-media-stopped'));
   const { min: firstTimestamp, max: last } = timestampRange(items, (event) => event.timestamp);
