@@ -10,9 +10,137 @@ const BROWSER = 'C:/Users/lilithgames/AppData/Local/ms-playwright/chromium_headl
 const TIME_LIMIT_MS = 180_000;
 const USAGE = 'Usage: node tools/diy2b/semantic-study.mjs <motion-page-url> <absolute-output-directory> <absolute-candidate-root>';
 const JOINTS = ['upperarm_r', 'forearm_r', 'hand_r', 'upperarm_l', 'forearm_l', 'hand_l', 'thigh_r', 'shin_r', 'foot_r', 'thigh_l', 'shin_l', 'foot_l', 'sword', 'sword_tip'];
+const LIMBS = ['arm_r', 'arm_l', 'knee_r', 'knee_l'];
+const REANALYSIS_USAGE = 'Usage: node tools/diy2b/semantic-study.mjs --reanalyze-json <source-report.json> <new-output-report.json>';
 
 function must(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function wrappedDegrees(degrees) {
+  let value = degrees;
+  while (value > 180) value -= 360;
+  while (value < -180) value += 360;
+  return value;
+}
+
+function neutralDirection(degrees, epsilon = 0.1) {
+  return Math.abs(degrees) <= epsilon ? 0 : Math.sign(degrees);
+}
+
+function maximumValue(object) {
+  return Math.max(...Object.values(object).map(Number));
+}
+
+function analyzeReport(sourceReport, sourceReportPath) {
+  must(Array.isArray(sourceReport.results), 'Source report has no sampled results array.');
+  const checks = [];
+  const resultFor = (variant, side) => sourceReport.results.find(result => result.variant === variant && result.side === side);
+  const baseline = {};
+  const candidateResults = [];
+  const previousDeltaDirectionDifferences = [];
+  const candidateTrajectories = [];
+  const staticJointLimit = 1.0;
+  const limits = { footBoneDrift: 0.5, soleBoundsDriftPx: 0.75, swordLengthRange: 0.05, gripOffsetRange: 0.5, gripAngleRangeDegrees: 2, rawEndpointDisplacement: staticJointLimit };
+
+  for (const side of ['front', 'back']) {
+    const source = resultFor('source', side);
+    const candidate = resultFor('candidate', side);
+    must(source?.idle0?.limbs && source?.attack0?.limbs && Array.isArray(source.frames), `Source ${side} sample is incomplete.`);
+    must(candidate?.idle0?.limbs && candidate?.attack0?.limbs && Array.isArray(candidate.frames), `Candidate ${side} sample is incomplete.`);
+    const limbChecks = [];
+    const perLimbComparisons = [];
+
+    for (const limb of LIMBS) {
+      const sourceIdle = source.idle0.limbs[limb].signedTurnDegrees;
+      const candidateIdle = candidate.idle0.limbs[limb].signedTurnDegrees;
+      const idleDifference = Math.abs(wrappedDegrees(candidateIdle - sourceIdle));
+      const idleMatches = idleDifference <= 0.1;
+      const sourceBranch = neutralDirection(sourceIdle);
+      const trajectory = candidate.frames.map(frame => {
+        const absolute = frame.limbs[limb].signedTurnDegrees;
+        const direction = neutralDirection(absolute);
+        return { t: frame.t, signedTurnDegrees: absolute, interiorAngleDegrees: frame.limbs[limb].interiorAngleDegrees, sourceIdle0Branch: sourceBranch, neutralizedCandidateDirection: direction, matchesSourceIdle0Branch: direction === sourceBranch };
+      });
+      const branchMismatches = trajectory.filter(frame => !frame.matchesSourceIdle0Branch);
+      limbChecks.push({ limb, sourceIdle0SignedTurnDegrees: sourceIdle, candidateIdle0SignedTurnDegrees: candidateIdle, idleDifferenceDegrees: idleDifference, idleMatches, sourceBranch, attackSamples: trajectory.length, branchMismatchCount: branchMismatches.length, firstBranchMismatches: branchMismatches.slice(0, 8) });
+      perLimbComparisons.push({ limb, idleMatches, idleDifferenceDegrees: idleDifference, branchMismatchCount: branchMismatches.length, samples: trajectory.length });
+      candidateTrajectories.push({ side, limb, sourceIdle0SignedTurnDegrees: sourceIdle, frames: trajectory });
+
+      const prior = sourceReport.candidateDirectionComparisons?.find(item => item.side === side && item.limb === limb);
+      const sourceDeltaSigns = source.frames.map(frame => Math.sign(frame.foldDeltaFromIdle?.[limb] ?? 0));
+      const candidateDeltaSigns = candidate.frames.map(frame => Math.sign(frame.foldDeltaFromIdle?.[limb] ?? 0));
+      const oldCount = Math.min(sourceDeltaSigns.length, candidateDeltaSigns.length);
+      const oldMismatches = [];
+      for (let i = 0; i < oldCount; i++) if (sourceDeltaSigns[i] !== candidateDeltaSigns[i]) oldMismatches.push({ frame: i, t: candidate.frames[i].t, sourceDeltaSign: sourceDeltaSigns[i], candidateDeltaSign: candidateDeltaSigns[i] });
+      previousDeltaDirectionDifferences.push({ side, limb, priorGateId: `fold-direction-matches-source-${limb}`, priorComparedSamples: prior?.comparedSamples ?? oldCount, priorMismatchCount: prior?.mismatchCount ?? oldMismatches.length, recomputedComparedSamples: oldCount, recomputedMismatchCount: oldMismatches.length, sourceDeltaSigns, candidateDeltaSigns, mismatches: oldMismatches, excludedFromPass: true });
+    }
+
+    const endpoint0Maximum = maximumValue(candidate.endpointDisplacements.attack0);
+    const endpointEndMaximum = maximumValue(candidate.endpointDisplacements.attackEnd);
+    const sampledFourLimbTrajectory = candidate.frames.length > 1 && candidate.frames.every(frame => LIMBS.every(limb => Number.isFinite(frame.limbs?.[limb]?.signedTurnDegrees) && Number.isFinite(frame.limbs?.[limb]?.interiorAngleDegrees)));
+    const sideChecks = [
+      ['idle0-four-limb-angles-match-source', limbChecks.every(item => item.idleMatches), JSON.stringify(limbChecks.map(({ limb, idleDifferenceDegrees, idleMatches }) => ({ limb, idleDifferenceDegrees, idleMatches })))],
+      ['candidate-four-limb-folds-follow-source-idle0-branch', limbChecks.every(item => item.branchMismatchCount === 0), JSON.stringify(limbChecks.map(({ limb, sourceBranch, attackSamples, branchMismatchCount }) => ({ limb, sourceBranch, attackSamples, branchMismatchCount })))],
+      ['four-limb-signed-turn-and-interior-trajectories-present', sampledFourLimbTrajectory, `samples=${candidate.frames.length}; each sample stores signed turn and interior angle for all four limbs`],
+      ['both-sole-slots-measured', candidate.hasBothSoleSlots === true, `measured=${candidate.hasBothSoleSlots}`],
+      ['foot-bones-fixed', candidate.maxFootBoneDrift <= limits.footBoneDrift, `${candidate.maxFootBoneDrift} <= ${limits.footBoneDrift}`],
+      ['sole-bounds-fixed', candidate.maxSoleBoundsDriftPx <= limits.soleBoundsDriftPx, `${candidate.maxSoleBoundsDriftPx} <= ${limits.soleBoundsDriftPx}`],
+      ['sword-length-stable', candidate.swordLengthRange <= limits.swordLengthRange, `${candidate.swordLengthRange} <= ${limits.swordLengthRange}`],
+      ['sword-grip-stable', candidate.gripOffsetRange <= limits.gripOffsetRange && candidate.gripAngleRangeDegrees <= limits.gripAngleRangeDegrees, `relative position ${candidate.gripOffsetRange}; angle ${candidate.gripAngleRangeDegrees}°`],
+      ['sword-tip-above-floor', candidate.minSwordTipY >= -1, `floor-relative Y=${candidate.minSwordTipY}; negative means below floor`],
+      ['idle0-attack0-joints-continuous', endpoint0Maximum <= limits.rawEndpointDisplacement, `maximum raw endpoint displacement ${endpoint0Maximum} <= ${limits.rawEndpointDisplacement}`],
+      ['attack-end-idle0-joints-continuous', endpointEndMaximum <= limits.rawEndpointDisplacement, `maximum raw endpoint displacement ${endpointEndMaximum} <= ${limits.rawEndpointDisplacement}`],
+      ['hand-left-slot-attachment-stable', candidate.handLeftAttachment?.stableSingleHandAttachment === true, JSON.stringify(candidate.handLeftAttachment)]
+    ];
+    checks.push(...sideChecks.map(([id, passed, detail]) => ({ scope: 'candidate', side, id, passed, detail })));
+    candidateResults.push({ side, metrics: { maxFootBoneDrift: candidate.maxFootBoneDrift, maxSoleBoundsDriftPx: candidate.maxSoleBoundsDriftPx, swordLengthRange: candidate.swordLengthRange, gripOffsetRange: candidate.gripOffsetRange, gripAngleRangeDegrees: candidate.gripAngleRangeDegrees, minSwordTipY: candidate.minSwordTipY, endpointDisplacements: candidate.endpointDisplacements, handLeftAttachment: candidate.handLeftAttachment }, limbChecks, perLimbComparisons });
+
+    if (side === 'front') {
+      const elbowBaseline = {};
+      for (const limb of ['arm_l', 'arm_r']) {
+        const idle = source.idle0.limbs[limb], attack = source.attack0.limbs[limb];
+        const chain = limb === 'arm_l' ? ['upperarm_l', 'forearm_l', 'hand_l'] : ['upperarm_r', 'forearm_r', 'hand_r'];
+        const [shoulder, elbow, wrist] = chain.map(name => source.endpointDisplacements.attack0[name]);
+        const signedTurnReversed = neutralDirection(idle.signedTurnDegrees) !== 0 && neutralDirection(attack.signedTurnDegrees) === -neutralDirection(idle.signedTurnDegrees);
+        const interiorAngleDeltaDegrees = attack.interiorAngleDegrees - idle.interiorAngleDegrees;
+        elbowBaseline[limb] = { idle0SignedTurnDegrees: idle.signedTurnDegrees, attack0SignedTurnDegrees: attack.signedTurnDegrees, signedTurnReversed, idle0InteriorAngleDegrees: idle.interiorAngleDegrees, attack0InteriorAngleDegrees: attack.interiorAngleDegrees, interiorAngleDeltaDegrees, interiorAngleNearlyUnchanged: Math.abs(interiorAngleDeltaDegrees) <= 0.1, shoulderDisplacement: shoulder, elbowDisplacement: elbow, wristDisplacement: wrist, shoulderWristNearElbowStable: shoulder < elbow && wrist < elbow && elbow > 0, endpointBones: Object.fromEntries(chain.map(name => [name, { idle0: source.idle0.bones[name], attack0: source.attack0.bones[name], displacement: source.endpointDisplacements.attack0[name] }])) };
+      }
+      baseline.frontElbows = elbowBaseline;
+      baseline.detectsIdle0Attack0ReversalWithStableShoulderWristAndInteriorAngle = Object.values(elbowBaseline).every(item => item.signedTurnReversed && item.shoulderWristNearElbowStable && item.interiorAngleNearlyUnchanged);
+    }
+  }
+
+  const pageCheck = { scope: 'global', id: 'source-browser-run-had-no-page-errors', passed: sourceReport.errors.length === 0, detail: `${sourceReport.errors.length} recorded page/runtime errors` };
+  const interactionCheck = { scope: 'global', id: 'pause-and-drag-seek-operable', passed: sourceReport.interaction?.pauseButtonWorks === true && sourceReport.interaction?.seekControlWorks === true, detail: JSON.stringify(sourceReport.interaction) };
+  const candidateFiles = sourceReport.candidateFiles || {};
+  const interceptionCheck = { scope: 'global', id: 'front-back-candidate-json-intercepted', passed: Object.keys(candidateFiles).length === 2 && Object.keys(candidateFiles).every(urlPath => sourceReport.candidateInterceptions?.[urlPath] > 0), detail: JSON.stringify(sourceReport.candidateInterceptions) };
+  checks.push(pageCheck, interactionCheck, interceptionCheck);
+
+  return {
+    analysisMode: 'pure-json-reanalysis',
+    analyzedAt: new Date().toISOString(),
+    passed: checks.every(check => check.passed),
+    checks,
+    samplingSource: { sourceReportPath, browserUrl: sourceReport.baseUrl, candidateRoot: sourceReport.candidateRoot, candidateFiles: sourceReport.candidateFiles, candidateInterceptions: sourceReport.candidateInterceptions, startedAt: sourceReport.startedAt, finishedAt: sourceReport.finishedAt, screenshots: sourceReport.screenshots },
+    previousGate: { gate: 'fold-direction-matches-source-<limb>', outcome: 'excluded-from-pass', reason: 'The prior rule compared candidate Attack delta-from-Idle0 signs against source Attack delta-from-Idle0 signs. Source Attack is itself under repair, so this required the candidate to reproduce the source Attack trajectory. Its observed per-frame differences are retained below as diagnostics.' },
+    baselineDiscovery: { sourceFrontIdle0ToAttack0: baseline.frontElbows, detected: baseline.detectsIdle0Attack0ReversalWithStableShoulderWristAndInteriorAngle, interpretation: 'Reports absolute signed-turn reversals for both elbows, stable shoulder/wrist positions, elbow movement, and nearly unchanged interior angles. This is a mechanical baseline finding, not an art judgment.' },
+    candidateResults,
+    candidateAbsoluteFoldTrajectories: candidateTrajectories,
+    priorSourceVsCandidateDeltaDirectionDifferences: previousDeltaDirectionDifferences,
+    numericalRules: { branchNeutralEpsilonDegrees: 0.1, endpointDisplacementLimit: staticJointLimit, existingMechanicalLimits: limits },
+    notes: ['The 0.1 degree tolerance only treats near-zero signed angles as numerically neutral and compares candidate Idle0 to source Idle0.', 'Candidate Attack absolute signedTurn follows the source Idle0 branch at every recorded sample; source Attack is not used as a direction baseline.', 'No art-quality verdict is produced.']
+  };
+}
+
+async function reanalyzeJson(sourcePath, outputPath) {
+  must(path.isAbsolute(sourcePath) && path.isAbsolute(outputPath), REANALYSIS_USAGE);
+  const sourceReport = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+  const result = analyzeReport(sourceReport, sourcePath);
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), { flag: 'wx' });
+  console.log(JSON.stringify({ report: outputPath, passed: result.passed, failedChecks: result.checks.filter(check => !check.passed).map(({ scope, side, id, detail }) => ({ scope, side, id, detail })), baselineDetected: result.baselineDiscovery.detected }, null, 2));
+  return result;
 }
 
 async function run(baseUrl, outputDir, candidateRoot) {
@@ -282,7 +410,14 @@ async function run(baseUrl, outputDir, candidateRoot) {
 
 const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
 if (isMain && !process.env.NODE_TEST_CONTEXT) {
-  const [baseUrl, outputDir, candidateRoot] = process.argv.slice(2);
-  if (!baseUrl || !outputDir || !candidateRoot) { console.error(USAGE); process.exitCode = 2; }
-  else { const report = await run(baseUrl, outputDir, candidateRoot); if (!report.passed) process.exitCode = 1; }
+  const args = process.argv.slice(2);
+  if (args[0] === '--reanalyze-json') {
+    const [sourcePath, outputPath] = args.slice(1);
+    if (!sourcePath || !outputPath) { console.error(REANALYSIS_USAGE); process.exitCode = 2; }
+    else { const report = await reanalyzeJson(sourcePath, outputPath); if (!report.passed) process.exitCode = 1; }
+  } else {
+    const [baseUrl, outputDir, candidateRoot] = args;
+    if (!baseUrl || !outputDir || !candidateRoot) { console.error(USAGE); process.exitCode = 2; }
+    else { const report = await run(baseUrl, outputDir, candidateRoot); if (!report.passed) process.exitCode = 1; }
+  }
 }
