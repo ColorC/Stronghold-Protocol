@@ -80,6 +80,7 @@ test('pool copies follow Battlegrounds by tier (15/15/13/11/9/7), by the tier an
   const catalog = getCatalog();
   const want = catalog.config.poolCopies;
   for (const [id, p] of Object.entries(state.pool)) assert.equal(p.cap, want[catalog.operators[id].tier], id);
-  const skadi = Object.values(catalog.operators).find((x) => !x.elite && x.name === '斯卡蒂');
-  assert.equal(state.pool[skadi.chessId].cap, want[skadi.tier], `copies follow current mode tier ${skadi.tier}`);
+  const active = Object.values(catalog.operators).find((x) => !x.elite && x.active && state.pool[x.chessId]);
+  assert.ok(active, 'the current active roster contributes a concrete pool member');
+  assert.equal(state.pool[active.chessId].cap, want[active.tier], `copies follow current mode tier ${active.tier}`);
 });

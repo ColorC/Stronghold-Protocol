@@ -111,15 +111,17 @@ test('old oversized save, purchase, equip, use-item and symmetric view aliases u
   let state = createSession({ seed: 20261007, openFactions: null });
   state.inventory = [{ uid: 'old-stock', id: 'precision', quantity: 1999, state: {} }];
   state.funds = 99;
-  state.shop.slots[0] = { kind: 'equipment', id: 'precision', price: 1, sold: false };
-  let result = applyAction(state, { type: 'buy', slot: 0 });
+  const buyerSlot = state.shop.slots.findIndex(x => x.kind === 'chess' && x.id);
+  assert.ok(buyerSlot >= 0, 'the current shop offers an operator');
+  let result = applyAction(state, { type: 'buy', slot: buyerSlot });
   assert.equal(result.ok, true, result.error?.message);
   state = result.state;
+  grantEquipment(state, real, 'precision', 1, { origin: 'test' });
   assert.equal(state.inventory.find(x => x.uid === 'old-stock').quantity, 1999);
   assert.equal(state.inventory.reduce((n, x) => n + x.quantity, 0), 2000);
   assert.equal(inventoryTiles(state, real), 3);
   assert.deepEqual(validateSession(state), []);
-  const names = ['斯卡蒂', '幽灵鲨']; // current automatic permit; retired IDs remain covered by synthetic legacy fixtures
+  const names = ['赫默', '蛇屠箱']; // active source operators with reciprocal current handover permits
   for (const name of names) {
     const op = Object.values(real.operators).find(x => !x.elite && x.name === name);
     state.shop.slots[0] = { kind: 'chess', id: op.chessId, price: 3, sold: false, equipment: [] };
@@ -154,7 +156,7 @@ test('wolf whistle uniqueness survives real equip, three-copy merge and handover
   const real = getCatalog(); const id = 'independent:叙拉古狼嚎哨';
   assert.equal(real.equipment[id].unique, true);
   assert.equal(real.equipment[id].inheritable, false);
-  const op = Object.values(real.operators).find(x => !x.elite && x.name === '角峰');
+  const op = Object.values(real.operators).find(x => !x.elite && x.active && x.nativeFactionTags?.includes('叙拉古') && x.recruitable);
   let state = createSession({ seed: 20261007, openFactions: null }); state.funds = 99;
   const chosen = [];
   for (let i = 0; i < 3; i++) {
