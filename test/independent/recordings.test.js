@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { createWriteStream } from 'node:fs';
+import { mkdtemp, mkdir, readFile, rm, truncate, writeFile } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
-import { createRecordingHttp } from '../../server/modes/independent/recordings.js';
+import { createRecordingHttp, pipeFileReadStream } from '../../server/modes/independent/recordings.js';
 
 test('recording API stores acknowledged rrweb and caption events, deduplicates retries, and ends explicitly', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sp-recording-test-'));
@@ -281,4 +281,70 @@ test('large recording read streams the complete JSON response under a 128 MiB he
   assert.equal(result.bytes, expectedResponseBytes); assert.ok(result.maxHeapBytes < 100 * 1024 * 1024);
   assert.ok(result.abort.backpressureWrites > 0); assert.ok(result.abort.writes < eventCount); assert.equal(result.abort.activeHandlers, 0);
   assert.ok(fileBytes >= targetBytes, `synthetic JSONL is ${fileBytes} bytes, expected at least ${targetBytes}`);
+});
+
+test('media file response closes its source descriptor when the client disconnects midstream', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'sp-media-close-'));
+  const file = path.join(root, 'media.bin'); const totalBytes = 32 * 1024 * 1024;
+  await writeFile(file, Buffer.alloc(1, 0x5a)); await truncate(file, totalBytes);
+  let source;
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'video/webm', 'Content-Length': String(totalBytes), 'Accept-Ranges': 'bytes' });
+    source = pipeFileReadStream(req, res, createReadStream(file, { highWaterMark: 16 * 1024 }));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { await new Promise((resolve) => server.close(resolve)); await rm(root, { recursive: true, force: true }); });
+
+  let receivedBytes = 0;
+  const clientClosed = new Promise((resolve, reject) => {
+    const request = http.get(`http://127.0.0.1:${server.address().port}/media`, (response) => {
+      response.once('aborted', () => resolve('aborted'));
+      response.once('error', (error) => resolve(error));
+      response.on('data', (chunk) => {
+        receivedBytes += chunk.length;
+        response.pause();
+        setTimeout(() => response.destroy(), 25);
+      });
+      response.once('end', () => resolve('ended'));
+    });
+    request.once('error', reject);
+  });
+  const outcome = await clientClosed;
+  assert.notEqual(outcome, 'ended', 'the client intentionally closed before the file was fully streamed');
+  assert.ok(receivedBytes < totalBytes, `client received ${receivedBytes} of ${totalBytes} bytes`);
+  assert.ok(source, 'server created a file source');
+  if (!source.closed) await once(source, 'close');
+  assert.equal(source.destroyed, true);
+  assert.equal(source.fd, null, 'closing the client releases the underlying file descriptor');
+  assert.equal(source.listenerCount('error'), 0, 'completion cleanup removes the temporary source error listener');
+});
+
+test('media file source read errors fail the response and are surfaced to the handler', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'sp-media-read-error-'));
+  const missingFile = path.join(root, 'missing.webm');
+  let source; let readError = null;
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'video/webm', 'Content-Length': '100' });
+    source = pipeFileReadStream(req, res, createReadStream(missingFile), (error) => {
+      readError = error;
+      if (!res.destroyed) res.destroy();
+    });
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { await new Promise((resolve) => server.close(resolve)); await rm(root, { recursive: true, force: true }); });
+
+  const outcome = await new Promise((resolve, reject) => {
+    const request = http.get(`http://127.0.0.1:${server.address().port}/media`, (response) => {
+      response.once('aborted', () => resolve('aborted'));
+      response.once('error', (error) => resolve(error));
+      response.once('end', () => resolve('ended'));
+    });
+    request.once('error', (error) => resolve(error));
+  });
+  assert.notEqual(outcome, 'ended', 'a missing media source must not become a successful complete response');
+  if (outcome instanceof Error) assert.equal(outcome.code, 'ECONNRESET');
+  assert.ok(readError, 'the handler receives the source read error');
+  assert.equal(readError.code, 'ENOENT');
+  if (source && !source.closed) await once(source, 'close');
+  assert.equal(source?.listenerCount('error'), 0, 'read-error cleanup removes its temporary listener');
 });

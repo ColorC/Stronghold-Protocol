@@ -16,6 +16,43 @@ const MAX_MEDIA_CHUNK = 8 * 1024 * 1024;
 const execFileAsync = promisify(execFile);
 const json = (res, status, value) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
 
+export function pipeFileReadStream(req, res, source, onReadError = (error) => { if (!res.destroyed) res.destroy(error); }) {
+  let settled = false;
+  const cleanup = () => {
+    if (settled) return;
+    settled = true;
+    req.off('aborted', onRequestAborted);
+    res.off('close', onResponseClose);
+    res.off('finish', onResponseFinish);
+    source.off('error', onSourceError);
+  };
+  const abortSource = () => {
+    cleanup();
+    if (!source.destroyed) source.destroy();
+  };
+  const onRequestAborted = () => {
+    abortSource();
+    if (!res.destroyed && !res.writableFinished) res.destroy();
+  };
+  const onResponseClose = () => {
+    if (res.writableFinished) cleanup();
+    else abortSource();
+  };
+  const onResponseFinish = cleanup;
+  const onSourceError = (error) => {
+    cleanup();
+    onReadError(error);
+  };
+
+  req.once('aborted', onRequestAborted);
+  res.once('close', onResponseClose);
+  res.once('finish', onResponseFinish);
+  source.once('error', onSourceError);
+  if (req.aborted || res.destroyed || res.writableEnded) abortSource();
+  else source.pipe(res);
+  return source;
+}
+
 function waitForReadStreamOpen(stream) {
   return new Promise((resolve, reject) => {
     const cleanup = () => { stream.off('open', onOpen); stream.off('error', onError); };
@@ -243,7 +280,11 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
           const first=meta.mediaSegments?.find(x=>x.index===1&&typeof x.startedAt==='string');
           res.writeHead(200, { 'Content-Type': meta.mediaMimeType || 'video/webm', 'Content-Length': String(first?.bytes||meta.mediaBytes), 'Cache-Control': 'private, no-store',
             'X-Media-Started-At': meta.mediaStartedAt || '', 'X-Media-Duration-Ms': String(first?.lastTimeMs||meta.mediaLastTimeMs || 0) });
-          createReadStream(mediaFile).pipe(res); return true;
+          pipeFileReadStream(req, res, createReadStream(mediaFile), (error) => {
+            void writeDiagnostic({ type: 'media-read-error', recordingId: id, media: 'raw', code: error.code || null, message: error.message || String(error) });
+            if (!res.destroyed) res.destroy();
+          });
+          return true;
         }
         if (mediaMatch[2] === 'playback' && req.method === 'GET') {
           const meta = await loadMeta(id);
@@ -259,7 +300,12 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
           end = Math.min(end, info.size - 1);
           res.writeHead(match ? 206 : 200, { 'Content-Type': 'video/webm', 'Content-Length': String(end - start + 1), 'Accept-Ranges': 'bytes',
             'Cache-Control': 'private, no-store', ...(match ? { 'Content-Range': `bytes ${start}-${end}/${info.size}` } : {}) });
-          createReadStream(file, { start, end }).pipe(res); return true;
+          pipeFileReadStream(req, res, createReadStream(file, { start, end }), (error) => {
+            void writeDiagnostic({ type: 'media-read-error', recordingId: id, media: 'playback', segmentIndex: index,
+              code: error.code || null, message: error.message || String(error) });
+            if (!res.destroyed) res.destroy();
+          });
+          return true;
         }
       }
       const match = relative.match(/^([0-9a-f-]{36})(?:\/(events|stop))?$/i);
