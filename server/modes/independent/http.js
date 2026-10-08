@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { getCatalog } from './catalog.js';
 import { createSession, applyAction, viewSession, validateSession } from './session.js';
 import { independentDisplayCatalog, independentSessionView } from './display.js';
+import { renameWithTransientRetry } from './persistence.js';
 export { independentDisplayCatalog } from './display.js';
 
 const PREFIX = '/independent/api/';
@@ -62,7 +63,7 @@ export function createIndependentHttp({ data, directory }) {
     await mkdir(directory, { recursive: true });
     const pending = path.join(directory, `${id}.${randomUUID()}.pending`);
     await writeFile(pending, gzipSync(JSON.stringify(replay)), { flag: 'wx' });
-    await rename(pending, replayFile(id, replay.round));
+    await renameWithTransientRetry(pending, replayFile(id, replay.round));
   }
   async function sendReplay(req, res, id, round) {
     let body;
@@ -92,7 +93,7 @@ export function createIndependentHttp({ data, directory }) {
     await mkdir(directory, { recursive: true });
     const pending = path.join(directory, `${id}.${randomUUID()}.pending`);
     await writeFile(pending, JSON.stringify(state), { flag: 'wx' });
-    await rename(pending, file(id));
+    await renameWithTransientRetry(pending, file(id));
   }
   // withCatalog false: the page fetched GET catalog once and only needs the state (body.catalog === false / ?catalog=0)
   function packet(id, state, events = [], withCatalog = true) {
