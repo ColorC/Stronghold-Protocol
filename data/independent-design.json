@@ -28835,6 +28835,7 @@
       "basic": true,
       "unique": false,
       "regularProduction": false,
+      "unassigned": true,
       "sourceRefs": {
         "cards": [
           {
@@ -32374,8 +32375,8 @@
     {
       "name": "专项战备授训",
       "stage": "成型",
-      "effect": "选择场上一名干员，从该干员可接受且尚未拥有的附加效果中三选一，永久附加一项；不足三项时展示全部可用选项。没有合法选择时不投放。",
-      "intent": "为当前本体补充一条另行设计的成长路线。",
+      "effect": "选择一名场上干员，从其尚未拥有且符合条件的附加特性与已解锁装备中选择一项；特性永久生效，装备直接永久穿戴在该干员身上。可选项不足三项时展示全部；没有可选项时不提供此奖品。",
+      "intent": "让授训为指定在场干员补充附加特性，或直接配发符合科技等级的战术装备。",
       "status": "new proposed option within Darkmoon adaptation",
       "sourceRefs": {
         "cards": [
@@ -32548,8 +32549,24 @@
     "level": "sum actual equipped levels times quantity; inventory and consumables excluded",
     "noUniversalInheritance": true,
     "noRemovableEquipment": true,
-    "shop": "operators only; every piece of gear comes through operators (traits), 工程部特供 prizes or 交接凭证",
+    "shop": "operators only; gear comes through operator traits, 工程部特供 prizes, 专项战备授训 or 交接凭证",
     "equipmentCapacity": 999,
+    "trainingGearIds": [
+      "chess_item_2_01_e_a",
+      "chess_item_3_01_e_a",
+      "chess_item_3_04_e_a",
+      "chess_item_5_03_e_a",
+      "independent:维多利亚校准砧",
+      "independent:增压臂铠",
+      "independent:炎国缚锁",
+      "independent:阿戈尔神经毒棘",
+      "independent:叙拉古狼嚎哨",
+      "independent:莱塔尼亚共鸣音叉",
+      "independent:阿戈尔深潜锚钩",
+      "independent:炎国点睛笔",
+      "independent:爆破部署台",
+      "independent:便携式融毁教学仪"
+    ],
     "inventory": "20 tiles: one per item, stacks unlimited; gear needing a 21st tile is not stored (ledger lost); kept prizes take no tile",
     "badgeLanding": "self",
     "poolCopies": {

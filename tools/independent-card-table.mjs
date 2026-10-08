@@ -39,7 +39,7 @@ const GEAR_COLUMNS = [
   { key: 'level', title: '等级', type: 'number', width: 60 },
   { key: 'faction', title: '阵营', width: 80 },
   { key: 'effect', title: '效果', width: 420 },
-  { key: 'from', title: '带来它的干员', width: 160 },
+  { key: 'from', title: '装备来源', width: 230 },
   { key: 'state', title: '状态', type: 'select', options: ['在用', '停产', '待分配'], width: 80 },
   { key: 'remark', title: '批注', width: 220 },
 ];
@@ -74,11 +74,14 @@ function bringers(catalog) {
 }
 function gearRows(catalog) {
   const from = bringers(catalog);
+  const trainingGearIds = new Set(DESIGN.rules?.trainingGearIds || []);
   return Object.values(catalog.equipment)
     .filter((d) => d.available !== false && d.mechanism !== 'badge' && d.mechanism !== 'disabled' && !['停用', 'permit'].includes(d.kind) && d.canonicalId === d.id)
     .sort((a, b) => Number(a.level ?? 9) - Number(b.level ?? 9))
     .map((d) => ({ id: d.id, name: d.newName || d.name, level: String(d.level ?? ''), faction: d.faction || '',
-      effect: TEXT.gear[d.id]?.normal || d.normal || d.effect || '', from: [...(from.get(d.id) || [])].join('、'),
+      effect: TEXT.gear[d.id]?.normal || d.normal || d.effect || '', from: trainingGearIds.has(d.id)
+        ? '专项战备授训奖品：永久直接装备给指定干员'
+        : [...(from.get(d.id) || [])].join('、'),
       state: d.retired ? '停产' : d.unassigned ? '待分配' : '在用', remark: '' }));
 }
 
