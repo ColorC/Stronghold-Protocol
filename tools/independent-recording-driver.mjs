@@ -718,11 +718,13 @@ try {
     const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
     const ordinary = (state.pieces || []).find((p) => !p.elite && Number.isInteger(p.row));
     if (ordinary && !report.references?.some((x) => x.kind === 'ordinary') && !report.referenceAttempts?.ordinary) {
-      if (await inspectReferenceCard(ordinary, 'ordinary')) { idle = 0; continue; }
+      if (await inspectReferenceCard(ordinary, 'ordinary')) { idle = 0; sameRevisionSince = Date.now(); continue; }
+      sameRevisionSince = Date.now();
     }
     const elite = (state.pieces || []).find((p) => p.elite && Number.isInteger(p.row));
     if (elite && !report.references?.some((x) => x.kind === 'elite') && !report.referenceAttempts?.elite) {
-      if (await inspectReferenceCard(elite, 'elite')) { idle = 0; continue; }
+      if (await inspectReferenceCard(elite, 'elite')) { idle = 0; sameRevisionSince = Date.now(); continue; }
+      sameRevisionSince = Date.now();
     }
     const nonTemporary = (state.pieces || []).filter((p) => !p.temp).length;
     const desired = Math.min(8, Math.max(1, nonTemporary));
