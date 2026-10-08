@@ -558,7 +558,7 @@ export async function createFieldView(host, options = {}) {
   const tiles = new TileField({ ground: layers.ground, overlay: layers.overlay, props: layers.units, anim: layers.anim });
   const fxIds = new WeakMap();  // UnitInfo → its FX registry identity (ctx.identify)
   const fx = new FxSystem({
-    P, layers, cam: () => cam, settings, assets, heightAt, redVignette: bg.red, surfaceLayer: ctx.surfaceLayer,
+    P, layers, renderer: app.renderer, cam: () => cam, settings, assets, heightAt, redVignette: bg.red, surfaceLayer: ctx.surfaceLayer,
     originalVfx: opts.originalVfx === false ? null : (opts.originalVfx || { root: '/assets/vfx/rosmon' }),
     timeScale: () => ctx.timeScale(),
     loadLevel: () => loadLevel,

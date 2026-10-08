@@ -29,11 +29,18 @@ const yieldToBrowser = () => new Promise((resolve) => {
   if (typeof requestIdleCallback === 'function') requestIdleCallback(() => resolve(), { timeout: 50 });
   else setTimeout(resolve, 0);
 });
+const yieldUpload = () => typeof requestAnimationFrame !== 'function' ? yieldToBrowser() : new Promise(resolve => {
+  let finished = false;
+  const done = () => { if (!finished) { finished = true; clearTimeout(timer); resolve(); } };
+  const timer = setTimeout(done, 50);
+  requestAnimationFrame(() => setTimeout(done, 0));
+});
 // Pixi's BaseTexture normally emits `loaded`/`error`, but a failed or aborted
 // image decode can leave an invalid texture without either event. Never let a
 // warmup promise hold the whole compare page in “preparing” forever; the play
 // path will retry the same URL lazily after this bounded wait.
-const waitBaseTexture = (base, timeout = 4500) => {
+const waitBaseTexture = (base, timeout = 4500, signal = null) => {
+  if (signal?.aborted) return Promise.reject(new Error('VFX load cancelled'));
   if (!base || base.valid) return Promise.resolve(base);
   return new Promise((resolve, reject) => {
     let done = false;
@@ -41,16 +48,40 @@ const waitBaseTexture = (base, timeout = 4500) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
       try { base.off?.('loaded', onLoad); base.off?.('error', onError); } catch { /* optional Pixi event API */ }
       fn(value);
     };
     const onLoad = () => finish(resolve, base);
     const onError = (err) => finish(reject, err instanceof Error ? err : new Error('VFX texture decode failed'));
+    const onAbort = () => finish(reject, new Error('VFX load cancelled'));
     const timer = setTimeout(() => finish(reject, new Error('VFX texture decode timeout')), timeout);
     base.once?.('loaded', onLoad);
     base.once?.('error', onError);
+    signal?.addEventListener('abort', onAbort, { once: true });
   });
 };
+
+/** Validate a contiguous frame sequence before allocating any GPU resources. */
+export function atlasLayout(meta) {
+  const count = Number(meta?.frames);
+  const [w, h] = meta?.cell || [];
+  if (![count, w, h].every((v) => Number.isInteger(v) && v > 0)) throw new Error('Invalid VFX frame dimensions');
+  const pages = meta.pages || [{ file: 'atlas.webp', start: 0, frames: count, cols: meta.cols }];
+  let start = 0;
+  const frames = [];
+  const result = pages.map((page, index) => {
+    if (page.start !== start || !Number.isInteger(page.frames) || page.frames < 1 ||
+      !Number.isInteger(page.cols) || page.cols < 1 || !/^atlas(?:-\d+)?\.webp$/.test(page.file || '')) throw new Error('Invalid VFX page sequence');
+    const width = page.cols * w * 2, height = Math.ceil(page.frames / page.cols) * h;
+    if (page.size && (page.size[0] !== width || page.size[1] !== height)) throw new Error('Invalid VFX page size');
+    for (let i = 0; i < page.frames; i++) frames.push({ page: index, x: (i % page.cols) * w * 2, y: Math.floor(i / page.cols) * h });
+    start += page.frames;
+    return { ...page, width, height, texture: null, promise: null };
+  });
+  if (start !== count) throw new Error('Incomplete VFX page sequence');
+  return { pages: result, frames };
+}
 const FRAME_FRAG = `
 precision highp float;
 varying vec2 vTextureCoord;
@@ -98,41 +129,43 @@ function sharedProgram(P, key, vertex, fragment) {
 }
 
 function setAtlasFrame(mesh, entry, index) {
-  const count = Math.max(1, entry?.textures?.length || 1);
+  const count = entry.frames.length;
   const i = Math.max(0, Math.min(count - 1, Number(index) | 0));
-  const frame = entry?.textures?.[i]?.frame;
-  const base = entry?.base;
+  const frame = entry.frames[i];
+  const texture = entry.pages[frame.page].texture;
+  const base = texture?.baseTexture;
   const uniforms = mesh?.shader?.uniforms;
-  if (!frame || !base || !uniforms?.uFrame) return;
+  if (!base || !uniforms?.uFrame) return false;
   const baseW = Math.max(1, Number(base.width) || 1);
   const baseH = Math.max(1, Number(base.height) || 1);
-  const logicalW = Math.max(1, Number(entry.cellW) || frame.width / 2);
-  const logicalH = Math.max(1, Number(entry.cellH) || frame.height);
+  const logicalW = entry.cellW;
+  const logicalH = entry.cellH;
+  uniforms.uSampler = texture;
+  uniforms.uTexel[0] = 1 / baseW;
+  uniforms.uTexel[1] = 1 / baseH;
   uniforms.uFrame[0] = frame.x / baseW;
   uniforms.uFrame[1] = frame.y / baseH;
   uniforms.uFrame[2] = logicalW / baseW;
   uniforms.uFrame[3] = logicalH / baseH;
   mesh.vfxFrameIndex = i;
+  return true;
 }
 
 function createAtlasFrame(P, entry, index = 0) {
   if (!P?.MeshGeometry || !P?.Shader || !P?.Program || !P?.Mesh || !P?.Texture) return null;
   const w = Math.max(1, Number(entry.cellW) || 1);
   const h = Math.max(1, Number(entry.cellH) || 1);
-  const ox = Number(entry.originX) || w / 2;
-  const oy = Number(entry.originY) || h;
-  const baseW = Math.max(1, Number(entry.base?.width) || 1);
-  const baseH = Math.max(1, Number(entry.base?.height) || 1);
+  const ox = asFinite(entry.originX, w / 2);
+  const oy = asFinite(entry.originY, h);
   const geometry = new P.MeshGeometry(
     new Float32Array([-ox, -oy, w - ox, -oy, w - ox, h - oy, -ox, h - oy]),
     new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
     new Uint16Array([0, 1, 2, 0, 2, 3]),
   );
-  const atlas = entry.atlas || new P.Texture(entry.base);
   const shader = new P.Shader(sharedProgram(P, 'atlas-frame', MESH_VERT, FRAME_FRAG), {
-    uSampler: atlas,
+    uSampler: entry.pages[0].texture,
     uFrame: new Float32Array(4),
-    uTexel: new Float32Array([1 / baseW, 1 / baseH]),
+    uTexel: new Float32Array(2),
     uAlpha: 1,
   });
   const mesh = new P.Mesh(geometry, shader);
@@ -185,8 +218,9 @@ function curveValue(curve, t, fallback = 0) {
  * render/app.js only when the local extracted VFX directory is present.
  */
 export class OriginalVfxPlayer {
-  constructor({ P, layers, cam, view, root = DEFAULT_ROOT, cacheKey = null }) {
+  constructor({ P, layers, cam, view, renderer = null, root = DEFAULT_ROOT, cacheKey = null }) {
     this.P = P;
+    this.renderer = renderer;
     this.layers = layers;
     this.cam = cam;
     this.view = typeof view === 'function' ? view : () => null;
@@ -197,6 +231,18 @@ export class OriginalVfxPlayer {
     this.manifest = null;
     this.manifestPromise = null;
     this.entries = new Map();
+    this.entryPromises = new Map();
+    this.meshTextures = new Map();
+    this.meshTexturePromises = new Map();
+    this.ownedBases = new Set();
+    this.generation = 0;
+    this.loadController = new AbortController();
+    this.pageMisses = 0;
+    this.uploadChain = Promise.resolve();
+    this.preparedPrograms = new Set();
+    this.selectionKey = null;
+    this.uploadCount = 0;
+    this.maxUploadMs = 0;
     this.active = new Set();
     this.missing = new Set();
     this.requested = new Set();
@@ -213,43 +259,122 @@ export class OriginalVfxPlayer {
   _manifest() {
     if (this.manifest) return Promise.resolve(this.manifest);
     if (!this.manifestPromise) {
-      this.manifestPromise = fetch(this._assetUrl(`${this.root}/index.json`), { cache: 'no-store' })
+      const generation = this.generation;
+      const promise = fetch(this._assetUrl(`${this.root}/index.json`), { cache: 'no-store', signal: this.loadController.signal })
         .then((r) => { if (!r.ok) throw new Error(`original VFX manifest ${r.status}`); return r.json(); })
         .then((m) => {
-          // Empty Unity control nodes are kept in the manifest for coverage, but have no atlas to request.
-          this.manifest = new Map((Array.isArray(m) ? m : []).filter((x) => x && x.prefab && !x.empty).map((x) => [x.prefab, x]));
+          if (generation !== this.generation) return null;
+          // A blank capture can also mean a missing moving trail; keep it explicit in coverage.
+          this.manifest = new Map((Array.isArray(m) ? m : []).filter((x) => x && x.prefab).map((x) => [x.prefab, x]));
           return this.manifest;
         })
-        .catch((err) => { this.manifestPromise = null; console.warn('[vfx] original manifest unavailable', err?.message || err); return null; });
+        .catch((err) => {
+          if (generation === this.generation) { this.manifestPromise = null; console.warn('[vfx] original manifest unavailable', err?.message || err); }
+          return null;
+        });
+      this.manifestPromise = promise;
     }
     return this.manifestPromise;
   }
 
   async _entry(prefab) {
     if (this.entries.has(prefab)) return this.entries.get(prefab);
+    if (this.entryPromises.has(prefab)) return this.entryPromises.get(prefab);
+    const generation = this.generation;
+    const promise = this._loadEntry(prefab, generation);
+    this.entryPromises.set(prefab, promise);
+    try { return await promise; } finally {
+      if (this.entryPromises.get(prefab) === promise) this.entryPromises.delete(prefab);
+    }
+  }
+
+  async _loadEntry(prefab, generation) {
     const manifest = await this._manifest();
+    if (generation !== this.generation) return null;
     const meta = manifest?.get(prefab);
     if (!meta) { this.missing.add(prefab); return null; }
-    const atlasUrl = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/atlas.webp`);
+    if (meta.empty) { this.unresolved.add(prefab); return null; }
     // The extractor's atlas is a premultiplied-colour / coverage pair.  The reference player samples it with
     // nearest filtering and premultiplied blending; linear filtering smears the narrow sword/trail cells into the
     // black padding and is the reason the otherwise-correct 锏 trail looked muddy.
-    const base = this.P.BaseTexture.from(atlasUrl, { scaleMode: this.P.SCALE_MODES?.NEAREST });
-    await waitBaseTexture(base);
-    const cellW = Math.max(1, Math.floor(asFinite(meta.cell?.[0], base.width / Math.max(1, meta.cols || 1) / 2)));
-    const cellH = Math.max(1, Math.floor(asFinite(meta.cell?.[1], base.height / Math.max(1, Math.ceil(meta.frames / Math.max(1, meta.cols || 1))))));
-    const cols = Math.max(1, Math.floor(asFinite(meta.cols, Math.floor(base.width / (cellW * 2)))));
-    const frames = Math.max(1, Math.floor(asFinite(meta.frames, cols * Math.floor(base.height / cellH))));
-    const textures = [];
-    for (let i = 0; i < frames; i++) {
-      const sx = (i % cols) * cellW * 2;
-      const sy = Math.floor(i / cols) * cellH;
-      textures.push(new this.P.Texture(base, new this.P.Rectangle(sx, sy, cellW * 2, cellH)));
-    }
-    const atlas = new this.P.Texture(base);
-    const entry = { meta, base, atlas, textures, cellW, cellH, fps: Math.max(1, asFinite(meta.fps, 30)), originX: asFinite(meta.originPx?.[0], cellW / 2), originY: asFinite(meta.originPx?.[1], cellH) };
+    const { pages, frames } = atlasLayout(meta);
+    const [cellW, cellH] = meta.cell;
+    const entry = { prefab, generation, root: this.root, meta, pages, frames, cellW, cellH, fps: Math.max(1, asFinite(meta.fps, 30)), originX: asFinite(meta.originPx?.[0], cellW / 2), originY: asFinite(meta.originPx?.[1], cellH) };
+    await this._loadPage(entry, 0);
+    if (generation !== this.generation) return null;
     this.entries.set(prefab, entry);
     return entry;
+  }
+
+  _newBase(url) {
+    // Each player owns its resources. Destroying one field must not invalidate another field's cached texture.
+    const base = new this.P.BaseTexture(url, { scaleMode: this.P.SCALE_MODES?.NEAREST, mipmap: this.P.MIPMAP_MODES?.OFF });
+    this.ownedBases.add(base);
+    return base;
+  }
+
+  async _loadPage(entry, index) {
+    if (entry.generation !== this.generation) throw new Error('VFX load cancelled');
+    const page = entry.pages[index];
+    if (page.texture) return page.texture;
+    if (page.promise) return page.promise;
+    const base = this._newBase(this._assetUrl(`${entry.root}/${encodeURIComponent(entry.prefab)}/${page.file}`));
+    const promise = (async () => {
+      await waitBaseTexture(base, 4500, this.loadController.signal);
+      if (entry.generation !== this.generation) throw new Error('VFX load cancelled');
+      if (base.width !== page.width || base.height !== page.height) throw new Error('VFX atlas dimensions disagree with manifest');
+      page.texture = new this.P.Texture(base);
+      return page.texture;
+    })();
+    page.promise = promise;
+    try { return await promise; } catch (err) {
+      this.ownedBases.delete(base);
+      if (!base.destroyed) base.destroy();
+      throw err;
+    } finally { if (page.promise === promise) page.promise = null; }
+  }
+
+  _warmEntry(entry) {
+    if (entry.warmPromise) return entry.warmPromise;
+    const promise = (async () => {
+      await this._prepareProgram('atlas-frame', FRAME_FRAG, entry.generation);
+      for (let i = 0; i < entry.pages.length; i++) {
+        const texture = await this._loadPage(entry, i);
+        // Decode alone leaves texImage2D until the first hit. Upload one bounded page per yield during preparation.
+        await this._queueUpload(() => {
+          const begun = performance.now();
+          this.renderer?.texture?.bind(texture.baseTexture);
+          this.maxUploadMs = Math.max(this.maxUploadMs, performance.now() - begun);
+          this.uploadCount++;
+        }, entry.generation);
+      }
+      return entry;
+    })();
+    entry.warmPromise = promise;
+    promise.catch(() => { if (entry.warmPromise === promise) entry.warmPromise = null; });
+    return promise;
+  }
+
+  _queueUpload(action, generation) {
+    const promise = this.uploadChain.catch(() => {}).then(async () => {
+      await yieldUpload();
+      if (generation !== this.generation) throw new Error('VFX load cancelled');
+      return action();
+    });
+    this.uploadChain = promise;
+    return promise;
+  }
+
+  _prepareProgram(key, fragment, generation) {
+    if (!this.renderer?.shader?.bind) return Promise.resolve();
+    const contextKey = `${this.renderer.CONTEXT_UID}:${key}`;
+    if (this.preparedPrograms.has(contextKey)) return Promise.resolve();
+    return this._queueUpload(() => {
+      if (this.preparedPrograms.has(contextKey)) return;
+      const shader = new this.P.Shader(sharedProgram(this.P, key, MESH_VERT, fragment));
+      try { this.renderer.shader.bind(shader, true); this.preparedPrograms.add(contextKey); }
+      finally { shader.destroy(); }
+    }, generation);
   }
 
   /** Warm the atlas decode/cache before a battle event requests its first frame.
@@ -259,15 +384,21 @@ export class OriginalVfxPlayer {
    * needed by the current action so this does not turn into a full bundle load.
    */
   async preload(prefabs = []) {
+    const generation = this.generation;
     const names = [...new Set(Array.isArray(prefabs) ? prefabs.filter(Boolean).map(String) : [])];
     const results = [];
     // Decoding ten to twenty atlases in one Promise.all burst blocks the
     // compare page while Pixi uploads every texture. Two at a time keeps the
     // event loop responsive without changing which source slots are warmed.
     for (let i = 0; i < names.length; i += 2) {
-      const batch = await Promise.allSettled(names.slice(i, i + 2).map((prefab) => this._entry(prefab)));
+      if (generation !== this.generation) break;
+      const batch = await Promise.allSettled(names.slice(i, i + 2).map(async (prefab) => {
+        const entry = await this._entry(prefab);
+        if (entry) await this._warmEntry(entry);
+        return entry;
+      }));
       results.push(...batch);
-      for (let j = 0; j < batch.length; j++) if (batch[j].status === 'rejected') this.missing.add(names[i + j]);
+      if (generation === this.generation) for (let j = 0; j < batch.length; j++) if (batch[j].status === 'rejected') this.missing.add(names[i + j]);
       await yieldToBrowser();
     }
     return results;
@@ -275,9 +406,12 @@ export class OriginalVfxPlayer {
 
   /** Warm mesh-particle JSON and its source textures before a map-bound effect starts. */
   async preloadMesh(prefabs = []) {
+    const generation = this.generation;
     const names = [...new Set(Array.isArray(prefabs) ? prefabs.filter(Boolean).map(String) : [])];
+    if (names.length) await this._prepareProgram('mesh-dissolve', DISSOLVE_FRAG, generation);
     const results = await Promise.allSettled(names.map(async (prefab) => {
       const data = await this._meshEntry(prefab);
+      if (generation !== this.generation) return null;
       const files = new Set();
       for (const node of data.nodes || []) {
         for (const material of Array.isArray(node?.materials) ? node.materials : []) {
@@ -286,34 +420,55 @@ export class OriginalVfxPlayer {
           for (const tex of Object.values(material?.textures || {})) if (tex?.file) files.add(tex.file);
         }
       }
-      if (!this.meshTextures) this.meshTextures = new Map();
-      const textureResults = [];
-      for (const file of files) {
-        const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`);
-        let texture = this.meshTextures.get(url);
-        if (!texture) { texture = this.P.Texture.from(url); this.meshTextures.set(url, texture); }
-        const base = texture.baseTexture || texture;
-        textureResults.push(waitBaseTexture(base));
-        if (textureResults.length >= 2) { await Promise.allSettled(textureResults.splice(0)); await yieldToBrowser(); }
+      const list = [...files];
+      for (let i = 0; i < list.length; i += 2) {
+        if (generation !== this.generation) return null;
+        await Promise.all(list.slice(i, i + 2).map(async file => {
+          const texture = await this._meshTexture(this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(file)}`));
+          await this._queueUpload(() => this.renderer?.texture?.bind(texture.baseTexture), generation);
+        }));
+        await yieldToBrowser();
       }
-      if (textureResults.length) { await Promise.allSettled(textureResults); await yieldToBrowser(); }
       return data;
     }));
-    for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
+    if (generation === this.generation) for (let i = 0; i < results.length; i++) if (results[i].status === 'rejected') this.missing.add(names[i]);
     return results;
+  }
+
+  _meshTexture(url) {
+    if (this.meshTexturePromises.has(url)) return this.meshTexturePromises.get(url);
+    const cached = this.meshTextures.get(url);
+    if (cached) return Promise.resolve(cached);
+    const generation = this.generation;
+    const base = this._newBase(url);
+    const texture = new this.P.Texture(base);
+    this.meshTextures.set(url, texture);
+    const promise = waitBaseTexture(base, 4500, this.loadController.signal).then(() => {
+      if (generation !== this.generation) throw new Error('VFX load cancelled');
+      return texture;
+    }).catch(err => {
+      if (this.meshTextures.get(url) === texture) this.meshTextures.delete(url);
+      texture.destroy(false); this.ownedBases.delete(base);
+      if (!base.destroyed) base.destroy();
+      throw err;
+    }).finally(() => {
+      if (this.meshTexturePromises.get(url) === promise) this.meshTexturePromises.delete(url);
+    });
+    this.meshTexturePromises.set(url, promise);
+    return promise;
   }
 
   async _meshEntry(prefab) {
     if (!this.meshEntries) this.meshEntries = new Map();
     if (this.meshEntries.has(prefab)) return this.meshEntries.get(prefab);
-    const promise = fetch(this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`), { cache: 'no-store' })
+    const promise = fetch(this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/mesh.json`), { cache: 'no-store', signal: this.loadController.signal })
       .then((r) => { if (!r.ok) throw new Error(`mesh VFX ${r.status}`); return r.json(); })
       .then((data) => {
         if (!data || data.format !== 1 || !Array.isArray(data.nodes)) throw new Error('invalid mesh VFX export');
         return data;
       });
     this.meshEntries.set(prefab, promise);
-    try { return await promise; } catch (err) { this.meshEntries.delete(prefab); throw err; }
+    try { return await promise; } catch (err) { if (this.meshEntries.get(prefab) === promise) this.meshEntries.delete(prefab); throw err; }
   }
 
   /**
@@ -331,27 +486,16 @@ export class OriginalVfxPlayer {
     this._meshEntry(prefab).then(async (data) => {
       if (record.dead) return;
       record.data = data;
-      const parts = [];
+      const parts = record.parts;
       for (const node of data.nodes) {
+        if (record.dead) return;
         const raw = node?.mesh;
         const material = Array.isArray(node?.materials) ? node.materials.find((m) => m?.texture?.file) : null;
         if (!raw || !Array.isArray(raw.vertices) || !raw.vertices.length || !Array.isArray(raw.indices) || !raw.indices.length || !material) continue;
         const loadTexture = async (info) => {
-          if (!info?.file) return null;
+          if (!info?.file || record.dead) return null;
           const url = this._assetUrl(`${this.root}/${encodeURIComponent(prefab)}/textures/${encodeURIComponent(info.file)}`);
-          let texture = this.meshTextures?.get(url);
-          if (!texture) {
-            if (!this.meshTextures) this.meshTextures = new Map();
-            texture = this.P.Texture.from(url);
-            this.meshTextures.set(url, texture);
-            // Texture.from returns a Texture wrapper; the load lifecycle belongs
-            // to its BaseTexture. Waiting on the wrapper leaves mesh prefabs in
-            // a permanently pending state in Pixi 6, so the coverage report
-            // shows the prefab as requested but never loaded.
-            const base = texture.baseTexture || texture;
-            await waitBaseTexture(base);
-          }
-          return texture;
+          return this._meshTexture(url);
         };
         // The baked smoke texture is retained as an extraction fallback, but
         // when the source dissolve map is available use the source pair and
@@ -362,6 +506,7 @@ export class OriginalVfxPlayer {
         if (!texture) continue;
         const dissolveInfo = material.textures?.DissolveTex;
         const dissolveTexture = dissolveInfo ? await loadTexture(dissolveInfo) : null;
+        if (record.dead) return;
         const vtx = new Float32Array(raw.vertices.length * 2);
         const uv = new Float32Array(raw.vertices.length * 2);
         const IndexArray = raw.vertices.length > 65535 ? Uint32Array : Uint16Array;
@@ -409,11 +554,10 @@ export class OriginalVfxPlayer {
         geometry.getBuffer('aTextureCoord').update(uv);
         parts.push({ mesh, geometry, positions: vtx, uv, node, material, uniforms, colorAlpha: rgba[3] });
       }
-      if (record.dead) { for (const p of parts) p.mesh.destroy({ children: true }); return; }
-      record.parts = parts;
+      if (record.dead) return;
       record.ready = true;
       this.loaded.add(prefab);
-    }).catch((err) => { record.dead = true; this.missing.add(prefab); console.warn('[vfx] mesh prefab unavailable', prefab, err?.message || err); });
+    }).catch((err) => { if (!record.dead) { this.missing.add(prefab); this._remove(record); console.warn('[vfx] mesh prefab unavailable', prefab, err?.message || err); } });
     return true;
   }
 
@@ -427,19 +571,23 @@ export class OriginalVfxPlayer {
       offsetZ: Number(offsetZ) || 0 };
     this.active.add(record);
     this._entry(prefab).then((entry) => {
-      if (record.dead || !entry) return;
+      if (record.dead) return;
+      if (!entry) { this._remove(record); return; }
       record.entry = entry;
       record.ready = true;
       this.loaded.add(prefab);
       const sprite = createAtlasFrame(this.P, entry, 0);
-      if (!sprite) { record.dead = true; return; }
+      if (!sprite) { this._remove(record); return; }
       sprite.blendMode = this.P.BLEND_MODES?.NORMAL ?? 0;
       sprite.alpha = 1;
       sprite.visible = record.elapsed >= record.delay;
       this.layers.fxAdd.addChild(sprite);
       record.sprite = sprite;
+      this._warmEntry(entry).catch((err) => {
+        if (!record.dead) { this.missing.add(prefab); console.warn('[vfx] page unavailable', prefab, err?.message || err); }
+      });
       this._place(record);
-    }).catch((err) => { record.dead = true; console.warn('[vfx] original prefab unavailable', prefab, err?.message || err); });
+    }).catch((err) => { if (!record.dead) { this.missing.add(prefab); this._remove(record); console.warn('[vfx] original prefab unavailable', prefab, err?.message || err); } });
     return true;
   }
 
@@ -642,6 +790,7 @@ export class OriginalVfxPlayer {
     this.active.delete(record);
     try { record.sprite?.destroy({ children: true }); } catch { /* optional */ }
     try { record.graphics?.destroy({ children: true }); } catch { /* optional */ }
+    for (const part of record.parts || []) { try { part.mesh.destroy({ children: true }); } catch { /* optional */ } }
   }
 
   update(dt) {
@@ -733,11 +882,16 @@ export class OriginalVfxPlayer {
       const entry = record.entry;
       const playTime = record.elapsed - record.delay;
       const frame = Math.floor(playTime * entry.fps);
-      const duration = entry.textures.length / entry.fps;
+      const duration = entry.frames.length / entry.fps;
       const maxLife = record.life == null ? duration : Math.max(0, Number(record.life));
       if (!record.loop && playTime >= maxLife) { this._remove(record); continue; }
-      const index = record.loop ? frame % entry.textures.length : Math.min(frame, entry.textures.length - 1);
-      setAtlasFrame(record.sprite, entry, index);
+      const index = record.loop ? frame % entry.frames.length : Math.min(frame, entry.frames.length - 1);
+      if (!setAtlasFrame(record.sprite, entry, index)) {
+        record.sprite.visible = false;
+        this.pageMisses++;
+        this._loadPage(entry, entry.frames[index].page).catch(() => { if (!record.dead) this.missing.add(record.prefab); });
+        continue;
+      }
       this._place(record);
     }
   }
@@ -749,6 +903,37 @@ export class OriginalVfxPlayer {
     return { requested: [...this.requested].sort(), loaded: [...this.loaded].sort(), missing: [...this.missing].sort(), procedural: [...this.procedural].sort(), unresolved: [...this.unresolved].sort() };
   }
 
+  resourceStats() {
+    return { root: this.root, generation: this.generation, entries: this.entries.size, pending: this.entryPromises.size,
+      textures: this.ownedBases.size, decodedBytes: [...this.ownedBases].reduce((n, base) => n + base.width * base.height * 4, 0), pageMisses: this.pageMisses,
+      uploadCount: this.uploadCount, maxUploadMs: this.maxUploadMs };
+  }
+
+  selectPrefabs(prefabs = [], meshPrefabs = []) {
+    const names = values => [...new Set(values.filter(Boolean).map(String))].sort();
+    const key = JSON.stringify([this.root, names(prefabs), names(meshPrefabs)]);
+    if (this.selectionKey !== null && this.selectionKey !== key) this.destroy();
+    this.selectionKey = key;
+  }
+
+  setRoot(root) {
+    const next = String(root || DEFAULT_ROOT).replace(/\/$/, '');
+    if (next !== this.root) { this.destroy(); this.root = next; }
+  }
+
   clear() { for (const record of [...this.active]) this._remove(record); }
-  destroy() { this.clear(); this.entries.clear(); this.meshEntries?.clear(); this.meshTextures?.clear(); this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.unresolved.clear(); this.manifest = null; this.manifestPromise = null; }
+  destroy() {
+    this.generation++;
+    this.loadController.abort();
+    this.loadController = new AbortController();
+    this.uploadChain = Promise.resolve();
+    this.clear();
+    for (const entry of this.entries.values()) for (const page of entry.pages) page.texture?.destroy(false);
+    for (const texture of this.meshTextures?.values() || []) texture.destroy(false);
+    for (const base of this.ownedBases) if (!base.destroyed) base.destroy();
+    this.ownedBases.clear(); this.entries.clear(); this.entryPromises.clear(); this.meshEntries?.clear(); this.meshTextures.clear(); this.meshTexturePromises.clear();
+    this.missing.clear(); this.requested.clear(); this.loaded.clear(); this.procedural.clear(); this.unresolved.clear();
+    this.manifest = null; this.manifestPromise = null; this.pageMisses = 0;
+    this.selectionKey = null; this.uploadCount = 0; this.maxUploadMs = 0;
+  }
 }
