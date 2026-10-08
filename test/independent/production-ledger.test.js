@@ -37,9 +37,8 @@ test('every real ready forges exactly what the prep-end forecast said, and the f
 });
 
 test('ledger rows name their source, phase and the revision that wrote them; the whole game is kept', () => {
-  // a pilot game that buys an operator producing in battle (干员表 v3 has few of them)
-  // (干员特质 v4 reshuffled the pool: seed 4 is a game whose bot fields an operator that counts a battle event)
-  const game = playSeed({ seed: 1, route: 'defense', difficulty: 'NORMAL', roundLimit: 14 });
+  // Current roster seed 38 fields a surviving battle-end producer; verify its real battle reward is persisted.
+  const game = playSeed({ seed: 38, route: 'defense', difficulty: 'NORMAL', roundLimit: 14 });
   const rows = game.state.production;
   assert.ok(rows.length > 0);
   for (const row of rows) {

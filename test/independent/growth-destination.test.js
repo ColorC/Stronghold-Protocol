@@ -29,10 +29,12 @@ test('fixed-target capacity overflow is lost and never becomes a flexible hand r
   const r = grantEquipment(s, catalog, 'precision', 2, { origin: 'native', sourceUid: 'a' });
   assert.equal(r.lost, 2); assert.equal(s.inventory.length, 0);
 });
-test('a missing front target neither buffs the maker nor creates free stock', () => {
+test('a missing front target falls back to its living maker and never creates free stock', () => {
   const s = state();
   const r = grantEquipment(s, catalog, 'precision', 1, { origin: 'native', sourceUid: 'a', landOn: 'front' });
-  assert.equal(r.quantity, 0); assert.equal(s.inventory.length, 0); assert.equal(s.pieces[0].equipment.length, 0);
+  assert.equal(r.quantity, 1); assert.equal(r.worn, 'a');
+  assert.equal(s.inventory.length, 0); assert.deepEqual(s.pieces[0].equipment.map(x=>[x.id,x.quantity]),[['precision',1]]);
+  assert.equal(s.production[0].targetUid,'a');
 });
 test('a hand resource stays freely allocatable until the player equips it', () => {
   const s = state();

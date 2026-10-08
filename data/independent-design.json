@@ -39536,7 +39536,9 @@
       "independent:阿戈尔深潜锚钩",
       "independent:炎国点睛笔",
       "independent:爆破部署台",
-      "independent:便携式融毁教学仪"
+      "independent:便携式融毁教学仪",
+      "independent:突袭盟约",
+      "independent:反冲空降仓"
     ],
     "inventory": "20 tiles: one per item, stacks unlimited; gear needing a 21st tile is not stored (ledger lost); kept prizes take no tile",
     "badgeLanding": "self",

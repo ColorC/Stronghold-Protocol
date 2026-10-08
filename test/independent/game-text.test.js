@@ -16,7 +16,7 @@ const display = independentDisplayCatalog(data, catalog);
 const numbers = (s) => new Set((String(s || '').match(/\d+(?:\.\d+)?/g) || []).map(Number));
 /** Design numbers a text says otherwise on purpose: in words, or in the auto-attached note of the item it names. */
 const SAID_IN_WORDS = { 'chess_char_1_03_a:normal': [2], 'extra-procurement-quota': [1] };
-const SPEC_WORDING = ['该干员', '锻造', '放入装备库存', '一级', '己方主战斗', '本稿', '第一期', '沿用', '不设精锐版'];
+const SPEC_WORDING = ['锻造', '放入装备库存', '一级', '己方主战斗', '本稿', '第一期', '沿用', '不设精锐版'];
 
 function sameNumbers(key, design, written) {
   const have = numbers(written);
@@ -65,6 +65,17 @@ test('prizes and attachments: texts with the design numbers; the page shows them
   for (const t of [...Object.values(text.prizes).map((x) => x.text), ...Object.values(text.attachments).map((x) => x.text)]) {
     for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `「${w}」 in 「${t}」`);
   }
+});
+
+test('special readiness training names its field recipient, unlocked choices, and direct permanent destination', () => {
+  const entry = text.prizes['special-readiness-training'];
+  assert.ok(entry, 'special readiness training has player-facing text');
+  assert.match(entry.text, /选择一名场上干员/);
+  assert.match(entry.text, /当前科技已解锁的装备/);
+  assert.match(entry.text, /随机发现三项/);
+  assert.match(entry.text, /装备直接永久穿戴在该干员身上/);
+  assert.match(entry.text, /唯一效果不重复提供/);
+  assert.match(entry.text, /没有可选项时不提供此奖品/);
 });
 
 test('the display catalog carries the hand-written texts, the new name and no internal ids in names', () => {

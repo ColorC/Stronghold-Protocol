@@ -88,43 +88,45 @@ test('the compiled roster has 101 unique bodies and the approved tier/role struc
   assert.deepEqual(tally(sources, (op) => op.tier), EXPECTED_TIERS);
   assert.deepEqual(tally(sources, (op) => op.roster), EXPECTED_ROLES);
   for (const op of sources) {
-    assert.deepEqual(Object.keys(op.modeEffects || {}).sort(), ['elite', 'normal'], `${op.name} authors ordinary and elite rules`);
+    assert.deepEqual(Object.keys(op.effectDelivery || {}).sort(), ['elite', 'normal'], `${op.name} authors ordinary and elite source deliveries`);
     assert.ok(op.nativeTrait?.normal?.trim() && op.nativeTrait?.elite?.trim(), `${op.name} has ordinary and elite trait text`);
     assert.ok(!/白板|无(?:额外)?特质|没有(?:额外)?特质|凭自身技能作战|纯战斗/.test(`${op.nativeTrait.normal} ${op.nativeTrait.elite}`), `${op.name} is not a blank-trait placeholder`);
-    assert.ok(op.sourceRefs?.traitRevision || op.sourceRefs?.basis, `${op.name} has a design basis/source reference`);
+    assert.ok(op.sourceRefs?.traitRevision || op.sourceRefs?.basis || op.sourceRefs?.darkmoon19_2?.id || op.sourceRefs?.cards?.length, `${op.name} has a design basis/source reference`);
     for (const form of ['normal', 'elite']) {
-      assert.ok(Array.isArray(op.modeEffects[form].prep));
-      assert.ok(Array.isArray(op.modeEffects[form].combat));
-      assert.ok(op.modeEffects[form].prep.length + op.modeEffects[form].combat.length > 0, `${op.name} ${form} has a configured mode effect`);
+      assert.ok(Array.isArray(op.effectDelivery[form]) && op.effectDelivery[form].length > 0, `${op.name} ${form} has a configured source delivery`);
+      assert.ok(op.effectDelivery[form].every((entry)=>entry.implementation==='supported'),`${op.name} ${form} source deliveries are executable`);
       const registered = CATALOG.operators[form === 'elite' ? CATALOG.operators[op.chessId].eliteChessId : op.chessId].nativeTrait.effect;
+      assert.ok(Array.isArray(registered.prep));assert.ok(Array.isArray(registered.combat));
       assert.deepEqual(registered.unsupported, [], `${op.name} ${form} has no unsupported rules`);
     }
   }
   const highTier = sources.filter((op) => op.tier >= 5);
-  assert.equal(highTier.length, 32);
+  assert.equal(highTier.length, 33);
   for (const op of highTier) assert.ok(op.role?.trim() && !/定位待定|待补|暂无/.test(op.role), `${op.name} T${op.tier} has a concrete role rationale`);
 });
 
-test('each of the nine core supply gears has at least one active normal or elite producer', () => {
+test('each core supply gear has an active named source or an explicit special-training prize source', () => {
+  const training = new Set(DESIGN.rules.trainingGearIds || []);
   for (const name of PRODUCED_GEAR) {
     const gearId = `independent:${name}`;
     assert.ok(CATALOG.equipment[gearId], `${gearId} is registered`);
     const producers = ACTIVE_IDS.filter((id) => {
       const op = DESIGN.operators.find((candidate) => candidate.chessId === id);
-      return ['normal', 'elite'].some((form) => JSON.stringify(op.modeEffects[form]).includes(gearId));
+      return ['normal', 'elite'].some((form) => JSON.stringify(op.effectDelivery[form]).includes(gearId)||JSON.stringify(op.effectDelivery[form]).includes(name));
     });
-    assert.ok(producers.length > 0, `${gearId} has an active-roster producer`);
+    assert.ok(producers.length > 0 || training.has(gearId), `${gearId} must be sourced by a named active trait or special readiness training`);
   }
 });
 
-test('锡人 proxy covers the configured 32 tavern factions without changing native Colombia or inheritance identity', () => {
-  const tinmanId = ACTIVE_IDS.find((id) => DESIGN.operators.find((op) => op.chessId === id)?.name === '锡人');
-  assert.ok(tinmanId);
+test('retired Tinman keeps native Colombia identity while the current 101-member pool excludes its old ALL proxy', () => {
+  const tinmanId = DESIGN.operators.find((op) => op.name === '锡人')?.chessId;
+  assert.ok(tinmanId);assert.ok(!ACTIVE_SET.has(tinmanId),'Tinman is retained for old saves but is not in the active pool');
+  assert.equal(CATALOG.operators[tinmanId].recruitable,false);
   assert.equal(CATALOG.operators[tinmanId].tavernFactionProxy, 'ALL');
   assert.deepEqual(CATALOG.operators[tinmanId].nativeFactionTags, ['哥伦比亚']);
   const piece = { chessId: tinmanId, equipment: [] };
-  assert.equal(CATALOG.config.tavernFactions.length, 32);
-  assert.equal(tavernFactions(piece, CATALOG).length, 32);
+  assert.equal(CATALOG.config.factionIdentityEquipment,false);
+  assert.deepEqual(tavernFactions(piece, CATALOG), ['哥伦比亚'],'the old ALL proxy is inert under current faction-identity rules');
   assert.deepEqual(nativeFactions(piece, CATALOG), ['哥伦比亚']);
   assert.equal(matchesInheritancePermission({ donorFaction: '哥伦比亚' }, 'donor', piece, CATALOG), true);
   assert.equal(matchesInheritancePermission({ donorFaction: '拉特兰' }, 'donor', piece, CATALOG), false);
