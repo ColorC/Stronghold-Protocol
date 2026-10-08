@@ -134,7 +134,7 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
     if (!chess || !text) throw new Error(`${op.name}: missing canonical chess or game-text record`);
     const forms = op.modeEffects || {};
     const rules = ['normal', 'elite'].flatMap((form) => [...(forms[form]?.prep || []), ...(forms[form]?.combat || [])]);
-    const moments = (op.effectDelivery?.normal||[]).map(e=>[e.trigger,e.recipient,e.duration].filter(Boolean).join('→')).join('；') || [...new Set(rules.map((rule) => TRAIT_WHEN[rule.trigger]).filter(Boolean))].join('、');
+    const moments = (op.effectDelivery?.normal||[]).map(e=>[e.triggerLabel,e.recipientLabel,e.durationLabel].filter(Boolean).join('→')).join('；') || [...new Set(rules.map((rule) => TRAIT_WHEN[rule.trigger]).filter(Boolean))].join('、');
     rows.push({
       section: '干员', level: `科技${op.tier}`, name: op.name, role: functionalRole(op),
       faction: (op.nativeFactionTags || []).join('、'), reference: sourceCardSummary(op.sourceRefs),
