@@ -21,6 +21,7 @@ function normalizeAbsolute(input, label) {
 function isWithin(file, root) { return file === root || file.startsWith(`${root.replace(/\/$/, '')}/`); }
 export function parseArgs(argv) {
   const extra = [];
+  const nativeExtras = [];
   let worktreeRoot = DEFAULT_WORKTREE;
   let remoteReceipt = null;
   let sourceRevision = 'HEAD';
@@ -41,12 +42,18 @@ export function parseArgs(argv) {
       if (!sourceRevision) throw new Error('--source-revision 后必须提供native Git revision');
       continue;
     }
+    if (flag === '--native-extra') {
+      const value = argv[++i];
+      if (!value) throw new Error('--native-extra 后必须提供native Git commit/ref/tree ID');
+      nativeExtras.push(value);
+      continue;
+    }
     if (flag !== '--candidate' && flag !== '--publish') throw new Error(`未知参数：${flag}`);
     const value = argv[++i];
     if (!value) throw new Error(`${flag} 后必须提供绝对路径`);
     extra.push({ role: flag.slice(2), path: value, note: `${flag.slice(2)}路径存在时全量计入。` });
   }
-  return { extra, worktreeRoot, remoteReceipt, sourceRevision };
+  return { extra, nativeExtras, worktreeRoot, remoteReceipt, sourceRevision };
 }
 function runGit(root, args, options = {}) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024, ...options });
@@ -73,12 +80,42 @@ export function shouldScanIndependentWorktree(plan) { return Boolean(plan?.indep
 export function resolveNativeRevision(root, requestedRevision, gitRunner = runGit) {
   return gitRunner(root, ['rev-parse', '--verify', `${requestedRevision}^{commit}`]).trim();
 }
+export function resolveNativeObject(root, requestedObject, gitRunner = runGit) {
+  const resolved = gitRunner(root, ['rev-parse', '--verify', `${requestedObject}^{}`]).trim();
+  const type = gitRunner(root, ['cat-file', '-t', resolved]).trim();
+  if (!['commit', 'tree'].includes(type)) throw new Error(`native-extra只接受commit或tree对象：${requestedObject} (${type})`);
+  return { requested: requestedObject, resolved, type };
+}
+export function resolveNativeExtras(root, requestedObjects = [], gitRunner = runGit) {
+  return requestedObjects.map((requested) => resolveNativeObject(root, requested, gitRunner));
+}
 export function nativeChangedPaths(root, baseCommit, sourceRevision, gitRunner = runGit) {
   return gitRunner(root, changedPathArgs(baseCommit, sourceRevision)).split('\0').filter(Boolean);
 }
-export function nativeObjectIds(root, baseCommit, sourceRevision, gitRunner = runGit) {
-  return [...new Set(gitRunner(root, ['rev-list', '--objects', revisionDeltaRange(baseCommit, sourceRevision)])
+export function nativeObjectArgs(baseCommit, sourceRevision, extraRevisions = []) {
+  return ['rev-list', '--objects', sourceRevision, ...extraRevisions, '--not', baseCommit];
+}
+export function nativeObjectIds(root, baseCommit, sourceRevision, gitRunner = runGit, extraRevisions = []) {
+  return [...new Set(gitRunner(root, nativeObjectArgs(baseCommit, sourceRevision, extraRevisions))
     .trim().split(/\r?\n/).filter(Boolean).map((line) => line.trim().split(/\s+/, 1)[0]).filter(Boolean))];
+}
+export function nativeExtraObjectIds(sourceObjectIds, accountedObjectIds) {
+  const source = new Set(sourceObjectIds);
+  return [...new Set(accountedObjectIds)].filter((id) => !source.has(id));
+}
+export function nativeObjectDiskSizes(root, objectIds) {
+  if (!objectIds.length) return new Map();
+  const sized = execFileSync('git', ['-C', root, 'cat-file', '--batch-check=%(objectname) %(objectsize:disk)'], {
+    input: `${objectIds.join('\n')}\n`, encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024,
+  });
+  const result = new Map();
+  for (const line of sized.split(/\r?\n/).filter(Boolean)) {
+    const [objectId, diskSize] = line.trim().split(/\s+/);
+    if (!objectId || !/^\d+$/.test(diskSize ?? '')) throw new Error(`Git对象存储大小无法解析：${line}`);
+    result.set(objectId, Number(diskSize));
+  }
+  if (result.size !== objectIds.length) throw new Error(`Git对象存储大小条目不匹配：requested=${objectIds.length}, measured=${result.size}`);
+  return result;
 }
 function remoteReceiptAccounting(receipt) {
   if (!receipt || receipt.schema !== REMOTE_SCHEMA) throw new Error(`remote receipt schema 必须为 ${REMOTE_SCHEMA}`);
@@ -275,7 +312,13 @@ const gitStorage = {
   commonGitDir: null,
   deltaObjects: 0,
   deltaObjectDiskBytes: 0,
-  objectAccounting: 'native git rev-list BASE..sourceRevision object difference, sized by git cat-file --batch-check=%(objectname) %(objectsize:disk)',
+  nativeExtrasRequested: parsedArgs.nativeExtras,
+  nativeExtras: [],
+  nativeExtraObjects: 0,
+  nativeExtraObjectDiskBytes: 0,
+  accountedObjects: 0,
+  accountedObjectDiskBytes: 0,
+  objectAccounting: 'deduplicated native git rev-list sourceRevision extras... --not BASE objects, sized by git cat-file --batch-check=%(objectname) %(objectsize:disk); source paths remain BASE..sourceRevision only',
   worktreeMetadata: null,
   independentWorktreeMetadata: sourcePlan.independentWorktree,
   error: null,
@@ -284,19 +327,22 @@ try {
   gitStorage.commonGitDir = runGit(SOURCE_ROOT, ['rev-parse', '--path-format=absolute', '--git-common-dir']).trim();
   if (shouldScanIndependentWorktree(sourcePlan)) gitStorage.worktreeGitDir = runGit(WORKTREE, ['rev-parse', '--absolute-git-dir']).trim();
   else gitStorage.worktreeMetadata = { path: null, bytes: 0, files: 0, links: [], hardlinks: [], status: sourcePlan.worktreeAccounting };
-  const objectIds = nativeObjectIds(SOURCE_ROOT, BASE_COMMIT, git.commit);
-  if (objectIds.length) {
-    const sized = execFileSync('git', ['-C', SOURCE_ROOT, 'cat-file', '--batch-check=%(objectname) %(objectsize:disk)'], {
-      input: `${objectIds.join('\n')}\n`, encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024,
-    });
-    for (const line of sized.split(/\r?\n/).filter(Boolean)) {
-      const [, diskSize] = line.trim().split(/\s+/);
-      if (!/^\d+$/.test(diskSize ?? '')) throw new Error(`Git对象存储大小无法解析：${line}`);
-      gitStorage.deltaObjectDiskBytes += Number(diskSize);
-    }
+  const resolvedExtras = resolveNativeExtras(SOURCE_ROOT, parsedArgs.nativeExtras);
+  gitStorage.nativeExtras = resolvedExtras;
+  const sourceObjectIds = nativeObjectIds(SOURCE_ROOT, BASE_COMMIT, git.commit);
+  const objectIds = nativeObjectIds(SOURCE_ROOT, BASE_COMMIT, git.commit, runGit, resolvedExtras.map((entry) => entry.resolved));
+  const sourceObjectSet = new Set(sourceObjectIds);
+  const extraObjectIds = nativeExtraObjectIds(sourceObjectIds, objectIds);
+  const diskSizes = nativeObjectDiskSizes(SOURCE_ROOT, objectIds);
+  for (const [objectId, diskSize] of diskSizes) {
+    if (sourceObjectSet.has(objectId)) gitStorage.deltaObjectDiskBytes += diskSize;
+    else gitStorage.nativeExtraObjectDiskBytes += diskSize;
   }
-  gitStorage.deltaObjects = objectIds.length;
-  totalBytes += gitStorage.deltaObjectDiskBytes;
+  gitStorage.deltaObjects = sourceObjectIds.length;
+  gitStorage.nativeExtraObjects = extraObjectIds.length;
+  gitStorage.accountedObjects = objectIds.length;
+  gitStorage.accountedObjectDiskBytes = [...diskSizes.values()].reduce((sum, size) => sum + size, 0);
+  totalBytes += gitStorage.accountedObjectDiskBytes;
   filesObserved += objectIds.length;
   if (shouldScanIndependentWorktree(sourcePlan)) gitStorage.worktreeMetadata = scanGitMetadata(gitStorage.worktreeGitDir);
 } catch (error) {

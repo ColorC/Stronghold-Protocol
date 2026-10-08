@@ -32,7 +32,7 @@ const rulesRevision=reuseRules?git('rev-parse',option('--rules-revision')):revis
 if(reuseRules&&git('diff','--name-only',rulesRevision,revision,'--','data'))throw new Error('code-only release requires unchanged public rules between the two native Git revisions');
 const selected=['server','shared','public/independent.html','public/independent-replay.html','public/js/independent/replay.js','public/css/independent-recording.css','public/js/hostingBootstrap.js','public/js/hostingWait.js','public/js/ui/assetUrls.js','public/js/ui/fieldHost.js','public/js/ui/fallbackField.js','public/resonance.html','public/css/resonance.css','public/js/resonance','public/js/render','LICENSE'];
 if(args.includes('--resonance-capacity'))selected.push('tools/resonance/capacity.mjs','tools/resonance/archetype-balance.mjs','tools/resonance/balance-campaign.mjs');
-const referencePaths=['docs/resonance/reference','docs/resonance/design.md','docs/resonance/content-contract.md','docs/resonance/catalog.md'];
+const referencePaths=['docs/resonance/reference','docs/resonance/design.md','docs/resonance/content-contract.md','docs/resonance/catalog.md','docs/resonance/roster-worktable.json','docs/resonance/roster-worktable.md','docs/resonance/interface-contract.md'];
 if(git('status','--porcelain','--untracked-files=no','--',...selected,'data','package-lock.json'))throw new Error('selected release source must be committed');
 if(args.includes('--resonance-references')){
  if(git('status','--porcelain','--',...referencePaths))throw new Error('resonance reference archive source must be committed and clean');

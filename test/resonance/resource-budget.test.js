@@ -5,7 +5,8 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  changedPathArgs, nativeChangedPaths, nativeObjectIds, parseArgs, REMOTE_SCHEMA, remoteReceiptAccounting,
+  changedPathArgs, nativeChangedPaths, nativeExtraObjectIds, nativeObjectArgs, nativeObjectDiskSizes, nativeObjectIds, parseArgs, REMOTE_SCHEMA, remoteReceiptAccounting,
+  resolveNativeExtras, resolveNativeObject,
   resolveNativeRevision, resourceAuditPlan, revisionDeltaRange, shouldScanIndependentWorktree,
 } from '../../tools/resonance/resource-budget.mjs';
 
@@ -55,6 +56,65 @@ test('task revision selects native Git path and object delta ranges; default sta
   assert.equal(revisionDeltaRange('4ed1ad32ec10da15c23f9d7939dade603950759b', revision), `4ed1ad32ec10da15c23f9d7939dade603950759b..${revision}`);
   assert.deepEqual(changedPathArgs('4ed1ad32ec10da15c23f9d7939dade603950759b', revision),
     ['diff', '--name-only', '-z', '--no-renames', '4ed1ad32ec10da15c23f9d7939dade603950759b', revision]);
+});
+
+test('native extra merge-preview trees are counted once beside the source delta without widening source paths', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'resonance-budget-merge-preview-'));
+  const repo = path.join(root, 'repo');
+  const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', windowsHide: true }).trim();
+  try {
+    await mkdir(repo);
+    git('init', '-q', '-b', 'main');
+    await writeFile(path.join(repo, 'shared.txt'), 'shared content\n');
+    git('-c', 'user.name=Budget Test', '-c', 'user.email=budget@example.invalid', 'add', 'shared.txt');
+    git('-c', 'user.name=Budget Test', '-c', 'user.email=budget@example.invalid', 'commit', '-qm', 'baseline');
+    const base = git('rev-parse', 'HEAD');
+
+    await writeFile(path.join(repo, 'shared.txt'), 'source shared update\n');
+    await writeFile(path.join(repo, 'source.txt'), 'source-only content\n');
+    git('add', 'shared.txt', 'source.txt');
+    git('-c', 'user.name=Budget Test', '-c', 'user.email=budget@example.invalid', 'commit', '-qm', 'source side');
+    const source = git('rev-parse', 'HEAD');
+
+    git('checkout', '-qb', 'incoming', base);
+    await writeFile(path.join(repo, 'incoming.txt'), 'incoming-only content\n');
+    git('add', 'incoming.txt');
+    git('-c', 'user.name=Budget Test', '-c', 'user.email=budget@example.invalid', 'commit', '-qm', 'incoming side');
+    const incoming = git('rev-parse', 'HEAD');
+    git('-c', 'user.name=Budget Test', '-c', 'user.email=budget@example.invalid', 'tag', '-a', 'incoming-tag', 'incoming', '-m', 'incoming tag');
+    const previewTree = git('merge-tree', '--write-tree', source, incoming).split(/\r?\n/)[0];
+    assert.equal(git('cat-file', '-t', previewTree), 'tree');
+
+    const parsed = parseArgs(['--native-extra', previewTree, '--native-extra', 'incoming-tag']);
+    assert.deepEqual(parsed.nativeExtras, [previewTree, 'incoming-tag']);
+    const resolved = resolveNativeExtras(repo, parsed.nativeExtras);
+    assert.deepEqual(resolved.map(({ requested, resolved: object, type }) => ({ requested, resolved: object, type })), [
+      { requested: previewTree, resolved: previewTree, type: 'tree' },
+      { requested: 'incoming-tag', resolved: incoming, type: 'commit' },
+    ]);
+    assert.deepEqual(resolveNativeObject(repo, previewTree), { requested: previewTree, resolved: previewTree, type: 'tree' });
+
+    const sourceIds = nativeObjectIds(repo, base, source);
+    const combinedIds = nativeObjectIds(repo, base, source, undefined, resolved.map((entry) => entry.resolved));
+    const extraIds = nativeExtraObjectIds(sourceIds, combinedIds);
+    const sharedBlob = git('rev-parse', `${source}:shared.txt`);
+    const incomingBlob = git('rev-parse', `${incoming}:incoming.txt`);
+    assert.ok(sourceIds.includes(sharedBlob));
+    assert.ok(combinedIds.includes(sharedBlob));
+    assert.ok(!extraIds.includes(sharedBlob), 'shared reachable object is not charged twice');
+    assert.ok(extraIds.includes(previewTree), 'dangling merge preview tree contributes its native tree object');
+    assert.ok(extraIds.includes(incomingBlob), 'incoming-only blob is reachable through the preview tree');
+    assert.equal(new Set(combinedIds).size, combinedIds.length);
+    const diskSizes = nativeObjectDiskSizes(repo, combinedIds);
+    assert.equal(diskSizes.size, combinedIds.length);
+    assert.ok(diskSizes.get(previewTree) > 0);
+    assert.equal([...diskSizes.keys()].filter((id) => id === sharedBlob).length, 1);
+    assert.ok([...extraIds].reduce((sum, id) => sum + diskSizes.get(id), 0) > 0);
+    assert.deepEqual(nativeObjectArgs(base, source, [previewTree]), ['rev-list', '--objects', source, previewTree, '--not', base]);
+    assert.deepEqual(nativeChangedPaths(repo, base, source), ['shared.txt', 'source.txt']);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('canonical worktree root is never traversed or charged as a second full tree', () => {
