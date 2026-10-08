@@ -1,5 +1,6 @@
 import { grantEquipment, equipmentRecord } from './equipment.js';
-import { attachmentAccepted, tavernFactions } from '../../../shared/independentRules.js';
+import { tavernFactions } from '../../../shared/independentRules.js';
+import { drawTrainingChoices, trainingChoiceOptions, trainingChoiceTargets } from '../../../shared/independentTrainingChoice.js';
 
 const byId = (map, id) => map && typeof id === 'string' && Object.hasOwn(map, id) ? map[id] : null;
 const prizeIds = (catalog) => Object.keys(catalog?.prizes || {}).sort();
@@ -13,7 +14,7 @@ export function makePrizeOffer(state, catalog, tier = 'start', source = 'round',
       const targetTier = p.params?.tier === 'currentShopLevel' ? state.shop.level : Number(p.params?.tier);
       if (!Object.values(catalog.operators).some((op) => !op.elite && !op.isElite && op.tier === targetTier && state.pool?.[op.chessId]?.left > 0)) return false;
     }
-    if (p.mechanism === 'attachmentOffer' && !(state.pieces || []).some((piece) => piece.row !== null && piece.col !== null && Object.values(catalog.attachments || {}).some((x) => x.unique && attachmentAccepted(x, piece, catalog) && !piece.attachments.some((a) => a.id === x.id)))) return false;
+    if (p.mechanism === 'attachmentOffer' && trainingChoiceTargets(state, catalog).length === 0) return false;
     if (p.mechanism === 'conditionalGrantGear') {
       const ids = [...(state.inventory || []).map((x) => x.id), ...(state.pieces || []).flatMap((piece) => (piece.equipment || []).map((x) => x.id))];
       if (!ids.some((itemId) => p.params?.requiresAnyBadge?.includes(equipmentRecord(catalog, itemId)?.badgeId || itemId))) return false;
@@ -81,10 +82,11 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
     state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, rule.choices || 3), tier, source: 'prize' });
   } else if (rule.type === 'attachmentOffer') {
     const piece = state.pieces.find((x) => x.uid === selection.targetUid);
-    if (!piece || piece.row === null || piece.col === null) throw new Error('BAD_TARGET');
-    const choices = Object.values(catalog.attachments || {}).filter((x) => x.unique && !piece.attachments.some((a) => a.id === x.id) && attachmentAccepted(x, piece, catalog)).map((x) => x.id);
-    if (!choices.length) throw new Error('NO_ELIGIBLE_TARGET');
-    state.offers.push({ id: `o${state.nextUid++}`, type: 'attachment', choices: choices.slice(0, rule.choices || 3), targetUid: piece.uid, source: id });
+    const options = trainingChoiceOptions(state, catalog, piece);
+    if (!piece || !options.length) throw new Error('BAD_TARGET');
+    const draw = drawTrainingChoices(options, state.rngState, rule.choices || 3);
+    state.rngState = draw.rngState;
+    state.offers.push({ id: `o${state.nextUid++}`, type: 'attachment', choices: draw.choices, targetUid: piece.uid, source: id, trainingChoice: true });
   } else if (rule.type === 'activeFundTopUp') state.inventory.push({ uid: `i${state.nextUid++}`, id, quantity: 1, state: {} });
   else if (rule.type === 'futureShopEquipment') {
     state.playerEffects.push({ type: 'futureShopEquipment', id: rule.id, quantity: rule.quantity, currentUnclaimed: true, source: id });

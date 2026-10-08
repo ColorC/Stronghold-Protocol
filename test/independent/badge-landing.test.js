@@ -1,5 +1,5 @@
-// 徽章落点 (user 2026-10-06: 「徽章直接落点，装备进库存」): an operator's own badges go straight onto an operator, gear and
-// prizes still go to the stock.
+// Native badges land directly; ordinary untargeted gear and prizes stay in stock. A prize with an explicit training recipient
+// is tested in training-prize.test.js.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
@@ -12,7 +12,7 @@ const landing = (mode) => ({ ...base, config: { ...base.config, badgeLanding: mo
 const piece = (uid, chessId, row, col, extra = {}) => ({ uid, chessId, row, col, dir: 'RIGHT', equipment: [], attachments: [], nativeState: {}, ...extra });
 const stateWith = (pieces) => ({ round: 1, revision: 0, nextUid: 100, inventory: [], production: [], pieces });
 
-test('with landing on, a badge an operator makes is worn by it; gear and prizes still go to the stock', () => {
+test('native badges land directly while untargeted gear and ordinary prize badges go to stock', () => {
   const catalog = landing('self');
   const maker = piece('p1', 'chess_char_1_07_a', 10, 3);
   const state = stateWith([maker]);
@@ -52,16 +52,15 @@ test('front, adjacent and faction-lowest pick their operator, and fall back to t
 
 test('a trait rule names where its badges land (params.landOn)', () => {
   const catalog = landing('self');
-  const op = catalog.operators.chess_char_1_03_a; // 惊蛰: a native gain badge is directed to the front operator
-  const rules = op.nativeTrait.effect.prep.map((r) => ({ ...r, params: { ...r.params, landOn: 'front' } }));
-  const custom = { ...catalog, operators: { ...catalog.operators, chess_char_1_03_a: { ...op, nativeTrait: { ...op.nativeTrait, effect: { ...op.nativeTrait.effect, prep: rules } } } } };
-  const maker = piece('a', 'chess_char_1_03_a', 10, 3);
+  const id = 'badge_landing_fixture';
+  const op = { chessId: id, nativeTrait: { effect: { prep: [{ trigger: 'gain', behavior: 'grantEquipment', params: { landOn: 'front', outputs: [{ id: 'precision', normal: 1, elite: 1 }] } }], combat: [] } } };
+  const custom = { ...catalog, operators: { ...catalog.operators, [id]: op } };
+  const maker = piece('a', id, 10, 3);
   const front = piece('b', 'chess_char_1_06_a', 10, 4);
   const state = stateWith([maker, front]);
   const services = { catalog: custom, data: null, rng: () => 0, grantEquipment: (s, id, n, extra) => grantEquipment(s, custom, id, n, extra), recordProduction: () => {} };
   runNativeHook(state, 'gain', { piece: maker }, services);
   assert.deepEqual(front.equipment.map((x) => x.id), ['precision']);
   assert.equal(maker.equipment.length, 0);
-  // 惊蛰 also brings 炎国缚锁: gear goes to the stock, never onto anyone
-  assert.deepEqual(state.inventory.map((x) => x.id), ['independent:炎国缚锁']);
+  assert.equal(state.inventory.length, 0, 'the named badge lands on its explicit target');
 });

@@ -1,6 +1,5 @@
-// 2026-10-06: the shop sells operators only, and every piece of gear comes through operators. Every badge and every
-// wearable gear has an operator that names and produces it; used items (补给, 玩家设施) may come at random; prize gear
-// stays with 工程部特供 and 交接凭证 with their twelve operators. A trait that hands out a named item names that item.
+// The shop sells operators only. Wearable gear has a named active operator source or the explicit 专项战备授训 source;
+// consumable/player-facility items may come from random pools, and 交接凭证 stays with its named operators.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -9,6 +8,8 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getData } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { modeIdFor } from '../../shared/constants.js';
+import { darkmoonGrowthBadges, applyDarkmoonAHGrowth } from '../../server/modes/independent/darkmoonShop.js';
+import { grantEquipment, equipItem } from '../../server/modes/independent/equipment.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 const catalog = getCatalog(data);
@@ -46,7 +47,7 @@ test('the shop shows operators only, one more than the original at every level',
   }
 });
 
-test('every badge and every piece of wearable gear has an operator that produces it by name', () => {
+test('every assigned badge and wearable gear has a named operator source or the explicit training prize source', () => {
   const fixed = new Set(); const random = new Set();
   for (const op of Object.values(catalog.operators)) { const p = producedBy(op); p.fixed.forEach((x) => fixed.add(x)); p.random.forEach((x) => random.add(x)); }
   const missing = []; const randomOnly = [];
@@ -56,6 +57,8 @@ test('every badge and every piece of wearable gear has an operator that produces
     if (d.available === false || d.retired || d.unassigned || d.mechanism === 'disabled' || d.kind === '停用' || d.kind === 'prizeGear' || d.kind === 'permit') continue;
     const c = canonical(id);
     if (fixed.has(c)) continue;
+    if ((catalog.config.trainingGearIds || []).includes(id)) continue; // 专项战备授训 is an explicit permanent direct-equip source
+    if (['damage', 'growth-training-record'].includes(c)) continue; // dynamic source paths are verified below
     if (['补给', '玩家设施'].includes(d.kind) && random.has(c)) { randomOnly.push(d.newName || d.name); continue; }
     if (random.has(c) && /维式重锤/.test(d.newName || d.name)) continue; // 洛洛 brings one of the four hammers
     missing.push(`${d.newName || d.name} (${id})`);
@@ -66,8 +69,10 @@ test('every badge and every piece of wearable gear has an operator that produces
 
 test('a trait that hands out a named piece of gear names it in its text', () => {
   const wrong = [];
-  for (const op of Object.values(catalog.operators).filter((x) => !x.elite)) {
-    const said = text.operators[op.chessId].normal;
+  const activeIds = new Set(catalog.config.activeRosterIds || []);
+  for (const op of Object.values(catalog.operators).filter((x) => !x.elite && activeIds.has(x.chessId))) {
+    const said = text.operators[op.chessId]?.normal;
+    assert.equal(typeof said, 'string', `active operator game text exists: ${op.chessId}`);
     for (const r of op.nativeTrait.effect.prep.filter((x) => x.behavior === 'grantEquipment')) {
       for (const out of r.params.outputs || []) {
         const d = items[out.id];
@@ -77,4 +82,42 @@ test('a trait that hands out a named piece of gear names it in its text', () => 
     }
   }
   assert.deepEqual(wrong, []);
+});
+
+test('damage badge comes from the current caster shop-growth mapping, not a fabricated operator source', () => {
+  const caster = Object.values(catalog.operators).find((op) => !op.elite && op.source?.normalChess?.profession === 'CASTER');
+  assert.ok(caster);
+  const piece = { uid: 'dynamic-caster', chessId: caster.chessId, row: 10, col: 3, equipment: [], attachments: [] };
+  assert.deepEqual(darkmoonGrowthBadges(piece, catalog), ['precision', 'damage']);
+  const state = { round: 1, revision: 0, nextUid: 1, growthMode: 'badges', pieces: [piece], inventory: [], production: [] };
+  const services = { catalog, grantEquipment: (s, id, quantity, extra) => grantEquipment(s, catalog, id, quantity, extra) };
+  applyDarkmoonAHGrowth(state, catalog, piece, 0, 2, services, { sourceUid: piece.uid, landOn: 'self', targetUid: piece.uid, shopGrowth: true });
+  assert.equal(piece.equipment.find((x) => x.id === 'damage')?.quantity, 2);
+  assert.deepEqual(state.production.at(-1), { round: 1, revision: 1, id: 'damage', quantity: 2,
+    origin: 'native', sourceUid: piece.uid, worn: true, targetUid: piece.uid });
+});
+
+test('ordinary-attack badge stays available with its stat definition but is explicitly unassigned', () => {
+  const mastery = catalog.badges.mastery;
+  assert.ok(mastery);
+  assert.equal(mastery.unassigned, true);
+  assert.notEqual(mastery.available, false);
+  assert.equal(mastery.stat, 'normalAttackDamagePercent');
+  assert.equal(mastery.value, 0.01);
+  assert.ok(!(catalog.config.trainingGearIds || []).includes('mastery'));
+});
+
+test('levels-mode badge prizes create real growth records that permanently raise the chosen operator level', () => {
+  const op = Object.values(catalog.operators).find((x) => !x.elite);
+  const piece = { uid: 'level-target', chessId: op.chessId, row: 10, col: 3, equipment: [], attachments: [], growthLevel: 1 };
+  const state = { round: 1, revision: 0, nextUid: 1, growthMode: 'levels', pieces: [piece], inventory: [], production: [] };
+  grantEquipment(state, catalog, 'precision', 2, { origin: 'prize', phase: 'prize', prizeId: 'fixture-badge-prize' });
+  const record = state.inventory.find((x) => x.id === 'growth-training-record');
+  assert.equal(record?.quantity, 2);
+  assert.deepEqual(state.production.at(-1), { round: 1, revision: 1, id: 'growth-training-record', quantity: 2,
+    origin: 'prize', phase: 'prize', prizeId: 'fixture-badge-prize' });
+  const used = equipItem(state, catalog, record.uid, piece.uid, 1);
+  assert.equal(used.quantity, 1);
+  assert.equal(piece.growthLevel, 2);
+  assert.equal(record.quantity, 1);
 });

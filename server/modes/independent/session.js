@@ -14,6 +14,7 @@ import { shopCarryApplies } from './warbandPrep.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, applyDarkmoonAHGrowth } from './darkmoonShop.js';
 import { GROWTH_MODES, operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 import { reactiveBuyTargetSpec } from '../../../shared/independentEligibility.js';
+import { trainingChoiceOptions } from '../../../shared/independentTrainingChoice.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
 
@@ -558,10 +559,25 @@ export function applyAction(state, action, options = {}) {
           if(!offer.noMerge)for (const merged of maybeMergeOperator(work, catalog, op.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
           }
         } else if (offer.type === 'attachment') {
-          const piece = work.pieces.find((x) => x.uid === (action.targetUid || offer.targetUid)); if (!piece) throw new Error('BAD_TARGET');
-          const attachmentId = offer.choices[action.index]; const attachment = catalog.attachments?.[attachmentId];
-          if (!attachment || !attachmentAccepted(attachment, piece, catalog) || piece.attachments.some((x) => x.id === attachmentId)) throw new Error('UNIQUE_OR_INELIGIBLE');
-          piece.attachments.push({ id: attachmentId, state: {} }); work.offers.splice(work.offers.indexOf(offer), 1);
+          const targetUid = offer.trainingChoice ? offer.targetUid : (action.targetUid || offer.targetUid);
+          const piece = work.pieces.find((x) => x.uid === targetUid);
+          if (!piece || (offer.trainingChoice && action.targetUid && action.targetUid !== offer.targetUid)) throw new Error('BAD_TARGET');
+          const attachmentId = offer.choices[action.index];
+          if (offer.trainingChoice) {
+            if (!trainingChoiceOptions(work, catalog, piece).includes(attachmentId)) throw new Error('UNIQUE_OR_INELIGIBLE');
+            const attachment = catalog.attachments?.[attachmentId];
+            if (attachment) piece.attachments.push({ id: attachmentId, state: {} });
+            else {
+              const gear = equipmentRecord(catalog, attachmentId);
+              if (!gear || !['功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(gear.kind)) throw new Error('UNIQUE_OR_INELIGIBLE');
+              grantEquipment(work, catalog, attachmentId, 1, { origin: 'prize', phase: 'prize', prizeId: offer.source, targetUid: piece.uid, landOn: `uid:${piece.uid}` });
+            }
+          } else {
+            const attachment = catalog.attachments?.[attachmentId];
+            if (!attachment || !attachmentAccepted(attachment, piece, catalog) || piece.attachments.some((x) => x.id === attachmentId)) throw new Error('UNIQUE_OR_INELIGIBLE');
+            piece.attachments.push({ id: attachmentId, state: {} });
+          }
+          work.offers.splice(work.offers.indexOf(offer), 1);
         }
       }
       if (!work.offers.some((x) => x.type === 'prize')) work.phase = 'prep';
