@@ -40,6 +40,8 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   assert.equal(packet.meta.sessionId, sessionId); assert.equal(packet.events.length, 4);
   assert.equal(packet.events[0].kind, 'rrweb'); assert.equal(packet.events[1].p.rect.x, 20);
   assert.equal(packet.events[2].p.canvasFrame.length, canvasFrame.length);
+  const metaOnly = await fetch(`${base}/${created.id}?meta=1`).then((response) => response.json());
+  assert.equal(metaOnly.ok, true); assert.equal(metaOnly.meta.sessionId, sessionId); assert.equal('events' in metaOnly, false);
   const jsonl = await readFile(path.join(records, created.id, 'events.jsonl'), 'utf8');
   assert.equal(jsonl.trim().split('\n').length, 4);
   const mediaHeaders = { 'content-type': 'application/octet-stream', 'x-media-started-at': '1700000000000', 'x-media-time-ms': '1000' };

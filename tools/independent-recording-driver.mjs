@@ -70,6 +70,13 @@ async function readRecording() {
     if (!r.ok) return null; return r.json();
   }, recordingId);
 }
+async function readRecordingMeta() {
+  if (!recordingId) return null;
+  return page.evaluate(async (id) => {
+    const r = await fetch(`/independent/api/recordings/${encodeURIComponent(id)}?meta=1`, { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) return null; return r.json();
+  }, recordingId);
+}
 async function verifyNarratedReplay(recording) {
   const meta = recording?.meta;
   const cue = (recording?.events || []).find((event) => event.kind === 'caption' && event.p?.key === 'first-native-mechanic');
@@ -335,15 +342,20 @@ async function buyOne(state, { triplesOnly = false } = {}) {
     if (card.position === 'RANGED') out.ranged += 1;
     return out;
   }, { medic: 0, melee: 0, ranged: 0 });
+  const hasAttacker = roster.some((p) => {
+    const card = chessCatalog[p.chessId] || {};
+    return card.profession && card.profession !== 'MEDIC';
+  });
   viable.sort((a, b) => {
     const ca = counts.get(a.s.id) || 0, cb = counts.get(b.s.id) || 0;
     const score = ({ s }, duplicateCount) => {
       const card = chessCatalog[s.id] || {};
       let value = 0;
-      if (!roleCounts.medic && card.profession === 'MEDIC') value += 100;
+      if (!hasAttacker && card.profession && card.profession !== 'MEDIC') value += 120;
+      if (!roleCounts.medic && card.profession === 'MEDIC') value += hasAttacker ? 35 : -25;
       if (roleCounts.melee < 2 && card.position === 'MELEE') value += 60;
       if (roleCounts.ranged < 2 && card.position === 'RANGED') value += 50;
-      if (roster.length < 4 && duplicateCount === 0) value += 24;
+      if (roster.length < 4 && duplicateCount === 0) value += card.profession === 'MEDIC' ? 8 : 24;
       if (roster.length >= 4 && duplicateCount === 2) value += 40;
       const currentTier = Number(state.shop?.level) || 1;
       if (currentTier >= 4 && Number(card.tier) >= 4) value += 30;
@@ -536,7 +548,25 @@ async function stopRecording() {
   let attempts = 0;
   while (Date.now() < stopDeadline) {
     const panelText = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => '');
-    if (/录制已结束/.test(panelText)) { report.recordingStopAttempts = attempts; delete report.recordingStopError; return; }
+    if (/录制已结束/.test(panelText)) {
+      report.recordingStopAttempts = attempts;
+      const finalizeStartedAt = Date.now(); let packet = null;
+      while (Date.now() < stopDeadline) {
+        packet = await readRecordingMeta().catch(() => null);
+        const meta = packet?.meta; const segments = (meta?.mediaSegments || []).filter((segment) => Number.isInteger(segment.index));
+        const mediaReady = !meta?.mediaBytes || (segments.length > 0 && segments.every((segment) => segment.playbackReady && Number(segment.playbackBytes) > 0));
+        if (meta?.endedAt && mediaReady) {
+          report.recordingFinalizeWaitMs = Date.now() - finalizeStartedAt;
+          report.recordingFinalizeMeta = { endedAt: meta.endedAt, mediaLastTimeMs: meta.mediaLastTimeMs || 0, mediaPlaybackReady: !!meta.mediaPlaybackReady, mediaSegments: segments };
+          delete report.recordingStopError; return;
+        }
+        await pause(1000);
+      }
+      report.recordingStopAttempts = attempts;
+      report.recordingFinalizeWaitMs = Date.now() - finalizeStartedAt;
+      report.recordingStopError = `录制结束后媒体未在限时内完成，meta=${JSON.stringify(packet?.meta ? { endedAt: packet.meta.endedAt, mediaBytes: packet.meta.mediaBytes, mediaSegments: packet.meta.mediaSegments } : null)}`;
+      return;
+    }
     const button = await page.$('.ix-recording button');
     const available = button && await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled);
     if (!available) { await pause(1000); continue; }
@@ -718,11 +748,13 @@ try {
     const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
     const ordinary = (state.pieces || []).find((p) => !p.elite && Number.isInteger(p.row));
     if (ordinary && !report.references?.some((x) => x.kind === 'ordinary') && !report.referenceAttempts?.ordinary) {
-      if (await inspectReferenceCard(ordinary, 'ordinary')) { idle = 0; continue; }
+      if (await inspectReferenceCard(ordinary, 'ordinary')) { idle = 0; sameRevisionSince = Date.now(); continue; }
+      sameRevisionSince = Date.now();
     }
     const elite = (state.pieces || []).find((p) => p.elite && Number.isInteger(p.row));
     if (elite && !report.references?.some((x) => x.kind === 'elite') && !report.referenceAttempts?.elite) {
-      if (await inspectReferenceCard(elite, 'elite')) { idle = 0; continue; }
+      if (await inspectReferenceCard(elite, 'elite')) { idle = 0; sameRevisionSince = Date.now(); continue; }
+      sameRevisionSince = Date.now();
     }
     const nonTemporary = (state.pieces || []).filter((p) => !p.temp).length;
     const desired = Math.min(8, Math.max(1, nonTemporary));

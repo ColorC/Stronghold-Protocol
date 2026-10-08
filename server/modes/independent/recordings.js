@@ -172,7 +172,9 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
           return json(res, 200, { ok: true, endedAt: meta.endedAt, mediaPlaybackReady: !!meta.mediaPlaybackReady }), true;
       }
       if (action === 'read' && req.method === 'GET') {
-        const meta = await loadMeta(id); const lines = (await readFile(eventsFile(id), 'utf8')).split(/\r?\n/).filter(Boolean);
+        const meta = await loadMeta(id);
+        if (new URL(req.url, 'http://localhost').searchParams.get('meta') === '1') return json(res, 200, { ok: true, meta }), true;
+        const lines = (await readFile(eventsFile(id), 'utf8')).split(/\r?\n/).filter(Boolean);
         // Actual canvas pixels come from native media. Replaying the redundant
         // WebGL command stream adds texture copies and can stall a long recording.
         const events=lines.map(line=>JSON.parse(line)).filter(e=>!(meta.mediaBytes&&e.kind==='rrweb'&&e.p?.type===3&&e.p?.data?.source===9));
