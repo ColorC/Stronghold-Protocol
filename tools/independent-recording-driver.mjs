@@ -9,6 +9,7 @@ import http from 'node:http';
 import net from 'node:net';
 import { createReadStream } from 'node:fs';
 import { startServer } from '../server/index.js';
+import { hasDamageDealer, upgradeReserve } from './independent-recording-strategy.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const chessCatalog = JSON.parse(await fs.readFile(path.join(repo, 'data/chess.json'), 'utf8'));
@@ -21,7 +22,8 @@ const processStartedAt = Date.now();
 const defaultHardLimitMs = process.env.SP_RECORD_DRIVER_PREP_ONLY === '1' ? 3 * 60 * 1000 : 30 * 60 * 1000;
 const requestedHardLimitMs = Number(process.env.SP_RECORD_DRIVER_HARD_TIMEOUT_MS || defaultHardLimitMs);
 const hardLimitMs = Number.isFinite(requestedHardLimitMs) && requestedHardLimitMs > 0
-  ? Math.max(60 * 1000, Math.min(60 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
+  ? Math.max(60 * 1000, Math.min(100 * 60 * 1000, requestedHardLimitMs)) : defaultHardLimitMs;
+const growthMode = process.env.SP_RECORD_DRIVER_GROWTH_MODE === 'badges' ? 'badges' : 'levels';
 const maxRounds = Math.max(1, Math.min(14, Number(process.env.SP_RECORD_DRIVER_MAX_ROUNDS || 14)));
 const seed = Number.isSafeInteger(Number(process.env.SP_RECORD_DRIVER_SEED))
   ? Math.trunc(Number(process.env.SP_RECORD_DRIVER_SEED)) : Math.floor(Math.random() * 2 ** 31);
@@ -30,7 +32,8 @@ const require = createRequire(path.join(repo, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const { mkdir, writeFile } = fs;
 const report = {
-  seed, maxRounds, startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
+  requestedSeed: process.env.SP_RECORD_DRIVER_SEED ? seed : null, maxRounds, growthModeRequested: growthMode,
+  startedAt: new Date(processStartedAt).toISOString(), hardLimitMs, baseCommit: process.env.SP_RECORD_DRIVER_BASE_COMMIT || null,
   actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
@@ -332,7 +335,8 @@ async function equipVisibleItem(state) {
 async function buyOne(state, { triplesOnly = false } = {}) {
   const deployed = (state.pieces || []).filter((p) => Number.isInteger(p.row)).length;
   const roster = (state.pieces || []).filter((p) => !p.temp);
-  const reserve = roster.length >= 4 && deployed > 0 && Number(state.shop?.level) < 6 ? Number(state.shop?.upgradePrice || 0) + 3 : 0;
+  const reserve = upgradeReserve({ roster: roster.length, deployed, funds: state.funds,
+    upgradePrice: state.shop?.upgradePrice, level: state.shop?.level });
   const counts = new Map(); for (const p of state.pieces || []) counts.set(p.chessId, (counts.get(p.chessId) || 0) + 1);
   const viable = (state.shop?.slots || []).map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess' && !s.sold && s.id && Number(s.price) <= Number(state.funds) - reserve && (!triplesOnly || counts.get(s.id) === 2));
   const roleCounts = roster.reduce((out, p) => {
@@ -342,16 +346,13 @@ async function buyOne(state, { triplesOnly = false } = {}) {
     if (card.position === 'RANGED') out.ranged += 1;
     return out;
   }, { medic: 0, melee: 0, ranged: 0 });
-  const hasAttacker = roster.some((p) => {
-    const card = chessCatalog[p.chessId] || {};
-    return card.profession && card.profession !== 'MEDIC';
-  });
+  const hasAttacker = hasDamageDealer(roster, chessCatalog);
   viable.sort((a, b) => {
     const ca = counts.get(a.s.id) || 0, cb = counts.get(b.s.id) || 0;
     const score = ({ s }, duplicateCount) => {
       const card = chessCatalog[s.id] || {};
       let value = 0;
-      if (!hasAttacker && card.profession && card.profession !== 'MEDIC') value += 120;
+      if (!hasAttacker && hasDamageDealer([{ chessId: s.id }], chessCatalog)) value += 120;
       if (!roleCounts.medic && card.profession === 'MEDIC') value += hasAttacker ? 35 : -25;
       if (roleCounts.melee < 2 && card.position === 'MELEE') value += 60;
       if (roleCounts.ranged < 2 && card.position === 'RANGED') value += 50;
@@ -430,7 +431,9 @@ async function sellForHighTierReplacement(state, replacement) {
   await pause(350); return true;
 }
 async function maybeUpgrade(state) {
-  if ((state.pieces || []).filter((p) => !p.temp).length < 4 || state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
+  const roster = (state.pieces || []).filter((p) => !p.temp).length;
+  const deployed = (state.pieces || []).filter((p) => !p.temp && Number.isInteger(p.row)).length;
+  if (roster < 8 || deployed < 6 || state.shop?.level >= 6 || state.funds < Number(state.shop?.upgradePrice) + 3) return false;
   const button = await page.$('[data-testid="ix-upgrade"]'); if (!button) return false;
   const before = state.revision; await button.click(); await pause(200); await button.click();
   try { await waitRevision(before); } catch { return false; }
@@ -530,6 +533,7 @@ async function waitBattleResult(round) {
     await page.waitForSelector('[data-testid="ix-result-ok"]', { timeout: 30000 });
   }
   const summary = await page.$eval('[data-testid="ix-result-ok"]', (e) => ({ button: e.innerText.trim(), title: e.closest('[role="dialog"]')?.innerText?.slice(0, 1000) || document.querySelector('#app')?.innerText?.slice(-1200) || '' }));
+  if (summary.button === '查看结算') { report.terminalReached = true; report.terminalRound = round; }
   await screenshot(`round-${round}-result`); report.rounds.push({ round, result: summary });
   await page.click('[data-testid="ix-result-ok"]'); await pause(500);
   if (summary.button === '查看结算') { await screenshot('terminal-result'); }
@@ -544,7 +548,7 @@ async function stopRecording() {
       buttonStyle: style(button), centerHit: at ? { tag: at.tagName, className: typeof at.className === 'string' ? at.className : '', text: (at.innerText || '').slice(0, 120) } : null };
   });
   await writeFile(path.join(output, 'recording-control-diagnostic.json'), JSON.stringify(report.recordingControlBeforeStop, null, 2));
-  const stopDeadline = Math.min(Date.now() + 6 * 60 * 1000, processStartedAt + hardLimitMs);
+  const stopDeadline = Date.now() + 6 * 60 * 1000;
   let attempts = 0;
   while (Date.now() < stopDeadline) {
     const panelText = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => '');
@@ -656,6 +660,13 @@ try {
         action: body.action ? { type: body.action.type, uid: body.action.uid, targetUid: body.action.targetUid, row: body.action.row, col: body.action.col, dir: body.action.dir } : null };
       pendingActionRequests.set(request, entry); (report.uiActionRequests ||= []).push(entry);
     }
+    if (request.method() === 'POST' && /\/independent\/api\/sessions\/?$/.test(pathname)) {
+      try {
+        const body = JSON.parse(request.postData() || '{}');
+        report.sessionCreateRequest = { seed: body.seed, growthMode: body.growthMode, roundLimit: body.roundLimit };
+        report.actualSeed = body.seed;
+      } catch { report.sessionCreateRequest = { unreadable: true }; }
+    }
     if (pathname === '/favicon.ico') void request.respond({ status: 204, body: '' }).catch(() => {});
     else void request.continue().catch(() => {});
   });
@@ -675,7 +686,7 @@ try {
     if (response.status() >= 400) report.errors.push(`response ${response.status()} ${response.url()}`);
   });
   page.on('requestfailed', (request) => report.errors.push(`request failed ${request.url()}: ${request.failure()?.errorText}`));
-  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); void browser?.close().catch(() => {}); }, Math.max(0, processStartedAt + hardLimitMs - Date.now()));
+  hardTimer = setTimeout(() => { report.hardTimeout = true; report.hardTimeoutAt = new Date().toISOString(); }, Math.max(0, processStartedAt + hardLimitMs - Date.now()));
   await page.goto(`${origin}/independent.html?record=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.ix-start__modes .ix-mode', { timeout: 60000 });
   // Chrome can reset an about:blank viewport during navigation; size the real game before session creation so
@@ -684,8 +695,12 @@ try {
   const growthOptions = await page.$$('.ix-growth-mode button[role="radio"]');
   for (const option of growthOptions) {
     const label = await option.evaluate((e) => (e.innerText || '').trim());
-    if (label.includes('徽章成长') && await option.evaluate((e) => e.getAttribute('aria-checked') !== 'true')) { await option.click(); break; }
+    const targetLabel = growthMode === 'badges' ? '徽章成长' : '等级成长';
+    if (label.includes(targetLabel) && await option.evaluate((e) => e.getAttribute('aria-checked') !== 'true')) { await option.click(); break; }
   }
+  const seedInput = await page.$('.ix-seed input');
+  if (!seedInput) throw new Error('开始页没有找到可见的对局编号输入框，无法记录实际种子');
+  await seedInput.click(); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control'); await seedInput.type(String(seed));
   await clickText('.ix-start__modes .ix-mode', (s) => s.includes('十四轮'));
   await page.waitForSelector('[data-testid="ix-game"]', { timeout: 60000 });
   await page.waitForFunction(() => !document.querySelector('.gm__loading') && globalThis.__SP_VIEW__, { timeout: 90000 });
@@ -737,7 +752,7 @@ try {
       await writeFile(path.join(output, 'stalled-preparation-diagnostic.json'), JSON.stringify(report.stalledPreparation, null, 2));
       throw new Error(`同一准备阶段 revision ${state.revision} 超过一分钟没有可见动作推进`);
     }
-    if (state.phase === 'finished') { await screenshot('terminal-finished'); break; }
+    if (state.phase === 'finished') { report.terminalReached = true; report.terminalRound = state.round; await screenshot('terminal-finished'); break; }
     if (await page.$('.ix-offer[role="dialog"]')) {
       const done = await resolveOffer(Number(state.round) || roundsDriven + 1);
       if (!done) throw new Error(`可见选择面板无法自动完成：${(await visibleText('.ix-offer')).join(' | ')}`);
@@ -819,7 +834,8 @@ try {
     await pause(500); idle++;
     if (idle > 6) throw new Error(`无法推进整备阶段，当前提示：${(await visibleText('[data-testid="ready-why"]')).join(' ')}`);
   }
-  if (Date.now() - processStartedAt >= hardLimitMs) throw new Error(`对局驾驶达到${Math.round(hardLimitMs / 60000)}分钟执行时限`);
+  if (Date.now() - processStartedAt >= hardLimitMs && !report.terminalReached) throw new Error(`对局驾驶达到${Math.round(hardLimitMs / 60000)}分钟执行时限；保留浏览器供失败路径停止录制并刷新媒体`);
+  if (!report.terminalReached && !report.prepDiagnosticComplete) throw new Error(`驾驶退出时尚未到达真实结算页，rounds=${roundsDriven}`);
   await stopRecording(); await pause(1000);
   report.roundsDriven = roundsDriven; report.endedAt = new Date().toISOString();
   const recording = await readRecording();
