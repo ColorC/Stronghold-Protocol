@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html } from '../ui/components.js';
 import { api } from './api.js';
 import { drawRecordingCanvasFrame, recordingCanvasLayout } from './recordingCanvas.js';
+import { captureRecordingMediaFrame, startRecordingMediaAtFirstCapture } from './recordingMediaClock.js';
 
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
@@ -25,11 +26,14 @@ export function RecordingControls({ sessionId }) {
     let active = true; let timer;
     const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
       mediaSeq: 0, mediaStartedAt: 0, mediaLastTimeMs: 0, mediaCaptureStoppedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false,
-      mediaBoundView: null, mediaViewOff: null, lastCompositeAt: 0, hasPaintedFrame: false };
+      mediaBoundView: null, mediaViewOff: null, lastCompositeAt: 0, hasPaintedFrame: false, mediaRecorderStarted: false,
+      mediaStartCancelled: false, firstNativeFrameAt: 0, firstCaptureAt: 0, actualRecorderStartedAt: 0, mediaStartError: null };
     state.captureFrames = 0; state.lastCaptureAt = 0; state.nativeFrameCopies = 0; state.lastNativeFrameAt = 0; state.lastMediaAckAt = 0; state.lastMediaAckSeq = 0;
     globalThis.__SP_RECORDING_STATUS__ = () => ({ eventSeq: state.seq, queuedEvents: state.queue.length, pushingEvents: state.pushing,
       mediaSeq: state.mediaSeq, queuedMedia: state.mediaPending.length, pushingMedia: state.mediaPushing, mediaError: state.mediaError,
       recorderState: state.mediaRecorder?.state || null, mediaStartedAt: state.mediaStartedAt || null,
+      firstNativeFrameAt: state.firstNativeFrameAt || null, firstCaptureAt: state.firstCaptureAt || null,
+      actualRecorderStartedAt: state.actualRecorderStartedAt || null, mediaStartError: state.mediaStartError,
       mediaLastTimeMs: state.mediaLastTimeMs, mediaCaptureStoppedAt: state.mediaCaptureStoppedAt || null,
       captureFrames: state.captureFrames, lastCaptureAt: state.lastCaptureAt || null,
       nativeFrameCopies: state.nativeFrameCopies, lastNativeFrameAt: state.lastNativeFrameAt || null,
@@ -127,7 +131,8 @@ export function RecordingControls({ sessionId }) {
           state.mediaViewOff?.();
           state.mediaBoundView = view;
           state.mediaViewOff = view.on('framePainted', () => {
-            if (!state.mediaRecorder || state.stopped || state.mediaRecorder.state === 'inactive') return;
+            if (!state.mediaRecorder || state.stopped || state.mediaStartCancelled
+              || (state.mediaRecorderStarted && state.mediaRecorder.state === 'inactive')) return;
             const now = performance.now();
             if (now - state.lastCompositeAt < 1000 / 24) return;
             try {
@@ -135,6 +140,8 @@ export function RecordingControls({ sessionId }) {
               const snapshot = state.frameCacheContext.getImageData(0, 0, state.frameCache.width, state.frameCache.height);
               state.frameCacheContext.putImageData(snapshot, 0, 0);
               state.lastCompositeAt = now; state.lastNativeFrameAt = Date.now(); state.nativeFrameCopies += 1; state.hasPaintedFrame = true;
+              if (!state.firstNativeFrameAt) state.firstNativeFrameAt = state.lastNativeFrameAt;
+              if (!state.mediaRecorderStarted) state.startMediaCapture?.();
             } catch { state.mediaError = true; }
           });
         };
@@ -182,18 +189,21 @@ export function RecordingControls({ sessionId }) {
               state.mediaPush = state.mediaPush.then(flushMedia).catch(() => { state.mediaError = true; });
             });
             recorder.addEventListener('error', () => { state.mediaError = true; });
-            recorder.start(5000);
-            const captureFrame = () => {
-              try {
-                if (!state.hasPaintedFrame) return;
-                state.captureContext.drawImage(state.frameCache, 0, 0, state.captureSurface.width, state.captureSurface.height);
-                videoTrack.requestFrame(); state.captureFrames += 1; state.lastCaptureAt = Date.now();
-              }
-              catch { state.mediaError = true; }
+            const paintCaptureFrame = () => {
+              state.captureContext.drawImage(state.frameCache, 0, 0, state.captureSurface.width, state.captureSurface.height);
+              return true;
             };
-            captureFrame(); state.mediaStartedAt = Date.now();
-            state.mediaCaptureTimer = setInterval(captureFrame, 1000 / 24);
-            event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height, mimeType });
+            const requestFrame = () => videoTrack.requestFrame();
+            const captureFrame = () => {
+              captureRecordingMediaFrame(state, { paintCaptureFrame, requestFrame });
+            };
+            state.startMediaCapture = () => {
+              const started = startRecordingMediaAtFirstCapture(state, { paintCaptureFrame, requestFrame });
+              if (!started) return false;
+              state.mediaCaptureTimer = setInterval(captureFrame, 1000 / 24);
+              event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height, mimeType });
+              return true;
+            };
           } catch { state.captureSurface?.remove(); state.mediaError = true; }
         };
         captureCanvas();
@@ -208,6 +218,7 @@ export function RecordingControls({ sessionId }) {
     window.addEventListener('pagehide', onHide);
     return () => {
       active = false; clearInterval(timer); window.removeEventListener('pagehide', onHide); document.removeEventListener('click', onClick, true);
+      state.mediaStartCancelled = true; state.startMediaCapture = null;
       state.rrwebStop?.(); state.observer?.disconnect(); state.mediaObserver?.disconnect(); state.mediaViewOff?.(); state.mediaViewOff = null; state.mediaBoundView = null;
       clearInterval(state.mediaCaptureTimer);
       try { state.mediaRecorder?.stream?.getTracks().forEach((track) => track.stop()); } catch { /* disposed with the page */ }
@@ -222,18 +233,26 @@ export function RecordingControls({ sessionId }) {
   const stop = async () => {
     const state = ctx.current;
     if (!state?.id || state.stopped) return;
+    if (!state.mediaRecorderStarted) state.mediaStartCancelled = true;
+    state.startMediaCapture = null;
     state.mediaViewOff?.(); state.mediaViewOff = null; state.mediaBoundView = null;
     state.rrwebStop?.(); state.rrwebStop = null;
-    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+    if (state.mediaRecorder && state.mediaRecorderStarted) {
       const recorder = state.mediaRecorder;
       clearInterval(state.mediaCaptureTimer); state.mediaCaptureTimer = null;
       state.mediaCaptureStoppedAt = Date.now();
-      await new Promise((resolve) => { recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); } });
+      await new Promise((resolve) => {
+        if (recorder.state === 'inactive') { resolve(); return; }
+        recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); }
+      });
       try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
       state.captureSurface?.remove();
       state.emit?.('custom', { tag: 'canvas-media-stopped', captureStoppedAt: state.mediaCaptureStoppedAt,
         lastPaintedAt: state.lastCaptureAt, mediaLastTimeMs: state.mediaLastTimeMs, mediaFinalSeq: state.mediaSeq });
       await Promise.race([state.mediaPush, new Promise((resolve) => setTimeout(resolve, 8000))]);
+    } else if (state.mediaRecorder) {
+      try { state.mediaRecorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* disposed before first media frame */ }
+      state.captureSurface?.remove();
     }
     if(state.mediaPending.length||state.mediaPushing){setMessage('画面仍在上传，请稍后再结束录制');return;}
     const drained = await new Promise((resolve) => { const wait = setInterval(() => { if (!state.queue.length && !state.pushing) { clearInterval(wait); resolve(true); } }, 100); setTimeout(() => { clearInterval(wait); resolve(!state.queue.length && !state.pushing); }, 5000); });
