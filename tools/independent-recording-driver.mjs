@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import http from 'node:http';
 import net from 'node:net';
 import { createReadStream } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { startServer } from '../server/index.js';
 import { hasDamageDealer, upgradeReserve } from './independent-recording-strategy.mjs';
 
@@ -133,6 +134,29 @@ async function verifyNarratedReplay(recording) {
     at: Math.max(0, (Date.parse(segment.startedAt) - wallStart) / 1000),
     duration: Number(segment.lastTimeMs) / 1000,
   }));
+  const ffprobe = process.env.SP_FFPROBE_PATH || 'ffprobe';
+  const probedSegments = [];
+  for (const segment of timelineSegments) {
+    const mediaUrl = new URL(`/independent/api/recordings/${encodeURIComponent(recordingId)}/media/playback/${segment.index}`, page.url());
+    const response = await fetch(mediaUrl);
+    if (!response.ok) throw new Error(`录制媒体下载失败：segment=${segment.index} HTTP ${response.status}`);
+    const mediaFile = path.join(output, `canvas-segment-${String(segment.index).padStart(3, '0')}.webm`);
+    await writeFile(mediaFile, Buffer.from(await response.arrayBuffer()));
+    const probe = JSON.parse(execFileSync(ffprobe, ['-v', 'error', '-select_streams', 'v:0', '-show_entries',
+      'frame=best_effort_timestamp_time,pkt_duration_time', '-of', 'json', mediaFile], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
+    const frames = probe.frames || [];
+    const firstPts = Number(frames[0]?.best_effort_timestamp_time);
+    const last = frames.at(-1) || {};
+    const lastPts = Number(last.best_effort_timestamp_time);
+    const tailDuration = Number(last.pkt_duration_time) || (frames.length > 1
+      ? Math.max(0, lastPts - Number(frames.at(-2)?.best_effort_timestamp_time)) : 0);
+    if (!frames.length || !Number.isFinite(firstPts) || !Number.isFinite(lastPts) || !tailDuration) {
+      throw new Error(`ffprobe没有可用的视频帧PTS：${mediaFile}`);
+    }
+    probedSegments.push({ index: segment.index, mediaFile, bytes: (await fs.stat(mediaFile)).size,
+      frameCount: frames.length, firstPtsSeconds: firstPts, lastPtsSeconds: lastPts,
+      tailDurationSeconds: tailDuration, encodedDurationSeconds: lastPts + tailDuration });
+  }
   const mediaStart = Math.min(...timelineSegments.map((segment) => segment.at));
   const mediaEnd = Math.max(...timelineSegments.map((segment) => segment.at + segment.duration));
   const sampleSeconds = [mediaStart + 1, (mediaStart + mediaEnd) / 2, Math.max(mediaStart + 1, mediaEnd - 1)];
@@ -162,14 +186,65 @@ async function verifyNarratedReplay(recording) {
     timelineSamples.push({ label: sampleNames[i], timelineSecond, segmentIndex: segment.index, expectedPts,
       ptsErrorSeconds: Math.abs(Number(observation.currentTime) - expectedPts), image, ...observation });
   }
+  const actionEvents = (recording.events || []).filter((event) => event.kind === 'server-action'
+    && Number.isFinite(Number(event.ts)) && event.p?.action).sort((a, b) => a.ts - b.ts);
+  if (actionEvents.length < 3) throw new Error(`完整录制只有${actionEvents.length}个可对齐UI动作事件，至少需要3个时间点`);
+  const actionIndexes = [...new Set([0, Math.floor((actionEvents.length - 1) / 2), actionEvents.length - 1])].filter((i) => i >= 0);
+  const actionSamples = [];
+  for (let i = 0; i < actionIndexes.length; i++) {
+    const event = actionEvents[actionIndexes[i]];
+    const timelineSecond = Math.max(mediaStart, Math.min(mediaEnd, (Number(event.ts) - wallStart) / 1000 + 0.2));
+    const segment = [...timelineSegments].reverse().find((item) => timelineSecond >= item.at) || timelineSegments[0];
+    const expectedPts = Math.max(0, timelineSecond - segment.at);
+    await page.evaluate((second) => {
+      const timeline = document.querySelector('#timeline'); timeline.value = String(second);
+      timeline.dispatchEvent(new Event('input', { bubbles: true }));
+    }, timelineSecond);
+    await page.waitForFunction((expected) => {
+      const video = document.querySelector('#stage video[data-sp-canvas-media]');
+      return video && video.readyState >= 2 && Math.abs(video.currentTime - expected) < 0.7;
+    }, { timeout: 30000 }, expectedPts);
+    const observation = await page.evaluate(() => {
+      const video = document.querySelector('#stage video[data-sp-canvas-media]');
+      const frame = document.querySelector('#stage iframe'); const doc = frame?.contentDocument;
+      return { currentTime: video?.currentTime ?? null, duration: video?.duration ?? null,
+        readyState: video?.readyState ?? 0, videoWidth: video?.videoWidth ?? 0, videoHeight: video?.videoHeight ?? 0,
+        iframeText: (doc?.body?.innerText || '').slice(0, 1800), iframeUrl: frame?.src || '' };
+    });
+    const image = await screenshot(`replay-action-${i + 1}-${slug(event.p.action)}`);
+    actionSamples.push({ action: event.p.action, revision: event.p.revision, eventWallTime: event.ts,
+      timelineSecond, segmentIndex: segment.index, expectedPts, ptsErrorSeconds: Math.abs(Number(observation.currentTime) - expectedPts), image,
+      ...observation });
+  }
+  const encodedEnd = Math.max(...probedSegments.map((segment) => {
+    const metaSegment = timelineSegments.find((item) => item.index === segment.index);
+    return metaSegment.at + segment.encodedDurationSeconds;
+  }));
+  const encodedStart = Math.min(...probedSegments.map((segment) => {
+    const metaSegment = timelineSegments.find((item) => item.index === segment.index);
+    return metaSegment.at + segment.firstPtsSeconds;
+  }));
+  const mediaStartedWallSecond = meta.mediaStartedAt ? (Date.parse(meta.mediaStartedAt) - wallStart) / 1000 : mediaStart;
+  const endedWallSecond = (Date.parse(meta.endedAt) - wallStart) / 1000;
+  const coverageGapSeconds = endedWallSecond - encodedEnd;
+  const startGapSeconds = encodedStart - mediaStartedWallSecond;
+  if (Math.abs(startGapSeconds) > 1.25 || Math.abs(coverageGapSeconds) > 1.25) {
+    throw new Error(`ffprobe视频PTS与录制wall边界不符：首帧差${startGapSeconds.toFixed(3)}秒、尾帧差${coverageGapSeconds.toFixed(3)}秒；检查帧缺失或停止队列未flush`);
+  }
   result.mediaTimeline = { startedAt: meta.mediaStartedAt, endedAt: meta.endedAt,
     wallDurationSeconds: (Date.parse(meta.endedAt) - wallStart) / 1000,
     mediaWallStartSecond: mediaStart, mediaWallEndSecond: mediaEnd,
     metaMediaLastTimeMs: meta.mediaLastTimeMs, segments: timelineSegments.map(({ index, at, duration, playbackBytes }) => ({ index, at, duration, playbackBytes })),
-    samples: timelineSamples };
+    ffprobe: { executable: ffprobe, segments: probedSegments, encodedWallEndSecond: encodedEnd,
+      encodedWallStartSecond: encodedStart, mediaStartedWallSecond,
+      endedWallSecond, startGapSeconds, coverageGapSeconds }, samples: timelineSamples, actionSamples };
   await writeFile(path.join(output, 'replay-media-timeline-proof.json'), JSON.stringify(result.mediaTimeline, null, 2));
+  await writeFile(path.join(output, 'replay-visual-proof.json'), JSON.stringify(result, null, 2));
   if (timelineSamples.some((sample) => !sample.videoVisible || !sample.iframeVisible || sample.readyState < 2
-    || !sample.videoWidth || sample.ptsErrorSeconds >= 0.7)) throw new Error(`整局回放起中终视频时轴或HUD校验失败：${JSON.stringify(timelineSamples)}`);
+    || !sample.videoWidth || sample.ptsErrorSeconds >= 0.7) || actionSamples.some((sample) => sample.readyState < 2
+    || !sample.videoWidth || !sample.iframeText || sample.ptsErrorSeconds >= 0.7)) {
+    throw new Error(`整局回放媒体wall/PTS覆盖、动作点视频和HUD校验失败：${JSON.stringify({ timelineSamples, actionSamples, coverageGapSeconds })}`);
+  }
   return result;
 }
 async function waitRevision(revision) {
