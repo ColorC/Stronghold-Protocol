@@ -122,7 +122,7 @@ function analyzeReport(sourceReport, sourceReportPath) {
     analyzedAt: new Date().toISOString(),
     passed: checks.every(check => check.passed),
     checks,
-    samplingSource: { sourceReportPath, browserUrl: sourceReport.baseUrl, candidateRoot: sourceReport.candidateRoot, candidateFiles: sourceReport.candidateFiles, candidateInterceptions: sourceReport.candidateInterceptions, startedAt: sourceReport.startedAt, finishedAt: sourceReport.finishedAt, screenshots: sourceReport.screenshots },
+    samplingSource: { sourceReportPath, browserUrl: sourceReport.baseUrl, candidateRoot: sourceReport.candidateRoot, candidateFiles: sourceReport.candidateFiles, candidateInterceptions: sourceReport.candidateInterceptions, startedAt: sourceReport.startedAt, finishedAt: sourceReport.finishedAt, screenshots: sourceReport.screenshots, browserErrors: sourceReport.errors, interaction: sourceReport.interaction },
     previousGate: { gate: 'fold-direction-matches-source-<limb>', outcome: 'excluded-from-pass', reason: 'The prior rule compared candidate Attack delta-from-Idle0 signs against source Attack delta-from-Idle0 signs. Source Attack is itself under repair, so this required the candidate to reproduce the source Attack trajectory. Its observed per-frame differences are retained below as diagnostics.' },
     baselineDiscovery: { sourceFrontIdle0ToAttack0: baseline.frontElbows, detected: baseline.detectsIdle0Attack0ReversalWithStableShoulderWristAndInteriorAngle, interpretation: 'Reports absolute signed-turn reversals for both elbows, stable shoulder/wrist positions, elbow movement, and nearly unchanged interior angles. This is a mechanical baseline finding, not an art judgment.' },
     candidateResults,
@@ -293,23 +293,6 @@ async function run(baseUrl, outputDir, candidateRoot) {
       }, JOINTS);
       sampled.side = side;
       sampled.variant = variant;
-      const limits = { footBoneDrift: 0.5, soleBoundsDriftPx: 0.75, swordLengthRange: 0.05, gripOffsetRange: 0.5, gripAngleRangeDegrees: 2, jointDiscontinuity: 1.0 };
-      const maxAttack0Displacement = Math.max(...Object.values(sampled.endpointDisplacements.attack0));
-      const maxAttackEndDisplacement = Math.max(...Object.values(sampled.endpointDisplacements.attackEnd));
-      const signaturePresent = sampled.frames.length > 1 && Object.keys(sampled.directionalSignature).length === 4 && Object.values(sampled.directionalSignature).every(values => values.length === sampled.frames.length && values.every(Number.isFinite));
-      const checks = variant === 'candidate' ? [
-        ['four-limb-signed-and-interior-trajectories-present', signaturePresent && sampled.frames.every(frame => Object.values(frame.limbs).every(limb => Number.isFinite(limb.signedTurnDegrees) && Number.isFinite(limb.interiorAngleDegrees))), 'Stores signed turn and separate interior angle for each arm and knee at every Attack sample.'],
-        ['both-sole-slots-measured', sampled.hasBothSoleSlots, 'Requires rendered left and right foot slots for sole drift measurement.'],
-        ['foot-bones-fixed', sampled.maxFootBoneDrift <= limits.footBoneDrift, `max drift ${sampled.maxFootBoneDrift.toFixed(3)} <= ${limits.footBoneDrift}`],
-        ['sole-bounds-fixed', sampled.maxSoleBoundsDriftPx <= limits.soleBoundsDriftPx, `max screen drift ${sampled.maxSoleBoundsDriftPx.toFixed(3)} px <= ${limits.soleBoundsDriftPx} px`],
-        ['sword-length-stable', sampled.swordLengthRange <= limits.swordLengthRange, `range ${sampled.swordLengthRange.toFixed(4)} <= ${limits.swordLengthRange}`],
-        ['sword-grip-stable', sampled.gripOffsetRange <= limits.gripOffsetRange && sampled.gripAngleRangeDegrees <= limits.gripAngleRangeDegrees, `hand_r offset range ${sampled.gripOffsetRange.toFixed(3)}, angle range ${sampled.gripAngleRangeDegrees.toFixed(3)}°`],
-        ['sword-tip-above-floor', sampled.minSwordTipY >= -1, `minimum floor-relative Y ${sampled.minSwordTipY.toFixed(3)}; negative means below floor`],
-        ['idle0-attack0-joints-continuous', maxAttack0Displacement <= limits.jointDiscontinuity, `maximum raw Idle0 to Attack0 bone displacement ${maxAttack0Displacement.toFixed(3)} <= ${limits.jointDiscontinuity}`],
-        ['attack-end-idle0-joints-continuous', maxAttackEndDisplacement <= limits.jointDiscontinuity, `maximum raw Attack-end to Idle0 bone displacement ${maxAttackEndDisplacement.toFixed(3)} <= ${limits.jointDiscontinuity}`],
-        ['hand-left-slot-attachment-stable', sampled.handLeftAttachment.stableSingleHandAttachment, `slotPresent=${sampled.handLeftAttachment.slotPresent}; Idle0=${sampled.handLeftAttachment.idle0}; Attack samples=${[...new Set(sampled.handLeftAttachment.attack)].join(',')}`]
-      ] : [];
-      report.checks.push(...checks.map(([id, passed, detail]) => ({ variant, side, id, passed, detail })));
       report.screenshots.push(path.join(outputDir, `${variant}-${side}-attack.png`));
       const seekTo = Math.min(0.58, sampled.duration * 0.55);
       await page.goto(url.href, { waitUntil: 'networkidle2', timeout: 25_000 });
@@ -337,61 +320,7 @@ async function run(baseUrl, outputDir, candidateRoot) {
     });
     interaction.pauseButtonWorks = paused && interaction.pauseButtonWorks;
     report.interaction = interaction;
-    report.checks.push({ id: 'pause-and-drag-seek-operable', passed: interaction.pauseButtonWorks && interaction.seekControlWorks, detail: JSON.stringify(interaction) });
-    const sourceFront = report.results.find(result => result.variant === 'source' && result.side === 'front');
-    const candidateDirectionComparisons = [];
-    for (const side of ['front', 'back']) {
-      const source = report.results.find(result => result.variant === 'source' && result.side === side);
-      const candidate = report.results.find(result => result.variant === 'candidate' && result.side === side);
-      for (const limb of ['arm_r', 'arm_l', 'knee_r', 'knee_l']) {
-        const sourceDirections = source.directionalSignature[limb];
-        const candidateDirections = candidate.directionalSignature[limb];
-        const count = Math.min(sourceDirections.length, candidateDirections.length);
-        const mismatches = [];
-        for (let i = 0; i < count; i++) if (sourceDirections[i] !== candidateDirections[i]) mismatches.push({ frame: i, t: candidate.frames[i].t, source: sourceDirections[i], candidate: candidateDirections[i] });
-        candidateDirectionComparisons.push({ side, limb, comparedSamples: count, mismatchCount: mismatches.length, firstMismatches: mismatches.slice(0, 8) });
-      }
-    }
-    report.candidateDirectionComparisons = candidateDirectionComparisons;
-    for (const comparison of candidateDirectionComparisons) report.checks.push({ variant: 'candidate', side: comparison.side, id: `fold-direction-matches-source-${comparison.limb}`, passed: comparison.mismatchCount === 0, detail: JSON.stringify(comparison) });
-    const degreeDelta = (to, from) => { let value = to - from; while (value > 180) value -= 360; while (value < -180) value += 360; return value; };
-    const frontLeftDelta = sourceFront && degreeDelta(sourceFront.attack0.limbs.arm_l.signedTurnDegrees, sourceFront.idle0.limbs.arm_l.signedTurnDegrees);
-    const frontRightDelta = sourceFront && degreeDelta(sourceFront.attack0.limbs.arm_r.signedTurnDegrees, sourceFront.idle0.limbs.arm_r.signedTurnDegrees);
-    const bodyMidlineX = sourceFront && (sourceFront.attack0.limbs.arm_l.points.proximal[0] + sourceFront.attack0.limbs.arm_r.points.proximal[0]) / 2;
-    const elbowOffsetFromChord = limb => {
-      const { proximal, joint, distal } = sourceFront.attack0.limbs[limb].points;
-      const chord = [distal[0] - proximal[0], distal[1] - proximal[1]];
-      const elbow = [joint[0] - proximal[0], joint[1] - proximal[1]];
-      const signedOffset = (chord[0] * elbow[1] - chord[1] * elbow[0]) / Math.hypot(...chord);
-      const sideSign = Math.sign(proximal[0] - bodyMidlineX);
-      return { signedPerpendicularOffset: signedOffset, relativeToBodySide: signedOffset * sideSign };
-    };
-    const leftElbowOffset = sourceFront && elbowOffsetFromChord('arm_l');
-    const rightElbowOffset = sourceFront && elbowOffsetFromChord('arm_r');
-    const leftElbowTransition = sourceFront && { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_l, elbow: sourceFront.endpointDisplacements.attack0.forearm_l, wrist: sourceFront.endpointDisplacements.attack0.hand_l };
-    const rightElbowTransition = sourceFront && { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_r, elbow: sourceFront.endpointDisplacements.attack0.forearm_r, wrist: sourceFront.endpointDisplacements.attack0.hand_r };
-    const elbowFoldAngleSeparation = sourceFront && Math.abs(sourceFront.attack0.limbs.arm_l.signedTurnDegrees - sourceFront.attack0.limbs.arm_r.signedTurnDegrees);
-    report.baselineDiscovery = sourceFront ? {
-      frontAttack0ArmFoldDeltas: { arm_l: frontLeftDelta, arm_r: frontRightDelta },
-      frontAttack0SignedTurns: { arm_l: sourceFront.attack0.limbs.arm_l.signedTurnDegrees, arm_r: sourceFront.attack0.limbs.arm_r.signedTurnDegrees },
-      elbowDirectionsDifferIdle0ToAttack0: Math.sign(frontLeftDelta) !== Math.sign(frontRightDelta),
-      elbowDirectionsDifferAtAttack0: Math.sign(sourceFront.attack0.limbs.arm_l.signedTurnDegrees) !== Math.sign(sourceFront.attack0.limbs.arm_r.signedTurnDegrees),
-      elbowFoldAnglesDifferAtAttack0: elbowFoldAngleSeparation > 0.01,
-      elbowFoldAngleSeparationDegrees: elbowFoldAngleSeparation,
-      elbowLeanRelativeToBodySide: { bodyMidlineX, arm_l: leftElbowOffset, arm_r: rightElbowOffset },
-      elbowLeanDirectionsDifferRelativeToBodyMidline: Math.sign(leftElbowOffset.relativeToBodySide) !== Math.sign(rightElbowOffset.relativeToBodySide),
-      idle0ElbowFoldDegrees: { arm_l: sourceFront.idle0.limbs.arm_l.signedTurnDegrees, arm_r: sourceFront.idle0.limbs.arm_r.signedTurnDegrees },
-      attack0ElbowInteriorAnglesDegrees: { arm_l: sourceFront.attack0.limbs.arm_l.interiorAngleDegrees, arm_r: sourceFront.attack0.limbs.arm_r.interiorAngleDegrees },
-      shoulderWristElbowTransitionDisplacement: { arm_l: leftElbowTransition, arm_r: rightElbowTransition },
-      sourceDetectsFrontElbowAsymmetry: elbowFoldAngleSeparation > 0.01 && Math.sign(leftElbowOffset.relativeToBodySide) !== Math.sign(rightElbowOffset.relativeToBodySide) && [leftElbowTransition, rightElbowTransition].every(move => move.shoulder < move.elbow && move.wrist < move.elbow),
-      shoulders: { arm_l: sourceFront.attack0.limbs.arm_l.points.proximal, arm_r: sourceFront.attack0.limbs.arm_r.points.proximal },
-      elbows: { arm_l: sourceFront.attack0.limbs.arm_l.points.joint, arm_r: sourceFront.attack0.limbs.arm_r.points.joint },
-      wrists: { arm_l: sourceFront.attack0.limbs.arm_l.points.distal, arm_r: sourceFront.attack0.limbs.arm_r.points.distal }
-    } : null;
-    const interceptedBothCandidates = Object.values(candidateFiles).every((file, index) => report.candidateInterceptions[Object.keys(candidateFiles)[index]] > 0);
-    report.checks.push({ variant: 'candidate', id: 'front-back-candidate-json-intercepted', passed: interceptedBothCandidates, detail: JSON.stringify(report.candidateInterceptions) });
     report.url = pageUrl;
-    report.passed = !report.checks.some(check => (check.variant === 'candidate' || !check.variant) && !check.passed) && report.errors.length === 0;
   })();
   const deadline = new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error(`Hard deadline reached after ${TIME_LIMIT_MS} ms`)), TIME_LIMIT_MS); });
   try { await Promise.race([work, deadline]); }
@@ -400,12 +329,20 @@ async function run(baseUrl, outputDir, candidateRoot) {
     clearTimeout(timeout);
     await browser?.close().catch(error => report.errors.push(`browser close: ${error.message}`));
     report.finishedAt = new Date().toISOString();
-    report.passed = report.passed === true && report.errors.length === 0 && !report.checks.some(check => (check.variant === 'candidate' || !check.variant) && !check.passed);
     const receipt = path.join(outputDir, 'semantic-study.json');
-    fs.writeFileSync(receipt, JSON.stringify(report, null, 2));
-    console.log(JSON.stringify({ receipt, screenshots: report.screenshots, passed: report.passed, errors: report.errors, checks: report.checks }, null, 2));
+    let finalReport;
+    try {
+      finalReport = analyzeReport(report, receipt);
+      finalReport.samplingSource.finishedAt = report.finishedAt;
+    } catch (error) {
+      finalReport = { analysisMode: 'browser-run-shared-analysis', passed: false, analyzedAt: new Date().toISOString(), errors: [...report.errors, error.stack || String(error)], failedChecks: [{ scope: 'browser-sampling', id: 'complete-source-and-candidate-samples-required', passed: false, detail: 'Shared analysis could not run because browser sampling failed or required samples were incomplete.' }], samplingSource: { sourceReportPath: receipt, browserUrl: report.baseUrl, candidateRoot: report.candidateRoot, candidateFiles, candidateInterceptions: report.candidateInterceptions, startedAt: report.startedAt, finishedAt: report.finishedAt, screenshots: report.screenshots, browserErrors: report.errors, interaction: report.interaction }, partialResults: report.results };
+    }
+    fs.writeFileSync(receipt, JSON.stringify(finalReport, null, 2));
+    report.passed = finalReport.passed;
+    report.finalReport = finalReport;
+    console.log(JSON.stringify({ receipt, screenshots: report.screenshots, passed: finalReport.passed, errors: finalReport.errors || finalReport.samplingSource?.browserErrors, failedChecks: finalReport.checks?.filter(check => !check.passed) || finalReport.failedChecks }, null, 2));
   }
-  return report;
+  return report.finalReport;
 }
 
 const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
