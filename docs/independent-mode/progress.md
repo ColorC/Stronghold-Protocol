@@ -117,3 +117,10 @@
 - 录制已实际修正可见Spine身体拾取；短录查出磁盘分片保存抖动和捕获结束/上传结束时间混淆，正在补真实停止时刻、5秒分片、子目录回放资源重定位和长事件流读取；没有合格完整视频。
 - 完整阵容测试发现德克萨斯攻击回声识别不到新版伺夜退场来源，已在source worker修共用退场adapter，等待完整组合与全套复验，最终整局须包含此修复。
 - VPS已通过原生dnf安装ffmpeg/ffprobe7.0.2，现有服务PID384944仍运行旧86f9475e。实查ProtectSystem=strict，仅sessions/logs可写；发布脚本已准备单独允许recordings，尚未激活新版本。安装日志：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/vps-dnf-media-install.log。
+
+## 2026-10-08 最终规则冻结前
+- 已将source2a5f3235与录制4ef24fc9、事件流e1b941dc原生合并。德克萨斯普通/进阶七人阵容各实跑96次自动普通攻击；技能事件不计入回声，活着的倍率来源/临时召唤/自然死亡路径均验证。16项历史失败所在9套回归全部通过。source审计：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/equipment-source-audit.json。
+- 实查33项可用装备，突袭盟约和反冲空降仓原来没有执行来源，现均加入既有专项战备授训；该训练池为16项，科技2/6及原效果数值保留。真实奖品生成、指定UID永久穿戴、production记录以及普通/进阶实战效果均通过。
+- 合并后的录制/资源重定位/长读取相关8项测试通过；128MiB heap完整交付100MiB合成事件流，停止请求清理及坏JSONL不丢事件也已验证。日志：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/merged-recording-media-tests.log。
+- 新子路径短回放已实际看到暂停放大字幕与原卡全文，ffprobe捕获头尾/动作采样覆盖通过，仍不是完整局。一次早期HTTP500原文未保留，不能确定其根因；同seed十个fresh UI首买均200且server错误日志为空，新增原packet/server堆栈诊断保留未来失败。摘要：E:/WindowsWorkspace/webworks/apps/stronghold-protocol/runtime/growth-destination-20261008/recording/first-buy-samples-seed1568472349-20261008/first-buy-series-summary.json。
+- 下一步固定本副本原生Git版本、生成同版client engine、完整套件复验与最终真实整局录制并行；通过后发布两个公开入口并交付完整回放。
