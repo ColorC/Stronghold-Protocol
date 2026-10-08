@@ -7,14 +7,15 @@ Output (per effect, into <out>/<prefab>/):
   preview.webp animated preview composited over a battlefield-like ground (for the canvas)
 and <out>/index.json listing every effect.
 
-The post pass preserves the source-shaped coverage for additive materials and
-enforces the premultiplied invariant (colour <= coverage). Without that
-constraint, a mixed additive/alpha prefab can leave a full translucent quad in
-the browser even though the Unity coverage pass has the correct shape.
+The half-float black/white captures encode P + (1-A)*background. Additive
+emission may have P > A, including nonzero P at A=0. Clamping colour to coverage
+or inventing coverage from brightness changes the authored effect. Retain the
+pair unchanged; source-reference captures provide a direct composition check.
 
     python post.py <frames root> <out root> [prefab ...]
 """
 import json
+import argparse
 import math
 import sys
 from pathlib import Path
@@ -30,24 +31,17 @@ def load(path: Path):
     im = np.asarray(Image.open(path).convert('RGB'), np.float32) / 255
     w = im.shape[1] // 2
     colour, coverage = im[:, :w], im[:, w:, 0]
-    # Additive Unity materials write the same emission over black and white;
-    # the background-difference estimator therefore collapses to zero when
-    # the white pass saturates. Preserve the source-shaped emission instead of
-    # letting the browser discard the whole frame. The colour is already
-    # premultiplied, so its energy is a conservative coverage estimate.
-    if coverage.max() <= THRESH and colour.max() > THRESH:
-        coverage = np.clip(colour.max(axis=2) * 2.0, 0.0, 1.0)
-    # Keep the packed colour premultiplied by the recovered source coverage.
-    # Additive source passes can otherwise leave emission outside the alpha
-    # shaped by the other renderers in the same prefab.  In the browser's
-    # ONE / ONE_MINUS_SRC_ALPHA blend that shows up as a faint full quad.
-    colour = np.minimum(colour, coverage[..., None])
     return colour, coverage
 
 
 def process(src: Path, dst: Path) -> dict:
     meta = json.loads((src / 'meta.json').read_text('utf-8'))
     files = sorted(src.glob('f_*.png'))
+    expected = int(meta['frames'])
+    if {file.name for file in files} != {f'f_{i:04d}.png' for i in range(expected)}:
+        raise ValueError(f'Incomplete source frame set: {src}')
+    if meta.get('unportedShaders'):
+        raise ValueError(f'Unsupported source shaders: {src}: {meta["unportedShaders"]}')
     frames = [load(f) for f in files]
     h, w = frames[0][1].shape
     # union box of anything visible over the clip
@@ -94,16 +88,31 @@ def process(src: Path, dst: Path) -> dict:
 
 
 def _one(args):
-    root, out, name = args
-    return process(root / name, out / name)
+    source, out, name = args
+    return process(source, out / name)
 
 
 def main():
     from multiprocessing import Pool
-    root, out = Path(sys.argv[1]), Path(sys.argv[2])
-    names = sys.argv[3:] or sorted(d.name for d in root.iterdir() if (d / 'meta.json').exists())
-    with Pool(4) as pool:
-        index = pool.map(_one, [(root, out, n) for n in names])
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('root', type=Path)
+    parser.add_argument('out', type=Path)
+    parser.add_argument('prefabs', nargs='*')
+    parser.add_argument('--source-manifest', type=Path)
+    parser.add_argument('--workers', type=int, default=4)
+    args = parser.parse_args()
+    if args.workers < 1:
+        parser.error('--workers must be positive')
+    root, out = args.root, args.out
+    if args.source_manifest:
+        source = json.loads(args.source_manifest.read_text(encoding='utf-8-sig'))
+        sources = {entry['prefab']: Path(entry['source']) for entry in source['sources']}
+    else:
+        sources = {d.name: d for d in root.iterdir() if (d / 'meta.json').exists()}
+    names = args.prefabs or sorted(sources)
+    out.mkdir(parents=True, exist_ok=True)
+    with Pool(args.workers) as pool:
+        index = pool.map(_one, [(sources[n], out, n) for n in names])
     for info in index:
         print(json.dumps(info, ensure_ascii=False, default=int))
     (out / 'index.json').write_text(json.dumps(index, ensure_ascii=False, indent=1, default=int), 'utf-8')
@@ -111,5 +120,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
