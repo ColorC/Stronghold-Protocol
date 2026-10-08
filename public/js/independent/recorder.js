@@ -120,10 +120,14 @@ export function RecordingControls({ sessionId }) {
             || canvases.find((item) => item.__context === 'webgl' || item.__context === 'webgl2' || item.getAttribute('data-render-surface') === 'game');
           if (!canvas?.captureStream) return;
           try {
-            // Ask for explicit frames so the media timeline continues while WebGL is visually static.
-            // Canvas captureStream(24) only emits when the renderer paints; long static intervals then
-            // shorten WebM timecodes relative to the rrweb/HUD event clock.
-            const stream = canvas.captureStream(0);
+            // Copy each real WebGL frame into a dedicated 2D surface. requestFrame() alone still
+            // depends on a source-canvas paint, so copying first keeps the media clock advancing
+            // during visually static game states without changing any pixels in the game canvas.
+            const captureSurface = document.createElement('canvas');
+            captureSurface.width = canvas.width; captureSurface.height = canvas.height;
+            const captureContext = captureSurface.getContext('2d', { alpha: false });
+            if (!captureContext) return;
+            const stream = captureSurface.captureStream(0);
             const videoTrack = stream.getVideoTracks()[0];
             if (typeof videoTrack?.requestFrame !== 'function') {
               stream.getTracks().forEach((track) => track.stop());
@@ -134,15 +138,19 @@ export function RecordingControls({ sessionId }) {
             const recorder = state.mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1800000, videoKeyFrameIntervalDuration: 1000 });
             recorder.addEventListener('dataavailable', (e) => {
               if (!e.data?.size || !state.id) return;
-              const seq = ++state.mediaSeq; const timeMs = Number.isFinite(e.timecode) ? e.timecode : (seq - 1) * 1000;
+              const seq = ++state.mediaSeq; const elapsedMs = Date.now() - state.mediaStartedAt;
+              const timeMs = Math.max(Number.isFinite(e.timecode) ? e.timecode : 0, elapsedMs);
               state.mediaPending.push({seq,blob:e.data,startedAt:state.mediaStartedAt,timeMs});
               state.mediaPush = state.mediaPush.then(flushMedia).catch(() => { state.mediaError = true; });
             });
             recorder.addEventListener('error', () => { state.mediaError = true; });
             recorder.start(1000);
-            state.mediaStartedAt = Date.now();
-            try { videoTrack.requestFrame(); } catch { state.mediaError = true; }
-            state.mediaCaptureTimer = setInterval(() => { try { videoTrack.requestFrame(); } catch { state.mediaError = true; } }, 1000 / 24);
+            const captureFrame = () => {
+              try { captureContext.drawImage(canvas, 0, 0, captureSurface.width, captureSurface.height); videoTrack.requestFrame(); }
+              catch { state.mediaError = true; }
+            };
+            captureFrame(); state.mediaStartedAt = Date.now();
+            state.mediaCaptureTimer = setInterval(captureFrame, 1000 / 24);
             event('custom', { tag: 'canvas-media-start', width: canvas.width, height: canvas.height, mimeType });
           } catch { state.mediaError = true; }
         };
