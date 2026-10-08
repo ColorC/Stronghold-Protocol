@@ -240,21 +240,22 @@ async function run(baseUrl, outputDir, candidateRoot) {
     };
     const leftElbowOffset = sourceFront && elbowOffsetFromChord('arm_l');
     const rightElbowOffset = sourceFront && elbowOffsetFromChord('arm_r');
+    const leftElbowTransition = sourceFront && { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_l, elbow: sourceFront.endpointDisplacements.attack0.forearm_l, wrist: sourceFront.endpointDisplacements.attack0.hand_l };
+    const rightElbowTransition = sourceFront && { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_r, elbow: sourceFront.endpointDisplacements.attack0.forearm_r, wrist: sourceFront.endpointDisplacements.attack0.hand_r };
+    const elbowFoldAngleSeparation = sourceFront && Math.abs(sourceFront.attack0.limbs.arm_l.signedTurnDegrees - sourceFront.attack0.limbs.arm_r.signedTurnDegrees);
     report.baselineDiscovery = sourceFront ? {
       frontAttack0ArmFoldDeltas: { arm_l: frontLeftDelta, arm_r: frontRightDelta },
       frontAttack0SignedTurns: { arm_l: sourceFront.attack0.limbs.arm_l.signedTurnDegrees, arm_r: sourceFront.attack0.limbs.arm_r.signedTurnDegrees },
       elbowDirectionsDifferIdle0ToAttack0: Math.sign(frontLeftDelta) !== Math.sign(frontRightDelta),
       elbowDirectionsDifferAtAttack0: Math.sign(sourceFront.attack0.limbs.arm_l.signedTurnDegrees) !== Math.sign(sourceFront.attack0.limbs.arm_r.signedTurnDegrees),
-      elbowFoldAnglesDifferAtAttack0: Math.abs(sourceFront.attack0.limbs.arm_l.signedTurnDegrees - sourceFront.attack0.limbs.arm_r.signedTurnDegrees) > 0.01,
-      elbowFoldAngleSeparationDegrees: Math.abs(sourceFront.attack0.limbs.arm_l.signedTurnDegrees - sourceFront.attack0.limbs.arm_r.signedTurnDegrees),
+      elbowFoldAnglesDifferAtAttack0: elbowFoldAngleSeparation > 0.01,
+      elbowFoldAngleSeparationDegrees: elbowFoldAngleSeparation,
       elbowLeanRelativeToBodySide: { bodyMidlineX, arm_l: leftElbowOffset, arm_r: rightElbowOffset },
       elbowLeanDirectionsDifferRelativeToBodyMidline: Math.sign(leftElbowOffset.relativeToBodySide) !== Math.sign(rightElbowOffset.relativeToBodySide),
       idle0ElbowFoldDegrees: { arm_l: sourceFront.idle0.limbs.arm_l.signedTurnDegrees, arm_r: sourceFront.idle0.limbs.arm_r.signedTurnDegrees },
       attack0ElbowInteriorAnglesDegrees: { arm_l: sourceFront.attack0.limbs.arm_l.interiorAngleDegrees, arm_r: sourceFront.attack0.limbs.arm_r.interiorAngleDegrees },
-      shoulderWristElbowTransitionDisplacement: {
-        arm_l: { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_l, elbow: sourceFront.endpointDisplacements.attack0.forearm_l, wrist: sourceFront.endpointDisplacements.attack0.hand_l },
-        arm_r: { shoulder: sourceFront.endpointDisplacements.attack0.upperarm_r, elbow: sourceFront.endpointDisplacements.attack0.forearm_r, wrist: sourceFront.endpointDisplacements.attack0.hand_r }
-      },
+      shoulderWristElbowTransitionDisplacement: { arm_l: leftElbowTransition, arm_r: rightElbowTransition },
+      sourceDetectsFrontElbowAsymmetry: elbowFoldAngleSeparation > 0.01 && Math.sign(leftElbowOffset.relativeToBodySide) !== Math.sign(rightElbowOffset.relativeToBodySide) && [leftElbowTransition, rightElbowTransition].every(move => move.shoulder < move.elbow && move.wrist < move.elbow),
       shoulders: { arm_l: sourceFront.attack0.limbs.arm_l.points.proximal, arm_r: sourceFront.attack0.limbs.arm_r.points.proximal },
       elbows: { arm_l: sourceFront.attack0.limbs.arm_l.points.joint, arm_r: sourceFront.attack0.limbs.arm_r.points.joint },
       wrists: { arm_l: sourceFront.attack0.limbs.arm_l.points.distal, arm_r: sourceFront.attack0.limbs.arm_r.points.distal }
