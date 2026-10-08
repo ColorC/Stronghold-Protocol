@@ -143,7 +143,7 @@ async function seek(value) {
   if (resume) { playing = false; play(); }
 }
 playButton.addEventListener('click', () => {if(narrating){resetZoom();play();}else playing ? pause() : play();});
-timeline.addEventListener('input', () => { if (playing) pause(); void seek(timeline.value); });
+timeline.addEventListener('input', () => { const requestedSecond = timeline.value; if (playing) pause(); void seek(requestedSecond); });
 $('zoom').addEventListener('click', () => { selecting = true; paintMediaLayer(); status.textContent = '在画面上拖动，框选要放大的区域。'; });
 function resetZoom(){clearTimeout(narrationTimer);narrationTimer=0;narrating=false;cueState.clear();zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();paintCue(Number(timeline.value));}
 function zoomArea(rect){
