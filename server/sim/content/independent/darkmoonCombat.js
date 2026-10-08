@@ -138,8 +138,9 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,seen:new Set(),stacks:new Map()}));
   });
   const results=battle.independentDarkmoonResults={growth:[],recruits:[],coins:[]};
-  const trace=battle.independentDarkmoonTrace=[];
-  const note=(e,kind,targets=[])=>{trace.push({sourceId:e.id,sourceUid:e.unit.uid,kind,time:battle.time,targets:targets.map(u=>u.uid??u.id)});battle.emit('darkmoonEffect',{sourceId:e.id,source:e.unit,kind,targets});};
+  const traceEnabled=battle.opts?.flags?.independent?.recordTrace!==false;
+  const trace=traceEnabled?(battle.independentDarkmoonTrace=[]):null;
+  const note=(e,kind,targets=[])=>{if(trace)trace.push({sourceId:e.id,sourceUid:e.unit.uid,kind,time:battle.time,targets:targets.map(u=>u.uid??u.id)});battle.emit('darkmoonEffect',{sourceId:e.id,source:e.unit,kind,targets});};
   const ready=(e,seconds=3,max=25,channel='event')=>{const c=(e.channels||={})[channel]||{last:-Infinity,uses:0};if(battle.time<c.last+seconds||c.uses>=max)return false;c.last=battle.time;c.uses++;e.channels[channel]=c;if(channel==='event')e.uses=c.uses;return true;};
   const scale=e=>e.elite?2:1;
   const secondary=u=>({TANK:['hpFlat',.03],CASTER:['dmgDealtMul',.02],MEDIC:['spRecoveryFlat',.02],SUPPORT:['spRecoveryFlat',.02],PIONEER:['spRecoveryFlat',.02]})[u.def.profession]||['aspd',.02];
