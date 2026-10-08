@@ -14,7 +14,15 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   const sessions = path.join(root, 'sessions'); const records = path.join(root, 'recordings');
   await mkdir(sessions); const sessionId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   await writeFile(path.join(sessions, `${sessionId}.json`), '{}');
-  const handle = createRecordingHttp({ directory: records, sessionDirectory: sessions });
+  const remuxCalls = new Map();
+  const handle = createRecordingHttp({ directory: records, sessionDirectory: sessions, remuxSegment: async (dir, index) => {
+    remuxCalls.set(index, (remuxCalls.get(index) || 0) + 1);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const output = path.join(dir, index === 1 ? 'canvas-playback.webm' : `canvas-${index}-playback.webm`);
+    const bytes = Buffer.from(index === 1 ? 'seekable-webm' : `segment-${index}-webm`);
+    await writeFile(output, bytes);
+    return { ready: true, bytes: bytes.length };
+  } });
   const server = http.createServer(async (req, res) => {
     if (!await handle(req, res, new URL(req.url, 'http://localhost').pathname)) { res.writeHead(404); res.end(); }
   });
@@ -76,16 +84,27 @@ test('recording API stores acknowledged rrweb and caption events, deduplicates r
   assert.equal(afterRefresh.meta.mediaLastTimeMs,11000,'separate capture timestamps preserve the wall-clock gap');
   assert.deepEqual(await readFile(path.join(records,created.id,'canvas-2.webm')),chunk1,'a new WebM header starts its own playable segment');
   assert.deepEqual(await readFile(path.join(records,created.id,'canvas.webm')),Buffer.concat([chunk1,Buffer.from([8,9])]),'refresh cannot corrupt the first segment');
-  const ended = await post(`${base}/${created.id}/stop`, { mediaCaptureStoppedAt: 1700000011000, mediaCaptureLastTimeMs: 1000,
-    mediaCaptureLastPaintedAt: 1700000010900, mediaCaptureFinalSeq: 3 }); assert.equal(ended.status, 200);
+  const stopInfo = { mediaCaptureStoppedAt: 1700000011000, mediaCaptureLastTimeMs: 1000,
+    mediaCaptureLastPaintedAt: 1700000010900, mediaCaptureFinalSeq: 3 };
+  const [ended, duplicateEnded] = await Promise.all([
+    post(`${base}/${created.id}/stop`, stopInfo), post(`${base}/${created.id}/stop`, stopInfo),
+  ]);
+  assert.equal(ended.status, 200); assert.equal(duplicateEnded.status, 200);
+  assert.equal((await ended.json()).mediaPlaybackReady, true);
+  assert.equal((await duplicateEnded.json()).mediaPlaybackReady, true);
+  assert.deepEqual([...remuxCalls.entries()].sort((a, b) => a[0] - b[0]), [[1, 1], [2, 1]], 'each segment is remuxed only once for concurrent stops');
   const recordDirectory = path.join(records, created.id);
-  await writeFile(path.join(recordDirectory, 'canvas-playback.webm'), Buffer.from('seekable-webm'));
   const metaPath = path.join(recordDirectory, 'meta.json');
   const finalMeta = JSON.parse(await readFile(metaPath, 'utf8'));
   assert.equal(finalMeta.mediaCaptureStopValidation.accepted, true);
   assert.equal(finalMeta.mediaCaptureFinalSeq, finalMeta.nextMediaSeq - 1);
-  assert.equal(finalMeta.mediaCaptureStoppedAt, new Date(1700000011000).toISOString()); finalMeta.mediaPlaybackReady = true;
-  await writeFile(metaPath, JSON.stringify(finalMeta));
+  assert.equal(finalMeta.mediaCaptureStoppedAt, new Date(1700000011000).toISOString());
+  assert.equal(finalMeta.mediaPlaybackReady, true);
+  assert.deepEqual(finalMeta.mediaSegments.map(({ index, playbackReady, playbackBytes }) => ({ index, playbackReady, playbackBytes })), [
+    { index: 1, playbackReady: true, playbackBytes: 13 }, { index: 2, playbackReady: true, playbackBytes: 14 },
+  ]);
+  assert.deepEqual(await readFile(path.join(recordDirectory, 'canvas.webm')), Buffer.concat([chunk1, Buffer.from([8, 9])]), 'finalization retains the original media bytes');
+  assert.deepEqual(await readFile(path.join(recordDirectory, 'canvas-2.webm')), chunk1, 'finalization retains later segment bytes');
   const range = await fetch(`${base}/${created.id}/media/playback`, { headers: { range: 'bytes=2-5' } });
   assert.equal(range.status, 206); assert.equal(range.headers.get('accept-ranges'), 'bytes');
   assert.equal(range.headers.get('content-range'), 'bytes 2-5/13'); assert.equal(await range.text(), 'ekab');
@@ -126,6 +145,42 @@ test('recording GET checks the events file before headers and does not silently 
   const malformed = await fetch(url);
   assert.equal(malformed.status, 200);
   await assert.rejects(() => malformed.text(), /terminated|aborted|reset|socket/i);
+});
+
+test('failed ffmpeg remux preserves process exit and stderr in recording metadata and diagnostics', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'sp-recording-remux-error-'));
+  const sessions = path.join(root, 'sessions'); const records = path.join(root, 'recordings'); const diagnosticsPath = path.join(root, 'remux-diagnostics.jsonl');
+  await mkdir(sessions); const sessionId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  await writeFile(path.join(sessions, `${sessionId}.json`), '{}');
+  const handle = createRecordingHttp({ directory: records, sessionDirectory: sessions, diagnosticsPath, ffmpegPath: process.execPath });
+  const server = http.createServer(async (req, res) => {
+    if (!await handle(req, res, new URL(req.url, 'http://localhost').pathname)) { res.writeHead(404); res.end(); }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { await new Promise((resolve) => server.close(resolve)); await rm(root, { recursive: true, force: true }); });
+  const base = `http://127.0.0.1:${server.address().port}/independent/api/recordings`;
+  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const created = await post(`${base}/start`, { sessionId }).then((response) => response.json());
+  const startedAt = Date.now(); const source = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 1, 2, 3]);
+  const uploaded = await fetch(`${base}/${created.id}/media/1`, { method: 'POST', headers: {
+    'content-type': 'application/octet-stream', 'x-media-started-at': String(startedAt), 'x-media-time-ms': '1000',
+  }, body: source });
+  assert.equal(uploaded.status, 200);
+  const stoppedAt = Date.now();
+  const stopped = await post(`${base}/${created.id}/stop`, { mediaCaptureStoppedAt: stoppedAt, mediaCaptureLastTimeMs: 1000,
+    mediaCaptureLastPaintedAt: stoppedAt - 40, mediaCaptureFinalSeq: 1 });
+  assert.deepEqual(await stopped.json(), { ok: true, endedAt: (await fetch(`${base}/${created.id}?meta=1`).then((r) => r.json())).meta.endedAt, mediaPlaybackReady: false });
+  const metadata = await fetch(`${base}/${created.id}?meta=1`).then((response) => response.json());
+  assert.equal(metadata.meta.mediaCaptureStopValidation.accepted, true);
+  assert.equal(metadata.meta.mediaPlaybackReady, false);
+  assert.equal(metadata.meta.mediaSegments[0].playbackError.exitCode, 9);
+  assert.match(metadata.meta.mediaSegments[0].playbackError.stderr, /bad option: -hide_banner/);
+  assert.deepEqual(await readFile(path.join(records, created.id, 'canvas.webm')), source);
+  const diagnostic = (await readFile(diagnosticsPath, 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
+  const remuxFailures = diagnostic.filter((entry) => entry.type === 'media-playback-remux-failed');
+  assert.equal(remuxFailures.length, 1);
+  assert.equal(remuxFailures[0].error.exitCode, 9);
+  assert.match(remuxFailures[0].error.stderr, /bad option: -hide_banner/);
 });
 
 test('large recording read streams the complete JSON response under a 128 MiB heap and aborts cleanly', async (t) => {

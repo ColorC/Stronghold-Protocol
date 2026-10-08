@@ -94,24 +94,32 @@ async function readMediaChunk(req) {
   if (size > MAX_MEDIA_CHUNK) throw Object.assign(new Error('MEDIA_LIMIT'), { status: 413 });
   return Buffer.concat(chunks);
 }
-async function remuxPlayback(dir, index=1) {
+async function remuxPlayback(dir, index=1, ffmpegPath=process.env.SP_FFMPEG_PATH || 'ffmpeg') {
   const stem=index===1?'canvas':`canvas-${index}`;
   const input = path.join(dir, `${stem}.webm`); const output = path.join(dir, `${stem}-playback.webm`); const pending = path.join(dir, `${stem}-playback.pending.webm`);
   try {
-    await execFileAsync(process.env.SP_FFMPEG_PATH || 'ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', input, '-map', '0:v:0', '-c:v', 'copy', '-cues_to_front', '1', pending],
+    await execFileAsync(ffmpegPath, ['-hide_banner', '-loglevel', 'error', '-y', '-i', input, '-map', '0:v:0', '-c:v', 'copy', '-cues_to_front', '1', pending],
       { timeout: 25000, windowsHide: true, maxBuffer: 1024 * 1024 });
     await rename(pending, output); const info = await stat(output); return { ready: true, bytes: info.size };
-  } catch {
+  } catch (error) {
     try { await unlink(pending); } catch { /* no generated output to remove */ }
-    return { ready: false, bytes: 0 };
+    return { ready: false, bytes: 0, error: {
+      exitCode: Number.isInteger(error.code) ? error.code : null,
+      code: typeof error.code === 'string' ? error.code : null,
+      signal: error.signal || null,
+      message: error.message || String(error),
+      stderr: String(error.stderr || ''), stdout: String(error.stdout || ''),
+    } };
   }
 }
 
 /** Server-side rrweb event store. Recording IDs are opaque UUIDs and never become session state. */
-export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPath = '' }) {
+export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPath = '', ffmpegPath = process.env.SP_FFMPEG_PATH || 'ffmpeg', remuxSegment = null }) {
   if (!path.isAbsolute(directory) || !path.isAbsolute(sessionDirectory)) throw new Error('Recording and session directories must be absolute');
   const root = path.resolve(directory);
   const locks = new Map();
+  const playbackFinalizers = new Map();
+  const runRemux = remuxSegment || ((dir, index) => remuxPlayback(dir, index, ffmpegPath));
   const dirOf = (id) => path.join(root, id);
   const metaFile = (id) => path.join(dirOf(id), 'meta.json');
   const eventsFile = (id) => path.join(dirOf(id), 'events.jsonl');
@@ -120,6 +128,43 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
     try { return await current; } finally { if (locks.get(id) === current) locks.delete(id); }
   }
   async function loadMeta(id) { return JSON.parse(await readFile(metaFile(id), 'utf8')); }
+  function finalizePlayback(id) {
+    const existing = playbackFinalizers.get(id);
+    if (existing) return existing;
+    let flight;
+    flight = (async () => {
+      const initial = await exclusive(id, () => loadMeta(id));
+      if (!initial.mediaBytes || initial.mediaPlaybackReady) return initial;
+      const stored = (initial.mediaSegments || []).filter((item) => Number.isInteger(item.index) && typeof item.startedAt === 'string');
+      const segments = structuredClone(stored.length ? stored : [{ index: 1, startedAt: initial.mediaStartedAt, bytes: initial.mediaBytes, lastTimeMs: initial.mediaLastTimeMs }]);
+      const results = [];
+      for (const segment of segments) {
+        if (segment.playbackReady) continue;
+        const result = await runRemux(dirOf(id), segment.index);
+        results.push({ index: segment.index, ...result });
+        if (!result.ready) await writeDiagnostic({ type: 'media-playback-remux-failed', recordingId: id, segmentIndex: segment.index, error: result.error || null });
+      }
+      return exclusive(id, async () => {
+        const current = await loadMeta(id);
+        const latest = (current.mediaSegments || []).filter((item) => Number.isInteger(item.index) && typeof item.startedAt === 'string');
+        const nextSegments = structuredClone(latest.length ? latest : segments);
+        for (const result of results) {
+          const segment = nextSegments.find((item) => item.index === result.index);
+          if (!segment || segment.playbackReady) continue;
+          segment.playbackReady = !!result.ready;
+          segment.playbackBytes = result.ready ? Number(result.bytes) || 0 : 0;
+          if (result.ready) delete segment.playbackError;
+          else if (result.error) segment.playbackError = result.error;
+        }
+        const next = { ...current, mediaSegments: nextSegments,
+          mediaPlaybackReady: nextSegments.every((item) => item.playbackReady),
+          mediaPlaybackBytes: nextSegments.reduce((sum, item) => sum + (Number(item.playbackBytes) || 0), 0) };
+        await saveMeta(id, next); return next;
+      });
+    })().finally(() => { if (playbackFinalizers.get(id) === flight) playbackFinalizers.delete(id); });
+    playbackFinalizers.set(id, flight);
+    return flight;
+  }
   async function writeDiagnostic(entry) {
     if (!diagnosticsPath) return;
     await appendFile(diagnosticsPath, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`, 'utf8').catch(() => {});
@@ -276,12 +321,7 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
             finalizeDelayMs: Date.parse(meta.endedAt) - Date.parse(meta.mediaCaptureStoppedAt) });
           else if (meta.mediaCaptureStopValidation) await writeDiagnostic({ type: 'media-capture-stop-rejected', recordingId: id,
             validation: meta.mediaCaptureStopValidation });
-          if (meta.mediaBytes && !meta.mediaPlaybackReady) {
-            const validSegments=(meta.mediaSegments||[]).filter(x=>Number.isInteger(x.index)&&typeof x.startedAt==='string');
-            const segments=structuredClone(validSegments.length?validSegments:[{index:1,startedAt:meta.mediaStartedAt,bytes:meta.mediaBytes,lastTimeMs:meta.mediaLastTimeMs}]);
-            for(const segment of segments)if(!segment.playbackReady){const playback=await remuxPlayback(dirOf(id),segment.index);segment.playbackReady=playback.ready;segment.playbackBytes=playback.bytes;}
-            meta = await exclusive(id, async () => { const current = await loadMeta(id); const next = { ...current, mediaSegments:segments,mediaPlaybackReady:segments.every(x=>x.playbackReady),mediaPlaybackBytes:segments.reduce((sum,x)=>sum+(x.playbackBytes||0),0) }; await saveMeta(id, next); return next; });
-          }
+          if (meta.mediaBytes && !meta.mediaPlaybackReady) meta = await finalizePlayback(id);
           return json(res, 200, { ok: true, endedAt: meta.endedAt, mediaPlaybackReady: !!meta.mediaPlaybackReady }), true;
       }
       if (action === 'read' && req.method === 'GET') {
