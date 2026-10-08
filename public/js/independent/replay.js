@@ -1,6 +1,7 @@
 import { rebaseRecordedAssets, timestampRange } from './replayAssets.js';
 import { recordingCanvasElements, recordingCanvasField } from './recordingCanvas.js';
 import { createReplayCueState } from './replayCueState.js';
+import { clampReplayMediaTime } from './replayMediaTime.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
@@ -78,8 +79,9 @@ function syncMediaTime(second) {
   }
   if(second<mediaStartSecond){mediaVideo.pause();return;}
   const time = Math.max(0, (second - (segment?.at??mediaStartSecond)));
-  if (mediaDuration > 0 && time < mediaDuration) {
-    try { if (Math.abs(mediaVideo.currentTime - time) > 0.4) mediaVideo.currentTime = time; } catch { /* metadata may still be loading */ }
+  if (mediaDuration > 0) {
+    const seekTime = clampReplayMediaTime(time, mediaDuration);
+    try { if (Math.abs(mediaVideo.currentTime - seekTime) > 0.4) mediaVideo.currentTime = seekTime; } catch { /* metadata may still be loading */ }
   }
 }
 function attachCanvasMedia(id) {
