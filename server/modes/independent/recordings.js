@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, writeFile, appendFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { stat, unlink } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -13,6 +14,70 @@ const MAX_BODY = 16 * 1024 * 1024;
 const MAX_MEDIA_CHUNK = 8 * 1024 * 1024;
 const execFileAsync = promisify(execFile);
 const json = (res, status, value) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
+
+function waitForReadStreamOpen(stream) {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => { stream.off('open', onOpen); stream.off('error', onError); };
+    const onOpen = () => { cleanup(); resolve(); };
+    const onError = (error) => { cleanup(); reject(error); };
+    stream.once('open', onOpen);
+    stream.once('error', onError);
+  });
+}
+
+function writeWithBackpressure(res, chunk) {
+  if (res.destroyed || res.writableEnded) return Promise.resolve(false);
+  if (res.write(chunk)) return Promise.resolve(true);
+  return new Promise((resolve, reject) => {
+    const cleanup = () => { res.off('drain', onDrain); res.off('close', onClose); res.off('error', onError); };
+    const onDrain = () => { cleanup(); resolve(!res.destroyed && !res.writableEnded); };
+    const onClose = () => { cleanup(); resolve(false); };
+    const onError = (error) => { cleanup(); reject(error); };
+    res.once('drain', onDrain);
+    res.once('close', onClose);
+    res.once('error', onError);
+  });
+}
+
+async function streamRecordingEvents(req, res, filename, meta) {
+  const source = createReadStream(filename, { encoding: 'utf8' });
+  let lines = null;
+  let disconnected = false;
+  const abort = () => {
+    if (res.writableFinished || res.writableEnded) return;
+    disconnected = true;
+    lines?.close();
+    source.destroy();
+  };
+  res.once('close', abort);
+  req.once('aborted', abort);
+  try {
+    // Opening before sending headers preserves the existing 404 response for a missing events file.
+    await waitForReadStreamOpen(source);
+    if (disconnected) return;
+    lines = createInterface({ input: source, crlfDelay: Infinity });
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    const write = (chunk) => writeWithBackpressure(res, chunk);
+    if (!await write(`{"ok":true,"meta":${JSON.stringify(meta)},"events":[`)) return;
+    let first = true;
+    for await (const line of lines) {
+      if (disconnected) return;
+      if (!line) continue;
+      const event = JSON.parse(line);
+      // Actual canvas pixels come from native media. Replaying the redundant
+      // WebGL command stream adds texture copies and can stall a long recording.
+      if (meta.mediaBytes && event.kind === 'rrweb' && event.p?.type === 3 && event.p?.data?.source === 9) continue;
+      if (!await write(`${first ? '' : ','}${JSON.stringify(event)}`)) return;
+      first = false;
+    }
+    if (!disconnected && !res.destroyed) res.end(']}');
+  } finally {
+    res.off('close', abort);
+    req.off('aborted', abort);
+    lines?.close();
+    if (!source.destroyed) source.destroy();
+  }
+}
 
 async function readBody(req) {
   let size = 0; const chunks = [];
@@ -174,14 +239,17 @@ export function createRecordingHttp({ directory, sessionDirectory }) {
       if (action === 'read' && req.method === 'GET') {
         const meta = await loadMeta(id);
         if (new URL(req.url, 'http://localhost').searchParams.get('meta') === '1') return json(res, 200, { ok: true, meta }), true;
-        const lines = (await readFile(eventsFile(id), 'utf8')).split(/\r?\n/).filter(Boolean);
-        // Actual canvas pixels come from native media. Replaying the redundant
-        // WebGL command stream adds texture copies and can stall a long recording.
-        const events=lines.map(line=>JSON.parse(line)).filter(e=>!(meta.mediaBytes&&e.kind==='rrweb'&&e.p?.type===3&&e.p?.data?.source===9));
-        return json(res, 200, { ok: true, meta, events }), true;
+        await streamRecordingEvents(req, res, eventsFile(id), meta);
+        return true;
       }
       return json(res, 405, { ok: false, error: 'METHOD' }), true;
     } catch (error) {
+      if (res.headersSent) {
+        // A malformed event cannot be skipped without changing replay history; terminate the partial JSON response.
+        if (!res.destroyed) res.destroy(error);
+        return true;
+      }
+      if (req.aborted || res.destroyed) return true;
       const status = error.status || (error.code === 'ENOENT' ? 404 : 500);
       return json(res, status, { ok: false, error: error.status ? error.message : status === 404 ? 'NOT_FOUND' : 'RECORDING_FAILED' }), true;
     }
