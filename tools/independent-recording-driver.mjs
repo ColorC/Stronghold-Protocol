@@ -38,10 +38,15 @@ const report = {
   actions: [], notes: [], rounds: [], screenshots: [], errors: [], pageErrors: [], preparationSnapshots: [],
   interactionPolicy: 'UI clicks and pointer drags only; state reads use GET; no action API or state injection.',
 };
-let server; let assetProxy; let browser; let page; let hardTimer; let recordingId = ''; let sessionId = '';
+let server; let assetProxy; let browser; let page; let hardTimer; let recordingTelemetryTimer; let recordingTelemetryBusy = false; let recordingId = ''; let sessionId = '';
 const pendingActionRequests = new WeakMap();
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function bounded(promise, timeoutMs, label) {
+  let timer;
+  try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label}超过${timeoutMs}ms`)), timeoutMs); })]); }
+  finally { clearTimeout(timer); }
+}
 const slug = (s) => String(s || 'state').normalize('NFKD').replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-|-$/g, '').slice(0, 42) || 'state';
 async function screenshot(name) {
   const file = path.join(output, `${String(report.screenshots.length + 1).padStart(3, '0')}-${slug(name)}.png`);
@@ -80,6 +85,18 @@ async function readRecordingMeta() {
     const r = await fetch(`/independent/api/recordings/${encodeURIComponent(id)}?meta=1`, { credentials: 'same-origin', cache: 'no-store' });
     if (!r.ok) return null; return r.json();
   }, recordingId);
+}
+async function captureRecordingTelemetry() {
+  if (!page || page.isClosed() || recordingTelemetryBusy) return;
+  recordingTelemetryBusy = true;
+  try {
+    const status = await bounded(page.evaluate(() => globalThis.__SP_RECORDING_STATUS__?.() || null), 15000, '读取录制队列诊断');
+    report.recordingTelemetry ||= [];
+    report.recordingTelemetry.push({ at: new Date().toISOString(), status });
+    await writeFile(path.join(output, 'recording-telemetry.json'), JSON.stringify(report.recordingTelemetry, null, 2));
+  } catch (error) {
+    report.recordingTelemetryErrors ||= []; report.recordingTelemetryErrors.push({ at: new Date().toISOString(), error: String(error) });
+  } finally { recordingTelemetryBusy = false; }
 }
 async function verifyNarratedReplay(recording) {
   const meta = recording?.meta;
@@ -310,24 +327,49 @@ async function deployPiece(state, piece) {
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   failure.from = from; failure.occupied = [...occupied]; failure.candidates = candidates.map(({ row, col, x, y }) => ({ row, col, x, y })); failure.viewport = viewport;
   for (const target of candidates.filter((p) => p.x >= 0 && p.x < viewport.width && p.y >= 0 && p.y < viewport.height)) {
-    await dragPointer(from, target);
-    const diagnostic = await page.evaluate(({ from, target, legalCount }) => {
+    const attempt = { row: target.row, col: target.col, from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y },
+      legalTileCount: legal.length, startedAt: new Date().toISOString() };
+    attempt.preflight = await page.evaluate(({ from, target }) => {
       const describe = (x, y) => {
         const e = document.elementFromPoint(x, y);
-        return e ? { tag: e.tagName, id: e.id, className: typeof e.className === 'string' ? e.className : '', text: (e.innerText || e.getAttribute('aria-label') || '').slice(0, 160), html: e.outerHTML.slice(0, 800) } : null;
+        return e ? { tag: e.tagName, id: e.id, className: typeof e.className === 'string' ? e.className : '',
+          text: (e.innerText || e.getAttribute('aria-label') || '').slice(0, 160), html: e.outerHTML.slice(0, 500) } : null;
       };
       return {
-        from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, row: target.row, col: target.col, legalTiles: legalCount,
+        from: { x: from.x, y: from.y }, to: { x: target.x, y: target.y }, row: target.row, col: target.col,
         viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
         elementFromPoint: { from: describe(from.x, from.y), to: describe(target.x, target.y) },
-        wheelVisible: !!document.querySelector('.fwheel[role="dialog"]'),
+        pickedPieceAtFrom: globalThis.__SP_VIEW__?.pieceAtClient?.(from.x, from.y) || null,
+        detailOpen: !!document.querySelector('[data-testid="ix-detail"]'), wheelVisible: !!document.querySelector('.fwheel[role="dialog"]'),
       };
-    }, { from, target, legalCount: legal.length });
+    }, { from, target });
+    failure.attempts.push(attempt); report.lastDeployAttempt = attempt;
+    await writeFile(path.join(output, 'deploy-attempt-diagnostic.json'), JSON.stringify({ uid: piece.uid, name: piece.name, revision: state.revision, attempt }, null, 2));
+    await bounded(dragPointer(from, target), 30000, `干员${piece.uid}部署指针操作(${target.row},${target.col})`);
+    attempt.droppedAt = new Date().toISOString();
+    if (!report.firstDeployDiagnostic || piece.uid !== report.firstDeployDiagnostic.uid) {
+      attempt.dropScreenshot = await screenshot(`deploy-${piece.uid}-drop-${target.row}-${target.col}`);
+    }
     if (!report.firstDeployDiagnostic) {
-      report.firstDeployDiagnostic = { ...diagnostic, screenshot: await screenshot('first-deploy-after-drop') };
+      report.firstDeployDiagnostic = { ...attempt, screenshot: attempt.dropScreenshot || await screenshot('first-deploy-after-drop') };
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
     }
-    try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 1200 }); } catch { continue; }
+    try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 5000 }); }
+    catch {
+      const after = await readState();
+      attempt.wheelVisible = false; attempt.revisionAfter = after.revision;
+      attempt.movedPiece = (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null;
+      attempt.readyReason = (await visibleText('[data-testid="ready-why"]')).join(' ');
+      attempt.gameToasts = (await visibleText('.toast-host, .toast__text')).join(' ');
+      attempt.pointerTrace = await page.evaluate(() => window.__spFacingTrace || []);
+      attempt.completedAt = new Date().toISOString();
+      await writeFile(path.join(output, 'deploy-attempt-diagnostic.json'), JSON.stringify({ uid: piece.uid, name: piece.name, revision: state.revision, attempt }, null, 2));
+      if ((after.pieces || []).some((p) => p.uid === piece.uid && Number.isInteger(p.row))) {
+        report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag without facing prompt' });
+        return true;
+      }
+      continue;
+    }
     if (report.firstDeployDiagnostic?.row === target.row && report.firstDeployDiagnostic?.col === target.col) {
       report.firstDeployDiagnostic.wheelVisibleAfterWait = true;
       await writeFile(path.join(output, 'first-deploy-diagnostic.json'), JSON.stringify(report.firstDeployDiagnostic, null, 2));
@@ -367,10 +409,12 @@ async function deployPiece(state, piece) {
       report.actions.push({ type: 'deploy', uid: piece.uid, row: target.row, col: target.col, input: 'pointer drag + facing-wheel click' });
       return true;
     }
-    failure.attempts.push({ row: target.row, col: target.col, wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
+    Object.assign(attempt, { wheelVisible: !!(await page.$('.fwheel[role="dialog"]')),
       revisionAfter: after.revision, movedPiece: (after.pieces || []).find((p) => p.uid === piece.uid)?.row ?? null,
       readyReason: (await visibleText('[data-testid="ready-why"]')).join(' '),
-      gameToasts: (await visibleText('.toast-host, .toast__text')).join(' '), facingTarget, facingHit, pointerTrace });
+      gameToasts: (await visibleText('.toast-host, .toast__text')).join(' '), facingTarget, facingHit, pointerTrace,
+      completedAt: new Date().toISOString() });
+    await writeFile(path.join(output, 'deploy-attempt-diagnostic.json'), JSON.stringify({ uid: piece.uid, name: piece.name, revision: state.revision, attempt }, null, 2));
     state = after;
   }
   failure.reason = failure.legalTiles.length ? 'all rendered legal positions rejected' : 'server supplied no legal tiles for this bench piece';
@@ -659,6 +703,8 @@ async function waitBattleResult(round) {
   if (summary.button === '查看结算') { await screenshot('terminal-result'); }
 }
 async function stopRecording() {
+  report.recorderStatusBeforeStop = await page.evaluate(() => globalThis.__SP_RECORDING_STATUS__?.() || null).catch(() => null);
+  await writeFile(path.join(output, 'recording-queue-before-stop.json'), JSON.stringify(report.recorderStatusBeforeStop, null, 2));
   report.recordingControlBeforeStop = await page.evaluate(() => {
     const panel = document.querySelector('.ix-recording'); const button = panel?.querySelector('button');
     const rect = (node) => { const r = node?.getBoundingClientRect(); return r ? r.toJSON() : null; };
@@ -694,9 +740,12 @@ async function stopRecording() {
     const button = await page.$('.ix-recording button');
     const available = button && await button.evaluate((e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.disabled);
     if (!available) { await pause(1000); continue; }
+    const queueAtAttempt = await page.evaluate(() => globalThis.__SP_RECORDING_STATUS__?.() || null).catch(() => null);
     attempts += 1; await button.click();
     try { await page.waitForFunction(() => /录制已结束/.test(document.querySelector('.ix-recording')?.innerText || ''), { timeout: 10000 }); }
     catch { await pause(1500); }
+    (report.recorderStopQueueObservations ||= []).push({ attempt: attempts, at: new Date().toISOString(), before: queueAtAttempt,
+      statusText: await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'panel unavailable') });
   }
   report.recordingStopAttempts = attempts;
   report.recordingStopError = await page.$eval('.ix-recording', (e) => e.innerText).catch(() => 'Recorder panel disappeared before completion');
@@ -829,6 +878,8 @@ try {
   const url = new URL(page.url()); sessionId = url.searchParams.get('session'); recordingId = url.searchParams.get('recording');
   if (!sessionId || !recordingId) throw new Error('UI 创建对局或录制未完成');
   await page.waitForFunction(() => document.querySelector('.ix-recording__dot.is-live'), { timeout: 30000 });
+  await captureRecordingTelemetry();
+  recordingTelemetryTimer = setInterval(() => { void captureRecordingTelemetry(); }, 60000);
   const initial = await readState(); report.sessionId = sessionId; report.recordingId = recordingId; report.growthMode = initial.growthMode; report.roundLimit = initial.roundLimit;
   await screenshot('first-preparation');
   let roundsDriven = 0; let idle = 0; let lastPrepRevision = null; let sameRevisionSince = Date.now();
@@ -976,6 +1027,7 @@ try {
   console.error(JSON.stringify({ failure: error?.message || String(error), report: file, log, screenshots: report.screenshots }, null, 2)); process.exitCode = 1;
 } finally {
   clearTimeout(hardTimer);
+  clearInterval(recordingTelemetryTimer);
   if (browser) await browser.close().catch(() => {});
   if (assetProxy) await new Promise((resolve) => { assetProxy.closeAllConnections?.(); assetProxy.close(resolve); }).catch(() => {});
   if (server) { server.closeAllConnections?.(); await server.close().catch(() => {}); }
