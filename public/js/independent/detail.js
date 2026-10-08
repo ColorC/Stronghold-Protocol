@@ -219,8 +219,8 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
   const chess = Number.isInteger(tier) && tier !== record.tier ? { ...record, tier } : record;
   const loadout = piece ? { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } } : null;
   const gear = piece
-    ? html`<${GearSection} key="equip" items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${state} sourcePiece=${piece}
-        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} /><${TemporaryGrowth} live=${live} catalog=${catalog} />`
+    ? html`<div key="equip"><${GearSection} items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${state} sourcePiece=${piece}
+        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} /><${TemporaryGrowth} live=${live} catalog=${catalog} /></div>`
     : html`<${GearSection} key="equip" items=${[...(opBase?.permitGear ? [{ id: opBase.permitGear, uid: 'permit', quantity: 1 }] : []), ...(slot.equipment || []).map((x, i) => ({ ...x, uid: `c${i}` }))]}
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,
