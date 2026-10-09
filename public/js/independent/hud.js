@@ -414,17 +414,19 @@ function SoldCard({ item }) {
  * reasons a tap cannot buy come from the state only. 收起 folds it to the original's tab (funds + 展开商店) so the
  * field behind it can be seen.
  */
+export function dispatchShopSlotTap({ index, slots, busy, armed, targetMode = false, targetSlots = [], onTargetShopSlot, onArm, onBuy, reasonFor }) {
+  const slot = slots[index];
+  if (!slot || slot.sold || busy) return;
+  if (targetMode) { if (targetSlots.includes(index)) onTargetShopSlot?.(index); return; }
+  if (armed === `s${index}`) { if (!reasonFor(slot)) onBuy(index); return; }
+  onArm(`s${index}`, slot);
+}
 export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, onRefresh, onFreeze, onDetail, deployed, deployCap, collapsed = false, onCollapse, targetSlots = [], onTargetShopSlot }) {
   const shop = state.shop;
   const price = catalog.rules?.refreshPrice ?? 1;
   const free = shop.freeRefreshes || 0;
   const reasonFor = (s) => (s.sold ? '已售出' : state.funds < s.price ? '资金不足' : null);
-  const tap = (i) => {
-    const s = shop.slots[i];
-    if (!s || s.sold || busy) return;
-    if (armed === `s${i}`) { if (!reasonFor(s)) onBuy(i); return; }
-    onArm(`s${i}`, s);
-  };
+  const tap = (i) => dispatchShopSlotTap({ index: i, slots: shop.slots, busy, armed, targetMode: typeof document !== 'undefined' && !!document.querySelector('.ix-target-prompt'), targetSlots, onTargetShopSlot, onArm, onBuy, reasonFor });
   const lvMax = shop.level >= 6;
   const lvReason = lvMax ? '调度中心已达最高等级' : state.funds < shop.upgradePrice ? '资金不足' : null;
   const chess = shop.slots.map((s, i) => ({ s, i })).filter(({ s }) => s.kind === 'chess');

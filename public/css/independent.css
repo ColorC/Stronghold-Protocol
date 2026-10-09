@@ -515,4 +515,11 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-target-prompt button{color:#f5d78b;background:#32302a;border:1px solid #88764d;border-radius:6px;padding:.35rem .65rem;cursor:pointer}
 .scard.is-targetable{outline:3px solid #f4d26c;outline-offset:3px;filter:brightness(1.18);cursor:crosshair}
 .scard.is-targetable:hover{transform:translateY(-4px)}
-.ix-buy-targets--field{display:flex;gap:.5rem;align-items:center}
+
+
+/* Keep direct-target guidance a single compact line; it must not cover field or hand targets. */
+.ix-target-prompt{box-sizing:border-box;width:max-content;max-width:calc(100vw - 20px);min-height:40px;height:40px;padding:6px 10px;gap:10px;font-size:clamp(12px,0.9vw,14px);line-height:1.2;white-space:nowrap}
+.ix-target-prompt>span{font-size:inherit;line-height:1.2}
+.ix-target-prompt button{font-size:12px;line-height:1.1;padding:5px 8px;white-space:nowrap}
+.ix-target-prompt kbd{font-size:10px;line-height:1}
+.ix-game:has(.ix-target-prompt) .ix-dpanel{display:none!important}

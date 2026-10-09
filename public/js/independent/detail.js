@@ -337,11 +337,6 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   const footer = html`<footer class="ix-dpanel__actions">
     ${hint ? html`<span class="ix-dpanel__hint" role="note">${hint.text}</span>` : null}
     ${isShop ? html`<${Button} size="sm" variant="primary" disabled=${busy || slot.sold || state.funds < slot.price} onClick=${startBuy}>购买 · ${slot.price}<//>` : null}
-      ${isShop&&buySelection?.slot===target.slot&&buySelection.fieldMode?html`<section class="ix-buy-targets ix-buy-targets--field" role="group" aria-label="选择本次效果目标">
-        <p>${buySelection.spec.kind==='shopSlot'?'请点击高亮的商店卡格':buySelection.spec.kind==='magnetic'?'请点击高亮的友方干员；也可以直接招募':'请点击场上高亮的友方干员'}</p>
-        ${buySelection.spec.kind==='magnetic'?html`<button type="button" class="ix-buy-targets__normal" disabled=${busy} onClick=${()=>{setBuySelection(null);onCancelTarget?.();onBuy(target.slot,{})}}>直接招募</button>`:null}
-        <button type="button" class="ix-buy-targets__cancel" onClick=${()=>{setBuySelection(null);onCancelTarget?.()}}>取消 · Esc</button>
-      </section>`:null}
       ${isShop&&buySelection?.slot===target.slot&&!buySelection.fieldMode?html`<section class="ix-buy-targets" role="group" aria-label="选择本次效果目标">
       <p>${buySelection.spec.kind==='shopSlot'?'选择要变化的酒馆干员':buySelection.spec.kind==='magnetic'?'可直接招募；若要合体，选择一名哥伦比亚友方干员':'选择获得效果的友方干员'}${buySelection.spec.kind==='magnetic'?'':`（${buySelection.required}）`}</p>
       ${buySelection.spec.kind==='magnetic'?html`<button type="button" class="ix-buy-targets__normal" disabled=${busy} onClick=${()=>{setBuySelection(null);onBuy(target.slot,{})}}>直接招募</button>`:null}
