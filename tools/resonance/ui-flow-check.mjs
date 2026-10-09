@@ -188,13 +188,16 @@ async function inspectPriorFightReplay(page, sessionId, round, screenshotName, e
   const replayTitle=await page.$eval('.rs-replay-native',element=>({label:element.getAttribute('aria-label'),text:element.innerText}));
   check('prior-fight-replay-opens-selected-round',replayTitle.label==='战斗回放'&&new RegExp(`第\\s*${round}\\s*场战斗`).test(replayTitle.text),replayTitle);
   const pause=await page.$eval('.rs-replay-native',root=>[...root.querySelectorAll('button')].find(element=>/^(暂停|继续)$/.test(element.innerText.trim()))?.innerText.trim()||null);
-  if(pause==='暂停') { const button=await page.$('.rs-replay-native button'),box=await button.boundingBox();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await page.waitForFunction(()=>/继续/.test(document.querySelector('.rs-replay-native')?.innerText||''),{timeout:5000}); }
+  if(pause==='暂停') {
+    await clickVisibleButtonText(page,'.rs-replay-native','暂停','prior-fight-replay-pause');
+    await page.waitForFunction(()=>{const button=[...document.querySelectorAll('.rs-replay-native button')].find(element=>/^(暂停|继续)$/.test(element.innerText.trim()));if(button?.innerText.trim()!=='继续'){window.__uiFlowPausedFrames=0;return false;}window.__uiFlowPausedFrames=(window.__uiFlowPausedFrames||0)+1;return window.__uiFlowPausedFrames>=3;},{polling:'raf',timeout:6000});
+  }
   const hit=await page.waitForFunction(expectedUid=>{const adapter=globalThis.__SP_VIEW__,raw=adapter?.raw,canvas=document.querySelector('.gm__field canvas');if(!raw?.debug?.views||!canvas)return false;const cr=canvas.getBoundingClientRect();for(const candidate of raw.debug.views.values()){const info=candidate?.info;if(info?.side!=='ally'||info.kind==='device'||info.uid==null||(expectedUid!=null&&info.uid!==expectedUid))continue;const rect=adapter.pieceScreenRect(info.uid);if(!rect||rect.width<3||rect.height<3)continue;for(const point of [{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-3}]){const unit=raw.debug.pick?.battleUnitAt?.(point.x-cr.left,point.y-cr.top);if(unit?.info?.uid===info.uid||unit?.uid===info.uid)return{x:point.x,y:point.y,uid:info.uid,side:info.side};}}return false;},{polling:'raf',timeout:12000},expectedUnitUid);
   const point=await hit.jsonValue();check('prior-fight-replay-hit-tests-real-ally-unit',point?.side==='ally',point);
   await page.mouse.click(point.x,point.y,{button:'right'});
   await page.waitForSelector('.dpanel .dhead__name',{timeout:10000});
-  const detail=await page.$eval('.dpanel',element=>({name:element.querySelector('.dhead__name')?.innerText.trim(),snapshot:!!element.querySelector('.rs-detail__battle-snapshot'),member:!!element.querySelector('.rs-detail__member'),actions:!!element.querySelector('.rs-detail__actions'),selects:element.querySelectorAll('select').length}));
-  check('prior-fight-ally-right-click-opens-readonly-detail',detail.snapshot&&!detail.member&&!detail.actions&&!detail.selects&&(!expectedName||detail.name?.includes(expectedName))&&(!expectedName||/1星/.test(detail.snapshot)),detail);
+  const detail=await page.$eval('.dpanel',element=>({name:element.querySelector('.dhead__name')?.innerText.trim(),snapshot:element.querySelector('.rs-detail__battle-snapshot')?.innerText.trim()||'',member:!!element.querySelector('.rs-detail__member'),actions:!!element.querySelector('.rs-detail__actions'),selects:element.querySelectorAll('select').length}));
+  check('prior-fight-ally-right-click-opens-readonly-detail',!!detail.snapshot&&!detail.member&&!detail.actions&&!detail.selects&&(!expectedName||detail.name?.includes(expectedName))&&(!expectedName||/1星/.test(detail.snapshot)),detail);
   await shot(page,screenshotName);
   const after=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
   check('prior-fight-replay-detail-is-readonly',after.revision===before.revision,{before:before.revision,after:after.revision});
@@ -213,36 +216,57 @@ async function runFinishTail(page, sessionId) {
   const history=state.history||[],p1=state.pieces?.find(piece=>piece.uid==='p1'),p12Sale=history.find(event=>event.type==='operator-sold'&&event.uid==='p12'&&event.round===2&&event.refund===1);
   const attempt10Sale=tests10.get('checkpoint13-sells-bench-p12-through-real-detail-action'),attempt10Revision=tests10.get('checkpoint13-sell-bench-p12-revision-advanced');
   const settled=[...history].reverse().find(event=>event.type==='fight-settled'&&event.round===1);
-  const checkpointValid=attempt10.status==='failed'&&attempt10.sessionId===sessionId&&attempt10.initialRevision===13&&attempt10.creates===0&&attempt10.fights===0&&
+  const priorEvidenceValid=attempt10.status==='failed'&&attempt10.sessionId===sessionId&&attempt10.initialRevision===13&&attempt10.creates===0&&attempt10.fights===0&&
     attempt10Sale?.passed===true&&attempt10Sale.detail?.goldBefore===4&&attempt10Sale.detail?.goldAfter===5&&attempt10Revision?.passed===true&&attempt10Revision.detail?.previous===13&&attempt10Revision.detail?.current===14&&
     attempt9.status==='failed'&&attempt9.sessionId===sessionId&&attempt9.initialRevision===9&&attempt9.creates===0&&attempt9.fights===1&&priorFightNames.every(name=>tests9.get(name)?.passed===true)&&
-    state.phase==='prep'&&state.revision===17&&state.round===2&&state.gold===5&&state.level===4&&state.xp===0&&state.hp===97&&p1?.row===9&&p1?.col===3&&p1?.dir==='RIGHT'&&
+    history.some(event=>event.type==='operator-sold'&&event.uid==='p3'&&event.refund===1)&&history.some(event=>event.type==='xp-purchased'&&event.gold===4)&&settled?.combatStats?.units?.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.heal===0&&unit.taken===840&&unit.kills===2);
+  const checkpoint17=priorEvidenceValid&&state.phase==='prep'&&state.revision===17&&state.round===2&&state.gold===5&&state.level===4&&state.xp===0&&state.hp===97&&p1?.row===9&&p1?.col===3&&p1?.dir==='RIGHT'&&
     p1.equipment?.some(item=>item.uid==='i4'&&item.itemId==='bow')&&p1.equipment?.some(item=>item.uid==='i5'&&item.itemId==='blade')&&!state.inventory?.length&&state.pieces?.length===1&&!!p12Sale&&
     history.some(event=>event.type==='piece-benched'&&event.uid==='p1'&&event.round===2)&&history.some(event=>event.type==='piece-deployed'&&event.uid==='p1'&&event.row===9&&event.col===3&&event.round===2)&&
-    history.some(event=>event.type==='item-equipped'&&event.uid==='i5'&&event.pieceUid==='p1'&&event.itemId==='blade'&&event.round===2)&&settled?.combatStats?.units?.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.heal===0&&unit.taken===840&&unit.kills===2);
-  check('finish-tail-validates-attempts-and-strict-rev17-history',checkpointValid,{attempt10Path,attempt9Path,attempt10Sale:attempt10Sale?.passed,attempt10Revision:attempt10Revision?.detail,revision:state.revision,round:state.round,gold:state.gold,p1,p12Sale,settled,priorActions:history.slice(-3)});
+    history.some(event=>event.type==='item-equipped'&&event.uid==='i5'&&event.pieceUid==='p1'&&event.itemId==='blade'&&event.round===2);
+  const attempt1Path=path.join(OUT,'ui-tft-finish-attempt-1.json');
+  const attempt1LogPath=path.join(ROOT,'runtime/resonance/ui-tft-finish-attempt-1.log');
+  let attempt1=null,tests1=new Map();
+  if(state.revision===20){attempt1=JSON.parse(await readFile(attempt1Path,'utf8'));tests1=new Map((attempt1.tests||[]).map(test=>[test.name,test]));}
+  const attempt1Log=state.revision===20?await readFile(attempt1LogPath,'utf8').catch(()=>null):null;
+  const attempt1Names=['finish-tail-validates-attempts-and-strict-rev17-history','finish-tail-preserves-three-previously-repeated-actions-without-replay','finish-tail-sell-p1-revision-advanced','finish-tail-e-sells-p1-for-one-gold','finish-tail-e-sale-closes-member-detail','finish-tail-mouse-xp-spends-four-gold','finish-tail-mouse-refresh-spends-two-gold','finish-tail-no-new-session-or-fight'];
+  const saleP1=history.find(event=>event.type==='operator-sold'&&event.uid==='p1'&&event.round===2&&event.refund===1);
+  const xpPurchase=[...history].reverse().find(event=>event.type==='xp-purchased'&&event.round===2&&event.gold===4);
+  const refresh=[...history].reverse().find(event=>event.type==='shop-refreshed'&&event.round===2&&event.cost===2);
+  const repeatedStart=history.findIndex(event=>event.type==='operator-sold'&&event.uid==='p12'&&event.round===2),repeatedEnd=history.findIndex(event=>event.type==='operator-sold'&&event.uid==='p1'&&event.round===2);
+  const repeatedSegment=history.slice(repeatedStart+1,repeatedEnd);
+  const checkpoint20=priorEvidenceValid&&attempt1?.status==='failed'&&attempt1.sessionId===sessionId&&attempt1.initialRevision===17&&attempt1.creates===0&&attempt1.fights===0&&attempt1Log?.length>0&&attempt1Names.every(name=>tests1.get(name)?.passed===true)&&
+    state.phase==='prep'&&state.revision===20&&state.round===2&&state.gold===0&&state.level===4&&state.xp===4&&state.hp===97&&state.pieces?.length===0&&
+    state.inventory?.some(item=>item.uid==='i4'&&item.itemId==='bow')&&state.inventory?.some(item=>item.uid==='i5'&&item.itemId==='blade')&&state.inventory.length===2&&!!saleP1&&!!xpPurchase&&!!refresh&&
+    history.filter(event=>event.type==='fight-settled').length===1&&history.slice(-3).map(event=>event.type).join('|')==='operator-sold|xp-purchased|shop-refreshed'&&repeatedSegment.map(event=>event.type).join('|')==='piece-benched|piece-deployed|item-equipped'&&settled?.combatStats?.units?.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.heal===0&&unit.taken===840&&unit.kills===2);
+  const checkpointValid=checkpoint17||checkpoint20;
+  check('finish-tail-validates-attempts-and-known-live-checkpoint',checkpointValid,{attempt10Path,attempt9Path,attempt1Path:checkpoint20?attempt1Path:null,attempt1LogPath:checkpoint20?attempt1LogPath:null,attempt10Sale:attempt10Sale?.passed,attempt10Revision:attempt10Revision?.detail,attempt1Passed:checkpoint20?attempt1Names.map(name=>({name,passed:tests1.get(name)?.passed===true})):null,revision:state.revision,round:state.round,gold:state.gold,pieces:state.pieces?.map(piece=>piece.uid),inventory:state.inventory,p12Sale,p1Sale:saleP1,settled,repeatedActions:repeatedSegment,priorActions:history.slice(-3)});
   receipt.initialRevision=state.revision;
-  check('finish-tail-preserves-three-previously-repeated-actions-without-replay',history.slice(-3).map(event=>event.type).join('|')==='piece-benched|piece-deployed|item-equipped'&&history.at(-1)?.uid==='i5'&&state.revision===17,{revision:state.revision,actions:history.slice(-3)});
-
-  await rightClickPiece(page,'p1');
-  const beforeSale=state;
-  await page.keyboard.press('e');
-  state=await stateAfterRevision(page,sessionId,beforeSale.revision,'finish-tail-sell-p1');
-  const sold=state.history?.find(event=>event.type==='operator-sold'&&event.uid==='p1'&&event.round===2&&event.refund===1);
-  check('finish-tail-e-sells-p1-for-one-gold',!state.pieces?.some(piece=>piece.uid==='p1')&&state.gold===6&&!!sold,{goldBefore:beforeSale.gold,goldAfter:state.gold,sold});
-  await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:10000});
-  check('finish-tail-e-sale-closes-member-detail',await page.$('.dpanel')===null,'operator detail closes after its selected member is sold');
-  const xpCost=Number(state.actionCosts?.xpGold??4),refreshCost=Number(state.actionCosts?.refreshGold??2),required=xpCost+refreshCost;
-  check('finish-tail-mouse-economy-is-exactly-funded',state.gold===required,{gold:state.gold,xpCost,refreshCost});
-  const beforeXp=state;
-  await clickPointerSelector(page,'.shopbar .rs-level-card','finish-tail-mouse-xp');
-  state=await stateAfterRevision(page,sessionId,beforeXp.revision,'finish-tail-mouse-xp');
-  check('finish-tail-mouse-xp-spends-four-gold',state.gold===beforeXp.gold-xpCost&&(state.level>beforeXp.level||state.xp>beforeXp.xp),{goldBefore:beforeXp.gold,goldAfter:state.gold,levelBefore:beforeXp.level,levelAfter:state.level,xpBefore:beforeXp.xp,xpAfter:state.xp});
-  const beforeRefresh=state;
-  await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber','finish-tail-mouse-refresh');
-  state=await stateAfterRevision(page,sessionId,beforeRefresh.revision,'finish-tail-mouse-refresh');
-  check('finish-tail-mouse-refresh-spends-two-gold',state.gold===beforeRefresh.gold-refreshCost,{goldBefore:beforeRefresh.gold,goldAfter:state.gold,refreshCost});
-  const readOnlyExpectedRevision=state.revision;
+  let readOnlyExpectedRevision=state.revision;
+  if(checkpoint17) {
+    check('finish-tail-preserves-three-previously-repeated-actions-without-replay',history.slice(-3).map(event=>event.type).join('|')==='piece-benched|piece-deployed|item-equipped'&&history.at(-1)?.uid==='i5'&&state.revision===17,{revision:state.revision,actions:history.slice(-3)});
+    await rightClickPiece(page,'p1');
+    const beforeSale=state;
+    await page.keyboard.press('e');
+    state=await stateAfterRevision(page,sessionId,beforeSale.revision,'finish-tail-sell-p1');
+    const sold=state.history?.find(event=>event.type==='operator-sold'&&event.uid==='p1'&&event.round===2&&event.refund===1);
+    check('finish-tail-e-sells-p1-for-one-gold',!state.pieces?.some(piece=>piece.uid==='p1')&&state.gold===6&&!!sold,{goldBefore:beforeSale.gold,goldAfter:state.gold,sold});
+    await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:10000});
+    check('finish-tail-e-sale-closes-member-detail',await page.$('.dpanel')===null,'operator detail closes after its selected member is sold');
+    const xpCost=Number(state.actionCosts?.xpGold??4),refreshCost=Number(state.actionCosts?.refreshGold??2),required=xpCost+refreshCost;
+    check('finish-tail-mouse-economy-is-exactly-funded',state.gold===required,{gold:state.gold,xpCost,refreshCost});
+    const beforeXp=state;
+    await clickPointerSelector(page,'.shopbar .rs-level-card','finish-tail-mouse-xp');
+    state=await stateAfterRevision(page,sessionId,beforeXp.revision,'finish-tail-mouse-xp');
+    check('finish-tail-mouse-xp-spends-four-gold',state.gold===beforeXp.gold-xpCost&&(state.level>beforeXp.level||state.xp>beforeXp.xp),{goldBefore:beforeXp.gold,goldAfter:state.gold,levelBefore:beforeXp.level,levelAfter:state.level,xpBefore:beforeXp.xp,xpAfter:state.xp});
+    const beforeRefresh=state;
+    await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber','finish-tail-mouse-refresh');
+    state=await stateAfterRevision(page,sessionId,beforeRefresh.revision,'finish-tail-mouse-refresh');
+    check('finish-tail-mouse-refresh-spends-two-gold',state.gold===beforeRefresh.gold-refreshCost,{goldBefore:beforeRefresh.gold,goldAfter:state.gold,refreshCost});
+    readOnlyExpectedRevision=state.revision;
+  } else {
+    check('finish-tail-reuses-attempt1-economic-actions-without-replay',checkpoint20&&attempt1Names.every(name=>tests1.get(name)?.passed===true),{attempt1Path,revision:state.revision,actions:history.slice(-3),passingChecks:attempt1Names});
+  }
   check('finish-tail-no-new-session-or-fight',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
 
   await inspectPriorFightReplay(page,sessionId,1,'23-finish-tail-sold-ally-detail','p1','角峰');
