@@ -32480,6 +32480,24 @@
           "sourceKind": "official mode-design article",
           "sourceSection": "How it Works — Experience and Income",
           "sourceEffectText": "Contrasts standard automatic round XP and 4-gold XP purchases with Hyper Roll’s 2-gold victory payout and no interest."
+        },
+        {
+          "game": "Teamfight Tactics",
+          "version": "Patch 18.2 historical official Riot notes; Sep 14 mid-patch adjustment",
+          "recordID": "XP per Level",
+          "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-2/",
+          "sourceKind": "official historical patch-note text",
+          "sourceSection": "Systems — XP per Level; Sep 14 mid-patch update",
+          "sourceEffectText": "Patch 18.2 changed level 7→8 XP from 60 to 56 and level 8→9 / 9→10 from 68 to 64; the Sep 14 mid-patch update restored 8→9 and 9→10 to 68 while retaining 56 for 7→8. These specific resulting thresholds match local values; this does not establish parity for all XP rules."
+        },
+        {
+          "game": "Teamfight Tactics",
+          "version": "Patch 16.4 historical official Riot notes",
+          "recordID": "Level 7 Shop Odds",
+          "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-16-4/",
+          "sourceKind": "official historical patch-note text",
+          "sourceSection": "System Changes — Level Cost Odds",
+          "sourceEffectText": "Level 7 cost odds changed from 19/30/40/10/1% to 16/30/43/10/1%, matching the local level-7 odds; other levels are not implied."
         }
       ],
       "designBasis": {
@@ -32498,7 +32516,7 @@
         "localAnchor": "resonanceContent.campaign.economy"
       },
       "adaptations": [
-        "TFT来源支持被动收入、连胜收益、回合经验及4金币购买经验等经营原语；本地金币排程、利息比例/上限、连胜阈值、难度与节点排程及开局奖励采用本地指定数值，不声称与TFT逐字段相同。"
+        "TFT来源支持被动收入、连胜收益、回合经验及4金币购买经验等经营原语；18.2历史补丁及9月14日中途调整支持本地7→8需56经验、8→9和9→10需68经验这三个字段；16.4历史补丁支持本地7级商店概率16/30/43/10/1%。本地金币排程、利息比例/上限、其他等级经验与商店概率、难度与节点排程及开局奖励采用本地指定数值，不声称与TFT逐字段相同。"
       ],
       "coverageClass": "partial",
       "decision": "记录本地经营规则及历史机制来源和数值差异",

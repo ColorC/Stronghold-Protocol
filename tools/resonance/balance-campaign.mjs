@@ -9,7 +9,8 @@ import { applyAction, createSession, validateSession, viewSession } from '../../
 import { canPlace, fieldTile, ownerRangeKeys, positionClass } from '../../server/match/board.js';
 import { Grid } from '../../server/sim/grid.js';
 import { GEO } from '../../shared/constants.js';
-import { toDataSource } from '../../server/sim/simdata.js';
+import { normalizeChess, toDataSource } from '../../server/sim/simdata.js';
+import { setupUnitKit } from '../../server/sim/content/index.js';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { resonanceOpenings, selectResonanceOpening, openingEventView } from '../../shared/resonance/openings.js';
 import { resonanceSeason, resonanceSeasonOperatorIds } from '../../shared/resonance/season-roster.js';
@@ -28,6 +29,7 @@ const catalogCache=new Map();
 const poolLedgers=new WeakMap();
 const routeAssignmentsByState=new WeakMap();
 const carryPowerBaselines=new WeakMap();
+const campaignCombatProfiles=new WeakMap();
 let activeMetrics=null;
 let activeProgress=null;
 let activePolicy={id:'legacy',coreOperatorId:null,rushReleased:false};
@@ -63,6 +65,17 @@ export function adaptiveStandardPlan(round,level,hp){
 export function adaptiveStandardAllowsXp({level,hp,legalUniqueOwned}){
   if(level===8)return hp>=40;
   return legalUniqueOwned>level;
+}
+export function seasonCampaignFieldableCapacity(state,catalog,field){
+  const unique=hasActiveStrategyEffect(state,catalog,'unique_nation_core'),seen=new Set(),matched=new Map();
+  const units=state.pieces.filter(piece=>{const op=opById(catalog,piece.operatorId);if(!op)return false;if(unique&&seen.has(op.charId))return false;seen.add(op.charId);return true;});
+  const cells=piece=>[...field.deployMap.keys()].filter(key=>{const [r,c]=key.split(',').map(Number),op=opById(catalog,piece.operatorId);return canOperatorUseTile(op,field.deployMap,r,c)&&(op.role!=='frontline'||canBlockGround(field,r,c));});
+  const visit=(piece,visited)=>{for(const key of cells(piece)){if(visited.has(key))continue;visited.add(key);if(!matched.has(key)||visit(matched.get(key),visited)){matched.set(key,piece);return true;}}return false;};
+  for(const piece of units)visit(piece,new Set());return Math.min(10,matched.size);
+}
+export function seasonCampaignXpDecision(state,catalog,field){
+  const capacity=seasonCampaignFieldableCapacity(state,catalog,field),late=state.round>=24;
+  return {capacity,allowed:state.level<capacity,target:Math.min(capacity,late?10:adaptiveStandardPlan(state.round,state.level,state.hp).levelTarget),reserve:late?0:Math.max(30,adaptiveStandardPlan(state.round,state.level,state.hp).xpReserve),purchaseLimit:late?Math.floor(state.gold/4):4};
 }
 export function estimateOperatorPower(operator,star=1){
   const stats=operator?.stars?.[star]?.stats??{};
@@ -285,22 +298,43 @@ function equipmentOwnerUtility(item,piece,state,catalog){
 }
 function carryEquipmentOwnerUtility(item,piece,state,catalog){
   const op=opById(catalog,piece.operatorId);
-  return itemUtility(item,op)*carryOperatorPowerFactor(op,piece.star??1,catalog)+equipmentTransferBonus(item,piece,state,catalog);
+  return (state.rulesVersion===2?carryItemScore(item,op,piece.star):itemUtility(item,op))*carryOperatorPowerFactor(op,piece.star??1,catalog)+equipmentTransferBonus(item,piece,state,catalog);
 }
 function policyEquipmentOwnerUtility(item,piece,state,catalog){
   return activePolicy.id===CARRY_ADAPTIVE_POLICY?carryEquipmentOwnerUtility(item,piece,state,catalog):equipmentOwnerUtility(item,piece,state,catalog);
 }
-export function carryItemScore(item,operator){
+export function campaignCombatProfile(operator,star=1){
+  const cached=operator&&campaignCombatProfiles.get(operator);if(cached?.has(star))return cached.get(star);
+  const record=operator?.stars?.[star]?.record??{},skill=record.skills?.find(s=>s.index===operator.fixedSkillIndex)??record.skill??{},bb=skill.bb??{};
+  const def=normalizeChess({...record,skill}),kit=setupUnitKit({opts:{},data:nativeDataSource},{kind:'op',def},'independent');
+  const type=bb['attack@damage_type']??bb.damage_type??bb.dmg_type;
+  const damageType=type===2||type==='arts'?'arts':type===1||type==='phys'?'phys':record.dmgType;
+  const profile={role:operator?.role,damageType,skill,ammo:kit.skill?.kind==='ammo',melee:operator?.position==='MELEE',healer:record.dmgType==='heal'||operator?.role==='healer'};
+  if(operator){const profiles=cached??new Map();profiles.set(star,profile);campaignCombatProfiles.set(operator,profiles);}return profile;
+}
+export function carryItemScore(item,operator,star=1,legacy=false){
+  const profile=campaignCombatProfile(operator,star);
+  // Backline output cannot use healing or being-hit triggers as a normal carry item.
+  if(!legacy&&!profile.melee&&!profile.healer&&(item?.effects??[]).some(e=>['periodic_heal','hit_sp','counter_magic','thorns','block_stack'].includes(e.kind)))return 0;
   const role=operator?.role??'damage',attacker=role==='damage'||role==='control';let value=0;
   for(const effect of item?.effects??[]){const p=effect.params??{};
     if(effect.kind==='component_stat')value+=Number(p.atk??0)*(attacker ? .08 : .035)+Number(p.aspd??0)*(attacker ? .07 : .025)+Number(p.def??0)*(role==='frontline' ? .05 : .01)+Number(p.hp??0)*(role==='frontline' ? .025 : role==='healer'||role==='support' ? .018 : .006)+Number(p.res??0)*.015+Number(p.sp??0)*5+Number(p.initialSp??0)*.2;
     else if(['transfer_pact','pact_transfer'].includes(effect.kind))continue;
-    else value+=3;
+    else if(legacy)value+=3;
+    else if(effect.kind==='cast_stack')value+=profile.damageType==='arts'||profile.healer?7:.3;
+    else if(['armor_pierce','fifth_strike'].includes(effect.kind))value+=profile.damageType==='phys'?8:1;
+    else if(['resistance_shred','spell_vulnerability'].includes(effect.kind))value+=profile.damageType==='arts'?8:1;
+    else if(['attack_stack','splash_strike','chain_lightning','giant_slayer'].includes(effect.kind))value+=attacker?8:1;
+    else if(effect.kind==='periodic_heal')value+=profile.healer?10:profile.melee?5:0;
+    else if(['hit_sp','counter_magic','thorns','block_stack','hit_stack','regeneration','death_barrier'].includes(effect.kind))value+=profile.melee?7:1;
+    else if(['attack_sp','cast_sp','skill_sp','skill_damage','first_cast_haste','cast_stun'].includes(effect.kind))value+=profile.ammo?0:profile.skill.spCost?5:0;
+    else value+=1;
   }
   return value;
 }
 export function claimOptions(choice,state,catalog){
   const count=Math.min(choice.remaining,choice.options.length);
+  const score=(item,op)=>state.rulesVersion===2?carryItemScore(item,op):itemUtility(item,op);
   if(choice.type==='pair'){
     const placed=state.pieces.filter(p=>p.row!==null);
     const pair=placed.flatMap((a,i)=>placed.slice(i+1).filter(b=>Math.abs(a.row-b.row)+Math.abs(a.col-b.col)===1).map(b=>[a.uid,b.uid]))[0];
@@ -317,7 +351,7 @@ export function claimOptions(choice,state,catalog){
   }
   if(choice.type==='components'){
     const target=state.pieces.filter(p=>p.row!==null).sort((a,b)=>Number(opById(catalog,b.operatorId)?.role==='frontline')-Number(opById(catalog,a.operatorId)?.role==='frontline'))[0];
-    return [...choice.options].sort((a,b)=>itemUtility(catalog.equipment[b],opById(catalog,target?.operatorId))-itemUtility(catalog.equipment[a],opById(catalog,target?.operatorId))||a.localeCompare(b)).slice(0,count);
+    return [...choice.options].sort((a,b)=>score(catalog.equipment[b],opById(catalog,target?.operatorId))-score(catalog.equipment[a],opById(catalog,target?.operatorId))||a.localeCompare(b)).slice(0,count);
   }
   if(choice.type==='transfer')return [...choice.options].sort((a,b)=>Number(b.includes('aegir')||b.includes('arts')||b.includes('breaker'))-Number(a.includes('aegir')||a.includes('arts')||a.includes('breaker'))||a.localeCompare(b)).slice(0,count);
   if(choice.type==='operators')return [...choice.options].sort((a,b)=>buyScore(b,state,catalog)-buyScore(a,state,catalog)||a.localeCompare(b)).slice(0,count);
@@ -327,7 +361,7 @@ export function claimOptions(choice,state,catalog){
   if(choice.type==='recipe'){
     const pieces=state.pieces.filter(p=>p.row!==null),target=pieces.slice().sort((a,b)=>candidatePower(b,catalog)-candidatePower(a,catalog))[0],operator=target&&opById(catalog,target.operatorId);
     const recipes=(catalog.recipes??[]).filter(recipe=>choice.options.includes(recipe.resultId));
-    const best=recipes.map(recipe=>({id:recipe.resultId,score:itemUtility(catalog.equipment[recipe.resultId],operator)})).sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id))[0];
+    const best=recipes.map(recipe=>({id:recipe.resultId,score:score(catalog.equipment[recipe.resultId],operator)})).sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id))[0];
     return best?[best.id]:[choice.options[0]];
   }
   if(choice.type==='identity_transfer'){
@@ -710,6 +744,11 @@ function blockerCoveragePlan(field){
 function routeTargets(field){return routeProfiles(field).map(route=>route.points[0]);}
 function routeDistance(row,col,route){return Math.min(...route.points.map(([r,c])=>Math.abs(row-r)+Math.abs(col-c)));}
 function operatorRouteCoverage(op,star,row,col,dir,routes){const record=op?.stars?.[star]?.record??{},grid=record.rangeGrid?.length?record.rangeGrid:op?.source?.normalChess?.rangeGrid??[[0,0]],keys=ownerRangeKeys(grid,row,col,dir);return routes.map((route,index)=>route.points.some(([r,c])=>keys.has(`${r},${c}`))?index:null).filter(index=>index!==null);}
+export function campaignBossCoverage(piece,catalog,profiles,bossIndices){
+  const covered=piece?operatorRouteCoverage(opById(catalog,piece.operatorId),piece.star,piece.row,piece.col,piece.dir,profiles):[];
+  const indices=covered.flatMap(index=>profiles[index]?.originalIndices??[]).filter(index=>bossIndices.includes(index));
+  return {deployed:Boolean(piece),coveredBossRouteIndices:[...new Set(indices)],coversBossRoute:indices.length>0};
+}
 function deploymentCell(state,catalog,field,operator,occupied,loadByRoute,reserved=new Set(),summon=null,opts={}){
   const display=viewSession(state,{catalog,fieldResolver:(s)=>getResonanceField(s,{data,catalog})});
   if(!display.ok||display.legalFieldStatus!=='resolved')throw new Error(`field-view:${display.error??display.legalFieldStatus}`);
@@ -726,9 +765,11 @@ function deploymentCell(state,catalog,field,operator,occupied,loadByRoute,reserv
       for(const {route,index} of candidateRoutes){
         const distance=routeDistance(row,col,route),pathIndex=route.points.reduce((bestIndex,p,i)=>Math.abs(row-p[0])+Math.abs(col-p[1])<Math.abs(row-route.points[bestIndex][0])+Math.abs(col-route.points[bestIndex][1])?i:bestIndex,0);
         const intercept=Math.max(0,route.points.length-3),target=route.points[Math.max(0,pathIndex-1)]??route.points[0];
-        const dir=directionToward(row,col,target);
+        let dir=directionToward(row,col,target);
+        if(state.rulesVersion===2){dir=['UP','RIGHT','DOWN','LEFT'].map(direction=>{const keys=ownerRangeKeys(range,row,col,direction);return {direction,hits:operator.role==='healer'?blockedFronts.filter(front=>keys.has(`${front.row},${front.col}`)).length:route.points.filter(([r,c])=>keys.has(`${r},${c}`)).length};}).sort((a,b)=>b.hits-a.hits||Number(b.direction===dir)-Number(a.direction===dir))[0].direction;}
         const coverage=new Set(ownerRangeKeys(range,row,col,dir));
         const covered=route.points.filter(([r,c])=>coverage.has(`${r},${c}`)).length;
+        if(state.rulesVersion===2&&routeIndex!=null&&operator.role!=='healer'&&!covered)continue;
         let score;
         if(operator.role==='frontline'){const sharedBlockerCoverage=routes.filter(candidate=>candidate.motion==='WALK'&&routeDistance(row,col,candidate)===0).length;score=(distance>0?10000:0)+distance*100+Math.abs(pathIndex-intercept)*0.35+(loadByRoute[index]??0)*2-sharedBlockerCoverage*1000;}
         else if(operator.role==='healer')score=blockedFronts.filter(front=>coverage.has(`${front.row},${front.col}`)).length===blockedFronts.length?0:500+blockedFronts.filter(front=>coverage.has(`${front.row},${front.col}`)).length*-25;
@@ -736,6 +777,7 @@ function deploymentCell(state,catalog,field,operator,occupied,loadByRoute,reserv
         score+=(klass==='ranged'&&operator.position==='MELEE'?-0.1:0);
         if(score<best.score)best={score,target,routeIndex:index,dir};
       }
+      if(state.rulesVersion===2&&routeIndex!=null&&best.score===999)return null;
       const dir=best.dir??directionToward(row,col,best.target);
       if(operator.role==='frontline'&&routes[best.routeIndex]&&routeDistance(row,col,routes[best.routeIndex])!==0)return null;
       if(operator.role==='healer'&&blockedFronts.length&&!blockedFronts.some(front=>ownerRangeKeys(range,row,col,dir).has(`${front.row},${front.col}`)))return null;
@@ -776,6 +818,15 @@ function summonSpecs(piece,catalog){
     .filter(spec=>spec.token?.placeable===true&&(!Array.isArray(spec.token.owners)||!spec.token.owners.length||spec.token.owners.includes(piece.operatorId))&&nativeDataSource.getToken(spec.tokenId,piece.operatorId,{skillIndex,moduleId:'none'})?.sources?.includes('skill'));
 }
 
+function campaignDuplicatePlacementAllowed(piece,picked,state,catalog){
+  const op=opById(catalog,piece.operatorId),same=picked.filter(p=>opById(catalog,p.operatorId)?.charId===op?.charId);
+  if(state.rulesVersion===2)return !hasActiveStrategyEffect(state,catalog,'unique_nation_core')||!same.length;
+  return !same.length||piece.star>Math.max(...same.map(p=>p.star));
+}
+export function deployCampaignTeamForVerification(state,catalog,{coreOperatorId=null}={}){
+  const priorPolicy=activePolicy,priorMetrics=activeMetrics;activePolicy={id:CARRY_ADAPTIVE_POLICY,coreOperatorId};activeMetrics=null;
+  try{return deployTeam(state,catalog);}finally{activePolicy=priorPolicy;activeMetrics=priorMetrics;}
+}
 function deployTeam(state,catalog){
   const field=activeBattleFields(state,catalog);const legal=new Set(viewSession(state,{catalog,fieldResolver:(s)=>getResonanceField(s,{data,catalog})}).legalCells??[]);
   const occupied=new Set();
@@ -785,7 +836,7 @@ function deployTeam(state,catalog){
   const bossIndices=bossRouteIndices(field),bossRoute=profiles.find(route=>route.originalIndices?.some(index=>bossIndices.has(index))),bossProfileIndex=bossRoute?profiles.indexOf(bossRoute):null;
   const addBest=(predicate,limit)=>{while(picked.length<state.level&&picked.filter(p=>predicate(opById(catalog,p.operatorId))).length<limit){
     const candidate=candidates.filter(p=>!picked.includes(p)&&predicate(opById(catalog,p.operatorId))).map(piece=>({piece,op:opById(catalog,piece.operatorId)}))
-      .filter(({piece,op})=>{const same=picked.filter(p=>opById(catalog,p.operatorId)?.charId===op.charId);return !same.length||piece.star>Math.max(...same.map(p=>p.star));})
+      .filter(({piece})=>campaignDuplicatePlacementAllowed(piece,picked,state,catalog))
       .sort((a,b)=>(candidatePower(b.piece,catalog)+pactThresholdGain(picked,b.op,catalog))-(candidatePower(a.piece,catalog)+pactThresholdGain(picked,a.op,catalog))||a.piece.uid.localeCompare(b.piece.uid))[0];
     if(!candidate)break;picked.push(candidate.piece);
   }};
@@ -812,7 +863,7 @@ function deployTeam(state,catalog){
   if(isEconomyCampaignPolicy(activePolicy.id)&&activePolicy.coreOperatorId)addBest(op=>op?.id===activePolicy.coreOperatorId,1);
   if(isEconomyCampaignPolicy(activePolicy.id)&&pactTargetOperatorIds.size)addBest(op=>pactTargetOperatorIds.has(op?.id),pactTargetLimit);
   addBest(op=>op&&op.role!=='healer'&&op.role!=='frontline',state.level);
-  if(picked.length<state.level)for(const piece of candidates){if(picked.length>=state.level)break;const op=opById(catalog,piece.operatorId);if(!op||op.role==='healer'||op.role==='frontline'&&picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').length>=routeSlots)continue;const same=picked.filter(p=>opById(catalog,p.operatorId)?.charId===op.charId);if(!same.length||piece.star>Math.max(...same.map(p=>p.star)))picked.push(piece);}
+  if(picked.length<state.level)for(const piece of candidates){if(picked.length>=state.level)break;const op=opById(catalog,piece.operatorId);if(!op||op.role==='healer'||op.role==='frontline'&&picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').length>=routeSlots)continue;if(campaignDuplicatePlacementAllowed(piece,picked,state,catalog))picked.push(piece);}
   const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold');
   const capacity=reduced?7:9;
   const pickedUids=new Set(picked.map(piece=>piece.uid));
@@ -870,7 +921,7 @@ function deployTeam(state,catalog){
   while(state.pieces.filter(p=>p.row!==null).length<state.level){
     const deployed=state.pieces.filter(p=>p.row!==null),roleCounts=roleCountsForPieces(deployed,catalog);
     const orderedFallback=candidates.filter(piece=>!deployedUids.has(piece.uid)).map(piece=>({piece,op:opById(catalog,piece.operatorId)}))
-      .filter(({piece,op})=>op&&(canFillFallbackRole(op.role,roleCounts,{frontlineLimit:routeSlots,healerLimit:2})||(isEconomyCampaignPolicy(activePolicy.id)&&op.role==='frontline'&&isPriorityExtra(piece)))&&state.pieces.find(p=>p.uid===piece.uid)?.row===null)
+      .filter(({piece,op})=>op&&(state.rulesVersion!==2||campaignDuplicatePlacementAllowed(piece,deployed,state,catalog))&&(canFillFallbackRole(op.role,roleCounts,{frontlineLimit:routeSlots,healerLimit:2})||(isEconomyCampaignPolicy(activePolicy.id)&&op.role==='frontline'&&isPriorityExtra(piece)))&&state.pieces.find(p=>p.uid===piece.uid)?.row===null)
       .sort((a,b)=>{
         const priority=op=>op.role==='healer'&&roleCounts.healer===0?0:op.role==='frontline'&&roleCounts.frontline<routeSlots?1:canAttackAir(op)&&roleCounts.antiAir<targets.antiAir?2:['damage','control'].includes(op.role)&&roleCounts.combatOutput<targets.combatOutput?3:op.role==='healer'?5:4;
         return priority(a.op)-priority(b.op)||candidatePower(b.piece,catalog)-candidatePower(a.piece,catalog)||a.piece.uid.localeCompare(b.piece.uid);
@@ -899,8 +950,9 @@ function equipAndCombine(state,catalog){
       const a=state.inventory[i],b=state.inventory[j],recipe=catalog.recipes.find(r=>r.parts?.length===2&&((r.parts[0]===a.itemId&&r.parts[1]===b.itemId)||(r.parts[0]===b.itemId&&r.parts[1]===a.itemId)));
       if(!recipe)continue;
       const owner=state.pieces.filter(piece=>piece.row!==null).sort((x,y)=>policyEquipmentOwnerUtility(catalog.equipment[recipe.resultId],y,state,catalog)-policyEquipmentOwnerUtility(catalog.equipment[recipe.resultId],x,state,catalog))[0];
-      const base=itemUtility(catalog.equipment[a.itemId],opById(catalog,owner?.operatorId))+itemUtility(catalog.equipment[b.itemId],opById(catalog,owner?.operatorId));
-      const delta=itemUtility(catalog.equipment[recipe.resultId],opById(catalog,owner?.operatorId))-base;
+      const score=item=>state.rulesVersion===2?carryItemScore(item,opById(catalog,owner?.operatorId),owner?.star):itemUtility(item,opById(catalog,owner?.operatorId));
+      const base=score(catalog.equipment[a.itemId])+score(catalog.equipment[b.itemId]);
+      const delta=score(catalog.equipment[recipe.resultId])-base;
       if(delta>0&&(!best||delta>best.delta))best={a,b,delta};
     }
     if(!best)break;
@@ -913,7 +965,7 @@ function equipAndCombine(state,catalog){
   });
   for(const item of ordered){
     const owners=state.pieces.filter(p=>p.row!==null&&p.equipment.length<3&&!p.equipment.some(owned=>owned.itemId===item.itemId)&&policyEquipmentOwnerUtility(catalog.equipment[item.itemId],p,state,catalog)>0).sort((a,b)=>policyEquipmentOwnerUtility(catalog.equipment[item.itemId],b,state,catalog)*(1+b.star*.35)-policyEquipmentOwnerUtility(catalog.equipment[item.itemId],a,state,catalog)*(1+a.star*.35)||a.uid.localeCompare(b.uid));
-    const owner=owners[0];if(!owner)break;
+    const owner=owners[0];if(!owner)continue;
     state=runAction(state,{type:'equip',pieceUid:owner.uid,itemUid:item.uid},catalog).state;
   }
   return state;
@@ -947,6 +999,13 @@ export function transferCarryEquipment(state,catalog,{coreOperatorId=null}={}){
   const selected=selectAdaptiveCarry(state,catalog,coreOperatorId),moves=[];
   if(!selected){const plan={round:state.round,kind:null,uid:null,operatorId:null,name:null,cost:null,star:null,gear:[],moves,reposition:activeMetrics?.carryRepositionPlans?.[state.round]??null};if(activeMetrics)activeMetrics.carryPlans[state.round]=plan;return {state,carry:plan,moves};}
   const targetUid=selected.piece.uid;
+  if(state.rulesVersion===2&&state.round>=18){
+    const target=state.pieces.find(p=>p.uid===targetUid),op=opById(catalog,target.operatorId);
+    for(const item of [...target.equipment]){if(carryItemScore(catalog.equipment[item.itemId],op,target.star)>0||state.inventory.length>=20)continue;
+      if(!carryTransferPreservesPacts(state,catalog,target,{uid:'inventory',equipment:[]},item))continue;
+      state=runAction(state,{type:'unequip',itemUid:item.uid},catalog).state;
+    }
+  }
   for(let pass=0;pass<3;pass++){
     const target=state.pieces.find(piece=>piece.uid===targetUid);if(!target||target.equipment.length>=3)break;
     const already=new Set(target.equipment.map(item=>item.itemId));
@@ -958,8 +1017,8 @@ export function transferCarryEquipment(state,catalog,{coreOperatorId=null}={}){
         if(already.has(item.itemId)||catalog.recipes.some(recipe=>recipe.parts?.includes(item.itemId)))continue;
         const itemDef=catalog.equipment?.[item.itemId];if(!itemDef)continue;
         const donorFactor=carryOperatorPowerFactor(sourceOp,source.star??1,catalog),targetOp=opById(catalog,target.operatorId),targetFactor=carryOperatorPowerFactor(targetOp,target.star??1,catalog);
-        const donorScore=carryItemScore(itemDef,sourceOp)*donorFactor+equipmentTransferBonus(itemDef,source,state,catalog);
-        const targetScore=carryItemScore(itemDef,targetOp)*targetFactor+equipmentTransferBonus(itemDef,target,state,catalog),gain=targetScore-donorScore;
+        const donorScore=carryItemScore(itemDef,sourceOp,source.star,state.rulesVersion!==2)*donorFactor+equipmentTransferBonus(itemDef,source,state,catalog);
+        const targetScore=carryItemScore(itemDef,targetOp,target.star,state.rulesVersion!==2)*targetFactor+equipmentTransferBonus(itemDef,target,state,catalog),gain=targetScore-donorScore;
         if(gain<1||targetScore<donorScore*1.05||!carryTransferPreservesPacts(state,catalog,source,target,item))continue;
         candidates.push({source,item,sourceOp,donorScore,targetScore,gain});
       }
@@ -986,7 +1045,7 @@ export function planCarryAdaptiveDeployment(state,catalog,{coreOperatorId=null}=
   const bossIndex=profiles.findIndex(route=>route.originalIndices?.some(index=>bossIds.has(index))),units=state.pieces.filter(piece=>piece.row!==null),carry=selectAdaptiveCarry(state,catalog,coreOperatorId)?.piece??null;
   const roleOrder=units.slice().sort((a,b)=>{
     const ao=opById(catalog,a.operatorId),bo=opById(catalog,b.operatorId),priority=piece=>{
-      const op=opById(catalog,piece.operatorId);if(op?.role==='frontline')return 0;if(op?.role==='healer')return 1;if(piece.uid===carry?.uid)return 2;if(canAttackAir(op))return 3;if(['damage','control','summoner'].includes(op?.role))return 4;return 5;
+      const op=opById(catalog,piece.operatorId);if(state.rulesVersion===2&&bossIndex>=0&&piece.uid===carry?.uid)return -1;if(op?.role==='frontline')return 0;if(op?.role==='healer')return 1;if(piece.uid===carry?.uid)return 2;if(canAttackAir(op))return 3;if(['damage','control','summoner'].includes(op?.role))return 4;return 5;
     };return priority(a)-priority(b)||candidatePower(b,catalog)-candidatePower(a,catalog)||a.uid.localeCompare(b.uid);
   });
   const occupied=new Set(),load=Array(profiles.length).fill(0),reserved=new Set(),frontlines=[],desired=[],assignedFrontRoutes=new Set();let frontCursor=0;
@@ -994,8 +1053,7 @@ export function planCarryAdaptiveDeployment(state,catalog,{coreOperatorId=null}=
     const live=state.pieces.find(entry=>entry.uid===piece.uid),op=opById(catalog,live.operatorId);if(!op)continue;
     let routeIndex=null;
     if(op.role==='frontline'&&ground.length){
-      const bossGround=live.uid===carry?.uid&&ground.find(entry=>entry.index===bossIndex);
-      routeIndex=bossGround?.index??ground.find(entry=>!assignedFrontRoutes.has(entry.index))?.index??ground[frontCursor%ground.length].index;assignedFrontRoutes.add(routeIndex);frontCursor++;
+      routeIndex=live.uid===carry?.uid&&bossIndex>=0?bossIndex:ground.find(entry=>!assignedFrontRoutes.has(entry.index))?.index??ground[frontCursor%ground.length].index;assignedFrontRoutes.add(routeIndex);frontCursor++;
     }else if(bossIndex>=0&&live.uid===carry?.uid)routeIndex=bossIndex;
     const tile=deploymentCell(state,catalog,field,op,occupied,load,reserved,summonSpecs(live,catalog),{star:live.star,routeIndex,frontlines});
     if(!tile){desired.push({uid:live.uid,operatorId:live.operatorId,role:op.role,from:[live.row,live.col,live.dir],to:null,reason:'no-legal-target'});continue;}
@@ -1116,8 +1174,9 @@ function improveEconomy(state,catalog){
 function improveEconomyPact(state,catalog,adaptive=false){
   if(state.rulesVersion===2&&activePolicy.id===CARRY_ADAPTIVE_POLICY)activePolicy.coreOperatorId=selectSeasonCampaignCore(state,catalog,activePolicy.coreOperatorId);
   const plan=adaptive?adaptiveStandardPlan(state.round,state.level,state.hp):econPactPlan(state.round,state.level),field=activeBattleFields(state,catalog),identity=catalog.environments?.[state.environmentId]?.identityPactId;
+  const allowsXp=()=>state.rulesVersion===2?seasonCampaignXpDecision(state,catalog,activeBattleFields(state,catalog)).allowed:adaptiveStandardAllowsXp({level:state.level,hp:state.hp,legalUniqueOwned});
   let legalUniqueOwned=0,xpAllowed=true;
-  if(adaptive){const chars=new Set(state.pieces.filter(piece=>legalCandidateCell(opById(catalog,piece.operatorId),field,new Set())).map(piece=>opById(catalog,piece.operatorId)?.charId).filter(Boolean));legalUniqueOwned=chars.size;xpAllowed=adaptiveStandardAllowsXp({level:state.level,hp:state.hp,legalUniqueOwned});activeMetrics.adaptivePlans.push({round:state.round,hp:state.hp,level:state.level,legalUniqueOwned,bankTarget:plan.bankTarget,xpReserve:plan.xpReserve,refreshEnabled:plan.refreshEnabled,refreshLimit:plan.refreshLimit,refreshReserve:plan.refreshReserve,xpAllowed,xpGate:xpAllowed?null:'owned-legal-unique-not-above-level'});}
+  if(adaptive){const chars=new Set(state.pieces.filter(piece=>legalCandidateCell(opById(catalog,piece.operatorId),field,new Set())).map(piece=>opById(catalog,piece.operatorId)?.charId).filter(Boolean));legalUniqueOwned=chars.size;xpAllowed=allowsXp();activeMetrics.adaptivePlans.push({round:state.round,hp:state.hp,level:state.level,legalUniqueOwned,bankTarget:plan.bankTarget,xpReserve:plan.xpReserve,refreshEnabled:plan.refreshEnabled,refreshLimit:plan.refreshLimit,refreshReserve:plan.refreshReserve,xpAllowed,xpGate:xpAllowed?null:'owned-legal-unique-not-above-level'});}
   const reserve=plan.bankTarget;
   let buys=0;
   const initialMissing=campaignRolePlan(state,catalog,field).missing;
@@ -1127,7 +1186,8 @@ function improveEconomyPact(state,catalog,adaptive=false){
     const roleNeed=roleNeedForOffer(op,state,catalog,field),floor=roleNeed?0:reserve;
     if(state.gold-Number(offer.cost)<floor)return false;
     const owned=state.pieces.filter(piece=>piece.operatorId===op.id),count=pactMemberCounts(state.pieces,catalog).get(identity)??0,thresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(level=>level.threshold)??[];
-    const targetable=Boolean(roleNeed||owned.some(piece=>piece.star===1)||econPactIdentityInvestment(op,state,catalog)||op.id===activePolicy.coreOperatorId&&campaignCorePurchaseAvailable(state,op)||thresholds.some(value=>value>count)&&(op.pacts??[]).includes(identity)&&!state.pieces.some(piece=>opById(catalog,piece.operatorId)?.charId===op.charId));
+    const expansion=state.rulesVersion===2&&state.round>=24&&state.level<10&&!owned.length&&['damage','control','healer'].includes(op.role)&&legalCandidateCell(op,field,new Set());
+    const targetable=Boolean(expansion||roleNeed||owned.some(piece=>piece.star===1)||econPactIdentityInvestment(op,state,catalog)||op.id===activePolicy.coreOperatorId&&campaignCorePurchaseAvailable(state,op)||thresholds.some(value=>value>count)&&(op.pacts??[]).includes(identity)&&!state.pieces.some(piece=>opById(catalog,piece.operatorId)?.charId===op.charId));
     if(!targetable)return false;
     const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold'),capacity=reduced?7:9;
     return state.pieces.filter(piece=>piece.row===null).length<capacity||Boolean(purchaseBenchCandidate(state,catalog,op.id));
@@ -1142,7 +1202,8 @@ function improveEconomyPact(state,catalog,adaptive=false){
     const nextThreshold=thresholds.find(value=>value>count);
     const advancesIdentity=Boolean(nextThreshold&&(op.pacts??[]).includes(identity));
     const isCore=op.id===activePolicy.coreOperatorId&&campaignCorePurchaseAvailable(state,op);
-    if(!roleNeed&&!canMerge&&!advancesIdentity&&!isCore)break;
+    const expansion=state.rulesVersion===2&&state.round>=24&&state.level<10&&!owned.length&&['damage','control','healer'].includes(op.role)&&legalCandidateCell(op,field,new Set());
+    if(!roleNeed&&!canMerge&&!advancesIdentity&&!isCore&&!expansion)break;
     const cost=Number(candidate.offer.cost),purchaseReserve=roleNeed?0:reserve;
     if(state.gold-cost<purchaseReserve){activeMetrics.roleDecisions.push({round:state.round,action:'buy',operatorId:op.id,reason:'econ-pact-bank-floor',gold:state.gold,cost,reserve:purchaseReserve});rejectCoreOffer(candidate,state,'econ-pact-bank-floor');break;}
     const room=makePurchaseBenchSpace(state,catalog,op.id);if(!room){activeMetrics.roleDecisions.push({round:state.round,action:'buy',operatorId:op.id,reason:'bench-full-no-unrequired-piece-to-sell'});break;}state=room;
@@ -1150,15 +1211,16 @@ function improveEconomyPact(state,catalog,adaptive=false){
     state=runAction(state,{type:'buy',offerUid:candidate.offer.uid,...(duplicate?{mergeTargetUid:duplicate.uid}:{})},catalog).state;buys++;
   }
   const xpPlan=adaptive?adaptiveStandardPlan(state.round,state.level,state.hp):econPactPlan(state.round,state.level),fieldNow=activeBattleFields(state,catalog),legalSlotCap=Math.min(10,fieldNow.deployMap?.size??10);
-  const xpGoal=Math.min(xpPlan.levelTarget,legalSlotCap);
+  const seasonXp=state.rulesVersion===2?seasonCampaignXpDecision(state,catalog,fieldNow):null;
+  const xpGoal=Math.min(seasonXp?.target??xpPlan.levelTarget,legalSlotCap),xpPurchaseLimit=seasonXp?.purchaseLimit??4,xpReserve=seasonXp?.reserve??xpPlan.xpReserve;
   let xpBuys=0;
-  if(adaptive){const chars=new Set(state.pieces.filter(piece=>legalCandidateCell(opById(catalog,piece.operatorId),fieldNow,new Set())).map(piece=>opById(catalog,piece.operatorId)?.charId).filter(Boolean));legalUniqueOwned=chars.size;xpAllowed=adaptiveStandardAllowsXp({level:state.level,hp:state.hp,legalUniqueOwned});const current=activeMetrics.adaptivePlans.at(-1);if(current){current.legalUniqueOwned=legalUniqueOwned;current.xpAllowed=xpAllowed;current.xpGate=xpAllowed?null:'owned-legal-unique-not-above-level';}}
-  while(state.level<xpGoal&&xpBuys<4){
-    if(adaptive){xpAllowed=adaptiveStandardAllowsXp({level:state.level,hp:state.hp,legalUniqueOwned});const current=activeMetrics.adaptivePlans.at(-1);if(current){current.legalUniqueOwned=legalUniqueOwned;current.xpAllowed=xpAllowed;current.xpGate=xpAllowed?null:'owned-legal-unique-not-above-level';}if(!xpAllowed){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'adaptive-legal-roster-capacity',level:state.level,legalUniqueOwned});break;}}
+  if(adaptive){const chars=new Set(state.pieces.filter(piece=>legalCandidateCell(opById(catalog,piece.operatorId),fieldNow,new Set())).map(piece=>opById(catalog,piece.operatorId)?.charId).filter(Boolean));legalUniqueOwned=chars.size;xpAllowed=allowsXp();const current=activeMetrics.adaptivePlans.at(-1);if(current){current.legalUniqueOwned=legalUniqueOwned;current.xpAllowed=xpAllowed;current.xpGate=xpAllowed?null:'owned-legal-unique-not-above-level';}}
+  while(state.level<xpGoal&&xpBuys<xpPurchaseLimit){
+    if(adaptive){xpAllowed=allowsXp();const current=activeMetrics.adaptivePlans.at(-1);if(current){current.legalUniqueOwned=legalUniqueOwned;current.xpAllowed=xpAllowed;current.xpGate=xpAllowed?null:'owned-legal-unique-not-above-level';}if(!xpAllowed){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'adaptive-legal-roster-capacity',level:state.level,legalUniqueOwned});break;}}
     const missing=campaignRolePlan(state,catalog,fieldNow).missing;
-    if(missing.frontline||missing.healer||missing.antiAir){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-wait-for-block-heal-air',missing});break;}
+    if((missing.frontline||missing.healer||missing.antiAir)&&!(state.rulesVersion===2&&state.round>=24&&seasonXp.allowed)){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-wait-for-block-heal-air',missing});break;}
     const cost=viewSession(state,{catalog}).actionCosts?.xpGold??4;
-    if(state.gold-cost<xpPlan.xpReserve){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-bank-floor',gold:state.gold,cost,reserve:xpPlan.xpReserve});break;}
+    if(state.gold-cost<xpReserve){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-bank-floor',gold:state.gold,cost,reserve:xpReserve});break;}
     state=runAction(state,{type:'buyXp'},catalog).state;xpBuys++;
   }
   const refreshPlan=adaptive?adaptiveStandardPlan(state.round,state.level,state.hp):econPactPlan(state.round,state.level);
@@ -1170,7 +1232,8 @@ function improveEconomyPact(state,catalog,adaptive=false){
       const canActOnRefreshed=(offer,op)=>{
         const currentCount=pactMemberCounts(state.pieces,catalog).get(identity)??0,currentThresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(level=>level.threshold)??[];
         const roleNeed=roleNeedForOffer(op,state,catalog,fieldNow),ownsStar1=state.pieces.some(piece=>piece.operatorId===op.id&&piece.star===1),targetsCore=op.id===activePolicy.coreOperatorId;
-        const targetable=roleNeed||ownsStar1||targetsCore||econPactIdentityInvestment(op,state,catalog)||((op.pacts??[]).includes(identity)&&currentThresholds.some(value=>value>currentCount)&&!state.pieces.some(piece=>opById(catalog,piece.operatorId)?.charId===op.charId));
+        const expansion=state.rulesVersion===2&&state.round>=24&&state.level<10&&!state.pieces.some(p=>p.operatorId===op.id)&&['damage','control','healer'].includes(op.role)&&legalCandidateCell(op,fieldNow,new Set());
+        const targetable=expansion||roleNeed||ownsStar1||targetsCore||econPactIdentityInvestment(op,state,catalog)||((op.pacts??[]).includes(identity)&&currentThresholds.some(value=>value>currentCount)&&!state.pieces.some(piece=>opById(catalog,piece.operatorId)?.charId===op.charId));
         const floor=roleNeed?0:refreshReserve,room=state.pieces.filter(piece=>piece.row===null).length<(hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold')?7:9)||Boolean(purchaseBenchCandidate(state,catalog,op.id));
         return targetable&&state.gold-Number(offer.cost)>=floor&&room;
       };
@@ -1178,7 +1241,8 @@ function improveEconomyPact(state,catalog,adaptive=false){
       const op=opById(catalog,candidate.offer.operatorId),owned=state.pieces.filter(piece=>piece.operatorId===op?.id),count=pactMemberCounts(state.pieces,catalog).get(identity)??0;
       const thresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(item=>item.threshold)??[];
       const targetsCore=op?.id===activePolicy.coreOperatorId,targetsPact=Boolean((op?.pacts??[]).includes(identity)&&thresholds.some(value=>value>count)),targetsMerge=owned.some(piece=>piece.star===1);
-      if(!targetsCore&&!targetsPact&&!targetsMerge)continue;
+      const expansion=state.rulesVersion===2&&state.round>=24&&state.level<10&&!owned.length&&['damage','control','healer'].includes(op?.role)&&legalCandidateCell(op,fieldNow,new Set());
+      if(!targetsCore&&!targetsPact&&!targetsMerge&&!expansion)continue;
       if(state.gold-Number(candidate.offer.cost)<refreshReserve)continue;
       const room=makePurchaseBenchSpace(state,catalog,candidate.offer.operatorId);if(!room)continue;state=room;
       const duplicate=state.pieces.find(piece=>piece.operatorId===candidate.offer.operatorId&&piece.star===1);
@@ -1254,8 +1318,8 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
     const battleProfiles=routeProfiles(field),battleRoutes=battleProfiles.map(x=>x.points[0]),battleGroundRoutes=groundRouteEntries(field,battleProfiles);
     const deployedRoleCounts=roleCountsForPieces(deployed,catalog),roleTargets=campaignRoleTargets(state,catalog,field),roleDeficits={frontline:Math.max(0,roleTargets.frontlines-deployedRoleCounts.frontline),healer:Math.max(0,roleTargets.healers-deployedRoleCounts.healer),antiAir:Math.max(0,roleTargets.antiAir-deployedRoleCounts.antiAir)};
     const coreId=activePolicy.coreOperatorId??null;
-    const bossOriginalRouteIndices=[...bossRouteIndices(field)],coreUnit=deployed.find(piece=>piece.operatorId===coreId),coreCoveredBossRoutes=(coreUnit?.coveredRoutes??[]).flatMap(index=>battleProfiles[index]?.originalIndices??[]).filter(index=>bossOriginalRouteIndices.includes(index));
-    const before={round:state.round,gold:state.gold,hp:state.hp,level:state.level,coreStock:{operatorId:coreId,owned:coreId?state.pieces.filter(piece=>piece.operatorId===coreId).length:0,deployed:coreId?deployed.filter(piece=>piece.operatorId===coreId).length:0,shopOffers:coreId?state.shop.offers.filter(offer=>offer.operatorId===coreId).length:0,poolRemaining:coreId?Number(state.poolRemaining[coreId]??0):0},bossOriginalRouteIndices,coreBossCoverage:{deployed:Boolean(coreUnit),coveredBossRouteIndices:coreCoveredBossRoutes,coversBossRoute:coreCoveredBossRoutes.length>0},routeCount:battleRoutes.length,
+    const bossOriginalRouteIndices=[...bossRouteIndices(field)],coreUnit=deployed.filter(piece=>piece.operatorId===coreId).sort((a,b)=>b.star-a.star)[0],coreCoverage=campaignBossCoverage(coreUnit,catalog,battleProfiles,bossOriginalRouteIndices);
+    const before={round:state.round,gold:state.gold,hp:state.hp,level:state.level,coreStock:{operatorId:coreId,owned:coreId?state.pieces.filter(piece=>piece.operatorId===coreId).length:0,deployed:coreId?deployed.filter(piece=>piece.operatorId===coreId).length:0,shopOffers:coreId?state.shop.offers.filter(offer=>offer.operatorId===coreId).length:0,poolRemaining:coreId?Number(state.poolRemaining[coreId]??0):0},bossOriginalRouteIndices,coreBossCoverage:coreCoverage,routeCount:battleRoutes.length,
       roster:deployed.map(p=>{const op=opById(catalog,p.operatorId),nearest=battleProfiles.map((route,index)=>({index,d:routeDistance(p.row,p.col,route)})).sort((a,b)=>a.d-b.d)[0],nativePacts=new Set(op?.pacts??[]),pacts=new Set([...nativePacts,...(p.extraPacts??[])]),transferPacts=new Set();for(const item of p.equipment??[])for(const effect of catalog.equipment[item.itemId]?.effects??[])if(['transfer_pact','pact_transfer'].includes(effect.kind)&&effect.params?.pactId){pacts.add(effect.params.pactId);if(!nativePacts.has(effect.params.pactId))transferPacts.add(effect.params.pactId);}return {uid:p.uid,operatorId:p.operatorId,name:op?.name,cost:op?.cost,star:p.star,role:op?.role,position:op?.position,canHitFly:canAttackAir(op),row:p.row,col:p.col,dir:p.dir,blocksGround:op?.role==='frontline'?canBlockGround(field,p.row,p.col):null,routeIndex:op?.role==='frontline'?(assignedRoutes.get(p.uid)??nearest?.index??null):null,coveredRoutes:operatorRouteCoverage(op,p.star,p.row,p.col,p.dir,battleProfiles),pacts:[...pacts],transferPacts:[...transferPacts],equipment:p.equipment.map(item=>item.itemId)};}),benchReserve:state.pieces.filter(p=>p.row===null).map(p=>({uid:p.uid,operatorId:p.operatorId,name:opById(catalog,p.operatorId)?.name,cost:opById(catalog,p.operatorId)?.cost,role:opById(catalog,p.operatorId)?.role,star:p.star})),mainPacts,refreshesSpent:metrics.refreshes[state.round]??0,
       roleCounts:Object.fromEntries(['frontline','healer','damage','control','summoner','support'].map(role=>[role,deployed.filter(p=>opById(catalog,p.operatorId)?.role===role).length]).concat([['antiAir',deployedRoleCounts.antiAir],['combatOutput',deployedRoleCounts.combatOutput]])),roleTargets,roleDeficits,vacantSlots:Math.max(0,state.level-deployed.length),deployCellCount:field.deployMap?.size??null,
       routeCoverage:{routes:battleProfiles.map((route,index)=>({index,originalIndices:route.originalIndices,motion:route.motion,source:route.source,points:route.points})),groundFrontlines:deployed.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').map(p=>{const routeIndex=assignedRoutes.get(p.uid),route=routeIndex==null?null:battleProfiles[routeIndex],distanceToPath=route?routeDistance(p.row,p.col,route):null;return {uid:p.uid,routeIndex,originalRouteIndices:route?.originalIndices??[],position:[p.row,p.col],distanceToPath,blocksGround:canBlockGround(field,p.row,p.col),onNativePath:distanceToPath===0,blocksGroundPath:distanceToPath===0&&canBlockGround(field,p.row,p.col)};}),uncoveredGroundRoutes:battleGroundRoutes.map(({index})=>index).filter(index=>!deployed.some(p=>opById(catalog,p.operatorId)?.role==='frontline'&&canBlockGround(field,p.row,p.col)&&routeDistance(p.row,p.col,battleProfiles[index])===0)),healerCoverage:deployed.filter(p=>opById(catalog,p.operatorId)?.role==='healer').map(p=>({uid:p.uid,coveredFrontlines:deployed.filter(x=>opById(catalog,x.operatorId)?.role==='frontline').filter(x=>operatorRouteCoverage(opById(catalog,p.operatorId),p.star,p.row,p.col,p.dir,[{points:[[x.row,x.col]]}]).length>0).map(x=>x.uid)}))}};

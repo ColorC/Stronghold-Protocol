@@ -146,6 +146,11 @@ test('campaign, economy and UI structures preserve the intended comparison bound
   assert.equal(matrix.systems.economy.remainingUnsupported.length,0);
   assert.ok(matrix.systems.economy.externalRefs.length>=4,'historical economy source primitives are cited individually');
   assert.ok(matrix.systems.economy.externalRefs.every(ref=>ref.sourceURL.startsWith('https://')&&ref.sourceSection));
+  const xpSource=matrix.systems.economy.externalRefs.find(ref=>ref.sourceURL==='https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-2/');
+  assert.match(xpSource?.sourceEffectText??'',/7→8.*56.*8→9.*9→10.*68/s,'18.2 and the Sep 14 update support only the local 56/68/68 XP thresholds');
+  const oddsSource=matrix.systems.economy.externalRefs.find(ref=>ref.sourceURL==='https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-16-4/');
+  assert.match(oddsSource?.sourceEffectText??'',/16\/30\/43\/10\/1%/,'16.4 supports the matching level-7 odds field');
+  assert.match(matrix.systems.economy.adaptations.join(' '),/不声称与TFT逐字段相同/,'economy citations must not imply full-system parity');
   const designBasis=matrix.systems.economy.designBasis;
   assert.equal(designBasis.absolutePath,'E:\\WindowsWorkspace\\spark.workshop\\debug-agent\\workshop\\data\\projects\\arknights\\material\\notes\\texts\\text-c536b659-3c89-40ab-ba70-db5648e64081.md');
   assert.equal(designBasis.sourceURL,'https://workshop.colorc.cc/bside/canvas?project=arknights&canvas=canvas-0470c0a1#card=text-c536b659-3c89-40ab-ba70-db5648e64081');

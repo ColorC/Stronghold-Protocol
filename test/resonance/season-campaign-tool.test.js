@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CANONICAL_DATA_DIR, CARRY_ADAPTIVE_POLICY, ENVIRONMENTS, campaignCorePurchaseAvailable, getSeasonCampaignCatalog, parseSeasonCampaignArguments, runCampaign, runSeasonCampaignMatrix, selectAdaptiveCarry, selectEconPactCopyTarget, selectSeasonCampaignCore, selectSeasonCampaignSeeds } from '../../tools/resonance/balance-campaign.mjs';
+import { CANONICAL_DATA_DIR, CARRY_ADAPTIVE_POLICY, ENVIRONMENTS, campaignBossCoverage, campaignCombatProfile, carryItemScore, campaignCorePurchaseAvailable, getSeasonCampaignCatalog, parseSeasonCampaignArguments, runCampaign, runSeasonCampaignMatrix, seasonCampaignFieldableCapacity, seasonCampaignXpDecision, selectAdaptiveCarry, selectEconPactCopyTarget, selectSeasonCampaignCore, selectSeasonCampaignSeeds } from '../../tools/resonance/balance-campaign.mjs';
 import { resonanceOpenings, selectResonanceOpening } from '../../shared/resonance/openings.js';
 import { resonanceSeasonOperatorIds } from '../../shared/resonance/season-roster.js';
+import { createSession, validateSession } from '../../server/modes/resonance/session.js';
+import { deployCampaignTeamForVerification, planCarryAdaptiveDeployment } from '../../tools/resonance/balance-campaign.mjs';
 
 test('bounded opening selection finds one deterministic seed for every real event',()=>{
   const tasks=selectSeasonCampaignSeeds();assert.deepEqual(tasks.map(t=>t.openingId),Object.keys(resonanceOpenings));
@@ -60,4 +62,56 @@ test('season three-cost stock can be bought and copied before the legacy five-co
   assert.equal(campaignCorePurchaseAvailable(state,{cost:5}),false,'five-cost entry still needs its usual level gate');
   assert.equal(selectEconPactCopyTarget({kind:'smallCopy'},[core,aux],state,op.id,catalog),core,'legal low-cost copy advances the held two-star branch');
   assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},[core,aux],state,op.id,catalog),core);
+});
+
+test('late season XP uses actual deployable copies and a finite real-gold budget',()=>{
+  const catalog=getSeasonCampaignCatalog(1),op=Object.values(catalog.operators).find(o=>o.name==='能天使');
+  const field={deployMap:new Map(Array.from({length:10},(_,i)=>[`${9+Math.floor(i/8)},${2+i%8}`,'ranged']))};
+  const state={rulesVersion:2,round:28,level:7,hp:46,gold:233,strategies:[],pieces:Array.from({length:10},(_,i)=>({uid:`held${i}`,operatorId:op.id,star:1,row:null,equipment:[]}))};
+  assert.equal(seasonCampaignFieldableCapacity(state,catalog,field),10,'legal repeated identities supply population; they do not supply extra pact count');
+  assert.deepEqual(seasonCampaignXpDecision(state,catalog,field),{capacity:10,allowed:true,target:10,reserve:0,purchaseLimit:58});
+  assert.equal(seasonCampaignXpDecision({...state,pieces:state.pieces.slice(0,7)},catalog,field).allowed,false,'no XP investment without an existing legal next member');
+  assert.equal(seasonCampaignXpDecision({...state,round:15},catalog,field).reserve,30,'before the roll-down phase money remains reserved');
+  assert.equal(seasonCampaignFieldableCapacity(state,catalog,{deployMap:new Map([['0,0','ranged']])}),0,'population cannot use a tile outside the native field');
+});
+
+test('fixed native skills distinguish physical carry gear from healer and being-hit gear',()=>{
+  const catalog=getSeasonCampaignCatalog(1),find=name=>Object.values(catalog.operators).find(o=>o.name===name),physical=find('能天使'),healer=find('白面鸮'),arts=find('蜜蜡');
+  assert.equal(campaignCombatProfile(physical,3).skill.index,physical.fixedSkillIndex);
+  for(const id of ['lifeSpring','vitalEngine','counterMirror'])assert.equal(carryItemScore(catalog.equipment[id],physical,3),0,id);
+  for(const id of ['rapidBlade','armorAxe','berserkBow'])assert(carryItemScore(catalog.equipment[id],physical,3)>carryItemScore(catalog.equipment.archangelStaff,physical,3),id);
+  assert(carryItemScore(catalog.equipment.lifeSpring,healer,2)>carryItemScore(catalog.equipment.lifeSpring,physical,3));
+  assert(carryItemScore(catalog.equipment.archangelStaff,arts,2)>carryItemScore(catalog.equipment.archangelStaff,physical,3));
+  const ammo=find('隐现');assert.equal(campaignCombatProfile(ammo,2).ammo,true,'AMMO comes from the selected native kit even when the raw durationType is NONE');
+  assert(carryItemScore(catalog.equipment.quickCharger,ammo,2)<carryItemScore(catalog.equipment.quickCharger,physical,3),'a sustained AMMO activation does not value active-skill SP recovery');
+});
+
+test('raw campaign pieces derive boss coverage from native range rather than absent report fields',()=>{
+  const catalog=getSeasonCampaignCatalog(1),op=Object.values(catalog.operators).find(o=>o.name==='能天使');
+  const piece={operatorId:op.id,star:3,row:9,col:3,dir:'RIGHT'};
+  const profiles=[{points:[[0,0]],originalIndices:[0]},{points:[[9,5],[9,6]],originalIndices:[5]}];
+  assert.deepEqual(campaignBossCoverage(piece,catalog,profiles,[5]),{deployed:true,coveredBossRouteIndices:[5],coversBossRoute:true});
+  assert.equal(campaignBossCoverage({...piece,dir:'LEFT'},catalog,profiles,[5]).coversBossRoute,false);
+  assert.equal(campaignBossCoverage(null,catalog,profiles,[5]).deployed,false);
+});
+
+test('season capacity and real placement both count legal duplicate stock',()=>{
+  const catalog=getSeasonCampaignCatalog(1),created=createSession({seed:1,difficulty:'NORMAL',catalog});assert.equal(created.ok,true);
+  const state=structuredClone(created.state),op=Object.values(catalog.operators).find(o=>o.name==='能天使');
+  // A conserved unit-test inventory fixture; no campaign funds, shop or result are changed.
+  for(const piece of state.pieces)state.poolRemaining[piece.operatorId]+=3**(piece.star-1);
+  const template=state.pieces[0];state.level=9;
+  state.pieces=Array.from({length:9},(_,i)=>({...template,uid:`fixture${i}`,operatorId:op.id,star:1,row:null,col:null,equipment:[]}));
+  state.poolRemaining[op.id]-=9;
+  assert.equal(validateSession(state,{catalog}).ok,true);
+  const field=planCarryAdaptiveDeployment(state,catalog).field;
+  const capacity=seasonCampaignFieldableCapacity(state,catalog,field);assert.equal(capacity,9);
+  const placed=deployCampaignTeamForVerification(state,catalog,{coreOperatorId:op.id});
+  assert.equal(placed.pieces.filter(p=>p.row!==null).length,capacity,'actual native deploy actions fill every counted slot');
+  assert.equal(validateSession(placed,{catalog}).ok,true);assert.equal(placed.gold,state.gold);assert.deepEqual(placed.poolRemaining,state.poolRemaining);
+  // Current season disables this old rule; a local catalog fixture verifies the supported active-rule boundary.
+  const restricted=structuredClone(state),uniqueId='fixtureUnique',uniqueCatalog={...catalog,strategies:{...catalog.strategies,[uniqueId]:{id:uniqueId,effects:[{kind:'unique_nation_core'}]}}};
+  restricted.strategies=[uniqueId];restricted.strategyState={[uniqueId]:{}};
+  assert.equal(seasonCampaignFieldableCapacity(restricted,uniqueCatalog,field),1);
+  assert.equal(deployCampaignTeamForVerification(restricted,uniqueCatalog).pieces.filter(p=>p.row!==null).length,1,'active unique rule is applied by both selection and fallback deployment');
 });
