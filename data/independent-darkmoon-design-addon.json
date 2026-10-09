@@ -1244,7 +1244,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+          "text": "本场每累计8次普通攻击后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
           "sourceId": "BGS_022",
           "implementation": "supported",
           "adapter": [
@@ -1255,7 +1255,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+          "text": "本场每累计8次普通攻击后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
           "sourceId": "BGS_022",
           "implementation": "supported",
           "adapter": [
@@ -1278,14 +1278,14 @@
                 "params": {
                   "sourceId": "BGS_022"
                 },
-                "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+                "text": "本场每累计8次普通攻击后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+                "adaptation": "本场每累计8次普通攻击后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -1304,14 +1304,14 @@
                 "params": {
                   "sourceId": "BGS_022"
                 },
-                "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+                "text": "本场每累计8次普通攻击后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+                "adaptation": "本场每累计8次普通攻击后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -1334,14 +1334,14 @@
             "params": {
               "sourceId": "BGS_022"
             },
-            "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+            "text": "本场每累计8次普通攻击后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
             "textEn": "",
             "tags": [
               "windfury"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+            "adaptation": "本场每累计8次普通攻击后，追加1次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -1360,14 +1360,14 @@
             "params": {
               "sourceId": "BGS_022"
             },
-            "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+            "text": "本场每累计8次普通攻击后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
             "textEn": "",
             "tags": [
               "windfury"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
+            "adaptation": "本场每累计8次普通攻击后，追加3次普通攻击。优先攻击当前可攻击范围内攻击力最低的敌人。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -1428,7 +1428,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+          "text": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
           "sourceId": "BGS_032",
           "implementation": "supported",
           "adapter": [
@@ -1439,7 +1439,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+          "text": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
           "sourceId": "BGS_032",
           "implementation": "supported",
           "adapter": [
@@ -1462,12 +1462,12 @@
                 "params": {
                   "sourceId": "BGS_032"
                 },
-                "text": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+                "text": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+                "adaptation": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -1486,12 +1486,12 @@
                 "params": {
                   "sourceId": "BGS_032"
                 },
-                "text": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+                "text": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+                "adaptation": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -1514,12 +1514,12 @@
             "params": {
               "sourceId": "BGS_032"
             },
-            "text": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+            "text": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+            "adaptation": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -1538,12 +1538,12 @@
             "params": {
               "sourceId": "BGS_032"
             },
-            "text": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+            "text": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+            "adaptation": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -1602,7 +1602,7 @@
           "trigger": "友方击倒敌人",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+          "text": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
           "sourceId": "BGS_035",
           "implementation": "supported",
           "adapter": [
@@ -1613,7 +1613,7 @@
           "trigger": "友方击倒敌人",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+          "text": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
           "sourceId": "BGS_035",
           "implementation": "supported",
           "adapter": [
@@ -1636,16 +1636,16 @@
                 "params": {
                   "sourceId": "BGS_035"
                 },
-                "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "text": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "adaptation": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "卡西米尔干员击倒敌人",
+                "triggerLabel": "卡西米尔友方单位击倒敌人",
                 "recipientLabel": "自身",
                 "durationLabel": "本场战斗"
               }
@@ -1660,16 +1660,16 @@
                 "params": {
                   "sourceId": "BGS_035"
                 },
-                "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+                "text": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+                "adaptation": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "卡西米尔干员击倒敌人",
+                "triggerLabel": "卡西米尔友方单位击倒敌人",
                 "recipientLabel": "自身",
                 "durationLabel": "本场战斗"
               }
@@ -1688,16 +1688,16 @@
             "params": {
               "sourceId": "BGS_035"
             },
-            "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "text": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "adaptation": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "卡西米尔干员击倒敌人",
+            "triggerLabel": "卡西米尔友方单位击倒敌人",
             "recipientLabel": "自身",
             "durationLabel": "本场战斗"
           }
@@ -1712,16 +1712,16 @@
             "params": {
               "sourceId": "BGS_035"
             },
-            "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+            "text": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+            "adaptation": "卡西米尔友方单位击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "卡西米尔干员击倒敌人",
+            "triggerLabel": "卡西米尔友方单位击倒敌人",
             "recipientLabel": "自身",
             "durationLabel": "本场战斗"
           }
@@ -3054,7 +3054,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
+          "text": "本场每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
           "sourceId": "BGS_045",
           "implementation": "supported",
           "adapter": [
@@ -3065,7 +3065,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
+          "text": "本场每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
           "sourceId": "BGS_045",
           "implementation": "supported",
           "adapter": [
@@ -3088,12 +3088,12 @@
                 "params": {
                   "sourceId": "BGS_045"
                 },
-                "text": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
+                "text": "本场每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
+                "adaptation": "本场每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -3112,12 +3112,12 @@
                 "params": {
                   "sourceId": "BGS_045"
                 },
-                "text": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
+                "text": "本场每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
+                "adaptation": "本场每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -3140,12 +3140,12 @@
             "params": {
               "sourceId": "BGS_045"
             },
-            "text": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
+            "text": "本场每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
+            "adaptation": "本场每累计8次自身攻击后，临时提高攻击倍率20%，增益持续至本场战斗结束。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -3164,12 +3164,12 @@
             "params": {
               "sourceId": "BGS_045"
             },
-            "text": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
+            "text": "本场每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
+            "adaptation": "本场每累计8次自身攻击后，临时提高攻击倍率30%，增益持续至本场战斗结束。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -3230,7 +3230,7 @@
           "trigger": "友方攻击",
           "recipient": "所有友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
+          "text": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
           "sourceId": "BGS_047",
           "implementation": "supported",
           "adapter": [
@@ -3241,7 +3241,7 @@
           "trigger": "友方攻击",
           "recipient": "所有友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
+          "text": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
           "sourceId": "BGS_047",
           "implementation": "supported",
           "adapter": [
@@ -3264,16 +3264,16 @@
                 "params": {
                   "sourceId": "BGS_047"
                 },
-                "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
+                "text": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
+                "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "维多利亚干员攻击敌人",
+                "triggerLabel": "维多利亚友方单位攻击敌人",
                 "recipientLabel": "所有友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -3288,16 +3288,16 @@
                 "params": {
                   "sourceId": "BGS_047"
                 },
-                "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
+                "text": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
+                "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "维多利亚干员攻击敌人",
+                "triggerLabel": "维多利亚友方单位攻击敌人",
                 "recipientLabel": "所有友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -3316,16 +3316,16 @@
             "params": {
               "sourceId": "BGS_047"
             },
-            "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
+            "text": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
+            "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "维多利亚干员攻击敌人",
+            "triggerLabel": "维多利亚友方单位攻击敌人",
             "recipientLabel": "所有友方干员",
             "durationLabel": "本场战斗"
           }
@@ -3340,16 +3340,16 @@
             "params": {
               "sourceId": "BGS_047"
             },
-            "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
+            "text": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
+            "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "维多利亚干员攻击敌人",
+            "triggerLabel": "维多利亚友方单位攻击敌人",
             "recipientLabel": "所有友方干员",
             "durationLabel": "本场战斗"
           }
@@ -3810,7 +3810,7 @@
           "trigger": "友方攻击",
           "recipient": "触发效果的友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+          "text": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
           "sourceId": "BGS_056",
           "implementation": "supported",
           "adapter": [
@@ -3821,7 +3821,7 @@
           "trigger": "友方攻击",
           "recipient": "触发效果的友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
+          "text": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
           "sourceId": "BGS_056",
           "implementation": "supported",
           "adapter": [
@@ -3844,16 +3844,16 @@
                 "params": {
                   "sourceId": "BGS_056"
                 },
-                "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "text": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "维多利亚干员攻击敌人",
+                "triggerLabel": "维多利亚友方单位攻击敌人",
                 "recipientLabel": "触发效果的友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -3868,16 +3868,16 @@
                 "params": {
                   "sourceId": "BGS_056"
                 },
-                "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
+                "text": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
+                "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "维多利亚干员攻击敌人",
+                "triggerLabel": "维多利亚友方单位攻击敌人",
                 "recipientLabel": "触发效果的友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -3896,16 +3896,16 @@
             "params": {
               "sourceId": "BGS_056"
             },
-            "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "text": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "维多利亚干员攻击敌人",
+            "triggerLabel": "维多利亚友方单位攻击敌人",
             "recipientLabel": "触发效果的友方干员",
             "durationLabel": "本场战斗"
           }
@@ -3920,16 +3920,16 @@
             "params": {
               "sourceId": "BGS_056"
             },
-            "text": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
+            "text": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次维多利亚干员攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
+            "adaptation": "本场每累计8次维多利亚友方单位攻击敌人后，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "维多利亚干员攻击敌人",
+            "triggerLabel": "维多利亚友方单位攻击敌人",
             "recipientLabel": "触发效果的友方干员",
             "durationLabel": "本场战斗"
           }
@@ -4170,7 +4170,7 @@
           "trigger": "友方累计破裂五层护盾",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+          "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
           "sourceId": "BGS_067",
           "implementation": "supported",
           "adapter": [
@@ -4181,7 +4181,7 @@
           "trigger": "友方累计破裂五层护盾",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+          "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
           "sourceId": "BGS_067",
           "implementation": "supported",
           "adapter": [
@@ -4204,18 +4204,18 @@
                 "params": {
                   "sourceId": "BGS_067"
                 },
-                "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "友方干员累计破裂五层护盾",
+                "triggerLabel": "友方单位累计破裂五层护盾",
                 "recipientLabel": "自身",
                 "durationLabel": "本场战斗"
               }
@@ -4230,18 +4230,18 @@
                 "params": {
                   "sourceId": "BGS_067"
                 },
-                "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+                "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+                "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "友方干员累计破裂五层护盾",
+                "triggerLabel": "友方单位累计破裂五层护盾",
                 "recipientLabel": "自身",
                 "durationLabel": "本场战斗"
               }
@@ -4260,18 +4260,18 @@
             "params": {
               "sourceId": "BGS_067"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "友方干员累计破裂五层护盾",
+            "triggerLabel": "友方单位累计破裂五层护盾",
             "recipientLabel": "自身",
             "durationLabel": "本场战斗"
           }
@@ -4286,18 +4286,18 @@
             "params": {
               "sourceId": "BGS_067"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+            "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
+            "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "友方干员累计破裂五层护盾",
+            "triggerLabel": "友方单位累计破裂五层护盾",
             "recipientLabel": "自身",
             "durationLabel": "本场战斗"
           }
@@ -5020,7 +5020,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+          "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
           "sourceId": "BGS_080",
           "implementation": "supported",
           "adapter": [
@@ -5031,7 +5031,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+          "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
           "sourceId": "BGS_080",
           "implementation": "supported",
           "adapter": [
@@ -5054,14 +5054,14 @@
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+                "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+                "adaptation": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -5080,14 +5080,14 @@
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+                "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+                "adaptation": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -5110,14 +5110,14 @@
             "params": {
               "sourceId": "BGS_080"
             },
-            "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+            "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
             "textEn": "",
             "tags": [
               "windfury"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+            "adaptation": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -5136,14 +5136,14 @@
             "params": {
               "sourceId": "BGS_080"
             },
-            "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+            "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
             "textEn": "",
             "tags": [
               "windfury"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。本场战斗内，该效果每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+            "adaptation": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -6558,7 +6558,7 @@
           "trigger": "友方受到攻击",
           "recipient": "触发效果的友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
+          "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
           "sourceId": "BGS_110",
           "implementation": "supported",
           "adapter": [
@@ -6569,7 +6569,7 @@
           "trigger": "友方受到攻击",
           "recipient": "触发效果的友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
+          "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
           "sourceId": "BGS_110",
           "implementation": "supported",
           "adapter": [
@@ -6592,18 +6592,18 @@
                 "params": {
                   "sourceId": "BGS_110"
                 },
-                "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
+                "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "taunt"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
+                "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+                "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
                 "recipientLabel": "触发效果的友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -6618,18 +6618,18 @@
                 "params": {
                   "sourceId": "BGS_110"
                 },
-                "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
+                "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "taunt"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
+                "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+                "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
                 "recipientLabel": "触发效果的友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -6648,18 +6648,18 @@
             "params": {
               "sourceId": "BGS_110"
             },
-            "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
+            "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
+            "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×3的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+            "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
             "recipientLabel": "触发效果的友方干员",
             "durationLabel": "本场战斗"
           }
@@ -6674,18 +6674,18 @@
             "params": {
               "sourceId": "BGS_110"
             },
-            "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
+            "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
+            "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使触发效果的友方获得攻击徽章×6的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+            "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
             "recipientLabel": "触发效果的友方干员",
             "durationLabel": "本场战斗"
           }
@@ -6740,7 +6740,7 @@
           "trigger": "友方受到攻击",
           "recipient": "自身",
           "duration": "本局永久",
-          "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
+          "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
           "sourceId": "BGS_111",
           "implementation": "supported",
           "adapter": [
@@ -6751,7 +6751,7 @@
           "trigger": "友方受到攻击",
           "recipient": "自身",
           "duration": "本局永久",
-          "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
+          "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
           "sourceId": "BGS_111",
           "implementation": "supported",
           "adapter": [
@@ -6774,18 +6774,18 @@
                 "params": {
                   "sourceId": "BGS_111"
                 },
-                "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
+                "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
+                "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+                "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
                 "recipientLabel": "自身",
                 "durationLabel": "本局成长"
               }
@@ -6800,18 +6800,18 @@
                 "params": {
                   "sourceId": "BGS_111"
                 },
-                "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
+                "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
                 "textEn": "",
                 "tags": [
                   "taunt"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
+                "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+                "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
                 "recipientLabel": "自身",
                 "durationLabel": "本局成长"
               }
@@ -6830,18 +6830,18 @@
             "params": {
               "sourceId": "BGS_111"
             },
-            "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
+            "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
+            "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×1与伤害徽章×1。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+            "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
             "recipientLabel": "自身",
             "durationLabel": "本局成长"
           }
@@ -6856,18 +6856,18 @@
             "params": {
               "sourceId": "BGS_111"
             },
-            "text": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
+            "text": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次佩戴坚守盟约的友方干员受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
+            "adaptation": "本场每累计8次佩戴坚守盟约的友方单位受到攻击后，使自身装备攻击徽章×2与伤害徽章×2。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "佩戴坚守盟约的友方干员受到攻击",
+            "triggerLabel": "佩戴坚守盟约的友方单位受到攻击",
             "recipientLabel": "自身",
             "durationLabel": "本局成长"
           }
@@ -7296,7 +7296,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加1次普通攻击。",
+          "text": "本场每累计8次普通攻击后，追加1次普通攻击。",
           "sourceId": "BGS_119",
           "implementation": "supported",
           "adapter": [
@@ -7307,7 +7307,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次普通攻击事件后，追加3次普通攻击。",
+          "text": "本场每累计8次普通攻击后，追加3次普通攻击。",
           "sourceId": "BGS_119",
           "implementation": "supported",
           "adapter": [
@@ -7640,7 +7640,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+          "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
           "sourceId": "BGS_126",
           "implementation": "supported",
           "adapter": [
@@ -7651,7 +7651,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+          "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
           "sourceId": "BGS_126",
           "implementation": "supported",
           "adapter": [
@@ -7674,12 +7674,12 @@
                 "params": {
                   "sourceId": "BGS_126"
                 },
-                "text": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+                "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+                "adaptation": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -7698,12 +7698,12 @@
                 "params": {
                   "sourceId": "BGS_126"
                 },
-                "text": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+                "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+                "adaptation": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -7726,12 +7726,12 @@
             "params": {
               "sourceId": "BGS_126"
             },
-            "text": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+            "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+            "adaptation": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -7750,12 +7750,12 @@
             "params": {
               "sourceId": "BGS_126"
             },
-            "text": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+            "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+            "adaptation": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -8668,7 +8668,7 @@
           "trigger": "友方受到攻击",
           "recipient": "自身附近的友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
+          "text": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
           "sourceId": "BGS_201",
           "implementation": "supported",
           "adapter": [
@@ -8679,7 +8679,7 @@
           "trigger": "友方受到攻击",
           "recipient": "自身附近的友方",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+          "text": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
           "sourceId": "BGS_201",
           "implementation": "supported",
           "adapter": [
@@ -8723,18 +8723,18 @@
                 "params": {
                   "sourceId": "BGS_201"
                 },
-                "text": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
+                "text": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "taunt"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
+                "adaptation": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "友方干员受到攻击",
+                "triggerLabel": "自身受到攻击",
                 "recipientLabel": "自身附近的友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -8770,18 +8770,18 @@
                 "params": {
                   "sourceId": "BGS_201"
                 },
-                "text": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "text": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "taunt"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+                "adaptation": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "友方干员受到攻击",
+                "triggerLabel": "自身受到攻击",
                 "recipientLabel": "自身附近的友方干员",
                 "durationLabel": "本场战斗"
               }
@@ -8821,18 +8821,18 @@
             "params": {
               "sourceId": "BGS_201"
             },
-            "text": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
+            "text": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
+            "adaptation": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "友方干员受到攻击",
+            "triggerLabel": "自身受到攻击",
             "recipientLabel": "自身附近的友方干员",
             "durationLabel": "本场战斗"
           }
@@ -8868,18 +8868,18 @@
             "params": {
               "sourceId": "BGS_201"
             },
-            "text": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "text": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次友方干员受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+            "adaptation": "本场每累计8次自身受到攻击后，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "友方干员受到攻击",
+            "triggerLabel": "自身受到攻击",
             "recipientLabel": "自身附近的友方干员",
             "durationLabel": "本场战斗"
           }
@@ -9148,7 +9148,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+          "text": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
           "sourceId": "BGS_205",
           "implementation": "supported",
           "adapter": [
@@ -9159,7 +9159,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+          "text": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
           "sourceId": "BGS_205",
           "implementation": "supported",
           "adapter": [
@@ -9224,7 +9224,7 @@
                 "params": {
                   "sourceId": "BGS_205"
                 },
-                "text": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+                "text": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
                 "textEn": "",
                 "tags": [
                   "taunt",
@@ -9233,7 +9233,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+                "adaptation": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9294,7 +9294,7 @@
                 "params": {
                   "sourceId": "BGS_205"
                 },
-                "text": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+                "text": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
                 "textEn": "",
                 "tags": [
                   "taunt",
@@ -9303,7 +9303,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+                "adaptation": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9368,7 +9368,7 @@
             "params": {
               "sourceId": "BGS_205"
             },
-            "text": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+            "text": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -9377,7 +9377,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+            "adaptation": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -9438,7 +9438,7 @@
             "params": {
               "sourceId": "BGS_205"
             },
-            "text": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+            "text": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -9447,7 +9447,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场战斗内，该效果每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
+            "adaptation": "本场每累计8次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13188,7 +13188,7 @@
           "trigger": "友方累计破裂五层护盾",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
+          "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
           "sourceId": "ICC_858",
           "implementation": "supported",
           "adapter": [
@@ -13199,7 +13199,7 @@
           "trigger": "友方累计破裂五层护盾",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
+          "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
           "sourceId": "ICC_858",
           "implementation": "supported",
           "adapter": [
@@ -13243,18 +13243,18 @@
                 "params": {
                   "sourceId": "ICC_858"
                 },
-                "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
+                "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
+                "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "友方干员累计破裂五层护盾",
+                "triggerLabel": "友方单位累计破裂五层护盾",
                 "recipientLabel": "自身",
                 "durationLabel": "本场战斗"
               }
@@ -13290,18 +13290,18 @@
                 "params": {
                   "sourceId": "ICC_858"
                 },
-                "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
+                "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
+                "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
-                "triggerLabel": "友方干员累计破裂五层护盾",
+                "triggerLabel": "友方单位累计破裂五层护盾",
                 "recipientLabel": "自身",
                 "durationLabel": "本场战斗"
               }
@@ -13341,18 +13341,18 @@
             "params": {
               "sourceId": "ICC_858"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
+            "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
+            "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "友方干员累计破裂五层护盾",
+            "triggerLabel": "友方单位累计破裂五层护盾",
             "recipientLabel": "自身",
             "durationLabel": "本场战斗"
           }
@@ -13388,18 +13388,18 @@
             "params": {
               "sourceId": "ICC_858"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
+            "text": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
+            "adaptation": "友方单位累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
-            "triggerLabel": "友方干员累计破裂五层护盾",
+            "triggerLabel": "友方单位累计破裂五层护盾",
             "recipientLabel": "自身",
             "durationLabel": "本场战斗"
           }

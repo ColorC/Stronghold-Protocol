@@ -39,7 +39,8 @@ test('all 101 source entries regenerate both visible variants from executable pr
         assert.doesNotMatch(row[`${variant}Levels`], /徽章|星级等量/);
         if (variant === 'elite') assert.match(row.eliteLevels, /结算两次/);
       } else {
-        assert.equal(row[`${variant}Levels`], toLevels(row[variant]), `${entry.sourceId} ${variant} levels must describe training levels`);
+        if (entry.sourceId === 'BGS_111') assert.match(row[variant + 'Levels'], /使自身获得训练等级/);
+        else assert.equal(row[variant + 'Levels'], toLevels(row[variant]), entry.sourceId + ' ' + variant + ' levels must describe training levels');
       }
       for (const delivery of entry.metadata?.op?.effectDelivery?.[variant] || []) {
         if (typeof delivery.text === 'string') {
@@ -86,9 +87,9 @@ test('growth text names the exact badge and its combat actor', () => {
   for (const row of byAddonId.values()) {
     assert.doesNotMatch(`${row.normal}\n${row.elite}`, /职业副属性|成长徽章|徽章成长/);
   }
-  assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔干员击倒敌人时/);
-  assert.match(darkmoonCombatMetadata('BGS_047').text, /该效果每累计8次维多利亚干员攻击敌人后/);
-  assert.match(darkmoonCombatMetadata('BGS_111').text, /该效果每累计8次佩戴坚守盟约的友方干员受到攻击后/);
+  assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔友方单位击倒敌人时/);
+  assert.match(darkmoonCombatMetadata('BGS_047').text, /本场每累计8次维多利亚友方单位攻击敌人后/);
+  assert.match(darkmoonCombatMetadata('BGS_111').text, /本场每累计8次佩戴坚守盟约的友方单位受到攻击后/);
   assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位实际部署时.*增加五层护盾/);
   assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位实际部署时/);
   for(const id of ['BGS_017','BGS_021','BGS_071']){
@@ -107,22 +108,37 @@ test('combat cadence copy is explicit in ordinary, elite, and both growth-mode v
     const row = byAddonId.get(id);
     assert.ok(row, `${id} game text exists`);
     for (const variant of ['normal','elite']) {
-      assert.match(row[variant], /本场战斗内，该效果每累计8次/);
-      assert.match(row[`${variant}Levels`], /本场战斗内，该效果每累计8次/);
+      assert.match(row[variant], /本场(?:内，)?(?:自身)?每累计8次|本场内，自身每累计受到8次/);
+      assert.match(row[`${variant}Levels`], /本场(?:内，)?(?:自身)?每累计8次|本场内，自身每累计受到8次/);
     }
   }
   for (const id of cadence3) {
     const row = byAddonId.get(id);
     assert.ok(row, `${id} game text exists`);
     for (const variant of ['normal','elite']) {
-      assert.match(row[variant], /本场战斗内，该效果每累计3次攻击超杀后/);
-      assert.match(row[`${variant}Levels`], /本场战斗内，该效果每累计3次攻击超杀后/);
+      assert.match(row[variant], /本场每累计3次攻击超杀后/);
+      assert.match(row[`${variant}Levels`], /本场每累计3次攻击超杀后/);
     }
   }
-  assert.match(byAddonId.get('BGS_080').normal, /累计8次普通攻击事件后，追加1次普通攻击/);
-  assert.match(byAddonId.get('BGS_080').elite, /累计8次普通攻击事件后，追加3次普通攻击/);
-  assert.match(byAddonId.get('BOT_218').normal, /自身受到伤害/);
-  assert.doesNotMatch(byAddonId.get('BOT_218').normal, /友方干员受到攻击/);
+  assert.match(byAddonId.get('BGS_080').normal, /累计8次普通攻击后，追加1次普通攻击/);
+  assert.match(byAddonId.get('BGS_080').elite, /累计8次普通攻击后，追加3次普通攻击/);
+  assert.match(byAddonId.get('BGS_201').normal, /本场每累计8次自身受到攻击后/);
+  assert.doesNotMatch(byAddonId.get('BGS_201').normal, /友方干员受到攻击/);
+  for (const variant of ['normal','elite']) {
+    const entry = byId.get('BGS_201');
+    const trigger = darkmoonCombatMetadata('BGS_201', variant === 'elite').trigger;
+    assert.equal(entry.authoredRule[variant].trigger, trigger);
+    assert.ok(entry.sourceEffect[variant].some(row => row.sourceTrigger === 'darkmoonCombat' && row.trigger === trigger));
+    assert.ok(entry.metadata.op.effectDelivery[variant].some(row => row.sourceTrigger === 'darkmoonCombat' && row.trigger === trigger));
+  }
+  assert.doesNotMatch(byAddonId.get('BOT_218').normal, /受到伤害后|每当受到伤害/);
+  for (const variant of ['normal','elite']) {
+    assert.match(byAddonId.get('BGS_111')[`${variant}Levels`], /使自身获得训练等级/);
+    assert.doesNotMatch(byAddonId.get('BGS_111')[`${variant}Levels`], /使自身装备训练等级/);
+  }
+  for (const id of [...cadence8,...cadence3]) {
+    assert.doesNotMatch(`${byAddonId.get(id).normal}\n${byAddonId.get(id).elite}`, /该效果|普通攻击事件/);
+  }
   for (const id of [...cadence8,...cadence3]) {
     const cards = byAddonId.get(id).sourceRefs.cards;
     assert.ok(cards.length);

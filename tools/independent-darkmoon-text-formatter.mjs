@@ -243,6 +243,8 @@ function main() {
     const eliteText = elite.join('\n') || cleanCombat(item.sourceId, 'elite') || normalText;
     const levelText = (variantText, variant) => item.sourceId === 'BGS_100'
       ? `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级两倍的训练等级${variant === 'elite' ? '；该效果结算两次' : ''}。`
+      : item.sourceId === 'BGS_111'
+        ? toLevels(variantText).replace('使自身装备训练等级', '使自身获得训练等级')
       : toLevels(variantText);
     const next = { ...item, normal: normalText, elite: eliteText, normalLevels: levelText(normalText, 'normal'), eliteLevels: levelText(eliteText, 'elite') };
     item.normal = next.normal; item.elite = next.elite; item.normalLevels = next.normalLevels; item.eliteLevels = next.eliteLevels;
@@ -313,6 +315,13 @@ function main() {
     }
   }
   for (const entry of blueprints.entries) {
+    for (const variant of ['normal', 'elite']) {
+      const trigger = darkmoonCombatMetadata(entry.sourceId, variant === 'elite')?.trigger;
+      if (entry.authoredRule?.mechanic === 'darkmoonCombat' && entry.authoredRule?.[variant] && trigger) entry.authoredRule[variant].trigger = trigger;
+      for (const rows of [entry.sourceEffect?.[variant], entry.metadata?.op?.effectDelivery?.[variant]]) {
+        for (const row of rows || []) if (row.sourceTrigger === 'darkmoonCombat' && trigger) row.trigger = trigger;
+      }
+    }
     const prepByVariant = { normal: renderedPrepRows(entry, 'normal'), elite: renderedPrepRows(entry, 'elite') };
     for (const variant of ['normal','elite']) {
       let prepIndex = 0;
