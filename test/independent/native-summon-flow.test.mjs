@@ -6,9 +6,34 @@ import { getData } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { modeIdFor } from '../../shared/constants.js';
 import { nativeLevelAttributes } from '../../shared/independentGrowth.js';
-import { battleUnits, runIndependentBattle } from '../../server/modes/independent/battle.js';
+import { battleUnits, runIndependentBattle, getIndependentField } from '../../server/modes/independent/battle.js';
 import { benchCount, tempCount } from '../../server/modes/independent/session.js';
 import { prepView } from '../../public/js/independent/model.js';
+
+function routeTilesForWave(wave) {
+  const tiles = new Set();
+  for (const spawn of wave.spawns || []) {
+    if (!(Number(spawn.count) > 0) || spawn.preview?.fly === true) continue;
+    const route = wave.routes?.[spawn.routeIndex];
+    if (!route || route.motion === 'FLY') continue;
+    const points = [route.start, ...(route.checkpoints || []), route.end].filter((p) => Array.isArray(p) && p.length === 2);
+    for (let i = 1; i < points.length; i++) {
+      const [r0, c0] = points[i - 1], [r1, c1] = points[i];
+      const steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0), 1);
+      // Wave route points are battle-field [x, y]; prep legal tiles are [row, col].
+      for (let n = 0; n <= steps; n++) tiles.add(`${Math.round(c0 + (c1 - c0) * n / steps)},${Math.round(r0 + (r1 - r0) * n / steps)}`);
+    }
+  }
+  return tiles;
+}
+
+function farthestLegalTile(legalTiles, routeTiles) {
+  const score = (tile) => Math.min(...[...routeTiles].map((key) => {
+    const [r, c] = key.split(',').map(Number);
+    return Math.abs(tile[0] - r) + Math.abs(tile[1] - c);
+  }));
+  return legalTiles.map((key) => key.split(',').map(Number)).sort((a, b) => score(b) - score(a))[0];
+}
 
 function buyOperator(chessId, growthMode='badges') {
   const state = createSession({ seed: 90210, growthMode });
@@ -138,7 +163,7 @@ test('a placed Vigil wolf replaces the generic tactician reinforcement and keeps
   assert.doesNotMatch(replay, /token_tactician_reinforce/);
 });
 
-test('a prep-placed Vigil wolf gets BGS021 growth through the real opening battle deploy flow', () => {
+function runPlacedVigilWolf(growthMode) {
   const data=getData(),catalog=getCatalog(data),gd=new GameData(data,modeIdFor('solo','NORMAL'));
   const vigil=Object.values(catalog.operators).find(op=>op.name==='伺夜'&&!op.elite);
   const holder=Object.values(catalog.operators).find(op=>op.sourceRefs?.darkmoon19_2?.id==='BGS_021'&&!op.elite);
@@ -146,32 +171,65 @@ test('a prep-placed Vigil wolf gets BGS021 growth through the real opening battl
   assert.ok(vigil&&holder);
   const skillIndex=[0,1,2].find(i=>gd.placeableTokens(vigil.chessId,{skillIndex:i,moduleId:'none'}).some(x=>x.tokenId===wolfId));
   assert.notEqual(skillIndex,undefined);
-  let state=buyOperator(vigil.chessId,'levels');
+  let state=buyOperator(vigil.chessId,growthMode);
   const owner=state.pieces[0];owner.skillIndex=skillIndex;
   state.shop.slots[0]={kind:'chess',id:holder.chessId,price:3,sold:false,equipment:[]};
   state.pool[holder.chessId]||={left:10,cap:10};state.pool[holder.chessId].left=Math.max(1,state.pool[holder.chessId].left);state.funds=Math.max(state.funds,10);
   const recruited=applyAction(state,{type:'buy',slot:0});assert.equal(recruited.ok,true,recruited.error?.message);state=recruited.state;
+  const field=getIndependentField(state,{data,catalog}),routeTiles=routeTilesForWave(field.wave);
+  assert.ok(routeTiles.size,'the selected real wave has ground route tiles');
   const source=state.pieces.find(piece=>piece.chessId===holder.chessId);assert.ok(source);
-  const ownerCell=viewSession(state,{data,catalog}).pieces.find(p=>p.uid===owner.uid).legalTiles[0].split(',').map(Number);
+  const ownerCell=viewSession(state,{data,catalog}).pieces.find(p=>p.uid===owner.uid).legalTiles.find(tile=>tile==='9,8')?.split(',').map(Number);
+  assert.ok(ownerCell,'the test places the owner where its unchanged marker range can cover the active ground route');
   const deployedOwner=applyAction(state,{type:'move',uid:owner.uid,row:ownerCell[0],col:ownerCell[1]});assert.equal(deployedOwner.ok,true,deployedOwner.error?.message);state=deployedOwner.state;
-  const sourceCell=viewSession(state,{data,catalog}).pieces.find(p=>p.uid===source.uid).legalTiles[0].split(',').map(Number);
+  const sourceCell=farthestLegalTile(viewSession(state,{data,catalog}).pieces.find(p=>p.uid===source.uid).legalTiles,routeTiles);
   const deployedSource=applyAction(state,{type:'move',uid:source.uid,row:sourceCell[0],col:sourceCell[1]});assert.equal(deployedSource.ok,true,deployedSource.error?.message);state=deployedSource.state;
   const stack=state.summons.find(p=>p.ownerUid===owner.uid&&p.tokenId===wolfId);assert.ok(stack);
-  const wolfCell=viewSession(state,{data,catalog}).pieces.find(p=>p.uid===stack.uid).legalTiles[0].split(',').map(Number);
+  const wolfView=viewSession(state,{data,catalog}).pieces.find(p=>p.uid===stack.uid);
+  const wolfCellText=wolfView.legalTiles.filter(tile=>routeTiles.has(tile)).sort((a,b)=>{
+    const start=field.wave.routes[field.wave.spawns.find(spawn=>Number(spawn.count)>0&&spawn.preview?.fly!==true)?.routeIndex]?.start||[0,0];
+    const distance=tile=>{const [r,c]=tile.split(',').map(Number);return Math.abs(r-start[1])+Math.abs(c-start[0]);};
+    return distance(a)-distance(b);
+  })[0];
+  assert.ok(wolfCellText,`the original token's legal marker tiles intersect an active ground route: ${JSON.stringify({legal:wolfView.legalTiles,routes:field.wave.routes})}`);
+  const wolfCell=wolfCellText.split(',').map(Number);
+  assert.ok((data.tokens[wolfId].rangeGrid||[[0,0]]).some(([r,c])=>r===0&&c===0),'the native token can engage an enemy occupying its unchanged marker cell');
   const placed=applyAction(state,{type:'move',uid:stack.uid,row:wolfCell[0],col:wolfCell[1]});assert.equal(placed.ok,true,placed.error?.message);
   const tokenInput=battleUnits(placed.state,catalog,data).find(unit=>unit.uid===stack.uid);assert.equal(tokenInput.kind,'token');assert.equal(tokenInput.independentSummon,true);
   const battle=runIndependentBattle(placed.state,{data,catalog});
   const sourceEvents=battle.darkmoonTrace.filter(entry=>entry.sourceId==='BGS_021'&&entry.kind==='event');
-  assert.ok(sourceEvents.some(entry=>entry.targets.includes(stack.uid)),`the actual placed wolf is in the BGS021 opening-deploy trace: ${JSON.stringify({sourceEvents,errors:battle.diagnostics.errors})}`);
-  const replayStats=battle.replay.frames.flatMap(frame=>Object.values(frame.stats||{})).filter(entry=>entry.defId===wolfId);
-  assert.ok(replayStats.length,'replay stats include the placed token actor');
+  const markerDeploy=sourceEvents.find(entry=>entry.targets.includes(stack.uid));
+  assert.ok(markerDeploy,`the actual placed wolf receives one BGS021 opening-deploy event: ${JSON.stringify({sourceEvents,wolfCell,errors:battle.diagnostics.errors})}`);
+  assert.ok(markerDeploy.time>0,'the opening marker stays queued until an enemy can engage it');
+  assert.equal(sourceEvents.filter(entry=>entry.targets.includes(stack.uid)).length,1,'the manually placed marker is trained exactly once');
+  const enemyIds=new Set(battle.samples.flatMap(sample=>sample.enemies.map(enemy=>enemy.id)));
+  assert.ok(battle.replay.frames.some(frame=>Math.abs(frame.snap.t-markerDeploy.time)<=0.2&&(frame.snap.units||[]).some(unit=>enemyIds.has(unit[0])&&Math.floor(unit[1])===wolfCell[1]&&Math.floor(unit[2])===wolfCell[0])),`an actual wave enemy reaches the unchanged marker tile before its deploy event at ${markerDeploy.time}s`);
+  const markerActorIds=new Set(battle.replay.frames.flatMap(frame=>(frame.snap.units||[]).filter(unit=>Math.round(unit[1])===wolfCell[1]&&Math.round(unit[2])===wolfCell[0]).map(unit=>unit[0])));
+  assert.ok(markerActorIds.size,`the manually placed marker reaches deployment at its unchanged cell ${wolfCell.join(',')}`);
+  const markerId=[...markerActorIds].find(id=>sourceEvents.some(entry=>entry.targets.includes(stack.uid)));
+  const replayStats=battle.replay.frames.flatMap(frame=>Object.entries(frame.stats||{}).map(([id,entry])=>({id:Number(id),...entry}))).filter(entry=>entry.defId===wolfId&&entry.id===markerId);
+  assert.ok(replayStats.length,'replay stats include the manually placed token actor');
   const live=replayStats.find(entry=>entry.temporaryGrowth?.some(growth=>growth.sourceId==='BGS_021'));
   assert.ok(live,'token replay stats carry the BGS021 temporary-growth source');
-  const curve=data.tokens[wolfId].nativeGrowth,phase=tokenInput.ownerGrowth.phase,level=tokenInput.ownerGrowth.level,levelsPerBadge=Number(catalog.config?.levelsPerBadge||1);
-  const base=nativeLevelAttributes(curve,phase,level),trained=nativeLevelAttributes(curve,phase,Math.min(curve.phases[phase].maxLevel,level+8*levelsPerBadge));
-  assert.deepEqual({atk:live.base.atk,maxHp:live.base.maxHp,def:live.base.def,res:live.base.res},{atk:base.atk,maxHp:base.maxHp,def:base.def,res:base.res},'replay token baseline matches its pinned native curve');
-  assert.deepEqual({atk:live.atk,maxHp:live.maxHp,def:live.def,res:live.res},{atk:trained.atk,maxHp:trained.maxHp,def:trained.def,res:trained.res},'replay live token values include the exact BGS021 curve growth');
+  if(growthMode==='levels'){
+    const curve=data.tokens[wolfId].nativeGrowth,phase=tokenInput.ownerGrowth.phase,level=tokenInput.ownerGrowth.level,levelsPerBadge=Number(catalog.config?.levelsPerBadge||1);
+    const base=nativeLevelAttributes(curve,phase,level),trained=nativeLevelAttributes(curve,phase,Math.min(curve.phases[phase].maxLevel,level+8*levelsPerBadge));
+    assert.deepEqual({atk:live.base.atk,maxHp:live.base.maxHp,def:live.base.def,res:live.base.res},{atk:base.atk,maxHp:base.maxHp,def:base.def,res:base.res},'replay token baseline matches its pinned native curve');
+    assert.deepEqual({atk:live.atk,maxHp:live.maxHp,def:live.def,res:live.res},{atk:trained.atk,maxHp:trained.maxHp,def:trained.def,res:trained.res},'replay live token values include the exact BGS021 curve growth');
+    assert.equal(live.temporaryGrowth.find(growth=>growth.sourceId==='BGS_021').temporaryTrainingLevels,8*levelsPerBadge);
+    assert.equal('attackUnits' in live.temporaryGrowth.find(growth=>growth.sourceId==='BGS_021'),false,'level mode never leaks badge-unit growth fields');
+  }else{
+    const growth=live.temporaryGrowth.find(entry=>entry.sourceId==='BGS_021');
+    assert.ok(Number.isFinite(growth.attackUnits)&&Number.isFinite(growth.secondaryUnits),'badge mode records its native attack/secondary badge units');
+    assert.deepEqual(growth.badgeIds,['precision','damage']);
+    assert.equal('temporaryTrainingLevels' in growth,false,'badge mode never leaks native-level growth fields');
+  }
   assert.equal(battle.diagnostics.errorCount,0,JSON.stringify(battle.diagnostics.errors));
+}
+
+test('a prep-placed Vigil wolf gets exactly one BGS021 growth through the real opening battle deploy flow in both growth modes', () => {
+  runPlacedVigilWolf('levels');
+  runPlacedVigilWolf('badges');
 });
 test('an unplaced Vigil wolf stack still uses the original automatic summon without a generic tactician placeholder', () => {
   const data = getData(); const catalog = getCatalog(data); const gd = new GameData(data, modeIdFor('solo', 'NORMAL'));
