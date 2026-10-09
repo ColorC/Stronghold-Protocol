@@ -493,6 +493,7 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
     summonAnchors: structuredClone(battle.resonanceSummonAnchors ?? []),
     summonAnchorGaps: structuredClone(battle.resonanceSummonAnchorGaps ?? []),
     errorCount: battle.errorCount,
+    robertaMachines: structuredClone(battle.resonanceResults?.robertaMachines ?? []),
     errors: battle.errors.slice(0, 20),
   };
   if (battle.errorCount) throw Object.assign(new Error(`resonance Battle recorded ${battle.errorCount} simulation/content error(s)`), { diagnostics, result });

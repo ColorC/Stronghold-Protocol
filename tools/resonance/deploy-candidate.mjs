@@ -34,7 +34,7 @@ const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const REMOTE_NODE = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/bin/node`;
 const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/node_modules/npm/bin/npm-cli.js`;
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
-const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'server/hosting/staticDelivery.js', 'server/sim/content/resonance/kits.js', 'public/resonance.html', 'public/js/hostingBootstrap.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/js/resonance/panels.js', 'public/css/resonance.css'];
+const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'server/modes/resonance/battle.js', 'server/hosting/staticDelivery.js', 'server/sim/content/resonance/kits.js', 'public/resonance.html', 'public/js/hostingBootstrap.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/js/resonance/panels.js', 'public/css/resonance.css'];
 const CANDIDATE_REFRESH_INVARIANTS = ['tools/resonance/capacity.mjs'];
 const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
 const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';

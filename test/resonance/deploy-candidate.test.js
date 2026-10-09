@@ -272,6 +272,7 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
   assert.deepEqual(validateCandidateRefreshChangeSet(Object.keys(oldProductBytes).reverse()), Object.keys(oldProductBytes).sort());
   assert.deepEqual(validateCandidateRefreshChangeSet(['public/js/resonance/panels.js']), ['public/js/resonance/panels.js']);
   assert.deepEqual(validateCandidateRefreshChangeSet(['server/sim/content/resonance/kits.js']), ['server/sim/content/resonance/kits.js']);
+  assert.deepEqual(validateCandidateRefreshChangeSet(['server/modes/resonance/battle.js']), ['server/modes/resonance/battle.js']);
   assert.throws(() => validateCandidateRefreshChangeSet(['server/sim/content/kits.js']), /nonempty subset/);
   assert.deepEqual(validateCandidateRefreshChangeSet(['public/resonance.html', 'public/js/hostingBootstrap.js', 'server/hosting/staticDelivery.js']),
     ['public/js/hostingBootstrap.js', 'public/resonance.html', 'server/hosting/staticDelivery.js']);
