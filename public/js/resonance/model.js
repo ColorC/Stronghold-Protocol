@@ -41,6 +41,13 @@ export function strategyProgressText(progress) {
 }
 export function needsAdjacentStrategyPair(strategy) { return strategy?.conditionKind === 'choose_adjacent_pair'; }
 export function roleLabel(role) {return ({damage:'输出',frontline:'前排',control:'控场',healer:'治疗',summoner:'召唤',support:'辅助',伤害:'伤害',前线:'前线',控制:'控制',治疗:'治疗',召唤:'召唤',支援:'支援'})[role]||'干员';}
+export function operatorShopPreview(op) {
+ const skill=op?.stars?.[1]?.skill||null;
+ const playerStats=op?.stars?.[1]?.stats||{},rawStats=op?.stars?.[1]?.record?.stats||{};
+ const stat=(playerField,rawField)=>playerStats[playerField]!=null&&playerStats[playerField]!==''&&Number.isFinite(Number(playerStats[playerField]))?playerStats[playerField]:rawStats[rawField]??playerStats[rawField];
+ const stats=[['生命',stat('health','maxHp')],['攻击',stat('attack','atk')],['防御',stat('defense','def')]].filter(([,value])=>value!=null&&value!==''&&Number.isFinite(Number(value))).map(([label,value])=>`${label} ${value}`).join(' · ');
+ return [stats&&`一星 · ${stats}`,skill?.name&&`技能 · ${skill.name}`,skill?.description].filter(Boolean).join('\n');
+}
 export function adjacentDeployedPairs(state) {
  const pieces=(state?.pieces||[]).filter(piece=>piece.row!=null&&piece.col!=null);const pairs=[];
  for(let i=0;i<pieces.length;i++)for(let j=i+1;j<pieces.length;j++)if(Math.abs(pieces[i].row-pieces[j].row)+Math.abs(pieces[i].col-pieces[j].col)===1)pairs.push([pieces[i],pieces[j]]);

@@ -15,7 +15,7 @@ import { BattleReport } from './battleReport.js';
 import { ReplayControls } from './replayControls.js';
 import { CodexScreen } from './codex.js';
 import { DetailPanel } from './detail.js';
-import { pieceNum, prepView, roleLabel, strategyProgressText } from './model.js';
+import { operatorShopPreview, pieceNum, prepView, roleLabel, strategyProgressText } from './model.js';
 import { pactIconUrl } from './pactIcon.js';
 
 const xpForLevel = (level) => [6,10,20,36,56,68,68][level-3] || 68;
@@ -62,10 +62,7 @@ export function GameChrome(p) {
     thresholds:(pacts[bondId]?.levels||[]).map(y=>y.threshold),tier:(pacts[bondId]?.levels||[]).filter(y=>y.threshold<=(x.count||0)).length,active:!!x.activeThreshold}));
   const cardPresentation=(slot)=>{const op=catalog.operators?.[slot.id];if(!op)return {};
     const skill=op.stars?.[1]?.skill||null;
-    const playerStats=op.stats||{},rawStats=op.stars?.[1]?.stats||{};
-    const stat=(playerField,rawField)=>playerStats[playerField]!=null&&playerStats[playerField]!==''&&Number.isFinite(Number(playerStats[playerField]))?playerStats[playerField]:rawStats[rawField]??playerStats[rawField];
-    const statText=[['生命',stat('health','maxHp')],['攻击',stat('attack','atk')],['防御',stat('defense','def')]].filter(([,value])=>value!=null&&value!==''&&Number.isFinite(Number(value))).map(([label,value])=>`${label} ${value}`).join(' · ');
-    const previewText=[statText&&`一星 · ${statText}`,skill?.name&&`技能 · ${skill.name}`,skill?.description].filter(Boolean).join('\n');
+    const previewText=operatorShopPreview(op);
     const copies=state.pieces.filter(x=>x.operatorId===slot.id&&x.star===1).length;
     const nextStar=state.pieces.filter(x=>x.operatorId===slot.id&&x.star===2).length>=2?'三星':'二星';
     return {record:{...op,tier:op.cost,bonds:op.pacts||[],profession:data.lookup('chess',slot.id)?.profession,subProfessionName:roleLabel(op.role),assets:{...(op.assets||{}),portrait:op.charId||op.assets?.portrait||op.portrait}},
