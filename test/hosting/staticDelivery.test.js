@@ -49,6 +49,8 @@ test('external resonance entry pins every Preact importer to one release and kee
   const pinnedPreact = `${base}/vendor/preact.module.js`;
   const pinnedHooks = `${base}/vendor/hooks.module.js`;
   const pinnedHtm = `${base}/vendor/htm.module.js`;
+  const pinnedGameData = `${base}/js/data.js`;
+  assert.equal(map['./js/data.js'], pinnedGameData);
   assert.equal(map['./vendor/preact.module.js'], pinnedPreact);
   assert.equal(map['./vendor/hooks.module.js'], pinnedHooks);
   assert.equal(map['./vendor/htm.module.js'], pinnedHtm);
@@ -75,6 +77,21 @@ test('external resonance entry pins every Preact importer to one release and kee
 
   for (const href of ['https://host.example/resonance.html', 'https://host.example/stronghold/resonance.html']) {
     const entry = new URL(href);
+    const gameModule = new URL('./js/resonance/game.js', entry);
+    const localFieldHost = new URL('./js/ui/fieldHost.js', entry);
+    const cdnGameComponents = new URL(`${base}/js/ui/gameComponents.js`);
+    const localGameData = new URL('../data.js', gameModule);
+    const localRendererData = new URL('../data.js', localFieldHost);
+    const pinnedComponentData = new URL('../data.js', cdnGameComponents);
+    assert.equal(resolveImport(map, importMap.scopes, '../data.js', gameModule.href, entry.href), pinnedGameData);
+    assert.equal(resolveImport(map, importMap.scopes, '../data.js', localFieldHost.href, entry.href), pinnedGameData);
+    assert.equal(pinnedComponentData.href, pinnedGameData);
+    assert.equal(new URL(map['./js/data.js'], entry).href, pinnedGameData);
+    assert.equal(localGameData.pathname, entry.pathname.slice(0, entry.pathname.lastIndexOf('/') + 1) + 'js/data.js');
+    assert.equal(localRendererData.href, localGameData.href);
+    assert.match(readFileSync(new URL('../../public/js/resonance/game.js', import.meta.url), 'utf8'), /from ['"]\.\.\/data\.js['"]/);
+    assert.match(readFileSync(new URL('../../public/js/ui/fieldHost.js', import.meta.url), 'utf8'), /from ['"]\.\.\/data\.js['"]/);
+    assert.match(readFileSync(new URL('../../public/js/ui/gameComponents.js', import.meta.url), 'utf8'), /from ['"]\.\.\/data\.js['"]/);
     const moduleUrl = new URL('./js/resonance/main.js', entry);
     const relativePreact = new URL('../../vendor/preact.module.js', moduleUrl);
     const importMapPreactKey = new URL('./vendor/preact.module.js', entry);

@@ -88,10 +88,12 @@ function resonanceEntryWithPinnedVendor(html, prefix) {
   const preact = `${prefix}/vendor/preact.module.js`;
   const hooks = `${prefix}/vendor/hooks.module.js`;
   const htm = `${prefix}/vendor/htm.module.js`;
+  const gameData = `${prefix}/js/data.js`;
   Object.assign(imports, {
     preact,
     'preact/hooks': hooks,
     htm,
+    './js/data.js': gameData,
     './vendor/preact.module.js': preact,
     './vendor/hooks.module.js': hooks,
     './vendor/htm.module.js': htm,
