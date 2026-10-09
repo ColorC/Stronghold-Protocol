@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
 import { buyRequiresTarget, buyTargetSpec } from '../../public/js/independent/targetSelection.js';
+import design from '../../data/independent-design.json' with { type: 'json' };
 
 const catalog = getCatalog();
 const rag = Object.values(catalog.operators).find((op) => !op.elite && op.sourceRefs?.darkmoon19_2?.id === 'BGS_100');
@@ -26,8 +27,10 @@ test('Lil Rag auto-selects a seeded on-board friendly minion, including self, wi
   assert.ok(rag && elemental);
   assert.equal(rag.nativeTrait.effect.prep.some((rule) => rule.trigger === 'played' && rule.behavior === 'darkmoonPlayedRandomTribeGrowth'), true);
   assert.equal(rag.nativeTrait.effect.prep.some((rule) => rule.trigger === 'bought'), false);
-  assert.equal(rag.nativeTrait.effect.prep.find((rule) => rule.behavior === 'darkmoonPlayedRandomTribeGrowth').params.triggerTribe, 'ELEMENTAL');
-  assert.equal(catalog.operators[elemental.chessId].sourceRefs.darkmoon19_2.rosterTribe, 'ELEMENTAL');
+  assert.equal(rag.nativeTrait.effect.prep.find((rule) => rule.behavior === 'darkmoonPlayedRandomTribeGrowth').params.triggerFaction, '炎');
+  const activeElementals = design.rules.activeRosterIds.map((id) => design.operators.find((op) => op.chessId === id)).filter((op) => op?.sourceRefs?.darkmoon19_2?.rosterTribe === 'ELEMENTAL');
+  assert.ok(activeElementals.length > 0);
+  assert.ok(activeElementals.every((op) => op.sourceRefs.darkmoon19_2.faction === '炎' && catalog.operators[op.chessId].nativeFactionTags.includes('炎')), 'every active original Elemental maps to the displayed Yan faction');
   const spec = buyTargetSpec({ id: elemental.chessId, kind: 'chess' }, catalog, { pieces: [{ ...rag, row: 0, col: 0, playerId: 'p1' }] });
   assert.equal(spec, null);
   assert.equal(buyRequiresTarget(spec), false);
@@ -36,12 +39,12 @@ test('Lil Rag auto-selects a seeded on-board friendly minion, including self, wi
   assert.equal(normal.rollIndex, 1);
   assert.deepEqual(new Set(normal.grants.map((x) => x.targetUid)), new Set(['rag']));
   assert.deepEqual(normal.grants.map((x) => x.id).sort(), ['damage', 'precision']);
-  const nonElemental = Object.values(catalog.operators).find((op) => !op.elite && op.recruitable && op.sourceRefs?.darkmoon19_2?.rosterTribe !== 'ELEMENTAL');
-  const outsider = { uid: 'other', chessId: nonElemental.chessId, playerId: 'p1', row: 0, col: 2 };
+  const outsider = { uid: 'other', chessId: elemental.chessId, playerId: 'p1', nativeFactionTags: [], row: 0, col: 2 };
   const noTriggerState = { pieces: [normal.source, normal.ally], counters: {} };
   let noTriggerRolls = 0;
-  runNativeHook(noTriggerState, 'played', { piece: outsider }, { catalog, rng: () => { noTriggerRolls++; return 0; }, grantEquipment() {}, record() {} });
-  assert.equal(noTriggerRolls, 0, 'the trigger checks original Elemental tribe, not a faction label or any card play');
+  const noYanCatalog = { ...catalog, operators: { ...catalog.operators, [elemental.chessId]: { ...catalog.operators[elemental.chessId], nativeFactionTags: [] } } };
+  runNativeHook(noTriggerState, 'played', { piece: outsider }, { catalog: noYanCatalog, rng: () => { noTriggerRolls++; return 0; }, grantEquipment() {}, record() {} });
+  assert.equal(noTriggerRolls, 0, 'the displayed Yan-faction trigger is enforced');
 });
 
 test('Lil Rag golden form resolves each of its two random grants independently within the friendly field', () => {

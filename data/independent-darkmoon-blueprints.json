@@ -6752,7 +6752,7 @@
                 "recipient": "randomFriendlyOperator",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
+                "text": "打出炎阵营干员后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6761,7 +6761,7 @@
                     "damage"
                   ],
                   "amount": "Elemental mapped-faction tier",
-                  "triggerTribe": "ELEMENTAL"
+                  "triggerFaction": "炎"
                 },
                 "adapter": [
                   "darkmoonPlayedRandomTribeGrowth"
@@ -6769,7 +6769,7 @@
                 "implementation": "supported",
                 "unsupportedReason": null,
                 "recipientLabel": "随机一名场上友方干员（可包含自身）",
-                "triggerLabel": "打出元素牌后",
+                "triggerLabel": "打出炎阵营干员后",
                 "durationLabel": "成长"
               }
             ],
@@ -6780,7 +6780,7 @@
                 "recipient": "randomFriendlyOperator",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；效果触发两次。",
+                "text": "打出炎阵营干员后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；效果触发两次。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6789,7 +6789,7 @@
                     "damage"
                   ],
                   "amount": "Elemental mapped-faction tier",
-                  "triggerTribe": "ELEMENTAL"
+                  "triggerFaction": "炎"
                 },
                 "adapter": [
                   "darkmoonPlayedRandomTribeGrowth"
@@ -6797,7 +6797,7 @@
                 "implementation": "supported",
                 "unsupportedReason": null,
                 "recipientLabel": "随机一名场上友方干员（可包含自身）",
-                "triggerLabel": "打出元素牌后",
+                "triggerLabel": "打出炎阵营干员后",
                 "durationLabel": "成长"
               }
             ]
@@ -6817,7 +6817,7 @@
               "precision",
               "damage"
             ],
-            "triggerTribe": "ELEMENTAL"
+            "triggerFaction": "炎"
           }
         },
         "elite": {
@@ -6830,7 +6830,7 @@
               "precision",
               "damage"
             ],
-            "triggerTribe": "ELEMENTAL"
+            "triggerFaction": "炎"
           }
         },
         "status": "supported",
@@ -6843,14 +6843,14 @@
             "sourceTrigger": "playElemental",
             "recipient": "randomFriendlyOperator",
             "duration": "permanentWornGrowth",
-            "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
+            "text": "打出炎阵营干员后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
             "params": {
               "outputs": [
                 "precision",
                 "damage"
               ],
               "amount": "Elemental mapped-faction tier",
-              "triggerTribe": "ELEMENTAL"
+              "triggerFaction": "炎"
             }
           }
         ],
@@ -6860,14 +6860,14 @@
             "sourceTrigger": "playElemental",
             "recipient": "randomFriendlyOperator",
             "duration": "permanentWornGrowth",
-            "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；效果触发两次。",
+            "text": "打出炎阵营干员后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；效果触发两次。",
             "params": {
               "outputs": [
                 "precision",
                 "damage"
               ],
               "amount": "Elemental mapped-faction tier",
-              "triggerTribe": "ELEMENTAL"
+              "triggerFaction": "炎"
             }
           }
         ]

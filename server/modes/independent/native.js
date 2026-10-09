@@ -555,11 +555,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       }
       case 'darkmoonPlayedRandomTribeGrowth': {
         const buyer=event.piece;
-        if(!buyer)break;
-        const playedDef=services.catalog?.operators?.[chessIdOf(buyer)];
-        const playedRef=playedDef?.sourceRefs?.darkmoon19_2;
-        const isElemental=playedRef?.rosterTribe==='ELEMENTAL'||playedRef?.originalRaces?.includes('ELEMENTAL')||(playedRef?.cards||[]).some(card=>card.rosterTribe==='ELEMENTAL'||card.originalRaces?.includes('ELEMENTAL'));
-        if(!isElemental||(buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId))break;
+        if(!buyer||!nativeFactions(buyer,services.catalog).includes(p.triggerFaction)||(buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId))break;
         const owner=piece.playerId??piece.ownerId;
         const targets=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner);
         const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
