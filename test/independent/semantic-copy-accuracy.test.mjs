@@ -27,8 +27,11 @@ test('deployment and knockout descriptions disclose the per-source battle cap', 
   }
   assert.deepEqual(missing, [], 'all current retirement/deployment payload descriptions include their actual three-activation cap');
   assert.equal(darkmoonCombatMetadata('BGS_012', false).trigger, '战斗部署时', '缪尔赛思 display metadata describes deployment, not the original source-card deathrattle');
-  assert.match(gameText.operators['chess_native_char_4155_talr_a'].normal, /自身装备突袭盟约×1/);
-  assert.doesNotMatch(gameText.operators['chess_native_char_4155_talr_a'].normal, /装备装备|获得时装备/);
+  const bgs008Copy = gameText.operators['chess_native_char_4155_talr_a'].normal;
+  assert.match(bgs008Copy, /招募获得或首次上阵时，自身装备突袭盟约×1/);
+  assert.match(bgs008Copy, /被击倒时召唤2名随机带有战斗部署效果干员的作战投影；每场最多触发3次/);
+  assert.equal((bgs008Copy.match(/突袭盟约/g) || []).length, 1, 'the acquisition grant appears once');
+  assert.doesNotMatch(bgs008Copy, /装备装备|获得时装备/);
 });
 
 test('adaptation metadata trigger labels agree with the executable combat handler', () => {
@@ -76,6 +79,8 @@ test('copy separates badge growth from levels growth and avoids duplicate claims
   assert.match(chongyue.normalLevels, /所购干员科技等级两倍的训练等级/);
   assert.match(chongyue.eliteLevels, /所购干员科技等级两倍的训练等级/);
   assert.match(chongyue.eliteLevels, /结算两次/);
+  assert.match(chongyue.normal, /所购干员科技等级等量的攻击徽章和伤害徽章/);
+  assert.doesNotMatch(chongyue.normal + chongyue.elite, /所购干员星级/);
   assert.doesNotMatch(chongyue.normalLevels + chongyue.eliteLevels, /徽章/);
 
   assert.equal(gameText.gear['growth-training-record'].normal, '使用后，目标干员的训练等级提升1级；属性按其成长曲线计算。');

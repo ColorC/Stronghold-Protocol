@@ -4,7 +4,7 @@ import { getData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 import { nativeBodyStats } from '../../shared/independentRules.js';
-import { nativeLevelAttributes, operatorGrowthInfo } from '../../shared/independentGrowth.js';
+import { nativeLevelAttributes, operatorGrowthInfo, levelBodyStats } from '../../shared/independentGrowth.js';
 import { grantEquipment, equipItem } from '../../server/modes/independent/equipment.js';
 import { choosePrize } from '../../server/modes/independent/prizes.js';
 import { previewUnitStats } from '../../server/modes/independent/battle.js';
@@ -77,6 +77,36 @@ test('native level interpolation obeys real curve endpoints and individual caps'
     p.growthLevel = 9999;
     assert.equal(operatorGrowthInfo(p, catalog).level, info.maximum);
     assert.equal(operatorGrowthInfo(p, catalog).stats.atk, ends.at(-1).data.atk);
+  }
+});
+test('prototype-backed support levels use its pinned token curve and only scale authored stats',()=>{
+  const owner=catalog.operators[id],normalOwner=owner.source.normalChess,eliteOwner=owner.source.eliteChess||normalOwner;
+  const supportId='darkmoon:support-prototype-test_a',supportEliteId='darkmoon:support-prototype-test_b';
+  const scale={attack:0.4,health:0.4,defense:0.4};
+  const tokenGrowth={source:{table:'character_table.json',revision:'fixture-pinned-token-curve'},phases:[
+    {phase:0,maxLevel:50,attributesKeyFrames:[{level:1,data:{maxHp:1000,atk:100,def:100,magicResistance:3}},{level:50,data:{maxHp:1100,atk:150,def:130,magicResistance:4}}]},
+    {phase:1,maxLevel:80,attributesKeyFrames:[{level:1,data:{maxHp:1200,atk:200,def:180,magicResistance:5}},{level:80,data:{maxHp:1600,atk:400,def:300,magicResistance:8}}]},
+    {phase:2,maxLevel:90,attributesKeyFrames:[{level:1,data:{maxHp:1300,atk:300,def:280,magicResistance:7}},{level:90,data:{maxHp:2000,atk:700,def:500,magicResistance:12}}]},
+  ]};
+  const selected=(phase)=>tokenGrowth.phases[phase].attributesKeyFrames[0].data;
+  const supportRaw={stats:{maxHp:Math.round(selected(1).maxHp*.4),atk:Math.round(selected(1).atk*.4),def:Math.round(selected(1).def*.4),res:selected(1).magicResistance,aspd:111},status:{phase:1,level:1},nativeGrowth:tokenGrowth,darkmoonPrototypeOwnerChessId:id,darkmoonPrototypeTokenId:'token_10028_vigil_wolf',darkmoonPrototypeScale:scale};
+  const supportEliteRaw={...supportRaw,stats:{maxHp:Math.round(selected(2).maxHp*.4),atk:Math.round(selected(2).atk*.4),def:Math.round(selected(2).def*.4),res:selected(2).magicResistance,aspd:111},status:{phase:2,level:1}};
+  const supportOp={chessId:supportId,darkmoonPrototypeOwnerChessId:id,darkmoonPrototypeTokenId:'token_10028_vigil_wolf',darkmoonPrototypeScale:scale,source:{normalChess:supportRaw,eliteChess:supportEliteRaw}};
+  const supportEliteOp={...supportOp,chessId:supportEliteId,elite:true};
+  const fixtureCatalog={...catalog,operators:{...catalog.operators,[supportId]:supportOp,[supportEliteId]:supportEliteOp}};
+  for(const [chessId,elite,ownerRaw,supportBody,phase] of [[supportId,false,normalOwner,supportRaw,1],[supportEliteId,true,eliteOwner,supportEliteRaw,2]]){
+    const p={...piece(`support-${elite}`,{chessId,elite,growthMode:'levels',growthLevel:1})};
+    const start=operatorGrowthInfo(p,fixtureCatalog);
+    assert.equal(start.phase,phase,'the selected native token variant supplies phase');
+    assert.equal(start.stats.atk,Math.round(selected(phase).atk*0.4));
+    p.growthLevel=Math.min(start.maximum,20);
+    const info=operatorGrowthInfo(p,fixtureCatalog),native=operatorGrowthInfo({...p,chessId:ownerRaw===eliteOwner?`${id.replace(/_a$/,'_b')}`:id},catalog);
+    const expectedToken=nativeLevelAttributes(tokenGrowth,phase,p.growthLevel);
+    assert.equal(info.stats.atk,Math.round(expectedToken.atk*0.4));assert.equal(info.stats.maxHp,Math.round(expectedToken.maxHp*0.4));assert.equal(info.stats.def,Math.round(expectedToken.def*0.4));
+    assert.equal(info.stats.res,expectedToken.res);
+    const actual=levelBodyStats(p,fixtureCatalog,supportBody);
+    assert.equal(actual.atk,info.stats.atk);assert.equal(actual.maxHp,info.stats.maxHp);assert.equal(actual.aspd,supportBody.stats.aspd);
+    assert.notEqual(info.stats.atk,Math.round(native.stats.atk*0.4),'token curve is not substituted with the owner operator curve');
   }
 });
 test('real battle and detail preview use the same level-scaled body', () => {

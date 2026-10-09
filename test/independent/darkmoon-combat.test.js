@@ -124,6 +124,8 @@ test('temporary training from multiple sources follows one native curve and neve
   h.run(3.1);b.forceAttack(ally,[enemy]);
   assert.equal(unit.s.atk,190);assert.equal(unit.s.def,90);assert.equal(unit.s.res,9);
   assert.deepEqual(installed.results.growth,[]);
+  const temp=Object.values(unit.mem.darkmoonTemporaryEquipment||{}).find(x=>x.sourceId==='BGS_047');
+  assert.ok(temp?.temporaryTrainingLevels>0);assert.equal('badgeIds'in temp,false);assert.equal('attackUnits'in temp,false);assert.equal('secondaryUnits'in temp,false);
 });
 for(const growthMode of ['badges','levels'])test(`random original copies keep the native kit and pristine ${growthMode} body`,()=>{
   const raw=structuredClone(getData().chess.chess_native_char_235_jesica_a);

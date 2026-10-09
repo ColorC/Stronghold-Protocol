@@ -49,13 +49,18 @@ function sourceCardRefs(op) {
   return cards.filter((x) => x && typeof x === 'object' && (x.text || x.textElite || x.name || x.sourceUrl));
 }
 
-function TemporaryGrowth({live,catalog}) {
+function TemporaryGrowth({live,catalog,growthMode='badges'}) {
   const entries=live?.temporaryGrowth||[];
   if(!entries.length)return null;
-  return html`<section class="ix-detail__text"><b>本场临时增益</b>${entries.map((entry,index)=>{
+  const lines=entries.map((entry,index)=>{
     const source=Object.values(catalog.operators||{}).find(op=>op.sourceRefs?.darkmoon19_2?.id===entry.sourceId);
-    return html`<p key=${index}>${source?.name?`${source.name}：`:''}${entry.trainingLevels!=null?`训练额度 ${entry.trainingLevels} 级，按自身等级上限生效`:`攻击徽章×${entry.attackUnits||0}${entry.secondaryUnits?`，${entry.badgeIds?.[1]==='vitality'?'生命徽章':'伤害徽章'}×${entry.secondaryUnits}`:''}`}。</p>`;
-  })}</section>`;
+    const body=growthMode==='levels'
+      ? (entry.temporaryTrainingLevels!=null?`本场临时训练等级 +${entry.temporaryTrainingLevels}`:null)
+      : `攻击徽章×${entry.attackUnits||0}${entry.secondaryUnits?`，${entry.badgeIds?.[1]==='vitality'?'生命徽章':'伤害徽章'}×${entry.secondaryUnits}`:''}`;
+    return body?html`<p key=${index}>${source?.name?`${source.name}：`:''}${body}。</p>`:null;
+  }).filter(Boolean);
+  if(!lines.length)return null;
+  return html`<section class="ix-detail__text"><b>本场临时增益</b>${lines}</section>`;
 }
 
 function readableCardText(value) {
@@ -81,9 +86,9 @@ function OriginalCardRefs({ op, piece, linkAnchor = null }) {
 /** The mode's 特质 (the original card's 特质 slot): the summary glyphs, both forms' texts and the terms they name. */
 function TraitSection({ op, elite, catalog, piece, state, conditionState = state, busy, prep, onAct, linkAnchor, onFieldHighlight, rangeTilesFor }) {
   return html`<section key="garrison" class="dgarrison ix-dtrait" aria-label="特质">
-    <div class="dgarrison__head"><span class="dgarrison__k">特质</span><${TraitGlyphs} summary=${op?.summary} elite=${elite} catalog=${catalog} max=${4} /></div>
+    <div class="dgarrison__head"><span class="dgarrison__k">特质</span><${TraitGlyphs} summary=${op?.summary} elite=${elite} catalog=${catalog} growthMode=${state?.growthMode||piece?.growthMode||'badges'} max=${4} /></div>
     <${TraitTexts} op=${op} elite=${elite} catalog=${catalog} growthMode=${state?.growthMode||piece?.growthMode||'badges'} piece=${piece} state=${conditionState} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />
-    ${piece && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
+    ${piece && (state?.growthMode || piece?.growthMode) !== 'levels' && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
       ${PRODUCTION_BADGES.map((id) => html`<button type="button" key=${id} class=${cx('ix-chip', (piece.preferences?.productionBadge || 'precision') === id && 'is-on')} disabled=${busy || !prep}
         onClick=${() => onAct({ type: 'configure', uid: piece.uid, productionBadge: id })}>${catalog.gear[id]?.name || ''}</button>`)}</div>` : null}
   </section>`;
@@ -93,7 +98,7 @@ function GrowthInfo({ piece }) {
   if (!piece || piece.growthLevel == null) return null;
   const stats = piece.growthStats || piece.growthAttributes || {};
   const labels = { attack: '攻击', atk: '攻击', maxHp: '生命', hp: '生命', defense: '防御', def: '防御', res: '法抗', attackSpeed: '攻速', aspd: '攻速' };
-  return html`<section class="ix-growth-info" aria-label="等级成长"><b>成长等级 ${piece.growthLevel}</b>
+  return html`<section class="ix-growth-info" aria-label="训练等级"><b>训练等级 ${piece.growthLevel}</b>
     ${Object.entries(stats).map(([key, value]) => html`<span key=${key}>${labels[key] || key} ${value}</span>`)}</section>`;
 }
 
@@ -180,7 +185,7 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
   const loadout = piece ? { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } } : null;
   const gear = piece
     ? html`<div key="equip"><${GearSection} items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${conditionState} sourcePiece=${piece} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor}
-        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} /><${TemporaryGrowth} live=${live} catalog=${catalog} /></div>`
+        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} /><${TemporaryGrowth} live=${live} catalog=${catalog} growthMode=${state?.growthMode||piece?.growthMode||'badges'} /></div>`
     : html`<${GearSection} key="equip" items=${[...(opBase?.permitGear ? [{ id: opBase.permitGear, uid: 'permit', quantity: 1 }] : []), ...(slot.equipment || []).map((x, i) => ({ ...x, uid: `c${i}` }))]}
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,

@@ -12,7 +12,7 @@ import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { shopCarryApplies } from './warbandPrep.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, applyDarkmoonAHGrowth } from './darkmoonShop.js';
-import { GROWTH_MODES, operatorGrowthInfo } from '../../../shared/independentGrowth.js';
+import { GROWTH_MODES, operatorGrowthInfo, grantGrowthLevels } from '../../../shared/independentGrowth.js';
 import { reactiveBuyTargetSpec } from '../../../shared/independentEligibility.js';
 import { trainingChoiceOptions } from '../../../shared/independentTrainingChoice.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
@@ -228,6 +228,12 @@ function applyDarkmoonBattleResults(state,catalog,results,services,events) {
     for(const growth of results.growth||[]) {
       const target=state.pieces.find(p=>p.uid===growth.targetUid);
       if(!target) { events.push({type:'darkmoon-growth-lost',sourceUid:growth.sourceUid,targetUid:growth.targetUid,reason:'target-missing'}); continue; }
+      if(state.growthMode==='levels'){
+        const requested=Math.max(0,Math.floor(Number(growth.growthLevels)||0));if(!requested)continue;
+        const gained=grantGrowthLevels(state,catalog,target,requested);
+        if(gained.added>0){recordProduction(state,{id:'growth-training-record',quantity:gained.added,origin:'native',phase:'battle',sourceUid:growth.sourceUid,worn:true,targetUid:target.uid,growthLevels:gained.added,growthLevel:gained.level});events.push({type:'darkmoon-growth',sourceUid:growth.sourceUid,targetUid:target.uid,growthLevels:gained.added});}
+        continue;
+      }
       const grants=applyDarkmoonAHGrowth(state,catalog,target,growth.attackUnits??growth.attackLevels,growth.secondaryUnits??growth.secondaryLevels,services,
         {sourceUid:growth.sourceUid,landOn:`uid:${target.uid}`,targetUid:target.uid,battleGrowth:true,badgeIds:growth.badgeIds});
       if(grants.length)events.push({type:'darkmoon-growth',sourceUid:growth.sourceUid,targetUid:target.uid,grants});

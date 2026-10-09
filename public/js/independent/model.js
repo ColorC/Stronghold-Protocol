@@ -203,6 +203,7 @@ export function forecastRows(state, catalog) {
 /** Equipment level an item stack contributes (design: 装备总等级 = 每件等级之和). */
 export function itemLevel(item, catalog) {
   const g = catalog?.gear?.[item.id] || {};
+  if(g.mechanism==='growthTraining')return 0;
   return Number(g.level ?? 1) * Number(item.quantity || 1);
 }
 

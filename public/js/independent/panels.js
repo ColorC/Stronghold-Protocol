@@ -86,7 +86,7 @@ export function FieldConditionCounts({ effects = [], rows = null, source, state,
 /** Both forms' trait texts (the current one lit) and, under them, every item and term they name. */
 export function TraitTexts({ op, elite, catalog, growthMode='badges', piece = null, state = null, onFieldHighlight = null, rangeTilesFor = null }) {
   const t = op?.traitTexts || {};
-  const normal=growthMode==='levels'?t.normalLevels||t.normal:t.normal, advanced=growthMode==='levels'?t.eliteLevels||t.elite:t.elite;
+  const normal=growthMode==='levels'?t.normalLevels:t.normal, advanced=growthMode==='levels'?t.eliteLevels:t.elite;
   const source = piece || { chessId: op?.chessId, elite, growthMode, growthLevel: 1 };
   const normalRows = fieldConditionRows(op?.summary || [], { source, state, catalog, rangeTilesFor });
   const eliteSource = piece ? { ...piece, elite: true } : { ...source, elite: true };
@@ -147,6 +147,7 @@ const KIND_LABEL = { equipment: '装备', prizeGear: '特供装备' };
 
 /** The line under a shop gear's name: what kind of gear it is, its level and the rule it carries. */
 export function gearMeta(g) {
+  if(g.mechanism==='growthTraining')return '用于提升干员训练等级';
   if (g.kind === 'badge' || g.kind === '徽章') return '基础徽章 · 可重复装备';
   return `${KIND_LABEL[g.kind] || g.kind || ''} · ${g.level ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`;
 }
@@ -264,15 +265,16 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
 
 const PRIZE_TARGET = { attachmentOffer: 'deployed', promoteOperator: 'normal' };
 
-function OperatorChoice({ chessId, catalog, onPick, busy }) {
+function OperatorChoice({ chessId, catalog, onPick, busy, growthMode = 'badges' }) {
   const op = catalog.operators[chessId] || {};
   const c = data.lookup('chess', chessId);
+  const traitText = growthMode === 'levels' ? op.traitTexts?.normalLevels : op.traitTexts?.normal;
   return html`<button type="button" class="ix-choice ix-choice--op" disabled=${busy} onClick=${onPick}>
     <${Img} src=${chessPortraitUrl(data.get('assets'), c) || chessAvatarUrl(data.get('assets'), c)} alt=${op.name || chessId} class="ix-choice__art" />
     <span class="ix-choice__head"><${TierChip} tier=${op.tier || 1} size="sm" /><b>${op.name || chessId}</b></span>
-    <${TraitGlyphs} summary=${op.summary} catalog=${catalog} />
-    <p><${GameText} text=${op.traitTexts?.normal} catalog=${catalog} /></p>
-    <${TermNotes} texts=${[op.traitTexts?.normal]} catalog=${catalog} />
+    <${TraitGlyphs} summary=${op.summary} catalog=${catalog} growthMode=${growthMode} />
+    <p><${GameText} text=${traitText} catalog=${catalog} /></p>
+    <${TermNotes} texts=${[traitText]} catalog=${catalog} />
   </button>`;
 }
 
@@ -312,7 +314,7 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
   } else if (offer.type === 'recruit') {
     // a promotion's reward (session.js pushPromotionReward) is the original's 晋升奖励
     title = offer.source === 'merge' ? `晋升奖励 · 科技等级${offer.tier}的干员任选一名` : '免费招募'; micro = offer.source === 'merge' ? 'PROMOTION REWARD' : 'RECRUIT';
-    body = html`<div class="ix-choices">${offer.choices.map((id, i) => html`<${OperatorChoice} key=${id} chessId=${id} catalog=${catalog} busy=${busy}
+    body = html`<div class="ix-choices">${offer.choices.map((id, i) => html`<${OperatorChoice} key=${id} chessId=${id} catalog=${catalog} growthMode=${state.growthMode || 'badges'} busy=${busy}
       onPick=${() => onChoose({ type: 'choose', offerId: offer.id, index: i })} />`)}</div>`;
   } else if (offer.type === 'attachment') {
     title = '专项战备授训'; micro = 'ATTACHMENT';

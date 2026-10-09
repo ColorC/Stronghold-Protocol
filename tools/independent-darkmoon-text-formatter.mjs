@@ -120,7 +120,7 @@ function prepText(sourceId, rule, variant) {
       const bonus = p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : '';
       return `${when}，${selected(p.faction)}获得${n}${bonus}。`;
     }
-    case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员星级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
+    case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员科技等级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
     case 'darkmoonBoughtSelfGrowth': return `${p.faction ? `购买${factionText(p.faction)}干员时` : when}，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonBeastSummonGrowth': return `每当其他友方叙拉古干员新获得或首次上阵时，该干员获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonPlayedTribeGrowth': return `每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得${growth(attack, secondary, variant)}。`;
@@ -164,7 +164,7 @@ function cleanCombat(id, variant) {
     .replaceAll('每三秒一轮', '每3秒最多触发一轮')
     .replaceAll('原型', '干员的作战投影')
     .replaceAll('作战支援单位', '作战支援单位')
-    .replaceAll('获得时装备1件突袭盟约', '自身装备突袭盟约×1')
+    .replace(/；?获得时装备1件突袭盟约[。]?/g, '')
     .replace(/按当前攻击成长计算，最多七个个/g, '按当前攻击成长计算，最多7个');
   if (['EX1_531', 'GVG_106'].includes(id)) {
     const faction = DARKMOON_COMBAT_RULES[id]?.faction === 'BEAST' ? '叙拉古'

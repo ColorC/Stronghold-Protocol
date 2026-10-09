@@ -25,11 +25,18 @@ const KIND_WORD = { recruit: '招募', random: '随机', stat: '属性', damage:
 const CONDITION_WORD = { escalate: '每次翻倍', professions: '每种职业', factions: '每种阵营', elites: '每名精锐', improves: '逐次+1' };
 const TOTAL_WORD = { gained: '获得', refreshes: '刷新', sold: '出售', bought: '购买', elites: '晋升', kills: '击倒' };
 
+function traitGlyphItems(items, catalog, growthMode) {
+  const isBadge = (it) => catalog?.gear?.[it.id]?.kind === 'badge' || catalog?.gear?.[it.id]?.kind === '徽章';
+  return growthMode === 'levels' && items.some(isBadge)
+    ? [...items.filter((it) => !isBadge(it)), { id: 'growth-training-record' }]
+    : items;
+}
+
 /**
  * The trait's icon line: moment → yield (icons × count of this form) and a marker per condition. It indexes the full
  * text (detail card); it never shortens a mechanism into words of its own.
  */
-export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: cls }) {
+export function TraitGlyphs({ summary, elite = false, catalog, growthMode = 'badges', max = 2, class: cls }) {
   const entries = (summary || []).slice(0, max);
   if (!entries.length) return null;
   return html`<span class=${cx('ix-trait', cls)}>
@@ -37,9 +44,12 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
       <span class="ix-trait__when">${catalog?.traitWhen?.[e.when] || e.when}</span>
       <span class="ix-trait__arrow" aria-hidden="true">›</span>
       ${e.kind === 'forge' || e.kind === 'shopBadge'
-        ? (e.items || []).map((it, k) => html`<span class="ix-trait__out" key=${k}>
-            <${GearIcon} id=${it.id} catalog=${catalog} />${summaryCount(it, elite) != null ? html`<b class="num">×${summaryCount(it, elite)}</b>` : null}
+        ? (() => {
+            const shown = traitGlyphItems(e.items || [], catalog, growthMode);
+            return shown.map((it, k) => html`<span class="ix-trait__out" key=${k}>
+            <${GearIcon} id=${it.id} catalog=${catalog} />${it.id !== 'growth-training-record' && summaryCount(it, elite) != null ? html`<b class="num">×${summaryCount(it, elite)}</b>` : null}
           </span>`)
+          })()
         : null}
       ${e.kind === 'funds' && summaryCount(e.amount,elite)!=null ? html`<span class="ix-trait__out"><${CoinGlyph} /><b class="num">+${summaryCount(e.amount, elite)}</b></span>` : null}
       ${e.kind === 'discount' && summaryCount(e.amount,elite)!=null ? html`<b class="num">−${summaryCount(e.amount,elite)}</b>` : null}
