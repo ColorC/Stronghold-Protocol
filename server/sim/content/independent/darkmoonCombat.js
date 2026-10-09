@@ -390,6 +390,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     for(let i=0;i<deploymentMultiplier(e.unit);i++)retireAction(e,kind);
   };
   const pendingInitial=[];
+  let battleStartConsumed=false;
   const deploymentActor=(actor,initial=false)=>{
     if(!actor||actor.side!=='ally'||actor.removed)return;
     battle.emit('darkmoonDeployActor',{actor,initial,kind:actor.kind,factions:identity(actor)});
@@ -401,11 +402,16 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   };
   battle.on('deploy',event=>{
     if(event.move||event.unit?.side!=='ally')return;
-    if(event.initial){pendingInitial.push(event.unit);return;}
+    if(event.initial){
+      if(battleStartConsumed)deploymentActor(event.unit,true);
+      else pendingInitial.push(event.unit);
+      return;
+    }
     deploymentActor(event.unit,false);
   });
   // Opening deployments are evaluated as one batch so late-placed amplifiers see the entire opening field.
   battle.on('battleStart',()=>{
+    battleStartConsumed=true;
     // Installation can happen after Battle.start has already emitted initial deploy
     // hooks (e.g. runtime adapters registered by a mode). Read the authoritative
     // opening field as well; deploySeq dedupe keeps captured events from repeating.

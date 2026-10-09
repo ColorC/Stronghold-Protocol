@@ -277,13 +277,22 @@ test('real Vigil wolf summon receives BGS021 training from the pinned wolf curve
   assert.equal(tokenData.nativeGrowth.source?.table,'character_table.json');
   assert.equal(tokenData.nativeGrowth.source?.revision,'a550f5e048bb94e7cdefc6eb97a4091f0c4c7add');
   const wolves=handWolves.map(input=>h.unit(input.uid));
-  assert.ok(wolves.every(Boolean),'all three authentic hand-placed wolf tokens deploy at battle start');
+  assert.ok(wolves.every(Boolean),'all three authentic hand-placed wolf markers are registered at battle start');
+  const pendingWolves=wolves.filter(wolf=>wolf.mem.nativeEngagementPending);
+  assert.ok(pendingWolves.length>0,'markers without an engageable enemy remain pending instead of deploying blindly');
   assert.ok(wolves.every(wolf=>wolf.nativeOwnerGrowth.phase===2&&wolf.nativeOwnerGrowth.level===1),'each token freezes the selected owner growth context');
+  for(const wolf of pendingWolves){
+    const marker=[wolf.tileR,wolf.tileC];
+    const enemy=h.spawn('growth-probe',{pos:marker,mods:{speedMul:0}});
+    assert.ok(enemy?.alive&&enemy.deployed,`a real enemy enters the fixed marker's melee cell ${marker.join(',')}`);
+    assert.ok(h.runUntil(()=>wolf.deployed,5),`the marker deploys only after its actual attack range contains an enemy at ${marker.join(',')}`);
+    assert.deepEqual([wolf.tileR,wolf.tileC],marker,'the manual marker stays at the player-selected position');
+  }
   const amount=8*Number(catalog.config?.levelsPerBadge||1),targetLevel=Math.min(tokenData.nativeGrowth.phases[2].maxLevel,1+amount);
   const before=nativeLevelAttributes(tokenData.nativeGrowth,2,1),after=nativeLevelAttributes(tokenData.nativeGrowth,2,targetLevel);
   for(const wolf of wolves){
     const buff=wolf.findBuff('darkmoon:native-level-growth');
-    assert.ok(buff,`real BGS021 source applies training to each opening hand-placed token: ${JSON.stringify({trace:h.b.independentDarkmoonTrace,errors:h.b.errors})}`);
+    assert.ok(buff,`real BGS021 source applies training after marker deployment: ${JSON.stringify({trace:h.b.independentDarkmoonTrace,errors:h.b.errors})}`);
     assert.equal(buff.mods.atkFlat,after.atk-before.atk);
     assert.equal(buff.mods.hpFlat,after.maxHp-before.maxHp);
     assert.equal(buff.mods.defFlat,after.def-before.def);
