@@ -177,6 +177,29 @@ test('prepare resume accepts only the same Native builder failure prefix and ski
   assert.equal(retryAll.completedNames.size, 0);
 });
 
+test('prepare resume accepts all transferred artifacts only after an explicit remote prepare failure', () => {
+  const release = prepareReleaseFixture();
+  const failedRemotePrepare = prepareFailureFixture(release);
+  failedRemotePrepare.artifactTransfers.forEach(row => { row.status = 'transferred'; });
+  failedRemotePrepare.remotePrepareError = 'ssh connect timed out after all artifact transfers';
+  const result = validatePrepareResumeReceipt(release, failedRemotePrepare);
+  assert.deepEqual(result.skipped.map(row => path.basename(row.source)), release.artifacts.map(row => path.basename(row.path)));
+  assert.deepEqual([...result.completedNames], release.artifacts.map(row => path.basename(row.path)));
+
+  const noError = structuredClone(failedRemotePrepare);
+  delete noError.remotePrepareError;
+  assert.throws(() => validatePrepareResumeReceipt(release, noError), /非空remotePrepareError/);
+  const wrongExit = structuredClone(failedRemotePrepare);
+  wrongExit.commandExitCode = 255;
+  assert.throws(() => validatePrepareResumeReceipt(release, wrongExit), /commandExitCode=1/);
+  const successState = structuredClone(failedRemotePrepare);
+  successState.status = 'complete';
+  assert.throws(() => validatePrepareResumeReceipt(release, successState), /失败的prepare/);
+  const nativeMismatch = structuredClone(failedRemotePrepare);
+  nativeMismatch.artifactTransfers[4].source = path.resolve('E:/other/package-lock.json');
+  assert.throws(() => validatePrepareResumeReceipt(release, nativeMismatch), /source/);
+});
+
 test('prepare batches only remaining SCP sources into one connection and reports unconfirmed batch truthfully', () => {
   const release = prepareReleaseFixture();
   const full = scpBatchArgs('C:/keys/server.pem', '62635', 'root@server.invalid', '/var/tmp/stronghold-protocol/resonance', release.artifacts);
