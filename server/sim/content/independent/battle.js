@@ -297,10 +297,10 @@ function traitBuff(battle, target, key, mods, duration) {
   if (!Object.keys(mods).length) return;
   battle.addBuff(target, timed ? { key, duration: Number(duration), refresh: 'replace', mods } : { key, mods, persist: true, refresh: 'replace' });
 }
-function grantShieldLayers(battle, target, layers, cap = 2) {
+function grantShieldLayers(battle, target, layers) {
   const key = `independent:equipmentShield:${target.uid}`;
   const have = Number(target.findBuff(key)?.shieldHits ?? 0);
-  const total = Math.min(cap, have + layers);
+  const total = have + layers;
   if (total > have) battle.addBuff(target, { key, shieldHits: total, duration: Infinity, persist: true, allowDead: true, refresh: 'replace' });
 }
 // 弱点伤害 handed out by a trait (宴): the operators marked here deal weakness damage for the rest of the battle
@@ -601,7 +601,7 @@ function installTemporaryNativeRules(battle, unit, piece, catalog, rules) {
       }
       case 'shieldAllies':
         // battle start (on 'deploy': every time it is deployed, redeploys too): `count` of the targets (wearing the fewest
-        // layers first, then left to right) get `layers`, 2 at most
+        // layers first, then left to right) get the configured `layers`.
         (p.on === 'deploy' ? (fn) => onDeployOf(battle, unit, fn) : (fn) => battle.on('battleStart', fn, { owner: unit }))(() => {
           const list = traitTargets(battle, unit, p.targets ?? 'all').filter((t) => !p.excludeSelf || t !== unit)
             .sort((a, b) => Number(a.findBuff(`independent:equipmentShield:${a.uid}`)?.shieldHits ?? 0) - Number(b.findBuff(`independent:equipmentShield:${b.uid}`)?.shieldHits ?? 0) || a.homeC - b.homeC || a.homeR - b.homeR);
@@ -2045,12 +2045,12 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
     // 工程部节拍校准器: every 「每发动N次普通攻击」 counter of the wearer advances this much per normal attack
     unit.mem.independentCountStep = Math.max(1, ...ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'combatEquipment')
       .flatMap((e) => (e.rec.params?.effects ?? []).filter((x) => x.behavior === 'counterAccelerator').map((x) => Number(x.params?.countPerAttack) || 1)));
-    const shieldCharges = Math.min(2, ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'equipmentShield')
+    const shieldCharges = ownedEntries.filter((e) => e.kind === 'equipment' && e.rec.mechanism === 'equipmentShield')
       .reduce((sum, e) => {
         const n = Number(e.rec.params?.charges);
         if (!(n > 0)) throw new Error(`equipmentShield ${e.id} needs params.charges`);
         return sum + n;
-      }, 0));
+      }, 0);
     if (shieldCharges > 0) {
       unit.mem.independentEquipmentShield = shieldCharges;
       battle.addBuff(unit, { key: `independent:equipmentShield:${unit.uid}`, shieldHits: shieldCharges, duration: Infinity, persist: true, allowDead: true });

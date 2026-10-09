@@ -77,6 +77,17 @@ test('retiring summons wait for an enemy and Deflect refreshes shield on each ev
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 
+test('a retirement summon request survives its owner leaving before the first engageable enemy arrives',()=>{
+  const h=battle([piece('maker',[retirement({buff:undefined,summon:{count:1,statRatio:.5}})])]);
+  const owner=h.unit('maker');h.b.kill(owner);h.step(.2);
+  assert.equal(h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).length,0,'the triggered request waits while the battle has no enemy');
+  h.spawn('dummy',{pos:[10,8]});
+  assert.ok(h.runUntil(()=>h.b.allyUnits.some(u=>u.kind==='token'&&u.alive),2),'the same queued event deploys once a legal target and tile exist');
+  const token=h.b.allyUnits.find(u=>u.kind==='token'&&u.alive);
+  assert.equal(token.ownerUnit,owner,'the queued token retains its retired source identity');
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+});
+
 test('warband shield trigger counts five-layer groups without a stack cap',()=>{
   const h=battle([piece('reactor',[event('shieldLayersBroken',{stats:{attackSpeedFlat:10}})]),piece('friend'),piece('outsider',[],[],'炎')]);
   const reactor=h.unit('reactor'),friend=h.unit('friend'),other=h.unit('outsider');

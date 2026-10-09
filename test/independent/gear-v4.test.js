@@ -358,6 +358,16 @@ test('skillStartShield (天马骑士战盔) and the paired break burst; 天马�
   assert.ok(near(lost(e2), 115), `alone 15%: ${lost(e2)}`);
 });
 
+test('equipmentShield charges from separate copies all stack above the former two-layer ceiling', () => {
+  const shieldGear=G('应急屏障组件');
+  const copyId='test-emergency-barrier-copy',saved=catalog.equipment[copyId];
+  catalog.equipment[copyId]={...catalog.equipment[shieldGear],id:copyId,sourceId:copyId,canonicalId:copyId,unique:false,uniqueKey:copyId};
+  let h;
+  try{h=setup([{uid:'w',chessId:OPS.a,row:10,col:3,equipment:[shieldGear,copyId]}]);}
+  finally{if(saved)catalog.equipment[copyId]=saved;else delete catalog.equipment[copyId];}
+  assert.equal(h.unit('w').findBuff(`independent:equipmentShield:${h.unit('w').uid}`)?.shieldHits,4);
+});
+
 test('countedExtraShot (拉特兰铳骑组件): every 8th attack one more shot at another enemy; with 跳弹模块 it bounces', () => {
   const h = setup([{ uid: 'w', chessId: OPS.lateran, row: 10, col: 3, equipment: [G('拉特兰铳骑组件'), G('拉特兰跳弹模块')] }]);
   const w = h.unit('w');

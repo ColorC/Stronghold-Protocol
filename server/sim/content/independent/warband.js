@@ -55,17 +55,25 @@ export function installWarband(battle,{catalog,pieces}) {
     for(let i=0;i<count;i++) {
       const cell=findSummonTile(battle,owner,'near',{melee:clean.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,owner,clean,r,c)});
       if(!cell){
-        const seq=owner.deploySeq; let timer;
+        let timer;
         timer=battle.every(0.1,()=>{
-          if(owner.removed||owner.deploySeq!==seq){timer.cancel();return;}
           const ready=findSummonTile(battle,owner,'near',{melee:clean.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,owner,clean,r,c)});
           if(!ready)return;
           timer.cancel();spawn(owner,def,count-i,ratio,original);
-        },{owner});
+        },{owner:null});
         break;
       }
       const token=battle.spawnToken(owner,clean.id || 'warband-summon',...cell,{def:clean,anySource:true,kit:{}});
       if(token) { token.mem.warbandOriginalCopy=original; out.push(token); }
+      else {
+        let timer;
+        timer=battle.every(0.1,()=>{
+          const ready=findSummonTile(battle,owner,'near',{melee:clean.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,owner,clean,r,c)});
+          if(!ready)return;
+          timer.cancel();spawn(owner,def,count-i,ratio,original);
+        },{owner:null});
+        break;
+      }
     }
     return out;
   };

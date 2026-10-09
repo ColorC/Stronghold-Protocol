@@ -407,8 +407,9 @@ function inRectTile(battle, r, c) { return Number.isInteger(r) && Number.isInteg
  * unit's tile).
  */
 export function tileFree(battle, r, c) {
-  return inRectTile(battle, r, c) && !battle.isReservedTile(r, c)
-    && !battle.enemies.some((enemy) => enemy.alive && enemy.deployed !== false && Math.round(enemy.y) === r && Math.round(enemy.x) === c);
+  if (!inRectTile(battle, r, c) || battle.isReservedTile(r, c)) return false;
+  const occupant = battle._occ?.[r * COLS + c];
+  return !(occupant?.alive) && !battle.downOn?.(r, c);
 }
 
 function mostAdvancedEnemy(battle) {
@@ -516,10 +517,11 @@ export function tokenCanEngageAt(battle, owner, def, r, c, dir = owner?.dir) {
 export function summonWhenEngageable(battle,owner,tokenId,def,opts={}) {
   const placement=opts.placement||'near', support=!!opts.support;
   const generation=owner.deploySeq;
+  const retainedEvent=!!opts.allowInactiveOwner;
   let timer=null,done=false;
   const attempt=()=>{
     if(done)return null;
-    if(owner.removed||owner.deploySeq!==generation||(!opts.allowInactiveOwner&&(!owner.alive||!owner.deployed))){done=true;timer?.cancel();return null;}
+    if(!retainedEvent&&(owner.removed||owner.deploySeq!==generation||!owner.alive||!owner.deployed)){done=true;timer?.cancel();return null;}
     const hasEnemy=battle.enemies.some(e=>e.alive&&e.deployed);
     if(!hasEnemy)return null;
     const canUseTile=support?()=>true:(r,c)=>tokenCanEngageAt(battle,owner,def,r,c);
@@ -531,7 +533,10 @@ export function summonWhenEngageable(battle,owner,tokenId,def,opts={}) {
     return token;
   };
   const immediate=attempt(); if(immediate)return immediate;
-  timer=battle.every(0.1,attempt,{owner});
+  // Event-generated requests (for example a death payload) belong to the event,
+  // not the body that raised it. A null scheduler owner keeps that request alive
+  // through removal or a later deployment generation change.
+  timer=battle.every(0.1,attempt,{owner:retainedEvent?null:owner});
   return null;
 }
 

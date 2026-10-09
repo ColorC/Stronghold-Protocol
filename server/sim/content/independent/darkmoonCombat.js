@@ -300,21 +300,27 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     return {...record,id:nativeId,name:prototype.name,darkmoonPrototypeTokenId:nativeId,darkmoonPrototypeOwnerChessId:prototype.ownerId,darkmoonPrototypeName:prototype.prototypeName,
       darkmoonPrototypeScale,darkmoonPrototypeGrowthStatus:prototypeGrowthStatus,darkmoonSummonSourceText:`由${e.unit.name||'干员'}的额外特质生成`,darkmoonCover:!!p.cover,profession:'TOKEN',stats};
   };
-  const spawn=(e,def,count,tags=[],p={})=>{
+  const spawn=(e,def,count,tags=[],p={},options={})=>{
     const out=[];
-    for(let i=0;i<count*summonMultiplier(e.unit);i++){
+    const total=options.applyMultiplier===false?count:count*summonMultiplier(e.unit);
+    for(let i=0;i<total;i++){
       // Put identity on the definition before deployment, so summon observers see its real origin.
       const clean=structuredClone(def);clean.darkmoonFactionTags=tags;
       const prototypeOwnerId=clean.darkmoonPrototypeOwnerChessId;
       const nativeId=prototypeOwnerId||clean.darkmoonNativeChessId;
-      const body=clean.darkmoonProjection?clean:battle.data.getToken(clean.id,prototypeOwnerId||e.unit.defId)||clean;
+      // Probe the exact projected/scaled definition passed to spawnToken below.
+      // Looking the raw catalog token back up here loses its resolved stats/profile.
+      const body=clean;
       const cell=findSummonTile(battle,e.unit,'near',{melee:body.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,e.unit,body,r,c)});
       if(!cell){
         let timer;
+        // This is already a triggered Darkmoon event. Keep its exact projected body
+        // queued until an engageable tile exists, even if its source later leaves.
+        const timerOwner=null;
         timer=battle.every(0.1,()=>{
           if(!findSummonTile(battle,e.unit,'near',{melee:body.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,e.unit,body,r,c)}))return;
-          timer.cancel();spawn(e,def,count*summonMultiplier(e.unit)-i,tags,p);
-        },{owner:e.unit});
+          timer.cancel();spawn(e,def,total-i,tags,p,{...options,applyMultiplier:false});
+        },{owner:timerOwner});
         break;
       }
       const sourceOperator=nativeId?catalog.operators?.[nativeId]:null;
@@ -333,7 +339,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         token.summonSourceText=clean.darkmoonSummonSourceText||`由${e.unit.name||'干员'}的额外特质生成`;
         token.prototypeName=clean.darkmoonPrototypeName||clean.name;
         token.uid ||= `darkmoon-copy:${token.id}`;
-        token.mem.darkmoonSummon=true;token.mem.darkmoonFactionTags=tags;out.push(token);
+        token.mem.darkmoonSummon=true;token.mem.darkmoonFactionTags=tags;out.push(token);options.onSpawn?.(token);
         const copyPiece={uid:token.uid,chessId:nativeId||e.unit.defId,elite:!!(clean.golden||clean.isGolden),growthLevel:1,equipment:[]};
         const grants=darkmoonPrepRulesFor({darkmoonSourceId:clean.darkmoonSourceId},copyPiece.elite).filter(r=>r.trigger==='gain'&&r.behavior==='grantEquipment'&&r.params.landOn==='self').flatMap(r=>r.params.outputs);
         if(p.cover)grants.push({id:'坚守盟约',normal:1,elite:1});
@@ -373,7 +379,8 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     }else if(p.fallen){for(const x of fallen.filter(x=>own(x.unit,e.unit)&&x.tags.includes(FACTIONS[p.fallen])).slice(0,p.count[e.elite?1:0]))spawn(e,x.def,1,x.tags);}
     if(p.token){const count=p.attackCount?Math.max(1,Math.floor(e.unit.s.atk/Math.max(1,e.unit.base.atk)*2)):(p.count[e.elite?1:0]);spawn(e,tokenDef(e,p),count,p.token==='beast'?['叙拉古']:p.token==='pirate'?['维多利亚']:['哥伦比亚'],p);}
     if(p.random)for(let i=0;i<p.count[e.elite?1:0];i++){
-      const x=randomDef(e,p.random);if(!x)continue;const created=spawn(e,x.def,1,x.op.nativeFactionTags||[]);if(p.handCopy&&created.length)results.recruits.push({sourceUid:e.unit.uid,chessId:x.op.chessId,pristine:true});
+      const x=randomDef(e,p.random);if(!x)continue;
+      spawn(e,x.def,1,x.op.nativeFactionTags||[],{},p.handCopy?{onSpawn:()=>results.recruits.push({sourceUid:e.unit.uid,chessId:x.op.chessId,pristine:true})}:{});
     }
     note(e,kind,targets);
   };
@@ -419,8 +426,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   };
   // Deathrattle echo adapters must execute the exact same retirement payload
   // as a real retirement, while leaving the chosen operator alive. Keep
-  // selection, faction ownership, per-candidate echo cap, and the live Baron
-   // multiplier here with the native retirement entries.
+  // selection, faction ownership, and the live multiplier here with the native entries.
   battle.echoDarkmoonRetirement=(owner,faction=null)=>{
     const e=entries.filter(x=>x.unit!==owner&&x.rule.retire&&alive(x.unit)&&eligible(x.unit,owner,faction))
       .sort((a,b)=>order(a.unit,b.unit)||String(a.id).localeCompare(String(b.id)))[0];

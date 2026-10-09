@@ -56,17 +56,17 @@ test('同阵营 targets read the tavern factions', () => {
   assert.equal(h.unit('other').s.aspd, 100);
 });
 
-test('队友倒下叠层: a stack for every fallen ally, up to the cap, for the rest of the battle', () => {
+test('队友倒下叠层: each fallen ally adds a stack for the rest of the battle', () => {
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'a', chessId: OPS.texas, row: 10, col: 5 },
     { uid: 'b', chessId: OPS.lateran, row: 11, col: 3 },
     { uid: 'c', chessId: OPS.loner2, row: 12, col: 3 },
-  ], { w: [rule('allyDownStacks', { every: 1, stats: { atkPct: 0.1 }, maxStacks: 2 })] });
+  ], { w: [rule('allyDownStacks', { every: 1, stats: { atkPct: 0.1 } })] });
   h.b.kill(h.unit('a')); h.step(1);
   assert.equal(Math.round(h.unit('w').s.atk), 110);
   h.b.kill(h.unit('b')); h.b.kill(h.unit('c')); h.step(1);
-  assert.equal(Math.round(h.unit('w').s.atk), 120);
+  assert.equal(Math.round(h.unit('w').s.atk), 130);
 });
 
 test('被击倒时: a blast around it, once', () => {
@@ -79,14 +79,14 @@ test('被击倒时: a blast around it, once', () => {
   assert.equal(far.hp, far.s.maxHp);
 });
 
-test('分发护盾: the given count of allies get a layer at battle start, two at most', () => {
+test('分发护盾: the configured count of allies receive all granted shield layers', () => {
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'a', chessId: OPS.texas, row: 10, col: 5 },
     { uid: 'b', chessId: OPS.lateran, row: 11, col: 3 },
   ], { w: [rule('shieldAllies', { targets: 'all', count: 2, layers: 3 })] });
   const layers = ['w', 'a', 'b'].map((uid) => Number(h.unit(uid).findBuff(`independent:equipmentShield:${uid}`)?.shieldHits ?? 0));
-  assert.deepEqual(layers.sort(), [0, 2, 2]);
+  assert.deepEqual(layers.sort(), [0, 3, 3]);
 });
 
 test('每第N次攻击: an extra hit on the main target every Nth attack', () => {
@@ -301,7 +301,7 @@ test('阻挡时反击: hit while blocking, it deals its DEF × the ratio to the 
   assert.ok(near(hpLost(e), 40), `${hpLost(e)}`);
 });
 
-test('new parameters: 首次部署 / 再部署 / 部署后N秒, 技能持续期间, 部署时护盾, 替身切换时', () => {
+test('new parameters: 首次部署 / 再部署 / 部署后N秒, 技能持续期间, 部署时护盾, repeated doll swap', () => {
   const h = setup([
     { uid: 'w', chessId: OPS.provence, row: 10, col: 3 },
     { uid: 'a', chessId: OPS.texas, row: 10, col: 4 },
@@ -310,7 +310,7 @@ test('new parameters: 首次部署 / 再部署 / 部署后N秒, 技能持续期�
     rule('deployBuff', { firstDeployOnly: true, delay: 2, targets: 'all', stats: { aspd: 10 }, duration: 'battle' }, 'deploy'),
     rule('skillStartBuff', { targets: 'adjacent', stats: { atkPct: 0.3 }, duration: 'skill' }, 'skillStart'),
     rule('shieldAllies', { on: 'deploy', targets: 'adjacent', count: 99, layers: 1, excludeSelf: true }, 'deploy'),
-    rule('onDown', { on: 'dollSwap', blast: { atkPct: 2, radius: 1.5, type: 'phys' }, perBattle: 2 }, 'dollSwap'),
+    rule('onDown', { on: 'dollSwap', blast: { atkPct: 2, radius: 1.5, type: 'phys' } }, 'dollSwap'),
   ] });
   const w = h.unit('w'); const a = h.unit('a');
   assert.equal(w.s.atk, 100, 'the first deployment is not a redeployment');
@@ -327,7 +327,7 @@ test('new parameters: 首次部署 / 再部署 / 部署后N秒, 技能持续期�
   assert.equal(a.s.atk, 100, 'the skill ended');
   const e = h.spawn('enemy_test', { pos: [10, 4], mods: { speedMul: 0 } });
   for (let i = 0; i < 3; i++) h.b.emit('dollSwap', { unit: w });
-  assert.ok(near(hpLost(e), 2 * 2 * 120), `${hpLost(e)}: twice a battle`);
+  assert.ok(near(hpLost(e), 3 * 2 * 120), `${hpLost(e)}: each doll swap emits its configured blast`);
 });
 
 test('battle counters: 受到攻击, 闪避, 未被击倒到战斗结束, and a skill start arming the row\'s next trait badge', () => {

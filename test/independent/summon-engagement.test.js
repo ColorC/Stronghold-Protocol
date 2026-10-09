@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
-import { summonWhenEngageable, tokenCanEngageAt } from '../../server/sim/content/tokens.js';
+import { findSummonTile, summonWhenEngageable, tileFree, tokenCanEngageAt } from '../../server/sim/content/tokens.js';
 
 const tokenDef={id:'engaging-probe',name:'接敌探针',profession:'WARRIOR',attackKind:'RANGED',position:'RANGED',dmgType:'phys',groundOnly:true,canHitFly:false,rangeGrid:Array.from({length:19},(_,r)=>Array.from({length:19},(_,c)=>[r,c])).flat(),stats:{maxHp:100,atk:10,def:0,res:0,aspd:100,bat:1,blockCnt:0}};
 function fixture(){
@@ -30,6 +30,16 @@ test('the engagement probe rejects targets the token cannot hit',()=>{
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 
+test('melee blockers may deploy on the enemy tile they must block, while ally/body occupancy remains unavailable',()=>{
+  const h=fixture(),owner=h.unit('owner');h.spawn('probe',{pos:[10,8]});
+  const blocker={id:'same-cell-blocker',name:'同格阻挡探针',profession:'WARRIOR',attackKind:'MELEE',position:'MELEE',dmgType:'phys',rangeGrid:[[0,0]],stats:{maxHp:100,atk:10,blockCnt:1}};
+  assert.equal(tileFree(h.b,10,8),true,'enemy occupancy does not make an ally deployment tile unavailable');
+  assert.equal(tokenCanEngageAt(h.b,owner,blocker,10,8),true,'a blocker can acquire a ground enemy on its own tile');
+  assert.deepEqual(findSummonTile(h.b,owner,'near',{allBoard:true,melee:true,canUseTile:(r,c)=>tokenCanEngageAt(h.b,owner,blocker,r,c)}),[10,8]);
+  assert.equal(tileFree(h.b,10,5),false,'a living ally still occupies its tile');
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+});
+
 test('engagement checks do not install kits, add units, hooks or mutate enemy blockers',()=>{
   const h=fixture(),owner=h.unit('owner');h.spawn('probe',{pos:[10,8]});
   const enemy=h.enemies()[0],units=h.b.units.length,blocked=enemy.blockedBy,blocking=owner.blocking.slice();
@@ -52,7 +62,7 @@ test('an explicitly retained event-source request can deploy after its source ow
   const h=fixture(),owner=h.unit('owner');
   const reserved=h.b.isReservedTile.bind(h.b);h.b.isReservedTile=()=>true;
   summonWhenEngageable(h.b,owner,tokenDef.id,tokenDef,{allowInactiveOwner:true});
-  h.b.kill(owner);h.spawn('probe',{pos:[10,8]});h.b.isReservedTile=reserved;h.run(.3);
+  h.b.retreat(owner,{permanent:true});owner.deploySeq++;h.spawn('probe',{pos:[10,8]});h.b.isReservedTile=reserved;h.runUntil(()=>h.b.allyUnits.some(u=>u.kind==='token'&&u.alive),1);
   assert.equal(h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).length,1);
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
