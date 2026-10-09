@@ -35,9 +35,14 @@ export const renderChessId = (catalog, piece) => (piece.elite ? catalog?.operato
  * cap may hold more: those are listed by the HUD (`overflow`).
  */
 export function benchLayout(state) {
-  const off = (state?.pieces || []).filter((p) => !isDeployed(p));
+  const seen = new Set();
+  const pieces = [...(state?.pieces || []), ...(state?.summons || [])].filter((p) => {
+    if (!p?.uid || seen.has(p.uid)) return false;
+    seen.add(p.uid); return true;
+  });
+  const off = pieces.filter((p) => !isDeployed(p));
   const bench = off.filter((p) => !p.temp); const temp = off.filter((p) => p.temp);
-  return { hand: bench.slice(0, HAND_SLOTS), temp: temp.slice(0, TEMP_SLOTS), overflow: [...bench.slice(HAND_SLOTS), ...temp.slice(TEMP_SLOTS)] };
+  return { hand: bench, temp, overflow: [] };
 }
 
 /**
@@ -45,14 +50,18 @@ export function benchLayout(state) {
  * not drawn as item pips (those are the original two-slot items): the HUD draws the equipment level instead.
  */
 export function prepView(state, catalog) {
-  const toPiece = (p) => ({ uid: pieceNum(p.uid), kind: 'chess', id: renderChessId(catalog, p), golden: !!p.elite,
+  const toPiece = (p) => p.kind === 'token' ? ({ uid: pieceNum(p.uid), kind: 'token', id: p.tokenId || p.id, tokenId: p.tokenId || p.id,
+    count: Number(p.count || 1), ownerUid: pieceNum(p.ownerUid), ownerUnitId: p.ownerUnitId || null, ownerChessId: p.ownerChessId || null,
+    ownerName: p.ownerName || '', summonSourceText: p.summonSourceText || '',
+    name: p.name || '', desc: p.desc || '', legalActions: p.legalActions || ['move', 'bench'], legalTiles: p.legalTiles || [],
+    ...(isDeployed(p) ? { row: p.row, col: p.col, dir: p.dir || 'RIGHT' } : {}) }) : ({ uid: pieceNum(p.uid), kind: 'chess', id: renderChessId(catalog, p), golden: !!p.elite,
     tier: catalog?.operators?.[p.chessId]?.tier ?? 1, items: [], ...(isDeployed(p) ? { row: p.row, col: p.col, dir: p.dir || 'RIGHT' } : {}) });
   const { hand, temp } = benchLayout(state);
   const pad = (list, n) => Array.from({ length: n }, (_, i) => (list[i] ? toPiece(list[i]) : null));
   return {
-    hand: pad(hand, HAND_SLOTS),
-    temp: pad(temp, TEMP_SLOTS),
-    board: (state?.pieces || []).filter(isDeployed).map(toPiece),
+    hand: pad(hand, Math.max(HAND_SLOTS, hand.length)),
+    temp: pad(temp, Math.max(TEMP_SLOTS, temp.length)),
+    board: [...(state?.pieces || []), ...(state?.summons || [])].filter(isDeployed).map(toPiece),
     nextEnemies: Array.isArray(state?.nextEnemies) ? state.nextEnemies : [],
   };
 }
@@ -86,7 +95,7 @@ export function withCatalogTiers(replay, catalog) {
 }
 
 /** Session piece for a renderer uid. */
-export const pieceByNum = (state, n) => (state?.pieces || []).find((p) => pieceNum(p.uid) === n) || null;
+export const pieceByNum = (state, n) => [...(state?.pieces || []), ...(state?.summons || [])].find((p) => pieceNum(p.uid) === n) || null;
 
 /**
  * Whether the renderer may drop piece `n` on `target` (render/drag.js canPlace): a board tile from the server's
@@ -98,7 +107,7 @@ export function canDrop(state, n, target) {
   if (target.area === 'hand') return isDeployed(piece) || !!piece.temp; // a 临时整备区 operator may go back to the bench
   if (target.area !== 'board') return false;
   if (!(piece.legalTiles || []).includes(`${target.row},${target.col}`)) return false;
-  const holder = (state.pieces || []).find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
+  const holder = [...(state.pieces || []), ...(state.summons || [])].find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
   return !holder || holder.uid === piece.uid;
 }
 
@@ -107,7 +116,7 @@ export function legalTilesOf(state, n) {
   const piece = pieceByNum(state, n);
   if (!piece) return [];
   return (piece.legalTiles || []).map((cell) => cell.split(',').map(Number))
-    .filter(([r, c]) => !(state.pieces || []).some((p) => p.uid !== piece.uid && isDeployed(p) && p.row === r && p.col === c));
+    .filter(([r, c]) => ![...(state.pieces || []), ...(state.summons || [])].some((p) => p.uid !== piece.uid && isDeployed(p) && p.row === r && p.col === c));
 }
 
 const gearRecord = (catalog, id) => catalog?.gear?.[id] || null;

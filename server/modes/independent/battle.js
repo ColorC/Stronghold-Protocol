@@ -79,7 +79,25 @@ export function getIndependentField(state, { data = null, catalog = null } = {})
   };
 }
 
-function battleUnits(state, catalog) {
+function summonSourceText(data, owner, tokenId, catalog) {
+  const token = data?.tokens?.[tokenId];
+  const base = catalog?.operators?.[owner?.chessId];
+  const ownerChessId = owner?.elite ? base?.eliteChessId || owner?.chessId : owner?.chessId;
+  const variant = token?.variants?.[ownerChessId] || token?.variants?.[String(owner?.chessId || '').replace(/_b$/, '_a')];
+  const selected = variant?.bySkill?.[owner?.skillIndex] || variant;
+  const sources = Array.isArray(selected?.sources) ? selected.sources : [];
+  const raw = owner?.elite ? (base?.source?.eliteChess || base?.source?.normalChess) : base?.source?.normalChess;
+  const triggers = [];
+  if (sources.includes('skill') && raw?.skills?.[owner?.skillIndex]?.name) triggers.push(`技能「${raw.skills[owner.skillIndex].name}」`);
+  if (sources.includes('talent')) {
+    const talent = (raw?.talents || []).find((x) => x?.name);
+    if (talent?.name) triggers.push(`天赋「${talent.name}」`);
+  }
+  if (sources.includes('module')) triggers.push('模组');
+  return `由${base?.name || '干员'}${triggers.length ? `的${triggers.join('、')}` : ''}召唤`;
+}
+
+export function battleUnits(state, catalog, data) {
   const pieces = Array.isArray(state?.pieces) ? state.pieces : [];
   const units = [];
   for (const piece of pieces) {
@@ -94,8 +112,18 @@ function battleUnits(state, catalog) {
       dir: piece.dir ?? 'RIGHT',
       skillIndex: piece.skillIndex ?? 0,
       moduleId: piece.moduleId ?? 'none',
-      ...(piece.growthMode==='levels'?{nativeGrowthStatus:(({phase,level})=>({phase,level}))(operatorGrowthInfo(piece,catalog))}:{}),
+      ...(state.growthMode==='levels'?{nativeGrowthStatus:(({phase,level})=>({phase,level}))(operatorGrowthInfo({...piece,growthMode:'levels',growthLevel:piece.growthLevel||1},catalog))}:{}),
     });
+  }
+  for (const token of Array.isArray(state?.summons) ? state.summons : []) {
+    if (!token || token.row == null || token.col == null) continue;
+    if (!Number.isInteger(Number(token.row)) || !Number.isInteger(Number(token.col)) || Number(token.count || 1) !== 1) continue;
+    const owner = pieces.find((p) => p.uid === token.ownerUid);
+    if (!owner || owner.row == null || owner.col == null) continue;
+    units.push({ uid: token.uid, kind: 'token', tokenId: token.tokenId, row: Number(token.row), col: Number(token.col),
+      dir: token.dir ?? 'RIGHT', ownerUid: token.ownerUid, ownerChessId: owner.elite ? catalog?.operators?.[owner.chessId]?.eliteChessId || owner.chessId : owner.chessId,
+      ownerGrowth: state.growthMode === 'levels' ? (({ phase, level }) => ({ phase, level }))(operatorGrowthInfo({...owner,growthMode:'levels',growthLevel:owner.growthLevel||1}, catalog)) : undefined,
+      summonSourceText: summonSourceText(data, owner, token.tokenId, catalog), independentSummon: true });
   }
   return units;
 }
@@ -127,7 +155,7 @@ function sampleBattle(battle) {
  */
 function buildBattle(input, source, catalog, { preview = false } = {}) {
   const prepared = prepare(input, source, catalog);
-  const units = battleUnits(input,catalog);
+  const units = battleUnits(input,catalog,source);
   const supportChess=Object.fromEntries(Object.entries(catalog?.operators||{}).filter(([,op])=>op?.darkmoonSupport&&op.source?.normalChess).map(([id,op])=>[id,op.source.normalChess]));
   const battleData=Object.keys(supportChess).length?{...source,chess:{...(source.chess||{}),...supportChess}}:source;
   const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1) * (prepared.tuning?.bossHpMul ?? 1)));

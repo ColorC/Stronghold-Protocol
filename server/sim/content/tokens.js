@@ -386,7 +386,8 @@ function countNear(list, r, c, rad = 1) {
 export function findSummonTile(battle, owner, placement = 'melee', opts = {}) {
   if (!owner || owner.tileR == null) return null;
   let keys;
-  if (placement === 'adjacent') keys = absoluteRangeKeys(GRID_3X3, owner.tileR, owner.tileC, owner.dir, 0);
+  if (opts.allBoard) keys = Array.from({ length: ROWS * COLS }, (_, index) => index);
+  else if (placement === 'adjacent') keys = absoluteRangeKeys(GRID_3X3, owner.tileR, owner.tileC, owner.dir, 0);
   else if (placement === 'plus') keys = absoluteRangeKeys(GRID_PLUS, owner.tileR, owner.tileC, owner.dir, 0);
   else if (opts.grid) keys = absoluteRangeKeys(opts.grid, owner.tileR, owner.tileC, owner.dir, 0);
   else keys = owner.rangeKeys || [];
@@ -1508,6 +1509,7 @@ export function install(battle) {
     // tactician 援军 = its talent token: board piece first; replaces the engine's generic 援军 when that one is in use
     const tac = toks.find((t) => TACTICIAN_TOKENS.has(t));
     if (tac && owner.profile?.sub === 'tactician') {
+      if (battle.flags.independent) owner.mem.nativeTacticianSummonTokenId = tac;
       const engineDefault = !!(owner.profile.install && owner.profile.install.name === 'installTactician');
       battle.on('deploy', (ctx) => {
         if (ctx.unit !== owner) return;
