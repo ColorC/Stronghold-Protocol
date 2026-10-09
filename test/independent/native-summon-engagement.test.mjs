@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
+import { tokenCanEngageAt } from '../../server/sim/content/tokens.js';
 
 const ranged={id:'independent-native-ranged',name:'native ranged',profession:'SNIPER',attackKind:'RANGED',position:'RANGED',dmgType:'phys',groundOnly:true,canHitFly:false,rangeGrid:[[0,0],[0,1]],stats:{maxHp:100,atk:10,def:0,res:0,aspd:100,bat:1,blockCnt:0}};
 const ownerDef=chessRec({id:'engagement-owner',name:'owner',skill:null,stats:{cost:0,atk:20,maxHp:500,def:0,bat:1},rangeGrid:[[0,0],[0,1]]});
@@ -77,4 +78,30 @@ test('an occupied fixed marker keeps its request and deploys after the allied ti
   h.b.retreat(blocker,{permanent:true});h.runUntil(()=>marker.deployed,1);
   assert.equal(marker.deployed,true);assert.deepEqual([marker.tileR,marker.tileC],[10,5]);
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+});
+
+test('stealth is previewed as targetable only when the token can truly block it, without mutating the enemy',()=>{
+  const blockRanged={...ranged,id:'independent-native-ranged-blocker',rangeGrid:[[0,0]],stats:{...ranged.stats,blockCnt:1}};
+  const h=makeBattle({defs:{chess:{'engagement-owner':ownerDef},enemies:{probe:enemy},tokens:{[blockRanged.id]:blockRanged}},units:[{uid:'owner',chessId:'engagement-owner',row:10,col:3}],flags:{independent:true},content:'none',autoFinish:false});
+  h.run(.1);const owner=h.unit('owner'),target=h.spawn('probe',{pos:[10,5]});target.s.flags.stealth=true;target.markDirty();
+  const unitCount=h.b.units.length,blockedEvents=h.eventsOf('blocked').length,ownerBlocks=[...owner.blocking];
+  assert.equal(tokenCanEngageAt(h.b,owner,blockRanged,10,5),true,'the block preview removes the stealth deadlock at actual contact distance');
+  assert.equal(target.blockedBy,null);assert.deepEqual(owner.blocking,ownerBlocks);assert.equal(h.b.units.length,unitCount);assert.equal(h.eventsOf('blocked').length,blockedEvents);
+  assert.equal(tokenCanEngageAt(h.b,owner,blockRanged,10,4),false,'the preview respects the native block radius outside weapon range');
+  target.s.flags.untargetable=true;assert.equal(tokenCanEngageAt(h.b,owner,blockRanged,10,5),false,'untargetable remains unselectable after a hypothetical block');target.s.flags.untargetable=false;
+  target.s.flags.unblockable=true;assert.equal(tokenCanEngageAt(h.b,owner,blockRanged,10,5),false,'unblockable enemies cannot unlock the summon');target.s.flags.unblockable=false;
+  target.motion='FLY';assert.equal(tokenCanEngageAt(h.b,owner,blockRanged,10,5),false,'a token without flight block/hit permission rejects flying enemies');
+  assert.equal(target.blockedBy,null);assert.deepEqual(owner.blocking,ownerBlocks);assert.equal(h.b.units.length,unitCount);assert.equal(h.eventsOf('blocked').length,blockedEvents);
+});
+
+test('a ranged token that can block an unrevealed stealth enemy deploys and attacks it after the real block',()=>{
+  const blockRanged={...ranged,id:'independent-native-ranged-blocker',rangeGrid:[[0,0]],stats:{...ranged.stats,blockCnt:1}};
+  const h=makeBattle({defs:{chess:{'engagement-owner':ownerDef},enemies:{probe:enemy},tokens:{[blockRanged.id]:blockRanged}},units:[
+    {uid:'owner',chessId:'engagement-owner',row:10,col:3},
+    {uid:'marker',kind:'token',tokenId:blockRanged.id,def:blockRanged,ownerUid:'owner',row:10,col:5,independentSummon:true},
+  ],flags:{independent:true},content:'none',autoFinish:false});
+  h.run(.1);const marker=h.b.units.find(unit=>unit.uid==='marker'),target=h.spawn('probe',{pos:[10,5]});target.s.flags.stealth=true;target.markDirty();
+  assert.ok(h.runUntil(()=>marker.deployed,1),'the actual blockable stealth target releases the fixed marker');
+  assert.equal(target.blockedBy,marker,'the real blocking state, not a probe mutation, removes stealth');
+  const hp=target.hp;h.run(1.2);assert.ok(target.hp<hp,'ranged attack profile can attack its blocked target');assert.equal(target.blockedBy,marker);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });

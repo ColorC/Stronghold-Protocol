@@ -88,7 +88,7 @@
 // TOKEN_IDS; mapCharTalents and touchGospel (Touch's 攫升 / 超脱 and 恳切福音, shared with the Touch 补位 stand-in kit,
 // kits/ops/standin-acmedc.js).
 
-import { COLS, ROWS, MOVE_SCALE, FORCED_EXIT } from '../constants.js';
+import { COLS, ROWS, MOVE_SCALE, FORCED_EXIT, BLOCK_RADIUS_SQ } from '../constants.js';
 import { absoluteRangeKeys, sortEnemyTargets, canTargetEnemy } from '../targeting.js';
 import { bodyInKeys, bodyOnTile } from '../body.js';
 import { hasHp } from '../damage.js';
@@ -497,19 +497,22 @@ export function tokenCanEngageAt(battle, owner, def, r, c, dir = owner?.dir) {
   const support=probe.profile?.noAttack||probe.profile?.dmgType==='heal';
   if (support) return battle.enemies.some(e=>e.alive&&e.deployed);
   if (acquireTargets(battle,probe,probe.profile).length) return true;
-  if(probe.s.blockCnt<=0||probe.profile?.attack!=='melee')return false;
-  const tile=battle.grid.tile(r,c);
-  if(!probe.ground||!tile||tile.pass!=='ALL')return false;
+  if(probe.s.blockCnt<=0)return false;
   return battle.enemies.some(enemy=>{
-    if(!enemy.alive||!enemy.deployed||!canTargetEnemy(probe,enemy,probe.profile))return false;
+    if(!enemy.alive||!enemy.deployed||enemy.hidden||enemy.blockedBy)return false;
     const flags=enemy.s.flags;
     if(flags.unblockable||flags.levitate||flags.fear||flags.sleep)return false;
-    if(enemy.isFlying&&!(probe.s.flags.blockFly||probe.profile.blockFly))return false;
-    if(!enemy.isFlying&&(!probe.ground||probe.s.flags.liftoff))return false;
-    const dy=enemy.y-r,dx=enemy.x-c;
-    if(!enemy.isFlying&&Math.abs(dy)>1e-9)return false;
-    const radiusSq=enemy.isFlying?0.5:0.5;
-    return dx*dx+dy*dy<radiusSq;
+    const r0=Math.round(enemy.y),c0=Math.round(enemy.x);
+    if(r<r0-1||r>r0+1||c< c0-1||c>c0+1||(!enemy.isFlying&&r!==r0&&c!==c0))return false;
+    const w=enemy.blockWeight??1;
+    if(!battle._blockerFor(probe,enemy,w))return false;
+    const dx=enemy.x-c,dy=enemy.y-r,k=enemy.isFlying?1+(probe.s.blockRadiusScale||0):1;
+    const radiusSq=enemy.isFlying?BLOCK_RADIUS_SQ.fly*k*k:BLOCK_RADIUS_SQ.ground;
+    if(!(dx*dx+dy*dy<radiusSq))return false;
+    // _checkBlock would set blockedBy before the normal target filter runs. Give only that target query a
+    // non-mutating blocked view so stealth is evaluated in the state the real collision creates.
+    const blockedView=Object.create(enemy);blockedView.blockedBy=probe;
+    return canTargetEnemy(probe,blockedView,probe.profile);
   });
 }
 
