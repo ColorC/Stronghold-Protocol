@@ -271,6 +271,8 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
   const oldProductBytes = { 'server/modes/resonance/session.js': 'b2xkLXNlc3Npb24=', 'server/modes/resonance/display.js': 'b2xkLWRpc3BsYXk=', 'public/js/resonance/game.js': 'b2xkLWdhbWU=', 'public/js/resonance/model.js': 'b2xkLW1vZGVs', 'public/css/resonance.css': 'b2xkLWNzcw==' };
   assert.deepEqual(validateCandidateRefreshChangeSet(Object.keys(oldProductBytes).reverse()), Object.keys(oldProductBytes).sort());
   assert.deepEqual(validateCandidateRefreshChangeSet(['public/js/resonance/panels.js']), ['public/js/resonance/panels.js']);
+  assert.deepEqual(validateCandidateRefreshChangeSet(['server/sim/content/resonance/kits.js']), ['server/sim/content/resonance/kits.js']);
+  assert.throws(() => validateCandidateRefreshChangeSet(['server/sim/content/kits.js']), /nonempty subset/);
   assert.deepEqual(validateCandidateRefreshChangeSet(['public/resonance.html', 'public/js/hostingBootstrap.js', 'server/hosting/staticDelivery.js']),
     ['public/js/hostingBootstrap.js', 'public/resonance.html', 'server/hosting/staticDelivery.js']);
   assert.throws(() => validateCandidateRefreshChangeSet([...Object.keys(oldProductBytes), 'server/index.js']), /nonempty subset/);
@@ -284,6 +286,7 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
   for (const fragment of ['candidate-native-not-expected-old', 'staged-native-not-expected-old', 'candidate-capacity-not-exact-old-native-bytes',
     'candidate-resonance-css-not-exact-old-native-bytes', 'candidate-inventory-mismatch', 'candidate-file-in-use-pid:', 'capacity-batch-receipt.json']) assert.ok(preflight.includes(fragment));
   assert.ok(preflight.includes('capacity-batch-receipt.20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d.json'));
+  assert.ok(preflight.includes('capacity-batch-receipt.5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538.json'));
   assert.ok(preflight.includes('stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup'));
   assert.ok(!preflight.includes('stronghold-protocol.*'), 'unobserved backup names remain rejected');
   assert.equal(spawnSync('bash', ['-n'], { input: preflight, encoding: 'utf8' }).status, 0);
