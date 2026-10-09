@@ -11,7 +11,7 @@ test('HTTP exact asset source, media fallback, worker bootstrap, admission UI, a
   const fixtureDir = await mkdtemp(path.join(os.tmpdir(), 'stronghold-static-routing-'));
   const designPath = path.join(fixtureDir, 'independent-design.json');
   const sourceMapPath = path.join(fixtureDir, 'asset-sources.json');
-  const localModulePaths = ['js/ui/fieldHost.js', 'js/ui/fallbackField.js', 'js/render/app.js', 'js/render/board3d/scene.js'];
+  const localModulePaths = ['js/hostingBootstrap.js', 'js/hostingWait.js', 'js/ui/fieldHost.js', 'js/ui/fallbackField.js', 'js/render/app.js', 'js/render/board3d/scene.js'];
   const previousDesignPath = process.env.SP_INDEPENDENT_DESIGN_PATH;
   const previousSourceMapPath = process.env.SP_ASSET_SOURCE_MAP;
   await writeFile(designPath, '{}');

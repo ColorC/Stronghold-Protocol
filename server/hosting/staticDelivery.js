@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const PREFIXES = ['/js/', '/css/', '/vendor/', '/fonts/', '/assets/', '/data/', '/shared/', '/sim/', '/media/'];
 const LOCAL_BOOTSTRAP = '/js/hostingBootstrap.js';
+const LOCAL_WAIT = '/js/hostingWait.js';
 const LOCAL_RESONANCE_DOWNLOAD = '/resonance-references.zip';
 const LOCAL_RESONANCE = new Set([
   '/css/resonance.css',
@@ -83,7 +84,7 @@ export function createStaticDelivery({ base = '', assetSources = {} } = {}) {
   const prefix = parsed.href.replace(/\/$/, '');
   return function handle(req, res, pathname) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return false;
-    if (pathname === LOCAL_BOOTSTRAP) return false;
+    if (pathname === LOCAL_BOOTSTRAP || pathname === LOCAL_WAIT) return false;
     if (pathname === LOCAL_RESONANCE_DOWNLOAD) return false;
     if (pathname.startsWith('/js/resonance/') || pathname.startsWith('/js/render/') || LOCAL_RESONANCE.has(pathname)) return false;
     if (pathname !== '/data.js' && !PREFIXES.some((p) => pathname.startsWith(p))) return false;

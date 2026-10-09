@@ -23,7 +23,7 @@ async function renew() {
     const result = await response.json();
     if (response.status === 202 && result.ok && result.queued) {
       blocked?.remove(); blocked = null;
-      const { startHostingWait } = await import('/js/hostingWait.js');
+      const { startHostingWait } = await import('./hostingWait.js');
       startHostingWait(result.queued);
       return false;
     }

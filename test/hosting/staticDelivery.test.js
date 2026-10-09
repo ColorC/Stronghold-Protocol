@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
 import { createStaticDelivery, loadAssetSourceMap } from '../../server/hosting/staticDelivery.js';
 const base = 'https://external.example/d31592f27b1567267ff35ac95932f08c8ae74d9d';
 const res = () => ({ writeHead(status, headers) { this.status = status; this.headers = headers; }, end(body) { this.body = body; } });
@@ -16,7 +18,7 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   const handler = createStaticDelivery({ base });
   const response = res(); handler(req, response, '/js/independent/client-worker.js'); assert.equal(response.status, 200);
   assert.equal(response.body, `import "${base}/js/independent/client-worker.js";\n`);
-  for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js', '/resonance-references.zip']) assert.equal(handler(req, res(), path), false);
+  for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js', '/js/hostingWait.js', '/resonance-references.zip']) assert.equal(handler(req, res(), path), false);
   for (const path of ['/resonance.html', '/resonance/api/catalog', '/js/resonance/main.js', '/css/resonance.css',
     '/js/ui/fieldHost.js', '/js/ui/fallbackField.js', '/js/render/app.js', '/js/render/interp.js',
     '/js/render/resonanceFloors.js', '/js/render/board3d/scene.js']) {
@@ -28,6 +30,24 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   }
   assert.equal(handler({ method: 'POST' }, res(), '/assets/x.png'), false);
   assert.equal(createStaticDelivery()(req, res(), '/assets/x.png'), false);
+});
+
+test('resonance entry resources stay relative at root and under the stronghold namespace', () => {
+  const html = readFileSync(new URL('../../public/resonance.html', import.meta.url), 'utf8');
+  const stylesheetHrefs = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
+  const importMap = JSON.parse(html.match(/<script type="importmap">(.*?)<\/script>/s)[1]);
+  const bootstrap = html.match(/<script type="module" src="([^"]+)"/)[1];
+  assert.equal(stylesheetHrefs.length, 5);
+  for (const href of [...stylesheetHrefs, ...Object.values(importMap.imports), bootstrap]) assert.ok(href.startsWith('./'), href);
+  for (const entry of ['https://host.example/resonance.html', 'https://host.example/stronghold/resonance.html']) {
+    const root = new URL(entry);
+    assert.equal(new URL(bootstrap, root).origin, root.origin);
+    assert.equal(new URL(bootstrap, root).pathname, `${root.pathname.slice(0, root.pathname.lastIndexOf('/') + 1)}js/hostingBootstrap.js`);
+    for (const href of stylesheetHrefs) assert.equal(new URL(href, root).origin, root.origin);
+    for (const href of Object.values(importMap.imports)) assert.equal(new URL(href, root).origin, root.origin);
+  }
+  const source = readFileSync(new URL('../../public/js/hostingBootstrap.js', import.meta.url), 'utf8');
+  assert.match(source, /import\('\.\/hostingWait\.js'\)/);
 });
 test('deployment URLs and unsafe paths cannot escape the version directory', () => {
   for (const wrong of ['http://external.example/' + 'a'.repeat(40), 'https://external.example/latest', base + '?x=1', base + '#x', base.replace('external.example', 'user:pass@external.example')]) assert.throws(() => createStaticDelivery({ base: wrong }));
