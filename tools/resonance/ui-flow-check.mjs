@@ -205,20 +205,41 @@ try {
   if (battleUi) {
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
     await page.waitForSelector('.gm__field canvas', { timeout: 10000 });
+    const codexBack = await page.$('.rs-codex-overlay .lo-top__left button');
+    check('codex-back-control-visible', !!codexBack, 'native top-left back button is present');
+    await codexBack.click();
+    await page.waitForFunction(id => {
+      const url = new URL(location.href);
+      return !document.querySelector('.rs-codex-overlay') && !document.querySelector('.dpanel') &&
+        !url.searchParams.has('view') && url.searchParams.get('session') === id;
+    }, { timeout: 15000 }, receipt.sessionId);
+    const boardPoint = await page.waitForFunction(() => {
+      const view = globalThis.__SP_VIEW__, canvas = document.querySelector('.gm__field canvas'), rect = canvas?.getBoundingClientRect();
+      if (!view || !rect || rect.width < 2 || rect.height < 2) return false;
+      const point = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      return document.elementFromPoint(point.x, point.y)?.tagName === 'CANVAS' ? point : false;
+    }, { timeout: 10000 });
+    const boardPointValue = await boardPoint.jsonValue();
+    check('codex-return-board-interactive', !!boardPointValue && await page.evaluate(() => !!globalThis.__SP_VIEW__), boardPointValue);
     let live = await readFresh();
     const starterIds = new Set(before.pieces.slice(0, 3).map(piece => piece.uid));
-    const occupied = new Set(live.pieces.filter(piece => piece.row != null).map(piece => `${piece.row},${piece.col}`));
-    const candidates = live.pieces.filter(piece => starterIds.has(piece.uid) && piece.row == null && piece.legalTiles?.length)
-      .slice(0, 5).flatMap(piece => piece.legalTiles.filter(key => !occupied.has(key)).slice(0, 5).map(key => ({ piece, key }))).slice(0, 5);
-    let deployment = null;
-    for (const candidate of candidates) {
+    const deployments = [];
+    for (const starterUid of starterIds) {
+      live = await readFresh();
+      const starter = live.pieces.find(piece => piece.uid === starterUid);
+      if (!starter || starter.row != null) continue;
+      const occupied = new Set(live.pieces.filter(piece => piece.row != null).map(piece => `${piece.row},${piece.col}`));
+      const candidates = (starter.legalTiles || []).filter(key => !occupied.has(key)).slice(0, 5).map(key => ({ piece: starter, key }));
+      let deployment = null;
+      for (const candidate of candidates) {
       const [row, col] = candidate.key.split(',').map(Number), uid = Number(String(candidate.piece.uid).replace(/^\D+/, ''));
       const ready = await page.waitForFunction(({ uid, row, col }) => {
         const view = globalThis.__SP_VIEW__, rect = view?.pieceScreenRect(uid), dest = view?.tileScreen(row, col);
         if (!rect || !dest) { window.__resonanceBattleDeployGeometry = null; return false; }
         const points = [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }];
-        const source = points.find(point => view.pieceAtClient?.(point.x, point.y)?.uid === uid), hit = document.elementFromPoint(dest.x, dest.y);
-        if (!source || hit?.tagName !== 'CANVAS' || [source.x,source.y,dest.x,dest.y].some((v,i)=>v<0||v>=(i%2?innerHeight:innerWidth))) {
+        const source = points.find(point => view.pieceAtClient?.(point.x, point.y)?.uid === uid && document.elementFromPoint(point.x, point.y)?.tagName === 'CANVAS');
+        const sourceHit = source && document.elementFromPoint(source.x, source.y), destHit = document.elementFromPoint(dest.x, dest.y);
+        if (!source || sourceHit?.tagName !== 'CANVAS' || destHit?.tagName !== 'CANVAS' || [source.x,source.y,dest.x,dest.y].some((v,i)=>v<0||v>=(i%2?innerHeight:innerWidth))) {
           window.__resonanceBattleDeployGeometry = null; return false;
         }
         const value = [source.x,source.y,dest.x,dest.y].map(Math.round), previous = window.__resonanceBattleDeployGeometry;
@@ -229,7 +250,7 @@ try {
       const geometry = await page.evaluate(() => window.__resonanceBattleDeployGeometry);
       await page.mouse.move(geometry.source.x, geometry.source.y); await page.mouse.down();
       await page.mouse.move(geometry.dest.x, geometry.dest.y, { steps: 8 }); await page.mouse.up();
-      await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 8000 });
+      try { await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 8000 }); } catch { continue; }
       await page.keyboard.press('ArrowRight');
       await page.waitForFunction(() => document.querySelector('.fwheel[role="dialog"]')?.classList.contains('is-right'), { timeout: 5000 });
       await page.keyboard.press('Enter'); await page.waitForFunction(() => !document.querySelector('.fwheel[role="dialog"]'), { timeout: 10000 });
@@ -238,9 +259,11 @@ try {
         return state.revision > revision && piece?.row === row && piece?.col === col && piece?.dir === 'RIGHT' ? state : false;
       }, { timeout: 10000 }, { id: receipt.sessionId, uid: candidate.piece.uid, row, col, revision: live.revision });
       live = await handle.jsonValue(); deployment = { uid: candidate.piece.uid, row, col, dir: 'RIGHT', revision: live.revision }; break;
+      }
+      if (deployment) deployments.push(deployment);
     }
-    check('starter-deployed-by-native-pointer-and-facing-wheel', !!deployment, deployment || { tried: candidates.length });
-    receipt.freshActions.push({ action: 'mouse-drag-starter-facing-wheel', ...deployment });
+    check('three-starters-deployed-by-native-pointer-and-facing-wheel', deployments.length === 3, { deployments, expectedStarterIds: [...starterIds] });
+    receipt.freshActions.push({ action: 'mouse-drag-three-starters-facing-wheel', deployments });
     if (live.node?.kind === 'logistics' || !live.nodeStarted) {
       await button(page, '领取补给');
       const handle = await page.waitForFunction(async id => { const state=(await (await fetch(`./resonance/api/sessions/${id}`)).json()).state; return state.nodeStarted ? state : false; }, { timeout: 12000 }, receipt.sessionId);
@@ -263,13 +286,43 @@ try {
     else { await button(page, '战报'); await page.waitForSelector('#rs-section-battle-report', { timeout: 10000 }); }
     await page.waitForSelector('#rs-section-battle-report .rs-battle-report__unit', { timeout: 10000 });
     const chart = await page.evaluate(() => ({
-      rows: [...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__unit')].map(row => ({ value: row.querySelector('.rs-battle-report__bar > b')?.textContent?.trim(), bar: Number(row.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')) })),
+      rows: [...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__unit')].map(row => ({ value: row.querySelector('.rs-battle-report__bar > b')?.textContent?.trim(), title: row.querySelector('.rs-battle-report__bar > b')?.getAttribute('title'), bar: Number(row.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')) })),
       tabs: [...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]')].map(tab => ({ label: tab.innerText.trim(), selected: tab.getAttribute('aria-selected') }))
     }));
     const shown = value => Number.isInteger(value) ? String(value) : String(Number(value.toFixed(1)));
     const expectedValues = damageUnits.map(unit => shown(unit.dmg));
-    check('battle-report-numeric-bars-match-history', expectedValues.some(value => chart.rows.some(row => row.value === value && row.bar > 0)) && chart.tabs.some(tab => tab.selected === 'true'), { expectedValues, chart });
-    receipt.combatStatsEvidence = { round: settled.round, source: 'GET session state.history[].combatStats.units', damageUnits, chart };
+    const countValues = values => values.slice().sort().join('|');
+    const positiveChartRows = chart.rows.filter(row => row.bar > 0);
+    const damageExactTitles = damageUnits.map(unit => `精确值：${String(unit.dmg)}`);
+    check('battle-report-numeric-bars-match-history',
+      countValues(positiveChartRows.map(row => row.value)) === countValues(expectedValues) &&
+      countValues(positiveChartRows.map(row => row.title)) === countValues(damageExactTitles) &&
+      chart.tabs.some(tab => tab.selected === 'true'), { expectedValues, damageExactTitles, chart });
+    const metricEvidence = { dmg: { expectedValues, rows: positiveChartRows } };
+    for (const [field, label] of [['heal', '治疗'], ['taken', '承伤']]) {
+      await page.$eval('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]', (first, target) => {
+        const tab = [...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]')]
+          .find(node => node.innerText.trim() === target);
+        if (!tab) throw new Error(`report metric tab missing: ${target}`);
+        tab.click();
+      }, label);
+      await page.waitForFunction(target => [...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]')]
+        .some(tab => tab.innerText.trim() === target && tab.getAttribute('aria-selected') === 'true'), { timeout: 5000 }, label);
+      const actualRows = await page.$$eval('#rs-section-battle-report .rs-battle-report__unit', rows => rows.map(row => ({
+        value: row.querySelector('.rs-battle-report__bar > b')?.textContent?.trim(),
+        title: row.querySelector('.rs-battle-report__bar > b')?.getAttribute('title'),
+        bar: Number(row.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'))
+      })).filter(row => row.bar > 0));
+      const expectedUnits = (settled.combatStats.units || []).filter(unit => Number.isFinite(Number(unit[field])) && Number(unit[field]) > 0);
+      const expectedRows = expectedUnits.map(unit => ({ value: shown(Number(unit[field])), title: `精确值：${String(unit[field])}` }))
+        .sort((a, b) => Number(b.value) - Number(a.value));
+      check(`battle-report-${field}-bars-match-history`,
+        actualRows.length === expectedRows.length && actualRows.every((row, index) =>
+          row.value === expectedRows[index]?.value && row.title === expectedRows[index]?.title),
+        { expectedRows, actualRows });
+      metricEvidence[field] = { expectedRows, actualRows };
+    }
+    receipt.combatStatsEvidence = { round: settled.round, source: 'GET session state.history[].combatStats.units', damageUnits, metricEvidence };
     await shot(page, '14-live-combat-report');
   }
   if (!remoteUrl) {
