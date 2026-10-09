@@ -472,6 +472,32 @@ test('Darkmoon mechanical support projections use the native otter body at the a
   assert.match(info.summonSourceText,/额外特质/);
 });
 
+test('elite beast projections double attack and health but keep defense at 40%, including native training',()=>{
+  const f=fixture('CFM_316',true,['BGS_021'],{growthMode:'levels'});
+  const projection=f.b.allyUnits.find(u=>u.kind==='token'&&u.mem.darkmoonSummon&&u.defId==='token_10028_vigil_wolf');
+  assert.ok(projection,'elite CFM_316 creates the real Vigil wolf projection on deployment');
+  const token=getData().tokens.token_10028_vigil_wolf;
+  const prototypeId='chess_char_3_19_a';
+  const proto=f.b.tokenDef('token_10028_vigil_wolf',prototypeId);
+  const expectedScale={attack:.8,health:.8,defense:.4};
+  assert.deepEqual(projection.def.raw.darkmoonPrototypeScale,expectedScale);
+  assert.equal(projection.base.atk,Math.round(proto.stats.atk*expectedScale.attack));
+  assert.equal(projection.base.maxHp,Math.round(proto.stats.maxHp*expectedScale.health));
+  assert.equal(projection.base.def,Math.round(proto.stats.def*expectedScale.defense),'elite does not double prototype defense');
+
+  const phase=token.variants[prototypeId].phase,level=token.variants[prototypeId].level;
+  const units=8*Number(f.catalog.config?.levelsPerBadge||1);
+  const baseline=nativeLevelAttributes(token.nativeGrowth,phase,level);
+  const trained=nativeLevelAttributes(token.nativeGrowth,phase,Math.min(token.nativeGrowth.phases[phase].maxLevel,level+units));
+  const buff=projection.findBuff('darkmoon:native-level-growth');
+  assert.ok(buff,'elite projection receives the real prototype curve growth');
+  assert.equal(buff.mods.atkFlat,(trained.atk-baseline.atk)*expectedScale.attack);
+  assert.equal(buff.mods.hpFlat,(trained.maxHp-baseline.maxHp)*expectedScale.health);
+  assert.equal(buff.mods.defFlat,(trained.def-baseline.def)*expectedScale.defense);
+  assert.equal(buff.mods.resFlat,trained.res-baseline.res);
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
+
 test('summoned cover metadata is visible before its deploy actor event for BGS112',()=>{
   const f=fixture('BGS_112',false,['BOT_218']),source=f.h.unit('p1');
   const deployedTokens=[];f.b.on('darkmoonDeployActor',event=>{if(event.actor.kind==='token')deployedTokens.push({cover:event.actor.def.raw?.darkmoonCover,tags:event.factions});});
