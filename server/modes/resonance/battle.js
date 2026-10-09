@@ -437,6 +437,21 @@ function aggregateMetrics(battle, result, playerResult) {
   return { ...base, ...resonance };
 }
 
+export function combatStatsOf(playerResult) {
+  if (!Array.isArray(playerResult?.unitStats)) return null;
+  const metric = (value) => Number.isFinite(value) ? value : null;
+  return { units: playerResult.unitStats.map((unit) => ({
+    uid: unit?.uid ?? null,
+    defId: unit?.defId ?? null,
+    kind: unit?.kind ?? null,
+    dmg: metric(unit?.dmg),
+    heal: metric(unit?.heal),
+    taken: metric(unit?.taken),
+    kills: metric(unit?.kills),
+    attacks: metric(unit?.attacks),
+  })) };
+}
+
 /** Run one authoritative upstream Battle. Unrecorded runs never construct frames, samples, or snapshots. */
 export function runResonanceBattle(state, { data = null, catalog = null, recording = false } = {}) {
   if (!state || typeof state !== 'object') throw new TypeError('resonance battle requires a state object');
@@ -473,6 +488,7 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
   }
   const result = battle.result();
   const playerResult = result.perPlayer?.[PLAYER_ID] ?? Object.values(result.perPlayer || {})[0] ?? {};
+  const combatStats = combatStatsOf(playerResult);
   const hpLoss = leakLoss(playerResult, prepared.gd.lpCapPerRound);
   const won = resonanceBattleWon(result,prepared.nodeKind,{capped});
   const diagnostics = {
@@ -512,6 +528,7 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
     duration: Math.round(battle.time * 100) / 100,
     field,
     frames,
+    combatStats,
   } : null;
   return {
     won,
@@ -521,6 +538,7 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
     coins: structuredClone(battle.resonanceResults?.coins ?? []),
     forge: structuredClone(battle.resonanceResults?.forge ?? []),
     replay,
+    combatStats,
     diagnostics,
     metrics: aggregateMetrics(battle, result, playerResult),
     summonAnchors: structuredClone(battle.resonanceSummonAnchors ?? []),

@@ -24,6 +24,7 @@ const CAPACITY_BATCH_ARCHIVE_NAMES = revision => [
   `capacity-recording-cgroup.${revision}.json`,
 ];
 const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
+  'a619f2c8e5eae4adc9ff75119c95ef45f4219129',
   'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b',
   '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d',
   '5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538',
@@ -33,6 +34,8 @@ const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
   '28dcd4101cfd520b222cff0e154f8b6036bd82bf',
 ];
 const VERIFIED_ACTIVATION_BACKUP_NAMES = [
+  'stronghold-protocol.a619f2c8e5eae4adc9ff75119c95ef45f4219129.unit.backup',
+  'stronghold-protocol.a619f2c8e5eae4adc9ff75119c95ef45f4219129.env.backup',
   'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
   'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
   'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.unit.backup',

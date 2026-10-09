@@ -309,7 +309,8 @@ export function PauseButton({ paused, busy = false, onToggle }) {
  *     `left` (a leaker in 联防): its enemies still standing — the capsule's ×N tag
  */
 export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, onReady, readyBusy, readyCount, playerCount, pen = false, penAvail = false, onPen = () => {},
-  config = null, frozenAt = null, pause = null, live = null, spectator = false }) {
+  config = null, frozenAt = null, pause = null, live = null, spectator = false,
+  leftMeta = null, phaseContent = null, rightContent = null }) {
   const phase = pub?.phase;
   const boss = isBossPhase(phase);
   const lp = boss && Number.isFinite(pub?.teamLp) ? pub.teamLp : Number.isFinite(priv?.lp) ? priv.lp : null;
@@ -335,8 +336,11 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
     <div class="gtop__left">
       <${Button} variant="danger" size="lg" square=${true} icon="exit" onClick=${onExit} aria-label="离开" title="离开 / 暂离" class="gtop__exit tapx" />
       <div class="gtop__meta">
+        ${leftMeta}
+        ${leftMeta ? null : html`
         <${PingPill} ms=${conn?.ping} online=${conn?.status === 'online'} />
         ${pub?.difficulty ? html`<${DifficultyTag} difficulty=${pub.difficulty} size="sm" />` : null}
+        `}
       </div>
     </div>
 
@@ -349,7 +353,7 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
         <span class="roundbox__label">回合</span>
         <b class="roundbox__num num">${roundText}</b>
       </div>
-      <${PhaseCapsule} pub=${pub} hud=${hud} miss=${!boss && Number.isFinite(live?.left) ? live.left : null} />
+      ${phaseContent != null ? phaseContent : html`<${PhaseCapsule} pub=${pub} hud=${hud} miss=${!boss && Number.isFinite(live?.left) ? live.left : null} />`}
       <${LpTower} value=${lp} size="lg" tone=${lowLp ? 'danger' : boss ? 'team' : null} pending=${pending}
         note=${pending > 0 && live?.unite ? '联防中' : null} tip=${pendingTip(lp, pending, { unite: !!live?.unite, cap, left: live?.left ?? null })} />
       <${Tooltip} text=${btn.right.tip} placement="bottom">
@@ -359,6 +363,7 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
     </div>
 
     <div class="gtop__right">
+      ${rightContent != null ? rightContent : html`
       <div class="gtop__clock">
         ${frozenSecs != null
           ? html`<${Countdown} seconds=${frozenSecs} total=${total ?? undefined} size="md" label="PAUSED" />`
@@ -367,6 +372,7 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
       </div>
       <${OvertimeWarning} ot=${ot} />
       ${showReady ? html`<${ReadyToggle} priv=${priv} onToggle=${onReady} busy=${readyBusy} readyCount=${readyCount} total=${playerCount} />` : null}
+      `}
     </div>
   </header>`;
 }
