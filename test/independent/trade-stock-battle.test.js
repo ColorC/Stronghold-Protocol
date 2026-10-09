@@ -11,8 +11,8 @@ function setup(equipment, secondWearer = false) {
   const catalog = structuredClone(getCatalog());
   const wolf = catalog.equipment[WOLF];
   assert.equal(wolf.unique, true, 'the effective catalog keeps the design unique flag');
-  wolf.params.effects[0].params = { status: 'fear', counterEvery: 2, durationSeconds: .1, cooldownSeconds: 8, target: 'primary' };
-  catalog.equipment['other-status'] = { ...structuredClone(wolf), id: 'other-status', sourceId: 'other-status', uniqueKey: 'other-status', canonicalId: 'other-status', params: { effects: [{ trigger: 'attack', behavior: 'countedStatus', params: { status: 'bind', counterEvery: 2, durationSeconds: .1, cooldownSeconds: 8 } }] } };
+  wolf.params.effects[0].params = { status: 'fear', counterEvery: 2, durationSeconds: .1, target: 'primary' };
+  catalog.equipment['other-status'] = { ...structuredClone(wolf), id: 'other-status', sourceId: 'other-status', uniqueKey: 'other-status', canonicalId: 'other-status', params: { effects: [{ trigger: 'attack', behavior: 'countedStatus', params: { status: 'bind', counterEvery: 2, durationSeconds: .1 } }] } };
   const pieces = [{ uid: 'w', chessId: OP, row: 10, col: 3, dir: 'RIGHT', equipment, attachments: [], nativeState: {} }];
   if (secondWearer) pieces.push({ ...pieces[0], uid: 'v', row: 11, equipment: [{ id: WOLF, quantity: 1 }] });
   const snapshot = structuredClone(pieces);
@@ -27,7 +27,7 @@ function setup(equipment, secondWearer = false) {
 }
 const attack = (h, unit, enemy, n = 1) => { for (let i = 0; i < n; i++) h.b.forceAttack(unit, [enemy]); };
 
-test('countedStatus cooldown is per wearer and native gear id, survives redeployment, and does not count multihits/skill/gear damage', () => {
+test('countedStatus counts ordinary attack cycles per wearer and native gear id across redeployment', () => {
   const { h } = setup([{ id: WOLF, quantity: 1 }, { id: 'other-status', quantity: 1 }], true);
   const unit = h.unit('w'); const other = h.unit('v');
   const enemy = h.spawn('dummy', { pos: [10, 4] });
@@ -41,16 +41,15 @@ test('countedStatus cooldown is per wearer and native gear id, survives redeploy
   attack(h, unit, enemy);
   assert.ok(enemy.s.flags.fear);
   assert.ok(enemy.s.flags.bind, 'a different native gear id has its own cooldown');
-  const first = unit.mem[`independentCountedStatusCd:${WOLF}`];
   attack(h, other, enemy2, 2);
   assert.ok(enemy2.s.flags.fear, 'another wearer may trigger at the same moment');
   h.run(.3);
   h.b.moveRedeploy(unit, unit.tileR, unit.tileC);
   unit.atkCd = 1e9;
   attack(h, unit, enemy, 2);
-  assert.ok(!enemy.s.flags.fear, 'redeployment cannot refresh a running cooldown');
-  assert.equal(unit.mem[`independentCountedStatusCd:${WOLF}`], first);
-  h.run(8);
+  assert.ok(enemy.s.flags.fear, 'another pair of ordinary attacks retriggers after the short status expires');
+  h.run(.2);
+  assert.ok(!enemy.s.flags.fear, 'the short fear has expired before the next counter cycle');
   unit.atkCd = 1e9;
   attack(h, unit, enemy, 2);
   assert.ok(enemy.s.flags.fear, 'the next eligible attack after cooldown triggers');

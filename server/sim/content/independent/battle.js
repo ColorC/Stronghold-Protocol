@@ -1885,7 +1885,8 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
         const seq = unit.deploySeq;
         let made = 0;
         const id=p.tokenId ?? 'token_10015_dusk_drgn';
-        const def=battle.tokenDef(id,unit)||{id,name:'召唤物',position:'MELEE',rangeGrid:[[0,0]],stats:{atk:unit.s.atk,maxHp:unit.s.maxHp,blockCnt:Number(p.blockCnt??1)}};
+        const sourceDef=battle.tokenDef(id,unit);
+        const def=sourceDef?{...sourceDef,stats:{...sourceDef.stats}}:{id,name:'召唤物',position:'MELEE',rangeGrid:[[0,0]],stats:{atk:unit.s.atk,maxHp:unit.s.maxHp,blockCnt:Number(p.blockCnt??1)}};
         const ratio = Number(p.statRatio ?? 0.5);
         def.stats={...def.stats,atk:unit.s.atk*ratio,maxHp:Math.max(1,unit.s.maxHp*ratio),blockCnt:Number(p.blockCnt??1)};
         const deploy = () => {
@@ -1895,7 +1896,7 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
           if(!cell)break;
           const token = battle.spawnToken(unit, id, cell[0], cell[1], {
             anySource: true, kit: { skill: null },
-            def,
+            def, stats: { atk: def.stats.atk, maxHp: def.stats.maxHp, blockCnt: def.stats.blockCnt },
           });
           if (token) made++; else break;
           }
@@ -1917,13 +1918,19 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       return true;
     }
     case 'skillRecast': {
-      // 萨尔贡黄沙罗盘: the declared skill recast remains source-bound; each started skill also gives paired allies SP.
+      // 萨尔贡黄沙罗盘: every completed skill recasts while the wearer remains deployed.
       if (!hasTag(p.requiresTag)) return true;
-      let left = Number(p.recasts ?? 1);
+      let queued = false, recasting = false;
       battle.on('skillEnd', ({ unit: who, reason }) => {
-        if (who !== unit || left <= 0 || reason === 'death' || !unit.alive || !unit.deployed) return;
-        left--;
-        battle.after(0, () => { if (unit.alive && unit.deployed && !unit.skill?.active) unit.skill?.activate('independentEquipment', { free: true }); }, { owner: unit });
+        if (who !== unit || queued || recasting || reason === 'death' || !unit.alive || !unit.deployed) return;
+        queued = true;
+        battle.after(0, () => {
+          queued = false;
+          if (!unit.alive || !unit.deployed || unit.skill?.active) return;
+          recasting = true;
+          try { unit.skill?.activate('independentEquipment', { free: true }); }
+          finally { recasting = false; }
+        }, { owner: unit });
       }, { owner: unit });
       if (ownPair(p.pairedSourceId) && Number(p.teamSpPerSkillStart) > 0) {
         battle.on('skillStart', ({ unit: who }) => {

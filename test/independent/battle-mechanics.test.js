@@ -45,7 +45,7 @@ test('Nearl the Radiant Knight combines her badge count with the deployed front 
   assert.ok(Math.abs(unit.s.redeployMul - 0.985) < 1e-8);
 });
 
-test('M3 emergency cocoon overrides the first respawn delay once and restores normal delay after use', () => {
+test('M3 emergency cocoon remains available across repeated lethal deployments', () => {
   const piece = fixturePiece('reviver', 'independent_revive_fixture_a', 9, 5, [{ id: 'chess_item_4_12_e_a', elite: false }]);
   const { h } = fixtureBattle({ pieces: [piece] });
   h.step(1);
@@ -56,7 +56,10 @@ test('M3 emergency cocoon overrides the first respawn delay once and restores no
   assert.equal(unit.deployed, true);
   assert.ok(Math.abs(unit.hp / unit.s.maxHp - 0.5) < 1e-8);
   h.b.kill(unit);
-  assert.ok(Math.abs((unit.respawnAt - unit.deathAt) - unit.base.respawnTime) < 1e-8);
+  assert.ok(Math.abs((unit.respawnAt - unit.deathAt) - 1) < 1e-8, 'the authored rescue repeats after redeployment');
+  h.b.addDp(unit.ownerId, unit.base.cost);
+  h.run(1.1);
+  assert.equal(unit.deployed, true);
 });
 
 test('equipment-applied freeze is excluded from native cold-record rewards while native freeze counts', () => {
@@ -87,7 +90,7 @@ test('equipment-applied freeze is excluded from native cold-record rewards while
   assert.deepEqual(h.b.independentRewards, [{ id: 'assault', quantity: 1, origin: 'equipment', sourceUid: 'freezer' }]);
 });
 
-test('Specter the Unchained real dollSwitch entry produces vitality and shares her per-battle cap', () => {
+test('Specter the Unchained real dollSwitch and death entries produce vitality without a per-battle cap', () => {
   const piece = fixturePiece('specter', 'chess_char_5_13_a', 9, 5);
   const { h } = fixtureBattle({ pieces: [piece], chessOptions: { subProfessionId: 'dollkeeper' } });
   h.step(1);
@@ -107,9 +110,9 @@ test('Specter the Unchained real dollSwitch entry produces vitality and shares h
   h.b.removeBuff(unit, 'trait:substitute');
   h.b.emit('dollSwitch', { unit, reason: 'test', done: false });
 
-  // death and dollSwap are distinct production rules but share the approved source/id cap.
+  // Repeated real switch/death events keep producing; neither event uses an artificial battle cap.
   for (let i = 0; i < 5; i++) h.b.emit('death', { unit });
-  assert.equal(h.b.independentRewards.filter(r => r.id === 'vitality' && r.sourceUid === 'specter').reduce((n, r) => n + r.quantity, 0), 4);
+  assert.equal(h.b.independentRewards.filter(r => r.id === 'vitality' && r.sourceUid === 'specter').reduce((n, r) => n + r.quantity, 0), 12);
 });
 
 for (const { chessId, elite, expectedQuantity } of [

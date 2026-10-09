@@ -42,7 +42,7 @@ function roster(names,elite){return names.map((name,i)=>({uid:String(i).padStart
 function prep(pieces){const state={round:1,nextUid:100,funds:0,pieces,inventory:[],production:[],playerEffects:[],counters:{gained:0},shop:{level:6,slots:[],freeRefreshes:0}};const services={catalog,data,rng:()=>.2,grantEquipment:(s,id,q,x)=>grantEquipment(s,catalog,id,q,x),recordProduction,record(){},addOffer(){},grantChess(){}};return {state,hook:(trigger,piece)=>runNativeHook(state,trigger,{piece},services)};}
 const qty=(p,id)=>(p.equipment||[]).filter(e=>e.id===id).reduce((s,e)=>s+e.quantity,0);
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
-function battle(pieces,{captureNoisy=false,beforeStart=null}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});beforeStart?.(h);h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
+function battle(pieces,{captureNoisy=false,beforeStart=null,enemyPos=null}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),enemies:enemyPos?[{key:'probe',pos:enemyPos}]:[],autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});beforeStart?.(h);h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
 for(const elite of [false,true]){
  const form=elite?'elite':'normal';
  test(`current Siracusa seven ${form}: opening deployments, amplified payloads and Javi attack echo`,()=>{
@@ -69,7 +69,7 @@ for(const elite of [false,true]){
    assert.equal(copiedPayloads()-beforeCopied,elite?6:2,'each copied deployment payload receives the opening FP1_031 multiplier');
    assert.ok(maker.alive,'echoing a deployment payload never kills its source');
    assert.ok(wuxian.alive,'the opening deployment amplifier stays alive during the echo');
-   assert.ok(h.b.allyUnits.some(t=>t.kind==='token'&&t.alive&&t.mem.darkmoonSummon),'echo summons through the normal temporary-token path');
+  assert.ok(h.runUntil(()=>h.b.allyUnits.some(t=>t.kind==='token'&&t.alive&&t.mem.darkmoonSummon),2),'queued echo summons deploy once their real target and legal tile are available');
    assert.ok(h.runUntil(()=>attackEvents()>=96,110),'the seven-body battle sustains 96 real Javi ordinary attacks');
    assert.equal(attackEvents(),96);assert.equal(echoEvents(),elite?6:3,'ordinary attacks share one per-battle counter and retain the source echo cap');
    assert.equal(copiedPayloads(),(elite?6:3)*(elite?3:2),'every Javi proc copies the deployment payload the amplified number of times');
@@ -102,7 +102,10 @@ for(const elite of [false,true]){
       return emit(name,ctx);
     };
   }}),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;
-  assert.ok(deflect.buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=2,'BGS_071 deployment generates its actual support token');
+  h.spawn('probe',{pos:[10,18]});
+  const shields=u=>u.buffs.reduce((s,b)=>s+(b.shieldHits||0),0);
+  h.runUntil(()=>shields(deflect)>=2,2);
+  assert.ok(shields(deflect)>=2,'BGS_071 support waits for an active battle target before resolving');
   assert.equal(h.hooksOf('death').length,0,'opening phantom selection does not depend on a death event');
   const mlyssSummons=h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_012'&&e.kind==='summon');
   const copiedIds=mlyssSummons.flatMap(e=>e.targets),copies=copiedIds.map(uid=>h.unit(uid)).filter(Boolean);

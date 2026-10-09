@@ -18,12 +18,13 @@ const FACTION_OPS = { victoria:'chess_char_1_06_a', aegir:'chess_char_2_07_a', s
 const RANGE = [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [-1, 1], [1, 2], [-1, 2]];
 const tag = (faction) => ({ id: 'chess_item_1_04_e_a', state: { faction } }); // 调和识别牌: an extra faction
 
-function setup(pieces, { skill = null, enemyBlockCnt = 1, dmgType = null } = {}) {
+function setup(pieces, { skill = null, enemyBlockCnt = 1, dmgType = null, enemies = [] } = {}) {
   const chess = {};
   for (const p of pieces) chess[p.chessId] = chessRec({ id: p.chessId, rangeGrid: RANGE, dmgType, stats: { atk: 100, maxHp: 1000, def: 0, res: 0, aspd: 100, spRecovery: 0, respawnTime: 20, blockCnt: 1 }, skill });
   const full = pieces.map((p) => ({ dir: 'RIGHT', skillIndex: 0, moduleId: 'none', attachments: [], nativeState: {}, ...p, equipment: (p.equipment || []).map((x) => (typeof x === 'string' ? { id: x } : x)) }));
   const h = makeBattle({
     units: full.map(({ uid, chessId, row, col, dir }) => ({ uid, chessId, row, col, dir })),
+    enemies,
     defs: { chess, enemies: {
       dummy: enemyRec({ key: 'dummy', hp: 10000, def: 0, res: 0, speed: 0, blockCnt: enemyBlockCnt }),
       walker: enemyRec({ key: 'walker', hp: 10000, def: 0, res: 0, speed: 1 }),
@@ -80,7 +81,7 @@ test('elementOnHit with damageType (灼燃维式重锤): 15% of each arts hit as
   assert.ok(near(e.elem.burn, 30), `${e.elem.burn}`);
 });
 
-test('knockbackOnHit (冲击维式重锤): 中力 push of the main target, once per 4 s', () => {
+test('knockbackOnHit (冲击维式重锤): each real normal hit pushes the main target', () => {
   const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('冲击维式重锤')] }]);
   const e = h.spawn('heavy', { pos: [10, 4] });
   const x0 = e.x;
@@ -88,7 +89,7 @@ test('knockbackOnHit (冲击维式重锤): 中力 push of the main target, once 
   const x1 = e.x;
   assert.ok(x1 > x0 + 0.5, `pushed away: ${x0} → ${x1}`);
   attacks(h, h.unit('w'), e);
-  assert.equal(e.x, x1, 'cooling down');
+  assert.ok(e.x > x1 + 0.5, `the next real attack pushes again: ${x1} → ${e.x}`);
 });
 
 test('pullOnHit (阿戈尔深潜锚钩): every 4th normal attack pulls the main target to the wearer', () => {
@@ -188,14 +189,13 @@ test('脆弱 / 法术脆弱 / 防御力降低 from gear are their own effects: t
   assert.ok(near(e2.s.artsTakenMul, 1.15 * 1.2, 1e-6), `${e2.s.artsTakenMul}`);
 });
 
-test('wolf whistle uses the effective unique 12-attack / .75-second / eight-second rule with real counters',()=>{
+test('wolf whistle uses the effective unique 12-attack / .75-second rule and retriggers on repeated counters',()=>{
   const def=catalog.equipment[G('叙拉古狼嚎哨')],params=def.params.effects[0].params;
-  assert.equal(def.unique,true);assert.equal(params.counterEvery,12);assert.equal(params.durationSeconds,.75);assert.equal(params.cooldownSeconds,8);
+  assert.equal(def.unique,true);assert.equal(params.counterEvery,12);assert.equal(params.durationSeconds,.75);assert.equal(params.cooldownSeconds,undefined);
   const h=setup([{uid:'w',chessId:OPS.syracusa,row:10,col:3,equipment:[def.id]}]);
   const unit=h.unit('w'),enemy=h.spawn('dummy',{pos:[10,4]});
   attacks(h,unit,enemy,11);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy);assert.ok(enemy.s.flags.fear);
-  h.run(.8);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy,24);assert.ok(!enemy.s.flags.fear,'extra twelve-attack cycles during cooldown cannot retrigger');
-  h.run(7.3);unit.atkCd=1e9;attacks(h,unit,enemy,12);assert.ok(enemy.s.flags.fear,'a full cycle after eight seconds triggers again');
+  h.run(.8);assert.ok(!enemy.s.flags.fear);attacks(h,unit,enemy,24);assert.ok(enemy.s.flags.fear,'two more full attack cycles retrigger without an artificial cooldown');
   h.run(.8);assert.ok(!enemy.s.flags.fear);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 
@@ -213,7 +213,7 @@ test('deployFirstHitStatus perDeploy (谢拉格冰爪): the first normal attack 
   assert.ok(e.findBuff('cold'), 'again after a new deployment');
 });
 
-test('disarmOnHit with 战栗 (战栗维式重锤); 蒸汽之心 强化 shortens its cooldown', () => {
+test('disarmOnHit with 战栗 (战栗维式重锤) retriggers on real attacks without an artificial cooldown', () => {
   const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('战栗维式重锤')] }]);
   const e = h.spawn('dummy', { pos: [10, 4] });
   attacks(h, h.unit('w'), e);
@@ -227,8 +227,8 @@ test('disarmOnHit with 战栗 (战栗维式重锤); 蒸汽之心 强化 shortens
     attacks(hh, hh.unit('w'), t);
     return !!t.s.flags.tremble;
   };
-  assert.equal(cd([G('战栗维式重锤')]), false, '8 s cooldown');
-  assert.equal(cd([G('战栗维式重锤'), { id: G('维多利亚蒸汽之心'), state: { hammerSourceIds: ['chess_item_2_03_e_a'] } }],FACTION_OPS.victoria), true, '强化: 5 s');
+  assert.equal(cd([G('战栗维式重锤')]), true, 'repeated hits retrigger without an artificial cooldown');
+  assert.equal(cd([G('战栗维式重锤'), { id: G('维多利亚蒸汽之心'), state: { hammerSourceIds: ['chess_item_2_03_e_a'] } }],FACTION_OPS.victoria), true, 'gear enhancement preserves retriggering');
 });
 
 test('spChargeMode (萨尔贡行军浓茶): each normal attack gives 1 SP', () => {
@@ -258,19 +258,20 @@ test('deviceOnDown (不屈部署支架): a 装置 that blocks one enemy lies whe
   assert.equal(w.tileR, 10); assert.equal(w.tileC, 3);
 });
 
-test('summonOnDeploy (炎国点睛笔): the first deployment of the battle puts a 召唤物 on a free tile next to the wearer', () => {
-  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('炎国点睛笔')] }]);
-  const tokens = h.b.allyUnits.filter((u) => u.kind === 'token' && u.alive);
-  assert.equal(tokens.length, 1);
-  const t = tokens[0];
-  assert.equal(Math.abs(t.tileR - 10) + Math.abs(t.tileC - 3), 1);
+test('summonOnDeploy (炎国点睛笔): each deployment summons beside the wearer once a real target is in range', () => {
+  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('炎国点睛笔')] }], { enemies: [{ key: 'dummy', pos: [10, 5] }] });
+  const w = h.unit('w');
+  const tokens = () => h.b.allyUnits.filter((u) => u.kind === 'token' && u.ownerUnit === w && u.defId === 'token_10015_dusk_drgn');
+  assert.ok(h.runUntil(() => tokens().some((u) => u.alive), 2), 'the enemy creates a real legal summon target');
+  const initial = tokens().filter((u) => u.alive);
+  assert.ok(initial.length >= 1);
+  const t = initial[0];
+  assert.ok(h.b.grid.inRect(t.tileR, t.tileC) && h.b.enemiesInKeys(t.rangeKeys, t, t.profile).includes(h.b.enemies[0]), 'the summon uses a real tile from which it can target the enemy');
   assert.ok(near(t.s.atk, 50) && near(t.s.maxHp, 500), `${t.s.atk}/${t.s.maxHp}`);
   assert.equal(t.s.blockCnt, 1);
-  const w = h.unit('w');
   h.b.moveRedeploy(w, w.tileR, w.tileC);
-  assert.equal(h.b.allyUnits.filter((u) => u.kind === 'token').length, 1, 'once per battle');
-  h.run(20.5);
-  assert.ok(!t.alive, 'gone after 20 s');
+  assert.ok(h.runUntil(() => tokens().filter((u) => u.alive).length > initial.length, 2), 'the next real deployment summons again');
+  assert.ok(t.alive, 'the source declares no summon duration');
 });
 
 test('skillStartStrike (炎国制式短刀) and deployStrike (卡西米尔竞技旗) hit every enemy in range', () => {
@@ -446,7 +447,7 @@ test('萨尔贡行军浓茶 grants its wearer SP on normal attacks without a com
   attacks(h,w,enemy);assert.ok(w.skill.sp>=1-1e-6,`SP=${w.skill.sp}`);
 });
 
-test('skillRecast (萨尔贡黄沙罗盘): the first skill starts again for free; paired 行军浓茶 gives other 萨尔贡 SP', () => {
+test('skillRecast (萨尔贡黄沙罗盘): each skill starts again for free; paired 行军浓茶 gives other 萨尔贡 SP', () => {
   const h = setup([
     { uid: 'w', chessId: FACTION_OPS.sargon, row: 10, col: 3, equipment: [G('萨尔贡黄沙罗盘'), G('萨尔贡行军浓茶')] },
     { uid: 's', chessId: 'chess_char_4_05_a', row: 12, col: 3, equipment: [] },
@@ -457,13 +458,13 @@ test('skillRecast (萨尔贡黄沙罗盘): the first skill starts again for free
   h.run(2.5);
   assert.equal(w.skill.activations, n0 + 1, 'cast again');
   h.run(3);
-  assert.equal(w.skill.activations, n0 + 1, 'once per battle');
+  assert.ok(w.skill.activations >= n0 + 2, 'each ended skill can recast again while deployed');
   assert.ok(h.unit('s').skill.sp >= 4 - 1e-6, `other 萨尔贡 got SP: ${h.unit('s').skill.sp}`);
 });
 
-test('萨尔贡黄沙罗盘 alone recasts its first ended skill once',()=>{
+test('萨尔贡黄沙罗盘 recasts each ended skill while the wearer stays deployed',()=>{
   const h=setup([{uid:'w',chessId:FACTION_OPS.sargon,row:10,col:3,equipment:[G('萨尔贡黄沙罗盘')]}],{skill:{...SKILL,duration:2}});
-  const w=h.unit('w');assert.ok(cast(w));h.run(2.5);assert.equal(w.skill.activations,2);h.run(3);assert.equal(w.skill.activations,2);
+  const w=h.unit('w');assert.ok(cast(w));h.run(7);assert.ok(w.skill.activations>=4,`repeated recasts: ${w.skill.activations}`);const before=w.skill.activations;h.run(2.5);assert.ok(w.skill.activations>before,'a later skill completion recasts again');
 });
 
 test('skillEndRedeploy (卡西米尔骑士戒律 + 竞技旗): the wearer redeploys on its tile when its skill ends and charges again', () => {

@@ -144,7 +144,7 @@ test('a badge boost and 熔铸模具 show in the operator\'s battle stats; 星�
   state.playerEffects.push({ type: 'badgeBoost', key: 'precision', badgeIds: ['precision'], percent: 0.5, max: 0.6 });
   const boosted = previewUnitStats(state, { data, catalog })[surt.uid].atk;
   const nativeAttack = catalog.operators[surt.chessId].source.normalChess.stats.atk;
-  assert.equal(Math.round(boosted - base), Math.round(nativeAttack * 0.02 * 10 * 0.5), 'badge boost scales 10 × 2% of native base attack');
+  assert.ok(Math.abs((boosted - base) - nativeAttack * 0.02 * 10 * 0.5) < 1, 'badge boost scales 10 × 2% of native base attack, allowing integer stat rounding');
   surt.equipment.push({ uid: 'x2', id: 'independent:熔铸模具', elite: false, quantity: 1, state: {} });
   const forged = previewUnitStats(state, { data, catalog })[surt.uid].atk;
   assert.equal(Math.round(forged - boosted), Math.round(nativeAttack * 0.02 * 10 * 1.5 * 0.25));
