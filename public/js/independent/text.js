@@ -72,13 +72,13 @@ export function GearIcon({ id, catalog, class: cls, plain = false }) {
   const icon = iconUrl ? html`<${Img} src=${iconUrl} class=${cx('ix-gear', 'ix-gear--item', cls)} alt=${name} fallback=${drawn} />` : drawn;
   if (plain || !g) return icon;
   const badge = !!BADGE_BOND[id] || g.kind === 'badge' || g.kind === '徽章';
-  const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.mechanism!=='growthTraining' && g.level ? html`<em>${g.level}级</em>` : null}<span>${badgeEffectText(id) || g.normal || g.effect || ''}</span></span>`;
+  const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.mechanism!=='growthTraining' && g.level ? html`<em>装备叠加×${g.level}</em>` : null}<span>${badgeEffectText(id) || g.normal || g.effect || ''}</span></span>`;
   return html`<${Tooltip} text=${tip} placement="top">${icon}<//>`;
 }
 
 /** One term in running text: the word, its explanation on hover / tap. */
 function Term({ entry, children }) {
-  const tip = html`<span class="ix-tip"><b>${entry.name}</b>${showsLevel(entry) ? html`<em>${entry.level}级</em>` : null}<span>${entry.text}</span></span>`;
+  const tip = html`<span class="ix-tip"><b>${entry.name}</b>${showsLevel(entry) ? html`<em>装备叠加×${entry.level}</em>` : null}<span>${entry.text}</span></span>`;
   return html`<${Tooltip} text=${tip} placement="top"><span class="rt-term" tabindex="0">${children}</span><//>`;
 }
 
@@ -107,7 +107,7 @@ export function TermNotes({ texts, catalog, exclude = null, class: cls }) {
   return html`<ul class=${cx('ix-notes', cls)} aria-label="相关说明">
     ${entries.map((e) => html`<li key=${e.name}>
       ${e.kind === 'gear' || e.kind === 'attachment' ? html`<${GearIcon} id=${e.id} catalog=${catalog} plain=${true} />` : html`<span class="ix-notes__mark" aria-hidden="true">·</span>`}
-      <span><b>${e.name}</b>${showsLevel(e) ? html`<em>${e.level}级</em>` : null}<${GameText} text=${e.text} catalog=${catalog} plainTerms=${true} /></span>
+      <span><b>${e.name}</b>${showsLevel(e) ? html`<em>装备叠加×${e.level}</em>` : null}<${GameText} text=${e.text} catalog=${catalog} plainTerms=${true} /></span>
     </li>`)}
   </ul>`;
 }
