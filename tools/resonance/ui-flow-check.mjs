@@ -339,9 +339,9 @@ async function inspectReadOnlyFixtures(page, screenshotPrefix='') {
   fixture.searchParams.set('session', '14f5ff81-2a70-4b2d-b15b-9d88e19eb9c1');
   await page.goto(fixture.href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.waitForSelector('.rs-final-screen', { timeout: 30000 });
   await shot(page, `${screenshotPrefix}11-existing-final-result`);
-  await button(page, '查看战报'); await page.waitForSelector('.modal', { timeout: 10000 });
-  check('completed-report-modal-visible', /战斗记录/.test(await page.$eval('.modal', e => e.innerText)), await page.$eval('.modal', e => e.innerText.slice(0, 400)));
-  await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.modal'), { timeout: 5000 });
+  await button(page, '查看战报'); await page.waitForSelector('.rs-panel-drawer[aria-label="战斗记录"]', { timeout: 10000 });
+  check('completed-report-drawer-visible', /战斗记录/.test(await page.$eval('.rs-panel-drawer[aria-label="战斗记录"]', e => e.innerText)), await page.$eval('.rs-panel-drawer[aria-label="战斗记录"]', e => e.innerText.slice(0, 400)));
+  await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
   await page.click('.rs-final-screen .rs-result-member > summary');
   await page.click('.rs-final-screen .rs-result-member[open] .rs-inline-detail'); await page.waitForSelector('.dpanel .dstats', { timeout: 10000 });
   check('completed-member-detail-eight-stats', await page.$$eval('.dpanel .dstat', nodes => nodes.length) === 8, 'member detail is readable from completed result');
