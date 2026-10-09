@@ -230,7 +230,8 @@ async function run() {
   };
   async function request(method, endpoint, body) {
     const response = await fetch(apiUrl(serverBase, endpoint), {
-      method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      method, headers, signal: AbortSignal.timeout(30_000),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const raw = await response.text();
     let result;

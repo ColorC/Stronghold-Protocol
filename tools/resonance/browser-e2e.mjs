@@ -450,6 +450,7 @@ async function startViaUi(page, { difficulty = 'NORMAL', environmentText = null 
   return { id, state: await stateOf(page, id) };
 }
 async function capture(page, name, purpose) {
+  await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.());
   const file = path.join(SCREENSHOT_DIR, name);
   await page.screenshot({ path: file, fullPage: true, captureBeyondViewport: true });
   screenshots.push({ path: file, purpose });
@@ -1044,6 +1045,11 @@ async function installWorkshopBearerScope(page, workshopUrl) {
   };
 }
 async function chooseNativeFieldAction(page, currentState) {
+  await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 15_000 }).catch(() => {});
+  await page.waitForFunction(() => {
+    const v = globalThis.__SP_VIEW__;
+    return v?.kind === 'fallback' || v?.raw?.stats?.()?.mode === 'prep';
+  }, { timeout: 15_000 }).catch(() => {});
   const view = await page.evaluate(() => {
     const v = globalThis.__SP_VIEW__;
     if (!v) return null;
@@ -1059,61 +1065,204 @@ async function chooseNativeFieldAction(page, currentState) {
   const usableUnits = currentState.pieces.filter((piece) => piece.row == null && piece.legalTiles?.length);
   if (view?.hasGeometry && usableUnits.length) {
     const piece = usableUnits[0];
-    const tile = (piece.legalTiles[1] || piece.legalTiles[0]).split(',').map(Number);
+    const sessionId = new URL(page.url()).searchParams.get('session');
+    let tile = (piece.legalTiles[1] || piece.legalTiles[0]).split(',').map(Number);
     const geometry = await page.evaluate(({ uid, row, col }) => {
       const view = globalThis.__SP_VIEW__;
-      const rect = view.pieceScreenRect(Number(String(uid).replace(/^\D+/, '')));
+      const viewUid = Number(String(uid).replace(/^\D+/, ''));
+      const rect = view.pieceScreenRect(viewUid);
       const dest = view.tileScreen(row, col);
-      return { rect, dest };
+      const points = rect ? [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }] : [];
+      // Include the full board and hand/temp rows. A bench piece can sit past column 12, so scanning only
+      // the battle-field half silently misses the renderer's authoritative tile-based hit target.
+      if (view.pieceAtClient) for (let r = 0; r <= 18; r++) for (let c = 0; c <= 20; c++) {
+        const tile = view.tileScreen(r, c);
+        if (tile) points.push({ x: tile.x, y: tile.y });
+      }
+      const picked = points.map(point => ({ point, piece: view.pieceAtClient?.(point.x, point.y) })).find(entry => entry.piece?.uid === viewUid) || null;
+      const describe = (point) => {
+        const element = point && document.elementFromPoint(point.x, point.y);
+        if (!element) return null;
+        const style = getComputedStyle(element);
+        return { tag: element.tagName, id: element.id, className: String(element.className?.baseVal ?? element.className ?? ''), pointerEvents: style.pointerEvents, zIndex: style.zIndex };
+      };
+      return { rect, dest, source: picked?.point || (rect && { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }), sourcePick: picked?.piece || null,
+        sourceHit: rect && describe(picked?.point || { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }), destHit: describe(dest),
+        canvases: [...document.querySelectorAll('canvas')].map(canvas => { const r = canvas.getBoundingClientRect(), s = getComputedStyle(canvas); return { className: canvas.className, rect: { x: r.x, y: r.y, width: r.width, height: r.height }, pointerEvents: s.pointerEvents, zIndex: s.zIndex }; }) };
     }, { uid: piece.uid, row: tile[0], col: tile[1] });
     if (geometry?.rect && geometry?.dest) {
-      await page.mouse.move(geometry.rect.x + geometry.rect.width / 2, geometry.rect.y + geometry.rect.height / 2);
+      await page.evaluate(() => {
+        globalThis.__resonanceDragEvents = [];
+        const v = globalThis.__SP_VIEW__;
+        for (const name of ['pieceDragStart', 'pieceDrop', 'pieceDragEnd']) v?.on?.(name, event => {
+          globalThis.__resonanceDragEvents.push({ name, uid: event?.uid, from: event?.from, target: event?.target, dropped: event?.dropped });
+        });
+      });
+      await page.mouse.move(geometry.source.x, geometry.source.y);
       await page.mouse.down(); await page.mouse.move(geometry.dest.x, geometry.dest.y, { steps: 8 }); await page.mouse.up();
-      await waitForAny(page, ['.fwheel[role="dialog"]', '.rs-field__board']);
-      const wheel = await page.$('.fwheel[role="dialog"]');
+      const wheel = await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 8_000 }).catch(() => null);
+      let wheelOpened = !!wheel, deployMethod = wheel ? 'facing-wheel' : 'pointer-drop';
+      let facingGeometry = null, dragEvents = await page.evaluate(() => globalThis.__resonanceDragEvents || []);
       if (wheel) {
         await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(() => document.querySelector('.fwheel[role="dialog"]')?.classList.contains('is-right'), { timeout: 5_000 });
         await page.keyboard.press('Enter');
-        await page.waitForFunction(() => !document.querySelector('.fwheel[role="dialog"]'), { timeout: 10_000 }).catch(() => {});
-      } else {
-        await page.waitForSelector('.rs-field__board');
+        await page.waitForFunction(() => !document.querySelector('.fwheel[role="dialog"]'), { timeout: 10_000 });
       }
-      const cards = await page.$$('.rs-piece');
-      let matchedCard = null;
-      for (const candidate of cards) if ((await textOf(candidate)).includes(piece.operator?.name || '')) { matchedCard = candidate; break; }
-      const selects = await matchedCard?.$$('select') || [];
-      const facing = selects.at(-1);
+      let authoritative = await stateOf(page, sessionId);
+      let placed = authoritative.pieces.find((candidate) => candidate.uid === piece.uid);
+      const tileMatches = placed?.row === tile[0] && placed?.col === tile[1];
+      if (!wheelOpened || !placed || placed.row == null) return { fieldKind, rendererVisible, view, deployed: false, directions: [],
+        failure: !wheelOpened ? 'pointer drag did not open the FacingWheel' : 'wheel commit did not update authoritative row/col' };
       const directions = [];
+      const openWheelOnCurrentTile = async () => {
+        const point = await page.evaluate(({ row, col }) => globalThis.__SP_VIEW__?.tileScreen(row, col), { row: placed.row, col: placed.col });
+        assert(point, `no rendered tile for ${piece.uid} at ${placed.row},${placed.col}`);
+        await page.mouse.move(point.x, point.y); await page.mouse.down();
+        await page.mouse.move(point.x + 12, point.y, { steps: 2 }); await page.mouse.move(point.x, point.y, { steps: 2 }); await page.mouse.up();
+        const nextWheel = await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 5_000 }).catch(() => null);
+        assert(nextWheel, `dragging ${piece.uid} onto its current tile did not open FacingWheel`);
+      };
       for (const dir of ['UP', 'RIGHT', 'DOWN', 'LEFT']) {
-        if (facing && (await facing.$(`option[value="${dir}"]`))) {
-          await selectOption(facing, dir);
-          const updated = await stateOf(page, new URL(page.url()).searchParams.get('session'));
-          if (updated.pieces.find((candidate) => candidate.uid === piece.uid)?.dir === dir) directions.push(dir);
+        if (placed?.dir !== dir) {
+          if (!directions.length && placed?.dir === 'RIGHT') await openWheelOnCurrentTile();
+          else await openWheelOnCurrentTile();
+          await page.keyboard.press(`Arrow${dir[0]}${dir.slice(1).toLowerCase()}`);
+          await page.waitForFunction((d) => document.querySelector('.fwheel[role="dialog"]')?.classList.contains(`is-${d.toLowerCase()}`), { timeout: 5_000 }, dir);
+          const priorRevision = authoritative.revision, priorRow = placed.row, priorCol = placed.col;
+          await page.keyboard.press('Enter');
+          await page.waitForFunction(() => !document.querySelector('.fwheel[role="dialog"]'), { timeout: 10_000 });
+          authoritative = await waitState(page, sessionId, next => {
+            const candidate = next.pieces.find(entry => entry.uid === piece.uid);
+            return next.revision > priorRevision && candidate?.row === priorRow && candidate?.col === priorCol && candidate?.dir === dir;
+          }, 10_000);
+          placed = authoritative.pieces.find(candidate => candidate.uid === piece.uid);
+          directions.push(dir);
         }
       }
-      return { fieldKind, rendererVisible, view, deployed: true, directions };
+      return { fieldKind, rendererVisible, view, deployed: placed?.row != null && tileMatches, row: placed?.row, col: placed?.col, dir: placed?.dir, directions,
+        deployMethod, wheelOpened, dragGeometry: geometry, facingGeometry, dragEvents };
     }
   }
   if (usableUnits.length) {
     // The explicit unit card is part of the real UI; its first legal cell deploys it.
     const piece = usableUnits[0];
-    await clickText(page, '.rs-piece button', piece.operator?.name || '', { exact: false });
-    let deployed = await stateOf(page, new URL(page.url()).searchParams.get('session'));
+    const sessionId = new URL(page.url()).searchParams.get('session');
+    const beforeDeploy = await stateOf(page, sessionId), beforeRevision = beforeDeploy.revision;
+    const cardButton = await page.$(`#member-${encodeURIComponent(piece.uid)} > button`);
+    if (!cardButton) return { fieldKind, rendererVisible, view, deployed: false, directions: [], failure: 'selected member card has no deploy control' };
+    await cardButton.click();
+    let deployed = await waitState(page, sessionId, next => {
+      const candidate = next.pieces.find(entry => entry.uid === piece.uid);
+      return next.revision > beforeRevision && candidate?.row != null && candidate?.col != null;
+    }, 10_000).catch(() => stateOf(page, sessionId));
+    let placed = deployed.pieces.find((candidate) => candidate.uid === piece.uid);
+    if (placed?.row == null) return { fieldKind, rendererVisible, view, deployed: false, directions: [], failure: 'deploy click did not change authoritative row/col' };
     const directions = [];
-    const cards = await page.$$('.rs-piece');
-    let card = null;
-    for (const candidate of cards) if ((await textOf(candidate)).includes(piece.operator?.name || '')) { card = candidate; break; }
+    const card = await page.$(`#member-${encodeURIComponent(piece.uid)}`);
     const facing = (await card?.$$('select') || []).at(-1);
+    const commitDirection = async (dir, count = true) => {
+      if (!facing || placed?.dir === dir) return;
+      const priorRevision = deployed.revision, priorRow = placed.row, priorCol = placed.col;
+      await selectOption(facing, dir);
+      deployed = await waitState(page, sessionId, next => {
+        const current = next.pieces.find(candidate => candidate.uid === piece.uid);
+        return next.revision > priorRevision && current?.row === priorRow && current?.col === priorCol && current?.dir === dir;
+      }, 10_000).catch(() => stateOf(page, sessionId));
+      placed = deployed.pieces.find(candidate => candidate.uid === piece.uid);
+      if (count && deployed.revision > priorRevision && placed?.row === priorRow && placed?.col === priorCol && placed?.dir === dir) directions.push(dir);
+    };
+    await commitDirection(placed.dir === 'LEFT' ? 'RIGHT' : 'LEFT', false);
     for (const dir of ['UP', 'RIGHT', 'DOWN', 'LEFT']) {
-      if (facing && await facing.$(`option[value="${dir}"]`)) {
-        await selectOption(facing, dir);
-        deployed = await stateOf(page, new URL(page.url()).searchParams.get('session'));
-        if (deployed.pieces.find((candidate) => candidate.uid === piece.uid)?.dir === dir) directions.push(dir);
-      }
+      if (facing && await facing.$(`option[value="${dir}"]`)) await commitDirection(dir);
     }
-    return { fieldKind, rendererVisible, view, deployed: deployed.pieces.find((candidate) => candidate.uid === piece.uid)?.row != null, directions };
+    return { fieldKind, rendererVisible, view, deployed: placed?.row != null, row: placed?.row, col: placed?.col, dir: placed?.dir, directions };
   }
   return { fieldKind, rendererVisible, view, deployed: false, directions: [] };
+}
+
+async function runUiInteractionCheck(sessionId) {
+  assert(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId || ''), '--check-ui-interactions requires an existing session UUID');
+  const canonicalData = loadData(path.join(CANONICAL_ROOT, 'data'), { log: { warn() {}, error() {} } });
+  server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: CANONICAL_ROOT,
+    dataDir: path.join(CANONICAL_ROOT, 'data'), independentDirectory: path.join(VERIFY_ROOT, 'independent-sessions'),
+    resonanceDirectory: SESSION_DIR, recordingDirectory: path.join(VERIFY_ROOT, 'recordings') });
+  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    headless: true, userDataDir: PROFILE_DIR, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check',
+      '--disable-background-networking', '--window-size=1440,1000'] });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+  const url = entryUrl(server, { session: sessionId });
+  const evidence = { sessionId, url, actions: [] };
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await waitGame(page);
+    let initial = await stateOf(page, sessionId);
+    if (!initial.pieces.some(piece => piece.row == null)) {
+      const piece = initial.pieces.find(candidate => candidate.row != null);
+      const card = await page.$(`#member-${encodeURIComponent(piece.uid)}`);
+      const buttons = await card?.$$('button') || [];
+      let withdraw = null;
+      for (const button of buttons) if ((await textOf(button)).includes('撤回')) { withdraw = button; break; }
+      assert(withdraw, 'no authoritative UI withdraw control to prepare a deployment check');
+      const priorRevision = initial.revision;
+      await withdraw.click();
+      initial = await waitState(page, sessionId, next => next.revision > priorRevision && next.pieces.find(candidate => candidate.uid === piece.uid)?.row == null);
+      evidence.actions.push({ kind: 'prepare-bench', pieceUid: piece.uid, revision: initial.revision });
+    }
+    const field = await chooseNativeFieldAction(page, initial);
+    const afterField = await stateOf(page, sessionId);
+    evidence.actions.push({ kind: 'deploy-and-turns', fieldKind: field.fieldKind, reported: field,
+      deployedCount: afterField.deployedCount, revision: afterField.revision,
+      changedPiece: field.row == null ? null : afterField.pieces.find(piece => piece.row === field.row && piece.col === field.col) });
+    assert(field.deployed && field.directions.join(',') === 'UP,RIGHT,DOWN,LEFT', 'deploy/facing UI did not produce all four authoritative direction commits');
+
+    const fallback = await browser.newPage();
+    await fallback.setViewport({ width: 1000, height: 700, deviceScaleFactor: 1 });
+    try {
+      await fallback.goto(entryUrl(server, { render: 'fallback', session: sessionId }), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await waitGame(fallback);
+      let fallbackState = await stateOf(fallback, sessionId);
+      const deployed = fallbackState.pieces.find(piece => piece.row != null);
+      assert(deployed, 'fallback view has no deployed piece to turn');
+      const dir = deployed.dir === 'UP' ? 'RIGHT' : 'UP';
+      const card = await fallback.$(`#member-${encodeURIComponent(deployed.uid)}`);
+      const facing = (await card?.$$('select') || []).at(-1);
+      assert(facing && await facing.$(`option[value="${dir}"]`), 'fallback facing selector missing');
+      const revision = fallbackState.revision;
+      await selectOption(facing, dir);
+      fallbackState = await waitState(fallback, sessionId, next => {
+        const current = next.pieces.find(piece => piece.uid === deployed.uid);
+        return next.revision > revision && current?.dir === dir && current?.row === deployed.row && current?.col === deployed.col;
+      });
+      evidence.actions.push({ kind: 'fallback-turn', pieceUid: deployed.uid, dir, row: fallbackState.pieces.find(piece => piece.uid === deployed.uid).row,
+        col: fallbackState.pieces.find(piece => piece.uid === deployed.uid).col, revision: fallbackState.revision });
+    } finally { await fallback.close(); }
+
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await waitGame(page);
+    const beforeLock = await stateOf(page, sessionId);
+    assert(await clickEnabled(page, '#rs-section-shop button', '锁定'), 'shop lock button is not clickable');
+    const locked = await waitState(page, sessionId, next => next.shop.locked && next.revision > beforeLock.revision);
+    evidence.actions.push({ kind: 'shop-lock', locked: locked.shop.locked, revision: locked.revision,
+      beforeRevision: beforeLock.revision, buttonText: '锁定' });
+    await clickText(page, '#rs-section-shop button', '解锁');
+    const unlocked = await waitState(page, sessionId, next => !next.shop.locked && next.revision > locked.revision);
+    evidence.actions.push({ kind: 'shop-unlock', locked: unlocked.shop.locked, revision: unlocked.revision });
+    assert(field.wheelOpened === true && field.deployMethod === 'facing-wheel',
+      'pointer drag did not open the FacingWheel; card-button deployment is not evidence for the wheel path');
+    return { status: 'passed', ...evidence };
+  } catch (error) {
+    await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.()).catch(() => {});
+    await mkdir(SCREENSHOT_DIR, { recursive: true });
+    const screenshot = path.join(SCREENSHOT_DIR, 'ui-interaction-failure.png');
+    await page.screenshot({ path: screenshot, fullPage: true, captureBeyondViewport: true }).catch(() => {});
+    return { status: 'failed', ...evidence, error: error.stack || error.message, screenshot };
+  } finally {
+    await browser?.close().catch(() => {});
+    await server?.close().catch(() => {});
+  }
 }
 
 async function run() {
@@ -1210,16 +1359,19 @@ async function run() {
   await fallbackPage.goto(entryUrl(server, { render: 'fallback', session: mainId }), { waitUntil: 'domcontentloaded' });
   await waitGame(fallbackPage);
   await fallbackPage.waitForFunction(() => globalThis.__SP_VIEW__?.kind === 'fallback', { timeout: 60_000 });
-  const fallbackUnit = (await stateOf(fallbackPage, mainId)).pieces.find((piece) => piece.row != null);
-  const fallbackSelect = await fallbackPage.$('.rs-piece select:last-of-type');
+  const fallbackBefore = await stateOf(fallbackPage, mainId);
+  const fallbackUnit = fallbackBefore.pieces.find((piece) => piece.row != null);
+  const fallbackSelect = fallbackUnit && await fallbackPage.$(`#member-${encodeURIComponent(fallbackUnit.uid)} select:last-of-type`);
   let fallbackVerified = false;
   if (fallbackUnit && fallbackSelect) {
-    for (const dir of ['UP', 'RIGHT', 'DOWN', 'LEFT']) {
-      if (await fallbackSelect.$(`option[value="${dir}"]`)) {
-        await selectOption(fallbackSelect, dir);
-        if ((await stateOf(fallbackPage, mainId)).pieces.find((piece) => piece.uid === fallbackUnit.uid)?.dir === dir) { fallbackVerified = true; break; }
-      }
-    }
+    const dir = fallbackUnit.dir === 'UP' ? 'RIGHT' : 'UP';
+    assert(await fallbackSelect.$(`option[value="${dir}"]`), 'fallback has no legal alternate facing');
+    await selectOption(fallbackSelect, dir);
+    const updated = await waitState(fallbackPage, mainId, next => {
+      const piece = next.pieces.find(candidate => candidate.uid === fallbackUnit.uid);
+      return next.revision > fallbackBefore.revision && piece?.row === fallbackUnit.row && piece?.col === fallbackUnit.col && piece?.dir === dir;
+    });
+    fallbackVerified = updated.revision > fallbackBefore.revision;
   }
   if (fallbackVerified) passed('renderer-dom-fallback', 'render=fallback下DOM棋子/朝向控件与正式session API成功交互');
   else unavailable('renderer-dom-fallback', 'fallback已挂载但没有完成真实session朝向交互');
@@ -1228,6 +1380,9 @@ async function run() {
     remoteStory('production-renderers', nativeOk && fallbackVerified ? 'passed' : 'unavailable', `native=${results.get('renderer-native').status}；fallback=${fallbackVerified ? 'passed' : 'unavailable'}；fallback朝向动作已写入真实session`);
   }
   await fallbackPage.close();
+  // The fallback tab committed the same session. Reload to use its current revision before the next UI action.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitGame(page);
   if (field.deployed && field.directions.join(',') === 'UP,RIGHT,DOWN,LEFT') passed('move-and-four-directions', '使用真实棋盘拖放部署，再通过朝向控件提交四方向操作');
   else if (field.deployed) unavailable('move-and-four-directions', `已真实部署；朝向操作覆盖：${field.directions.join(',')}`);
   else unavailable('move-and-four-directions', '未找到有合法格的备战干员或可用棋盘坐标');
@@ -1387,6 +1542,7 @@ async function run() {
 
   await page.setViewport({ width: 1000, height: 560, deviceScaleFactor: 1 });
   await page.evaluate(() => screen.orientation?.lock?.('landscape').catch?.(() => {})).catch(() => {});
+  await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.());
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04-landscape.png'), fullPage: true, captureBeyondViewport: true });
   screenshots.push({ path: path.join(SCREENSHOT_DIR, '04-landscape.png'), purpose: '横屏整备/战报布局' });
   const layout = await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth, bodyWidth: document.body.scrollWidth }));
@@ -1477,6 +1633,13 @@ try {
     process.stdout.write(`${JSON.stringify({status:'fixtures-valid',serverStarted:false,browserStarted:false,sessionsWritten:0,
       common,fixturesValidated:validation.fixtures.length,nativeTokenPlaceable:tokenResolution?.placeable===true,
       fixtures:validation.fixtures.map(f=>({environmentId:f.environmentId,seed:f.seed,pieces:f.pieces.length,sessionWritten:f.sessionWritten}))})}\n`);
+  }else if(process.argv.includes('--check-ui-interactions')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const index=process.argv.indexOf('--check-ui-interactions');
+    const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
+    const result=await runUiInteractionCheck(sessionId);
+    process.stdout.write(`${JSON.stringify(result,null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
   }else{
     puppeteer=requireFromCanonical('puppeteer-core');
     try {
