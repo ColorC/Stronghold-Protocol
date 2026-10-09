@@ -506,6 +506,12 @@ function capacityPhaseUnit(revision, recording) {
 
 function shellQuotePosix(value) { return `'${String(value).replaceAll("'", "'\\''")}'`; }
 
+export function jsonPrintCommand(value) {
+  const json = JSON.stringify(value);
+  if (typeof json !== 'string') throw new Error('JSON output value is not serializable');
+  return `printf '%s\\n' ${shellQuotePosix(json)}`;
+}
+
 export function capacityBatchScript(revision) {
   if (!/^[0-9a-f]{40}$/i.test(String(revision))) throw new Error('capacity batch requires full Native Git revision');
   const phases = [
@@ -948,8 +954,10 @@ function prepareRemote(release, resumeInfo = null, replaceStagedRevision = null)
   const candidateAction = preflightInfo.candidate === 'reuse'
     ? `printf 'candidate reused after receipt, link, hardlink, and occupancy checks: %s\\n' '${CANDIDATE}'`
     : `mkdir -m 0755 '${CANDIDATE}'\ntar -xf '${STAGING}/server-code.tar' --no-same-owner --no-same-permissions -C '${CANDIDATE}'\ninstall -m 0644 '${STAGING}/resonance-references.zip' '${CANDIDATE}/public/resonance-references.zip'\ninstall -m 0644 '${STAGING}/server-release.json' '${CANDIDATE}/.resonance-release-receipt.json'`;
-  const replacedJson = preflightInfo.replacedStagedRevision == null ? 'null' : `"${preflightInfo.replacedStagedRevision}"`;
-  const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\nprintf '{"prepared":true,"sourceRevision":"${revision}","replacedStagedRevision":${replacedJson},"candidate":"${CANDIDATE}","candidateAction":"${preflightInfo.candidate}","wsVersion":"${release.wsVersion}","artifactTransfers":${JSON.stringify(transferReceipt)},"skippedAlreadyTransferred":${JSON.stringify(skippedAlreadyTransferred)},"actualTransferred":${JSON.stringify(actualTransferred)}}\\n'`;
+  const preparedResult = { prepared: true, sourceRevision: revision, replacedStagedRevision: preflightInfo.replacedStagedRevision ?? null,
+    candidate: CANDIDATE, candidateAction: preflightInfo.candidate, wsVersion: release.wsVersion,
+    artifactTransfers: transferReceipt, skippedAlreadyTransferred, actualTransferred };
+  const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\n${jsonPrintCommand(preparedResult)}`;
   try {
     const preparedText = invoke('ssh', [...sshArgs(), 'timeout 180s bash -s'], remotePrepare, 180_000);
     if (!archivedPriorCapacityBatch) return preparedText;

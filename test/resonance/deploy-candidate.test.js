@@ -5,9 +5,21 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { absolutePath, activationCommand, activationScript, capacityBatchCommand, capacityBatchReceiptFromStdout, capacityBatchScript, candidateRefreshPreflightScript, candidateRefreshScript, candidateSessionRefreshScript, archiveCompletedCapacityBatchScript, parseArgs, prepareLocalBatchReceiptPath, writeLocalBatchReceipt, preflightScript, preserveOldFailureCgroupScript, resumeVerificationScript, scpBatchArgs, validateCapacityReceipt, validatePrepareResumeReceipt, validateStagedReplacementRevision, validateCandidateRefreshRevisions, validateCandidateRefreshChangeSet, validateCandidateRefreshInvariantBytes, validateCapacityReuseEvidence } from '../../tools/resonance/deploy-candidate.mjs';
+import { absolutePath, activationCommand, activationScript, capacityBatchCommand, capacityBatchReceiptFromStdout, capacityBatchScript, candidateRefreshPreflightScript, candidateRefreshScript, candidateSessionRefreshScript, archiveCompletedCapacityBatchScript, jsonPrintCommand, parseArgs, prepareLocalBatchReceiptPath, writeLocalBatchReceipt, preflightScript, preserveOldFailureCgroupScript, resumeVerificationScript, scpBatchArgs, validateCapacityReceipt, validatePrepareResumeReceipt, validateStagedReplacementRevision, validateCandidateRefreshRevisions, validateCandidateRefreshChangeSet, validateCandidateRefreshInvariantBytes, validateCapacityReuseEvidence } from '../../tools/resonance/deploy-candidate.mjs';
 
 const revision = '0123456789abcdef0123456789abcdef01234567';
+
+test('prepare JSON receipt is printed as a literal and survives Windows path backslashes', () => {
+  const payload = {
+    prepared: true,
+    artifactTransfers: [{ source: String.raw`E:\WindowsWorkspace\webworks\apps\stronghold-protocol\.omni\tmp\resonance\release\server-release.json`, target: '/var/tmp/stronghold-protocol/resonance/server-release.json', role: 'native builder receipt', status: 'transferred' }],
+    note: String.raw`backslashes: \server\path`,
+  };
+  const result = spawnSync('bash', ['-s'], { input: jsonPrintCommand(payload), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), payload);
+});
+
 function capacityReceipt() {
   return {
     schema: 'resonance-capacity-receipt/v1', sourceRevision: revision, providedSourceRevision: revision,
