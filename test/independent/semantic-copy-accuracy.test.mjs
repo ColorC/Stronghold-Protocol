@@ -12,26 +12,21 @@ const { getCatalog } = await import(new URL('../../server/modes/independent/cata
 const { independentDisplayCatalog } = await import(new URL('../../server/modes/independent/display.js', import.meta.url));
 const { DARKMOON_COMBAT_RULES, darkmoonCombatMetadata } = await import(new URL('../../server/sim/content/independent/darkmoonCombat.js', import.meta.url));
 
-test('deployment and knockout descriptions disclose the per-source battle cap', () => {
+test('deployment and knockout descriptions omit removed artificial caps', () => {
   const data = getData();
   const display = independentDisplayCatalog(data, getCatalog(data));
-  const sourceOps = Object.values(display.operators).filter((op) => op.sourceRefs?.darkmoon19_2 && !op.elite);
-  const missing = [];
-  for (const op of sourceOps) {
+  for (const op of Object.values(display.operators).filter(op => op.sourceRefs?.darkmoon19_2 && !op.elite)) {
     const id = op.sourceRefs.darkmoon19_2.id;
     if (!DARKMOON_COMBAT_RULES[id]?.retire) continue;
     const copy = gameText.operators[op.baseChessId];
-    for (const form of ['normal', 'elite', 'normalLevels', 'eliteLevels']) {
-      if (!String(copy?.[form] || '').includes('每场最多触发3次')) missing.push(`${id}/${form}`);
-    }
+    for (const form of ['normal', 'elite', 'normalLevels', 'eliteLevels']) assert.doesNotMatch(String(copy?.[form] || ''), /每场最多触发|投影在场45秒|最多保留7个投影|至多7个/, `${id}/${form}`);
   }
-  assert.deepEqual(missing, [], 'all current retirement/deployment payload descriptions include their actual three-activation cap');
-  assert.equal(darkmoonCombatMetadata('BGS_012', false).trigger, '战斗部署时', '缪尔赛思 display metadata describes deployment, not the original source-card deathrattle');
-  const bgs008Copy = gameText.operators['chess_native_char_4155_talr_a'].normal;
-  assert.match(bgs008Copy, /招募获得或首次上阵时，自身装备突袭盟约×1/);
-  assert.match(bgs008Copy, /被击倒时召唤2名随机带有战斗部署效果干员的作战投影；每场最多触发3次/);
-  assert.equal((bgs008Copy.match(/突袭盟约/g) || []).length, 1, 'the acquisition grant appears once');
-  assert.doesNotMatch(bgs008Copy, /装备装备|获得时装备/);
+  assert.equal(darkmoonCombatMetadata('BGS_012', false).trigger, '战斗部署时');
+  const copy = gameText.operators['chess_native_char_4155_talr_a'].normal;
+  assert.match(copy, /招募获得或首次上阵时，自身装备突袭盟约×1/);
+  assert.match(copy, /被击倒时召唤2名随机带有战斗部署效果干员的作战投影/);
+  assert.equal((copy.match(/突袭盟约/g) || []).length, 1);
+  assert.doesNotMatch(copy, /装备装备|获得时装备/);
 });
 
 test('adaptation metadata trigger labels agree with the executable combat handler', () => {

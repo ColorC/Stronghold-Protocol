@@ -89,7 +89,7 @@ test('growth text names the exact badge and its combat actor', () => {
   assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔干员击倒敌人时/);
   assert.match(darkmoonCombatMetadata('BGS_047').text, /维多利亚干员攻击敌人时/);
   assert.match(darkmoonCombatMetadata('BGS_111').text, /佩戴坚守盟约的友方干员受到攻击时/);
-  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位实际部署时.*护盾刷新至五层/);
+  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位实际部署时.*增加五层护盾/);
   assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位实际部署时/);
   for(const id of ['BGS_017','BGS_021','BGS_071']){
     const rule=darkmoonCombatEligibilityRules(id)[0];
@@ -159,7 +159,7 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('BGS_055').normal, /升级费用减少1金币/);
   assert.match(card('BGS_055').elite, /升级费用减少2金币/);
   assert.match(card('BGS_100').normal, /随机.*场上友方干员.*元素科技等级/);
-  assert.match(card('BGS_100').elite, /随机.*场上友方干员.*元素科技等级.*触发两次/);
+  assert.match(card('BGS_100').elite, /随机.*场上友方干员.*元素科技等级.*结算两次/);
   assert.match(card('GVG_113').normal, /巨锤盟约/);
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /获得时效果共触发2次/);
@@ -172,7 +172,7 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.doesNotMatch(card('BOT_312').normal, /亡语附加/);
   assert.match(card('BOT_312').normal, /机械水獭投影.*攻击为机械水獭基础攻击的40%.*生命为其基础生命的40%/);
   assert.match(card('BOT_312').elite, /机械水獭投影.*攻击为机械水獭基础攻击的80%.*生命为其基础生命的80%/);
-  assert.match(card('BOT_312').normal, /每个投影在场45秒.*最多保留7个投影/);
+  for (const row of byAddonId.values()) for (const form of ['normal','elite','normalLevels','eliteLevels']) assert.doesNotMatch(row[form], /每场最多触发|投影在场45秒|最多保留7个投影|至多7个/, `${row.sourceId}/${form} has no Workshop trigger, lifetime or summon cap`);
   assert.match(card('BGS_061').normal, /黄金盟誓投影.*攻击为黄金盟誓基础攻击的40%.*生命为其基础生命的40%/);
   assert.match(card('BGS_061').elite, /黄金盟誓投影.*攻击为黄金盟誓基础攻击的80%.*生命为其基础生命的80%/);
   assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击徽章×2及伤害徽章×4/);

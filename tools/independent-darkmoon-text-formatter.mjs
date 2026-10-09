@@ -20,7 +20,7 @@ const gears = new Map([
 const badgeNames = Object.freeze({ precision: '攻击徽章', agility: '攻速徽章', damage: '伤害徽章', vitality: '生命徽章', defense: '防御徽章', assault: '攻击加成徽章', recovery: '技力徽章', arcane: '法抗徽章', foresight: '初始技力徽章', miracle: '闪避徽章', investor: '回复徽章', unyielding: '生命加成徽章', harmony: '治疗徽章', coordination: '减伤徽章', solitary: '再部署徽章', mastery: '普通攻击徽章' });
 const legacyPlusPlusGrowthSources = new Set(['BGS_041', 'BGS_048', 'BGS_100', 'BGS_128']);
 const recipientNames = Object.freeze({
-  self: '自身', hand: '整备区手牌', inventory: '装备栏', shop: '酒馆', playerResource: '玩家资源', shopUpgradeCost: '酒馆升级费用',
+  randomFriendlyOperator: '一名随机场上友方干员', self: '自身', hand: '整备区手牌', inventory: '装备栏', shop: '酒馆', playerResource: '玩家资源', shopUpgradeCost: '酒馆升级费用',
   selectedFriendlyDragon: '你选择的一名友方卡西米尔干员', selectedFriendlyBeast: '你选择的一名友方叙拉古干员',
   selectedFriendlyMechanical: '你选择的一名友方哥伦比亚干员', selectedFriendlyPirate: '你选择的一名友方维多利亚干员',
   selectedFriendlyOperator: '你选择的一名友方干员', selectedColumbiaFriendly: '你选择的一名友方哥伦比亚干员',
@@ -37,7 +37,7 @@ const recipientNames = Object.freeze({
   '战场': '战场单位', '所有友方': '所有友方干员', '自身': '自身', '自身附近的友方': '自身附近的友方干员',
   '触发效果的友方': '触发效果的友方干员', '退场干员附近的友方': '退场干员附近的友方干员', '随机友方': '随机一名友方干员',
 });
-const triggerNames = Object.freeze({ gain: '招募获得或首次上阵时', bought: '购买时', sold: '出售时', prepEnd: '每回合休整结束时', roundStart: '每回合休整开始时', combatStart: '战斗开始时', battlecryMultiplier: '获得时效果触发时' });
+const triggerNames = Object.freeze({ played: '干员上阵时', gain: '招募获得或首次上阵时', bought: '购买时', sold: '出售时', prepEnd: '每回合休整结束时', roundStart: '每回合休整开始时', combatStart: '战斗开始时', battlecryMultiplier: '获得时效果触发时' });
 const durationNames = Object.freeze({
   currentShopOnly: '仅当前商店有效', frozenUntilPurchase: '购买前保持冻结', immediateOnSale: '出售时立即结算', nextRefreshes: '后续刷新期间生效',
   nextUpgrade: '下次酒馆升级前生效', permanent: '本局商店效果', permanentAttachment: '附加', permanentTransformation: '转化',
@@ -120,6 +120,7 @@ function prepText(sourceId, rule, variant) {
       const bonus = p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : '';
       return `${when}，${selected(p.faction)}获得${n}${bonus}。`;
     }
+    case 'darkmoonPlayedRandomTribeGrowth': return `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章${variant === 'elite' ? '；该效果结算两次' : ''}。`;
     case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员科技等级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
     case 'darkmoonBoughtSelfGrowth': return `${p.faction ? `购买${factionText(p.faction)}干员时` : when}，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonBeastSummonGrowth': return `每当其他友方叙拉古干员新获得或首次上阵时，该干员获得${growth(attack, secondary, variant)}。`;
@@ -144,7 +145,7 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonRecruitTribeToHand': return `招募获得或首次上阵时，生成${amount}次随机炎阵营干员的招募选择，供整备时选择。`;
     case 'darkmoonElementalTokenOffer': return `出售时，将${amount}个炎阵营元素支援单位（每个攻击240、生命700）加入整备区手牌；可部署，本体不可商店招募。`;
     case 'darkmoonLastWarbandRecruit': return `招募获得或首次上阵时，从上一回合友方阵容中随机招募一名干员；${variant === 'elite' ? '以进阶形态' : '以普通形态'}加入，保留其原生效果。`;
-    case 'factionReaction': return p.mode === 'funds' ? `出售时获得${amount}枚金币。` : `招募获得或首次上阵时，下次酒馆升级费用减少${amount}金币；每回合最多触发3次。`;
+    case 'factionReaction': return p.mode === 'funds' ? `出售时获得${amount}枚金币。` : `招募获得或首次上阵时，下次酒馆升级费用减少${amount}金币。`;
     case 'freeRefresh': return `招募获得或首次上阵时，立即免费刷新酒馆${pick(p, variant)}次。`;
     case 'triggerMultiplier': return `在场时，你的获得时效果共触发${1 + pick(p.extra, variant)}次；不重复其他整备效果。`;
     case 'darkmoonSummonSupport': return '招募获得或首次上阵时，召唤猫形支援单位加入整备区。';
@@ -160,9 +161,6 @@ function cleanCombat(id, variant) {
   text = text.replace(/攻击徽章×(\d+)，伤害徽章×(\d+)/g, (_, a, b) => `攻击徽章${qty(a)}与伤害徽章${qty(b)}`)
     .replace(/职业副属性装备|职业副属性徽章/g, '伤害徽章')
     .replace(/攻击徽章×(\d+)及五层护盾/g, (_, a) => `攻击徽章${qty(a)}及护盾层数+5`)
-    .replaceAll('本场最多二十五次', '每3秒最多触发一次，每场最多25次')
-    .replaceAll('每三秒触发一次', '每3秒最多触发一次')
-    .replaceAll('每三秒一轮', '每3秒最多触发一轮')
     .replaceAll('原型', '干员的作战投影')
     .replaceAll('作战支援单位', '作战支援单位')
     .replace(/；?获得时装备1件突袭盟约[。]?/g, '')
@@ -184,14 +182,8 @@ function cleanCombat(id, variant) {
   if (id === 'BGS_061') text = `战斗中每次实际部署时召唤${rule.retire.count[variant === 'elite' ? 1 : 0]}个${tokenName}；${bodyText('黄金盟誓')}`;
   else if (id === 'BOT_312') text = `携带此效果的干员实际部署时，召唤3个${tokenName}；${bodyText('机械水獭')}`;
   else if (id === 'BOT_537') text = `战斗中每次实际部署时召唤1个${tokenName}；${bodyText('机械水獭')}`;
-  else if (id === 'CFM_316') text = `战斗中每次实际部署时，按自身当前攻击与基础攻击之比×2召唤${tokenName}（至少1个，至多7个）；${bodyText('狼群')}`;
-  else if (tokenName) text = `战斗中每次实际部署时召唤${rule.retire.attackCount ? '按自身当前攻击与基础攻击之比×2计算、至少1个且至多7个' : `${rule.retire.count[variant === 'elite' ? 1 : 0]}个`}${tokenName}；${bodyText(token === 'beast' ? '狼群' : token === 'pirate' ? '黄金盟誓' : '机械水獭')}`;
-  if (rule.retire && !text.includes('每场最多触发3次')) {
-    text = `${text.replace(/[。；]?\s*$/, '')}；每场最多触发3次。`;
-  }
-  if (rule.retire && (token || rule.retire.random || rule.retire.fallen)) {
-    text = `${text.replace(/[。；]?\s*$/, '')}；每个投影在场45秒，该干员同时最多保留7个投影。`;
-  }
+  else if (id === 'CFM_316') text = `战斗中每次实际部署时，按自身当前攻击与基础攻击之比×2召唤${tokenName}（至少1个）；${bodyText('狼群')}`;
+  else if (tokenName) text = `战斗中每次实际部署时召唤${rule.retire.attackCount ? '按自身当前攻击与基础攻击之比×2计算、至少1个' : `${rule.retire.count[variant === 'elite' ? 1 : 0]}个`}${tokenName}；${bodyText(token === 'beast' ? '狼群' : token === 'pirate' ? '黄金盟誓' : '机械水獭')}`;
   return text;
 }
 
@@ -205,6 +197,7 @@ export function compactWording(text) {
     .replace(/(?:攻击成长徽章|攻击徽章|训练等级)×0及/g, '')
     .replace(/购买符合条件的干员时，购买(?=[^，。；]*阵营干员时)/g, '购买')
     .replace(/[，；]仅本场战斗生效[。]?/g, '。')
+    .replace(/[；，]\s*$/g, '。')
     .replace(/。{2,}/g, '。');
 }
 
@@ -246,7 +239,7 @@ function main() {
     const normalText = normal.join('\n') || cleanCombat(item.sourceId, 'normal') || '战斗中执行对应的干员效果。';
     const eliteText = elite.join('\n') || cleanCombat(item.sourceId, 'elite') || normalText;
     const levelText = (variantText, variant) => item.sourceId === 'BGS_100'
-      ? `每次购买炎阵营干员时，选择一名友方干员；${variant === 'elite' ? '该效果结算两次，每次' : '该干员'}获得所购干员科技等级两倍的训练等级。`
+      ? `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级两倍的训练等级${variant === 'elite' ? '；该效果结算两次' : ''}。`
       : toLevels(variantText);
     const next = { ...item, normal: normalText, elite: eliteText, normalLevels: levelText(normalText, 'normal'), eliteLevels: levelText(eliteText, 'elite') };
     item.normal = next.normal; item.elite = next.elite; item.normalLevels = next.normalLevels; item.eliteLevels = next.eliteLevels;
@@ -295,9 +288,9 @@ function main() {
           row.triggerLabel = meta?.trigger || row.triggerLabel;
         }
         else if (row.kind === 'keywordGear') row.text = takeGrant('gear') || row.text;
-        else if (row.kind === 'badgeGrowth' && row.params?.outputs?.some(x => badgeNames[x] || badgeNames[String(x).replace(/^independent:/, '')])) row.text = takeGrant('badge') || take(['darkmoonEndTurnGrowth','darkmoonPreviousWinSelfGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtSelfGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedTribeGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth']) || row.text;
+        else if (row.kind === 'badgeGrowth' && row.params?.outputs?.some(x => badgeNames[x] || badgeNames[String(x).replace(/^independent:/, '')])) row.text = takeGrant('badge') || take(['darkmoonEndTurnGrowth','darkmoonPreviousWinSelfGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonPlayedRandomTribeGrowth','darkmoonBoughtSelfGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedTribeGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth']) || row.text;
         else if (row.kind === 'magneticAttachment') row.text = take(['darkmoonMagneticMerge']) || row.text;
-        else if (row.kind === 'badgeGrowth' || row.kind === 'badgeGrowthAndGear') row.text = take(['darkmoonEndTurnGrowth','darkmoonPreviousWinSelfGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtSelfGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedTribeGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth']) || row.text;
+        else if (row.kind === 'badgeGrowth' || row.kind === 'badgeGrowthAndGear') row.text = take(['darkmoonEndTurnGrowth','darkmoonPreviousWinSelfGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonPlayedRandomTribeGrowth','darkmoonBoughtSelfGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedTribeGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth']) || row.text;
         else if (row.kind === 'gold') row.text = take(['darkmoonRosterTribePurchaseFunds','factionReaction']) || row.text;
         else if (row.kind === 'shopGrowth') row.text = take(['darkmoonShopGrowth']) || row.text;
         else if (row.kind === 'upgradeDiscount') row.text = take(['factionReaction']) || row.text;
@@ -310,7 +303,7 @@ function main() {
         else if (row.kind === 'triggerMultiplier') row.text = take(['triggerMultiplier']) || row.text;
         row.text = (row.text || '').replace(/\b(?:newSiracusaRecruit|allFriendlyDragonOperators|selectedFriendly\w*|otherFriendly\w*|randomOtherFriendly|originalBattlecryOutputs|battlecryMultiplier|oneRandomOtherFriendly)\b/g, '友方干员');
         if (row.adaptation !== undefined) row.adaptation = row.text;
-        row.recipientLabel = recipientNames[row.recipient] || row.recipient;
+        row.recipientLabel = recipientNames[row.recipient] || row.recipientLabel || row.recipient;
         if (row.kind !== 'sourceSpecificCombat') row.triggerLabel = triggerNames[row.trigger] || row.trigger;
         row.durationLabel = durationNames[row.duration] || row.duration;
       }

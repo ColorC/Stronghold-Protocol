@@ -371,7 +371,7 @@ function deployDocked(battle, u) {
   const stock = u.ownerUnit?.mem.summonStock;
   if (!stock || !(stock[u.defId] > 0) || u.alive || u.removed || battle.finished || !u.ownerUnit.alive) return false;
   const wait = u.mem.readyAt - battle.time;
-  const engagementReady = u.tileR != null && tokenCanEngageAt(battle, u.ownerUnit, u.def, u.tileR, u.tileC);
+  const engagementReady = !battle.flags.independent || (u.tileR != null && tokenCanEngageAt(battle, u.ownerUnit, u.def, u.tileR, u.tileC));
   if (wait > 1e-9 || !engagementReady || !battle.redeploy(u, { free: true })) {
     if (!u.mem.dockRetry) {
       u.mem.dockRetry = true;
