@@ -34,7 +34,7 @@ export function RosterPanel({ catalog, activeIds, onDetail, filter = '', onlyAct
       <span class="lo-card__art"><${OperatorAvatar} operator=${op} size="card"/><${HexBadge} value=${op.cost||1} tone="gold" size="sm" class="lo-card__tier"/><b class="lo-card__name">${op.name}</b></span>
       <span class="lo-card__kit"><span class="lo-card__sk">${op.cost}费 · ${roleLabel(op.role)}</span>${activeIds.includes(id)?html`<span class="lo-card__mod is-alt">本局可招</span>`:null}</span>
       <span class="rs-codex__pact-tags">${(op.pacts||[]).slice(0,2).map(p=>catalog.pacts?.[p]?.name).filter(Boolean).map(name=>html`<i>${name}</i>`)}</span>
-      <small class="rs-codex__skill">${op.stars?.[1]?.skill?.name||'战线应答'}</small>
+      <small class="rs-codex__skill">${op.stars?.[1]?.skill?.name||'查看技能'}</small>
     </button>
   </article>`)}</div>
  </${Panel}>`;

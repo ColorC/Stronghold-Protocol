@@ -54,8 +54,7 @@ function representativeFor(environment, catalog, activeIds) {
   if (!pactId) return null;
   const available = activeIds.map((id) => catalog.operators?.[id]).find((operator) => operator?.pacts?.includes(pactId));
   if (available) return available;
-  const representative = catalog.operators?.[environment.guaranteedTerminalId];
-  return representative?.pacts?.includes(pactId) ? representative : null;
+  return Object.values(catalog.operators || {}).find((operator) => operator?.pacts?.includes(pactId)) || null;
 }
 function briefingRoute(campaign, difficulty) {
   const schedule = campaign?.nodeSchedule?.[difficulty] || {};
