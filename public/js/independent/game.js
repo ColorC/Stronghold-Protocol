@@ -681,7 +681,6 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
           onTap=${(s) => openInventory(null, s.key)} onDrop=${dropFromStock} />
-        <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} />
         ${!pen ? html`<${EffectsColumn} effects=${state.playerEffects} catalog=${catalog} />` : null}
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
         ${state.phase === 'prep' && !pen ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
@@ -695,6 +694,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}
         ${(() => { const endControl = battleEndControl(battle.done, !!battle.finished); return html`<${Button} size="sm" variant="secondary" onClick=${endControl.action === 'close' ? closeBattle : () => seekRef.current?.()} data-testid="ix-skip">${endControl.label}<//>`; })()}
       </div>`}
+      <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} battleUnits=${battle ? battle.replay?.field?.units || [] : null} />
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
         onClose=${() => { cancelFieldTarget(); setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onBeginTarget=${beginFieldTarget} onCancelTarget=${cancelFieldTarget} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}
         onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />

@@ -484,7 +484,7 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
  * The equipment stack chip under every own unit, plus markers for attachments and a worn
  * 交接凭证. Positions follow the renderer every frame (camera moves, drags, resizes).
  */
-export function UnitBadges({ view, pieces, catalog, hidden }) {
+export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null }) {
   const boxRef = useRef(null);
   useEffect(() => {
     if (!view || hidden) return undefined;
@@ -505,11 +505,17 @@ export function UnitBadges({ view, pieces, catalog, hidden }) {
     return () => cancelAnimationFrame(raf);
   }, [view, hidden]);
   if (hidden) return null;
+  const pieceByUid = new Map((pieces || []).map((piece) => [piece.uid, piece]));
+  const badges = Array.isArray(battleUnits)
+    ? battleUnits.filter((unit) => unit?.side === 'ally' && unit.kind === 'op' && Number.isInteger(unit.id) && unit.uid)
+      .map((unit) => ({ piece: pieceByUid.get(unit.uid), screenId: unit.id, key: `${unit.uid}:${unit.id}` }))
+      .filter((entry) => entry.piece && entry.piece.kind !== 'token' && isDeployed(entry.piece))
+    : (pieces || []).map((piece) => ({ piece, screenId: Number(String(piece.uid).replace(/^\D+/, '')), key: String(piece.uid) }));
   return html`<div class="ix-badges" ref=${boxRef} aria-hidden="true">
-    ${pieces.map((p) => html`<span key=${p.uid} class="ix-badge" data-n=${String(p.uid).replace(/^\D+/, '')}>
-        <b class="num">×${p.equipmentLevel ?? 0}</b>
-        ${p.attachments?.length ? html`<i class="ix-badge__att" title="外来附加效果"></i>` : null}
-        ${permitsOf(p, catalog).length ? html`<i class="ix-badge__perm" title="携带交接凭证"></i>` : null}
+    ${badges.map(({ piece, screenId, key }) => html`<span key=${key} class="ix-badge" data-n=${String(screenId)}>
+        <b class="num">×${piece.equipmentLevel ?? 0}</b>
+        ${piece.attachments?.length ? html`<i class="ix-badge__att" title="外来附加效果"></i>` : null}
+        ${permitsOf(piece, catalog).length ? html`<i class="ix-badge__perm" title="携带交接凭证"></i>` : null}
       </span>`)}
   </div>`;
 }
