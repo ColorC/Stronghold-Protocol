@@ -87,8 +87,8 @@ test('growth text names the exact badge and its combat actor', () => {
     assert.doesNotMatch(`${row.normal}\n${row.elite}`, /职业副属性|成长徽章|徽章成长/);
   }
   assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔干员击倒敌人时/);
-  assert.match(darkmoonCombatMetadata('BGS_047').text, /维多利亚干员攻击敌人时/);
-  assert.match(darkmoonCombatMetadata('BGS_111').text, /佩戴坚守盟约的友方干员受到攻击时/);
+  assert.match(darkmoonCombatMetadata('BGS_047').text, /该效果每累计8次维多利亚干员攻击敌人后/);
+  assert.match(darkmoonCombatMetadata('BGS_111').text, /该效果每累计8次佩戴坚守盟约的友方干员受到攻击后/);
   assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位实际部署时.*增加五层护盾/);
   assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位实际部署时/);
   for(const id of ['BGS_017','BGS_021','BGS_071']){
@@ -97,6 +97,37 @@ test('growth text names the exact badge and its combat actor', () => {
     assert.deepEqual(rule.params.actorKinds,['token']);
     assert.equal(rule.params.targets,'newSummonedToken');
     assert.doesNotMatch(darkmoonCombatMetadata(id).text,/3秒|三秒/);
+  }
+});
+
+test('combat cadence copy is explicit in ordinary, elite, and both growth-mode variants', () => {
+  const cadence8 = ['BGS_022','BGS_045','BGS_047','BGS_056','BGS_060','BGS_078','BGS_080','BGS_110','BGS_111','BGS_119','BGS_201','BGS_205','BOT_218'];
+  const cadence3 = ['BGS_032','BGS_080','BGS_126','TRL_232'];
+  for (const id of cadence8) {
+    const row = byAddonId.get(id);
+    assert.ok(row, `${id} game text exists`);
+    for (const variant of ['normal','elite']) {
+      assert.match(row[variant], /本场战斗内，该效果每累计8次/);
+      assert.match(row[`${variant}Levels`], /本场战斗内，该效果每累计8次/);
+    }
+  }
+  for (const id of cadence3) {
+    const row = byAddonId.get(id);
+    assert.ok(row, `${id} game text exists`);
+    for (const variant of ['normal','elite']) {
+      assert.match(row[variant], /本场战斗内，该效果每累计3次攻击超杀后/);
+      assert.match(row[`${variant}Levels`], /本场战斗内，该效果每累计3次攻击超杀后/);
+    }
+  }
+  assert.match(byAddonId.get('BGS_080').normal, /累计8次普通攻击事件后，追加1次普通攻击/);
+  assert.match(byAddonId.get('BGS_080').elite, /累计8次普通攻击事件后，追加3次普通攻击/);
+  assert.match(byAddonId.get('BOT_218').normal, /自身受到伤害/);
+  assert.doesNotMatch(byAddonId.get('BOT_218').normal, /友方干员受到攻击/);
+  for (const id of [...cadence8,...cadence3]) {
+    const cards = byAddonId.get(id).sourceRefs.cards;
+    assert.ok(cards.length);
+    assert.doesNotMatch(cards.map(c => `${c.text}\n${c.textElite}`).join('\n'), /累计(?:8|3)次/,
+      `${id} source card wording remains unchanged`);
   }
 });
 

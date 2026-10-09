@@ -1,4 +1,5 @@
 import { hypot } from '../../detmath.js';
+import { INDEPENDENT_COMBAT_CADENCE } from '../../../../shared/independentCombatCadence.js';
 // Authored 19.2 source-card adaptations. Combat gains stay on the Battle instance;
 // only the three explicitly persistent/resource effects are returned to preparation.
 import { nativeFactions } from '../../../../shared/independentRules.js';
@@ -106,17 +107,20 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
     const actor=r.requireCover?'佩戴坚守盟约的友方干员':r.event==='summon'&&r.faction?`${FACTIONS[r.faction]}支援单位`:r.faction?`${FACTIONS[r.faction]}干员`:'友方干员';
     const action=r.event==='summon'?'被召唤':({death:'退场',kill:'击倒敌人',attack:'攻击敌人',attacked:'受到攻击',shieldLayersBroken:'累计破裂五层护盾'}[r.event]||trigger);
     trigger=`${actor}${action}`;
-    text=`${actor}${action}时，使${recipient}${r.permanent?'装备'+buffText(r.buff):'获得'+buffText(r.buff)+'的战斗增益'}${r.shield?'及五层护盾':''}。同一效果。`;
-  } else if(r.event==='damaged')text=`受到伤害后召唤一个携带坚守盟约的机械支援单位${elite?'，支援单位的攻击和生命翻倍':''}。`;
+    const effect=`使${recipient}${r.permanent?'装备'+buffText(r.buff):'获得'+buffText(r.buff)+'的战斗增益'}${r.shield?'及五层护盾':''}`;
+    text=['attack','attacked'].includes(r.event)
+      ? `本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE[r.event]}次${actor}${action}后，${effect}。`
+      : `${actor}${action}时，${effect}。`;
+  } else if(r.event==='damaged')text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.damaged}次自身受到伤害后，召唤一个携带坚守盟约的机械支援单位${elite?'，支援单位的攻击和生命翻倍':''}。`;
   else if(r.summonMultiplier)text=`卡牌效果召唤的支援单位数量变为${number(r.summonMultiplier)}倍；不复制装备或成长。`;
   else if(r.retireMultiplier)text=`友方战斗部署效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
-  else if(r.echo)text=`普通攻击后随机复制另一名在场友方的战斗部署效果${elite?'，复制两次':''}；。`;
+  else if(r.echo)text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.attack}次普通攻击后，随机复制另一名在场友方的战斗部署效果${elite?'，复制两次':''}。`;
   else if(r.startStrike)text=`首批敌人入场时，随机造成${elite?'两次':'一次'}法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。`;
-  else if(r.attackRamp)text=`每次攻击临时提高攻击倍率${elite?30:20}%，增益持续至本场战斗结束。`;
-  else if(r.overkill)text=r.overkill==='spill'?`攻击击倒敌人时，把超过其生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}。`:r.overkill==='strike'?`攻击超杀时对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害。`:r.overkill==='summon'?`攻击超杀时召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}。`:`攻击超杀时使其他维多利亚友方获得${buffText(r.buff)}。`;
+  else if(r.attackRamp)text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.attack}次自身攻击后，临时提高攻击倍率${elite?30:20}%，增益持续至本场战斗结束。`;
+  else if(r.overkill)text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.overkill}次攻击超杀后，${r.overkill==='spill'?`把超过敌人生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}`:r.overkill==='strike'?`对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害`:r.overkill==='summon'?`召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}`:`使其他维多利亚友方获得${buffText(r.buff)}`}。`;
   else if(r.recruitOnKill){duration='整备区';text=`普通攻击击倒敌人后，随机将${elite?2:1}名原始干员加入整备区。`;}
-  else if(r.counterattack)text=`受到敌人攻击并存活后立即反击一次；反击不再次触发自身反击。`;
-  else if(r.intercept)text=`敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。`;
+  else if(r.counterattack)text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.attacked}次自身受到敌人攻击并存活后，立即反击一次；反击不再次触发自身反击。`;
+  else if(r.intercept)text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.attacked}次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。`;
   else if(r.aura)text=`在场时使其他维多利亚友方获得${buffText(r.aura.buff)}；自身退场后失效。`;
   // These descriptions spell out the actual replay body or token recipe. They do not alter
   // the native rules above; elite forms scale the spawned body even when its count is fixed.
@@ -128,17 +132,17 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   else if(sourceId==='BGS_071') text=`哥伦比亚支援单位实际部署时，使自身获得攻击徽章×${r.buff[0]*m}的战斗增益，并增加五层护盾；每只单位每次部署触发一次。`;
   else if(sourceId==='BGS_023') text=`战斗中每次实际部署时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
   else if(sourceId==='BGS_061') text=`战斗中每次实际部署时召唤${number(r.retire.count)}个黄金盟誓投影。`;
-  else if(sourceId==='BOT_218') text=`受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。`;
+  else if(sourceId==='BOT_218') text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.damaged}次自身受到伤害后，召唤一个机械水獭投影，并赋予坚守盟约。`;
   else if(sourceId==='BOT_312') text=`战斗中每次实际部署时召唤3个机械水獭投影。`;
   else if(sourceId==='BOT_537') text=`战斗中每次实际部署时召唤一个机械水獭投影。`;
   else if(sourceId==='CFM_316') text=`战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤狼群投影，数量至少为1个。`;
   else if(sourceId==='EX1_531'||sourceId==='GVG_106') { trigger=`${FACTIONS[r.faction]}友方战斗部署时`; text=`${FACTIONS[r.faction]}友方战斗部署时，使自身获得${buffText(r.buff)}。`; }
   else if(sourceId==='BGS_112') { trigger='携带坚守盟约的友方战斗部署时'; text='携带坚守盟约的友方战斗部署时，使该干员附近友方获得'+buffText(r.buff)+'。'; }
   else if(sourceId==='FP1_031') text=`友方战斗部署效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
-  else if(sourceId==='BGS_078') text=`普通攻击后随机复制另一名在场友方的战斗部署效果${elite?'两次':''}；。`;
+  else if(sourceId==='BGS_078') text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.attack}次普通攻击后，随机复制另一名在场友方的战斗部署效果${elite?'两次':''}。`;
   else if(sourceId==='BOT_606') text=`战斗部署后，下一次普通攻击时对一个随机敌人造成自身基础攻击200%的法术伤害${elite?'，触发两次':''}；每次部署各排队一次。`;
   else if(sourceId==='FP1_024') text=`战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害${elite?'，触发两次':''}；每次部署各排队一次。`;
-  if(r.windfury)text=`每次普通攻击后追加${elite?3:1}次普通攻击。${text}`;
+  if(r.windfury)text=`本场战斗内，该效果每累计${INDEPENDENT_COMBAT_CADENCE.attack}次普通攻击事件后，追加${elite?3:1}次普通攻击。${text}`;
   if(r.weakest)text+='优先攻击当前可攻击范围内攻击力最低的敌人。';
   return {trigger,recipient,duration,text,sourceId,implementation:'supported',adapter:['darkmoonCombat'],...(r.retire?{event:sourceId==='BGS_008'?'knockoutPayload':'deploymentPayload',actor:sourceId==='BGS_008'?'killed-source':'deployed-source',targets:recipient}:{}),...(['EX1_531','GVG_106','BGS_112'].includes(sourceId)?{event:'allyDeployment',actor:'deployed-ally',targets:sourceId==='BGS_112'?'adjacent-allies':'owner'}:{})};
 }
