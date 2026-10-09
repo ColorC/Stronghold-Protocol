@@ -38,8 +38,11 @@ export function applyDarkmoonAHGrowth(state,catalog,piece,attackUnits,healthUnit
   if(!piece)return [];
   const [attackBadge,healthBadge]=extra.badgeIds||darkmoonGrowthBadges(piece,catalog),grants=[];
   for(const [id,quantity] of [[attackBadge,Number(attackUnits||0)],[healthBadge,Number(healthUnits||0)]]) if(quantity>0) {
-    services.grantEquipment(state,id,quantity,{origin:'native',sourceUid:extra.sourceUid||piece.uid,targetUid:piece.uid,landOn:extra.landOn||'self',...extra});
-    grants.push({id,quantity,targetUid:piece.uid});
+    const result=services.grantEquipment(state,id,quantity,{origin:'native',sourceUid:extra.sourceUid||piece.uid,targetUid:piece.uid,landOn:extra.landOn||'self',...extra});
+    if(state.growthMode==='levels') {
+      const growthLevels=Number(result?.growthLevels??result?.growth?.added??0);
+      if(growthLevels>0)grants.push({id:'growth-training-record',quantity:growthLevels,growthLevels,targetUid:piece.uid});
+    } else grants.push({id,quantity,targetUid:piece.uid});
   }
   return grants;
 }

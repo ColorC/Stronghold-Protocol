@@ -116,9 +116,9 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
     }
     if (isBadge && state.growthMode === 'levels') {
       const growth = grantGrowthLevels(state, catalog, target, quantity);
-      recordProduction(state, { id, quantity, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId,
+      if(growth.added>0)recordProduction(state, { id:'growth-training-record', quantity:growth.added, origin: extra.origin, phase: extra.phase, sourceUid: extra.sourceUid, prizeId: extra.prizeId,
         worn: true, targetUid: target.uid, growthLevels: growth.added, growthLevel: growth.level });
-      return { id, quantity, worn: target.uid, growth };
+      return { id:'growth-training-record', quantity:growth.added, worn: target.uid, growth, growthLevels:growth.added };
     }
     const alreadyUnique = def.unique && (target.equipment || []).some((x) => {
       const other = equipmentRecord(catalog, x.id);
@@ -254,6 +254,7 @@ export function discardPieceAssets(state, piece) {
 export function totalEquipmentLevel(piece, catalog) {
   return (piece?.equipment || []).reduce((sum, item) => {
     const def = equipmentRecord(catalog, item.id);
+    if(def?.mechanism==='growthTraining')return sum;
     return sum + Math.max(0, Number((def?.level ?? def?.tier) || 0)) * Math.max(1, Number(item.quantity || 1));
   }, 0);
 }

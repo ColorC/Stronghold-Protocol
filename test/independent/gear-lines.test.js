@@ -9,7 +9,7 @@ import { getData } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { modeIdFor } from '../../shared/constants.js';
 import { darkmoonGrowthBadges, applyDarkmoonAHGrowth } from '../../server/modes/independent/darkmoonShop.js';
-import { grantEquipment, equipItem } from '../../server/modes/independent/equipment.js';
+import { grantEquipment, equipItem, totalEquipmentLevel } from '../../server/modes/independent/equipment.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 const catalog = getCatalog(data);
@@ -102,6 +102,29 @@ test('A/H growth uses fixed attack and damage badges across professions and skil
     origin: 'native', sourceUid: piece.uid, worn: true, targetUid: piece.uid });
 });
 
+test('the same AH source resolves as badges or native training according to the selected mode',()=>{
+  const op=Object.values(catalog.operators).find(x=>!x.elite);
+  for(const elite of [false,true]) for(const mode of ['badges','levels']){
+    const count=elite?2:1,chessId=elite?(op.eliteChessId||op.chessId):op.chessId;
+    const piece={uid:`mode-${mode}-${elite?'elite':'normal'}`,chessId,elite,row:10,col:3,equipment:[],attachments:[],growthMode:mode,growthLevel:1};
+    const state={round:1,revision:0,nextUid:1,growthMode:mode,pieces:[piece],inventory:[],production:[]};
+    const services={catalog,grantEquipment:(s,id,n,extra)=>grantEquipment(s,catalog,id,n,extra)};
+    const grants=applyDarkmoonAHGrowth(state,catalog,piece,count,count,services,{sourceUid:piece.uid,landOn:'self',targetUid:piece.uid});
+    if(mode==='badges'){
+      assert.deepEqual(piece.equipment.map(x=>[x.id,x.quantity]).sort(),[['damage',count],['precision',count]]);
+      assert.ok(grants.every(x=>(x.id==='precision'||x.id==='damage')&&x.quantity===count));
+    }else{
+      assert.equal(piece.growthLevel,1+count*2);
+      assert.deepEqual(piece.equipment,[]);
+      assert.equal(grants.length,2);
+      assert.ok(grants.every(x=>x.id==='growth-training-record'&&x.growthLevels===count));
+      assert.equal(state.production.length,2);
+      assert.ok(state.production.every(x=>x.id==='growth-training-record'&&x.growthLevels===count));
+      assert.ok(grants.every(x=>!('badgeIds'in x)&&!('attackUnits'in x)&&!('secondaryUnits'in x)));
+    }
+  }
+});
+
 test('ordinary-attack badge stays available with its stat definition but is explicitly unassigned', () => {
   const mastery = catalog.badges.mastery;
   assert.ok(mastery);
@@ -125,4 +148,16 @@ test('levels-mode badge prizes create real growth records that permanently raise
   assert.equal(used.quantity, 1);
   assert.equal(piece.growthLevel, 2);
   assert.equal(record.quantity, 1);
+});
+
+test('fixed-target level grants use the training ledger and do not count as equipment technology level',()=>{
+  const op=Object.values(catalog.operators).find(x=>!x.elite),piece={uid:'fixed-level-target',chessId:op.chessId,row:10,col:3,equipment:[],attachments:[],growthMode:'levels',growthLevel:1};
+  const tech=Object.values(catalog.equipment).find(x=>x.mechanism!=='growthTraining'&&x.level>0);assert.ok(tech);
+  piece.equipment.push({uid:'tech',id:tech.id,quantity:1});const before=piece.equipment.length,levelBefore=piece.growthLevel,equipmentLevel=totalEquipmentLevel(piece,catalog);
+  const state={round:1,revision:0,nextUid:3,growthMode:'levels',pieces:[piece],inventory:[],production:[]};
+  const result=grantEquipment(state,catalog,'precision',2,{origin:'native',sourceUid:piece.uid,targetUid:piece.uid,landOn:`uid:${piece.uid}`});
+  assert.equal(piece.growthLevel,levelBefore+2);assert.equal(piece.equipment.length,before);
+  assert.equal(totalEquipmentLevel(piece,catalog),equipmentLevel,'native gear technology level remains on its separate axis');
+  assert.equal(result.id,'growth-training-record');assert.equal(result.growthLevels,2);
+  assert.deepEqual(state.production.at(-1),{round:1,revision:1,id:'growth-training-record',quantity:2,origin:'native',sourceUid:piece.uid,worn:true,targetUid:piece.uid,growthLevels:2,growthLevel:3});
 });

@@ -568,7 +568,7 @@ test('applyAction persists combat growth on its fixed target and resolves pristi
     const moved=applyAction(bought.state,{type:'move',uid:owner.uid,row:tile[0],col:tile[1]},{catalog:base});assert.equal(moved.ok,true,JSON.stringify(moved.error));
     const initialLevel=owner.growthLevel||1;
     const result=applyAction(moved.state,{type:'ready'},{catalog:base,battleRunner:()=>({result:{perPlayer:{independent:{leaked:[]}},killed:0},pieceStates:{},darkmoonResults:{
-      growth:[{sourceUid:owner.uid,targetUid:owner.uid,attackUnits:1,secondaryUnits:1}],
+      growth:[growthMode==='levels'?{sourceUid:owner.uid,targetUid:owner.uid,growthLevels:2}:{sourceUid:owner.uid,targetUid:owner.uid,attackUnits:1,secondaryUnits:1,badgeIds:['precision','damage']}],
       recruits:[{sourceUid:owner.uid,chessId:recruitOp.chessId,pristine:true}],coins:[{sourceUid:owner.uid,quantity:2,inventory:true}]
     }})});
     assert.equal(result.ok,true,JSON.stringify(result.error));
@@ -576,7 +576,12 @@ test('applyAction persists combat growth on its fixed target and resolves pristi
     assert.ok(copy?.darkmoonPendingPlay,'combat hand copies enter the bench without firing Battlecry or inheriting gear');
     assert.equal(result.state.inventory.find(x=>x.id==='chess_item_1_03_e_a')?.quantity,2,'coin output becomes the named inventory resource');
     if(growthMode==='badges')assert.ok(grown.equipment.some(x=>x.id==='precision'&&x.quantity===1),'combat attack growth wears on the specified target');
-    else assert.equal(grown.growthLevel,initialLevel+2,'attack and profession-matched secondary growth become native curve levels on the same target');
+    else {
+      assert.equal(grown.growthLevel,initialLevel+2,'AH source growth becomes native curve levels on the same target');
+      const row=result.state.production.find(x=>x.id==='growth-training-record'&&x.sourceUid===owner.uid&&x.targetUid===owner.uid);
+      assert.equal(row.id,'growth-training-record');assert.equal(row.growthLevels,2);
+      assert.ok(result.state.production.every(x=>x.id!=='precision'&&x.id!=='damage'),'levels mode has no badge-shaped business output');
+    }
     assert.equal(result.state.production.some(x=>x.sourceUid===owner.uid&&x.targetUid===owner.uid),true,'battle reward production records the fixed recipient');
   }
 });

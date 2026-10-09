@@ -26,27 +26,48 @@ export function nativeLevelAttributes(curve, phase, level) {
 
 function recordFor(piece, catalog) {
   const op = catalog?.operators?.[piece?.chessId];
-  return piece?.elite || String(piece?.chessId).endsWith('_b')
-    ? op?.source?.eliteChess || op?.source?.normalChess : op?.source?.normalChess;
+  const elite = piece?.elite || String(piece?.chessId).endsWith('_b');
+  const ownRaw = elite ? op?.source?.eliteChess || op?.source?.normalChess : op?.source?.normalChess;
+  const prototypeOwnerId = op?.darkmoonPrototypeOwnerChessId || ownRaw?.darkmoonPrototypeOwnerChessId;
+  if (!prototypeOwnerId) return { raw: ownRaw, scale: null };
+  if (!ownRaw?.nativeGrowth || ownRaw.nativeGrowth.source?.table !== 'character_table.json') {
+    throw new Error(`MISSING_NATIVE_TOKEN_GROWTH:${op?.darkmoonPrototypeTokenId || ownRaw?.darkmoonPrototypeTokenId || piece?.chessId}`);
+  }
+  const scale = op?.darkmoonPrototypeScale || ownRaw?.darkmoonPrototypeScale || {};
+  // makeDarkmoonSupport selects the authentic token variant's phase/level and attaches its native token curve to
+  // the synthetic operator record. Owner operator curves must never be used as a proxy for the token's own body.
+  return { raw: ownRaw, scale };
+}
+
+function scaledStats(stats, scale) {
+  if (!scale) return stats;
+  return {
+    ...stats,
+    atk: Math.round(Number(stats.atk || 0) * Number(scale.attack ?? 1)),
+    maxHp: Math.round(Number(stats.maxHp || 0) * Number(scale.health ?? 1)),
+    def: Math.round(Number(stats.def || 0) * Number(scale.defense ?? 1)),
+  };
 }
 
 export function operatorGrowthInfo(piece, catalog) {
-  const raw = recordFor(piece, catalog);
+  const { raw, scale } = recordFor(piece, catalog);
   const curve = raw?.nativeGrowth;
   if (!curve) throw new Error(`MISSING_NATIVE_GROWTH_CURVE:${piece?.chessId}`);
   const phase = Number(raw.status?.phase ?? 0);
   const maximum = Number(curve.phases?.[phase]?.maxLevel);
   if (!(maximum >= 1)) throw new Error('BAD_NATIVE_GROWTH_MAX_LEVEL');
   const level = Math.min(maximum, Math.max(1, Number(piece.growthLevel) || 1));
-  return { phase, level, maximum, stats: nativeLevelAttributes(curve, phase, level) };
+  return { phase, level, maximum, stats: scaledStats(nativeLevelAttributes(curve, phase, level), scale) };
 }
 
-export function levelBodyStats(piece, catalog, raw = recordFor(piece, catalog)) {
+export function levelBodyStats(piece, catalog, raw = null) {
+  const growthRecord = recordFor(piece, catalog);
+  raw ||= growthRecord.raw;
   const selected = loadoutRecord(raw, piece) ?? raw;
   const stats = { ...(selected?.stats || {}) };
   if (piece?.growthMode !== 'levels') return stats;
   const info = operatorGrowthInfo(piece, catalog);
-  const before = nativeLevelAttributes(raw.nativeGrowth, info.phase, raw.status?.level ?? 1);
+  const before = scaledStats(nativeLevelAttributes(growthRecord.raw.nativeGrowth, info.phase, growthRecord.raw.status?.level ?? 1), growthRecord.scale);
   // Preserve trust/potential/module additions that are already present in the native loadout.
   for (const key of Object.values(STAT_KEYS)) stats[key] = Number(stats[key] || 0) + info.stats[key] - before[key];
   return stats;
