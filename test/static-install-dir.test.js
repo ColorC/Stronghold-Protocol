@@ -42,6 +42,11 @@ test('installDir serves the install folders a checkout lacks, never its other fi
   const install = path.join(base, 'install'); const checkout = path.join(base, 'checkout');
   write(path.join(install, 'public', 'assets', 'bond', 'a.png'), 'install-art');
   write(path.join(install, 'public', 'vendor', 'lib.js'), 'install-vendor');
+  write(path.join(install, 'public', 'vendor', 'rrweb.umd.js'), 'install-recording');
+  write(path.join(install, 'public', 'vendor', 'pixi.min.js'), 'install-rendering');
+  // Node-only UI tests may cache just a few vendor modules in a sparse checkout.
+  write(path.join(checkout, 'public', 'vendor', 'htm.module.js'), 'checkout-test-cache');
+  write(path.join(checkout, 'public', 'vendor', 'lib.js'), 'checkout-test-cache-vendor');
   write(path.join(install, 'public', 'fonts', 'fonts.css'), 'install-fonts');
   write(path.join(install, 'public', 'index.html'), 'install-page');
   write(path.join(install, 'data', 'local-assets.json'), '{"version":1,"groups":{"x":{}}}');
@@ -52,6 +57,9 @@ test('installDir serves the install folders a checkout lacks, never its other fi
   try {
     assert.equal((await get(srv, '/assets/bond/a.png')).body, 'install-art');
     assert.equal((await get(srv, '/vendor/lib.js')).body, 'install-vendor');
+    assert.equal((await get(srv, '/vendor/rrweb.umd.js')).body, 'install-recording');
+    assert.equal((await get(srv, '/vendor/pixi.min.js')).body, 'install-rendering');
+    assert.equal((await get(srv, '/vendor/htm.module.js')).status, 404, 'Node test cache is not a public install');
     // the checkout's own folder wins over the install's
     assert.equal((await get(srv, '/fonts/fonts.css')).body, 'checkout-fonts');
     assert.equal((await get(srv, '/index.html')).body, 'checkout-page');

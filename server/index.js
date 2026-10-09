@@ -363,9 +363,10 @@ const INSTALL_PUBLIC_DIRS = ['assets', 'vendor', 'fonts'];
 
 export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = path.join(ROOT, 'server', 'sim'), installDir = null, log = noopLog }) {
   // A checkout without its own install (a Git worktree) can serve another install's art, vendored libraries and
-  // fonts read-only, so nothing is copied or linked into the checkout.
+  // fonts read-only, so nothing is copied or linked into the checkout. An explicit vendor install is complete;
+  // a partial Node-test cache in the checkout must not shadow its rendering and recording libraries.
   const installMounts = installDir ? INSTALL_PUBLIC_DIRS
-    .filter((name) => !fs.existsSync(path.join(publicDir, name)))
+    .filter((name) => name === 'vendor' || !fs.existsSync(path.join(publicDir, name)))
     .map((name) => ({ prefix: `/${name}/`, name: 'public', dir: path.resolve(installDir, 'public', name) })) : [];
   const mediaPublicDir = installMounts.some((m) => m.prefix === '/assets/') ? path.resolve(installDir, 'public') : publicDir;
   // dev pages (public/dev/) the checkout does not have come from the install's: demos kept untracked in the install
