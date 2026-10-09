@@ -275,24 +275,32 @@ export function archiveCompletedCapacityBatchScript(oldRevision) {
   const sources = [CAPACITY_RECEIPT, CAPACITY_RECORDING_RECEIPT, CAPACITY_BATCH_RECEIPT,
     `${STAGING}/capacity-http-cgroup.json`, `${STAGING}/capacity-recording-cgroup.json`];
   const targets = CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision).map(name => `${STAGING}/${name}`);
+  const batchCheck = `
+const fs=require('fs');const [file,rev,index,stage]=process.argv.slice(2);const r=JSON.parse(fs.readFileSync(file,'utf8'));const fail=m=>{console.error('capacity-archive-invalid:'+m);process.exit(1)};
+if(index==='0'||index==='1'){if(r.status!=='completed'||r.sourceRevision!==rev||r.concurrency!==4||r.sessions?.length!==4)fail('capacity-receipt');if(r.recording!==(index==='1'))fail('capacity-recording-flag');}
+if(index==='2'||index==='3'||index==='4'){
+ const util=require('util');const batchPaths=[stage+'/capacity-batch-receipt.json',stage+'/capacity-batch-receipt.'+rev+'.json'];const batchPath=batchPaths.find(p=>fs.existsSync(p));if(!batchPath)fail('batch-receipt-missing');
+ const batch=JSON.parse(fs.readFileSync(batchPath,'utf8'));if(batch.schema!=='resonance-capacity-batch-receipt/v1'||batch.status!=='completed'||batch.sourceRevision!==rev||batch.phases?.length!==2||batch.cleanup?.sessionDirectoryEmpty!==true)fail('batch-receipt-terminal');
+ if(index==='2'){
+  for(let p=0;p<2;p++){const c=batch.phases[p]?.cgroup;const unit='resonance-cap-'+rev.slice(0,12)+'-'+(p===1?'record':'http')+'.service';const expectedReceipt=stage+(p===1?'/capacity-recording-receipt.json':'/capacity-receipt.json');const fields=[['recording',c?.recording===(p===1)],['unit',c?.unit===unit],['unitResult',c?.unitResult==='success'],['runnerExitCode',c?.runnerExitCode===0],['cgroupVersion',[1,2].includes(c?.cgroupVersion)],['cgroupPath',c?.cgroupPath==='/system.slice/'+unit],['receipt',c?.receipt===expectedReceipt],['cpuUsageNSec',c?.cpuUsageNSec>0],['memoryPeakBytes',c?.memoryPeakBytes>0]];const bad=fields.find(([,ok])=>!ok);if(bad)fail('batch-cgroup-'+p+'-'+bad[0]+(bad[0]==='receipt'?'-got='+c?.receipt+'-expected='+expectedReceipt:''));}
+ }else{
+  const p=index==='3'?0:1;const expected=batch.phases[p].cgroup;const recording=p===1;
+  if(!util.isDeepStrictEqual(r,expected)||r.recording!==recording||r.unit!=='resonance-cap-'+rev.slice(0,12)+'-'+(recording?'record':'http')+'.service'||r.unitResult!=='success'||r.runnerExitCode!==0||![1,2].includes(r.cgroupVersion)||r.cgroupPath!=='/system.slice/'+r.unit||r.receipt!==stage+(recording?'/capacity-recording-receipt.json':'/capacity-receipt.json')||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0))fail('cgroup-file-mismatch-'+p);
+ }
+}
+`;
   const checks = sources.map((source, i) => `
 src='${source}'; dst='${targets[i]}';
 if test -e "$src" || test -L "$src"; then
   test ! -e "$dst" && test ! -L "$dst" || { echo 'capacity-archive-source-and-target-exist' >&2; exit 91; }
   test -f "$src" && test ! -L "$src" && test "$(stat -c %h "$src")" -eq 1 || { echo 'capacity-source-unsafe' >&2; exit 92; }
-  "$NODE" - "$src" '${oldRevision}' '${i}' <<'CHECK_CAP'
-const fs=require('fs');const [file,rev,index]=process.argv.slice(2);const r=JSON.parse(fs.readFileSync(file,'utf8'));
-if(index==='0'||index==='1'){if(r.status!=='completed'||r.sourceRevision!==rev||r.concurrency!==4||r.sessions?.length!==4)process.exit(1);if(r.recording!==(index==='1'))process.exit(1);}
-if(index==='2'){if(r.schema!=='resonance-capacity-batch-receipt/v1'||r.status!=='completed'||r.sourceRevision!==rev||r.phases?.length!==2||r.cleanup?.sessionDirectoryEmpty!==true)process.exit(1);}
-if(index==='3'||index==='4'){const phase=index==='3'?0:1;const suffix=phase===0?'http':'recording';if(r.sourceRevision!==rev||!String(r.unit||'').includes(rev.slice(0,12))||!String(r.unit||'').includes(suffix)||r.unitResult!=='success'||r.runnerExitCode!==0||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0))process.exit(1);}
+  "$NODE" - "$src" '${oldRevision}' '${i}' '${STAGING}' <<'CHECK_CAP'
+${batchCheck}
 CHECK_CAP
 else
   test -f "$dst" && test ! -L "$dst" && test "$(stat -c %h "$dst")" -eq 1 || { echo 'capacity-archive-missing-or-unsafe' >&2; exit 93; }
-  "$NODE" - "$dst" '${oldRevision}' '${i}' <<'CHECK_CAP'
-const fs=require('fs');const [file,rev,index]=process.argv.slice(2);const r=JSON.parse(fs.readFileSync(file,'utf8'));
-if((index==='0'||index==='1')&&(r.status!=='completed'||r.sourceRevision!==rev||r.concurrency!==4||r.sessions?.length!==4||r.recording!==(index==='1')))process.exit(1);
-if(index==='2'&&(r.schema!=='resonance-capacity-batch-receipt/v1'||r.status!=='completed'||r.sourceRevision!==rev||r.phases?.length!==2||r.cleanup?.sessionDirectoryEmpty!==true))process.exit(1);
-if((index==='3'||index==='4')&&(r.sourceRevision!==rev||!String(r.unit||'').includes(rev.slice(0,12))||r.unitResult!=='success'||r.runnerExitCode!==0||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0)))process.exit(1);
+  "$NODE" - "$dst" '${oldRevision}' '${i}' '${STAGING}' <<'CHECK_CAP'
+${batchCheck}
 CHECK_CAP
 fi`).join('');
   return `set -eu\nNODE='${REMOTE_NODE}'\n${checks}\n${sources.map((source, i) => `if test -e '${source}'; then mv -- '${source}' '${targets[i]}'; fi\n`).join('')}\nfor f in ${targets.map(v => `'${v}'`).join(' ')}; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || exit 94; done\nprintf '{"archived":true,"sourceRevision":"${oldRevision}","files":${JSON.stringify(targets)}}\\n'`;

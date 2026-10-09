@@ -78,15 +78,17 @@ test('capacity batch receipt requires both true four-session phases and real rep
   assert.throws(() => capacityBatchReceiptFromStdout(JSON.stringify(noReplay), revision), /replay证明/);
 });
 
-function completeBatchReceipt(rev) {
-  const phase = recording => ({
+function completeBatchReceipt(rev, stage = '/var/tmp/stronghold-protocol/resonance') {
+  const phase = (recording, index) => ({
     capacity: { ...capacityReceipt(), sourceRevision: rev, providedSourceRevision: rev, recording,
       sessions: capacityReceipt().sessions.map(row => ({ ...row, ...(recording ? { replay: { verifiedViaHttp: true, frames: 2, gzipBytes: 500 } } : {}) })) },
-    cgroup: { sourceRevision: rev, unit: `resonance-cap-${rev.slice(0, 12)}-${recording ? 'recording' : 'http'}.service`, recording,
-      unitResult: 'success', runnerExitCode: 0, cpuUsageNSec: 1000, memoryPeakBytes: 4096 },
+    cgroup: { recording, unit: `resonance-cap-${rev.slice(0, 12)}-${recording ? 'record' : 'http'}.service`,
+      unitResult: 'success', runnerExitCode: 0, cpuUsageNSec: 1000 + index, memoryPeakBytes: 4096 + index,
+      cgroupVersion: 2, cgroupPath: `/system.slice/resonance-cap-${rev.slice(0, 12)}-${recording ? 'record' : 'http'}.service`,
+      receipt: `${stage}/${recording ? 'capacity-recording-receipt' : 'capacity-receipt'}.json` },
   });
   return { schema: 'resonance-capacity-batch-receipt/v1', sourceRevision: rev, status: 'completed',
-    phases: [phase(false), phase(true)], cleanup: { sessionDirectoryEmpty: true } };
+    phases: [phase(false, 0), phase(true, 1)], cleanup: { sessionDirectoryEmpty: true } };
 }
 
 test('fixed local capacity receipt archives exact prior Native bytes, atomically writes next, and reuses same Native', () => {
@@ -275,6 +277,49 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
   assert.ok(archive.includes(`capacity-batch-receipt.${oldRevision}.json`) && archive.includes(`capacity-recording-cgroup.${oldRevision}.json`));
   assert.ok(archive.includes('sessionDirectoryEmpty!==true') && archive.includes('concurrency!==4') && archive.includes('mv --'));
   assert.equal(spawnSync('bash', ['-n'], { input: archive, encoding: 'utf8' }).status, 0);
+});
+
+test('capacity receipt archive validates both native cgroup records against the completed batch schema', () => {
+  const oldRevision = 'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b';
+  const stageToken = '__STAGE__';
+  const batch = completeBatchReceipt(oldRevision, stageToken);
+  const mismatchedHttp = { ...batch.phases[0].cgroup, cpuUsageNSec: batch.phases[0].cgroup.cpuUsageNSec + 1 };
+  const script = archiveCompletedCapacityBatchScript(oldRevision)
+    .replaceAll('/var/tmp/stronghold-protocol/resonance', stageToken)
+    .replaceAll('/opt/stronghold-protocol/toolchain/node-v22.23.3-linux-x64/bin/node', 'node');
+  const encode = value => Buffer.from(JSON.stringify(value)).toString('base64');
+  const wrapper = `set -euo pipefail
+ROOT=$(mktemp -d /tmp/resonance-archive-schema.XXXXXX)
+trap 'rm -rf -- "$ROOT"' EXIT
+write64(){ printf '%s' "$2" | base64 -d > "$1"; }
+run_case(){
+ name="$1"; bad="$2"; d="$ROOT/$name"; S="$d/stage"; mkdir -p "$S"
+ write64 "$S/capacity-receipt.json" '${encode({ ...batch.phases[0].capacity, sourceRevision: oldRevision })}'
+ write64 "$S/capacity-recording-receipt.json" '${encode({ ...batch.phases[1].capacity, sourceRevision: oldRevision })}'
+ write64 "$S/capacity-batch-receipt.json" '${encode(batch)}'
+ if test "$bad" = yes; then write64 "$S/capacity-http-cgroup.json" '${encode(mismatchedHttp)}'; else write64 "$S/capacity-http-cgroup.json" '${encode(batch.phases[0].cgroup)}'; fi
+ write64 "$S/capacity-recording-cgroup.json" '${encode(batch.phases[1].cgroup)}'
+ WIN_STAGE=$(cygpath -m "$S")
+ for f in capacity-batch-receipt.json capacity-http-cgroup.json capacity-recording-cgroup.json; do sed -i "s|${stageToken}|$WIN_STAGE|g" "$S/$f"; done
+ printf '%s' '${Buffer.from(script).toString('base64')}' | base64 -d | sed "s|${stageToken}|$S|g" > "$d/archive.sh"
+ if test "$bad" = yes; then
+   set +e; PATH="$PATH" bash -x "$d/archive.sh" > "$d/out" 2> "$d/err"; rc=$?; set -e
+   test "$rc" -ne 0
+   for f in capacity-receipt.json capacity-recording-receipt.json capacity-batch-receipt.json capacity-http-cgroup.json capacity-recording-cgroup.json; do test -f "$S/$f" || exit 41; done
+   test ! -e "$S/capacity-batch-receipt.${oldRevision}.json"
+ else
+   bash -x "$d/archive.sh" > "$d/out" 2> "$d/trace" || { tail -n 40 "$d/trace" >&2; exit 44; }
+   bash -x "$d/archive.sh" > "$d/repeat.out" 2> "$d/repeat.trace" || { tail -n 40 "$d/repeat.trace" >&2; exit 45; }
+   for f in capacity-receipt.${oldRevision}.json capacity-recording-receipt.${oldRevision}.json capacity-batch-receipt.${oldRevision}.json capacity-http-cgroup.${oldRevision}.json capacity-recording-cgroup.${oldRevision}.json; do test -f "$S/$f" || exit 42; done
+   for f in capacity-receipt.json capacity-recording-receipt.json capacity-batch-receipt.json capacity-http-cgroup.json capacity-recording-cgroup.json; do test ! -e "$S/$f" || exit 43; done
+ fi
+}
+run_case valid no
+run_case mismatch yes
+`;
+  const result = spawnSync('bash', ['-euo', 'pipefail'], { input: wrapper, encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
 test('candidate five-source refresh updates all five files and rolls all five back on explicit post-write failure', () => {
