@@ -106,6 +106,7 @@ test('owned, shop and battle operator tabs separate references from traits while
     window.mountEnemyDetail=()=>window.mountDetail({kind:'unit',unit:{side:'enemy',defId:'enemy_1000_gopro_2',id:'enemy-unit'}});
     window.mountSummonDetail=()=>window.mountDetail({kind:'unit',unit:{side:'ally',defId:'token_10000_silent_healrb',uid:'summon-unit',id:'summon-unit'}});
     window.mountDetail({kind:'piece',uid:'owned-pane-piece'});window.ready=true;
+    window.mountActualCopyMode=(name,growthMode)=>{const op=Object.values(fixture.catalog.operators).find(x=>!x.elite&&x.name===name);if(!op)throw new Error('missing actual operator '+name);const uid='copy-audit-'+name;const state={...fixture.state,growthMode,pieces:[{uid,chessId:op.baseChessId,elite:false,skillIndex:0,moduleId:'none',row:1,col:1,dir:'RIGHT',equipment:[],attachments:[]}],shop:{slots:[]},inventory:[]};render(null,document.querySelector('#root'));render(h(DetailCard,{...fixture,state,target:{kind:'piece',uid},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){}}),document.querySelector('#root'));};
   </script></body></html>`;
   const installation=path.resolve(process.env.SP_INSTALL_ROOT||ROOT),dataRoot=path.resolve(process.env.SP_DATA_DIR||path.join(ROOT,'data'));
   const server=http.createServer((req,res)=>{
@@ -141,7 +142,20 @@ test('owned, shop and battle operator tabs separate references from traits while
     browserPhase='navigation';await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded',timeout:20000});
     await (browserContext || page.browserContext()).overridePermissions(new URL(page.url()).origin,['clipboard-read','clipboard-write']);
     browserPhase='window-ready';
-    await page.waitForFunction(()=>window.ready,{timeout:30000});
+    try { await page.waitForFunction(()=>window.ready,{timeout:30000}); }
+    catch (error) { throw new Error(`${error.message}; browserPhase=${browserPhase}; url=${page.url()}; pageErrors=${JSON.stringify(errors)}`); }
+    browserPhase='actual-copy-modes';
+    const modeScreenshots=[];
+    for(const [name,mode,expected] of [['阿罗玛','badges','攻击徽章×1与伤害徽章×1'],['阿罗玛','levels','训练等级×2'],['重岳','badges','攻击徽章和伤害徽章'],['重岳','levels','所购干员科技等级两倍的训练等级']]){
+      await page.evaluate(([n,m])=>window.mountActualCopyMode(n,m),[name,mode]);
+      await page.waitForFunction(()=>document.querySelector('[role=tabpanel]'));
+      const shown=await page.$eval('[role=tabpanel]',el=>el.textContent);
+      assert.ok(shown.includes(expected),`${name} ${mode} mode shows the matching roster copy`);
+      if(mode==='levels')assert.doesNotMatch(shown,/攻击徽章|伤害徽章/,`${name} levels copy does not leak badge terminology`);
+      modeScreenshots.push(await capture(`copy-${name==='阿罗玛'?'aroma':'chongyue'}-${mode}.png`));
+    }
+    assert.ok(modeScreenshots.every(Boolean),'actual catalog copy is captured in both growth modes');
+    await page.evaluate(()=>window.mountDetail({kind:'piece',uid:'owned-pane-piece'}));
     browserPhase='owned-tabs';
     const ownedTraits=await page.evaluate(()=>({tabs:[...document.querySelectorAll('[role=tab]')].map(x=>x.textContent.trim()),text:document.querySelector('[role=tabpanel]').textContent,stats:document.querySelector('.ix-dpanel__stats')?.textContent||''}));
     assert.ok(ownedTraits.tabs.includes('参考原卡'),'operators with original-card data get a separate tab');assert.match(ownedTraits.text,/特质/);assert.doesNotMatch(ownedTraits.text,/暴怒的巨蜥|在你使用一张亡语随从牌后/,'default trait pane does not include original-card text');assert.match(ownedTraits.stats,/攻击/,'the permanent stats column remains visible');
@@ -213,7 +227,7 @@ test('owned, shop and battle operator tabs separate references from traits while
     const deploymentLineCounts=await page.evaluate(()=>[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(count=>count.textContent.trim())));
     assert.deepEqual(deploymentLineCounts,[['（3）'],['（1）'],['（0）'],['（3）'],['（1）'],['（0）']],'each field count is attached to the exact faction or keyword clause it describes');
     const actorTooltips=await page.evaluate(()=>[...document.querySelectorAll('.ix-field-count')].slice(0,3).map(x=>x.title));
-    assert.ok(actorTooltips[0].includes(kjeragOp.name));assert.match(actorTooltips[0],/叙拉古支援/);assert.match(actorTooltips[1],/坚守作战单位/);assert.match(actorTooltips[2],/当前没有符合条件的干员/);assert.doesNotMatch(actorTooltips[0],/field-kjerag/);
+    assert.ok(actorTooltips[0].includes(kjeragOp.name));assert.match(actorTooltips[0],/叙拉古支援/);assert.match(actorTooltips[1],/坚守作战单位/);assert.match(actorTooltips[2],/当前没有符合条件的友方单位/);assert.doesNotMatch(actorTooltips[0],/field-kjerag/);
     const actorScreenshot=await capture('deployment-actors-inline-count.png');
     const actorCountRect=await page.evaluate(()=>{const r=document.querySelectorAll('.ix-field-count')[0].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});await page.mouse.move(actorCountRect.x,actorCountRect.y);
     const factionHighlight=await page.evaluate(()=>window.deploymentHighlight);assert.deepEqual(factionHighlight,['condition-source','field-kjerag','sira-token']);

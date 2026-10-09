@@ -31,7 +31,13 @@ test('all 101 source entries regenerate both visible variants from executable pr
       assert.doesNotMatch(row[variant], visibleText, `${entry.sourceId} ${variant} must not expose internals or placeholders`);
       assert.doesNotMatch(row[variant], /成长永久保留|永久装备|临时获得|仅本场战斗生效|(?:攻击成长徽章|训练等级)×0|购买符合条件的干员时，购买/,
         `${entry.sourceId} ${variant} should use concise default-duration wording`);
-      assert.equal(row[`${variant}Levels`], toLevels(row[variant]), `${entry.sourceId} ${variant} levels must describe training levels`);
+      if (entry.sourceId === 'BGS_100') {
+        assert.match(row[`${variant}Levels`], /所购干员科技等级两倍的训练等级/, `${entry.sourceId} ${variant} levels use purchased tier as both growth inputs`);
+        assert.doesNotMatch(row[`${variant}Levels`], /徽章|星级等量/);
+        if (variant === 'elite') assert.match(row.eliteLevels, /结算两次/);
+      } else {
+        assert.equal(row[`${variant}Levels`], toLevels(row[variant]), `${entry.sourceId} ${variant} levels must describe training levels`);
+      }
       for (const delivery of entry.metadata?.op?.effectDelivery?.[variant] || []) {
         if (typeof delivery.text === 'string') {
           assert.doesNotMatch(delivery.text, visibleText, `${entry.sourceId} delivery text`);
