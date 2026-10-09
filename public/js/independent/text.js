@@ -3,12 +3,13 @@
 // attachment or game term a text names becomes a term with its explanation: a tooltip on the word, and a 相关说明
 // list under longer texts (a touch screen has no hover). The wording itself is never rewritten here.
 import { html, Icon, Tooltip } from '../ui/components.js';
-import { BondGlyph, Img } from '../ui/gameComponents.js';
-import { itemIconUrl } from '../ui/assetUrls.js';
+import { Img } from '../ui/gameComponents.js';
+import { itemIconUrl, skillRecordIconUrl } from '../ui/assetUrls.js';
 import { data } from '../data.js';
 import { BADGE_BOND } from './model.js';
 import { badgeEffectText } from './badgeText.js';
 import { GEAR_GLYPHS, gearGlyphOf } from './gearGlyphs.js';
+import { gearIconSource } from './gearIconMap.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const glossaries = new WeakMap();
@@ -56,15 +57,19 @@ export function termsIn(texts, catalog, exclude = null) {
  * is already beside it.
  */
 export function GearIcon({ id, catalog, class: cls, plain = false }) {
-  const g = (id && (catalog?.gear?.[id] || catalog?.prizes?.[id])) || null;
+  const g = (id && (catalog?.gear?.[id] || catalog?.prizes?.[id] || catalog?.attachments?.[id])) || null;
   const name = g?.name || '徽章';
-  const itemId = [g?.iconItemId, g?.sourceItemId, id].find((x) => x && data.lookup('items', x));
+  const source = gearIconSource(id, catalog);
+  const assetManifest = data.get('assets');
+  const sourceItem = source?.sourceItemId && data.lookup('items', source.sourceItemId);
+  const iconUrl = source?.type === 'skill'
+    ? skillRecordIconUrl(assetManifest, { skillId: source.skillId, iconId: source.skillId }, { empty: false })
+    : sourceItem && itemIconUrl(assetManifest, sourceItem);
   const glyph = gearGlyphOf(name, g?.kind);
   const drawn = html`<span class=${cx('ix-gear', 'ix-gear--drawn', `ix-gear--${glyph}`, cls)}>
     <svg viewBox="0 0 34 34" role="img" aria-label=${name}><path d=${GEAR_GLYPHS[glyph]} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
   </span>`;
-  const icon = id && BADGE_BOND[id] ? html`<${BondGlyph} bondId=${BADGE_BOND[id]} class=${cx('ix-gear', cls)} />`
-    : itemId ? html`<${Img} src=${itemIconUrl(data.get('assets'), data.lookup('items', itemId))} class=${cx('ix-gear', 'ix-gear--item', cls)} alt=${name} fallback=${drawn} />` : drawn;
+  const icon = iconUrl ? html`<${Img} src=${iconUrl} class=${cx('ix-gear', 'ix-gear--item', cls)} alt=${name} fallback=${drawn} />` : drawn;
   if (plain || !g) return icon;
   const badge = !!BADGE_BOND[id] || g.kind === 'badge' || g.kind === '徽章';
   const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.level ? html`<em>${g.level}级</em>` : null}<span>${badgeEffectText(id) || g.normal || g.effect || ''}</span></span>`;
@@ -101,7 +106,7 @@ export function TermNotes({ texts, catalog, exclude = null, class: cls }) {
   if (!entries.length) return null;
   return html`<ul class=${cx('ix-notes', cls)} aria-label="相关说明">
     ${entries.map((e) => html`<li key=${e.name}>
-      ${e.kind === 'gear' ? html`<${GearIcon} id=${e.id} catalog=${catalog} plain=${true} />` : html`<span class="ix-notes__mark" aria-hidden="true">${e.kind === 'attachment' ? '◆' : '·'}</span>`}
+      ${e.kind === 'gear' || e.kind === 'attachment' ? html`<${GearIcon} id=${e.id} catalog=${catalog} plain=${true} />` : html`<span class="ix-notes__mark" aria-hidden="true">·</span>`}
       <span><b>${e.name}</b>${showsLevel(e) ? html`<em>${e.level}级</em>` : null}<${GameText} text=${e.text} catalog=${catalog} plainTerms=${true} /></span>
     </li>`)}
   </ul>`;
