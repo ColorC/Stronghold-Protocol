@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -36,6 +36,7 @@ const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
+let completedWCheckpoint = false;
 const check = (name, value, detail) => { receipt.tests.push({ name, passed: !!value, detail }); if (!value) throw new Error(`${name}: ${JSON.stringify(detail)}`); };
 async function button(page, pattern) {
   const h = await page.waitForFunction((source) => { const re = new RegExp(source);
@@ -375,9 +376,27 @@ try {
     const resumed = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, resumeTailSession);
     const historyTypes = (resumed?.history || []).map(entry => entry.type);
     const expectedPrefix = ['operator-bought', 'shop-refreshed', 'piece-deployed', 'piece-deployed', 'piece-deployed'];
-    check('resume-tail-existing-session-at-exact-prep-state', resumed?.phase === 'prep' && resumed?.revision === 5 && resumed?.gold === 2 &&
-      expectedPrefix.every((type, index) => historyTypes[index] === type) && resumed.pieces?.filter(piece => piece.row != null).length === 3,
-      { phase: resumed?.phase, revision: resumed?.revision, gold: resumed?.gold, historyTypes, deployed: resumed?.pieces?.filter(piece => piece.row != null).length });
+    let validResumeState = resumed?.phase === 'prep' && resumed?.revision === 5 && resumed?.gold === 2 &&
+      expectedPrefix.every((type, index) => historyTypes[index] === type) && resumed.pieces?.filter(piece => piece.row != null && ['p1','p2','p3'].includes(piece.uid)).length === 3;
+    if (!validResumeState && resumed?.phase === 'prep' && resumed?.revision === 7 && resumed?.gold === 2) {
+      const priorPath=path.join(ROOT,'runtime/resonance/ui-verification/ui-tft-tail-attempt-7.json');
+      const prior=JSON.parse(await readFile(priorPath,'utf8'));
+      const priorTests=new Map((prior.tests||[]).map(test=>[test.name,test]));
+      const priorBench=priorTests.get('W-bench-selected-piece'),priorBenchRevision=priorTests.get('W-bench-revision-advanced');
+      const priorDeployRevision=priorTests.get('W-redeploy-revision-advanced'),priorPosition=priorTests.get('W-restores-previous-placement');
+      const laterHistory=(resumed.history||[]).slice(expectedPrefix.length);
+      const p1=resumed.pieces?.find(piece=>piece.uid==='p1'),p2=resumed.pieces?.find(piece=>piece.uid==='p2'),p3=resumed.pieces?.find(piece=>piece.uid==='p3'),p12=resumed.pieces?.find(piece=>piece.uid==='p12');
+      completedWCheckpoint=prior.status==='failed'&&prior.sessionId===resumeTailSession&&prior.initialRevision===5&&
+        priorBench?.passed===true&&priorBench.detail?.uid==='p1'&&priorBench.detail?.row==null&&priorBenchRevision?.passed===true&&priorBenchRevision.detail?.current===6&&
+        priorDeployRevision?.passed===true&&priorDeployRevision.detail?.current===7&&priorPosition?.passed===false&&
+        priorPosition.detail?.expected?.row===9&&priorPosition.detail?.expected?.col===3&&priorPosition.detail?.actual?.row===10&&priorPosition.detail?.actual?.col===3&&
+        laterHistory.some(event=>event.type==='piece-benched'&&event.uid==='p1')&&laterHistory.some(event=>event.type==='piece-deployed'&&event.uid==='p1'&&event.row===10&&event.col===3&&event.dir==='RIGHT')&&
+        p1?.row===10&&p1?.col===3&&p1?.dir==='RIGHT'&&p2?.row===9&&p2?.col===4&&p3?.row===9&&p3?.col===5&&p12?.row==null;
+      validResumeState=completedWCheckpoint;
+      check('resume-tail-validates-stored-W-checkpoint-and-live-state',completedWCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,revision:resumed.revision,p1,p2,p3,p12,laterHistory});
+    }
+    check('resume-tail-existing-session-at-valid-prep-checkpoint',validResumeState,
+      { phase: resumed?.phase, revision: resumed?.revision, gold: resumed?.gold, historyTypes, deployed: resumed?.pieces?.filter(piece => piece.row != null).length, completedWCheckpoint });
     check('resume-tail-no-new-session', receipt.creates === 0 && new URL(page.url()).searchParams.get('session') === resumeTailSession,
       { creates: receipt.creates, sessionId: resumeTailSession });
     receipt.initialRevision = resumed.revision;
@@ -659,17 +678,35 @@ try {
     check('quick-inventory-right-click-opens-item-recipe-detail',quickDetail.recipe,quickDetail);
     await page.click('.dpanel__close'); await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
     await inspectOverlayShopReachability(page, wTarget.uid);
-    const beforeBench = await readFresh();
-    await page.keyboard.press('w');
-    current = await stateAfterRevision(page, receipt.sessionId, beforeBench.revision, 'W-bench');
-    const benched = current.pieces.find(piece => piece.uid === wTarget.uid);
-    check('W-bench-selected-piece', benched?.row == null, { uid: wTarget.uid, row: benched?.row });
-    await page.keyboard.press('w');
-    current = await stateAfterRevision(page, receipt.sessionId, current.revision, 'W-redeploy');
-    const redeployed = current.pieces.find(piece => piece.uid === wTarget.uid);
-    check('W-restores-previous-placement', redeployed?.row === wTarget.row && redeployed?.col === wTarget.col,
-      { expected: { row: wTarget.row, col: wTarget.col }, actual: { row: redeployed?.row, col: redeployed?.col } });
-    receipt.freshActions.push({ action: 'W-bench-and-restore', uid: wTarget.uid, row: redeployed?.row, col: redeployed?.col });
+    if(completedWCheckpoint) {
+      current=await readFresh();
+      check('W-bench-action-already-validated-from-prior-receipt',current.history?.some(event=>event.type==='piece-benched'&&event.uid===wTarget.uid),{uid:wTarget.uid,revision:current.revision});
+      check('W-redeploy-action-already-validated-from-prior-receipt',current.pieces.find(piece=>piece.uid===wTarget.uid)?.row===10&&current.pieces.find(piece=>piece.uid===wTarget.uid)?.col===3,{uid:wTarget.uid,actual:current.pieces.find(piece=>piece.uid===wTarget.uid)});
+    } else {
+      const beforeBench = await readFresh();
+      await page.keyboard.press('w');
+      current = await stateAfterRevision(page, receipt.sessionId, beforeBench.revision, 'W-bench');
+      const benched = current.pieces.find(piece => piece.uid === wTarget.uid);
+      check('W-bench-selected-piece', benched?.row == null, { uid: wTarget.uid, row: benched?.row });
+      const wTile = await page.evaluate(async ({id,uid,preferred}) => {
+        const state=(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,piece=state.pieces.find(entry=>entry.uid===uid);
+        const occupied=new Set(state.pieces.filter(entry=>entry.uid!==uid&&entry.row!=null).map(entry=>`${entry.row},${entry.col}`));
+        const legal=(piece.legalTiles||[]).filter(key=>!occupied.has(key));
+        const preferredKey=`${preferred.row},${preferred.col}`,key=legal.includes(preferredKey)?preferredKey:legal[0];
+        if(!key)return null;const [row,col]=key.split(',').map(Number),view=globalThis.__SP_VIEW__,screen=view?.tileScreen(row,col);
+        if(!screen)return null;const canvas=document.querySelector('.gm__field canvas'),rect=canvas?.getBoundingClientRect(),tile=view.raw?.debug?.pick?.groundTile?.(screen.x-rect.left,screen.y-rect.top);
+        return tile?.row===row&&tile?.col===col&&document.elementFromPoint(screen.x,screen.y)?.tagName==='CANVAS'?{row,col,x:screen.x,y:screen.y,preferred:key===preferredKey}:null;
+      },{id:receipt.sessionId,uid:wTarget.uid,preferred:{row:wTarget.row,col:wTarget.col}});
+      check('W-redeploy-hover-target-is-real-legal-empty-tile',!!wTile,wTile);
+      await page.mouse.move(wTile.x,wTile.y);
+      await page.waitForFunction(({row,col,x,y})=>{const canvas=document.querySelector('.gm__field canvas'),rect=canvas?.getBoundingClientRect();if(!rect)return false;const point=globalThis.__SP_VIEW__?.raw?.debug?.pick?.groundTile?.(x-rect.left,y-rect.top);return point?.row===row&&point?.col===col&&document.elementFromPoint(x,y)?.tagName==='CANVAS';},{timeout:5000},wTile);
+      await page.keyboard.press('w');
+      current = await stateAfterRevision(page, receipt.sessionId, current.revision, 'W-redeploy');
+      const redeployed = current.pieces.find(piece => piece.uid === wTarget.uid);
+      check('W-restores-to-hovered-legal-placement', redeployed?.row === wTile.row && redeployed?.col === wTile.col,
+        { expected: { row: wTile.row, col: wTile.col }, preferredOriginal: wTile.preferred, actual: { row: redeployed?.row, col: redeployed?.col } });
+      receipt.freshActions.push({ action: 'W-bench-and-restore-to-pointer-legal-tile', uid: wTarget.uid, row: redeployed?.row, col: redeployed?.col });
+    }
     const equipmentBefore = await readFresh();
     check('starter-equipment-available-for-real-drag', equipmentBefore.inventory?.length > 0,
       { inventory: equipmentBefore.inventory?.length || 0 });

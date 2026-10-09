@@ -91,6 +91,7 @@ export function GameChrome(p) {
   const saleCost=Number(catalog.operators?.[sellingPiece?.operatorId]?.cost)||0;
   const saleValue=sellingPiece?(saleCost===1?saleCost*saleCopies:Math.max(0,saleCost*saleCopies-(sellingPiece.star>1?1:0))):0;
   const resultBg=uiUrl(data.get('assets'),won?'settle/settlemen_teamshow_success':'settle/settlemen_teamshow_fail');
+  const replayFullscreenHref=replay?(()=>{const url=new URL(location.href);url.hash=`replay-${replay.round}`;return url.href})():null;
   const closeReplay=()=>{setPlaying(false);setReplay(null);frame.current=0;view?.setCamera('prep');setPanel(state.phase==='choice'&&state.pendingChoices?.length?'choice':null)};
   const content=panel==='equipment'?html`<${InventoryPanel} state=${state} catalog=${catalog} act=${act} onDetail=${openDetail} busy=${busy}/>`:
     panel==='pacts'?html`<${PactPanel} state=${state} catalog=${catalog} onDetail=${openDetail} onCodex=${()=>{location.hash='section-pact-catalog'}}/>`:
@@ -110,7 +111,7 @@ export function GameChrome(p) {
       <${TopBar} pub=${{round:replay?.round??state.round,phase:replay?'battle':state.phase}} priv=${{lp:state.hp,alive:true}} conn=${null} hud=${null} total=${null} drawer=${panel==='formation'?'info':null} pen=${!replay&&panel==='enemy'} penAvail=${!replay&&!!state.nextEnemies?.length&&state.node?.kind!=='logistics'} onPen=${enabled=>setPanel(enabled?'enemy':null)} onExit=${onLeave} onDrawer=${tab=>setPanel(tab==='info'?(panel==='formation'?null:'formation'):null)} onReady=${()=>{}}
         leftMeta=${html`<div class="rs-gmeta"><${MicroLabel} tone="mint">卫戍协议 · 共鸣</${MicroLabel}><b>${catalog.environments[state.environmentId]?.shortName||catalog.environments[state.environmentId]?.name||'共鸣'}</b><${DifficultyTag} difficulty=${state.difficulty} size="sm"/></div>`}
         phaseContent=${html`<span class="rs-phase">${replay?'战斗回放':state.phase==='choice'?'选择补给':state.phase==='battle'?'交战':state.phase==='complete'?'已结束':state.nodeStarted?'整备':'补给'}</span>`}
-        rightContent=${replay?html`<div class="rs-hud-actions"><span class="rs-phase">第 ${replay.round} 场</span></div>`:html`<div class="rs-hud-actions">
+        rightContent=${replay?html`<div class="rs-hud-actions"><span class="rs-phase">第 ${replay.round} 场</span><a class="rs-fullscreen-small" href=${replayFullscreenHref} target="_blank" rel="noopener">全屏打开</a></div>`:html`<div class="rs-hud-actions">
           ${state.phase==='choice'&&state.pendingChoices?.length&&panel!=='choice'?html`<${Button} size="sm" onClick=${()=>setPanel('choice')}>继续选择</${Button}>`:null}
           <${Button} size="sm" square=${true} title="装备背包" aria-label="装备背包" onClick=${()=>setPanel('equipment')}><${ResonanceItemIcon} catalog=${catalog} itemId=${state.inventory?.[0]?.itemId||Object.keys(catalog.equipment||{})[0]} size="sm" showTier=${false}/></${Button}><${Button} size="sm" square=${true} title="设置" aria-label="设置" onClick=${()=>setSettingsOpen(true)}><${GIcon} name="gear"/></${Button}><${Button} size="sm" square=${true} title="战术图鉴" onClick=${()=>{setCodexInitialTab('operators');setPanel('codex')}}><${GIcon} name="book"/></${Button}>
           <a class="rs-fullscreen-small" href=${location.href} target="_blank" rel="noopener">全屏打开</a></div>`}/>
