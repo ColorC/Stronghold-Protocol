@@ -14,7 +14,7 @@ function setup(pieces, { atk = 100, def = 0, enemyHp = 100000, enemyDef = 0, ene
     seed,
     units: full.map(({ uid, chessId, row, col }) => ({ uid, chessId, row, col })),
     defs: {
-      chess: Object.fromEntries(full.map((p) => [p.chessId, chessRec({ id: p.chessId, skill: null, stats: { atk, maxHp: 1000, def: p.def ?? def, res: 0, aspd: 100, spRecovery: 0, respawnTime: 20 }, rangeGrid: [[0, 0], [0, 1]] })])),
+      chess: Object.fromEntries(full.map((p) => [p.chessId, chessRec({ id: p.chessId, position: p.position, skill: null, stats: { atk, maxHp: 1000, def: p.def ?? def, res: 0, aspd: 100, spRecovery: 0, respawnTime: 20 }, rangeGrid: [[0, 0], [0, 1]] })])),
       enemies: { dummy: enemyRec({ key: 'dummy', hp: enemyHp, def: enemyDef, res: 0, speed: 0, atk: enemyAtk }) },
     },
     autoFinish: false, content: 'none',
@@ -179,6 +179,25 @@ test('不屈盟约 revives once per real ground retreat; random tile airdrop cho
   h.b.kill(w);
   assert.equal(w.alive, true, 'a second distinct exit can make its own probability roll, but one exit cannot revive twice');
   assert.ok(target.hp < before, 'the deploy effect runs again only because this was a real redeployment');
+});
+
+test('不屈盟约 works for ranged deepindigo, stacks its probability, banks doll swaps, and clears the bank on deployment', () => {
+  const stacked = setup([{ uid: 'deepindigo', chessId: 'deepindigo', position: 'RANGED', row: 10, col: 3, equipment: [worn('unyielding-oath', 2)] }]);
+  const remote = stacked.unit('deepindigo'); const beforeDeploys = remote.deploySeq;
+  stacked.b.rng = () => 0.183;
+  stacked.b.kill(remote);
+  assert.ok(remote.alive && remote.deployed && remote.deploySeq > beforeDeploys,
+    'two pieces give a ranged holder the configured 18.4% return roll');
+
+  const banked = setup([{ uid: 'remote', chessId: 'remote', position: 'RANGED', row: 10, col: 3, equipment: [worn('unyielding-oath')] }]);
+  const wearer = banked.unit('remote');
+  banked.b.rng = () => 0;
+  banked.b.emit('dollSwap', { unit: wearer, form: 'doll' });
+  banked.b.rng = () => 0.99;
+  banked.b.kill(wearer);
+  assert.ok(wearer.alive && wearer.deployed, 'a stored swap chance returns the wearer without another successful roll');
+  banked.b.retreat(wearer, { reason: 'retreat' });
+  assert.ok(!wearer.alive, 'redeployment consumes the stored chance; the next failed exit roll does not revive');
 });
 
 test('爆破部署台 and 融毁教学仪 scale damage by quantity; trainer triggers on retreat, not death, once per battle', () => {
