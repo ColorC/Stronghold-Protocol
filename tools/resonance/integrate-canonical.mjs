@@ -261,7 +261,7 @@ export function buildDryRun({ canonicalRoot = CANONICAL_ROOT, incomingRoot = DEF
     unknownUntrackedSourceDocs: dirtySourcePaths.filter(row => row.status === '??' && !knownCollisions.has(row.path)),
     pathSafety,
     backup: { ref: backupRef, scope: 'source/docs and identified source-like untracked paths only; no data/assets/runtime/uploads/handoff' },
-    executionProtocol: ['preflight source and path protection; acquire exclusive canonical index.lock before transaction writes', 'under lock, byte-compare original index and source preimages and recheck branch/head', 'save original index and source preimages in fixed integration staging', 'create native source-only backup commit/ref from tracked changes and identified collisions only', 'build temporary index from native merge tree, restoring only dirty canonical docs and reviewed deletions', 'write all other allowlisted task source and docs after safely creating checked parents', 'create two-parent source-only merge commit', 'CAS update-ref canonical branch', 'atomically replace index from the held index.lock; rollback only actual transaction writes on failure'],
+    executionProtocol: ['preflight source and path protection; acquire exclusive canonical index.lock before transaction writes', 'under lock, byte-compare original index and source preimages and recheck branch/head', 'save original index and source preimages in fixed integration staging', 'create native source-only backup commit/ref from tracked changes and identified collisions only', 'build temporary index from canonical initial HEAD, then write only reviewed allowlisted task source and docs', 'write all other allowlisted task source and docs after safely creating checked parents', 'create two-parent source-only merge commit', 'CAS update-ref canonical branch', 'atomically replace index from the held index.lock; rollback only actual transaction writes on failure'],
     staging: { planPath, summaryPath, integrationDir },
     blockers,
   };
@@ -401,7 +401,9 @@ export function executePlan(plan, { afterSourceWrite } = {}) {
     }
 
     const integrationEnv = { ...process.env, GIT_INDEX_FILE: integrationTemp };
-    git(c, ['read-tree', plan.nativeMergeTree.treeId], { env: integrationEnv });
+    // Never seed from the native merge tree: it can carry protected incoming
+    // data/assets/runtime entries even though only source/docs are authorized.
+    git(c, ['read-tree', initialHead], { env: integrationEnv });
     integrationTempCreated = true;
     for (const [rel, bytes] of writeBuffers) updateIndexBlob(c, integrationTemp, rel, bytes, nativeBlob(c, plan.nativeMergeTree.treeId, rel)?.mode ?? '100644');
     // Revert only protected dirty docs and the eight reviewed deletions to their canonical Native entries.

@@ -139,6 +139,7 @@ function initMergeFixture(root, { rollback = false } = {}) {
   nativeGit(canonical, ['config', 'user.name', 'Resonance Fixture']);
   nativeGit(canonical, ['config', 'user.email', 'fixture@example.invalid']);
   put(canonical, 'server/app.js', 'export const revision = "native";\n');
+  put(canonical, 'data/protected.json', '{"value":"native"}\n');
   put(canonical, 'docs/dirty.md', 'base dirty document\n');
   put(canonical, 'docs/clean.md', 'base clean document\n');
   const deletes = ['docs/legacy-a.md', 'docs/legacy-b.md', 'docs/legacy-c.md', 'test/legacy-a.js', 'test/legacy-b.js', 'test/legacy-c.js', 'tools/legacy-a.mjs', 'tools/legacy-b.mjs'];
@@ -150,6 +151,7 @@ function initMergeFixture(root, { rollback = false } = {}) {
   nativeGit(incoming, ['config', 'user.name', 'Resonance Fixture']);
   nativeGit(incoming, ['config', 'user.email', 'fixture@example.invalid']);
   put(incoming, 'server/app.js', 'export const revision = "incoming";\n');
+  put(incoming, 'data/protected.json', '{"value":"incoming"}\n');
   if (rollback) put(incoming, 'server/nested/new.js', 'export const newFile = true;\n');
   else {
     put(incoming, 'docs/dirty.md', 'incoming dirty document\n');
@@ -165,6 +167,7 @@ function initMergeFixture(root, { rollback = false } = {}) {
 
   if (!rollback) {
     put(canonical, 'docs/dirty.md', 'canonical user-edited document\n');
+    put(canonical, 'data/protected.json', '{"value":"canonical user data"}\n');
     put(canonical, 'server/unknown-local.js', 'unknown local untracked\n');
   }
   const indexPath = path.resolve(canonical, nativeGit(canonical, ['rev-parse', '--git-path', 'index']).trim());
@@ -188,7 +191,7 @@ function initMergeFixture(root, { rollback = false } = {}) {
     backup: { ref: `refs/backup/resonance-fixture/${rollback ? 'rollback' : 'success'}` },
     staging: { integrationDir: staging },
   };
-  const snapshotPaths = [...new Set([...sourceChanges.map(row => row.path), ...status.map(row => row.path)])];
+  const snapshotPaths = [...new Set([...sourceChanges.map(row => row.path), ...status.map(row => row.path).filter(rel => /^(server|shared|tools|test|docs|public\/js|public\/css)\//.test(rel) || /^public\/[^/]+\.html$/.test(rel))])];
   Object.defineProperty(plan, '_indexSnapshot', { value: fs.readFileSync(indexPath) });
   Object.defineProperty(plan, '_sourcePreimages', { value: new Map(snapshotPaths.map(rel => {
     const file = path.join(canonical, rel);
@@ -250,7 +253,7 @@ test('reviewed collision preimages are compared as current file bytes, including
   }
 });
 
-test('native fixture transaction merges clean docs/new directories, preserves dirty docs and eight deletions, and excludes unknown untracked files', () => {
+test('native fixture transaction merges reviewed source/docs only, preserves protected data, dirty docs and eight deletions', () => {
   assert.equal(fs.existsSync(FIXTURE), false, `fixed fixture already exists: ${FIXTURE}`);
   let totalBytes = 0;
   try {
@@ -261,9 +264,14 @@ test('native fixture transaction merges clean docs/new directories, preserves di
       assert.equal(nativeGit(fixture.canonical, ['rev-parse', 'HEAD']).trim(), fixture.initialHead, 'branch CAS has not happened during source writes');
     } });
     assert.equal(result.ok, true);
+    assert.deepEqual(nativeGit(fixture.canonical, ['rev-list', '--parents', '-n', '1', 'HEAD']).trim().split(' '), [result.newCommit, fixture.initialHead, fixture.incomingHead], 'integration commit retains canonical and incoming parents');
     assert.equal(fs.readFileSync(path.join(fixture.canonical, 'server/app.js'), 'utf8'), 'export const revision = "incoming";\n');
     assert.equal(nativeGit(fixture.canonical, ['show', 'HEAD:server/app.js']), 'export const revision = "incoming";\n', 'native commit contains the actual hashed source bytes');
     assert.equal(nativeGit(fixture.canonical, ['show', 'HEAD:server/nested/new.js']), 'export const newFile = true;\n');
+    assert.equal(fs.readFileSync(path.join(fixture.canonical, 'data/protected.json'), 'utf8'), '{"value":"canonical user data"}\n', 'physical protected user data remains untouched');
+    assert.equal(nativeGit(fixture.canonical, ['show', ':data/protected.json']), '{"value":"native"}\n', 'protected data index entry stays at the canonical Native value');
+    assert.equal(nativeGit(fixture.canonical, ['show', 'HEAD:data/protected.json']), '{"value":"native"}\n', 'incoming protected data is excluded from the integration commit');
+    assert.equal(nativeGit(fixture.canonical, ['diff', '--name-status', `${fixture.initialHead}..HEAD`, '--', 'data', 'assets', 'runtime', 'uploads', 'public/dev']).trim(), '', 'protected path groups are absent from the native merge diff');
     assert.equal(fs.readFileSync(path.join(fixture.canonical, 'docs/clean.md'), 'utf8'), 'incoming clean document\n');
     assert.equal(fs.readFileSync(path.join(fixture.canonical, 'docs/resonance/new.md'), 'utf8'), 'new formal resonance document\n');
     assert.equal(nativeGit(fixture.canonical, ['show', 'HEAD:docs/resonance/new.md']), 'new formal resonance document\n');
