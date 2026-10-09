@@ -111,7 +111,7 @@ function preparedWorkshopProjection(data, catalog) {
   const replayStats = (ready.replay.frames || []).flatMap(frame => Object.entries(frame.stats || {}).map(([id, entry]) => ({ id: Number(id), ...entry })));
   const projection = replayStats.find(unit => unit.defId === wolfId && unit.ownerName === summoner.name)
     || fieldUnits.find(unit => unit.kind === 'token' && unit.defId === wolfId && unit.ownerName === summoner.name);
-  assert.ok(projection, `real placed CFM316 marker creates a Workshop wolf projection in replay; initialActors=${JSON.stringify(fieldUnits.map(u => ({ kind: u.kind, defId: u.defId, name: u.name, ownerName: u.ownerName })))}; projectedReplayActors=${JSON.stringify(replayStats.filter(u => u.defId === wolfId).map(u => ({ id: u.id, name: u.name, ownerName: u.ownerName, atk: u.atk })))}`);
+  assert.ok(projection, `real placed CFM316 marker creates a Workshop wolf projection in replay; initialActors=${JSON.stringify(fieldUnits.map(u => ({ kind: u.kind, defId: u.defId, name: u.name, ownerName: u.ownerName })))}; projectedReplayActors=${JSON.stringify(replayStats.filter(u => u.defId === wolfId))}; replayKeys=${JSON.stringify(Object.keys(ready.replay||{}))}`);
   assert.equal(projection.ownerName, summoner.name, 'the projection is attributed to the actual CFM316 summoner; BGS021 only supplies its training');
   assert.equal(projection.name, '狼群投影', 'the replay actor keeps the Workshop projection identity');
   const live = [...(ready.replay.frames || [])].reverse().map(frame => frame.stats?.[projection.id]).find(Boolean);
