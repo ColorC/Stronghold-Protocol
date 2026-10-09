@@ -159,6 +159,8 @@ test('deployment actor projection counts only matching live operators and tokens
   const coverRule={behavior:'darkmoonCombat',trigger:'deploy',params:{scope:'boardonly',event:'deploy',actor:'deployedFriendly',actorKinds:['op','token'],targets:'adjacentToDeploymentActor',radius:1.5,match:{keywordGear:'坚守盟约'}}};
   const summonRule={behavior:'darkmoonCombat',trigger:'summon',params:{scope:'boardonly',event:'summon',actor:'newSummonedToken',actorKinds:['token'],targets:'sourceOperator',match:{faction:'叙拉古'}}};
   assert.deepEqual(fieldIds(factionRule,roster,catalog,source),['sira-op','sira-token']);
+  const siracusaSource={...source,factions:['叙拉古']};
+  assert.deepEqual(fieldIds({...factionRule,params:{...factionRule.params,excludeSelf:true}},[siracusaSource,...roster.slice(1)],catalog,siracusaSource),['sira-op','sira-token'],'source operators are excluded when the actual rule says “other friendly operators”');
   assert.deepEqual(fieldIds(coverRule,roster,catalog,source),['cover-token']);
   assert.equal(fieldConditionPiecesForEffect({rule:summonRule},{pieces:roster,catalog,source}),null,'future summoned units are not current-field conditions');
   assert.deepEqual(fieldIds({...coverRule,params:{...coverRule.params,actorKinds:['op']}},roster,catalog,source),[],'tokens only qualify when allowed by actorKinds');

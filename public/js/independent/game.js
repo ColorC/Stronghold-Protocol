@@ -26,6 +26,7 @@ import { EnemyDrawer } from '../ui/enemyDrawer.js';
 import { DpCounter } from '../ui/hud.js';
 import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, USE_NEEDS } from './panels.js';
 import { DetailCard } from './detail.js';
+import { parseComponentLinkHash } from './componentLinkHash.js';
 import { ElementPicker } from './picker.js';
 import { RecordingControls } from './recorder.js';
 import { buyTargetSpec } from './targetSelection.js';
@@ -464,13 +465,19 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     else audio.sfx('bossRoundSingle');
   }, [phaseKey]);
 
-  // ---- component links (#piece-p12, #shop-2, #item-i7, #offer-o5): open what the link points at -------------------
+  // ---- component links (#piece-p12:tab=reference, #shop-2:tab=gear, #item-i7): open the linked component tab ------
   useEffect(() => {
     const follow = () => {
       const rawHash = location.hash.slice(1);
       const hash = decodeURIComponent(rawHash);
+      const component = parseComponentLinkHash(location.hash);
       const st = stateRef.current;
-      if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
+      if (component?.kind === 'piece' && st.pieces.some((p) => p.uid === component.id)) setDetail({ kind: 'piece', uid: component.id, tab: component.tab });
+      else if (component?.kind === 'shop' && st.shop.slots[Number(component.id)]) {
+        const i = Number(component.id); const s = st.shop.slots[i];
+        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i, tab: component.tab } : { kind: 'gear', id: s.id });
+      } else if (component?.kind === 'gear' && catalog.gear[component.id]) setDetail({ kind: 'gear', id: component.id });
+      else if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
       else if (hash.startsWith('shop-') && st.shop.slots[Number(hash.slice(5))]) {
         const i = Number(hash.slice(5)); const s = st.shop.slots[i];
         setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id });

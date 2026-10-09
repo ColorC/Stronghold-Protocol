@@ -225,6 +225,7 @@ export function fieldConditionPiecesForEffect(effect, { pieces = [], catalog, so
         return pieces.filter((piece) => {
           const kind = piece.kind || (catalog?.operators?.[piece.chessId] ? 'op' : null);
           if (!kinds.has(kind) || !deployed(piece) || piece.deleted || piece.removed) return false;
+          if (p.excludeSelf && source?.uid != null && piece.uid === source.uid) return false;
           if (owner(source) != null && owner(piece) != null && owner(source) !== owner(piece)) return false;
           const factions = new Set([...(piece.factions || []), ...(piece.darkmoonFactionTags || []), ...factionsFor(piece, catalog)]);
           if (match.faction && !factions.has(match.faction)) return false;

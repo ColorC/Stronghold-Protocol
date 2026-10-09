@@ -68,7 +68,7 @@ function OriginalCardRefs({ op, piece, linkAnchor = null }) {
   const refs = sourceCardRefs(op);
   if (!refs.length) return null;
   const anchor = linkAnchor || (piece ? `piece-${piece.uid}` : null);
-  return html`<section class="ix-original-card" aria-label="参考原卡" onContextMenu=${(e) => anchor && copyComponentLink(e, anchor)}>
+  return html`<section class="ix-original-card" aria-label="参考原卡" onContextMenu=${(e) => anchor && copyComponentLink(e, `${anchor}:tab=reference`)}>
     ${refs.map((ref, index) => html`<article class="ix-original-card__item" key=${index}>
       <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>${ref.version.startsWith('19.2')?'暗月奖品初版 · 19.2':`版本 ${ref.version}`}</span>` : null}${ref.tier != null ? html`<span>酒馆科技 ${ref.tier}</span>` : null}
         ${ref.sourceUrl ? html`<a href=${ref.sourceUrl} target="_blank" rel="noreferrer">來源卡片</a>` : null}</header>
@@ -165,8 +165,8 @@ function ModuleChoice({ base, golden, piece, busy, prep, onAct }) {
  * An operator — own piece (prep or battle) or shop card — as the original card's blocks in tabs. `live`: the stats
  * entry it shows (start of battle / live) or null for the record's; `snapHp`: its HP in a battle (`inBattle`).
  */
-function OperatorCard({ piece, slot, state, conditionState = state, catalog, busy, live, snapHp = null, inBattle = false, onAct, footer = null, linkAnchor = null, onFieldHighlight = null, rangeTilesFor = null }) {
-  const [tab, setTab] = useState('traits');
+function OperatorCard({ piece, slot, state, conditionState = state, catalog, busy, live, snapHp = null, inBattle = false, onAct, footer = null, linkAnchor = null, initialTab = 'traits', onFieldHighlight = null, rangeTilesFor = null }) {
+  const [tab, setTab] = useState(initialTab);
   const prep = state.phase === 'prep' && !inBattle;
   const opBase = catalog.operators[piece ? piece.chessId : slot.id];
   const base = data.lookup('chess', piece ? piece.chessId : slot.id);
@@ -205,8 +205,9 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
     ${panes.stats.length ? html`<div class="ix-dpanel__stats" onContextMenu=${(e) => linkAnchor && copyComponentLink(e, linkAnchor)}>${panes.stats}</div>` : null}
     </div><div class="ix-dop__side">
     <div class="ix-dtabs" role="tablist">${shown.map(([k, label]) => html`<button type="button" key=${k} role="tab" aria-selected=${cur === k ? 'true' : 'false'}
-      class=${cx('ix-dtabs__tab', cur === k && 'is-on')} onClick=${() => { onFieldHighlight?.([]); setTab(k); }}>${label}${k === 'gear' && piece ? html`<span class="num">${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}</span>` : null}</button>`)}</div>
-    <div class="ix-dpanel__pane" role="tabpanel" onContextMenu=${(e) => linkAnchor && copyComponentLink(e, linkAnchor)}>${panes[cur]}</div>
+      class=${cx('ix-dtabs__tab', cur === k && 'is-on')} onClick=${() => { onFieldHighlight?.([]); setTab(k); }}
+      onContextMenu=${(e) => linkAnchor && copyComponentLink(e, `${linkAnchor}:tab=${k}`)}>${label}${k === 'gear' && piece ? html`<span class="num">${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}</span>` : null}</button>`)}</div>
+    <div class="ix-dpanel__pane" role="tabpanel" onContextMenu=${(e) => linkAnchor && copyComponentLink(e, `${linkAnchor}:tab=${cur}`)}>${panes[cur]}</div>
     ${footer}</div></div>`;
 }
 
@@ -255,7 +256,7 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
     const liveEntry = live ? { ...live, src: 'battle' } : null;
     if (u.side === 'enemy') { const en = data.lookup('enemies', u.defId); return en ? frame(html`<${EnemyDetail} enemy=${en} snapHp=${hp} live=${liveEntry} />`, 'enemy') : null; }
     const piece = state.pieces.find((p) => p.uid === u.uid);
-    if (piece) return frame(html`<${OperatorCard} piece=${piece} state=${state} conditionState=${conditionState} catalog=${catalog} busy=${busy} live=${liveEntry} snapHp=${hp} inBattle=${true} onAct=${onAct} linkAnchor=${anchor} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, 'chess');
+    if (piece) return frame(html`<${OperatorCard} key=${`battle:${piece.uid}:${target.tab || 'traits'}`} piece=${piece} state=${state} conditionState=${conditionState} catalog=${catalog} busy=${busy} live=${liveEntry} snapHp=${hp} inBattle=${true} onAct=${onAct} linkAnchor=${anchor} initialTab=${target.tab || 'traits'} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, 'chess');
     const tok = data.lookup('tokens', u.defId);
     return tok ? frame(html`<${TokenDetail} token=${tok} snapHp=${hp} live=${liveEntry} />`, 'token') : null;
   }
@@ -310,6 +311,6 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
         ? html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => onAct({ type: 'sell', uid: piece.uid })}>确认出售 +${catalog.rules?.sellPrice ?? 1}<//>`
         : html`<${Button} size="sm" variant="danger" disabled=${busy} onClick=${() => setConfirmSell(true)} title="装备与附加效果会一起失去">出售 +${catalog.rules?.sellPrice ?? 1}<//>`}` : null}
   </footer>`;
-  return frame(html`<${OperatorCard} key=${piece ? piece.uid : `s${target.slot}`} piece=${piece} slot=${slot} state=${state} conditionState=${conditionState} catalog=${catalog} busy=${busy} live=${live}
-    onAct=${onAct} footer=${footer} linkAnchor=${anchor} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, 'chess');
+  return frame(html`<${OperatorCard} key=${piece ? `${piece.uid}:${target.tab || 'traits'}` : `s${target.slot}:${target.tab || 'traits'}`} piece=${piece} slot=${slot} state=${state} conditionState=${conditionState} catalog=${catalog} busy=${busy} live=${live}
+    onAct=${onAct} footer=${footer} linkAnchor=${anchor} initialTab=${target.tab || 'traits'} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, 'chess');
 }
