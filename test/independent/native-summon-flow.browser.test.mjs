@@ -95,18 +95,25 @@ function preparedWorkshopProjection(data, catalog) {
   const stack = state.summons.find(piece => piece.ownerUid === summonerPiece.uid && piece.tokenId === wolfId);
   assert.ok(stack, 'the deployed owner generates its native wolf marker stack');
   const wolfTiles = viewSession(state, { data, catalog }).pieces.find(piece => piece.uid === stack.uid).legalTiles;
-  const wolfCellText = wolfTiles.find(tile => routeTiles.has(tile));
-  assert.ok(wolfCellText, `the native marker has a legal tile on the current ground route: ${JSON.stringify({ wolfTiles, wave: field.wave })}`);
+  // Keep the native marker legally placed but leave the real wave's first
+  // engageable route cell open. The Workshop deployment projection is queued
+  // until an enemy enters that cell; the native marker's separate owner-range
+  // case still exercises a route tile at [9,9] in preparedVigil above.
+  const wolfCellText = '10,8';
+  assert.ok(wolfTiles.includes(wolfCellText), `the native marker can be placed at the validated legal staging cell: ${JSON.stringify({ wolfTiles, wave: field.wave })}`);
   const [wolfRow, wolfCol] = wolfCellText.split(',').map(Number);
   moved = applyAction(state, { type: 'move', uid: stack.uid, row: wolfRow, col: wolfCol }, { catalog });
   assert.equal(moved.ok, true, moved.error?.message); state = moved.state;
   const preparedView = viewSession(state, { data, catalog });
   const ready = applyAction(state, { type: 'ready' }, { catalog });
   assert.equal(ready.ok, true, ready.error?.message);
-  const units = ready.replay.field?.units || [];
-  const projection = units.find(u => u.kind === 'token' && u.defId === 'token_10028_vigil_wolf' && u.name === '狼群投影');
-  assert.ok(projection, `real CFM316 deployment creates a Workshop wolf projection; actors=${JSON.stringify(units.map(u => ({ kind: u.kind, defId: u.defId, name: u.name, ownerName: u.ownerName })))}`);
+  const fieldUnits = ready.replay.field?.units || [];
+  const replayStats = (ready.replay.frames || []).flatMap(frame => Object.entries(frame.stats || {}).map(([id, entry]) => ({ id: Number(id), ...entry })));
+  const projection = replayStats.find(unit => unit.defId === wolfId && unit.ownerName === summoner.name)
+    || fieldUnits.find(unit => unit.kind === 'token' && unit.defId === wolfId && unit.ownerName === summoner.name);
+  assert.ok(projection, `real placed CFM316 marker creates a Workshop wolf projection in replay; initialActors=${JSON.stringify(fieldUnits.map(u => ({ kind: u.kind, defId: u.defId, name: u.name, ownerName: u.ownerName })))}; projectedReplayActors=${JSON.stringify(replayStats.filter(u => u.defId === wolfId).map(u => ({ id: u.id, name: u.name, ownerName: u.ownerName, atk: u.atk })))}`);
   assert.equal(projection.ownerName, summoner.name, 'the projection is attributed to the actual CFM316 summoner; BGS021 only supplies its training');
+  assert.equal(projection.name, '狼群投影', 'the replay actor keeps the Workshop projection identity');
   const live = [...(ready.replay.frames || [])].reverse().map(frame => frame.stats?.[projection.id]).find(Boolean);
   assert.ok(live && Number.isFinite(live.atk), 'battle replay records the projected token live attack');
   const native = data.tokens[wolfId];
