@@ -130,7 +130,7 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonTaggedGrowth': return `招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonMagneticMerge': return sourceId === 'BOT_911'
       ? `招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员装备坚守盟约和护盾发生器，并使其获得攻击徽章${qty(attack)}及伤害徽章${qty(secondary)}；本体不进入阵容。`
-      : `招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击徽章${qty(attack)}及伤害徽章${qty(secondary)}；本体不进入阵容。`;
+      : `招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击徽章${qty(attack)}及伤害徽章${qty(secondary)}；本体不进入阵容。`;
     case 'darkmoonSummonSupport': return `招募获得或首次上阵时，免费将一个猫形支援单位（攻击${variant === 'elite' ? 240 : 120}、生命${variant === 'elite' ? 700 : 350}）放入整备区；可部署，本体不可商店招募。`;
     case 'darkmoonTransformFromShop': return `招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为${variant === 'elite' ? '进阶' : '普通'}形态并招募。`;
     case 'darkmoonRosterTribePurchaseFunds': return `购买维多利亚阵营干员时，获得${amount}枚金币。`;
@@ -155,6 +155,7 @@ function prepText(sourceId, rule, variant) {
 function cleanCombat(id, variant) {
   const meta = darkmoonCombatMetadata(id, variant === 'elite');
   if (!meta?.text) return '';
+  const rule = DARKMOON_COMBAT_RULES[id] || {};
   let text = meta.text;
   text = text.replace(/攻击徽章×(\d+)，伤害徽章×(\d+)/g, (_, a, b) => `攻击徽章${qty(a)}与伤害徽章${qty(b)}`)
     .replace(/职业副属性装备|职业副属性徽章/g, '伤害徽章')
@@ -167,14 +168,29 @@ function cleanCombat(id, variant) {
     .replace(/；?获得时装备1件突袭盟约[。]?/g, '')
     .replace(/按当前攻击成长计算，最多七个个/g, '按当前攻击成长计算，最多7个');
   if (['EX1_531', 'GVG_106'].includes(id)) {
-    const faction = DARKMOON_COMBAT_RULES[id]?.faction === 'BEAST' ? '叙拉古'
-      : DARKMOON_COMBAT_RULES[id]?.faction === 'MECHANICAL' ? '哥伦比亚' : null;
-    if (faction && DARKMOON_COMBAT_RULES[id]?.excludeSelf) {
+    const faction = rule.faction === 'BEAST' ? '叙拉古'
+      : rule.faction === 'MECHANICAL' ? '哥伦比亚' : null;
+    if (faction && rule.excludeSelf) {
       text = text.replace(`${faction}友方战斗部署时`, `其他${faction}友方单位战斗部署时`);
     }
   }
-  if (DARKMOON_COMBAT_RULES[id]?.retire && !text.includes('每场最多触发3次')) {
+  const token = rule.retire?.token;
+  const tokenName = ({ mechanical: '机械水獭投影', beast: '狼群投影', pirate: '黄金盟誓投影' })[token];
+  const stats = rule.retire?.stats;
+  const percent = value => value * 40 * (variant === 'elite' ? 2 : 1);
+  const bodyText = prototype => stats
+    ? `每个投影的攻击为${prototype}基础攻击的${percent(stats[0])}%，生命为其基础生命的${percent(stats[1])}%。`
+    : '';
+  if (id === 'BGS_061') text = `战斗中每次实际部署时召唤${rule.retire.count[variant === 'elite' ? 1 : 0]}个${tokenName}；${bodyText('黄金盟誓')}`;
+  else if (id === 'BOT_312') text = `携带此效果的干员实际部署时，召唤3个${tokenName}；${bodyText('机械水獭')}`;
+  else if (id === 'BOT_537') text = `战斗中每次实际部署时召唤1个${tokenName}；${bodyText('机械水獭')}`;
+  else if (id === 'CFM_316') text = `战斗中每次实际部署时，按自身当前攻击与基础攻击之比×2召唤${tokenName}（至少1个，至多7个）；${bodyText('狼群')}`;
+  else if (tokenName) text = `战斗中每次实际部署时召唤${rule.retire.attackCount ? '按自身当前攻击与基础攻击之比×2计算、至少1个且至多7个' : `${rule.retire.count[variant === 'elite' ? 1 : 0]}个`}${tokenName}；${bodyText(token === 'beast' ? '狼群' : token === 'pirate' ? '黄金盟誓' : '机械水獭')}`;
+  if (rule.retire && !text.includes('每场最多触发3次')) {
     text = `${text.replace(/[。；]?\s*$/, '')}；每场最多触发3次。`;
+  }
+  if (rule.retire && (token || rule.retire.random || rule.retire.fallen)) {
+    text = `${text.replace(/[。；]?\s*$/, '')}；每个投影在场45秒，该干员同时最多保留7个投影。`;
   }
   return text;
 }
@@ -193,7 +209,7 @@ export function compactWording(text) {
 }
 
 export function toLevels(text) {
-  return text.replace(/攻击徽章×(\d+)与(?:伤害|生命)徽章×(\d+)/g, (_, a, b) => `训练等级${qty(Number(a) + Number(b))}`)
+  return text.replace(/攻击徽章×(\d+)(?:与|及)(?:伤害|生命)徽章×(\d+)/g, (_, a, b) => `训练等级${qty(Number(a) + Number(b))}`)
     .replace(/职业副属性成长徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
     .replace(/职业副属性徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
     .replace(/(?:精准|敏捷|攻击|活力|防护|强袭|恢复|术法|洞察|奇迹|投资|坚毅|协同|协调|孤勇|精通)徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
