@@ -330,7 +330,7 @@ export function viewSession(state, { catalog, fieldResolver } = {}) {
   return {
     ok: true,
     revision: state.revision, round: state.round, roundLimit: state.roundLimit, difficulty: state.difficulty,
-    phase: state.phase, level: state.level, xp: state.xp, gold: state.gold, hp: state.hp,
+    phase: state.phase, terminalReason: state.terminalReason ?? null, history: clone(state.history ?? []), level: state.level, xp: state.xp, gold: state.gold, hp: state.hp,
     winStreak: state.winStreak, lossStreak: state.lossStreak, shop: clone(state.shop),
     pieces: clone(state.pieces), inventory: clone(state.inventory), poolRemaining: clone(state.poolRemaining),
     pendingChoices: clone(state.pendingChoices), consumables: clone(state.consumables), strategies: clone(state.strategies),

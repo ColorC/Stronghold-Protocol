@@ -27,6 +27,7 @@ test('resonance HTTP is authoritative, same-origin, and returns a source-free pl
  const env=Object.keys(getResonanceCatalog(data).environments)[0];
  const created=await invoke(handler,'POST','/resonance/api/sessions',{seed:812,difficulty:'NORMAL',environmentId:env});
  assert.equal(created.status,201,JSON.stringify(created.body.error));assert.equal(created.body.state.pieces.length,3);assert.equal(created.body.catalog.activeOperatorIds.length,65);
+ assert.deepEqual(created.body.state.history,[],'active preparation DTO starts with empty compact history');
  assert.equal(Object.hasOwn(created.body.catalog.operators[Object.keys(created.body.catalog.operators)[0]],'source'),false);
  assert.equal(Object.hasOwn(created.body.state.pieces[0].operator.starDetails,'record'),false);
  const id=created.body.id;const stored=JSON.parse(await readFile(path.join(directory,`${id}.json`),'utf8'));assert.equal(stored.revision,0);
@@ -38,4 +39,26 @@ test('resonance HTTP is authoritative, same-origin, and returns a source-free pl
  assert.equal(stale.status,409);assert.equal(stale.body.error.code,'STALE_REVISION');
  const unknown=await invoke(handler,'POST','/resonance/api/sessions',{seed:1,difficulty:'NORMAL',environmentId:'origin_unknown'});
  assert.equal(unknown.status,422);assert.equal(unknown.body.error.code,'BAD_ENVIRONMENT');
+});
+
+test('HTTP session DTO returns each persisted terminal reason without running a battle',async()=>{
+ const directory=path.resolve(ROOT,'..','..','..','runtime/resonance/verification/fixture-sessions');
+ const catalogProvider=(native,options)=>getResonanceCatalog(native,options);
+ const handler=createResonanceHttp({data,directory,catalogProvider,fieldResolver:()=>null,statsPreview:()=>({}),battleRunner:()=>{throw new Error('battle must not run for saved terminal sessions')}});
+ const fixtures=[
+  ['14f5ff81-2a70-4b2d-b15b-9d88e19eb9c1','victory'],
+  ['3ac11314-7783-4364-bbab-0c3144ea1104','hp-depleted'],
+  ['507bc965-a382-46d0-ae8a-5f21c82fd981','round-limit-loss'],
+ ];
+ for(const [id,reason] of fixtures){
+  const stored=JSON.parse(await readFile(path.join(directory,`${id}.json`),'utf8'));
+  assert.equal(stored.terminalReason,reason,`fixture ${id} reason`);
+  const packet=await invoke(handler,'GET',`/resonance/api/sessions/${id}?catalog=0`);
+  assert.equal(packet.status,200,`fixture ${id} HTTP status`);
+  assert.equal(packet.body.state.terminalReason,stored.terminalReason,`fixture ${id} HTTP reason matches the saved state`);
+  assert.equal(packet.body.state.phase,'complete');
+  assert.deepEqual(packet.body.state.history,stored.history,`fixture ${id} reopens with the persisted compact history`);
+  assert.ok(packet.body.state.history.some(entry=>entry.type==='fight-settled'),`fixture ${id} restores settlement/report rows`);
+  for(const entry of packet.body.state.history){assert.equal(Object.hasOwn(entry,'result'),false);assert.equal(Object.hasOwn(entry,'diagnostics'),false);}
+ }
 });

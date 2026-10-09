@@ -110,6 +110,22 @@ test('design probability table, difficulty limits, caller revision and view fiel
   assert.equal(viewSession(state,{catalog,fieldResolver:fields}).legalFieldStatus,'resolved');
 });
 
+test('session view preserves all terminal reasons and keeps active sessions null',()=>{
+  const active=session(81);
+  assert.equal(viewSession(active,{catalog}).terminalReason,null);
+  const cases=[
+    ['victory',{round:28,hp:100}],
+    ['hp-depleted',{round:12,hp:0}],
+    ['round-limit-loss',{round:28,hp:100}],
+  ];
+  for(const [reason,changes] of cases){
+    const state={...structuredClone(active),...changes,phase:'complete',terminalReason:reason};
+    const viewed=viewSession(state,{catalog});
+    assert.equal(viewed.ok,true,JSON.stringify(viewed.errors));
+    assert.equal(viewed.terminalReason,reason);
+  }
+});
+
 test('XP purchase crosses thresholds correctly and max level never charges',()=>{
   const initial=session(8);
   const near=structuredClone(initial);near.xp=5;
