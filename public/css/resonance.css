@@ -86,13 +86,13 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-list button:hover, .rs-choice-collapse:hover { border-color: var(--mint-400); color: var(--mint-300); }
 .rs-choice-full { z-index: 20; inset: 0; display: block; pointer-events: none; background: transparent; }
 .rs-choice-full .spov__veil { display: none; }
-.rs-choice-overlay { position: absolute; right: clamp(8px,1vw,18px); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(12.8rem,92vw); max-height: min(72dvh,calc(100dvh - 3.2rem - env(safe-area-inset-bottom,0px))); overflow: auto; padding: .18rem; background: rgba(8,13,11,.97); border: 1px solid var(--mint-600); pointer-events: auto; }
+.rs-choice-overlay { position: absolute; right: clamp(8px,1vw,18px); bottom: var(--rs-dock-bottom,calc(2.82rem + env(safe-area-inset-bottom,0px))); width: min(12.8rem,92vw); max-height: min(72dvh,calc(100dvh - 3.2rem - env(safe-area-inset-bottom,0px))); overflow: auto; padding: .18rem; background: rgba(8,13,11,.97); border: 1px solid var(--mint-600); pointer-events: auto; }
 .rs-choice-option { min-width: 0; }
 .rs-choice-option .spcard { width: 100%; min-height: 2.1rem; }
 .rs-choice-option > label { display: flex; align-items: center; gap: .08rem; padding-top: .07rem; }
 .rs-choice-option select { min-width: 0; flex: 1; }
 .rs-choice-collapse { position: absolute; z-index: 2; right: .2rem; top: .2rem; }
-.rs-panel-drawer { position: fixed; z-index: 110; top: clamp(8px,1vh,14px); right: clamp(8px,1vw,18px); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(7.2rem,58vw); display: flex; flex-direction: column; overflow: hidden; color: var(--text-hi); background: rgba(8,13,11,.98); border: 1px solid var(--line-2); box-shadow: 0 .14rem .4rem rgba(0,0,0,.72); }
+.rs-panel-drawer { position: fixed; z-index: 110; top: clamp(8px,1vh,14px); right: clamp(8px,1vw,18px); bottom: var(--rs-dock-bottom,calc(2.82rem + env(safe-area-inset-bottom,0px))); width: min(7.2rem,58vw); display: flex; flex-direction: column; overflow: hidden; color: var(--text-hi); background: rgba(8,13,11,.98); border: 1px solid var(--line-2); box-shadow: 0 .14rem .4rem rgba(0,0,0,.72); }
 .rs-panel-drawer > header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: .1rem; padding: .08rem .12rem; background: rgba(22,32,27,.96); border-bottom: 1px solid var(--line); }
 .rs-panel-drawer > header h2 { margin: .015rem 0 0; font-size: .2rem; }
 .rs-panel-drawer > header > button { width: .38rem; height: .38rem; color: var(--text-hi); background: transparent; border: 1px solid var(--line-2); font-size: .26rem; cursor: pointer; }
@@ -106,6 +106,10 @@ body { background: #101512; color: var(--rs-text); }
 .rs-quick-inventory { position:fixed; z-index:34; left:clamp(8px,1vw,18px); bottom:calc(2.78rem + env(safe-area-inset-bottom,0px)); display:flex; align-items:center; gap:.04rem; max-width:min(4.8rem,70vw); overflow-x:auto; padding:.035rem; background:rgba(8,13,11,.88); border:1px solid var(--line-2); box-shadow:0 .08rem .2rem rgba(0,0,0,.45); pointer-events:none; }
 .rs-quick-inventory__item { flex:none; display:grid; place-items:center; width:.42rem; height:.42rem; padding:.015rem; color:var(--mint-300); background:rgba(255,255,255,.04); border:1px solid var(--line-2); cursor:grab; pointer-events:auto; }
 .rs-quick-inventory__item:active { cursor:grabbing; border-color:var(--mint-400); }
+.rs-item-icon { position:relative; display:grid; place-items:center; width:100%; height:100%; min-width:0; min-height:0; color:var(--mint-300); }
+.rs-item-icon img { display:block; width:100%; height:100%; object-fit:contain; }
+.rs-item-icon > .icon { width:72%; height:72%; }
+.rs-item-icon > small { position:absolute; right:-.02rem; bottom:-.02rem; min-width:.13rem; padding:0 .025rem; color:#10120f; background:var(--mint-300); font-size:.09rem; line-height:1.2; text-align:center; }
 .rs-economy-help { display:grid; gap:.08rem; color:var(--text-hi); font-size:.13rem; line-height:1.45; }
 .rs-economy-help p { margin:0; }
 .rs-economy-help__odds { display:grid; gap:.04rem; }

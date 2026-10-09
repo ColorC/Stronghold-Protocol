@@ -3,17 +3,18 @@ import { html, Button, Icon, Panel, TextField, TierChip, HexBadge, BondDisc } fr
 import { assets } from '../assets.js';
 import { filterOperators, formatStat, roleLabel, strategyConditionText, strategyTimingText } from './model.js';
 import { pactIconUrl } from './pactIcon.js';
+import { ResonanceItemIcon, resonanceItemIconUrl } from './itemIcon.js';
 function OperatorAvatar({operator,size='md'}) {
  const [src,setSrc]=useState(()=>assets.avatar(operator?.charId));
  useEffect(()=>{let live=true;const refresh=()=>{if(live)setSrc(assets.avatar(operator?.charId))};const off=assets.onChange(refresh);assets.ready().then(refresh).catch(()=>{});return()=>{live=false;off()}},[operator?.charId]);
  return html`<span class=${`rs-avatar rs-avatar--${size}`}>${src?html`<img src=${src} alt="" loading="lazy"/>`:html`<span aria-hidden="true">${(operator?.name||'干').slice(0,1)}</span>`}</span>`;
 }
 function CatalogVisual({kind,id,item}) {
- const resolve=()=>kind==='pact'?assets.bondIcon(id):kind==='environment'&&item?.identityPactId?assets.bondIcon(item.identityPactId):assets.itemIcon(kind==='item'?id:item);
+ const resolve=()=>kind==='pact'?assets.bondIcon(id):kind==='environment'&&item?.identityPactId?assets.bondIcon(item.identityPactId):kind==='item'?resonanceItemIconUrl({equipment:{[id]:item}},id):assets.itemIcon(item);
  const [src,setSrc]=useState(resolve);
  useEffect(()=>{let live=true;const refresh=()=>{if(live)setSrc(resolve())};const off=assets.onChange(refresh);assets.ready().then(refresh).catch(()=>{});return()=>{live=false;off()}},[kind,id,item?.identityPactId]);
- const glyph={pact:'shield',item:'sword',strategy:'book',environment:'rook'}[kind]||'book';
- return html`<span class="lo-card__art rs-codex__art">${kind==='pact'?html`<span class="rs-codex__bond-disc"><${BondDisc} name=${item?.name||''} icon=${pactIconUrl({pacts:{[id]:item}},id)||undefined} iconMask=${true} showName=${false} size="md"/></span>`:src?html`<img src=${src} alt="" loading="lazy"/>`:html`<span class="lo-card__glyph"><${Icon} name=${glyph}/></span>`}</span>`;
+ const glyph={pact:'shield',strategy:'book',environment:'rook'}[kind]||'book';
+ return html`<span class="lo-card__art rs-codex__art">${kind==='pact'?html`<span class="rs-codex__bond-disc"><${BondDisc} name=${item?.name||''} icon=${pactIconUrl({pacts:{[id]:item}},id)||undefined} iconMask=${true} showName=${false} size="md"/></span>`:kind==='item'?html`<${ResonanceItemIcon} catalog=${{equipment:{[id]:item}}} itemId=${id} size="md" showTier=${false}/>`:src?html`<img src=${src} alt="" loading="lazy"/>`:html`<span class="lo-card__glyph"><${Icon} name=${glyph}/></span>`}</span>`;
 }
 export function RosterPanel({ catalog, activeIds, onDetail, filter = '', onlyActive = false }) {
  const [query,setQuery]=useState(filter),[cost,setCost]=useState(''),[pact,setPact]=useState(''),[role,setRole]=useState(''),[poolOnly,setPoolOnly]=useState(onlyActive);

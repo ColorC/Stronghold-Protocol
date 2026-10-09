@@ -52,7 +52,28 @@ function sessionUrl(id) {
 function representativeFor(environment, catalog, activeIds) {
   const pactId = environment?.identityPactId;
   if (!pactId) return null;
-  return activeIds.map((id) => catalog.operators?.[id]).find((operator) => operator?.pacts?.includes(pactId)) || null;
+  const available = activeIds.map((id) => catalog.operators?.[id]).find((operator) => operator?.pacts?.includes(pactId));
+  if (available) return available;
+  const representative = catalog.operators?.[environment.guaranteedTerminalId];
+  return representative?.pacts?.includes(pactId) ? representative : null;
+}
+function briefingRoute(campaign, difficulty) {
+  const schedule = campaign?.nodeSchedule?.[difficulty] || {};
+  const supplyNodes = campaign?.supply?.components?.nodes || [];
+  const leaderNodes = [schedule.bossNode, schedule.baseBossNode, schedule.eliteNode, schedule.hiddenBossNode].filter(Number.isFinite);
+  const nodes = [...new Set([1, 2, 3, ...supplyNodes.slice(0, 2), ...leaderNodes])].filter((node) => node > 0 && node <= (schedule.nodes || Infinity)).sort((a, b) => a - b);
+  return nodes.map((node) => {
+    const leader = node === schedule.bossNode ? '最终领袖'
+      : node === schedule.baseBossNode ? '领袖战'
+        : node === schedule.eliteNode ? '精英战'
+          : node === schedule.hiddenBossNode ? '隐藏领袖' : '';
+    const component = supplyNodes.includes(node);
+    const funnySupply = difficulty === 'FUNNY' && schedule.battleOnEvenNodes && node % 2 === 1;
+    const kind = leader || (component ? '组件补给' : funnySupply ? '补给' : campaign?.strategyNodes?.includes(node) ? '策略选择' : '节点推进');
+    const detail = component ? `选择${campaign.supply?.components?.optionCount ?? 3}项，获得${campaign.supply?.components?.countPerNode ?? 1}件组件`
+      : funnySupply ? `获得${schedule.oddNodeGold ?? 0}金币与${schedule.oddNodeXp ?? 0}经验` : '';
+    return { node, kind, detail };
+  });
 }
 function EnvironmentPortrait({ environment, catalog, activeIds }) {
   const operator = representativeFor(environment, catalog, activeIds);
@@ -74,13 +95,17 @@ function FlowHeader({ step, title, difficulty, onBack, onGuide }) {
 }
 function PactSummary({ pact, catalog, id, description, onOpen }) {
   if (!pact) return html`<p class="t-dim">本环境暂无额外盟约说明。</p>`;
+  const firstLevel = pact.levels?.[0];
+  const threshold = firstLevel?.threshold;
+  const firstEffect = firstLevel?.description || description || pact.description || '查看盟约详情了解效果。';
   return html`<article class="rs-brief-pact">
     <div class="rs-brief-pact__head">
       <${PactIcon} catalog=${catalog} id=${id} size="lg"/>
       <div><${MicroLabel} tone="mint">本局主盟约</${MicroLabel}><h3>${pact.name}</h3></div>
       <button type="button" class="rs-brief-pact__open" onClick=${onOpen}>查看盟约</button>
     </div>
-    <p>${description || pact.description || '查看盟约详情了解效果。'}</p>
+    <p>${threshold ? html`<b>达到${threshold}名干员：</b>` : null}${firstEffect}</p>
+    ${pact.levels?.length > 1 ? html`<span class="rs-brief-pact__more">更高层级效果可在盟约详情中查看</span>` : null}
   </article>`;
 }
 export function App() {
@@ -234,6 +259,7 @@ export function App() {
   const catalogReady = seedValid && catalogKey === `${numericSeed}:${env}` && !!selected;
   const difficultyArt = uiUrl(data.get('assets'), `modeChoice/${difficultyArtKey[difficulty] || 'normal'}_rhodes_island`);
   const difficultySummary = difficultyCampaignSummary(catalog.campaign, difficulty);
+  const route = briefingRoute(catalog.campaign, difficulty);
   const showCodex = (tab) => { setCodexTab(tab); setCodex(true); const url = new URL(location.href); url.searchParams.set('view', 'codex'); history.replaceState(null, '', url); };
   const openCodex = () => showCodex('operators');
   const openEconomyGuide = () => showCodex('economy');
@@ -308,14 +334,19 @@ export function App() {
             <div class="rs-brief-identity">${selected ? html`<${EnvironmentPortrait} environment=${selected} catalog=${catalog} activeIds=${activeIds}/>` : null}
               <div><${MicroLabel} tone="mint">本局难度</${MicroLabel}><h2>${difficultyName(difficulty)}</h2>
                 <p>${DIFFICULTIES.find(([id]) => id === difficulty)?.[2]}</p></div></div>
-            <${PactSummary} pact=${selectedPact} catalog=${catalog} id=${selected?.identityPactId} description=${selectedPact?.description} onOpen=${detailButton(selected?.identityPactId)}/>
+            <${PactSummary} pact=${selectedPact} catalog=${catalog} id=${selected?.identityPactId} onOpen=${detailButton(selected?.identityPactId)}/>
             <button class="rs-advanced" onClick=${() => setAdvancedOpen(true)}><${Icon} name="gear"/>高级设置</button>
           </section>
           <section class="brief__right"><div class="rs-brief-prep brackets">
             <div class="rs-brief-prep__head"><h2>开局整备</h2><${MicroLabel}>本局可用阵容</${MicroLabel}></div>
-            <p class="rs-brief-prep__roster">招募池中有 <b class="num">${activeIds.length}</b> 名干员</p>
+            <p class="rs-brief-prep__roster">可招募干员 <b class="num">${activeIds.length}</b> 名</p>
             <div class="rs-brief-prep__resources"><span>开局资源</span><b>${catalog.campaign?.opening?.gold ?? '—'}<small>金币</small></b>
-              <b>${catalog.campaign?.opening?.level ?? '—'}<small>科技</small></b><b>${catalog.campaign?.opening?.population ?? '—'}<small>人口</small></b></div>
+              <b>${catalog.campaign?.opening?.level ?? '—'}<small>科技</small></b><b>${catalog.campaign?.opening?.population ?? '—'}<small>人口</small></b>
+              <b class="rs-brief-prep__components">${catalog.campaign?.opening?.basicComponents ?? '—'}<small>基础组件</small></b></div>
+            <section class="rs-brief-route" aria-label="本局节点路线"><div class="rs-brief-route__head"><b>本局路线</b><span>${difficultyName(difficulty)} · ${catalog.campaign?.nodeSchedule?.[difficulty]?.nodes ?? '—'}节点</span></div>
+              <ol>${route.map(({ node, kind, detail }) => html`<li key=${node} class=${kind.includes('领袖') ? 'is-leader' : kind.includes('精英') ? 'is-elite' : ''}>
+                <b class="rs-brief-route__node">${node}</b><span class="rs-brief-route__kind">${kind}</span>${detail ? html`<small>${detail}</small>` : null}
+              </li>`)}</ol></section>
             <p class="rs-brief-prep__hint">确认后进入本局，完整干员与战术资料可随时从图鉴查看。</p>
             <${Button} variant="secondary" icon="book" onClick=${openCodex}>打开战术图鉴<//>
           </div></section>

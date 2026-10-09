@@ -2,14 +2,15 @@ import { html, Button, MicroLabel, DifficultyTag, HexBadge } from '../ui/compone
 import { TopBar } from '../ui/hud.js';
 import { ShopBar } from '../ui/shopBar.js';
 import { BondStrip } from '../ui/bondStrip.js';
-import { GIcon, CoinGlyph, ItemIcon } from '../ui/gameComponents.js';
-import { useState } from '../../vendor/hooks.module.js';
+import { GIcon, CoinGlyph } from '../ui/gameComponents.js';
+import { useLayoutEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { SettingsModal } from '../ui/settings.js';
 import { data } from '../data.js';
 import { assets } from '../assets.js';
 import { uiUrl } from '../ui/assetUrls.js';
 import { FacingWheel, setPieceDir } from '../ui/facingWheel.js';
 import { FieldPanel, InventoryPanel, PactPanel } from './panels.js';
+import { ResonanceItemIcon } from './itemIcon.js';
 import { BattleReport } from './battleReport.js';
 import { ReplayControls } from './replayControls.js';
 import { CodexScreen } from './codex.js';
@@ -23,10 +24,33 @@ const mergeAvailable = (state,id) => (state.pieces||[]).filter(piece=>piece.oper
 export function GameChrome(p) {
   const [settingsOpen,setSettingsOpen]=useState(false);
   const [codexInitialTab,setCodexInitialTab]=useState('operators');
+  const rootRef=useRef(null);
   const {state,catalog,host,detail,setDetail,setPanel,panel,busy,act,onLeave,shopCollapsed,setShopCollapsed,
     replay,setReplay,playing,setPlaying,speed,setSpeed,frame,jumpToEnd,view,summary,showReplay,
     move,openDetail,facing,commitFacing,cancelFacing,choiceSelections,setChoiceSelections,strategyTargets,setStrategyTargets,
     makeChoice,choiceOpen,saleZoneRef,sellingPiece,equipDrop} = p;
+  useLayoutEffect(()=>{
+    const root=rootRef.current;if(!root)return;
+    const selector='.shopbar__cards .scard, .shopbar__reward .spcard, .shopbar__tools .toolbtn, .lvcard, .rs-turn-action button, .rs-quick-inventory__item, .rs-replay-native button, .rs-replay-native select, .rs-replay-native progress, .rs-sell-zone';
+    let frame=0;const observed=new Set([root]);
+    const observer=typeof ResizeObserver==='function'?new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure)}):null;
+    observer?.observe(root);
+    const measure=()=>{
+      let top=Infinity;const nextObserved=new Set([root]);
+      for(const element of root.querySelectorAll(selector)){
+        const rect=element.getBoundingClientRect(),style=getComputedStyle(element);
+        if(!element.getClientRects().length||style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0||rect.width<=0||rect.height<=0||rect.bottom<=0||rect.top>=innerHeight)continue;
+        top=Math.min(top,Math.max(0,rect.top));nextObserved.add(element);
+      }
+      if(Number.isFinite(top))root.style.setProperty('--rs-dock-bottom',`${Math.max(0,innerHeight-top+8)}px`);
+      else root.style.removeProperty('--rs-dock-bottom');
+      for(const element of observed)if(!nextObserved.has(element)){observer?.unobserve(element);observed.delete(element)}
+      for(const element of nextObserved)if(!observed.has(element)){observed.add(element);observer?.observe(element)}
+    };
+    const onResize=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure)};
+    measure();addEventListener('resize',onResize);
+    return()=>{removeEventListener('resize',onResize);cancelAnimationFrame(frame);observer?.disconnect();root.style.removeProperty('--rs-dock-bottom')};
+  },[state,panel,replay,shopCollapsed,sellingPiece,choiceOpen,busy]);
   const xpNeed=Number(catalog.campaign?.economy?.xpToLevel?.[state.level]??xpForLevel(state.level));
   const prep=prepView(state,catalog);
   const shopPriv={funds:state.gold,deployCount:state.deployedCount,deployCap:state.level,hand:prep.hand,board:prep.board,temp:prep.temp,loadout:null,
@@ -38,11 +62,15 @@ export function GameChrome(p) {
     thresholds:(pacts[bondId]?.levels||[]).map(y=>y.threshold),tier:(pacts[bondId]?.levels||[]).filter(y=>y.threshold<=(x.count||0)).length,active:!!x.activeThreshold}));
   const cardPresentation=(slot)=>{const op=catalog.operators?.[slot.id];if(!op)return {};
     const skill=op.stars?.[1]?.skill||null;
+    const playerStats=op.stats||{},rawStats=op.stars?.[1]?.stats||{};
+    const stat=(playerField,rawField)=>playerStats[playerField]!=null&&playerStats[playerField]!==''&&Number.isFinite(Number(playerStats[playerField]))?playerStats[playerField]:rawStats[rawField]??playerStats[rawField];
+    const statText=[['生命',stat('health','maxHp')],['攻击',stat('attack','atk')],['防御',stat('defense','def')]].filter(([,value])=>value!=null&&value!==''&&Number.isFinite(Number(value))).map(([label,value])=>`${label} ${value}`).join(' · ');
+    const previewText=[statText&&`一星 · ${statText}`,skill?.name&&`技能 · ${skill.name}`,skill?.description].filter(Boolean).join('\n');
     const copies=state.pieces.filter(x=>x.operatorId===slot.id&&x.star===1).length;
     const nextStar=state.pieces.filter(x=>x.operatorId===slot.id&&x.star===2).length>=2?'三星':'二星';
     return {record:{...op,tier:op.cost,bonds:op.pacts||[],profession:data.lookup('chess',slot.id)?.profession,subProfessionName:roleLabel(op.role),assets:{...(op.assets||{}),portrait:op.charId||op.assets?.portrait||op.portrait}},
       skill:skill?{...skill,index:Number.isInteger(skill.index)?skill.index:undefined}:null,
-      merge:{copies:Math.min(2,copies),need:3,hint:copies>=2?`干员将晋升为${nextStar}`:''}};
+      merge:{copies:Math.min(2,copies),need:3,hint:copies>=2?`干员将晋升为${nextStar}`:''},previewText};
   };
   const reasonFor=(_kind,slot,_priv,editable)=>!editable||busy||!['prep','choice'].includes(state.phase)?'当前阶段无法招募':slot.sold?'已售罄':
     state.gold<Number(slot.price??catalog.operators?.[slot.id]?.cost??0)?'金币不足':
@@ -74,7 +102,7 @@ export function GameChrome(p) {
     panel==='settlement'?state.phase==='complete'?null:summary?html`<section class="rs-native-settlement"><h2>${summary.won?'本场守住防线':'本场防线失守'}</h2>
       <p>目标生命损失 <b>${summary.hpLoss}</b></p><p>收入 ${summary.income} · 胜利奖励 ${summary.winBonus} · 连胜奖励 ${summary.streakBonus}</p>
       <p>利息 ${summary.interest} · 结算金币 ${summary.goldAfter} · 经验 ${summary.xpAfter}</p><button onClick=${()=>showReplay(summary.round)}>回放本场</button></section>`:html`<p>本场结算尚未记录</p>`:null;
-  return html`<main class=${`screen gm rs-game ${state.phase==='complete'&&!replay?'is-terminal':''}`} onDragOver=${event=>{if(event.dataTransfer?.types?.includes('application/x-stronghold-equipment'))event.preventDefault()}} onDrop=${equipDrop}>
+  return html`<main ref=${rootRef} class=${`screen gm rs-game ${state.phase==='complete'&&!replay?'is-terminal':''}`} onDragOver=${event=>{if(event.dataTransfer?.types?.includes('application/x-stronghold-equipment'))event.preventDefault()}} onDrop=${equipDrop}>
     <section class="gm__field" ref=${host} aria-label="共鸣战场"><div class="gm__vignette"></div></section>
     <div class="gm__hud">
       <${TopBar} pub=${{round:replay?.round??state.round,phase:replay?'battle':state.phase}} priv=${{lp:state.hp,alive:true}} conn=${null} hud=${null} total=${null} drawer=${panel==='formation'?'info':null} pen=${!replay&&panel==='enemy'} penAvail=${!replay&&!!state.nextEnemies?.length&&state.node?.kind!=='logistics'} onPen=${enabled=>setPanel(enabled?'enemy':null)} onExit=${onLeave} onDrawer=${tab=>setPanel(tab==='info'?(panel==='formation'?null:'formation'):null)} onReady=${()=>{}}
@@ -82,7 +110,7 @@ export function GameChrome(p) {
         phaseContent=${html`<span class="rs-phase">${replay?'战斗回放':state.phase==='choice'?'选择补给':state.phase==='battle'?'交战':state.phase==='complete'?'已结束':state.nodeStarted?'整备':'补给'}</span>`}
         rightContent=${replay?html`<div class="rs-hud-actions"><span class="rs-phase">第 ${replay.round} 场</span></div>`:html`<div class="rs-hud-actions">
           ${state.phase==='choice'&&state.pendingChoices?.length&&panel!=='choice'?html`<${Button} size="sm" onClick=${()=>setPanel('choice')}>继续选择</${Button}>`:null}
-          <${Button} size="sm" square=${true} title="装备背包" aria-label="装备背包" onClick=${()=>setPanel('equipment')}><${ItemIcon} itemId=${state.inventory?.[0]?.itemId||Object.keys(catalog.equipment||{})[0]} size="sm" showTier=${false}/></${Button}><${Button} size="sm" square=${true} title="设置" aria-label="设置" onClick=${()=>setSettingsOpen(true)}><${GIcon} name="gear"/></${Button}><${Button} size="sm" square=${true} title="战术图鉴" onClick=${()=>{setCodexInitialTab('operators');setPanel('codex')}}><${GIcon} name="book"/></${Button}>
+          <${Button} size="sm" square=${true} title="装备背包" aria-label="装备背包" onClick=${()=>setPanel('equipment')}><${ResonanceItemIcon} catalog=${catalog} itemId=${state.inventory?.[0]?.itemId||Object.keys(catalog.equipment||{})[0]} size="sm" showTier=${false}/></${Button}><${Button} size="sm" square=${true} title="设置" aria-label="设置" onClick=${()=>setSettingsOpen(true)}><${GIcon} name="gear"/></${Button}><${Button} size="sm" square=${true} title="战术图鉴" onClick=${()=>{setCodexInitialTab('operators');setPanel('codex')}}><${GIcon} name="book"/></${Button}>
           <a class="rs-fullscreen-small" href=${location.href} target="_blank" rel="noopener">全屏打开</a></div>`}/>
       ${replay?null:html`<div class="rs-gm-bonds"><${BondStrip} bonds=${bonds} records=${pactRecords} onOpen=${id=>openDetail({kind:'pact',id})} iconFor=${id=>pactIconUrl(catalog,id)} iconMask=${true} emptyLabel="部署激活" max=${8}/></div>`}
       ${replay?null:html`<nav class="rs-strategy-pins" aria-label="已选策略">${(state.strategies||[]).map(entry=>{const id=typeof entry==='string'?entry:entry.id,record=catalog.strategies?.[id],progress=state.strategyState?.[id];return html`<button key=${id} title=${record?.description||record?.name} onClick=${()=>openDetail({kind:'strategy',id})}><${GIcon} name="book"/><span><b>${record?.name||'本局策略'}</b><small>${strategyProgressText(progress)||'生效条件依策略而定'}</small></span></button>`})}</nav>`}
@@ -100,7 +128,7 @@ export function GameChrome(p) {
       ${replay?null:html`<div class="rs-turn-action"><${Button} variant="primary" size="lg" disabled=${busy||state.phase!=='prep'||(state.node?.kind!=='logistics'&&!state.deployedCount)} onClick=${()=>state.node?.kind==='logistics'||!state.nodeStarted?act({type:'advanceSupply'}):act({type:'fight'})}>${state.node?.kind==='logistics'||!state.nodeStarted?'领取补给':'开始战斗'}</${Button}></div>`}
     </div>
     ${!replay&&sellingPiece?html`<aside class="rs-sell-zone" data-drop="sell" ref=${saleZoneRef} aria-label=${`出售${catalog.operators?.[sellingPiece.operatorId]?.name||'干员'}，返还${saleValue}金币`}><b>松开出售</b><span>${catalog.operators?.[sellingPiece.operatorId]?.name||'干员'} · +${saleValue}金</span><small>继续拖回战场可取消</small></aside>`:null}
-    ${!replay&&(state.inventory||[]).length?html`<nav class="rs-quick-inventory" aria-label="装备背包">${state.inventory.map(item=>{const record=catalog.equipment?.[item.itemId]||{};const label=`${record.name||'装备'} · ${record.description||'拖到干员身上装备'} · 右键查看合成配方`;return html`<button type="button" class="rs-quick-inventory__item" key=${item.uid} draggable=${!busy&&['prep','choice'].includes(state.phase)} aria-label=${label} title=${label} onDragStart=${event=>{event.dataTransfer?.setData('application/x-stronghold-equipment',String(item.uid));if(event.dataTransfer)event.dataTransfer.effectAllowed='move'}} onClick=${()=>openDetail({kind:'item',id:item.itemId})} onContextMenu=${event=>{event.preventDefault();openDetail({kind:'item',id:item.itemId})}}><${ItemIcon} itemId=${item.itemId} size="sm" showTier=${true}/></button>`})}</nav>`:null}
+    ${!replay&&(state.inventory||[]).length?html`<nav class="rs-quick-inventory" aria-label="装备背包">${state.inventory.map(item=>{const record=catalog.equipment?.[item.itemId]||{};const label=`${record.name||'装备'} · ${record.description||'拖到干员身上装备'} · 右键查看合成配方`;return html`<button type="button" class="rs-quick-inventory__item" key=${item.uid} draggable=${!busy&&['prep','choice'].includes(state.phase)} aria-label=${label} title=${label} onDragStart=${event=>{event.dataTransfer?.setData('application/x-stronghold-equipment',String(item.uid));if(event.dataTransfer)event.dataTransfer.effectAllowed='move'}} onClick=${()=>openDetail({kind:'item',id:item.itemId})} onContextMenu=${event=>{event.preventDefault();openDetail({kind:'item',id:item.itemId})}}><${ResonanceItemIcon} catalog=${catalog} itemId=${item.itemId} size="sm" showTier=${true}/></button>`})}</nav>`:null}
     ${!replay&&state.pendingChoices?.length&&state.phase==='choice'&&choiceOpen?html`<div class="spov rs-choice-full" role="dialog" aria-modal="true" aria-label="选择补给"><div class="spov__veil"></div><${Button} class="rs-choice-collapse" size="sm" onClick=${()=>setPanel(null)}>收起整备</${Button}>${state.pendingChoices.map(makeChoice)}</div>`:null}
     ${!replay&&panel==='codex'?html`<div class="rs-codex-overlay"><${CodexScreen} catalog=${catalog} activeIds=${state.activeOperatorIds||[]} initialTab=${codexInitialTab} onBack=${()=>{const url=new URL(location.href);url.searchParams.delete('view');url.hash='';history.replaceState(null,'',url);setDetail(null);setPanel(null)}} onDetail=${openDetail} overlayDetail=${detail?html`<${DetailPanel} detail=${detail} catalog=${catalog} state=${state} onDetail=${openDetail} onAction=${act} busy=${busy} onClose=${()=>setDetail(null)}/>`:null}/></div>`:null}
     ${!replay&&title?html`<aside class="rs-panel-drawer" role="dialog" aria-label=${title}><header><div><${MicroLabel} tone="mint">共鸣 · 局内</${MicroLabel}><h2>${title}</h2></div><button type="button" aria-label="关闭面板" title="关闭面板" onClick=${()=>setPanel(null)}>×</button></header><div class="rs-panel-drawer__body">${content}</div></aside>`:null}

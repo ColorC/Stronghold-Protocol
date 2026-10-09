@@ -62,7 +62,7 @@ function ArmedTag({ reason, free }) {
  *   onTap?:(idx:number)=>void, onBuy:Function, onDetail:Function }} props
  */
 export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free = false, armed = false, onTap = null, onBuy, onDetail, offBonds = null,
-  record = null, bondRenderer = null, skill = null, merge = null, id = null }) {
+  record = null, bondRenderer = null, skill = null, merge = null, previewText = null, id = null }) {
   const c = record || data.lookup('chess', slot.id);
   const m = data.get('assets');
   const tier = c?.tier ?? 1;
@@ -106,7 +106,8 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
     ${frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
     ${armed ? html`<${ArmedTag} reason=${reason} free=${free} />` : null}
   </button>`;
-  return reason && reason !== '已售出' && !armed ? html`<${Tooltip} text=${reason} block=${true} class="scard-wrap">${card}<//>` : card;
+  const tip = reason && reason !== '已售出' ? [reason, previewText].filter(Boolean).join('\n') : previewText;
+  return tip && !armed ? html`<${Tooltip} text=${tip} block=${true} class="scard-wrap">${card}<//>` : card;
 }
 
 /** The loadout's skill (icon; name + 已调配 in the tooltip) and an elite's module type, on an operator card. */
@@ -335,7 +336,7 @@ export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel,
           const reason = reasonFor ? reasonFor('chess', s, priv, editable) : shopBlockReason('buy', { priv, editable, slot: s, ...LOOKUPS });
           const visual = typeof cardPresentation === 'function' ? cardPresentation(s) : cardPresentation?.[s.id];
           const card = html`<${ChessCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} priv=${priv} frozen=${frozen} onBuy=${onBuy} onDetail=${onDetail} offBonds=${offBonds}
-              record=${visual?.record} bondRenderer=${visual?.bondRenderer || bondRenderer} skill=${visual?.skill} merge=${visual?.merge} id=${s.offerUid ? `offer-${encodeURIComponent(s.offerUid)}` : null}
+              record=${visual?.record} bondRenderer=${visual?.bondRenderer || bondRenderer} skill=${visual?.skill} merge=${visual?.merge} previewText=${visual?.previewText} id=${s.offerUid ? `offer-${encodeURIComponent(s.offerUid)}` : null}
               reason=${reason} armed=${interaction === 'two-tap' && armed === armKey('c', i, s)} onTap=${editable && interaction !== 'direct' ? (idx) => tapCard('c', idx, s, 'chess', reason, onBuy) : null} />`;
           return typeof renderSlotAction === 'function'
             ? html`<div class="shopbar__offer-wrap" key=${`wrap-c${i}:${s.id}`}>${card}${renderSlotAction(s, i)}</div>`

@@ -9,25 +9,30 @@ const NATIVE_DATA = path.join(ROOT, 'data/resonance-native');
 const SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(ROOT, 'runtime/resonance/ui-verification');
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
-const REPORT = path.join(OUT, 'ui-flow-receipt.json');
 const args = process.argv.slice(2);
-let remoteUrl = null, replaySession = null, createdSession = null, battleUi = false;
+let remoteUrl = null, replaySession = null, createdSession = null, resumeTailSession = null, battleUi = false;
 for (let i = 0; i < args.length;) {
   if (args[i] === '--battle-ui' && !battleUi) { battleUi = true; i++; }
   else if (args[i] === '--url' && args[i + 1] && !remoteUrl) { remoteUrl = args[i + 1]; i += 2; }
   else if (args[i] === '--session' && args[i + 1] && !replaySession) { replaySession = args[i + 1]; i += 2; }
   else if (args[i] === '--created-session' && args[i + 1] && !createdSession) { createdSession = args[i + 1]; i += 2; }
-  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-production-session-id>] [--battle-ui fresh flow (optional --url, forbids --session)]; no work started');
+  else if (args[i] === '--resume-tail' && args[i + 1] && !resumeTailSession) { resumeTailSession = args[i + 1]; i += 2; }
+  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-session-id>] [--battle-ui fresh flow] [--resume-tail <existing-ephemeral-session-id>]; no work started');
 }
 if (replaySession && !/^[a-zA-Z0-9-]{8,80}$/.test(replaySession)) throw new Error('--session must be an existing session id; no work started');
 if (createdSession && !/^[a-zA-Z0-9-]{8,80}$/.test(createdSession)) throw new Error('--created-session must be an existing session id; no work started');
+if (resumeTailSession && !/^[a-zA-Z0-9-]{8,80}$/.test(resumeTailSession)) throw new Error('--resume-tail must be an existing ephemeral session id; no work started');
+if (resumeTailSession && (remoteUrl || replaySession || createdSession || battleUi)) throw new Error('--resume-tail is an isolated existing ephemeral session flow and cannot be combined with other session/url flags; no work started');
+if (resumeTailSession) battleUi = true;
 if (battleUi && replaySession) throw new Error('--battle-ui cannot be combined with --session; no work started');
 if (createdSession && (!battleUi || !remoteUrl || replaySession)) throw new Error('--created-session requires --url and --battle-ui and cannot be combined with --session; no work started');
+const REPORT = path.join(OUT, resumeTailSession ? 'ui-flow-tail-receipt.json' : 'ui-flow-receipt.json');
 const require = createRequire(path.join(ROOT, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   sourceStatus: execFileSync('git', ['-C', SOURCE, 'status', '--short', '--untracked-files=no'], { encoding: 'utf8' }).trim(),
-  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || createdSession, battleUi,
+  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : resumeTailSession ? 'resume-tail-live-session' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || resumeTailSession || createdSession, battleUi,
+  resumeTailReference: resumeTailSession ? path.join(OUT, 'ui-flow-receipt.json') : null,
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
@@ -53,19 +58,109 @@ async function stateAfterRevision(page, id, revision, label) {
   await page.evaluate(value => { document.body.dataset.uiFlowRevision = String(value); }, state.revision);
   return state;
 }
+async function piecePointerPoint(page, uid) {
+  const handle = await page.waitForFunction(value => {
+    const numeric = Number(String(value).replace(/^\D+/, ''));
+    const view = globalThis.__SP_VIEW__, rect = view?.pieceScreenRect?.(numeric);
+    if (!rect || rect.width <= 2 || rect.height <= 2) return false;
+    const point = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    const hit = view.pieceAtClient?.(point.x, point.y);
+    if (hit?.uid !== numeric || document.elementFromPoint(point.x, point.y)?.tagName !== 'CANVAS') {
+      window.__uiFlowPiecePoint = null; return false;
+    }
+    const key = `${numeric}:${Math.round(point.x)}:${Math.round(point.y)}`;
+    const previous = window.__uiFlowPiecePoint;
+    const count = previous?.key === key ? previous.count + 1 : 1;
+    window.__uiFlowPiecePoint = { key, count };
+    return count >= 3 ? point : false;
+  }, { polling: 'raf', timeout: 15000 }, uid);
+  const point = await handle.jsonValue();
+  if (!point) throw new Error(`stable visible hit target unavailable for piece ${uid}`);
+  return point;
+}
+async function assertShopPointerTargets(page, scope) {
+  const result = await page.evaluate(() => {
+    const visible = element => {
+      const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return element.getClientRects().length > 0 && style.display !== 'none' && style.visibility !== 'hidden' &&
+        Number(style.opacity) > 0 && rect.width > 2 && rect.height > 2 && rect.left < innerWidth && rect.right > 0 && rect.top < innerHeight && rect.bottom > 0;
+    };
+    const controls = [
+      ...[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')].map((element, index) => ({ element, label: `shop-card-${index + 1}:${element.querySelector('.scard__name')?.textContent?.trim() || element.getAttribute('aria-label') || 'offer'}` })),
+      ...[...document.querySelectorAll('.shopbar__tools .toolbtn--amber, .shopbar__tools .toolbtn--ice, .shopbar .rs-level-card')].map(element => ({ element, label: element.innerText.trim() || element.title })),
+      ...[...document.querySelectorAll('.rs-turn-action button')].map(element => ({ element, label: `main-action:${element.innerText.trim()}` })),
+    ].filter(({ element }) => visible(element));
+    return { count: controls.length, shopCards: controls.filter(row => row.label.startsWith('shop-card-')).length,
+      controls: controls.map(({ element, label }) => {
+        const rect = element.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return { label, reachable: !!hit && (hit === element || element.contains(hit)), hit: hit?.className?.toString?.() || hit?.tagName || null,
+          center: { x: Math.round(x), y: Math.round(y) } };
+      }) };
+  });
+  check(`shop-pointer-centers-reachable-${scope}`, result.shopCards > 0 && result.controls.length >= result.shopCards + 3 && result.controls.every(control => control.reachable), result);
+}
+async function clickVisibleButtonText(page, rootSelector, text, label) {
+  const handle = await page.waitForFunction(({ rootSelector, text }) => {
+    const root = document.querySelector(rootSelector);
+    return [...(root?.querySelectorAll('button') || [])].find(element => {
+      const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return (element.innerText.trim() === text || element.getAttribute('aria-label') === text || element.title === text) &&
+        !element.disabled && rect.width > 2 && rect.height > 2 && style.display !== 'none' && style.visibility !== 'hidden';
+    }) || false;
+  }, { timeout: 10000 }, { rootSelector, text });
+  const element = handle.asElement();
+  if (!element) { await handle.dispose(); throw new Error(`visible ${text} button not found in ${rootSelector}`); }
+  const point = await element.evaluate(button => {
+    const rect = button.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return { x, y, reachable: !!hit && (hit === button || button.contains(hit)), hit: hit?.className?.toString?.() || hit?.tagName || null };
+  });
+  check(`${label}-button-center-reachable`, point.reachable, point);
+  await page.mouse.click(point.x, point.y); await handle.dispose();
+}
+async function inspectShopHoverTooltip(page) {
+  const card = await page.$('.shopbar__cards .scard-wrap > .scard:not(.scard--sold)');
+  if (!card) throw new Error('native preview tooltip shop card is unavailable');
+  const box = await card.boundingBox();
+  if (!box) throw new Error('native preview tooltip shop card has no visible bounds');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForFunction(() => {
+    const tip = document.querySelector('div.tooltip.is-shown[role="tooltip"]');
+    if (!tip) { window.__uiFlowTooltipSince = null; return false; }
+    window.__uiFlowTooltipSince ??= performance.now();
+    return performance.now() - window.__uiFlowTooltipSince >= 150;
+  }, { polling: 'raf', timeout: 5000 });
+  const text = await page.$eval('div.tooltip.is-shown[role="tooltip"]', element => element.innerText.trim());
+  check('shop-hover-shows-native-preview-tooltip', /一星/.test(text) && /生命|攻击|防御/.test(text) && /技能/.test(text), text);
+  await page.mouse.move(2, 2);
+}
+async function inspectOverlayShopReachability(page, pieceUid) {
+  await rightClickPiece(page, pieceUid);
+  check('operator-detail-visible-for-pointer-overlay-test', await page.$('.rs-detail-panel[role="dialog"]') !== null,
+    await page.$eval('.rs-detail-panel[role="dialog"]', element => element.getAttribute('aria-label')));
+  await assertShopPointerTargets(page, 'operator-detail');
+  const drawers = [
+    { root: '.rs-dock', text: '盟约', selector: '.rs-panel-drawer[aria-label="盟约"]', name: 'pacts' },
+    { root: '.rs-hud-actions', text: '装备背包', selector: '.rs-panel-drawer[aria-label="装备"]', name: 'equipment' },
+    { root: '.rs-dock', text: '战报', selector: '.rs-panel-drawer[aria-label="战斗记录"]', name: 'report' },
+  ];
+  for (const drawer of drawers) {
+    await clickVisibleButtonText(page, drawer.root, drawer.text, `${drawer.name}-drawer-opener`);
+    await page.waitForSelector(drawer.selector, { timeout: 5000 });
+    check(`${drawer.name}-drawer-and-detail-coexist`, await page.$('.rs-detail-panel[role="dialog"]') !== null,
+      await page.$eval(drawer.selector, element => element.getAttribute('aria-label')));
+    await assertShopPointerTargets(page, drawer.name);
+    await clickVisibleButtonText(page, drawer.selector, '×', `${drawer.name}-drawer-closer`);
+    await page.waitForFunction(selector => !document.querySelector(selector), { timeout: 5000 }, drawer.selector);
+  }
+}
 async function rightClickPiece(page, uid) {
   const beforeRevision = await page.evaluate(async () => {
     const id = new URL(location.href).searchParams.get('session');
     return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision;
   });
-  const point = await page.evaluate(value => {
-    const numeric = Number(String(value).replace(/^\D+/, ''));
-    const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
-    if (!rect || rect.width <= 2 || rect.height <= 2) return null;
-    return [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }]
-      .find(candidate => document.elementFromPoint(candidate.x, candidate.y)?.tagName === 'CANVAS') || null;
-  }, uid);
-  if (!point) throw new Error(`visible piece bounds unavailable for ${uid}`);
+  const point = await piecePointerPoint(page, uid);
   await page.mouse.click(point.x, point.y, { button: 'right' });
   await page.waitForSelector('.dpanel .rs-detail__member', { timeout: 10000 });
   const afterRevision = await page.evaluate(async () => {
@@ -80,14 +175,7 @@ async function leftClickPiece(page, uid) {
     const id = new URL(location.href).searchParams.get('session');
     return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision;
   });
-  const point = await page.evaluate(value => {
-    const numeric = Number(String(value).replace(/^\D+/, ''));
-    const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
-    if (!rect) return null;
-    return [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }]
-      .find(candidate => document.elementFromPoint(candidate.x, candidate.y)?.tagName === 'CANVAS') || null;
-  }, uid);
-  if (!point) throw new Error(`visible piece bounds unavailable for left click ${uid}`);
+  const point = await piecePointerPoint(page, uid);
   await page.mouse.click(point.x, point.y);
   await page.waitForSelector('.dpanel .rs-detail__member', { timeout: 10000 });
   const afterRevision = await page.evaluate(async () => {
@@ -170,6 +258,7 @@ try {
     if (request.method() === 'POST' && request.postData()?.includes('"type":"fight"')) receipt.fights++; });
   if (replaySession) { const replayUrl = new URL(url); replayUrl.searchParams.set('session', replaySession); url = replayUrl.href; receipt.url = url; }
   if (createdSession) { const resumeUrl = new URL(url); resumeUrl.searchParams.set('session', createdSession); url = resumeUrl.href; receipt.url = url; }
+  if (resumeTailSession) { const tailUrl = new URL(url); tailUrl.searchParams.set('session', resumeTailSession); url = tailUrl.href; receipt.url = url; }
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   if (replaySession) {
     await page.waitForSelector('.gm', { timeout: 30000 });
@@ -227,7 +316,19 @@ try {
     if (await page.$('.modal')) { await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.modal'), { timeout: 5000 }); }
     receipt.status = 'passed';
   } else {
-  if (createdSession) {
+  if (resumeTailSession) {
+    await page.waitForSelector('.gm', { timeout: 30000 });
+    await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30000 });
+    const resumed = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, resumeTailSession);
+    const historyTypes = (resumed?.history || []).map(entry => entry.type);
+    const expectedPrefix = ['operator-bought', 'shop-refreshed', 'piece-deployed', 'piece-deployed', 'piece-deployed'];
+    check('resume-tail-existing-session-at-exact-prep-state', resumed?.phase === 'prep' && resumed?.revision === 5 && resumed?.gold === 2 &&
+      expectedPrefix.every((type, index) => historyTypes[index] === type) && resumed.pieces?.filter(piece => piece.row != null).length === 3,
+      { phase: resumed?.phase, revision: resumed?.revision, gold: resumed?.gold, historyTypes, deployed: resumed?.pieces?.filter(piece => piece.row != null).length });
+    check('resume-tail-no-new-session', receipt.creates === 0 && new URL(page.url()).searchParams.get('session') === resumeTailSession,
+      { creates: receipt.creates, sessionId: resumeTailSession });
+    receipt.initialRevision = resumed.revision;
+  } else if (createdSession) {
     await page.waitForSelector('.gm', { timeout: 30000 });
     await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30000 });
     const resumed = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, createdSession);
@@ -300,15 +401,19 @@ try {
   await page.waitForSelector('.gm__field canvas,.fbfield', { timeout: 30000 });
   await page.waitForFunction(() => { const view = globalThis.__SP_VIEW__; return view?.kind === 'fallback' || Number(view?.raw?.stats?.().units) > 0; }, { timeout: 30000 });
   receipt.renderer = await page.evaluate(() => ({ kind: globalThis.__SP_VIEW__?.kind, stats: globalThis.__SP_VIEW__?.raw?.stats?.() }));
+  const before = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
+  const readFresh = () => page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
+  let current = before;
+  receipt.freshActions = [];
+  if (resumeTailSession) {
+    check('resume-tail-gameplay-visible', await page.$('.gm') !== null && await page.$('.rs-codex') === null,
+      { phase: before?.phase, revision: before?.revision });
+  } else {
   await shot(page, '05-prep'); await layout(page, 'prep');
   check('native-hud-shop', await page.$('.gtop') !== null && await page.$('.shopbar') !== null, 'native TopBar and ShopBar');
   check('prep-no-full-pool', await page.$('.rs-roster') === null, 'full pool absent');
-  const before = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
   check('real-session-state', !!before?.pieces?.length, before?.phase);
-  receipt.freshActions = [];
   check('fresh-opening-five-gold', before.gold === 5, { gold: before.gold });
-  const readFresh = () => page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
-  let current = before;
   const oneCostIndex = await page.$$eval('.shopbar__cards .scard:not(.scard--sold)', cards => cards.findIndex(card => {
     const price = card.querySelector('.scard__price'); return price && Number(price.textContent.trim()) === 1;
   }));
@@ -401,9 +506,11 @@ try {
   await page.click('.rs-codex-overlay .dpanel__close');
   check('codex-detail-keeps-board-view', await page.evaluate(() => !!globalThis.__SP_VIEW__ && globalThis.__SP_VIEW__ === window.__uiFlowViewRef), 'codex detail close keeps board view attached');
   await shot(page, '09-independent-codex'); check('codex-session-preserved', new URL(page.url()).searchParams.get('session') === receipt.sessionId, page.url());
+  }
   if (battleUi) {
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
     await page.waitForSelector('.gm__field canvas', { timeout: 10000 });
+    if (!resumeTailSession) {
     const codexBack = await page.$('.rs-codex-overlay .lo-top__left button');
     check('codex-back-control-visible', !!codexBack, 'native top-left back button is present');
     await codexBack.click();
@@ -420,9 +527,13 @@ try {
     }, { timeout: 10000 });
     const boardPointValue = await boardPoint.jsonValue();
     check('codex-return-board-interactive', !!boardPointValue && await page.evaluate(() => !!globalThis.__SP_VIEW__), boardPointValue);
+    }
     let live = await readFresh();
     const starterIds = new Set(before.pieces.slice(0, 3).map(piece => piece.uid));
-    const deployments = [];
+    const deployments = resumeTailSession
+      ? live.pieces.filter(piece => starterIds.has(piece.uid) && piece.row != null).map(piece => ({ uid: piece.uid, row: piece.row, col: piece.col, dir: piece.dir || 'RIGHT' }))
+      : [];
+    if (!resumeTailSession) {
     for (const starterUid of starterIds) {
       live = await readFresh();
       const starter = live.pieces.find(piece => piece.uid === starterUid);
@@ -463,10 +574,15 @@ try {
     }
     check('three-starters-deployed-by-native-pointer-and-facing-wheel', deployments.length === 3, { deployments, expectedStarterIds: [...starterIds] });
     receipt.freshActions.push({ action: 'mouse-drag-three-starters-facing-wheel', deployments });
+    } else {
+      check('resume-tail-three-starters-already-deployed', deployments.length === 3,
+        { deployments, expectedStarterIds: [...starterIds] });
+    }
     const wTarget = deployments[0];
+    await inspectShopHoverTooltip(page);
     await leftClickPiece(page, wTarget.uid);
     await page.click('.dpanel__close'); await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
-    await rightClickPiece(page, wTarget.uid);
+    await inspectOverlayShopReachability(page, wTarget.uid);
     const beforeBench = await readFresh();
     await page.keyboard.press('w');
     current = await stateAfterRevision(page, receipt.sessionId, beforeBench.revision, 'W-bench');
@@ -485,13 +601,8 @@ try {
     await page.waitForSelector('.rs-inventory__main[draggable="true"]', { timeout: 10000 });
     const itemUid = equipmentBefore.inventory[0].uid;
     const itemButton = await page.$(`[id="inventory-${itemUid}"] .rs-inventory__main[draggable="true"]`);
-    const equipPoint = await page.evaluate(uid => {
-      const numeric = Number(String(uid).replace(/^\D+/, ''));
-      const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
-      const point = rect && { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-      return point && document.elementFromPoint(point.x, point.y)?.tagName === 'CANVAS' ? point : null;
-    }, wTarget.uid);
-    if (!itemButton || !equipPoint) throw new Error('real equipment drag source or board target is unavailable');
+    const equipPoint = await piecePointerPoint(page, wTarget.uid);
+    if (!itemButton) throw new Error('real equipment drag source is unavailable');
     await dragPointer(page, itemButton, equipPoint);
     current = await stateAfterRevision(page, receipt.sessionId, equipmentBefore.revision, 'drag-equip');
     const equippedTarget = current.pieces.find(piece => piece.uid === wTarget.uid);
@@ -512,12 +623,7 @@ try {
     await page.evaluate(() => { const close = document.querySelector('.dpanel__close'); close?.click(); });
     await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
     const beforeDragSale = await readFresh();
-    const saleSource = await page.evaluate(uid => {
-      const numeric = Number(String(uid).replace(/^\D+/, ''));
-      const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
-      return rect && { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-    }, dragSale.uid);
-    if (!saleSource) throw new Error(`sale drag source unavailable for ${dragSale.uid}`);
+    const saleSource = await piecePointerPoint(page, dragSale.uid);
     await page.mouse.move(saleSource.x, saleSource.y); await page.mouse.down();
     await page.mouse.move(saleSource.x + 10, saleSource.y + 8, { steps: 2 });
     await page.waitForSelector('.rs-sell-zone[data-drop="sell"]', { timeout: 5000 });
@@ -529,6 +635,7 @@ try {
     check('drag-sells-real-deployed-piece', !current.pieces.some(piece => piece.uid === dragSale.uid) && current.gold > beforeDragSale.gold,
       { uid: dragSale.uid, goldBefore: beforeDragSale.gold, goldAfter: current.gold });
     receipt.freshActions.push({ action: 'native-drag-sell', pieceUid: dragSale.uid, gold: current.gold });
+    live = current;
     await rightClickPiece(page, wTarget.uid);
     const beforeXp = current;
     check('F-xp-cost-is-affordable', beforeXp.gold >= Number(beforeXp.actionCosts?.xpGold ?? 4), { gold: beforeXp.gold, cost: beforeXp.actionCosts?.xpGold ?? 4 });

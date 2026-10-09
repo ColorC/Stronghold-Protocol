@@ -1193,7 +1193,7 @@ export async function createFieldView(host, options = {}) {
     return t ? { row: t.row, col: t.col, x: t.x, y: t.y } : null;
   }
 
-  /** The prep piece under a canvas point: the one on the tile under it (render/pick.js; board, bench and temp rows). */
+  /** Prep defaults to tile picking; selected modes can also hit the drawn model bounds for full-body mouse targets. */
   function pieceAt(x, y) {
     if (mode !== 'prep') return null;
     const units = [];
@@ -1201,7 +1201,19 @@ export async function createFieldView(host, options = {}) {
       const u = pickUnitOf(views.get(e.key));
       if (u) { u.entry = e; units.push(u); }
     }
-    const best = pickOnTile(units, groundTile(x, y))?.entry;
+    let best = pickOnTile(units, groundTile(x, y))?.entry;
+    if (!best && lastPrep?.o?.pickModels) {
+      const hits=[];
+      for (const entry of prepPieces) {
+        const view=views.get(entry.key);if(!view||view.destroyed)continue;
+        const bounds=view.bounds?.();if(!bounds||![bounds.x,bounds.y,bounds.width,bounds.height].every(Number.isFinite))continue;
+        if(x<bounds.x||x>bounds.x+bounds.width||y<bounds.y||y>bounds.y+bounds.height)continue;
+        const dx=x-(bounds.x+bounds.width/2),dy=y-(bounds.y+bounds.height/2);
+        hits.push({entry,distance:dx*dx+dy*dy,depth:Number(view.z)||0});
+      }
+      hits.sort((a,b)=>a.distance-b.distance||b.depth-a.depth);
+      best=hits[0]?.entry||null;
+    }
     if (!best) return null;
     return { uid: best.uid, kind: best.piece.kind, id: best.piece.id, area: best.area, idx: best.idx, row: best.row, col: best.col, piece: best.piece, draggable: true };
   }
