@@ -125,11 +125,11 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   else if(sourceId==='BGS_017') text=`叙拉古支援单位被召唤时，该支援单位获得攻击徽章×${r.buff[0]*m}的战斗增益。`;
   else if(sourceId==='BGS_021') text=`叙拉古支援单位被召唤时，该支援单位获得攻击徽章×${r.buff[0]*m}与伤害徽章×${r.buff[1]*m}的战斗增益。`;
   else if(sourceId==='BGS_023') text=`战斗中每次实际部署时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
-  else if(sourceId==='BGS_061') text=`战斗中每次实际部署时召唤维多利亚作战支援单位${number(r.retire.count)}个；每个攻击${120*m}、生命${350*m}。`;
-  else if(sourceId==='BOT_218') text=`受到伤害后召唤一个哥伦比亚机械支援单位（攻击${240*m}、生命${1050*m}），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。`;
-  else if(sourceId==='BOT_312') text=`战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击${120*m}、生命${350*m}。`;
-  else if(sourceId==='BOT_537') text=`战斗中每次实际部署时召唤一个机械支援单位（攻击${960*m}、生命${2800*m}）。`;
-  else if(sourceId==='CFM_316') text=`战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='BGS_061') text=`战斗中每次实际部署时召唤${number(r.retire.count)}个黄金盟誓投影。`;
+  else if(sourceId==='BOT_218') text=`受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；每3秒最多触发一次，每场最多7次。`;
+  else if(sourceId==='BOT_312') text=`战斗中每次实际部署时召唤3个机械水獭投影。`;
+  else if(sourceId==='BOT_537') text=`战斗中每次实际部署时召唤一个机械水獭投影。`;
+  else if(sourceId==='CFM_316') text=`战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤狼群投影（至少1个，至多7个）。`;
   else if(sourceId==='EX1_531'||sourceId==='GVG_106') { trigger=`${FACTIONS[r.faction]}友方战斗部署时`; text=`${FACTIONS[r.faction]}友方战斗部署时，使自身获得${buffText(r.buff)}。`; }
   else if(sourceId==='BGS_112') { trigger='携带坚守盟约的友方战斗部署时'; text='携带坚守盟约的友方战斗部署时，使该干员附近友方获得'+buffText(r.buff)+'。'; }
   else if(sourceId==='FP1_031') text=`友方战斗部署效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
@@ -233,16 +233,6 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   const auras=[];
   const fallen=[];
   const summonMultiplier=owner=>Math.max(1,...entries.filter(e=>e.rule.summonMultiplier&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.summonMultiplier[e.elite?1:0]));
-  {
-    const nativeSpawn=battle.spawnToken.bind(battle);let cloning=false;
-    battle.spawnToken=(owner,id,r,c,opts={})=>{
-      const token=nativeSpawn(owner,id,r,c,opts);
-      if(!token||cloning||opts.darkmoonHandled||typeof owner!=='object')return token;
-      const count=summonMultiplier(owner)-1;
-      cloning=true;try{for(let i=0;i<count;i++){const cell=findSummonTile(battle,owner,'melee');if(!cell)break;nativeSpawn(owner,id,...cell,{...opts,darkmoonHandled:true});}}finally{cloning=false;}
-      return token;
-    };
-  }
   const retireMultiplier=owner=>Math.max(1,...entries.filter(e=>e.rule.retireMultiplier&&e.id!=='FP1_031'&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.retireMultiplier[e.elite?1:0]));
   const deploymentMultiplier=owner=>Math.max(1,...entries.filter(e=>e.id==='FP1_031'&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.retireMultiplier[e.elite?1:0]));
   const normalOps=()=>Object.values(catalog.operators).filter(op=>!op.elite&&op.recruitable!==false&&(op.source?.normalChess?.visible!==false||op.source?.normalChess?.nativeImport?.playable===true));
@@ -255,7 +245,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const op=pick(ops);if(!op)return null;
     const raw=op.source.normalChess,normalized=battle.data.getChess(op.chessId,{skillIndex:raw.skill?.index??0,moduleId:'none'});
     const stats=state?.growthMode==='levels'?levelBodyStats({chessId:op.chessId,growthMode:'levels',growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw):{...raw.stats};
-    return {op,def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',spine:'token_10030_mlyss_wtrman',avatar:'token_10030_mlyss_wtrman',name:raw.name+'的流形',stats,position:'MELEE',darkmoonSourceId:op.sourceRefs?.darkmoon19_2?.id,darkmoonNativeChessId:op.chessId}};
+    return {op,def:{...normalized,name:`${raw.name}投影`,stats,darkmoonProjection:true,darkmoonSourceId:op.sourceRefs?.darkmoon19_2?.id,darkmoonNativeChessId:op.chessId}};
   };
   const phantomDef=(e,u)=>{
     const piece=byUid.get(u?.uid),op=sourceOf(u),elite=!!(piece?.elite||op?.elite||u.def.golden||u.def.raw?.golden);
@@ -264,30 +254,50 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const raw=(elite?op?.source?.eliteChess||op?.source?.normalChess:op?.source?.normalChess)||u.def.raw;
     const normalized=battle.data.getChess(nativeId,{skillIndex:raw.skill?.index??0,moduleId:'none'});
     const stats=state?.growthMode==='levels'?levelBodyStats({chessId:nativeId,elite,growthMode:'levels',growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw):{...raw.stats};
-    return {def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',spine:'token_10030_mlyss_wtrman',avatar:'token_10030_mlyss_wtrman',name:raw.name+'的流形',stats,position:'MELEE',golden:elite,darkmoonNativeChessId:nativeId},tags:identity(u)};
+    return {def:{...normalized,name:`${raw.name}投影`,stats,golden:elite,darkmoonProjection:true,darkmoonNativeChessId:nativeId},tags:identity(u)};
   };
   const tokenDef=(e,p)=>{
-    const nativeId=p.token==='beast'?'token_10028_vigil_wolf':p.token==='pirate'?'token_10040_siege2_vlion':'token_10030_mlyss_wtrman';
-    const record=battle.tokenDef(nativeId,e.unit)||{id:nativeId,rangeGrid:[[0,0],[0,1]]};
-    const [a,h]=p.stats, m=scale(e);
-    return {...record,id:nativeId,name:p.token==='beast'?'协同狼群':p.token==='pirate'?'黄金盟誓':'作战流形',darkmoonCover:!!p.cover,profession:'TOKEN',position:'MELEE',dmgType:'phys',stats:{...record.stats,maxHp:350*h*m,atk:120*a*m,def:120,res:0,cost:0,blockCnt:p.cover?2:1,bat:1.5,aspd:100},skill:null,skills:[],talents:[],trait:'',traitBb:{},tokens:[]};
+    const prototypes={
+      mechanical:{tokenId:'token_10004_otter_motter',ownerId:'chess_native_char_242_otter_a',name:'机械水獭投影',prototypeName:'机械水獭'},
+      beast:{tokenId:'token_10028_vigil_wolf',ownerId:'chess_char_3_19_a',name:'狼群投影',prototypeName:'狼群'},
+      pirate:{tokenId:'token_10040_siege2_vlion',ownerId:'chess_char_6_07_a',name:'黄金盟誓投影',prototypeName:'黄金盟誓'},
+      elemental:{tokenId:'token_10015_dusk_drgn',ownerId:'chess_char_5_12_a',name:'小自在投影',prototypeName:'“小自在”'},
+    };
+    const prototype=prototypes[p.token]||prototypes.mechanical;
+    const nativeId=prototype.tokenId;
+    const record=battle.tokenDef(nativeId,prototype.ownerId)||{id:nativeId,rangeGrid:[[0,0],[0,1]]};
+    const [a,h]=p.stats, m=scale(e), proto=record.stats||{};
+    const stats={...proto,maxHp:Math.round((Number(proto.maxHp)||0)*h*.4*m),atk:Math.round((Number(proto.atk)||0)*a*.4*m),def:Math.round((Number(proto.def)||0)*.4*m),blockCnt:p.cover?2:1,cost:0};
+    return {...record,id:nativeId,name:prototype.name,darkmoonPrototypeTokenId:nativeId,darkmoonPrototypeOwnerChessId:prototype.ownerId,darkmoonPrototypeName:prototype.prototypeName,
+      darkmoonPrototypeScale:{attack:a*.4,health:h*.4,defense:.4},darkmoonSummonSourceText:`由${e.unit.name||'干员'}的额外特质生成`,darkmoonCover:!!p.cover,profession:'TOKEN',stats};
   };
   const spawn=(e,def,count,tags=[],p={})=>{
     const out=[],limit=Math.max(0,7-battle.allyUnits.filter(u=>u.kind==='token'&&alive(u)&&own(u,e.unit)&&u.mem.darkmoonSummon).length);
     for(let i=0;i<Math.min(count*summonMultiplier(e.unit),limit);i++){
-      const cell=findSummonTile(battle,e.unit,'melee');if(!cell)break;
       // Put identity on the definition before deployment, so summon observers see its real origin.
       const clean=structuredClone(def);clean.darkmoonFactionTags=tags;
-      const nativeId=clean.darkmoonNativeChessId,nativeDef=nativeId?battle.data.getChess(nativeId):null;
+      const prototypeOwnerId=clean.darkmoonPrototypeOwnerChessId;
+      const nativeId=prototypeOwnerId||clean.darkmoonNativeChessId;
+      const body=clean.darkmoonProjection?clean:battle.data.getToken(clean.id,prototypeOwnerId||e.unit.defId)||clean;
+      const cell=findSummonTile(battle,e.unit,'near',{melee:body.position!=='RANGED',allBoard:true});if(!cell)break;
+      const sourceOperator=nativeId?catalog.operators?.[nativeId]:null;
+      const sourceRaw=sourceOperator?.elite?sourceOperator.source?.eliteChess||sourceOperator.source?.normalChess:sourceOperator?.source?.normalChess;
+      const nativeDef=nativeId?(battle.data.getChess(nativeId)||sourceRaw||null):null;
+      const nativeRaw=sourceRaw||nativeDef?.raw||nativeDef||{};
       const factory=nativeId?(KITS[nativeId]||KITS[nativeId.replace(/_[ab]$/,'')]):null;
-      const authored=factory?.(nativeDef?.skill?.bb||{},nativeDef?.raw||{},nativeDef)||{};
-      const kit=nativeId?selectSkillSpec(authored,nativeDef?.skill?.bb||{},nativeDef?.raw||{},nativeDef):authored;
-      const nativeGrowthStatus=nativeId?{phase:nativeDef?.raw?.status?.phase??0,level:state?.growthMode==='levels'?1:nativeDef?.raw?.status?.level??1}:null;
-      const token=battle.spawnToken(e.unit,clean.id,...cell,{def:clean,anySource:true,kit,nativeGrowthStatus,duration:45,darkmoonHandled:true});
+      const kitDef=nativeDef?{...nativeDef,skill:nativeRaw.skill||nativeDef.skill,talents:nativeRaw.talents||nativeDef.talents}:null;
+      const authored=factory?(factory(nativeRaw.skill?.bb||{},nativeRaw,kitDef)||{}):{};
+      const kit=prototypeOwnerId?undefined:(nativeId?selectSkillSpec(authored,nativeRaw.skill?.bb||kitDef?.skill?.bb||{},nativeRaw,kitDef):undefined);
+      const nativeGrowthStatus=nativeDef?{phase:nativeRaw.status?.phase??0,level:state?.growthMode==='levels'?1:nativeRaw.status?.level??1}:null;
+      const token=battle.spawnToken(e.unit,clean.id,...cell,{def:clean,anySource:true,...(kit?{kit}:{}),ownerGrowth:nativeGrowthStatus,nativeGrowthStatus,duration:45,darkmoonHandled:true});
       if(token){
+        token.ownerChessId=e.unit.defId||null;
+        token.prototypeOwnerChessId=prototypeOwnerId||null;
+        token.summonSourceText=clean.darkmoonSummonSourceText||`由${e.unit.name||'干员'}的额外特质生成`;
+        token.prototypeName=clean.darkmoonPrototypeName||clean.name;
         token.uid ||= `darkmoon-copy:${token.id}`;
         token.mem.darkmoonSummon=true;token.mem.darkmoonFactionTags=tags;out.push(token);
-        const copyPiece={uid:token.uid,chessId:nativeId,elite:!!(clean.golden||clean.isGolden),growthLevel:1,equipment:[]};
+        const copyPiece={uid:token.uid,chessId:nativeId||e.unit.defId,elite:!!(clean.golden||clean.isGolden),growthLevel:1,equipment:[]};
         const grants=darkmoonPrepRulesFor({darkmoonSourceId:clean.darkmoonSourceId},copyPiece.elite).filter(r=>r.trigger==='gain'&&r.behavior==='grantEquipment'&&r.params.landOn==='self').flatMap(r=>r.params.outputs);
         if(p.cover)grants.push({id:'坚守盟约',normal:1,elite:1});
         for(const grant of grants){
@@ -295,7 +305,6 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
           if(gear?.mechanism==='keywordGear')copyPiece.equipment.push({id:gear.id,quantity:Number(copyPiece.elite?grant.elite:grant.normal)||1});
         }
         token.mem.darkmoonCover=copyPiece.equipment.some(x=>catalog.equipment[x.id]?.params?.gearId==='oath-cover');
-        if(nativeId)byUid.set(token.uid,copyPiece);
         installKeywordGear(battle,{catalog,pieces:[copyPiece],units:[token]});
         const childRule=rules[clean.darkmoonSourceId];
         if(childRule&&(e.depth||0)<3){

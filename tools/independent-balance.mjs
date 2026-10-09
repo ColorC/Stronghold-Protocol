@@ -3,7 +3,7 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createSession, applyAction, validateSession, BENCH_SIZE } from '../server/modes/independent/session.js';
+import { createSession, applyAction, validateSession, viewSession, BENCH_SIZE } from '../server/modes/independent/session.js';
 import { getCatalog } from '../server/modes/independent/catalog.js';
 import { getIndependentField } from '../server/modes/independent/battle.js';
 import { totalEquipmentLevel, equipmentRecord } from '../server/modes/independent/equipment.js';
@@ -86,8 +86,27 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
   const rejectedSignatures = new Set();
   const repeatedRejectSkips = [];
   const battleReceipts=[];
+  const summonPlacements=[];
   let actions = 0;
+  const placeNativeSummons = () => {
+    if (state.phase !== 'prep') return;
+    for (let guard = 0; guard < 100; guard++) {
+      const token = viewSession(state, { data, catalog }).pieces.find((p) => p.kind === 'token' && p.row == null && p.legalTiles?.length);
+      if (!token) return;
+      const [row, col] = token.legalTiles[0].split(',').map(Number);
+      const action = { type: 'move', uid: token.uid, row, col };
+      const result = applyAction(state, action, { data, catalog });
+      if (!result.ok) {
+        summonPlacements.push({ round: state.round, uid: token.uid, tokenId: token.tokenId, ownerUid: token.ownerUid, placed: false, code: result.error?.code || 'UNKNOWN' });
+        return;
+      }
+      state = result.state; actions++; actionLog.push(action);
+      summonPlacements.push({ round: state.round, uid: token.uid, tokenId: token.tokenId, ownerUid: token.ownerUid, row, col, placed: true });
+    }
+    throw new Error('native summon placement guard exceeded 100 actions in one prep phase');
+  };
   const act = (action, strict=false) => {
+    if (action.type === 'buy') placeNativeSummons();
     const actionRound=state.round;
     const signature=JSON.stringify(action);
     if(rejectedSignatures.has(signature)) {
@@ -165,6 +184,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
   for (let turn=0; state.phase!=='finished' && turn<roundLimit+2; turn++) {
     pickOffers();
     const round=state.round;
+    placeNativeSummons();
     const targetLevel=Math.min(6,1+Math.floor(round/2));
     if (state.pieces.length>=4 || state.shop.upgradePrice===0) {
       while (state.shop.level<targetLevel && state.funds>=state.shop.upgradePrice+3) {
@@ -250,6 +270,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       const [row,col]=key.split(',').map(Number);
       act({type:'move',uid,row,col,dir:layout.dirs.get(uid)},true);
     }
+    placeNativeSummons();
     if(!state.pieces.some(p=>p.row!==null)) throw new Error('Pilot has no legal deployed piece');
     const before={round,lp:state.lp,funds:state.funds,shopLevel:state.shop.level,mainFaction:mainFaction(state.pieces),
       deployed:state.pieces.filter(p=>p.row!==null).map(p=>({chessId:p.chessId,level:p.growthLevel||null,equipmentLevel:totalEquipmentLevel(p,catalog),
@@ -274,7 +295,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       production:(state.production||[]).filter(e=>e.round===round),battleEvents:(state.history||[]).filter(e=>e.round===round && e.type==='battle').length});
   }
   if(state.phase!=='finished') throw new Error('Pilot exceeded bounded turns');
-  return {seed,difficulty,roundLimit,route,growthMode,targetId,actions,rejectedActions,repeatedRejectSkips,actionLog,rounds:trace.length,lp:state.lp,
+  return {seed,difficulty,roundLimit,route,growthMode,targetId,actions,rejectedActions,repeatedRejectSkips,actionLog,summonPlacements,rounds:trace.length,lp:state.lp,
     outcome:state.outcome,completed:state.phase==='finished'&&state.outcome==='win',bossHpLeft:state.battleSummary?.result?.bossHpLeft,trace,state};
 }
 

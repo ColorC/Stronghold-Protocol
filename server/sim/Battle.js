@@ -266,6 +266,9 @@ export class Battle {
       const def = this._tokenDef(inp.tokenId ?? inp.chessId, owner, inp.def, inp.ownerGrowth ?? owner?.nativeGrowthStatus ?? null);
       if (!def) { this.log(`unknown token ${inp.tokenId}`); return null; }
       const u = this._makeAlly(ps, def, 'token', r, c, { uid: inp.uid, ownerUnit: owner, dir, nativeOwnerGrowth: inp.ownerGrowth ?? owner?.nativeGrowthStatus ?? null });
+      u.ownerChessId = inp.ownerChessId ?? owner?.defId ?? null;
+      u.summonSourceText = inp.summonSourceText || null;
+      u.mem.independentSummon = inp.independentSummon === true;
       u.carry = inp.carryState ?? null;
       return u;
     }

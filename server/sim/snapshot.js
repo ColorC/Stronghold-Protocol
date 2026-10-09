@@ -27,6 +27,9 @@ export function unitInfo(u) {
     : null;
   const darkmoonFactionTags = u.mem?.darkmoonFactionTags || d.darkmoonFactionTags || d.raw?.darkmoonFactionTags || inheritedFactionTags || null;
   const darkmoonCover = !!(u.mem?.darkmoonCover || d.darkmoonCover || d.raw?.darkmoonCover);
+  const summonSourceText = u.kind === 'token' && u.ownerUnit
+    ? u.summonSourceText || d.darkmoonSummonSourceText || `由${u.ownerUnit.name || ownerDef.name || '干员'}召唤`
+    : null;
   return {
     id: u.id,
     kind: u.kind,
@@ -34,6 +37,15 @@ export function unitInfo(u) {
     ownerId: u.ownerId ?? null,
     defId: u.defId,
     name: u.name,
+    ...(u.kind === 'token' && u.ownerUnit ? {
+      ownerUnitId: Number.isInteger(u.ownerUnit.id) ? u.ownerUnit.id : null,
+      ownerUid: u.ownerUnit.uid || null,
+      ownerName: u.ownerUnit.name || ownerDef.name || '',
+      ownerChessId: u.ownerChessId || u.ownerUnit.defId || null,
+      ...(u.prototypeOwnerChessId || d.darkmoonPrototypeOwnerChessId ? { prototypeOwnerChessId: u.prototypeOwnerChessId || d.darkmoonPrototypeOwnerChessId } : {}),
+      prototypeName: u.prototypeName || d.darkmoonPrototypeName || d.name || u.name,
+      summonSourceText,
+    } : {}),
     tier: d.tier ?? (d.rank === 'BOSS' ? 3 : d.rank === 'ELITE' ? 2 : 1),
     golden: !!d.golden,
     spine: d.spine ?? d.charId ?? u.defId,
