@@ -162,8 +162,8 @@
 .ix-dchips .dbond { cursor: default; }
 .ix-dchips__lv { display: inline-flex; align-items: baseline; gap: .04rem; font-size: max(.14rem, 12px); color: var(--text-lo); }
 .ix-dchips__lv b { font-size: max(.2rem, 15px); color: var(--gold); }
-.ix-dtabs { flex: none; display: flex; gap: .04rem; border-bottom: 1px solid var(--line-2); }
-.ix-dtabs__tab { display: inline-flex; align-items: center; gap: .05rem; padding: .05rem .14rem; font: inherit; font-size: max(.16rem, 14px); color: var(--text-lo);
+.ix-dtabs { flex: none; display: flex; flex-wrap: wrap; gap: .04rem; border-bottom: 1px solid var(--line-2); }
+.ix-dtabs__tab { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .05rem; padding: .05rem .08rem; font: inherit; font-size: max(.16rem, 14px); white-space: nowrap; color: var(--text-lo);
   background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
 .ix-dtabs__tab.is-on { color: var(--mint-400); border-bottom-color: var(--mint-500); }
 .ix-dtabs__tab .num { font-size: max(.13rem, 12px); color: var(--gold); }
@@ -472,7 +472,8 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 
 /* New independent-mode details stay selectable and offer a touch-friendly native disclosure. */
 .ix-original-card, .ix-effect-targets__item { margin-top: .12rem; border: 1px solid rgba(177, 203, 193, .24); border-radius: 5px; background: rgba(8, 15, 13, .52); color: #dce8e1; }
-.ix-original-card > summary, .ix-effect-targets__item > summary { cursor: pointer; padding: .1rem .14rem; color: #e7c987; font-weight: 700; user-select: text; }
+.ix-original-card { display: flex; flex-direction: column; }
+.ix-effect-targets__item > summary { cursor: pointer; padding: .1rem .14rem; color: #e7c987; font-weight: 700; user-select: text; }
 .ix-original-card__item { padding: .1rem .14rem .15rem; border-top: 1px solid rgba(177, 203, 193, .16); }
 .ix-original-card__item header { display: flex; flex-wrap: wrap; gap: .08rem .16rem; align-items: center; font-size: max(.13rem, 12px); }
 .ix-original-card__item pre { margin: .04rem 0 .08rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: max(.14rem, 13px); line-height: 1.5; user-select: text; }

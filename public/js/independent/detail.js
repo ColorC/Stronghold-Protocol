@@ -23,7 +23,7 @@ import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } fr
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const FACTION_BOND = Object.fromEntries(Object.entries(TAVERN_FACTIONS).map(([bond, name]) => [name, bond]));
 // the stats (and the range) stay on screen (user 10-07: 「属性常驻显示，其余的可以切换」); the rest switches
-const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], ['gear', '装备']];
+const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], ['gear', '装备'], ['reference', '参考原卡']];
 /** Which tab each block of the original card goes to (ui/detailPanel.js CHESS_SECTIONS); the header stays on top. */
 const TAB_OF = { garrison: 'traits', trait: 'skill', stats: 'stats', skill: 'skill', module: 'talent', talents: 'talent', equip: 'gear' };
 
@@ -69,15 +69,14 @@ function OriginalCardRefs({ op, piece, linkAnchor = null }) {
   const refs = sourceCardRefs(op);
   if (!refs.length) return null;
   const anchor = linkAnchor || (piece ? `piece-${piece.uid}` : null);
-  return html`<details class="ix-original-card" onContextMenu=${(e) => anchor && copyComponentLink(e, anchor)}>
-    <summary>参考原卡</summary>
+  return html`<section class="ix-original-card" aria-label="参考原卡" onContextMenu=${(e) => anchor && copyComponentLink(e, anchor)}>
     ${refs.map((ref, index) => html`<article class="ix-original-card__item" key=${index}>
       <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>${ref.version.startsWith('19.2')?'暗月奖品初版 · 19.2':`版本 ${ref.version}`}</span>` : null}${ref.tier != null ? html`<span>酒馆科技 ${ref.tier}</span>` : null}
         ${ref.sourceUrl ? html`<a href=${ref.sourceUrl} target="_blank" rel="noreferrer">來源卡片</a>` : null}</header>
       ${ref.text ? html`<section><h4>普通</h4><pre>${readableCardText(ref.text)}</pre></section>` : null}
-      ${ref.textElite ? html`<section><h4>精锐</h4><pre>${readableCardText(ref.textElite)}</pre></section>` : null}
+      ${ref.textElite ? html`<section><h4>金色</h4><pre>${readableCardText(ref.textElite)}</pre></section>` : null}
     </article>`)}
-  </details>`;
+  </section>`;
 }
 
 function EffectTargets({ op, piece, state, catalog, elite = false }) {
@@ -123,7 +122,6 @@ function TraitSection({ op, elite, catalog, piece, state, busy, prep, onAct, lin
     <div class="dgarrison__head"><span class="dgarrison__k">特质</span><${TraitGlyphs} summary=${op?.summary} elite=${elite} catalog=${catalog} max=${4} /></div>
     <${TraitTexts} op=${op} elite=${elite} catalog=${catalog} growthMode=${state?.growthMode||piece?.growthMode||'badges'} />
     <${EffectTargets} op=${op} piece=${piece} state=${state} catalog=${catalog} elite=${elite} />
-    <${OriginalCardRefs} op=${op} piece=${piece} linkAnchor=${linkAnchor} />
     ${piece && (op?.summary || []).some((e) => e.kind === 'copy' && e.items) ? html`<div class="ix-usepick"><span class="ix-muted">没有可复制的徽章时，改为获得：</span>
       ${PRODUCTION_BADGES.map((id) => html`<button type="button" key=${id} class=${cx('ix-chip', (piece.preferences?.productionBadge || 'precision') === id && 'is-on')} disabled=${busy || !prep}
         onClick=${() => onAct({ type: 'configure', uid: piece.uid, productionBadge: id })}>${catalog.gear[id]?.name || ''}</button>`)}</div>` : null}
@@ -228,8 +226,9 @@ function OperatorCard({ piece, slot, state, catalog, busy, live, snapHp = null, 
       level=${piece ? piece.equipmentLevel ?? 0 : null} catalog=${catalog} />`,
     overrides: { garrison: html`<${TraitSection} key="garrison" op=${opBase} elite=${!!piece?.elite} catalog=${catalog} piece=${piece} state=${state} busy=${busy} prep=${prep} onAct=${onAct} linkAnchor=${linkAnchor} />`, equip: gear, actions: null } });
   const head = blocks.find((b) => b?.key === 'head');
-  const panes = { traits: [], stats: [], skill: [], talent: [], gear: [] };
+  const panes = { traits: [], stats: [], skill: [], talent: [], gear: [], reference: [] };
   for (const b of blocks) if (b && b.key !== 'head' && TAB_OF[b.key]) panes[TAB_OF[b.key]].push(b);
+  if (sourceCardRefs(opBase).length) panes.reference.push(html`<${OriginalCardRefs} key="original-card-refs" op=${opBase} piece=${piece} linkAnchor=${linkAnchor} />`);
   if (piece) {
     panes.skill.unshift(html`<${SkillChoice} key="skillchoice" base=${base} golden=${golden} piece=${piece} busy=${busy} prep=${prep} onAct=${onAct} />`);
     panes.talent.unshift(html`<${ModuleChoice} key="modulechoice" base=${base} golden=${golden} piece=${piece} busy=${busy} prep=${prep} onAct=${onAct} />`);
