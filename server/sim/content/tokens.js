@@ -886,7 +886,7 @@ function wolfPack(bb, raw, def) {
           }, { owner: unit });
         }
         const o = ownerOf(unit);
-        if (o && o.profile?.sub === 'tactician') o.trait.reinforcement = unit;
+        if (o && o.profile?.sub === 'tactician' && !unit.def?.raw?.darkmoonPrototypeTokenId) o.trait.reinforcement = unit;
       }, 20);
       // fatal with more than one 狼影: one is lost, full HP; on the last one the knock-out goes through — 战术点形态
       battle.on('fatal', (ctx) => {
@@ -1772,7 +1772,7 @@ export function tacticalPoint(battle, owner) {
 /** Make sure a tactician's 援军 is its real talent token (board piece, or a fresh summon on a tactical point). */
 function ensureReinforcement(battle, owner, tokenId) {
   // (split 流形 clones — this file's `isClone`, the 缪尔赛思 kit's `mlyssClone` — are never the 援军)
-  const mine = battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone && !t.mem.mlyssClone);
+  const mine = battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone && !t.mem.mlyssClone && !t.def?.raw?.darkmoonPrototypeTokenId);
   const live = mine.find((t) => t.alive);
   if (live) { owner.trait.reinforcement = live; return live; }
   // a 狼群 in its 战术点形态 is still the 援军 on the field: it comes back by its own timer (a 【移动】 of the owner fires
@@ -1809,7 +1809,7 @@ export function install(battle) {
   // deploy limit per owner (data deployLimit): a new summon withdraws the oldest one of the same kind
   battle.on('deploy', (ctx) => {
     const u = ctx.unit;
-    if (!u || u.kind !== 'token' || !u.ownerUnit || u.mem.isClone || !u.kit?.fromTokens || SKILL_SUMMON_UNCAPPED.has(u.defId)) return;
+    if (!u || u.kind !== 'token' || !u.ownerUnit || u.mem.isClone || u.def?.raw?.darkmoonPrototypeTokenId || !u.kit?.fromTokens || SKILL_SUMMON_UNCAPPED.has(u.defId)) return;
     const lim = deployLimitOf(u);
     if (!(lim >= 1) || !Number.isFinite(lim)) return;
     const same = battle.allyUnits.filter((t) => t.alive && t.kind === 'token' && t.defId === u.defId && t.ownerUnit === u.ownerUnit && !t.mem.isClone && t.kit?.fromTokens);

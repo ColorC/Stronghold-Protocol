@@ -6,7 +6,7 @@ import { applyDamageIncrease } from '../../../../../shared/damageIncrease.js';
 import { installWolfTacticalPoint, wolfReturnNow, wolfShadowInterval, wolfTacticalPoint } from '../../tokens.js';
 
 /** Tokens `tokenId` summoned by / placed for `owner` (board pieces included). */
-const tokensOf = (battle, owner, tokenId) => battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone);
+const tokensOf = (battle, owner, tokenId) => battle.allyUnits.filter((t) => t.kind === 'token' && t.defId === tokenId && t.ownerUnit === owner && !t.mem.isClone && !t.def?.raw?.darkmoonPrototypeTokenId);
 
 export default {
   // ---- 3_19 伺夜 · 战术家 — the tactical reinforcement is the wolf pack (狼群领袖: 2 wolves, +1 every 25 s up to 3, each
