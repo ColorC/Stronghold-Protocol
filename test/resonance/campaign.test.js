@@ -21,7 +21,7 @@ test('offer selection skips the first eligible offer when its reserved spend is 
   assert.equal(picked?.offer.uid,'affordable-offer','an unaffordable-after-bank-floor first choice must not stop scanning later offers');
 });
 
-test('looser counterfactual clones only NORMAL enemy multipliers and runs through a real session and Battle',()=>{
+test('enemy-balance counterfactuals clone only NORMAL multipliers and run through a real session and Battle',()=>{
   const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
   const source=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:20261009});
   const adjusted=catalogForBalanceProfile(source,'looser','NORMAL');
@@ -33,16 +33,28 @@ test('looser counterfactual clones only NORMAL enemy multipliers and runs throug
   assert.equal(adjusted.campaign.enemyBalance.byDifficulty.NORMAL.terminal.bossPoolMultiplier,.6);
   assert.equal(source.campaign.enemyBalance.byDifficulty.NORMAL,undefined,'the compiled catalog remains unchanged');
   assert.equal(catalogForBalanceProfile(source,'looser','HARD'),source,'other difficulties retain their official profile');
+  const refined=catalogForBalanceProfile(source,'refined-standard','NORMAL');
+  assert.notEqual(refined,source);
+  assert.deepEqual(refined.campaign.enemyBalance.byDifficulty.NORMAL,{regular:{hpMultiplier:.75,atkMultiplier:.90,defMultiplier:.45},terminal:{hpMultiplier:.80,atkMultiplier:.90,defMultiplier:.45,bossPoolMultiplier:.65}});
+  assert.equal(catalogForBalanceProfile(source,'refined-standard','HARD'),source,'the candidate does not alter other difficulties');
   const formal=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo'});
   const looser=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo',balanceProfile:'looser'});
+  const candidate=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo',balanceProfile:'refined-standard'});
   assert.equal(formal.rows[0].enemyBalance.hpMultiplier,.8);
   assert.equal(looser.rows[0].enemyBalance.hpMultiplier,.65);
+  assert.equal(candidate.rows[0].enemyBalance.hpMultiplier,.75);
+  assert.equal(candidate.rows[0].enemyBalance.atkMultiplier,.90);
+  assert.equal(candidate.rows[0].enemyBalance.defMultiplier,.45);
   assert.equal(looser.rows[0].enemyBalance.resMultiplier,1);
   assert.equal(looser.rows[0].enemyBalance.speedMultiplier,1);
+  assert.equal(candidate.rows[0].enemyBalance.resMultiplier,1);
+  assert.equal(candidate.rows[0].enemyBalance.speedMultiplier,1);
   assert.equal(formal.rows[0].diagnostics,0);
   assert.equal(looser.rows[0].diagnostics,0);
+  assert.equal(candidate.rows[0].diagnostics,0);
   assert.equal(formal.rows[0].summonAnchorGaps.length,0);
   assert.equal(looser.rows[0].summonAnchorGaps.length,0);
+  assert.equal(candidate.rows[0].summonAnchorGaps.length,0);
 });
 
 test('tempo, reroll, and rush have explicit level schedules',()=>{

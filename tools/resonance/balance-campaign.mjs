@@ -119,12 +119,15 @@ const activeBattleFields=(state,catalog)=>getResonanceField(state,{data,catalog}
 function cacheKey(env,seed){return `${env}:${seed>>>0}`;}
 function getCatalog(env,seed){const key=cacheKey(env,seed);if(!catalogCache.has(key))catalogCache.set(key,getResonanceCatalog(data,{environmentId:env,seed}));return catalogCache.get(key);}
 export function catalogForBalanceProfile(sourceCatalog,profile='formal',difficulty='NORMAL'){
-  if(!['formal','looser'].includes(profile))throw new Error(`unknown-enemy-balance-profile:${profile}`);
+  if(!['formal','looser','refined-standard'].includes(profile))throw new Error(`unknown-enemy-balance-profile:${profile}`);
   if(profile==='formal'||difficulty!=='NORMAL')return sourceCatalog;
   const catalog=structuredClone(sourceCatalog);
-  catalog.campaign.enemyBalance.byDifficulty.NORMAL={
+  catalog.campaign.enemyBalance.byDifficulty.NORMAL=profile==='looser'?{
     regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},
     terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.6},
+  }:{
+    regular:{hpMultiplier:.75,atkMultiplier:.90,defMultiplier:.45},
+    terminal:{hpMultiplier:.80,atkMultiplier:.90,defMultiplier:.45,bossPoolMultiplier:.65},
   };
   return catalog;
 }
@@ -973,7 +976,7 @@ export function selectEconPactCopyTarget(item,targets,state,coreOperatorId,catal
 
 export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',balanceProfile='formal'}={}){
   if(!['legacy',...CAMPAIGN_POLICIES,ECON_PACT_POLICY].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
-  if(!['formal','looser'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
+  if(!['formal','looser','refined-standard'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
   const metrics={actions:{},refreshes:{},nodeEconomy:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[]};activeMetrics=metrics;
   const started=Date.now(),catalog=catalogForBalanceProfile(getCatalog(environmentId,seed),balanceProfile,difficulty),created=createSession({seed,difficulty,catalog,environmentId});
   if(!created.ok)throw new Error(`session-create:${created.error}`);
@@ -1112,17 +1115,34 @@ function compactEconPactRun(run){
   const coreStarMilestones={2:nodes.find(node=>node.core?.star>=2)?.round??null,3:nodes.find(node=>node.core?.star>=3)?.round??null};
   return {environmentId:run.environmentId,difficulty:run.difficulty,seed:run.seed,policy:run.policy,designatedCoreId:run.designatedCoreId,coreSelection:run.coreSelection,terminalReason:run.terminalReason,round:run.round,hp:run.hp,gold:run.gold,level:run.level,xp:run.xp,battles:run.battles,policyActions:run.policyActions,coreOffersSeen:run.coreOffersSeen,coreOffersBought:run.coreOffersBought,coreOfferDecisions:run.coreOfferDecisions,coreStarMilestones,diagnostics:run.diagnostics,nodes};
 }
-export function runEconomyPactValidation({seedBase=0x45434f4e,maxMs=12*60*1000}={}){
+export function runEconomyPactValidation({seedBase=0x45434f4e,maxMs=12*60*1000,balanceProfile='formal'}={}){
   const started=Date.now(),environments=['origin_aegir','origin_laterano','origin_kjerag','origin_yan'],sourceBefore={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no']),dataSourceCommit:null};
-  const runs=[];for(const environmentId of environments){if(Date.now()-started>=maxMs)break;const seed=seedFor(environmentId,'NORMAL',seedBase);try{const nativeCatalog=getCatalog(environmentId,seed);sourceBefore.dataSourceCommit??=nativeCatalog.source?.commit??null;const run=runCampaign({environmentId,difficulty:'NORMAL',seed,maxMs:Math.max(1000,maxMs-(Date.now()-started)),policy:ECON_PACT_POLICY,balanceProfile:'formal'});runs.push(compactEconPactRun(run));}catch(error){runs.push({environmentId,difficulty:'NORMAL',seed,policy:ECON_PACT_POLICY,error:error.message});}}
+  const runs=[];for(const environmentId of environments){if(Date.now()-started>=maxMs)break;const seed=seedFor(environmentId,'NORMAL',seedBase);try{const nativeCatalog=getCatalog(environmentId,seed);sourceBefore.dataSourceCommit??=nativeCatalog.source?.commit??null;const run=runCampaign({environmentId,difficulty:'NORMAL',seed,maxMs:Math.max(1000,maxMs-(Date.now()-started)),policy:ECON_PACT_POLICY,balanceProfile});runs.push(compactEconPactRun(run));}catch(error){runs.push({environmentId,difficulty:'NORMAL',seed,policy:ECON_PACT_POLICY,error:error.message});}}
   const sourceAfter={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no'])};
-  return {schemaVersion:1,policy:ECON_PACT_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',balanceProfile:'formal',environments,runs,summary:{runs:runs.length,expectedRuns:environments.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+run.battles,0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length||runs.some(run=>run.truncated),elapsedMs:Date.now()-started}};
+  return {schemaVersion:1,policy:ECON_PACT_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',balanceProfile,environments,runs,summary:{runs:runs.length,expectedRuns:environments.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+run.battles,0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length||runs.some(run=>run.truncated),elapsedMs:Date.now()-started}};
 }
 export function appendEconomyPactValidation(result){
   ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
+  const field=result.balanceProfile==='refined-standard'?'refinedStandardNaturalComparison':'economyPactNaturalValidation';
+  if(field==='refinedStandardNaturalComparison'){
+    const baseline=document.economyPactNaturalValidation;
+    if(!baseline||baseline.seedBase!==result.seedBase||baseline.policy!==result.policy||baseline.runs?.length!==result.environments.length)throw new Error('refined-standard-baseline-missing-or-incompatible');
+    const baselineByEnv=new Map(baseline.runs.map(run=>[run.environmentId,run]));
+    const summarize=run=>{
+      const nodes=run?.nodes??[];
+      const last=nodes.at(-1);
+      const incomeKeys=['base','win','streak','interest','delayed','strategy','battle'];
+      const income=Object.fromEntries(incomeKeys.map(key=>[key,nodes.reduce((sum,node)=>sum+(Number(node.gold?.income?.[key])||0),0)]));
+      const spend={buy:nodes.reduce((sum,node)=>sum+(Number(node.spend?.buy)||0),0),xp:nodes.reduce((sum,node)=>sum+(Number(node.spend?.xp)||0),0),refresh:nodes.reduce((sum,node)=>sum+(Number(node.spend?.refresh)||0),0)};
+      const stars=last?.stars??null;
+      return {terminalReason:run?.terminalReason??null,round:run?.round??null,hp:run?.hp??null,level:run?.level??null,gold:run?.gold??null,battles:run?.battles??null,wins:nodes.filter(node=>node.won).length,income,spend,finalStars:stars,finalMainPacts:last?.mainPacts??null,core:run?.designatedCoreId?{id:run.designatedCoreId,selection:run.coreSelection??null,milestones:run.coreStarMilestones??null,last:last?.core??null}:null,defense:{hpLost:nodes.reduce((sum,node)=>sum+(Number(node.hpLoss)||0),0),leaks:nodes.reduce((sum,node)=>sum+(Number(node.leaked)||0),0)},boss:last?.boss??null};};
+    result.comparison={baseline:{field:'economyPactNaturalValidation',balanceProfile:baseline.balanceProfile,seedBase:baseline.seedBase,source:baseline.source},runs:result.runs.map(candidate=>{const prior=baselineByEnv.get(candidate.environmentId);return {environmentId:candidate.environmentId,seed:candidate.seed,baseline:summarize(prior),candidate:summarize(candidate)};})};
+  }
   const previous=document.economyPactNaturalValidation,priorAttempts=[...(previous?.priorAttempts??[])];
   if(previous){const {priorAttempts:prior,...attempt}=previous;priorAttempts.push(attempt);}
-  document.economyPactNaturalValidation={...result,priorAttempts};fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
+  if(field==='economyPactNaturalValidation')document[field]={...result,priorAttempts};
+  else {const prior=document[field]?.priorAttempts??[];if(document[field]){const {priorAttempts:old,...attempt}=document[field];prior.push(attempt);}document[field]={...result,priorAttempts:prior};}
+  fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
 }
 
 function ensureReportPath(){
@@ -1131,8 +1151,9 @@ function ensureReportPath(){
 }
 const isMain=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(isMain){
-  if(process.argv.includes('--econ-pact-validation')){
-    const result=runEconomyPactValidation();const report=appendEconomyPactValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
+  if(process.argv.includes('--econ-pact-validation')||process.argv.includes('--refined-standard-validation')){
+    const balanceProfile=process.argv.includes('--refined-standard-validation')?'refined-standard':'formal';
+    const result=runEconomyPactValidation({balanceProfile});const report=appendEconomyPactValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
     if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps)process.exitCode=1;
   }else{
     const maxMs=Number(process.env.SP_RESONANCE_BALANCE_TIMEOUT_MS??DEFAULT_TIMEOUT);
