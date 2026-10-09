@@ -141,6 +141,28 @@ test('mastery and native damage increases share one outgoing bucket while other 
   assert.equal(oldMode.damageIncreaseBonus,undefined);
 });
 
+test('worn damage badges, temporary damage badges, and native damage bonuses add in one bucket',()=>{
+  const {h,u}=unitWith([badge('damage',2)],false,false,{},[],{enemy_stat_dummy:enemyRec({key:'enemy_stat_dummy',hp:5000})});
+  const target=h.spawn('enemy_stat_dummy',{pos:[10,6]});
+  u.buffs.push({key:'native-damage-increase',mods:{dmgDealtMul:1.05},stacks:1});
+  u.buffs.push({key:'darkmoon-temporary-damage-badge',mods:{dmgDealtMul:1.04},stacks:1});
+  h.b.dealDamage(u,target,{amount:100,type:'true',mul:1,isAttack:true});
+  assert.equal(target.hp,4887,'2 worn damage badges (+4%), temporary damage badges (+4%), and native damage (+5%) total +13%');
+});
+
+test('Workshop support tokens add native, worn, and temporary damage bonuses in the same bucket',()=>{
+  const {h,u}=unitWith([],false,false,{},[],{enemy_stat_dummy:enemyRec({key:'enemy_stat_dummy',hp:5000})});
+  const token=h.b.spawnToken(u,'damage-bonus-projection',11,6,{def:{stats:{atk:100,maxHp:500,def:0},skill:null},kit:{},anySource:true});
+  const target=h.spawn('enemy_stat_dummy',{pos:[10,6]});
+  assert.equal(token.side,'ally');
+  assert.equal(token.kind,'token');
+  token.buffs.push({key:'native-damage-increase',mods:{dmgDealtMul:1.05},stacks:1});
+  token.buffs.push({key:'worn-damage-badge',mods:{dmgDealtMul:1.04},stacks:1});
+  token.buffs.push({key:'temporary-damage-badge',mods:{dmgDealtMul:1.04},stacks:1});
+  h.b.dealDamage(token,target,{amount:100,type:'true',mul:1,isAttack:true});
+  assert.equal(target.hp,4887,'token native +5%, worn badge +4%, and temporary badge +4% add to +13%');
+});
+
 test('outgoing damage helper preserves reduction and element multipliers in their existing lanes',()=>{
   const {h,u}=unitWith([badge('mastery',2)]);
   const factorDown={amount:100,type:'true',mul:1};

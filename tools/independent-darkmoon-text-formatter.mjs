@@ -9,12 +9,16 @@ import { darkmoonCombatMetadata } from '../server/sim/content/independent/darkmo
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const addonPath = path.join(root, 'data/independent-darkmoon-game-text-addon.json');
+const designAddonPath = path.join(root, 'data/independent-darkmoon-design-addon.json');
 const blueprintPath = path.join(root, 'data/independent-darkmoon-blueprints.json');
+const gameTextPath = path.join(root, 'data/independent-game-text.json');
+const designPath = path.join(root, 'data/independent-design.json');
 const gears = new Map([
   ['坚守盟约', '坚守盟约'], ['护盾发生器', '护盾发生器'], ['不屈盟约', '不屈盟约'],
   ['精准盟约', '精准盟约'], ['巨锤盟约', '巨锤盟约'], ['oath-cover', '坚守盟约'],
 ]);
-const badgeNames = Object.freeze({ precision: '精准徽章', agility: '敏捷徽章', damage: '攻击徽章', vitality: '活力徽章', defense: '防护徽章', assault: '强袭徽章', recovery: '恢复徽章', arcane: '术法徽章', foresight: '洞察徽章', miracle: '奇迹徽章', investor: '投资徽章', unyielding: '坚毅徽章', harmony: '协同徽章', coordination: '协调徽章', solitary: '孤勇徽章', mastery: '精通徽章' });
+const badgeNames = Object.freeze({ precision: '攻击徽章', agility: '攻速徽章', damage: '伤害徽章', vitality: '生命徽章', defense: '防御徽章', assault: '攻击加成徽章', recovery: '技力徽章', arcane: '法抗徽章', foresight: '初始技力徽章', miracle: '闪避徽章', investor: '回复徽章', unyielding: '生命加成徽章', harmony: '治疗徽章', coordination: '减伤徽章', solitary: '再部署徽章', mastery: '普通攻击徽章' });
+const legacyPlusPlusGrowthSources = new Set(['BGS_041', 'BGS_048', 'BGS_100', 'BGS_128']);
 const recipientNames = Object.freeze({
   self: '自身', hand: '整备区手牌', inventory: '装备栏', shop: '酒馆', playerResource: '玩家资源', shopUpgradeCost: '酒馆升级费用',
   selectedFriendlyDragon: '你选择的一名友方卡西米尔干员', selectedFriendlyBeast: '你选择的一名友方叙拉古干员',
@@ -42,6 +46,18 @@ const durationNames = Object.freeze({
   整备区: '整备区', 本场战斗: '本场战斗', 本局永久: '本局成长',
 });
 const pick = (x, variant) => Number(x && typeof x === 'object' ? (x[variant] ?? x.normal ?? 0) : (x ?? 0));
+function normalizeLegacyGrowthOutputs(sourceId, value) {
+  if (!legacyPlusPlusGrowthSources.has(sourceId) || !value || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    for (const item of value) normalizeLegacyGrowthOutputs(sourceId, item);
+    return;
+  }
+  if (value.params && Array.isArray(value.params.outputs)
+      && JSON.stringify(value.params.outputs) === JSON.stringify(['precision', 'vitality'])) {
+    value.params.outputs = ['precision', 'damage'];
+  }
+  for (const item of Object.values(value)) normalizeLegacyGrowthOutputs(sourceId, item);
+}
 const qty = n => `×${Number(n)}`;
 const factionText = f => f ? `${f}阵营` : '友方';
 const whenText = trigger => ({
@@ -56,8 +72,8 @@ function units(p, variant) {
 }
 function growth(attack, secondary, variant) {
   const bits = [];
-  if (attack) bits.push(`攻击成长徽章${qty(attack)}`);
-  if (secondary) bits.push(`职业副属性成长徽章${qty(secondary)}`);
+  if (attack) bits.push(`攻击徽章${qty(attack)}`);
+  if (secondary) bits.push(`伤害徽章${qty(secondary)}`);
   return bits.length ? bits.join('与') : '';
 }
 function prepText(sourceId, rule, variant) {
@@ -89,31 +105,32 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonBattlecryFactionGrowth': {
       const who = p.excludeSelf ? `除自身外的所有友方${factionText(p.faction)}干员` : `所有友方${factionText(p.faction)}干员`;
       const parts = [];
-      if (p.outputs?.includes('precision')) parts.push(`攻击成长徽章${qty(amount)}`);
-      if (p.outputs?.some(x => x !== 'precision')) parts.push(`职业副属性成长徽章${qty(amount)}`);
+      if (p.outputs?.includes('precision')) parts.push(`攻击徽章${qty(amount)}`);
+      if (p.outputs?.some(x => x !== 'precision')) parts.push(`${badgeNames[p.outputs.find(x => x !== 'precision')] || '伤害徽章'}${qty(amount)}`);
       return `具有获得时效果的友方干员入队时，${who}各获得${parts.join('与')}。`;
     }
     case 'darkmoonBattlecryTargetGrowth': {
       if (p.perTribeBought) {
         const each = pick(p.perTribeBought, variant);
-        return `每购买一名维多利亚阵营干员，你选择的一名友方维多利亚干员获得攻击成长徽章${qty(each)}与职业副属性成长徽章${qty(each)}；按本局已购买的维多利亚干员数量累加。`;
+        const secondaryName = badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章';
+        return `每购买一名维多利亚阵营干员，你选择的一名友方维多利亚干员获得攻击徽章${qty(each)}与${secondaryName}${qty(each)}；按本局已购买的维多利亚干员数量累加。`;
       }
       const count = p.fixedCount !== undefined ? pick(p.fixedCount, variant) : p.perTribeBought ? `${pick(p.perTribeBought, variant)}枚每名已购买${factionText(p.faction)}干员` : null;
-      const n = (p.attackUnits !== undefined || p.secondaryUnits !== undefined) ? growth(attack, secondary, variant) : `${p.outputs?.includes('precision') ? `攻击成长徽章${qty(count)}` : ''}${p.outputs?.some(x => x !== 'precision') ? `与职业副属性成长徽章${qty(count)}` : ''}`;
+      const n = (p.attackUnits !== undefined || p.secondaryUnits !== undefined) ? growth(attack, secondary, variant) : `${p.outputs?.includes('precision') ? `攻击徽章${qty(count)}` : ''}${p.outputs?.some(x => x !== 'precision') ? `与${badgeNames[p.outputs.find(x => x !== 'precision')] || '伤害徽章'}${qty(count)}` : ''}`;
       const bonus = p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : '';
       return `${when}，${selected(p.faction)}获得${n}${bonus}。`;
     }
-    case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员星级等量的攻击成长徽章和职业副属性成长徽章。`;
-    case 'darkmoonBoughtSelfGrowth': return `${when}，购买${factionText(p.faction)}干员时，自身获得${growth(attack, secondary, variant)}。`;
+    case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员星级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
+    case 'darkmoonBoughtSelfGrowth': return `${p.faction ? `购买${factionText(p.faction)}干员时` : when}，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonBeastSummonGrowth': return `每当其他友方叙拉古干员新获得或首次上阵时，该干员获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonPlayedTribeGrowth': return `每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得${growth(attack, secondary, variant)}。`;
-    case 'darkmoonPlayedFactionCountSelfGrowth': return `每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章${qty(pick(p.attackUnits, variant))}及职业副属性成长徽章${qty(pick(p.secondaryUnitsPerTarget, variant))}；按在场炎阵营干员数累加。`;
+    case 'darkmoonPlayedFactionCountSelfGrowth': return `每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章${qty(pick(p.attackUnits, variant))}及伤害徽章${qty(pick(p.secondaryUnitsPerTarget, variant))}；按在场炎阵营干员数累加。`;
     case 'darkmoonPlayedTagSelfGrowth': return `每有一名带有退场效果的友方干员新获得或首次上阵，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonAdjacentGrowth': return `招募获得或首次上阵时，相邻友方干员各获得${growth(attack, secondary, variant)}${p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : ''}。`;
     case 'darkmoonTaggedGrowth': return `招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonMagneticMerge': return sourceId === 'BOT_911'
-      ? `招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员装备坚守盟约和护盾发生器，并使其获得攻击成长徽章${qty(attack)}及职业副属性成长徽章${qty(secondary)}；本体不进入阵容。`
-      : `招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章${qty(attack)}及职业副属性成长徽章${qty(secondary)}；本体不进入阵容。`;
+      ? `招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员装备坚守盟约和护盾发生器，并使其获得攻击徽章${qty(attack)}及伤害徽章${qty(secondary)}；本体不进入阵容。`
+      : `招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击徽章${qty(attack)}及伤害徽章${qty(secondary)}；本体不进入阵容。`;
     case 'darkmoonSummonSupport': return `招募获得或首次上阵时，免费将一个猫形支援单位（攻击${variant === 'elite' ? 240 : 120}、生命${variant === 'elite' ? 700 : 350}）放入整备区；可部署，本体不可商店招募。`;
     case 'darkmoonTransformFromShop': return `招募获得或首次上阵时，选择一名未售出的酒馆干员；将该格干员转化为${variant === 'elite' ? '进阶' : '普通'}形态并招募。`;
     case 'darkmoonRosterTribePurchaseFunds': return `购买维多利亚阵营干员时，获得${amount}枚金币。`;
@@ -139,7 +156,8 @@ function cleanCombat(id, variant) {
   const meta = darkmoonCombatMetadata(id, variant === 'elite');
   if (!meta?.text) return '';
   let text = meta.text;
-  text = text.replace(/攻击徽章×(\d+)，依职业配置的副属性装备×(\d+)/g, (_, a, b) => `攻击徽章${qty(a)}与职业副属性徽章${qty(b)}`)
+  text = text.replace(/攻击徽章×(\d+)，依职业配置的副属性装备×(\d+)/g, (_, a, b) => `攻击徽章${qty(a)}与伤害徽章${qty(b)}`)
+    .replace(/职业副属性装备|职业副属性徽章/g, '伤害徽章')
     .replace(/攻击徽章×(\d+)及五层护盾/g, (_, a) => `攻击徽章${qty(a)}及护盾层数+5`)
     .replaceAll('本场最多二十五次', '每3秒最多触发一次，每场最多25次')
     .replaceAll('每三秒触发一次', '每3秒最多触发一次')
@@ -164,13 +182,14 @@ function compactWording(text) {
 }
 
 export function toLevels(text) {
-  return text.replace(/攻击成长徽章×(\d+)与职业副属性成长徽章×(\d+)/g, (_, a, b) => `训练等级${qty(Number(a) + Number(b))}`)
-    .replace(/攻击徽章×(\d+)与职业副属性徽章×(\d+)/g, (_, a, b) => `训练等级${qty(Number(a) + Number(b))}`)
+  return text.replace(/攻击徽章×(\d+)与(?:伤害|生命)徽章×(\d+)/g, (_, a, b) => `训练等级${qty(Number(a) + Number(b))}`)
+    .replace(/职业副属性成长徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
+    .replace(/职业副属性徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
     .replace(/(?:精准|敏捷|攻击|活力|防护|强袭|恢复|术法|洞察|奇迹|投资|坚毅|协同|协调|孤勇|精通)徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
     .replace(/攻击成长徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
-    .replace(/职业副属性成长徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
-    .replace(/攻击徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
-    .replace(/职业副属性徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`);
+    .replace(/(?:攻击|伤害|生命|攻速|攻击加成|技力|法抗|防御|初始技力|闪避|回复|生命加成|治疗|减伤|再部署|普通攻击)徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
+    .replace(/(?:伤害|生命)徽章×(\d+)/g, (_, n) => `训练等级${qty(n)}`)
+    .replace(/训练等级×0及/g, '');
 }
 export function renderedPrepRows(entry, variant) {
   const id = entry.sourceId;
@@ -185,7 +204,10 @@ export function textsFor(entry, variant) {
 }
 function main() {
   const addon = JSON.parse(fs.readFileSync(addonPath, 'utf8'));
+  const designAddon = JSON.parse(fs.readFileSync(designAddonPath, 'utf8'));
   const blueprints = JSON.parse(fs.readFileSync(blueprintPath, 'utf8'));
+  const gameText = JSON.parse(fs.readFileSync(gameTextPath, 'utf8'));
+  const design = JSON.parse(fs.readFileSync(designPath, 'utf8'));
   const byId = new Map(blueprints.entries.map(x => [x.sourceId, x]));
   const rewritten = new Map();
   for (const item of Object.values(addon.operators)) {
@@ -199,7 +221,15 @@ function main() {
     item.normal = next.normal; item.elite = next.elite; item.normalLevels = next.normalLevels; item.eliteLevels = next.eliteLevels;
     rewritten.set(item.sourceId, { normal, elite });
   }
+  const renderedBySource = new Map(Object.values(addon.operators).map(item => [item.sourceId, item]));
+  const designBySource = new Map((design.operators || []).map(operator => [operator.sourceRefs?.darkmoon19_2?.id, operator]).filter(([id]) => id));
+  for (const [sourceId, rendered] of renderedBySource) {
+    const designOperator = designBySource.get(sourceId), operator = gameText.operators?.[designOperator?.chessId];
+    if (!operator) continue;
+    for (const field of ['normal','elite','normalLevels','eliteLevels']) if (rendered[field]) operator[field] = rendered[field];
+  }
   for (const entry of blueprints.entries) {
+    normalizeLegacyGrowthOutputs(entry.sourceId, entry);
     const pair = rewritten.get(entry.sourceId);
     const delivery = entry.metadata?.op?.effectDelivery;
     if (!pair || !delivery) continue;
@@ -228,9 +258,13 @@ function main() {
         return '';
       };
       for (const row of delivery[variant] || []) {
-        if (row.kind === 'sourceSpecificCombat') row.text = cleanCombat(entry.sourceId, variant) || row.text;
+        if (row.kind === 'sourceSpecificCombat') {
+          const meta = darkmoonCombatMetadata(entry.sourceId, variant === 'elite');
+          row.text = cleanCombat(entry.sourceId, variant) || row.text;
+          row.triggerLabel = meta?.trigger || row.triggerLabel;
+        }
         else if (row.kind === 'keywordGear') row.text = takeGrant('gear') || row.text;
-        else if (row.kind === 'badgeGrowth' && row.params?.outputs?.some(x => badgeNames[x] || badgeNames[String(x).replace(/^independent:/, '')])) row.text = takeGrant('badge') || row.text;
+        else if (row.kind === 'badgeGrowth' && row.params?.outputs?.some(x => badgeNames[x] || badgeNames[String(x).replace(/^independent:/, '')])) row.text = takeGrant('badge') || take(['darkmoonEndTurnGrowth','darkmoonPreviousWinSelfGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtSelfGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedTribeGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth']) || row.text;
         else if (row.kind === 'magneticAttachment') row.text = take(['darkmoonMagneticMerge']) || row.text;
         else if (row.kind === 'badgeGrowth' || row.kind === 'badgeGrowthAndGear') row.text = take(['darkmoonEndTurnGrowth','darkmoonPreviousWinSelfGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtSelfGrowth','darkmoonBeastSummonGrowth','darkmoonPlayedTribeGrowth','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonAdjacentGrowth','darkmoonTaggedGrowth']) || row.text;
         else if (row.kind === 'gold') row.text = take(['darkmoonRosterTribePurchaseFunds','factionReaction']) || row.text;
@@ -244,14 +278,77 @@ function main() {
         else if (row.kind === 'transform') row.text = take(['darkmoonTransformFromShop']) || row.text;
         else if (row.kind === 'triggerMultiplier') row.text = take(['triggerMultiplier']) || row.text;
         row.text = (row.text || '').replace(/\b(?:newSiracusaRecruit|allFriendlyDragonOperators|selectedFriendly\w*|otherFriendly\w*|randomOtherFriendly|originalBattlecryOutputs|battlecryMultiplier|oneRandomOtherFriendly)\b/g, '友方干员');
+        if (row.adaptation !== undefined) row.adaptation = row.text;
         row.recipientLabel = recipientNames[row.recipient] || row.recipient;
-        row.triggerLabel = triggerNames[row.trigger] || row.trigger;
+        if (row.kind !== 'sourceSpecificCombat') row.triggerLabel = triggerNames[row.trigger] || row.trigger;
         row.durationLabel = durationNames[row.duration] || row.duration;
       }
     }
   }
+  for (const entry of blueprints.entries) {
+    const prepByVariant = { normal: renderedPrepRows(entry, 'normal'), elite: renderedPrepRows(entry, 'elite') };
+    for (const variant of ['normal','elite']) {
+      let prepIndex = 0;
+      for (const row of entry.sourceEffect?.[variant] || []) {
+        if (row.sourceTrigger === 'darkmoonCombat') {
+          row.text = cleanCombat(entry.sourceId, variant) || row.text;
+        } else {
+          const prepared = prepByVariant[variant][prepIndex++];
+          if (prepared && row.text !== undefined) row.text = prepared.text;
+        }
+        if (row.adaptation !== undefined) row.adaptation = row.text;
+      }
+      const authored = entry.authoredRule?.[variant];
+      if (authored?.text !== undefined) authored.text = entry.authoredRule.mechanic === 'darkmoonCombat'
+        ? cleanCombat(entry.sourceId, variant) || authored.text
+        : prepByVariant[variant][0]?.text || authored.text;
+    }
+  }
+  const addonBySource = new Map(Object.values(addon.operators).map(item => [item.sourceId, item]));
+  const blueprintBySource = new Map(blueprints.entries.map(item => [item.sourceId, item]));
+  for (const operator of designAddon.operators || []) {
+    const sourceId = operator.sourceId;
+    const blueprint = blueprintBySource.get(sourceId);
+    if (!blueprint) continue;
+    normalizeLegacyGrowthOutputs(sourceId, operator);
+    for (const variant of ['normal','elite']) {
+      const authoredText = blueprint.authoredRule?.[variant]?.text;
+      if (typeof authoredText === 'string' && operator.authoredRule?.[variant]) operator.authoredRule[variant].text = authoredText;
+      const sourceRows = blueprint.metadata?.op?.effectDelivery?.[variant] || [];
+      for (const rows of [operator.effectDelivery?.[variant] || [], operator.metadata?.op?.effectDelivery?.[variant] || []]) {
+        for (let i = 0; i < rows.length; i++) {
+          const target = rows[i], source = sourceRows[i];
+          if (!source || source.kind !== target.kind) continue;
+          for (const field of ['text','adaptation','triggerLabel','recipientLabel','durationLabel']) if (source[field] !== undefined) target[field] = source[field];
+          if (source.params?.outputs && target.params?.outputs) target.params.outputs = structuredClone(source.params.outputs);
+        }
+      }
+    }
+  }
+  for (const operator of design.operators || []) {
+    const sourceId = operator.sourceRefs?.darkmoon19_2?.id;
+    if (!sourceId) continue;
+    normalizeLegacyGrowthOutputs(sourceId, operator);
+    const rendered = addonBySource.get(sourceId), blueprint = blueprintBySource.get(sourceId);
+    if (!rendered || !blueprint) continue;
+    if (operator.nativeTrait) for (const variant of ['normal','elite']) if (rendered[variant]) operator.nativeTrait[variant] = rendered[variant];
+    for (const variant of ['normal','elite']) {
+      const targetRows = operator.effectDelivery?.[variant] || [];
+      const sourceRows = blueprint.metadata?.op?.effectDelivery?.[variant] || [];
+      for (let i = 0; i < targetRows.length; i++) {
+        const target = targetRows[i], source = sourceRows[i];
+        if (!source || source.kind !== target.kind) continue;
+        for (const field of ['text','adaptation','triggerLabel','recipientLabel','durationLabel']) if (source[field] !== undefined) target[field] = source[field];
+      }
+      const workshopRows = operator.allocationEvidence?.workshop?.[variant] || [];
+      for (let i = 0; i < workshopRows.length; i++) if (targetRows[i]?.text && workshopRows[i].rule !== undefined) workshopRows[i].rule = targetRows[i].text;
+    }
+  }
   fs.writeFileSync(addonPath, `${JSON.stringify(addon, null, 2)}\n`);
+  fs.writeFileSync(designAddonPath, `${JSON.stringify(designAddon, null, 2)}\n`);
   fs.writeFileSync(blueprintPath, `${JSON.stringify(blueprints, null, 2)}\n`);
+  fs.writeFileSync(gameTextPath, `${JSON.stringify(gameText, null, 2)}\n`);
+  fs.writeFileSync(designPath, `${JSON.stringify(design, null, 2)}\n`);
   process.stdout.write(`formatted ${rewritten.size} source cards; ordinary/elite and level-mode variants refreshed\n`);
 }
 

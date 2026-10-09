@@ -54,7 +54,7 @@ function TemporaryGrowth({live,catalog}) {
   if(!entries.length)return null;
   return html`<section class="ix-detail__text"><b>本场临时增益</b>${entries.map((entry,index)=>{
     const source=Object.values(catalog.operators||{}).find(op=>op.sourceRefs?.darkmoon19_2?.id===entry.sourceId);
-    return html`<p key=${index}>${source?.name?`${source.name}：`:''}${entry.trainingLevels!=null?`训练额度 ${entry.trainingLevels} 级，按自身等级上限生效`:`攻击徽章×${entry.attackUnits||0}${entry.secondaryUnits?`，职业副属性装备×${entry.secondaryUnits}`:''}`}。本场结束后消失。</p>`;
+    return html`<p key=${index}>${source?.name?`${source.name}：`:''}${entry.trainingLevels!=null?`训练额度 ${entry.trainingLevels} 级，按自身等级上限生效`:`攻击徽章×${entry.attackUnits||0}${entry.secondaryUnits?`，${entry.badgeIds?.[1]==='vitality'?'生命徽章':'伤害徽章'}×${entry.secondaryUnits}`:''}`}。</p>`;
   })}</section>`;
 }
 

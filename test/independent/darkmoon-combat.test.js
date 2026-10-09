@@ -74,6 +74,13 @@ test('combat ramps and shields do not become persistent badge rewards or transfe
   assert.equal(b.independentRewards,undefined);
   assert.ok(Object.values(unit.mem.darkmoonTemporaryEquipment||{}).every(x=>x.expires==='battleEnd'));
 });
+test('temporary A/H combat growth records and applies the fixed damage badge ID',()=>{
+  const {b,unit,ally,enemy}=fixture('BGS_047');
+  b.forceAttack(ally,[enemy]);
+  const record=Object.values(unit.mem.darkmoonTemporaryEquipment||{})[0];
+  assert.deepEqual(record.badgeIds,['precision','damage']);
+  assert.equal(unit.findBuff(Object.keys(unit.mem.darkmoonTemporaryEquipment)[0]).mods.dmgDealtMul,1.02);
+});
 test('combat faction requirements reject an unrelated owner and unrelated native faction',()=>{
   const {b,unit,ally,enemy,installed}=fixture('BGS_047');
   ally.ownerId='different';b.forceAttack(ally,[enemy]);assert.equal(installed.trace.length,0);

@@ -3,7 +3,7 @@ import { tavernFactions as sharedTavernFactions, nativeFactions, nativeBodyStats
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
 import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
-import { addDarkmoonShopGrowth, darkmoonGrowthBadges } from './darkmoonShop.js';
+import { addDarkmoonShopGrowth } from './darkmoonShop.js';
 import { darkmoonCombatMetadata } from '../../sim/content/independent/darkmoonCombat.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
@@ -282,9 +282,9 @@ function output(services, state, id, quantity, piece, extra = {}) {
   services.__nativeOutputCapture?.push({ id, quantity: n });
   services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...(services.__nativeCopied ? { copied: true } : {}), ...(services.__landOn ? { landOn: services.__landOn } : {}), ...extra });
 }
-function darkmoonGrowth(state,source,target,attackUnits,secondaryUnits,services) {
+function darkmoonGrowth(state,source,target,attackUnits,secondaryUnits,services,outputs=['precision','damage']) {
   if(!target)return;
-  const [attackId,secondaryId]=darkmoonGrowthBadges(target,services.catalog);
+  const [attackId,secondaryId]=outputs;
   const landing=target.uid===source.uid?'self':`uid:${target.uid}`;
   for(const [id,quantity] of [[attackId,attackUnits],[secondaryId,secondaryUnits]]) {
     const n=Math.max(0,Math.floor(Number(quantity)||0));
@@ -483,7 +483,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const count=pick(p.count,elite);
         const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
         for(const target of roster(state).filter(x=>isPresent(x) && (x.playerId??x.ownerId)===(piece.playerId??piece.ownerId) && (!p.excludeSelf || x.uid!==piece.uid) && nativeFactions(x,services.catalog).includes(p.faction))) {
-          darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services);
+          darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services,p.outputs||['precision','damage']);
         }
         break;
       }
@@ -526,7 +526,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         if(!target||!eligible.some(x=>x.uid===target.uid))throw new Error('DARKMOON_TARGET_REQUIRED');
         const count=p.fixedCount!==undefined?Number(p.fixedCount):Number(state.counters?.factionBought?.[p.faction]||0)*Number(p.perTribeBought||1);
         const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
-        darkmoonGrowth(state,piece,target,p.attackUnits!==undefined?pick(p.attackUnits,elite):(hasAttack?count:0),p.secondaryUnits!==undefined?pick(p.secondaryUnits,elite):(hasSecondary?count:0),services);
+        darkmoonGrowth(state,piece,target,p.attackUnits!==undefined?pick(p.attackUnits,elite):(hasAttack?count:0),p.secondaryUnits!==undefined?pick(p.secondaryUnits,elite):(hasSecondary?count:0),services,p.outputs||['precision','damage']);
         for(const id of p.extraGear||[])services.grantEquipment(state,id,1,{origin:'native',sourceUid:piece.uid,targetUid:target.uid,landOn:`uid:${target.uid}`});
         break;
       }
@@ -549,7 +549,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
         const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
         const repeats=Math.max(1,Math.floor(pick(p.repeatCount,elite)));
-        for(let i=0;i<repeats;i++)darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services);
+        for(let i=0;i<repeats;i++)darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services,p.outputs||['precision','damage']);
         break;
       }
       case 'grantEquipment':

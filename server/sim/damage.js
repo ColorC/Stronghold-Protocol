@@ -265,12 +265,12 @@ export function dealDamage(battle, source, target, dmgIn) {
   });
   // 脆弱 / "受到的伤害±" (dmgTakenMul) scale 物理、法术、真实 only; 元素伤害 takes 元素脆弱 alone (header)
   let mul = dmg.mul * (type === 'elemental' ? 1 : ts.dmgTakenMul);
-  const independentOperator = (battle.contentMode === 'independent' || !!battle.flags?.independent)
-    && source?.side === 'ally' && source?.kind === 'op';
+  const independentDamageActor = (battle.contentMode === 'independent' || !!battle.flags?.independent)
+    && source?.side === 'ally' && (source?.kind === 'op' || source?.kind === 'token');
   if (ss) {
-    if (independentOperator) {
-      // Unit.s currently products MUL_KEYS. In this mode, every outgoing increase contributes to the
-      // shared additive bucket with explicit DamageInfo increases before type-specific and target buckets.
+    if (independentDamageActor) {
+      // Workshop operators and their battle projections use the same additive outgoing-damage bucket.
+      // Unit.s currently products MUL_KEYS, so collect only outgoing-damage buffs and explicit per-hit increases.
       const buffs = Array.isArray(source.buffs) ? source.buffs : [];
       const buffBonus = buffs.reduce((sum, buff) => {
         const v = Number(buff?.mods?.dmgDealtMul);
@@ -280,7 +280,7 @@ export function dealDamage(battle, source, target, dmgIn) {
       mul *= Math.max(0, 1 + buffBonus + explicitBonus);
     } else mul *= ss.dmgDealtMul;
     mul *= type === 'phys' ? ss.physDealtMul : type === 'arts' ? ss.artsDealtMul : 1;
-  } else if (independentOperator && dmg.damageIncreaseBonus) {
+  } else if (independentDamageActor && dmg.damageIncreaseBonus) {
     // Preserve the engine's sourceless rule for source buffs/type-specific stats while honoring
     // a per-hit output factor explicitly snapshotted by the caller.
     mul *= Math.max(0, 1 + Number(dmg.damageIncreaseBonus));

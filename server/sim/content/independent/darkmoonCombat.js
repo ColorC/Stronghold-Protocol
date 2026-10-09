@@ -14,8 +14,7 @@ const order = (a,b) => String(a.uid ?? a.id).localeCompare(String(b.uid ?? b.id)
 const close = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 const FACTIONS = Object.freeze({MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'});
 
-// Numeric attack/health translations are equipment units, not native flat ATK/HP.
-// Health mostly becomes the recipient's offensive secondary attribute; tanks retain HP.
+// Numeric attack/health translations become attack and damage badges across operators.
 const rules = {
   BGS_006:{retire:{random:'legendary',count:[1,2]}},
   BGS_008:{retire:{random:'deathrattle',count:[2,4]}},
@@ -84,7 +83,7 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   const r=rules[sourceId]; if(!r)return null;
   const m=elite?2:1;
   const number=x=>Array.isArray(x)?x[elite?1:0]:x;
-  const buffText=v=>`攻击徽章×${v[0]*m}${v[1]?`，依职业配置的副属性装备×${v[1]*m}`:''}`;
+  const buffText=v=>`攻击徽章×${v[0]*m}${v[1]?`与伤害徽章×${v[1]*m}`:''}`;
   let text='',trigger='战斗中',recipient='自身',duration='本场战斗';
   if(r.retire) {
     const p=r.retire;trigger='每次退场（每场最多三次）';recipient=p.randomAlly?'随机友方':p.faction?FACTIONS[p.faction]+'友方':p.buff?'所有友方':'战场';
@@ -92,7 +91,11 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   } else if(r.buff&&r.event) {
     trigger={summon:'召唤友方支援单位',death:'友方退场',kill:'友方击倒敌人',attack:'友方攻击',attacked:'友方受到攻击',shieldLayersBroken:'友方累计破裂五层护盾'}[r.event];
     recipient={self:'自身',actor:'触发效果的友方',all:'所有友方',adjacentActor:'退场干员附近的友方',adjacentSelf:'自身附近的友方'}[r.target];
-    duration=r.permanent?'本局成长':'本场战斗';text=`${trigger}${r.faction?'（'+FACTIONS[r.faction]+'）':''}${r.requireCover?'（需要坚守盟约）':''}时，使${recipient}${r.permanent?'装备'+buffText(r.buff):'获得'+buffText(r.buff)+'的战斗增益'}${r.shield?'及五层护盾':''}。同一效果每三秒触发一次，每场最多二十五次。`;
+    duration=r.permanent?'本局成长':'本场战斗';
+    const actor=r.requireCover?'佩戴坚守盟约的友方干员':r.event==='summon'&&r.faction?`${FACTIONS[r.faction]}支援单位`:r.faction?`${FACTIONS[r.faction]}干员`:'友方干员';
+    const action=r.event==='summon'?'被召唤':({death:'退场',kill:'击倒敌人',attack:'攻击敌人',attacked:'受到攻击',shieldLayersBroken:'累计破裂五层护盾'}[r.event]||trigger);
+    trigger=`${actor}${action}`;
+    text=`${actor}${action}时，使${recipient}${r.permanent?'装备'+buffText(r.buff):'获得'+buffText(r.buff)+'的战斗增益'}${r.shield?'及五层护盾':''}。同一效果每3秒最多触发一次，每场最多25次。`;
   } else if(r.event==='damaged')text=`受到伤害后召唤一个携带坚守盟约的机械支援单位${elite?'，支援单位的攻击和生命翻倍':''}；每三秒一次，每场最多七次。`;
   else if(r.summonMultiplier)text=`卡牌效果召唤的支援单位数量变为${number(r.summonMultiplier)}倍；不复制装备或成长。`;
   else if(r.retireMultiplier)text=`友方源卡退场效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
@@ -109,8 +112,8 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   if(sourceId==='BGS_006') text=`退场时召唤${number(r.retire.count)}名随机六星干员的作战投影。`;
   else if(sourceId==='BGS_008') text=`退场时召唤${number(r.retire.count)}名随机带有退场效果干员的作战投影。`;
   else if(sourceId==='BGS_012') text=`退场时召回本场战斗中最先倒下的${number(r.retire.count)}名哥伦比亚友方干员的作战投影。`;
-  else if(sourceId==='BGS_017') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}的战斗增益。`;
-  else if(sourceId==='BGS_021') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}与职业副属性徽章×${r.buff[1]*m}的战斗增益。`;
+  else if(sourceId==='BGS_017') text=`叙拉古支援单位被召唤时，该支援单位获得攻击徽章×${r.buff[0]*m}的战斗增益。`;
+  else if(sourceId==='BGS_021') text=`叙拉古支援单位被召唤时，该支援单位获得攻击徽章×${r.buff[0]*m}与伤害徽章×${r.buff[1]*m}的战斗增益。`;
   else if(sourceId==='BGS_023') text=`退场时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
   else if(sourceId==='BGS_061') text=`退场时召唤维多利亚作战支援单位${number(r.retire.count)}个；每个攻击${120*m}、生命${350*m}。`;
   else if(sourceId==='BOT_218') text=`受到伤害后召唤一个哥伦比亚机械支援单位（攻击${240*m}、生命${1050*m}），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。`;
@@ -142,10 +145,9 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   const note=(e,kind,targets=[])=>{trace.push({sourceId:e.id,sourceUid:e.unit.uid,kind,time:battle.time,targets:targets.map(u=>u.uid??u.id)});battle.emit('darkmoonEffect',{sourceId:e.id,source:e.unit,kind,targets});};
   const ready=(e,seconds=3,max=25,channel='event')=>{const c=(e.channels||={})[channel]||{last:-Infinity,uses:0};if(battle.time<c.last+seconds||c.uses>=max)return false;c.last=battle.time;c.uses++;e.channels[channel]=c;if(channel==='event')e.uses=c.uses;return true;};
   const scale=e=>e.elite?2:1;
-  const secondary=u=>({TANK:['hpFlat',.03],CASTER:['dmgDealtMul',.02],MEDIC:['spRecoveryFlat',.02],SUPPORT:['spRecoveryFlat',.02],PIONEER:['spRecoveryFlat',.02]})[u.def.profession]||['aspd',.02];
   const growthMods=(u,a,h)=>{
-    const [stat,n]=secondary(u),mods={atkFlat:u.base.atk*a*.02};
-    if(h){if(stat==='dmgDealtMul')mods[stat]=1+n*h;else if(stat==='hpFlat')mods[stat]=u.base.maxHp*n*h;else if(stat==='spRecoveryFlat'){if(u.skill?.spType==='time')mods[stat]=Math.max(0,Number(u.base.spRecovery??1))*n*h;else mods.aspd=(u.base.aspd||100)*.02*h;}else mods[stat]=(u.base.aspd||100)*n*h;}
+    const mods={atkFlat:u.base.atk*a*.02};
+    if(h)mods.dmgDealtMul=1+.02*h;
     const piece=byUid.get(u.uid);
     if(state?.growthMode==='levels'&&piece){
       for(const field of Object.keys(mods))delete mods[field];
@@ -176,8 +178,8 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const m=scale(e),key=`darkmoon:${e.unit.uid}:${e.id}${e.instanceKey||''}:${u.id}`;
     const v=e.stacks.get(u.id)||{a:0,h:0};v.a+=a*m;v.h+=h*m;e.stacks.set(u.id,v);
     applyGrowth(u,key,v.a,v.h);
-    (u.mem.darkmoonTemporaryEquipment||={})[key]={sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,...(state?.growthMode==='levels'?{trainingLevels:(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1)}:{}),expires:'battleEnd'};
-    if(persistent&&u.kind==='op')results.growth.push({sourceUid:e.unit.uid,targetUid:u.uid,attackUnits:a*m,secondaryUnits:h*m});
+    (u.mem.darkmoonTemporaryEquipment||={})[key]={sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,badgeIds:['precision','damage'],...(state?.growthMode==='levels'?{trainingLevels:(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1)}:{}),expires:'battleEnd'};
+    if(persistent&&u.kind==='op')results.growth.push({sourceUid:e.unit.uid,targetUid:u.uid,attackUnits:a*m,secondaryUnits:h*m,badgeIds:['precision','damage']});
   };
   const shield=(e,u,layers)=>{const key=`darkmoon:shield:${e.unit.uid}${e.instanceKey||''}:${u.id}`,n=Number(u.findBuff(key)?.shieldHits||0);battle.addBuff(u,{key,shieldHits:n+layers,source:e.unit,duration:Infinity,persist:true,allowDead:true,refresh:'replace'});};
   const auras=[];
