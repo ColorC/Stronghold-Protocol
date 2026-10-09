@@ -1,4 +1,6 @@
 import { legalSummonCells,selectedSummonIds } from './summons.js';
+import { resonanceOpenings, selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
+import { resonanceSeason, resonanceSeasonOperatorIds } from '../../../shared/resonance/season-roster.js';
 const SCHEMA_VERSION = 1;
 const BENCH_CAPACITY = 9;
 const INVENTORY_CAPACITY = 20;
@@ -124,6 +126,8 @@ function makePiece(state, operatorId) {
 }
 function createStarterState({ seed, difficulty, catalog, environmentId }) {
   if (!catalog || !opTable(catalog) || !itemTable(catalog) || !Array.isArray(catalog.recipes)) throw new Error('BAD_CATALOG');
+  const rulesVersion = resonanceRulesVersion({ rulesVersion: catalog.config?.rulesVersion });
+  if(rulesVersion===2&&environmentId!=null)throw new Error('UNSUPPORTED_ENVIRONMENT');
   if(!validEnvironmentId(catalog,environmentId))throw new Error('UNKNOWN_ENVIRONMENT');
   const selectedDifficulty = String(difficulty || 'NORMAL').toUpperCase();
   const roundLimit = DEFAULT_ROUND_LIMIT[selectedDifficulty];
@@ -145,6 +149,16 @@ function createStarterState({ seed, difficulty, catalog, environmentId }) {
     })),
     nextUid: 1, history: [],
   };
+  if (rulesVersion === 2) {
+    state.rulesVersion = 2;
+    state.seasonId = resonanceSeason.id;
+    if (catalog.config?.seasonId !== state.seasonId) throw new Error('UNKNOWN_SEASON');
+    state.environmentId = null;
+    state.openingId = selectResonanceOpening(state.seed);
+    if (catalog.config?.openingId !== state.openingId) throw new Error('OPENING_MISMATCH');
+    state.freeRefreshes = 0;
+    if (state.openingId === 'double_duplicators') addConsumable(state, 'smallCopy', 'opening');
+  }
   for (const id of selectInitialStarterIds(state, catalog)) {
     state.poolRemaining[id]--;
     state.pieces.push(makePiece(state, id));
@@ -175,6 +189,22 @@ export function validateSession(state, { catalog } = {}) {
   try { activeIds = activeOperatorIds(catalog); }
   catch (error) { add(error.message || 'BAD_ACTIVE_OPERATOR_IDS'); activeIds = []; }
   const activeSet = new Set(activeIds);
+  let rulesVersion;
+  try { rulesVersion = resonanceRulesVersion(state); } catch { add('UNKNOWN_RULES_VERSION'); }
+  try { if (rulesVersion !== resonanceRulesVersion({rulesVersion:catalog.config?.rulesVersion})) add('RULES_VERSION_MISMATCH'); }
+  catch { add('UNKNOWN_CATALOG_RULES_VERSION'); }
+  if (rulesVersion === 2) {
+    if (state.seasonId !== resonanceSeason.id || catalog.config?.seasonId !== resonanceSeason.id) add('UNKNOWN_SEASON');
+    if (!Array.isArray(state.activeOperatorIds) || state.activeOperatorIds.length !== resonanceSeasonOperatorIds.length
+      || state.activeOperatorIds.some((id,index)=>id!==resonanceSeasonOperatorIds[index])) add('SEASON_ROSTER_MISMATCH');
+    if (!Number.isSafeInteger(state.seed)||state.seed<0||state.seed>0xffffffff) add('BAD_OPENING_SEED');
+    if (!own(resonanceOpenings, state.openingId)) add('UNKNOWN_OPENING');
+    else if (Number.isSafeInteger(state.seed)&&state.seed>=0&&state.seed<=0xffffffff&&state.openingId !== selectResonanceOpening(state.seed)) add('OPENING_MISMATCH');
+    if (state.environmentId !== null) add('ENVIRONMENT_NOT_ALLOWED');
+    if (!isInt(state.freeRefreshes) || state.freeRefreshes < 0 || state.freeRefreshes > 8) add('BAD_FREE_REFRESHES');
+    const tradeSectorState=state.strategyState?.strategy_21;
+    if(tradeSectorState&&Object.hasOwn(tradeSectorState,'freeAvailable')&&typeof tradeSectorState.freeAvailable!=='boolean')add('BAD_TRADE_SECTOR_FREE_REFRESH');
+  }
   if(!validEnvironmentId(catalog,state.environmentId))add('UNKNOWN_ENVIRONMENT');
   if (state.schemaVersion !== SCHEMA_VERSION) add('BAD_SCHEMA_VERSION');
   if (!isInt(state.revision) || state.revision < 0 || !isInt(state.seed) || !isInt(state.rngCounter) || state.rngCounter < 0) add('BAD_REVISION_OR_RNG');
@@ -190,7 +220,7 @@ export function validateSession(state, { catalog } = {}) {
   else if (state.phase === 'prep' && state.hp === 0) add('BAD_PHASE_TERMINAL');
   if (!isInt(state.nextUid) || state.nextUid < 1) add('BAD_NEXT_UID');
   if (!isInt(state.level) || state.level < 3 || state.level > 10 || !isInt(state.xp) || state.xp < 0) add('BAD_LEVEL_XP');
-  else if ((state.level === 10 && state.xp !== 0) || (state.level < 10 && state.xp >= XP_TO_LEVEL[state.level])) add('XP_NOT_NORMALIZED');
+  else if ((state.level === 10 && state.xp !== 0) || (state.level < 10 && state.xp >= xpToLevel(state))) add('XP_NOT_NORMALIZED');
   for (const field of ['gold','hp','winStreak','lossStreak']) if (!isInt(state[field]) || state[field] < 0) add('BAD_ECONOMY_FIELD', field);
   if (!state.shop || !Array.isArray(state.shop.offers) || state.shop.offers.length !== SHOP_SIZE || typeof state.shop.locked !== 'boolean') add('BAD_SHOP');
   const collectionsValid = Array.isArray(state.pieces) && Array.isArray(state.inventory) && Array.isArray(state.history) && Array.isArray(state.strategies)
@@ -236,6 +266,8 @@ export function validateSession(state, { catalog } = {}) {
   for (const choice of Array.isArray(state.pendingChoices) ? state.pendingChoices : []) {
     if (!choice || typeof choice !== 'object' || typeof choice.uid !== 'string' || !Array.isArray(choice.options)||choice.options.length===0||choice.options.some((id)=>typeof id!=='string')||!isInt(choice.remaining)||choice.remaining<1) add('BAD_PENDING_CHOICE');
     else trackUid(choice.uid,'choice');
+    if (rulesVersion===2&&['operators','target_operator'].includes(choice?.type)&&Array.isArray(choice.options)
+      &&choice.options.some(id=>!activeSet.has(id))) add('INACTIVE_REWARD_OPERATOR');
   }
   for (const item of Array.isArray(state.consumables) ? state.consumables : []) {
     if (!item || typeof item !== 'object' || typeof item.uid !== 'string' || !['smallCopy','universalCopy'].includes(item.kind)) add('BAD_CONSUMABLE');
@@ -335,6 +367,7 @@ export function viewSession(state, { catalog, fieldResolver } = {}) {
     pieces: clone(state.pieces), inventory: clone(state.inventory), poolRemaining: clone(state.poolRemaining),
     pendingChoices: clone(state.pendingChoices), consumables: clone(state.consumables), strategies: clone(state.strategies),
     strategyState: clone(state.strategyState), environmentId: state.environmentId, nodeStarted: state.nodeStarted,
+    ...(state.rulesVersion===2?{rulesVersion:2,seasonId:state.seasonId,openingId:state.openingId,freeRefreshes:state.freeRefreshes}:{}),
     forgeProgress: clone(state.forgeProgress??{}), actionCosts: economyActionCosts(state,catalog),
     benchCount: state.pieces.filter((piece) => piece.row === null).length,
     deployedCount: state.pieces.filter((piece) => piece.row !== null).length,
@@ -353,10 +386,13 @@ export function calculateRoundIncome({ gold, round, won, winStreak, lossStreak, 
   const income = round === 1 ? 4 : 5;
   return { income, winBonus, streakBonus: streak, interest, goldAfter: gold + income + winBonus + streak + interest };
 }
+function xpToLevel(state) {
+  return XP_TO_LEVEL[state.level] - (state.rulesVersion===2&&state.openingId==='cheaper_levels'?2:0);
+}
 function applyXp(state, amount) {
   state.xp += amount;
   while (state.level < 10) {
-    const cost = XP_TO_LEVEL[state.level];
+    const cost = xpToLevel(state);
     if (state.xp < cost) break;
     state.xp -= cost;
     state.level++;
@@ -424,9 +460,11 @@ function economyActionCosts(state,catalog) {
   const refresh=active.find(([id])=>strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='refresh_discount'))?.[1];
   const xp=active.find(([id,entry])=>Number(entry.uses)>0&&strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='xp_discount'))?.[1];
   const baseRefresh=Number(shopRule?.refreshCost??campaignOf(catalog).economy?.paidRefreshGold??2);
-  const refreshGold=refresh&&Number(refresh.paidCount??0)+1>=Math.max(1,Number(refresh.paidRefreshEvery??3))?0:baseRefresh;
+  const nodeFree=active.find(([id,entry])=>strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='trade_sector')&&entry.freeAvailable===true);
+  const availableFree=Number(state.freeRefreshes??0)+(nodeFree?1:0);
+  const refreshGold=availableFree>0||refresh&&Number(refresh.paidCount??0)+1>=Math.max(1,Number(refresh.paidRefreshEvery??3))?0:baseRefresh;
   const interestCap=5+active.reduce((sum,[id,entry])=>sum+(strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='interest_cap')?Number(entry.amount??0):0),0);
-  return {refreshGold,xpGold:4-(xp?Math.min(4,Number(xp.amount??0)):0),canLockShop:!shopRule?.lockDisabled,interestCap};
+  return {refreshGold,xpGold:4-(xp?Math.min(4,Number(xp.amount??0)):0),...(state.rulesVersion===2?{xpToLevel:state.level<10?xpToLevel(state):0,freeRefreshes:availableFree}:{}),canLockShop:!shopRule?.lockDisabled,interestCap};
 }
 function settleNodeIncome(state, catalog, { won = null, baseIncome = null } = {}) {
   const previousGold = state.gold;
@@ -526,6 +564,7 @@ function strategyEligible(strategy,state,catalog,targets={}) {
     if(effect.kind==='disassemble_recipe_item')return [...state.inventory,...state.pieces.flatMap((piece)=>piece.equipment)].some((item)=>catalog.recipes.some((recipe)=>recipe.resultId===item.itemId&&itemTable(catalog)[item.itemId]?.kind!=='emblem'));
     if(effect.kind==='choose_pool_operators')return activeOperatorIds(catalog).filter((id)=>costOf(catalog,id)===Number(effect.params?.cost)&&(state.poolRemaining[id]??0)>0).length>=Number(effect.params?.count??1);
     if(effect.kind==='choose_transfer')return availableItemOptions(catalog,'emblem').length>0;
+    if(effect.kind==='choose_viable_transfer')return viableTransferOptions(catalog).length>0;
     if(effect.kind==='choose_components')return availableItemOptions(catalog,'component').length>0;
     if(effect.kind==='late_game')return state.gold>=Math.abs(Number(effect.params?.startGold??-8));
     if(effect.kind==='target_copy')return state.pieces.some((piece)=>piece.row!==null&&costOf(catalog,piece.operatorId)>=Number(effect.params?.costMin??1)&&costOf(catalog,piece.operatorId)<=Number(effect.params?.costMax??3));
@@ -554,6 +593,27 @@ function addConsumable(state,kind,source) { state.consumables.push({uid:uid(stat
 function availableItemOptions(catalog,kind) {
   return Object.values(itemTable(catalog)).filter((item)=>!kind || item.kind===kind).map((item)=>item.id);
 }
+function viableTransferOptions(catalog) {
+  const active=new Set(activeOperatorIds(catalog));
+  const viablePacts=new Set(Object.values(catalog.operators??{}).filter(op=>active.has(op.id)).flatMap(op=>op.pacts??[]));
+  const recipes=new Set((catalog.recipes??[]).map(recipe=>recipe.resultId));
+  const byPact=new Map();
+  for(const item of Object.values(itemTable(catalog))){
+    if(item.kind!=='emblem')continue;
+    for(const effect of item.effects??[]){
+      if(!['pact_transfer','transfer_pact'].includes(effect.kind))continue;
+      const pactId=effect.params?.pactId??effect.params?.pact;
+      if(!viablePacts.has(pactId))continue;
+      const candidates=byPact.get(pactId)??[];candidates.push(item);byPact.set(pactId,candidates);
+    }
+  }
+  return [...byPact.values()].map(items=>items.sort((a,b)=>Number(recipes.has(b.id))-Number(recipes.has(a.id))||a.id.localeCompare(b.id))[0].id);
+}
+export function unbiasedTransferChoices(state,catalog,count=4) {
+  const candidates=viableTransferOptions(catalog),picked=[];
+  while(candidates.length&&picked.length<Math.max(1,count))picked.push(candidates.splice(Math.floor(random(state)*candidates.length),1)[0]);
+  return picked;
+}
 function componentOptions(state,catalog,optionCount) {
   const available=availableItemOptions(catalog,'component'),picked=[];
   const count=Math.min(available.length,Math.max(1,Math.trunc(optionCount)));
@@ -563,9 +623,24 @@ function componentOptions(state,catalog,optionCount) {
 function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
   const p=effect.params??{};
   switch(effect.kind) {
+    case 'patient_study': case 'stand_united':
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round}; break;
+    case 'trade_sector':
+      state.gold+=Number(p.gold??2);
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,freeAvailable:true};
+      break;
+    case 'team_building':
+      addConsumable(state,'smallCopy',strategy.id);
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,battlesCompleted:0,copyDelivered:false,lastBattleNode:null};
+      break;
+    case 'woven_magic':
+      addPendingChoice(state,'components',strategy.id,componentOptions(state,catalog,1),1);
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,ammoSpent:0,rewarded:false,lastBattleNode:null};
+      break;
     case 'gold': state.gold+=Number(p.amount??0); break;
     case 'xp': applyXp(state,Number(p.amount??0)); break;
     case 'choose_components': addPendingChoice(state,'components',strategy.id,componentOptions(state,catalog,Number(p.optionCount??8)),Number(p.count??1)); break;
+    case 'choose_viable_transfer': addPendingChoice(state,'transfer',strategy.id,unbiasedTransferChoices(state,catalog,Number(p.candidateCount??4)),1,{sourceTemplate:'TFT11.15:Tome of Traits'}); break;
     case 'choose_pool_operators': {
       const cost=Number(p.cost), options=activeOperatorIds(catalog).filter((id)=>costOf(catalog,id)===cost&&(state.poolRemaining[id]??0)>0);
       if(!options.length) throw new Error('STRATEGY_POOL_EMPTY');
@@ -640,8 +715,12 @@ function prepareSupply(state,catalog) {
   if(state.claimedNodes.includes(state.round)) throw new Error('NODE_ALREADY_CLAIMED');
   state.claimedNodes.push(state.round);
   const node=state.round;
+  if(state.rulesVersion===2) {
+    if(state.openingId==='double_duplicators'&&node===14)addConsumable(state,'smallCopy','opening');
+    if(state.openingId==='reroll_start'&&node===5)state.freeRefreshes+=8;
+  }
   const component=supply.components;
-  const envRule=catalog.environments?.[state.environmentId]?.rule;
+  const envRule=state.rulesVersion===2?null:catalog.environments?.[state.environmentId]?.rule;
   if(component?.nodes?.includes(node)) {
     const count=Number(component.countPerNode??2),extra=envRule?.kind==='environment_component_choice'?Number(envRule.params?.extraOptions??1):0;
     addPendingChoice(state,'components',`node-${node}`,componentOptions(state,catalog,Math.max(count,Number(component.optionCount??3)+extra)),count);
@@ -653,11 +732,15 @@ function prepareSupply(state,catalog) {
   const copy=(supply.copies??[]).find((entry)=>entry.node===node);
   if(copy) for(let i=0;i<Number(copy.count??1);i++) addConsumable(state,copy.kind==='minor'?'smallCopy':'universalCopy',`node-${node}`);
   const transfer=(supply.transfers??[]).find((entry)=>entry.node===node);
-  if(transfer) addPendingChoice(state,'transfer',`node-${node}`,availableItemOptions(catalog,'emblem'),Number(transfer.count??1));
+  if(transfer) {
+    const options=state.rulesVersion===2?unbiasedTransferChoices(state,catalog,4):availableItemOptions(catalog,'emblem');
+    if(options.length)addPendingChoice(state,'transfer',`node-${node}`,options,state.rulesVersion===2?1:Number(transfer.count??1),state.rulesVersion===2?{sourceTemplate:'TFT11.15:Tome of Traits'}:{});
+  }
   const xp=(supply.xp??[]).find((entry)=>entry.node===node);
   if(xp) applyXp(state,Number(xp.amount??0));
   for(const [id,entry] of activeStrategyEntries(state)){
     const strategy=strategyDefs(catalog)[id];if(!strategy)continue;
+    if(strategy.effects?.some(effect=>effect.kind==='trade_sector'))entry.freeAvailable=true;
     if(strategy.effects?.some((effect)=>effect.kind==='delayed_operator')&&node>=Number(entry.dueRound??Infinity)&&!entry.delivered){
       const target=entry.targetOperatorId;
       if(target&&(state.poolRemaining[target]??0)>0)addPendingChoice(state,'operators',id,[target],1,{cost:Number(entry.cost??4)});else state.gold+=6;
@@ -849,7 +932,21 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   const {battleGold}=settleBattleRewards(state,catalog,result);
   applyXp(state,2);
   for(const [id,entry] of activeStrategyEntries(state)) {
+    const study=strategyDefs(catalog)[id]?.effects?.find(effect=>effect.kind==='patient_study');
+    if(study&&Number(entry.lastBattleNode)!==Number(state.round)){applyXp(state,Number(result.won?study.params?.winXp??2:study.params?.lossXp??3));entry.lastBattleNode=state.round;}
+  }
+  for(const [id,entry] of activeStrategyEntries(state)) {
     const strategy=strategyDefs(catalog)[id]; if(!strategy) continue;
+    const teamBuilding=strategy.effects?.find(effect=>effect.kind==='team_building');
+    if(teamBuilding&&Number(entry.lastBattleNode)!==Number(state.round)){
+      entry.battlesCompleted=Number(entry.battlesCompleted??0)+1;entry.lastBattleNode=state.round;
+      if(entry.battlesCompleted>=Number(teamBuilding.params?.battleCount??5)&&!entry.copyDelivered){addConsumable(state,'smallCopy',id);entry.copyDelivered=true;}
+    }
+    const wovenMagic=strategy.effects?.find(effect=>effect.kind==='woven_magic');
+    if(wovenMagic&&Number(entry.lastBattleNode)!==Number(state.round)){
+      entry.ammoSpent=Number(entry.ammoSpent??0)+Math.max(0,Number(result.metrics?.ammoSpent??0));entry.lastBattleNode=state.round;
+      if(entry.ammoSpent>=Number(wovenMagic.params?.ammoThreshold??60)&&!entry.rewarded){addPendingChoice(state,'components',id,componentOptions(state,catalog,Number(wovenMagic.params?.optionCount??4)),1);entry.rewarded=true;}
+    }
     if(strategy.effects?.some((effect)=>effect.kind==='target_copy')&&result.won&&deployed.some(piece=>piece.uid===entry.targetUid))entry.observedWins=Number(entry.observedWins??0)+1;
     const metric=strategy.effects?.find((effect)=>effect.kind==='metric_reward');
     if(metric) {
@@ -921,7 +1018,13 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         const shopRule=activeStrategyEntries(draft).find(([id])=>strategyDefs(catalog)[id]?.effects?.some((effect)=>effect.kind==='shop_rule'))?.[1];
         const discount=activeStrategyEntries(draft).find(([id])=>strategyDefs(catalog)[id]?.effects?.some((effect)=>effect.kind==='refresh_discount'))?.[1];
         let refreshCost=Number(shopRule?.refreshCost??campaignOf(catalog).economy?.paidRefreshGold??2);
-        if(discount){const cadence=Math.max(1,Number(discount.paidRefreshEvery??3));if(Number(discount.paidCount??0)+1>=cadence){refreshCost=0;discount.paidCount=0;}else discount.paidCount=Number(discount.paidCount??0)+1;}
+        const tradeSector=activeStrategyEntries(draft).find(([id])=>strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='trade_sector'))?.[1];
+        const nodeFree=tradeSector?.freeAvailable===true;
+        const storedFree=Number(draft.freeRefreshes??0)>0;
+        const freeRefresh=nodeFree||storedFree;
+        if(nodeFree){refreshCost=0;tradeSector.freeAvailable=false;}
+        else if(storedFree){refreshCost=0;draft.freeRefreshes--;}
+        else if(discount){const cadence=Math.max(1,Number(discount.paidRefreshEvery??3));if(Number(discount.paidCount??0)+1>=cadence){refreshCost=0;discount.paidCount=0;}else discount.paidCount=Number(discount.paidCount??0)+1;}
         if (draft.gold < refreshCost) throw new Error('NOT_ENOUGH_GOLD'); draft.gold-=refreshCost; refreshShop(draft,catalog); events.push({type:'shop-refreshed',cost:refreshCost}); break;
       }
       case 'lockShop': {

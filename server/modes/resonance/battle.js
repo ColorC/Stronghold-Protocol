@@ -89,6 +89,7 @@ function sourceData(data) {
 
 function catalogFor(state, source, catalog) {
   return catalog ?? getResonanceCatalog(source, {
+    rulesVersion: state?.rulesVersion ?? 1,
     environmentId: state?.environmentId ?? 'origin_laterano',
     seed: state?.seed ?? 1,
   });
@@ -377,7 +378,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
       dpInit: 20,
       dpPerSec: 1,
       dpMax: 99,
-      resonance: { catalog, state: input, round: input.round, battleRound: prepared.battleRound, environmentId: input.environmentId ?? null },
+      resonance: { catalog, state: input, round: input.round, battleRound: prepared.battleRound, environmentId: input.rulesVersion===2?null:input.environmentId ?? null },
     },
     fieldId: `resonance-r${input.round}`,
     data: battleData,
@@ -549,7 +550,7 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
 /** Starting stats after the star record, native Kit and resonance installs are applied; no enemy wave is simulated. */
 export function previewUnitStats(state, { data = null, catalog = null } = {}) {
   const source = sourceData(data);
-  catalog ??= getResonanceCatalog(source);
+  catalog = catalogFor(state, source, catalog);
   const input = structuredClone(state);
   if(input.difficulty==='FUNNY'&&Number(input.round)%2===1)input.round=Number(input.round)+1;
   const { battle } = buildResonanceBattle(input, { data: source, catalog, preview: true, recording: false });

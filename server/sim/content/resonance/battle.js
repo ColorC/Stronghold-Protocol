@@ -103,6 +103,42 @@ function applyPactStats(battle, active) {
     }
   }
 }
+export function standUnitedActiveTraitCount(battle,ctx,params={}) {
+  const excluded=new Set(['holyGun','yela','crown',...(params.excludedPacts??[])]);
+  const units=battle.allyUnits.filter(unit=>unit.kind==='op'&&!unit.removed&&unit.deployed);
+  const pacts=new Set();
+  for(const unit of units){
+    for(const id of pactIds(unit,pieceOperator(unit,ctx)))pacts.add(id);
+    for(const item of inputOf(unit)?.items??unit.items??[])for(const effect of ctx.content.equipment?.[typeof item==='string'?item:item?.id]?.effects??[])if(['pact_transfer','transfer_pact'].includes(effect.kind))pacts.add(effect.params?.pactId??effect.params?.pact);
+  }
+  let activeCount=0;
+  for(const id of pacts){
+    if(excluded.has(id)||ctx.content.pacts?.[id]?.singleUnique===true)continue;
+    const identities=new Set();
+    for(const unit of units){
+      const op=pieceOperator(unit,ctx);if(!op)continue;
+      const ids=pactIds(unit,op);
+      for(const item of inputOf(unit)?.items??unit.items??[])for(const effect of ctx.content.equipment?.[typeof item==='string'?item:item?.id]?.effects??[])if(['pact_transfer','transfer_pact'].includes(effect.kind))ids.add(effect.params?.pactId??effect.params?.pact);
+      if(ids.has(id))identities.add(op.charId??op.id);
+    }
+    if(tierFor(ctx,id,identities.size))activeCount++;
+  }
+  return activeCount;
+}
+function applyStandUnited(battle,ctx) {
+  const effect=ctx.strategies.flatMap(strategy=>strategy.effects??[]).find(row=>row.kind==='stand_united');
+  if(!effect)return;
+  const units=battle.allyUnits.filter(unit=>unit.kind==='op'&&!unit.removed&&unit.deployed);
+  const activeCount=standUnitedActiveTraitCount(battle,ctx,effect.params);
+  if(activeCount<1)return;
+  const pct=numeric(effect.params?.attackPercentPerPact,1.5)*activeCount/100;
+  for(const unit of units){
+    unit.mem??={};const applied=Number(unit.mem.resonanceStandUnitedPct??0),delta=Math.max(0,pct-applied);
+    if(delta<=0)continue;
+    battle.addBuff(unit,{key:`resonance:strategy:standUnited:${pct}`,persist:true,allowDead:true,mods:{atkPct:delta},tags:['resonance','strategy']});
+    unit.mem.resonanceStandUnitedPct=pct;
+  }
+}
 function enemies(battle) { return battle.enemies.filter((e) => e.alive && e.deployed && !e.hidden); }
 function closestEnemy(battle, unit, limit = Infinity) {
   return enemies(battle).filter((e) => Math.hypot(e.x - unit.x, e.y - unit.y) <= limit)
@@ -230,7 +266,7 @@ export function installResonanceBattle(battle, { catalog, state } = {}) {
   ctx.pactCache = initial;
   applyPactStats(battle, initial);
   const yela = initial.get('yela');
-  const flags = content.environments?.[state?.environmentId] ?? state?.environment ?? state?.field?.environment ?? state?.env ?? null;
+  const flags = state?.rulesVersion===2 ? null : content.environments?.[state?.environmentId] ?? state?.environment ?? state?.field?.environment ?? state?.env ?? null;
   if (yela || flags?.rule?.kind==='environment_snow') battle.resonanceFloors = fieldTiles(battle);
   if(flags?.rule?.kind==='environment_leak_reduction')battle.on('beforeEnemyLeak',(event)=>{if(ctx.environmentFirstLeak)return;ctx.environmentFirstLeak=true;const raw=Number(event.loss);if(Number.isFinite(raw)&&raw>=0)event.loss=Math.floor(raw/2);},{owner:battle});
   applyPersonalPassives(battle, ctx);
@@ -314,7 +350,7 @@ function installEvents(b, ctx, active, env) {
     u.mem.resonanceAmmoSpent=(u.mem.resonanceAmmoSpent??0)+1;
     const op = pieceOperator(u, ctx); if (!op) return;
     const executor=personalPassives(u,ctx).find(x=>x.kind==='star3_executor');if(executor&&u.skill?.kind==='ammo'&&u.skill.ammoLeft===0&&!u.mem.star3ExecutorRefund){u.mem.star3ExecutorRefund=true;u.skill.ammoLeft=u.skill.ammoMax;metric(b,'triggers.signature_executor_refund');}
-    const last=strategy('lastAmmo'),lastTarget=c.targets?.find(t=>t?.side==='enemy'&&t.alive);if(last&&u.skill?.kind==='ammo'&&c.left===0){u.mem.resonanceLastAmmoSp=(u.mem.resonanceLastAmmoSp??0)+numeric(last.sp,3);deal(b,u,lastTarget,u.s.atk*numeric(last.damage,150)/100,'phys',['strategy']);}
+    const last=strategy('lastAmmo'),lastTarget=c.targets?.find(t=>t?.side==='enemy'&&t.alive);if(last&&u.skill?.kind==='ammo'&&c.left===0){const sp=numeric(last.sp,3);if(sp>0)u.mem.resonanceLastAmmoSp=(u.mem.resonanceLastAmmoSp??0)+sp;deal(b,u,lastTarget,u.s.atk*numeric(last.damage,150)/100,'phys',['strategy']);}
   }, { owner: b });
   b.on('skillEnd',(c)=>{const u=c?.unit,sp=Number(u?.mem?.resonanceLastAmmoSp??0);if(u&&sp>0){u.mem.resonanceLastAmmoSp=0;u.skill?.gainSp?.(sp,'resonanceLastAmmo');}},{owner:b});
   b.on('damaged', (c) => {
@@ -360,6 +396,7 @@ function installEvents(b, ctx, active, env) {
     if(env?.rule?.kind==='environment_elite_bounty'&&/ELITE|BOSS/i.test(String(victim.def?.rank??''))&&!ctx.envBounty){ctx.envBounty=true;const amount=numeric(env.rule.params?.firstKillGold,2);metric(b,'environmentGold',amount);b.resonanceResults.coins.push({amount,reason:'environment_elite_bounty'});}
   }, { owner: b });
   b.on('battleStart', () => {
+    applyStandUnited(b,ctx);
     if(env?.rule?.kind==='environment_opening_sp'){const q=env.rule.params??{};for(const u of b.allyUnits)if(u.kind==='op')b.addBuff(u,{key:'resonance:environment:openingSp',duration:numeric(q.duration,10),mods:{spRecoveryFlat:numeric(q.perSecond,.3)},tags:['resonance','environment']});}
     if(env?.rule?.kind==='environment_deploy_stealth'&&!ctx.envFirstDeploy){const first=b.allyUnits.find(u=>u.kind==='op'&&u.alive&&u.deployed);if(first){ctx.envFirstDeploy=true;b.applyStatus(first,'stealth',{duration:numeric(env.rule.params?.seconds,2),source:first});}}
     if(env?.rule?.kind==='environment_front_barrier')for(const u of b.allyUnits)if(u.kind==='op'&&u.def?.position==='MELEE')b.addBuff(u,{key:'resonance:environment:frontBarrier',shield:u.s.maxHp*numeric(env.rule.params?.hp,15)/100,duration:Infinity,tags:['resonance','environment']});
@@ -375,6 +412,7 @@ function installEvents(b, ctx, active, env) {
       if (op.name === '凛御银灰' && starOf(u, op) >= 3) silverAshAura(b,ctx,u);
     }
   }, { owner:b });
+  b.on('deploy',()=>applyStandUnited(b,ctx),{owner:b});
   b.on('fatal',(c)=>{
     const u=c?.unit;if(!u||u.side!=='ally'||u.kind!=='op')return;const op=pieceOperator(u,ctx);if(!op)return;
     const ines=personalPassives(u,ctx).find(x=>x.kind==='star3_ines');if(ines&&!u.mem.resonanceInesSave){u.mem.resonanceInesSave=true;u.mem.resonanceInesUntil=b.time+numeric(ines.params?.firstLethalRefusalSeconds,8);u.mem.resonanceInesDefReduction=numeric(ines.params?.globalEnemyDefReduction,40)/100;c.prevented=true;b.addBuff(u,{key:'resonance:inesUndying',duration:numeric(ines.params?.firstLethalRefusalSeconds,8),flags:{invulnerable:true},tags:['resonance']});metric(b,'triggers.signature_ines_fatal_save');}

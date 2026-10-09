@@ -7,10 +7,9 @@ import { assets } from '../assets.js';
 import { TitleScreen } from '../screens/title.js';
 import { DifficultyCard } from '../screens/lobby.js';
 import { StepHeader } from '../ui/matchChrome.js';
-import { chessPortraitUrl, uiUrl } from '../ui/assetUrls.js';
+import { uiUrl } from '../ui/assetUrls.js';
 import { GameScreen } from './game.js';
 import { resonanceApi } from './api.js';
-import { PactIcon } from './pactIcon.js';
 import { parseDetailHash, actionErrorText } from './model.js';
 import { DetailPanel } from './detail.js';
 import { CodexScreen } from './codex.js';
@@ -49,18 +48,11 @@ function sessionUrl(id) {
   url.searchParams.delete('step');
   history.replaceState(null, '', url);
 }
-function representativeFor(environment, catalog, activeIds) {
-  const pactId = environment?.identityPactId;
-  if (!pactId) return null;
-  const available = activeIds.map((id) => catalog.operators?.[id]).find((operator) => operator?.pacts?.includes(pactId));
-  if (available) return available;
-  return Object.values(catalog.operators || {}).find((operator) => operator?.pacts?.includes(pactId)) || null;
-}
 function briefingRoute(campaign, difficulty) {
   const schedule = campaign?.nodeSchedule?.[difficulty] || {};
   const supplyNodes = campaign?.supply?.components?.nodes || [];
   const leaderNodes = [schedule.bossNode, schedule.baseBossNode, schedule.eliteNode, schedule.hiddenBossNode].filter(Number.isFinite);
-  const nodes = [...new Set([1, 2, 3, ...supplyNodes.slice(0, 2), ...leaderNodes])].filter((node) => node > 0 && node <= (schedule.nodes || Infinity)).sort((a, b) => a - b);
+  const nodes = [...new Set([1, 2, 3, ...(campaign?.strategyNodes?.slice(0, 3) || []), ...supplyNodes.slice(0, 2), ...leaderNodes])].filter((node) => node > 0 && node <= (schedule.nodes || Infinity)).sort((a, b) => a - b);
   return nodes.map((node) => {
     const leader = node === schedule.bossNode ? '最终领袖'
       : node === schedule.baseBossNode ? '领袖战'
@@ -68,56 +60,28 @@ function briefingRoute(campaign, difficulty) {
           : node === schedule.hiddenBossNode ? '隐藏领袖' : '';
     const component = supplyNodes.includes(node);
     const funnySupply = difficulty === 'FUNNY' && schedule.battleOnEvenNodes && node % 2 === 1;
-    const kind = leader || (component ? '组件补给' : funnySupply ? '补给' : campaign?.strategyNodes?.includes(node) ? '策略选择' : '节点推进');
-    const detail = component ? `选择${campaign.supply?.components?.optionCount ?? 3}项，获得${campaign.supply?.components?.countPerNode ?? 1}件组件`
-      : funnySupply ? `获得${schedule.oddNodeGold ?? 0}金币与${schedule.oddNodeXp ?? 0}经验` : '';
+    const strategy = campaign?.strategyNodes?.includes(node);
+    const kind = [leader, component && '组件补给', strategy && '策略选择', funnySupply && '后勤'].filter(Boolean).join(' · ') || '节点推进';
+    const detail = [component && `从${campaign.supply?.components?.optionCount ?? 3}项中选择${campaign.supply?.components?.countPerNode ?? 1}件组件`,
+      funnySupply && `获得${schedule.oddNodeGold ?? 0}金币与${schedule.oddNodeXp ?? 0}经验`].filter(Boolean).join('；');
     return { node, kind, detail };
   });
 }
-function EnvironmentPortrait({ environment, catalog, activeIds }) {
-  const operator = representativeFor(environment, catalog, activeIds);
-  const src = operator ? chessPortraitUrl(data.get('assets'), { charId: operator.charId }) : null;
-  const pact = catalog.pacts?.[environment?.identityPactId];
-  return html`<div class="rs-env-portrait" aria-label=${operator ? `${operator.name}代表本环境` : '本环境盟约'}>
-    ${src ? html`<img class="rs-env-portrait__operator" src=${src} alt=${operator.name} draggable="false"/>` : null}
-    <div class="rs-env-portrait__identity">
-      ${pact ? html`<${PactIcon} catalog=${catalog} id=${environment.identityPactId} size="sm"/>` : null}
-      <span>${pact?.name || '环境盟约'}</span>
-    </div>
-  </div>`;
-}
 function FlowHeader({ step, title, difficulty, onBack, onGuide }) {
   return html`<div class="rs-flow__header">
-    <${StepHeader} step=${step} of=${3} title=${title} micro="卫戍协议 · 共鸣" pub=${{ difficulty }} onExit=${onBack} onGuide=${onGuide}/>
+    <${StepHeader} step=${step} of=${2} title=${title} micro="卫戍协议 · 共鸣" pub=${{ difficulty }} onExit=${onBack} onGuide=${onGuide}/>
     <a class="rs-fullscreen" href=${location.href} target="_blank" rel="noopener">全屏打开</a>
   </div>`;
-}
-function PactSummary({ pact, catalog, id, description, onOpen }) {
-  if (!pact) return html`<p class="t-dim">本环境暂无额外盟约说明。</p>`;
-  const firstLevel = pact.levels?.[0];
-  const threshold = firstLevel?.threshold;
-  const firstEffect = firstLevel?.description || description || pact.description || '查看盟约详情了解效果。';
-  return html`<article class="rs-brief-pact">
-    <div class="rs-brief-pact__head">
-      <${PactIcon} catalog=${catalog} id=${id} size="lg"/>
-      <div><${MicroLabel} tone="mint">本局主盟约</${MicroLabel}><h3>${pact.name}</h3></div>
-      <button type="button" class="rs-brief-pact__open" onClick=${onOpen}>查看盟约</button>
-    </div>
-    <p>${threshold ? html`<b>达到${threshold}名干员：</b>` : null}${firstEffect}</p>
-    ${pact.levels?.length > 1 ? html`<span class="rs-brief-pact__more">更高层级效果可在盟约详情中查看</span>` : null}
-  </article>`;
 }
 export function App() {
   const openedSession = useRef('');
   useData('bonds', 'assets');
   const query = new URL(location.href).searchParams;
   const stepName = query.get('step');
-  const stepFromUrl = stepName === 'difficulty' ? 1 : stepName === 'environment' ? 2 : stepName === 'briefing' ? 3 : 0;
+  const stepFromUrl = stepName === 'difficulty' ? 1 : ['environment', 'briefing'].includes(stepName) ? 2 : 0;
   const [catalog, setCatalog] = useState(null);
   const [activeIds, setActiveIds] = useState([]);
-  const [environments, setEnvironments] = useState([]);
   const [seed, setSeed] = useState(String(Math.floor(Math.random() * 2 ** 31)));
-  const [env, setEnv] = useState(query.get('environment') || '');
   const [difficulty, setDifficulty] = useState(DIFFICULTIES.some(([id]) => id === query.get('difficulty')) ? query.get('difficulty') : 'NORMAL');
   const [step, setStep] = useState(() => query.has('session') ? 0 : stepFromUrl);
   const [session, setSession] = useState(null);
@@ -151,20 +115,16 @@ export function App() {
     (async () => {
       if (!seedValid) { setCatalogKey(''); return; }
       const requestedSeed = numericSeed;
-      const response = await resonanceApi.catalog(requestedSeed, env || undefined);
+      const response = await resonanceApi.catalog(requestedSeed);
       if (!alive) return;
       if (!response.ok || !response.catalog?.operators || !Array.isArray(response.activeOperatorIds)) {
         setFailure(actionErrorText(response.error || { code: 'BAD_RESPONSE' }));
         return;
       }
       const next = { ...response.catalog, activeOperatorIds: response.activeOperatorIds };
-      const choices = (response.environmentChoices || []).filter((id) => next.environments?.[id]);
       setCatalog(next);
       setActiveIds(response.activeOperatorIds);
-      setEnvironments(choices);
-      if (!env && choices[0]) { setEnv(choices[0]); return; }
-      if (env && !choices.includes(env)) { setEnv(choices[0] || ''); return; }
-      setCatalogKey(`${requestedSeed}:${env || choices[0] || ''}`);
+      setCatalogKey(String(requestedSeed));
       const url = new URL(location.href);
       const sessionId = url.searchParams.get('session');
       if (sessionId && openedSession.current !== sessionId) {
@@ -178,27 +138,26 @@ export function App() {
       } else if (url.searchParams.get('view') === 'codex') setCodex(true);
     })().catch(() => { if (alive) setFailure('数据载入失败，请检查网络后重试'); });
     return () => { alive = false; };
-  }, [seed, env]);
+  }, [seed]);
 
   useEffect(() => {
     if (session || codex) return;
     const url = new URL(location.href);
     if (url.searchParams.get('view') === 'codex') return;
     url.searchParams.delete('view');
-    const names = { 1: 'difficulty', 2: 'environment', 3: 'briefing' };
+    const names = { 1: 'difficulty', 2: 'briefing' };
     if (names[step]) url.searchParams.set('step', names[step]);
     else url.searchParams.delete('step');
     url.searchParams.set('difficulty', difficulty);
-    if (env) url.searchParams.set('environment', env);
-    else url.searchParams.delete('environment');
+    url.searchParams.delete('environment');
     history.replaceState(null, '', url);
-  }, [step, difficulty, env, session, codex]);
+  }, [step, difficulty, session, codex]);
 
   useEffect(() => {
     const open = () => {
       const target = parseDetailHash(location.hash);
       if (!target) return;
-      if (['operator', 'pact', 'item', 'recipe', 'strategy', 'environment'].includes(target.kind)) setDetail(target);
+      if (['operator', 'pact', 'item', 'recipe', 'strategy', 'environment', 'opening'].includes(target.kind)) setDetail(target);
       else if (target.kind === 'section') {
         setCodex(true);
         requestAnimationFrame(() => document.getElementById(`rs-section-${target.id}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }));
@@ -210,11 +169,11 @@ export function App() {
   }, [catalog, session]);
 
   const start = useCallback(async () => {
-    if (!seedValid || !env || step !== 3 || !catalog?.environments?.[env] || catalogKey !== `${numericSeed}:${env}`) return;
+    if (!seedValid || step !== 2 || catalogKey !== String(numericSeed)) return;
     setBusy(true);
     try {
       await assets.ready();
-      const response = await resonanceApi.create({ seed: numericSeed, difficulty, environmentId: env });
+      const response = await resonanceApi.create({ seed: numericSeed, difficulty });
       if (!response.ok || !response.id || !response.state) {
         setFailure(actionErrorText(response.error || { code: 'BAD_RESPONSE' }));
         return;
@@ -226,7 +185,7 @@ export function App() {
       try { localStorage.setItem(LAST, response.id); } catch { /* storage is optional */ }
     } catch { setFailure('连接中断，请检查网络后重试'); }
     finally { setBusy(false); }
-  }, [env, seed, numericSeed, seedValid, difficulty, catalog, step, catalogKey]);
+  }, [seed, numericSeed, seedValid, difficulty, catalog, step, catalogKey]);
 
   const resume = async (id) => {
     if (!id) return;
@@ -253,9 +212,8 @@ export function App() {
     overlayDetail=${html`<${DetailPanel} detail=${detail} catalog=${catalog} onDetail=${setDetail} onClose=${() => setDetail(null)}/>`}
     onBack=${() => { setCodex(false); setCodexTab('operators'); setDetail(null); const url = new URL(location.href); url.searchParams.delete('view'); url.hash = ''; history.replaceState(null, '', url); }} onDetail=${setDetail}/>`;
 
-  const selected = catalog.environments?.[env];
-  const selectedPact = catalog.pacts?.[selected?.identityPactId];
-  const catalogReady = seedValid && catalogKey === `${numericSeed}:${env}` && !!selected;
+  const openingEvent = catalog.openingEvent;
+  const catalogReady = seedValid && catalogKey === String(numericSeed) && !!openingEvent;
   const difficultyArt = uiUrl(data.get('assets'), `modeChoice/${difficultyArtKey[difficulty] || 'normal'}_rhodes_island`);
   const difficultySummary = difficultyCampaignSummary(catalog.campaign, difficulty);
   const route = briefingRoute(catalog.campaign, difficulty);
@@ -267,7 +225,6 @@ export function App() {
     { label: '战术图鉴', onClick: openCodex },
     ...(readLast() ? [{ label: busy ? '正在载入…' : '继续上一局', onClick: () => resume(readLast()) }] : []),
   ];
-  const detailButton = (id) => () => setDetail({ kind: 'pact', id });
 
   return html`<main class="rs-entry">
     ${step === 0 ? html`<${TitleScreen} presentation=${{
@@ -285,7 +242,7 @@ export function App() {
                 <div class="rs-difficulty-feature__schedule"><b>本局节奏</b><span>${difficultySummary.rhythm}</span></div>
                 ${difficultySummary.regularText ? html`<p class="rs-difficulty-feature__pressure">${difficultySummary.regularText}</p>` : null}
                 ${difficultySummary.terminalText ? html`<p class="rs-difficulty-feature__pressure">${difficultySummary.terminalText}</p>` : null}
-                <${Button} class="rs-difficulty-feature__next" variant="primary" size="lg" block=${true} iconRight="chevrons" onClick=${() => setStep(2)}>选择战场</${Button}>
+                <${Button} class="rs-difficulty-feature__next" variant="primary" size="lg" block=${true} iconRight="chevrons" onClick=${() => setStep(2)}>查看本局简报</${Button}>
               </div>
             </article>
           </section>
@@ -294,51 +251,32 @@ export function App() {
               selected=${difficulty === id} onSelect=${setDifficulty} presentation=${{ name, description }}/>` )}</div>
           </section>
         </div></div>`
-      : step === 2 ? html`<div class="screen draft rs-flow rs-flow--environment"><div class="brief__bg" aria-hidden="true"></div>
-        <${FlowHeader} step=${2} title="选择战场" difficulty=${difficulty} onBack=${() => setStep(1)} onGuide=${openEconomyGuide}/>
-        <main class="draft__main">
-          <aside class="draft-order"><h3 class="brief-h"><span>本局安排</span><${MicroLabel}>DEPLOYMENT<//></h3>
-            <article class="dorder is-done"><span class="dorder__idx num">01</span><div class="dorder__text"><b class="dorder__name">难度</b><span class="dorder__state">${difficultyName(difficulty)}</span></div></article>
-            <article class="dorder is-cur is-self"><span class="dorder__idx num">02</span><div class="dorder__text"><b class="dorder__name">战场</b><span class="dorder__state">${selected?.name || '等待选择'}</span></div></article>
-            <button class="draft-order__info btn btn--secondary" onClick=${openCodex}><${Icon} name="book"/>浏览全部环境</button>
-          </aside>
-          <section class="draft-grid" role="listbox" aria-label="本局推荐战场">${environments.slice(0, 3).map((id) => {
-            const item = catalog.environments[id];
-            const pact = catalog.pacts?.[item?.identityPactId];
-            const operator = representativeFor(item, catalog, activeIds);
-            const portrait = operator ? chessPortraitUrl(data.get('assets'), { charId: operator.charId }) : null;
-            return item ? html`<button type="button" role="option" aria-selected=${env === id ? 'true' : 'false'}
-              class=${`dband rs-env-card${env === id ? ' is-sel' : ''}`} onClick=${() => setEnv(id)}>
-              <span class="rs-env-card__identity">${pact ? html`<${PactIcon} catalog=${catalog} id=${item.identityPactId} size="sm"/>` : null}<span>${pact?.name || '战场盟约'}</span></span>
-              ${portrait ? html`<img class="rs-env-card__portrait" src=${portrait} alt=${operator.name} draggable="false"/>` : null}
-              <span class="dband__name">${item.name}</span><p class="rs-env-card__summary">${item.description || '选择此环境查看本局盟约。'}</p>
-            </button>` : null;
-          })}</section>
-          <aside class="draft-detail brackets">${selected ? html`<${EnvironmentPortrait} environment=${selected} catalog=${catalog} activeIds=${activeIds}/>
-            <div class="draft-detail__hp"><span>推荐战场</span><${MicroLabel}>ENVIRONMENT<//></div>
-            <h2 class="draft-detail__name">${selected.name}</h2>
-            <div class="draft-detail__eff"><${MicroLabel} tone="mint">环境规则</${MicroLabel}><p class="draft-detail__desc">${selected.description || '本环境暂无额外说明。'}</p>
-              ${selectedPact ? html`<button class="rs-flow__pact" onClick=${detailButton(selected.identityPactId)}>主盟约 · ${selectedPact.name}</button>` : null}</div>`
-            : html`<p class="t-dim">选择战场查看规则</p>`}
-            <div class="draft-detail__actions"><div class="draft-detail__btns"><${Button} variant="secondary" onClick=${() => setStep(1)}>返回难度<//>
-              <${Button} variant="primary" icon="check" disabled=${!selected} onClick=${() => setStep(3)}>查看本局简报<//></div></div>
-          </aside>
-        </main></div>`
       : html`<div class="screen brief rs-flow rs-flow--briefing"><div class="brief__bg" aria-hidden="true"></div>
-        <${FlowHeader} step=${3} title="确认本局信息" difficulty=${difficulty} onBack=${() => setStep(2)} onGuide=${openEconomyGuide}/>
+        <${FlowHeader} step=${2} title="本局简报" difficulty=${difficulty} onBack=${() => setStep(1)} onGuide=${openEconomyGuide}/>
         <main class="brief__main">
           <section class="brief__left">
-            <div class="brief-stage"><span class="brief-stage__k"><${MicroLabel}>战场环境<//></span>
-              <span class="brief-stage__name"><${Icon} name="rook"/>${selected?.name || '请选择战场'}</span></div>
-            <div class="rs-brief-identity">${selected ? html`<${EnvironmentPortrait} environment=${selected} catalog=${catalog} activeIds=${activeIds}/>` : null}
-              <div><${MicroLabel} tone="mint">本局难度</${MicroLabel}><h2>${difficultyName(difficulty)}</h2>
-                <p>${DIFFICULTIES.find(([id]) => id === difficulty)?.[2]}</p></div></div>
-            <${PactSummary} pact=${selectedPact} catalog=${catalog} id=${selected?.identityPactId} onOpen=${detailButton(selected?.identityPactId)}/>
+            <article class="rs-difficulty-feature brackets">
+              ${difficultyArt ? html`<div class="rs-difficulty-feature__art"><img src=${difficultyArt} alt="" draggable="false"/></div>` : null}
+              <div class="rs-difficulty-feature__content"><${MicroLabel} tone="mint">本局难度</${MicroLabel}><h2>${difficultyName(difficulty)}</h2>
+                <p>${DIFFICULTIES.find(([id]) => id === difficulty)?.[2]}</p>
+                <div class="rs-difficulty-feature__schedule"><b>本局节奏</b><span>${difficultySummary.rhythm}</span></div>
+                ${difficultySummary.regularText ? html`<p class="rs-difficulty-feature__pressure">${difficultySummary.regularText}</p>` : null}
+                ${difficultySummary.terminalText ? html`<p class="rs-difficulty-feature__pressure">${difficultySummary.terminalText}</p>` : null}
+              </div>
+            </article>
+            <button type="button" class="rs-opening-event brackets" onClick=${() => {
+              const id = Object.entries(catalog.openingEvents || {}).find(([, event]) => event.name === openingEvent?.name)?.[0];
+              if (id) setDetail({ kind: 'opening', id });
+            }} aria-label=${`开局事件：${openingEvent?.name || '标准开局'}，查看效果`}>
+              <${MicroLabel} tone="mint">开局事件 · 查看效果</${MicroLabel}>
+              <b>${openingEvent?.name || '标准开局'}</b>
+              <span>${openingEvent?.description || '本局没有额外开局效果。'}</span>
+            </button>
             <button class="rs-advanced" onClick=${() => setAdvancedOpen(true)}><${Icon} name="gear"/>高级设置</button>
           </section>
           <section class="brief__right"><div class="rs-brief-prep brackets">
-            <div class="rs-brief-prep__head"><h2>开局整备</h2><${MicroLabel}>本局可用阵容</${MicroLabel}></div>
-            <p class="rs-brief-prep__roster">可招募干员 <b class="num">${activeIds.length}</b> 名</p>
+            <div class="rs-brief-prep__head"><h2>开局整备</h2><${MicroLabel}>本赛季名单</${MicroLabel}></div>
+            <p class="rs-brief-prep__roster">本赛季可招募干员 <b class="num">${activeIds.length}</b> 名</p>
             <div class="rs-brief-prep__resources"><span>开局资源</span><b>${catalog.campaign?.opening?.gold ?? '—'}<small>金币</small></b>
               <b>${catalog.campaign?.opening?.level ?? '—'}<small>科技</small></b><b>${catalog.campaign?.opening?.population ?? '—'}<small>人口</small></b>
               <b class="rs-brief-prep__components">${catalog.campaign?.opening?.basicComponents ?? '—'}<small>基础组件</small></b></div>
@@ -350,14 +288,13 @@ export function App() {
             <${Button} variant="secondary" icon="book" onClick=${openCodex}>打开战术图鉴<//>
           </div></section>
         </main>
-        <footer class="brief__foot"><${Button} variant="secondary" onClick=${() => setStep(2)}>返回战场<//>
+        <footer class="brief__foot"><${Button} variant="secondary" onClick=${() => setStep(1)}>返回难度<//>
           <${Button} variant="primary" size="xl" icon="play" disabled=${busy || !catalogReady} loading=${busy} onClick=${start}>确认并开始本局<//></footer>
         <${Modal} open=${advancedOpen} title="高级设置" micro="本局选项" onClose=${() => setAdvancedOpen(false)}
           actions=${html`<${Button} variant="primary" onClick=${() => setAdvancedOpen(false)}>完成<//>`}>
           <label class="rs-seed-field">对局种子<input inputMode="numeric" value=${seed} onInput=${(event) => setSeed(event.currentTarget.value.replace(/\D/g, '').slice(0, 10))}/></label>
-          ${!seedValid ? html`<p>请输入 0 至 4294967295 之间的整数种子。</p>` : !catalogReady ? html`<p>正在更新当前战场数据；更新完成后即可确认。</p>` : null}
+          ${!seedValid ? html`<p>请输入 0 至 4294967295 之间的整数种子。</p>` : !catalogReady ? html`<p>正在更新当前种子数据；更新完成后即可确认。</p>` : null}
         </${Modal}>
-      </div>`}
-    <${DetailPanel} detail=${detail} catalog=${catalog} state=${null} onDetail=${setDetail} onClose=${() => setDetail(null)}/>
+      </div>`}    <${DetailPanel} detail=${detail} catalog=${catalog} state=${null} onDetail=${setDetail} onClose=${() => setDetail(null)}/>
   </main>`;
 }

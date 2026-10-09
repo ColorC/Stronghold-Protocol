@@ -1,8 +1,10 @@
 import { createRequire } from 'node:module';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { resonanceOpenings, selectResonanceOpening } from '../../shared/resonance/openings.js';
+import { resonanceSeasonOperatorIds } from '../../shared/resonance/season-roster.js';
 
 const ROOT = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const NATIVE_DATA = path.join(ROOT, 'data/resonance-native');
@@ -10,16 +12,19 @@ const SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const OUT = path.join(ROOT, 'runtime/resonance/ui-verification');
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const args = process.argv.slice(2);
-let remoteUrl = null, replaySession = null, createdSession = null, resumeTailSession = null, finishTailSession = null, battleUi = false;
+let remoteUrl = null, replaySession = null, createdSession = null, resumeTailSession = null, finishTailSession = null, battleUi = false, modeBoundary = false, validateArgs = false;
 for (let i = 0; i < args.length;) {
-  if (args[i] === '--battle-ui' && !battleUi) { battleUi = true; i++; }
+  if (args[i] === '--mode-boundary' && !modeBoundary) { modeBoundary = true; i++; }
+  else if (args[i] === '--validate-args' && !validateArgs) { validateArgs = true; i++; }
+  else if (args[i] === '--battle-ui' && !battleUi) { battleUi = true; i++; }
   else if (args[i] === '--url' && args[i + 1] && !remoteUrl) { remoteUrl = args[i + 1]; i += 2; }
   else if (args[i] === '--session' && args[i + 1] && !replaySession) { replaySession = args[i + 1]; i += 2; }
   else if (args[i] === '--created-session' && args[i + 1] && !createdSession) { createdSession = args[i + 1]; i += 2; }
   else if (args[i] === '--resume-tail' && args[i + 1] && !resumeTailSession) { resumeTailSession = args[i + 1]; i += 2; }
   else if (args[i] === '--finish-tail' && args[i + 1] && !finishTailSession) { finishTailSession = args[i + 1]; i += 2; }
-  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-session-id>] [--battle-ui fresh flow] [--resume-tail <existing-ephemeral-session-id>] [--finish-tail <existing-ephemeral-session-id>]; no work started');
+  else throw new Error('usage: --mode-boundary | [--url <fresh-flow-entry>] [--session <existing-session-id>] [--battle-ui fresh flow] [--resume-tail <existing-ephemeral-session-id>] [--finish-tail <existing-ephemeral-session-id>] [--validate-args]; no work started');
 }
+if (modeBoundary && (remoteUrl || replaySession || createdSession || resumeTailSession || finishTailSession || battleUi)) throw new Error('--mode-boundary is isolated, local, and resumes only its own receipt; no work started');
 if (replaySession && !/^[a-zA-Z0-9-]{8,80}$/.test(replaySession)) throw new Error('--session must be an existing session id; no work started');
 if (createdSession && !/^[a-zA-Z0-9-]{8,80}$/.test(createdSession)) throw new Error('--created-session must be an existing session id; no work started');
 if (resumeTailSession && !/^[a-zA-Z0-9-]{8,80}$/.test(resumeTailSession)) throw new Error('--resume-tail must be an existing ephemeral session id; no work started');
@@ -29,16 +34,27 @@ if (finishTailSession && (remoteUrl || replaySession || createdSession || resume
 if (resumeTailSession) battleUi = true;
 if (battleUi && replaySession) throw new Error('--battle-ui cannot be combined with --session; no work started');
 if (createdSession && (!battleUi || !remoteUrl || replaySession)) throw new Error('--created-session requires --url and --battle-ui and cannot be combined with --session; no work started');
-const REPORT = path.join(OUT, finishTailSession ? 'ui-tft-finish-receipt.json' : resumeTailSession ? 'ui-flow-tail-receipt.json' : 'ui-flow-receipt.json');
+const REPORT = path.join(OUT, modeBoundary ? 'ui-mode-boundary-receipt.json' : finishTailSession ? 'ui-tft-finish-receipt.json' : resumeTailSession ? 'ui-flow-tail-receipt.json' : 'ui-flow-receipt.json');
+if (validateArgs) {
+  process.stdout.write(JSON.stringify({ valid: true, mode: modeBoundary ? 'mode-boundary' : 'legacy', browserStarted: false, report: REPORT,
+    ...(modeBoundary ? { maxCreates: 1, maxFights: 1, deadlineMs: 600000, opening: 'cheaper_levels', data: NATIVE_DATA } : {}) }) + '\n');
+  process.exit(0);
+}
 const require = createRequire(path.join(ROOT, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   sourceStatus: execFileSync('git', ['-C', SOURCE, 'status', '--short', '--untracked-files=no'], { encoding: 'utf8' }).trim(),
-  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : finishTailSession ? 'finish-tail-live-session' : resumeTailSession ? 'resume-tail-live-session' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || finishTailSession || resumeTailSession || createdSession, battleUi,
+  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: modeBoundary ? 'mode-boundary' : replaySession ? 'existing-session-read-only' : finishTailSession ? 'finish-tail-live-session' : resumeTailSession ? 'resume-tail-live-session' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || finishTailSession || resumeTailSession || createdSession, battleUi,
   resumeTailReference: resumeTailSession ? path.join(OUT, 'ui-flow-receipt.json') : null,
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
+let checkpointWrites = Promise.resolve(), modeReportWritable = false;
+const saveModeCheckpoint = () => {
+  if (!modeBoundary) return Promise.resolve();
+  checkpointWrites = checkpointWrites.then(() => writeFile(REPORT, JSON.stringify(receipt, null, 2)));
+  return checkpointWrites;
+};
 let completedWCheckpoint = false, completedEquipmentSellCheckpoint = false, completedFightCheckpoint = false, completedP12SaleCheckpoint = false;
 const check = (name, value, detail) => { receipt.tests.push({ name, passed: !!value, detail }); if (!value) throw new Error(`${name}: ${JSON.stringify(detail)}`); };
 async function button(page, pattern) {
@@ -418,7 +434,12 @@ async function shot(page, name) {
     });
     await Promise.all(finite.map(a => a.finished.catch(() => {})));
   });
-  const file = path.join(OUT, `${name}.jpg`); await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
+  const file = path.join(OUT, `${name}.jpg`);
+  if (modeBoundary) {
+    const existing = await readFile(file).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; });
+    if (existing) { receipt.screenshots.push({ name, path: file, preserved: true }); return; }
+  }
+  await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
   receipt.screenshots.push({ name, path: file });
 }
 async function layout(page, name) {
@@ -441,8 +462,200 @@ async function waitForGameplayReady(page, label, {allowEmpty=false}={}) {
   const observed=await page.evaluate(() => ({kind:globalThis.__SP_VIEW__?.kind,...globalThis.__SP_VIEW__?.raw?.stats?.()}));
   check(`${label}-renderer-ready`,allowEmpty?observed.kind==='engine'&&observed.mode==='prep'&&observed.board3d?.frames>0&&observed.board3d?.triangles>0:observed.kind==='fallback'||observed.units>0,observed);
 }
+async function restoreModeCheckpoint() {
+  const prior = await readFile(REPORT, 'utf8').then(JSON.parse, error => { if (error.code === 'ENOENT') return null; throw error; });
+  if (!prior) { receipt.attempt = 1; receipt.checkpoints = {}; modeReportWritable = true; return; }
+  if (prior.mode !== 'mode-boundary' || !Number.isInteger(prior.attempt) || prior.creates > 1 || prior.fights > 1) throw new Error('unowned-mode-receipt; no browser started');
+  const archive = path.join(OUT, `ui-mode-boundary-attempt-${prior.attempt}.json`);
+  await writeFile(archive, JSON.stringify(prior, null, 2), { flag: 'wx' });
+  modeReportWritable = true;
+  receipt.previousAttempt = archive;
+  receipt.attempt = prior.attempt + 1;
+  receipt.checkpoints = prior.checkpoints || {};
+  receipt.selectedOpening = prior.selectedOpening; receipt.starterIds = prior.starterIds; receipt.purchaseIndex = prior.purchaseIndex;
+  receipt.creates = prior.creates || 0; receipt.fights = prior.fights || 0;
+  receipt.sessionId = prior.sessionId; receipt.originalStartedAt = prior.originalStartedAt || prior.startedAt;
+  receipt.previousEvidence = { tests: prior.tests, screenshots: prior.screenshots };
+  // Recover a create whose response arrived after the previous process was interrupted.
+  if (receipt.creates === 1 && !receipt.sessionId) {
+    const candidates = [];
+    for (const name of await readdir(receipt.paths.sessionDirectory)) {
+      if (!name.endsWith('.json')) continue;
+      const stored = JSON.parse(await readFile(path.join(receipt.paths.sessionDirectory, name), 'utf8'));
+      const state = stored.state || stored;
+      const savedAt=(await stat(path.join(receipt.paths.sessionDirectory,name))).birthtimeMs;
+      if (state.rulesVersion === 2 && state.openingId === 'cheaper_levels' && state.seed === prior.selectedOpening?.seed &&
+          JSON.stringify(state.activeOperatorIds)===JSON.stringify(resonanceSeasonOperatorIds) && savedAt >= Date.parse(receipt.originalStartedAt)) candidates.push(name.replace(/\.json$/, ''));
+    }
+    if (candidates.length !== 1) throw new Error(`ambiguous-interrupted-create:${candidates.length}; preserve receipt and inspect fixture saves before continuation`);
+    receipt.sessionId = candidates[0];
+  }
+  if (receipt.sessionId) {
+    if (!/^[a-zA-Z0-9-]{8,80}$/.test(receipt.sessionId)) throw new Error('bad-mode-checkpoint-session');
+    const stored = JSON.parse(await readFile(path.join(receipt.paths.sessionDirectory, `${receipt.sessionId}.json`), 'utf8'));
+    const state = stored.state || stored;
+    if (state.rulesVersion !== 2 || state.openingId !== 'cheaper_levels' || JSON.stringify(state.activeOperatorIds) !== JSON.stringify(resonanceSeasonOperatorIds)) throw new Error('mode-checkpoint-is-not-owned-v2-season');
+    receipt.creates = 1;
+    const settled = (state.history || []).filter(event => event.type === 'fight-settled');
+    if (settled.length > 1) throw new Error('mode-checkpoint-exceeds-one-fight');
+    receipt.fights = Math.max(receipt.fights, settled.length);
+  }
+}
+async function modeDefaultSurface(page, label) {
+  const surface = await page.evaluate(() => ({ text: document.body.innerText,
+    copyButtons: [...document.querySelectorAll('button')].filter(button => /复制.*(链接|位置)|定位链接/.test(button.innerText)).map(button => button.innerText),
+    environmentCards: document.querySelectorAll('.rs-env-card').length }));
+  check(`${label}-mode-copy`, !/主盟约|三选环境|chess_char_|cheaper_levels|double_duplicators|reroll_start|resonance-season-|rulesVersion|openingId/.test(surface.text) && !surface.copyButtons.length && !surface.environmentCards, surface);
+  await layout(page, label);
+}
+async function modeCloseOverlay(page) {
+  const close = await page.$('.dpanel__close,.rs-panel-drawer > header > button[aria-label="关闭面板"]');
+  if (close) { await close.click(); await page.waitForFunction(() => !document.querySelector('.dpanel,.rs-panel-drawer'), { timeout: 5000 }); }
+}
+async function modeControlReachability(page, label) {
+  await assertShopPointerTargets(page, label);
+  const controls = await page.evaluate(() => [...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold),.shopbar__tools .toolbtn--amber,.shopbar__tools .toolbtn--ice,.shopbar .rs-level-card')].filter(element=>element.getBoundingClientRect().width>0).map(element => {
+    const r = element.getBoundingClientRect(), hit = document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
+    const disabled=element.disabled || element.getAttribute('aria-disabled')==='true' || element.classList.contains('is-disabled');
+    const tooltip=element.closest('.scard-wrap,.tooltip-wrap')?.querySelector('.tooltip')?.innerText.trim();
+    const gold=Number(document.querySelector('.rs-funds .funds__num')?.innerText),price=Number(element.querySelector('.lvcard__price,.scard__price')?.textContent?.trim());
+    return { text: element.innerText.trim(), reachable: !!hit && (hit===element || element.contains(hit)), disabled, reason: tooltip || element.title || element.getAttribute('aria-label') || element.innerText.trim(),
+      ...(disabled && Number.isFinite(price) && gold<price ? { economyEvidence:{gold,price,derivedReason:'insufficient-funds'} } : {}) };
+  }));
+  check(`${label}-controls-and-disabled-reasons`, controls.length >= 3 && controls.every(control => control.reachable && (!control.disabled || control.reason.length > 0)), controls);
+}
+async function runModeBoundary(page, entryUrl) {
+  const seeds = {};
+  for (let seed=0; seed<1000 && Object.keys(seeds).length<4; seed++) seeds[selectResonanceOpening(seed)] ??= seed;
+  check('mode-four-opening-seeds-found', Object.keys(seeds).length===4, seeds);
+  receipt.selectedOpening = { id: 'cheaper_levels', seed: seeds.cheaper_levels };
+  receipt.scope = { freshCreates: 1, actualFights: 1, freeRerolls: 'directory description and source UI only; no node-five consumption claimed', otherOpenings: 'read-only catalog requests', productionSessions: 'not accessed' };
+  const catalogs = {};
+  for (const [id,seed] of Object.entries(seeds)) {
+    catalogs[id] = await page.evaluate(async seed => (await (await fetch(`./resonance/api/catalog?seed=${seed}`)).json()), seed);
+    const result=catalogs[id];
+    check(`mode-${id}-catalog-fixed-roster`, result.ok && Object.keys(result.catalog.operators).length===154 && JSON.stringify(result.activeOperatorIds)===JSON.stringify(resonanceSeasonOperatorIds) && Object.keys(result.catalog.openingEvents).length===4 && !Object.hasOwn(result.catalog,'environmentChoices') && result.catalog.openingEvent.name===result.catalog.openingEvents[id].name, {seed,active:result.activeOperatorIds?.length,operators:Object.keys(result.catalog?.operators||{}).length,opening:result.catalog?.openingEvent});
+  }
+  check('mode-free-refresh-description-eight', /八次免费刷新|8次免费刷新/.test(catalogs.reroll_start.catalog.openingEvent.description), catalogs.reroll_start.catalog.openingEvent);
+  const chromeSource=await readFile(path.join(SOURCE,'public/js/resonance/gameChrome.js'),'utf8');
+  check('mode-free-refresh-control-source', /freeRefreshes/.test(chromeSource), 'source composition only; live consumption not exercised');
+  await saveModeCheckpoint();
+  if (!receipt.sessionId) {
+    check('mode-create-budget-unused', receipt.creates===0, receipt.creates);
+    await page.waitForSelector('.rs-title-fullscreen',{timeout:30000});
+    const full=await page.$eval('.rs-title-fullscreen',node=>({href:node.href,target:node.target,text:node.innerText,rect:node.getBoundingClientRect().toJSON()}));
+    check('mode-title-small-fullscreen', full.target==='_blank' && /全屏打开/.test(full.text) && full.rect.height<60, full);
+    await page.evaluate(async()=>{await document.fonts.ready; await document.fonts.load('16px Bender'); await document.fonts.load('16px Novecento');});
+    const fonts=await page.evaluate(()=>({css:!!document.querySelector('link[href*="fonts/fonts.css"]'),faces:[...document.fonts].map(face=>({family:face.family,status:face.status})),resources:performance.getEntriesByType('resource').filter(entry=>/\.(woff2?|ttf|otf)(\?|$)/.test(entry.name)).map(entry=>entry.name)}));
+    check('mode-native-fonts-loaded',fonts.css && fonts.faces.some(face=>face.status==='loaded') && fonts.resources.length>0,fonts);
+    const embed=await browser.newPage();
+    try {
+      await embed.setViewport({width:800,height:500});
+      await embed.setContent(`<iframe src="${entryUrl}" style="width:760px;height:450px;border:0"></iframe>`);
+      const frameHandle=await embed.waitForSelector('iframe');const frame=await frameHandle.contentFrame();await frame.waitForSelector('.rs-title-fullscreen',{timeout:30000});
+      const link=await frame.$eval('.rs-title-fullscreen',node=>({href:node.href,target:node.target,text:node.innerText,visible:node.getBoundingClientRect().width>0}));
+      check('mode-iframe-small-fullscreen',link.visible && link.target==='_blank' && new URL(link.href).pathname.endsWith('/resonance.html'),link);
+    } finally {await embed.close();}
+    await shot(page,'40-mode-title'); await modeDefaultSurface(page,'mode-title');
+    await button(page,'^开始整备$');await page.waitForSelector('.rs-flow--difficulty');
+    await shot(page,'41-mode-difficulty');await modeDefaultSurface(page,'mode-difficulty');
+    await page.waitForFunction(()=>{const image=document.querySelector('.rs-difficulty-feature__art img');return image?.complete&&image.naturalWidth>0;},{timeout:15000});
+    const image=await page.$eval('.rs-difficulty-feature__art img',node=>({src:node.src,loaded:node.complete&&node.naturalWidth>0}));
+    check('mode-native-difficulty-image',image.loaded && new URL(image.src).origin===new URL(page.url()).origin,image);
+    await button(page,'查看本局简报');await page.waitForSelector('.rs-flow--briefing');
+    await button(page,'返回难度');await page.waitForSelector('.rs-flow--difficulty');check('mode-return-does-not-create',receipt.creates===0,receipt.creates);
+    await button(page,'查看本局简报');await page.waitForSelector('.rs-flow--briefing');
+    for (const seed of [seeds.none,seeds.cheaper_levels]) {
+      await page.click('.rs-advanced');await page.waitForSelector('.rs-seed-field input');
+      await page.click('.rs-seed-field input');await page.keyboard.down('Control');await page.keyboard.press('A');await page.keyboard.up('Control');await page.keyboard.type(String(seed));
+      await page.waitForFunction(()=>document.querySelector('.brief__foot .btn--primary')?.disabled===false || [...document.querySelectorAll('.brief__foot button')].some(node=>/确认并开始本局/.test(node.innerText)&&!node.disabled),{timeout:15000});
+      await button(page,'^完成$');await page.waitForFunction(()=>!document.querySelector('.rs-seed-field'));
+      const expected=Object.entries(seeds).find(([,value])=>value===seed)[0];
+      await page.waitForFunction(name=>document.querySelector('.rs-opening-event')?.innerText.includes(name),{timeout:15000},catalogs[expected].catalog.openingEvent.name);
+      check(`mode-seed-${seed}-briefing-roster`,await page.$eval('.rs-brief-prep__roster b',node=>Number(node.innerText))===65 && receipt.creates===0,{seed,creates:receipt.creates});
+    }
+    await page.click('.rs-opening-event');await page.waitForSelector('.dpanel .dtext');check('mode-briefing-opening-detail',/经验减少两点|经验.*减少.*2/.test(await page.$eval('.dpanel',node=>node.innerText)),await page.$eval('.dpanel',node=>node.innerText));await modeCloseOverlay(page);
+    await button(page,'打开战术图鉴');await page.waitForSelector('.rs-codex__roster-entry');
+    check('mode-full-encyclopedia-154',await page.$$('.rs-codex__roster-entry').then(nodes=>nodes.length)===154,'default full encyclopedia');
+    await page.click('input[aria-label="仅本局可招募"]');await page.waitForFunction(()=>document.querySelectorAll('.rs-codex__roster-entry').length===65);
+    await page.select('select[aria-label="费用筛选"]','1');await page.waitForFunction(()=>document.querySelectorAll('.rs-codex__roster-entry').length===14);
+    check('mode-season-cost-filter-14',await page.$$('.rs-codex__roster-entry').then(nodes=>nodes.length)===14,'real roster toggle and cost selection');
+    await clickVisibleButtonText(page,'.rs-codex__tabs','开局事件','mode-opening-codex-tab');await page.waitForSelector('#rs-section-opening-event-catalog');
+    const cards=await page.$$('#rs-section-opening-event-catalog .rs-codex__catalog-card');check('mode-opening-directory-four',cards.length===4,cards.length);
+    for (let index=0;index<4;index++) {await cards[index].click();await page.waitForSelector('.dpanel .dtext');check(`mode-opening-${index}-click-detail`,(await page.$eval('.dpanel .dtext',node=>node.innerText)).length>10,'real catalog card opens effect');await modeCloseOverlay(page);}
+    await clickVisibleButtonText(page,'.lo-top__left','返回','mode-codex-back');await page.waitForSelector('.rs-flow--briefing');
+    await shot(page,'42-mode-briefing');await modeDefaultSurface(page,'mode-briefing');
+    receipt.checkpoints.entryComplete=true;await saveModeCheckpoint();
+    await button(page,'确认并开始本局');await page.waitForSelector('.gm',{timeout:30000});
+    receipt.sessionId=new URL(page.url()).searchParams.get('session');check('mode-one-created-session',receipt.creates===1&&!!receipt.sessionId,{creates:receipt.creates,session:receipt.sessionId});await saveModeCheckpoint();
+  }
+  await waitForGameplayReady(page,'mode-prep');
+  const read=async()=>page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,receipt.sessionId);
+  let state=await read();check('mode-stored-v2-season',state.rulesVersion===2&&state.openingId==='cheaper_levels'&&JSON.stringify(state.activeOperatorIds)===JSON.stringify(resonanceSeasonOperatorIds),{rulesVersion:state.rulesVersion,opening:state.openingEvent,season:state.seasonId,active:state.activeOperatorIds?.length});
+  receipt.initialRevision ??= state.revision;receipt.starterIds ??= state.pieces.slice(0,3).map(piece=>piece.uid);await saveModeCheckpoint();
+  const mutation=async(key,eventType,act)=>{
+    state=await read();const checkpoint=receipt.checkpoints[key];
+    if(checkpoint?.complete)return;
+    if(checkpoint && state.revision>checkpoint.beforeRevision){const events=(state.history||[]).slice(checkpoint.historyLength);check(`mode-${key}-reconciled`,events.some(event=>event.type===eventType&&(!key.startsWith('deploy-')||event.uid===key.slice(7))),{checkpoint,revision:state.revision,events});receipt.checkpoints[key]={...checkpoint,complete:true,afterRevision:state.revision};await saveModeCheckpoint();return;}
+    if(checkpoint)check(`mode-${key}-uncommitted-intent`,state.revision===checkpoint.beforeRevision&&key!=='fight',{checkpoint,revision:state.revision});
+    receipt.checkpoints[key]={beforeRevision:state.revision,historyLength:(state.history||[]).length};await saveModeCheckpoint();await act(state);
+    state=await stateAfterRevision(page,receipt.sessionId,state.revision,`mode-${key}`);receipt.checkpoints[key]={...receipt.checkpoints[key],complete:true,afterRevision:state.revision};await saveModeCheckpoint();
+  };
+  if(!(state.history||[]).some(event=>event.type==='fight-settled')) {
+    if(!receipt.checkpoints.buy?.complete&&!receipt.checkpoints.buy) {
+      const index=state.shop.offers.findIndex(offer=>!offer.sold&&offer.cost===1);check('mode-legal-one-cost-offer',index>=0,index);
+      const card=(await page.$$('.shopbar__cards .scard'))[index],bounds=await card.boundingBox();check('mode-one-cost-card-pointer',!!bounds,bounds);
+      await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height/2,{button:'right'});await page.waitForSelector('.dpanel .dhead__name');check('mode-shop-right-click-readonly',(await read()).revision===state.revision,'real shop detail');await modeControlReachability(page,'mode-shop-detail');
+      receipt.purchaseIndex=index;await saveModeCheckpoint();
+    }
+    await mutation('buy','operator-bought',async before=>{check('mode-before-buy-five-gold',before.gold===5,before.gold);const card=(await page.$$('.shopbar__cards .scard'))[receipt.purchaseIndex],r=await card?.boundingBox();if(!r)throw new Error('mode-buy-pointer-missing');const hit=await page.evaluate(({x,y})=>!!document.elementFromPoint(x,y)?.closest('.scard'),{x:r.x+r.width/2,y:r.y+r.height/2});check('mode-buy-pointer-reachable',hit,r);await page.mouse.click(r.x+r.width/2,r.y+r.height/2);});
+    await modeCloseOverlay(page);state=await read();
+    if(!receipt.checkpoints.xp){const xp=await page.$eval('.rs-level-card',node=>({text:node.innerText,title:node.title}));check('mode-cheaper-level-threshold-four',state.actionCosts?.xpToLevel===4&&/0\/4/.test(xp.text),{costs:state.actionCosts,xp});}
+    await mutation('xp','xp-purchased',async before=>{check('mode-real-xp-budget',before.gold>=4,before.gold);await page.keyboard.press('f');});
+    const xpEvent=state.history.find(event=>event.type==='xp-purchased');check('mode-four-gold-four-xp',xpEvent?.gold===4&&xpEvent?.xp===4&&state.level===4&&state.gold===0,{xpEvent,level:state.level,gold:state.gold});
+    for(const uid of receipt.starterIds){
+      state=await read();const starter=state.pieces.find(piece=>piece.uid===uid);if(starter?.row!=null)continue;
+      await mutation(`deploy-${uid}`,'piece-deployed',async before=>{
+        const occupied=new Set(before.pieces.filter(piece=>piece.row!=null).map(piece=>`${piece.row},${piece.col}`));let deployed=false;
+        for(const key of (starter.legalTiles||[]).filter(key=>!occupied.has(key)).slice(0,8)){
+          const [row,col]=key.split(',').map(Number),numeric=Number(uid.replace(/^\D+/,''));
+          const geometry=await page.evaluate(({numeric,row,col})=>{const view=globalThis.__SP_VIEW__,r=view?.pieceScreenRect(numeric),dest=view?.tileScreen(row,col);if(!r||!dest)return null;const source=[{x:r.x+r.width/2,y:r.y+r.height/2},{x:r.x+r.width/2,y:r.bottom-2}].find(point=>view.pieceAtClient?.(point.x,point.y)?.uid===numeric&&document.elementFromPoint(point.x,point.y)?.tagName==='CANVAS');return source&&document.elementFromPoint(dest.x,dest.y)?.tagName==='CANVAS'?{source,dest}:null;},{numeric,row,col});if(!geometry)continue;
+          await page.mouse.move(geometry.source.x,geometry.source.y);await page.mouse.down();await page.mouse.move(geometry.dest.x,geometry.dest.y,{steps:12});await page.mouse.up();
+          await page.waitForSelector('.fwheel[role="dialog"]',{timeout:8000});await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.querySelector('.fwheel[role="dialog"]')?.classList.contains('is-right'),{timeout:5000});await page.keyboard.press('Enter');await page.waitForFunction(()=>!document.querySelector('.fwheel[role="dialog"]'),{timeout:10000});deployed=true;break;
+        }check(`mode-${uid}-native-facing-wheel`,deployed,'pointer drag and real direction wheel');
+      });
+    }
+    state=await read();check('mode-native-three-starters-deployed',receipt.starterIds.every(uid=>state.pieces.some(piece=>piece.uid===uid&&piece.row!=null&&piece.dir==='RIGHT')),state.pieces.map(piece=>({uid:piece.uid,row:piece.row,col:piece.col,dir:piece.dir})));
+    await leftClickPiece(page,receipt.starterIds[0]);await modeControlReachability(page,'mode-board-detail');await modeCloseOverlay(page);
+    await clickPointerSelector(page,'.rs-gmeta__opening','mode-live-opening');await page.waitForSelector('.dpanel');await modeControlReachability(page,'mode-live-opening');await modeCloseOverlay(page);
+    for(const label of ['盟约','敌情','阵容','策略','战报']){await clickVisibleButtonText(page,'.rs-dock',label,`mode-${label}-open`);await page.waitForSelector('.rs-panel-drawer');await modeControlReachability(page,`mode-dock-${label}`);await modeCloseOverlay(page);}
+    await clickVisibleButtonText(page,'.rs-hud-actions','装备背包','mode-equipment-open');await page.waitForSelector('.rs-panel-drawer');await modeControlReachability(page,'mode-equipment');
+    await mutation('equip','item-equipped',async before=>{const item=before.inventory[0];check('mode-real-starter-item',!!item,item);const source=await page.$(`[id="inventory-${item.uid}"] .rs-inventory__main[draggable="true"]`);if(!source)throw new Error('mode-native-equipment-drag-source-missing');await dragPointer(page,source,await piecePointerPoint(page,receipt.starterIds[0]));});
+    state=await read();check('mode-real-item-equipped',state.pieces.some(piece=>receipt.starterIds.includes(piece.uid)&&piece.equipment?.length>0),state.pieces.map(piece=>({uid:piece.uid,equipment:piece.equipment})));await modeCloseOverlay(page);
+    await mutation('lock','shop-lock-changed',async()=>clickPointerSelector(page,'.shopbar__tools .toolbtn--ice','mode-lock-shop'));
+    state=await read();check('mode-real-lock-shop',state.shop.locked===true,state.shop.locked);
+    await modeControlReachability(page,'mode-prep-controls');await shot(page,'43-mode-prep');await modeDefaultSurface(page,'mode-prep');
+    await page.setViewport({width:844,height:390,deviceScaleFactor:1,isMobile:true,hasTouch:true});await waitForGameplayReady(page,'mode-mobile');await modeControlReachability(page,'mode-mobile');await shot(page,'44-mode-mobile');await modeDefaultSurface(page,'mode-mobile');
+    await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});await waitForGameplayReady(page,'mode-restored');
+    check('mode-fight-budget-unused',receipt.fights===0,receipt.fights);
+    await mutation('fight','fight-settled',async()=>clickPointerSelector(page,'.rs-turn-action button','mode-one-real-fight'));
+  }
+  state=await read();const fights=(state.history||[]).filter(event=>event.type==='fight-settled');
+  check('mode-one-real-native-fight',fights.length===1&&receipt.fights===1&&fights[0].combatStats?.units?.length>0,{fights:receipt.fights,historyFights:fights.length,stats:fights[0]?.combatStats});
+  receipt.combatStatsEvidence={round:fights[0].round,units:fights[0].combatStats.units};
+  await modeCloseOverlay(page);
+  await inspectPriorFightReplay(page,receipt.sessionId,fights[0].round,'45-mode-replay');
+  await clickVisibleButtonText(page,'.rs-dock','战报','mode-final-report');await page.waitForSelector('#rs-section-battle-report .rs-battle-report__unit');await shot(page,'46-mode-report');await modeCloseOverlay(page);
+  const revision=state.revision;await page.reload({waitUntil:'domcontentloaded'});await waitForGameplayReady(page,'mode-recovered');state=await read();check('mode-reload-preserves-session',state.revision===revision&&receipt.creates===1&&receipt.fights===1,{revision,stateRevision:state.revision,creates:receipt.creates,fights:receipt.fights});
+  receipt.finalState={revision:state.revision,phase:state.phase,round:state.round,gold:state.gold,hp:state.hp,opening:state.openingEvent,season:state.seasonId};await saveModeCheckpoint();
+}
 try {
   await mkdir(OUT, { recursive: true });
+  if (modeBoundary) {
+    await restoreModeCheckpoint();
+    deadline = setTimeout(() => { receipt.timedOut = true; browser?.close().catch(() => {}); server?.close().catch(() => {}); }, receipt.deadlineMs);
+    await saveModeCheckpoint();
+  }
   let url = remoteUrl;
   if (!url) {
     process.env.SP_DATA_DIR = NATIVE_DATA;
@@ -463,7 +676,7 @@ try {
   browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
     userDataDir: PROFILE, args: ['--no-sandbox', '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
       '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  deadline = setTimeout(() => { receipt.timedOut = true; browser?.close().catch(() => {}); server?.close().catch(() => {}); }, receipt.deadlineMs);
+  if (!modeBoundary) deadline = setTimeout(() => { receipt.timedOut = true; browser?.close().catch(() => {}); server?.close().catch(() => {}); }, receipt.deadlineMs);
   const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await browser.defaultBrowserContext().overridePermissions(new URL(url).origin, ['clipboard-read', 'clipboard-write']);
   page.on('pageerror', error => receipt.errors.push(error.message));
@@ -471,6 +684,9 @@ try {
   page.on('response', response => {
     if(response.status() >= 400) (receipt.httpErrors ||= []).push({status:response.status(),url:response.url()});
     if (new URL(response.url()).pathname === '/vendor/three.core.js') (receipt.nativeResourceResponses ||= []).push({ url: response.url(), status: response.status() });
+    if (modeBoundary && response.request().method()==='POST' && /\/resonance\/api\/sessions$/.test(new URL(response.url()).pathname)) dataResponses.push((async()=>{
+      const result=await response.json();if(result.ok&&result.id){receipt.sessionId=result.id;await saveModeCheckpoint();}
+    })());
     if (new URL(response.url()).pathname === '/data/chess.json') dataResponses.push((async () => {
       const body = await response.buffer();
       const native = await import('node:fs/promises').then(fs => fs.readFile(path.join(ROOT, 'data/resonance-native/chess.json')));
@@ -480,14 +696,27 @@ try {
     })());
   });
   page.on('console', message => { if (message.type() === 'error' || (message.type() === 'warn' && /\[field\]|render/.test(message.text()))) (receipt.console ||= []).push(message.text()); });
-  page.on('request', request => { (receipt.requestUrls ||= []).push(request.url()); if (request.method() === 'POST' && /\/resonance\/api\/sessions$/.test(new URL(request.url()).pathname)) receipt.creates++;
-    if (request.method() === 'POST' && request.postData()?.includes('"type":"fight"')) receipt.fights++; });
+  page.on('request', request => { (receipt.requestUrls ||= []).push(request.url()); if (!modeBoundary && request.method() === 'POST' && /\/resonance\/api\/sessions$/.test(new URL(request.url()).pathname)) receipt.creates++;
+    if (!modeBoundary && request.method() === 'POST' && request.postData()?.includes('"type":"fight"')) receipt.fights++; });
+  if (modeBoundary) {
+    await page.setRequestInterception(true);
+    page.on('request', request => { (async()=>{
+      const create=request.method()==='POST'&&/\/resonance\/api\/sessions$/.test(new URL(request.url()).pathname);
+      const fight=request.method()==='POST'&&request.postData()?.includes('"type":"fight"');
+      if(create||fight){const key=create?'creates':'fights';if(receipt[key]>=1){receipt.errors.push(`mode-${key}-budget-rejected`);await request.abort();return;}receipt[key]++;await saveModeCheckpoint();}
+      await request.continue();
+    })().catch(async error=>{receipt.errors.push(error.message);await request.abort().catch(()=>{});}); });
+  }
   if (replaySession) { const replayUrl = new URL(url); replayUrl.searchParams.set('session', replaySession); url = replayUrl.href; receipt.url = url; }
   if (createdSession) { const resumeUrl = new URL(url); resumeUrl.searchParams.set('session', createdSession); url = resumeUrl.href; receipt.url = url; }
   if (resumeTailSession) { const tailUrl = new URL(url); tailUrl.searchParams.set('session', resumeTailSession); url = tailUrl.href; receipt.url = url; }
   if (finishTailSession) { const finishUrl = new URL(url); finishUrl.searchParams.set('session', finishTailSession); url = finishUrl.href; receipt.url = url; }
+  const modeEntryUrl=url;
+  if (modeBoundary && receipt.sessionId) {const resumeUrl=new URL(url);resumeUrl.searchParams.set('session',receipt.sessionId);url=resumeUrl.href;receipt.url=url;}
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  if (finishTailSession) {
+  if (modeBoundary) {
+    await runModeBoundary(page,modeEntryUrl);
+  } else if (finishTailSession) {
     await runFinishTail(page,finishTailSession);
     await inspectReadOnlyFixtures(page,'finish-');
   } else if (replaySession) {
@@ -1228,15 +1457,18 @@ try {
     return (parsed.hostname === 'colorc.cc' && parsed.pathname.startsWith('/stronghold')) || parsed.hostname.endsWith('.pages.dev');
   }))];
   check('no-cloud-game-or-pages-dependency', forbiddenRequests.length === 0, forbiddenRequests);
-  check('expected-fight-count', receipt.fights === (battleUi && !resumeTailSession ? 1 : 0), { expected: battleUi && !resumeTailSession ? 1 : 0, actual: receipt.fights }); check('no-js-error', receipt.errors.length === 0, receipt.errors);
+  check('expected-fight-count', receipt.fights === (modeBoundary || battleUi && !resumeTailSession ? 1 : 0), { expected: modeBoundary || battleUi && !resumeTailSession ? 1 : 0, actual: receipt.fights }); check('no-js-error', receipt.errors.length === 0, receipt.errors);
   receipt.status = 'passed';
 } catch (error) { receipt.status = 'failed'; receipt.failure = error.stack || String(error);
-  if (browser) { const pages = await browser.pages().catch(() => []); if (pages.length) await shot(pages.at(-1), 'failure').catch(() => {}); }
+  if (browser) { const pages = await browser.pages().catch(() => []); if (pages.length) await shot(pages.at(-1), modeBoundary ? `47-mode-failure-attempt-${receipt.attempt}` : 'failure').catch(() => {}); }
 } finally {
   clearTimeout(deadline); await browser?.close().catch(error => receipt.errors.push(`close: ${error.message}`));
   await server?.close().catch(error => receipt.errors.push(`server close: ${error.message}`));
   await fixtureServer?.close().catch(error => receipt.errors.push(`fixture close: ${error.message}`));
-  receipt.finishedAt = new Date().toISOString(); await writeFile(REPORT, JSON.stringify(receipt, null, 2));
-  process.stdout.write(JSON.stringify({ status: receipt.status, report: REPORT, screenshots: receipt.screenshots, failure: receipt.failure }) + '\n');
+  receipt.finishedAt = new Date().toISOString();
+  await checkpointWrites.catch(error=>receipt.errors.push(`checkpoint: ${error.message}`));
+  const actualReport=modeBoundary&&!modeReportWritable?path.join(OUT,`ui-mode-boundary-preflight-failure-${Date.now()}.json`):REPORT;
+  await writeFile(actualReport, JSON.stringify(receipt, null, 2),modeBoundary&&!modeReportWritable?{flag:'wx'}:undefined);
+  process.stdout.write(JSON.stringify({ status: receipt.status, report: actualReport, creates:receipt.creates, fights:receipt.fights, session:receipt.sessionId, revision:receipt.finalState?.revision, screenshots: receipt.screenshots, failure: receipt.failure }) + '\n');
   if (receipt.status !== 'passed') process.exitCode = 1;
 }

@@ -1,4 +1,5 @@
 import { legalSummonCells,selectedSummonIds } from './summons.js';
+import { resonanceOpenings, openingEventView } from '../../../shared/resonance/openings.js';
 const RECOVERY_TEXT = {
   INCREASE_WITH_TIME: '自然回复', INCREASE_WHEN_ATTACK: '攻击回复',
   INCREASE_WHEN_ATTACKED: '受击回复', INCREASE_WHEN_TAKEN_DAMAGE: '受击回复', NOT_RECOVER: '不回复',
@@ -115,7 +116,8 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     operators, pacts, equipment, activeOperatorIds: [...(catalog.config?.activeOperatorIds ?? [])],
     recipes: catalog.recipes.map((recipe) => ({ parts: [...recipe.parts], resultId: recipe.resultId,
       names: recipe.parts.map((id) => catalog.equipment[id]?.name ?? '装备'), resultName: catalog.equipment[recipe.resultId]?.name ?? '装备' })),
-    strategies, environments, campaign: structuredClone(catalog.campaign),
+    strategies, environments: catalog.config?.rulesVersion===2?{}:environments, campaign: structuredClone(catalog.campaign),
+    ...(catalog.config?.rulesVersion===2?{season:{name:catalog.season.displayName},openingEvent:openingEventView(catalog.config.openingId),openingEvents:Object.fromEntries(Object.keys(resonanceOpenings).map(id=>[id,openingEventView(id)]))}:{}),
   };
 }
 
@@ -197,13 +199,17 @@ export function resonanceSessionDisplay(state, { data, catalog, viewSession, fie
   const nodeKind = state.phase==='complete'?'complete':state.difficulty==='FUNNY'&&state.round%2===1?'logistics':resolved?.nodeKind??'unknown';
   const enemyData = resolved ? nextEnemyViews(data, resolved.wave) : [];
   const pacts = pactCounts(state.pieces.filter(piece=>piece.row!==null), catalog);
+  const standUnited=state.rulesVersion===2&&state.strategies.some(selected=>(typeof selected==='string'?selected:selected.id)==='strategy_22');
+  const standUnitedPacts=standUnited?Object.entries(pacts).filter(([id,pact])=>!['holyGun','yela','crown'].includes(id)&&catalog.pacts[id]?.singleUnique!==true&&pact.activeThreshold>0).map(([id])=>id):[];
   const strategyState={...base.strategyState};
   for(const selected of state.strategies??[]){const id=typeof selected==='string'?selected:selected.id;const entry=state.strategyState?.[id]??{};strategyState[id]={...entry,progressText:strategyProgressText(entry,catalog.strategies?.[id],state.round)};}
   return {
     ...base,
+    ...(state.rulesVersion===2?{season:{name:catalog.season.displayName},openingEvent:openingEventView(state.openingId)}:{}),
     activeOperatorIds: [...(state.activeOperatorIds ?? [])],
     pieces,
     pacts,
+    ...(standUnited?{strategyPreview:{standUnited:{activePacts:standUnitedPacts,attackPercentPerOperator:standUnitedPacts.length*1.5}}}:{}),
     strategyState,
     node: { kind: nodeKind, field: resolved?.field ?? null, stageId: resolved?.stageId ?? null,
       battleRound: resolved?.battleRound ?? null, waveRound: resolved?.waveRound ?? null,

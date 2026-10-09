@@ -8,6 +8,8 @@ import { toDataSource } from '../../server/sim/simdata.js';
 import { KITS, skillSpecSource } from '../../server/sim/content/index.js';
 import { meleeOnHighGround } from '../../shared/highGround.js';
 import { compileResonancePlayerText } from '../../shared/resonance/player-text.js';
+import { validateResonanceSeasonRoster } from '../../shared/resonance/season-roster.js';
+import { resonanceOpenings } from '../../shared/resonance/openings.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CANONICAL_ROOT = path.dirname(path.resolve(ROOT,execFileSync('git',['-C',ROOT,'rev-parse','--git-common-dir'],{encoding:'utf8'}).trim()));
@@ -29,6 +31,85 @@ function publishGenerated(target,content) {
 const sourceCommit = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const clone = (value) => structuredClone(value);
+
+/** Render the server's composed v2 catalogue without changing the frozen v1 source. */
+export function renderCatalogDocumentation(catalog, { legacyCatalog, sourceSkillGaps = [] } = {}) {
+  if(catalog.config?.rulesVersion!==2)throw new Error('current-documentation-requires-v2');
+  const activeIds=validateResonanceSeasonRoster(catalog.operators);
+  if(JSON.stringify(activeIds)!==JSON.stringify(catalog.config.activeOperatorIds))throw new Error('current-documentation-roster-mismatch');
+  const {operators,pacts,equipment,recipes,strategies,campaign,playerText}=catalog;
+  const crew=Object.values(operators),active=activeIds.map(id=>operators[id]);
+  const countByCost=list=>Object.fromEntries([1,2,3,4,5].map(cost=>[cost,list.filter(operator=>operator.cost===cost).length]));
+  const sourceCommit=catalog.source.commit;
+  const starLine=(operator,star)=>{
+    const spec=operator.stars[star];
+    const permanent=spec.passive?.params?.permanentSkill===true?`\n- 持续值对照：共鸣运行时按永久持续处理（-1）；原生固定技能记录时长 ${spec.skillOverrides.duration} 秒，仅作来源对照。`:'';
+    return `- 星${star}：属性 \`${JSON.stringify(spec.stats)}\`；固定技能参数 \`${JSON.stringify(spec.skillOverrides)}\`；天赋覆盖 \`${JSON.stringify(spec.talentOverrides)}\`；被动 ${spec.passive?.description||'沿用原生天赋，无额外三星被动'} \`${JSON.stringify(spec.passive?.params??{})}\`${permanent}`;
+  };
+  const enemyBalanceRows=['NORMAL','FUNNY','HARD','ABYSS'].map(difficulty=>{
+    const configured=campaign.enemyBalance??{},override=configured.byDifficulty?.[difficulty]??{};
+    const regular={...configured.regular,...override.regular},terminal={...configured.terminal,...override.terminal};
+    const factors=rule=>['hpMultiplier','atkMultiplier','defMultiplier','resMultiplier','speedMultiplier'].map(key=>(rule[key]??1).toFixed(2)).join(' / ');
+    return `| ${difficulty} | ${factors(regular)} | ${factors(terminal)} | ${(terminal.bossPoolMultiplier??1).toFixed(2)} |`;
+  });
+  const legacyStrategyCount=Object.keys(legacyCatalog?.strategies??{}).length;
+  const legacyEnvironmentCount=Object.keys(legacyCatalog?.environments??{}).length;
+  const lines=[
+    '# 共鸣当前赛季配置终值清单','',
+    `来源 commit：${sourceCommit}。赛季：${catalog.season.displayName}；固定招募名单 ${active.length} 人，费用分布 ${JSON.stringify(countByCost(active))}。独立图鉴保留 ${crew.length} 人，费用分布 ${JSON.stringify(countByCost(crew))}。`,
+    `盟约 ${Object.keys(pacts).length} 项；装备 ${Object.keys(equipment).length} 项；配方 ${recipes.length} 项；当前策略 ${Object.keys(strategies).length} 项；自动开局事件 ${Object.keys(resonanceOpenings).length} 项。`,
+    `策略选择节点：${campaign.strategyNodes.join('/')}。开局事件由种子自动确定；全部事件、难度和种子使用同一字面名单。新局 API 仅接受 seed/difficulty，不接受区域、主盟约或开局事件指定。`,
+    '', '## 本赛季固定招募名单','',
+    '| 干员 | ID | 费用 | 职责 | 位置 | 可对空 | 盟约 |','|---|---|---:|---|---|---|---|',
+    ...active.map(operator=>`| ${operator.name} | ${operator.id} | ${operator.cost} | ${operator.role} | ${operator.position} | ${operator.source.normalChess.canHitFly?'是':'否'} | ${operator.pacts.map(id=>pacts[id].name).join('、')} |`),
+    '', '## 当前赛季盟约自然成员覆盖','',
+    '人数按固定名单中的自然标签统计；同一干员可属于多条盟约。转职占装备槽且同身份不重复计数；缺少自然成员不改造原生职责。','',
+    '| 盟约 | 自然成员 | 档位 | 最高档差额 |','|---|---:|---|---:|',
+    ...Object.values(pacts).map(pact=>{const natural=active.filter(operator=>operator.pacts.includes(pact.id)).length;return `| ${pact.name} | ${natural} | ${pact.thresholds.join('/')} | ${Math.max(0,Math.max(...pact.thresholds)-natural)} |`;}),
+    '', '职责按正式角色配置读取：魔王与普通吟游者海蒂为支援；职责分类不从职业名推导盟约。二费前线仅泡泡，三至四费治疗按两档合计；原生飞行成员仅蒂比，灼燃成员仅烛煌。',
+    '余在本赛季保留炎国与连击，并加岁家身份，至多三个自然标签。依据为其报到与新年台词中的兄姐称呼；原生标签和旧局配置不含此补充。',
+    '', '## 自动开局事件','',
+    '| 事件 | 效果 | 自动权重 |','|---|---|---:|',
+    ...Object.values(resonanceOpenings).map(event=>`| ${event.name} | ${event.description} | ${event.weight}% |`),
+    '权重与节点换算属于共鸣适配；事件参考 TFT 17.2 Double Duplicators、Reroll Start 与 Cheaper Levels。第5节点对应2-1，第14节点对应3-3。快速成长只减少升级门槛，4金币购买4经验保持。',
+    '', '## 敌方强度终值','',
+    '普通波与终端波分别应用下表倍率；终端领袖生命池单独应用最后一列。未配置的 RES 与移速倍率按 1 计算。','',
+    '| 难度 | 普通波 HP / ATK / DEF / RES / 移速 | 终端波 HP / ATK / DEF / RES / 移速 | 领袖生命池 |','|---|---|---|---:|',...enemyBalanceRows,
+    '', '## 原生 Kit 分类记录',`${sourceSkillGaps.length} 名干员的原生分类为 generic/none；该字段保留原始 Kit 分类。运行时由共鸣固定技能承接这些分类例外，其中正义骑士号使用周期支援被动。`,'',
+    ...sourceSkillGaps.map(operator=>`- ${operator.name}（${operator.charId}，${operator.sourceChessId}）：${operator.fixedSkillId} — ${operator.skillSpecSource}`),
+    '', '## 完整图鉴逐项终值','',
+    ...crew.flatMap(operator=>[
+      `### ${operator.name}`,`- 本赛季可招募：${activeIds.includes(operator.id)?'是':'否'}；charId：${operator.charId}；sourceChessId：${operator.sourceChessId}；费用：${operator.cost}；位置：${operator.position}；职责：${operator.role}；可部署高台：${operator.canDeployHighGround?'是':'否'}`,
+      `- 固定技能：${operator.fixedSkillId}（技能索引 ${operator.fixedSkillIndex??'自定义被动'}；Kit 来源 ${operator.source.skillSpecSource}）`,
+      `- 技能倍率审计：直伤/治疗/护盾倍率键 ${JSON.stringify(operator.skillScaleAudit.scaledKeys)}；未应用倍率的候选键 ${JSON.stringify(operator.skillScaleAudit.unscaledCandidates)}；技能文案支持直接伤害判断 ${operator.skillScaleAudit.damageDescriptionConfirmed?'是':'否'}。`,
+      `- 当前技能可见造物来源：${JSON.stringify(operator.source.tokenSources)}`,
+      `- 盟约：${operator.pacts.map(id=>pacts[id].name).join('、')}；资源：\`${JSON.stringify(operator.assets)}\``,
+      ...[1,2,3].map(star=>`${starLine(operator,star)}\n- 玩家技能说明：${playerText.operators[operator.id].stars[star].skillDescription??operator.stars[star].passive?.description??'战线应答由固定支援被动执行。'}`),
+    ]),
+    '', '## 当前盟约效果',
+    ...Object.values(pacts).flatMap(pact=>[`### ${pact.name} (${pact.id})`,...pact.levels.map((level,index)=>`- ${level.threshold} 人：${playerText.pacts[pact.id]?.levels[index]?.description??level.description} 效果：\`${JSON.stringify(level.effects)}\``)]),
+    '', '## 配方','','| 组件 | 结果 | 效果参数 |','|---|---|---|',
+    ...recipes.map(recipe=>`| ${recipe.parts.map(id=>equipment[id].name).join(' + ')} | ${equipment[recipe.resultId].name} | \`${JSON.stringify(equipment[recipe.resultId].effects)}\``),
+    '', '## 当前策略','',
+    ...Object.values(strategies).map(strategy=>`- ${strategy.name}（${strategy.group}，${strategy.timing}）：${strategy.description} 条件 \`${JSON.stringify(strategy.condition)}\`；效果 \`${JSON.stringify(strategy.effects)}\`；无效时 \`${JSON.stringify(strategy.invalidFallback)}\``),
+    '', '## 旧局兼容','',
+    `shared/resonance/catalog.js 保持 schemaVersion=1 的冻结基表：${legacyStrategyCount} 条旧策略和 ${legacyEnvironmentCount} 条旧区域规则仅用于旧局恢复。当前文档读取服务器 v2 合成，不把覆盖写回该基表。`,
+    '既有 schemaVersion=1 且 rulesVersion=1 或没有 rulesVersion 的存档，继续按其 environmentId/seed 重建原来的65人名单，并使用原 campaign、策略、区域效果、ledger 和 replay。加载新版本不改写旧存档。',
+    '新局保存 rulesVersion=2、seasonId、openingId 与实际65名 activeOperatorIds，严格核对固定名单；战斗环境为 null，不执行旧区域 hook。所有招募、赠送、复制和策略干员候选都受当前名单限制。',
+  ];
+  return lines.join('\n');
+}
+
+async function writeCurrentDocumentation(data, {target=DOC} = {}) {
+  const {getResonanceCatalog,getLegacyResonanceCatalog,resonanceSourceSkillGaps}=await import('../../server/modes/resonance/catalog.js');
+  const current=getResonanceCatalog(data,{rulesVersion:2,seed:1});
+  const legacy=getLegacyResonanceCatalog(data,{seed:1,environmentId:'origin_laterano'});
+  const document=renderCatalogDocumentation(current,{legacyCatalog:legacy,sourceSkillGaps:resonanceSourceSkillGaps});
+  publishGenerated(target,document);
+  return {document,current,legacy};
+}
+
+async function generateFrozenContent() {
 const work = readJson(WORKTABLE);
 const canonicalData = loadData(DATA_DIR, { log: { warn() {}, error() {} } });
 const chess = canonicalData.chess;
@@ -430,57 +511,20 @@ const fatalTextIssues=playerText.diagnostics.filter(x=>x.type==='missing-templat
 if(fatalTextIssues.length) throw new Error(`player text compilation has ${fatalTextIssues.length} unresolved issues: ${JSON.stringify(fatalTextIssues.slice(0,12))}`);
 content.playerText=playerText;
 const catalogSource=`// Generated by tools/resonance/build-content.mjs from the frozen roster and canonical native records.\nexport const resonanceContent = ${JSON.stringify(content,null,2)};\nexport const resonanceSourceSkillGaps = ${JSON.stringify(sourceSkillGaps,null,2)};\nexport { buildRecruitmentPool };\n\n${buildRecruitmentPool.toString()}\nconst poolSeed = ${poolSeed.toString()};\nconst shuffle = ${shuffle.toString()};\n`;
-publishGenerated(OUT,catalogSource);
-const counts=Object.fromEntries([1,2,3,4,5].map(cost=>[cost,crew.filter(o=>o.cost===cost).length]));
-const envChecks=Object.values(environments).map(env=>({id:env.id,name:env.name,identityPactId:env.identityPactId,natural:crew.filter(o=>o.pacts[0]===env.identityPactId).length,required:env.guaranteedNaturalMembers,terminal:crew.find(o=>o.id===env.guaranteedTerminalId)?.name??''}));
-const starLine=(op,star)=>{
-  const spec=op.stars[star];
-  const permanentDuration=spec.passive.params?.permanentSkill===true
-    ? `\n- 持续值对照：共鸣运行时按永久持续处理（-1）；原生固定技能记录时长 ${spec.skillOverrides.duration} 秒，仅作来源对照。`
-    : '';
-  return `- 星${star}：属性 \`${JSON.stringify(spec.stats)}\`；固定技能参数 \`${JSON.stringify(spec.skillOverrides)}\`；天赋覆盖 \`${JSON.stringify(spec.talentOverrides)}\`；被动 ${spec.passive.description||'沿用原生天赋，无额外盟约被动'} \`${JSON.stringify(spec.passive.params)}\`${permanentDuration}`;
-};
-const enemyBalanceRows=['NORMAL','FUNNY','HARD','ABYSS'].map(difficulty=>{
-  const configured=campaign.enemyBalance??{};
-  const override=configured.byDifficulty?.[difficulty]??{};
-  const regular={...configured.regular,...override.regular};
-  const terminal={...configured.terminal,...override.terminal};
-  const factors=rule=>['hpMultiplier','atkMultiplier','defMultiplier','resMultiplier','speedMultiplier']
-    .map(key=>(rule[key]??1).toFixed(2)).join(' / ');
-  return `| ${difficulty} | ${factors(regular)} | ${factors(terminal)} | ${(terminal.bossPoolMultiplier??1).toFixed(2)} |`;
-});
-const lines=[
-  '# 共鸣正式配置终值清单','',
-  `来源 commit：${sourceCommit}。名单 ${crew.length} 人；费用分布 ${JSON.stringify(counts)}。`,
-  `盟约 ${Object.keys(pacts).length} 项；配方 ${recipes.length} 项；策略 ${Object.keys(strategies).length} 项；环境 ${Object.keys(environments).length} 项。`,
-  '', '## 环境自然成员核验','',
-  '| 环境 | 主盟约 | 自然人数 | 本局保证人数 | 固定终端 |','|---|---|---:|---:|---|',
-  ...envChecks.map(e=>`| ${e.name} | ${pacts[e.identityPactId].name} | ${e.natural} | ${e.required} | ${e.terminal} |`),
-  '', '职责按正式角色配置读取：魔王与普通吟游者海蒂为支援；职责分类不从职业名推导盟约。',
-  '', '## 敌方强度终值','',
-  '普通波与终端波分别应用下表倍率；终端领袖生命池单独应用最后一列。未配置的 RES 与移速倍率按 1 计算。','',
-  '| 难度 | 普通波 HP / ATK / DEF / RES / 移速 | 终端波 HP / ATK / DEF / RES / 移速 | 领袖生命池 |','|---|---|---|---:|',
-  ...enemyBalanceRows,
-  '', '## 原生 Kit 分类记录',`${sourceSkillGaps.length} 名干员的原生分类为 generic/none；该字段保留原始 Kit 分类。运行时由共鸣固定技能承接这些分类例外，其中正义骑士号使用周期支援被动。`,'',
-  ...sourceSkillGaps.map(o=>`- ${o.name}（${o.charId}，${o.sourceChessId}）：${o.fixedSkillId} — ${o.skillSpecSource}`),
-  '', '## 干员逐项终值','',
-  ...crew.flatMap(o=>[
-    `### ${o.name}`,
-    `- charId：${o.charId}；sourceChessId：${o.sourceChessId}；费用：${o.cost}；位置：${o.position}；职责：${o.role}；可部署高台：${o.canDeployHighGround?'是':'否'}`,
-    `- 固定技能：${o.fixedSkillId}（技能索引 ${o.fixedSkillIndex??'自定义被动'}；Kit 来源 ${o.source.skillSpecSource}）`,
-    `- 技能倍率审计：直伤/治疗/护盾倍率键 ${JSON.stringify(o.skillScaleAudit.scaledKeys)}；未应用倍率的候选键 ${JSON.stringify(o.skillScaleAudit.unscaledCandidates)}；技能文案支持直接伤害判断 ${o.skillScaleAudit.damageDescriptionConfirmed?'是':'否'}。`,
-    `- 当前技能可见造物来源：${JSON.stringify(o.source.tokenSources)}`,
-    `- 盟约：${o.pacts.map(id=>pacts[id].name).join('、')}；资源：\`${JSON.stringify(o.assets)}\``,
-    ...[1,2,3].map(star=>`${starLine(o,star)}\n- 玩家技能说明：${playerText.operators[o.id].stars[star].skillDescription??o.stars[star].passive.description??'战线应答由固定支援被动执行。'}`),
-  ]),
-  '', '## 盟约效果',
-  ...ids.flatMap(id=>[`### ${pacts[id].name} (${id})`,...pacts[id].levels.map((l,i)=>`- ${l.threshold} 人：${playerText.pacts[id].levels[i].description} 效果：\`${JSON.stringify(l.effects)}\``)]),
-  '', '## 配方','','| 组件 | 结果 | 效果参数 |','|---|---|---|',
-  ...recipes.map(r=>`| ${r.parts.map(id=>equipment[id].name).join(' + ')} | ${equipment[r.resultId].name} | \`${JSON.stringify(equipment[r.resultId].effects)}\``),
-  '', '## 策略','',
-  ...Object.values(strategies).map(s=>`- ${s.name}（${s.group}，${s.timing}）：${s.description} 条件 \`${JSON.stringify(s.condition)}\`；效果 \`${JSON.stringify(s.effects)}\`；无效时 \`${JSON.stringify(s.invalidFallback)}\``),
-  '', '## 环境','',
-  ...Object.values(environments).map(e=>`- ${e.name}（主盟约${pacts[e.identityPactId].name}；自然保证${e.guaranteedNaturalMembers}人；终端${crew.find(o=>o.id===e.guaranteedTerminalId)?.name}）：${e.description} 效果 \`${JSON.stringify(e.rule)}\``),
-].join('\n');
-publishGenerated(DOC,lines);
-console.log(`generated ${OUT}`);console.log(`generated ${DOC}`);console.log(`operators=${crew.length} costs=${JSON.stringify(counts)} pacts=${ids.length} recipes=${recipes.length} strategies=${strategyRows.length} environments=${Object.keys(environments).length} sourceSkillGaps=${sourceSkillGaps.length}`);
+const legacyPreview=path.join(STAGING,'legacy-catalog-preview.mjs');
+const currentPreview=path.join(STAGING,'legacy-current-catalog-preview.md');
+publishGenerated(legacyPreview,catalogSource);
+const {current}=await writeCurrentDocumentation(canonicalData,{target:currentPreview});
+console.log("generated development legacy preview "+legacyPreview);console.log("generated development current documentation preview "+currentPreview);
+console.log(JSON.stringify({legacy:{operators:crew.length,strategies:strategyRows.length,environments:Object.keys(environments).length},current:{operators:current.config.activeOperatorIds.length,encyclopedia:Object.keys(current.operators).length,strategies:Object.keys(current.strategies).length,openings:Object.keys(resonanceOpenings).length}}));
+}
+const isMain=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
+if(isMain){
+  const args=process.argv.slice(2);
+  if(args.length===1&&args[0]==='--rebuild-legacy')await generateFrozenContent();
+  else if(args.length===0||args.length===1&&args[0]==='--catalog-doc-only'){
+    const data=loadData(path.join(CANONICAL_ROOT,'data/resonance-native'),{log:{warn(){},error(){}}});
+    const {current}=await writeCurrentDocumentation(data);
+    console.log(JSON.stringify({document:DOC,sourceUnchanged:OUT,rulesVersion:current.config.rulesVersion,active:current.config.activeOperatorIds.length,strategies:Object.keys(current.strategies).length}));
+  }else throw new Error('usage: [--catalog-doc-only | --rebuild-legacy (development preview only)]; no generation started');
+}

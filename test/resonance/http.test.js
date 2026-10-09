@@ -24,8 +24,7 @@ test('resonance HTTP is authoritative, same-origin, and returns a source-free pl
  const blocked=await invoke(handler,'GET','/resonance/api/catalog',undefined,'http://evil.test');assert.equal(blocked.status,403);
  const wrongScheme=await invoke(handler,'GET','/resonance/api/catalog',undefined,'https://local.test');assert.equal(wrongScheme.status,403);
  const bad=await invoke(handler,'POST','/resonance/api/sessions',{rawState:{phase:'prep'}});assert.equal(bad.status,422);assert.equal(bad.body.error.code,'UNSUPPORTED_SESSION_INPUT');
- const env=Object.keys(getResonanceCatalog(data).environments)[0];
- const created=await invoke(handler,'POST','/resonance/api/sessions',{seed:812,difficulty:'NORMAL',environmentId:env});
+ const created=await invoke(handler,'POST','/resonance/api/sessions',{seed:812,difficulty:'NORMAL'});
  assert.equal(created.status,201,JSON.stringify(created.body.error));assert.equal(created.body.state.pieces.length,3);assert.equal(created.body.catalog.activeOperatorIds.length,65);
  assert.deepEqual(created.body.state.history,[],'active preparation DTO starts with empty compact history');
  assert.equal(Object.hasOwn(created.body.catalog.operators[Object.keys(created.body.catalog.operators)[0]],'source'),false);
@@ -38,7 +37,7 @@ test('resonance HTTP is authoritative, same-origin, and returns a source-free pl
  const stale=await invoke(handler,'POST',`/resonance/api/sessions/${id}/actions`,{expectedRevision:2,action:{type:'refresh'}});
  assert.equal(stale.status,409);assert.equal(stale.body.error.code,'STALE_REVISION');
  const unknown=await invoke(handler,'POST','/resonance/api/sessions',{seed:1,difficulty:'NORMAL',environmentId:'origin_unknown'});
- assert.equal(unknown.status,422);assert.equal(unknown.body.error.code,'BAD_ENVIRONMENT');
+ assert.equal(unknown.status,422);assert.equal(unknown.body.error.code,'UNSUPPORTED_SESSION_INPUT');
 });
 
 test('HTTP session DTO returns each persisted terminal reason without running a battle',async()=>{

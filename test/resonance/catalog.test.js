@@ -145,15 +145,19 @@ test('fixed skill index resolves to the configured raw skill and blackboard in B
   }
 });
 
-test('content compiler writes byte-identical formal outputs on repeated builds', () => {
+test('current documentation builds repeat exactly while preserving the frozen legacy catalogue', () => {
   const outputPath = path.join(ROOT, 'shared/resonance/catalog.js');
   const reviewPath = path.join(ROOT, 'docs/resonance/catalog.md');
   const compilerPath = path.join(ROOT, 'tools/resonance/build-content.mjs');
-  const env = { ...process.env, SP_DATA_DIR: process.env.SP_DATA_DIR || path.resolve(ROOT, '../../../data/resonance-native') };
-  execFileSync(process.execPath, [compilerPath], { cwd: ROOT, env, stdio: 'ignore' });
-  const firstConfig = fs.readFileSync(outputPath, 'utf8');
+  const originalConfig = fs.readFileSync(outputPath);
+  const env = { ...process.env, SP_DATA_DIR: path.resolve(ROOT, '../../../data/resonance-native') };
+  const options = { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 4*1024*1024, timeout: 30000 };
+  const defaultResult=JSON.parse(execFileSync(process.execPath, [compilerPath], options).trim());
+  assert.equal(defaultResult.rulesVersion,2);assert.equal(defaultResult.active,65);assert.equal(defaultResult.strategies,28);
+  assert.ok(fs.readFileSync(outputPath).equals(originalConfig));
   const firstReview = fs.readFileSync(reviewPath, 'utf8');
-  execFileSync(process.execPath, [compilerPath], { cwd: ROOT, env, stdio: 'ignore' });
-  assert.equal(fs.readFileSync(outputPath, 'utf8'), firstConfig);
+  execFileSync(process.execPath, [compilerPath, '--catalog-doc-only'], options);
+  assert.ok(fs.readFileSync(outputPath).equals(originalConfig));
   assert.equal(fs.readFileSync(reviewPath, 'utf8'), firstReview);
+  assert.match(firstReview,/固定招募名单 65 人/);assert.match(firstReview,/装备 69 项/);assert.match(firstReview,/独立图鉴保留 154 人/);assert.match(firstReview,/当前策略 28 项/);assert.match(firstReview,/36 条旧策略和 19 条旧区域规则/);
 });

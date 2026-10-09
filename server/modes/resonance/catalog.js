@@ -1,5 +1,11 @@
 import { getData } from '../../data.js';
 import { resonanceContent, buildRecruitmentPool, resonanceSourceSkillGaps } from '../../../shared/resonance/catalog.js';
+import { selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
+import { resonanceSeason, resonanceSeasonTraitOverrides, validateResonanceSeasonRoster } from '../../../shared/resonance/season-roster.js';
+import { applyCurrentStrategies } from '../../../shared/resonance/current-strategies.js';
+import { applyCurrentPacts } from '../../../shared/resonance/current-pacts.js';
+import { applyCurrentOperators } from '../../../shared/resonance/current-operators.js';
+import { applyCurrentEquipment } from '../../../shared/resonance/current-equipment.js';
 
 const clone = (value) => structuredClone(value);
 const operatorCache = new WeakMap();
@@ -27,7 +33,11 @@ function chooseStarterIds(activeOperatorIds, operators) {
  * Merge the published, deterministic resonance configuration with canonical native chess data.
  * The environment pool contains 65 IDs; the operator map always retains all 154 entries.
  */
-export function getResonanceCatalog(data = getData(), { environmentId = 'origin_laterano', seed = 1 } = {}) {
+export function getResonanceCatalog(data = getData(), options = {}) {
+  const { environmentId = 'origin_laterano', seed = 1 } = options;
+  // Explicit environment-only calls are the legacy configuration API. New entry points always request v2.
+  const rulesVersion = options.rulesVersion ?? (Object.hasOwn(options, 'environmentId') ? 1 : 2);
+  resonanceRulesVersion({ rulesVersion });
   const nativeChess = data?.chess;
   if (!nativeChess || typeof nativeChess !== 'object') throw new Error('RESONANCE_NATIVE_CHESS_UNAVAILABLE');
   let operators=operatorCache.get(nativeChess);
@@ -66,6 +76,26 @@ export function getResonanceCatalog(data = getData(), { environmentId = 'origin_
    operatorCache.set(nativeChess,operators);
   }
   const catalog = { ...resonanceContent, operators };
+  if (rulesVersion === 2) {
+    const seasonOperators = { ...operators };
+    for (const [id, additions] of Object.entries(resonanceSeasonTraitOverrides)) {
+      if (!Object.hasOwn(operators, id)) throw new Error(`RESONANCE_UNKNOWN_SEASON_OPERATOR:${id}`);
+      seasonOperators[id] = { ...operators[id], pacts: [...new Set([...operators[id].pacts, ...additions])] };
+    }
+    catalog.operators = seasonOperators;
+    const activeOperatorIds = validateResonanceSeasonRoster(seasonOperators);
+    const currentCatalog = applyCurrentOperators(applyCurrentPacts(applyCurrentStrategies(applyCurrentEquipment(catalog))));
+    const campaign = clone(currentCatalog.campaign);
+    campaign.strategyNodes = [5, 13, 20];
+    delete campaign.supply.acceleratedStrategy;
+    campaign.supply.transfers = campaign.supply.transfers.map((entry) => ({ ...entry, selection: 'viable-pact' }));
+    campaign.poolByCost = Object.fromEntries([1,2,3,4,5].map((cost) => [cost, activeOperatorIds.filter((id) => operators[id].cost === cost).length]));
+    currentCatalog.campaign = campaign;
+    currentCatalog.season = resonanceSeason;
+    currentCatalog.config = { rulesVersion, seasonId: resonanceSeason.id, environmentId: null, openingId: selectResonanceOpening(seed), seed, activeOperatorIds, starterIds: chooseStarterIds(activeOperatorIds, seasonOperators) };
+    currentCatalog.diagnostics = { sourceSkillGaps: clone(resonanceSourceSkillGaps) };
+    return currentCatalog;
+  }
   const resolvedEnvironmentId = catalog.environments[environmentId]
     ? environmentId
     : catalog.environments[`origin_${environmentId}`]
@@ -74,9 +104,18 @@ export function getResonanceCatalog(data = getData(), { environmentId = 'origin_
   if (!resolvedEnvironmentId) throw new Error(`RESONANCE_UNKNOWN_ENVIRONMENT:${environmentId}`);
   const activeOperatorIds = buildRecruitmentPool(catalog, { environmentId: resolvedEnvironmentId, seed });
   const starterIds = chooseStarterIds(activeOperatorIds, operators);
-  catalog.config = { environmentId: resolvedEnvironmentId, seed, activeOperatorIds, starterIds };
+  catalog.config = { rulesVersion: 1, environmentId: resolvedEnvironmentId, seed, activeOperatorIds, starterIds };
   catalog.diagnostics = { sourceSkillGaps: clone(resonanceSourceSkillGaps) };
   return catalog;
+}
+
+export function getLegacyResonanceCatalog(data = getData(), { environmentId = 'origin_laterano', seed = 1 } = {}) {
+  return getResonanceCatalog(data, { rulesVersion: 1, environmentId, seed });
+}
+
+export function getResonanceCatalogForState(data, state) {
+  const rulesVersion = resonanceRulesVersion(state);
+  return rulesVersion === 1 ? getLegacyResonanceCatalog(data, state) : getResonanceCatalog(data, { rulesVersion, seed: state.seed });
 }
 
 export { buildRecruitmentPool, resonanceContent, resonanceSourceSkillGaps };

@@ -5,7 +5,7 @@ const PACT_IDS = new Set([
   'laterano','kjerag','yan','victoria','columbia','kazimierz','siracusa','rhodes','lungmen','sargon','leithania','iberia','higashi','ursus','bolivar','rim','babel','sami',
   'ammo','combo','control','creation','symbiosis','logistics','redeploy','flight','arts','breaker','burn','necrosis','sui','crown',
 ]);
-const SUPPORTED = new Set(['stat','aegir_cycle','laterano_ammo','kjerag_coordination','yan_combo','victoria_artillery','columbia_construct','kazimierz_true_damage','siracusa_execute','rhodes_first_cast','lungmen_reward','sargon_sand','leithania_sound','iberia_barrier','higashi_redeploy','ursus_adjacency','bolivar_slow','rim_forge','babel_exit','sami_cold','ammo_last_round','combo_sixth','control_first','creation_construct','symbiosis_barrier','logistics_dp','redeploy_return','flight_dive','arts_cycle','breaker_front','burn_spread','necrosis_burst','sui_shadow','crown_memory','holy_gun','yela_breath']);
+const SUPPORTED = new Set(['stat','aegir_cycle','laterano_ammo','kjerag_coordination','yan_combo','victoria_artillery','columbia_construct','kazimierz_true_damage','siracusa_execute','siracusa_harvest','rhodes_first_cast','lungmen_reward','sargon_sand','leithania_sound','iberia_barrier','higashi_redeploy','ursus_adjacency','bolivar_slow','rim_forge','babel_exit','sami_cold','ammo_last_round','combo_sixth','control_first','creation_construct','symbiosis_barrier','logistics_dp','redeploy_return','flight_dive','arts_cycle','breaker_front','burn_spread','necrosis_burst','sui_shadow','crown_memory','holy_gun','yela_breath']);
 const n = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const norm = (value) => String(value ?? '').replace(/_[ab]$/, '');
 const contentOf = (catalog) => catalog?.resonanceContent ?? catalog ?? {};
@@ -134,6 +134,7 @@ function spawnVisible(battle, owner, kind, stats, duration = Infinity, anchor = 
 /** Install all ordinary and mechanism pacts plus low/mid-cost three-star passives. */
 export function installResonancePacts(battle, { catalog, state } = {}) {
   const content = contentOf(catalog);
+  const currentRules = Number(catalog?.config?.rulesVersion ?? content?.config?.rulesVersion) === 2;
   validatePacts(content);
   const bySource = operatorMap(content);
   const active = activePacts(battle, content, bySource);
@@ -205,7 +206,8 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
     const sir = params(active, 'siracusa', 'siracusa_execute');
     if (matched.ids.has('siracusa')) {
       if (target.hpRatio < n(sir.executeBelow, 40) / 100) dmg.mul = (dmg.mul ?? 1) * (1 + n(sir.executeBonus, 15) / 100);
-      const queued = n(source.mem.siracusaNextHit); if (queued) { dmg.amount = n(dmg.amount) + queued; source.mem.siracusaNextHit = 0; }
+      const queued = n(source.mem.siracusaNextHit);
+      if (queued > 0 && (!currentRules || (dmg.isAttack && !dmg.isSkill))) { dmg.amount = n(dmg.amount) + queued; source.mem.siracusaNextHit = 0; }
     }
     if(matched.ids.has('breaker')&&target.blockedBy){const p=params(active,'breaker','breaker_front');if(battle.time>=n(target.mem.pactBreakerFrontAt,-Infinity)){target.mem.pactBreakerFrontAt=battle.time+.25;dmg.mul=(dmg.mul??1)*(1+n(p.blockedBonus,15)/100);}}
     for (const passive of matched.profile.passives) if (passive.kind === 'star3_breaker' && target.hpRatio < n(passive.params?.hpBelow, 35) / 100) dmg.mul = (dmg.mul ?? 1) * (1 + n(passive.params?.damage, 20) / 100);
@@ -256,6 +258,10 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
   battle.on('skillStart', (event) => {
     const unit=event?.unit;if(!unit||unit.side!=='ally'||unit.kind!=='op')return;
     const matched=idsFor(unit);if(!matched)return;const {ids,profile}=matched;
+    if(ids.has('ammo')&&unit.skill?.kind==='ammo'){
+      const extra=n(params(active,'ammo','ammo_last_round').skillAmmo,0);
+      if(extra>0){unit.skill.addAmmo(extra);unit.mem.pactAmmoLastDamageUsed=false;}
+    }
     if(ids.has('yan')){const p=params(active,'yan','yan_combo');const cd=nextAt(unit,'yan');if(battle.time>=cd.value){cd.set(battle.time+n(p.receiverCooldown,2));for(const ally of memberUnits(active.get('yan')))if(ally!==unit)ally.skill?.gainSp?.(n(p.teamSp,1),'resonanceYan');battle.resonanceYanCast=(battle.resonanceYanCast??0)+1;if(battle.resonanceYanCast%n(p.comboEvery,5)===0)for(const ally of memberUnits(active.get('yan'))){const enemy=nearestEnemy(battle,ally);if(enemy)deal(battle,ally,enemy,ally.s.atk*n(p.comboDamage,100)/100,'arts');}}}
     if(ids.has('rhodes')&&!unit.mem.pactRhodesUsed){unit.mem.pactRhodesUsed=true;const p=params(active,'rhodes','rhodes_first_cast'),count=active.get('rhodes').count;buff(battle,unit,'rhodes-first-cast',{dmgTakenMul:1-n(p.damageReduction,10)/100,aspd:n(p.aspd,15)},n(p.duration,10));battle.heal(unit,unit,unit.s.maxHp*n(p.heal,20)/100,{tags:['resonance']});}
     if(ids.has('leithania')){const p=params(active,'leithania','leithania_sound');battle.resonanceLeithaniaCasts=(battle.resonanceLeithaniaCasts??0)+1;if(battle.resonanceLeithaniaCasts%n(p.castEvery,3)===0){const enemy=nearestEnemy(battle,unit);if(enemy){battle.resonanceLeithaniaAreas??=[];const live=battle.resonanceLeithaniaAreas.filter((field)=>field.until>battle.time);if(live.length>=n(p.maxAreas,3))live.shift();const field={x:enemy.x,y:enemy.y,until:battle.time+n(p.areaDuration,6),next:battle.time+1,silenceAt:active.get('leithania').count>=n(p.silenceAt,5)?battle.time+n(p.silenceInterval,2):Infinity,owner:unit};live.push(field);battle.resonanceLeithaniaAreas=live;const tiles=[];for(let r=Math.floor(field.y-1.5);r<=Math.ceil(field.y+1.5);r++)for(let c=Math.floor(field.x-1.5);c<=Math.ceil(field.x+1.5);c++)if((r-field.y)**2+(c-field.x)**2<=1.5**2)tiles.push([r,c]);battle.resonanceAddFloor?.(`leithania:${battle.resonanceLeithaniaCasts}`,'sound',unit,tiles,field.until);}}}
@@ -282,17 +288,17 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
 
   battle.on('ammoUsed', (event) => {
     const unit=event?.unit;if(!unit||unit.side!=='ally')return;const matched=idsFor(unit);if(!matched)return;
-    if(matched.ids.has('ammo')){const p=params(active,'ammo','ammo_last_round');if(battle.rng()<n(p.refundChance,20)/100)unit.skill?.gainSp?.(.5,'resonanceAmmo');if(unit.skill?.ammoLeft===0){const enemy=nearestEnemy(battle,unit,8);deal(battle,unit,enemy,unit.s.atk*n(p.lastDamage,80)/100,'phys');}}
+    if(matched.ids.has('ammo')){const p=params(active,'ammo','ammo_last_round');if(currentRules){if(n(p.refundChance,0)>0&&battle.rng()<n(p.refundChance,0)/100)unit.skill?.gainSp?.(n(p.refundSp,0),'resonanceAmmo');if(unit.skill?.kind==='ammo'&&n(event.left,unit.skill.ammoLeft)<=0&&!unit.mem.pactAmmoLastDamageUsed){unit.mem.pactAmmoLastDamageUsed=true;const enemy=nearestEnemy(battle,unit,8);deal(battle,unit,enemy,unit.s.atk*n(p.lastDamage,80)/100,'phys');}}else{if(battle.rng()<.2)unit.skill?.gainSp?.(.5,'resonanceAmmo');if(unit.skill?.ammoLeft===0){const enemy=nearestEnemy(battle,unit,8);deal(battle,unit,enemy,unit.s.atk*n(p.lastDamage,80)/100,'phys');}}}
     if(matched.ids.has('laterano')){const p=params(active,'laterano','laterano_ammo');battle.resonanceAmmoSpent=(battle.resonanceAmmoSpent??0)+1;if(battle.resonanceAmmoSpent%n(p.ammoSpend,6)===0)for(const ally of memberUnits(active.get('laterano')))ally.mem.pactLateranoCharge=(ally.mem.pactLateranoCharge??0)+ally.s.atk*n(p.bonus,20)/100;}
   },{owner:battle});
 
   battle.on('damaged', (event) => {
     const source=event?.source,target=event?.target,dmg=event?.dmg;
-    if(source?.side==='ally'&&target?.side==='enemy'&&event.dealt>0){
-      const matched=idsFor(source);if(!matched)return;const {ids}=matched;
-      if(ids.has('siracusa')){const p=params(active,'siracusa','siracusa_execute');source.mem.pactSiraDamage=(source.mem.pactSiraDamage??0)+event.dealt;const cd=nextAt(source,'siracusa');if(battle.time>=cd.value&&source.mem.pactSiraDamage>=n(p.damageCycle,4000)){source.mem.pactSiraDamage-=n(p.damageCycle,4000);cd.set(battle.time+n(p.personalCooldown,2));source.skill?.gainSp?.(n(p.sp,3),'resonanceSiracusa');source.mem.siracusaNextHit=(source.mem.siracusaNextHit??0)+source.s.atk*n(p.nextHit,60)/100;}}
+      if(source?.side==='ally'&&target?.side==='enemy'&&event.dealt>0){
+        const matched=idsFor(source);if(!matched)return;const {ids}=matched;
+        if(!currentRules&&ids.has('siracusa')){const p=params(active,'siracusa','siracusa_execute');source.mem.pactSiraDamage=(source.mem.pactSiraDamage??0)+event.dealt;const cd=nextAt(source,'siracusa');if(battle.time>=cd.value&&source.mem.pactSiraDamage>=n(p.damageCycle,4000)){source.mem.pactSiraDamage-=n(p.damageCycle,4000);cd.set(battle.time+n(p.personalCooldown,2));source.skill?.gainSp?.(n(p.sp,3),'resonanceSiracusa');source.mem.siracusaNextHit=(source.mem.siracusaNextHit??0)+source.s.atk*n(p.nextHit,60)/100;}}
       if(ids.has('burn')&&!(dmg?.tags??[]).includes('resonance')){const p=params(active,'burn','burn_spread');const cd=nextAt(target,'burn');if(battle.time>=cd.value){cd.set(battle.time+n(p.targetCooldown,3));battle.dealDamage(source,target,{amount:source.s.atk*n(p.burn,10)/100,type:'element',element:'burn',canDodge:false,tags:['resonance','burn']});}}
-      if(ids.has('necrosis')&&target.s?.flags?.necrosis&&target.s?.flags?.necrosisBurst&&!target.mem.pactNecrosis){target.mem.pactNecrosis=true;const p=params(active,'necrosis','necrosis_burst');source.skill?.gainSp?.(n(p.firstBurstSp,3),'resonanceNecrosis');target.buffs?.push?.({key:'resonance:necrosis:pact',duration:n(p.duration,5),interval:1,source,data:{dps:source.s.atk*n(p.dps,50)/100},onTick:({battle:b,unit:enemy,buff:entry})=>{if(enemy.alive)b.dealDamage(source,enemy,{amount:entry.data.dps,type:'arts',canDodge:false,tags:['resonance','necrosis']});},tags:['resonance']});}
+    if(ids.has('necrosis')&&target.s?.flags?.necrosis&&target.s?.flags?.necrosisBurst&&!target.mem.pactNecrosis){target.mem.pactNecrosis=true;const p=params(active,'necrosis','necrosis_burst'),burstSp=n(p.firstBurstSp,3);if(burstSp>0)source.skill?.gainSp?.(burstSp,'resonanceNecrosis');target.buffs?.push?.({key:'resonance:necrosis:pact',duration:n(p.duration,5),interval:1,source,data:{dps:source.s.atk*n(p.dps,50)/100},onTick:({battle:b,unit:enemy,buff:entry})=>{if(enemy.alive)b.dealDamage(source,enemy,{amount:entry.data.dps,type:'arts',canDodge:false,tags:['resonance','necrosis']});},tags:['resonance']});}
       if(ids.has('control')&&(target.s?.flags?.stun||target.s?.flags?.cold||target.s?.flags?.freeze))procControl(battle,active,source,target);
     }
     if(source?.side==='enemy'&&target?.side==='ally'&&dmg?.isAttack){
@@ -320,6 +326,7 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
 
   battle.on('kill', (event) => {
     const killer=event?.killer,victim=event?.victim;if(!killer||killer.side!=='ally')return;const matched=idsFor(killer);if(!matched)return;
+    if(currentRules&&matched.ids.has('siracusa')&&victim?.side==='enemy'){const p=params(active,'siracusa','siracusa_harvest');killer.skill?.gainSp?.(n(p.sp,0),'resonanceSiracusaHarvest');if(!(n(killer.mem.siracusaNextHit)>0))killer.mem.siracusaNextHit=killer.s.atk*n(p.nextHit,0)/100;}
     if(matched.ids.has('lungmen')){const p=params(active,'lungmen','lungmen_reward');battle.resonanceKills=(battle.resonanceKills??0)+1;if(battle.resonanceKills<=n(p.teamSpCap,6))for(const ally of memberUnits(active.get('lungmen')))ally.skill?.gainSp?.(n(p.killSp,1),'resonanceLungmen');}
     if(matched.ids.has('breaker')&&/ELITE|BOSS/i.test(String(victim.def?.rank))&&!killer.mem.pactBreakerElite){killer.mem.pactBreakerElite=true;const p=params(active,'breaker','breaker_front');buff(battle,killer,'breaker-elite',{aspd:n(p.eliteAspd,20)},n(p.duration,8));}
   },{owner:battle});
@@ -333,16 +340,37 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
     if(unit.kind==='token'&&unit.ownerUnit){const matched=idsFor(unit.ownerUnit);const passive=matched?.profile.passives.find((row)=>row.kind==='star3_creation');if(passive&&!unit.ownerUnit.mem.star3CreationUsed){unit.ownerUnit.mem.star3CreationUsed=true;unit.base.maxHp*=1+n(passive.params?.firstConstructHp,20)/100;unit.base.atk*=1+n(passive.params?.firstConstructAtk,30)/100;unit.markDirty?.();unit.hp=unit.s.maxHp;}return;}
     if(unit.kind!=='op')return;const matched=idsFor(unit);if(!matched)return;
     if(matched.ids.has('higashi')){const p=params(active,'higashi','higashi_redeploy');buff(battle,unit,'higashi-deploy',{dodgePhys:n(p.dodge,25)/100,dodgeArts:n(p.dodge,25)/100},n(p.duration,10));}
-    if(matched.ids.has('redeploy')&&!event.initial&&unit.mem.pactRedeployPending){unit.mem.pactRedeployPending=false;const p=params(active,'redeploy','redeploy_return');battle.heal(unit,unit,unit.s.maxHp*n(p.heal,20)/100,{tags:['resonance']});for(const enemy of enemiesInRange(battle,unit,8))deal(battle,unit,enemy,unit.s.atk*n(p.damage,100)/100,p.damageType==='arts'?'arts':'arts');}
+    if(matched.ids.has('redeploy')&&!event.initial&&unit.mem.pactRedeployPending){
+      unit.mem.pactRedeployPending=false;
+      const p=params(active,'redeploy','redeploy_return');
+      if(currentRules){
+        const returned=n(unit.mem.pactRedeployReturns,0);
+        if(returned<n(p.returnLimit,1)){
+          unit.mem.pactRedeployReturns=returned+1;
+          if(n(p.heal,0)>0)battle.heal(unit,unit,unit.s.maxHp*n(p.heal)/100,{tags:['resonance']});
+          for(const enemy of enemiesInRange(battle,unit,8))deal(battle,unit,enemy,unit.s.atk*n(p.damage,100)/100,p.damageType==='arts'?'arts':'arts');
+        }
+      }else{
+        battle.heal(unit,unit,unit.s.maxHp*n(p.heal,20)/100,{tags:['resonance']});
+        for(const enemy of enemiesInRange(battle,unit,8))deal(battle,unit,enemy,unit.s.atk*n(p.damage,100)/100,p.damageType==='arts'?'arts':'arts');
+      }
+    }
     if(matched.ids.has('higashi')&&active.get('higashi').count>=n(params(active,'higashi','higashi_redeploy').deployTrueDamageAt,4)&&!event.initial){const p=params(active,'higashi','higashi_redeploy');for(const enemy of enemiesInRange(battle,unit,8))deal(battle,unit,enemy,unit.s.atk*n(p.deployTrueDamage,80)/100,'true');}
     if(matched.ids.has('iberia')&&!unit.mem.pactIberiaUsed){unit.mem.pactIberiaUsed=true;}
-    if(!event.initial&&unit.mem.star3RedeployPending){unit.mem.star3RedeployPending=false;unit.hp=Math.min(unit.s.maxHp,unit.hp+unit.s.maxHp*n(matched.profile.passives.find((row)=>row.kind==='star3_redeploy')?.params?.firstRedeployHeal,20)/100);const p=matched.profile.passives.find((row)=>row.kind==='star3_redeploy')?.params??{};for(const enemy of enemiesInRange(battle,unit,8))deal(battle,unit,enemy,unit.s.atk*n(p.firstRedeployDamage,100)/100,'arts');}
+    if(!event.initial&&unit.mem.star3RedeployPending){
+      unit.mem.star3RedeployPending=false;
+      if(!currentRules){
+        unit.hp=Math.min(unit.s.maxHp,unit.hp+unit.s.maxHp*n(matched.profile.passives.find((row)=>row.kind==='star3_redeploy')?.params?.firstRedeployHeal,20)/100);
+        const p=matched.profile.passives.find((row)=>row.kind==='star3_redeploy')?.params??{};
+        for(const enemy of enemiesInRange(battle,unit,8))deal(battle,unit,enemy,unit.s.atk*n(p.firstRedeployDamage,100)/100,'arts');
+      }
+    }
   },{owner:battle});
 
   battle.on('blocked',(event)=>{const unit=event?.blocker;if(!unit||unit.kind!=='op')return;const matched=idsFor(unit);if(!matched?.ids.has('iberia')||unit.mem.pactIberiaBlocked)return;unit.mem.pactIberiaBlocked=true;const p=params(active,'iberia','iberia_barrier');battle.addBuff(unit,{key:`resonance:pact:iberia-barrier:${unit.id}`,shield:unit.s.maxHp*n(p.barrier,20)/100,duration:Infinity,tags:['resonance','pact']});unit.mem.pactIberiaShield=n(p.barrier,20)/100*unit.s.maxHp;},{owner:battle});
   const babelFirstExit=(unit)=>{if(!unit||unit.side!=='ally'||unit.kind!=='op'||unit.mem.pactBabelExitUsed)return;const matched=idsFor(unit);if(!matched?.ids.has('babel'))return;unit.mem.pactBabelExitUsed=true;for(const ally of battle.allyUnits.filter((row)=>row.kind==='op'&&row.alive&&row.ownerId===unit.ownerId))ally.skill?.gainSp?.(n(params(active,'babel','babel_exit').exitSp,5),'resonanceBabel');};
   battle.on('retreating',(event)=>babelFirstExit(event?.unit),{owner:battle});
-  battle.on('retreating',(event)=>{const unit=event?.unit;if(!unit||unit.side!=='ally'||unit.kind!=='op')return;const matched=idsFor(unit);const p=params(active,'higashi','higashi_redeploy');if(matched?.ids.has('higashi')&&n(unit.mem.pactHigashiReturns,0)<n(p.returnLimit,2)){unit.mem.pactHigashiReturns=n(unit.mem.pactHigashiReturns,0)+1;unit.skill?.gainSp?.(n(p.returnSp,15),'resonanceHigashi');}},{owner:battle});
+   battle.on('retreating',(event)=>{const unit=event?.unit;if(!unit||unit.side!=='ally'||unit.kind!=='op')return;const matched=idsFor(unit);const p=params(active,'higashi','higashi_redeploy');if(matched?.ids.has('higashi')&&(!currentRules||n(p.returnSp,0)>0)&&n(unit.mem.pactHigashiReturns,0)<n(p.returnLimit,2)){unit.mem.pactHigashiReturns=n(unit.mem.pactHigashiReturns,0)+1;unit.skill?.gainSp?.(n(p.returnSp,15),'resonanceHigashi');}},{owner:battle});
 
   battle.on('battleStart',()=>{applyTierStats(battle,active);
     const logistics=active.get('logistics');if(logistics){const q=params(active,'logistics','logistics_dp');for(const unit of memberUnits(logistics).slice(0,1))battle.addDp?.(unit.ownerId,n(q.startingDp,10),{source:'initial'});}
@@ -361,8 +389,16 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
     if(passive){producer.mem.star3LogisticsUsed=true;battle.addDp?.(producer.ownerId,n(passive.params?.firstDp,5),{source:'resonance_bonus'});}
   },{owner:battle});
 
-  battle.on('death',(event)=>{const unit=event?.unit;if(!unit||unit.side!=='ally'||unit.kind!=='op')return;const matched=idsFor(unit);const passive=matched?.profile.passives.find((row)=>row.kind==='star3_redeploy');if(passive&&!unit.mem.star3RedeployUsed){unit.mem.star3RedeployUsed=true;unit.mem.star3RedeployPending=true;const multiplier=n(passive.params?.firstRedeployTimeMultiplier,.5);unit.respawnAt=unit.deathAt+unit.base.respawnTime*multiplier;}
-    if(matched.ids.has('redeploy')){const p=params(active,'redeploy','redeploy_return');unit.mem.pactRedeployPending=true;unit.respawnAt=unit.deathAt+unit.base.respawnTime*n(p.timeMultiplier,.8);}
+  battle.on('death',(event)=>{const unit=event?.unit;if(!unit||unit.side!=='ally'||unit.kind!=='op')return;const matched=idsFor(unit);const passive=matched?.profile.passives.find((row)=>row.kind==='star3_redeploy');
+    if(currentRules){
+      let multiplier=1;
+      if(passive&&!unit.mem.star3RedeployUsed){unit.mem.star3RedeployUsed=true;unit.mem.star3RedeployPending=true;multiplier=Math.min(multiplier,n(passive.params?.firstRedeployTimeMultiplier,.5));}
+      if(matched.ids.has('redeploy')){const p=params(active,'redeploy','redeploy_return');unit.mem.pactRedeployPending=true;multiplier=Math.min(multiplier,n(p.timeMultiplier,.8));}
+      if(multiplier<1)unit.respawnAt=unit.deathAt+unit.base.respawnTime*multiplier;
+    }else{
+      if(passive&&!unit.mem.star3RedeployUsed){unit.mem.star3RedeployUsed=true;unit.mem.star3RedeployPending=true;const multiplier=n(passive.params?.firstRedeployTimeMultiplier,.5);unit.respawnAt=unit.deathAt+unit.base.respawnTime*multiplier;}
+      if(matched.ids.has('redeploy')){const p=params(active,'redeploy','redeploy_return');unit.mem.pactRedeployPending=true;unit.respawnAt=unit.deathAt+unit.base.respawnTime*n(p.timeMultiplier,.8);}
+    }
   },{owner:battle});
   battle.on('death',(event)=>{const unit=event?.unit;if(unit?.kind==='token'&&unit.mem.pactSuiSummon)battle.resonanceSuiAlive=false;if(unit?.kind==='token'&&unit.mem.resonanceSyntheticKind==='columbia-construct'&&active.get('columbia')?.count>=n(params(active,'columbia','columbia_construct').rebuildAt,10)){const owner=unit.ownerUnit;if(owner&&!owner.mem.pactColumbiaRebuilt){owner.mem.pactColumbiaRebuilt=true;battle.after(.05,()=>{if(owner.alive)spawnVisible(battle,owner,'columbia-construct',{maxHp:owner.s.maxHp,atk:owner.s.atk},n(params(active,'columbia','columbia_construct').constructDuration,8));},{owner});}}},{owner:battle});
 

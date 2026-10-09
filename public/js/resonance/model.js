@@ -23,6 +23,13 @@ export function parseDetailHash(hash) {
   const raw=String(hash||'').replace(/^#/,'');const at=raw.indexOf('-');if(at<1)return null;
   try{return {kind:decodeURIComponent(raw.slice(0,at)),id:decodeURIComponent(raw.slice(at+1))}}catch{return null}
 }
+export function resolveOpeningEvent(state, catalog) {
+  if (state?.rulesVersion !== 2 && !catalog?.openingEvent) return null;
+  const event = state?.openingEvent || catalog?.openingEvents?.[state?.openingId] || catalog?.openingEvent;
+  if (!event) return null;
+  const id = state?.openingId || Object.entries(catalog?.openingEvents || {}).find(([, value]) => value.name === event.name && value.description === event.description)?.[0] || null;
+  return { ...event, id };
+}
 export function filterOperators(operators, activeIds, {query='',cost='',pact='',role='',onlyActive=false}={}) {
   const needle=String(query).trim().toLocaleLowerCase();const active=new Set(activeIds||[]);
   return Object.entries(operators||{}).filter(([id,op])=>(!onlyActive||active.has(id))&&(!needle||`${id} ${op.name||''}`.toLocaleLowerCase().includes(needle))&&(!cost||Number(op.cost)===Number(cost))&&(!pact||(op.pacts||[]).includes(pact))&&(!role||op.role===role));

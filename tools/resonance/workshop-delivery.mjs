@@ -18,7 +18,7 @@ const WSH_CLI_PATH = process.env.WSH_CLI_PATH
 
 const DESIGN_SECTIONS = new Set([
   '体验与内容范围', '经济与招募', '费用与角色职责', '盟约设计原则',
-  '需求明确的终端', '装备、策略与全局环境', '成型窗口与遭遇预算',
+  '需求明确的终端', '装备、策略与开局事件', '成型窗口与遭遇预算',
 ]);
 
 function playerFacingDesign(markdown) {
@@ -29,7 +29,7 @@ function playerFacingDesign(markdown) {
     if (!DESIGN_SECTIONS.has(heading)) continue;
     const body = block.replace(/^#{2,3} .+\r?\n/, '').trim();
     const paragraphs = body.split(/\r?\n\s*\r?\n/).filter(Boolean).filter(paragraph => !(
-      /完整招募目录采用|界面沿用工坊|概率采用当前 Set18|五费名单：|费用映射以现有设计 tier|^- 原[一二三四五六]档|完整内容表需包括|经营状态、配置与战斗核心共用|日常使用 `recording:false`|测试覆盖经济边界|推演后逐次修订|全部配置与完整用户故事|磁盘工具持续计入/i.test(paragraph)
+      /完整招募目录采用|完整干员资料采用|界面沿用工坊|概率采用当前 Set18|五费名单：|费用映射以现有设计 tier|^- 原[一二三四五六]档|完整内容表需包括|经营状态、配置与战斗核心共用|日常使用 `recording:false`|测试覆盖经济边界|推演后逐次修订|全部配置与完整用户故事|磁盘工具持续计入|每个保留的新增机制|用户明确指定|必须包含的主逻辑/i.test(paragraph)
     ));
     if (paragraphs.length) included.push(`## ${heading}\n\n${paragraphs.join('\n\n')}`);
   }
@@ -196,23 +196,17 @@ function repairedPlayCard(card, embedUrl) {
 
 const UI_OPERATION_SECTION = [
   '## 界面与操作', '',
-  '进入玩法后会依次选择难度、战场并确认本局简报。对局中，金币、等级和商店常驻显示。',
+  '进入玩法后选择难度，在本局简报中查看开局事件并开始对局。所有开局事件共用本赛季招募名单；独立图鉴可查看完整资料与本赛季招募资格。对局中，金币、等级和商店常驻显示。',
   '招募卡单击购买，右键查看详情。D 刷新、F 购买经验、E 出售所指干员、W 部署或移回备战区；装备可拖给干员，组件右键查看配方。',
   '详情和盟约停靠在商店上方；盟约点击档位切换效果。招募费用用灰、绿、蓝、紫、金底色区分，星标表示星级。独立图鉴汇集完整资料，可全屏打开。',
   '谢拉格通过普攻标记目标，由友方干员随后响应集火；最高档位可触发团队援射。各档位的具体效果在盟约详情中查看。',
 ].join('\n');
 
-function refreshedDesignBody(existingBody, entryUrl, referenceUrl) {
+function refreshedDesignBody(existingBody, entryUrl, referenceUrl, designRules) {
   if (typeof existingBody !== 'string' || !/^# 共鸣玩法与参考\r?\n/m.test(existingBody)
     || !/^## 体验与内容范围\r?$/m.test(existingBody)) throw new Error('现有设计正文身份或玩法内容无法确认；拒绝覆盖');
-  const withoutOldUi = existingBody.split(/(?=^## )/m).filter(block => !/^## 界面与操作\s*$/m.test(block)).join('').trim();
-  const intro = `打开[共鸣玩法](${entryUrl})。完整资料可从[参考资料包](${referenceUrl})下载。`;
-  const withUpdatedLinks = withoutOldUi.replace(/^(# 共鸣玩法与参考\r?\n\r?\n)[^\r\n]*(?:\r?\n\r?\n)/m, (_match, heading) => `${heading}${intro}\n\n`)
-    .replaceAll('谢拉格寒冷/冻结/地板', '谢拉格目标标记、友方响应与集火');
-  if (withUpdatedLinks === withoutOldUi && !withoutOldUi.startsWith(`# 共鸣玩法与参考\n\n${intro}`)) {
-    throw new Error('现有设计正文入口段格式不明；拒绝破坏性重写');
-  }
-  return `${withUpdatedLinks.trim()}\n\n${UI_OPERATION_SECTION}\n`;
+  if (typeof designRules !== 'string' || !designRules.trim()) throw new Error('缺少当前正式设计规则');
+  return `${DESIGN_BODY(entryUrl, referenceUrl, designRules).trim()}\n\n${UI_OPERATION_SECTION}\n`;
 }
 
 function validateRefreshTargets(cards, relations, embedUrl) {
@@ -327,10 +321,11 @@ function selfTest() {
     material: { revision_ref: { provider: 'material-note', object: 'canvas#card=design', revision: 'r267' } },
     x: 900, y: 126, width: 560, height: 460, fontSize: 14 };
   const oldDesignBody = '# 共鸣玩法与参考\n\n打开[共鸣玩法](https://old.invalid/resonance.html)。完整资料可从[参考资料包](https://old.invalid/reference.zip)下载。\n\n## 体验与内容范围\n\n玩家按局内节点构建阵容。\n\n谢拉格寒冷/冻结/地板。\n\n## 界面与操作\n\n旧操作说明。';
-  const nextDesignBody = refreshedDesignBody(oldDesignBody, entryUrl, 'https://example.invalid/reference.zip');
-  if (!nextDesignBody.includes('玩家按局内节点构建阵容。') || nextDesignBody.includes('旧操作说明。')
-    || !nextDesignBody.includes('谢拉格目标标记、友方响应与集火。') || nextDesignBody.includes('谢拉格寒冷/冻结/地板')
-    || !nextDesignBody.includes(UI_OPERATION_SECTION) || !nextDesignBody.includes(entryUrl)) throw new Error('refresh保留玩法正文/更新谢拉格机制说明/替换操作说明纯测试失败');
+  const nextDesignBody = refreshedDesignBody(oldDesignBody, entryUrl, 'https://example.invalid/reference.zip', designRules);
+  if (nextDesignBody.includes('旧操作说明。') || nextDesignBody.includes('谢拉格寒冷/冻结/地板')
+    || !nextDesignBody.includes('队伍同时只保留一个有效标记')
+    || !nextDesignBody.includes('本赛季招募名单') || nextDesignBody.includes('选择难度、战场')
+    || !nextDesignBody.includes(UI_OPERATION_SECTION) || !nextDesignBody.includes(entryUrl)) throw new Error('refresh正式规则/固定赛季/操作说明纯测试失败');
   const refreshSources = refreshedCards(testDesign, testPlay, { path: '/new/design.md', open_token: 'new-token', editableId: DESIGN_CARD_ID }, embedUrl);
   const refreshBeforeCards = [testDesign, testPlay, { id: 'user-card', kind: 'text', source: { path: '/user.md' }, x: 10, y: 12, width: 200, height: 100 }];
   const refreshAfterCards = [...refreshBeforeCards.filter(card => ![DESIGN_CARD_ID, PLAY_CARD_ID].includes(card.id)), ...refreshSources];
@@ -445,7 +440,7 @@ async function run() {
   const embedUrl = options['embed-url'] ? httpsUrl(options['embed-url'], '--embed-url') : entryUrl;
   if (options.repairPlayCard && !options['embed-url']) throw new Error('--repair-play-card 必须提供 --embed-url');
   const referenceUrl = options.repairPlayCard ? null : httpsUrl(options['reference-url'], '--reference-url');
-  const designRules = options.repairPlayCard || options.refreshExisting ? null : playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
+  const designRules = options.repairPlayCard ? null : playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
   const releaseReceiptPath = absoluteFile(options['release-receipt'], '--release-receipt');
   const receiptPath = absoluteFile(options.receipt, '--receipt');
   if (fs.existsSync(receiptPath)) throw new Error(`receipt 已存在，为避免覆盖而停止：${receiptPath}`);
@@ -490,7 +485,7 @@ async function run() {
     const textsBefore = await readTexts(textIds);
     const designText = textsBefore.find(item => (item.id ?? item.editableId) === DESIGN_CARD_ID);
     const existingBody = designText?.content ?? designText?.text ?? designText?.body;
-    const nextBody = refreshedDesignBody(existingBody, entryUrl, referenceUrl);
+    const nextBody = refreshedDesignBody(existingBody, entryUrl, referenceUrl, designRules);
     const beforeCards = structuredClone(current.cards), beforeRelations = structuredClone(current.relations);
     const workspaceRef = currentResponse.workspace_ref ?? current._workspaceRef;
     if (!workspaceRef) throw new Error('画布缺少workspace_ref，无法安全提交');

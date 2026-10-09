@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { getResonanceCatalog } from './catalog.js';
+import { resonanceRulesVersion } from '../../../shared/resonance/openings.js';
 import { getResonanceField, previewUnitStats, runResonanceBattle } from './battle.js';
 import { applyAction, createSession, validateSession, viewSession } from './session.js';
 import { resonanceDisplayCatalog, resonanceSessionDisplay } from './display.js';
@@ -45,16 +46,6 @@ function sameOrigin(req) {
 }
 
 function validSeed(seed) { return Number.isSafeInteger(seed) && seed >= 0 && seed <= 0xffffffff; }
-function featuredEnvironments(catalog, seed) {
-  const ids = Object.keys(catalog.environments);
-  let state = (seed >>> 0) || 0x6d2b79f5;
-  for (let index = ids.length - 1; index > 0; index--) {
-    state = (Math.imul(state ^ (state >>> 15), state | 1) + 0x6d2b79f5) >>> 0;
-    const other = state % (index + 1);
-    [ids[index], ids[other]] = [ids[other], ids[index]];
-  }
-  return ids.slice(0, 3);
-}
 
 export function createResonanceHttp({ data, directory, battleRunner = runResonanceBattle, fieldResolver = getResonanceField, statsPreview = previewUnitStats,
   catalogProvider = getResonanceCatalog, recording = true } = {}) {
@@ -65,12 +56,13 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
   const file = (id) => path.join(directory, `${id}.json`);
   const replayFile = (id, round) => path.join(directory, `${id}.replay-r${round}.json.gz`);
 
-  function catalogFor(environmentId = 'origin_laterano', seed = 1) {
-    const key = `${environmentId}|${seed}`;
+  function catalogFor(rulesVersion = 2, seed = 1, environmentId = null) {
+    resonanceRulesVersion({rulesVersion});
+    const key = `${rulesVersion}|${environmentId}|${seed}`;
     if (catalogCache.has(key)) {
       const cached = catalogCache.get(key); catalogCache.delete(key); catalogCache.set(key, cached); return cached;
     }
-    const catalog = catalogProvider(data, { environmentId, seed });
+    const catalog = catalogProvider(data, { rulesVersion, environmentId, seed });
     catalogCache.set(key, catalog);
     while (catalogCache.size > CATALOG_CACHE_LIMIT) catalogCache.delete(catalogCache.keys().next().value);
     return catalog;
@@ -81,6 +73,11 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
     const display = resonanceDisplayCatalog(catalog, data);
     displayCache.set(catalog, display);
     return display;
+  }
+
+  function catalogForIdentity(identity) {
+    try { return catalogFor(resonanceRulesVersion(identity), identity.seed, identity.environmentId); }
+    catch { throw Object.assign(new Error('这一局的规则存档内容无效'), { status: 500, code: 'CORRUPT_SESSION' }); }
   }
 
   async function atomicWrite(target, text) {
@@ -150,34 +147,24 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
         const url = new URL(req.url, 'http://localhost');
         const seedValue = url.searchParams.has('seed') ? Number(url.searchParams.get('seed')) : 1;
         const seed = validSeed(seedValue) ? seedValue : 1;
-        const requestedEnvironment = url.searchParams.get('environmentId') || 'origin_laterano';
-        let catalog;
-        try { catalog = catalogFor(requestedEnvironment, seed); }
-        catch (error) {
-          if (/RESONANCE_UNKNOWN_ENVIRONMENT/.test(error.message)) { reply(res, 422, { ok: false, error: { code: 'BAD_ENVIRONMENT', message: '请选择有效的环境' } }); return true; }
-          throw error;
+        if (url.searchParams.has('environmentId') || url.searchParams.has('openingId')) {
+          reply(res, 422, { ok:false, error:{code:'UNSUPPORTED_SESSION_INPUT',message:'开局效果由本局自动决定'} }); return true;
         }
-        reply(res, 200, { ok: true, catalog: displayFor(catalog), activeOperatorIds: [...catalog.config.activeOperatorIds],
-          environmentChoices: featuredEnvironments(catalog, seed), seed });
+        const catalog = catalogFor(2, seed);
+        reply(res, 200, { ok: true, catalog: displayFor(catalog), activeOperatorIds: [...catalog.config.activeOperatorIds], seed });
         return true;
       }
       if (relative === 'sessions' && req.method === 'POST') {
         const body = await bodyOf(req);
-        if (Object.keys(body).some((key) => !['seed','difficulty','environmentId'].includes(key))) {
-          reply(res, 422, { ok: false, error: { code: 'UNSUPPORTED_SESSION_INPUT', message: '开局请求只接受种子、难度与环境' } }); return true;
+        if (Object.keys(body).some((key) => !['seed','difficulty'].includes(key))) {
+          reply(res, 422, { ok: false, error: { code: 'UNSUPPORTED_SESSION_INPUT', message: '开局请求只接受种子与难度' } }); return true;
         }
         const seed = body.seed ?? randomUUID().split('-').join('').slice(0,8).split('').reduce((value, char) => (value * 16 + parseInt(char,16)) >>> 0, 0);
         if (!validSeed(seed)) { reply(res, 422, { ok: false, error: { code: 'BAD_SEED', message: '种子必须是有效的非负整数' } }); return true; }
         const difficulty = String(body.difficulty || 'NORMAL').toUpperCase();
         if (!['FUNNY','NORMAL','HARD','ABYSS'].includes(difficulty)) { reply(res, 422, { ok: false, error: { code: 'BAD_DIFFICULTY', message: '请选择有效难度' } }); return true; }
-        const environmentId = String(body.environmentId || '');
-        let catalog;
-        try { catalog = catalogFor(environmentId, seed); }
-        catch (error) {
-          if (/RESONANCE_UNKNOWN_ENVIRONMENT/.test(error.message)) { reply(res, 422, { ok: false, error: { code: 'BAD_ENVIRONMENT', message: '请选择有效的环境' } }); return true; }
-          throw error;
-        }
-        const created = createSession({ seed, difficulty, environmentId, catalog });
+        const catalog = catalogFor(2, seed);
+        const created = createSession({ seed, difficulty, catalog });
         if (!created.ok) { reply(res, 422, { ok: false, error: { code: created.error, message: '无法开始新的一局' } }); return true; }
         const id = randomUUID();
         await saveSession(id, created.state);
@@ -200,7 +187,7 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
         });
         let identity;
         try { identity = JSON.parse(text); } catch { throw Object.assign(new Error('这一局的存档无法读取'), { status: 500, code: 'CORRUPT_SESSION' }); }
-        const catalog = catalogFor(identity.environmentId, identity.seed);
+        const catalog = catalogForIdentity(identity);
         const state = await loadSession(id, catalog);
         reply(res, 200, statePacket(id, state, catalog, url.searchParams.get('catalog') !== '0'));
         return true;
@@ -210,7 +197,7 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
           if (error.code === 'ENOENT') throw Object.assign(new Error('这一局不存在或已过期'), { status: 404, code: 'NOT_FOUND' }); throw error;
         });
         let state; try { state = JSON.parse(stateText); } catch { throw Object.assign(new Error('这一局的存档无法读取'), { status: 500, code: 'CORRUPT_SESSION' }); }
-        const catalog = catalogFor(state.environmentId, state.seed);
+        const catalog = catalogForIdentity(state);
         await loadSession(id, catalog);
         await replayResponse(res, id, Number(parts[3]));
         return true;
@@ -225,7 +212,7 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
             if (error.code === 'ENOENT') throw Object.assign(new Error('这一局不存在或已过期'), { status: 404, code: 'NOT_FOUND' }); throw error;
           });
           let identity; try { identity = JSON.parse(first); } catch { throw Object.assign(new Error('这一局的存档无法读取'), { status: 500, code: 'CORRUPT_SESSION' }); }
-          const catalog = catalogFor(identity.environmentId, identity.seed);
+          const catalog = catalogForIdentity(identity);
           const state = await loadSession(id, catalog);
           if (body.expectedRevision !== state.revision) {
             reply(res, 409, { ...statePacket(id, state, catalog, false), ok: false, error: { code: 'STALE_REVISION', message: '对局已在别处更新，请重试当前操作' } }); return;

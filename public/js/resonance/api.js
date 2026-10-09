@@ -13,12 +13,11 @@ async function call(path, init = {}) {
 }
 
 export const resonanceApi = Object.freeze({
-  catalog: (seed = 1, environmentId) => {
+  catalog: (seed = 1) => {
     const query = new URLSearchParams({ seed: String(seed) });
-    if (environmentId) query.set('environmentId', environmentId);
     return call(`catalog?${query}`);
   },
-  create: ({ seed, difficulty, environmentId }) => call('sessions', { method: 'POST', body: JSON.stringify({ seed, difficulty, environmentId }) }),
+  create: ({ seed, difficulty }) => call('sessions', { method: 'POST', body: JSON.stringify({ seed, difficulty }) }),
   load: (id) => call(`sessions/${encodeURIComponent(id)}?catalog=1`),
   act: (id, expectedRevision, action) => call(`sessions/${encodeURIComponent(id)}/actions`, {
     method: 'POST', body: JSON.stringify({ expectedRevision, action }),

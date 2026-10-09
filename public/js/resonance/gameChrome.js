@@ -15,7 +15,7 @@ import { BattleReport } from './battleReport.js';
 import { ReplayControls } from './replayControls.js';
 import { CodexScreen } from './codex.js';
 import { DetailPanel } from './detail.js';
-import { operatorShopPreview, pieceNum, prepView, roleLabel, strategyProgressText } from './model.js';
+import { operatorShopPreview, pieceNum, prepView, resolveOpeningEvent, roleLabel, strategyProgressText } from './model.js';
 import { pactIconUrl } from './pactIcon.js';
 
 const xpForLevel = (level) => [6,10,20,36,56,68,68][level-3] || 68;
@@ -56,11 +56,12 @@ export function GameChrome(p) {
     measure();addEventListener('resize',onResize);
     return()=>{removeEventListener('resize',onResize);cancelAnimationFrame(frame);observer?.disconnect();root.style.removeProperty('--rs-dock-bottom');root.style.removeProperty('--rs-panel-top')};
   },[state,panel,replay,shopCollapsed,sellingPiece,choiceOpen,busy]);
-  const xpNeed=Number(catalog.campaign?.economy?.xpToLevel?.[state.level]??xpForLevel(state.level));
+  const xpNeed=Number(state.actionCosts?.xpToLevel??catalog.campaign?.economy?.xpToLevel?.[state.level]??xpForLevel(state.level));
+  const openingEvent=resolveOpeningEvent(state,catalog);
   const prep=prepView(state,catalog);
   const shopPriv={funds:state.gold,deployCount:state.deployedCount,deployCap:state.level,hand:prep.hand,board:prep.board,temp:prep.temp,loadout:null,
     shop:{slots:(state.shop?.offers||[]).map(o=>({kind:'chess',id:o.operatorId,price:o.cost??catalog.operators?.[o.operatorId]?.cost??0,sold:!o.operatorId||!!o.sold,offerUid:o.uid})),
-      frozen:!!state.shop?.locked,refreshPrice:state.actionCosts?.refreshGold??2,freeRefreshes:0,level:state.level,maxLevel:10,upgradePrice:state.actionCosts?.xpGold??4}};
+      frozen:!!state.shop?.locked,refreshPrice:state.actionCosts?.refreshGold??2,freeRefreshes:Number(state.actionCosts?.freeRefreshes??state.freeRefreshes??(Number(state.actionCosts?.refreshGold)===0?1:0)),level:state.level,maxLevel:10,upgradePrice:state.actionCosts?.xpGold??4}};
   const pacts=catalog.pacts||{};
   const pactRecords=Object.fromEntries(Object.entries(pacts).map(([id,x])=>[id,{name:x.name,noStack:true,thresholds:(x.levels||[]).map(y=>y.threshold)}]));
   const bonds=Object.entries(state.pacts||{}).filter(([,x])=>(x.count||0)>0).map(([bondId,x])=>({bondId,count:x.count||0,layers:0,noStack:true,
@@ -109,7 +110,7 @@ export function GameChrome(p) {
     <section class="gm__field" ref=${host} aria-label="共鸣战场"><div class="gm__vignette"></div></section>
     <div class="gm__hud">
       <${TopBar} pub=${{round:replay?.round??state.round,phase:replay?'battle':state.phase}} priv=${{lp:state.hp,alive:true}} conn=${null} hud=${null} total=${null} drawer=${panel==='formation'?'info':null} pen=${!replay&&panel==='enemy'} penAvail=${!replay&&!!state.nextEnemies?.length&&state.node?.kind!=='logistics'} onPen=${enabled=>setPanel(enabled?'enemy':null)} onExit=${onLeave} onDrawer=${tab=>setPanel(tab==='info'?(panel==='formation'?null:'formation'):null)} onReady=${()=>{}}
-        leftMeta=${html`<div class="rs-gmeta"><${MicroLabel} tone="mint">卫戍协议 · 共鸣</${MicroLabel}><b>${catalog.environments[state.environmentId]?.shortName||catalog.environments[state.environmentId]?.name||'共鸣'}</b><${DifficultyTag} difficulty=${state.difficulty} size="sm"/></div>`}
+        leftMeta=${html`<div class="rs-gmeta"><${MicroLabel} tone="mint">卫戍协议 · 共鸣</${MicroLabel}>${openingEvent?.id?html`<button type="button" class="rs-gmeta__opening" onClick=${()=>openDetail({kind:'opening',id:openingEvent.id})} aria-label=${`查看开局事件：${openingEvent.id==='none'?'共鸣':openingEvent.name}`}>${openingEvent.id==='none'?'共鸣':openingEvent.name}</button>`:html`<b>共鸣</b>`}<${DifficultyTag} difficulty=${state.difficulty} size="sm"/></div>`}
         phaseContent=${html`<span class="rs-phase">${replay?'战斗回放':state.phase==='choice'?'选择补给':state.phase==='battle'?'交战':state.phase==='complete'?'已结束':state.nodeStarted?'整备':'补给'}</span>`}
         rightContent=${replay?html`<div class="rs-hud-actions"><span class="rs-phase">第 ${replay.round} 场</span><a class="rs-fullscreen-small" href=${replayFullscreenHref} target="_blank" rel="noopener">全屏打开</a></div>`:html`<div class="rs-hud-actions">
           ${state.phase==='choice'&&state.pendingChoices?.length&&panel!=='choice'?html`<${Button} size="sm" onClick=${()=>setPanel('choice')}>继续选择</${Button}>`:null}
