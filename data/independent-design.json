@@ -694,8 +694,8 @@
       "role": "生成",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
-        "elite": "退场时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+        "normal": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+        "elite": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -740,7 +740,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -748,25 +748,25 @@
             "params": {
               "sourceId": "BGS_061"
             },
-            "text": "退场时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+            "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -774,19 +774,19 @@
             "params": {
               "sourceId": "BGS_061"
             },
-            "text": "退场时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+            "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -809,18 +809,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤维多利亚作战支援单位1个；每个攻击120、生命350。"
+              "rule": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤维多利亚作战支援单位1个；每个攻击240、生命700。"
+              "rule": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。"
             }
           ]
         },
@@ -942,8 +942,8 @@
       "role": "重射手单体输出强；免费刷新去掉，一阶经济由德克萨斯、格雷伊承担",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "友方退场（叙拉古）时，使自身获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
-        "elite": "友方退场（叙拉古）时，使自身获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+        "normal": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+        "elite": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -988,7 +988,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "友方退场",
+            "trigger": "友方战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
@@ -996,23 +996,23 @@
             "params": {
               "sourceId": "EX1_531"
             },
-            "text": "友方退场（叙拉古）时，使自身获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+            "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方退场（叙拉古）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "叙拉古友方战斗部署时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×1。同一效果每三秒触发一次，每场最多二十五次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "自身",
-            "triggerLabel": "友方退场",
+            "triggerLabel": "友方战斗部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "友方退场",
+            "trigger": "友方战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
@@ -1020,17 +1020,17 @@
             "params": {
               "sourceId": "EX1_531"
             },
-            "text": "友方退场（叙拉古）时，使自身获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+            "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方退场（叙拉古）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "叙拉古友方战斗部署时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "自身",
-            "triggerLabel": "友方退场",
+            "triggerLabel": "友方战斗部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -1053,18 +1053,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "友方退场",
+              "trigger": "友方战斗部署时",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方退场（叙拉古）时，使自身获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。"
+              "rule": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。"
             }
           ],
           "elite": [
             {
-              "trigger": "友方退场",
+              "trigger": "友方战斗部署时",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方退场（叙拉古）时，使自身获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。"
+              "rule": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。"
             }
           ]
         },
@@ -3369,8 +3369,8 @@
         }
       },
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
-        "elite": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。\n退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+        "normal": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。\n战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+        "elite": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。\n战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -3416,12 +3416,12 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "gain",
+            "trigger": "战斗部署时",
             "sourceTrigger": "optionalMagneticFusion",
             "recipient": "selectedColumbiaFriendly",
             "duration": "permanentAttachment",
             "kind": "magneticAttachment",
-            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。",
+            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。",
             "textEn": "",
             "tags": [
               "magnetic"
@@ -3450,11 +3450,11 @@
               "optional": true
             },
             "recipientLabel": "你选择的一名友方哥伦比亚干员",
-            "triggerLabel": "招募获得或首次上阵时",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "附加"
           },
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -3462,30 +3462,30 @@
             "params": {
               "sourceId": "BOT_312"
             },
-            "text": "退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+            "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤3个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤3个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "gain",
+            "trigger": "战斗部署时",
             "sourceTrigger": "optionalMagneticFusion",
             "recipient": "selectedColumbiaFriendly",
             "duration": "permanentAttachment",
             "kind": "magneticAttachment",
-            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。",
+            "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。",
             "textEn": "",
             "tags": [
               "magnetic"
@@ -3514,11 +3514,11 @@
               "optional": true
             },
             "recipientLabel": "你选择的一名友方哥伦比亚干员",
-            "triggerLabel": "招募获得或首次上阵时",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "附加"
           },
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -3526,19 +3526,19 @@
             "params": {
               "sourceId": "BOT_312"
             },
-            "text": "退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+            "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤3个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤3个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -3561,30 +3561,30 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "招募获得或首次上阵时",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "你选择的一名友方哥伦比亚干员",
               "duration": "附加",
-              "rule": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。"
+              "rule": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×3及职业副属性成长徽章×1；本体不进入阵容。"
             },
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。"
+              "rule": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。"
             }
           ],
           "elite": [
             {
-              "trigger": "招募获得或首次上阵时",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "你选择的一名友方哥伦比亚干员",
               "duration": "附加",
-              "rule": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其亡语附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。"
+              "rule": "招募获得或首次上阵时，可直接招募；也可消耗此干员，将其战斗部署效果附加给你选择的一名友方哥伦比亚干员，并使其获得攻击成长徽章×6及职业副属性成长徽章×2；本体不进入阵容。"
             },
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。"
+              "rule": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。"
             }
           ]
         },
@@ -4350,8 +4350,8 @@
       "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件不屈盟约。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：WARRIOR/强攻手，MELEE，范围1-1；原生攻击530、攻速100、攻击间隔1.2秒、生命1909；选用「肉斩骨断」Lv4，SP消耗45/初始25（INCREASE_WITH_TIME）：“技能持续期间内干员的生命值始终不会低于1，攻击力+70%\n技能结束后干员晕眩10秒”。探针依据：单体0防/0抗最佳总DPS 507.9（本体507.9+召唤物0.0；攻击力强化·γ型）；单体800防/40抗最佳总DPS 36.0（本体36.0+召唤物0.0；肉斩骨断）；四目标0防/0抗最佳总DPS 507.9（本体507.9+召唤物0.0；攻击力强化·γ型）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
-        "elite": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+        "normal": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+        "elite": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -4395,7 +4395,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "inventory",
             "duration": "本场战斗",
@@ -4403,25 +4403,25 @@
             "params": {
               "sourceId": "BGS_200"
             },
-            "text": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "adaptation": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "装备栏",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "inventory",
             "duration": "本场战斗",
@@ -4429,19 +4429,19 @@
             "params": {
               "sourceId": "BGS_200"
             },
-            "text": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "adaptation": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "装备栏",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -4464,18 +4464,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "装备栏",
               "duration": "本场战斗",
-              "rule": "退场时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。"
+              "rule": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "装备栏",
               "duration": "本场战斗",
-              "rule": "退场时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。"
+              "rule": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。"
             }
           ]
         },
@@ -8988,8 +8988,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时召唤1个作战支援单位。",
-        "elite": "退场时召唤1个作战支援单位。",
+        "normal": "战斗中每次实际部署时召唤1个作战支援单位。",
+        "elite": "战斗中每次实际部署时召唤1个作战支援单位。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -9034,7 +9034,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -9042,25 +9042,25 @@
             "params": {
               "sourceId": "EX1_556"
             },
-            "text": "退场时召唤1个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤1个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -9068,19 +9068,19 @@
             "params": {
               "sourceId": "EX1_556"
             },
-            "text": "退场时召唤1个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤1个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -9103,18 +9103,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤1个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤1个作战支援单位。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤1个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤1个作战支援单位。"
             }
           ]
         },
@@ -10937,8 +10937,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
-        "elite": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+        "normal": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+        "elite": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -10983,7 +10983,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -10991,25 +10991,25 @@
             "params": {
               "sourceId": "CFM_316"
             },
-            "text": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+            "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤按当前攻击成长计算，最多七个个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤按当前攻击成长计算，最多七个个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -11017,19 +11017,19 @@
             "params": {
               "sourceId": "CFM_316"
             },
-            "text": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+            "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤按当前攻击成长计算，最多七个个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤按当前攻击成长计算，最多七个个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -11052,18 +11052,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。"
+              "rule": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。"
+              "rule": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。"
             }
           ]
         },
@@ -12305,8 +12305,8 @@
       "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：自身每使一名敌人晕眩，战斗结束后获得1枚攻速徽章（每场至多4枚）。规则动作：普通战斗statusApplied触发按事件累计产出；进阶战斗statusApplied触发按事件累计产出。本体依据：SNIPER/速射手，RANGED，范围3-3；原生攻击411、攻速100、攻击间隔1秒、生命1246；选用「封喉」Lv4，SP消耗45/初始15（INCREASE_WITH_TIME）：“攻击间隔少量缩短，攻击变为2连射，击中目标40次后技能剩余时间内攻击变为4连射”。探针依据：单体0防/0抗最佳总DPS 730.7（本体730.7+召唤物0.0；封喉）；单体800防/40抗最佳总DPS 36.5（本体36.5+召唤物0.0；封喉）；四目标0防/0抗最佳总DPS 730.7（本体730.7+召唤物0.0；封喉）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
-        "elite": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+        "normal": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+        "elite": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -12349,7 +12349,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "友方退场",
+            "trigger": "友方战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "退场干员附近的友方",
             "duration": "本场战斗",
@@ -12357,25 +12357,25 @@
             "params": {
               "sourceId": "BGS_112"
             },
-            "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+            "text": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "退场干员附近的友方干员",
-            "triggerLabel": "友方退场",
+            "triggerLabel": "友方战斗部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "友方退场",
+            "trigger": "友方战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "退场干员附近的友方",
             "duration": "本场战斗",
@@ -12383,19 +12383,19 @@
             "params": {
               "sourceId": "BGS_112"
             },
-            "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+            "text": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "退场干员附近的友方干员",
-            "triggerLabel": "友方退场",
+            "triggerLabel": "友方战斗部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -12418,18 +12418,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "友方退场",
+              "trigger": "友方战斗部署时",
               "recipient": "退场干员附近的友方干员",
               "duration": "本场战斗",
-              "rule": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。"
+              "rule": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。"
             }
           ],
           "elite": [
             {
-              "trigger": "友方退场",
+              "trigger": "友方战斗部署时",
               "recipient": "退场干员附近的友方干员",
               "duration": "本场战斗",
-              "rule": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。"
+              "rule": "携带坚守盟约的友方战斗部署时，使该干员附近的友方，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。"
             }
           ]
         },
@@ -13105,8 +13105,8 @@
       "role": "天赋「起泡性能测试」（首次攻击使目标浮空2.5秒）",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
-        "elite": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
+        "normal": "每有一名具有战斗部署效果的的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
+        "elite": "每有一名具有战斗部署效果的的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -13156,7 +13156,7 @@
             "recipient": "self",
             "duration": "permanentWornGrowth",
             "kind": "badgeGrowth",
-            "text": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
+            "text": "每有一名具有战斗部署效果的的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
             "textEn": "",
             "tags": [],
             "params": {
@@ -13187,7 +13187,7 @@
             "recipient": "self",
             "duration": "permanentWornGrowth",
             "kind": "badgeGrowth",
-            "text": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
+            "text": "每有一名具有战斗部署效果的的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
             "textEn": "",
             "tags": [],
             "params": {
@@ -13233,7 +13233,7 @@
               "trigger": "招募获得或首次上阵时",
               "recipient": "自身",
               "duration": "成长",
-              "rule": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。"
+              "rule": "每有一名具有战斗部署效果的的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。"
             }
           ],
           "elite": [
@@ -13241,7 +13241,7 @@
               "trigger": "招募获得或首次上阵时",
               "recipient": "自身",
               "duration": "成长",
-              "rule": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。"
+              "rule": "每有一名具有战斗部署效果的的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。"
             }
           ]
         },
@@ -16413,8 +16413,8 @@
       "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时使所有友方获得攻击徽章×1与职业副属性徽章×1。",
-        "elite": "退场时使所有友方获得攻击徽章×2与职业副属性徽章×2。",
+        "normal": "战斗中每次实际部署时使所有友方获得攻击徽章×1与职业副属性徽章×1。",
+        "elite": "战斗中每次实际部署时使所有友方获得攻击徽章×2与职业副属性徽章×2。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -16457,7 +16457,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "所有友方",
             "duration": "本场战斗",
@@ -16465,25 +16465,25 @@
             "params": {
               "sourceId": "OG_256"
             },
-            "text": "退场时使所有友方获得攻击徽章×1与职业副属性徽章×1。",
+            "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与职业副属性徽章×1。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时使所有友方临时获得攻击徽章×1，依职业配置的副属性装备×1。",
+            "adaptation": "战斗中每次实际部署时使所有友方临时获得攻击徽章×1，依职业配置的副属性装备×1。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "所有友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "所有友方",
             "duration": "本场战斗",
@@ -16491,19 +16491,19 @@
             "params": {
               "sourceId": "OG_256"
             },
-            "text": "退场时使所有友方获得攻击徽章×2与职业副属性徽章×2。",
+            "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与职业副属性徽章×2。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时使所有友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
+            "adaptation": "战斗中每次实际部署时使所有友方临时获得攻击徽章×2，依职业配置的副属性装备×2。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "所有友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -16526,18 +16526,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "所有友方干员",
               "duration": "本场战斗",
-              "rule": "退场时使所有友方获得攻击徽章×1与职业副属性徽章×1。"
+              "rule": "战斗中每次实际部署时使所有友方获得攻击徽章×1与职业副属性徽章×1。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "所有友方干员",
               "duration": "本场战斗",
-              "rule": "退场时使所有友方获得攻击徽章×2与职业副属性徽章×2。"
+              "rule": "战斗中每次实际部署时使所有友方获得攻击徽章×2与职业副属性徽章×2。"
             }
           ]
         },
@@ -18836,8 +18836,8 @@
       "role": "定位依据：该特质由技能技力、队伍事件或本体机制触发协同。具体特质：获得时，获得1件双模机械臂；身前一格友方若有休整期结束时，特质，自身拥有相同特质。规则动作：普通整备gain触发授予装备；普通整备prepEnd触发copyFrontNative；进阶整备gain触发授予装备；进阶整备prepEnd触发copyFrontNative。本体依据：TANK/守护者，MELEE，范围0-1；原生攻击388、攻速100、攻击间隔1.2秒、生命2268；选用「药物配置」Lv4，SP消耗9/初始0（INCREASE_WITH_TIME）：“治疗附近一定范围内的所有友军相当于塞雷娅攻击力95%的生命”。探针依据：单体0防/0抗最佳总DPS 351.8（本体351.8+召唤物0.0；急救）；单体800防/40抗最佳总DPS 17.6（本体17.6+召唤物0.0；急救）；四目标0防/0抗最佳总DPS 351.8（本体351.8+召唤物0.0；急救）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时召唤1名随机六星干员的作战投影。",
-        "elite": "退场时召唤2名随机六星干员的作战投影。",
+        "normal": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
+        "elite": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -18883,7 +18883,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -18891,25 +18891,25 @@
             "params": {
               "sourceId": "BGS_006"
             },
-            "text": "退场时召唤1名随机六星干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个随机六星原型。",
+            "adaptation": "战斗中每次实际部署时召唤1个随机六星原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -18917,19 +18917,19 @@
             "params": {
               "sourceId": "BGS_006"
             },
-            "text": "退场时召唤2名随机六星干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个随机六星原型。",
+            "adaptation": "战斗中每次实际部署时召唤2个随机六星原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -18952,18 +18952,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤1名随机六星干员的作战投影。"
+              "rule": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2名随机六星干员的作战投影。"
+              "rule": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。"
             }
           ]
         },
@@ -20006,8 +20006,8 @@
       "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：休整期结束时，本次休整期每获得1名干员，自身获得1枚普通攻击徽章（至多4枚）。规则动作：普通整备prepEnd触发按获得干员成长；进阶整备prepEnd触发按获得干员成长。本体依据：WARRIOR/斗士，MELEE，范围1-1；原生攻击475、攻速100、攻击间隔0.78秒、生命2250；选用「横扫架势」Lv4，SP消耗9/初始0（INCREASE_WITH_TIME）：“可以在下列状态和初始状态间切换：\n防御力-30%，攻击距离缩短，攻击力+35%，阻挡数+1，同时攻击阻挡的所有敌人，每秒恢复最大生命的4.0%”。探针依据：单体0防/0抗最佳总DPS 763.2（本体763.2+召唤物0.0；左勾扫拳）；单体800防/40抗最佳总DPS 38.2（本体38.2+召唤物0.0；左勾扫拳）；四目标0防/0抗最佳总DPS 960.6（本体960.6+召唤物0.0；左勾扫拳）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "友方退场（哥伦比亚）时，使自身获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
-        "elite": "友方退场（哥伦比亚）时，使自身获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+        "normal": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+        "elite": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -20052,7 +20052,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "友方退场",
+            "trigger": "友方战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
@@ -20060,23 +20060,23 @@
             "params": {
               "sourceId": "GVG_106"
             },
-            "text": "友方退场（哥伦比亚）时，使自身获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+            "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "哥伦比亚友方战斗部署时，使自身临时获得攻击徽章×2，依职业配置的副属性装备×2。同一效果每三秒触发一次，每场最多二十五次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "自身",
-            "triggerLabel": "友方退场",
+            "triggerLabel": "友方战斗部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "友方退场",
+            "trigger": "友方战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
@@ -20084,17 +20084,17 @@
             "params": {
               "sourceId": "GVG_106"
             },
-            "text": "友方退场（哥伦比亚）时，使自身获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+            "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
+            "adaptation": "哥伦比亚友方战斗部署时，使自身临时获得攻击徽章×4，依职业配置的副属性装备×4。同一效果每三秒触发一次，每场最多二十五次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "自身",
-            "triggerLabel": "友方退场",
+            "triggerLabel": "友方战斗部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -20117,18 +20117,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "友方退场",
+              "trigger": "友方战斗部署时",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方退场（哥伦比亚）时，使自身获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。"
+              "rule": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。"
             }
           ],
           "elite": [
             {
-              "trigger": "友方退场",
+              "trigger": "友方战斗部署时",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方退场（哥伦比亚）时，使自身获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。"
+              "rule": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。"
             }
           ]
         },
@@ -21747,8 +21747,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时为卡西米尔友方各增加5层护盾。",
-        "elite": "退场时为卡西米尔友方各增加5层护盾。",
+        "normal": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+        "elite": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -21791,7 +21791,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "卡西米尔友方",
             "duration": "本场战斗",
@@ -21799,7 +21799,7 @@
             "params": {
               "sourceId": "BGS_040"
             },
-            "text": "退场时为卡西米尔友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -21807,18 +21807,18 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为卡西米尔友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "卡西米尔友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "卡西米尔友方",
             "duration": "本场战斗",
@@ -21826,7 +21826,7 @@
             "params": {
               "sourceId": "BGS_040"
             },
-            "text": "退场时为卡西米尔友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -21834,12 +21834,12 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为卡西米尔友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "卡西米尔友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -21862,18 +21862,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "卡西米尔友方干员",
               "duration": "本场战斗",
-              "rule": "退场时为卡西米尔友方各增加5层护盾。"
+              "rule": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "卡西米尔友方干员",
               "duration": "本场战斗",
-              "rule": "退场时为卡西米尔友方各增加5层护盾。"
+              "rule": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。"
             }
           ]
         },
@@ -22724,8 +22724,8 @@
       "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时召唤3个随机维多利亚干员的作战投影。",
-        "elite": "退场时召唤6个随机维多利亚干员的作战投影。",
+        "normal": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
+        "elite": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -22768,7 +22768,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -22776,25 +22776,25 @@
             "params": {
               "sourceId": "BGS_079"
             },
-            "text": "退场时召唤3个随机维多利亚干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤3个随机维多利亚原型。",
+            "adaptation": "战斗中每次实际部署时召唤3个随机维多利亚原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -22802,19 +22802,19 @@
             "params": {
               "sourceId": "BGS_079"
             },
-            "text": "退场时召唤6个随机维多利亚干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤6个随机维多利亚原型。",
+            "adaptation": "战斗中每次实际部署时召唤6个随机维多利亚原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -22837,18 +22837,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤3个随机维多利亚干员的作战投影。"
+              "rule": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤6个随机维多利亚干员的作战投影。"
+              "rule": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。"
             }
           ]
         },
@@ -23842,8 +23842,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时召回本场战斗中最先倒下的2名哥伦比亚友方干员的作战投影。",
-        "elite": "退场时召回本场战斗中最先倒下的4名哥伦比亚友方干员的作战投影。",
+        "normal": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+        "elite": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -23887,7 +23887,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -23895,25 +23895,25 @@
             "params": {
               "sourceId": "BGS_012"
             },
-            "text": "退场时召回本场战斗中最先倒下的2名哥伦比亚友方干员的作战投影。",
+            "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召回本场最先倒下的2名哥伦比亚友方的原始幻影。",
+            "adaptation": "战斗中每次实际部署时召回本场最先倒下的2名哥伦比亚友方的原始幻影。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -23921,19 +23921,19 @@
             "params": {
               "sourceId": "BGS_012"
             },
-            "text": "退场时召回本场战斗中最先倒下的4名哥伦比亚友方干员的作战投影。",
+            "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召回本场最先倒下的4名哥伦比亚友方的原始幻影。",
+            "adaptation": "战斗中每次实际部署时召回本场最先倒下的4名哥伦比亚友方的原始幻影。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -23956,18 +23956,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召回本场战斗中最先倒下的2名哥伦比亚友方干员的作战投影。"
+              "rule": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召回本场战斗中最先倒下的4名哥伦比亚友方干员的作战投影。"
+              "rule": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。"
             }
           ]
         },
@@ -25670,8 +25670,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。",
-        "elite": "退场时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。",
+        "normal": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。",
+        "elite": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -25716,7 +25716,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "叙拉古友方",
             "duration": "本场战斗",
@@ -25724,25 +25724,25 @@
             "params": {
               "sourceId": "BGS_018"
             },
-            "text": "退场时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。",
+            "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时使叙拉古友方临时获得攻击徽章×5，依职业配置的副属性装备×5。",
+            "adaptation": "战斗中每次实际部署时使叙拉古友方临时获得攻击徽章×5，依职业配置的副属性装备×5。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "叙拉古友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "叙拉古友方",
             "duration": "本场战斗",
@@ -25750,19 +25750,19 @@
             "params": {
               "sourceId": "BGS_018"
             },
-            "text": "退场时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。",
+            "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时使叙拉古友方临时获得攻击徽章×10，依职业配置的副属性装备×10。",
+            "adaptation": "战斗中每次实际部署时使叙拉古友方临时获得攻击徽章×10，依职业配置的副属性装备×10。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "叙拉古友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -25785,18 +25785,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "叙拉古友方干员",
               "duration": "本场战斗",
-              "rule": "退场时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。"
+              "rule": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "叙拉古友方干员",
               "duration": "本场战斗",
-              "rule": "退场时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。"
+              "rule": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。"
             }
           ]
         },
@@ -27142,8 +27142,8 @@
       "role": "定位依据：该特质将招募、刷新或部署辅助限制为一次性动作。具体特质：获得时，获得1件反冲空降仓。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：SPECIAL/推击手，MELEE，范围1-1；原生攻击528、攻速100、攻击间隔1.2秒、生命1510；默认技能「惊爆射击」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=21；initSp=0；duration字段=-1）：立即将范围内所有敌人往身前方向中等力度地推开并晕眩1.9秒（撞到高台时晕眩时间延长为3秒）。若目标碰撞其他敌人，使其晕眩1.9秒。；原生天赋：技巧射击：攻击重量大于等于3的敌人时无视目标180的防御力。探针依据：单体0防/0抗最佳总DPS 105.6（本体105.6+召唤物0.0；惊爆射击）；单体800防/40抗最佳总DPS 5.3（本体5.3+召唤物0.0；惊爆射击）；四目标0防/0抗最佳总DPS 140.8（本体140.8+召唤物0.0；护身射击）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "退场时为随机1名友方各增加5层护盾。",
-        "elite": "退场时为随机2名友方各增加5层护盾。",
+        "normal": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
+        "elite": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -27186,7 +27186,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "随机友方",
             "duration": "本场战斗",
@@ -27194,7 +27194,7 @@
             "params": {
               "sourceId": "OG_221"
             },
-            "text": "退场时为随机1名友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -27202,18 +27202,18 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为随机1名友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "随机一名友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "随机友方",
             "duration": "本场战斗",
@@ -27221,7 +27221,7 @@
             "params": {
               "sourceId": "OG_221"
             },
-            "text": "退场时为随机2名友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -27229,12 +27229,12 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时为随机2名友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "随机一名友方干员",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -27257,18 +27257,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "随机一名友方干员",
               "duration": "本场战斗",
-              "rule": "退场时为随机1名友方各增加5层护盾。"
+              "rule": "战斗中每次实际部署时为随机1名友方各增加5层护盾。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "随机一名友方干员",
               "duration": "本场战斗",
-              "rule": "退场时为随机2名友方各增加5层护盾。"
+              "rule": "战斗中每次实际部署时为随机2名友方各增加5层护盾。"
             }
           ]
         },
@@ -27389,8 +27389,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "友方源卡退场效果触发2次；不增加其他产出。",
-        "elite": "友方源卡退场效果触发3次；不增加其他产出。",
+        "normal": "友方战斗部署效果触发2次；不增加其他产出。",
+        "elite": "友方战斗部署效果触发3次；不增加其他产出。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -27441,14 +27441,14 @@
             "params": {
               "sourceId": "FP1_031"
             },
-            "text": "友方源卡退场效果触发2次；不增加其他产出。",
+            "text": "友方战斗部署效果触发2次；不增加其他产出。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方源卡退场效果触发2次；不增加其他产出。",
+            "adaptation": "友方战斗部署效果触发2次；不增加其他产出。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -27467,14 +27467,14 @@
             "params": {
               "sourceId": "FP1_031"
             },
-            "text": "友方源卡退场效果触发3次；不增加其他产出。",
+            "text": "友方战斗部署效果触发3次；不增加其他产出。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方源卡退场效果触发3次；不增加其他产出。",
+            "adaptation": "友方战斗部署效果触发3次；不增加其他产出。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -27505,7 +27505,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方源卡退场效果触发2次；不增加其他产出。"
+              "rule": "友方战斗部署效果触发2次；不增加其他产出。"
             }
           ],
           "elite": [
@@ -27513,7 +27513,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方源卡退场效果触发3次；不增加其他产出。"
+              "rule": "友方战斗部署效果触发3次；不增加其他产出。"
             }
           ]
         },
@@ -27639,8 +27639,8 @@
       "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件护盾发生器。规则动作：普通整备gain触发授予装备；进阶整备gain触发授予装备。本体依据：CASTER/阵法术师，RANGED，范围x-1；原生攻击632、攻速100、攻击间隔2秒、生命1644；默认技能「守卫尖碑」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=28；initSp=10；duration字段=20）：在攻击范围内的近战部署位召唤一个可以阻挡敌人的方尖塔，方尖塔在出现时会对附近的敌人造成相当于攻击力200%的法术伤害，并使其晕眩1秒；原生天赋：沙原的庇护：技能未开启时，每秒恢复4%的最大生命。探针依据：单体0防/0抗最佳总DPS 168.5（本体168.5+召唤物0.0；守卫尖碑）；单体800防/40抗最佳总DPS 101.1（本体101.1+召唤物0.0；守卫尖碑）；四目标0防/0抗最佳总DPS 646.0（本体646.0+召唤物0.0；守卫尖碑）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，自身装备坚守盟约×1。\n退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
-        "elite": "招募获得或首次上阵时，自身装备坚守盟约×1。\n退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
+        "normal": "招募获得或首次上阵时，自身装备坚守盟约×1。\n战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+        "elite": "招募获得或首次上阵时，自身装备坚守盟约×1。\n战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -27683,7 +27683,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "gain",
+            "trigger": "战斗部署时",
             "sourceTrigger": "staticCombat",
             "recipient": "self",
             "duration": "permanentWornGear",
@@ -27700,11 +27700,11 @@
             "implementation": "supported",
             "unsupportedReason": null,
             "recipientLabel": "自身",
-            "triggerLabel": "招募获得或首次上阵时",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "穿戴"
           },
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -27712,7 +27712,7 @@
             "params": {
               "sourceId": "FP1_024"
             },
-            "text": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+            "text": "战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -27720,18 +27720,18 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
+            "adaptation": "战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "gain",
+            "trigger": "战斗部署时",
             "sourceTrigger": "staticCombat",
             "recipient": "self",
             "duration": "permanentWornGear",
@@ -27748,11 +27748,11 @@
             "implementation": "supported",
             "unsupportedReason": null,
             "recipientLabel": "自身",
-            "triggerLabel": "招募获得或首次上阵时",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "穿戴"
           },
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -27760,7 +27760,7 @@
             "params": {
               "sourceId": "FP1_024"
             },
-            "text": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
+            "text": "战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -27768,12 +27768,12 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
+            "adaptation": "战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
@@ -27796,30 +27796,30 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "招募获得或首次上阵时",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "自身",
               "duration": "穿戴",
               "rule": "招募获得或首次上阵时，自身装备坚守盟约×1。"
             },
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害。"
+              "rule": "战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害。"
             }
           ],
           "elite": [
             {
-              "trigger": "招募获得或首次上阵时",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "自身",
               "duration": "穿戴",
               "rule": "招募获得或首次上阵时，自身装备坚守盟约×1。"
             },
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。"
+              "rule": "战斗中每次实际部署时对场上所有单位造成相当于自身基础攻击40%的法术伤害，触发两次。"
             }
           ]
         },
@@ -28556,7 +28556,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -28564,25 +28564,25 @@
             "params": {
               "sourceId": "BOT_606"
             },
-            "text": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
+            "text": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
+            "adaptation": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -28590,26 +28590,26 @@
             "params": {
               "sourceId": "BOT_606"
             },
-            "text": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
+            "text": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
+            "adaptation": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
-        "elite": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
+        "normal": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。",
+        "elite": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -28656,18 +28656,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。"
+              "rule": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。"
+              "rule": "战斗中每次实际部署时对一个随机敌人造成相当于自身基础攻击200%的法术伤害，触发两次。"
             }
           ]
         },
@@ -28966,7 +28966,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -28974,25 +28974,25 @@
             "params": {
               "sourceId": "BGS_023"
             },
-            "text": "退场时召唤1名随机二星干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤1名随机二星干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个随机低本原型。",
+            "adaptation": "战斗中每次实际部署时召唤1个随机低本原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -29000,26 +29000,26 @@
             "params": {
               "sourceId": "BGS_023"
             },
-            "text": "退场时召唤2名随机二星干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤2名随机二星干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个随机低本原型。",
+            "adaptation": "战斗中每次实际部署时召唤2个随机低本原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时召唤1名随机二星干员的作战投影。",
-        "elite": "退场时召唤2名随机二星干员的作战投影。",
+        "normal": "战斗中每次实际部署时召唤1名随机二星干员的作战投影。",
+        "elite": "战斗中每次实际部署时召唤2名随机二星干员的作战投影。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -29066,18 +29066,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤1名随机二星干员的作战投影。"
+              "rule": "战斗中每次实际部署时召唤1名随机二星干员的作战投影。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2名随机二星干员的作战投影。"
+              "rule": "战斗中每次实际部署时召唤2名随机二星干员的作战投影。"
             }
           ]
         },
@@ -29371,7 +29371,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -29379,25 +29379,25 @@
             "params": {
               "sourceId": "BOT_537"
             },
-            "text": "退场时召唤一个机械支援单位（攻击960、生命2800）。",
+            "text": "战斗中每次实际部署时召唤一个机械支援单位（攻击960、生命2800）。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -29405,26 +29405,26 @@
             "params": {
               "sourceId": "BOT_537"
             },
-            "text": "退场时召唤一个机械支援单位（攻击1920、生命5600）。",
+            "text": "战斗中每次实际部署时召唤一个机械支援单位（攻击1920、生命5600）。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时召唤一个机械支援单位（攻击960、生命2800）。",
-        "elite": "退场时召唤一个机械支援单位（攻击1920、生命5600）。",
+        "normal": "战斗中每次实际部署时召唤一个机械支援单位（攻击960、生命2800）。",
+        "elite": "战斗中每次实际部署时召唤一个机械支援单位（攻击1920、生命5600）。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -29473,18 +29473,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤一个机械支援单位（攻击960、生命2800）。"
+              "rule": "战斗中每次实际部署时召唤一个机械支援单位（攻击960、生命2800）。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤一个机械支援单位（攻击1920、生命5600）。"
+              "rule": "战斗中每次实际部署时召唤一个机械支援单位（攻击1920、生命5600）。"
             }
           ]
         },
@@ -32115,7 +32115,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "gain",
+            "trigger": "战斗部署时",
             "sourceTrigger": "staticCombat",
             "recipient": "self",
             "duration": "permanentWornGear",
@@ -32132,11 +32132,11 @@
             "implementation": "supported",
             "unsupportedReason": null,
             "recipientLabel": "自身",
-            "triggerLabel": "招募获得或首次上阵时",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "穿戴"
           },
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "combatSummonAndHand",
             "duration": "本场战斗",
@@ -32144,7 +32144,7 @@
             "params": {
               "sourceId": "BGS_121"
             },
-            "text": "退场时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+            "text": "战斗中每次实际部署时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -32152,18 +32152,18 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个随机炎原型，并将对应干员的原始复制加入整备区。",
+            "adaptation": "战斗中每次实际部署时召唤1个随机炎原型，并将对应干员的原始复制加入整备区。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战斗召唤单位与整备区手牌",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "gain",
+            "trigger": "战斗部署时",
             "sourceTrigger": "staticCombat",
             "recipient": "self",
             "duration": "permanentWornGear",
@@ -32180,11 +32180,11 @@
             "implementation": "supported",
             "unsupportedReason": null,
             "recipientLabel": "自身",
-            "triggerLabel": "招募获得或首次上阵时",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "穿戴"
           },
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "combatSummonAndHand",
             "duration": "本场战斗",
@@ -32192,7 +32192,7 @@
             "params": {
               "sourceId": "BGS_121"
             },
-            "text": "退场时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+            "text": "战斗中每次实际部署时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -32200,19 +32200,19 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个随机炎原型，并将对应干员的原始复制加入整备区。",
+            "adaptation": "战斗中每次实际部署时召唤2个随机炎原型，并将对应干员的原始复制加入整备区。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战斗召唤单位与整备区手牌",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，自身装备坚守盟约×1。\n退场时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
-        "elite": "招募获得或首次上阵时，自身装备坚守盟约×1。\n退场时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+        "normal": "招募获得或首次上阵时，自身装备坚守盟约×1。\n战斗中每次实际部署时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
+        "elite": "招募获得或首次上阵时，自身装备坚守盟约×1。\n战斗中每次实际部署时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -32276,30 +32276,30 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "招募获得或首次上阵时",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "自身",
               "duration": "穿戴",
               "rule": "招募获得或首次上阵时，自身装备坚守盟约×1。"
             },
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战斗召唤单位与整备区手牌",
               "duration": "本场战斗",
-              "rule": "退场时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。"
+              "rule": "战斗中每次实际部署时召唤1个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。"
             }
           ],
           "elite": [
             {
-              "trigger": "招募获得或首次上阵时",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "自身",
               "duration": "穿戴",
               "rule": "招募获得或首次上阵时，自身装备坚守盟约×1。"
             },
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战斗召唤单位与整备区手牌",
               "duration": "本场战斗",
-              "rule": "退场时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。"
+              "rule": "战斗中每次实际部署时召唤2个随机炎干员的作战投影，并将对应干员的原始复制加入整备区。"
             }
           ]
         },
@@ -33932,7 +33932,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -33940,25 +33940,25 @@
             "params": {
               "sourceId": "KAR_005"
             },
-            "text": "退场时召唤1个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤1个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -33966,26 +33966,26 @@
             "params": {
               "sourceId": "KAR_005"
             },
-            "text": "退场时召唤1个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤1个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时召唤1个作战支援单位。",
-        "elite": "退场时召唤1个作战支援单位。",
+        "normal": "战斗中每次实际部署时召唤1个作战支援单位。",
+        "elite": "战斗中每次实际部署时召唤1个作战支援单位。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -34033,18 +34033,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤1个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤1个作战支援单位。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤1个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤1个作战支援单位。"
             }
           ]
         },
@@ -34144,14 +34144,14 @@
             "params": {
               "sourceId": "BGS_078"
             },
-            "text": "普通攻击后随机触发另一名在场友方的退场效果；每六秒一次，每场最多三次。",
+            "text": "普通攻击后随机复制另一名在场友方的战斗部署效果；每六秒一次，每场最多三次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "普通攻击后随机触发另一名在场友方的退场效果；每六秒一次，每场最多三次。",
+            "adaptation": "普通攻击后随机复制另一名在场友方的战斗部署效果；每六秒一次，每场最多三次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -34170,14 +34170,14 @@
             "params": {
               "sourceId": "BGS_078"
             },
-            "text": "普通攻击后随机触发另一名在场友方的退场效果，随机两次；每六秒一次，每场最多三次。",
+            "text": "普通攻击后随机复制另一名在场友方的战斗部署效果，复制两次；每六秒一次，每场最多三次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "普通攻击后随机触发另一名在场友方的退场效果，随机两次；每六秒一次，每场最多三次。",
+            "adaptation": "普通攻击后随机复制另一名在场友方的战斗部署效果，复制两次；每六秒一次，每场最多三次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -34188,8 +34188,8 @@
         ]
       },
       "nativeTrait": {
-        "normal": "普通攻击后随机触发另一名在场友方的退场效果；每六秒一次，每场最多三次。",
-        "elite": "普通攻击后随机触发另一名在场友方的退场效果，随机两次；每六秒一次，每场最多三次。",
+        "normal": "普通攻击后随机复制另一名在场友方的战斗部署效果；每六秒一次，每场最多三次。",
+        "elite": "普通攻击后随机复制另一名在场友方的战斗部署效果，复制两次；每六秒一次，每场最多三次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -34241,7 +34241,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "普通攻击后随机触发另一名在场友方的退场效果；每六秒一次，每场最多三次。"
+              "rule": "普通攻击后随机复制另一名在场友方的战斗部署效果；每六秒一次，每场最多三次。"
             }
           ],
           "elite": [
@@ -34249,7 +34249,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "普通攻击后随机触发另一名在场友方的退场效果，随机两次；每六秒一次，每场最多三次。"
+              "rule": "普通攻击后随机复制另一名在场友方的战斗部署效果，复制两次；每六秒一次，每场最多三次。"
             }
           ]
         },
@@ -34340,7 +34340,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -34348,25 +34348,25 @@
             "params": {
               "sourceId": "OG_216"
             },
-            "text": "退场时召唤2个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤2个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤2个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -34374,26 +34374,26 @@
             "params": {
               "sourceId": "OG_216"
             },
-            "text": "退场时召唤2个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤2个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤2个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时召唤2个作战支援单位。",
-        "elite": "退场时召唤2个作战支援单位。",
+        "normal": "战斗中每次实际部署时召唤2个作战支援单位。",
+        "elite": "战斗中每次实际部署时召唤2个作战支援单位。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -34441,18 +34441,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤2个作战支援单位。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤2个作战支援单位。"
             }
           ]
         },
@@ -34544,7 +34544,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -34552,25 +34552,25 @@
             "params": {
               "sourceId": "EX1_534"
             },
-            "text": "退场时召唤2个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤2个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤2个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "战斗部署时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -34578,26 +34578,26 @@
             "params": {
               "sourceId": "EX1_534"
             },
-            "text": "退场时召唤2个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤2个作战支援单位。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤2个作战支援单位。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "战斗中每次实际部署时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时召唤2个作战支援单位。",
-        "elite": "退场时召唤2个作战支援单位。",
+        "normal": "战斗中每次实际部署时召唤2个作战支援单位。",
+        "elite": "战斗中每次实际部署时召唤2个作战支援单位。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -34646,18 +34646,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤2个作战支援单位。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "战斗中每次实际部署时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2个作战支援单位。"
+              "rule": "战斗中每次实际部署时召唤2个作战支援单位。"
             }
           ]
         },
@@ -35166,7 +35166,7 @@
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "被击倒时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -35174,25 +35174,25 @@
             "params": {
               "sourceId": "BGS_008"
             },
-            "text": "退场时召唤2名随机带有退场效果干员的作战投影。",
+            "text": "获得时装备1件突袭盟约。\n被击倒时召唤2名随机具有战斗部署效果的干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤2个随机退场效果原型。",
+            "adaptation": "获得时装备1件突袭盟约。\n被击倒时召唤2个随机退场效果原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "被击倒时",
             "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "每次退场（每场最多三次）",
+            "trigger": "被击倒时",
             "sourceTrigger": "darkmoonCombat",
             "recipient": "战场",
             "duration": "本场战斗",
@@ -35200,26 +35200,26 @@
             "params": {
               "sourceId": "BGS_008"
             },
-            "text": "退场时召唤4名随机带有退场效果干员的作战投影。",
+            "text": "获得时装备1件突袭盟约。\n被击倒时召唤4名随机具有战斗部署效果的干员的作战投影。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "退场时召唤4个随机退场效果原型。",
+            "adaptation": "获得时装备1件突袭盟约。\n被击倒时召唤4个随机退场效果原型。",
             "adapter": [
               "darkmoonCombat"
             ],
             "recipientLabel": "战场单位",
-            "triggerLabel": "每次退场（每场最多三次）",
+            "triggerLabel": "被击倒时",
             "durationLabel": "本场战斗"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "退场时召唤2名随机带有退场效果干员的作战投影。",
-        "elite": "退场时召唤4名随机带有退场效果干员的作战投影。",
+        "normal": "获得时装备1件突袭盟约。\n被击倒时召唤2名随机具有战斗部署效果的干员的作战投影。",
+        "elite": "获得时装备1件突袭盟约。\n被击倒时召唤4名随机具有战斗部署效果的干员的作战投影。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -35266,18 +35266,18 @@
         "workshop": {
           "normal": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "被击倒时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤2名随机带有退场效果干员的作战投影。"
+              "rule": "获得时装备1件突袭盟约。 被击倒时召唤2名随机具有战斗部署效果的干员的作战投影。"
             }
           ],
           "elite": [
             {
-              "trigger": "每次退场（每场最多三次）",
+              "trigger": "被击倒时",
               "recipient": "战场单位",
               "duration": "本场战斗",
-              "rule": "退场时召唤4名随机带有退场效果干员的作战投影。"
+              "rule": "获得时装备1件突袭盟约。 被击倒时召唤4名随机具有战斗部署效果的干员的作战投影。"
             }
           ]
         },

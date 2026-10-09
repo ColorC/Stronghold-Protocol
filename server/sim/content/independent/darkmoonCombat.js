@@ -71,32 +71,40 @@ const rules = {
 };
 export const DARKMOON_COMBAT_SUPPORTED_IDS = Object.freeze(Object.keys(rules));
 export const DARKMOON_COMBAT_RULES = Object.freeze(rules);
+export const hasDarkmoonDeploymentPayload = sourceId => !!rules[sourceId]?.retire && sourceId !== 'BGS_008';
 
 export function darkmoonCombatEligibilityRules(sourceId) {
   const r=rules[sourceId];if(!r)return [];
   const faction=r.faction||r.retire?.faction||r.retire?.fallen||r.startStrike||r.aura?.faction;
   const match={...(faction?{faction:FACTIONS[faction]}:{}),...(r.requireCover?{keywordGear:'坚守盟约'}:{})};
   if(!faction&&!r.requireCover&&!r.target?.startsWith('adjacent'))return [];
-  return [{behavior:'darkmoonCombat',params:{scope:'boardonly',targets:r.target==='adjacentSelf'?'adjacentRadius':'all',radius:1.5,match,excludeSelf:!!(r.excludeSelf||r.aura)}}];
+  const deploymentReactor=['EX1_531','GVG_106','BGS_112'].includes(sourceId);
+  const summonedActor=['BGS_017','BGS_021','BGS_071'].includes(sourceId);
+  const roles={BGS_012:{event:'deploy',actor:'deployedSource',actorKinds:['op'],targets:'topAttackFactionOperators',recipientKinds:['op'],includeSelf:true},BGS_019:{event:'battleStartEnemySpawn',actor:'firstEnemy',actorKinds:['enemy'],targets:'factionCount',countKinds:['op','token']},BGS_080:{event:'overkill',actor:'attacker',actorKinds:['op'],targets:'otherFactionOperators',recipientKinds:['op','token'],excludeSelf:true}};
+  const role=roles[sourceId];
+  const recipientKinds=role?.recipientKinds||(r.retire?.faction||r.retire?.randomAlly||r.retire?.shield?['op','token']:undefined);
+  return [{behavior:'darkmoonCombat',params:{scope:'boardonly',targets:role?.targets||(deploymentReactor?(sourceId==='BGS_112'?'adjacentToDeploymentActor':'sourceOperator'):(summonedActor?(sourceId==='BGS_021'?'newSummonedToken':'sourceOperator'):(r.target==='adjacentSelf'?'adjacentRadius':'all'))),event:role?.event||(deploymentReactor||sourceId==='BGS_012'?'deploy':summonedActor?'summon':undefined),actor:role?.actor||(deploymentReactor?'deployedFriendly':sourceId==='BGS_012'?'deployedSource':summonedActor?'newSummonedToken':undefined),actorKinds:role?.actorKinds||(deploymentReactor?['op','token']:sourceId==='BGS_012'?['op']:summonedActor?['token']:undefined),recipientKinds, countKinds:role?.countKinds, includeSelf:role?.includeSelf, radius:1.5,match,excludeSelf:!!(r.excludeSelf||r.aura||role?.excludeSelf)}}];
 }
 
 export function darkmoonCombatMetadata(sourceId, elite=false) {
+  if(sourceId==='BGS_075')return {trigger:'招募获得或首次上阵时',recipient:'自身',duration:'本局成长',text:`招募具有战斗部署效果的干员时，自身获得${elite?2:1}枚攻击徽章与${elite?2:1}枚伤害徽章。`,sourceId,implementation:'supported',adapter:['darkmoonPrep'],event:'gain',actor:'recruited-deployment-source',targets:'self'};
   const r=rules[sourceId]; if(!r)return null;
   const m=elite?2:1;
   const number=x=>Array.isArray(x)?x[elite?1:0]:x;
-  const buffText=v=>`攻击徽章×${v[0]*m}${v[1]?`，依职业配置的副属性装备×${v[1]*m}`:''}`;
+  const buffText=v=>`攻击徽章×${v[0]*m}${v[1]?`，伤害徽章×${v[1]*m}`:''}`;
   let text='',trigger='战斗中',recipient='自身',duration='本场战斗';
-  if(r.retire) {
-    const p=r.retire;trigger='每次退场（每场最多三次）';recipient=p.randomAlly?'随机友方':p.faction?FACTIONS[p.faction]+'友方':p.buff?'所有友方':'战场';
-    text=p.coin?`退场时将${p.coin*m}张罗德岛采购券加入装备栏；使用一张可获得一枚金币。`:p.buff?`退场时使${recipient}获得${buffText(p.buff)}。`:p.shield?`退场时为${p.randomAlly?`随机${m}名友方`:recipient}各增加${p.shield}层护盾。`:p.damage?`退场时${p.allCombatants?'对场上所有单位':'对一个随机敌人'}造成相当于自身基础攻击${p.damage*100}%的法术伤害${elite?'，触发两次':''}。`:p.fallen?`退场时召回本场最先倒下的${number(p.count)}名${FACTIONS[p.fallen]}友方的原始幻影。`:`退场时召唤${p.attackCount?'按当前攻击成长计算，最多七个':number(p.count)}个${p.random?('随机'+(FACTIONS[p.random]||(p.random==='tier2'?'低本':p.random==='legendary'?'六星':'退场效果'))+'原型'):'作战支援单位'}${p.handCopy?'，并将对应干员的原始复制加入整备区':''}。`;
+    if(r.retire) {
+      const p=r.retire,deploy=sourceId!=='BGS_008',at=deploy?'战斗中每次实际部署时':'被击倒时';trigger=deploy?'战斗部署时':'被击倒时';recipient=p.randomAlly?'随机友方':p.faction?FACTIONS[p.faction]+'友方':p.buff?'所有友方':'战场';
+      if(deploy&&p.damage){trigger='战斗部署后首次普通攻击时';}
+    text=p.coin?`${at}将${p.coin*m}张罗德岛采购券加入装备栏；使用一张可获得一枚金币。`:p.buff?`${at}使${recipient}获得${buffText(p.buff)}。`:p.shield?`${at}为${p.randomAlly?`随机${m}名友方`:recipient}各增加${p.shield}层护盾。`:p.damage?`${at}${p.allCombatants?'对场上所有单位':'对一个随机敌人'}造成相当于自身基础攻击${p.damage*100}%的法术伤害${elite?'，触发两次':''}。`:p.fallen?`${at}召回本场最先倒下的${number(p.count)}名${FACTIONS[p.fallen]}友方的原始幻影。`:`${at}召唤${p.attackCount?'按当前攻击成长计算，最多七个':number(p.count)}个${p.random?('随机'+(FACTIONS[p.random]||(p.random==='tier2'?'低本':p.random==='legendary'?'六星':'战斗部署效果'))+'原型'):'作战支援单位'}${p.handCopy?'，并将对应干员的原始复制加入整备区':''}。`;
   } else if(r.buff&&r.event) {
     trigger={summon:'召唤友方支援单位',death:'友方退场',kill:'友方击倒敌人',attack:'友方攻击',attacked:'友方受到攻击',shieldLayersBroken:'友方累计破裂五层护盾'}[r.event];
     recipient={self:'自身',actor:'触发效果的友方',all:'所有友方',adjacentActor:'退场干员附近的友方',adjacentSelf:'自身附近的友方'}[r.target];
     duration=r.permanent?'本局成长':'本场战斗';text=`${trigger}${r.faction?'（'+FACTIONS[r.faction]+'）':''}${r.requireCover?'（需要坚守盟约）':''}时，使${recipient}${r.permanent?'装备'+buffText(r.buff):'获得'+buffText(r.buff)+'的战斗增益'}${r.shield?'及五层护盾':''}。同一效果每三秒触发一次，每场最多二十五次。`;
   } else if(r.event==='damaged')text=`受到伤害后召唤一个携带坚守盟约的机械支援单位${elite?'，支援单位的攻击和生命翻倍':''}；每三秒一次，每场最多七次。`;
   else if(r.summonMultiplier)text=`卡牌效果召唤的支援单位数量变为${number(r.summonMultiplier)}倍；不复制装备或成长。`;
-  else if(r.retireMultiplier)text=`友方源卡退场效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
-  else if(r.echo)text=`普通攻击后随机触发另一名在场友方的退场效果${elite?'，随机两次':''}；每六秒一次，每场最多三次。`;
+  else if(r.retireMultiplier)text=`友方战斗部署效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
+  else if(r.echo)text=`普通攻击后随机复制另一名在场友方的战斗部署效果${elite?'，复制两次':''}；每六秒一次，每场最多三次。`;
   else if(r.startStrike)text=`首批敌人入场时，随机造成${elite?'两次':'一次'}法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。`;
   else if(r.attackRamp)text=`每次攻击临时提高攻击倍率${elite?30:20}%，最多叠加至额外${elite?300:200}%；同一效果每三秒触发一次。`;
   else if(r.overkill)text=r.overkill==='spill'?`攻击击倒敌人时，把超过其生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}。`:r.overkill==='strike'?`攻击超杀时对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害。`:r.overkill==='summon'?`攻击超杀时召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}。`:`攻击超杀时使其他维多利亚友方获得${buffText(r.buff)}。`;
@@ -106,36 +114,42 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   else if(r.aura)text=`在场时使其他维多利亚友方获得${buffText(r.aura.buff)}；自身退场后失效。`;
   // These descriptions spell out the actual replay body or token recipe. They do not alter
   // the native rules above; elite forms scale the spawned body even when its count is fixed.
-  if(sourceId==='BGS_006') text=`退场时召唤${number(r.retire.count)}名随机六星干员的作战投影。`;
-  else if(sourceId==='BGS_008') text=`退场时召唤${number(r.retire.count)}名随机带有退场效果干员的作战投影。`;
-  else if(sourceId==='BGS_012') text=`退场时召回本场战斗中最先倒下的${number(r.retire.count)}名哥伦比亚友方干员的作战投影。`;
+  if(sourceId==='BGS_006') text=`战斗中每次实际部署时召唤${number(r.retire.count)}名随机六星干员的作战投影。`;
+  else if(sourceId==='BGS_008') text=`被击倒时召唤${number(r.retire.count)}名随机带有战斗部署效果干员的作战投影；获得时装备1件突袭盟约。`;
+  else if(sourceId==='BGS_012') text=`战斗中每次实际部署时复制场上攻击力最高的${number(r.retire.count)}名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。`;
   else if(sourceId==='BGS_017') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}的战斗增益。`;
   else if(sourceId==='BGS_021') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}与职业副属性徽章×${r.buff[1]*m}的战斗增益。`;
-  else if(sourceId==='BGS_023') text=`退场时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
-  else if(sourceId==='BGS_061') text=`退场时召唤维多利亚作战支援单位${number(r.retire.count)}个；每个攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='BGS_023') text=`战斗中每次实际部署时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
+  else if(sourceId==='BGS_061') text=`战斗中每次实际部署时召唤维多利亚作战支援单位${number(r.retire.count)}个；每个攻击${120*m}、生命${350*m}。`;
   else if(sourceId==='BOT_218') text=`受到伤害后召唤一个哥伦比亚机械支援单位（攻击${240*m}、生命${1050*m}），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。`;
-  else if(sourceId==='BOT_312') text=`退场时召唤3个哥伦比亚机械支援单位；每个攻击${120*m}、生命${350*m}。`;
-  else if(sourceId==='BOT_537') text=`退场时召唤一个机械支援单位（攻击${960*m}、生命${2800*m}）。`;
-  else if(sourceId==='CFM_316') text=`退场时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='BOT_312') text=`战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='BOT_537') text=`战斗中每次实际部署时召唤一个机械支援单位（攻击${960*m}、生命${2800*m}）。`;
+  else if(sourceId==='CFM_316') text=`战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击${120*m}、生命${350*m}。`;
+  else if(sourceId==='EX1_531'||sourceId==='GVG_106') { trigger=`${FACTIONS[r.faction]}友方战斗部署时`; text=`${FACTIONS[r.faction]}友方战斗部署时，使自身获得${buffText(r.buff)}。`; }
+  else if(sourceId==='BGS_112') { trigger='携带坚守盟约的友方战斗部署时'; text='携带坚守盟约的友方战斗部署时，使该干员附近友方获得'+buffText(r.buff)+'。'; }
+  else if(sourceId==='FP1_031') text=`友方战斗部署效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
+  else if(sourceId==='BGS_078') text=`普通攻击后随机复制另一名在场友方的战斗部署效果${elite?'两次':''}；每六秒一次，每场最多三次。`;
+  else if(sourceId==='BOT_606') text=`战斗部署后，下一次普通攻击时对一个随机敌人造成自身基础攻击200%的法术伤害${elite?'，触发两次':''}；每次部署各排队一次。`;
+  else if(sourceId==='FP1_024') text=`战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害${elite?'，触发两次':''}；每次部署各排队一次。`;
   if(r.windfury)text=`攻击后追加${elite?3:1}次普通攻击；每三秒一轮。${text}`;
   if(r.weakest)text+='优先攻击当前可攻击范围内攻击力最低的敌人。';
-  return {trigger,recipient,duration,text,sourceId,implementation:'supported',adapter:['darkmoonCombat']};
+  return {trigger,recipient,duration,text,sourceId,implementation:'supported',adapter:['darkmoonCombat'],...(r.retire?{event:sourceId==='BGS_008'?'knockoutPayload':'deploymentPayload',actor:sourceId==='BGS_008'?'killed-source':'deployed-source',targets:recipient}:{}),...(['EX1_531','GVG_106','BGS_112'].includes(sourceId)?{event:'allyDeployment',actor:'deployed-ally',targets:sourceId==='BGS_112'?'adjacent-allies':'owner'}:{})};
 }
 
 export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) {
   const byUid=new Map(pieces.map(p=>[p.uid,p]));
   const sourceOf=u=>catalog.operators?.[u?.def?.raw?.darkmoonNativeChessId] || (u?.kind==='token'?sourceOf(u.ownerUnit):catalog.operators?.[byUid.get(u?.uid)?.chessId]);
-  const identity=u=>u?.mem?.darkmoonFactionTags || u?.def?.raw?.darkmoonFactionTags || (u?.kind==='token'?identity(u.ownerUnit):nativeFactions(byUid.get(u?.uid)||{chessId:u?.defId},catalog));
+  const identity=u=>u?.mem?.darkmoonFactionTags || u?.def?.darkmoonFactionTags || u?.def?.raw?.darkmoonFactionTags || (u?.kind==='token'?identity(u.ownerUnit):nativeFactions(byUid.get(u?.uid)||{chessId:u?.defId},catalog));
   const eligible=(u,owner,tribe=null)=>!!u&&u.side==='ally'&&own(u,owner)&&['op','token'].includes(u.kind)&&(!tribe||identity(u).includes(FACTIONS[tribe]||tribe));
   const members=(owner,tribe=null)=>battle.allyUnits.filter(u=>alive(u)&&eligible(u,owner,tribe)).sort(order);
   const enemies=()=>battle.enemies.filter(alive).sort((a,b)=>a.x-b.x||a.id-b.id);
   const pick=a=>a.length?a[Math.floor(battle.rng()*a.length)]:null;
-  const hasCover=u=>u?.mem?.darkmoonCover || (byUid.get(u?.uid)?.equipment||[]).some(x=>catalog.equipment[x.id]?.params?.gearId==='oath-cover');
+  const hasCover=u=>u?.mem?.darkmoonCover || u?.def?.darkmoonCover || u?.def?.raw?.darkmoonCover || (byUid.get(u?.uid)?.equipment||[]).some(x=>catalog.equipment[x.id]?.params?.gearId==='oath-cover');
   const entries=battle.allyUnits.filter(u=>u.kind==='op').flatMap(unit=>{
     const op=sourceOf(unit),piece=byUid.get(unit.uid);
     const sources=[{id:op?.sourceRefs?.darkmoon19_2?.id,elite:!!(piece?.elite||op?.elite),instanceKey:''},
       ...(piece?.attachments||[]).flatMap((a,index)=>a.id==='darkmoon-magnetic'&&a.state?.sourceId==='BOT_312'?[{id:a.state.sourceId,elite:!!a.state.elite,instanceKey:`:magnetic:${index}`}]:[])];
-    return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,seen:new Set(),stacks:new Map()}));
+    return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map()}));
   });
   const results=battle.independentDarkmoonResults={growth:[],recruits:[],coins:[]};
   const trace=battle.independentDarkmoonTrace=[];
@@ -193,24 +207,34 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       return token;
     };
   }
-  const retireMultiplier=owner=>Math.max(1,...entries.filter(e=>e.rule.retireMultiplier&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.retireMultiplier[e.elite?1:0]));
+  const retireMultiplier=owner=>Math.max(1,...entries.filter(e=>e.rule.retireMultiplier&&e.id!=='FP1_031'&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.retireMultiplier[e.elite?1:0]));
+  const deploymentMultiplier=owner=>Math.max(1,...entries.filter(e=>e.id==='FP1_031'&&alive(e.unit)&&own(e.unit,owner)).map(e=>e.rule.retireMultiplier[e.elite?1:0]));
   const normalOps=()=>Object.values(catalog.operators).filter(op=>!op.elite&&op.recruitable!==false&&(op.source?.normalChess?.visible!==false||op.source?.normalChess?.nativeImport?.playable===true));
   const randomDef=(e,kind)=>{
     let ops=normalOps();
     if(FACTIONS[kind])ops=ops.filter(op=>op.nativeFactionTags?.includes(FACTIONS[kind])&&(kind!=='ELEMENTAL'||op.chessId!==sourceOf(e.unit)?.chessId));
     else if(kind==='tier2')ops=ops.filter(op=>op.tier===2);
     else if(kind==='legendary')ops=ops.filter(op=>Number(op.source?.normalChess?.rarity)>=6);
-    else if(kind==='deathrattle')ops=ops.filter(op=>rules[op.sourceRefs?.darkmoon19_2?.id]?.retire);
+    else if(kind==='deathrattle')ops=ops.filter(op=>hasDarkmoonDeploymentPayload(op.sourceRefs?.darkmoon19_2?.id));
     const op=pick(ops);if(!op)return null;
     const raw=op.source.normalChess,normalized=battle.data.getChess(op.chessId,{skillIndex:raw.skill?.index??0,moduleId:'none'});
     const stats=state?.growthMode==='levels'?levelBodyStats({chessId:op.chessId,growthMode:'levels',growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw):{...raw.stats};
     return {op,def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',spine:'token_10030_mlyss_wtrman',avatar:'token_10030_mlyss_wtrman',name:raw.name+'的流形',stats,position:'MELEE',darkmoonSourceId:op.sourceRefs?.darkmoon19_2?.id,darkmoonNativeChessId:op.chessId}};
   };
+  const phantomDef=(e,u)=>{
+    const piece=byUid.get(u?.uid),op=sourceOf(u),elite=!!(piece?.elite||op?.elite||u.def.golden||u.def.raw?.golden);
+    const nativeId=elite?(op?.eliteChessId||piece?.chessId||op?.chessId||u?.def?.raw?.darkmoonNativeChessId):(piece?.chessId||op?.baseChessId||op?.chessId||u?.def?.raw?.darkmoonNativeChessId);
+    if(!nativeId)return null;
+    const raw=(elite?op?.source?.eliteChess||op?.source?.normalChess:op?.source?.normalChess)||u.def.raw;
+    const normalized=battle.data.getChess(nativeId,{skillIndex:raw.skill?.index??0,moduleId:'none'});
+    const stats=state?.growthMode==='levels'?levelBodyStats({chessId:nativeId,elite,growthMode:'levels',growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw):{...raw.stats};
+    return {def:{...normalized,id:'token_10030_mlyss_wtrman',baseId:'token_10030_mlyss_wtrman',spine:'token_10030_mlyss_wtrman',avatar:'token_10030_mlyss_wtrman',name:raw.name+'的流形',stats,position:'MELEE',golden:elite,darkmoonNativeChessId:nativeId},tags:identity(u)};
+  };
   const tokenDef=(e,p)=>{
     const nativeId=p.token==='beast'?'token_10028_vigil_wolf':p.token==='pirate'?'token_10040_siege2_vlion':'token_10030_mlyss_wtrman';
     const record=battle.tokenDef(nativeId,e.unit)||{id:nativeId,rangeGrid:[[0,0],[0,1]]};
     const [a,h]=p.stats, m=scale(e);
-    return {...record,id:nativeId,name:p.token==='beast'?'协同狼群':p.token==='pirate'?'黄金盟誓':'作战流形',profession:'TOKEN',position:'MELEE',dmgType:'phys',stats:{...record.stats,maxHp:350*h*m,atk:120*a*m,def:120,res:0,cost:0,blockCnt:p.cover?2:1,bat:1.5,aspd:100},skill:null,skills:[],talents:[],trait:'',traitBb:{},tokens:[]};
+    return {...record,id:nativeId,name:p.token==='beast'?'协同狼群':p.token==='pirate'?'黄金盟誓':'作战流形',darkmoonCover:!!p.cover,profession:'TOKEN',position:'MELEE',dmgType:'phys',stats:{...record.stats,maxHp:350*h*m,atk:120*a*m,def:120,res:0,cost:0,blockCnt:p.cover?2:1,bat:1.5,aspd:100},skill:null,skills:[],talents:[],trait:'',traitBb:{},tokens:[]};
   };
   const spawn=(e,def,count,tags=[],p={})=>{
     const out=[],limit=Math.max(0,7-battle.allyUnits.filter(u=>u.kind==='token'&&alive(u)&&own(u,e.unit)&&u.mem.darkmoonSummon).length);
@@ -239,27 +263,73 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         installKeywordGear(battle,{catalog,pieces:[copyPiece],units:[token]});
         const childRule=rules[clean.darkmoonSourceId];
         if(childRule&&(e.depth||0)<3){
-          const child={unit:token,id:clean.darkmoonSourceId,rule:childRule,elite:copyPiece.elite,depth:(e.depth||0)+1,instanceKey:'',last:-Infinity,uses:0,retireUses:0,seen:new Set(),stacks:new Map()};
+          const child={unit:token,id:clean.darkmoonSourceId,rule:childRule,elite:copyPiece.elite,depth:(e.depth||0)+1,instanceKey:'',last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map()};
           entries.push(child);installEntry(child);
+          // The token's deploy event preceded its source entry installation. Resolve
+          // its own eligible payload now without emitting a second actor event.
+          if(childRule.retire&&child.id!=='BGS_008'&&child.deployUses<3){child.deploySeqs.add(token.deploySeq??0);child.deployUses++;runDeploymentPayload(child,'deploy');}
         }
         if(p.immediate)battle.forceAttack(token);
       }
     }
     note(e,'summon',out);return out;
   };
-  const retireAction=(e,echo=false)=>{
+  const retireAction=(e,kind='retire')=>{
     const p=e.rule.retire;if(!p)return;
     const m=scale(e);let targets=[];
     if(p.buff){targets=members(e.unit,p.faction);for(const u of targets)equipment(e,u,...p.buff);}
     if(p.shield){const pool=members(e.unit).filter(u=>u!==e.unit);targets=p.randomAlly?[]:members(e.unit,p.faction);if(p.randomAlly)for(let i=0;i<m&&pool.length;i++){const chosen=pick(pool);targets.push(chosen);pool.splice(pool.indexOf(chosen),1);}for(const u of targets)shield(e,u,p.shield);}
     if(p.damage)for(let i=0;i<(p.hits?.[e.elite?1:0]||1);i++){targets=p.allCombatants?[...members(e.unit),...enemies()]:[pick(enemies())].filter(Boolean);for(const u of targets)battle.dealDamage(e.unit,u,{amount:e.unit.base.atk*p.damage,type:'arts',tags:['darkmoon','retiringEffect']});}
     if(p.coin)results.coins.push({sourceUid:e.unit.uid,quantity:p.coin*m,inventory:true});
-    if(p.fallen){for(const x of fallen.filter(x=>own(x.unit,e.unit)&&x.tags.includes(FACTIONS[p.fallen])).slice(0,p.count[e.elite?1:0]))spawn(e,x.def,1,x.tags);}
+    if(p.fallen&&e.id==='BGS_012'){
+      const targets=members(e.unit,p.fallen).filter(u=>u.kind==='op').sort((a,b)=>b.s.atk-a.s.atk||order(a,b)).slice(0,p.count[e.elite?1:0]);
+      for(const target of targets){const phantom=phantomDef(e,target);if(phantom)spawn(e,phantom.def,1,phantom.tags);}
+    }else if(p.fallen){for(const x of fallen.filter(x=>own(x.unit,e.unit)&&x.tags.includes(FACTIONS[p.fallen])).slice(0,p.count[e.elite?1:0]))spawn(e,x.def,1,x.tags);}
     if(p.token){const count=p.attackCount?Math.min(7,Math.max(1,Math.floor(e.unit.s.atk/Math.max(1,e.unit.base.atk)*2))):(p.count[e.elite?1:0]);spawn(e,tokenDef(e,p),count,p.token==='beast'?['叙拉古']:p.token==='pirate'?['维多利亚']:['哥伦比亚'],p);}
     if(p.random)for(let i=0;i<p.count[e.elite?1:0];i++){
       const x=randomDef(e,p.random);if(!x)continue;const created=spawn(e,x.def,1,x.op.nativeFactionTags||[]);if(p.handCopy&&created.length)results.recruits.push({sourceUid:e.unit.uid,chessId:x.op.chessId,pristine:true});
     }
-    note(e,echo?'retireEcho':'retire',targets);
+    note(e,kind,targets);
+  };
+  const deploymentEntriesFor=unit=>entries.filter(e=>e.unit===unit&&e.rule.retire&&e.id!=='BGS_008');
+  const runDeploymentPayload=(e,kind='deploymentPayload')=>{
+    if(e.rule.retire?.damage&&kind!=='deployEcho'){e.pendingDamage=(e.pendingDamage||0)+deploymentMultiplier(e.unit);note(e,'deployQueued',[]);return;}
+    for(let i=0;i<deploymentMultiplier(e.unit);i++)retireAction(e,kind);
+  };
+  const pendingInitial=[];
+  const deploymentActor=(actor,initial=false)=>{
+    if(!actor||actor.side!=='ally'||actor.removed)return;
+    battle.emit('darkmoonDeployActor',{actor,initial,kind:actor.kind,factions:identity(actor)});
+    for(const e of deploymentEntriesFor(actor)){
+      const seq=actor.deploySeq??0;
+      if(e.deploySeqs.has(seq)||e.deployUses>=3||!alive(actor))continue;
+      e.deploySeqs.add(seq);e.deployUses++;runDeploymentPayload(e,'deploy');
+    }
+  };
+  battle.on('deploy',event=>{
+    if(event.move||event.unit?.side!=='ally')return;
+    if(event.initial){pendingInitial.push(event.unit);return;}
+    deploymentActor(event.unit,false);
+  });
+  // Opening deployments are evaluated as one batch so late-placed amplifiers see the entire opening field.
+  battle.on('battleStart',()=>{
+    // Installation can happen after Battle.start has already emitted initial deploy
+    // hooks (e.g. runtime adapters registered by a mode). Read the authoritative
+    // opening field as well; deploySeq dedupe keeps captured events from repeating.
+    const initial=[...new Set([...pendingInitial,...battle.allyUnits.filter(u=>u.side==='ally'&&u.alive&&u.deployed&&(u.kind==='op'||u.kind==='token'))])];pendingInitial.length=0;
+    for(const actor of initial)if(alive(actor))battle.emit('darkmoonDeployActor',{actor,initial:true,kind:actor.kind,factions:identity(actor)});
+    for(const actor of initial)for(const e of deploymentEntriesFor(actor)){
+      const seq=actor.deploySeq??0;if(e.deploySeqs.has(seq)||e.deployUses>=3||!alive(actor))continue;
+      e.deploySeqs.add(seq);e.deployUses++;runDeploymentPayload(e,'deploy');
+    }
+  },{priority:1000});
+  battle.echoDarkmoonDeployment=(owner,faction=null)=>{
+    const candidate=pick(entries.filter(e=>e.id!=='BGS_008'&&e.rule.retire&&e.unit!==owner&&alive(e.unit)&&eligible(e.unit,owner,faction)&&Number(e.echoes||0)<6));
+    if(!candidate)return null;
+    candidate.echoes++;
+    const repetitions=deploymentMultiplier(candidate.unit);
+    for(let i=0;i<repetitions;i++)retireAction(candidate,'deployEcho');
+    return {unit:candidate.unit,repetitions};
   };
   // Deathrattle echo adapters must execute the exact same retirement payload
   // as a real retirement, while leaving the chosen operator alive. Keep
@@ -271,7 +341,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     if(!e)return null;
     e.echoes=(e.echoes||0)+1;
     const repetitions=retireMultiplier(e.unit);
-    for(let i=0;i<repetitions;i++)retireAction(e,true);
+    for(let i=0;i<repetitions;i++)retireAction(e,'retireEcho');
     return {unit:e.unit,repetitions};
    };
   battle.on('death',({unit,reason})=>{
@@ -287,14 +357,18 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   },{priority:100});
   function installEntry(e){
     const {unit,rule:r}=e;
-    if(r.retire)battle.on('death',({unit:who,reason})=>{
-      if(who!==unit||!['killed','retreat','raid','merchant'].includes(reason)||e.retireUses>=3||e.seen.has(unit.deploySeq))return;
+    if(r.retire?.damage&&e.id!=='BGS_008')battle.on('attack',event=>{
+      if(event.attacker!==unit||!attackEvent(event)||!alive(unit)||!(e.pendingDamage>0))return;
+      e.pendingDamage--;retireAction(e,'deploy');
+    },{owner:unit});
+    if(r.retire&&e.id==='BGS_008')battle.on('death',({unit:who,reason})=>{
+      if(who!==unit||reason!=='killed'||e.retireUses>=3||e.seen.has(unit.deploySeq))return;
       e.seen.add(unit.deploySeq);e.retireUses++;const repeat=retireMultiplier(unit);
       battle.after(0,()=>{for(let i=0;i<repeat;i++)retireAction(e);});
     },{owner:unit});
     if(r.echo)battle.on('attack',event=>{
       if(event.attacker!==unit||!attackEvent(event)||!alive(unit)||!ready(e,6,3))return;
-      for(let i=0;i<scale(e);i++){const x=pick(entries.filter(x=>x!==e&&x.rule.retire&&alive(x.unit)&&own(x.unit,unit)));if(x){for(let j=0;j<retireMultiplier(x.unit);j++)retireAction(x,true);note(e,'echo',[x.unit]);}}
+      for(let i=0;i<scale(e);i++){const x=battle.echoDarkmoonDeployment(unit);if(x)note(e,'deployEcho',[x.unit]);}
     },{owner:unit});
     if(r.aura)auras.push(e);
     if(r.startStrike&&!e.depth){let done=false;battle.on('enemySpawn',()=>{if(done||!alive(unit))return;done=true;for(let i=0;i<(e.elite?2:1);i++){const target=pick(enemies());if(target)battle.dealDamage(unit,target,{amount:unit.base.atk*.4*members(unit,'DRAGON').length,type:'arts',tags:['darkmoon','combatStart']});}note(e,'startStrike');},{owner:unit});}
@@ -322,15 +396,17 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     },{owner:unit});
     if(r.event){
       let broken=0;
-      const name=r.event==='summon'?'deploy':r.event==='attacked'?'beforeAttack':r.event;
+      const deploymentReactor=['EX1_531','GVG_106','BGS_112'].includes(e.id);
+      const name=deploymentReactor?'darkmoonDeployActor':r.event==='summon'?'deploy':r.event==='attacked'?'beforeAttack':r.event;
       battle.on(name,event=>{
         if(!alive(unit))return;
-        let actor=r.event==='kill'?event.killer:r.event==='attack'?event.attacker:r.event==='damaged'?event.target:event.unit;
+        let actor=deploymentReactor?event.actor:r.event==='kill'?event.killer:r.event==='attack'?event.attacker:r.event==='damaged'?event.target:event.unit;
         let actors=r.event==='attacked'&&event.attacker?.side==='enemy'?event.targets||[]:actor?[actor]:[];
         if(r.event==='summon')actors=actors.filter(u=>u.kind==='token'&&!event.initial&&!event.move);
+        if(deploymentReactor)actors=actors.filter(u=>['op','token'].includes(u.kind));
         if(r.event==='attack'&&!attackEvent(event))return;
         if(r.event==='kill'&&event.victim?.side!=='enemy')return;
-        if(r.event==='death'&&!['killed','retreat','merchant'].includes(event.reason))return;
+        if(r.event==='death'&&!deploymentReactor)return;
         if(r.event==='damaged'&&!(event.amount>0))return;
         actors=actors.filter(u=>eligible(u,unit,r.faction)&&(!r.selfOnly||u===unit)&&(!r.excludeSelf||u!==unit)&&(!r.requireCover||hasCover(u)));
         if(!actors.length)return;

@@ -112,3 +112,19 @@ test('current table omits retired and unassigned equipment while keeping catalog
     assert.ok(!equipmentRows.some((row) => row.name === name), `${name} must not be a current issuance row`);
   }
 });
+
+test('current combat trigger roles and warband chains describe deployment payloads and strict knockout gear',()=>{
+  const roles=new Map(bySection('干员').map(row=>[row.name,row.role]));
+  assert.equal(roles.get('裁度'),'击倒召唤');
+  assert.equal(roles.get('缪尔赛思'),'部署原始幻影');
+  assert.equal(roles.get('刺玫'),'部署召唤');
+  assert.equal(roles.get('华法琳'),'部署团队增益');
+  assert.equal(roles.get('巫恋'),'部署效果放大');
+  assert.equal(roles.get('贾维'),'部署效果复制');
+  const gear=bySection('装备').find(row=>row.name==='不屈盟约');
+  assert.match(gear?.basis||gear?.normal||'',/被击倒时判定.*撤回不会触发.*替身/);
+  for(const archetype of sourceReference.archetypes){
+    if(['哥伦比亚召唤与机械支援','维多利亚商店与召唤','叙拉古召唤与攻击成长'].includes(archetype.name))
+      assert.doesNotMatch(archetype.chain,/退场|倒下|死亡/);
+  }
+});

@@ -160,7 +160,7 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
         ${onConfigure && g.steamOptions?.length ? html`<${HammerPicker} g=${g} item=${item} busy=${busy} catalog=${catalog} onSave=${(ids) => onConfigure(item.uid, ids)} />` : null}</div>`
       : html`<p class="t-dim dempty">${note || '尚未穿戴装备：把库存格子拖到干员身上即可穿戴'}</p>`}
     ${attachments.length ? html`<div class="ix-dgear__att"><b>附加效果</b>${attachments.map((a,index) => {
-      const record=catalog.attachments?.[a.id]||{}, source=a.id==='darkmoon-magnetic'?`${a.state?.sourceName||'来源干员'}：${a.state?.sourceEffect||record.effect||'附加本局退场效果。'}`:record.effect||'';
+      const record=catalog.attachments?.[a.id]||{}, source=a.id==='darkmoon-magnetic'?`${a.state?.sourceName||'来源干员'}：${a.state?.sourceEffect||record.effect||'附加本局战斗部署效果。'}`:record.effect||'';
       return html`<span key=${`${a.id}-${index}`} title=${source}><${GearIcon} id=${a.id} catalog=${catalog} plain=${true} /><${GameText} text=${record.name||'附加组件'} catalog=${catalog} />${a.state?.sourceName?` · ${a.state.sourceName}`:''}<small>${source}</small></span>`;
     })}</div>` : null}
     ${rows.some((r) => r.permit) ? html`<${TermNotes} texts=${['交接凭证']} catalog=${catalog} />` : null}

@@ -4,11 +4,15 @@ import addon from '../../data/independent-darkmoon-game-text-addon.json' with { 
 import blueprints from '../../data/independent-darkmoon-blueprints.json' with { type: 'json' };
 import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPrep.js';
 import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
-import { textsFor, toLevels } from '../../tools/independent-darkmoon-text-formatter.mjs';
+import { compactWording, textsFor, toLevels } from '../../tools/independent-darkmoon-text-formatter.mjs';
 
 const byId = new Map(blueprints.entries.map(entry => [entry.sourceId, entry]));
 const byAddonId = new Map(Object.values(addon.operators).map(row => [row.sourceId, row]));
 const visibleText = /undefined|NaN|\[object Object\]|\b(?:BGS|BOT|CFM|DAL|DS1|EX1|FP1|GVG|ICC|KAR|LOE|LOOT|NEW1|OG|TRL|ULD)_\d+|newSiracusaRecruit|selectedFriendly|allFriendlyDragonOperators|otherFriendly|randomOtherFriendly|originalBattlecryOutputs|battlecryMultiplier|原型|副属性装备/;
+
+test('zero attack badges compact cleanly while preserving nonzero damage badge quantities', () => {
+  assert.equal(compactWording('获得攻击徽章×0及伤害徽章×2。'), '获得伤害徽章×2。');
+});
 
 test('all 101 source entries regenerate both visible variants from executable preparation/combat rules', () => {
   assert.equal(blueprints.entries.length, 101);

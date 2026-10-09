@@ -89,7 +89,7 @@ export const workshopShowcaseNarration = {
     {
       "sourceKey": "native-mechanic-chess_char_3_15_a",
       "key": "workshop-high-tech-death-engine",
-      "text": "巫恋让友方的源卡退场效果触发两次，放大刺玫这类召唤单位。高科技功能核心改变联动效率，不只是提高面板。"
+      "text": "巫恋让友方的战斗部署效果触发两次，放大刺玫这类召唤单位。高科技功能核心改变联动效率，不只是提高面板。"
     },
     {
       "sourceKey": "native-mechanic-chess_char_3_12_a",
