@@ -20,7 +20,7 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   const response = res(); handler(req, response, '/js/independent/client-worker.js'); assert.equal(response.status, 200);
   assert.equal(response.body, `import "${base}/js/independent/client-worker.js";\n`);
   for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js', '/js/hostingWait.js', '/resonance-references.zip']) assert.equal(handler(req, res(), path), false);
-  for (const path of ['/resonance.html', '/resonance/api/catalog', '/js/resonance/main.js', '/css/resonance.css',
+  for (const path of ['/resonance/api/catalog', '/js/resonance/main.js', '/css/resonance.css',
     '/js/ui/fieldHost.js', '/js/ui/fallbackField.js', '/js/render/app.js', '/js/render/interp.js',
     '/js/render/resonanceFloors.js', '/js/render/board3d/scene.js']) {
     assert.equal(handler(req, res(), path), false, 'resonance host, fallback, and renderer modules must resolve from the active release');
@@ -31,6 +31,73 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   }
   assert.equal(handler({ method: 'POST' }, res(), '/assets/x.png'), false);
   assert.equal(createStaticDelivery()(req, res(), '/assets/x.png'), false);
+});
+
+test('external resonance entry pins every Preact importer to one release and keeps HEAD metadata exact', () => {
+  const sourceHtml = readFileSync(new URL('../../public/resonance.html', import.meta.url), 'utf8');
+  const handler = createStaticDelivery({ base });
+  const get = res();
+  assert.equal(handler({ method: 'GET' }, get, '/resonance.html'), true);
+  assert.equal(get.status, 200);
+  assert.equal(get.headers['Content-Type'], 'text/html; charset=utf-8');
+  assert.equal(get.headers['Cache-Control'], 'no-cache');
+  assert.equal(get.headers['Content-Length'], Buffer.byteLength(get.body));
+
+  const renderedHtml = get.body.toString('utf8');
+  const importMap = JSON.parse(renderedHtml.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]);
+  const map = importMap.imports;
+  const pinnedPreact = `${base}/vendor/preact.module.js`;
+  const pinnedHooks = `${base}/vendor/hooks.module.js`;
+  const pinnedHtm = `${base}/vendor/htm.module.js`;
+  assert.equal(map['./vendor/preact.module.js'], pinnedPreact);
+  assert.equal(map['./vendor/hooks.module.js'], pinnedHooks);
+  assert.equal(map['./vendor/htm.module.js'], pinnedHtm);
+  assert.equal(map.preact, pinnedPreact);
+  assert.equal(map['preact/hooks'], pinnedHooks);
+  assert.equal(map.htm, pinnedHtm);
+  assert.equal(map['/Stronghold-Protocol/4ed1ad32ec10da15c23f9d7939dade603950759b/vendor/preact.module.js'], pinnedPreact);
+  const resolveImport = runInNewContext(`(imports, scopes, specifier, referrer, documentUrl) => {
+    const normalized = Object.entries(imports).map(([key, value]) => [
+      key.startsWith('.') || key.startsWith('/') ? new URL(key, documentUrl).href : key,
+      new URL(value, documentUrl).href,
+    ]);
+    const resolvedSpecifier = specifier.startsWith('.') || specifier.startsWith('/')
+      ? new URL(specifier, referrer).href : specifier;
+    const scope = Object.entries(scopes).map(([key, value]) => [new URL(key, documentUrl).href, value])
+      .filter(([key]) => referrer.startsWith(key)).sort(([a], [b]) => b.length - a.length)[0]?.[1] ?? {};
+    const scoped = Object.entries(scope).map(([key, value]) => [
+      key.startsWith('.') || key.startsWith('/') ? new URL(key, documentUrl).href : key,
+      new URL(value, documentUrl).href,
+    ]);
+    return scoped.find(([key]) => key === resolvedSpecifier)?.[1]
+      ?? normalized.find(([key]) => key === resolvedSpecifier)?.[1] ?? null;
+  }`, { URL });
+
+  for (const href of ['https://host.example/resonance.html', 'https://host.example/stronghold/resonance.html']) {
+    const entry = new URL(href);
+    const moduleUrl = new URL('./js/resonance/main.js', entry);
+    const relativePreact = new URL('../../vendor/preact.module.js', moduleUrl);
+    const importMapPreactKey = new URL('./vendor/preact.module.js', entry);
+    assert.equal(relativePreact.pathname, importMapPreactKey.pathname);
+    assert.equal(new URL(map['./vendor/preact.module.js'], entry).href, pinnedPreact);
+    assert.equal(new URL(map['/Stronghold-Protocol/4ed1ad32ec10da15c23f9d7939dade603950759b/vendor/preact.module.js'], entry).href, pinnedPreact);
+    assert.equal(resolveImport(map, importMap.scopes, '../../vendor/preact.module.js', moduleUrl.href, entry.href), pinnedPreact);
+    assert.equal(resolveImport(map, importMap.scopes, '/Stronghold-Protocol/4ed1ad32ec10da15c23f9d7939dade603950759b/vendor/preact.module.js', `${base}/vendor/hooks.module.js`, entry.href), pinnedPreact);
+    assert.equal(resolveImport(map, importMap.scopes, 'preact', moduleUrl.href, entry.href), pinnedPreact);
+    assert.equal(resolveImport(map, importMap.scopes, 'preact/hooks', moduleUrl.href, entry.href), pinnedHooks);
+    assert.equal(resolveImport(map, importMap.scopes, 'htm', moduleUrl.href, entry.href), pinnedHtm);
+  }
+
+  const head = res();
+  assert.equal(handler({ method: 'HEAD' }, head, '/resonance.html'), true);
+  assert.equal(head.status, 200);
+  assert.equal(head.headers['Content-Length'], get.headers['Content-Length']);
+  assert.equal(head.body, undefined);
+
+  const local = createStaticDelivery();
+  assert.equal(local({ method: 'GET' }, res(), '/resonance.html'), false);
+  assert.match(sourceHtml, /"preact"\s*:\s*"\.\/vendor\/preact\.module\.js"/);
+  assert.equal(local({ method: 'GET' }, res(), '/independent.html'), false);
 });
 
 test('resonance entry resources stay relative at root and under the stronghold namespace', () => {

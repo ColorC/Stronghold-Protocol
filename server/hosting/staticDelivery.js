@@ -1,10 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const PREFIXES = ['/js/', '/css/', '/vendor/', '/fonts/', '/assets/', '/data/', '/shared/', '/sim/', '/media/'];
 const LOCAL_BOOTSTRAP = '/js/hostingBootstrap.js';
 const LOCAL_WAIT = '/js/hostingWait.js';
 const LOCAL_RESONANCE_DOWNLOAD = '/resonance-references.zip';
+const RESONANCE_ENTRY = '/resonance.html';
+const LEGACY_PREACT_IMPORT = '/Stronghold-Protocol/4ed1ad32ec10da15c23f9d7939dade603950759b/vendor/preact.module.js';
 const LOCAL_RESONANCE = new Set([
   '/css/resonance.css',
   '/js/ui/fieldHost.js',
@@ -73,6 +76,41 @@ function validateAssetSources(assetSources) {
   }
 }
 
+function resonanceEntryWithPinnedVendor(html, prefix) {
+  const script = /<script\s+type="importmap">([\s\S]*?)<\/script>/i.exec(html);
+  if (!script) throw new Error('resonance.html is missing its import map');
+  const parsed = JSON.parse(script[1]);
+  if (!parsed || !parsed.imports || Array.isArray(parsed.imports) || typeof parsed.imports !== 'object') {
+    throw new Error('resonance.html import map is invalid');
+  }
+  const imports = { ...parsed.imports };
+  const scopes = { ...(parsed.scopes ?? {}) };
+  const preact = `${prefix}/vendor/preact.module.js`;
+  const hooks = `${prefix}/vendor/hooks.module.js`;
+  const htm = `${prefix}/vendor/htm.module.js`;
+  Object.assign(imports, {
+    preact,
+    'preact/hooks': hooks,
+    htm,
+    './vendor/preact.module.js': preact,
+    './vendor/hooks.module.js': hooks,
+    './vendor/htm.module.js': htm,
+    [LEGACY_PREACT_IMPORT]: preact,
+  });
+  // The historical hooks module uses an origin-rooted import. Since it is
+  // served from the pinned external release, that specifier resolves against
+  // the CDN origin rather than the page origin. Scope the normalized URL to
+  // this module tree without assuming a hostname.
+  const externalHooksScope = `${prefix}/vendor/`;
+  const legacyPreactFromExternalOrigin = new URL(LEGACY_PREACT_IMPORT, `${prefix}/`).href;
+  scopes[externalHooksScope] = {
+    ...(scopes[externalHooksScope] ?? {}),
+    [legacyPreactFromExternalOrigin]: preact,
+  };
+  const updated = JSON.stringify({ ...parsed, imports, scopes });
+  return Buffer.from(html.replace(script[0], `<script type="importmap">${updated}</script>`));
+}
+
 /** Only a deployer-supplied, native Git revision URL can become a static origin. */
 export function createStaticDelivery({ base = '', assetSources = {} } = {}) {
   validateAssetSources(assetSources);
@@ -82,8 +120,20 @@ export function createStaticDelivery({ base = '', assetSources = {} } = {}) {
   if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash
       || !/\/[a-f0-9]{40}\/?$/.test(parsed.pathname)) throw new Error('SP_STATIC_BASE must be an HTTPS URL ending in the full Git commit');
   const prefix = parsed.href.replace(/\/$/, '');
+  const resonanceHtmlPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public/resonance.html');
   return function handle(req, res, pathname) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+    if (pathname === RESONANCE_ENTRY) {
+      const html = fs.readFileSync(resonanceHtmlPath, 'utf8');
+      const body = resonanceEntryWithPinnedVendor(html, prefix);
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Content-Length': body.length,
+      });
+      res.end(req.method === 'HEAD' ? undefined : body);
+      return true;
+    }
     if (pathname === LOCAL_BOOTSTRAP || pathname === LOCAL_WAIT) return false;
     if (pathname === LOCAL_RESONANCE_DOWNLOAD) return false;
     if (pathname.startsWith('/js/resonance/') || pathname.startsWith('/js/render/') || LOCAL_RESONANCE.has(pathname)) return false;
