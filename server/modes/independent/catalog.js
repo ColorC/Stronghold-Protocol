@@ -223,9 +223,10 @@ export function makeDarkmoonSupport(spec, data = getData()) {
   const variant = token?.variants?.[prototypeOwnerChessId] || token;
   const prototypeStats = variant?.stats || token?.stats;
   if (!token || !prototypeStats || !prototypeOwnerChessId) throw new Error(`BAD_DARKMOON_SUPPORT_PROTOTYPE:${id}`);
-  const scale = { attack: Number(spec.prototypeScale?.attack ?? 0.4), health: Number(spec.prototypeScale?.health ?? 0.4), defense: Number(spec.prototypeScale?.defense ?? 0.4) };
-  const attack = Math.round(Math.max(1, Number(spec.attack) || 1) * Number(prototypeStats.atk || 0) * scale.attack);
-  const health = Math.round(Math.max(1, Number(spec.health) || 1) * Number(prototypeStats.maxHp || 0) * scale.health);
+  const pointScale = { attack: Number(spec.prototypeScale?.attack ?? 0.4), health: Number(spec.prototypeScale?.health ?? 0.4), defense: Number(spec.prototypeScale?.defense ?? 0.4) };
+  const scale = { attack: pointScale.attack * Math.max(1, Number(spec.attack) || 1), health: pointScale.health * Math.max(1, Number(spec.health) || 1), defense: pointScale.defense };
+  const attack = Math.round(Number(prototypeStats.atk || 0) * scale.attack);
+  const health = Math.round(Number(prototypeStats.maxHp || 0) * scale.health);
   const defense = Math.round(Number(prototypeStats.def || 0) * scale.defense);
   const variantSkill = variant?.skill || token.skill || null;
   const normalChess = { ...clone(token), chessId: id, baseId: id, goldenId: null, isGolden: false, tier: 1, techLevel: 1, identifier: -1, isHidden: true, isDiy: false, visible: false,

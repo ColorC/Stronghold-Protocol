@@ -102,11 +102,13 @@ test('shield growth needs five broken layers, shares the native shield concept, 
   b.dealDamage(enemy,ally,{amount:1,type:'true',isAttack:true});
   assert.equal(installed.trace.length,1);assert.ok(unit.s.atk>unit.base.atk);
 });
-test('Khadgar doubles actual native summons without doubling their equipment, and uses the strongest multiplier only',()=>{
+test('Khadgar leaves native summons alone and multiplies only Workshop projections',()=>{
   const {b,unit}=fixture('DAL_575',false,['DAL_575']);
   const before=b.allyUnits.filter(u=>u.kind==='token').length;
   b.spawnToken(unit,'token_10028_vigil_wolf',11,6,{anySource:true});
-  assert.equal(b.allyUnits.filter(u=>u.kind==='token').length-before,2);
+  assert.equal(b.allyUnits.filter(u=>u.kind==='token').length-before,1,'native skill deployment limit is not replaced');
+  const projection=fixture('BGS_061',false,['DAL_575']);
+  assert.equal(projection.b.allyUnits.filter(u=>u.kind==='token'&&u.mem.darkmoonSummon).length,2,'Workshop projection count uses the printed multiplier');
   assert.equal(b.independentRewards,undefined);
 });
 test('deployment payload never triggers on withdrawal and is bounded across actual redeployments',()=>{
@@ -199,18 +201,45 @@ for(const growthMode of ['badges','levels'])test(`random original copies keep th
   const copy=h.b.allyUnits.find(u=>u.kind==='token');assert.ok(copy);
   assert.equal(copy.def.raw.darkmoonNativeChessId,raw.chessId);assert.equal(copy.skill.id,raw.skill.skillId);
   assert.equal(copy.base.atk,levelBodyStats({chessId:raw.chessId,growthMode,growthLevel:1,skillIndex:raw.skill?.index??0,moduleId:'none'},catalog,raw).atk,'pristine copies do not inherit preset max-level stats in training mode');
-  assert.ok(copy.s.aspd>copy.base.aspd,'the original native talent remains installed');
+  assert.ok(copy.s.aspd>copy.base.aspd,JSON.stringify({message:'the original native talent remains installed',aspd:copy.s.aspd,base:copy.base.aspd,kind:copy.kind,defId:copy.defId,native:copy.def.raw?.darkmoonNativeChessId,skills:copy.def.raw?.skills?.map(x=>x.skillId),buffs:copy.buffs.map(x=>x.key),kit:Object.keys(copy.kit||{}),talents:copy.def.talents}));
   for(let i=0;i<12;i++){h.b.forceAttack(copy,[enemy]);h.run(.3);}
   assert.ok(copy.skill.activations>0,JSON.stringify({reason:'the native attack-recovery skill must activate',position:[copy.x,copy.y],sp:copy.skill.sp,cost:copy.skill.spCost,kind:copy.skill.kind,attacks:copy.stats.attacks,skill:copy.def.skill}));
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
   h.invariants();
+});
+test('a short-range Saria can project a real ranged Caster onto a legal ranged tile',()=>{
+  const data=getData(),saria=structuredClone(data.chess.chess_char_5_11_a),indigo=structuredClone(data.chess.chess_char_1_17_a);
+  const pieces=[{uid:'saria',chessId:saria.chessId,row:10,col:5,elite:false}];
+  const blockers=[],blockerDefs={};
+  for(let r=9;r<=11;r++)for(let c=4;c<=6;c++)if(r!==10||c!==5){
+    const id=`fixture_blocker_${blockers.length}_a`,rec=chessRec({id,name:id,stats:{atk:1,maxHp:1e8,def:0,cost:0}});
+    blockers.push({uid:id,chessId:id,row:r,col:c,elite:false});
+    // Each blocker is a real deployed battle unit occupying one tile around the short-range owner.
+    blockerDefs[id]=rec;
+  }
+  const catalog={config:{maxShopLevel:6},equipment:{},operators:{
+    [saria.chessId]:{chessId:saria.chessId,name:'塞雷娅',tier:6,source:{normalChess:saria},nativeFactionTags:['哥伦比亚'],sourceRefs:{darkmoon19_2:{id:'BGS_023'}}},
+    [indigo.chessId]:{chessId:indigo.chessId,name:'深靛',tier:2,source:{normalChess:indigo},nativeFactionTags:['伊比利亚'],recruitable:true},
+  }};
+  const allPieces=[...pieces,...blockers];
+  const h=makeBattle({defs:{chess:{[saria.chessId]:saria,[indigo.chessId]:indigo,...blockerDefs},enemies:{probe:enemyRec({key:'probe',hp:1e8,atk:0,def:0,speed:0})}},units:allPieces,content:'none',autoFinish:false,extraContent:[b=>installDarkmoonCombat(b,{catalog,pieces,state:{growthMode:'badges'}})]});
+  h.run(.2);h.spawn('probe',{pos:[10,8]});
+  const copy=h.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw?.darkmoonNativeChessId===indigo.chessId);
+  assert.ok(copy,'the selected Caster body is deployed');
+  assert.equal(copy.def.position,'RANGED');
+  assert.equal(copy.def.profession,'CASTER');
+  assert.equal(copy.def.spine,indigo.spine||indigo.assets?.spine||indigo.chessId);
+  assert.equal(copy.def.skill?.id || copy.def.skill?.skillId,indigo.skill.skillId);
+  assert.ok(Math.abs(copy.tileR-10)+Math.abs(copy.tileC-5)>1,'placement is not constrained to Saria’s one-tile native range');
+  assert.equal(h.b.grid.canStand(copy.tileR,copy.tileC,{ranged:true}),true);
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
 test('advanced source effects preserve recipients, repeats and token counts rather than uniformly doubling everything',()=>{
   for(const elite of [false,true]){
     const rover=fixture('BOT_218',elite);
     rover.b.dealDamage(rover.enemy,rover.unit,{amount:50,type:'true',isAttack:true});
     const summons=rover.b.allyUnits.filter(u=>u.kind==='token');
-    assert.equal(summons.length,1);assert.equal(summons[0].base.atk,elite?480:240);
+    assert.equal(summons.length,1);assert.equal(summons[0].base.atk,elite?536:268);
     const nadina=fixture('BGS_040',elite);nadina.b.retreat(nadina.unit);nadina.h.run(.1);
     assert.equal(nadina.ally.buffs.filter(x=>x.key.startsWith('darkmoon:shield:')).reduce((n,x)=>n+(x.shieldHits||0),0),5);
     const ripper=fixture('BGS_060',elite),before=ripper.unit.stats.attacks;
@@ -236,7 +265,7 @@ test('magnetic modules retain their own source quality and stack distinct retire
   assert.equal(b.relocate(ally,12,2),true);
   b.retreat(unit);h.run(.1);
   const tokens=b.allyUnits.filter(u=>u.kind==='token');
-  assert.ok(tokens.length<=6&&tokens.length>=5);assert.equal(tokens.filter(u=>u.base.atk===120).length,3);assert.ok(tokens.filter(u=>u.base.atk===240).length>=2);
+  assert.ok(tokens.length<=6&&tokens.length>=5);assert.equal(tokens.filter(u=>u.base.atk===134).length,3);assert.ok(tokens.filter(u=>u.base.atk===268).length>=2);
   assert.equal(installed.trace.filter(t=>t.kind==='deploy'&&t.sourceId==='BOT_312').length,2);
   assert.deepEqual(unit.mem.darkmoonDeploymentSources,['BOT_312']);
   assert.deepEqual(unitInfo(unit).darkmoonDeploymentSources,['BOT_312'],'snapshot exposes the installed attachment payload source');
@@ -249,32 +278,32 @@ test('snapshot deployment eligibility is derived from installed payloads and exc
   assert.deepEqual(unitInfo(payload).darkmoonDeploymentSources,['OG_256']);
   assert.equal(unitInfo(ko).darkmoonDeploymentSources,undefined,'裁度 has knockout-only payload');
   const m=fixture('BGS_012',false,['OG_256']);
-  const phantom=m.b.allyUnits.find(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman');
+  const phantom=m.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw?.darkmoonProjection);
   assert.ok(phantom);assert.equal(unitInfo(phantom).darkmoonDeploymentSources,undefined,'original Muelsyse phantom does not install workshop deployment payloads');
 });
 
 test('Muelsyse copies top-attack Columbian operators, including itself, without recursive workshop payloads',()=>{
   const f=fixture('BGS_012',false,['BGS_061']);
-  const copies=f.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman');
+  const copies=f.b.allyUnits.filter(u=>u.kind==='token'&&u.def.raw?.darkmoonProjection);
   assert.equal(copies.length,2);
   assert.ok(copies.every(u=>!f.installed.entries.some(e=>e.unit===u)),'phantoms do not recursively receive workshop payloads');
   assert.deepEqual(copies.map(u=>u.base.atk).sort((a,b)=>a-b),[100,100]);
   assert.ok(copies.some(u=>(u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId)==='fixture_0_a'),'the source operator can copy its own original phantom');
   assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
   const advanced=fixture('BGS_012',true,['BGS_061','OG_256'],null,[],['BGS_061']);
-  const advancedCopies=advanced.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman');
-  assert.equal(advancedCopies.length,3,'four requested copies respect actual eligible target count');
-  assert.deepEqual(advancedCopies.map(u=>u.base.atk).sort((a,b)=>a-b),[100,150,150]);
+  const advancedCopies=advanced.b.allyUnits.filter(u=>u.kind==='token'&&u.def.raw?.darkmoonProjection);
+  assert.equal(advancedCopies.length,4,'all four eligible targets receive one requested copy');
+  assert.deepEqual(advancedCopies.map(u=>u.base.atk).sort((a,b)=>a-b),[100,100,150,150]);
   assert.equal(advancedCopies.filter(u=>u.base.atk===150).length,2,'elite targets use their elite original stats while ordinary targets keep ordinary stats');
   const ranked=fixture('BGS_012',false,['BGS_061']);
   const [source,best,other]=ranked.b.allyUnits.filter(u=>u.kind==='op');
   best.base.atk=500;best.markDirty();
-  const before=ranked.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman').length;
+  const before=ranked.b.allyUnits.filter(u=>u.kind==='token'&&u.def.raw?.darkmoonProjection).length;
   ranked.b.retreat(source);ranked.b.redeploy(source,{free:true});ranked.h.run(.1);
-  const selected=ranked.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman').slice(before);
-  assert.equal(selected.length,1,'the battlefield summon cap limits this placement to one available slot');
+  const selected=ranked.b.allyUnits.filter(u=>u.kind==='token'&&u.def.raw?.darkmoonProjection).slice(before);
+  assert.equal(selected.length,2,'eligible targets remain capped by the Workshop summon limit, independent of native tokens');
   const ids=selected.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId).sort();
-  assert.deepEqual(ids,['fixture_1_a'],'highest current attack wins; lower targets are excluded while battlefield slot cap is respected');
+  assert.deepEqual(ids,['fixture_0_a','fixture_1_a'],'top two current-attack targets are selected and each projection keeps its selected body');
   assert.ok(other.alive);
 });
 
@@ -336,6 +365,27 @@ test('summoned original deployment entries initialize deploySeq caps after the d
   assert.ok(f.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).some(u=>u.mem.darkmoonDeploymentSources?.includes('BGS_061')),'summoned actors expose only deployment payloads actually installed after spawn');
   assert.ok(f.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).length<=7,'recursive copies keep the original allied token cap');
   assert.ok(tokenEntries.every(e=>e.deployUses<=3));
+});
+
+test('Darkmoon mechanical support projections use the native otter body at the approved 40% scale',()=>{
+  const f=fixture('BOT_312');
+  f.b.kill(f.unit,f.enemy);f.h.run(.1);
+  const projection=f.b.allyUnits.find(u=>u.kind==='token'&&u.mem.darkmoonSummon&&u.defId==='token_10004_otter_motter');
+  assert.ok(projection,'mechanical support uses the original otter token identity');
+  const raw=getData().tokens.token_10004_otter_motter;
+  const proto=f.b.tokenDef('token_10004_otter_motter','chess_native_char_242_otter_a');
+  assert.equal(projection.name,'机械水獭投影');
+  assert.equal(projection.base.atk,Math.round(proto.stats.atk*.4));
+  assert.equal(projection.base.maxHp,Math.round(proto.stats.maxHp*.4));
+  assert.equal(projection.base.def,Math.round(proto.stats.def*.4));
+  assert.equal(projection.base.res,proto.stats.res);
+  assert.equal(projection.base.bat,proto.stats.bat);
+  assert.deepEqual(projection.rangeGrid,proto.rangeGrid);
+  assert.equal(projection.def.skill?.skillId,proto.skill?.skillId);
+  const info=unitInfo(projection);
+  assert.equal(info.ownerUid,f.unit.uid);
+  assert.equal(info.prototypeName,'机械水獭');
+  assert.match(info.summonSourceText,/额外特质/);
 });
 
 test('summoned cover metadata is visible before its deploy actor event for BGS112',()=>{

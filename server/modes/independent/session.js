@@ -1,6 +1,7 @@
 import { getData } from '../../data.js';
 import { GameData } from '../../match/gamedata.js';
-import { canPlace, inField, positionClass } from '../../match/board.js';
+import { canPlace, inField, positionClass, ownerRangeKeys, tileKey } from '../../match/board.js';
+import { attackRangeGrid, loadoutRecord, resolveRecordLoadout } from '../../../shared/loadoutRecord.js';
 import { modeIdFor } from '../../../shared/constants.js';
 import { createRng } from '../../sim/rng.js';
 import { getCatalog } from './catalog.js';
@@ -165,8 +166,9 @@ function addTotal(state, key, n = 1) { state.totals ||= {}; state.totals[key] = 
 export const BENCH_SIZE = 10;
 export const TEMP_SIZE = 5;
 const onBoard = (p) => p.row != null && p.col != null;
-export const benchCount = (state) => state.pieces.filter((p) => !onBoard(p) && !p.temp).length;
-export const tempCount = (state) => state.pieces.filter((p) => p.temp).length;
+const summonsOf = (state) => Array.isArray(state.summons) ? state.summons : [];
+export const benchCount = (state) => state.pieces.filter((p) => !onBoard(p) && !p.temp).length + summonsOf(state).filter((p) => !onBoard(p) && !p.temp).length;
+export const tempCount = (state) => state.pieces.filter((p) => p.temp).length + summonsOf(state).filter((p) => p.temp).length;
 function completesMerge(state, catalog, chessId) {
   const op = opFor(catalog, chessId);
   if (!op?.eliteChessId) return false;
@@ -182,6 +184,115 @@ function roomFor(state, catalog, chessId, { allowTemp }) {
 /** A temp operator moves onto the bench as soon as a place frees up (a sale, a merge, a deployment). */
 function settleTemp(state) {
   for (const p of state.pieces) if (p.temp && benchCount(state) < BENCH_SIZE) delete p.temp;
+  for (const p of summonsOf(state)) if (p.temp && benchCount(state) < BENCH_SIZE) delete p.temp;
+}
+
+function tokenSources(data, owner, tokenId, catalog) {
+  const token = data?.tokens?.[tokenId];
+  const base = opFor(catalog, owner?.chessId);
+  const id = owner?.elite ? base?.eliteChessId || owner?.chessId : owner?.chessId;
+  const variant = token?.variants?.[id] || token?.variants?.[String(owner?.chessId || '').replace(/_b$/, '_a')];
+  const selected = variant?.bySkill?.[owner?.skillIndex] || variant;
+  return Array.isArray(selected?.sources) ? selected.sources : [];
+}
+function tokenSourceText(data, owner, tokenId, catalog) {
+  const sources = tokenSources(data, owner, tokenId, catalog);
+  const op = owner && opFor(catalog, owner.chessId);
+  const raw = owner?.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
+  const names = [];
+  if (sources.includes('skill')) {
+    const skill = raw?.skills?.[owner.skillIndex];
+    if (skill?.name) names.push(`技能「${skill.name}」`);
+  }
+  if (sources.includes('talent')) {
+    const talent = (raw?.talents || []).find((x) => x?.name);
+    if (talent?.name) names.push(`天赋「${talent.name}」`);
+  }
+  if (sources.includes('module')) names.push('模组');
+  return names.length ? `由${op?.name || '干员'}的${names.join('、')}召唤` : `由${op?.name || '干员'}召唤`;
+}
+function legalSummonTiles(state, token, data, catalog, deployMap) {
+  const owner = state.pieces.find((p) => p.uid === token.ownerUid);
+  if (!owner || !onBoard(owner) || !deployMap) return [];
+  const def = data?.tokens?.[token.tokenId];
+  if (!def) return [];
+  let range = null;
+  if (def.ownerRange === true) {
+    const op = opFor(catalog, owner.chessId);
+    const raw = owner.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
+    const selected = resolveRecordLoadout(raw || {}, { skillIndex: owner.skillIndex, moduleId: owner.moduleId });
+    const loadout = loadoutRecord(raw || {}, selected);
+    const grid = attackRangeGrid(loadout) || raw?.rangeGrid;
+    if (!grid) return [];
+    range = ownerRangeKeys(grid, owner.row, owner.col, owner.dir || 'RIGHT');
+  }
+  return [...deployMap.keys()].filter((cell) => {
+    const [row, col] = cell.split(',').map(Number);
+    if (!canPlace(deployMap, positionClass(def), row, col)) return false;
+    if (range && !range.has(tileKey(row, col))) return false;
+    return !state.pieces.some((p) => onBoard(p) && p.row === row && p.col === col)
+      && !summonsOf(state).some((p) => p.uid !== token.uid && onBoard(p) && p.row === row && p.col === col);
+  });
+}
+function removeSummonsForOwner(state, ownerUid) {
+  state.summons = summonsOf(state).filter((p) => p.ownerUid !== ownerUid);
+}
+function returnSummonToStack(state, token) {
+  const stack = summonsOf(state).find((p) => p.ownerUid === token.ownerUid && p.tokenId === token.tokenId && !onBoard(p));
+  if (stack && stack !== token) {
+    stack.count = Number(stack.count || 1) + Number(token.count || 1);
+    state.summons = state.summons.filter((p) => p !== token);
+    return stack;
+  }
+  token.row = null; token.col = null; token.count = Math.max(1, Number(token.count) || 1);
+  return token;
+}
+function liftSummonsForOwner(state, ownerUid) {
+  for (const token of [...summonsOf(state)]) if (token.ownerUid === ownerUid && onBoard(token)) returnSummonToStack(state, token);
+}
+function syncSummonsForOwner(state, data, catalog, owner) {
+  if (!owner) return;
+  if (!onBoard(owner)) { removeSummonsForOwner(state, owner.uid); return; }
+  const gd = gdFor(state, data);
+  const wanted = new Map(gd.placeableTokens(owner.chessId, { skillIndex: owner.skillIndex, moduleId: owner.moduleId }).map((x) => [x.tokenId, x.count]));
+  const ownedIds = new Set(summonsOf(state).filter((p) => p.ownerUid === owner.uid).map((p) => p.tokenId));
+  for (const tokenId of ownedIds) {
+    const allowed = wanted.get(tokenId) || 0;
+    let owned = summonsOf(state).filter((p) => p.ownerUid === owner.uid && p.tokenId === tokenId);
+    if (!allowed) { state.summons = summonsOf(state).filter((p) => !(p.ownerUid === owner.uid && p.tokenId === tokenId)); continue; }
+    let excess = owned.reduce((n, p) => n + (Number(p.count) || 1), 0) - allowed;
+    for (const stack of owned.filter((p) => !onBoard(p))) {
+      if (excess <= 0) break;
+      const take = Math.min(excess, Number(stack.count) || 1);
+      stack.count -= take; excess -= take;
+      if (stack.count <= 0) state.summons = summonsOf(state).filter((p) => p !== stack);
+    }
+    if (excess > 0) {
+      owned = summonsOf(state).filter((p) => p.ownerUid === owner.uid && p.tokenId === tokenId && onBoard(p));
+      for (const placed of owned) {
+        if (excess <= 0) break;
+        returnSummonToStack(state, placed); excess--;
+      }
+    }
+  }
+  for (const [tokenId, count] of wanted) {
+    const owned = summonsOf(state).filter((p) => p.ownerUid === owner.uid && p.tokenId === tokenId);
+    const total = owned.reduce((n, p) => n + (Number(p.count) || 1), 0);
+    if (total >= count) continue;
+    const stack = owned.find((p) => !onBoard(p));
+    if (stack) stack.count += count - total;
+    else {
+      const token = { uid: `t${state.nextUid++}`, kind: 'token', tokenId, ownerUid: owner.uid, count: count - total, row: null, col: null, dir: 'RIGHT' };
+      if (benchCount(state) >= BENCH_SIZE) {
+        if (tempCount(state) >= TEMP_SIZE) continue;
+        token.temp = true;
+      }
+      state.summons.push(token);
+    }
+  }
+}
+function syncSummonsForActiveOwners(state, data, catalog) {
+  for (const owner of state.pieces) syncSummonsForOwner(state, data, catalog, owner);
 }
 function gainChess(state, catalog, chessId, extra = {}) {
   const def = opFor(catalog, chessId); if (!def || def.elite || def.isElite) throw new Error('UNKNOWN_CHESS');
@@ -277,7 +388,7 @@ function mergeKey(item, catalog) {
   // the copies' own 交接凭证 are the same item: they fold into one without asking (mergeOperator)
   return d?.unique && !isPermit(item, catalog) ? (d.uniqueKey || d.canonicalId || item.id) : null;
 }
-function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
+function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}, data = null) {
   if (!Array.isArray(pieceUids) || new Set(pieceUids).size !== pieceUids.length) throw new Error('BAD_MERGE_GROUP');
   const group = pieceUids.map((uid) => state.pieces.find((p) => p.uid === uid));
   if (group.some((p) => !p || p.elite) || group.some((p) => p.chessId !== group[0].chessId)) throw new Error('BAD_MERGE_GROUP');
@@ -302,6 +413,7 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
   if (worn.reduce((n, x) => n + Number(x.quantity || 1), 0) > EQUIPMENT_CAPACITY) throw new Error('CAPACITY');
   const fielded = group.filter((p) => p.row !== null && p.col !== null).sort((a, b) => a.uid.localeCompare(b.uid));
   const survivor = fielded[0] || [...group].sort((a, b) => a.uid.localeCompare(b.uid))[0];
+  for (const p of group) removeSummonsForOwner(state, p.uid);
   const attachments = group.flatMap((p) => (p.attachments || []).map((attachment) => ({ ...clone(attachment), ownerUid: p.uid })));
   const attachGroups = new Map();
   for (const a of attachments) if (catalog.attachments?.[a.id]?.unique) attachGroups.set(a.id, [...(attachGroups.get(a.id) || []), a]);
@@ -338,6 +450,7 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}) {
   survivor.bodyPenaltyApplied = penaltyApplied;
   survivor.poolCopies = copies;
   for (const p of group) if (p !== survivor) state.pieces.splice(state.pieces.indexOf(p), 1);
+  if (data) syncSummonsForOwner(state, data, catalog, survivor);
   return { piece: survivor, consumed: group.map((p) => p.uid), required, destroyedGear: destroyedGear.map((x) => ({ id: x.id, uid: x.uid, ownerUid: x.ownerUid, state: clone(x.state || {}) })), destroyedAttachments };
 }
 function mergeConflictPreview(group, catalog) {
@@ -348,14 +461,14 @@ function mergeConflictPreview(group, catalog) {
   }
   return { equipment: [...gear].filter(([, xs]) => xs.length > 1).map(([key, items]) => ({ key, choices: items })), attachments: [...attachments].filter(([, xs]) => xs.length > 1).map(([id, items]) => ({ id, choices: items })) };
 }
-function maybeMergeOperator(state, catalog, chessId) {
+function maybeMergeOperator(state, catalog, chessId, data = null) {
   const op = opFor(catalog, chessId); const required = mergeCopiesRequired(op);
   if (state.offers.some((x) => x.type === 'operatorMerge' && x.chessId === chessId)) return [];
   const merged = [];
   while (op?.eliteChessId) {
     const group = state.pieces.filter((p) => p.chessId === chessId && !p.elite).slice(0, required);
     if (group.length < required) break;
-    try { merged.push(mergeOperator(state, catalog, group.map((p) => p.uid))); }
+    try { merged.push(mergeOperator(state, catalog, group.map((p) => p.uid), {}, data)); }
     catch (error) {
       if (error.message !== 'NEED_UNIQUE_SELECTION' && error.message !== 'CAPACITY') throw error;
       if (!state.offers.some((x) => x.type === 'operatorMerge' && x.chessId === chessId)) state.offers.push({ id: `o${state.nextUid++}`, type: 'operatorMerge', chessId, pieceUids: group.map((p) => p.uid), required, conflicts: mergeConflictPreview(group, catalog) });
@@ -404,7 +517,7 @@ export function createSession(options = {}) {
   const openFactions = null;
   const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, growthMode, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
-    shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], inventory: [], offers: [],
+    shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], summons: [], inventory: [], offers: [],
     incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0, factionBought:{} }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
@@ -420,6 +533,7 @@ export function validateSession(state) {
   if (!['prep', 'prize', 'finished'].includes(state.phase)) e.push('BAD_PHASE');
   if (![9, 14, 15].includes(state.roundLimit) || state.round < 1 || state.round > state.roundLimit + 1) e.push('BAD_ROUND');
   for (const key of ['pieces', 'inventory', 'offers', 'playerEffects', 'history']) if (!Array.isArray(state[key])) e.push(`BAD_${key.toUpperCase()}`);
+  if (state.summons !== undefined && !Array.isArray(state.summons)) e.push('BAD_SUMMONS');
   if (!isRecord(state.shop) || !Array.isArray(state.shop.slots) || !Number.isInteger(state.shop.level)) e.push('BAD_SHOP');
   if (state.openFactions !== undefined) {
     const known = Object.values(TAVERN_FACTIONS);
@@ -428,6 +542,9 @@ export function validateSession(state) {
   if (!isRecord(state.pool)) e.push('BAD_POOL');
   else for (const [id, p] of Object.entries(state.pool)) if (!safeId(id) || !Number.isInteger(p.left) || !Number.isInteger(p.cap) || p.left < 0 || p.left > p.cap) e.push('BAD_POOL_ENTRY');
   const uids = new Set();
+  for (const piece of state.pieces || []) {
+    if (!safeId(piece.uid) || uids.has(piece.uid)) e.push('BAD_UID'); else uids.add(piece.uid);
+  }
   for (const item of [...(state.inventory || []), ...(state.pieces || []).flatMap((p) => p.equipment || [])]) {
     if (!safeId(item.uid) || uids.has(item.uid)) e.push('BAD_UID'); else uids.add(item.uid);
   }
@@ -436,6 +553,12 @@ export function validateSession(state) {
     if (state.growthMode === 'levels' && (p.growthMode !== 'levels' || !Number.isInteger(p.growthLevel) || p.growthLevel < 1)) e.push('BAD_GROWTH_LEVEL');
     if ((p.row === null) !== (p.col === null) || (p.row !== null && (!inField(p.row, p.col) || !inField(p.row, p.col)))) e.push('BAD_POSITION');
     for (const attachment of p.attachments || []) if (!safeId(attachment.id) || (attachment.state !== undefined && !isRecord(attachment.state))) e.push('BAD_ATTACHMENT');
+  }
+  for (const token of summonsOf(state)) {
+    if (!safeId(token.uid) || uids.has(token.uid) || !safeId(token.tokenId) || !safeId(token.ownerUid)
+      || !Number.isInteger(token.count) || token.count < 1 || !state.pieces.some((p) => p.uid === token.ownerUid)
+      || (token.row === null) !== (token.col === null) || (token.row !== null && (!inField(token.row, token.col) || !inField(token.row, token.col)))) e.push('BAD_SUMMON');
+    else uids.add(token.uid);
   }
   for (const item of state.inventory || []) if (!safeId(item.id) || !Number.isInteger(item.quantity) || item.quantity < 1) e.push('BAD_ITEM');
   for (const p of state.pieces || []) if (p.equipment?.reduce((n, x) => n + Number(x.quantity || 0), 0) > EQUIPMENT_CAPACITY) e.push('PIECE_CAPACITY');
@@ -461,6 +584,7 @@ export function matchStats(state) {
 
 export function viewSession(state, options = {}) {
   const data = sessionData(options); const catalog = sessionCatalog(data, options);
+  if (!Array.isArray(state.summons)) state = { ...state, summons: [] };
   if (state.pieces.some((p) => lacksPermit(p, catalog))) { state = clone(state); ensurePermits(state, catalog); }
   // gear has one form only: an old save's elite gear shows as the normal item, same quantity (applyAction saves it so)
   if ([...state.inventory, ...state.pieces.flatMap((p) => p.equipment || [])].some((x) => x?.elite)) { state = clone(state); normalizeGearForms(state, catalog); }
@@ -474,7 +598,11 @@ export function viewSession(state, options = {}) {
     const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
     // the tiles this piece may stand on (the ready check's rule), so the page never re-implements placement
     let legalTiles = [];
-    try { const cls = positionClass(raw, p.moduleId); legalTiles = deployCells.filter((cell) => { const [r, c] = cell.split(',').map(Number); return canPlace(field.deployMap, cls, r, c); }); } catch { legalTiles = []; }
+    try { const cls = positionClass(raw, p.moduleId); legalTiles = deployCells.filter((cell) => { const [r, c] = cell.split(',').map(Number);
+      return canPlace(field.deployMap, cls, r, c)
+        && !state.pieces.some((x) => x.uid !== p.uid && onBoard(x) && x.row === r && x.col === c)
+        && !summonsOf(state).some((x) => onBoard(x) && x.row === r && x.col === c);
+    }); } catch { legalTiles = []; }
     const modules = (raw?.modules || []).map((x) => ({ ...clone(x), id: x.uniEquipId || x.id })).filter((x) => x.id);
     const steamOptions = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
     return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
@@ -486,6 +614,19 @@ export function viewSession(state, options = {}) {
       // whom it may hand its gear to (give) and take gear from (take) under the 交接凭证 worn on either side
       handover: state.phase === 'prep' ? handoverPartners(state, p, catalog) : undefined };
   });
+  for (const token of state.summons) {
+    const owner = state.pieces.find((p) => p.uid === token.ownerUid);
+    const ownerOp = owner && opFor(catalog, owner.chessId);
+    const def = data?.tokens?.[token.tokenId] || {};
+    const legalTiles = state.phase === 'prep' && field ? legalSummonTiles(state, token, data, catalog, field.deployMap) : [];
+    pieces.push({ ...clone(token), id: token.tokenId, kind: 'token', name: def.name || token.tokenId, desc: def.desc || '',
+      ownerName: ownerOp?.name || '', ownerUnitId: Number(String(token.ownerUid).replace(/^\D+/, '')) || null,
+      ownerChessId: owner?.elite ? ownerOp?.eliteChessId || owner?.chessId : owner?.chessId,
+      summonSourceText: owner ? tokenSourceText(data, owner, token.tokenId, catalog) : '',
+      legalActions: ['move', 'bench'], legalTiles,
+      tokenStats: clone(def.variants?.[owner?.elite ? ownerOp?.eliteChessId : owner?.chessId]?.stats || def.stats || {}),
+    });
+  }
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()], bossId: field.bossId, factions: field.factions,
       bossRound: state.roundLimit === 9 ? 9 : 14 } : null, battleSummary: state.battleSummary, matchStats: matchStats(state),
@@ -524,6 +665,7 @@ export function applyAction(state, action, options = {}) {
   let work;
   try { work = clone(state); } catch { return { ok: false, error: { code: 'INVALID_STATE', message: 'State is not serializable.' }, state }; }
   const data = sessionData(options); const catalog = sessionCatalog(data, options); const gd = gdFor(work, data);
+  work.summons ||= [];
   sanitizeRecruitPool(work, catalog);
   // an old save's elite gear becomes the normal item, same quantity (owner 2026-10-07 「装备不再有精锐形态」)
   normalizeGearForms(work, catalog);
@@ -546,7 +688,7 @@ export function applyAction(state, action, options = {}) {
       if (offer.type === 'prize') events.push(choosePrize(work, catalog, action.offerId, action.index, action));
       else if (offer.type === 'operatorMerge') {
         const sourceChessId = offer.chessId;
-        const merged = mergeOperator(work, catalog, offer.pieceUids, action.uniqueSelections || {});
+        const merged = mergeOperator(work, catalog, offer.pieceUids, action.uniqueSelections || {}, data);
         work.offers.splice(work.offers.indexOf(offer), 1); events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId, destroyedEquipment: merged.destroyedGear, destroyedAttachments: merged.destroyedAttachments });
         for (const further of maybeMergeOperator(work, catalog, sourceChessId)) events.push({ type: 'operator-merge', uid: further.piece.uid, chessId: further.piece.chessId });
       }
@@ -562,7 +704,7 @@ export function applyAction(state, action, options = {}) {
           for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
           if(!offer.deferNativeGain) handleGainEquipment(work, catalog, piece);
           work.offers.splice(work.offers.indexOf(offer), 1);
-          if(!offer.noMerge)for (const merged of maybeMergeOperator(work, catalog, op.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
+          if(!offer.noMerge)for (const merged of maybeMergeOperator(work, catalog, op.chessId, data)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
           }
         } else if (offer.type === 'attachment') {
           const targetUid = offer.trainingChoice ? offer.targetUid : (action.targetUid || offer.targetUid);
@@ -626,7 +768,7 @@ export function applyAction(state, action, options = {}) {
         }
         // 购买干员后 (native buyGear): operators on the field react to the one just bought, before it merges
         invokeHook(work, 'bought', { piece, source: 'buy', targetUid:action.targetUid }, services);
-        if(!magneticTarget)for (const merged of maybeMergeOperator(work, catalog, piece.chessId)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
+          if(!magneticTarget)for (const merged of maybeMergeOperator(work, catalog, piece.chessId, data)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
         // an equipment place left in a shop saved before the shop stopped selling gear (gone at the next refresh)
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
@@ -651,26 +793,49 @@ export function applyAction(state, action, options = {}) {
     } else if (act === 'sell') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       invokeHook(work, 'selling', { piece: p }, services); addTotal(work, 'sold');
-      discardPieceAssets(work, p); safeCopyPool(work, p.chessId, p.poolCopies || 1); work.pieces.splice(work.pieces.indexOf(p), 1);
+      removeSummonsForOwner(work, p.uid); discardPieceAssets(work, p); safeCopyPool(work, p.chessId, p.poolCopies || 1); work.pieces.splice(work.pieces.indexOf(p), 1);
       work.funds++; work.counters.sold++; handleSaleEquipment(work, catalog); invokeHook(work, 'sold', { piece: p }, services); events.push({ type: 'sell', uid: p.uid, funds: 1 });
     } else if (act === 'move') {
-      ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
+      ensurePrep(work); const token = summonsOf(work).find((x) => x.uid === action.uid);
+      if (token) {
+        if (!Number.isInteger(action.row) || !Number.isInteger(action.col) || !inField(action.row, action.col)) throw new Error('BAD_POSITION');
+        const owner = work.pieces.find((x) => x.uid === token.ownerUid);
+        if (!owner || !onBoard(owner)) throw new Error('SUMMON_OWNER_NOT_DEPLOYED');
+        const field = getIndependentField(work, { data, catalog });
+        if (!legalSummonTiles(work, token, data, catalog, field.deployMap).includes(`${action.row},${action.col}`)) throw new Error('ILLEGAL_TILE');
+        if (action.dir && !['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(action.dir)) throw new Error('BAD_DIRECTION');
+        let placedUid = token.uid;
+        if (token.count > 1) {
+          token.count--;
+          placedUid = `t${work.nextUid++}`;
+          work.summons.push({ uid: placedUid, kind: 'token', tokenId: token.tokenId, ownerUid: token.ownerUid, count: 1, row: action.row, col: action.col, dir: action.dir || 'RIGHT' });
+        } else { token.row = action.row; token.col = action.col; token.dir = action.dir || token.dir || 'RIGHT'; delete token.temp; }
+        events.push({ type: 'summon-move', uid: placedUid, tokenId: token.tokenId, row: action.row, col: action.col });
+      } else {
+      const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       if (!Number.isInteger(action.row) || !Number.isInteger(action.col) || !inField(action.row, action.col)) throw new Error('BAD_POSITION');
-      const occupied = work.pieces.some((x) => x !== p && x.row === action.row && x.col === action.col); if (occupied) throw new Error('OCCUPIED');
+      const occupied = [...work.pieces, ...summonsOf(work)].some((x) => x !== p && onBoard(x) && x.row === action.row && x.col === action.col); if (occupied) throw new Error('OCCUPIED');
       const field = getIndependentField(work, { data, catalog }); const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
       const cls = positionClass(raw, p.moduleId);
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');
       if (action.dir && !['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(action.dir)) throw new Error('BAD_DIRECTION');
+      if (onBoard(p) && (p.row !== action.row || p.col !== action.col || (action.dir && action.dir !== p.dir))) liftSummonsForOwner(work, p.uid);
       p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; delete p.temp; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
+      syncSummonsForOwner(work, data, catalog, p);
       if(p.darkmoonPendingPlay) {
         delete p.darkmoonPendingPlay;
         invokeHook(work,'gain',{piece:p,source:'darkmoon-hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);
         handleGainEquipment(work,catalog,p);
       }
+      }
     } else if (act === 'bench') {
-      ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
+      ensurePrep(work); const token = summonsOf(work).find((x) => x.uid === action.uid);
+      if (token) { returnSummonToStack(work, token); events.push({ type: 'summon-bench', uid: token.uid, tokenId: token.tokenId }); }
+      else {
+      const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       if (onBoard(p) || p.temp) { if (benchCount(work) >= BENCH_SIZE) throw new Error('BENCH_FULL'); }
-      p.row = null; p.col = null; delete p.temp; events.push({ type: 'bench', uid: p.uid });
+      removeSummonsForOwner(work, p.uid); p.row = null; p.col = null; delete p.temp; events.push({ type: 'bench', uid: p.uid });
+      }
     } else if (act === 'loadout') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); const op = p && opFor(catalog, p.chessId); if (!p || !op) throw new Error('BAD_TARGET');
       const raw = p.elite ? (op.source?.eliteChess || op.source?.normalChess) : op.source?.normalChess;
@@ -678,7 +843,7 @@ export function applyAction(state, action, options = {}) {
       if(raw.nativeImport&&!raw.nativeImport.supportedSkillIds?.includes(raw.skills[action.skillIndex]?.skillId))throw new Error('UNSUPPORTED_NATIVE_SKILL');
       const moduleId = action.moduleId ?? p.moduleId; const moduleIds = (raw?.modules || []).map((x) => x.uniEquipId || x.id).filter(Boolean);
       if (moduleId !== 'none' && !moduleIds.includes(moduleId)) throw new Error('BAD_MODULE');
-      p.skillIndex = action.skillIndex; p.moduleId = moduleId; events.push({ type: 'loadout', uid: p.uid });
+      p.skillIndex = action.skillIndex; p.moduleId = moduleId; syncSummonsForOwner(work, data, catalog, p); events.push({ type: 'loadout', uid: p.uid });
     } else if (act === 'configure') {
       ensurePrep(work); const piece = work.pieces.find((x) => x.uid === action.uid); if (!piece) throw new Error('BAD_TARGET');
       const preference = { ...(piece.nativeState.preferences || {}) };
@@ -714,7 +879,10 @@ export function applyAction(state, action, options = {}) {
     } else if (act === 'inherit-preview') {
       readOnly = true; events.push({ type: 'inherit-preview', preview: previewInheritance(work, catalog, action.donorUid, action.receiverUid, data) });
     } else if (act === 'inherit') {
-      ensurePrep(work); const result = applyInheritance(work, catalog, action.donorUid, action.receiverUid, action.uniqueSelections || {}, data); work.funds += 1; work.counters.sold++; handleSaleEquipment(work, catalog); events.push({ type: 'inherit', receiverUid: result.receiver.uid, preview: result.preview });
+      ensurePrep(work); liftSummonsForOwner(work, action.receiverUid); removeSummonsForOwner(work, action.donorUid);
+      const result = applyInheritance(work, catalog, action.donorUid, action.receiverUid, action.uniqueSelections || {}, data);
+      syncSummonsForOwner(work, data, catalog, result.receiver);
+      work.funds += 1; work.counters.sold++; handleSaleEquipment(work, catalog); events.push({ type: 'inherit', receiverUid: result.receiver.uid, preview: result.preview });
     } else if (act === 'ready') {
       ensurePrep(work);
       if (tempCount(work) > 0) throw new Error('TEMP_NOT_EMPTY'); // 「直到溢出情况排除才可开始进行作战」
@@ -726,6 +894,13 @@ export function applyAction(state, action, options = {}) {
         const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
         const cell = `${p.row},${p.col}`;
         if (cells.has(cell) || !canPlace(field.deployMap, positionClass(raw, p.moduleId), p.row, p.col)) throw new Error('ILLEGAL_TILE');
+        cells.add(cell);
+      }
+      for (const token of summonsOf(work).filter(onBoard)) {
+        if (Number(token.count || 1) !== 1 || !deployed.some((p) => p.uid === token.ownerUid)) throw new Error('INVALID_SUMMON_OWNER');
+        const map = getIndependentField(work, { data, catalog }).deployMap;
+        const cell = `${token.row},${token.col}`;
+        if (cells.has(cell) || !legalSummonTiles(work, token, data, catalog, map).includes(cell)) throw new Error('ILLEGAL_SUMMON_TILE');
         cells.add(cell);
       }
       invokeHook(work, 'prepEnd', { round: work.round }, services);
@@ -772,10 +947,12 @@ export function applyAction(state, action, options = {}) {
       const award = roundAward(work);
       if (award) { work.pendingRoundStart = true; makePrizeOffer(work, catalog, award, 'round', rng); }
       else { work.phase = 'prep'; work.pendingRoundStart = false; invokeHook(work, 'roundStart', { round: work.round }, services); events.push({ type: 'round-start', round: work.round }); }
+      if (work.phase === 'prep') syncSummonsForActiveOwners(work, data, catalog);
       }
       }
     } else throw new Error('UNKNOWN_ACTION');
     for (let n = Number(work.totals?.elites || 0) - elitesBefore; n > 0; n--) { pushPromotionReward(work, catalog, rng); events.push({ type: 'promotion-reward' }); }
+    if (work.phase === 'prep') syncSummonsForActiveOwners(work, data, catalog);
     settleTemp(work);
     if (!readOnly) { work.rngState = rng.state(); work.revision++; }
     const errors = validateSession(work); if (errors.length) throw new Error(`INVALID_RESULT:${errors.join(',')}`);

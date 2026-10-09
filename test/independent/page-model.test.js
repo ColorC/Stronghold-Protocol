@@ -13,22 +13,29 @@ const catalog = getCatalog(data);
 const display = independentDisplayCatalog(data, catalog);
 const view = (state) => viewSession(state, { data, catalog });
 
-test('the renderer gets integer uids, golden elites and only the first 10 bench pieces; the rest are listed', () => {
+test('the renderer keeps every operator and native summon marker visible and draggable', () => {
   const game = playSeed({ seed: 2, route: 'assault', difficulty: 'NORMAL', roundLimit: 14 });
   const v = view(game.state);
   const prep = prepView(v, display);
-  const bench = v.pieces.filter((p) => p.row === null);
-  assert.equal(prep.hand.length, HAND_SLOTS);
+  const allPieces = [...v.pieces, ...v.summons];
+  const bench = allPieces.filter((p) => p.row === null && !p.temp);
+  assert.equal(prep.hand.length, Math.max(HAND_SLOTS, bench.length));
   assert.ok(prep.temp.every((x) => x === null), 'the temp row (临时整备区) stays empty');
-  assert.equal(prep.hand.filter(Boolean).length, Math.min(HAND_SLOTS, bench.length));
-  assert.equal(benchLayout(v).overflow.length, Math.max(0, bench.length - HAND_SLOTS));
-  assert.equal(prep.board.length, v.pieces.filter((p) => p.row !== null).length);
+  assert.equal(prep.hand.filter(Boolean).length, bench.length);
+  assert.deepEqual(benchLayout(v).overflow, [], 'native tokens are represented in the hand instead of being hidden in overflow');
+  assert.equal(prep.board.length, allPieces.filter((p) => p.row !== null).length);
   for (const piece of prep.board) {
     assert.ok(Number.isInteger(piece.uid));
-    const source = v.pieces.find((p) => Number(p.uid.slice(1)) === piece.uid);
-    assert.equal(piece.golden, !!source.elite);
-    assert.equal(piece.id, renderChessId(display, source));
-    assert.ok(data.chess[piece.id] || Object.values(data.chess).some((c) => c.chessId === piece.id), `${piece.id} is drawable`);
+    const source = allPieces.find((p) => Number(p.uid.slice(1)) === piece.uid);
+    if (source.kind === 'token') {
+      assert.equal(piece.kind, 'token');
+      assert.equal(piece.tokenId, source.tokenId);
+      assert.ok(piece.ownerUid, 'summon marker keeps a resolvable owner');
+    } else {
+      assert.equal(piece.golden, !!source.elite);
+      assert.equal(piece.id, renderChessId(display, source));
+      assert.ok(data.chess[piece.id] || Object.values(data.chess).some((c) => c.chessId === piece.id), `${piece.id} is drawable`);
+    }
   }
 });
 
