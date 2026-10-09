@@ -62,6 +62,11 @@ if (process.argv.includes('--self-test-embed-url')) {
     || matchesExpectedEmbeddedGame('https://workshop.colorc.cc/other/resonance.html', expected)) {
     throw new Error('embedded URL exact-origin/path pure check failed');
   }
+  const focused = new URL(workshopFocusedCardUrl('https://workshop.colorc.cc/bside/canvas/notes-web.html?theme=workshop&session_id=canvas%3A0470#card=resonance-play-20261009'));
+  if (focused.searchParams.get('focus') !== 'resonance-play-20261009' || focused.searchParams.get('fullscreen') !== '1'
+    || focused.hash !== '#card=resonance-play-20261009' || focused.searchParams.get('session_id') !== 'canvas:0470') {
+    throw new Error('Workshop card focus URL must preserve existing query/hash and request official HD fullscreen');
+  }
   process.stdout.write(JSON.stringify({ ok: true, expectedOrigin: new URL(expected).origin, expectedPath: new URL(expected).pathname }) + '\n');
   process.exit(0);
 }
@@ -496,6 +501,14 @@ async function visibleInViewport(handle) {
     const top = document.elementFromPoint(x, y);
     return r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth && (top === el || el.contains(top));
   }).catch(() => false);
+}
+function workshopFocusedCardUrl(rawUrl) {
+  const url = new URL(rawUrl);
+  const cardId = workshopFocusCardId(rawUrl);
+  if (!cardId) throw new Error('Workshop play URL must identify an existing card before opening the focused HD preview');
+  url.searchParams.set('focus', cardId);
+  url.searchParams.set('fullscreen', '1');
+  return url.href;
 }
 async function enabled(handle) { return !!handle && handle.evaluate((el) => !el.disabled).catch(() => false); }
 async function textOf(handle) { return handle?.evaluate((el) => el.innerText || el.textContent || '').catch(() => '') || ''; }
@@ -1211,7 +1224,8 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
   attachPageDiagnostics(workshop, 'remote Workshop page');
   try {
     const workshopAuth = await scopePage(workshop);
-    await workshop.goto(workshopUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    const focusedWorkshopUrl = workshopFocusedCardUrl(workshopUrl);
+    await workshop.goto(focusedWorkshopUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     const expectedEmbeddedURL = REMOTE_EMBED_URL || REMOTE_ENTRY_URL;
     const expectedOrigin = new URL(expectedEmbeddedURL).origin;
     const hostDeadline = Date.now() + 30_000;
@@ -1239,7 +1253,7 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       if (!card) await new Promise((resolve) => setTimeout(resolve, 150));
     }
     if (!card) throw new Error(`notes-web画布宿主中不存在URL指定的目标卡 ${focusCardId}`);
-    await capture(workshop, '05-workshop-card.png', 'Workshop画布中的正式玩法卡');
+    await capture(workshop, '05-workshop-card.png', 'Workshop Canvas聚焦状态（非玩法内容截图）');
     const locateEmbeddedGame = () => workshop.frames().find((candidate) => {
       try {
         const url = new URL(candidate.url()); let parent = candidate.parentFrame(), nestedInHost = false;
@@ -1247,13 +1261,14 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
         return nestedInHost && matchesExpectedEmbeddedGame(url.href, expectedEmbeddedURL);
       } catch { return false; }
     }) || null;
-    let activate = await card.$('button[aria-label="游玩"]');
+    let embeddedFrame = locateEmbeddedGame();
+    let activate = embeddedFrame ? null : await card.$('button[aria-label="游玩"]');
     let activationLabel = '游玩';
-    if (!activate || !(await visible(activate))) {
+    if (!embeddedFrame && (!activate || !(await visibleInViewport(activate)))) {
       activate = await findTextHandle(card, 'button', '全屏查看', false);
       activationLabel = '全屏查看';
     }
-    if (!activate || !(await visible(activate))) {
+    if (!embeddedFrame && (!activate || !(await visibleInViewport(activate))) && await visibleInViewport(card)) {
       await card.hover().catch(() => {});
       await card.click().catch(() => {});
       await hostFrame.waitForFunction((id) => {
@@ -1264,23 +1279,36 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
           const rect = control.getBoundingClientRect(), style = getComputedStyle(control);
           return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
         });
-      }, { timeout: 2_000 }, focusCardId).catch(() => {});
+      }, { polling: 100, timeout: 2_000 }, focusCardId).catch(() => {});
       activate = await card.$('button[aria-label="游玩"]');
       activationLabel = '游玩';
-      if (!activate || !(await visible(activate))) {
+      if (!activate || !(await visibleInViewport(activate))) {
         activate = await findTextHandle(card, 'button', '全屏查看', false);
         activationLabel = '全屏查看';
       }
     }
-    let embeddedFrame = locateEmbeddedGame();
-    if (!embeddedFrame && (!activate || !(await visible(activate)))) {
+    if (!embeddedFrame && (!activate || !(await visibleInViewport(activate)))) {
+      if (!await visibleInViewport(card)) {
+        const frames = workshop.frames().map((candidate) => ({ url: candidate.url(), parentUrl: candidate.parentFrame()?.url() || null }));
+        const rect = await card.evaluate((el) => { const r=el.getBoundingClientRect(); return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),viewport:{width:innerWidth,height:innerHeight}}; });
+        const state = await hostFrame.evaluate(() => ({ url:location.href, readyState:document.readyState, bodyText:(document.body?.innerText||'').slice(0,1600) })).catch((error)=>({error:error.message}));
+        await capture(workshop, '07-workshop-card-action-inspection.png', 'Workshop聚焦目标与嵌入状态诊断');
+        throw new Error(`focused Workshop card is offscreen and no embedded game frame was found; card=${JSON.stringify({id:focusCardId,rect,state})}; frames=${JSON.stringify(frames)}`);
+      }
       await card.click({ clickCount: 2 }).catch(() => {});
       for (let attempt = 0; attempt < 30 && !embeddedFrame; attempt++) {
         embeddedFrame = locateEmbeddedGame();
         if (!embeddedFrame) await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
-    if (!embeddedFrame && (!activate || !(await visible(activate)))) {
+    if (!embeddedFrame && (!activate || !(await visibleInViewport(activate)))) {
+      if (!await visibleInViewport(card)) {
+        const frames = workshop.frames().map((candidate) => ({ url: candidate.url(), parentUrl: candidate.parentFrame()?.url() || null }));
+        const rect = await card.evaluate((el) => { const r=el.getBoundingClientRect(); return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),viewport:{width:innerWidth,height:innerHeight}}; });
+        const state = await hostFrame.evaluate(() => ({ url:location.href, readyState:document.readyState, bodyText:(document.body?.innerText||'').slice(0,1600) })).catch((error)=>({error:error.message}));
+        await capture(workshop, '07-workshop-card-action-inspection.png', 'Workshop聚焦目标与嵌入状态诊断');
+        throw new Error(`focused Workshop card is offscreen and no embedded game frame was found; card=${JSON.stringify({id:focusCardId,rect,state})}; frames=${JSON.stringify(frames)}`);
+      }
       await card.click({ button: 'right' }).catch(() => {});
       const menuOptions = await hostFrame.$$eval('button,[role="menuitem"],a', (elements) => elements.map((el) => {
         const rect = el.getBoundingClientRect(), style = getComputedStyle(el);
@@ -1288,9 +1316,9 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       })).catch(() => []);
       for (const label of ['全屏查看','全屏打开','全屏预览','预览','游玩','打开玩法']) {
         activate = await findTextHandle(hostFrame, 'button,[role="menuitem"]', label, false).catch(() => null);
-        if (activate && await visible(activate)) { activationLabel = `右键菜单${label}`; break; }
+        if (activate && await visibleInViewport(activate)) { activationLabel = `右键菜单${label}`; break; }
       }
-      if (!activate || !(await visible(activate))) {
+      if (!activate || !(await visibleInViewport(activate))) {
         const cardInspection = await card.evaluate((el) => ({
           cardId: el.getAttribute('data-id'), className: typeof el.className === 'string' ? el.className : '',
           rect: (() => { const r = el.getBoundingClientRect(); return { x:r.x,y:r.y,width:r.width,height:r.height,intersectsViewport:r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight }; })(),
@@ -1307,7 +1335,7 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
         throw new Error(`目标卡 ${focusCardId} 在选中/双击/右键后仍无嵌入iframe或可用游玩控件；实际卡UI摘要=${JSON.stringify(cardInspection)}`);
       }
     }
-    if (!embeddedFrame && activate && await visible(activate)) {
+    if (!embeddedFrame && activate && await visibleInViewport(activate)) {
       await activate.click();
       const activationDeadline = Date.now() + 30_000;
       while (!embeddedFrame && Date.now() < activationDeadline) {
@@ -1350,7 +1378,7 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       if (href.searchParams.get('session') !== frameGame.id || href.hash !== iframeHash) throw new Error('卡片高清iframe全屏URL未保留当前session/hash');
       const hit = await fullscreen.evaluate((el) => { const r=el.getBoundingClientRect(); const target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2); return { hit:el.contains(target),rect:{width:r.width,height:r.height},modal:!!document.querySelector('.rs-detail') }; });
       await fullscreen.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
-      await embeddedFrame.waitForFunction(()=>{const el=[...document.querySelectorAll('a')].find(x=>x.textContent.trim()==='全屏打开');if(!el)return false;const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&el.contains(hit)&&!document.querySelector('.rs-detail')},{timeout:10_000});
+      await embeddedFrame.waitForFunction(()=>{const el=[...document.querySelectorAll('a')].find(x=>x.textContent.trim()==='全屏打开');if(!el)return false;const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&el.contains(hit)&&!document.querySelector('.rs-detail')},{polling:100,timeout:10_000});
       let popupHandler; let popupTimeout;
       const popupPromise=new Promise(resolve=>{popupHandler=popup=>resolve(popup);workshop.once('popup',popupHandler)});
       let popup;
