@@ -11,8 +11,8 @@ import { createCanvasMediaRecorder, resolveMediaOptions } from '../recording/can
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
 const MECHANIC_TEXT = Object.freeze({
-  buy: '招募干员的效果按其科技档位结算；部分工坊效果在招募获得或首次上阵时触发，具体时机看干员说明。',
-  equip: '装备会放入目标干员的装备栏；成长装备按对应属性乘区计算，徽章成长分项记录，训练等级合并显示。',
+  buy: '科技档位影响商店卡池；部分工坊效果在招募获得或首次上阵时触发，具体时机看干员说明。',
+  equip: '装备直接进入目标干员的装备栏；属性加成、乘区和触发条件以装备说明为准。',
   merge: '三名相同干员合成一名进阶干员；进阶后的科技档位与效果以当前干员说明为准。',
 });
 

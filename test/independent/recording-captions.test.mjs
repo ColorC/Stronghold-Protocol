@@ -11,7 +11,7 @@ test('first-action captions explain workshop differences without basic-play tuto
   assert.match(block, /招募获得或首次上阵时触发/);
   assert.match(block, /科技档位/);
   assert.match(block, /装备栏/);
-  assert.match(block, /徽章成长分项记录，训练等级合并显示/);
+  assert.doesNotMatch(block, /徽章.*训练等级/);
   assert.match(block, /三名相同干员合成一名进阶干员/);
   assert.match(source, /打开干员的参考原卡，查看原始卡面记录/);
   assert.doesNotMatch(block, /所有装备|永久|一定是徽章/);
