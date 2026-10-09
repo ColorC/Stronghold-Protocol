@@ -820,7 +820,6 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   if (state.pendingChoices.length) throw new Error('CHOICES_PENDING');
   if (!state.nodeStarted) throw new Error('SUPPLY_NOT_ADVANCED');
   const deployed = state.pieces.filter((piece) => piece.row !== null);
-  if (!deployed.length) throw new Error('NO_DEPLOYED_PIECES');
   if (deployed.length > state.level) throw new Error('POPULATION_OVER_CAPACITY');
   const cells = resolveDeployedField(state,catalog,fieldResolver);
   for (const piece of deployed) if (!canDeployAt(cells,piece.row,piece.col,opTable(catalog)[piece.operatorId])) throw new Error('ILLEGAL_DEPLOYMENT');

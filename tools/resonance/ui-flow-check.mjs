@@ -36,7 +36,7 @@ const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
-let completedWCheckpoint = false, completedEquipmentSellCheckpoint = false;
+let completedWCheckpoint = false, completedEquipmentSellCheckpoint = false, completedFightCheckpoint = false;
 const check = (name, value, detail) => { receipt.tests.push({ name, passed: !!value, detail }); if (!value) throw new Error(`${name}: ${JSON.stringify(detail)}`); };
 async function button(page, pattern) {
   const h = await page.waitForFunction((source) => { const re = new RegExp(source);
@@ -175,6 +175,30 @@ async function inspectEconomyControls(page, label) {
   await page.waitForFunction(() => !document.querySelector('.rs-codex-overlay'), { timeout: 8000 });
   const after = await page.evaluate(async () => { const id=new URL(location.href).searchParams.get('session'); return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision; });
   check(`${label}-economy-inspection-does-not-mutate-session`, before === after, {before,after});
+}
+async function inspectPriorFightReplay(page, sessionId, round, screenshotName, expectedUnitUid=null, expectedName=null) {
+  const before=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
+  await clickVisibleButtonText(page,'.rs-dock','战报','prior-fight-report-opener');
+  await page.waitForSelector('.rs-panel-drawer[aria-label="战斗记录"]',{timeout:8000});
+  await clickVisibleButtonText(page,'.rs-panel-drawer[aria-label="战斗记录"]','回放','prior-fight-replay-button');
+  await page.waitForSelector('.rs-replay-native[aria-label="战斗回放"]',{timeout:15000});
+  const replayTitle=await page.$eval('.rs-replay-native',element=>({label:element.getAttribute('aria-label'),text:element.innerText}));
+  check('prior-fight-replay-opens-selected-round',replayTitle.label==='战斗回放'&&new RegExp(`第\\s*${round}\\s*场战斗`).test(replayTitle.text),replayTitle);
+  const pause=await page.$eval('.rs-replay-native',root=>[...root.querySelectorAll('button')].find(element=>/^(暂停|继续)$/.test(element.innerText.trim()))?.innerText.trim()||null);
+  if(pause==='暂停') { const button=await page.$('.rs-replay-native button'),box=await button.boundingBox();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await page.waitForFunction(()=>/继续/.test(document.querySelector('.rs-replay-native')?.innerText||''),{timeout:5000}); }
+  const hit=await page.waitForFunction(expectedUid=>{const adapter=globalThis.__SP_VIEW__,raw=adapter?.raw,canvas=document.querySelector('.gm__field canvas');if(!raw?.debug?.views||!canvas)return false;const cr=canvas.getBoundingClientRect();for(const candidate of raw.debug.views.values()){const info=candidate?.info;if(info?.side!=='ally'||info.kind==='device'||info.uid==null||(expectedUid!=null&&info.uid!==expectedUid))continue;const rect=adapter.pieceScreenRect(info.uid);if(!rect||rect.width<3||rect.height<3)continue;for(const point of [{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-3}]){const unit=raw.debug.pick?.battleUnitAt?.(point.x-cr.left,point.y-cr.top);if(unit?.info?.uid===info.uid||unit?.uid===info.uid)return{x:point.x,y:point.y,uid:info.uid,side:info.side};}}return false;},{polling:'raf',timeout:12000},expectedUnitUid);
+  const point=await hit.jsonValue();check('prior-fight-replay-hit-tests-real-ally-unit',point?.side==='ally',point);
+  await page.mouse.click(point.x,point.y,{button:'right'});
+  await page.waitForSelector('.dpanel .dhead__name',{timeout:10000});
+  const detail=await page.$eval('.dpanel',element=>({name:element.querySelector('.dhead__name')?.innerText.trim(),snapshot:!!element.querySelector('.rs-detail__battle-snapshot'),member:!!element.querySelector('.rs-detail__member'),actions:!!element.querySelector('.rs-detail__actions'),selects:element.querySelectorAll('select').length}));
+  check('prior-fight-ally-right-click-opens-readonly-detail',detail.snapshot&&!detail.member&&!detail.actions&&!detail.selects&&(!expectedName||detail.name?.includes(expectedName))&&(!expectedName||/1星/.test(detail.snapshot)),detail);
+  await shot(page,screenshotName);
+  const after=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
+  check('prior-fight-replay-detail-is-readonly',after.revision===before.revision,{before:before.revision,after:after.revision});
+  await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+  await clickVisibleButtonText(page,'.rs-replay-native','关闭','prior-fight-replay-close');
+  await page.waitForFunction(()=>!document.querySelector('.rs-replay-native'),{timeout:8000});
+  check('prior-fight-replay-closes-without-new-actions',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
 }
 async function inspectOverlayShopReachability(page, pieceUid) {
   await rightClickPiece(page, pieceUid);
@@ -413,6 +437,22 @@ try {
       completedWCheckpoint=completedEquipmentSellCheckpoint;
       validResumeState=completedEquipmentSellCheckpoint;
       check('resume-tail-validates-stored-equip-and-sale-checkpoint',completedEquipmentSellCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,revision:resumed.revision,originalStarterIds:deployments,p1,p2,p3,p12,inventory:resumed.inventory,equipEvent,saleEvent});
+    }
+    if (!validResumeState && resumed?.phase === 'prep' && resumed?.revision === 13 && resumed?.round === 2 && resumed?.gold === 4) {
+      const priorPath=path.join(ROOT,'runtime/resonance/ui-verification/ui-tft-tail-attempt-9.json');
+      const prior=JSON.parse(await readFile(priorPath,'utf8'));
+      const priorTests=new Map((prior.tests||[]).map(test=>[test.name,test]));
+      const testsDone=['resume-tail-validates-stored-equip-and-sale-checkpoint','outside-sale-drop-cancels-without-session-change','drag-sells-real-deployed-piece','F-buys-xp-with-detail-open','mouse-move-p1-preserves-uid-position-facing-and-equipment','single-ui-fight-authoritative-damage','paused-replay-ally-pointer-hit-is-real-render-unit'];
+      const history=resumed.history||[],settled=[...history].reverse().find(event=>event.type==='fight-settled'&&event.round===1);
+      const p1=resumed.pieces?.find(piece=>piece.uid==='p1'),p12=resumed.pieces?.find(piece=>piece.uid==='p12');
+      completedFightCheckpoint=prior.status==='failed'&&prior.sessionId===resumeTailSession&&prior.initialRevision===9&&prior.fights===1&&
+        testsDone.every(name=>priorTests.get(name)?.passed===true)&&p1?.row===9&&p1?.col===3&&p1?.dir==='RIGHT'&&p1?.equipment?.some(item=>item.uid==='i4'&&item.itemId==='bow')&&
+        !resumed.pieces?.some(piece=>piece.uid==='p2'||piece.uid==='p3')&&p12?.row==null&&resumed.inventory?.some(item=>item.uid==='i5')&&resumed.xp===0&&resumed.level===4&&resumed.hp===97&&
+        history.some(event=>event.type==='operator-sold'&&event.uid==='p3'&&event.refund===1)&&history.some(event=>event.type==='xp-purchased'&&event.gold===4)&&
+        history.some(event=>event.type==='piece-moved'&&event.uid==='p1'&&event.row===9&&event.col===3)&&settled?.combatStats?.units?.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.taken===840&&unit.kills===2);
+      completedWCheckpoint=completedEquipmentSellCheckpoint=completedFightCheckpoint;
+      validResumeState=completedFightCheckpoint;
+      check('resume-tail-validates-stored-fight-and-live-round-two-checkpoint',completedFightCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,priorTests:testsDone.map(name=>({name,passed:priorTests.get(name)?.passed})),revision:resumed.revision,round:resumed.round,gold:resumed.gold,p1,p12,historyTail:history.slice(-5),settled});
     }
     check('resume-tail-existing-session-at-valid-prep-checkpoint',validResumeState,
       { phase: resumed?.phase, revision: resumed?.revision, gold: resumed?.gold, historyTypes, deployed: resumed?.pieces?.filter(piece => piece.row != null).length, completedWCheckpoint });
@@ -667,10 +707,10 @@ try {
     check('three-starters-deployed-by-native-pointer-and-facing-wheel', deployments.length === 3, { deployments, expectedStarterIds: [...starterIds] });
     receipt.freshActions.push({ action: 'mouse-drag-three-starters-facing-wheel', deployments });
     } else {
-      const expectedDeployed=completedEquipmentSellCheckpoint?['p1','p3']:['p1','p2','p3'];
+      const expectedDeployed=completedFightCheckpoint?['p1']:completedEquipmentSellCheckpoint?['p1','p3']:['p1','p2','p3'];
       check(completedEquipmentSellCheckpoint?'resume-tail-original-starters-tracked-after-sale':'resume-tail-three-starters-already-deployed',
         [...starterIds].join('|')==='p1|p2|p3'&&deployments.map(piece=>piece.uid).join('|')===expectedDeployed.join('|'),
-        { deployments, expectedOriginalStarterIds: [...starterIds], expectedCurrentlyDeployed:expectedDeployed, soldStarter:completedEquipmentSellCheckpoint?'p2':null });
+        { deployments, expectedOriginalStarterIds: [...starterIds], expectedCurrentlyDeployed:expectedDeployed, alreadySold:completedFightCheckpoint?['p2','p3']:completedEquipmentSellCheckpoint?['p2']:[] });
     }
     const viewportRevision=(await readFresh()).revision;
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
@@ -703,7 +743,8 @@ try {
     if(completedWCheckpoint) {
       current=await readFresh();
       check('W-bench-action-already-validated-from-prior-receipt',current.history?.some(event=>event.type==='piece-benched'&&event.uid===wTarget.uid),{uid:wTarget.uid,revision:current.revision});
-      check('W-redeploy-action-already-validated-from-prior-receipt',current.pieces.find(piece=>piece.uid===wTarget.uid)?.row===10&&current.pieces.find(piece=>piece.uid===wTarget.uid)?.col===3,{uid:wTarget.uid,actual:current.pieces.find(piece=>piece.uid===wTarget.uid)});
+      const piece=current.pieces.find(entry=>entry.uid===wTarget.uid),expectedMove=completedFightCheckpoint?current.history?.some(event=>event.type==='piece-moved'&&event.uid===wTarget.uid&&event.row===9&&event.col===3&&event.dir==='RIGHT'):piece?.row===10&&piece?.col===3;
+      check('W-redeploy-action-already-validated-from-prior-receipt',!!expectedMove,{uid:wTarget.uid,actual:piece,completedFightCheckpoint});
     } else {
       const beforeBench = await readFresh();
       await page.keyboard.press('w');
@@ -732,7 +773,7 @@ try {
     const equipmentBefore = await readFresh();
     let dragSale;
     if(completedEquipmentSellCheckpoint) {
-      check('equip-and-E-sale-already-validated-by-attempt-8',equipmentBefore.revision===9&&equipmentBefore.pieces.some(piece=>piece.uid==='p1'&&piece.equipment?.some(item=>item.uid==='i4'))&&!equipmentBefore.pieces.some(piece=>piece.uid==='p2')&&equipmentBefore.history?.some(event=>event.type==='operator-sold'&&event.uid==='p2'&&event.refund===1),{revision:equipmentBefore.revision,gold:equipmentBefore.gold,p1:equipmentBefore.pieces.find(piece=>piece.uid==='p1'),p2:equipmentBefore.pieces.find(piece=>piece.uid==='p2')||null});
+      check('equip-and-E-sale-already-validated-by-attempt-8',equipmentBefore.revision>=9&&equipmentBefore.pieces.some(piece=>piece.uid==='p1'&&piece.equipment?.some(item=>item.uid==='i4'))&&!equipmentBefore.pieces.some(piece=>piece.uid==='p2')&&equipmentBefore.history?.some(event=>event.type==='operator-sold'&&event.uid==='p2'&&event.refund===1),{revision:equipmentBefore.revision,gold:equipmentBefore.gold,p1:equipmentBefore.pieces.find(piece=>piece.uid==='p1'),p2:equipmentBefore.pieces.find(piece=>piece.uid==='p2')||null});
       dragSale=deployments.find(piece=>piece.uid==='p3');
     } else {
       check('starter-equipment-available-for-real-drag', equipmentBefore.inventory?.length > 0,
@@ -761,9 +802,12 @@ try {
       receipt.freshActions.push({ action: 'E-sell-selected-piece', uid: eTarget.uid, gold: current.gold });
       dragSale = deployments[2];
     }
-    check('drag-sale-target-is-still-a-live-deployed-starter',!!dragSale&&equipmentBefore.pieces.some(piece=>piece.uid===dragSale.uid&&piece.row!=null),{dragSale,currentlyDeployed:equipmentBefore.pieces.filter(piece=>starterIds.has(piece.uid)&&piece.row!=null).map(piece=>piece.uid)});
     await page.evaluate(() => { const close = document.querySelector('.dpanel__close'); close?.click(); });
     await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
+    if(completedFightCheckpoint) {
+      check('cancelled-sale-and-p3-drag-sale-already-validated-by-attempt-9',!equipmentBefore.pieces.some(piece=>piece.uid==='p3')&&equipmentBefore.history?.some(event=>event.type==='operator-sold'&&event.uid==='p3'&&event.refund===1),{revision:equipmentBefore.revision,p3:equipmentBefore.pieces.find(piece=>piece.uid==='p3')||null});
+    } else {
+    check('drag-sale-target-is-still-a-live-deployed-starter',!!dragSale&&equipmentBefore.pieces.some(piece=>piece.uid===dragSale.uid&&piece.row!=null),{dragSale,currentlyDeployed:equipmentBefore.pieces.filter(piece=>starterIds.has(piece.uid)&&piece.row!=null).map(piece=>piece.uid)});
     const beforeDragSale = await readFresh();
     const saleSource = await piecePointerPoint(page, dragSale.uid);
     await page.mouse.move(saleSource.x, saleSource.y); await page.mouse.down();
@@ -784,6 +828,9 @@ try {
     check('drag-sells-real-deployed-piece', !current.pieces.some(piece => piece.uid === dragSale.uid) && current.gold > beforeDragSale.gold,
       { uid: dragSale.uid, goldBefore: beforeDragSale.gold, goldAfter: current.gold });
     receipt.freshActions.push({ action: 'native-drag-sell', pieceUid: dragSale.uid, gold: current.gold });
+    }
+    let settled, damageUnits=[];
+    if(!completedFightCheckpoint) {
     live = current;
     await rightClickPiece(page, wTarget.uid);
     const beforeXp = current;
@@ -835,8 +882,8 @@ try {
       const state=(await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, last=[...(state.history||[])].reverse().find(entry=>entry.type==='fight-settled');
       return Array.isArray(last?.combatStats?.units) && last.combatStats.units.some(unit=>Number.isFinite(unit.dmg) && unit.dmg>0);
     }, { timeout: 60000 }, receipt.sessionId);
-    live = await readFresh(); const settled = [...live.history].reverse().find(entry => entry.type === 'fight-settled');
-    const damageUnits = settled.combatStats.units.filter(unit => Number.isFinite(unit.dmg) && unit.dmg > 0);
+    live = await readFresh(); settled = [...live.history].reverse().find(entry => entry.type === 'fight-settled');
+    damageUnits = settled.combatStats.units.filter(unit => Number.isFinite(unit.dmg) && unit.dmg > 0);
     check('single-ui-fight-authoritative-damage', receipt.fights === 1 && damageUnits.length > 0,
       { fights: receipt.fights, damageUnits: damageUnits.map(unit => ({ uid: unit.uid, dmg: unit.dmg })) });
     receipt.freshActions.push({ action: 'single-ui-fight', round: settled.round, damageUnits: damageUnits.map(unit => ({ uid: unit.uid, dmg: unit.dmg })) });
@@ -901,6 +948,50 @@ try {
         check('post-fight-mouse-refresh-updates-session',current.gold===beforeMouseRefresh.gold-refreshCost,{before:beforeMouseRefresh.gold,after:current.gold,cost:refreshCost});
       } else check('post-fight-mouse-economy-actions-affordable',false,{phase:current.phase,gold:current.gold,required,level:current.level});
     } else check('post-fight-mouse-economy-controls-reachable-in-prep',false,{phase:current.phase});
+    } else {
+      await inspectPriorFightReplay(page,receipt.sessionId,1,'21-tft-replay-detail');
+      current=await readFresh();
+      const benchPiece=current.pieces.find(piece=>piece.uid==='p12');
+      check('round-two-bench-p12-is-available-for-legal-financing',current.phase==='prep'&&benchPiece?.row==null,{phase:current.phase,gold:current.gold,p12:benchPiece});
+      await rightClickPiece(page,'p12');
+      const beforeP12Sale=await readFresh();await page.keyboard.press('e');
+      current=await stateAfterRevision(page,receipt.sessionId,beforeP12Sale.revision,'checkpoint13-sell-bench-p12');
+      check('checkpoint13-sells-bench-p12-through-real-detail-action',!current.pieces.some(piece=>piece.uid==='p12')&&current.gold>beforeP12Sale.gold,{goldBefore:beforeP12Sale.gold,goldAfter:current.gold,history:[...current.history].slice(-1)});
+      await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+      const refreshCost=Number(current.actionCosts?.refreshGold??2),xpCost=Number(current.actionCosts?.xpGold??4),required=refreshCost+xpCost;
+      if(current.gold<required) {
+        const p1=current.pieces.find(piece=>piece.uid==='p1');
+        check('checkpoint13-legal-p1-sale-needed-for-exact-economy-budget',!!p1,{gold:current.gold,required,p1:p1||null});
+        await rightClickPiece(page,'p1');const beforeP1Sale=await readFresh();await page.keyboard.press('e');
+        current=await stateAfterRevision(page,receipt.sessionId,beforeP1Sale.revision,'checkpoint13-sell-p1-budget');
+        check('checkpoint13-additional-live-piece-sale-funds-mouse-economy',!current.pieces.some(piece=>piece.uid==='p1')&&current.gold>=required,{goldBefore:beforeP1Sale.gold,goldAfter:current.gold,required});
+        await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+      }
+      check('checkpoint13-exact-mouse-economy-cost-is-funded',current.gold>=required,{gold:current.gold,refreshCost,xpCost,required});
+      const beforeMouseXp=current;
+      await clickPointerSelector(page,'.shopbar .rs-level-card','checkpoint13-mouse-xp');
+      current=await stateAfterRevision(page,receipt.sessionId,beforeMouseXp.revision,'checkpoint13-mouse-xp');
+      check('checkpoint13-real-mouse-xp-purchase',current.gold===beforeMouseXp.gold-xpCost&&(current.level>beforeMouseXp.level||current.xp>beforeMouseXp.xp),{goldBefore:beforeMouseXp.gold,goldAfter:current.gold,xpBefore:beforeMouseXp.xp,xpAfter:current.xp,levelBefore:beforeMouseXp.level,levelAfter:current.level,cost:xpCost});
+      const beforeMouseRefresh=current;
+      await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber','checkpoint13-mouse-refresh');
+      current=await stateAfterRevision(page,receipt.sessionId,beforeMouseRefresh.revision,'checkpoint13-mouse-refresh');
+      check('checkpoint13-real-mouse-refresh-purchase',current.gold===beforeMouseRefresh.gold-refreshCost,{goldBefore:beforeMouseRefresh.gold,goldAfter:current.gold,cost:refreshCost});
+      check('checkpoint13-does-not-create-or-fight-again',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights,priorReceiptFightCount:1});
+      await inspectPriorFightReplay(page,receipt.sessionId,1,'22-tft-replay-sold-ally','p1','角峰');
+      current=await readFresh();settled=[...current.history].reverse().find(entry=>entry.type==='fight-settled'&&entry.round===1);
+      damageUnits=settled?.combatStats?.units?.filter(unit=>Number.isFinite(unit.dmg)&&unit.dmg>0)||[];
+      check('checkpoint13-prior-fight-stats-remain-authoritative',!!settled&&damageUnits.some(unit=>unit.uid==='p1'&&unit.dmg===4872),{round:settled?.round,damageUnits});
+      await clickVisibleButtonText(page,'.rs-dock','战报','checkpoint13-report-identity-opener');
+      await page.waitForSelector('#rs-section-battle-report .rs-battle-report__identity',{timeout:10000});
+      const identityPoint=await page.evaluate(()=>{const button=[...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__unit')].find(row=>row.querySelector('.rs-battle-report__identity')?.innerText.includes('角峰'))?.querySelector('.rs-battle-report__identity');if(!button)return null;const r=button.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return document.elementFromPoint(x,y)?.closest('.rs-battle-report__identity')===button?{x,y,text:button.innerText.trim()}:null;});
+      check('checkpoint13-report-identity-is-real-pointer-target',!!identityPoint,identityPoint);
+      const beforeIdentity=await readFresh();await page.mouse.click(identityPoint.x,identityPoint.y);
+      await page.waitForFunction(()=>document.querySelector('.dpanel .dhead__name')?.innerText.includes('角峰'),{timeout:8000});
+      const identityDetail=await page.evaluate(()=>{const panel=document.querySelector('.dpanel');return{title:panel?.querySelector('.dhead__name')?.innerText.trim(),snapshot:panel?.querySelector('.rs-detail__battle-snapshot')?.innerText.trim(),oneStar:panel?.querySelector('.rs-detail__stars [aria-label="一星"]')?.getAttribute('aria-selected'),members:!!panel?.querySelector('.rs-detail__member'),actions:!!panel?.querySelector('.rs-detail__actions'),selects:panel?.querySelectorAll('select').length||0};});
+      check('checkpoint13-sold-report-identity-opens-readonly-one-star-detail',identityDetail.title?.includes('角峰')&&identityDetail.snapshot?.includes('1星')&&identityDetail.oneStar==='true'&&!identityDetail.members&&!identityDetail.actions&&!identityDetail.selects,identityDetail);
+      const afterIdentity=await readFresh();check('checkpoint13-report-identity-does-not-mutate-session',afterIdentity.revision===beforeIdentity.revision,{before:beforeIdentity.revision,after:afterIdentity.revision});
+      await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+    }
     if (await page.$('.rs-final-screen')) { await button(page, '查看战报'); await page.waitForSelector('.modal', { timeout: 10000 }); }
     else { await button(page, '战报'); await page.waitForSelector('#rs-section-battle-report', { timeout: 10000 }); }
     await page.waitForSelector('#rs-section-battle-report .rs-battle-report__unit', { timeout: 10000 });
@@ -995,7 +1086,7 @@ try {
     return (parsed.hostname === 'colorc.cc' && parsed.pathname.startsWith('/stronghold')) || parsed.hostname.endsWith('.pages.dev');
   }))];
   check('no-cloud-game-or-pages-dependency', forbiddenRequests.length === 0, forbiddenRequests);
-  check('expected-fight-count', receipt.fights === (battleUi ? 1 : 0), { expected: battleUi ? 1 : 0, actual: receipt.fights }); check('no-js-error', receipt.errors.length === 0, receipt.errors);
+  check('expected-fight-count', receipt.fights === (battleUi && !resumeTailSession ? 1 : 0), { expected: battleUi && !resumeTailSession ? 1 : 0, actual: receipt.fights }); check('no-js-error', receipt.errors.length === 0, receipt.errors);
   receipt.status = 'passed';
 } catch (error) { receipt.status = 'failed'; receipt.failure = error.stack || String(error);
   if (browser) { const pages = await browser.pages().catch(() => []); if (pages.length) await shot(pages.at(-1), 'failure').catch(() => {}); }

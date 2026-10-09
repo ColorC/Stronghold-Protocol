@@ -1,6 +1,15 @@
 // Pure, player-facing reshaping helpers for the Resonance page.
 export const pieceNum = (uid) => Number(String(uid).replace(/^\D+/, ''));
 export const isDeployed = (piece) => piece?.row != null && piece?.col != null;
+export function resolveBattleOperator(unit,catalog,pieces=[],nativeChess=null) {
+ const operators=catalog?.operators||{},defId=String(unit?.defId??'');let operatorId=Object.hasOwn(operators,defId)?defId:null,historicalStar=null;
+ const variant=/^resonance_(.+)_star([1-3])$/.exec(defId);
+ if(!operatorId&&variant&&Object.hasOwn(operators,variant[1])){operatorId=variant[1];historicalStar=Number(variant[2])}
+ const uid=unit?.uid,piece=uid==null?null:pieces.find(row=>row.uid===uid||String(row.uid)===String(uid)||pieceNum(row.uid)===Number(uid));
+ if(!operatorId&&piece&&Object.hasOwn(operators,piece.operatorId))operatorId=piece.operatorId;
+ if(!operatorId&&nativeChess?.charId)operatorId=Object.entries(operators).find(([,operator])=>operator.charId===nativeChess.charId)?.[0]||null;
+ return {operatorId,historicalStar,piece};
+}
 export function prepView(state,catalog) {
   const bench = (state?.pieces || []).filter((piece) => !isDeployed(piece));
   const toRender = (piece) => ({ uid: pieceNum(piece.uid), kind: 'chess', id: piece.operatorId,

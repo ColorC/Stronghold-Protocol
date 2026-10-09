@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   applyAction, calculateRoundIncome, createSession, validateSession, viewSession, resonanceRules,
 } from '../../server/modes/resonance/session.js';
-import { combatStatsOf } from '../../server/modes/resonance/battle.js';
+import { combatStatsOf, runResonanceBattle } from '../../server/modes/resonance/battle.js';
+import { getData } from '../../server/data.js';
+import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 
 const operators = Object.fromEntries([
   ['m1',1,'MELEE'],['m2',1,'MELEE'],['r1',1,'RANGED'],['m3',1,'MELEE'],['r2',1,'RANGED'],
@@ -158,6 +160,36 @@ test('sell returns source copies and follows one-star refund rule',()=>{
   assert.equal(result.state.gold,6);
   assert.equal(result.state.poolRemaining[piece.operatorId],before+1);
   assertPoolConserved(result.state);
+});
+
+test('selling the whole starter roster and spending all gold can recover through a real empty-field loss',()=>{
+  const data=getData(),seed=9127,realCatalog=getResonanceCatalog(data,{environmentId:'origin_laterano',seed});
+  const created=createSession({seed,difficulty:'NORMAL',environmentId:'origin_laterano',catalog:realCatalog});
+  assert.equal(created.ok,true,created.error);
+  let state=created.state;
+  const action=(type,args={},extra={})=>{
+    const result=applyAction(state,{type,...args},{catalog:realCatalog,fieldResolver:fields,...extra});
+    assert.equal(result.ok,true,`${type}: ${result.error}`);state=result.state;return result;
+  };
+  for(const piece of [...state.pieces])action('sell',{pieceUid:piece.uid});
+  assert.equal(state.pieces.length,0,'all three starter pieces were sold through legal actions');
+  assert.equal(state.gold,8,'the three one-cost starters plus opening gold produce eight gold');
+  action('buyXp');action('buyXp');
+  assert.equal(state.pieces.length,0);assert.equal(state.gold,0,'two legal four-gold XP purchases exhaust the proceeds');
+  assert.equal(state.nodeStarted,true);
+  const settled=action('fight',{}, {recording:false,battleRunner:(input,{recording})=>runResonanceBattle(input,{data,catalog:realCatalog,recording})});
+  assert.equal(settled.replay,null,'recording:false returns no replay data');
+  const fight=settled.events.find(event=>event.type==='fight-settled');
+  assert.ok(fight,'the real battle reaches normal fight settlement');
+  assert.equal(fight.won,false,'an empty formation does not clear the wave');
+  assert.ok(fight.hpLoss>0,`native enemies leak and cause real target loss (hpLoss=${fight.hpLoss})`);
+  assert.equal(fight.diagnostics?.errorCount,0);
+  assert.equal(state.round,2);
+  assert.equal(state.gold,4,'normal first-round base income is paid on the loss');
+  const affordable=state.shop.offers.find(offer=>offer.operatorId&&offer.cost<=state.gold);
+  assert.ok(affordable,'the refreshed real shop offers an operator affordable from the earned base income');
+  action('buy',{offerUid:affordable.uid});
+  assert.equal(state.pieces.length,1,'the next legal shop purchase restores a roster');
 });
 
 test('same-identity copies merge 3→2→3 without minting pool copies',()=>{

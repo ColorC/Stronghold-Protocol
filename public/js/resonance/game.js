@@ -4,7 +4,7 @@ import { useFieldView } from '../ui/fieldHost.js';
 import { useGameData } from '../ui/gameComponents.js';
 import { FacingWheel,holdPiece,setPieceDir } from '../ui/facingWheel.js';
 import { data } from '../data.js';
-import { actionErrorText,adjacentDeployedPairs,choiceDescription,choiceLabel,needsAdjacentStrategyPair,parseDetailHash,pieceNum,prepView } from './model.js';
+import { actionErrorText,adjacentDeployedPairs,choiceDescription,choiceLabel,needsAdjacentStrategyPair,parseDetailHash,pieceNum,prepView,resolveBattleOperator } from './model.js';
 import { resonanceApi } from './api.js';
 import { toast } from '../ui/toasts.js';
 import { audio } from '../audio.js';
@@ -26,10 +26,8 @@ export function GameScreen({id,initial,catalog,onLeave,onState}) {
  // and UID; when a historical UID no longer exists in state, the detail stays read-only and uses catalog basics.
  useEffect(()=>{if(!view)return;const off=view.on('pieceClick',(event)=>{
    if(event?.preview)return;
-   if(event?.unitId!=null){const unit=event.unit;if(unit?.side!=='ally')return;const defId=unit.defId;let operatorId=catalog.operators?.[defId]?defId:null;
-     if(!operatorId&&defId!=null){const native=data.lookup('chess',defId);operatorId=Object.entries(catalog.operators||{}).find(([id,op])=>id===defId||op.charId&&native?.charId===op.charId)?.[0]||null;}
-     if(!operatorId)return;const unitUid=unit.uid??event.uid;const piece=unitUid==null?null:stateRef.current.pieces.find(p=>p.uid===unitUid||String(p.uid)===String(unitUid)||pieceNum(p.uid)===Number(unitUid));
-     if(piece)setHoveredPieceUid(piece.uid);openDetail({kind:'operator',id:operatorId,...(piece?{pieceUid:piece.uid}:{}),star:unit.resonanceStar||piece?.star||1,battleUnit:unit});return;
+     if(event?.unitId!=null){const unit=event.unit;if(unit?.side!=='ally')return;const unitUid=unit.uid??event.uid,variant=/^resonance_(.+)_star[1-3]$/.exec(String(unit.defId??''));const native=data.lookup('chess',variant?.[1]||unit.defId);const resolved=resolveBattleOperator({...unit,uid:unitUid},catalog,stateRef.current.pieces,native);if(!resolved.operatorId)return;
+     const {operatorId,piece,historicalStar}=resolved;if(piece)setHoveredPieceUid(piece.uid);openDetail({kind:'operator',id:operatorId,...(piece?{pieceUid:piece.uid}:{}),star:historicalStar||unit.resonanceStar||piece?.star||1,battleUnit:unit});return;
    }
    const piece=stateRef.current.pieces.find(p=>pieceNum(p.uid)===Number(event?.uid));if(piece){setHoveredPieceUid(piece.uid);openDetail({kind:'operator',id:piece.operatorId,pieceUid:piece.uid})}
  });const hover=view.on('pieceHover',(event)=>{const piece=event?.uid==null?null:stateRef.current.pieces.find(p=>pieceNum(p.uid)===Number(event.uid));setHoveredPieceUid(piece?.uid||null)});const tile=view.on('tileHover',(event)=>setHoveredTile(event?.area==='board'?{row:event.row,col:event.col}:null));return()=>{off?.();hover?.();tile?.()}},[view,openDetail,catalog]);
