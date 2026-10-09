@@ -16,7 +16,7 @@ import {makeBattle,enemyRec} from '../helpers/battleHarness.js';
 
 const data=getData(),catalog=getCatalog(data);
 const groups=[
- ['忍冬','伺夜','德克萨斯','拉普兰德','缄默德克萨斯','巫恋','荒芜拉普兰德'],
+ ['贾维','伺夜','普罗旺斯','拉普兰德','缄默德克萨斯','巫恋','荒芜拉普兰德'],
  ['耶拉','崖心','银灰','初雪','锏','凛御银灰','圣聆初雪'],
  ['松果','赫默','雷蛇','白面鸮','蛇屠箱','迷迭香','缪尔赛思'],
  ['流星','焰尾','瑕光','锏','玛恩纳','灰毫','耀骑士临光'],
@@ -45,27 +45,34 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 function battle(pieces,{captureNoisy=false}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
 for(const elite of [false,true]){
  const form=elite?'elite':'normal';
- test(`current Siracusa seven ${form}: retirement summons, live multiplier and native attack echo`,()=>{
-   const pieces=roster(groups[0],elite),echoPiece=pieces.find(p=>p.name==='德克萨斯');
+ test(`current Siracusa seven ${form}: opening deployments, amplified payloads and Javi attack echo`,()=>{
+   const pieces=roster(groups[0],elite),echoPiece=pieces.find(p=>p.name==='贾维');
    const blocker=pieces.find(p=>p.row===echoPiece.row&&p.col===echoPiece.col+1);if(blocker){blocker.row=9;blocker.col=echoPiece.col+1;}
-   const h=battle(pieces,{captureNoisy:true}),maker=h.by('伺夜'),baron=h.by('荒芜拉普兰德'),echo=h.by('德克萨斯');
-   const echoed=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='CFM_316'&&e.kind==='retireEcho').length;
+   const h=battle(pieces,{captureNoisy:true}),maker=h.by('伺夜'),wuxian=h.by('巫恋'),echo=h.by('贾维');
+   const echoEvents=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_078'&&e.kind==='deployEcho').length;
+   const copiedPayloads=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId!=='BGS_078'&&e.kind==='deployEcho').length;
    const attackEvents=()=>h.hooksOf('attack').filter(e=>e.attacker===echo&&!e.isSkill&&!e.attacker.mem.independentExtraAttack&&!(e.profile?.tags||[]).includes('independentEquipment')).length;
+   const opening=h.b.independentDarkmoonTrace;
+   assert.ok(opening.some(e=>e.sourceId==='CFM_316'&&e.kind==='deploy'),'CFM_316 resolves from Battle.start without waiting for a death');
+   assert.ok(opening.some(e=>e.sourceId==='BGS_018'&&e.kind==='deploy'),'the late-positioned BGS_018 resolves its opening deployment payload');
+   const amplified=Object.values(maker.mem.darkmoonTemporaryEquipment||{}).find(x=>x.sourceId==='BGS_018');
+   assert.equal(amplified?.attackUnits,5*(elite?2:1)*(elite?3:2),'FP1_031 amplifies the opening deployment payload regardless of roster order');
+   assert.ok(h.b.allyUnits.filter(u=>u.kind==='token'&&u.mem.darkmoonSummon).length<=7,'opening summon effects respect the seven-token safety cap');
    const enemy=h.spawn('probe',{pos:[echoPiece.row,echoPiece.col+1]});
-   const tile=h.b.grid.tile(echoPiece.row,echoPiece.col+1);assert.ok(tile&&tile.pass!=='NONE','Texas attacks a real enemy on a legal adjacent tile');
+   const tile=h.b.grid.tile(echoPiece.row,echoPiece.col+1);assert.ok(tile&&tile.pass!=='NONE','Javi attacks a real enemy on a legal adjacent tile');
+   const beforeEcho=echoEvents(),beforeCopied= copiedPayloads();
    h.b.emit('attack',{attacker:echo,targets:[enemy],isSkill:true,profile:{tags:['skill']}});
+   assert.equal(echoEvents(),beforeEcho,'a skill attack does not trigger Javi');
    echo.atkCd=0;
-   const every=elite?8:12;
-   assert.ok(h.runUntil(()=>attackEvents()>=every-1,20),'actual battle steps produce ordinary native attacks');
-   assert.equal(attackEvents(),every-1);assert.equal(echoed(),0,'a skill-tagged event does not advance Texas native-attack counter');
-   assert.ok(h.runUntil(()=>attackEvents()>=every,5),'the next actual ordinary attack crosses Texas threshold');
-   const echoes=echoed();assert.equal(echoes,elite?3:2,'Texas triggers every 12 normal or 8 elite native attacks, then uses the live Baron multiplier');
-   assert.ok(maker.alive,'echoing a retirement never kills its source');
-   assert.ok(baron.alive,'the retirement multiplier must stay alive during the echo');
+   assert.ok(h.runUntil(()=>attackEvents()>=1,10),'actual battle steps produce an ordinary Javi attack');
+   const echoes=echoEvents()-beforeEcho;assert.equal(echoes,elite?2:1,'Javi copies a live deployment payload on each eligible proc');
+   assert.equal(copiedPayloads()-beforeCopied,elite?6:2,'each copied deployment payload receives the opening FP1_031 multiplier');
+   assert.ok(maker.alive,'echoing a deployment payload never kills its source');
+   assert.ok(wuxian.alive,'the opening deployment amplifier stays alive during the echo');
    assert.ok(h.b.allyUnits.some(t=>t.kind==='token'&&t.alive&&t.mem.darkmoonSummon),'echo summons through the normal temporary-token path');
-   assert.ok(h.runUntil(()=>attackEvents()>=96,110),'the seven-body battle sustains 96 real Texas ordinary attacks');
-   assert.equal(attackEvents(),96);assert.equal(echoed(),elite?18:6,'ordinary attacks share one per-battle counter across the battle and retain the source echo cap');
-   h.b.kill(maker);h.step(1);assert.ok(h.b.independentDarkmoonTrace.some(e=>e.sourceId==='CFM_316'&&e.sourceUid===maker.uid&&e.kind==='retire'),'the same source still resolves its real death through the natural retirement path');
+   assert.ok(h.runUntil(()=>attackEvents()>=96,110),'the seven-body battle sustains 96 real Javi ordinary attacks');
+   assert.equal(attackEvents(),96);assert.equal(echoEvents(),elite?6:3,'ordinary attacks share one per-battle counter and retain the source echo cap');
+   assert.equal(copiedPayloads(),(elite?6:3)*(elite?3:2),'every Javi proc copies the deployment payload the amplified number of times');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
  test(`current Kjerag seven ${form}: cross-faction gain trait, same-tier bodies and five shield breaks`,()=>{
@@ -80,16 +87,28 @@ for(const elite of [false,true]){
    assert.equal(shields(silverash),0,'five actual hits consume the five setup shield layers');assert.ok(reactor.s.atk>beforeAtk,'current BGS_067 reacts after real shield consumption');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
- test(`current Colombia seven ${form}: permanent badges, summon shield and original fallen tokens`,()=>{
+ test(`current Colombia seven ${form}: permanent badges, summon shield and highest-attack original phantoms`,()=>{
   const pieces=roster(groups[2],elite),{hook}=prep(pieces);hook('prepEnd',pieces[3]);assert.ok(pieces.some(p=>qty(p,'precision')>=2));
-  const h=battle(pieces),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;h.b.kill(h.by('松果'));h.step(1);
-  const first=h.b.allyUnits.find(u=>u.kind==='token'&&u.alive);assert.ok(first);assert.ok(deflect.buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=2);assert.ok(growth.s.atk>before);
-  const original={atk:first.base.atk,maxHp:first.base.maxHp};h.b.addBuff(first,{key:'probe-temporary',mods:{atkPct:5},persist:true});h.b.kill(first);h.step(1);h.b.kill(h.by('缪尔赛思'));h.step(1);
-  const sourceCopies=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.uid?.startsWith('darkmoon-copy:')&&u.mem.darkmoonSummon);
-  const copiedOriginal=sourceCopies.find(u=>u.defId==='token_tactician_reinforce'&&u.base.atk===original.atk&&u.base.maxHp===original.maxHp);
+  const h=battle(pieces),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;
+  assert.ok(deflect.buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=2,'BGS_071 deployment generates its actual support token');
+  assert.equal(h.hooksOf('death').length,0,'opening phantom selection does not depend on a death event');
   const mlyssSummons=h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_012'&&e.kind==='summon');
-  assert.ok(copiedOriginal,JSON.stringify({original,sourceCopies:sourceCopies.map(u=>({uid:u.uid,defId:u.defId,rawSource:u.def.raw?.darkmoonNativeChessId,atk:u.base.atk,hp:u.base.maxHp,items:u.items})),mlyssSummons,trace:h.b.independentDarkmoonTrace,errors:h.b.errors}));
-  assert.ok(mlyssSummons.some(e=>e.targets.includes(copiedOriginal.uid)),'BGS_012 summoned the source-native projection');assert.deepEqual(copiedOriginal.items,[]);
+  const copiedIds=mlyssSummons.flatMap(e=>e.targets),copies=copiedIds.map(uid=>h.unit(uid)).filter(Boolean);
+  const eligible=pieces.filter(p=>nativeFactions(p,catalog).includes('哥伦比亚')).map(p=>h.unit(p.uid)).sort((a,b)=>b.s.atk-a.s.atk||a.id-b.id);
+  const expected=eligible.slice(0,elite?4:2).map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId);
+  const actual=copies.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId);
+  assert.deepEqual(actual,expected.slice(0,actual.length),'BGS_012 copies the highest-attack Columbia units in order, including itself when ranked');
+  const otherSummons=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon&&!copies.includes(u));
+  assert.ok(copies.length<=Math.min(expected.length,Math.max(0,7-otherSummons.length)),'the copied target count respects the remaining seven-token capacity and available legal tiles');
+  for(const copy of copies){
+    const sourceId=copy.def.darkmoonNativeChessId||copy.def.raw?.darkmoonNativeChessId||copy.defId;
+    const source=catalog.operators[sourceId],raw=source?.source?.[elite?'eliteChess':'normalChess']||source?.source?.normalChess;
+    assert.ok(raw,'phantom source preserves the correct native body form');
+    assert.equal(copy.base.atk,raw.stats.atk,'phantom uses pristine source attack, without inherited badge growth');
+    assert.equal(copy.base.maxHp,raw.stats.maxHp,'phantom uses pristine source health, without inherited badge growth');
+    assert.deepEqual(copy.items,[],'phantom does not inherit worn equipment');
+  }
+  assert.ok(h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon).length<=7,'actual initial summons respect the seven-token safety cap');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
   test(`current Kazimierz seven ${form}: Battlecry and end-of-prep growth`,()=>{

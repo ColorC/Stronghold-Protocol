@@ -369,7 +369,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       battle.after(0,()=>{for(let i=0;i<repeat;i++)retireAction(e);});
     },{owner:unit});
     if(r.echo)battle.on('attack',event=>{
-      if(event.attacker!==unit||!attackEvent(event)||!alive(unit)||!ready(e,6,3))return;
+      if(event.attacker!==unit||event.isSkill||!attackEvent(event)||!alive(unit)||!ready(e,6,3))return;
       for(let i=0;i<scale(e);i++){const x=battle.echoDarkmoonDeployment(unit);if(x)note(e,'deployEcho',[x.unit]);}
     },{owner:unit});
     if(r.aura)auras.push(e);
