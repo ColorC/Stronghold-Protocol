@@ -268,7 +268,7 @@ async function writeFixtureSession({ data, catalog, specs, strategyId = null, la
       summonOwnerId: specs.find((spec) => spec.summonTokenId)?.operatorId || null, summonTokenId: specs.find((spec) => spec.summonTokenId)?.summonTokenId || null,
       source: 'canonical createSession + validated isolated fixture state; browser actions still use real HTTP and runResonanceBattle' });
   }
-  return { id, state, catalog: reconstructedCatalog,seed:fixtureSeed };
+  return { id, state, catalog: reconstructedCatalog, seed: fixtureSeed, strategyId };
 }
 function resolveFixtureSummonToken(field,catalog,operator,star=1){
   const record=operator?.stars?.[star]?.record;if(!record)return null;
@@ -443,7 +443,7 @@ async function clickText(page, selector, text, { exact = true, timeout = 10_000 
   throw new Error(`未找到可点击文本 ${JSON.stringify(text)} (${selector})`);
 }
 async function clickButton(page, text) { return clickText(page, 'button', text, { exact: false }); }
-async function waitGame(page) { await page.waitForSelector('.rs-game', { timeout: 60_000 }); }
+async function waitGame(page, timeout = 60_000) { await page.waitForSelector('.rs-game', { timeout }); }
 async function stateOf(page, id) {
   const response = await page.evaluate(async (sessionId) => fetch(new URL(`resonance/api/sessions/${encodeURIComponent(sessionId)}?catalog=0`, location.href)).then((r) => r.json()), id);
   assert(response?.ok && response.state, '无法读取由页面创建的验证存档');
@@ -470,15 +470,26 @@ async function leaveToOpening(page) {
   await page.waitForSelector('.rs-start__setup', { timeout: 30_000 });
 }
 async function clickEnabled(page, selector, label) {
-  const list = await page.$$(selector);
-  for (const el of list) {
-    if (label && !(await textOf(el)).includes(label)) continue;
-    if (await visible(el) && await enabled(el)) {
-      await el.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
-      if (!await visibleInViewport(el)) continue;
-      await el.click(); return true;
+  const deadline = Date.now() + 5_000;
+  let lastClickError = null;
+  while (Date.now() < deadline) {
+    let matched = false;
+    for (const el of await page.$$(selector)) {
+      if (label && !(await textOf(el)).includes(label)) continue;
+      matched = true;
+      if (!await visible(el)) continue;
+      await el.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })).catch(() => {});
+      if (!await visibleInViewport(el) || !await enabled(el)) continue;
+      try { await el.click({ timeout: 1_000 }); return true; }
+      catch (error) {
+        lastClickError = error;
+        if (!/not clickable|notclickable|detached|not attached|Node is detached/i.test(error.message || '')) throw error;
+      }
     }
+    if (!matched && lastClickError) break;
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
+  if (lastClickError) throw new Error(`could not click current visible control ${selector} (${label || 'any'}): ${lastClickError.message}`);
   return false;
 }
 async function waitState(page, id, predicate, timeout = 20_000) {
@@ -641,42 +652,86 @@ async function openSessionPage(browserInstance, serverInstance, id, { fallback =
   const page = await browserInstance.newPage();
   await page.setViewport({ width: 1440, height: 1000 });
   attachPageDiagnostics(page, 'session page');
+  const network = [];
+  page.on('response', (response) => {
+    const url = response.url();
+    if (/\/resonance\/(api\/|data\/|js\/)|\.js(?:\?|$)/.test(url)) network.push({ status: response.status(), url,
+      resourceType: response.request().resourceType() });
+  });
+  page.on('requestfailed', (request) => network.push({ failed: request.failure()?.errorText || 'request failed', url: request.url(),
+    resourceType: request.resourceType() }));
   await page.browserContext().overridePermissions(serverInstance.url, ['clipboard-read', 'clipboard-write']);
   const params = { session: id }; if (fallback) params.render = 'fallback';
-  await page.goto(entryUrl(serverInstance, params), { waitUntil: 'domcontentloaded' });
-  await waitGame(page);
-  return page;
+  const targetUrl = entryUrl(serverInstance, params);
+  try {
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await waitGame(page);
+    return page;
+  } catch (error) {
+    const diagnostic = await page.evaluate(async (sessionId) => {
+      let sessionApi = null;
+      try {
+        const response = await fetch(new URL(`resonance/api/sessions/${encodeURIComponent(sessionId)}?catalog=0`, location.href));
+        const body = await response.json();
+        sessionApi = { status: response.status, ok: body?.ok, state: body?.state ? { phase: body.state.phase,
+          round: body.state.round, revision: body.state.revision } : null, error: body?.error || null };
+      } catch (error) { sessionApi = { error: error.message }; }
+      return { url: location.href, title: document.title, sessionApi,
+      body: (document.body?.innerText || '').slice(0, 1600), rootClasses: document.querySelector('main')?.className || null,
+      game: Boolean(document.querySelector('.rs-game')), setup: Boolean(document.querySelector('.rs-start__setup')) };
+    }, id).catch(() => ({ url: page.url() }));
+    await page.close().catch(() => {});
+    throw new Error(`session page failed to become ready: ${error.message}; target=${targetUrl}; diagnostic=${JSON.stringify(diagnostic)}; network=${JSON.stringify(network.slice(-30))}; recentPageErrors=${JSON.stringify(errors.slice(-8))}`);
+  }
 }
 async function exerciseFixtureInteractions(browserInstance, fixtureServerInstance, fixture) {
   const page = await openSessionPage(browserInstance, fixtureServerInstance, fixture.id);
   try {
     let state = await stateOf(page, fixture.id);
-    await collectStoryLinks(page, fixtureServerInstance);
-    const inventoryLink = await verifyCopiedLinkKinds(browserInstance, page, fixtureServerInstance, ['inventory']);
-    for (const kind of inventoryLink.verified) verifiedLinkKinds.add(kind);
-    await page.goto(`${fixtureServerInstance.url}/resonance.html?session=${encodeURIComponent(fixture.id)}`, { waitUntil: 'domcontentloaded' });
-    await waitGame(page);
+    // This fixture may already have been exercised by earlier preserved attempts.
+    // Begin from its actual authoritative state: use official unequip controls to
+    // bring its existing components back to inventory instead of assuming a fresh bag.
+    for (const piece of state.pieces) {
+      for (const equipped of [...(piece.equipment || [])]) {
+        const card = await page.$(`#member-${piece.uid} .rs-equipped`);
+        let unequip = null;
+        for (const button of await (card?.$$('button') || [])) {
+          if ((await textOf(button)).includes('卸下')) { unequip = button; break; }
+        }
+        if (!unequip) throw new Error(`equipped component ${equipped.uid} has no official unequip button`);
+        await unequip.click();
+        state = await waitState(page, fixture.id, (next) => next.inventory.some((entry) => entry.uid === equipped.uid));
+        if (state.pieces.some((owner) => owner.equipment?.some((entry) => entry.uid === equipped.uid))) {
+          throw new Error(`official unequip duplicated component ${equipped.uid}`);
+        }
+      }
+    }
     state = await stateOf(page, fixture.id);
     const recipe = fixture.catalog.recipes.find((entry) => entry.resultId === fixture.recipeResult);
-    const target = state.pieces[0];
-    const equip = await page.$(`#inventory-${state.inventory[0]?.uid} select[aria-label="装备给谁"]`);
-    if (!recipe || !target || !equip) throw new Error('fixture did not expose canonical recipe, owner, and equip selector');
+    const target = state.pieces.find((piece) => piece.uid !== state.pieces[0]?.uid) || state.pieces[0];
+    const materialIds = recipe?.parts || [];
+    const usedMaterials = new Set();
+    const materialUids = materialIds.map((itemId) => {
+      const found = state.inventory.find((entry) => entry.itemId === itemId && !usedMaterials.has(entry.uid));
+      if (found) usedMaterials.add(found.uid);
+      return found?.uid;
+    });
+    if (!recipe || !target || state.inventory.length < materialIds.length || materialUids.some((uid) => !uid)) {
+      throw new Error(`fixture lacks live canonical recipe materials after official unequip: ${JSON.stringify({
+        recipe: recipe?.id, materialIds, inventory: state.inventory.map((entry) => ({ uid: entry.uid, itemId: entry.itemId }))
+      })}`);
+    }
+    const equippedUid = state.inventory.find((entry) => entry.itemId === materialIds[0])?.uid;
+    const equip = await page.$(`#inventory-${equippedUid} select[aria-label="装备给谁"]`);
+    if (!equip) throw new Error('fixture did not expose canonical equipment owner selector');
     await selectOption(equip, target.uid);
     state = await waitState(page, fixture.id, (next) => next.pieces.find((piece) => piece.uid === target.uid)?.equipment.length === 1);
-    await collectStoryLinks(page, fixtureServerInstance);
-    const equippedLink = await verifyCopiedLinkKinds(browserInstance, page, fixtureServerInstance, ['equipped']);
-    for (const kind of equippedLink.verified) verifiedLinkKinds.add(kind);
-    await page.goto(`${fixtureServerInstance.url}/resonance.html?session=${encodeURIComponent(fixture.id)}`, { waitUntil: 'domcontentloaded' });
-    await waitGame(page);
-    state = await stateOf(page, fixture.id);
     const unequip = await page.$(`#member-${target.uid} .rs-equipped button`);
     if (!unequip) throw new Error('fixture equipment did not appear on the operator card');
     await unequip.click();
-    state = await waitState(page, fixture.id, (next) => next.pieces.find((piece) => piece.uid === target.uid)?.equipment.length === 0 && next.inventory.length >= 3);
+    state = await waitState(page, fixture.id, (next) => next.pieces.find((piece) => piece.uid === target.uid)?.equipment.length === 0
+      && next.inventory.some((entry) => entry.uid === equippedUid));
 
-    const materialIds = recipe.parts;
-    const materialUids = materialIds.map((itemId) => state.inventory.find((entry) => entry.itemId === itemId)?.uid);
-    if (materialUids.some((uid) => !uid)) throw new Error(`fixture recipe materials missing: ${materialIds.join(',')}`);
     for (const uid of materialUids) await (await page.$(`#inventory-${uid} input[type="checkbox"]`)).click();
     const combine = await findTextHandle(page, 'button', '合成所选', true);
     if (!combine || !await enabled(combine)) throw new Error('fixture recipe components are not combinable in the UI');
@@ -687,7 +742,7 @@ async function exerciseFixtureInteractions(browserInstance, fixtureServerInstanc
     if (!recycle) throw new Error('completed fixture equipment has no recycle control');
     await recycle.click();
     state = await waitState(page, fixture.id, (next) => !next.inventory.some((entry) => entry.uid === completed.uid));
-    passed('equip-unequip-combine-recycle', `隔离fixture真实UI依次装配/卸下/合成${recipe.resultName}/回收；不证明这些材料在玩家经济中可达`);
+    passed('equip-unequip-combine-recycle', `隔离fixture通过正式UI卸下既有装备后转装，再合成${recipe.resultName}并回收；不证明这些材料在玩家经济中可达`);
 
     const copySelect = await page.$('.rs-piece select[aria-label="选择复制器"]');
     if (!copySelect) throw new Error('fixture copy consumable selector not visible');
@@ -702,10 +757,23 @@ async function exerciseFixtureInteractions(browserInstance, fixtureServerInstanc
 
     const owner = state.pieces.find((piece) => piece.operatorId === fixture.summonOwnerId && piece.row != null);
     const summon = owner && await page.$(`#member-${owner.uid} .rs-summons select`);
-    if (!summon || (await summon.$$('option')).length < 2) throw new Error(`fixture ${fixture.summonTokenId} has no legal player-visible summon cells`);
-    await selectOption(summon, await summon.$eval('option:nth-child(2)', (option) => option.value));
+    if (!summon) throw new Error(`fixture ${fixture.summonTokenId} has no visible owner summon selector for ${owner?.uid || 'missing owner'}`);
+    await page.waitForFunction((ownerUid) => {
+      const select = document.querySelector(`#member-${CSS.escape(ownerUid)} .rs-summons select`);
+      return !!select && [...select.options].some((option) => option.value);
+    }, { timeout: 15_000 }, owner.uid).catch(async (error) => {
+      const actual = await page.evaluate((ownerUid) => {
+        const select = document.querySelector(`#member-${CSS.escape(ownerUid)} .rs-summons select`);
+        return { ownerPresent: !!document.querySelector(`#member-${CSS.escape(ownerUid)}`), selectPresent: !!select,
+          disabled: select?.disabled, options: [...(select?.options || [])].map((option) => ({ value: option.value, text: option.innerText })) };
+      }, owner.uid);
+      throw new Error(`fixture ${fixture.summonTokenId} has no legal player-visible summon cell after UI settled: ${JSON.stringify(actual)}; ${error.message}`);
+    });
+    const readySummon = await page.$(`#member-${owner.uid} .rs-summons select`);
+    if (!readySummon || (await readySummon.$$('option')).length < 2) throw new Error(`fixture ${fixture.summonTokenId} summon selector has no legal target options`);
+    await selectOption(readySummon, await readySummon.$eval('option:nth-child(2)', (option) => option.value));
     state = await waitState(page, fixture.id, (next) => next.pieces.find((piece) => piece.uid === owner.uid)?.summonOrders?.length > 0);
-    await selectOption(summon, '');
+    await selectOption(await page.$(`#member-${owner.uid} .rs-summons select`), '');
     state = await waitState(page, fixture.id, (next) => !next.pieces.find((piece) => piece.uid === owner.uid)?.summonOrders?.length);
     passed('summon-order-and-clear', `隔离fixture固定技能召唤物${fixture.summonTokenId}真实选择合法格并清除；不证明自然商店可达`);
     const battle = await performRealFight(page, fixture.id);
@@ -719,6 +787,7 @@ async function exercisePairFixture(browserInstance, fixtureServerInstance, fixtu
     const state = await stateOf(page, fixture.id);
     await collectStoryLinks(page, fixtureServerInstance);
     const choiceLink = await verifyCopiedLinkKinds(browserInstance, page, fixtureServerInstance, ['choice']);
+    if (choiceLink.missing.length) throw new Error('当前fixture没有可定位的策略选择项');
     for (const kind of choiceLink.verified) verifiedLinkKinds.add(kind);
     await page.goto(`${fixtureServerInstance.url}/resonance.html?session=${encodeURIComponent(fixture.id)}`, { waitUntil: 'domcontentloaded' });
     await waitGame(page);
@@ -792,6 +861,72 @@ async function collectStoryLinks(page, serverInstance) {
   for (const [kind, url] of links) if (url && !copiedLinkEvidence.has(kind)) copiedLinkEvidence.set(kind, { url, server: serverInstance });
   return links;
 }
+async function copyLiveLinkForKind(page, serverInstance, kind, onProgress = () => {}) {
+  const bounded = (promise, ms, label) => {
+    let timer;
+    return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms}ms`)), ms); })])
+      .finally(() => clearTimeout(timer));
+  };
+  const sessionId = new URL(page.url()).searchParams.get('session');
+  if (!sessionId) return null;
+  if (kind === 'operator') {
+    onProgress({ stage: 'expand-roster' });
+    const rosterButton = await findTextHandle(page, '.rs-game button', '展开全部干员', true);
+    if (rosterButton) await rosterButton.click().catch(() => {});
+  }
+  if (new Set(['recipe','strategy','environment','node']).has(kind)) {
+    onProgress({ stage: 'expand-catalog' });
+    for (const summary of await page.$$('details > summary')) {
+      const text = (await textOf(summary)).trim();
+      if (text.includes('图鉴与经营规则') || text.includes('合成配方')) await summary.click().catch(() => {});
+    }
+  }
+  const selectors = {
+    operator: '.rs-card--operator .rs-copy', pact: '.rs-pact .rs-copy',
+    item: '#rs-section-equipment .rs-card .rs-copy', recipe: '#rs-section-recipe-catalog .rs-card .rs-copy, #rs-section-equipment details .rs-copy',
+    strategy: '#rs-section-strategy-catalog .rs-card .rs-copy, [id^="choice-"] .rs-choice__option .rs-copy', environment: '#rs-section-environment-catalog .rs-card .rs-copy',
+    member: '#rs-section-field .rs-piece .rs-copy', inventory: '#rs-section-equipment [id^="inventory-"] .rs-copy',
+    equipped: '#rs-section-equipment [id^="equipped-"] .rs-copy', offer: '#rs-section-shop .rs-offer .rs-copy',
+    choice: '[id^="choice-"] .rs-copy', node: '#rs-section-economy-rules .rs-node .rs-copy',
+    battleNode: '.rs-next .rs-copy',
+  };
+  if (kind === 'session') {
+    onProgress({ stage: 'find-session-copy' });
+    const button = await findTextHandle(page, '.rs-resources button', '复制本局链接', true);
+    if (!button) return null;
+    await button.click();
+    const raw = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+    try { const url = new URL(raw); return url.origin === new URL(serverInstance.url).origin && url.searchParams.get('session') === sessionId
+      ? { url: url.href, targetId: sessionId } : null; } catch { return null; }
+  }
+  const selector = selectors[kind];
+  if (!selector) return null;
+  if (new Set(['operator','pact','item','recipe','strategy','environment','member','inventory','equipped','offer','choice','node','battleNode']).has(kind)) {
+    onProgress({ stage: 'wait-for-copy-target', selector });
+    await page.waitForSelector(selector, { timeout: 4_000 }).catch(() => {});
+  }
+  onProgress({ stage: 'enumerate-copy-targets', selector });
+  const buttons = await bounded(page.$$(selector), 2_000, `query ${kind} copy controls`);
+  onProgress({ stage: 'candidate-count', selector, count: buttons.length });
+  for (let index = 0; index < buttons.length; index++) {
+    const button = buttons[index];
+    onProgress({ stage: 'candidate-visible', selector, index });
+    if (!await bounded(visible(button), 1_500, `visibility ${kind} copy control ${index}`).catch(() => false)) continue;
+    onProgress({ stage: 'candidate-click', selector, index });
+    await bounded(button.click({ timeout: 1_500 }), 2_000, `click ${kind} copy control ${index}`).catch(() => {});
+    onProgress({ stage: 'read-clipboard', selector, index });
+    const raw = await bounded(page.evaluate(() => navigator.clipboard.readText()), 2_000, `read ${kind} clipboard`).catch(() => '');
+    let url, parsed;
+    try { url = new URL(raw); parsed = detailHashParts(url); } catch { continue; }
+    if (url.origin !== new URL(serverInstance.url).origin || parsed.kind !== kind || url.searchParams.get('session') !== sessionId) continue;
+    const targetId = kind === 'member' ? `member-${encodeURIComponent(parsed.id)}`
+      : kind === 'battleNode' ? `battle-node-${parsed.id}` : `${kind}-${parsed.id}`;
+    onProgress({ stage: 'verify-live-target', targetId });
+    if (!await bounded(page.evaluate((id) => !!document.getElementById(id), targetId), 1_500, `verify live ${kind} target`).catch(() => false)) continue;
+    return { url: url.href, targetId };
+  }
+  return null;
+}
 function detailHashParts(url) {
   const raw = decodeURIComponent(url.hash.slice(1));
   const kinds = ['battleNode', 'environment', 'operator', 'strategy', 'inventory', 'equipped', 'session', 'choice', 'member', 'recipe', 'offer', 'pact', 'item', 'node', 'section'];
@@ -828,14 +963,42 @@ function workshopFocusCardId(rawUrl) {
   if (hash.startsWith('card=')) return new URLSearchParams(hash).get('card') || '';
   return hash;
 }
-async function verifyCopiedLinkKinds(browserInstance, page, serverInstance, expectedKinds = []) {
+async function verifyCopiedLinkKinds(browserInstance, page, serverInstance, expectedKinds = [], onProgress = () => {}) {
   for (const summary of await page.$$('details > summary')) await summary.click().catch(() => {});
   const links = new Map(copiedLinkEvidence);
-  for (const [kind, url] of await collectCopiedLinks(page, serverInstance)) if (url && !links.has(kind)) links.set(kind, { url, server: serverInstance });
+  for (const [kind, url] of await collectCopiedLinks(page, serverInstance)) if (url) links.set(kind, { url, server: serverInstance });
+  const liveLinkKinds = new Set(['inventory', 'equipped', 'choice']);
+  for (const kind of expectedKinds.filter((candidate) => liveLinkKinds.has(candidate))) {
+    const selector = kind === 'choice' ? '[id^="choice-"]' : `#rs-section-equipment [id^="${kind}-"]`;
+    const targets = await page.$$(selector);
+    let fresh = null;
+    for (const targetElement of targets) {
+      if (!await visible(targetElement)) continue;
+      const targetId = await targetElement.evaluate((el) => el.id);
+      const copy = await targetElement.$('.rs-copy');
+      if (!copy) continue;
+      await copy.click();
+      const raw = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+      try {
+        const url = new URL(raw), parsed = detailHashParts(url);
+        const expectedTargetId = `${kind}-${parsed.id}`;
+        const currentTargetExists = await page.evaluate((id) => Boolean(document.getElementById(id)), expectedTargetId);
+        const currentSessionId = new URL(page.url()).searchParams.get('session');
+        if (url.origin === new URL(serverInstance.url).origin && parsed.kind === kind && targetId === expectedTargetId
+          && currentTargetExists && currentSessionId && url.searchParams.get('session') === currentSessionId) {
+          fresh = { url: url.href, server: serverInstance };
+          break;
+        }
+      } catch { /* a non-link clipboard result cannot be evidence for this target */ }
+    }
+    if (fresh) links.set(kind, fresh);
+    else links.delete(kind);
+  }
   const verified = [];
   const detailKinds = new Set(['operator','pact','item','recipe','strategy','environment']);
   const kindsToCheck = expectedKinds.length ? expectedKinds : [...links.keys()];
   for (const kind of kindsToCheck) {
+    onProgress({ stage: 'open-link', kind, verified: [...verified] });
     const entry = links.get(kind);
     if (!entry) continue;
     const url = typeof entry === 'string' ? entry : entry.url;
@@ -844,19 +1007,20 @@ async function verifyCopiedLinkKinds(browserInstance, page, serverInstance, expe
     const target = new URL(url);
     const parsed = detailHashParts(target);
     if (parsed.kind !== kind) throw new Error(`copied ${kind} link parsed as ${parsed.kind}`);
-    await page.goto(url, { waitUntil: 'domcontentloaded' }); await waitGame(page);
-    if (detailKinds.has(kind)) await page.waitForSelector('.rs-detail', { timeout: 15_000 });
-    else if (kind === 'member') await page.waitForFunction((id) => !!document.getElementById(`member-${encodeURIComponent(id)}`)?.matches(':focus'), { timeout: 15_000 }, parsed.id);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 }); await waitGame(page, 20_000);
+    if (detailKinds.has(kind)) await page.waitForSelector('.rs-detail', { timeout: 10_000 });
+    else if (kind === 'member') await page.waitForFunction((id) => !!document.getElementById(`member-${encodeURIComponent(id)}`)?.matches(':focus'), { timeout: 10_000 }, parsed.id);
     else if (kind === 'session') {
       assert(target.searchParams.get('session') === parsed.id, '复制的本局链接hash与session参数不一致');
       await stateOf(page, parsed.id);
     }
     else {
       const prefix = { inventory:'inventory', equipped:'equipped', offer:'offer', choice:'choice', node:'node', battleNode:'battle-node' }[kind];
-      if (prefix) await page.waitForSelector(`[id="${prefix}-${parsed.id.replaceAll('"', '\\"')}"]`, { timeout: 15_000 });
+      if (prefix) await page.waitForSelector(`[id="${prefix}-${parsed.id.replaceAll('"', '\\"')}"]`, { timeout: 10_000 });
       else continue;
     }
     verified.push(kind);
+    onProgress({ stage: 'link-verified', kind, verified: [...verified] });
     verifiedLinkKinds.add(kind);
   }
   const missing = expectedKinds.filter((kind) => !verified.includes(kind));
@@ -868,9 +1032,10 @@ async function verifyIframeFullscreen(browserInstance, fixtureServerInstance, fi
     const embeddedLinks = await collectStoryLinks(embedded, fixtureServerInstance);
     const detailUrl = embeddedLinks.get('strategy');
     if (!detailUrl) throw new Error('iframe fixture has no real copyable strategy link');
-    const wrapper = await browserInstance.newPage();
-    try {
-      await wrapper.setContent(`<iframe id="workshop-embed" title="共鸣嵌入画布" src="${detailUrl.replaceAll('&','&amp;').replaceAll('"','&quot;')}"></iframe>`);
+      const wrapper = await browserInstance.newPage();
+      try {
+      await wrapper.setViewport({ width: 1120, height: 800 });
+      await wrapper.setContent(`<iframe id="workshop-embed" title="共鸣嵌入画布" style="width:1120px;height:800px;border:0" src="${detailUrl.replaceAll('&','&amp;').replaceAll('"','&quot;')}"></iframe>`);
       const frameDeadline = Date.now() + 30_000;
       let frame = null;
       while (!frame && Date.now() < frameDeadline) {
@@ -880,18 +1045,53 @@ async function verifyIframeFullscreen(browserInstance, fixtureServerInstance, fi
       if (!frame) throw new Error('embedded session/detail page did not load in iframe');
       await frame.waitForSelector('.rs-game', { timeout: 60_000 });
       await frame.waitForSelector('.rs-detail', { timeout: 30_000 });
-      const fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
+      let fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
       if (!fullscreen) throw new Error('embedded Resonance page has no full screen link');
+      const initialHit = await fullscreen.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { rect: { x: r.x, y: r.y, width: r.width, height: r.height }, hitTag: hit?.tagName, hitText: hit?.textContent?.trim(), dialog: !!document.querySelector('.rs-detail') };
+      });
+      if (initialHit.dialog) {
+        const close = await frame.$('button[aria-label="关闭详情"]');
+        if (!close) throw new Error('detail dialog blocks fullscreen anchor and has no close control');
+        await close.click();
+        await frame.waitForSelector('.rs-detail', { hidden: true, timeout: 10_000 });
+        fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
+        if (!fullscreen) throw new Error('fullscreen anchor disappeared after closing the detail dialog');
+      }
+      await frame.waitForFunction(() => {
+        const el = [...document.querySelectorAll('a')].find((candidate) => candidate.textContent.trim() === '全屏打开');
+        if (!el) return false;
+        const r = el.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return r.width > 0 && r.height > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && hit === el && !document.querySelector('.rs-detail');
+      }, { timeout: 10_000 });
       const href = await fullscreen.evaluate((el) => el.href);
       const hrefUrl = new URL(href), embeddedUrl = new URL(frame.url());
       if (hrefUrl.searchParams.get('session') !== fixture.id || hrefUrl.hash !== embeddedUrl.hash) throw new Error('full screen link dropped session or deep link fragment');
-      const popupPromise = new Promise((resolve) => wrapper.once('popup', resolve));
-      await fullscreen.click();
-      const popup = await popupPromise;
+      let targetHandler;
+      const popupPromise = new Promise((resolve) => {
+        targetHandler = (target) => {
+          if (target.type() === 'page') resolve(target.page());
+        };
+        browserInstance.on('targetcreated', targetHandler);
+      });
+      let popup;
+      try {
+        await fullscreen.click();
+        popup = await Promise.race([popupPromise, new Promise((_, reject) => setTimeout(() => reject(new Error(`full screen click opened no browser page: ${href}`)), 15_000))]);
+      } finally {
+        if (targetHandler) browserInstance.off('targetcreated', targetHandler);
+      }
+      if (!popup) throw new Error(`full screen click did not create a browser page: ${href}`);
       await waitGame(popup);
-      if (new URL(popup.url()).searchParams.get('session') !== fixture.id || new URL(popup.url()).hash !== embeddedUrl.hash) throw new Error('opened full screen page did not preserve embedded session/fragment');
+      const openedUrl = popup.url();
+      if (new URL(openedUrl).searchParams.get('session') !== fixture.id || new URL(openedUrl).hash !== embeddedUrl.hash) throw new Error('opened full screen page did not preserve embedded session/fragment');
       await popup.close();
       passed('workshop-iframe-fullscreen-session-fragment', '本地iframe宿主中从真实策略定位链接点全屏；新页保留同一session与hash。iframe嵌入行为已验，实际Workshop宿主未接入本仓运行环境');
+      return { fixtureId: fixture.id, iframeUrl: detailUrl, embeddedSession: fixture.id, embeddedHash: embeddedUrl.hash,
+        fullscreenHref: href, openedUrl, viewport: { width: 1120, height: 800 }, detailClosedBeforeClick: initialHit.dialog,
+        clickCenterHitVerified: true, battleReplayed: false };
     } finally { await wrapper.close(); }
   } finally { await embedded.close(); }
 }
@@ -1090,6 +1290,24 @@ async function chooseNativeFieldAction(page, currentState) {
     const sessionId = new URL(page.url()).searchParams.get('session');
     const beforeDragRevision = currentState.revision;
     let tile = (piece.legalTiles[1] || piece.legalTiles[0]).split(',').map(Number);
+    const pickedUid = Number(String(piece.uid).replace(/^\D+/, ''));
+    await page.waitForFunction(({ uid, row, col }) => {
+      const view = globalThis.__SP_VIEW__, rect = view?.pieceScreenRect(uid), dest = view?.tileScreen(row, col);
+      if (!view || !rect || !dest) { window.__resonanceStableDeployGeometry = null; return false; }
+      const sources = [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }];
+      const source = sources.find((point) => view.pieceAtClient?.(point.x, point.y)?.uid === uid);
+      const target = document.elementFromPoint(dest.x, dest.y);
+      if (!source || !target || target.tagName !== 'CANVAS'
+        || source.x < 0 || source.x >= innerWidth || source.y < 0 || source.y >= innerHeight
+        || dest.x < 0 || dest.x >= innerWidth || dest.y < 0 || dest.y >= innerHeight) {
+        window.__resonanceStableDeployGeometry = null; return false;
+      }
+      const current = [Math.round(source.x), Math.round(source.y), Math.round(dest.x), Math.round(dest.y), Math.round(innerWidth), Math.round(innerHeight)];
+      const previous = window.__resonanceStableDeployGeometry;
+      const count = previous && previous.value.every((value, index) => value === current[index]) ? previous.count + 1 : 1;
+      window.__resonanceStableDeployGeometry = { value: current, count };
+      return count >= 3;
+    }, { polling: 'raf', timeout: 10_000 }, { uid: pickedUid, row: tile[0], col: tile[1] });
     const geometry = await page.evaluate(({ uid, row, col }) => {
       const view = globalThis.__SP_VIEW__;
       const viewUid = Number(String(uid).replace(/^\D+/, ''));
@@ -1149,42 +1367,65 @@ async function chooseNativeFieldAction(page, currentState) {
         }
       }
       let placed = authoritative.pieces.find((candidate) => candidate.uid === piece.uid);
-      const tileMatches = placed?.row === tile[0] && placed?.col === tile[1];
       if (!wheelOpened || !placed || placed.row == null) return { fieldKind, rendererVisible, view, deployed: false, directions: [],
         failure: !wheelOpened ? 'pointer drag did not open the FacingWheel' : 'wheel commit did not update authoritative row/col',
         target: tile, beforeRevision: beforeDragRevision, authoritative: { revision: authoritative.revision, piece: placed }, dragGeometry: geometry, dragEvents };
       const directions = [];
-      const openWheelOnCurrentTile = async () => {
+      const openWheelOnFreeTile = async () => {
         const viewUid = Number(String(piece.uid).replace(/^\D+/, ''));
-        await page.waitForFunction(({ row, col, uid }) => {
-          const view = globalThis.__SP_VIEW__, point = view?.tileScreen(row, col), hit = point && view?.pieceAtClient?.(point.x, point.y);
-          return hit?.uid === uid && hit?.area === 'board';
-        }, { timeout: 8_000 }, { row: placed.row, col: placed.col, uid: viewUid });
-        const point = await page.evaluate(({ row, col }) => globalThis.__SP_VIEW__?.tileScreen(row, col), { row: placed.row, col: placed.col });
-        assert(point, `no rendered tile for ${piece.uid} at ${placed.row},${placed.col}`);
+        const liveState = await stateOf(page, sessionId);
+        const current = liveState.pieces.find((candidate) => candidate.uid === piece.uid);
+        const occupied = new Set(liveState.pieces.filter((candidate) => candidate.uid !== piece.uid && candidate.row != null)
+          .map((candidate) => `${candidate.row},${candidate.col}`));
+        const targetKey = (current?.legalTiles || []).find((key) => key !== `${current.row},${current.col}` && !occupied.has(key));
+        assert(targetKey, `no second legal empty tile is available to verify facing for ${piece.uid}`);
+        const [targetRow, targetCol] = targetKey.split(',').map(Number);
+        await page.waitForFunction(({ row, col, targetRow, targetCol, uid }) => {
+          const view = globalThis.__SP_VIEW__, source = view?.tileScreen(row, col), dest = view?.tileScreen(targetRow, targetCol);
+          const hit = source && view?.pieceAtClient?.(source.x, source.y);
+          if (!source || !dest || hit?.uid !== uid || hit?.area !== 'board'
+            || source.x < 0 || source.x >= innerWidth || source.y < 0 || source.y >= innerHeight
+            || dest.x < 0 || dest.x >= innerWidth || dest.y < 0 || dest.y >= innerHeight) {
+            window.__resonanceStableWheelGeometry = null; return false;
+          }
+          const target = document.elementFromPoint(dest.x, dest.y);
+          if (!target || target.tagName !== 'CANVAS') { window.__resonanceStableWheelGeometry = null; return false; }
+          const current = [Math.round(source.x), Math.round(source.y), Math.round(dest.x), Math.round(dest.y), Math.round(innerWidth), Math.round(innerHeight)];
+          const previous = window.__resonanceStableWheelGeometry;
+          const count = previous && previous.value.every((value, index) => value === current[index]) ? previous.count + 1 : 1;
+          window.__resonanceStableWheelGeometry = { value: current, count };
+          return count >= 3;
+        }, { polling: 'raf', timeout: 10_000 }, { row: current.row, col: current.col, targetRow, targetCol, uid: viewUid });
+        const geometry = await page.evaluate(({ row, col, targetRow, targetCol }) => {
+          const view = globalThis.__SP_VIEW__;
+          const source = view?.tileScreen(row, col), dest = view?.tileScreen(targetRow, targetCol);
+          return { source, dest, picked: source && view?.pieceAtClient?.(source.x, source.y), targetPick: dest && view?.pieceAtClient?.(dest.x, dest.y),
+            hit: dest && (() => { const el = document.elementFromPoint(dest.x, dest.y); return el ? { tag: el.tagName, cls: String(el.className?.baseVal ?? el.className ?? ''), pointerEvents: getComputedStyle(el).pointerEvents } : null; })() };
+        }, { row: current.row, col: current.col, targetRow, targetCol });
+        assert(geometry.source && geometry.dest && geometry.picked?.uid === viewUid && geometry.picked?.area === 'board'
+          && (!geometry.targetPick || geometry.targetPick.uid !== viewUid), `exact field hit geometry is not ready for ${piece.uid}: ${JSON.stringify(geometry)}`);
         const priorEvents = await page.evaluate(({ x, y }) => {
           const view = globalThis.__SP_VIEW__;
           globalThis.__resonanceWheelEvents ||= [];
           for (const name of ['pieceDragStart', 'pieceDrop', 'pieceDragEnd']) view?.on?.(name, event => {
             globalThis.__resonanceWheelEvents.push({ name, uid: event?.uid, from: event?.from, target: event?.target, dropped: event?.dropped });
           });
-          return { picked: view?.pieceAtClient?.(x, y) || null, hit: (() => { const el = document.elementFromPoint(x, y); return el ? { tag: el.tagName, className: String(el.className?.baseVal ?? el.className ?? ''), pointerEvents: getComputedStyle(el).pointerEvents } : null; })(),
-            eventCount: globalThis.__resonanceWheelEvents.length };
-        }, { x: point.x, y: point.y });
-        assert(priorEvents.picked?.uid === viewUid, `current tile hit test mismatch for ${piece.uid}: ${JSON.stringify({ point, viewUid, picked: priorEvents.picked, hit: priorEvents.hit })}`);
-        await page.mouse.move(point.x, point.y); await page.mouse.down();
-        await page.mouse.move(point.x + 12, point.y, { steps: 2 }); await page.mouse.move(point.x, point.y, { steps: 2 }); await page.mouse.up();
+          return { eventCount: globalThis.__resonanceWheelEvents.length };
+        }, { x: geometry.source.x, y: geometry.source.y });
+        await page.mouse.move(geometry.source.x, geometry.source.y); await page.mouse.down();
+        await page.mouse.move(geometry.dest.x, geometry.dest.y, { steps: 8 }); await page.mouse.up();
         const nextWheel = await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 5_000 }).catch(() => null);
         const observed = await page.evaluate((start) => (globalThis.__resonanceWheelEvents || []).slice(start), priorEvents.eventCount);
-        assert(nextWheel, `dragging ${piece.uid} onto its current tile did not open FacingWheel: ${JSON.stringify({ point, picked: priorEvents.picked, events: observed })}`);
+        assert(nextWheel && observed.some((event) => event.name === 'pieceDrop' && event.uid === viewUid && event.target?.row === targetRow && event.target?.col === targetCol),
+          `dragging ${piece.uid} to a free legal tile did not open FacingWheel: ${JSON.stringify({ geometry, targetRow, targetCol, events: observed })}`);
+        return { row: targetRow, col: targetCol };
       };
       for (const dir of ['UP', 'RIGHT', 'DOWN', 'LEFT']) {
         if (placed?.dir !== dir) {
-          if (!directions.length && placed?.dir === 'RIGHT') await openWheelOnCurrentTile();
-          else await openWheelOnCurrentTile();
+          const target = await openWheelOnFreeTile();
           await page.keyboard.press(`Arrow${dir[0]}${dir.slice(1).toLowerCase()}`);
           await page.waitForFunction((d) => document.querySelector('.fwheel[role="dialog"]')?.classList.contains(`is-${d.toLowerCase()}`), { timeout: 5_000 }, dir);
-          const priorRevision = authoritative.revision, priorRow = placed.row, priorCol = placed.col;
+          const priorRevision = authoritative.revision, priorRow = target.row, priorCol = target.col;
           await page.keyboard.press('Enter');
           await page.waitForFunction(() => !document.querySelector('.fwheel[role="dialog"]'), { timeout: 10_000 });
           authoritative = await waitState(page, sessionId, next => {
@@ -1195,7 +1436,8 @@ async function chooseNativeFieldAction(page, currentState) {
           directions.push(dir);
         }
       }
-      return { fieldKind, rendererVisible, view, deployed: placed?.row != null && tileMatches, row: placed?.row, col: placed?.col, dir: placed?.dir, directions,
+      return { fieldKind, rendererVisible, view, deployed: placed?.row != null && placed?.legalTiles?.includes(`${placed.row},${placed.col}`),
+        initialTile: tile, row: placed?.row, col: placed?.col, dir: placed?.dir, directions,
         deployMethod, wheelOpened, dragGeometry: geometry, facingGeometry, dragEvents };
     }
   }
@@ -1238,14 +1480,14 @@ async function chooseNativeFieldAction(page, currentState) {
   return { fieldKind, rendererVisible, view, deployed: false, directions: [] };
 }
 
-async function runUiInteractionCheck(sessionId) {
-  assert(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId || ''), '--check-ui-interactions requires an existing session UUID');
+async function runUiInteractionCheck(sessionId, { fresh = false } = {}) {
+  assert(fresh || /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId || ''), '--check-ui-interactions requires an existing session UUID');
   const canonicalData = loadData(path.join(CANONICAL_ROOT, 'data'), { log: { warn() {}, error() {} } });
-  server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: CANONICAL_ROOT,
+  server = await startChromeSafeLocalServer({ host: '127.0.0.1', quiet: true, installDir: CANONICAL_ROOT,
     dataDir: path.join(CANONICAL_ROOT, 'data'), independentDirectory: path.join(VERIFY_ROOT, 'independent-sessions'),
     resonanceDirectory: SESSION_DIR, recordingDirectory: path.join(VERIFY_ROOT, 'recordings') });
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    headless: true, userDataDir: PROFILE_DIR, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader',
+    headless: true, dumpio: process.env.RESONANCE_CHROME_DUMPIO === '1', userDataDir: PROFILE_DIR, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader',
       '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check',
       '--disable-background-networking', '--window-size=1440,1000'] });
   const page = await browser.newPage();
@@ -1254,7 +1496,12 @@ async function runUiInteractionCheck(sessionId) {
   const url = entryUrl(server, { session: sessionId });
   const evidence = { sessionId, url, actions: [] };
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    if (fresh) {
+      await page.goto(entryUrl(server), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await page.waitForSelector('.rs-start__setup', { timeout: 30_000 });
+      const created = await startViaUi(page, { difficulty: 'NORMAL' });
+      sessionId = created.id; evidence.sessionId = sessionId; evidence.url = entryUrl(server, { session: sessionId });
+    } else await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await waitGame(page);
     for (const sectionId of ['field', 'shop', 'equipment']) {
       evidence.actions.push({ kind: 'section-deep-link', ...await verifySectionDeepLink(page, sectionId, sessionId) });
@@ -1279,6 +1526,7 @@ async function runUiInteractionCheck(sessionId) {
       deployedCount: afterField.deployedCount, revision: afterField.revision,
       changedPiece: field.row == null ? null : afterField.pieces.find(piece => piece.row === field.row && piece.col === field.col) });
     assert(field.deployed && field.directions.join(',') === 'UP,RIGHT,DOWN,LEFT', 'deploy/facing UI did not produce all four authoritative direction commits');
+    await capture(page, fresh ? 'fresh-ui-field-wheelfour.png' : 'ui-interaction-field-wheelfour.png', '真实拖放部署和四向朝向提交');
 
     const fallback = await browser.newPage();
     await fallback.setViewport({ width: 1000, height: 700, deviceScaleFactor: 1 });
@@ -1319,12 +1567,776 @@ async function runUiInteractionCheck(sessionId) {
   } catch (error) {
     await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.()).catch(() => {});
     await mkdir(SCREENSHOT_DIR, { recursive: true });
-    const screenshot = path.join(SCREENSHOT_DIR, 'ui-interaction-failure.png');
+    const screenshot = path.join(SCREENSHOT_DIR, fresh ? 'fresh-ui-interaction-failure.png' : 'ui-interaction-failure.png');
     await page.screenshot({ path: screenshot, fullPage: true, captureBeyondViewport: true }).catch(() => {});
     return { status: 'failed', ...evidence, error: error.stack || error.message, screenshot };
   } finally {
     await browser?.close().catch(() => {});
     await server?.close().catch(() => {});
+  }
+}
+
+async function runLateShopCheck(sessionId) {
+  assert(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId || ''), '--check-late-shop requires an existing session UUID');
+  server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: CANONICAL_ROOT,
+    dataDir: path.join(CANONICAL_ROOT, 'data'), independentDirectory: path.join(VERIFY_ROOT, 'independent-sessions'),
+    resonanceDirectory: SESSION_DIR, recordingDirectory: path.join(VERIFY_ROOT, 'recordings') });
+  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    headless: true, userDataDir: PROFILE_DIR, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check',
+      '--disable-background-networking', '--window-size=1440,1000'] });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+  await browser.defaultBrowserContext().overridePermissions(server.url, ['clipboard-read', 'clipboard-write']);
+  const url = entryUrl(server, { session: sessionId });
+  const evidence = { sessionId, url, actions: [] };
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await waitGame(page);
+    let before = await stateOf(page, sessionId);
+    assert(before.phase === 'prep' && before.gold >= (before.actionCosts?.refreshGold ?? 2),
+      `existing SID is not at an affordable prep shop: ${JSON.stringify({ phase: before.phase, gold: before.gold, revision: before.revision })}`);
+    evidence.actions.push({ kind: 'initial-authority', phase: before.phase, round: before.round, gold: before.gold, revision: before.revision,
+      resultPanelVisible: !!await page.$('.rs-result') });
+    evidence.actions.push({ kind: 'shop-deep-link', ...await verifySectionDeepLink(page, 'shop', sessionId) });
+    await page.waitForFunction(() => {
+      const shop = document.querySelector('#rs-section-shop');
+      const refresh = [...(shop?.querySelectorAll('button') || [])].find(button => (button.innerText || '').includes('刷新'));
+      if (!shop || !refresh) return false;
+      const r = refresh.getBoundingClientRect(), s = getComputedStyle(refresh);
+      return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0;
+    }, { timeout: 10_000 });
+    before = await stateOf(page, sessionId);
+    const buttonEvidence = await page.$eval('#rs-section-shop button', (first) => {
+      const shop = document.querySelector('#rs-section-shop');
+      const button = [...(shop?.querySelectorAll('button') || [])].find(el => (el.innerText || '').includes('刷新'));
+      if (!button) return null;
+      const r = button.getBoundingClientRect(), top = document.elementFromPoint(Math.max(0, r.left + r.width / 2), Math.max(0, r.top + r.height / 2));
+      return { text: button.innerText.trim(), disabled: button.disabled, viewport: { top: r.top, bottom: r.bottom, left: r.left, right: r.right }, hitTarget: top?.tagName || null };
+    });
+    assert(buttonEvidence, 'shop section has no current refresh button after deep link');
+    const clicked = await clickEnabled(page, '#rs-section-shop button', '刷新');
+    assert(clicked, `refresh button was not currently clickable: ${JSON.stringify(buttonEvidence)}`);
+    const after = await waitState(page, sessionId, next => next.revision > before.revision && next.gold < before.gold);
+    evidence.actions.push({ kind: 'official-refresh', before: { gold: before.gold, revision: before.revision }, after: { gold: after.gold, revision: after.revision,
+      offerCount: after.shop.offers.length }, buttonEvidence });
+    return { status: 'passed', ...evidence };
+  } catch (error) {
+    await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.()).catch(() => {});
+    await mkdir(SCREENSHOT_DIR, { recursive: true });
+    const screenshot = path.join(SCREENSHOT_DIR, 'late-shop-failure.png');
+    await page.screenshot({ path: screenshot, fullPage: true, captureBeyondViewport: true }).catch(() => {});
+    return { status: 'failed', ...evidence, error: error.stack || error.message, screenshot };
+  } finally {
+    await browser?.close().catch(() => {});
+    await server?.close().catch(() => {});
+  }
+}
+
+function priorBrowserReceipt() {
+  return JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+}
+async function appendFollowupEvidence(kind, evidence) {
+  const receipt = priorBrowserReceipt();
+  receipt.followupEvidence ??= [];
+  receipt.followupEvidence.push({ createdAt: new Date().toISOString(), kind, nativeSource: nativeSourceState(), evidence });
+  await writeFile(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  return RECEIPT_PATH;
+}
+const CHROME_BLOCKED_PORTS = new Set([1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95,
+  101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137, 138, 139, 143, 161, 179, 389, 427, 465, 512, 513,
+  514, 515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049,
+  3659, 4045, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6697, 10080]);
+async function startChromeSafeLocalServer(options) {
+  let instance = await startServer({ ...options, port: 0 });
+  let candidate = Number(new URL(instance.url).port);
+  for (let attempt = 0; CHROME_BLOCKED_PORTS.has(candidate) && attempt < 24; attempt++) {
+    await instance.close().catch(() => {});
+    candidate++;
+    try { instance = await startServer({ ...options, port: candidate }); }
+    catch (error) {
+      if (!/EADDRINUSE|address already in use/i.test(error.message || '')) throw error;
+      candidate++;
+      instance = await startServer({ ...options, port: candidate });
+    }
+  }
+  if (CHROME_BLOCKED_PORTS.has(Number(new URL(instance.url).port))) {
+    await instance.close().catch(() => {});
+    throw new Error(`could not allocate a Chrome-allowed local port after ${candidate}`);
+  }
+  return instance;
+}
+async function startNarrowBrowser({ fixture = false } = {}) {
+  const canonicalData = loadData(path.join(CANONICAL_ROOT, 'data'), { log: { warn() {}, error() {} } });
+  server = await startChromeSafeLocalServer({ host: '127.0.0.1', quiet: true, installDir: CANONICAL_ROOT,
+    dataDir: path.join(CANONICAL_ROOT, 'data'), independentDirectory: path.join(VERIFY_ROOT, 'independent-sessions'),
+    resonanceDirectory: SESSION_DIR, recordingDirectory: path.join(VERIFY_ROOT, 'recordings') });
+  if (fixture) fixtureServer = await startChromeSafeLocalServer({ host: '127.0.0.1', quiet: true, installDir: CANONICAL_ROOT,
+    dataDir: path.join(CANONICAL_ROOT, 'data'), independentDirectory: path.join(VERIFY_ROOT, 'fixture-independent-sessions'),
+    resonanceDirectory: FIXTURE_SESSION_DIR, recordingDirectory: FIXTURE_RECORDING_DIR });
+  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    headless: true, userDataDir: PROFILE_DIR, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check',
+      '--disable-background-networking', '--window-size=1440,1000'] });
+  await browser.defaultBrowserContext().overridePermissions(server.url, ['clipboard-read', 'clipboard-write']);
+  if (fixtureServer) await browser.defaultBrowserContext().overridePermissions(fixtureServer.url, ['clipboard-read', 'clipboard-write']);
+  return { data: canonicalData, server, fixtureServer, browser };
+}
+async function runFixtureFollowupChecks({ componentOnly = false, pairOnly = false } = {}) {
+  const old = priorBrowserReceipt();
+  const fixtures = old.fixtureSessions || [];
+  const interactive = fixtures.find((fixture) => fixture.label === 'copy/equipment/summon');
+  const pairFixture = fixtures.find((fixture) => fixture.label === 'adjacent-pair-strategy');
+  assert(interactive && pairFixture && interactive.id !== pairFixture.id, 'existing receipt lacks the two isolated fixture sessions');
+  const { data } = await startNarrowBrowser({ fixture: true });
+  const evidence = { componentLinks: [], pairStrategy: null };
+  try {
+    const hardDeadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+      void browser?.close().catch(() => {}); void server?.close().catch(() => {});
+      reject(new Error('fixture followup check exceeded 5-minute deadline'));
+    }, 5 * 60 * 1000); });
+    const work = (async () => {
+      if (!pairOnly) {
+      const page = await openSessionPage(browser, fixtureServer, interactive.id);
+      try {
+        let initial = await stateOf(page, interactive.id);
+        let item = initial.inventory.find((candidate) => candidate.itemId)
+          || initial.pieces.flatMap((piece) => piece.equipment || []).find((candidate) => candidate.itemId);
+        assert(item, 'existing copy/equipment fixture has no live equipment component');
+        const verifyItemLink = async (kind, uid) => {
+          const targetId = `${kind}-${uid}`;
+          const source = await page.$(`#${targetId}`);
+          assert(source, `current session does not render live ${kind} target ${uid}`);
+          await source.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+          const copy = await source.$('.rs-copy');
+          assert(copy, `live ${kind} target ${uid} has no copy-link control`);
+          await copy.click();
+          const copied = await page.evaluate(() => navigator.clipboard.readText());
+          const url = new URL(copied), parsed = detailHashParts(url);
+          assert(url.searchParams.get('session') === interactive.id && parsed.kind === kind && parsed.id === uid,
+            `copy control for ${targetId} returned a stale/different target: ${url.href}`);
+          await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+          await waitGame(page);
+          await page.waitForFunction((id) => Boolean(document.getElementById(id)), { timeout: 15_000 }, targetId);
+          const resolved = await stateOf(page, interactive.id);
+          assert(kind === 'inventory' ? resolved.inventory.some((entry) => entry.uid === uid)
+            : resolved.pieces.some((piece) => piece.equipment?.some((entry) => entry.uid === uid)),
+          `link resolved to a DOM target without the corresponding live authoritative ${kind} item ${uid}`);
+          evidence.componentLinks.push({ kind, uid, sessionId: interactive.id, href: url.href, resolvedFromCurrentLiveComponent: true });
+        };
+        if (initial.inventory.some((candidate) => candidate.uid === item.uid)) {
+          await verifyItemLink('inventory', item.uid);
+        } else {
+          await verifyItemLink('equipped', item.uid);
+          const card = await page.$(`#equipped-${item.uid}`);
+          let unequipButton = null;
+          for (const button of await (card?.$$('button') || [])) if ((await textOf(button)).includes('卸下')) { unequipButton = button; break; }
+          assert(card && unequipButton, `equipped item ${item.uid} has no real unequip control`);
+          await unequipButton.click();
+          initial = await waitState(page, interactive.id, (next) => next.inventory.some((candidate) => candidate.uid === item.uid));
+          assert(initial.pieces.every((piece) => !piece.equipment.some((entry) => entry.uid === item.uid)), 'official unequip duplicated the item instead of moving it to inventory');
+          await page.goto(entryUrl(fixtureServer, { session: interactive.id }), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+          await waitGame(page);
+          await verifyItemLink('inventory', item.uid);
+        }
+        await page.goto(entryUrl(fixtureServer, { session: interactive.id }), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        await waitGame(page);
+        const owner = (await stateOf(page, interactive.id)).pieces[0];
+        const equipSelect = await page.$(`#inventory-${item.uid} select[aria-label="装备给谁"]`);
+        assert(equipSelect && owner, 'fixture has no real equipment owner selector');
+        await selectOption(equipSelect, owner.uid);
+        await waitState(page, interactive.id, (next) => next.pieces.find((piece) => piece.uid === owner.uid)?.equipment.some((entry) => entry.uid === item.uid));
+        await page.goto(entryUrl(fixtureServer, { session: interactive.id }), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        await waitGame(page);
+        await verifyItemLink('equipped', item.uid);
+      } finally { await page.close(); }
+      }
+
+      if (!componentOnly) {
+       const pairPage = await openSessionPage(browser, fixtureServer, pairFixture.id);
+       try {
+        const pairActionResponses = [];
+        pairPage.on('response', async (response) => {
+          if (!/\/resonance\/api\/sessions\/[^/]+\/actions(?:\?|$)/.test(response.url())) return;
+          let body = null;
+          try { body = await response.json(); } catch {}
+          pairActionResponses.push({ status: response.status(), body });
+        });
+        const state = await stateOf(pairPage, pairFixture.id);
+        const choice = state.pendingChoices?.find((entry) => entry.type === 'strategy');
+        const strategyId = pairFixture.strategyId || choice?.options?.find((id) => {
+          const candidate = getResonanceCatalog(data, { environmentId: pairFixture.environmentId, seed: pairFixture.seed }).strategies[id];
+          return candidate?.condition?.kind === 'choose_adjacent_pair';
+        });
+        assert(choice && strategyId && choice.options.includes(strategyId), 'existing pair fixture does not expose the chosen strategy identity');
+        const catalog = getResonanceCatalog(data, { environmentId: pairFixture.environmentId, seed: pairFixture.seed });
+        const definition = catalog.strategies[strategyId];
+        assert(definition?.condition?.kind === 'choose_adjacent_pair' && definition.description, `pair strategy profile missing: ${strategyId}`);
+        const section = await pairPage.$(`#choice-${choice.uid}`);
+        const description = (await textOf(await section?.$('.rs-choice__option p'))).trim();
+        assert(description.includes(definition.description) && description.includes('条件：') && description.includes('时点：'),
+          `pair strategy description/condition/timing not rendered: ${strategyId}/${description}`);
+        const select = await section.$('select');
+        assert(select && (await select.$$('option')).length > 1, 'pair strategy fixture has no legal adjacent pair choice');
+        const selected = await select.$eval('option:nth-child(2)', (option) => ({ value: option.value, text: option.innerText }));
+        const revision = state.revision;
+        await selectOption(select, selected.value);
+        await pairPage.waitForFunction(({ choiceUid, value }) => {
+          const current = document.querySelector(`#choice-${CSS.escape(choiceUid)}`);
+          const currentSelect = current?.querySelector('.rs-choice__option select');
+          const currentButton = current?.querySelector('.rs-choice__option > button');
+          return currentSelect?.value === value && currentButton && !currentButton.disabled;
+        }, { timeout: 10_000 }, { choiceUid: choice.uid, value: selected.value });
+        const currentSection = await pairPage.$(`#choice-${choice.uid}`);
+        const submit = await currentSection?.$('.rs-choice__option > button');
+        assert(submit && await enabled(submit), 'pair strategy official submit remained disabled after selected target rendered');
+        const clickDetails = await submit.evaluate((el) => {
+          const rect = el.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2, hit = document.elementFromPoint(x, y);
+          return { text: el.innerText, disabled: el.disabled, rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+            hitTag: hit?.tagName, hitText: hit?.innerText?.slice(0, 120), selectValue: el.closest('.rs-choice__option')?.querySelector('select')?.value || null };
+        });
+        const pairRequests = [];
+        pairPage.on('request', (request) => { if (request.method() === 'POST') pairRequests.push({ url: request.url(), method: request.method() }); });
+        const clicked = await clickEnabled(pairPage, `#choice-${choice.uid} .rs-choice__option > button`, definition.name);
+        if (!clicked) {
+          await capture(pairPage, 'pair-strategy-click-failure.png', '双人策略提交按钮未能通过中心点击');
+          throw new Error(`normal center click was not possible: ${JSON.stringify(clickDetails)}`);
+        }
+        let after;
+        try {
+          after = await waitState(pairPage, pairFixture.id, (next) => next.revision > revision
+            && next.strategies?.some((entry) => (typeof entry === 'string' ? entry : entry.id) === strategyId));
+        } catch (error) {
+          const latest = await stateOf(pairPage, pairFixture.id).catch(() => null);
+          throw new Error(`${error.message}; clickDetails=${JSON.stringify(clickDetails)}; pairRequests=${JSON.stringify(pairRequests)}; pairActionResponses=${JSON.stringify(pairActionResponses)}; latest=${JSON.stringify(latest && {
+            revision: latest.revision, phase: latest.phase, pendingChoices: latest.pendingChoices, strategies: latest.strategies,
+            strategyState: latest.strategyState, pieces: latest.pieces.map((piece) => ({ uid: piece.uid, row: piece.row, col: piece.col }))
+          })}`);
+        }
+        evidence.pairStrategy = { sessionId: pairFixture.id, strategyId, description: definition.description,
+          selectedPair: selected.text, revisionBefore: revision, revisionAfter: after.revision, officialActionApplied: true, battleReplayed: false };
+       } finally { await pairPage.close(); }
+      }
+    })();
+    await Promise.race([work, hardDeadline]);
+  } finally {
+    clearTimeout(timeoutHandle);
+    await browser?.close().catch(() => {}); await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+  const kind = pairOnly ? 'adjacent-pair-strategy-choice' : componentOnly ? 'live-inventory-equipped-links' : 'fixture-copy-strategy';
+  const fixtureIds = componentOnly ? [interactive.id] : pairOnly ? [pairFixture.id] : [interactive.id, pairFixture.id];
+  const receipt = await appendFollowupEvidence(kind, { fixtureIds, stories: evidence });
+  return { status: pairOnly ? evidence.pairStrategy?.officialActionApplied ? 'passed' : 'failed'
+    : evidence.componentLinks.length === 2 && (componentOnly || evidence.pairStrategy?.officialActionApplied) ? 'passed' : 'failed', receipt, fixtureIds, stories: evidence };
+}
+async function runInteractiveFixtureCheck(sessionOverride = null) {
+  const old = priorBrowserReceipt();
+  const fixtureRow = (old.fixtureSessions || []).find((fixture) => fixture.label === 'copy/equipment/summon');
+  assert(fixtureRow?.id, 'existing receipt lacks the copy/equipment/summon fixture');
+  const fixtureId = sessionOverride || fixtureRow.id;
+  const runtimeState = JSON.parse(readFileSync(path.join(FIXTURE_SESSION_DIR, `${fixtureId}.json`), 'utf8'));
+  assert(runtimeState.phase === 'prep' && runtimeState.round === 1, `interactive fixture is not an unfinished round-1 prep state: ${fixtureId}/${runtimeState.phase}/${runtimeState.round}`);
+  const data = loadData(path.join(CANONICAL_ROOT, 'data'), { log: { warn() {}, error() {} } });
+  const catalog = getResonanceCatalog(data, { environmentId: runtimeState.environmentId, seed: runtimeState.seed });
+  const fixture = { ...fixtureRow, id: fixtureId, environmentId: runtimeState.environmentId, seed: runtimeState.seed, catalog };
+  await startNarrowBrowser({ fixture: true });
+  const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+    void browser?.close().catch(() => {}); void server?.close().catch(() => {}); void fixtureServer?.close().catch(() => {});
+    reject(new Error('interactive fixture followup exceeded 5-minute deadline'));
+  }, 5 * 60 * 1000); });
+  try {
+    await Promise.race([exerciseFixtureInteractions(browser, fixtureServer, fixture), deadline]);
+    const page = await openSessionPage(browser, fixtureServer, fixture.id);
+    let finalState;
+    try { finalState = await stateOf(page, fixture.id); } finally { await page.close(); }
+    const storyNames = ['equip-unequip-combine-recycle', 'copy-selector', 'summon-order-and-clear', 'fixture-copy-summon-real-battle'];
+    const storyEvidence = storyNames.map((name) => ({ name, ...results.get(name) }));
+    assert(finalState.phase === 'complete' && finalState.terminalReason, 'interactive fixture did not persist an authoritative terminal state');
+    const evidence = { fixtureId: fixture.id, revision: finalState.revision, phase: finalState.phase, round: finalState.round,
+      terminalReason: finalState.terminalReason, pieces: finalState.pieces.map((piece) => ({ uid: piece.uid, operatorId: piece.operatorId,
+        star: piece.star, row: piece.row, col: piece.col, equipment: piece.equipment.map((entry) => entry.itemId) })),
+      inventoryCount: finalState.inventory.length, remainingConsumables: finalState.consumables.map((entry) => entry.kind), stories: storyEvidence,
+      battleReplayed: true, fixtureOnly: true };
+    const receipt = await appendFollowupEvidence('equipment-copy-summon-real-battle', evidence);
+    return { status: storyEvidence.every((entry) => entry.status === 'passed') ? 'passed' : 'failed', receipt, evidence };
+  } finally {
+    clearTimeout(timeoutHandle);
+    await browser?.close().catch(() => {}); await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+}
+async function runSummonFixtureCheck(sessionId) {
+  assert(sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId), 'summon fixture check requires an existing session UUID');
+  const runtimeState = JSON.parse(readFileSync(path.join(FIXTURE_SESSION_DIR, `${sessionId}.json`), 'utf8'));
+  assert(runtimeState.phase === 'prep' && runtimeState.round > 1
+    && !(runtimeState.history || []).some((event) => event.type === 'fight-settled' && event.round === runtimeState.round),
+  `summon fixture must be at a new, unfinished prep node after preserved prior attempts: ${sessionId}/${runtimeState.phase}/${runtimeState.round}`);
+  const old = priorBrowserReceipt();
+  const metadata = (old.fixtureSessions || []).find((fixture) => fixture.label === 'copy/equipment/summon');
+  assert(metadata?.summonOwnerId && metadata?.summonTokenId, 'receipt lacks native summon fixture identity');
+  let page = null;
+  const attemptEvidence = { fixtureId: sessionId, priorRound: runtimeState.round, stage: 'launch', actionResponses: [], battleExecutedOnce: false };
+  const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+    void page?.close().catch(() => {}); void browser?.close().catch(() => {});
+    void server?.close().catch(() => {}); void fixtureServer?.close().catch(() => {});
+    reject(new Error('summon fixture check exceeded 5-minute deadline'));
+  }, 5 * 60 * 1000); });
+  try {
+    const work = (async () => {
+      await startNarrowBrowser({ fixture: true });
+      page = await openSessionPage(browser, fixtureServer, sessionId);
+      const actionResponses = [];
+      attemptEvidence.stage = 'opened-session';
+      attemptEvidence.actionResponses = actionResponses;
+      page.on('response', async (response) => {
+        if (!/\/resonance\/api\/sessions\/[^/]+\/actions(?:\?|$)/.test(response.url())) return;
+        let body = null;
+        try { body = await response.json(); } catch {}
+        actionResponses.push({ status: response.status(), url: response.url(), body });
+      });
+      let state = await stateOf(page, sessionId);
+      const owner = state.pieces.find((piece) => piece.operatorId === metadata.summonOwnerId && piece.row != null);
+      assert(owner, 'official session DTO has no deployed summon owner');
+      const ownerToken = owner.operator?.summons?.find((entry) => entry.id === metadata.summonTokenId);
+      assert(ownerToken?.name, `official DTO has no native summon name for ${metadata.summonTokenId}`);
+      const dtoCells = owner.summonLegalTiles?.[metadata.summonTokenId] || [];
+      assert(dtoCells.length > 0, `official DTO exposes no legal summon cells for ${metadata.summonTokenId}: ${JSON.stringify({
+        owner: { uid: owner.uid, row: owner.row, col: owner.col, dir: owner.dir }, allLegalTiles: owner.legalTiles,
+        summonLegalTiles: owner.summonLegalTiles, deployed: state.pieces.filter((piece) => piece.row != null).map((piece) => ({ uid: piece.uid, row: piece.row, col: piece.col, dir: piece.dir }))
+      })}`);
+      const selector = await page.$(`#member-${owner.uid} .rs-summons select`);
+      assert(selector, `UI omitted summon selector despite official DTO legal cells: ${JSON.stringify(dtoCells)}`);
+      await page.waitForFunction(({ ownerUid, expected }) => {
+        const select = document.querySelector(`#member-${CSS.escape(ownerUid)} .rs-summons select`);
+        return !!select && expected.every((value) => [...select.options].some((option) => option.value === value));
+      }, { timeout: 15_000 }, { ownerUid: owner.uid, expected: dtoCells });
+      const choice = dtoCells[0];
+      const [row, col] = choice.split(',').map(Number);
+      const selectedAt = (piece, token, cellRow, cellCol) => piece?.summonOrders?.some((entry) =>
+        (entry.tokenId === token.id || entry.name === token.name) && entry.row === cellRow && entry.col === cellCol);
+      const selectedAny = (piece, token) => piece?.summonOrders?.some((entry) => entry.tokenId === token.id || entry.name === token.name);
+      const applyUiSelection = async (value, expected, label) => {
+        const control = await page.$(`#member-${owner.uid} .rs-summons select`);
+        assert(control, `summon selector disappeared before ${label}`);
+        await selectOption(control, value);
+        await page.waitForFunction(({ ownerUid }) => {
+          const select = document.querySelector(`#member-${CSS.escape(ownerUid)} .rs-summons select`);
+          return !!select && !select.disabled;
+        }, { timeout: 15_000 }, { ownerUid: owner.uid }).catch(() => {});
+        try {
+          return await waitState(page, sessionId, expected);
+        } catch (error) {
+          const actual = await stateOf(page, sessionId).catch(() => null);
+          const controlValue = await page.$eval(`#member-${owner.uid} .rs-summons select`, (node) => ({ value: node.value, disabled: node.disabled })).catch(() => null);
+          throw new Error(`${label} did not reach authoritative state: ${error.message}; control=${JSON.stringify(controlValue)}; latestState=${JSON.stringify({
+            revision: actual?.revision, summonOrders: actual?.pieces.find((piece) => piece.uid === owner.uid)?.summonOrders
+          })}; actionResponses=${JSON.stringify(actionResponses.slice(-4))}; pageErrors=${JSON.stringify(errors.slice(-8))}`);
+        }
+      };
+      const beforeRevision = state.revision;
+      const battleRound = state.round;
+      attemptEvidence.ownerUid = owner.uid;
+      attemptEvidence.tokenId = metadata.summonTokenId;
+      attemptEvidence.legalCellsFromOfficialDto = dtoCells;
+      attemptEvidence.battleRound = battleRound;
+      state = await applyUiSelection(choice, (next) => next.revision > beforeRevision
+        && selectedAt(next.pieces.find((piece) => piece.uid === owner.uid), ownerToken, row, col), 'summon set');
+      const afterSet = state.revision;
+      state = await applyUiSelection('', (next) => next.revision > afterSet
+        && !selectedAny(next.pieces.find((piece) => piece.uid === owner.uid), ownerToken), 'summon clear');
+      const afterClear = state.revision;
+      state = await applyUiSelection(choice, (next) => next.revision > afterClear
+        && selectedAt(next.pieces.find((piece) => piece.uid === owner.uid), ownerToken, row, col), 'summon final set');
+      const finalOrderRevision = state.revision;
+      attemptEvidence.stage = 'official-set-clear-set-complete';
+      attemptEvidence.revisions = { before: beforeRevision, set: afterSet, clear: afterClear, finalSet: finalOrderRevision };
+      attemptEvidence.selectedCell = choice;
+      passed('summon-order-and-clear', `真实UI选中官方合法格${choice}、清除、再指定；revision ${beforeRevision}→${afterSet}→${afterClear}→${finalOrderRevision}`);
+      const battle = await performRealFight(page, sessionId);
+      attemptEvidence.battleExecutedOnce = !!battle.ran;
+      attemptEvidence.stage = 'battle-settled';
+      attemptEvidence.battleDiagnostics = battle.settlement?.diagnostics;
+      if (!battle.ran || Number(battle.settlement.diagnostics?.errorCount ?? 0) !== 0) {
+        throw new Error(`summon fixture Battle did not complete cleanly: ${JSON.stringify({ ran: battle.ran, diagnostics: battle.settlement?.diagnostics })}`);
+      }
+      assert(battle.battleRound === battleRound, `summon fixture advanced the unexpected battle round ${battle.battleRound}; expected ${battleRound}`);
+      state = await stateOf(page, sessionId);
+      const settled = [...(state.history || [])].reverse().find((entry) => entry.type === 'fight-settled' && entry.round === battle.battleRound);
+      assert(settled && state.round > battle.battleRound, 'summon fixture has no authoritative settled fight after Battle');
+      const anchor = battle.settlement.diagnostics?.summonAnchors?.find((entry) => entry.ownerUid === owner.uid && entry.tokenId === metadata.summonTokenId);
+      assert(anchor && anchor.row === row && anchor.col === col, `Battle did not use the final authoritative summon order ${choice}: ${JSON.stringify(battle.settlement.diagnostics?.summonAnchors)}`);
+      const spawnedUid = `resonance-summon-${owner.uid}-${metadata.summonTokenId}`;
+      const player = Object.values(battle.settlement.result?.perPlayer || {})[0] || {};
+      const summonedUnit = player.unitStats?.find((entry) => entry.uid === spawnedUid && entry.kind === 'token');
+      assert(summonedUnit, `Battle result has no spawned token unit ${spawnedUid}: ${JSON.stringify(player.unitStats?.filter((entry) => entry.kind === 'token'))}`);
+      passed('fixture-copy-summon-real-battle', `隔离夹具真实召唤路径后运行Battle，诊断错误0且结果含指定token；copy action另由${metadata.id}证明`);
+      return { fixtureId: sessionId, ownerUid: owner.uid, tokenId: metadata.summonTokenId, legalCellsFromOfficialDto: dtoCells,
+        selectedCell: choice, revisionBefore: beforeRevision, revisionAfterFirstSet: afterSet, revisionAfterClear: afterClear,
+        revisionAfterFinalSet: finalOrderRevision, battleSummonAnchor: anchor, spawnedUnit: summonedUnit, battleRound: battle.battleRound,
+        settled: { round: settled.round, won: settled.won, hpLoss: settled.hpLoss }, nextRound: state.round,
+        diagnostics: battle.settlement.diagnostics, actionResponses, battleExecutedOnce: true, priorBattleReplayed: false,
+        priorSettledRounds: (runtimeState.history || []).filter((entry) => entry.type === 'fight-settled').map((entry) => entry.round),
+        splitFixtureEvidence: { copySessionId: metadata.id, copyActionPreviouslyRecorded: true } };
+    })();
+    const evidence = await Promise.race([work, deadline]);
+    attemptEvidence.status = 'passed';
+    attemptEvidence.completed = evidence;
+    const receipt = await appendFollowupEvidence('summon-order-clear-and-real-battle', evidence);
+    return { status: 'passed', receipt, evidence };
+  } catch (error) {
+    attemptEvidence.status = 'failed';
+    attemptEvidence.error = error.stack || String(error);
+    const receipt = await appendFollowupEvidence('summon-order-clear-and-real-battle', attemptEvidence);
+    return { status: 'failed', receipt, evidence: attemptEvidence };
+  } finally {
+    clearTimeout(timeoutHandle);
+    await page?.close().catch(() => {}); await browser?.close().catch(() => {});
+    await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+}
+async function runTerminalAndCssFollowup({ cssOnly = false } = {}) {
+  const old = priorBrowserReceipt(), fixtures = old.fixtureSessions || [];
+  const labels = ['terminal-normal', 'terminal-funny', 'terminal-hard', 'terminal-hp-depleted', 'terminal-round-limit-loss', 'abyss-28-to-30'];
+  const terminalFixtures = labels.map((label) => fixtures.find((fixture) => fixture.label === label));
+  assert(terminalFixtures.every(Boolean), 'existing receipt lacks one or more completed terminal fixtures');
+  await startNarrowBrowser({ fixture: true });
+  const terminalEvidence = [];
+  const cssEvidence = {};
+  try {
+    const hardDeadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+      void browser?.close().catch(() => {}); void server?.close().catch(() => {});
+      reject(new Error('terminal/CSS followup check exceeded 5-minute deadline'));
+    }, 5 * 60 * 1000); });
+    const work = (async () => {
+      if (!cssOnly) for (const fixture of terminalFixtures) {
+        const page = await openSessionPage(browser, fixtureServer, fixture.id);
+        try {
+          const state = await stateOf(page, fixture.id);
+          await page.waitForSelector('.rs-final', { timeout: 15_000 });
+          await page.waitForSelector('.rs-result', { timeout: 15_000 });
+          const settled = [...(state.history || [])].reverse().find((entry) => entry.type === 'fight-settled');
+          assert(state.phase === 'complete' && state.terminalReason && settled, `completed fixture lacks authoritative terminal state/history: ${fixture.label}`);
+          const expected = fixture.label === 'terminal-hp-depleted' ? ['hp-depleted']
+            : fixture.label === 'terminal-round-limit-loss' ? ['round-limit-loss']
+              : fixture.label === 'abyss-28-to-30' ? ['victory', 'round-limit-loss', 'hp-depleted'] : ['victory'];
+          assert(expected.includes(state.terminalReason), `${fixture.label} terminal reason changed: ${state.terminalReason}/${expected.join('|')}`);
+          const heading = (await textOf(await page.$('.rs-final h2'))).trim();
+          const row = `第${settled.round}场 · ${settled.won ? '胜利' : '失守'}`;
+          const body = await page.$eval('.rs-game', (node) => node.innerText);
+          assert(heading.includes(state.terminalReason === 'victory' ? '防线守住了' : '本局结束') && body.includes(row) && body.includes('本局战报'),
+            `completed session final panel/report does not match its stored result: ${fixture.label}/${heading}/${row}`);
+          terminalEvidence.push({ fixture: fixture.label, sessionId: fixture.id, terminalReason: state.terminalReason,
+            round: settled.round, won: settled.won, heading, reportRow: row, revision: state.revision, battleReplayed: false });
+        } finally { await page.close(); }
+      }
+      if (!cssOnly) await appendFollowupEvidence('completed-terminal-ui-reopened', { terminals: terminalEvidence, battleReplayed: false });
+      const opening = await browser.newPage();
+      try {
+        await opening.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+        const openingCdp = await opening.target().createCDPSession();
+        await openingCdp.send('Network.enable'); await openingCdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+        await opening.goto(entryUrl(server), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        await opening.waitForSelector('.rs-start__setup', { timeout: 30_000 }).catch(async (error) => {
+          const body = await opening.evaluate(() => document.body.innerText.slice(0, 1200)).catch(() => '');
+          throw new Error(`opening setup never became ready: ${error.message}; URL=${opening.url()}; body=${body}`);
+        });
+        await opening.waitForFunction(() => document.querySelector('.rs-fullscreen') || [...document.querySelectorAll('a')].some((el) => (el.innerText || '').includes('全屏打开')), { timeout: 10_000 }).catch(() => {});
+        await capture(opening, 'opening-css-refresh.png', '全屏打开按钮紧凑尺寸与开局环境选择');
+        const openingDOM = await opening.evaluate(() => ({ url: location.href, mainClass: document.querySelector('main')?.className || null,
+          anchors: [...document.querySelectorAll('a')].map((el) => ({ text: (el.innerText || '').trim(), className: el.className, href: el.href }))
+            .filter((entry) => entry.text.includes('全屏') || entry.className.includes('fullscreen')), bodyStart: document.body.innerText.slice(0, 400) }));
+        const fullscreen = await opening.$('.rs-fullscreen') || await findTextHandle(opening, 'a', '全屏打开');
+        assert(fullscreen, `opening view omitted fullscreen link: ${JSON.stringify(openingDOM)}`);
+        const openingStyle = await fullscreen.evaluate((el) => ({ className: el.className, fontSize: getComputedStyle(el).fontSize, padding: getComputedStyle(el).padding,
+          rect: (() => { const r = el.getBoundingClientRect(); return { width: r.width, height: r.height }; })() }));
+        assert(openingStyle.className.split(/\s+/).includes('rs-fullscreen') && openingStyle.fontSize === '14px',
+          `fullscreen link is not the styled compact 14px control: ${JSON.stringify({ openingStyle, openingDOM })}`);
+        const environmentStyle = await opening.$eval('.rs-env-choice', (el) => {
+          const button = el.querySelector(':scope > button'), copy = el.querySelector(':scope > .rs-copy');
+          const br = button?.getBoundingClientRect(), cr = copy?.getBoundingClientRect(), text = button?.querySelector('span');
+          const tr = text?.getBoundingClientRect();
+          return { display: getComputedStyle(el).display, buttonWidth: br?.width, buttonHeight: br?.height,
+            descriptionWidth: tr?.width ?? 0, copyWidth: cr?.width ?? 0, copyVisible: !!copy && cr.width > 0,
+            description: (text?.innerText || '').trim() };
+        });
+        assert(environmentStyle.buttonWidth > 100 && environmentStyle.descriptionWidth > 100 && environmentStyle.copyVisible && environmentStyle.description,
+          `environment choice text/copy layout is not usable: ${JSON.stringify(environmentStyle)}`);
+        cssEvidence.opening = openingStyle;
+        cssEvidence.environmentChoice = environmentStyle;
+      } finally { await opening.close(); }
+      const prepFixture = old.sessions?.find((entry) => entry.purpose === 'NORMAL/谢拉格')
+        || old.sessions?.find((entry) => entry.purpose === 'NORMAL/拉特兰') || old.sessions?.find((entry) => entry.purpose === 'NORMAL');
+      assert(prepFixture?.id, 'prior receipt has no reusable natural session for CSS prep layout');
+      const prep = await browser.newPage();
+      try {
+        await prep.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+        await prep.goto(entryUrl(server, { session: prepFixture.id }), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+        await waitGame(prep);
+        const state = await stateOf(prep, prepFixture.id);
+        const prepStyle = await prep.$eval('.rs-field__canvas', (canvas) => ({
+          canvasWidth: canvas.getBoundingClientRect().width, canvasHeight: canvas.getBoundingClientRect().height,
+          boardVisible: !!document.querySelector('.rs-field__board'), copyControls: document.querySelectorAll('.rs-copy').length,
+          phase: document.querySelector('.rs-game')?.dataset?.phase || null
+        }));
+        assert(state.phase === 'prep' && prepStyle.canvasWidth > 300 && prepStyle.canvasHeight > 200 && prepStyle.boardVisible && prepStyle.copyControls > 0,
+          `natural prep field layout is not visible: ${JSON.stringify({ statePhase: state.phase, prepStyle })}`);
+        await capture(prep, 'natural-prep-css-refresh.png', '自然备战界面环境文字和复制链接排版');
+        await prep.setViewport({ width: 1000, height: 700, deviceScaleFactor: 1 });
+        await prep.waitForFunction(() => {
+          const canvas = document.querySelector('.rs-field__canvas'), root = document.querySelector('.rs-game');
+          if (!canvas || !root) return false;
+          const cr = canvas.getBoundingClientRect(), rr = root.getBoundingClientRect();
+          const current = [innerWidth, innerHeight, scrollX, scrollY, Math.round(cr.width), Math.round(cr.height), Math.round(rr.width)];
+          const previous = window.__resonanceStableViewport;
+          const count = previous && previous.value.every((value, index) => value === current[index]) ? previous.count + 1 : 1;
+          window.__resonanceStableViewport = { value: current, count };
+          return count >= 3;
+        }, { polling: 'raf', timeout: 10_000 });
+        await capture(prep, 'landscape-css-refresh.png', '横屏布局与紧凑全屏入口');
+        cssEvidence.prep = { sessionId: prepFixture.id, phase: state.phase, round: state.round, environmentId: state.environmentId, layout: prepStyle };
+        cssEvidence.landscape = await prep.evaluate(() => {
+          const root = document.querySelector('.rs-game'), canvas = document.querySelector('.rs-field__canvas'), link = [...document.querySelectorAll('a')].find((el) => (el.innerText || '').includes('全屏打开'));
+          const rr = root.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), lr = link?.getBoundingClientRect();
+          return { viewport: { width: innerWidth, height: innerHeight }, rootWidth: rr.width, documentWidth: document.documentElement.scrollWidth,
+            noHorizontalOverflow: document.documentElement.scrollWidth <= innerWidth + 2, canvasWidth: cr.width, canvasHeight: cr.height,
+            fullscreenLinkVisible: !!link && lr.width > 0 && lr.height > 0, fullscreenLinkFontSize: link ? getComputedStyle(link).fontSize : null };
+        });
+        assert(cssEvidence.landscape.noHorizontalOverflow && cssEvidence.landscape.canvasWidth > 250 && cssEvidence.landscape.fullscreenLinkVisible,
+          `landscape prep view overflows or loses the fullscreen action: ${JSON.stringify(cssEvidence.landscape)}`);
+      } finally { await prep.close(); }
+    })();
+    await Promise.race([work, hardDeadline]);
+  } finally {
+    clearTimeout(timeoutHandle);
+    await browser?.close().catch(() => {}); await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+  const receipt = await appendFollowupEvidence(cssOnly ? 'opening-prep-css-refresh' : 'completed-terminal-ui-and-css',
+    { terminals: terminalEvidence, css: cssEvidence, screenshots: screenshots.slice(-3), battleReplayed: false });
+  return { status: (cssOnly || terminalEvidence.length === 6) && cssEvidence.opening?.fontSize === '14px'
+    && cssEvidence.environmentChoice?.copyVisible && cssEvidence.prep?.layout?.boardVisible ? 'passed' : 'failed', receipt, terminals: terminalEvidence, css: cssEvidence, screenshots: screenshots.slice(-3) };
+}
+async function runVictoryPanelCapture() {
+  const fixture = (priorBrowserReceipt().fixtureSessions || []).find((entry) => entry.label === 'terminal-normal');
+  assert(fixture, 'existing receipt lacks the completed NORMAL victory fixture');
+  await startNarrowBrowser({ fixture: true });
+  let page;
+  try {
+    page = await openSessionPage(browser, fixtureServer, fixture.id);
+    const state = await stateOf(page, fixture.id);
+    assert(state.phase === 'complete' && state.terminalReason === 'victory', 'existing NORMAL fixture is not already a completed victory');
+    await page.waitForSelector('.rs-final', { timeout: 15_000 });
+    await page.waitForSelector('.rs-result', { timeout: 15_000 });
+    const latest = [...(state.history || [])].reverse().find((entry) => entry.type === 'fight-settled');
+    assert(latest?.won && latest.round === 28, 'stored NORMAL terminal history is not the completed R28 victory');
+    const heading = (await textOf(await page.$('.rs-final h2'))).trim();
+    const report = await page.$eval('.rs-game', (node) => node.innerText);
+    assert(heading.includes('防线守住了') && report.includes(`第${latest.round}场 · 胜利`) && report.includes('本局战报'), 'existing final UI does not match authoritative stored result');
+    await capture(page, 'normal-victory-final-panel.png', '已完成标准难度战斗的最终阵容与战报');
+    const evidence = { fixtureId: fixture.id, terminalReason: state.terminalReason, round: latest.round, won: latest.won,
+      heading, reportVisible: true, screenshot: path.join(SCREENSHOT_DIR, 'normal-victory-final-panel.png'), battleReplayed: false };
+    const receipt = await appendFollowupEvidence('normal-victory-final-panel-capture', evidence);
+    return { status: 'passed', evidence, receipt };
+  } finally {
+    await page?.close().catch(() => {}); await browser?.close().catch(() => {});
+    await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+}
+async function runIframeOnlyCheck() {
+  const fixture = (priorBrowserReceipt().fixtureSessions || []).find((entry) => entry.label === 'adjacent-pair-strategy');
+  assert(fixture, 'existing receipt lacks the selected adjacent-pair strategy fixture');
+  let timeout = null;
+  try {
+    const work = (async () => {
+      await startNarrowBrowser({ fixture: true });
+      return verifyIframeFullscreen(browser, fixtureServer, fixture);
+    })();
+    const deadline = new Promise((_, reject) => { timeout = setTimeout(() => {
+      void browser?.close().catch(() => {}); void server?.close().catch(() => {}); void fixtureServer?.close().catch(() => {});
+      reject(new Error('local iframe followup exceeded 4-minute deadline'));
+    }, 4 * 60 * 1000); });
+    const result = await Promise.race([work, deadline]);
+    const evidence = { fixtureId: fixture.id, ...result, battleReplayed: false };
+    const receipt = await appendFollowupEvidence('local-iframe-fullscreen-session-fragment', evidence);
+    return { status: 'passed', evidence, receipt };
+  } catch (error) {
+    const evidence = { fixtureId: fixture.id, status: 'failed', error: error.stack || String(error), battleReplayed: false };
+    const receipt = await appendFollowupEvidence('local-iframe-fullscreen-session-fragment', evidence);
+    return { status: 'failed', evidence, receipt };
+  } finally {
+    clearTimeout(timeout);
+    await browser?.close().catch(() => {}); await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+}
+async function runLinkKindsOnlyCheck() {
+  const prior = priorBrowserReceipt();
+  const fixtures = prior.fixtureSessions || [];
+  const pair = fixtures.find((entry) => entry.label === 'adjacent-pair-strategy');
+  const interactive = fixtures.find((entry) => entry.label === 'copy/equipment/summon');
+  const terminal = fixtures.find((entry) => entry.label === 'terminal-normal');
+  assert(pair && interactive && terminal, 'receipt lacks existing pair, prep-inventory, or terminal-equipment fixtures');
+  let timeout = null;
+  const pages = new Map();
+  const attempts = [];
+  const expected = ['operator','pact','item','recipe','strategy','environment','member','inventory','offer','choice','node','battleNode','session'];
+  const sourceFor = (kind) => kind === 'choice' ? pair : ['inventory','offer','node','battleNode','member','session'].includes(kind) ? interactive : pair;
+  const fixtureById = new Map([pair, interactive, terminal].map((entry) => [entry.id, entry]));
+  const passedKinds = new Set(prior.followupEvidence.filter((entry) => entry.kind === 'link-kind-checkpoint'
+    && entry.evidence?.status === 'passed').map((entry) => entry.evidence.kind));
+  const equippedProof = [...prior.followupEvidence].reverse().find((entry) => entry.kind === 'live-inventory-equipped-links')
+    ?.evidence?.stories?.componentLinks?.find((entry) => entry.kind === 'equipped');
+  try {
+    await startNarrowBrowser({ fixture: true });
+    for (const kind of [...expected, 'equipped']) {
+      if (passedKinds.has(kind)) continue;
+      process.stdout.write(`${JSON.stringify({ event: 'link-kind-start', kind, sourceSessionId: sourceFor(kind).id, native: nativeSourceState() })}\n`);
+      if (kind === 'equipped') {
+        const evidence = equippedProof ? { kind, status: 'passed', source: 'prior-live-inventory-equipped-links',
+          sourceEvidence: equippedProof, sourceSessionId: interactive.id, nativeRequired: true, battleReplayed: false }
+          : { kind, status: 'failed', reason: 'no prior actual equipped-link proof; no live equipped target found in remaining fixtures' };
+        attempts.push(evidence);
+        await appendFollowupEvidence('link-kind-checkpoint', evidence);
+        process.stdout.write(`${JSON.stringify({ event: 'link-kind-terminal', kind, status: evidence.status, source: evidence.source || null })}\n`);
+        if (evidence.status !== 'passed') break;
+        continue;
+      }
+      const fixture = sourceFor(kind);
+      let sourcePage = pages.get(fixture.id);
+      const step = { kind, sourceSessionId: fixture.id, stage: 'source-load', openedUrl: null, targetId: null };
+      try {
+        const stepWork = (async () => {
+          if (!sourcePage) {
+            step.stage = 'load-source-session';
+            sourcePage = await openSessionPage(browser, fixtureServer, fixture.id);
+            pages.set(fixture.id, sourcePage);
+          }
+          step.stage = 'copy-from-live-component';
+          const copied = await copyLiveLinkForKind(sourcePage, fixtureServer, kind, (detail) => { step.copyProgress = detail; });
+          if (!copied) step.domDiagnostics = await sourcePage.evaluate((targetKind) => ({
+            url: location.href, main: document.querySelector('main')?.className || null,
+            catalogOpen: [...document.querySelectorAll('details')].map(node => ({ open: node.open, label: node.querySelector('summary')?.innerText || '' })),
+            selectors: { roster: document.querySelectorAll('.rs-card--operator .rs-copy').length,
+              pact: document.querySelectorAll('.rs-pact .rs-copy').length, inventory: document.querySelectorAll('#rs-section-equipment [id^="inventory-"] .rs-copy').length,
+              equipped: document.querySelectorAll('#rs-section-equipment [id^="equipped-"] .rs-copy').length,
+              offer: document.querySelectorAll('#rs-section-shop .rs-offer .rs-copy').length,
+              choice: document.querySelectorAll('[id^="choice-"] .rs-copy').length,
+              node: document.querySelectorAll('#rs-section-economy-rules .rs-node .rs-copy').length,
+              battleNode: document.querySelectorAll('.rs-next .rs-copy').length,
+              environment: document.querySelectorAll('#rs-section-environment-catalog .rs-card .rs-copy').length,
+              strategy: document.querySelectorAll('#rs-section-strategy-catalog .rs-card .rs-copy,[id^="choice-"] .rs-choice__option .rs-copy').length,
+              requested: targetKind }
+          }), kind);
+          assert(copied, `no live ${kind} copy control on source session ${fixture.id}; source URL=${sourcePage.url()}`);
+          step.openedUrl = copied.url;
+          step.targetId = copied.targetId;
+          const targetPage = await browser.newPage();
+          try {
+            step.stage = 'open-copied-url';
+            await targetPage.goto(copied.url, { waitUntil: 'domcontentloaded', timeout: 12_000 });
+            await waitGame(targetPage, 18_000);
+            const parsed = detailHashParts(new URL(copied.url));
+            if (new Set(['operator','pact','item','recipe','strategy','environment']).has(kind)) {
+              await targetPage.waitForSelector('.rs-detail', { timeout: 8_000 });
+            } else if (kind === 'member') {
+              await targetPage.waitForFunction((id) => !!document.getElementById(`member-${encodeURIComponent(id)}`)?.matches(':focus'), { timeout: 8_000 }, parsed.id);
+            } else if (kind === 'session') {
+              assert(new URL(targetPage.url()).searchParams.get('session') === parsed.id, 'session link did not preserve the session id');
+              const state = await stateOf(targetPage, parsed.id);
+              step.authoritativeState = { phase: state.phase, round: state.round, revision: state.revision };
+            } else {
+              await targetPage.waitForSelector(`[id="${step.targetId.replaceAll('"', '\\"')}"]`, { timeout: 8_000 });
+            }
+            return { kind, status: 'passed', sourceSessionId: fixture.id, url: copied.url, targetId: step.targetId,
+              openedUrl: targetPage.url(), targetVisible: true, native: nativeSourceState(), battleReplayed: false };
+          } finally { await targetPage.close().catch(() => {}); }
+        })();
+        const deadline = new Promise((_, reject) => { timeout = setTimeout(() => {
+          void browser?.close().catch(() => {});
+          reject(new Error(`link kind ${kind} exceeded 45 seconds at ${step.stage}/${JSON.stringify(step.copyProgress || {})}`));
+        }, 45_000); });
+        const checkpoint = await Promise.race([stepWork, deadline]);
+        clearTimeout(timeout); timeout = null;
+        attempts.push(checkpoint);
+        await appendFollowupEvidence('link-kind-checkpoint', checkpoint);
+        passedKinds.add(kind);
+        process.stdout.write(`${JSON.stringify({ event: 'link-kind-terminal', kind, status: checkpoint.status, url: checkpoint.url, targetId: checkpoint.targetId })}\n`);
+      } catch (error) {
+        clearTimeout(timeout); timeout = null;
+        const failed = { ...step, status: 'failed', error: error.stack || String(error), native: nativeSourceState(), battleReplayed: false };
+        attempts.push(failed);
+        await appendFollowupEvidence('link-kind-checkpoint', failed);
+        process.stdout.write(`${JSON.stringify({ event: 'link-kind-terminal', kind, status: 'failed', stage: failed.stage, error: failed.error })}\n`);
+        break;
+      }
+    }
+    const missing = [...expected, 'equipped'].filter((kind) => !passedKinds.has(kind)
+      && !attempts.some((entry) => entry.kind === kind && entry.status === 'passed'));
+    const evidence = { expectedKinds: [...expected, 'equipped'], reusedPassedKinds: [...passedKinds], attempts,
+      completed: attempts.filter((entry) => entry.status === 'passed').map((entry) => entry.kind), missing,
+      battleReplayed: false };
+    const receipt = await appendFollowupEvidence('fourteen-link-kinds-index', evidence);
+    return { status: missing.length ? 'incomplete' : 'passed', receipt, evidence };
+  } catch (error) {
+    const evidence = { status: 'failed', attempts, error: error.stack || String(error), battleReplayed: false };
+    const receipt = await appendFollowupEvidence('fourteen-link-kinds-index', evidence);
+    return { status: 'failed', evidence, receipt };
+  } finally {
+    clearTimeout(timeout);
+    for (const page of pages.values()) await page?.close().catch(() => {});
+    await browser?.close().catch(() => {});
+    await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
+  }
+}
+async function runSessionLoadDiagnostic(sessionId) {
+  assert(sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId), 'load diagnostic requires an existing session UUID');
+  const fixture = (priorBrowserReceipt().fixtureSessions || []).find((entry) => entry.id === sessionId);
+  assert(fixture, 'load diagnostic only accepts a fixture already listed in the receipt');
+  let page = null, timeout = null;
+  const network = [];
+  try {
+    const work = (async () => {
+      await startNarrowBrowser({ fixture: true });
+      page = await browser.newPage();
+      await page.setViewport({ width: 1440, height: 1000 });
+      page.on('response', response => network.push({ status: response.status(), url: response.url(), type: response.request().resourceType() }));
+      page.on('requestfailed', request => network.push({ failed: request.failure()?.errorText || 'request failed', url: request.url(), type: request.resourceType() }));
+      const errorsSeen = [];
+      page.on('pageerror', error => errorsSeen.push(error.message));
+      page.on('console', message => { if (message.type() === 'error') errorsSeen.push(message.text()); });
+      const target = entryUrl(fixtureServer, { session: sessionId });
+      await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await page.waitForFunction(() => document.querySelector('.rs-game') || document.querySelector('.rs-start__setup') || document.querySelector('.rs-start .rs-panel'), { timeout: 20_000 });
+      const dom = await page.evaluate(async id => {
+        let api;
+        try {
+          const response = await fetch(new URL(`resonance/api/sessions/${encodeURIComponent(id)}?catalog=0`, location.href));
+          const body = await response.json();
+          api = { status: response.status, ok: body?.ok, state: body?.state ? { phase: body.state.phase, round: body.state.round, revision: body.state.revision } : null, error: body?.error || null };
+        } catch (error) { api = { error: error.message }; }
+        return { href: location.href, mainClass: document.querySelector('main')?.className || null,
+          setupVisible: !!document.querySelector('.rs-start__setup'), gameVisible: !!document.querySelector('.rs-game'),
+          failureText: document.querySelector('.rs-start .rs-panel')?.innerText || null, api };
+      }, sessionId);
+      await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.());
+      await mkdir(SCREENSHOT_DIR, { recursive: true });
+      const screenshot = path.join(SCREENSHOT_DIR, `session-load-diagnostic-${sessionId}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true, captureBeyondViewport: true });
+      return { fixtureId: sessionId, target, dom, network, pageErrors: errorsSeen, screenshot, stateMutated: false };
+    })();
+    const deadline = new Promise((_, reject) => { timeout = setTimeout(() => {
+      void page?.close().catch(() => {}); void browser?.close().catch(() => {});
+      void server?.close().catch(() => {}); void fixtureServer?.close().catch(() => {});
+      reject(new Error('session load diagnostic exceeded 45 seconds'));
+    }, 45_000); });
+    const evidence = await Promise.race([work, deadline]);
+    const receipt = await appendFollowupEvidence('session-load-readonly-diagnostic', evidence);
+    return { status: 'completed', evidence, receipt };
+  } catch (error) {
+    const evidence = { fixtureId: sessionId, status: 'failed', error: error.stack || String(error), network, stateMutated: false };
+    const receipt = await appendFollowupEvidence('session-load-readonly-diagnostic', evidence);
+    return { status: 'failed', evidence, receipt };
+  } finally {
+    clearTimeout(timeout);
+    await page?.close().catch(() => {}); await browser?.close().catch(() => {});
+    await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
   }
 }
 
@@ -1569,13 +2581,15 @@ async function run() {
     remoteStory('production-natural-battles-and-supply', mainBattles.length > 0 && naturalSupplyClaims.length > 0 ? 'passed' : 'unavailable', evidence);
   }
   const latePrep = await advancePrepViaUi(page, mainId);
-  const lateShopBefore = latePrep;
+  const lateShopBefore = await stateOf(page, mainId);
   const lateShopActions = [];
-  const refreshButton = await findTextHandle(page, '.rs-panel button', '刷新', false);
-  if (refreshButton && await enabled(refreshButton) && lateShopBefore.gold >= (lateShopBefore.actionCosts?.refreshGold ?? 2)) {
-    await refreshButton.click();
+  if (latePrep.phase === 'prep' && lateShopBefore.phase === 'prep'
+    && lateShopBefore.gold >= (lateShopBefore.actionCosts?.refreshGold ?? 2)) {
+    const refreshClicked = await clickEnabled(page, '#rs-section-shop button', '刷新');
+    if (refreshClicked) {
     const refreshed = await waitState(page, mainId, (next) => next.revision > lateShopBefore.revision && next.gold < lateShopBefore.gold);
     if (refreshed.shop.offers.length === 5) lateShopActions.push('刷新');
+    }
   }
   const xpBefore = await stateOf(page, mainId);
   const xpBought = await clickEnabled(page, '.rs-panel button', '经验');
@@ -1702,6 +2716,84 @@ try {
     const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
     const result=await runUiInteractionCheck(sessionId);
     process.stdout.write(`${JSON.stringify(result,null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-fresh-ui')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString();
+    const hardDeadline=new Promise((_,reject)=>{timeoutHandle=setTimeout(()=>{void browser?.close().catch(()=>{});void server?.close().catch(()=>{});reject(new Error('fresh UI interaction check exceeded 5-minute deadline'));},5*60*1000)});
+    let result;
+    try { result=await Promise.race([runUiInteractionCheck(null,{fresh:true}),hardDeadline]); }
+    finally { clearTimeout(timeoutHandle); }
+    const receipt=await appendFollowupEvidence('fresh-ui-deploy-facing-fallback-shop',{sessionId:result.sessionId,result});
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,receipt,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-late-shop')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const index=process.argv.indexOf('--check-late-shop');
+    const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
+    const result=await runLateShopCheck(sessionId);
+    process.stdout.write(`${JSON.stringify(result,null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-component-links')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(), result=await runFixtureFollowupChecks({ componentOnly: true });
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-followup-fixtures')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(), result=await runFixtureFollowupChecks();
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-pair-strategy')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(), result=await runFixtureFollowupChecks({ pairOnly: true });
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-interactive-fixture')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const index=process.argv.indexOf('--check-interactive-fixture');
+    const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
+    const startedAt=new Date().toISOString(),result=await runInteractiveFixtureCheck(sessionId);
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-summon-fixture')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const index=process.argv.indexOf('--check-summon-fixture');
+    const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
+    const startedAt=new Date().toISOString(),result=await runSummonFixtureCheck(sessionId);
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--capture-normal-victory')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(),result=await runVictoryPanelCapture();
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-iframe-only')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(),result=await runIframeOnlyCheck();
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-link-kinds-only')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(),result=await runLinkKindsOnlyCheck();
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--diagnose-session-load')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const index=process.argv.indexOf('--diagnose-session-load');
+    const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
+    const startedAt=new Date().toISOString(),result=await runSessionLoadDiagnostic(sessionId);
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='completed')process.exitCode=1;
+  }else if(process.argv.includes('--check-terminal-css')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(), result=await runTerminalAndCssFollowup();
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-css-only')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const startedAt=new Date().toISOString(), result=await runTerminalAndCssFollowup({ cssOnly: true });
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
     if(result.status!=='passed')process.exitCode=1;
   }else{
     puppeteer=requireFromCanonical('puppeteer-core');
