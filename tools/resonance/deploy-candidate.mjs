@@ -22,7 +22,9 @@ const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const REMOTE_NODE = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/bin/node`;
 const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/node_modules/npm/bin/npm-cli.js`;
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
-const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare | --activate --capacity-receipt <绝对路径>]\n默认dry-run只读本地receipt/档案并打印预演；--prepare准备候选；--activate要求匹配的四并发容量回执，有界切换服务，失败恢复原unit/env。`;
+const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
+const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';
+const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径>] | --activate --capacity-receipt <绝对路径>]\n默认dry-run只读本地receipt/档案并打印预演；--prepare准备候选；--resume-receipt仅续传通过原生版本及远端文件核验的失败批次；--activate要求匹配的四并发容量回执，有界切换服务，失败恢复原unit/env。`;
 
 export function parseArgs(argv) {
   const options = { prepare: false, activate: false };
@@ -41,11 +43,17 @@ export function parseArgs(argv) {
       const next = argv[++i];
       if (!next || next.startsWith('--')) throw new Error('缺少 --capacity-receipt 路径');
       options.capacityReceiptPath = next;
+    } else if (value === '--resume-receipt') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--')) throw new Error('缺少 --resume-receipt 路径');
+      options.resumeReceiptPath = next;
     } else throw new Error(`未知参数：${value}`);
   }
   if (options.prepare && options.activate) throw new Error('--prepare 与 --activate 不能同时使用');
   if (options.activate && !options.capacityReceiptPath) throw new Error('--activate 必须提供 --capacity-receipt');
   if (!options.activate && options.capacityReceiptPath) throw new Error('--capacity-receipt 只能与 --activate 一起使用');
+  if (options.resumeReceiptPath && !options.prepare) throw new Error('--resume-receipt 只能与 --prepare 一起使用');
+  if (options.resumeReceiptPath && !path.isAbsolute(options.resumeReceiptPath)) throw new Error('--resume-receipt 必须提供绝对路径');
   return options;
 }
 
@@ -104,12 +112,69 @@ function readReleaseReceipt(receiptPath) {
     || manifest.dependencies?.ws !== wsVersion || lock.packages?.['node_modules/ws']?.version !== wsVersion) {
     throw new Error('release receipt、package.json与package-lock.json的ws版本不一致');
   }
-  const listing = execFileSync('tar', ['-tf', code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+  const listing = execFileSync(TAR_COMMAND, ['-tf', code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
   if (!listing.includes('server/index.js') || !listing.includes('public/resonance.html')) throw new Error('server-code.tar缺少共鸣服务入口');
-  const verbose = execFileSync('tar', ['-tvf', code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+  const verbose = execFileSync(TAR_COMMAND, ['-tvf', code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
   validateArchiveListing(listing, verbose);
   return { sourceRevision, receiptPath, code, references, packageJson, packageLock, wsVersion,
     artifacts: [{ path: receiptPath, role: 'native builder receipt' }, code, references, packageJson, packageLock] };
+}
+
+export function validatePrepareResumeReceipt(release, receipt) {
+  if (!receipt || receipt.mode !== 'prepare' || receipt.status !== 'failed') throw new Error('resume receipt必须是失败的prepare回执');
+  if (String(receipt.sourceRevision ?? '').toLowerCase() !== String(release?.sourceRevision ?? '').toLowerCase()) throw new Error('resume receipt sourceRevision与当前Native builder不一致');
+  if (!Number.isInteger(receipt.commandExitCode) || receipt.commandExitCode === 0) throw new Error('resume receipt缺少失败命令退出码');
+  if (!Array.isArray(receipt.artifactTransfers) || receipt.artifactTransfers.length === 0 || receipt.artifactTransfers.length > release.artifacts.length) throw new Error('resume receipt artifactTransfers条目数无效');
+  let sawIncomplete = false;
+  for (let index = 0; index < receipt.artifactTransfers.length; index += 1) {
+    const row = receipt.artifactTransfers[index];
+    const artifact = release.artifacts[index];
+    const expectedTarget = `${STAGING}/${path.basename(artifact.path)}`;
+    if (!row || path.resolve(String(row.source ?? '')).toLowerCase() !== path.resolve(artifact.path).toLowerCase()) throw new Error(`resume artifact source与当前Native builder不一致：${index}`);
+    if (row.target !== expectedTarget) throw new Error(`resume artifact target与正式staging路径不一致：${index}`);
+    if (String(row.role ?? '') !== String(artifact.role ?? '')) throw new Error(`resume artifact role与当前Native builder不一致：${index}`);
+    if (!['transferred', 'failed', 'pending'].includes(row.status)) throw new Error(`resume artifact status无效：${index}`);
+    if (row.status !== 'transferred') {
+      if (sawIncomplete || index !== receipt.artifactTransfers.length - 1) throw new Error('resume receipt必须按原顺序记录连续成功前缀及最后一个未完成档案');
+      sawIncomplete = true;
+    } else if (sawIncomplete) throw new Error('resume receipt在失败档案后不能标记传输成功');
+  }
+  if (!sawIncomplete || !receipt.artifactTransfers.some(row => row.status === 'transferred')) throw new Error('resume receipt必须包含至少一个已传档案和一个未完成档案');
+  const skipped = receipt.artifactTransfers.filter(row => row.status === 'transferred').map((row, index) => ({ ...row, artifact: release.artifacts[index] }));
+  return { receipt, skipped, completedNames: new Set(skipped.map(row => path.basename(row.source))) };
+}
+
+export function resumeVerificationScript(revision, rows) {
+  if (!/^[0-9a-f]{40}$/i.test(revision)) throw new Error('resume revision must be full native Git commit');
+  const allowedNames = new Set(['server-release.json', 'server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json']);
+  const checks = rows.map(row => {
+    const name = path.basename(row.source);
+    if (!allowedNames.has(name) || row.target !== `${STAGING}/${name}` || !Number.isSafeInteger(row.localBytes) || row.localBytes < 0) throw new Error(`invalid resume verification row: ${name}`);
+    return `${name}\t${row.localBytes}`;
+  }).join('\n');
+  return `set -eu
+STAGING='${STAGING}'
+REV='${revision}'
+NODE='${REMOTE_NODE}'
+test -d "$STAGING" && test ! -L "$STAGING" || { echo 'staging-not-ordinary' >&2; exit 51; }
+test -f "$STAGING/server-release.json" && test ! -L "$STAGING/server-release.json" && test "$(stat -c %h "$STAGING/server-release.json")" -eq 1 || { echo 'staged-native-receipt-missing-or-unsafe' >&2; exit 52; }
+staged_revision=$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$STAGING/server-release.json")
+test "$staged_revision" = "$REV" || { echo 'staged-native-revision-mismatch' >&2; exit 53; }
+while IFS="$(printf '\\t')" read -r name expected_bytes; do
+  test -n "$name" || continue
+  f="$STAGING/$name"
+  test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "resume-file-not-ordinary:$name" >&2; exit 54; }
+  actual_bytes=$(stat -c %s "$f")
+  test "$actual_bytes" = "$expected_bytes" || { echo "resume-file-size-mismatch:$name" >&2; exit 55; }
+done <<'RESUME_FILES'
+${checks}
+RESUME_FILES
+printf 'resume-assets-verified\\n'`;
+}
+
+function readPrepareResumeReceipt(receiptPath, release) {
+  checkedRegularFile(receiptPath, 'prepare resume receipt');
+  return validatePrepareResumeReceipt(release, JSON.parse(fs.readFileSync(receiptPath, 'utf8')));
 }
 
 function capacityCommand(revision) {
@@ -359,33 +424,48 @@ function invoke(command, args, input, timeoutMs) {
   return result.stdout.trim();
 }
 
-function prepareRemote(release) {
+function prepareRemote(release, resumeInfo = null) {
   if (!fs.existsSync(IDENTITY)) throw new Error(`SSH identity不存在：${IDENTITY}`);
-  const archiveEntries = execFileSync('tar', ['-tf', release.code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+  const archiveEntries = execFileSync(TAR_COMMAND, ['-tf', release.code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
   const candidateFiles = archiveEntries.filter(name => !name.endsWith('/'));
   const preflight = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript(release.wsVersion, release.sourceRevision, candidateFiles), 45_000);
   const preflightInfo = JSON.parse(preflight);
   if (preflightInfo.preflight !== 'ok' || !['install', 'reuse'].includes(preflightInfo.installState)) throw new Error('远端安全预检未通过');
-  const transferReceipt = [];
+  const transferReceipt = resumeInfo ? resumeInfo.receipt.artifactTransfers.map(({ source, target, role, status }) => ({ source, target, role, status })) : [];
+  const skippedAlreadyTransferred = resumeInfo ? resumeInfo.skipped.map(({ source, target, role }) => ({ source, target, role })) : [];
+  const actualTransferred = [];
+  if (resumeInfo) {
+    const verifyRows = resumeInfo.skipped.map(row => ({ ...row, localBytes: fs.statSync(row.artifact.path).size }));
+    const verified = invoke('ssh', [...sshArgs(), 'bash', '-s'], resumeVerificationScript(release.sourceRevision, verifyRows), 45_000);
+    if (verified !== 'resume-assets-verified') throw new Error('远端已传档案核验未返回成功终态');
+  }
   invoke('ssh', [...sshArgs(), 'bash', '-s'], `set -eu\nmkdir -p '${STAGING}' '${path.posix.dirname(CANDIDATE)}'\n`, 45_000);
   for (const artifact of release.artifacts) {
     const target = `${STAGING}/${path.basename(artifact.path)}`;
-    const entry = { source: artifact.path, target, role: artifact.role, status: 'pending' };
-    transferReceipt.push(entry);
+    if (resumeInfo?.completedNames.has(path.basename(artifact.path))) continue;
+    let entry = transferReceipt.find(row => row.target === target);
+    if (entry) entry.status = 'pending';
+    else {
+      entry = { source: artifact.path, target, role: artifact.role, status: 'pending' };
+      transferReceipt.push(entry);
+    }
     try {
       invoke('scp', ['-i', IDENTITY, '-P', PORT, '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'ConnectTimeout=15', '-o', 'LogLevel=ERROR', '-o', 'ServerAliveInterval=15', artifact.path, `${HOST}:${target}`], undefined, 120_000);
       entry.status = 'transferred';
+      actualTransferred.push({ source: artifact.path, target, role: artifact.role });
     } catch (error) {
       entry.status = 'failed';
       entry.error = error instanceof Error ? error.message : String(error);
-      throw new Error(`artifact transfer failed; receipt=${JSON.stringify(transferReceipt)}`);
+      const failureReceipt = { mode: 'prepare', sourceRevision: release.sourceRevision, status: 'failed', commandExitCode: 1,
+        artifactTransfers: transferReceipt, skippedAlreadyTransferred, actualTransferred };
+      throw new Error(`artifact transfer failed; prepareFailureReceipt=${JSON.stringify(failureReceipt)}; ${entry.error}`);
     }
   }
   const revision = release.sourceRevision;
   const candidateAction = preflightInfo.candidate === 'reuse'
     ? `printf 'candidate reused after receipt, link, hardlink, and occupancy checks: %s\\n' '${CANDIDATE}'`
     : `mkdir -m 0755 '${CANDIDATE}'\ntar -xf '${STAGING}/server-code.tar' --no-same-owner --no-same-permissions -C '${CANDIDATE}'\ninstall -m 0644 '${STAGING}/resonance-references.zip' '${CANDIDATE}/public/resonance-references.zip'\ninstall -m 0644 '${STAGING}/server-release.json' '${CANDIDATE}/.resonance-release-receipt.json'`;
-  const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\nprintf '{"prepared":true,"sourceRevision":"${revision}","candidate":"${CANDIDATE}","candidateAction":"${preflightInfo.candidate}","wsVersion":"${release.wsVersion}","artifactTransfers":${JSON.stringify(transferReceipt)}}\\n'`;
+  const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\nprintf '{"prepared":true,"sourceRevision":"${revision}","candidate":"${CANDIDATE}","candidateAction":"${preflightInfo.candidate}","wsVersion":"${release.wsVersion}","artifactTransfers":${JSON.stringify(transferReceipt)},"skippedAlreadyTransferred":${JSON.stringify(skippedAlreadyTransferred)},"actualTransferred":${JSON.stringify(actualTransferred)}}\\n'`;
   try {
     return invoke('ssh', [...sshArgs(), 'timeout 180s bash -s'], remotePrepare, 180_000);
   } catch (error) {
@@ -399,6 +479,9 @@ function main() {
   if (options.selfTest) return selfTest();
   const receiptPath = absolutePath(options.receiptPath, '--release-receipt');
   const release = readReleaseReceipt(receiptPath);
+  const resumeInfo = options.resumeReceiptPath
+    ? readPrepareResumeReceipt(absolutePath(options.resumeReceiptPath, '--resume-receipt'), release)
+    : null;
   if (options.activate) {
     const capacityReceiptPath = absolutePath(options.capacityReceiptPath, '--capacity-receipt');
     const capacity = readCapacityReceipt(capacityReceiptPath);
@@ -410,13 +493,14 @@ function main() {
   }
   const plan = {
     mode: options.prepare ? 'prepare' : 'dry-run', sourceRevision: release.sourceRevision,
+    resumeReceipt: options.resumeReceiptPath ? absolutePath(options.resumeReceiptPath, '--resume-receipt') : null,
     filesToStage: release.artifacts.map(item => ({ path: item.path, role: item.role })),
     staging: STAGING, rulesData: RULES, installRoot: INSTALL_ROOT, candidate: CANDIDATE,
     protectedReadOnly: [SERVICE_UNIT, SERVICE_ENV], capacityCommand: capacityCommand(release.sourceRevision), capacityTimeoutSeconds: 480,
     note: 'public-rules.tar不传输；复用现有4ed canonical rules。不会启动或变更systemd服务。',
   };
   if (!options.prepare) return process.stdout.write(`${JSON.stringify(plan)}\n`);
-  process.stdout.write(`${JSON.stringify({ ...plan, remoteResult: prepareRemote(release) })}\n`);
+  process.stdout.write(`${JSON.stringify({ ...plan, remoteResult: prepareRemote(release, resumeInfo) })}\n`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

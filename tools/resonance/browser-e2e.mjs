@@ -133,7 +133,12 @@ function attachPageDiagnostics(page, label = 'page') {
       else if (sameOrigin) errors.push(`same-origin business HTTP ${status} ${response.url()}`);
     } else if (sameOrigin && status >= 400) errors.push(`HTTP ${status} ${response.url()}`);
   });
-  if (!REMOTE_MODE) page.on('console', (message) => { if (message.type() === 'error') errors.push(`${label} console: ${message.text()}`); });
+  if (!REMOTE_MODE) page.on('console', (message) => {
+    if (message.type() !== 'error') return;
+    const location = message.location()?.url || '';
+    if (/\/favicon\.ico(?:[?#]|$)/.test(location)) return;
+    errors.push(`${label} console: ${message.text()}${location ? ` (${location})` : ''}`);
+  });
 }
 const copiesForStar = (star) => ({ 1: 1, 2: 3, 3: 9 })[star];
 function fixtureCatalogFor(data,environmentId,seed){

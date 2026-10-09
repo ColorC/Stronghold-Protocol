@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { absolutePath, activationCommand, activationScript, parseArgs, preflightScript, validateCapacityReceipt } from '../../tools/resonance/deploy-candidate.mjs';
+import { absolutePath, activationCommand, activationScript, parseArgs, preflightScript, resumeVerificationScript, validateCapacityReceipt, validatePrepareResumeReceipt } from '../../tools/resonance/deploy-candidate.mjs';
 
 const revision = '0123456789abcdef0123456789abcdef01234567';
 function capacityReceipt() {
@@ -30,6 +30,74 @@ test('activation arguments require capacity receipt and exclude prepare', () => 
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--activate', '--prepare', '--capacity-receipt', 'C:/c.json']), /不能同时使用/);
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--capacity-receipt', 'C:/c.json']), /只能与 --activate/);
   assert.throws(() => absolutePath('relative-capacity.json', '--capacity-receipt'), /必须为绝对路径/);
+});
+
+function prepareReleaseFixture() {
+  const names = ['server-release.json', 'server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json'];
+  const roles = ['native builder receipt', 'backend and small control page/code archive', 'resonance reference documents', 'minimal server dependency manifest', 'ws version lock manifest'];
+  return { sourceRevision: revision, artifacts: names.map((name, index) => ({ path: path.resolve(`E:/release/${name}`), role: roles[index] })) };
+}
+
+function prepareFailureFixture(release = prepareReleaseFixture()) {
+  return {
+    mode: 'prepare', sourceRevision: revision, status: 'failed', commandExitCode: 1,
+    artifactTransfers: release.artifacts.map((artifact, index) => ({
+      source: artifact.path,
+      target: `/var/tmp/stronghold-protocol/resonance/${path.basename(artifact.path)}`,
+      role: artifact.role,
+      status: index < 4 ? 'transferred' : 'failed',
+    })),
+  };
+}
+
+test('prepare resume accepts only the same Native builder failure prefix and skips transferred artifacts', () => {
+  const release = prepareReleaseFixture();
+  const receipt = prepareFailureFixture(release);
+  const result = validatePrepareResumeReceipt(release, receipt);
+  assert.deepEqual(result.skipped.map(row => path.basename(row.source)), release.artifacts.slice(0, 4).map(row => path.basename(row.path)));
+  assert.deepEqual([...result.completedNames], ['server-release.json', 'server-code.tar', 'resonance-references.zip', 'package.json']);
+  for (const [mutate, pattern] of [
+    [row => { row.mode = 'activate'; }, /失败的prepare/],
+    [row => { row.status = 'completed'; }, /失败的prepare/],
+    [row => { row.sourceRevision = 'f'.repeat(40); }, /sourceRevision/],
+    [row => { row.artifactTransfers[0].source = path.resolve('E:/other/server-release.json'); }, /source/],
+    [row => { row.artifactTransfers[0].target = '/tmp/unrelated/server-release.json'; }, /target/],
+    [row => { row.artifactTransfers[0].role = 'different role'; }, /role/],
+    [row => { row.artifactTransfers[1].status = 'transferred'; row.artifactTransfers[0].status = 'failed'; }, /连续成功前缀/],
+    [row => { row.artifactTransfers[4].status = 'succeeded'; }, /status无效/],
+  ]) {
+    const invalid = prepareFailureFixture(release); mutate(invalid);
+    assert.throws(() => validatePrepareResumeReceipt(release, invalid), pattern);
+  }
+});
+
+test('resume verification checks exact remote byte lengths, ordinary files and staged Native revision without writes', () => {
+  const release = prepareReleaseFixture();
+  const receipt = prepareFailureFixture(release);
+  const rows = receipt.artifactTransfers.slice(0, 4).map((row, index) => ({ ...row, localBytes: 100 + index }));
+  const script = resumeVerificationScript(revision, rows);
+  assert.ok(script.includes("stat -c %h \"$STAGING/server-release.json\""));
+  assert.ok(script.includes('staged_revision'));
+  assert.ok(script.includes('resume-file-size-mismatch:'));
+  assert.ok(script.includes('server-release.json\t100'));
+  assert.ok(script.includes('package.json\t103'));
+  const parserLine = script.match(/^while IFS=.*$/m)?.[0];
+  assert.ok(parserLine);
+  const parseShell = `${parserLine}\n  printf '%s\\t%s\\n' "$name" "$expected_bytes"\ndone`;
+  const parsed = spawnSync('bash', ['-c', parseShell], { input: `${rows.map(row => `${path.basename(row.source)}\t${row.localBytes}`).join('\n')}\n`, encoding: 'utf8' });
+  assert.equal(parsed.status, 0, parsed.stderr);
+  assert.deepEqual(parsed.stdout.trimEnd().split('\n'), ['server-release.json\t100', 'server-code.tar\t101', 'resonance-references.zip\t102', 'package.json\t103']);
+  assert.equal(spawnSync('bash', ['-n'], { input: script, encoding: 'utf8' }).status, 0);
+  assert.throws(() => resumeVerificationScript(revision, [{ ...rows[0], localBytes: -1 }]), /invalid resume verification row/);
+});
+
+test('resume CLI is available only with prepare and remains separate from activation', () => {
+  assert.deepEqual(parseArgs(['--release-receipt', 'C:/r.json', '--prepare', '--resume-receipt', 'C:/failure.json']), {
+    prepare: true, activate: false, receiptPath: 'C:/r.json', resumeReceiptPath: 'C:/failure.json',
+  });
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--resume-receipt', 'C:/failure.json']), /只能与 --prepare/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--prepare', '--resume-receipt', 'relative.json']), /必须提供绝对路径/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--activate', '--capacity-receipt', 'C:/c.json', '--resume-receipt', 'C:/failure.json']), /只能与 --prepare/);
 });
 
 test('capacity acceptance requires native matching revision and four successful official HTTP battles', () => {

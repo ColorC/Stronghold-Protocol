@@ -7,3 +7,22 @@ body{background:radial-gradient(ellipse at 50% -25%,#2a3943,var(--rs-bg) 70%);co
 
 .rs-field{display:flex;flex-direction:column}.rs-field__canvas{position:relative;inset:auto;min-height:440px;aspect-ratio:1.6;opacity:1;z-index:0}.rs-field__board{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto}.rs-side details>summary{cursor:pointer;padding:10px 0}.rs-side .rs-catalog-grid{grid-template-columns:1fr}
 .rs-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:8px 0}.rs-filters input,.rs-filters select,.rs-piece select,.rs-card select{font:inherit;color:inherit;background:#273440;border:1px solid #586a79;border-radius:6px;padding:7px 10px;min-width:0}.rs-card--operator{grid-template-columns:48px minmax(0,1fr) auto;gap:10px}.rs-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#34424e;display:grid;place-items:center;color:var(--rs-gold);font-weight:700}.rs-avatar img{width:100%;height:100%;object-fit:cover}.rs-offer .rs-avatar{width:54px;height:54px}.rs-choice__option{display:grid;grid-template-columns:minmax(130px,auto) minmax(0,1fr) auto;align-items:center;gap:8px;width:100%}.rs-choice__option p{margin:.25rem 0;color:var(--rs-muted)}.rs-choice__option button{justify-self:start}.rs-node{display:flex;align-items:center;flex-wrap:wrap;gap:5px}.rs-copy{font-size:.8rem}.rs-strategies{display:grid;gap:6px}.rs-summons{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.rs-summons label,.rs-piece label{display:flex;align-items:center;gap:6px}.rs-equipped{display:inline-flex;gap:4px}.rs-card--operator .rs-card__main{min-width:0}.rs-card--operator i{grid-column:2/-1}.rs-env-choice{display:flex;align-items:stretch;gap:4px;background:#202a34;border:1px solid var(--rs-line);border-radius:9px;padding:8px}.rs-env-choice>button{flex:1;text-align:left}.rs-env-choice .rs-copy{align-self:center}@media(max-width:650px){.rs-choice__option{grid-template-columns:1fr}.rs-card--operator{grid-template-columns:40px minmax(0,1fr)}.rs-card--operator .rs-copy{grid-column:2}}
+
+/* The shared game theme scales 1rem to viewport-sized design pixels. Keep the
+   resonance page's editorial text and related vertical rhythm at CSS-pixel size. */
+.rs-start,.rs-game,.rs-detail{font-size:16px;line-height:1.45}
+.rs-start h1{font-size:clamp(26px,3vw,38px);line-height:1.2;margin:8px 0}
+.rs-start h2,.rs-panel h2{font-size:22px;line-height:1.3;margin:2px 0 10px}
+.rs-top h1{font-size:26px;line-height:1.25;margin:4px 0}
+.rs-envs button span,.rs-difficulties button span,.rs-card span,.rs-card small,.rs-piece span,.rs-offer span,.rs-pact small{font-size:14px;line-height:1.4}
+.rs-card,.rs-offer,.rs-piece,.rs-pact,.rs-envs button,.rs-difficulties button{font-size:15px;line-height:1.4}
+.rs-roster .rs-card i,.rs-copy{font-size:13px;line-height:1.35}
+.rs-resources{font-size:15px;line-height:1.4}
+.rs-panel h3,.rs-star h3,.rs-next h3{font-size:16px;line-height:1.35}
+.rs-choice__option p,.rs-detail__body p,.rs-detail__body small{font-size:14px;line-height:1.5}
+.rs-panel h2{margin-bottom:8px}
+.rs-field{min-height:460px}
+.rs-shop{grid-template-columns:repeat(5,minmax(0,1fr));overflow-x:auto;overflow-y:visible}
+@media(max-width:1100px){.rs-shop{grid-template-columns:repeat(3,minmax(150px,1fr))}}
+@media(max-width:900px){.rs-shop{grid-template-columns:repeat(2,minmax(140px,1fr))}.rs-field__canvas{min-height:380px}}
+@media(max-width:520px){.rs-shop{grid-template-columns:1fr}.rs-field__canvas{min-height:320px}}
