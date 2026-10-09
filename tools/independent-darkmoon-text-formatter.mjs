@@ -184,7 +184,7 @@ function cleanCombat(id, variant) {
   else if (id === 'BOT_537') text = `战斗中每次实际部署时召唤1个${tokenName}；${bodyText('机械水獭')}`;
   else if (id === 'CFM_316') text = `战斗中每次实际部署时，按自身当前攻击与基础攻击之比×2召唤${tokenName}（至少1个）；${bodyText('狼群')}`;
   else if (tokenName) text = `战斗中每次实际部署时召唤${rule.retire.attackCount ? '按自身当前攻击与基础攻击之比×2计算、至少1个' : `${rule.retire.count[variant === 'elite' ? 1 : 0]}个`}${tokenName}；${bodyText(token === 'beast' ? '狼群' : token === 'pirate' ? '黄金盟誓' : '机械水獭')}`;
-  return text;
+  return compactWording(text);
 }
 
 export function compactWording(text) {
@@ -197,6 +197,9 @@ export function compactWording(text) {
     .replace(/(?:攻击成长徽章|攻击徽章|训练等级)×0及/g, '')
     .replace(/购买符合条件的干员时，购买(?=[^，。；]*阵营干员时)/g, '购买')
     .replace(/[，；]仅本场战斗生效[。]?/g, '。')
+    .replace(/[（(]\s*[）)]/g, '')
+    .replace(/[；，](?=[）)。])/g, '')
+    .replace(/。同一效果。/g, '。')
     .replace(/[；，]\s*$/g, '。')
     .replace(/。{2,}/g, '。');
 }

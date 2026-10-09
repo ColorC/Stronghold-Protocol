@@ -503,9 +503,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "初雷",
-              "damage": 53277,
-              "dps": 592,
+              "damage": 57265,
+              "dps": 636,
               "healing": 0,
               "attacks": 40,
               "skillActivations": 1,
@@ -514,16 +513,16 @@
             },
             {
               "form": "进阶",
-              "skill": "初雷",
-              "damage": 92733,
-              "dps": 1030,
+              "damage": 98944,
+              "dps": 1099,
               "healing": 0,
               "attacks": 40,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《爆裂飓风》原科技3：源卡功能为“圣盾，风怒”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -854,10 +853,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "荆藤庇荫",
-              "damage": 19341,
-              "dps": 215,
-              "healing": 10290,
+              "damage": 20371,
+              "dps": 226,
+              "healing": 11139,
               "attacks": 57,
               "skillActivations": 2,
               "deaths": 0,
@@ -865,16 +863,16 @@
             },
             {
               "form": "进阶",
-              "skill": "荆藤庇荫",
-              "damage": 25603,
-              "dps": 284,
-              "healing": 14519,
+              "damage": 26712,
+              "dps": 297,
+              "healing": 15543,
               "attacks": 57,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《海盗无赖》原科技1：源卡功能为“亡语：召唤一个1/1的海盗并使其立即发起攻击。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -1104,9 +1102,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "狼眼",
-              "damage": 22616,
-              "dps": 251,
+              "damage": 26627,
+              "dps": 296,
               "healing": 0,
               "attacks": 57,
               "skillActivations": 0,
@@ -1115,16 +1112,16 @@
             },
             {
               "form": "进阶",
-              "skill": "狼眼",
-              "damage": 41795,
-              "dps": 464,
+              "damage": 46651,
+              "dps": 518,
               "healing": 0,
               "attacks": 57,
               "skillActivations": 0,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "原生猎人高基础攻击与近距暴击，使一科技成长核心过早形成战力；调整为二科技。"
       }
@@ -1968,9 +1965,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "孢子扩散",
-              "damage": 15983,
-              "dps": 178,
+              "damage": 17145,
+              "dps": 190,
               "healing": 0,
               "attacks": 48,
               "skillActivations": 3,
@@ -1979,16 +1975,16 @@
             },
             {
               "form": "进阶",
-              "skill": "孢子扩散",
-              "damage": 20354,
-              "dps": 226,
+              "damage": 21657,
+              "dps": 241,
               "healing": 0,
               "attacks": 48,
               "skillActivations": 3,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《族群领袖》原科技2：源卡功能为“每当你召唤一个野兽，使其获得+2 攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -2419,9 +2415,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "光影迷宫",
-              "damage": 22302,
-              "dps": 248,
+              "damage": 23983,
+              "dps": 266,
               "healing": 0,
               "attacks": 33,
               "skillActivations": 1,
@@ -2430,16 +2425,16 @@
             },
             {
               "form": "进阶",
-              "skill": "光影迷宫",
-              "damage": 30397,
-              "dps": 338,
+              "damage": 34182,
+              "dps": 380,
               "healing": 0,
               "attacks": 34,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《克苏恩的侍僧》原科技1：源卡功能为“复生，嘲讽”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -2769,7 +2764,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "夹枪冲锋",
               "damage": 3887,
               "dps": 43,
               "healing": 0,
@@ -2780,7 +2774,6 @@
             },
             {
               "form": "进阶",
-              "skill": "夹枪冲锋",
               "damage": 4975,
               "dps": 55,
               "healing": 0,
@@ -2789,7 +2782,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《雕文护卫者》原科技2：源卡功能为“每当该随从攻击，便使其攻击力翻倍。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -3103,18 +3097,16 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "反击电弧",
-              "damage": 20639,
+              "damage": 20602,
               "dps": 229,
               "healing": 0,
-              "attacks": 55,
+              "attacks": 54,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "反击电弧",
               "damage": 28212,
               "dps": 313,
               "healing": 0,
@@ -3123,7 +3115,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《偏折机器人》原科技3：源卡功能为“圣盾 在战斗阶段中，每当你召唤一个机械，便获得+1攻击力和圣盾。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -3648,10 +3641,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "医疗无人机",
               "damage": 0,
               "dps": 0,
-              "healing": 12179,
+              "healing": 12971,
               "attacks": 34,
               "skillActivations": 3,
               "deaths": 0,
@@ -3659,16 +3651,16 @@
             },
             {
               "form": "进阶",
-              "skill": "医疗无人机",
               "damage": 0,
               "dps": 0,
-              "healing": 15787,
+              "healing": 16627,
               "attacks": 36,
-              "skillActivations": 3,
+              "skillActivations": 4,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《量产型恐吓机》原科技3：源卡功能为“磁力 亡语：召唤三个1/1的微型机器人。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -3973,27 +3965,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "乡音沉沉",
-              "damage": 24344,
-              "dps": 270,
+              "damage": 25990,
+              "dps": 289,
               "healing": 0,
-              "attacks": 51,
+              "attacks": 52,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "乡音沉沉",
-              "damage": 35486,
-              "dps": 394,
+              "damage": 37492,
+              "dps": 417,
               "healing": 0,
               "attacks": 59,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《熔融岩石》原科技2：源卡功能为“嘲讽 在你使用一张元素牌后，获得+1生命值。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -4549,9 +4540,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "肉斩骨断",
-              "damage": 22600,
-              "dps": 251,
+              "damage": 24760,
+              "dps": 275,
               "healing": 0,
               "attacks": 66,
               "skillActivations": 2,
@@ -4560,16 +4550,16 @@
             },
             {
               "form": "进阶",
-              "skill": "肉斩骨断",
-              "damage": 35230,
-              "dps": 391,
-              "healing": 140,
+              "damage": 37363,
+              "dps": 415,
+              "healing": 144,
               "attacks": 59,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《古神的卫士》原科技3：源卡功能为“亡语：将一枚铸币置入你的手牌。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -4656,8 +4646,8 @@
       "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：自身每受到20次敌方伤害，战斗结束后获得1枚防御徽章。规则动作：普通战斗damaged触发按事件累计产出；进阶战斗damaged触发按事件累计产出。本体依据：TANK/铁卫，MELEE，范围0-1；原生攻击314、攻速100、攻击间隔1.2秒、生命2391；选用「“挨打”」Lv4，SP消耗50/初始0（INCREASE_WITH_TIME）：“停止攻击敌人。探针依据：单体0防/0抗最佳总DPS 261.7（本体261.7+召唤物0.0；防御力强化·β型）；单体800防/40抗最佳总DPS 13.1（本体13.1+召唤物0.0；防御力强化·β型）；四目标0防/0抗最佳总DPS 261.7（本体261.7+召唤物0.0；防御力强化·β型）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，自身装备坚守盟约×1。\n友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。同一效果。",
-        "elite": "招募获得或首次上阵时，自身装备坚守盟约×1。\n友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+        "normal": "招募获得或首次上阵时，自身装备坚守盟约×1。\n友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
+        "elite": "招募获得或首次上阵时，自身装备坚守盟约×1。\n友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -4735,14 +4725,14 @@
             "params": {
               "sourceId": "BGS_201"
             },
-            "text": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。同一效果。",
+            "text": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。同一效果。",
+            "adaptation": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -4782,14 +4772,14 @@
             "params": {
               "sourceId": "BGS_201"
             },
-            "text": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "text": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "adaptation": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -4826,7 +4816,7 @@
               "trigger": "友方受到攻击",
               "recipient": "自身附近的友方干员",
               "duration": "本场战斗",
-              "rule": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。同一效果。"
+              "rule": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×1与伤害徽章×1的战斗增益。"
             }
           ],
           "elite": [
@@ -4840,7 +4830,7 @@
               "trigger": "友方受到攻击",
               "recipient": "自身附近的友方干员",
               "duration": "本场战斗",
-              "rule": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。"
+              "rule": "友方干员受到攻击时，使自身附近的友方获得攻击徽章×2与伤害徽章×2的战斗增益。"
             }
           ]
         },
@@ -4862,9 +4852,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "“挨打”",
-              "damage": 1236,
-              "dps": 14,
+              "damage": 1504,
+              "dps": 17,
               "healing": 0,
               "attacks": 55,
               "skillActivations": 1,
@@ -4873,16 +4862,16 @@
             },
             {
               "form": "进阶",
-              "skill": "“挨打”",
-              "damage": 6770,
-              "dps": 75,
+              "damage": 7214,
+              "dps": 80,
               "healing": 0,
               "attacks": 55,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《被折磨的祭师》原科技2：源卡功能为“嘲讽 每当该随从受到攻击时，使相邻的随从获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -4973,8 +4962,8 @@
       "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。同一效果。",
-        "elite": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。同一效果。",
+        "normal": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。",
+        "elite": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -5031,14 +5020,14 @@
             "params": {
               "sourceId": "BGS_110"
             },
-            "text": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。同一效果。",
+            "text": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。同一效果。",
+            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -5057,14 +5046,14 @@
             "params": {
               "sourceId": "BGS_110"
             },
-            "text": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。同一效果。",
+            "text": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。同一效果。",
+            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -5095,7 +5084,7 @@
               "trigger": "友方受到攻击",
               "recipient": "触发效果的友方干员",
               "duration": "本场战斗",
-              "rule": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。同一效果。"
+              "rule": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×3的战斗增益。"
             }
           ],
           "elite": [
@@ -5103,7 +5092,7 @@
               "trigger": "友方受到攻击",
               "recipient": "触发效果的友方干员",
               "duration": "本场战斗",
-              "rule": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。同一效果。"
+              "rule": "佩戴坚守盟约的友方干员受到攻击时，使触发效果的友方获得攻击徽章×6的战斗增益。"
             }
           ]
         },
@@ -5125,9 +5114,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "高效处理",
-              "damage": 37716,
-              "dps": 419,
+              "damage": 43176,
+              "dps": 480,
               "healing": 0,
               "attacks": 70,
               "skillActivations": 1,
@@ -5136,16 +5124,16 @@
             },
             {
               "form": "进阶",
-              "skill": "高效处理",
-              "damage": 58098,
-              "dps": 646,
+              "damage": 64006,
+              "dps": 711,
               "healing": 0,
               "attacks": 70,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《帝国之手》原科技3：源卡功能为“每当一个友方嘲讽随从受到攻击时，使其获得+3攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -5393,9 +5381,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "自负此轭",
-              "damage": 19009,
-              "dps": 211,
+              "damage": 21135,
+              "dps": 235,
               "healing": 0,
               "attacks": 69,
               "skillActivations": 1,
@@ -5404,16 +5391,16 @@
             },
             {
               "form": "进阶",
-              "skill": "自负此轭",
-              "damage": 26078,
-              "dps": 290,
+              "damage": 28595,
+              "dps": 318,
               "healing": 0,
               "attacks": 72,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《海上掠夺者》原科技3：源卡功能为“每当你使用一张海盗牌时，获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -5635,9 +5622,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "纸艺·双影",
-              "damage": 31544,
-              "dps": 350,
+              "damage": 34211,
+              "dps": 380,
               "healing": 0,
               "attacks": 75,
               "skillActivations": 2,
@@ -5646,16 +5632,16 @@
             },
             {
               "form": "进阶",
-              "skill": "纸艺·双影",
-              "damage": 46351,
-              "dps": 515,
+              "damage": 49202,
+              "dps": 547,
               "healing": 0,
               "attacks": 75,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 2
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《卡德加》原科技3：源卡功能为“你的召唤随从的卡牌召唤数量翻倍。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -5939,7 +5925,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "鼠群",
               "damage": 5044,
               "dps": 56,
               "healing": 0,
@@ -5950,7 +5935,6 @@
             },
             {
               "form": "进阶",
-              "skill": "鼠群",
               "damage": 12610,
               "dps": 140,
               "healing": 0,
@@ -5959,7 +5943,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《龙人军官》原科技1：源卡功能为“嘲讽”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -6220,9 +6205,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "紧急赶场通知",
-              "damage": 39623,
-              "dps": 440,
+              "damage": 42878,
+              "dps": 476,
               "healing": 0,
               "attacks": 60,
               "skillActivations": 3,
@@ -6231,16 +6215,16 @@
             },
             {
               "form": "进阶",
-              "skill": "紧急赶场通知",
-              "damage": 66165,
-              "dps": 735,
+              "damage": 69840,
+              "dps": 776,
               "healing": 0,
               "attacks": 60,
               "skillActivations": 3,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《废旧螺栓机甲》原科技3：源卡功能为“战吼：使一个友方机械获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -6488,10 +6472,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "精调",
               "damage": 0,
               "dps": 0,
-              "healing": 10437,
+              "healing": 10025,
               "attacks": 26,
               "skillActivations": 1,
               "deaths": 0,
@@ -6499,16 +6482,16 @@
             },
             {
               "form": "进阶",
-              "skill": "精调",
               "damage": 0,
               "dps": 0,
-              "healing": 14005,
+              "healing": 12400,
               "attacks": 26,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《展馆茶杯》原科技2：源卡功能为“战吼：随机使三个不同类型的友方随从获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -6744,9 +6727,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "狼魂",
-              "damage": 33662,
-              "dps": 374,
+              "damage": 35992,
+              "dps": 400,
               "healing": 0,
               "attacks": 70,
               "skillActivations": 2,
@@ -6755,16 +6737,16 @@
             },
             {
               "form": "进阶",
-              "skill": "狼魂",
-              "damage": 53793,
-              "dps": 598,
+              "damage": 56440,
+              "dps": 627,
               "healing": 0,
               "attacks": 70,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《洞穴多头蛇》原科技4：源卡功能为“同时对其攻击目标相邻的随从造成伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -7099,9 +7081,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "攻击力强化·γ型",
-              "damage": 18351,
-              "dps": 204,
+              "damage": 20130,
+              "dps": 224,
               "healing": 0,
               "attacks": 33,
               "skillActivations": 1,
@@ -7110,16 +7091,16 @@
             },
             {
               "form": "进阶",
-              "skill": "攻击力强化·γ型",
-              "damage": 26812,
-              "dps": 298,
+              "damage": 28809,
+              "dps": 320,
               "healing": 0,
               "attacks": 33,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《深蓝刃鳞龙人》原科技4：源卡功能为“在你的回合结束时，随机使另一个友方随从获得+3攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -7981,9 +7962,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "协同作战",
-              "damage": 31077,
-              "dps": 345,
+              "damage": 35002,
+              "dps": 389,
               "healing": 0,
               "attacks": 85,
               "skillActivations": 1,
@@ -7992,16 +7972,16 @@
             },
             {
               "form": "进阶",
-              "skill": "协同作战",
-              "damage": 41740,
-              "dps": 464,
+              "damage": 46078,
+              "dps": 512,
               "healing": 0,
               "attacks": 85,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《管理者埃克索图斯》原科技4：源卡功能为“在你的回合结束时，使你最左边的随从获得+1/+1。在本回合中你每使用过一张元素牌，就重复一次。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -8707,7 +8687,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "聚能涡旋",
               "damage": 28928,
               "dps": 321,
               "healing": 0,
@@ -8718,7 +8697,6 @@
             },
             {
               "form": "进阶",
-              "skill": "聚能涡旋",
               "damage": 41216,
               "dps": 458,
               "healing": 0,
@@ -8727,7 +8705,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《血帆炮手》原科技3：源卡功能为“战吼：使你的其他海盗获得+3攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -8995,9 +8974,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "阻滞性显色剂",
-              "damage": 26337,
-              "dps": 293,
+              "damage": 26787,
+              "dps": 298,
               "healing": 0,
               "attacks": 57,
               "skillActivations": 2,
@@ -9006,16 +8984,16 @@
             },
             {
               "form": "进阶",
-              "skill": "阻滞性显色剂",
-              "damage": 33591,
-              "dps": 373,
+              "damage": 34165,
+              "dps": 380,
               "healing": 0,
               "attacks": 57,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《兔妖教头》原科技4：源卡功能为“战吼：使一个友方野兽获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -9260,9 +9238,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "电能过载",
-              "damage": 65224,
-              "dps": 725,
+              "damage": 70657,
+              "dps": 785,
               "healing": 0,
               "attacks": 40,
               "skillActivations": 2,
@@ -9271,16 +9248,16 @@
             },
             {
               "form": "进阶",
-              "skill": "电能过载",
-              "damage": 87141,
-              "dps": 968,
+              "damage": 92840,
+              "dps": 1032,
               "healing": 0,
               "attacks": 40,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "原生S2的散射群攻在接敌测试中明显高于常规二科技输出，配退场支援升至三科技。"
       }
@@ -9472,8 +9449,8 @@
       "role": "联动",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
-        "elite": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+        "normal": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+        "elite": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -9532,14 +9509,14 @@
             "params": {
               "sourceId": "BGS_067"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -9558,14 +9535,14 @@
             "params": {
               "sourceId": "BGS_067"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -9596,7 +9573,7 @@
               "trigger": "友方累计破裂五层护盾",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。"
+              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。"
             }
           ],
           "elite": [
@@ -9604,7 +9581,7 @@
               "trigger": "友方累计破裂五层护盾",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。"
+              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。"
             }
           ]
         },
@@ -9626,10 +9603,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "先贤化身",
-              "damage": 29785,
-              "dps": 331,
-              "healing": 19037,
+              "damage": 34317,
+              "dps": 381,
+              "healing": 21257,
               "attacks": 75,
               "skillActivations": 3,
               "deaths": 0,
@@ -9637,16 +9613,16 @@
             },
             {
               "form": "进阶",
-              "skill": "先贤化身",
-              "damage": 45417,
-              "dps": 505,
-              "healing": 28545,
+              "damage": 49248,
+              "dps": 547,
+              "healing": 30155,
               "attacks": 75,
               "skillActivations": 3,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《龙人执行者》原科技4：源卡功能为“在一个友方随从失去圣盾后，获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -10308,10 +10284,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "壳状防御",
               "damage": 791,
               "dps": 9,
-              "healing": 136,
+              "healing": 140,
               "attacks": 51,
               "skillActivations": 1,
               "deaths": 0,
@@ -10319,16 +10294,16 @@
             },
             {
               "form": "进阶",
-              "skill": "壳状防御",
               "damage": 2907,
               "dps": 32,
-              "healing": 136,
+              "healing": 140,
               "attacks": 51,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《吵吵模组》原科技4：源卡功能为“磁力 圣盾 嘲讽”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -10680,27 +10655,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "碎甲击·扩散",
-              "damage": 13577,
-              "dps": 151,
+              "damage": 16379,
+              "dps": 182,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 4,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "碎甲击·扩散",
-              "damage": 23086,
-              "dps": 257,
+              "damage": 26087,
+              "dps": 290,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 4,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《暮光使者》原科技3：源卡功能为“嘲讽，战吼：使一条友方的龙获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -11225,27 +11199,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "领袖的尊严",
-              "damage": 9204,
-              "dps": 102,
+              "damage": 9360,
+              "dps": 104,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 1
             },
             {
               "form": "进阶",
-              "skill": "领袖的尊严",
-              "damage": 16884,
-              "dps": 188,
+              "damage": 17152,
+              "dps": 191,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 1
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《瘟疫鼠群》原科技3：源卡功能为“亡语：召唤若干个1/1的老鼠，数量等同于该随从的攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -11494,8 +11467,8 @@
       "role": "临时战斗",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，自身装备护盾发生器×1。\n友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。同一效果。",
-        "elite": "招募获得或首次上阵时，自身装备护盾发生器×1。\n友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。同一效果。",
+        "normal": "招募获得或首次上阵时，自身装备护盾发生器×1。\n友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
+        "elite": "招募获得或首次上阵时，自身装备护盾发生器×1。\n友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -11573,14 +11546,14 @@
             "params": {
               "sourceId": "ICC_858"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。同一效果。",
+            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。同一效果。",
+            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11620,14 +11593,14 @@
             "params": {
               "sourceId": "ICC_858"
             },
-            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。同一效果。",
+            "text": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
             "textEn": "",
             "tags": [
               "divineShield"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。同一效果。",
+            "adaptation": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11664,7 +11637,7 @@
               "trigger": "友方累计破裂五层护盾",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。同一效果。"
+              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。"
             }
           ],
           "elite": [
@@ -11678,7 +11651,7 @@
               "trigger": "友方累计破裂五层护盾",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。同一效果。"
+              "rule": "友方干员累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。"
             }
           ]
         },
@@ -11700,27 +11673,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "箭矢·暴风",
-              "damage": 46824,
-              "dps": 520,
+              "damage": 55102,
+              "dps": 612,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "箭矢·暴风",
-              "damage": 73656,
-              "dps": 818,
+              "damage": 82064,
+              "dps": 912,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《浴火者伯瓦尔》原科技4：源卡功能为“圣盾 在一个友方随从失去圣盾后，获得+2攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -12174,27 +12146,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "序时之匙",
-              "damage": 27342,
-              "dps": 304,
+              "damage": 27694,
+              "dps": 308,
               "healing": 0,
-              "attacks": 22,
+              "attacks": 21,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "序时之匙",
-              "damage": 34574,
-              "dps": 384,
+              "damage": 36064,
+              "dps": 401,
               "healing": 0,
               "attacks": 21,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《展馆茶壶》原科技4：源卡功能为“战吼：随机使三个不同类型的友方随从获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -12607,27 +12578,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "封喉",
-              "damage": 17760,
-              "dps": 197,
+              "damage": 18404,
+              "dps": 204,
               "healing": 0,
-              "attacks": 94,
+              "attacks": 96,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "封喉",
-              "damage": 33831,
-              "dps": 376,
+              "damage": 36874,
+              "dps": 410,
               "healing": 0,
-              "attacks": 99,
+              "attacks": 103,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《其拉传令官》原科技4：源卡功能为“在一个友方嘲讽随从死亡后，使其相邻的随从获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -12891,27 +12861,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "高效冲击",
-              "damage": 28372,
-              "dps": 315,
+              "damage": 32071,
+              "dps": 356,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 15,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "高效冲击",
-              "damage": 43016,
-              "dps": 478,
+              "damage": 48418,
+              "dps": 538,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 19,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《破浪巨人》原科技5：源卡功能为“风怒，超杀：使你的其他海盗获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -13014,8 +12983,8 @@
       "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：自身每攻击30次，战斗结束后获得1枚攻击徽章。规则动作：普通战斗attack触发按事件累计产出；进阶战斗attack触发按事件累计产出。本体依据：SPECIAL/伏击客，MELEE，范围y-1；原生攻击692、攻速100、攻击间隔3.5秒、生命1336；选用「囚徒困境」Lv4，SP消耗22/初始5（INCREASE_WITH_TIME）：“攻击间隔小幅度缩短，攻击力+15%，第一天赋额外攻击1个目标并附加0.8秒束缚”。探针依据：单体0防/0抗最佳总DPS 403.7（本体403.7+召唤物0.0；唤醒）；单体800防/40抗最佳总DPS 145.7（本体145.7+召唤物0.0；唤醒）；四目标0防/0抗最佳总DPS 1311.3（本体1311.3+召唤物0.0；镜花水月）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。同一效果。",
-        "elite": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。同一效果。",
+        "normal": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。",
+        "elite": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -13072,14 +13041,14 @@
             "params": {
               "sourceId": "BGS_111"
             },
-            "text": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。同一效果。",
+            "text": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。同一效果。",
+            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13098,14 +13067,14 @@
             "params": {
               "sourceId": "BGS_111"
             },
-            "text": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。同一效果。",
+            "text": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。同一效果。",
+            "adaptation": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13136,7 +13105,7 @@
               "trigger": "友方受到攻击",
               "recipient": "自身",
               "duration": "本局成长",
-              "rule": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。同一效果。"
+              "rule": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×1与伤害徽章×1。"
             }
           ],
           "elite": [
@@ -13144,7 +13113,7 @@
               "trigger": "友方受到攻击",
               "recipient": "自身",
               "duration": "本局成长",
-              "rule": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。同一效果。"
+              "rule": "佩戴坚守盟约的友方干员受到攻击时，使自身装备攻击徽章×2与伤害徽章×2。"
             }
           ]
         },
@@ -13166,9 +13135,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "囚徒困境",
-              "damage": 49895,
-              "dps": 554,
+              "damage": 53410,
+              "dps": 593,
               "healing": 0,
               "attacks": 29,
               "skillActivations": 2,
@@ -13177,16 +13145,16 @@
             },
             {
               "form": "进阶",
-              "skill": "囚徒困境",
-              "damage": 73544,
-              "dps": 817,
+              "damage": 77602,
+              "dps": 862,
               "healing": 0,
               "attacks": 32,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《亚煞极的勇士》原科技4：源卡功能为“每当一个友方嘲讽随从受到攻击时，便永久获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -13437,27 +13405,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "小心地滑",
-              "damage": 32423,
-              "dps": 360,
+              "damage": 35087,
+              "dps": 390,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "小心地滑",
-              "damage": 38272,
-              "dps": 425,
+              "damage": 41125,
+              "dps": 457,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《暴怒的巨蜥》原科技2：源卡功能为“在你使用一张亡语随从牌后，获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -13731,7 +13698,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "战火淬炼",
               "damage": 5928,
               "dps": 66,
               "healing": 0,
@@ -13742,7 +13708,6 @@
             },
             {
               "form": "进阶",
-              "skill": "战火淬炼",
               "damage": 7684,
               "dps": 85,
               "healing": 0,
@@ -13751,7 +13716,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《甲板杂兵》原科技1：源卡功能为“战吼：提升酒馆等级所需的铸币减少（1）枚。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -14035,10 +14001,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "缺水的碎漩狂舞",
-              "damage": 37332,
-              "dps": 415,
-              "healing": 46,
+              "damage": 38352,
+              "dps": 426,
+              "healing": 48,
               "attacks": 50,
               "skillActivations": 2,
               "deaths": 0,
@@ -14046,16 +14011,16 @@
             },
             {
               "form": "进阶",
-              "skill": "缺水的碎漩狂舞",
-              "damage": 49971,
-              "dps": 555,
-              "healing": 292,
+              "damage": 51312,
+              "dps": 570,
+              "healing": 288,
               "attacks": 50,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《驯兽师》原科技3：源卡功能为“战吼：使一个友方野兽获得+2/+2和嘲讽。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -14583,9 +14548,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "剑雨滂沱",
-              "damage": 19288,
-              "dps": 214,
+              "damage": 21795,
+              "dps": 242,
               "healing": 0,
               "attacks": 104,
               "skillActivations": 1,
@@ -14594,16 +14558,16 @@
             },
             {
               "form": "进阶",
-              "skill": "剑雨滂沱",
-              "damage": 30754,
-              "dps": 342,
+              "damage": 33340,
+              "dps": 370,
               "healing": 0,
               "attacks": 104,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《无面酒客》原科技5：源卡功能为“战吼：选择一个鲍勃的酒馆中的随从，变形成为它的原始版 复制。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -15042,27 +15006,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "岩崩锤",
-              "damage": 46413,
-              "dps": 516,
-              "healing": 142,
+              "damage": 48037,
+              "dps": 534,
+              "healing": 154,
               "attacks": 57,
-              "skillActivations": 15,
+              "skillActivations": 16,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "岩崩锤",
-              "damage": 64080,
-              "dps": 712,
-              "healing": 144,
+              "damage": 66391,
+              "dps": 738,
+              "healing": 154,
               "attacks": 57,
-              "skillActivations": 15,
+              "skillActivations": 16,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《阿古斯防御者》原科技4：源卡功能为“战吼：使相邻的随从获得+1/+1和嘲讽。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -15308,9 +15271,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "焰心",
-              "damage": 25166,
-              "dps": 280,
+              "damage": 30179,
+              "dps": 335,
               "healing": 0,
               "attacks": 94,
               "skillActivations": 3,
@@ -15319,16 +15281,16 @@
             },
             {
               "form": "进阶",
-              "skill": "焰心",
-              "damage": 40256,
-              "dps": 447,
+              "damage": 46658,
+              "dps": 518,
               "healing": 0,
               "attacks": 94,
               "skillActivations": 3,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《火焰传令官》原科技4：源卡功能为“超杀：对最左边的敌方随从造成3点伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -15573,9 +15535,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "光羽箭",
-              "damage": 32528,
-              "dps": 361,
+              "damage": 34272,
+              "dps": 381,
               "healing": 0,
               "attacks": 34,
               "skillActivations": 2,
@@ -15584,16 +15545,16 @@
             },
             {
               "form": "进阶",
-              "skill": "光羽箭",
-              "damage": 41458,
-              "dps": 461,
+              "damage": 43298,
+              "dps": 481,
               "healing": 0,
               "attacks": 34,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《姆诺兹多》原科技5：源卡功能为“战吼：将你上一个对手的战队中的一个随从置入你的手牌。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -15836,27 +15797,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "脑啡肽",
               "damage": 0,
               "dps": 0,
-              "healing": 13570,
-              "attacks": 51,
+              "healing": 14339,
+              "attacks": 50,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "脑啡肽",
               "damage": 0,
               "dps": 0,
-              "healing": 17980,
-              "attacks": 57,
+              "healing": 18821,
+              "attacks": 56,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《钢铁武道家》原科技3：源卡功能为“在你的回合结束时，使另一个友方机械获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -16773,10 +16733,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "紧急包扎",
               "damage": 0,
               "dps": 0,
-              "healing": 12526,
+              "healing": 13363,
               "attacks": 32,
               "skillActivations": 0,
               "deaths": 0,
@@ -16784,16 +16743,16 @@
             },
             {
               "form": "进阶",
-              "skill": "紧急包扎",
               "damage": 0,
               "dps": 0,
-              "healing": 14851,
+              "healing": 15688,
               "attacks": 32,
               "skillActivations": 0,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《恩佐斯的子嗣》原科技2：源卡功能为“亡语：使你的所有随从获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -17118,27 +17077,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "近身铳斗",
-              "damage": 94296,
-              "dps": 1048,
-              "healing": 146,
-              "attacks": 104,
+              "damage": 97798,
+              "dps": 1087,
+              "healing": 156,
+              "attacks": 102,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "近身铳斗",
-              "damage": 145987,
-              "dps": 1622,
-              "healing": 132,
-              "attacks": 111,
+              "damage": 148566,
+              "dps": 1651,
+              "healing": 144,
+              "attacks": 109,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《扎普·斯里维克》原科技6：源卡功能为“风怒 该随从总会攻击攻击力最低的敌方随从。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -17517,9 +17475,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "众恶的焚场",
-              "damage": 88504,
-              "dps": 983,
+              "damage": 93439,
+              "dps": 1038,
               "healing": 0,
               "attacks": 84,
               "skillActivations": 2,
@@ -17528,16 +17485,16 @@
             },
             {
               "form": "进阶",
-              "skill": "众恶的焚场",
-              "damage": 120067,
-              "dps": 1334,
+              "damage": 126473,
+              "dps": 1405,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 89,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《硬壳清道夫》原科技5：源卡功能为“战吼：使你具有嘲讽的随从获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -18030,10 +17987,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "灵与欲的惜别",
-              "damage": 467860,
-              "dps": 5198,
-              "healing": 177,
+              "damage": 518540,
+              "dps": 5762,
+              "healing": 181,
               "attacks": 97,
               "skillActivations": 2,
               "deaths": 0,
@@ -18041,16 +17997,16 @@
             },
             {
               "form": "进阶",
-              "skill": "灵与欲的惜别",
-              "damage": 692748,
-              "dps": 7697,
-              "healing": 175,
+              "damage": 754530,
+              "dps": 8384,
+              "healing": 181,
               "attacks": 98,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "原生S3多段输出明显高于同档，叠加招募效果复触发可放大长期成长，保留六科技。"
       }
@@ -18421,10 +18377,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "黄昏",
-              "damage": 82840,
-              "dps": 920,
-              "healing": 65,
+              "damage": 89040,
+              "dps": 989,
+              "healing": 59,
               "attacks": 34,
               "skillActivations": 1,
               "deaths": 0,
@@ -18432,16 +18387,16 @@
             },
             {
               "form": "进阶",
-              "skill": "黄昏",
-              "damage": 104049,
-              "dps": 1156,
-              "healing": 52,
+              "damage": 111096,
+              "dps": 1234,
+              "healing": 46,
               "attacks": 33,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《永恒者艾丽斯特拉》原科技6：源卡功能为“圣盾，复生 每当一个友方嘲讽随从受到攻击时，改为该随从受到攻击。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -18541,8 +18496,8 @@
       "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
-        "elite": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+        "normal": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
+        "elite": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -18601,12 +18556,12 @@
             "params": {
               "sourceId": "BGS_056"
             },
-            "text": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "text": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "adaptation": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -18625,12 +18580,12 @@
             "params": {
               "sourceId": "BGS_056"
             },
-            "text": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+            "text": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+            "adaptation": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -18661,7 +18616,7 @@
               "trigger": "友方攻击",
               "recipient": "触发效果的友方干员",
               "duration": "本场战斗",
-              "rule": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。"
+              "rule": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×2与伤害徽章×2的战斗增益。"
             }
           ],
           "elite": [
@@ -18669,7 +18624,7 @@
               "trigger": "友方攻击",
               "recipient": "触发效果的友方干员",
               "duration": "本场战斗",
-              "rule": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。"
+              "rule": "维多利亚干员攻击敌人时，使触发效果的友方获得攻击徽章×4与伤害徽章×4的战斗增益。"
             }
           ]
         },
@@ -18691,9 +18646,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "终极防线",
-              "damage": 28730,
-              "dps": 319,
+              "damage": 31211,
+              "dps": 347,
               "healing": 0,
               "attacks": 39,
               "skillActivations": 1,
@@ -18702,16 +18656,16 @@
             },
             {
               "form": "进阶",
-              "skill": "终极防线",
-              "damage": 55542,
-              "dps": 617,
+              "damage": 59395,
+              "dps": 660,
               "healing": 0,
               "attacks": 53,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "原生S3远程群攻、超载与重装攻击光环形成高战斗能力，攻击触发成长组合放在五科技。"
       }
@@ -18974,10 +18928,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "狐火渺然",
-              "damage": 10366,
-              "dps": 115,
-              "healing": 1103,
+              "damage": 10980,
+              "dps": 122,
+              "healing": 94,
               "attacks": 34,
               "skillActivations": 1,
               "deaths": 0,
@@ -18985,16 +18938,16 @@
             },
             {
               "form": "进阶",
-              "skill": "狐火渺然",
-              "damage": 11459,
-              "dps": 127,
-              "healing": 1604,
-              "attacks": 33,
+              "damage": 12422,
+              "dps": 138,
+              "healing": 94,
+              "attacks": 34,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《熊妈妈》原科技5：源卡功能为“每当你召唤一个野兽，使其获得+4/+4。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -19241,10 +19194,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "药物配置",
-              "damage": 9161,
-              "dps": 102,
-              "healing": 4634,
+              "damage": 9673,
+              "dps": 107,
+              "healing": 4719,
               "attacks": 75,
               "skillActivations": 11,
               "deaths": 0,
@@ -19252,16 +19204,16 @@
             },
             {
               "form": "进阶",
-              "skill": "药物配置",
-              "damage": 14383,
-              "dps": 160,
-              "healing": 6679,
+              "damage": 14980,
+              "dps": 166,
+              "healing": 6793,
               "attacks": 75,
               "skillActivations": 12,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《斯尼德的伐木机》原科技5：源卡功能为“亡语：随机召唤一个传说随从。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -19514,27 +19466,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "工笔入化",
-              "damage": 45227,
-              "dps": 503,
+              "damage": 47785,
+              "dps": 531,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 12,
               "deaths": 0,
               "summons": 1
             },
             {
               "form": "进阶",
-              "skill": "工笔入化",
-              "damage": 63920,
-              "dps": 710,
+              "damage": 67055,
+              "dps": 745,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 14,
               "deaths": 0,
               "summons": 1
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《酒馆旋风》原科技5：源卡功能为“战吼：随机将一张其他元素牌置入你的 手牌。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -20414,10 +20365,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "横扫架势",
-              "damage": 47624,
-              "dps": 529,
-              "healing": 134,
+              "damage": 52160,
+              "dps": 580,
+              "healing": 135,
               "attacks": 113,
               "skillActivations": 1,
               "deaths": 0,
@@ -20425,16 +20375,16 @@
             },
             {
               "form": "进阶",
-              "skill": "横扫架势",
-              "damage": 70575,
-              "dps": 784,
-              "healing": 134,
+              "damage": 75629,
+              "dps": 840,
+              "healing": 135,
               "attacks": 113,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《回收机器人》原科技5：源卡功能为“每当一个友方机械死亡，便获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -20709,9 +20659,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "未照耀的荣光",
-              "damage": 154697,
-              "dps": 1719,
+              "damage": 171232,
+              "dps": 1903,
               "healing": 0,
               "attacks": 22,
               "skillActivations": 1,
@@ -20720,16 +20669,16 @@
             },
             {
               "form": "进阶",
-              "skill": "未照耀的荣光",
-              "damage": 160881,
-              "dps": 1788,
+              "damage": 174860,
+              "dps": 1943,
               "healing": 0,
               "attacks": 22,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《狂野的拉佐格尔》原科技5：源卡功能为“在你的回合结束时，你每有一条龙，便获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -20982,10 +20931,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "秘杖·反重力模式",
-              "damage": 38219,
-              "dps": 425,
-              "healing": 174,
+              "damage": 40347,
+              "dps": 448,
+              "healing": 180,
               "attacks": 16,
               "skillActivations": 2,
               "deaths": 0,
@@ -20993,16 +20941,16 @@
             },
             {
               "form": "进阶",
-              "skill": "秘杖·反重力模式",
-              "damage": 58663,
-              "dps": 652,
-              "healing": 174,
-              "attacks": 20,
+              "damage": 67686,
+              "dps": 752,
+              "healing": 180,
+              "attacks": 22,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《“厨房煞星”诺米》原科技5：源卡功能为“在你使用一张元素牌后，鲍勃的酒馆中的元素在本局对战的剩余时间内获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -21388,9 +21336,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "怵然震爆",
-              "damage": 35613,
-              "dps": 396,
+              "damage": 37361,
+              "dps": 415,
               "healing": 0,
               "attacks": 57,
               "skillActivations": 5,
@@ -21399,16 +21346,16 @@
             },
             {
               "form": "进阶",
-              "skill": "怵然震爆",
-              "damage": 106074,
-              "dps": 1179,
+              "damage": 109125,
+              "dps": 1213,
               "healing": 0,
               "attacks": 57,
               "skillActivations": 6,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《致命的孢子》原科技5：源卡功能为“剧毒”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -21654,10 +21601,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "一点关窍",
               "damage": 0,
               "dps": 0,
-              "healing": 14583,
+              "healing": 15529,
               "attacks": 32,
               "skillActivations": 1,
               "deaths": 0,
@@ -21665,16 +21611,16 @@
             },
             {
               "form": "进阶",
-              "skill": "一点关窍",
               "damage": 0,
               "dps": 0,
-              "healing": 18338,
+              "healing": 19369,
               "attacks": 32,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《奥术助手》原科技3：源卡功能为“战吼：使你的其他元素获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -22187,9 +22133,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "群山俯首",
-              "damage": 131114,
-              "dps": 1457,
+              "damage": 137950,
+              "dps": 1533,
               "healing": 0,
               "attacks": 23,
               "skillActivations": 1,
@@ -22198,16 +22143,16 @@
             },
             {
               "form": "进阶",
-              "skill": "群山俯首",
-              "damage": 212962,
-              "dps": 2366,
+              "damage": 223034,
+              "dps": 2478,
               "healing": 0,
               "attacks": 23,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《红衣纳迪娜》原科技6：源卡功能为“亡语：使你的龙获得圣盾。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -22689,10 +22634,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "\"潮涌，潮枯\"",
-              "damage": 7759,
-              "dps": 86,
-              "healing": 790,
+              "damage": 8685,
+              "dps": 97,
+              "healing": 56,
               "attacks": 0,
               "skillActivations": 1,
               "deaths": 0,
@@ -22700,16 +22644,16 @@
             },
             {
               "form": "进阶",
-              "skill": "\"潮涌，潮枯\"",
-              "damage": 12138,
-              "dps": 135,
-              "healing": 853,
+              "damage": 13453,
+              "dps": 149,
+              "healing": 56,
               "attacks": 0,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《光牙执行者》原科技5：源卡功能为“在你的回合结束时，随机使每个随从类型的各一个友方随从获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -23172,9 +23116,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "时光震荡",
-              "damage": 155394,
-              "dps": 1727,
+              "damage": 164532,
+              "dps": 1828,
               "healing": 0,
               "attacks": 47,
               "skillActivations": 1,
@@ -23183,16 +23126,16 @@
             },
             {
               "form": "进阶",
-              "skill": "时光震荡",
-              "damage": 200748,
-              "dps": 2231,
+              "damage": 210906,
+              "dps": 2343,
               "healing": 0,
               "attacks": 47,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《海浪剃刀号》原科技6：源卡功能为“亡语：随机召唤三个海盗。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -23377,8 +23320,8 @@
       "role": "成长",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。同一效果。",
-        "elite": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。同一效果。",
+        "normal": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
+        "elite": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -23437,12 +23380,12 @@
             "params": {
               "sourceId": "BGS_047"
             },
-            "text": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。同一效果。",
+            "text": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。同一效果。",
+            "adaptation": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -23461,12 +23404,12 @@
             "params": {
               "sourceId": "BGS_047"
             },
-            "text": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。同一效果。",
+            "text": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。同一效果。",
+            "adaptation": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -23497,7 +23440,7 @@
               "trigger": "友方攻击",
               "recipient": "所有友方干员",
               "duration": "本场战斗",
-              "rule": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。同一效果。"
+              "rule": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×2与伤害徽章×1的战斗增益。"
             }
           ],
           "elite": [
@@ -23505,7 +23448,7 @@
               "trigger": "友方攻击",
               "recipient": "所有友方干员",
               "duration": "本场战斗",
-              "rule": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。同一效果。"
+              "rule": "维多利亚干员攻击敌人时，使所有友方获得攻击徽章×4与伤害徽章×2的战斗增益。"
             }
           ]
         },
@@ -23527,27 +23470,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "俱以我之名",
-              "damage": 95542,
-              "dps": 1062,
+              "damage": 106214,
+              "dps": 1180,
               "healing": 0,
-              "attacks": 76,
+              "attacks": 77,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 7
             },
             {
               "form": "进阶",
-              "skill": "俱以我之名",
-              "damage": 115296,
-              "dps": 1281,
+              "damage": 127078,
+              "dps": 1412,
               "healing": 0,
-              "attacks": 76,
+              "attacks": 77,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 7
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《亡灵舰长伊丽扎》原科技6：源卡功能为“每当一个友方海盗攻击时，使所有友方随从获得+2/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -24036,9 +23978,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "“黄金的狂喜”",
-              "damage": 120578,
-              "dps": 1340,
+              "damage": 126617,
+              "dps": 1407,
               "healing": 0,
               "attacks": 13,
               "skillActivations": 13,
@@ -24047,16 +23988,16 @@
             },
             {
               "form": "进阶",
-              "skill": "“黄金的狂喜”",
-              "damage": 144338,
-              "dps": 1604,
+              "damage": 152156,
+              "dps": 1691,
               "healing": 0,
               "attacks": 16,
               "skillActivations": 16,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《拆解者米斯拉克斯》原科技5：源卡功能为“在你的回合结束时，你每控制一个随从类型的随从，便获得+1/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -24307,27 +24248,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "浅层非熵适应",
-              "damage": 10849,
-              "dps": 121,
+              "damage": 13401,
+              "dps": 149,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 1
             },
             {
               "form": "进阶",
-              "skill": "浅层非熵适应",
-              "damage": 18946,
-              "dps": 211,
+              "damage": 21929,
+              "dps": 244,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 1
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《坎格尔的学徒》原科技6：源卡功能为“亡语：召唤本场战斗中最先死亡的两个友方机械。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -25206,27 +25146,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "问雪",
-              "damage": 71597,
-              "dps": 796,
+              "damage": 78466,
+              "dps": 872,
               "healing": 0,
-              "attacks": 79,
+              "attacks": 80,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "问雪",
-              "damage": 110816,
-              "dps": 1231,
+              "damage": 116318,
+              "dps": 1292,
               "healing": 0,
               "attacks": 86,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《野火元素》原科技4：源卡功能为“在该随从攻击并消灭一个随从后，随机对一个相邻的随从造成超过目标生命值的伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -25849,9 +25788,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "耀阳颔首",
-              "damage": 53168,
-              "dps": 591,
+              "damage": 56071,
+              "dps": 623,
               "healing": 0,
               "attacks": 60,
               "skillActivations": 1,
@@ -25860,16 +25798,16 @@
             },
             {
               "form": "进阶",
-              "skill": "耀阳颔首",
-              "damage": 66911,
-              "dps": 743,
+              "damage": 69993,
+              "dps": 778,
               "healing": 0,
               "attacks": 60,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 1
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《奥术守护者卡雷苟斯》原科技6：源卡功能为“在你使用一张战吼随从牌后，使你的龙获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -26142,27 +26080,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "终幕·浩劫",
-              "damage": 76279,
-              "dps": 848,
+              "damage": 86343,
+              "dps": 959,
               "healing": 0,
-              "attacks": 39,
+              "attacks": 40,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "终幕·浩劫",
-              "damage": 94228,
-              "dps": 1047,
+              "damage": 103552,
+              "dps": 1151,
               "healing": 0,
-              "attacks": 40,
+              "attacks": 39,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《巨狼戈德林》原科技6：源卡功能为“亡语：使你的野兽获得+5/+5。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -27205,8 +27142,8 @@
       "role": "定位依据：该特质把源生长/恢复/持续贡献改为可结算的成长收益。具体特质：自身每使一名敌人晕眩，战斗结束后获得1枚攻击加成徽章。规则动作：普通战斗statusApplied触发按事件累计产出；进阶战斗statusApplied触发按事件累计产出。本体依据：CASTER/轰击术师，RANGED，范围5-1；原生攻击564、攻速100、攻击间隔2.9秒、生命1237；默认技能「震爆调谐」（Lv4；skillType=MANUAL；spType=INCREASE_WITH_TIME；spCost=60；initSp=20；duration字段=32）：攻击力+35%，每次攻击在攻击范围内的其他干员处施加一次音爆，造成相当于15%攻击力的群体法术伤害；原生天赋：律脉同构：攻击范围内至少有1名其他友方干员时，攻击力+8%。探针依据：单体0防/0抗最佳总DPS 218.4（本体218.4+召唤物0.0；震爆调谐）；单体800防/40抗最佳总DPS 131.0（本体131.0+召唤物0.0；震爆调谐）；四目标0防/0抗最佳总DPS 873.6（本体873.6+召唤物0.0；震爆调谐）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
-        "elite": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+        "normal": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
+        "elite": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -27263,12 +27200,12 @@
             "params": {
               "sourceId": "BGS_035"
             },
-            "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。",
+            "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -27287,12 +27224,12 @@
             "params": {
               "sourceId": "BGS_035"
             },
-            "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+            "text": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。",
+            "adaptation": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -27323,7 +27260,7 @@
               "trigger": "友方击倒敌人",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。同一效果。"
+              "rule": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×2与伤害徽章×2的战斗增益。"
             }
           ],
           "elite": [
@@ -27331,7 +27268,7 @@
               "trigger": "友方击倒敌人",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。同一效果。"
+              "rule": "卡西米尔干员击倒敌人时，使自身获得攻击徽章×4与伤害徽章×4的战斗增益。"
             }
           ]
         },
@@ -27353,27 +27290,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "震爆调谐",
-              "damage": 27518,
-              "dps": 306,
+              "damage": 30205,
+              "dps": 336,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "震爆调谐",
-              "damage": 32966,
-              "dps": 366,
+              "damage": 35971,
+              "dps": 400,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《蜡烛骑士托瓦格尔》原科技2：源卡功能为“每当一条友方的龙消灭一个敌人，便获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -27614,7 +27550,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "惊爆射击",
               "damage": 4104,
               "dps": 46,
               "healing": 0,
@@ -27625,7 +27560,6 @@
             },
             {
               "form": "进阶",
-              "skill": "惊爆射击",
               "damage": 5457,
               "dps": 61,
               "healing": 0,
@@ -27634,7 +27568,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《无私的英雄》原科技2：源卡功能为“亡语：随机使一个友方随从获得圣盾。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -27865,7 +27800,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "诅咒娃娃",
               "damage": 13486,
               "dps": 150,
               "healing": 0,
@@ -27876,7 +27810,6 @@
             },
             {
               "form": "进阶",
-              "skill": "诅咒娃娃",
               "damage": 15561,
               "dps": 173,
               "healing": 0,
@@ -27885,7 +27818,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《瑞文戴尔男爵》原科技5：源卡功能为“你的随从的亡语将触发两次。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -28177,10 +28111,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "守卫尖碑",
-              "damage": 33622,
-              "dps": 374,
-              "healing": 172,
+              "damage": 35218,
+              "dps": 391,
+              "healing": 176,
               "attacks": 20,
               "skillActivations": 2,
               "deaths": 0,
@@ -28188,16 +28121,16 @@
             },
             {
               "form": "进阶",
-              "skill": "守卫尖碑",
-              "damage": 38910,
-              "dps": 432,
-              "healing": 170,
+              "damage": 40556,
+              "dps": 451,
+              "healing": 174,
               "attacks": 20,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 2
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《蹒跚的食尸鬼》原科技2：源卡功能为“嘲讽，亡语：对所有随从造成1点伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -28560,7 +28493,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "冲锋号令·援军",
               "damage": 8793,
               "dps": 98,
               "healing": 0,
@@ -28571,7 +28503,6 @@
             },
             {
               "form": "进阶",
-              "skill": "冲锋号令·援军",
               "damage": 10816,
               "dps": 120,
               "healing": 0,
@@ -28580,7 +28511,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《微型战斗机甲》原科技1：源卡功能为“在每个回合开始时，获得+1攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -28832,7 +28764,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "叙拉古式上妆",
               "damage": 10014,
               "dps": 111,
               "healing": 0,
@@ -28843,7 +28774,6 @@
             },
             {
               "form": "进阶",
-              "skill": "叙拉古式上妆",
               "damage": 17884,
               "dps": 199,
               "healing": 0,
@@ -28852,7 +28782,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《微型木乃伊》原科技1：源卡功能为“复生 在你的回合结束时，随机使另一个友方随从获得+1攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -29041,7 +28972,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "强力击·β型",
               "damage": 13225,
               "dps": 147,
               "healing": 0,
@@ -29052,7 +28982,6 @@
             },
             {
               "form": "进阶",
-              "skill": "强力击·β型",
               "damage": 24000,
               "dps": 267,
               "healing": 0,
@@ -29061,7 +28990,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《爆爆机器人》原科技2：源卡功能为“亡语：随机对一个敌方随从造成4点伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -29254,7 +29184,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "花式点射",
               "damage": 15433,
               "dps": 171,
               "healing": 0,
@@ -29265,7 +29194,6 @@
             },
             {
               "form": "进阶",
-              "skill": "花式点射",
               "damage": 24704,
               "dps": 274,
               "healing": 0,
@@ -29274,7 +29202,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《金刚刃牙兽》原科技2：源卡功能为“战吼：使你的其他机械获得+2攻击力。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -29463,7 +29392,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "迷惑装置",
               "damage": 14324,
               "dps": 159,
               "healing": 0,
@@ -29474,7 +29402,6 @@
             },
             {
               "form": "进阶",
-              "skill": "迷惑装置",
               "damage": 16718,
               "dps": 186,
               "healing": 0,
@@ -29483,7 +29410,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《载人收割机》原科技3：源卡功能为“亡语：随机召唤一个法力值消耗为（2）的随从。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -29546,14 +29474,14 @@
             "params": {
               "sourceId": "BOT_218"
             },
-            "text": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。",
+            "text": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。",
+            "adaptation": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -29572,14 +29500,14 @@
             "params": {
               "sourceId": "BOT_218"
             },
-            "text": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。",
+            "text": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。",
             "textEn": "",
             "tags": [
               "taunt"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。",
+            "adaptation": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -29590,8 +29518,8 @@
         ]
       },
       "nativeTrait": {
-        "normal": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。",
-        "elite": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。",
+        "normal": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。",
+        "elite": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -29641,7 +29569,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。"
+              "rule": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。"
             }
           ],
           "elite": [
@@ -29649,7 +29577,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约；。"
+              "rule": "受到伤害后召唤一个机械水獭投影，并赋予坚守盟约。"
             }
           ]
         },
@@ -29671,7 +29599,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "束缚“夹子”",
               "damage": 10192,
               "dps": 113,
               "healing": 0,
@@ -29682,7 +29609,6 @@
             },
             {
               "form": "进阶",
-              "skill": "束缚“夹子”",
               "damage": 18512,
               "dps": 206,
               "healing": 0,
@@ -29691,7 +29617,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《安保巡游者》原科技4：源卡功能为“每当该随从受到伤害，召唤一个2/3并具有嘲讽的机械。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -29882,27 +29809,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "危险目标清除",
               "damage": 14560,
               "dps": 162,
               "healing": 0,
               "attacks": 104,
-              "skillActivations": 0,
+              "skillActivations": 4,
               "deaths": 0,
-              "summons": 0
+              "summons": 1
             },
             {
               "form": "进阶",
-              "skill": "危险目标清除",
               "damage": 24336,
               "dps": 270,
               "healing": 0,
               "attacks": 104,
-              "skillActivations": 0,
+              "skillActivations": 2,
               "deaths": 0,
-              "summons": 0
+              "summons": 2
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《机械蛋》原科技4：源卡功能为“亡语：召唤一个8/8的机械暴龙。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -30091,7 +30017,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "坚守阵线",
               "damage": 7875,
               "dps": 88,
               "healing": 0,
@@ -30102,16 +30027,16 @@
             },
             {
               "form": "进阶",
-              "skill": "坚守阵线",
               "damage": 13650,
               "dps": 152,
               "healing": 0,
               "attacks": 75,
-              "skillActivations": 0,
+              "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《死神4000型》原科技6：源卡功能为“同时对其攻击目标相邻的随从造成伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -30299,27 +30224,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "永不后退！",
-              "damage": 18057,
-              "dps": 201,
+              "damage": 18333,
+              "dps": 204,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "永不后退！",
-              "damage": 28508,
-              "dps": 317,
+              "damage": 28944,
+              "dps": 322,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《白赚赌徒》原科技2：源卡功能为“出售该随从可以获得3枚铸币。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -30563,27 +30487,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "关键线索",
-              "damage": 17644,
-              "dps": 196,
+              "damage": 18364,
+              "dps": 204,
               "healing": 0,
-              "attacks": 88,
-              "skillActivations": 12,
+              "attacks": 90,
+              "skillActivations": 13,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "关键线索",
-              "damage": 30358,
-              "dps": 337,
+              "damage": 30812,
+              "dps": 342,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 15,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《喊号食人魔》原科技2：源卡功能为“嘲讽 在该随从受到攻击并没有死亡后，立即发起攻击。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -30769,7 +30692,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "碎甲拳",
               "damage": 21764,
               "dps": 242,
               "healing": 0,
@@ -30780,7 +30702,6 @@
             },
             {
               "form": "进阶",
-              "skill": "碎甲拳",
               "damage": 36572,
               "dps": 406,
               "healing": 0,
@@ -30789,7 +30710,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《南海船长》原科技2：源卡功能为“你的其他海盗获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -30982,10 +30904,9 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "虚构故事·怒士",
               "damage": 0,
               "dps": 0,
-              "healing": 2399,
+              "healing": 180,
               "attacks": 0,
               "skillActivations": 3,
               "deaths": 0,
@@ -30993,16 +30914,16 @@
             },
             {
               "form": "进阶",
-              "skill": "虚构故事·怒士",
               "damage": 0,
               "dps": 0,
-              "healing": 2835,
+              "healing": 180,
               "attacks": 0,
               "skillActivations": 3,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《南海勇夫》原科技3：源卡功能为“战吼：在本回合中，你每购买过一个海盗，使一个友方海盗获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -31202,8 +31123,7 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "街头好手",
-              "damage": 42202,
+              "damage": 42211,
               "dps": 469,
               "healing": 0,
               "attacks": 60,
@@ -31213,8 +31133,7 @@
             },
             {
               "form": "进阶",
-              "skill": "街头好手",
-              "damage": 62135,
+              "damage": 62143,
               "dps": 690,
               "healing": 0,
               "attacks": 60,
@@ -31222,7 +31141,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《掘金者》原科技4：源卡功能为“在你的回合结束时，你每有一个金色友方随从，便获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -31409,7 +31329,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "跃空锤",
               "damage": 13440,
               "dps": 149,
               "healing": 0,
@@ -31420,7 +31339,6 @@
             },
             {
               "form": "进阶",
-              "skill": "跃空锤",
               "damage": 25277,
               "dps": 281,
               "healing": 0,
@@ -31429,7 +31347,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《“钓鱼王”纳特·帕格》原科技5：源卡功能为“当该随从攻击并消灭一个随从时，随机将一张随从牌置入你的 手牌。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -31614,27 +31533,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "极致火力",
-              "damage": 16435,
-              "dps": 183,
+              "damage": 11173,
+              "dps": 124,
               "healing": 0,
               "attacks": 60,
               "skillActivations": 1,
               "deaths": 0,
-              "summons": 2
+              "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "极致火力",
-              "damage": 28698,
-              "dps": 319,
+              "damage": 19867,
+              "dps": 221,
               "healing": 0,
               "attacks": 60,
               "skillActivations": 2,
               "deaths": 0,
-              "summons": 3
+              "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《霍格船长》原科技5：源卡功能为“在你购买一个海盗后，在本回合中获得一枚铸币。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -31821,7 +31739,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "治愈水波",
               "damage": 0,
               "dps": 0,
               "healing": 12357,
@@ -31832,7 +31749,6 @@
             },
             {
               "form": "进阶",
-              "skill": "治愈水波",
               "damage": 0,
               "dps": 0,
               "healing": 15324,
@@ -31841,7 +31757,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《刷新畸体》原科技1：源卡功能为“战吼：你下一次刷新酒馆的消耗为（0）枚铸币。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -32032,7 +31949,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "人间降吉",
               "damage": 15086,
               "dps": 168,
               "healing": 0,
@@ -32043,7 +31959,6 @@
             },
             {
               "form": "进阶",
-              "skill": "人间降吉",
               "damage": 19417,
               "dps": 216,
               "healing": 0,
@@ -32052,7 +31967,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《商贩元素》原科技1：源卡功能为“当你出售该随从时，将一张2/2的元素牌置入你的手牌。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -32251,7 +32167,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "何处着",
               "damage": 0,
               "dps": 0,
               "healing": 16700,
@@ -32262,7 +32177,6 @@
             },
             {
               "form": "进阶",
-              "skill": "何处着",
               "damage": 0,
               "dps": 0,
               "healing": 22315,
@@ -32271,7 +32185,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《派对元素》原科技2：源卡功能为“在你使用一张元素牌后，随机使另一个友方元素获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -32493,7 +32408,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "支援号令·γ型",
               "damage": 6156,
               "dps": 68,
               "healing": 0,
@@ -32504,7 +32418,6 @@
             },
             {
               "form": "进阶",
-              "skill": "支援号令·γ型",
               "damage": 10374,
               "dps": 115,
               "healing": 0,
@@ -32513,7 +32426,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《静滞元素》原科技3：源卡功能为“战吼：随机在鲍勃的酒馆中添加一个其他元素并使其冻结。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -32775,7 +32689,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "重进酒",
               "damage": 18054,
               "dps": 201,
               "healing": 0,
@@ -32786,7 +32699,6 @@
             },
             {
               "form": "进阶",
-              "skill": "重进酒",
               "damage": 24473,
               "dps": 272,
               "healing": 0,
@@ -32795,7 +32707,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《温和的灯神》原科技6：源卡功能为“嘲讽，亡语：随机召唤一个其他元素，并将召唤的元素的复制置入你的手牌。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -33050,27 +32963,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "化被草木",
-              "damage": 0,
-              "dps": 0,
+              "damage": 4500,
+              "dps": 50,
               "healing": 0,
-              "attacks": 0,
+              "attacks": 75,
               "skillActivations": 0,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "化被草木",
-              "damage": 0,
-              "dps": 0,
+              "damage": 10500,
+              "dps": 117,
               "healing": 0,
-              "attacks": 0,
+              "attacks": 75,
               "skillActivations": 0,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《炎魔副官加尔》原科技6：源卡功能为“嘲讽 在你使用一张元素牌后，你每有一个元素，便获得+1生命值。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -33266,9 +33178,8 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "冲盈",
-              "damage": 58258,
-              "dps": 647,
+              "damage": 35290,
+              "dps": 392,
               "healing": 0,
               "attacks": 113,
               "skillActivations": 18,
@@ -33277,16 +33188,16 @@
             },
             {
               "form": "进阶",
-              "skill": "冲盈",
-              "damage": 109463,
-              "dps": 1216,
+              "damage": 67911,
+              "dps": 755,
               "healing": 0,
               "attacks": 113,
               "skillActivations": 22,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《小拉格》原科技6：源卡功能为“在你使用一张元素牌后，使一个友方随从获得等同于该元素等级的属性值。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -33470,27 +33381,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "无主动技能",
-              "damage": 757,
-              "dps": 8,
+              "damage": 774,
+              "dps": 9,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 0,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "无主动技能",
-              "damage": 757,
-              "dps": 8,
+              "damage": 774,
+              "dps": 9,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 0,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《红色雏龙》原科技1：源卡功能为“战斗开始时：随机对一个敌方随从造成等同于友方龙的数量的 伤害。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -33676,7 +33586,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "纠纷起诉",
               "damage": 18460,
               "dps": 205,
               "healing": 0,
@@ -33687,7 +33596,6 @@
             },
             {
               "form": "进阶",
-              "skill": "纠纷起诉",
               "damage": 25469,
               "dps": 283,
               "healing": 0,
@@ -33696,7 +33604,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《时间管理者》原科技2：源卡功能为“当你出售该随从时，使鲍勃的酒馆中的所有随从获得+1/+1。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -33895,7 +33804,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "鞭刃",
               "damage": 21001,
               "dps": 233,
               "healing": 0,
@@ -33906,7 +33814,6 @@
             },
             {
               "form": "进阶",
-              "skill": "鞭刃",
               "damage": 30464,
               "dps": 338,
               "healing": 0,
@@ -33915,7 +33822,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《急饿巨龙》原科技3：源卡功能为“在你的回合开始时，如果你在上一场战斗中获胜，则获得+2/+2。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -34154,27 +34062,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "攻击力强化·γ型",
-              "damage": 12605,
-              "dps": 140,
+              "damage": 12951,
+              "dps": 144,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "攻击力强化·γ型",
-              "damage": 23138,
-              "dps": 257,
+              "damage": 23760,
+              "dps": 264,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《青铜守卫》原科技3：源卡功能为“圣盾，复生”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -34358,27 +34265,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "双弦开弓",
-              "damage": 15394,
-              "dps": 171,
+              "damage": 15568,
+              "dps": 173,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "双弦开弓",
-              "damage": 28762,
-              "dps": 320,
+              "damage": 29080,
+              "dps": 323,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 2,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《雄斑虎》原科技1：源卡功能为“战吼：召唤一个1/1的雌斑虎。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -34568,7 +34474,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "迅捷打击·γ型",
               "damage": 94934,
               "dps": 1055,
               "healing": 0,
@@ -34579,7 +34484,6 @@
             },
             {
               "form": "进阶",
-              "skill": "迅捷打击·γ型",
               "damage": 139947,
               "dps": 1555,
               "healing": 0,
@@ -34588,7 +34492,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《慈祥的外婆》原科技2：源卡功能为“亡语：召唤一只3/2的大灰狼。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -34652,14 +34557,14 @@
             "params": {
               "sourceId": "BGS_078"
             },
-            "text": "普通攻击后随机复制另一名在场友方的战斗部署效果；。",
+            "text": "普通攻击后随机复制另一名在场友方的战斗部署效果。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "普通攻击后随机复制另一名在场友方的战斗部署效果；。",
+            "adaptation": "普通攻击后随机复制另一名在场友方的战斗部署效果。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -34678,14 +34583,14 @@
             "params": {
               "sourceId": "BGS_078"
             },
-            "text": "普通攻击后随机复制另一名在场友方的战斗部署效果两次；。",
+            "text": "普通攻击后随机复制另一名在场友方的战斗部署效果两次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "普通攻击后随机复制另一名在场友方的战斗部署效果两次；。",
+            "adaptation": "普通攻击后随机复制另一名在场友方的战斗部署效果两次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -34696,8 +34601,8 @@
         ]
       },
       "nativeTrait": {
-        "normal": "普通攻击后随机复制另一名在场友方的战斗部署效果；。",
-        "elite": "普通攻击后随机复制另一名在场友方的战斗部署效果两次；。",
+        "normal": "普通攻击后随机复制另一名在场友方的战斗部署效果。",
+        "elite": "普通攻击后随机复制另一名在场友方的战斗部署效果两次。",
         "inheritable": false,
         "origin": "operator body"
       },
@@ -34749,7 +34654,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "普通攻击后随机复制另一名在场友方的战斗部署效果；。"
+              "rule": "普通攻击后随机复制另一名在场友方的战斗部署效果。"
             }
           ],
           "elite": [
@@ -34757,7 +34662,7 @@
               "trigger": "战斗中",
               "recipient": "自身",
               "duration": "本场战斗",
-              "rule": "普通攻击后随机复制另一名在场友方的战斗部署效果两次；。"
+              "rule": "普通攻击后随机复制另一名在场友方的战斗部署效果两次。"
             }
           ]
         },
@@ -34779,7 +34684,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "冲锋号令·γ型",
               "damage": 8755,
               "dps": 97,
               "healing": 0,
@@ -34790,7 +34694,6 @@
             },
             {
               "form": "进阶",
-              "skill": "冲锋号令·γ型",
               "damage": 15810,
               "dps": 176,
               "healing": 0,
@@ -34799,7 +34702,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《巨大的金刚鹦鹉》原科技3：源卡功能为“在该随从攻击后，随机触发一个友方随从的亡语。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -34988,27 +34892,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "合奏起拍",
-              "damage": 15142,
-              "dps": 168,
+              "damage": 15581,
+              "dps": 173,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 7,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "合奏起拍",
-              "damage": 20533,
-              "dps": 228,
+              "damage": 21049,
+              "dps": 234,
               "healing": 0,
-              "attacks": 31,
+              "attacks": 32,
               "skillActivations": 11,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《寄生恶狼》原科技3：源卡功能为“亡语：召唤两只1/1的蜘蛛。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -35199,7 +35102,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "通电",
               "damage": 24389,
               "dps": 271,
               "healing": 0,
@@ -35210,7 +35112,6 @@
             },
             {
               "form": "进阶",
-              "skill": "通电",
               "damage": 37172,
               "dps": 413,
               "healing": 0,
@@ -35219,7 +35120,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《长鬃草原狮》原科技4：源卡功能为“亡语：召唤两只2/2的土狼。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -35407,27 +35309,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "一锤定音",
-              "damage": 30729,
-              "dps": 341,
+              "damage": 28616,
+              "dps": 318,
               "healing": 0,
               "attacks": 57,
-              "skillActivations": 17,
+              "skillActivations": 14,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "一锤定音",
-              "damage": 74045,
-              "dps": 823,
+              "damage": 70621,
+              "dps": 785,
               "healing": 0,
               "attacks": 57,
-              "skillActivations": 22,
+              "skillActivations": 18,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《铁皮恐角龙》原科技5：源卡功能为“超杀：召唤一个5/5的铁皮小恐龙。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -35629,7 +35530,6 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "家主的余裕",
               "damage": 46235,
               "dps": 514,
               "healing": 0,
@@ -35640,7 +35540,6 @@
             },
             {
               "form": "进阶",
-              "skill": "家主的余裕",
               "damage": 74886,
               "dps": 832,
               "healing": 0,
@@ -35649,7 +35548,8 @@
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《迈克斯纳》原科技6：源卡功能为“剧毒”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
@@ -35837,27 +35737,26 @@
           "forms": [
             {
               "form": "普通",
-              "skill": "量衣尺",
-              "damage": 39520,
-              "dps": 439,
+              "damage": 40446,
+              "dps": 449,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             },
             {
               "form": "进阶",
-              "skill": "量衣尺",
-              "damage": 57314,
-              "dps": 637,
+              "damage": 58655,
+              "dps": 652,
               "healing": 0,
-              "attacks": 88,
+              "attacks": 90,
               "skillActivations": 1,
               "deaths": 0,
               "summons": 0
             }
-          ]
+          ],
+          "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
         "tierReason": "沿用《阴森巨蟒》原科技6：源卡功能为“亡语：随机召唤 两个亡语随从。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
