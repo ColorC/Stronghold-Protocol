@@ -42,7 +42,7 @@ function roster(names,elite){return names.map((name,i)=>({uid:String(i).padStart
 function prep(pieces){const state={round:1,nextUid:100,funds:0,pieces,inventory:[],production:[],playerEffects:[],counters:{gained:0},shop:{level:6,slots:[],freeRefreshes:0}};const services={catalog,data,rng:()=>.2,grantEquipment:(s,id,q,x)=>grantEquipment(s,catalog,id,q,x),recordProduction,record(){},addOffer(){},grantChess(){}};return {state,hook:(trigger,piece)=>runNativeHook(state,trigger,{piece},services)};}
 const qty=(p,id)=>(p.equipment||[]).filter(e=>e.id===id).reduce((s,e)=>s+e.quantity,0);
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
-function battle(pieces,{captureNoisy=false}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
+function battle(pieces,{captureNoisy=false,beforeStart=null}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});beforeStart?.(h);h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
 for(const elite of [false,true]){
  const form=elite?'elite':'normal';
  test(`current Siracusa seven ${form}: opening deployments, amplified payloads and Javi attack echo`,()=>{
@@ -89,13 +89,27 @@ for(const elite of [false,true]){
  });
  test(`current Colombia seven ${form}: permanent badges, summon shield and highest-attack original phantoms`,()=>{
   const pieces=roster(groups[2],elite),{hook}=prep(pieces);hook('prepEnd',pieces[3]);assert.ok(pieces.some(p=>qty(p,'precision')>=2));
-  const h=battle(pieces),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;
+  const mlyssPiece=pieces.find(p=>catalog.operators[p.chessId]?.sourceRefs?.darkmoon19_2?.id==='BGS_012');assert.ok(mlyssPiece,'the roster contains the current BGS012 source');
+  let rankingAtTrigger=null;
+  const h=battle(pieces,{beforeStart(harness){
+    const emit=harness.b.emit.bind(harness.b);
+    harness.b.emit=(name,ctx)=>{
+      if(name==='deploy'&&ctx?.unit?.uid===mlyssPiece.uid){
+        rankingAtTrigger=harness.b.allyUnits.filter(u=>u.alive&&u.deployed&&u.kind==='op'&&nativeFactions(pieces.find(p=>p.uid===u.uid),catalog).includes('哥伦比亚'))
+          .map(u=>({unit:u,atk:u.s.atk,id:u.id,chessId:u.def.raw?.darkmoonNativeChessId||u.defId}))
+          .sort((a,b)=>b.atk-a.atk||a.id-b.id);
+      }
+      return emit(name,ctx);
+    };
+  }}),deflect=h.by('雷蛇'),growth=h.by('迷迭香'),before=growth.s.atk;
   assert.ok(deflect.buffs.reduce((s,b)=>s+(b.shieldHits||0),0)>=2,'BGS_071 deployment generates its actual support token');
   assert.equal(h.hooksOf('death').length,0,'opening phantom selection does not depend on a death event');
   const mlyssSummons=h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_012'&&e.kind==='summon');
   const copiedIds=mlyssSummons.flatMap(e=>e.targets),copies=copiedIds.map(uid=>h.unit(uid)).filter(Boolean);
-  const eligible=pieces.filter(p=>nativeFactions(p,catalog).includes('哥伦比亚')).map(p=>h.unit(p.uid)).sort((a,b)=>b.s.atk-a.s.atk||a.id-b.id);
-  const expected=eligible.slice(0,elite?4:2).map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId);
+  assert.ok(rankingAtTrigger,'capture current deployed Columbia attack values immediately before BGS012 runs at its actual opening deploy');
+  const finalRanking=h.b.allyUnits.filter(u=>u.alive&&u.deployed&&u.kind==='op'&&nativeFactions(pieces.find(p=>p.uid===u.uid),catalog).includes('哥伦比亚')).sort((a,b)=>b.s.atk-a.s.atk||a.id-b.id);
+  assert.notDeepEqual(rankingAtTrigger.map(u=>u.chessId),finalRanking.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId),'later opening deployment payloads can change the attack ranking after BGS012 has already copied its current leaders');
+  const expected=rankingAtTrigger.slice(0,elite?4:2).map(u=>u.chessId);
   const actual=copies.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId||u.defId);
   assert.deepEqual(actual,expected.slice(0,actual.length),'BGS_012 copies the highest-attack Columbia units in order, including itself when ranked');
   const otherSummons=h.b.allyUnits.filter(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon&&!copies.includes(u));
