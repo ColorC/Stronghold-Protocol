@@ -237,6 +237,16 @@ test('replacement preflight permits only an exact old Native staging receipt wit
   assert.ok(script.includes('staging-file-unsafe:'));
   assert.ok(script.includes(`"replacedStagedRevision":"${oldRevision}"`));
   assert.ok(!script.includes('staging-source-revision-mismatch:'));
+  for (const completed of ['ee9e2d8b90f35a4d46705ad6d019ada9f684d94b', '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d']) {
+    for (const name of ['capacity-receipt', 'capacity-recording-receipt', 'capacity-batch-receipt', 'capacity-http-cgroup', 'capacity-recording-cgroup']) {
+      assert.ok(script.includes(`'${name}.${completed}.json'`));
+    }
+  }
+  assert.ok(script.includes(`'stronghold-protocol.${oldRevision}.unit.backup'`));
+  assert.ok(script.includes(`'stronghold-protocol.${oldRevision}.env.backup'`));
+  const withoutReplacement = preflightScript('1.0.0', revision, ['server/index.js']);
+  assert.ok(!withoutReplacement.includes(`'stronghold-protocol.${oldRevision}.unit.backup'`));
+  assert.ok(!script.includes('capacity-*.json'), 'unknown archive names remain rejected');
   assert.throws(() => preflightScript('1.0.0', revision, [], { replaceStagedRevision: revision }), /invalid staged replacement/);
   assert.throws(() => preflightScript('1.0.0', revision, [], { replaceStagedRevision: 'not-a-commit' }), /invalid staged replacement/);
   assert.equal(spawnSync('bash', ['-n'], { input: script, encoding: 'utf8' }).status, 0);

@@ -23,6 +23,10 @@ const CAPACITY_BATCH_ARCHIVE_NAMES = revision => [
   `capacity-batch-receipt.${revision}.json`, `capacity-http-cgroup.${revision}.json`,
   `capacity-recording-cgroup.${revision}.json`,
 ];
+const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
+  'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b',
+  '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d',
+];
 const RESONANCE_DIRECTORY = '/var/lib/stronghold-protocol/resonance-sessions';
 const BACKUP_ROOT = STAGING;
 const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
@@ -819,7 +823,11 @@ export function preflightScript(wsVersion, revision, candidateFiles, { allowStag
   if (allowStagedReceiptOverwrite && replaceStagedRevision) throw new Error('resume receipt replacement and staged revision replacement are mutually exclusive');
   if (replaceStagedRevision && (!/^[0-9a-f]{40}$/i.test(replaceStagedRevision) || replaceStagedRevision.toLowerCase() === revision.toLowerCase())) throw new Error('invalid staged replacement revision');
   const expected = [...new Set([...candidateFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
-  const stageNames = OWNED_STAGE_NAMES.map(name => `'${name}'`).join(' ');
+  const stageNames = [
+    ...OWNED_STAGE_NAMES,
+    ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
+    ...(replaceStagedRevision ? [`stronghold-protocol.${replaceStagedRevision}.unit.backup`, `stronghold-protocol.${replaceStagedRevision}.env.backup`] : []),
+  ].map(name => `'${name}'`).join(' ');
   const expectedLines = expected.map(name => `'${name}'`).join(' ');
   const stagedReceiptCheck = replaceStagedRevision
     ? `test -f '${STAGING}/server-release.json' && test ! -L '${STAGING}/server-release.json' && test "$(stat -c %h '${STAGING}/server-release.json')" -eq 1 || { echo 'replacement-old-staging-receipt-missing-or-unsafe:${STAGING}/server-release.json'; exit 25; }; staged_revision=$('${REMOTE_NODE}' -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' '${STAGING}/server-release.json'); test "$staged_revision" = '${replaceStagedRevision}' || { echo 'replacement-old-staging-revision-mismatch:${STAGING}/server-release.json'; exit 25; }`
