@@ -12,6 +12,16 @@ import { installKeywordGear } from './keywordGear.js';
 const alive = u => !!u && u.alive && u.deployed && !u.removed;
 const own = (a,b) => a?.ownerId === b?.ownerId;
 const attackEvent = e => e?.attacker?.side === 'ally' && e.targets?.some(t=>t?.side==='enemy') && !e.attacker.mem.darkmoonExtraAttack;
+const nextCadence = (entry, kind) => {
+  entry.cadence ||= Object.create(null);
+  const count = (entry.cadence[kind] || 0) + 1;
+  entry.cadence[kind] = count;
+  return count % INDEPENDENT_COMBAT_CADENCE[kind] === 0;
+};
+const attackIdOf = dmg => Number.isSafeInteger(dmg?.attackId) && dmg.attackId > 0 ? dmg.attackId : null;
+const darkmoonDamage = dmg => Array.isArray(dmg?.tags) && dmg.tags.includes('darkmoon');
+const enemyLifeKey = target => `${target.id}:${target.deploySeq ?? 0}`;
+const cadenceState = () => ({cadence:Object.create(null),damagedAttackIds:new Set(),overkillAttackTargets:new Set(),overkillLives:new Set(),overkillMarks:new WeakMap(),pendingOverkills:new Map()});
 const order = (a,b) => String(a.uid ?? a.id).localeCompare(String(b.uid ?? b.id));
 const close = (a,b) => hypot(a.x-b.x,a.y-b.y);
 const FACTIONS = Object.freeze({MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'});
@@ -160,7 +170,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const op=sourceOf(unit),piece=byUid.get(unit.uid);
     const sources=[{id:op?.sourceRefs?.darkmoon19_2?.id,elite:!!(piece?.elite||op?.elite),instanceKey:''},
       ...(piece?.attachments||[]).flatMap((a,index)=>a.id==='darkmoon-magnetic'&&a.state?.sourceId==='BOT_312'?[{id:a.state.sourceId,elite:!!a.state.elite,instanceKey:`:magnetic:${index}`}]:[])];
-    return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map()}));
+    return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map(),...cadenceState()}));
   });
   for(const unit of battle.allyUnits.filter(u=>u.kind==='op')){
     const sources=[...new Set(entries.filter(e=>e.unit===unit&&hasDarkmoonDeploymentPayload(e.id)).map(e=>e.id))];
@@ -356,7 +366,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         const childRule=rules[clean.darkmoonSourceId];
         const ancestry = new Set(e.ancestry ?? [e.id]);
         if(childRule && !ancestry.has(clean.darkmoonSourceId)){
-          const child={unit:token,id:clean.darkmoonSourceId,rule:childRule,elite:copyPiece.elite,ancestry:new Set([...ancestry,clean.darkmoonSourceId]),instanceKey:'',last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map()};
+          const child={unit:token,id:clean.darkmoonSourceId,rule:childRule,elite:copyPiece.elite,ancestry:new Set([...ancestry,clean.darkmoonSourceId]),instanceKey:'',last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map(),...cadenceState()};
           entries.push(child);installEntry(child);
           // The token's deploy event preceded its source entry installation. Resolve
           // its own eligible payload now without emitting a second actor event.
@@ -469,39 +479,64 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       battle.after(0,()=>{for(let i=0;i<repeat;i++)retireAction(e);});
     },{owner:unit});
     if(r.echo)battle.on('attack',event=>{
-      if(event.attacker!==unit||event.isSkill||!attackEvent(event)||!alive(unit)||!ready(e))return;
+      if(event.attacker!==unit||event.isSkill||!attackEvent(event)||!alive(unit)||!nextCadence(e,'attack')||!ready(e))return;
       for(let i=0;i<scale(e);i++){const x=battle.echoDarkmoonDeployment(unit);if(x)note(e,'deployEcho',[x.unit]);}
     },{owner:unit});
     if(r.aura)auras.push(e);
     if(r.startStrike){let done=false;battle.on('enemySpawn',()=>{if(done||!alive(unit))return;done=true;for(let i=0;i<(e.elite?2:1);i++){const target=pick(enemies());if(target)battle.dealDamage(unit,target,{amount:unit.base.atk*.4*members(unit,'DRAGON').length,type:'arts',tags:['darkmoon','combatStart']});}note(e,'startStrike');},{owner:unit});}
     if(r.weakest)battle.on('beforeAttack',ctx=>{if(ctx.attacker!==unit)return;const pool=battle.enemiesInKeys(unit.rangeKeys,unit,ctx.profile).sort((a,b)=>a.s.atk-b.s.atk||a.id-b.id);if(pool.length)ctx.targets=pool.slice(0,ctx.targets?.length||1);},{owner:unit,priority:-50});
     if(r.windfury)battle.on('attack',ev=>{
-      if(ev.attacker!==unit||!attackEvent(ev)||!alive(unit)||!ready(e))return;
+      if(ev.attacker!==unit||!attackEvent(ev)||!alive(unit)||!nextCadence(e,'attack')||!ready(e))return;
       unit.mem.darkmoonExtraAttack=true;try{for(let i=0;i<(e.elite?3:1)&&alive(unit);i++)battle.forceAttack(unit,null,{noAmmo:true});}finally{unit.mem.darkmoonExtraAttack=false;}note(e,'windfury');
     },{owner:unit,priority:-90});
-    if(r.counterattack)battle.on('attack',ev=>{if(ev.attacker?.side!=='enemy'||!ev.targets?.includes(unit)||!alive(unit)||!ready(e))return;battle.after(0,()=>{if(alive(unit)){unit.mem.darkmoonExtraAttack=true;try{battle.forceAttack(unit);}finally{unit.mem.darkmoonExtraAttack=false;}note(e,'counterattack');}});},{owner:unit});
+    if(r.counterattack)battle.on('attack',ev=>{if(ev.attacker?.side!=='enemy'||!ev.targets?.includes(unit)||!alive(unit)||!nextCadence(e,'attacked')||!ready(e))return;battle.after(0,()=>{if(alive(unit)){unit.mem.darkmoonExtraAttack=true;try{battle.forceAttack(unit);}finally{unit.mem.darkmoonExtraAttack=false;}note(e,'counterattack');}});},{owner:unit});
     if(r.intercept)battle.on('beforeAttack',ctx=>{
-      if(!alive(unit)||ctx.attacker?.side!=='enemy')return;let applied=false;
-      ctx.targets=(ctx.targets||[]).map(target=>{if(target!==unit&&own(target,unit)&&hasCover(target)&&close(ctx.attacker,unit)<=Math.max(.75,ctx.attacker.s.rangeRadius||0)){applied=true;return unit;}return target;});if(applied)note(e,'intercept',[unit]);
+      if(!alive(unit)||ctx.attacker?.side!=='enemy')return;
+      const range=Math.max(.75,ctx.attacker.s.rangeRadius||0);
+      const interceptable=(ctx.targets||[]).filter(target=>target!==unit&&own(target,unit)&&hasCover(target)&&close(ctx.attacker,unit)<=range);
+      if(!interceptable.length||!nextCadence(e,'attacked'))return;
+      const selected=new Set(interceptable);
+      ctx.targets=(ctx.targets||[]).map(target=>selected.has(target)?unit:target);
+      note(e,'intercept',[unit]);
     },{owner:unit,priority:80});
     if(r.recruitOnKill){battle.on('kill',({killer,victim})=>{if(killer!==unit||victim.side!=='enemy'||!unit.mem.darkmoonAttackIds?.has(victim.id))return;for(let i=0;i<scale(e);i++){const x=pick(normalOps().filter(op=>op.tier<=catalog.config?.maxShopLevel||op.tier<=6));if(x)results.recruits.push({sourceUid:unit.uid,chessId:x.chessId,pristine:true});}note(e,'recruit');},{owner:unit});}
-    if(r.recruitOnKill||r.overkill){
-      battle.on('hit',({source,target,dmg})=>{if(source!==unit||target.side!=='enemy'||!dmg.isAttack||dmg.tags?.includes('darkmoon'))return;(unit.mem.darkmoonAttackIds||=new Map()).set(target.id,{hp:target.hp,dmg});},{owner:unit,priority:-99});
+    if(r.recruitOnKill)battle.on('hit',({source,target,dmg})=>{if(source!==unit||target.side!=='enemy'||!dmg.isAttack||darkmoonDamage(dmg))return;(unit.mem.darkmoonAttackIds||=new Map()).set(target.id,{hp:target.hp,dmg});},{owner:unit,priority:-99});
+    if(r.overkill){
+      battle.on('hit',({source,target,dmg})=>{
+        const attackId=attackIdOf(dmg);
+        if(source!==unit||target.side!=='enemy'||!dmg.isAttack||darkmoonDamage(dmg)||attackId==null)return;
+        const life=enemyLifeKey(target);
+        e.pendingOverkills.delete(life);
+        e.overkillMarks.set(dmg,{attackId,life,hp:target.hp,type:dmg.type});
+      },{owner:unit,priority:-99});
+      battle.on('damaged',({source,target,amount,dmg})=>{
+        const mark=e.overkillMarks.get(dmg);
+        if(source!==unit||target.side!=='enemy'||!mark||!(amount>mark.hp)||target.hp>0)return;
+        e.overkillMarks.delete(dmg);
+        e.pendingOverkills.set(mark.life,{...mark,amount});
+      },{owner:unit});
+      battle.on('death',({unit:victim,reason,killer})=>{
+        const life=enemyLifeKey(victim),mark=e.pendingOverkills.get(life);
+        if(!mark)return;
+        e.pendingOverkills.delete(life);
+        if(reason!=='killed'||killer!==unit||victim.side!=='enemy')return;
+        const attackTarget=`${mark.attackId}:${life}`;
+        if(e.overkillAttackTargets.has(attackTarget)||e.overkillLives.has(life))return;
+        e.overkillAttackTargets.add(attackTarget);e.overkillLives.add(life);
+        if(!nextCadence(e,'overkill')||!ready(e))return;
+        if(r.overkill==='strike'){const next=enemies().find(t=>t!==victim);if(next)battle.dealDamage(unit,next,{amount:unit.base.atk*r.ratio*scale(e),type:'arts',tags:['darkmoon','overkill']});}
+        else if(r.overkill==='spill'){const pool=enemies().filter(t=>t!==victim&&close(t,victim)<=1.5),next=e.elite?pool:[pick(pool)].filter(Boolean);for(const t of next)battle.dealDamage(unit,t,{amount:mark.amount-mark.hp,type:mark.type,tags:['darkmoon','overkill']});}
+        else if(r.overkill==='factionBuff')for(const t of members(unit,r.faction).filter(t=>t!==unit))equipment(e,t,...r.buff);
+        else if(r.overkill==='summon')spawn(e,tokenDef(e,r.summon),1,['叙拉古']);note(e,'overkill');
+      },{owner:unit});
     }
-    if(r.overkill)battle.on('damaged',({source,target,amount,dmg})=>{
-      const mark=unit.mem.darkmoonAttackIds?.get(target.id);if(source!==unit||target.side!=='enemy'||!mark||mark.dmg!==dmg||!(amount>mark.hp))return;
-      unit.mem.darkmoonAttackIds.delete(target.id);if(!ready(e))return;
-      if(r.overkill==='strike'){const next=enemies().find(t=>t!==target);if(next)battle.dealDamage(unit,next,{amount:unit.base.atk*r.ratio*scale(e),type:'arts',tags:['darkmoon','overkill']});}
-      else if(r.overkill==='spill'){const pool=enemies().filter(t=>t!==target&&close(t,target)<=1.5),next=e.elite?pool:[pick(pool)].filter(Boolean);for(const t of next)battle.dealDamage(unit,t,{amount:amount-mark.hp,type:dmg.type,tags:['darkmoon','overkill']});}
-      else if(r.overkill==='factionBuff')for(const t of members(unit,r.faction).filter(t=>t!==unit))equipment(e,t,...r.buff);
-      else if(r.overkill==='summon')spawn(e,tokenDef(e,r.summon),1,['叙拉古']);note(e,'overkill');
-    },{owner:unit});
     if(r.event){
       let broken=0;
       const deploymentReactor=['EX1_531','GVG_106','BGS_112'].includes(e.id);
-      const name=deploymentReactor||r.event==='summon'?'darkmoonDeployActor':r.event==='attacked'?'beforeAttack':r.event;
+      const name=deploymentReactor||r.event==='summon'?'darkmoonDeployActor':r.event==='attacked'?'attack':r.event;
       battle.on(name,event=>{
         if(!alive(unit))return;
+        let damageAttackId=null;
         let actor=deploymentReactor||r.event==='summon'?event.actor:r.event==='kill'?event.killer:r.event==='attack'?event.attacker:r.event==='damaged'?event.target:event.unit;
         let actors=r.event==='attacked'&&event.attacker?.side==='enemy'?event.targets||[]:actor?[actor]:[];
         // Player-placed native tokens are already on the opening field when this
@@ -511,11 +546,16 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         if(r.event==='summon')actors=actors.filter(u=>u.kind==='token'&&!event.move&&(!event.initial||u.mem?.independentSummon));
         if(deploymentReactor)actors=actors.filter(u=>['op','token'].includes(u.kind));
         if(r.event==='attack'&&!attackEvent(event))return;
+        if(r.event==='attacked'&&event.attacker?.side!=='enemy')return;
         if(r.event==='kill'&&event.victim?.side!=='enemy')return;
         if(r.event==='death'&&!deploymentReactor)return;
-        if(r.event==='damaged'&&!(event.amount>0))return;
+        if(r.event==='damaged'){
+          damageAttackId=attackIdOf(event.dmg);
+          if(!(event.amount>0)||!event.dmg?.isAttack||darkmoonDamage(event.dmg)||damageAttackId==null)return;
+        }
         actors=actors.filter(u=>eligible(u,unit,r.faction)&&(!r.selfOnly||u===unit)&&(!r.excludeSelf||u!==unit)&&(!r.requireCover||hasCover(u)));
         if(!actors.length)return;
+        if(damageAttackId!=null){if(e.damagedAttackIds.has(damageAttackId))return;e.damagedAttackIds.add(damageAttackId);}
         if(r.event==='summon'){
           e.summonActors||=new Set();
           for(const summoned of actors){
@@ -529,6 +569,8 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
           return;
         }
         if(r.event==='shieldLayersBroken'){broken+=Math.max(0,Number(event.layers)||0);if(broken<5)return;broken-=5;}
+        const cadenceKind=r.event==='attack'?'attack':r.event==='attacked'?'attacked':r.event==='damaged'?'damaged':null;
+        if(cadenceKind&&!nextCadence(e,cadenceKind))return;
         if(!ready(e))return;
         const targets=new Set();
         for(const a of actors){

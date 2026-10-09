@@ -14,7 +14,7 @@ import { unitInfo } from '../../server/sim/snapshot.js';
 import { tokenCanEngageAt,findSummonTile } from '../../server/sim/content/tokens.js';
 
 const tribes={MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'};
-function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[],eliteSourceIds=[],spawnTargets=true) {
+function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[],eliteSourceIds=[],spawnTargets=true,quietSetup=false) {
   const r=DARKMOON_COMBAT_RULES[sourceId],faction=tribes[r.faction||r.retire?.faction||r.retire?.fallen||r.retire?.random||r.startStrike||r.aura?.faction]||'叙拉古';
   const definitions={};const pieces=[];const operators={};
   for(const [index,id]of [sourceId,...extraSources,'fixture'].entries()){
@@ -32,13 +32,14 @@ function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[],
   }
   const catalog={operators,config:{maxShopLevel:6},equipment:{cover:{params:{gearId:'oath-cover'}}}};
   let installed;
-  const h=makeBattle({defs:{chess:definitions,enemies:{probe:enemyRec({key:'probe',hp:1e8,atk:0,def:0,speed:0})}},units:pieces,content:'none',autoFinish:false,extraContent:[b=>{installed=installDarkmoonCombat(b,{catalog,pieces,state});}]});
+  const h=makeBattle({defs:{chess:definitions,enemies:{probe:enemyRec({key:'probe',hp:1e8,atk:0,def:0,speed:0})}},units:pieces,content:'none',autoFinish:false,extraContent:[b=>{installed=installDarkmoonCombat(b,{catalog,pieces,state});if(quietSetup)for(const u of b.allyUnits)if(u.profile)u.profile.noAttack=true;}]});
   h.run(.2);
   if(spawnTargets){
     // The two static probes sit in contact with an open legal tile (8.3 -> tile 9)
     // so melee blockers can engage them without occupying a player or enemy tile.
     h.spawn('probe',{pos:[10,8.3]});h.spawn('probe',{pos:[11,8.3]});h.run(.2);
   }
+  if(quietSetup)for(const u of h.b.allyUnits)if(u.profile)u.profile.noAttack=false;
   return {h,b:h.b,unit:h.unit('p0'),ally:h.unit(`p${pieces.length-1}`),enemy:h.enemies()[0],installed,catalog,pieces};
 }
 
@@ -54,17 +55,18 @@ for(const elite of [false,true])for(const [id,r]of Object.entries(DARKMOON_COMBA
     else if(r.summonMultiplier){b.retreat(h.unit('p1'));h.run(.1);assert.ok(b.allyUnits.filter(u=>u.kind==='token').length>=(elite?3:2));}
     else if(r.retireMultiplier){const target=h.unit('p1'),base=unit.base.atk;b.retreat(target);b.redeploy(target,{free:true});h.run(.1);assert.ok(unit.s.atk>base);assert.equal(installed.trace.filter(t=>t.sourceId==='OG_256'&&t.kind==='deploy').length,2*(elite?3:2));}
     else if(r.aura){h.run(.3);assert.ok(ally.s.atk>ally.base.atk);b.retreat(unit);h.run(.6);assert.equal(ally.s.atk,ally.base.atk);}
-    else if(r.intercept){const ctx={attacker:enemy,targets:[ally],profile:{}};enemy.x=unit.x+.1;enemy.y=unit.y;b.emit('beforeAttack',ctx);assert.equal(ctx.targets[0],unit);}
-    else if(r.counterattack){b.emit('attack',{attacker:enemy,targets:[unit],isSkill:false});h.run(.1);assert.ok(unit.stats.attacks>0);}
-    else if(r.overkill||r.recruitOnKill){enemy.hp=1;b.dealDamage(unit,enemy,{amount:1000,type:'phys',isAttack:true});}
+    else if(r.intercept){enemy.x=unit.x+.1;enemy.y=unit.y;for(let i=0;i<7;i++){const ctx={attacker:enemy,targets:[ally],profile:{}};b.emit('beforeAttack',ctx);assert.equal(ctx.targets[0],ally);}const ctx={attacker:enemy,targets:[ally],profile:{}};b.emit('beforeAttack',ctx);assert.equal(ctx.targets[0],unit);}
+    else if(r.counterattack){for(let i=0;i<8;i++)b.emit('attack',{attacker:enemy,targets:[unit],isSkill:false});h.run(.1);assert.ok(installed.trace.some(x=>x.sourceId===id&&x.kind==='counterattack'));}
+    else if(r.overkill){const targets=b.enemies.filter(x=>x.alive);while(targets.length<5)targets.push(h.spawn('probe',{pos:[12+targets.length,8.3]}));for(const target of targets.slice(0,3))target.hp=1;b.forceAttack(unit,targets.slice(0,3));}
+    else if(r.recruitOnKill){enemy.hp=1;b.forceAttack(unit,[enemy]);}
     else if(r.startStrike){assert.ok(installed.trace.some(t=>t.kind==='startStrike'));}
-    else if(r.echo||r.windfury){b.forceAttack(unit,[enemy]);}
+    else if(r.echo||r.windfury){for(let i=0;i<8;i++)b.forceAttack(unit,[enemy]);}
     else if(r.event==='summon'){b.spawnToken(ally,'token_10028_vigil_wolf',11,6,{anySource:true});}
-    else if(r.event==='attacked'){b.emit('beforeAttack',{attacker:enemy,targets:[r.selfOnly?unit:ally],profile:{}});}
-    else if(r.event==='attack'){b.forceAttack(r.selfOnly?unit:ally,[enemy]);}
+    else if(r.event==='attacked'){for(let i=0;i<8;i++)b.emit('attack',{attacker:enemy,targets:[r.selfOnly?unit:ally],isSkill:false});}
+    else if(r.event==='attack'){for(let i=0;i<8;i++)b.forceAttack(r.selfOnly?unit:ally,[enemy]);}
     else if(r.event==='kill'){b.dealDamage(ally,enemy,{amount:1e9,type:'true',isAttack:true});}
     else if(r.event==='death'){assert.ok(installed.trace.some(t=>t.sourceId===id&&t.kind==='event'),'real initial deployment is the ally event');}
-    else if(r.event==='damaged'){b.dealDamage(enemy,unit,{amount:50,type:'true',isAttack:true});}
+    else if(r.event==='damaged'){for(let i=0;i<8;i++)b.forceAttack(ally,[unit]);}
     else if(r.event==='shieldLayersBroken'){b.addBuff(ally,{key:'test-shield',shieldHits:5});for(let i=0;i<5;i++)b.dealDamage(enemy,ally,{amount:1,type:'true',isAttack:true});}
     h.run(.1);
     if(!r.aura&&!r.retire&&!r.retireMultiplier&&!r.summonMultiplier&&r.event!=='death')assert.ok(installed.trace.length>before||r.startStrike,'actual causal effect must execute');
@@ -81,6 +83,63 @@ for(const elite of [false,true])for(const [id,r]of Object.entries(DARKMOON_COMBA
     h.invariants();
   });
 }
+
+test('frequency scaling counts attack actions 7/8/16 with a fresh counter for each battle',()=>{
+  const first=fixture('BGS_047',false,[],null,[],[],true,true);
+  const baseline=first.installed.trace.filter(t=>t.sourceId==='BGS_047'&&t.kind==='event').length;
+  for(let i=0;i<7;i++)first.b.forceAttack(first.ally,[first.enemy]);
+  assert.equal(first.installed.trace.filter(t=>t.sourceId==='BGS_047'&&t.kind==='event').length,baseline);
+  first.b.forceAttack(first.ally,[first.enemy]);
+  assert.equal(first.installed.trace.filter(t=>t.sourceId==='BGS_047'&&t.kind==='event').length,baseline+1);
+  for(let i=0;i<8;i++)first.b.forceAttack(first.ally,[first.enemy]);
+  assert.equal(first.installed.trace.filter(t=>t.sourceId==='BGS_047'&&t.kind==='event').length,baseline+2);
+  const second=fixture('BGS_047',false,[],null,[],[],true,true);
+  const secondBaseline=second.installed.trace.filter(t=>t.sourceId==='BGS_047'&&t.kind==='event').length;
+  for(let i=0;i<7;i++)second.b.forceAttack(second.ally,[second.enemy]);
+  assert.equal(second.installed.trace.filter(t=>t.sourceId==='BGS_047'&&t.kind==='event').length,secondBaseline,'a new Battle starts a new source counter');
+});
+
+test('overkill cadence counts three unique killed enemies, including three targets in one attack',()=>{
+  const multi=fixture('BGS_032');
+  const targets=[...multi.b.enemies.filter(x=>x.alive),multi.h.spawn('probe',{pos:[12,8.3]})];
+  for(const target of targets)target.hp=1;
+  multi.b.forceAttack(multi.unit,targets);
+  assert.equal(multi.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,1,JSON.stringify({trace:multi.installed.trace,attackId:multi.b._attackSeq,enemies:targets.map(t=>({id:t.id,alive:t.alive,hp:t.hp,deploySeq:t.deploySeq})),entry:multi.installed.entries.find(e=>e.id==='BGS_032')&&{cadence:multi.installed.entries.find(e=>e.id==='BGS_032').cadence,pending:[...multi.installed.entries.find(e=>e.id==='BGS_032').pendingOverkills],lives:[...multi.installed.entries.find(e=>e.id==='BGS_032').overkillLives]}}));
+
+  const singles=fixture('BGS_032');
+  const victims=[...singles.b.enemies.filter(x=>x.alive),singles.h.spawn('probe',{pos:[12,8.3]})];
+  for(const victim of victims.slice(0,2)){victim.hp=1;singles.b.forceAttack(singles.unit,[victim]);}
+  assert.equal(singles.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,0);
+  victims[2].hp=1;singles.b.forceAttack(singles.unit,[victims[2]]);
+  assert.equal(singles.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,1,'three separate overkilled enemies also release once');
+  for(let i=3;i<6;i++){const victim=singles.h.spawn('probe',{pos:[12+i,8.3]});victim.hp=1;singles.b.forceAttack(singles.unit,[victim]);}
+  assert.equal(singles.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,2,'six distinct overkills release twice');
+
+  const multihit=fixture('BGS_032');
+  multihit.unit.profile.hits=2;
+  const firstVictim=multihit.enemy;firstVictim.hp=150;
+  multihit.b.forceAttack(multihit.unit,[firstVictim]);
+  assert.equal(multihit.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,0,'two damage instances with one attackId and one target count as one overkill');
+  for(let i=0;i<2;i++){const victim=multihit.h.spawn('probe',{pos:[12+i,8.3]});victim.hp=1;multihit.b.forceAttack(multihit.unit,[victim]);}
+  assert.equal(multihit.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,1,'the next two unique enemy lives reach three total');
+});
+
+test('BGS080 keeps its attack-action and unique-overkill counters independent',()=>{
+  const f=fixture('BGS_080',false,[],null,[],[],true,true);
+  const before=f.unit.stats.attacks;
+  for(let i=0;i<7;i++)f.b.forceAttack(f.unit,[f.enemy]);
+  assert.equal(f.unit.stats.attacks-before,7);
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='BGS_080'&&t.kind==='overkill').length,0);
+  f.b.forceAttack(f.unit,[f.enemy]);
+  assert.equal(f.unit.stats.attacks-before,9,'the eighth eligible attack gets its normal extra attack');
+  const victims=[...f.b.enemies.filter(x=>x.alive),f.h.spawn('probe',{pos:[12,8.3]})];
+  for(const victim of victims)victim.hp=1;
+  f.b.forceAttack(f.unit,victims);
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='BGS_080'&&t.kind==='overkill').length,1,'three distinct overkills release independently of the attack counter');
+  for(let i=0;i<8;i++)f.b.forceAttack(f.unit,[f.h.spawn('probe',{pos:[12+i,8.3]})]);
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='BGS_080'&&t.kind==='windfury').length,2,'the separate attack counter reaches its next eighth action');
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
 
 test('BGS008 waits after its source is killed before a legal enemy target arrives',()=>{
   const {h,b,unit,installed,catalog,pieces}=fixture('BGS_008',false,[],null,[],[],false);
@@ -101,7 +160,7 @@ test('BGS008 withdrawal does not issue a knockout summon request',()=>{
 
 test('combat ramps and shields do not become persistent badge rewards or transferable inventory',()=>{
   const {b,unit,ally,enemy,installed}=fixture('BGS_047');
-  const before=ally.s.atk;b.forceAttack(ally,[enemy]);
+  const before=ally.s.atk;for(let i=0;i<8;i++)b.forceAttack(ally,[enemy]);
   assert.ok(ally.s.atk>before);
   assert.deepEqual(installed.results.growth,[]);
   assert.equal(b.independentRewards,undefined);
@@ -109,7 +168,7 @@ test('combat ramps and shields do not become persistent badge rewards or transfe
 });
 test('temporary A/H combat growth records and applies the fixed damage badge ID',()=>{
   const {b,unit,ally,enemy}=fixture('BGS_047');
-  b.forceAttack(ally,[enemy]);
+  for(let i=0;i<8;i++)b.forceAttack(ally,[enemy]);
   const record=Object.values(unit.mem.darkmoonTemporaryEquipment||{})[0];
   assert.deepEqual(record.badgeIds,['precision','damage']);
   const totalDamageUnits=Object.values(unit.mem.darkmoonTemporaryEquipment).reduce((sum,item)=>sum+Number(item.secondaryUnits||0),0);
@@ -173,9 +232,9 @@ test('deployment payload runs on every actual redeployment and never on withdraw
 });
 test('temporary training from multiple sources follows one native curve and never exceeds its real cap',()=>{
   const {h,b,unit,ally,enemy,installed}=fixture('BGS_047',false,['BGS_047'],{growthMode:'levels'});
-  b.forceAttack(ally,[enemy]);
+  for(let i=0;i<8;i++)b.forceAttack(ally,[enemy]);
   assert.ok(unit.s.atk<=190&&unit.s.def<=90&&unit.s.res<=9,'multiple effects share the source native level maximum');
-  h.run(3.1);b.forceAttack(ally,[enemy]);
+  h.run(3.1);for(let i=0;i<8;i++)b.forceAttack(ally,[enemy]);
   assert.ok(unit.s.atk<=190&&unit.s.def<=90&&unit.s.res<=9,'later effects remain inside the source native level maximum');
   assert.deepEqual(installed.results.growth,[]);
   const temp=Object.values(unit.mem.darkmoonTemporaryEquipment||{}).find(x=>x.sourceId==='BGS_047');
@@ -380,18 +439,20 @@ test('a short-range Saria can project a real ranged Caster onto a legal ranged t
 test('advanced source effects preserve recipients, repeats and token counts rather than uniformly doubling everything',()=>{
   for(const elite of [false,true]){
     const rover=fixture('BOT_218',elite);
-    rover.b.dealDamage(rover.enemy,rover.unit,{amount:50,type:'true',isAttack:true});
+    rover.enemy.s.atk=1;rover.enemy.profile.hits=8;rover.b.forceAttack(rover.enemy,[rover.unit]);
+    assert.equal(rover.b.allyUnits.filter(u=>u.kind==='token').length,0,'eight damage instances in one attack action still count once');
+    rover.enemy.profile.hits=1;for(let i=0;i<7;i++)rover.b.forceAttack(rover.enemy,[rover.unit]);
     const summons=rover.b.allyUnits.filter(u=>u.kind==='token');
     assert.equal(summons.length,1);assert.equal(summons[0].base.atk,elite?536:268);
     const nadina=fixture('BGS_040',elite);nadina.b.retreat(nadina.unit);nadina.h.run(.1);
     assert.equal(nadina.ally.buffs.filter(x=>x.key.startsWith('darkmoon:shield:')).reduce((n,x)=>n+(x.shieldHits||0),0),5);
     const ripper=fixture('BGS_060',elite),before=ripper.unit.stats.attacks;
-    ripper.b.emit('attack',{attacker:ripper.enemy,targets:[ripper.unit]});ripper.h.run(.1);
+    for(let i=0;i<8;i++)ripper.b.emit('attack',{attacker:ripper.enemy,targets:[ripper.unit]});ripper.h.run(.1);
     assert.equal(ripper.unit.stats.attacks-before,1);
     const macaw=fixture('BGS_078',elite,['OG_256']),baselineEchoCount=macaw.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length;
-    for(let i=0;i<5;i++)macaw.b.forceAttack(macaw.unit,[macaw.enemy]);
+    for(let i=0;i<16;i++)macaw.b.forceAttack(macaw.unit,[macaw.enemy]);
     macaw.h.run(.1);
-    assert.ok(macaw.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length-baselineEchoCount>3,'each eligible attack can echo again; no artificial echo-use cap');
+    assert.ok(macaw.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length-baselineEchoCount>=(elite?4:2),'every eighth ordinary attack echoes; advanced copies preserve their printed repeat count');
   }
 });
 test('advanced shield gift chooses two different allies and advanced bomber applies both queued hits',()=>{
@@ -511,9 +572,9 @@ test('current source set contains twenty deployment payloads, with strict KO-onl
 test('Javi echo repeats a living deployment payload without killing or recursively echoing its source',()=>{
   const f=fixture('BGS_078',false,['OG_256']);
   const candidate=f.h.unit('p1'),before=f.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length;
-  for(let i=0;i<4;i++)f.b.forceAttack(f.unit,[f.enemy]);f.h.run(.1);
+  for(let i=0;i<8;i++)f.b.forceAttack(f.unit,[f.enemy]);f.h.run(.1);
   assert.equal(candidate.alive,true);
-  assert.ok(f.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length-before>1,'separate ordinary attacks each resolve the echo');
+  assert.ok(f.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length-before>0,'the eighth ordinary attack resolves the echo');
   assert.equal(f.installed.trace.filter(t=>t.kind==='death').length,0);
   assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
 });
@@ -602,7 +663,7 @@ test('summoned cover metadata is visible before its deploy actor event for BGS11
   const deployedTokens=[];f.b.on('darkmoonDeployActor',event=>{if(event.actor.kind==='token')deployedTokens.push({cover:event.actor.def.raw?.darkmoonCover,tags:event.factions});});
   f.h.run(3.1);
   const before=f.installed.trace.filter(t=>t.sourceId==='BGS_112'&&t.kind==='event').length;
-  f.b.dealDamage(f.enemy,source,{amount:50,type:'true',isAttack:true});
+  f.enemy.s.atk=1;for(let i=0;i<8;i++)f.b.forceAttack(f.enemy,[source]);
   const token=f.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw?.darkmoonCover);
   assert.ok(token,JSON.stringify({tokens:f.b.allyUnits.filter(u=>u.kind==='token').map(u=>({kind:u.kind,cover:u.def.darkmoonCover,memCover:u.mem.darkmoonCover,rawCover:u.def.raw?.darkmoonCover})),trace:f.installed.trace}));
   assert.ok(deployedTokens.some(x=>x.cover&&x.tags.includes('哥伦比亚')),'the actor event exposes its cover and faction metadata before observers run');
