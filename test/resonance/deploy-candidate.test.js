@@ -256,6 +256,37 @@ test('replacement preflight recognizes exact completed capacity history and acti
   assert.equal(spawnSync('bash', ['-n'], { input: script, encoding: 'utf8' }).status, 0);
 });
 
+test('replacement preflight enumerates the existing standard five capacity files but rejects them outside replacement mode and rejects unknown entries', () => {
+  assert.equal(fs.existsSync(path.join(os.tmpdir(), 'resonance-replace-stage-fixture')), false);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'resonance-replace-stage-fixture-'));
+  const stage = path.join(root, 'stage');
+  fs.mkdirSync(stage);
+  const standard = ['capacity-receipt.json', 'capacity-recording-receipt.json', 'capacity-batch-receipt.json', 'capacity-http-cgroup.json', 'capacity-recording-cgroup.json'];
+  const oldRevision = '44c3d344d56349487ecdf3031042ab8012136fe7';
+  const extractLoop = script => {
+    const marker = "for f in '/var/tmp/stronghold-protocol/resonance'/*;";
+    const start = script.indexOf(marker);
+    assert.notEqual(start, -1, 'generated preflight contains staging inventory loop');
+    const end = script.indexOf('\n  ', start);
+    assert.notEqual(end, -1, 'generated preflight contains the staged receipt gate after inventory');
+    return script.slice(start, end).replaceAll("'/var/tmp/stronghold-protocol/resonance'", `'${stage.replaceAll('\\', '/')}'`);
+  };
+  const runLoop = script => spawnSync('bash', ['-c', `set -eu\n${extractLoop(script)}`], { encoding: 'utf8' });
+  try {
+    for (const file of standard) fs.writeFileSync(path.join(stage, file), '{}\n');
+    const replacement = runLoop(preflightScript('1.0.0', revision, ['server/index.js'], { replaceStagedRevision: oldRevision }));
+    assert.equal(replacement.status, 0, replacement.stderr || replacement.stdout);
+    const normal = runLoop(preflightScript('1.0.0', revision, ['server/index.js']));
+    assert.notEqual(normal.status, 0, 'standard prior capacity files are admitted only during explicit replacement');
+    fs.writeFileSync(path.join(stage, 'unknown-keep.json'), '{}\n');
+    const withUnknown = runLoop(preflightScript('1.0.0', revision, ['server/index.js'], { replaceStagedRevision: oldRevision }));
+    assert.notEqual(withUnknown.status, 0);
+    assert.match(withUnknown.stderr + withUnknown.stdout, /staging-unknown:/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: false });
+  }
+});
+
 test('candidate session refresh archives completed ee9e capacity receipts and changes only approved product sources', () => {
   const oldRevision = 'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b';
   const newRevision = '1234567890abcdef1234567890abcdef12345678';

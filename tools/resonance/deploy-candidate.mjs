@@ -838,6 +838,8 @@ export function preflightScript(wsVersion, revision, candidateFiles, { allowStag
     ...OWNED_STAGE_NAMES,
     ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
     ...(replaceStagedRevision ? [
+      'capacity-receipt.json', 'capacity-recording-receipt.json', 'capacity-batch-receipt.json',
+      'capacity-http-cgroup.json', 'capacity-recording-cgroup.json',
       `stronghold-protocol.${replaceStagedRevision}.unit.backup`, `stronghold-protocol.${replaceStagedRevision}.env.backup`,
       'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
       'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
