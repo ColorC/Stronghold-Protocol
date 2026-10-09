@@ -15,9 +15,16 @@ const GEAR = {
   'test:vulnerable': gear('test:vulnerable', 'factionVulnerable', { damagePercent: 0.2, durationSeconds: 5 }),
   'test:guard': gear('test:guard', 'factionGuard', { damageReduction: 0.3 }),
 };
-const catalog = { ...baseCatalog, equipment: { ...baseCatalog.equipment, ...GEAR } };
-// 普罗旺斯 and 德克萨斯 are 叙拉古, 隐现 is 拉特兰, 跃跃 and 深靛 have no faction; none of them has a combat trait (干员表 v3)
+// Keep source factions for equipment targeting, while removing these operators'
+// unrelated workshop traits and source adapters from isolated equipment cases.
 const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', lateran: 'chess_char_1_01_a', loner: 'chess_char_1_09_a', loner2: 'chess_char_1_17_a' };
+const isolatedOperators = { ...baseCatalog.operators };
+for (const id of [OPS.provence, OPS.texas]) {
+  const op = isolatedOperators[id], sourceRefs = { ...op.sourceRefs };
+  delete sourceRefs.darkmoon19_2;
+  isolatedOperators[id] = { ...op, sourceRefs, nativeTrait: { ...op.nativeTrait, effect: { prep: [], combat: [] } } };
+}
+const catalog = { ...baseCatalog, operators: isolatedOperators, equipment: { ...baseCatalog.equipment, ...GEAR } };
 
 function setup(pieces) {
   const chess = {};
@@ -35,6 +42,15 @@ function setup(pieces) {
   return h;
 }
 const lost = (e) => e.s.maxHp - e.hp;
+
+test('equipment-only fixture keeps Syrian faction matching but has no embedded operator deployment source', () => {
+  for (const id of [OPS.provence, OPS.texas]) {
+    const op = catalog.operators[id];
+    assert.ok(op.nativeFactionTags.includes('叙拉古'));
+    assert.equal(op.sourceRefs.darkmoon19_2, undefined);
+    assert.deepEqual(op.nativeTrait.effect.combat, []);
+  }
+});
 
 test('弹射: an attack bounces from its main target to the nearest enemy, then on, within the radius each time', () => {
   const h = setup([{ uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:ricochet' }] }]);
