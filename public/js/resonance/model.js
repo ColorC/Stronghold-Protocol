@@ -39,6 +39,7 @@ export function strategyProgressText(progress) {
  if(typeof progress?.progressText==='string'&&progress.progressText.trim())return progress.progressText;
  return '';
 }
+export function needsAdjacentStrategyPair(strategy) { return strategy?.conditionKind === 'choose_adjacent_pair'; }
 export function roleLabel(role) {return ({damage:'输出',frontline:'前排',control:'控场',healer:'治疗',summoner:'召唤',support:'辅助'})[role]||'干员';}
 export function adjacentDeployedPairs(state) {
  const pieces=(state?.pieces||[]).filter(piece=>piece.row!=null&&piece.col!=null);const pairs=[];

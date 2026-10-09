@@ -104,6 +104,7 @@ export function resonanceDisplayCatalog(catalog, data = null) {
   const strategies = Object.fromEntries(Object.entries(catalog.strategies).map(([id, strategy]) => [id, {
     name: strategy.name, group: STRATEGY_GROUP_TEXT[strategy.group] ?? '策略', description: strategy.description,
     timing: STRATEGY_TIMING_TEXT[strategy.timing] ?? '按当前节点生效', condition: conditionText(strategy.condition),
+    conditionKind: strategy.condition?.kind ?? null,
   }]));
   const environments = Object.fromEntries(Object.entries(catalog.environments).map(([id, env]) => [id, {
     name: env.name, identityPactId: env.identityPactId, description: env.description,

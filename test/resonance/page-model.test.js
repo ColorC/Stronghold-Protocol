@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { actionErrorText,adjacentDeployedPairs,choiceDescription,choiceLabel,detailHash,filterOperators,formatStat,isDeployed,parseDetailHash,pieceNum,prepView,roleLabel,strategyConditionText,strategyProgressText,strategyTimingText } from '../../public/js/resonance/model.js';
+import { actionErrorText,adjacentDeployedPairs,choiceDescription,choiceLabel,detailHash,filterOperators,formatStat,isDeployed,needsAdjacentStrategyPair,parseDetailHash,pieceNum,prepView,roleLabel,strategyConditionText,strategyProgressText,strategyTimingText } from '../../public/js/resonance/model.js';
+import { resonanceContent } from '../../shared/resonance/catalog.js';
+import { resonanceDisplayCatalog } from '../../server/modes/resonance/display.js';
 
 test('page model maps session identities to stable renderer ids without changing the source state',()=>{
  const state={pieces:[{uid:'p42',operatorId:'op_a',star:2,row:3,col:4,dir:'LEFT'},{uid:'p55',operatorId:'op_b',star:1,row:null,col:null}],nextEnemies:[{name:'敌人'}]};
@@ -74,4 +76,14 @@ test('recipe rewards identify the selected finished item and its components',()=
 test('target strategy choices expose only actually adjacent deployed pairs',()=>{
  const state={pieces:[{uid:'p1',row:0,col:0},{uid:'p2',row:0,col:1},{uid:'p3',row:2,col:2},{uid:'p4',row:null,col:null}]};
  assert.deepEqual(adjacentDeployedPairs(state).map(pair=>pair.map(piece=>piece.uid)),[['p1','p2']]);
+});
+
+test('display DTO keeps readable condition text and drives the actual adjacent UID pair choice',()=>{
+ const displayed=resonanceDisplayCatalog(resonanceContent).strategies.strategy_32;
+ assert.equal(displayed.condition,'需要选择两名相邻干员');
+ assert.equal(displayed.conditionKind,'choose_adjacent_pair');
+ assert.equal(needsAdjacentStrategyPair(displayed),true);
+ const state={pieces:[{uid:'p11',operatorId:'a',star:1,row:9,col:3},{uid:'p12',operatorId:'b',star:2,row:9,col:4},{uid:'p13',operatorId:'c',star:1,row:7,col:0}]};
+ const options=needsAdjacentStrategyPair(displayed)?adjacentDeployedPairs(state).map(([a,b])=>`${a.uid}|${b.uid}`):[];
+ assert.deepEqual(options,['p11|p12']);
 });

@@ -14,19 +14,36 @@ const SERVER_FALLBACK = 'https://workshop.colorc.cc/bside';
 const PROJECT_ID = 'arknights';
 const CONFIG_PATH = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 
-const DESIGN_BODY = (entryUrl, referenceUrl) => [
+const DESIGN_SECTIONS = new Set([
+  '体验与内容范围', '经济与招募', '费用与角色职责', '盟约设计原则',
+  '需求明确的终端', '装备、策略与全局环境', '成型窗口与遭遇预算',
+]);
+
+function playerFacingDesign(markdown) {
+  const blocks = markdown.split(/(?=^#{2,3} )/m).slice(1);
+  const included = [];
+  for (const block of blocks) {
+    const heading = block.match(/^#{2,3} (.+)$/m)?.[1]?.trim();
+    if (!DESIGN_SECTIONS.has(heading)) continue;
+    const body = block.replace(/^#{2,3} .+\r?\n/, '').trim();
+    const paragraphs = body.split(/\r?\n\s*\r?\n/).filter(Boolean).filter(paragraph => !(
+      /完整招募目录采用|界面沿用工坊|概率采用当前 Set18|五费名单：|费用映射以现有设计 tier|^- 原[一二三四五六]档|完整内容表需包括|经营状态、配置与战斗核心共用|日常使用 `recording:false`|测试覆盖经济边界|推演后逐次修订|全部配置与完整用户故事|磁盘工具持续计入/i.test(paragraph)
+    ));
+    if (paragraphs.length) included.push(`## ${heading}\n\n${paragraphs.join('\n\n')}`);
+  }
+  const result = included.join('\n\n');
+  if (!result || /(?:[A-Z]:\\|(?:^|\s)T-\d+|reference\/|18\.2|2026-\d\d-\d\d)/m.test(result)) {
+    throw new Error('设计卡正文包含非玩家内容或未提取到规则');
+  }
+  return result;
+}
+
+const DESIGN_BODY = (entryUrl, referenceUrl, designRules) => [
   '# 共鸣玩法与参考',
   '',
   `打开[共鸣玩法](${entryUrl})。完整资料可从[参考资料包](${referenceUrl})下载。`,
   '',
-  '## 经营与招募',
-  '干员按费用分档，玩家在购买干员、追求升星和提升人口之间分配金币。开局选择的环境会影响本局可招募名单，并贯穿本局。',
-  '',
-  '## 固定技能与盟约',
-  '每名干员使用固定技能，星级会改变技能效果。盟约根据上阵干员即时生效；调整阵容会改变盟约档位。',
-  '',
-  '## 装备与策略',
-  '装备由组件按配方合成，可在干员之间调整。经营节点提供策略选择；策略可能带来即时收益、任务目标、延迟回报或规则变化。详情中可以查看技能、盟约、装备配方与策略条件。',
+  designRules,
 ].join('\n');
 
 const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
@@ -173,12 +190,15 @@ function selfTest() {
   ]);
   const entryUrl = 'https://colorc.cc/stronghold/resonance.html';
   const embedUrl = 'https://workshop.colorc.cc/stronghold/resonance.html';
+  const designRules = playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
   const cards = plannedCards(layout, embedUrl, { kind: 'file', path: '/tmp/ref.md', token: 'not-used' });
   const relations = plannedRelations();
   if (!noOverlap([...cards.map(card => ({ ...card })), { x: 0, y: 0, width: 1, height: 1 }])) throw new Error('布局纯测试失败');
   if (cards[0].kind !== 'text' || cards[0].source.kind !== 'file' || cards[1].kind !== 'material'
     || cards[1].adapter !== 'web' || cards[1].source.url !== embedUrl || cards[1].source.url === entryUrl
-    || !DESIGN_BODY(entryUrl, 'https://example.invalid/reference.zip').includes(entryUrl)) throw new Error('独立入口与嵌入入口分离纯测试失败');
+    || !DESIGN_BODY(entryUrl, 'https://example.invalid/reference.zip', designRules).includes(entryUrl)) throw new Error('独立入口与嵌入入口分离纯测试失败');
+  for (const phrase of ['经验', '固定技能', '阿戈尔', '装备普通栏位', '深渊']) if (!designRules.includes(phrase)) throw new Error(`设计卡正文缺少规则段：${phrase}`);
+  if (/完整招募目录采用|recording:false|reference\/|T-\d+|E:\\WindowsWorkspace/i.test(designRules)) throw new Error('设计卡正文包含内部说明或绝对路径');
   if (validateEmbedUrl(embedUrl, 'https://workshop.colorc.cc') !== embedUrl) throw new Error('Workshop同源嵌入页验证失败');
   for (const invalid of ['https://colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/stronghold/independent.html']) {
     let rejected = false; try { validateEmbedUrl(invalid, 'https://workshop.colorc.cc'); } catch { rejected = true; }
@@ -213,6 +233,7 @@ async function run() {
   const entryUrl = httpsUrl(options['entry-url'], '--entry-url');
   const embedUrl = options['embed-url'] ? httpsUrl(options['embed-url'], '--embed-url') : entryUrl;
   const referenceUrl = httpsUrl(options['reference-url'], '--reference-url');
+  const designRules = playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
   const releaseReceiptPath = absoluteFile(options['release-receipt'], '--release-receipt');
   const receiptPath = absoluteFile(options.receipt, '--receipt');
   if (fs.existsSync(receiptPath)) throw new Error(`receipt 已存在，为避免覆盖而停止：${receiptPath}`);
@@ -279,7 +300,7 @@ async function run() {
 
   try {
     const bodyResult = unwrap(await request('POST', '/lofa/overlay/invoke', {
-      cmd: 'notes_text_put', args: { id: DESIGN_CARD_ID, content: DESIGN_BODY(entryUrl, referenceUrl) },
+      cmd: 'notes_text_put', args: { id: DESIGN_CARD_ID, content: DESIGN_BODY(entryUrl, referenceUrl, designRules) },
     })) ?? {};
     const bodyPath = bodyResult.path;
     const bodyToken = bodyResult.open_token ?? bodyResult.token;
@@ -337,7 +358,7 @@ async function run() {
     const designAfter = textItems.find(item => (item.id ?? item.editableId) === DESIGN_CARD_ID);
     const originalBodyAfter = originalAfter?.content ?? originalAfter?.text ?? originalAfter?.body;
     const designBodyAfter = designAfter?.content ?? designAfter?.text ?? designAfter?.body;
-    if (originalBodyAfter !== upstreamBody || designBodyAfter !== DESIGN_BODY(entryUrl, referenceUrl)) throw new Error('文字正文回读与预期不符');
+    if (originalBodyAfter !== upstreamBody || designBodyAfter !== DESIGN_BODY(entryUrl, referenceUrl, designRules)) throw new Error('文字正文回读与预期不符');
     const done = {
       ...preview, status: 'complete', revision: after.revision,
       verified: { originalCardsUnchanged: true, originalRelationsUnchanged: true, sourceBodyUnchanged: true, newDesignBody: true, newPlaySource: true, geometry: true, relations: true },
