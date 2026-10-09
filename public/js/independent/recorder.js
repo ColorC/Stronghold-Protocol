@@ -11,9 +11,9 @@ import { createCanvasMediaRecorder, resolveMediaOptions } from '../recording/can
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
 const MECHANIC_TEXT = Object.freeze({
-  buy: '招募一名干员，看看他怎样加入阵容。', equip: '为干员装上装备，观察装备效果如何生效。',
-  merge: '合成升阶，让干员获得新的强化。', ready: '整备完成，进入本轮战斗。', upgrade: '提升调度中心等级，解锁更高成长。',
-  use: '使用道具，观察它带来的变化。', deploy: '把干员部署到战场位置。', skill: '切换干员技能，查看战斗方式变化。',
+  buy: '招募干员的效果按其科技档位结算；部分工坊效果在招募获得或首次上阵时触发，具体时机看干员说明。',
+  equip: '装备会放入目标干员的装备栏；成长装备按对应属性乘区计算，徽章成长分项记录，训练等级合并显示。',
+  merge: '三名相同干员合成一名进阶干员；进阶后的科技档位与效果以当前干员说明为准。',
 });
 
 export function RecordingControls({ sessionId }) {
