@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { eligiblePiecesForEffect, fieldConditionPiecesForEffect, hasConditionalTargets } from '../../shared/independentEligibility.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
+import { unitInfo } from '../../server/sim/snapshot.js';
 
 const mkOp = (id, profession, faction, atk = 100) => ({ chessId: id, tier: 3, profession, nativeFactionTags: [faction], nativeFactions: [faction], nativeStats: { atk },
   source: { normalChess: { profession, bonds: [], stats: { atk } } } });
@@ -141,4 +142,40 @@ test('field count reuses module-adjusted base-stat, equipment keyword and normal
   assert.deepEqual(fieldIds(effect,roster,catalog,source),['adjacent']);
   roster[1].bodyPenaltyApplied=true;
   assert.deepEqual(fieldIds(effect,roster,catalog,source),[]);
+});
+
+test('deployment actor projection counts only matching live operators and tokens, never hand, wrong owner or false cover',()=>{
+  const catalog=realCatalog(),op=Object.values(catalog.operators)[0];
+  const source={uid:'medical-source',kind:'op',chessId:op.chessId,playerId:'player-a',row:1,col:1,factions:['罗德岛']};
+  const roster=[source,
+    {uid:'sira-op',kind:'op',chessId:op.chessId,ownerId:'player-a',row:2,col:2,darkmoonFactionTags:['叙拉古']},
+    {uid:'sira-token',kind:'token',defId:'support-token',ownerId:'player-a',row:2,col:3,darkmoonFactionTags:['叙拉古']},
+    {uid:'cover-token',kind:'token',defId:'support-token',ownerId:'player-a',row:3,col:2,darkmoonCover:true},
+    {uid:'unmarked-token',kind:'token',defId:'support-token',ownerId:'player-a',row:3,col:3},
+    {uid:'hand-cover',kind:'token',defId:'support-token',ownerId:'player-a',row:null,col:null,darkmoonCover:true},
+    {uid:'other-owner',kind:'token',defId:'support-token',ownerId:'player-b',row:4,col:4,darkmoonFactionTags:['叙拉古'],darkmoonCover:true},
+  ];
+  const factionRule={behavior:'darkmoonCombat',trigger:'deploy',params:{scope:'boardonly',event:'deploy',actor:'deployedFriendly',actorKinds:['op','token'],targets:'sourceOperator',match:{faction:'叙拉古'}}};
+  const coverRule={behavior:'darkmoonCombat',trigger:'deploy',params:{scope:'boardonly',event:'deploy',actor:'deployedFriendly',actorKinds:['op','token'],targets:'adjacentToDeploymentActor',radius:1.5,match:{keywordGear:'坚守盟约'}}};
+  const summonRule={behavior:'darkmoonCombat',trigger:'summon',params:{scope:'boardonly',event:'summon',actor:'newSummonedToken',actorKinds:['token'],targets:'sourceOperator',match:{faction:'叙拉古'}}};
+  assert.deepEqual(fieldIds(factionRule,roster,catalog,source),['sira-op','sira-token']);
+  const siracusaSource={...source,factions:['叙拉古']};
+  assert.deepEqual(fieldIds({...factionRule,params:{...factionRule.params,excludeSelf:true}},[siracusaSource,...roster.slice(1)],catalog,siracusaSource),['sira-op','sira-token'],'source operators are excluded when the actual rule says “other friendly operators”');
+  assert.deepEqual(fieldIds(coverRule,roster,catalog,source),['cover-token']);
+  assert.equal(fieldConditionPiecesForEffect({rule:summonRule},{pieces:roster,catalog,source}),null,'future summoned units are not current-field conditions');
+  assert.deepEqual(fieldIds({...coverRule,params:{...coverRule.params,actorKinds:['op']}},roster,catalog,source),[],'tokens only qualify when allowed by actorKinds');
+  assert.deepEqual(eligiblePiecesForEffect(coverRule,{pieces:roster,catalog,source}),[],'gameplay operator selectors stay unchanged and token-free');
+  assert.deepEqual(fieldIds({...factionRule,params:{...factionRule.params,match:{faction:'哥伦比亚'}}},roster,catalog,source),[],'a medical source outside the match is not counted as a deployment actor');
+});
+
+test('UnitInfo exposes only the optional deployment actor metadata needed by field-condition display',()=>{
+  const base={id:8,kind:'token',side:'ally',ownerId:'player-a',defId:'support-token',name:'作战支援单位',def:{id:'support-token',raw:{}},x:4,y:6,tileR:6,tileC:4,dir:'RIGHT',s:{maxHp:100},mem:{darkmoonFactionTags:['哥伦比亚'],darkmoonCover:true}};
+  const info=unitInfo(base);
+  assert.deepEqual([info.row,info.col],[6,4]);assert.deepEqual(info.darkmoonFactionTags,['哥伦比亚']);assert.equal(info.darkmoonCover,true);
+  const ordinary=unitInfo({...base,mem:{},def:{id:'support-token',raw:{}}});
+  assert.equal('darkmoonFactionTags' in ordinary,false);assert.equal('darkmoonCover' in ordinary,false);
+  const inherited=unitInfo({...base,mem:{},def:{id:'support-token',raw:{}},ownerUnit:{mem:{darkmoonFactionTags:['维多利亚']},def:{raw:{}}}});
+  assert.deepEqual(inherited.darkmoonFactionTags,['维多利亚'],'a token uses the same inherited identity that its native actor match resolves');
+  const raw=unitInfo({...base,mem:{},def:{id:'support-token',raw:{darkmoonFactionTags:['哥伦比亚'],darkmoonCover:true}}});
+  assert.deepEqual(raw.darkmoonFactionTags,['哥伦比亚']);assert.equal(raw.darkmoonCover,true);
 });

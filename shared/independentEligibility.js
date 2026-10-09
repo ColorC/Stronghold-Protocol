@@ -210,7 +210,30 @@ export function fieldConditionPiecesForEffect(effect, { pieces = [], catalog, so
       } else if (!p.match && !p.targets) return null;
       break;
     case 'darkmoonCombat':
-      // This adapter can describe a future summon or a field trigger. Only its board trigger is counted here.
+      // A unit created by a future summon is not a current field candidate.
+      if (p.event === 'summon' || p.actor === 'newSummonedToken') return null;
+      // Deployment payloads react to the deployed actor, not the source operator or the effect recipients.
+      // UnitInfo can represent tokens which are not entries in state.pieces; keep this UI projection separate
+      // from eligiblePiecesForEffect, whose operator-only semantics are used by gameplay target selectors.
+      if (p.event === 'deploy' && p.actor === 'deployedFriendly' && Array.isArray(p.actorKinds)) {
+        const kinds = new Set(p.actorKinds);
+        const match = p.match || {};
+        const hasKeyword = (piece, keyword) => {
+          if (keyword === '坚守盟约' && piece.darkmoonCover) return true;
+          return matchesMatch(piece, source, { keywordGear: keyword }, catalog);
+        };
+        return pieces.filter((piece) => {
+          const kind = piece.kind || (catalog?.operators?.[piece.chessId] ? 'op' : null);
+          if (!kinds.has(kind) || !deployed(piece) || piece.deleted || piece.removed) return false;
+          if (p.excludeSelf && source?.uid != null && piece.uid === source.uid) return false;
+          if (owner(source) != null && owner(piece) != null && owner(source) !== owner(piece)) return false;
+          const factions = new Set([...(piece.factions || []), ...(piece.darkmoonFactionTags || []), ...factionsFor(piece, catalog)]);
+          if (match.faction && !factions.has(match.faction)) return false;
+          if (match.keywordGear && !hasKeyword(piece, match.keywordGear)) return false;
+          return true;
+        });
+      }
+      // Older field-scoped payload rules already name a current ally match. Do not count generic future effects.
       if (!p.match && !p.requiresFactionOnField && p.scope !== 'boardonly') return null;
       params.targets = 'all';
       break;

@@ -7,7 +7,7 @@ import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const enabled=process.env.DETAIL_PANEL_E2E==='1';
-test('owned, shop and battle operator tabs separate references from traits while retaining gear and temporary growth', {skip:enabled?false:'set DETAIL_PANEL_E2E=1 for CPU-only DOM browser verification',timeout:90000}, async()=>{
+test('owned, shop and battle operator tabs separate references from traits while retaining gear and temporary growth', {skip:enabled?false:'set DETAIL_PANEL_E2E=1 for CPU-only DOM browser verification',timeout:180000}, async()=>{
   const {getCatalog}=await import('../../server/modes/independent/catalog.js');
   const {getData}=await import('../../server/data.js');
   const {independentDisplayCatalog}=await import('../../server/modes/independent/display.js');
@@ -18,6 +18,8 @@ test('owned, shop and battle operator tabs separate references from traits while
   const piece={uid:'owned-pane-piece',chessId:op.chessId,elite:false,skillIndex:0,moduleId:'none',factions:op.nativeFactionTags,equipment:[{uid:'worn-attack',id:'precision',quantity:2}],attachments:[],startStats:{...op.source.normalChess.stats,temporaryGrowth:[{attackUnits:1,secondaryUnits:1}]}};
   const fixture={catalog,state:{phase:'prep',growthMode:'badges',funds:10,pieces:[piece],shop:{slots:[{id:op.chessId,kind:'chess',price:3,sold:false,equipment:[{id:'precision',quantity:1}]}]},inventory:[]}};
   const conditionOp=Object.values(rawCatalog.operators).find(x=>!x.elite&&x.name==='锏');assert.ok(conditionOp);
+  const deploymentCatalogEntry=Object.entries(catalog.operators).find(([,x])=>!x.elite&&x.name==='普罗旺斯');assert.ok(deploymentCatalogEntry,'use a current active-roster operator for deployment-condition rendering');
+  const [deploymentChessId,deploymentCatalogOp]=deploymentCatalogEntry;
   const kjeragOp=Object.values(rawCatalog.operators).find(x=>!x.elite&&(x.nativeFactionTags||[]).includes('谢拉格')&&x.chessId!==conditionOp.chessId);assert.ok(kjeragOp);
   const kazOp=Object.values(rawCatalog.operators).find(x=>!x.elite&&(x.nativeFactionTags||[]).includes('卡西米尔')&&x.chessId!==conditionOp.chessId);assert.ok(kazOp);
   const conditionPieces=[
@@ -27,18 +29,56 @@ test('owned, shop and battle operator tabs separate references from traits while
     {uid:'field-kaz',chessId:kazOp.chessId,playerId:'p1',kind:'op',row:3,col:3,dir:'RIGHT',equipment:[],elite:false},
   ];
   const conditionFixture={catalog,state:{phase:'prep',growthMode:'badges',funds:10,pieces:conditionPieces,shop:{slots:[]},inventory:[]}};
+  const deploymentRules=[
+    {kind:'conditional',trigger:'deploy',effectDelivery:{text:'符合阵营的友方部署时触发。'},rule:{behavior:'darkmoonCombat',trigger:'deploy',params:{scope:'boardonly',event:'deploy',actor:'deployedFriendly',actorKinds:['op','token'],targets:'sourceOperator',match:{faction:'叙拉古'}}}},
+    {kind:'conditional',trigger:'deploy',effectDelivery:{text:'携带坚守盟约的友方部署时触发。'},rule:{behavior:'darkmoonCombat',trigger:'deploy',params:{scope:'boardonly',event:'deploy',actor:'deployedFriendly',actorKinds:['op','token'],targets:'adjacentToDeploymentActor',radius:1.5,match:{keywordGear:'坚守盟约'}}}},
+    {kind:'conditional',trigger:'deploy',effectDelivery:{text:'哥伦比亚友方部署时触发。'},rule:{behavior:'darkmoonCombat',trigger:'deploy',params:{scope:'boardonly',event:'deploy',actor:'deployedFriendly',actorKinds:['op','token'],targets:'sourceOperator',match:{faction:'哥伦比亚'}}}},
+  ];
+  const deploymentPieces=[{...conditionPieces[0],darkmoonFactionTags:['罗德岛']},{...conditionPieces[1],darkmoonFactionTags:['叙拉古']},{...conditionPieces[3],darkmoonFactionTags:['卡西米尔']},
+    {uid:'sira-token',name:'叙拉古支援',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_siracusa',row:4,col:2,dir:'RIGHT',darkmoonFactionTags:['叙拉古']},
+    {uid:'cover-token',name:'坚守作战单位',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_cover',row:3,col:4,dir:'RIGHT',darkmoonCover:true},
+    {uid:'unmarked-token',name:'无标记作战单位',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_other',row:4,col:4,dir:'RIGHT'},
+    {uid:'bench-cover-token',name:'整备区作战单位',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_cover',row:null,col:null,darkmoonCover:true},
+    {uid:'foreign-sira-token',name:'其他队伍支援',kind:'token',ownerId:'p2',playerId:'p2',defId:'token_siracusa',row:5,col:4,dir:'RIGHT',darkmoonFactionTags:['叙拉古']},
+  ];
+  const deploymentOp={...deploymentCatalogOp,chessId:deploymentChessId,summary:deploymentRules,summaryElite:deploymentRules,traitTexts:{name:deploymentCatalogOp.name,normal:'叙拉古友方部署时，自身获得攻击增益；携带坚守盟约的友方部署时，为附近友方提供增益；哥伦比亚友方部署时，自身获得攻击增益。',elite:'叙拉古友方部署时，自身获得攻击增益；携带坚守盟约的友方部署时，为附近友方提供增益；哥伦比亚友方部署时，自身获得攻击增益。'}};
+  const deploymentSource={...conditionPieces[0],chessId:deploymentChessId,factions:deploymentCatalogOp.nativeFactionTags};
+  deploymentPieces[0]=deploymentSource;
+  const deploymentFixture={catalog:{...conditionFixture.catalog,operators:{...conditionFixture.catalog.operators,[deploymentChessId]:deploymentOp}},state:{...conditionFixture.state,pieces:deploymentPieces}};
+  const actualProvenceEntry=Object.entries(catalog.operators).find(([,op])=>!op.elite&&op.name==='普罗旺斯');
+  const actualKroosEntry=Object.entries(catalog.operators).find(([,op])=>!op.elite&&op.name==='寒芒克洛丝');
+  const actualSiracusaEntry=Object.entries(catalog.operators).find(([id,op])=>!op.elite&&op.name!=='普罗旺斯'&&id!==actualProvenceEntry?.[0]&&(op.nativeFactionTags||op.nativeFactions||[]).includes('叙拉古'));
+  assert.ok(actualProvenceEntry&&actualKroosEntry&&actualSiracusaEntry,'current catalog contains the live source operators and a Siracusa actor');
+  const [actualProvenceId,actualProvenceOp]=actualProvenceEntry,[actualKroosId,actualKroosOp]=actualKroosEntry,[actualSiracusaId,actualSiracusaOp]=actualSiracusaEntry;
+  const actualState=(pieces)=>({phase:'prep',growthMode:'badges',funds:10,pieces,shop:{slots:[]},inventory:[]});
+  const actualProvencePiece={uid:'actual-provence',chessId:actualProvenceId,playerId:'p1',kind:'op',row:2,col:2,dir:'RIGHT',factions:actualProvenceOp.nativeFactionTags||actualProvenceOp.nativeFactions||[],equipment:[],elite:false};
+  const actualProvenceFixture={catalog,state:actualState([actualProvencePiece,
+    {uid:'actual-siracusa-op',chessId:actualSiracusaId,playerId:'p1',kind:'op',row:2,col:3,dir:'RIGHT',factions:['叙拉古'],equipment:[],elite:false},
+    {uid:'actual-siracusa-token',name:'叙拉古支援',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_siracusa',row:3,col:2,dir:'RIGHT',darkmoonFactionTags:['叙拉古']},
+    {uid:'actual-siracusa-bench',chessId:actualSiracusaId,playerId:'p1',kind:'op',row:null,col:null,factions:['叙拉古'],equipment:[],elite:false},
+    {uid:'actual-siracusa-foreign',chessId:actualSiracusaId,playerId:'p2',kind:'op',row:3,col:3,factions:['叙拉古'],equipment:[],elite:false}])};
+  const actualKroosPiece={uid:'actual-kroos',chessId:actualKroosId,playerId:'p1',kind:'op',row:2,col:2,dir:'RIGHT',factions:actualKroosOp.nativeFactionTags||actualKroosOp.nativeFactions||[],equipment:[],elite:false};
+  const actualKroosFixture={catalog,state:actualState([actualKroosPiece,
+    {uid:'actual-cover-op',chessId:actualSiracusaId,playerId:'p1',kind:'op',row:2,col:3,dir:'RIGHT',factions:['叙拉古'],equipment:[],darkmoonCover:true,elite:false},
+    {uid:'actual-cover-token',name:'坚守作战单位',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_cover',row:3,col:2,dir:'RIGHT',darkmoonCover:true},
+    {uid:'actual-cover-bench',chessId:actualSiracusaId,playerId:'p1',kind:'op',row:null,col:null,factions:['叙拉古'],equipment:[],darkmoonCover:true,elite:false}])};
   const boot=`<!doctype html><html lang="zh-CN" class="ix-ws"><head><link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/screens/game-panels.css"><link rel="stylesheet" href="/css/independent.css"></head><body><div id="root" class="ix-game"></div><script type="module">
     import {h,render} from '/vendor/preact.module.js';
     import {DetailCard} from '/js/independent/detail.js';
+    import {parseComponentLinkHash} from '/js/independent/componentLinkHash.js';
     import {loadData} from '/js/data.js';
-    const fixture=await (await fetch('/fixture.json')).json();const conditionFixture=await (await fetch('/condition-fixture.json')).json();window.highlightedCondition=[];
+    const fixture=await (await fetch('/fixture.json')).json();const conditionFixture=await (await fetch('/condition-fixture.json')).json();const deploymentFixture=await (await fetch('/deployment-fixture.json')).json();const actualProvenceFixture=await (await fetch('/actual-provence-fixture.json')).json();const actualKroosFixture=await (await fetch('/actual-kroos-fixture.json')).json();window.highlightedCondition=[];
     await loadData('chess','assets','bonds','items','garrisons','tokens','enemies','config');
     window.mountDetail=(target)=>{render(null,document.querySelector('#root'));render(h(DetailCard,{...fixture,target,busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){}}),document.querySelector('#root'));};
+    window.openComponentLink=(href)=>{history.replaceState(null,'',href);const link=parseComponentLinkHash(location.hash);if(link?.kind==='piece')window.mountDetail({kind:'piece',uid:link.id,tab:link.tab});else if(link?.kind==='shop')window.mountDetail({kind:'shop',slot:Number(link.id),tab:link.tab});};
     window.mountBattleDetail=()=>{render(null,document.querySelector('#root'));render(h(DetailCard,{...fixture,state:{...fixture.state,phase:'battle'},target:{kind:'unit',unit:{side:'ally',uid:'owned-pane-piece',id:'battle-unit'}},battle:null,busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){}}),document.querySelector('#root'));};
     const conditionHighlight=(pieces)=>{window.highlightedCondition=pieces.map(p=>p.uid);window.highlightedConditionPositions=pieces.map(p=>({uid:p.uid,row:p.row,col:p.col}));};
     window.mountCondition=()=>{render(null,document.querySelector('#root'));render(h(DetailCard,{...conditionFixture,target:{kind:'piece',uid:'condition-source'},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight:conditionHighlight}),document.querySelector('#root'));};
     window.moveConditionPiece=(uid,row,col)=>{const state={...conditionFixture.state,pieces:conditionFixture.state.pieces.map(p=>p.uid===uid?{...p,row,col}:p)};render(h(DetailCard,{...conditionFixture,state,target:{kind:'piece',uid:'condition-source'},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight:conditionHighlight}),document.querySelector('#root'));};
     window.mountBattleCondition=()=>{render(null,document.querySelector('#root'));const battle={fieldPieceUids:()=>['condition-source','field-kaz'],snapHp:()=>100,stats:()=>null};render(h(DetailCard,{...conditionFixture,state:{...conditionFixture.state,phase:'battle'},target:{kind:'unit',unit:{side:'ally',uid:'condition-source',id:'battle-condition'}},battle,busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight:conditionHighlight}),document.querySelector('#root'));};
+    const deploymentHighlight=(pieces)=>{window.deploymentHighlight=pieces.map(p=>p.uid);window.deploymentTiles=pieces.map(p=>({uid:p.uid,row:p.row,col:p.col}));};
+    window.mountDeploymentCondition=(battleMode=false)=>{render(null,document.querySelector('#root'));window.deploymentHighlight=[];const deploymentPieces=deploymentFixture.state.pieces;const battle=battleMode?{fieldConditionPieces:()=>[deploymentPieces[1],deploymentPieces[3]].filter(p=>p.row!=null)}:null;const onClose=()=>render(null,document.querySelector('#root'));render(h(DetailCard,{...deploymentFixture,state:{...deploymentFixture.state,phase:battleMode?'battle':'prep'},target:{kind:'piece',uid:'condition-source'},battle,busy:false,onClose,onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight:deploymentHighlight}),document.querySelector('#root'));};
+    window.mountActualCondition=(name)=>{render(null,document.querySelector('#root'));window.actualHighlight=[];const fixture=name==='provence'?actualProvenceFixture:actualKroosFixture;const uid=name==='provence'?'actual-provence':'actual-kroos';render(h(DetailCard,{...fixture,target:{kind:'piece',uid},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight(pieces){window.actualHighlight=pieces.map(p=>p.uid);}}),document.querySelector('#root'));};
     window.mountEnemyDetail=()=>window.mountDetail({kind:'unit',unit:{side:'enemy',defId:'enemy_1000_gopro_2',id:'enemy-unit'}});
     window.mountSummonDetail=()=>window.mountDetail({kind:'unit',unit:{side:'ally',defId:'token_10000_silent_healrb',uid:'summon-unit',id:'summon-unit'}});
     window.mountDetail({kind:'piece',uid:'owned-pane-piece'});window.ready=true;
@@ -49,21 +89,32 @@ test('owned, shop and battle operator tabs separate references from traits while
     if(name==='/'){res.setHeader('content-type','text/html');return res.end(boot);}
     if(name==='/fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(fixture));}
     if(name==='/condition-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(conditionFixture));}
-    const file=name.startsWith('/vendor/')?path.join(installation,'public',name):name.startsWith('/data/')?path.join(dataRoot,path.basename(name)):name.startsWith('/shared/')?path.join(ROOT,name):path.join(ROOT,'public',name);
-    if(/\.(?:js|json|css)$/.test(name)&&fs.existsSync(file)){res.setHeader('content-type',name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'application/json');return res.end(fs.readFileSync(file));}
+    if(name==='/deployment-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(deploymentFixture));}
+    if(name==='/actual-provence-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(actualProvenceFixture));}
+    if(name==='/actual-kroos-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(actualKroosFixture));}
+    const file=name.startsWith('/vendor/')||name.startsWith('/assets/')||name.startsWith('/fonts/')?path.join(installation,'public',name):name.startsWith('/data/')?path.join(dataRoot,path.basename(name)):name.startsWith('/shared/')?path.join(ROOT,name):path.join(ROOT,'public',name);
+    if(fs.existsSync(file)){const ext=path.extname(file).toLowerCase(),mime={'.js':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff':'font/woff','.woff2':'font/woff2'}[ext];if(mime){res.setHeader('content-type',mime);return res.end(fs.readFileSync(file));}}
     res.setHeader('content-type','image/svg+xml');res.end('<svg xmlns="http://www.w3.org/2000/svg"/>');
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  let browser;const errors=[];let browserPhase='launch';let browserPhaseGuard;let browserProfile=null;
+  let browser;let browserContext=null;let browserOwned=false;const errors=[];let browserPhase='launch';let browserPhaseGuard;let browserProfile=null;let browserConnectionMode='edge-launch';
   try{
-    browserPhaseGuard=setTimeout(()=>{console.error(`[detail-browser-phase-timeout] ${browserPhase}`);void browser?.close();},60000);
-    browserProfile=fs.mkdtempSync(path.join(os.tmpdir(),'sp-detail-panel-e2e-'));
-    browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,userDataDir:browserProfile,args:['--disable-gpu','--disable-software-rasterizer','--no-first-run','--no-default-browser-check','--no-sandbox']});
-    const page=await browser.newPage({viewport:{width:1600,height:900}});page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>errors.push(`requestfailed ${r.method()} ${r.url()} ${r.failure()?.errorText||''}`));
+    browserPhaseGuard=setTimeout(()=>{console.error(`[detail-browser-phase-timeout] ${browserPhase}`);if(browserOwned)void browser?.close();else void browserContext?.close();},150000);
+    let page;
+    if(process.env.SP_DETAIL_PANEL_CDP){
+      browserConnectionMode='isolated-context-on-existing-headless-browser';browser=await puppeteer.connect({browserURL:process.env.SP_DETAIL_PANEL_CDP});browserContext=await browser.createBrowserContext();page=await browserContext.newPage();await page.setViewport({width:1600,height:900});
+    }else{
+      browserOwned=true;const profileRoot=path.resolve(process.env.SP_DETAIL_PANEL_PROFILE_ROOT||os.tmpdir());fs.mkdirSync(profileRoot,{recursive:true});
+      browserProfile=fs.mkdtempSync(path.join(profileRoot,'edge-profile-'));
+      browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/msedge.exe',headless:true,userDataDir:browserProfile,dumpio:true,timeout:150000,args:['--disable-gpu','--disable-software-rasterizer','--no-first-run','--no-default-browser-check','--no-sandbox']});
+      page=await browser.newPage({viewport:{width:1600,height:900}});
+    }
+    page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>errors.push(`requestfailed ${r.method()} ${r.url()} ${r.failure()?.errorText||''}`));
     const screenshotDir=process.env.SP_DETAIL_PANEL_SCREENSHOT_DIR?path.resolve(process.env.SP_DETAIL_PANEL_SCREENSHOT_DIR):null;
     if(screenshotDir)fs.mkdirSync(screenshotDir,{recursive:true});
     const capture=async(name)=>{if(!screenshotDir)return null;const file=path.join(screenshotDir,name);await page.screenshot({path:file,fullPage:true});return file;};
     browserPhase='navigation';await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded',timeout:20000});
+    await (browserContext || page.browserContext()).overridePermissions(new URL(page.url()).origin,['clipboard-read','clipboard-write']);
     browserPhase='window-ready';
     await page.waitForFunction(()=>window.ready,{timeout:30000});
     browserPhase='owned-tabs';
@@ -72,11 +123,36 @@ test('owned, shop and battle operator tabs separate references from traits while
     const ownedReference=await page.evaluate(async()=>{const tab=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.trim()==='参考原卡');tab.click();await new Promise(r=>requestAnimationFrame(r));return {selected:tab.getAttribute('aria-selected'),text:document.querySelector('[role=tabpanel]').textContent};});
     assert.equal(ownedReference.selected,'true');assert.match(ownedReference.text,/暴怒的巨蜥/);assert.match(ownedReference.text,/酒馆科技 2/);assert.match(ownedReference.text,/暗月奖品初版 · 19\.2/);assert.match(ownedReference.text,/普通[\s\S]*在你使用一张亡语随从牌后，获得\+1\/\+1/);assert.match(ownedReference.text,/金色[\s\S]*在你使用一张亡语随从牌后，获得\+2\/\+2/);
     const ownedReferenceScreenshot=await capture('owned-reference-tab.png');
-    const returnedTraits=await page.evaluate(async()=>{const tab=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.trim()==='特质');tab.click();await new Promise(r=>requestAnimationFrame(r));return {selected:tab.getAttribute('aria-selected'),text:document.querySelector('[role=tabpanel]').textContent};});
+    const referenceTabRect=await page.$eval('[role=tab][aria-selected="true"]',el=>{const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});
+    await page.mouse.click(referenceTabRect.x,referenceTabRect.y,{button:'right'});
+    const copiedReferenceLink=await page.evaluate(()=>navigator.clipboard.readText());
+    assert.match(new URL(copiedReferenceLink).hash,/#piece-owned-pane-piece:tab=reference$/,'right-clicking the reference tab copies a tab-specific component link');
+    const referencePaneRect=await page.$eval('[role=tabpanel]',el=>{const r=el.getBoundingClientRect();return {x:r.left+r.width*.75,y:r.top+r.height*.5};});
+    await page.mouse.click(referencePaneRect.x,referencePaneRect.y,{button:'right'});
+    const copiedReferencePaneLink=await page.evaluate(()=>navigator.clipboard.readText());
+    assert.match(new URL(copiedReferencePaneLink).hash,/#piece-owned-pane-piece:tab=reference$/,'right-clicking the visible panel also copies the active reference tab link');
+    await page.evaluate(href=>window.openComponentLink(href),copiedReferencePaneLink);
+    await page.waitForFunction(()=>document.querySelector('[role=tab][aria-selected="true"]')?.textContent.trim()==='参考原卡');
+    const reopenedReference=await page.evaluate(()=>({selected:document.querySelector('[role=tab][aria-selected="true"]')?.textContent.trim(),text:document.querySelector('[role=tabpanel]').textContent}));
+    assert.equal(reopenedReference.selected,'参考原卡');assert.match(reopenedReference.text,/普通[\s\S]*亡语/);assert.match(reopenedReference.text,/金色[\s\S]*亡语/);
+    await page.evaluate(()=>[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.trim()==='特质').click());
+    await page.waitForFunction(()=>document.querySelector('[role=tab][aria-selected="true"]')?.textContent.trim()==='特质');
+    const returnedTraits=await page.evaluate(()=>({selected:document.querySelector('[role=tab][aria-selected="true"]')?.getAttribute('aria-selected'),text:document.querySelector('[role=tabpanel]').textContent}));
     assert.equal(returnedTraits.selected,'true');assert.match(returnedTraits.text,/特质/);assert.doesNotMatch(returnedTraits.text,/暴怒的巨蜥|亡语随从牌/);
     const traitsScreenshot=await capture('owned-traits-tab.png');
-    const owned=await page.evaluate(async()=>{const tab=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.startsWith('装备'));if(!tab)return {tabs:[...document.querySelectorAll('[role=tab]')].map(x=>x.textContent),exists:false};tab.click();await new Promise(r=>requestAnimationFrame(r));return {exists:true,selected:tab.getAttribute('aria-selected'),text:document.querySelector('[role=tabpanel]').textContent,tiles:document.querySelectorAll('.ix-dgear__tile').length,temporary:!!document.querySelector('[role=tabpanel] .ix-detail__text')};});
-    assert.equal(owned.exists,true,'owned gear tab must survive block classification');assert.equal(owned.selected,'true');assert.equal(owned.tiles,1);assert.match(owned.text,/攻击徽章/);assert.match(owned.text,/本场临时增益/);assert.match(owned.text,/本场结束后消失/);
+    await page.evaluate(()=>[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.startsWith('装备'))?.click());
+    await page.waitForFunction(()=>document.querySelector('[role=tab][aria-selected="true"]')?.textContent.trim().startsWith('装备'));
+    const copiedGearTabLink=await (async()=>{const r=await page.$eval('[role=tab][aria-selected="true"]',el=>{const b=el.getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2};});await page.mouse.click(r.x,r.y,{button:'right'});return page.evaluate(()=>navigator.clipboard.readText());})();
+    assert.match(new URL(copiedGearTabLink).hash,/#piece-owned-pane-piece:tab=gear$/,'gear tab copies its own component link');
+    await page.evaluate(href=>window.openComponentLink(href),copiedGearTabLink);
+    await page.waitForFunction(()=>document.querySelector('[role=tab][aria-selected="true"]')?.textContent.trim().startsWith('装备'));
+    await page.waitForFunction(()=>{const images=[...document.querySelectorAll('.ix-gear')].filter(el=>el.tagName==='IMG');return images.length>0&&images.every(img=>img.complete&&img.naturalWidth>0);},{timeout:5000});
+    const owned=await page.evaluate(()=>{const tab=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.startsWith('装备'));if(!tab)return {tabs:[...document.querySelectorAll('[role=tab]')].map(x=>x.textContent),exists:false};return {exists:true,selected:tab.getAttribute('aria-selected'),text:document.querySelector('[role=tabpanel]').textContent,tiles:document.querySelectorAll('.ix-dgear__tile').length,temporary:!!document.querySelector('[role=tabpanel] .ix-detail__text'),icons:[...document.querySelectorAll('.ix-gear')].map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,src:el.currentSrc||el.src||null,label:el.getAttribute('aria-label')||el.alt||el.querySelector('svg')?.getAttribute('aria-label')||'',width:r.width,height:r.height,naturalWidth:el.naturalWidth||null,naturalHeight:el.naturalHeight||null,complete:el.complete??null};})};});
+    assert.equal(owned.exists,true,'owned gear tab must survive block classification');assert.equal(owned.selected,'true');assert.equal(owned.tiles,1);assert.match(owned.text,/攻击徽章/);assert.match(owned.text,/本场临时增益/);
+    assert.ok(owned.icons.some(x=>x.width>0&&x.height>0),'gear icon has a visible bounding box');assert.ok(owned.icons.filter(x=>x.tag==='IMG').every(x=>x.complete&&x.naturalWidth>0),'loaded icon URLs resolve to real pixels');
+    const visibleIcons=await page.evaluate(()=>[...document.querySelectorAll('.ix-gear, .ix-dpanel__head img, .ix-dpanel__head svg')].map(el=>{const r=el.getBoundingClientRect();return {tag:el.tagName,src:el.currentSrc||el.src||null,label:el.getAttribute('aria-label')||el.alt||el.querySelector('svg')?.getAttribute('aria-label')||'',width:r.width,height:r.height,naturalWidth:el.naturalWidth||null,naturalHeight:el.naturalHeight||null,complete:el.complete??null};}).filter(x=>x.width>0&&x.height>0));
+    assert.ok(visibleIcons.length>0,'an existing UI/icon asset remains visible at a nonzero size');assert.ok(visibleIcons.filter(x=>x.tag==='IMG').every(x=>x.complete&&x.naturalWidth>0),'visible icon URLs return decoded image pixels');
+    const ownedGearScreenshot=await capture('owned-gear-panel.png');
     await page.evaluate(()=>window.mountDetail({kind:'shop',slot:0}));
     const shopReferences=await page.evaluate(async()=>{const traits=document.querySelector('[role=tabpanel]').textContent;const tab=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.trim()==='参考原卡');tab?.click();await new Promise(r=>requestAnimationFrame(r));return {traits,tabs:[...document.querySelectorAll('[role=tab]')].map(x=>x.textContent.trim()),selected:tab?.getAttribute('aria-selected'),text:document.querySelector('[role=tabpanel]').textContent};});
     assert.ok(shopReferences.tabs.includes('参考原卡'));assert.doesNotMatch(shopReferences.traits,/暴怒的巨蜥|亡语随从牌/);assert.equal(shopReferences.selected,'true');assert.match(shopReferences.text,/普通[\s\S]*亡语/);assert.match(shopReferences.text,/金色[\s\S]*亡语/);
@@ -104,10 +180,39 @@ test('owned, shop and battle operator tabs separate references from traits while
     assert.equal(cleared.tab,'true');assert.deepEqual(cleared.highlighted,[],'switching away from traits clears only the detail condition highlight');assert.deepEqual(errors,[]);
     browserPhase='battle-condition';await page.evaluate(()=>window.mountBattleCondition());await page.waitForFunction(()=>window.highlightedCondition.length===2);
     const battleCondition=await page.evaluate(()=>({counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),highlighted:window.highlightedCondition}));
-    assert.deepEqual(battleCondition.counts,['（1）','（1）','（1）','（1）']);assert.deepEqual(battleCondition.highlighted,['condition-source','field-kaz'],'battle detail candidates are restricted to units alive in the displayed frame');
+    assert.deepEqual(battleCondition.counts,['（1）','（2）','（1）','（2）']);assert.deepEqual(battleCondition.highlighted,['condition-source','field-kaz'],'battle detail candidates are restricted to units alive in the displayed frame');
+    browserPhase='deployment-actors';await page.evaluate(()=>window.mountDeploymentCondition());await page.waitForFunction(()=>document.querySelectorAll('.ix-field-count').length===6&&window.deploymentHighlight.length===4,{timeout:5000});
+    const deploymentView=await page.evaluate(()=>({operator:document.querySelector('.ix-dpanel__head .dhead__name')?.textContent||'',counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),highlighted:window.deploymentHighlight,text:document.querySelector('[role=tabpanel]').textContent}));
+    assert.match(deploymentView.operator,/普罗旺斯/);
+    assert.deepEqual(deploymentView.counts,['（3）','（1）','（0）','（3）','（1）','（0）']);assert.deepEqual(deploymentView.highlighted,['condition-source','field-kjerag','sira-token','cover-token']);
+    const deploymentLineCounts=await page.evaluate(()=>[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(count=>count.textContent.trim())));
+    assert.deepEqual(deploymentLineCounts,[['（3）'],['（1）'],['（0）'],['（3）'],['（1）'],['（0）']],'each field count is attached to the exact faction or keyword clause it describes');
+    const actorTooltips=await page.evaluate(()=>[...document.querySelectorAll('.ix-field-count')].slice(0,3).map(x=>x.title));
+    assert.ok(actorTooltips[0].includes(kjeragOp.name));assert.match(actorTooltips[0],/叙拉古支援/);assert.match(actorTooltips[1],/坚守作战单位/);assert.match(actorTooltips[2],/当前没有符合条件的干员/);assert.doesNotMatch(actorTooltips[0],/field-kjerag/);
+    const actorScreenshot=await capture('deployment-actors-inline-count.png');
+    const actorCountRect=await page.evaluate(()=>{const r=document.querySelectorAll('.ix-field-count')[0].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});await page.mouse.move(actorCountRect.x,actorCountRect.y);
+    const factionHighlight=await page.evaluate(()=>window.deploymentHighlight);assert.deepEqual(factionHighlight,['condition-source','field-kjerag','sira-token']);
+    const coverRect=await page.evaluate(()=>{const r=document.querySelectorAll('.ix-field-count')[1].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});await page.mouse.move(coverRect.x,coverRect.y);
+    const coverHighlight=await page.evaluate(()=>window.deploymentHighlight);assert.deepEqual(coverHighlight,['cover-token']);
+    await page.evaluate(()=>window.mountDeploymentCondition(true));await page.waitForFunction(()=>document.querySelectorAll('.ix-field-count').length===6&&window.deploymentHighlight.length===2,{timeout:5000});
+    const battleDeployment=await page.evaluate(()=>({counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),highlighted:window.deploymentHighlight}));
+    assert.deepEqual(battleDeployment.counts,['（2）','（0）','（0）','（2）','（0）','（0）']);assert.deepEqual(battleDeployment.highlighted,['field-kjerag','sira-token'],'battle projection only sees actor units present in the selected live frame');
+    browserPhase='actual-current-source-projections';
+    await page.evaluate(()=>window.mountActualCondition('provence'));await page.waitForFunction(()=>window.actualHighlight.length===2,{timeout:5000});
+    const actualProvenceView=await page.evaluate(()=>({name:document.querySelector('.ix-dpanel__head .dhead__name')?.textContent||'',text:document.querySelector('[role=tabpanel]').innerText,compact:document.querySelector('[role=tabpanel]').innerText.replace(/\s+/g,''),counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),lineCounts:[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim())),highlighted:window.actualHighlight}));
+    assert.equal(actualProvenceView.name,'普罗旺斯');assert.ok(actualProvenceView.compact.includes(actualProvenceOp.traitTexts.normal.replace(/\s+/g,'')),'the visible trait matches the current directory catalog text');assert.deepEqual(actualProvenceView.counts,['（2）','（2）']);assert.deepEqual(actualProvenceView.lineCounts,[['（2）'],['（2）']]);assert.deepEqual(actualProvenceView.highlighted,['actual-siracusa-op','actual-siracusa-token'],'actual Provence excludes itself, bench and foreign owner while retaining matching op/token actors');
+    const actualProvenceScreenshot=await capture('actual-provence-field-counts.png');
+    await page.evaluate(()=>window.mountActualCondition('kroos'));await page.waitForFunction(()=>window.actualHighlight.length===2,{timeout:5000});
+    const actualKroosView=await page.evaluate(()=>({name:document.querySelector('.ix-dpanel__head .dhead__name')?.textContent||'',text:document.querySelector('[role=tabpanel]').innerText,compact:document.querySelector('[role=tabpanel]').innerText.replace(/\s+/g,''),counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),lineCounts:[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim())),highlighted:window.actualHighlight}));
+    assert.equal(actualKroosView.name,'寒芒克洛丝');assert.ok(actualKroosView.compact.includes(actualKroosOp.traitTexts.normal.replace(/\s+/g,'')),'the visible trait matches the current directory catalog text');assert.deepEqual(actualKroosView.counts,['（2）','（2）']);assert.deepEqual(actualKroosView.lineCounts,[['（2）'],['（2）']]);assert.deepEqual(actualKroosView.highlighted,['actual-cover-op','actual-cover-token'],'actual Kroos counts matching cover-marked deployed operators and tokens only');
+    const actualKroosScreenshot=await capture('actual-kroos-field-counts.png');
+    const skillTabRect2=await page.evaluate(()=>{const r=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.trim()==='技能').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});await page.mouse.click(skillTabRect2.x,skillTabRect2.y);
+    assert.deepEqual(await page.evaluate(()=>window.deploymentHighlight),[],'tab changes clear deployment actor highlights');
+    await page.evaluate(()=>window.mountDeploymentCondition());await page.click('.dpanel__close');
+    assert.deepEqual(await page.evaluate(()=>window.deploymentHighlight),[],'closing the detail panel clears deployment actor highlights');
     await page.evaluate(()=>window.mountEnemyDetail());const enemy=await page.evaluate(()=>({dialog:!!document.querySelector('[data-testid="ix-detail"]'),referenceTab:[...document.querySelectorAll('[role=tab]')].some(x=>x.textContent.trim()==='参考原卡')}));assert.equal(enemy.dialog,true);assert.equal(enemy.referenceTab,false);
     await page.evaluate(()=>window.mountSummonDetail());const summon=await page.evaluate(()=>({dialog:!!document.querySelector('[data-testid="ix-detail"]'),referenceTab:[...document.querySelectorAll('[role=tab]')].some(x=>x.textContent.trim()==='参考原卡')}));assert.equal(summon.dialog,true);assert.equal(summon.referenceTab,false);
     assert.deepEqual(errors,[]);
-    if(process.env.SP_DETAIL_PANEL_REPORT)fs.writeFileSync(process.env.SP_DETAIL_PANEL_REPORT,JSON.stringify({ok:true,ownedTraits,ownedReference,returnedTraits,owned,shopReferences,shop,battleReferences,conditionView,hover,focusHighlight,secondHover,movedHighlight,cleared,battleCondition,enemy,summon,screenshots:[ownedReferenceScreenshot,traitsScreenshot,shopReferenceScreenshot,battleReferenceScreenshot,conditionScreenshot].filter(Boolean),pageErrors:errors,browserProfile,pageUrl:'127.0.0.1 ephemeral test server',browserArgs:['--disable-gpu','--disable-software-rasterizer'],gameRendererStarted:false},null,2)+'\n');
-  }finally{clearTimeout(browserPhaseGuard);await browser?.close();await new Promise(resolve=>server.close(resolve));}
+    if(process.env.SP_DETAIL_PANEL_REPORT)fs.writeFileSync(process.env.SP_DETAIL_PANEL_REPORT,JSON.stringify({ok:true,ownedTraits,ownedReference,reopenedReference,copiedReferenceLink,copiedReferencePaneLink,copiedGearTabLink,returnedTraits,owned,visibleIcons,shopReferences,shop,battleReferences,conditionView,hover,focusHighlight,secondHover,movedHighlight,cleared,battleCondition,deploymentView,deploymentLineCounts,actorTooltips,factionHighlight,coverHighlight,battleDeployment,actualProvenceView,actualKroosView,enemy,summon,fixtureScope:{deploymentRows:'受控UI投影场景，用于验证多条件逐行绑定；不是实战局或源文本快照',activeOperatorRows:'当前目录普罗旺斯与寒芒克洛丝的实际catalog文案/规则，场上actor集合为受控验证状态'},screenshots:[ownedReferenceScreenshot,traitsScreenshot,ownedGearScreenshot,shopReferenceScreenshot,battleReferenceScreenshot,conditionScreenshot,actorScreenshot,actualProvenceScreenshot,actualKroosScreenshot].filter(Boolean),pageErrors:errors,browserProfile,browserConnectionMode,pageUrl:'127.0.0.1 ephemeral test server',browserArgs:browserOwned?['--disable-gpu','--disable-software-rasterizer']:[],gameRendererStarted:false},null,2)+'\n');
+  }finally{clearTimeout(browserPhaseGuard);await browserContext?.close();if(browserOwned)await browser?.close();else browser?.disconnect();await new Promise(resolve=>server.close(resolve));}
 });

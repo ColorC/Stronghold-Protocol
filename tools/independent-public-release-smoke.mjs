@@ -119,28 +119,38 @@ async function exerciseEntry(page, base, mode, output, receipt) {
     await target.click();
     await page.waitForSelector('[data-testid="ix-detail"]', { timeout: 10000 });
     const detailText = await page.$eval('[data-testid="ix-detail"]', (el) => el.innerText.trim());
-    const refs = await page.$('[data-testid="ix-detail"] .ix-original-card');
-    if (refs) {
-      await page.click('[data-testid="ix-detail"] .ix-original-card > summary');
-    }
-    const cardEvidence = refs ? await page.$eval('[data-testid="ix-detail"] .ix-original-card', (el) => {
+    const referenceTabs = await page.$$eval('[data-testid="ix-detail"] [role="tab"]', (tabs) => tabs.filter((tab) => tab.innerText.trim() === '参考原卡').length);
+    if (referenceTabs) await page.evaluate(() => [...document.querySelectorAll('[data-testid="ix-detail"] [role="tab"]')].find((tab) => tab.innerText.trim() === '参考原卡')?.click());
+    const refs = referenceTabs ? await page.$('[data-testid="ix-detail"] [role="tabpanel"] .ix-original-card') : null;
+    const cardEvidence = refs ? await page.$eval('[data-testid="ix-detail"] [role="tabpanel"] .ix-original-card', (el) => {
       const text = el.innerText;
       const forms = [...el.querySelectorAll('section')].map((section) => ({ form: section.querySelector('h4')?.innerText.trim() || '', text: section.querySelector('pre')?.innerText.trim() || '' }));
-      return { text, forms, ordinary: forms.some((x) => x.form === '普通' && x.text.length > 0), elite: forms.some((x) => x.form === '精锐' && x.text.length > 0) };
+      return { text, forms, ordinary: forms.some((x) => x.form === '普通' && x.text.length > 0), golden: forms.some((x) => x.form === '金色' && x.text.length > 0) };
     }) : null;
-    offerEvidence.push({ index: i, kind: slot.kind || 'chess', id: slot.id, detailVisibleText: detailText, originalCard: cardEvidence });
-    if (cardEvidence?.ordinary && cardEvidence?.elite && !record.checks.originalCard) {
-      record.checks.originalCard = { offer: { index: i, id: slot.id }, ordinary: cardEvidence.ordinary, elite: cardEvidence.elite, text: cardEvidence.text };
+    offerEvidence.push({ index: i, kind: slot.kind || 'chess', id: slot.id, defaultTraitPaneText: detailText, referenceTabVisible: Boolean(referenceTabs), originalCard: cardEvidence });
+    if (cardEvidence?.ordinary && cardEvidence?.golden && !record.checks.originalCard) {
+      assert.doesNotMatch(detailText, /暴怒的巨蜥|在你使用一张亡语随从牌后/, 'original card text stays out of the default trait pane');
+      record.checks.originalCard = { offer: { index: i, id: slot.id }, ordinary: cardEvidence.ordinary, golden: cardEvidence.golden, text: cardEvidence.text };
       await takeShot(page, output, receipt.artifacts, `${mode}-original-card-normal-elite`);
-      await page.mouse.click(...await page.$eval('.ix-original-card', (el) => { const r = el.getBoundingClientRect(); return [r.x + r.width / 2, r.y + 12]; }), { button: 'right' });
+      const referenceTab = await page.$('[data-testid="ix-detail"] [role="tab"][aria-selected="true"]');
+      const tabRect = await referenceTab.evaluate((el) => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+      await page.mouse.click(tabRect.x, tabRect.y, { button: 'right' });
       await page.waitForFunction(() => document.body.innerText.includes('链接已复制'), { timeout: 5000 });
       const copied = await page.evaluate(() => navigator.clipboard.readText());
-      assert.match(copied, /#shop-\d+$/, 'context-menu copy should produce a component deep link');
-      record.checks.componentLink = { copied };
-      await page.goto(copied, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForSelector('[data-testid="ix-detail"]', { timeout: 15000 });
-      record.checks.componentLink.detailReopened = true;
-      await page.keyboard.press('Escape');
+      assert.match(new URL(copied).hash, /#shop-\d+:tab=reference$/, 'right-clicking the reference tab copies a tab-specific component link');
+      const linkPage = await page.browserContext().newPage();
+      try {
+        await linkPage.setViewport({ width: 1600, height: 900 });
+        monitor(linkPage, receipt, base);
+        await linkPage.goto(copied, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await linkPage.waitForSelector('[data-testid="ix-detail"]', { timeout: 15000 });
+        await linkPage.waitForFunction(() => document.querySelector('[data-testid="ix-detail"] [role="tab"][aria-selected="true"]')?.innerText.trim() === '参考原卡', { timeout: 10000 });
+        const reopened = await linkPage.$eval('[data-testid="ix-detail"] [role="tabpanel"]', (el) => el.innerText);
+        assert.match(reopened, /普通[\s\S]*金色/);
+        assert.match(reopened, /暴怒的巨蜥|亡语/);
+        record.checks.componentLink = { copied, reopenedInNewPage: true, selectedTab: '参考原卡', sourceTextVisible: true };
+        await takeShot(linkPage, output, receipt.artifacts, `${mode}-reference-link-reopened`);
+      } finally { await linkPage.close(); }
     }
   }
   record.checks.shop = { offersInState: slots.length, visibleOfferDetails: offerEvidence.length, offers: offerEvidence };
@@ -266,12 +276,17 @@ async function main() {
   await mkdir(args.output, { recursive: true });
   const reportPath = path.join(args.output, 'public-release-smoke.json');
   const receipt = { ok: false, startedAt: new Date().toISOString(), bases: args.bases, recording: args.recording, output: args.output,
-    policy: 'Only real browser UI input changes game state; metadata/session checks are GET-only. One private context per public base.',
+    policy: 'Only real browser UI input changes game state; metadata/session checks are GET-only. One isolated context per public base.',
+    browserConnectionMode: process.env.SP_DETAIL_PANEL_CDP ? 'connected-existing-browser-with-isolated-contexts' : 'owned-browser-with-isolated-contexts',
     entries: [], replay: null, artifacts: [{ path: reportPath, role: 'public release browser QA receipt' }],
     consoleErrors: [], pageErrors: [], requestFailures: [], httpErrors: [], mediaResponses: [] };
-  let browser; const contexts = []; let browserStartedAt = 0;
+  let browser; let browserOwned = false; const contexts = []; let browserStartedAt = 0;
   try {
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, slowMo: SLOW_MO, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+    if (process.env.SP_DETAIL_PANEL_CDP) browser = await puppeteer.connect({ browserURL: process.env.SP_DETAIL_PANEL_CDP });
+    else {
+      browserOwned = true;
+      browser = await puppeteer.launch({ executablePath: CHROME, headless: true, slowMo: SLOW_MO, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+    }
     browserStartedAt = Date.now();
     for (let i = 0; i < args.bases.length; i += 1) {
       const base = args.bases[i]; const context = await browser.createBrowserContext(); contexts.push(context);
@@ -297,7 +312,8 @@ async function main() {
   } catch (error) { receipt.error = error.stack || error.message; }
   finally {
     for (const context of contexts) await context.close().catch((error) => { receipt.closeErrors ||= []; receipt.closeErrors.push(error.message); });
-    if (browser) await browser.close().catch((error) => { receipt.closeErrors ||= []; receipt.closeErrors.push(error.message); });
+    if (browserOwned) await browser?.close().catch((error) => { receipt.closeErrors ||= []; receipt.closeErrors.push(error.message); });
+    else browser?.disconnect();
     receipt.finishedAt = new Date().toISOString();
     await writeFile(reportPath, `${JSON.stringify(receipt, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify({ ok: receipt.ok, report: reportPath, artifactCount: receipt.artifacts.length, entries: receipt.entries.length, replay: !!receipt.replay, error: receipt.error, diagnostics: { console: receipt.consoleErrors.length, page: receipt.pageErrors.length, request: receipt.requestFailures.length, http: receipt.httpErrors.length } }, null, 2)}\n`);

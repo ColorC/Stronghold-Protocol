@@ -1,5 +1,6 @@
 import { copyText } from '../ui/clipboard.js';
 import { toast } from '../ui/toasts.js';
+export { parseComponentLinkHash } from './componentLinkHash.js';
 
 export function copyComponentLink(event, anchor) {
   event.preventDefault(); event.stopPropagation();

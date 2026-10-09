@@ -1,7 +1,7 @@
 // server/sim/snapshot.js — compact serialization for clients (DESIGN §8.2).
 //
 // b.snap  = { fieldId, t, units: [[id, x, y, hp, maxHp, sp, spMax, flags, anim]], dp, killed, total }
-// UnitInfo = { id, kind, side, ownerId, defId, name, tier, golden, spine, avatar, x, y, facing, dir, maxHp, motion?, boss?, uid?,
+// UnitInfo = { id, kind, side, ownerId, defId, name, tier, golden, spine, avatar, x, y, facing, dir, maxHp, motion?, boss?, uid?, row?, col?, darkmoonFactionTags?, darkmoonCover?,
 //   form?, skillIndex?, moduleId?, items? }  (form = the unit's current model form — an enemy's, content/enemies.js setForm:
 //   掠海漂移体 'crawl', 暴鸰 'bombed', 转译基底·α's forms …; a 傀儡师 fighting as its 替身 'doll', professions.js — a view built
 //   after the change, a field opened mid-battle, draws it: render/units.js FORMS)
@@ -21,6 +21,12 @@ const r1 = (v) => Math.round(v * 10) / 10;
 /** Static per-unit info sent on spawn / in m.field. */
 export function unitInfo(u) {
   const d = u.def || {};
+  const ownerDef = u.ownerUnit?.def || {};
+  const inheritedFactionTags = u.kind === 'token'
+    ? u.ownerUnit?.mem?.darkmoonFactionTags || ownerDef.darkmoonFactionTags || ownerDef.raw?.darkmoonFactionTags
+    : null;
+  const darkmoonFactionTags = u.mem?.darkmoonFactionTags || d.darkmoonFactionTags || d.raw?.darkmoonFactionTags || inheritedFactionTags || null;
+  const darkmoonCover = !!(u.mem?.darkmoonCover || d.darkmoonCover || d.raw?.darkmoonCover);
   return {
     id: u.id,
     kind: u.kind,
@@ -34,6 +40,7 @@ export function unitInfo(u) {
     avatar: d.avatar ?? d.charId ?? u.defId,
     x: r2(u.x),
     y: r2(u.y),
+    ...(u.side === 'ally' && Number.isInteger(u.tileR) && Number.isInteger(u.tileC) ? { row: u.tileR, col: u.tileC } : {}),
     facing: u.facing ?? 1,
     dir: u.dir ?? 'RIGHT',
     maxHp: Math.max(1, Math.round(u.s.maxHp)),
@@ -51,6 +58,8 @@ export function unitInfo(u) {
     // an ally operator's equipped item ids (display: a 变形同构体 wearer counts for the bond it grants — the bond popup's
     // member list and the detail card's bond chips of a teammate's unit)
     items: u.side === 'ally' && u.kind === 'op' && Array.isArray(u.items) && u.items.length ? [...u.items] : undefined,
+    ...(u.side === 'ally' && Array.isArray(darkmoonFactionTags) && darkmoonFactionTags.length ? { darkmoonFactionTags: [...darkmoonFactionTags] } : {}),
+    ...(u.side === 'ally' && darkmoonCover ? { darkmoonCover: true } : {}),
   };
 }
 

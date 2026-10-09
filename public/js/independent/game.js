@@ -26,6 +26,7 @@ import { EnemyDrawer } from '../ui/enemyDrawer.js';
 import { DpCounter } from '../ui/hud.js';
 import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, USE_NEEDS } from './panels.js';
 import { DetailCard } from './detail.js';
+import { parseComponentLinkHash } from './componentLinkHash.js';
 import { ElementPicker } from './picker.js';
 import { RecordingControls } from './recorder.js';
 import { buyTargetSpec } from './targetSelection.js';
@@ -464,13 +465,19 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     else audio.sfx('bossRoundSingle');
   }, [phaseKey]);
 
-  // ---- component links (#piece-p12, #shop-2, #item-i7, #offer-o5): open what the link points at -------------------
+  // ---- component links (#piece-p12:tab=reference, #shop-2:tab=gear, #item-i7): open the linked component tab ------
   useEffect(() => {
     const follow = () => {
       const rawHash = location.hash.slice(1);
       const hash = decodeURIComponent(rawHash);
+      const component = parseComponentLinkHash(location.hash);
       const st = stateRef.current;
-      if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
+      if (component?.kind === 'piece' && st.pieces.some((p) => p.uid === component.id)) setDetail({ kind: 'piece', uid: component.id, tab: component.tab });
+      else if (component?.kind === 'shop' && st.shop.slots[Number(component.id)]) {
+        const i = Number(component.id); const s = st.shop.slots[i];
+        setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i, tab: component.tab } : { kind: 'gear', id: s.id });
+      } else if (component?.kind === 'gear' && catalog.gear[component.id]) setDetail({ kind: 'gear', id: component.id });
+      else if (hash.startsWith('piece-') && st.pieces.some((p) => p.uid === hash.slice(6))) setDetail({ kind: 'piece', uid: hash.slice(6) });
       else if (hash.startsWith('shop-') && st.shop.slots[Number(hash.slice(5))]) {
         const i = Number(hash.slice(5)); const s = st.shop.slots[i];
         setDetail(s.kind === 'chess' ? { kind: 'shop', slot: i } : { kind: 'gear', id: s.id });
@@ -591,16 +598,37 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     fieldPieceUids: () => {
       const frames = battle.replay.frames;
       const frame = frames[Math.max(0, replayPosRef.current)];
-      const liveIds = new Set((frame?.snap?.units || []).map((unit) => unit[0]));
+      const liveIds = new Set((frame?.snap?.units || []).filter((unit) => Number(unit[3]) > 0).map((unit) => unit[0]));
       return (battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && unit.kind === 'op'
         && liveIds.has(unit.id) && typeof unit.uid === 'string').map((unit) => unit.uid);
     },
     fieldPieceStats: () => {
       const frames = battle.replay.frames;
       const frame = frames[Math.max(0, replayPosRef.current)];
-      const live = new Map((frame?.snap?.units || []).map((unit) => [unit[0], { hp: unit[3], maxHp: unit[4] }]));
+      const live = new Map((frame?.snap?.units || []).filter((unit) => Number(unit[3]) > 0).map((unit) => [unit[0], { hp: unit[3], maxHp: unit[4] }]));
       return Object.fromEntries((battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && unit.kind === 'op'
         && live.has(unit.id) && typeof unit.uid === 'string').map((unit) => [unit.uid, live.get(unit.id)]));
+    },
+    fieldConditionPieces: () => {
+      const frames = battle.replay.frames;
+      const frame = frames[Math.max(0, replayPosRef.current)];
+      const live = new Map((frame?.snap?.units || []).filter((unit) => Number(unit[3]) > 0)
+        .map((unit) => [unit[0], { col: Math.round(Number(unit[1])), row: Math.round(Number(unit[2])), hp: unit[3], maxHp: unit[4] }]));
+      return (battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && ['op', 'token'].includes(unit.kind) && live.has(unit.id))
+        .map((unit) => {
+          const piece = unit.kind === 'op' && unit.uid ? stateRef.current.pieces.find((p) => p.uid === unit.uid) : null;
+          const uid = unit.uid || `battle-unit:${unit.id}`;
+          return {
+            ...(piece || {}), uid, kind: unit.kind, chessId: piece?.chessId || unit.defId,
+            playerId: piece?.playerId ?? unit.ownerId, ownerId: unit.ownerId,
+            row: live.get(unit.id).row ?? unit.row, col: live.get(unit.id).col ?? unit.col, dir: unit.dir || piece?.dir || 'RIGHT',
+            elite: piece?.elite ?? !!unit.golden, moduleId: piece?.moduleId || unit.moduleId || 'none',
+            factions: unit.darkmoonFactionTags || piece?.factions || [],
+            darkmoonFactionTags: unit.darkmoonFactionTags || [], darkmoonCover: !!unit.darkmoonCover,
+            equipment: piece?.equipment || (unit.items || []).map((id) => ({ id, quantity: 1 })),
+            hp: live.get(unit.id).hp, currentHp: live.get(unit.id).hp, maxHp: live.get(unit.id).maxHp,
+          };
+        });
     },
   } : null;
 
