@@ -74,6 +74,8 @@ export const hasDarkmoonDeploymentPayload = sourceId => !!rules[sourceId]?.retir
 
 export function darkmoonCombatEligibilityRules(sourceId) {
   const r=rules[sourceId];if(!r)return [];
+  if(sourceId==='BGS_078')return [{behavior:'darkmoonCombat',params:{scope:'boardonly',targets:'all',event:'ordinaryAttackEcho',actor:'deployedSource',actorKinds:['op'],recipientKinds:['op','token'],match:{deploymentPayload:true},excludeSelf:true}}];
+  if(sourceId==='FP1_031')return [{behavior:'darkmoonCombat',params:{scope:'boardonly',targets:'all',event:'deploymentMultiplier',actor:'deployedAmplifier',actorKinds:['op'],recipientKinds:['op','token'],match:{deploymentPayload:true}}}];
   const faction=r.faction||r.retire?.faction||r.retire?.fallen||r.startStrike||r.aura?.faction;
   const match={...(faction?{faction:FACTIONS[faction]}:{}),...(r.requireCover?{keywordGear:'坚守盟约'}:{})};
   if(!faction&&!r.requireCover&&!r.target?.startsWith('adjacent'))return [];
@@ -154,6 +156,10 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       ...(piece?.attachments||[]).flatMap((a,index)=>a.id==='darkmoon-magnetic'&&a.state?.sourceId==='BOT_312'?[{id:a.state.sourceId,elite:!!a.state.elite,instanceKey:`:magnetic:${index}`}]:[])];
     return sources.filter(x=>rules[x.id]).map(({id,elite,instanceKey})=>({unit,id,rule:rules[id],elite,instanceKey,last:-Infinity,uses:0,retireUses:0,deployUses:0,deploySeqs:new Set(),echoes:0,seen:new Set(),stacks:new Map()}));
   });
+  for(const unit of battle.allyUnits.filter(u=>u.kind==='op')){
+    const sources=[...new Set(entries.filter(e=>e.unit===unit&&hasDarkmoonDeploymentPayload(e.id)).map(e=>e.id))];
+    if(sources.length)(unit.mem.darkmoonDeploymentSources=sources);
+  }
   const results=battle.independentDarkmoonResults={growth:[],recruits:[],coins:[]};
   const trace=battle.independentDarkmoonTrace=[];
   const note=(e,kind,targets=[])=>{trace.push({sourceId:e.id,sourceUid:e.unit.uid,kind,time:battle.time,targets:targets.map(u=>u.uid??u.id)});battle.emit('darkmoonEffect',{sourceId:e.id,source:e.unit,kind,targets});};
@@ -269,7 +275,10 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
           entries.push(child);installEntry(child);
           // The token's deploy event preceded its source entry installation. Resolve
           // its own eligible payload now without emitting a second actor event.
-          if(childRule.retire&&child.id!=='BGS_008'&&child.deployUses<3){child.deploySeqs.add(token.deploySeq??0);child.deployUses++;runDeploymentPayload(child,'deploy');}
+          if(hasDarkmoonDeploymentPayload(child.id)){
+            token.mem.darkmoonDeploymentSources=[child.id];
+            if(child.deployUses<3){child.deploySeqs.add(token.deploySeq??0);child.deployUses++;runDeploymentPayload(child,'deploy');}
+          }
         }
         if(p.immediate)battle.forceAttack(token);
       }

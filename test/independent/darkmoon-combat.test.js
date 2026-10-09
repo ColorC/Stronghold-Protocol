@@ -8,6 +8,7 @@ import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPre
 import { darkmoonCombatEligibilityRules } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { levelBodyStats } from '../../shared/independentGrowth.js';
 import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
+import { unitInfo } from '../../server/sim/snapshot.js';
 
 const tribes={MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'};
 function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[],eliteSourceIds=[]) {
@@ -177,7 +178,19 @@ test('magnetic modules retain their own source quality and stack distinct retire
   const tokens=b.allyUnits.filter(u=>u.kind==='token');
   assert.ok(tokens.length<=6&&tokens.length>=5);assert.equal(tokens.filter(u=>u.base.atk===120).length,3);assert.ok(tokens.filter(u=>u.base.atk===240).length>=2);
   assert.equal(installed.trace.filter(t=>t.kind==='deploy'&&t.sourceId==='BOT_312').length,2);
+  assert.deepEqual(unit.mem.darkmoonDeploymentSources,['BOT_312']);
+  assert.deepEqual(unitInfo(unit).darkmoonDeploymentSources,['BOT_312'],'snapshot exposes the installed attachment payload source');
   assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
+
+test('snapshot deployment eligibility is derived from installed payloads and excludes KO-only and original phantom units',()=>{
+  const f=fixture('BGS_078',false,['OG_256','BGS_008']);
+  const payload=f.h.unit('p1'),ko=f.h.unit('p2');
+  assert.deepEqual(unitInfo(payload).darkmoonDeploymentSources,['OG_256']);
+  assert.equal(unitInfo(ko).darkmoonDeploymentSources,undefined,'裁度 has knockout-only payload');
+  const m=fixture('BGS_012',false,['OG_256']);
+  const phantom=m.b.allyUnits.find(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman');
+  assert.ok(phantom);assert.equal(unitInfo(phantom).darkmoonDeploymentSources,undefined,'original Muelsyse phantom does not install workshop deployment payloads');
 });
 
 test('Muelsyse copies top-attack Columbian operators, including itself, without recursive workshop payloads',()=>{
@@ -260,6 +273,7 @@ test('summoned original deployment entries initialize deploySeq caps after the d
   const tokenEntries=f.installed.entries.filter(e=>e.unit.kind==='token'&&e.id==='BGS_061'&&e.rule.retire);
   assert.ok(tokenEntries.length>0,JSON.stringify({entries:f.installed.entries.map(e=>({id:e.id,unit:e.unit.uid,kind:e.unit.kind})),trace:f.installed.trace,tokens:f.b.allyUnits.filter(u=>u.kind==='token').map(u=>({id:u.id,def:u.def,raw:u.def.raw}))}));
   assert.ok(tokenEntries.every(e=>e.deploySeqs instanceof Set&&e.deployUses===1),'the first summon deployment is applied once and recorded');
+  assert.ok(f.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).some(u=>u.mem.darkmoonDeploymentSources?.includes('BGS_061')),'summoned actors expose only deployment payloads actually installed after spawn');
   assert.ok(f.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).length<=7,'recursive copies keep the original allied token cap');
   assert.ok(tokenEntries.every(e=>e.deployUses<=3));
 });

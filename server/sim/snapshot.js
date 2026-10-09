@@ -60,6 +60,10 @@ export function unitInfo(u) {
     items: u.side === 'ally' && u.kind === 'op' && Array.isArray(u.items) && u.items.length ? [...u.items] : undefined,
     ...(u.side === 'ally' && Array.isArray(darkmoonFactionTags) && darkmoonFactionTags.length ? { darkmoonFactionTags: [...darkmoonFactionTags] } : {}),
     ...(u.side === 'ally' && darkmoonCover ? { darkmoonCover: true } : {}),
+    // Display-only evidence of currently installed deployment adapters (native source plus magnetic attachment).
+    // Eligibility consumers must not infer this from original-card keywords or tags.
+    darkmoonDeploymentSources: u.side === 'ally' && Array.isArray(u.mem?.darkmoonDeploymentSources) && u.mem.darkmoonDeploymentSources.length
+      ? [...u.mem.darkmoonDeploymentSources] : undefined,
   };
 }
 

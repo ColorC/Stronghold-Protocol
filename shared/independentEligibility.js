@@ -1,7 +1,7 @@
 import { nativeBodyStats, nativeRecord, tavernFactions } from './independentRules.js';
 import { composeStats } from './loadoutRecord.js';
 
-const deployed = (piece) => piece?.row != null && piece?.col != null;
+const deployed = (piece) => (piece?.row != null && piece?.col != null) || (piece?.x != null && piece?.y != null);
 const owner = (piece) => piece?.playerId ?? piece?.ownerId;
 const formRecord = (piece, catalog) => {
   const op = catalog?.operators?.[piece?.chessId];
@@ -35,6 +35,7 @@ function boardOnly(rule) {
 }
 
 function matchesMatch(candidate, source, match = {}, catalog) {
+  if(match.deploymentPayload===true&&!deploymentPayloadCandidate(candidate,catalog))return false;
   const factions = factionsFor(candidate, catalog);
   const profession = professionOf(candidate, catalog);
   if(match.elite===true&&!candidate.elite&&!String(candidate.chessId).endsWith('_b'))return false;
@@ -52,6 +53,31 @@ function matchesMatch(candidate, source, match = {}, catalog) {
       && (!Number.isFinite(match.minBaseStatRatioToSelf) || own >= Number(self || 0) * match.minBaseStatRatioToSelf))) return false;
   }
   return true;
+}
+
+function adaptedDeploymentSource(sourceId,op,catalog){
+  if(!sourceId||sourceId==='BGS_008')return false;
+  if(op?.sourceRefs?.darkmoon19_2?.id!==sourceId)op=Object.values(catalog?.operators||{}).find(x=>x?.sourceRefs?.darkmoon19_2?.id===sourceId);
+  const deliveries=[op?.darkmoonDeploymentPayload,op?.effectDelivery,op?.effectDeliveryElite,op?.nativeTrait?.effectDelivery,
+    ...(op?.summary||[]).filter(x=>x?.rule?.behavior==='darkmoonCombat').map(x=>x.effectDelivery),
+    ...(op?.summaryElite||[]).filter(x=>x?.rule?.behavior==='darkmoonCombat').map(x=>x.effectDelivery)];
+  return deliveries.some(bundle=>{
+    const entries=bundle?.event?[bundle]:['normal','elite'].flatMap(form=>bundle?.[form]||[]);
+    return entries.some(entry=>entry?.event==='deploymentPayload'&&entry?.implementation==='supported'&&entry?.adapter?.includes('darkmoonCombat'));
+  });
+}
+function deploymentPayloadCandidate(piece,catalog){
+  if(!piece||piece.deleted||piece.removed)return false;
+  let sources;
+  const runtime=piece.kind==='token'||(piece.kind==='op'&&('x'in piece||'y'in piece));
+  if(runtime){sources=piece.darkmoonDeploymentSources; if(!Array.isArray(sources)||!sources.length)return false;}
+  else {
+    const op=catalog?.operators?.[piece.chessId];
+    const nativeId=op?.sourceRefs?.darkmoon19_2?.id;
+    const magnetic=(piece.attachments||piece.attachmentDetails||[]).filter(a=>a?.id==='darkmoon-magnetic'&&a?.state?.sourceId==='BOT_312').map(a=>a.state.sourceId);
+    sources=[nativeId,...magnetic].filter(Boolean);
+  }
+  return sources.some(id=>adaptedDeploymentSource(id,catalog?.operators?.[piece.chessId],catalog));
 }
 
 function statsForPiece(piece, catalog) {
@@ -100,7 +126,8 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
   const rule = projectionRule(effectRule(effect));
   const params = rule?.params || effect?.params || {};
   const behavior = rule?.behavior || effect?.behavior;
-  const roster = pieces.filter((piece) => realOperator(piece, catalog)
+  const payloadMatch=params.match?.deploymentPayload===true;
+  const roster = pieces.filter((piece) => (realOperator(piece, catalog)||(payloadMatch&&piece?.kind==='token'))
     && (owner(source) == null || owner(piece) == null || owner(piece) === owner(source))
     && (!boardOnly(rule) || deployed(piece))
     && (!['board', 'boardonly'].includes(params.scope) || deployed(piece))
