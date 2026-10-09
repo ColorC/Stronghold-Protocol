@@ -29,10 +29,10 @@ test('resonance enemy balance validates profiles and applies legal difficulty ov
 
 test('compiled campaign enemy balance resolves the approved four difficulty profiles',()=>{
   const data=getData(),catalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:1}),config=catalog.campaign.enemyBalance;
-  assert.deepEqual(resolveEnemyBalance(config,'NORMAL','normal'),{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
-  assert.deepEqual(resolveEnemyBalance(config,'NORMAL','boss'),{hpMultiplier:0.85,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.75});
-  assert.deepEqual(resolveEnemyBalance(config,'FUNNY','normal'),{hpMultiplier:0.65,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
-  assert.deepEqual(resolveEnemyBalance(config,'FUNNY','boss'),{hpMultiplier:0.75,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.6});
+  assert.deepEqual(resolveEnemyBalance(config,'NORMAL','normal'),{hpMultiplier:0.65,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance(config,'NORMAL','boss'),{hpMultiplier:0.75,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.5});
+  assert.deepEqual(resolveEnemyBalance(config,'FUNNY','normal'),{hpMultiplier:0.55,atkMultiplier:0.75,defMultiplier:0.3,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(resolveEnemyBalance(config,'FUNNY','boss'),{hpMultiplier:0.65,atkMultiplier:0.8,defMultiplier:0.3,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.4});
   assert.deepEqual(resolveEnemyBalance(config,'HARD','normal'),{hpMultiplier:0.9,atkMultiplier:1,defMultiplier:0.65,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
   assert.deepEqual(resolveEnemyBalance(config,'HARD','boss'),{hpMultiplier:0.95,atkMultiplier:1,defMultiplier:0.65,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.9});
   assert.deepEqual(resolveEnemyBalance(config,'ABYSS','normal'),{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
@@ -44,7 +44,7 @@ test('resonance enemy balance scales native spawn mods once and boss pool indepe
   const baseCatalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:777});
   const nativeCatalog=structuredClone(baseCatalog);nativeCatalog.campaign={...(nativeCatalog.campaign??{}),enemyBalance:null};
   const candidate=structuredClone(nativeCatalog);
-  candidate.campaign.enemyBalance={regular:{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1},terminal:{hpMultiplier:0.85,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.75}};
+  candidate.campaign.enemyBalance={regular:{hpMultiplier:0.65,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1},terminal:{hpMultiplier:0.75,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:0.5}};
   const baseNormal={seed:612345,difficulty:'NORMAL',round:12,roundLimit:28,environmentId:'origin_aegir',pieces:[]};
   const baseNormalField=getResonanceField(baseNormal,{data,catalog:nativeCatalog});
   assert.equal(baseNormalField.tuning,'native-wave');
@@ -53,10 +53,10 @@ test('resonance enemy balance scales native spawn mods once and boss pool indepe
   assert.deepEqual(getResonanceField(baseNormal,{data,catalog:allOne}).wave.spawns,baseNormalField.wave.spawns,'all-one tuning preserves exact native spawn values');
   const scaledField=getResonanceField(baseNormal,{data,catalog:candidate});
   assert.equal(scaledField.tuning,'resonance');
-  assert.deepEqual(scaledField.enemyBalance,{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(scaledField.enemyBalance,{hpMultiplier:0.65,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
   const nativeSpawn=baseNormalField.wave.spawns.find(spawn=>spawn.enemyKey),scaledSpawn=scaledField.wave.spawns.find(spawn=>spawn.enemyKey);
   assert.ok(nativeSpawn&&scaledSpawn);
-  for(const [key,multiplier] of [['hpMul',0.8],['atkMul',0.9],['defMul',0.5],['resMul',1],['speedMul',1]])assert.equal(scaledSpawn.mods?.[key]??1,(nativeSpawn.mods?.[key]??1)*multiplier,`${key} composes with native spawn mods`);
+  for(const [key,multiplier] of [['hpMul',0.65],['atkMul',0.85],['defMul',0.35],['resMul',1],['speedMul',1]])assert.equal(scaledSpawn.mods?.[key]??1,(nativeSpawn.mods?.[key]??1)*multiplier,`${key} composes with native spawn mods`);
   const nativeBuilt=buildResonanceBattle(baseNormal,{data,catalog:nativeCatalog});
   const scaledBuilt=buildResonanceBattle(baseNormal,{data,catalog:candidate});
   const nativeOutcome=runResonanceBattle(baseNormal,{data,catalog:nativeCatalog,recording:false});
@@ -64,17 +64,17 @@ test('resonance enemy balance scales native spawn mods once and boss pool indepe
   assert.equal(nativeOutcome.diagnostics.tuning,'native-wave');
   assert.deepEqual(nativeOutcome.diagnostics.enemyBalance,{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
   assert.equal(scaledOutcome.diagnostics.tuning,'resonance');
-  assert.deepEqual(scaledOutcome.diagnostics.enemyBalance,{hpMultiplier:0.8,atkMultiplier:0.9,defMultiplier:0.5,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
+  assert.deepEqual(scaledOutcome.diagnostics.enemyBalance,{hpMultiplier:0.65,atkMultiplier:0.85,defMultiplier:0.35,resMultiplier:1,speedMultiplier:1,bossPoolMultiplier:1});
   assert.deepEqual(scaledBuilt.prepared.wave.spawns,scaledField.wave.spawns,'field preview and constructed Battle share scaled spawns');
   const nativeEnemy=nativeBuilt.battle.spawnEnemy(nativeSpawn.enemyKey,{...nativeSpawn});
   const scaledEnemy=scaledBuilt.battle.spawnEnemy(scaledSpawn.enemyKey,{...scaledSpawn});
-  for(const key of ['maxHp','atk','def','res','moveSpeed'])assert.ok(Math.abs(scaledEnemy.base[key]-nativeEnemy.base[key]*({maxHp:0.8,atk:0.9,def:0.5,res:1,moveSpeed:1}[key]))<1e-8,`actual Battle ${key} honors configured spawn mods`);
+  for(const key of ['maxHp','atk','def','res','moveSpeed'])assert.ok(Math.abs(scaledEnemy.base[key]-nativeEnemy.base[key]*({maxHp:0.65,atk:0.85,def:0.35,res:1,moveSpeed:1}[key]))<1e-8,`actual Battle ${key} honors configured spawn mods`);
   const baseTerminal={...baseNormal,round:28},baseTerminalBattle=buildResonanceBattle(baseTerminal,{data,catalog:nativeCatalog}),scaledTerminalBattle=buildResonanceBattle(baseTerminal,{data,catalog:candidate});
   const baseBossSpawn=baseTerminalBattle.prepared.wave.spawns.find(spawn=>spawn.tag==='boss'),scaledBossSpawn=scaledTerminalBattle.prepared.wave.spawns.find(spawn=>spawn.tag==='boss');
   assert.ok(baseBossSpawn&&scaledBossSpawn);
-  assert.equal(scaledBossSpawn.mods?.hpMul??1,(baseBossSpawn.mods?.hpMul??1)*0.85,'leader native hpMul receives terminal HP once');
-  assert.equal(scaledBossSpawn.mods?.atkMul??1,(baseBossSpawn.mods?.atkMul??1)*0.9);
-  assert.equal(scaledTerminalBattle.battle.sharedBoss.hp,Math.round(baseTerminalBattle.battle.sharedBoss.hp*0.75),'shared boss pool uses its independent multiplier');
+  assert.equal(scaledBossSpawn.mods?.hpMul??1,(baseBossSpawn.mods?.hpMul??1)*0.75,'leader native hpMul receives terminal HP once');
+  assert.equal(scaledBossSpawn.mods?.atkMul??1,(baseBossSpawn.mods?.atkMul??1)*0.85);
+  assert.equal(scaledTerminalBattle.battle.sharedBoss.hp,Math.round(baseTerminalBattle.battle.sharedBoss.hp*0.5),'shared boss pool uses its independent multiplier');
 });
 
 test('terminal resonance bridge applies the configured 180 second upper bound', () => {

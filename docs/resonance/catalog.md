@@ -31,17 +31,17 @@
 
 ## 敌方强度终值
 
-普通波与终端波分别使用以下生命、攻击、防御、法抗、移速倍率；领袖生命池倍率单独作用，不重复乘领袖自身生命倍率。NORMAL使用基础档，其他难度覆盖基础档；未显式给出的法抗和移速均为1。
+普通波与终端波分别应用下表倍率；终端领袖生命池单独应用最后一列。未配置的 RES 与移速倍率按 1 计算。
 
-| 难度 | 普通波 HP/ATK/DEF/RES/移速 | 终端波 HP/ATK/DEF/RES/移速 | 领袖生命池 |
+| 难度 | 普通波 HP / ATK / DEF / RES / 移速 | 终端波 HP / ATK / DEF / RES / 移速 | 领袖生命池 |
 |---|---|---|---:|
-| NORMAL | 0.80 / 0.90 / 0.50 / 1 / 1 | 0.85 / 0.90 / 0.50 / 1 / 1 | 0.75 |
-| FUNNY | 0.65 / 0.85 / 0.35 / 1 / 1 | 0.75 / 0.85 / 0.35 / 1 / 1 | 0.60 |
-| HARD | 0.90 / 1 / 0.65 / 1 / 1 | 0.95 / 1 / 0.65 / 1 / 1 | 0.90 |
-| ABYSS | 1 / 1 / 1 / 1 / 1 | 1 / 1 / 1 / 1 / 1 | 1 |
+| NORMAL | 0.65 / 0.85 / 0.35 / 1.00 / 1.00 | 0.75 / 0.85 / 0.35 / 1.00 / 1.00 | 0.50 |
+| FUNNY | 0.55 / 0.75 / 0.30 / 1.00 / 1.00 | 0.65 / 0.80 / 0.30 / 1.00 / 1.00 | 0.40 |
+| HARD | 0.90 / 1.00 / 0.65 / 1.00 / 1.00 | 0.95 / 1.00 / 0.65 / 1.00 / 1.00 | 0.90 |
+| ABYSS | 1.00 / 1.00 / 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 / 1.00 / 1.00 | 1.00 |
 
-## 原生 Kit 来源缺口
-实际 normalize/KITS 检查发现 7 名固定项为 generic/none；运行时不替换这些技能。
+## 原生 Kit 分类记录
+7 名干员的原生分类为 generic/none；该字段保留原始 Kit 分类。运行时由共鸣固定技能承接这些分类例外，其中正义骑士号使用周期支援被动。
 
 - 万顷（char_4119_wanqin，chess_native_char_4119_wanqin_a）：skchr_wanqin_2 — generic
 - 令（char_2023_ling，chess_native_char_2023_ling_a）：skchr_ling_3 — generic
@@ -1303,8 +1303,8 @@
 - 星2：属性 `{"maxHp":3260,"atk":642,"def":233,"res":15,"cost":24,"blockCnt":1,"bat":2,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":24,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"CUSTOM_RANGE","rawRule":"CUSTOM_RANGE_SEARCH_ENEMY","customRangeGrid":[[2,-1],[2,0],[2,1],[1,-2],[1,-1],[1,0],[1,1],[1,2],[0,-2],[0,-1],[0,0],[0,1],[0,2],[-1,-2],[-1,-1],[-1,0],[-1,1],[-1,2],[-2,-1],[-2,0],[-2,1]]},"duration":30,"bb":{"atk":0.35,"attack_speed":30,"magic_resist_penetrate_fixed":10,"attract_time":10,"interval":1.5,"attack@atk_scale_s3":2.16}}`；天赋覆盖 `[{"index":0,"bb":{"interval":5.5,"max_cast_cnt":5,"move_speed":-0.12,"talent_magic_scale":0.75,"first_snow":0},"sourceId":"char_1046_sbell2:talent:0"},{"index":1,"bb":{"hp_ratio":1,"cold":1.5,"freeze":4,"c2e_freeze":8},"sourceId":"char_1046_sbell2:talent:1"}]`；被动 沿用原生天赋，无额外盟约被动 `{}`
 - 玩家技能说明：攻击范围扩大，立即诱导攻击范围内的所有敌人至自身周围的可达地面，持续10秒，积雪生成速度加快，攻击力+35%，攻击速度+30，攻击无视目标10点法术抗性，每次攻击造成相当于攻击力216%的法术伤害
 - 星3：属性 `{"maxHp":5868,"atk":963,"def":233,"res":15,"cost":24,"blockCnt":1,"bat":2,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":24,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"CUSTOM_RANGE","rawRule":"CUSTOM_RANGE_SEARCH_ENEMY","customRangeGrid":[[2,-1],[2,0],[2,1],[1,-2],[1,-1],[1,0],[1,1],[1,2],[0,-2],[0,-1],[0,0],[0,1],[0,2],[-1,-2],[-1,-1],[-1,0],[-1,1],[-1,2],[-2,-1],[-2,0],[-2,1]]},"duration":30,"bb":{"atk":0.35,"attack_speed":30,"magic_resist_penetrate_fixed":10,"attract_time":10,"interval":1.5,"attack@atk_scale_s3":14.4}}`；天赋覆盖 `[{"index":0,"bb":{"interval":5.5,"max_cast_cnt":5,"move_speed":-0.12,"talent_magic_scale":0.75,"first_snow":0},"sourceId":"char_1046_sbell2:talent:0"},{"index":1,"bb":{"hp_ratio":1,"cold":1.5,"freeze":4,"c2e_freeze":8},"sourceId":"char_1046_sbell2:talent:1"}]`；被动 本场首次施加控制后恢复15技力。 技能永久保持；铺雪持续造成寒冷。每个寒冷或冻结敌人提高10%攻击和10攻速。单体攻击追加两次500%攻击力法伤并施加1层麻痹。 `{"perColdAttack":10,"perColdAspd":10,"perColdSp":0.2,"tileCooldown":3,"coldDuration":1.5,"phalanxDefenseRetained":true,"permanentSkill":true,"singleTargetExtraHits":2,"hitDamage":500,"paralysisStacks":1}`
+- 持续值对照：共鸣运行时按永久持续处理（-1）；原生固定技能记录时长 30 秒，仅作来源对照。
 - 玩家技能说明：攻击范围扩大，立即诱导攻击范围内的所有敌人至自身周围的可达地面，持续10秒，积雪生成速度加快，攻击力+35%，攻击速度+30，攻击无视目标10点法术抗性，每次攻击造成相当于攻击力1440%的法术伤害
-- 战斗中的三星技能持续值：-1（永久）；个人被动同时给出每格冷却3秒、寒冷持续1.5秒。
 ### 余
 - charId：char_2026_yu；sourceChessId：chess_char_6_03_a；费用：5；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_yu_3（技能索引 2；Kit 来源 kit）
@@ -1483,8 +1483,8 @@
 - 玩家技能说明：在周围四格可部署地面召唤一把"耀阳"对周围敌人造成90%耀骑士临光攻击力的真实伤害并晕眩3秒，自身攻击范围扩大，攻击力+70%、防御力+40%，攻击自身与"耀阳"阻挡的单位时伤害类型变为真实
 - 星2：属性 `{"maxHp":4950,"atk":551,"def":247,"res":0,"cost":19,"blockCnt":1,"bat":1.5,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":15,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":25,"bb":{"atk":0.7,"def":0.4,"value":0.9,"value2":3}}`；天赋覆盖 `[{"index":0,"bb":{"atk_scale":0.8,"stun":3},"sourceId":"char_1014_nearl2:talent:0"},{"index":1,"bb":{"def_penetrate":0.2},"sourceId":"char_1014_nearl2:talent:1"}]`；被动 沿用原生天赋，无额外盟约被动 `{}`
 - 玩家技能说明：在周围四格可部署地面召唤一把"耀阳"对周围敌人造成90%耀骑士临光攻击力的真实伤害并晕眩3秒，自身攻击范围扩大，攻击力+70%、防御力+40%，攻击自身与"耀阳"阻挡的单位时伤害类型变为真实
-- 星3：属性 `{"maxHp":8910,"atk":826,"def":247,"res":0,"cost":19,"blockCnt":1,"bat":1.5,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":15,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":25,"bb":{"atk":0.7,"def":0.4,"value":0.9,"value2":3}}`；天赋覆盖 `[{"index":0,"bb":{"atk_scale":0.8,"stun":3},"sourceId":"char_1014_nearl2:talent:0"},{"index":1,"bb":{"def_penetrate":0.2},"sourceId":"char_1014_nearl2:talent:1"}]`；被动 本场首次召唤的造物生命提高20%，攻击提高30%。 每次技能以目标为中心留下耀阳区域，半径2内每秒造成100%攻击力真实伤害，持续8秒。 `{"sunAreaRadius":2,"sunDps":100,"sunDuration":8}`
-- 玩家技能说明：在周围四格可部署地面召唤一把"耀阳"对周围敌人造成90%耀骑士临光攻击力的真实伤害并晕眩3秒，自身攻击范围扩大，攻击力+70%、防御力+40%，攻击自身与"耀阳"阻挡的单位时伤害类型变为真实；三星另在技能目标处留下上述持续伤害区域
+- 星3：属性 `{"maxHp":8910,"atk":826,"def":247,"res":0,"cost":19,"blockCnt":1,"bat":1.5,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":15,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":25,"bb":{"atk":0.7,"def":0.4,"value":0.9,"value2":3}}`；天赋覆盖 `[{"index":0,"bb":{"atk_scale":0.8,"stun":3},"sourceId":"char_1014_nearl2:talent:0"},{"index":1,"bb":{"def_penetrate":0.2},"sourceId":"char_1014_nearl2:talent:1"}]`；被动 本场首次召唤的造物生命提高20%，攻击提高30%。 每次技能以目标为中心留下耀阳，半径2内每秒造成100%攻击力真实伤害，持续8秒。 `{"sunAreaRadius":2,"sunDps":100,"sunDuration":8}`
+- 玩家技能说明：在周围四格可部署地面召唤一把"耀阳"对周围敌人造成90%耀骑士临光攻击力的真实伤害并晕眩3秒，自身攻击范围扩大，攻击力+70%、防御力+40%，攻击自身与"耀阳"阻挡的单位时伤害类型变为真实
 ### 荒芜拉普兰德
 - charId：char_1038_whitw2；sourceChessId：chess_char_6_18_a；费用：5；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_whitw2_3（技能索引 2；Kit 来源 kit）

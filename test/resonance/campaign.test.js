@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, CARRY_ADAPTIVE_POLICY, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, carryItemScore, carryOperatorPowerFactor, carryTransferPreservesPacts, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, pairAdaptiveStandardRuns, planCarryAdaptiveDeployment, policyLevelTarget, repositionCarryAdaptiveTeam, routeProfiles as campaignRouteProfiles, runCampaign, selectAdaptiveCarry, selectEconPactCopyTarget, transferCarryEquipment } from '../../tools/resonance/balance-campaign.mjs';
+import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, CARRY_ADAPTIVE_POLICY, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, carryItemScore, carryOperatorPowerFactor, carryTransferPreservesPacts, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, finalFormalValidationTasks, pairAdaptiveStandardRuns, planCarryAdaptiveDeployment, policyLevelTarget, repositionCarryAdaptiveTeam, routeProfiles as campaignRouteProfiles, runCampaign, selectAdaptiveCarry, selectEconPactCopyTarget, transferCarryEquipment } from '../../tools/resonance/balance-campaign.mjs';
 import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
@@ -11,6 +11,15 @@ test('campaign coverage declares every environment and difficulty', () => {
   assert.equal(ENVIRONMENTS.length, 19);
   assert.equal(new Set(ENVIRONMENTS).size, 19);
   assert.deepEqual(DIFFICULTIES, ['FUNNY', 'NORMAL', 'HARD', 'ABYSS']);
+});
+
+test('final formal validation covers all NORMAL environments and only four FUNNY environments',()=>{
+  const tasks=finalFormalValidationTasks(),normal=tasks.filter(task=>task.difficulty==='NORMAL'),funny=tasks.filter(task=>task.difficulty==='FUNNY');
+  assert.equal(tasks.length,23);
+  assert.deepEqual(normal.map(task=>task.environmentId),ENVIRONMENTS);
+  assert.deepEqual(funny.map(task=>task.environmentId),['origin_aegir','origin_laterano','origin_kjerag','origin_yan']);
+  assert.equal(new Set(tasks.map(task=>`${task.environmentId}:${task.difficulty}`)).size,23);
+  assert.ok(tasks.every(task=>task.difficulty==='NORMAL'||task.difficulty==='FUNNY'));
 });
 
 test('offer selection skips the first eligible offer when its reserved spend is not actionable',()=>{
@@ -46,7 +55,9 @@ test('enemy-balance counterfactuals clone only NORMAL multipliers and run throug
   const looser=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo',balanceProfile:'looser'});
   const candidate=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo',balanceProfile:'refined-standard'});
   const accessibleBattle=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:CARRY_ADAPTIVE_POLICY,balanceProfile:'accessible-standard'});
-  assert.equal(formal.rows[0].enemyBalance.hpMultiplier,.8);
+  assert.equal(formal.rows[0].enemyBalance.hpMultiplier,.65);
+  assert.equal(formal.rows[0].enemyBalance.atkMultiplier,.85);
+  assert.equal(formal.rows[0].enemyBalance.defMultiplier,.35);
   assert.equal(looser.rows[0].enemyBalance.hpMultiplier,.65);
   assert.equal(candidate.rows[0].enemyBalance.hpMultiplier,.75);
   assert.equal(candidate.rows[0].enemyBalance.atkMultiplier,.90);

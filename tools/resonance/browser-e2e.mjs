@@ -5,6 +5,8 @@ import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const CANONICAL_ROOT = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
@@ -18,6 +20,12 @@ const RECEIPT_PATH = path.join(VERIFY_ROOT, 'browser-receipt.json');
 const PROFILE_DIR = path.join(CANONICAL_ROOT, '.omni/tmp/resonance/browser-profile');
 const WSH_CONFIG_PATH = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 const DEADLINE_MS = 25 * 60 * 1000;
+const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const nativeSourceState = () => ({
+  revision: execFileSync('git', ['-C', SOURCE_ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  trackedStatus: execFileSync('git', ['-C', SOURCE_ROOT, 'status', '--short', '--untracked-files=no'], { encoding: 'utf8' }).trim(),
+});
+const SOURCE_BEFORE = nativeSourceState();
 const urlArg = process.argv.findIndex((arg) => arg === '--url');
 const REMOTE_ENTRY_URL = urlArg >= 0 ? process.argv[urlArg + 1] : process.argv.find((arg) => arg.startsWith('--url='))?.slice('--url='.length) || null;
 const workshopUrlArg = process.argv.findIndex((arg) => arg === '--workshop-url');
@@ -1374,6 +1382,7 @@ async function writeReceipt(error = null) {
   const judgedStories = REMOTE_MODE ? [...remoteStories.values()] : [...results.values()];
   const receipt = {
     schemaVersion: 1, createdAt: new Date().toISOString(), mode: REMOTE_MODE ? 'remote-production' : 'isolated-local',
+    nativeSource: { before: SOURCE_BEFORE, after: nativeSourceState() },
     status: error || errors.length || judgedStories.some((entry) => entry.status !== 'passed') ? 'incomplete' : 'passed',
     serverUrl: server?.url || null, entryUrl: server?.entryUrl || null, fixtureServerUrl: fixtureServer?.url || null, timeoutMs: DEADLINE_MS,
     paths: { canonicalRoot: CANONICAL_ROOT, sessionDirectory: REMOTE_MODE ? null : SESSION_DIR, fixtureSessionDirectory: REMOTE_MODE ? null : FIXTURE_SESSION_DIR,

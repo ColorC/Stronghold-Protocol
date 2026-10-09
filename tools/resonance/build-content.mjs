@@ -166,10 +166,10 @@ const campaign={
   shopOdds:{3:[75,25,0,0,0],4:[55,30,15,0,0],5:[45,33,20,2,0],6:[30,40,25,5,0],7:[16,30,43,10,1],8:[15,20,32,30,3],9:[10,17,25,33,15],10:[5,10,20,40,25]},
   supply,rounds:{FUNNY:28,NORMAL:28,HARD:28,ABYSS:30},nodeSchedule:{FUNNY:{nodes:28,battleOnEvenNodes:true,battleCount:14,oddNodeGold:5,oddNodeXp:2,keepStreak:true},NORMAL:{nodes:28,bossNode:28},HARD:{nodes:28,bossNode:28},ABYSS:{nodes:30,baseBossNode:28,eliteNode:29,hiddenBossNode:30},regularWave:{formula:'ceil(node/2)',max:13,bossWave:14,hiddenBossWave:15}},strategyNodes:[3,9,15,21],shopSize:5,starterCount:3,
   enemyBalance:{
-    regular:{hpMultiplier:.8,atkMultiplier:.9,defMultiplier:.5},
-    terminal:{hpMultiplier:.85,atkMultiplier:.9,defMultiplier:.5,bossPoolMultiplier:.75},
+    regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},
+    terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.5},
     byDifficulty:{
-      FUNNY:{regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.6}},
+      FUNNY:{regular:{hpMultiplier:.55,atkMultiplier:.75,defMultiplier:.3},terminal:{hpMultiplier:.65,atkMultiplier:.8,defMultiplier:.3,bossPoolMultiplier:.4}},
       HARD:{regular:{hpMultiplier:.9,atkMultiplier:1,defMultiplier:.65},terminal:{hpMultiplier:.95,atkMultiplier:1,defMultiplier:.65,bossPoolMultiplier:.9}},
       ABYSS:{regular:{hpMultiplier:1,atkMultiplier:1,defMultiplier:1},terminal:{hpMultiplier:1,atkMultiplier:1,defMultiplier:1,bossPoolMultiplier:1}},
     },
@@ -435,7 +435,10 @@ const counts=Object.fromEntries([1,2,3,4,5].map(cost=>[cost,crew.filter(o=>o.cos
 const envChecks=Object.values(environments).map(env=>({id:env.id,name:env.name,identityPactId:env.identityPactId,natural:crew.filter(o=>o.pacts[0]===env.identityPactId).length,required:env.guaranteedNaturalMembers,terminal:crew.find(o=>o.id===env.guaranteedTerminalId)?.name??''}));
 const starLine=(op,star)=>{
   const spec=op.stars[star];
-  return `- 星${star}：属性 \`${JSON.stringify(spec.stats)}\`；固定技能参数 \`${JSON.stringify(spec.skillOverrides)}\`；天赋覆盖 \`${JSON.stringify(spec.talentOverrides)}\`；被动 ${spec.passive.description||'沿用原生天赋，无额外盟约被动'} \`${JSON.stringify(spec.passive.params)}\``;
+  const permanentDuration=spec.passive.params?.permanentSkill===true
+    ? `\n- 持续值对照：共鸣运行时按永久持续处理（-1）；原生固定技能记录时长 ${spec.skillOverrides.duration} 秒，仅作来源对照。`
+    : '';
+  return `- 星${star}：属性 \`${JSON.stringify(spec.stats)}\`；固定技能参数 \`${JSON.stringify(spec.skillOverrides)}\`；天赋覆盖 \`${JSON.stringify(spec.talentOverrides)}\`；被动 ${spec.passive.description||'沿用原生天赋，无额外盟约被动'} \`${JSON.stringify(spec.passive.params)}\`${permanentDuration}`;
 };
 const enemyBalanceRows=['NORMAL','FUNNY','HARD','ABYSS'].map(difficulty=>{
   const configured=campaign.enemyBalance??{};

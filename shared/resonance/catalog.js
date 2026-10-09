@@ -383889,28 +383889,28 @@ export const resonanceContent = {
     "starterCount": 3,
     "enemyBalance": {
       "regular": {
-        "hpMultiplier": 0.8,
-        "atkMultiplier": 0.9,
-        "defMultiplier": 0.5
+        "hpMultiplier": 0.65,
+        "atkMultiplier": 0.85,
+        "defMultiplier": 0.35
       },
       "terminal": {
-        "hpMultiplier": 0.85,
-        "atkMultiplier": 0.9,
-        "defMultiplier": 0.5,
-        "bossPoolMultiplier": 0.75
+        "hpMultiplier": 0.75,
+        "atkMultiplier": 0.85,
+        "defMultiplier": 0.35,
+        "bossPoolMultiplier": 0.5
       },
       "byDifficulty": {
         "FUNNY": {
           "regular": {
-            "hpMultiplier": 0.65,
-            "atkMultiplier": 0.85,
-            "defMultiplier": 0.35
+            "hpMultiplier": 0.55,
+            "atkMultiplier": 0.75,
+            "defMultiplier": 0.3
           },
           "terminal": {
-            "hpMultiplier": 0.75,
-            "atkMultiplier": 0.85,
-            "defMultiplier": 0.35,
-            "bossPoolMultiplier": 0.6
+            "hpMultiplier": 0.65,
+            "atkMultiplier": 0.8,
+            "defMultiplier": 0.3,
+            "bossPoolMultiplier": 0.4
           }
         },
         "HARD": {

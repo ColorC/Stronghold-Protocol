@@ -1295,7 +1295,7 @@ export function compactEconPactRun(run,{includeAdaptiveDetails=false}={}){
   const ledgers=new Map((run.nodeEconomy??[]).map(entry=>[entry.round,entry]));
   const plans=new Map((run.adaptivePlans??[]).map(entry=>[entry.round,entry])),carryPlans=run.carryPlans??{};
   const nodes=run.rows.map(row=>{const money=ledgers.get(row.round)??{},core=row.roster.find(piece=>piece.operatorId===run.designatedCoreId)??null;
-    const node={round:row.round,level:row.level,gold:{start:money.goldStart??row.goldBefore,end:money.goldAfter,delta:money.goldDelta??row.goldAfter-row.goldBefore,income:money.settlement?{base:money.settlement.income,win:money.settlement.winBonus,streak:money.settlement.streakBonus,interest:money.settlement.interest,delayed:money.settlement.delayedBonus,strategy:money.settlement.strategyGold,battle:money.settlement.battleGold}:null},actions:money.actions??{},spend:{buy:money.buyGold??0,sellRefund:money.sellRefund??0,xp:money.xpGold??0,refresh:money.refreshGold??0},mainPacts:row.mainPacts,stars:{1:row.roster.filter(piece=>piece.star===1).length,2:row.roster.filter(piece=>piece.star===2).length,3:row.roster.filter(piece=>piece.star===3).length},equipment:row.roster.flatMap(piece=>piece.equipment.map(item=>({unit:piece.name,star:piece.star,item}))),core:core?{name:core.name,star:core.star,position:[core.row,core.col],equipment:core.equipment,coveredRoutes:core.coveredRoutes,bossCoverage:row.coreBossCoverage}:null,boss:{id:row.bossId,hpLeft:row.bossHp,damage:row.bossDamage,coreDamage:row.coreDamage,coreAttacks:row.coreAttacks,covered:row.coreBossCoverage},won:row.won,hpLoss:row.hpLoss,hpAfter:row.hpAfter,leaked:row.leaked,capped:row.capped,diagnostics:row.diagnostics,summonAnchorGaps:row.summonAnchorGaps};
+    const node={round:row.round,level:row.level,gold:{start:money.goldStart??row.goldBefore,end:money.goldAfter,delta:money.goldDelta??row.goldAfter-row.goldBefore,income:money.settlement?{base:money.settlement.income,win:money.settlement.winBonus,streak:money.settlement.streakBonus,interest:money.settlement.interest,delayed:money.settlement.delayedBonus,strategy:money.settlement.strategyGold,battle:money.settlement.battleGold}:null},actions:money.actions??{},spend:{buy:money.buyGold??0,sellRefund:money.sellRefund??0,xp:money.xpGold??0,refresh:money.refreshGold??0},mainPacts:row.mainPacts,stars:{1:row.roster.filter(piece=>piece.star===1).length,2:row.roster.filter(piece=>piece.star===2).length,3:row.roster.filter(piece=>piece.star===3).length},equipment:row.roster.flatMap(piece=>piece.equipment.map(item=>({unit:piece.name,star:piece.star,item}))),coreStock:row.coreStock??null,deployCellCount:row.deployCellCount??null,core:core?{name:core.name,star:core.star,position:[core.row,core.col],equipment:core.equipment,coveredRoutes:core.coveredRoutes,bossCoverage:row.coreBossCoverage}:null,boss:{id:row.bossId,hpLeft:row.bossHp,damage:row.bossDamage,coreDamage:row.coreDamage,coreAttacks:row.coreAttacks,covered:row.coreBossCoverage},won:row.won,hpLoss:row.hpLoss,hpAfter:row.hpAfter,leaked:row.leaked,capped:row.capped,diagnostics:row.diagnostics,summonAnchorGaps:row.summonAnchorGaps};
     if(includeAdaptiveDetails||run.policy===CARRY_ADAPTIVE_POLICY){node.deployed=row.roster.map(piece=>({uid:piece.uid,operatorId:piece.operatorId,star:piece.star,row:piece.row,col:piece.col,dir:piece.dir,gearIds:piece.equipment}));node.hpPlan=plans.get(row.round)??null;}
     if(run.policy===CARRY_ADAPTIVE_POLICY)node.carry=carryPlans[row.round]??null;
     return node;});
@@ -1352,6 +1352,30 @@ export function runAccessibleStandardValidation({seedBase=0x45434f4e,maxMs=12*60
   const sourceAfter={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no'])};
   return {schemaVersion:1,policy:CARRY_ADAPTIVE_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',balanceProfile,environments,runs,summary:{runs:runs.length,expectedRuns:environments.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+(run.battles??0),0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length||runs.some(run=>run.truncated),elapsedMs:Date.now()-started}};
 }
+export function finalFormalValidationTasks(){
+  const normalEnvironments=[...ENVIRONMENTS],funnyEnvironments=['origin_aegir','origin_laterano','origin_kjerag','origin_yan'];
+  return [...normalEnvironments.map(environmentId=>({environmentId,difficulty:'NORMAL'})),...funnyEnvironments.map(environmentId=>({environmentId,difficulty:'FUNNY'}))];
+}
+export function runFinalFormalValidation({seedBase=0x45434f4e,maxMs=8*60*1000}={}){
+  const started=Date.now(),tasks=finalFormalValidationTasks(),normalEnvironments=tasks.filter(task=>task.difficulty==='NORMAL').map(task=>task.environmentId),funnyEnvironments=tasks.filter(task=>task.difficulty==='FUNNY').map(task=>task.environmentId);
+  const sourceBefore={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no']),dataSourceCommit:null},runs=[];
+  for(const {environmentId,difficulty} of tasks){
+    if(Date.now()-started>=maxMs)break;
+    const seed=seedFor(environmentId,difficulty,seedBase);
+    try{
+      const nativeCatalog=getCatalog(environmentId,seed);sourceBefore.dataSourceCommit??=nativeCatalog.source?.commit??null;
+      const run=runCampaign({environmentId,difficulty,seed,maxMs:Math.max(1000,maxMs-(Date.now()-started)),policy:CARRY_ADAPTIVE_POLICY,balanceProfile:'formal'});
+      runs.push({...compactEconPactRun(run),phase:run.phase,roundLimit:run.roundLimit});
+    }catch(error){runs.push({environmentId,difficulty,seed,policy:CARRY_ADAPTIVE_POLICY,balanceProfile:'formal',error:error.message});}
+  }
+  const sourceAfter={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no'])};
+  const byDifficulty=Object.fromEntries(['NORMAL','FUNNY'].map(difficulty=>{
+    const subset=runs.filter(run=>run.difficulty===difficulty),nodes=subset.flatMap(run=>run.nodes??[]);
+    return [difficulty,{runs:subset.length,expectedRuns:difficulty==='NORMAL'?normalEnvironments.length:funnyEnvironments.length,errors:subset.filter(run=>run.error).length,battles:subset.reduce((n,run)=>n+(run.battles??0),0),victories:subset.filter(run=>run.terminalReason==='victory').length,hpDepleted:subset.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:subset.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:nodes.reduce((n,node)=>n+(node.diagnostics??0),0),summonAnchorGaps:nodes.reduce((n,node)=>n+(node.summonAnchorGaps?.length??0),0),policyErrors:subset.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),cappedBattles:nodes.filter(node=>node.capped).length,hpCapViolations:nodes.filter(node=>node.hpAfter>100||node.hpAfter<0).length,tileCapViolations:nodes.filter(node=>node.deployed?.length>node.level||node.deployed?.length>node.deployCellCount||new Set((node.deployed??[]).map(piece=>`${piece.row},${piece.col}`)).size!==(node.deployed??[]).length).length,coreStockViolations:nodes.filter(node=>node.coreStock&&(!Number.isInteger(node.coreStock.owned)||!Number.isInteger(node.coreStock.deployed)||!Number.isInteger(node.coreStock.poolRemaining)||node.coreStock.owned<0||node.coreStock.deployed<0||node.coreStock.poolRemaining<0||node.coreStock.deployed>node.coreStock.owned)).length,phaseCounts:Object.fromEntries([...new Set(subset.map(run=>run.phase??'unknown'))].map(phase=>[phase,subset.filter(run=>(run.phase??'unknown')===phase).length])),truncated:subset.length!==(difficulty==='NORMAL'?normalEnvironments.length:funnyEnvironments.length)||subset.some(run=>run.truncated)}];
+  }));
+  const summary={runs:runs.length,expectedRuns:tasks.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+(run.battles??0),0),victories:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:Object.values(byDifficulty).reduce((n,entry)=>n+entry.battleDiagnostics,0),summonAnchorGaps:Object.values(byDifficulty).reduce((n,entry)=>n+entry.summonAnchorGaps,0),policyErrors:Object.values(byDifficulty).reduce((n,entry)=>n+entry.policyErrors,0),cappedBattles:Object.values(byDifficulty).reduce((n,entry)=>n+entry.cappedBattles,0),hpCapViolations:Object.values(byDifficulty).reduce((n,entry)=>n+entry.hpCapViolations,0),tileCapViolations:Object.values(byDifficulty).reduce((n,entry)=>n+entry.tileCapViolations,0),coreStockViolations:Object.values(byDifficulty).reduce((n,entry)=>n+entry.coreStockViolations,0),truncated:runs.length!==tasks.length||runs.some(run=>run.truncated),byDifficulty,elapsedMs:Date.now()-started};
+  return {schemaVersion:1,policy:CARRY_ADAPTIVE_POLICY,validation:'final-formal-natural',source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,balanceProfile:'formal',normalEnvironments,funnyEnvironments,difficultyCoverage:{NORMAL:normalEnvironments.length,FUNNY:funnyEnvironments.length},runs,summary};
+}
 export function appendAdaptiveStandardValidation(result){
   ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
   const priorAttempts=[...(document.adaptiveStandardNaturalComparison?.priorAttempts??[])];
@@ -1386,6 +1410,13 @@ export function appendAccessibleStandardValidation(result){
   const previous=document.accessibleStandardNaturalValidation,priorAttempts=[...(previous?.priorAttempts??[])];
   if(previous){const {priorAttempts:old,...attempt}=previous;priorAttempts.push(attempt);}
   document.accessibleStandardNaturalValidation={...result,pairedFormalBaseline:{runnerHead:baseline.source.runnerHead,dataSourceCommit:baseline.source.dataSourceCommit,seedBase:baseline.seedBase},pairs,priorAttempts};
+  fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
+}
+export function appendFinalFormalValidation(result){
+  ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
+  const previous=document.finalFormalNaturalValidation,priorAttempts=[...(previous?.priorAttempts??[])];
+  if(previous){const {priorAttempts:old,...attempt}=previous;priorAttempts.push(attempt);}
+  document.finalFormalNaturalValidation={...result,priorAttempts};
   fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
 }
 export function pairAdaptiveStandardRuns(runs){
@@ -1426,7 +1457,10 @@ function ensureReportPath(){
 }
 const isMain=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(isMain){
-  if(process.argv.includes('--accessible-standard-validation')){
+  if(process.argv.includes('--final-formal-validation')){
+    const result=runFinalFormalValidation();const report=appendFinalFormalValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
+    if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps||result.summary.policyErrors||result.summary.cappedBattles||result.summary.hpCapViolations||result.summary.tileCapViolations||result.summary.coreStockViolations||result.summary.truncated)process.exitCode=1;
+  }else if(process.argv.includes('--accessible-standard-validation')){
     const result=runAccessibleStandardValidation();const report=appendAccessibleStandardValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
     if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps||result.summary.illegalOrRejectedActions||result.summary.truncated)process.exitCode=1;
   }else if(process.argv.includes('--carry-adaptive-validation')){

@@ -228,6 +228,12 @@ function atomicUpdate(reportPath, patch) {
   }
   return next;
 }
+export function classifyPreviousMidTierAttempt(attempt) {
+  const committed = attempt?.helperWorkingTreeState === 'committed-or-clean-at-current-codeRevision';
+  const completeEightCaseRun = attempt?.cases === 8 && attempt?.summary?.battles === 8;
+  const formalEightBattleRun = committed && completeEightCaseRun;
+  return { attemptStatus: formalEightBattleRun ? 'committed-eight-case-superseded-by-this-validation' : 'preliminary-uncommitted-run-superseded-by-this-validation', formalEightBattleRun };
+}
 export function runMidTierTerminalDesignValidation({ dataDir = DATA_DIR, reportPath = REPORT_PATH } = {}) {
   const data = loadData(dataDir, { log: { warn() {}, error() {}, info() {} } });
   const sourceCodeRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: WORKTREE, encoding: 'utf8' }).trim();
@@ -250,8 +256,7 @@ export function runMidTierTerminalDesignValidation({ dataDir = DATA_DIR, reportP
     const preserved = structuredClone(previousAttempt);
     delete preserved.priorAttempts;
     validation.priorAttempts = [...(previousAttempt.priorAttempts ?? []), {
-      ...preserved, attemptStatus: 'preliminary-uncommitted-run-superseded-by-this-validation',
-      formalEightBattleRun: false,
+      ...preserved, ...classifyPreviousMidTierAttempt(preserved),
     }];
   } else validation.priorAttempts = [];
   atomicUpdate(reportPath, { midTierTerminalDesignValidation: validation });
