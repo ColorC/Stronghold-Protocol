@@ -88,18 +88,18 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   let text='',trigger='战斗中',recipient='自身',duration='本场战斗';
   if(r.retire) {
     const p=r.retire;trigger='每次退场（每场最多三次）';recipient=p.randomAlly?'随机友方':p.faction?FACTIONS[p.faction]+'友方':p.buff?'所有友方':'战场';
-    text=p.coin?`退场时将${p.coin*m}张罗德岛采购券加入装备栏；使用一张可获得一枚金币。`:p.buff?`退场时使${recipient}临时获得${buffText(p.buff)}。`:p.shield?`退场时为${p.randomAlly?`随机${m}名友方`:recipient}各增加${p.shield}层护盾。`:p.damage?`退场时${p.allCombatants?'对场上所有单位':'对一个随机敌人'}造成相当于自身基础攻击${p.damage*100}%的法术伤害${elite?'，触发两次':''}。`:p.fallen?`退场时召回本场最先倒下的${number(p.count)}名${FACTIONS[p.fallen]}友方的原始幻影。`:`退场时召唤${p.attackCount?'按当前攻击成长计算，最多七个':number(p.count)}个${p.random?('随机'+(FACTIONS[p.random]||(p.random==='tier2'?'低本':p.random==='legendary'?'六星':'退场效果'))+'原型'):'作战支援单位'}${p.handCopy?'，并将对应干员的原始复制加入整备区':''}。`;
+    text=p.coin?`退场时将${p.coin*m}张罗德岛采购券加入装备栏；使用一张可获得一枚金币。`:p.buff?`退场时使${recipient}获得${buffText(p.buff)}。`:p.shield?`退场时为${p.randomAlly?`随机${m}名友方`:recipient}各增加${p.shield}层护盾。`:p.damage?`退场时${p.allCombatants?'对场上所有单位':'对一个随机敌人'}造成相当于自身基础攻击${p.damage*100}%的法术伤害${elite?'，触发两次':''}。`:p.fallen?`退场时召回本场最先倒下的${number(p.count)}名${FACTIONS[p.fallen]}友方的原始幻影。`:`退场时召唤${p.attackCount?'按当前攻击成长计算，最多七个':number(p.count)}个${p.random?('随机'+(FACTIONS[p.random]||(p.random==='tier2'?'低本':p.random==='legendary'?'六星':'退场效果'))+'原型'):'作战支援单位'}${p.handCopy?'，并将对应干员的原始复制加入整备区':''}。`;
   } else if(r.buff&&r.event) {
     trigger={summon:'召唤友方支援单位',death:'友方退场',kill:'友方击倒敌人',attack:'友方攻击',attacked:'友方受到攻击',shieldLayersBroken:'友方累计破裂五层护盾'}[r.event];
     recipient={self:'自身',actor:'触发效果的友方',all:'所有友方',adjacentActor:'退场干员附近的友方',adjacentSelf:'自身附近的友方'}[r.target];
-    duration=r.permanent?'本局永久':'本场战斗';text=`${trigger}${r.faction?'（'+FACTIONS[r.faction]+'）':''}${r.requireCover?'（需要坚守盟约）':''}时，使${recipient}${r.permanent?'永久':'临时'}获得${buffText(r.buff)}${r.shield?'及五层护盾':''}。同一效果每三秒触发一次，每场最多二十五次。`;
+    duration=r.permanent?'本局成长':'本场战斗';text=`${trigger}${r.faction?'（'+FACTIONS[r.faction]+'）':''}${r.requireCover?'（需要坚守盟约）':''}时，使${recipient}${r.permanent?'装备'+buffText(r.buff):'获得'+buffText(r.buff)+'的战斗增益'}${r.shield?'及五层护盾':''}。同一效果每三秒触发一次，每场最多二十五次。`;
   } else if(r.event==='damaged')text=`受到伤害后召唤一个携带坚守盟约的机械支援单位${elite?'，支援单位的攻击和生命翻倍':''}；每三秒一次，每场最多七次。`;
   else if(r.summonMultiplier)text=`卡牌效果召唤的支援单位数量变为${number(r.summonMultiplier)}倍；不复制装备或成长。`;
   else if(r.retireMultiplier)text=`友方源卡退场效果触发${number(r.retireMultiplier)}次；不增加其他产出。`;
   else if(r.echo)text=`普通攻击后随机触发另一名在场友方的退场效果${elite?'，随机两次':''}；每六秒一次，每场最多三次。`;
   else if(r.startStrike)text=`首批敌人入场时，随机造成${elite?'两次':'一次'}法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。`;
   else if(r.attackRamp)text=`每次攻击临时提高攻击倍率${elite?30:20}%，最多叠加至额外${elite?300:200}%；同一效果每三秒触发一次。`;
-  else if(r.overkill)text=r.overkill==='spill'?`攻击击倒敌人时，把超过其生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}。`:r.overkill==='strike'?`攻击超杀时对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害。`:r.overkill==='summon'?`攻击超杀时召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}。`:`攻击超杀时使其他维多利亚友方临时获得${buffText(r.buff)}。`;
+  else if(r.overkill)text=r.overkill==='spill'?`攻击击倒敌人时，把超过其生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}。`:r.overkill==='strike'?`攻击超杀时对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害。`:r.overkill==='summon'?`攻击超杀时召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}。`:`攻击超杀时使其他维多利亚友方获得${buffText(r.buff)}。`;
   else if(r.recruitOnKill){duration='整备区';text=`普通攻击击倒敌人后，随机将${elite?2:1}名原始干员加入整备区；每场最多触发一次。`;}
   else if(r.counterattack)text=`受到敌人攻击并存活后立即反击一次；每三秒触发一次，反击不再次触发自身反击。`;
   else if(r.intercept)text=`敌人准备攻击携带坚守盟约的其他友方时，替其承受攻击；需要自身可被该敌人攻击。`;
@@ -109,8 +109,8 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   if(sourceId==='BGS_006') text=`退场时召唤${number(r.retire.count)}名随机六星干员的作战投影。`;
   else if(sourceId==='BGS_008') text=`退场时召唤${number(r.retire.count)}名随机带有退场效果干员的作战投影。`;
   else if(sourceId==='BGS_012') text=`退场时召回本场战斗中最先倒下的${number(r.retire.count)}名哥伦比亚友方干员的作战投影。`;
-  else if(sourceId==='BGS_017') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}；仅本场战斗生效。`;
-  else if(sourceId==='BGS_021') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}与职业副属性徽章×${r.buff[1]*m}；仅本场战斗生效。`;
+  else if(sourceId==='BGS_017') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}的战斗增益。`;
+  else if(sourceId==='BGS_021') text=`战斗中召唤叙拉古支援单位时，该支援单位获得攻击徽章×${r.buff[0]*m}与职业副属性徽章×${r.buff[1]*m}的战斗增益。`;
   else if(sourceId==='BGS_023') text=`退场时召唤${number(r.retire.count)}名随机二星干员的作战投影。`;
   else if(sourceId==='BGS_061') text=`退场时召唤维多利亚作战支援单位${number(r.retire.count)}个；每个攻击${120*m}、生命${350*m}。`;
   else if(sourceId==='BOT_218') text=`受到伤害后召唤一个哥伦比亚机械支援单位（攻击${240*m}、生命${1050*m}），并赋予坚守盟约；每3秒最多触发一次，每场最多7次。`;

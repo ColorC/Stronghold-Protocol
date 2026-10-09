@@ -19,12 +19,12 @@ export const workshopShowcaseNarration = {
     {
       "sourceKey": "native-mechanic-chess_char_1_17_a",
       "key": "workshop-direct-permanent-equipment",
-      "text": "深靛获得的坚守、不屈盟约直接穿在自身，永久保留。它们不是装备栏里的待分配奖励，也不会靠反复撤回重复领取。"
+      "text": "深靛获得坚守、不屈盟约后直接穿戴；它们不是装备栏里的待分配奖励，也不会因反复撤回重复领取。"
     },
     {
       "sourceKey": "native-mechanic-chess_native_char_484_robrta_a",
       "key": "workshop-low-tech-growth",
-      "text": "低科技也能承担成长功能：罗比菈塔每轮休整结束，永久强化另一名队友；自身则用不屈盟约补留场能力。"
+      "text": "低科技也能承担成长功能：罗比菈塔每轮休整结束，强化另一名队友；自身则用不屈盟约补留场能力。"
     },
     {
       "sourceKey": "choice-profile-4",
@@ -44,7 +44,7 @@ export const workshopShowcaseNarration = {
     {
       "sourceKey": "native-mechanic-chess_char_3_08_a",
       "key": "workshop-trait-faction-intersection",
-      "text": "薄绿的触发条件是队友带有获得时效果；受益者却是其他维多利亚。选人要同时看特质和阵营，成长永久保留。"
+      "text": "薄绿的触发条件是队友带有获得时效果；受益者却是其他维多利亚。选人要同时看特质和阵营。"
     },
     {
       "sourceKey": "native-mechanic-chess_char_4_10_a",
@@ -54,12 +54,12 @@ export const workshopShowcaseNarration = {
     {
       "sourceKey": "choice-profile-8",
       "key": "workshop-inventory-prize",
-      "text": "便携锻造站给的是可分配装备，不会立刻强化全队。选锻炉，是为后续每轮积累永久成长。"
+      "text": "便携锻造站给的是可分配装备，不会立刻强化全队。选锻炉，是为后续每轮积累成长。"
     },
     {
       "sourceKey": "equipment-growth-p21-2",
       "key": "workshop-forge-permanent-growth",
-      "text": "锻炉分给薄绿。只有休整结束时她仍在场，才获得攻击、生命徽章；装备产生的成长会一直保留。"
+      "text": "锻炉分给薄绿。只有休整结束时她仍在场，才获得攻击、生命徽章。"
     },
     {
       "sourceKey": "native-mechanic-chess_native_char_4000_jnight_a",
@@ -79,12 +79,12 @@ export const workshopShowcaseNarration = {
     {
       "sourceKey": "equipment-growth-p1-5",
       "key": "workshop-shield-to-summoner",
-      "text": "护盾组件交给刺玫，每场开战获得两层装备护盾。永久持有的是装备，每场重新生成的是护盾层数。"
+      "text": "护盾组件交给刺玫，每场开战获得两层装备护盾。装备持续穿戴，护盾层数每场重新生成。"
     },
     {
       "sourceKey": "native-mechanic-chess_char_2_08_a",
       "key": "workshop-temporary-combat-growth",
-      "text": "泡泡的坚守盟约永久持有；受击联动给附近队友的徽章只在本场生效。整备成长与战斗临时增益分开规划。"
+      "text": "泡泡穿戴坚守盟约；受击联动给附近队友的徽章只在本场生效。整备成长与战斗临时增益分开规划。"
     },
     {
       "sourceKey": "native-mechanic-chess_char_3_15_a",
@@ -99,7 +99,7 @@ export const workshopShowcaseNarration = {
     {
       "at": 551,
       "key": "workshop-build-summary",
-      "text": "这一局先靠招募与休整积累永久成长，后期再补退场放大、受击增益和破盾联动。工坊的构筑重点是让收益形成循环。",
+      "text": "这一局先靠招募与休整积累成长，后期再补退场放大、受击增益和破盾联动。工坊的构筑重点是让收益形成循环。",
       "viewport": {
         "width": 1600,
         "height": 900
