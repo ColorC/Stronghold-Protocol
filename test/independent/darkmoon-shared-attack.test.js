@@ -101,3 +101,56 @@ test('a fresh Battle starts a fresh shared-attack cadence',async()=>{
   assert.equal(recordFor(fresh).cadence.attacked,undefined);assert.equal(recordFor(fresh).uses,0);assert.equal(expectedRecord(fresh.unit),null);
   await advanceShared(fresh,7);assert.equal(recordFor(fresh).uses,0);assert.equal(expectedRecord(fresh.unit),null);
 });
+
+test('native multi-hit force attack damage instances share one attack identity',()=>{
+  const s=sharedScenario({count:1});
+  s.h.run(0.1);
+  const enemy=s.h.enemies()[0];assert.ok(enemy,'actual enemy entity exists');
+  enemy.profile.hits=4;
+  assert.equal(s.b.forceAttack(enemy,[s.front]),true,'invoke the battle attack lifecycle on the actual enemy unit');
+  const entry=recordFor(s),ids=uniqueSharedIds(s);
+  assert.equal(ids.size,1);
+  assert.ok(s.shares.length>1,`${s.shares.length} damage instances notified shared recipients with one attack identity`);
+  assert.equal(entry.cadence.attacked,1,'one attack action advances cadence once despite its four damage instances');
+  assert.equal(entry.attackedAttackIds.size,1);
+});
+
+test('native enemy attack against a covered operator plus another covered share counts once',()=>{
+  const sourceChessId=Object.values(catalog.operators).find(o=>!o.elite&&o.sourceRefs?.darkmoon19_2?.id==='BGS_111')?.chessId;
+  const pieces=[
+    {uid:'mizuki',chessId:sourceChessId,row:10,col:9,equipment:[{id:GEAR,quantity:1}],nativeState:{}},
+    {uid:'front',chessId:ACTORS.front,row:9,col:9,equipment:[],nativeState:{}},
+  ];
+  let installed;
+  const h=makeBattle({stageId:'flat',units:pieces,enemies:[{key:ENEMY,time:0,route:0,count:2,interval:.25}],autoFinish:false,recordEvents:true,extraContent:[b=>{
+    installKeywordGear(b,{catalog,pieces});for(const u of b.allyUnits)u.profile.noAttack=true;
+    installed=installDarkmoonCombat(b,{catalog,pieces,state:{growthMode:'badges'}});
+  }]});
+  const enemy=()=>h.enemies()[0];
+  h.run(0.1);assert.ok(enemy());
+  enemy().profile.melee=false;enemy().profile.maxTargets=2;enemy().base.rangeRadius=1.8;
+  const seen=[];h.b.on('attack',ev=>{if(ev.attacker?.side==='enemy')seen.push({id:ev.attackId,targets:ev.targets.map(t=>t.uid)});});
+  assert.equal(h.runUntil(()=>seen.some(x=>x.targets.includes('front')&&x.targets.includes('mizuki')),20),true,JSON.stringify(seen));
+  const entry=installed.entries.find(x=>x.id==='BGS_111');
+  assert.equal(entry.cadence.attacked,1,'direct and shared reports from the same actual enemy attack share one attackId');
+  assert.equal(entry.attackedAttackIds.size,1);
+});
+
+test('BGS110, BGS201 and BGS060 retain their recipients/counter when shared damage qualifies',async()=>{
+  const actorBuff=sharedScenario({sourceId:'BGS_110',count:8});
+  await advanceShared(actorBuff,8);
+  assert.equal(recordFor(actorBuff,'BGS_110').uses,1);
+  assert.ok(firstTemp(actorBuff.unit,'BGS_110'),'BGS110 keeps the attacked covered unit as its buff target');
+
+  const adjacentBuff=sharedScenario({sourceId:'BGS_201',count:8});
+  await advanceShared(adjacentBuff,8);
+  assert.equal(recordFor(adjacentBuff,'BGS_201').uses,1);
+  assert.ok(firstTemp(adjacentBuff.honey,'BGS_201'),'BGS201 keeps its adjacent-self recipient');
+
+  const counter=sharedScenario({sourceId:'BGS_060',count:8});
+  counter.unit.profile.noAttack=false;
+  await advanceShared(counter,8);
+  counter.h.runUntil(()=>counter.installations.darkmoon.trace.some(x=>x.kind==='counterattack'),1);
+  assert.ok(counter.installations.darkmoon.trace.some(x=>x.kind==='counterattack'),'BGS060 still counterattacks at its native cadence after shared attacks');
+  assert.equal(counter.b.errorCount,0,JSON.stringify(counter.b.errors));
+});
