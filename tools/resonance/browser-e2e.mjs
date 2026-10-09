@@ -408,6 +408,16 @@ async function waitForAny(page, selectors, timeout = 30_000) {
 async function visible(handle) {
   return !!handle && handle.evaluate((el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden'; }).catch(() => false);
 }
+async function visibleInViewport(handle) {
+  return !!handle && handle.evaluate((el) => {
+    const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+    if (!(r.width > 0 && r.height > 0) || s.display === 'none' || s.visibility === 'hidden') return false;
+    const x = Math.max(0, Math.min(innerWidth - 1, r.left + r.width / 2));
+    const y = Math.max(0, Math.min(innerHeight - 1, r.top + r.height / 2));
+    const top = document.elementFromPoint(x, y);
+    return r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth && (top === el || el.contains(top));
+  }).catch(() => false);
+}
 async function enabled(handle) { return !!handle && handle.evaluate((el) => !el.disabled).catch(() => false); }
 async function textOf(handle) { return handle?.evaluate((el) => el.innerText || el.textContent || '').catch(() => '') || ''; }
 async function selectOption(handle, value) { return handle.select(String(value)); }
@@ -462,8 +472,10 @@ async function leaveToOpening(page) {
 async function clickEnabled(page, selector, label) {
   const list = await page.$$(selector);
   for (const el of list) {
+    if (label && !(await textOf(el)).includes(label)) continue;
     if (await visible(el) && await enabled(el)) {
-      if (label && !(await textOf(el)).includes(label)) continue;
+      await el.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+      if (!await visibleInViewport(el)) continue;
       await el.click(); return true;
     }
   }
@@ -1045,6 +1057,16 @@ async function installWorkshopBearerScope(page, workshopUrl) {
   };
 }
 async function chooseNativeFieldAction(page, currentState) {
+  const fieldHost = await page.$('.rs-field__canvas');
+  assert(fieldHost, 'native field canvas host is missing');
+  await fieldHost.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
+  await page.waitForFunction(() => {
+    const el = document.querySelector('.rs-field__canvas');
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+  }, { timeout: 10_000 });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 15_000 }).catch(() => {});
   await page.waitForFunction(() => {
     const v = globalThis.__SP_VIEW__;
@@ -1066,6 +1088,7 @@ async function chooseNativeFieldAction(page, currentState) {
   if (view?.hasGeometry && usableUnits.length) {
     const piece = usableUnits[0];
     const sessionId = new URL(page.url()).searchParams.get('session');
+    const beforeDragRevision = currentState.revision;
     let tile = (piece.legalTiles[1] || piece.legalTiles[0]).split(',').map(Number);
     const geometry = await page.evaluate(({ uid, row, col }) => {
       const view = globalThis.__SP_VIEW__;
@@ -1110,18 +1133,50 @@ async function chooseNativeFieldAction(page, currentState) {
         await page.waitForFunction(() => !document.querySelector('.fwheel[role="dialog"]'), { timeout: 10_000 });
       }
       let authoritative = await stateOf(page, sessionId);
+      if (wheelOpened) {
+        try {
+          authoritative = await waitState(page, sessionId, (next) => {
+            const candidate = next.pieces.find((entry) => entry.uid === piece.uid);
+            return next.revision > beforeDragRevision && candidate?.row === tile[0] && candidate?.col === tile[1] && candidate?.dir === 'RIGHT';
+          }, 10_000);
+        } catch (error) {
+          authoritative = await stateOf(page, sessionId);
+          const current = authoritative.pieces.find((candidate) => candidate.uid === piece.uid);
+          if (current?.row == null || current.row !== tile[0] || current.col !== tile[1] || current.dir !== 'RIGHT') {
+            return { fieldKind, rendererVisible, view, deployed: false, directions: [], failure: `wheel closed but deploy was not confirmed by session: ${error.message}`,
+              target: tile, beforeRevision: beforeDragRevision, authoritative: { revision: authoritative.revision, piece: current }, dragGeometry: geometry, dragEvents };
+          }
+        }
+      }
       let placed = authoritative.pieces.find((candidate) => candidate.uid === piece.uid);
       const tileMatches = placed?.row === tile[0] && placed?.col === tile[1];
       if (!wheelOpened || !placed || placed.row == null) return { fieldKind, rendererVisible, view, deployed: false, directions: [],
-        failure: !wheelOpened ? 'pointer drag did not open the FacingWheel' : 'wheel commit did not update authoritative row/col' };
+        failure: !wheelOpened ? 'pointer drag did not open the FacingWheel' : 'wheel commit did not update authoritative row/col',
+        target: tile, beforeRevision: beforeDragRevision, authoritative: { revision: authoritative.revision, piece: placed }, dragGeometry: geometry, dragEvents };
       const directions = [];
       const openWheelOnCurrentTile = async () => {
+        const viewUid = Number(String(piece.uid).replace(/^\D+/, ''));
+        await page.waitForFunction(({ row, col, uid }) => {
+          const view = globalThis.__SP_VIEW__, point = view?.tileScreen(row, col), hit = point && view?.pieceAtClient?.(point.x, point.y);
+          return hit?.uid === uid && hit?.area === 'board';
+        }, { timeout: 8_000 }, { row: placed.row, col: placed.col, uid: viewUid });
         const point = await page.evaluate(({ row, col }) => globalThis.__SP_VIEW__?.tileScreen(row, col), { row: placed.row, col: placed.col });
         assert(point, `no rendered tile for ${piece.uid} at ${placed.row},${placed.col}`);
+        const priorEvents = await page.evaluate(({ x, y }) => {
+          const view = globalThis.__SP_VIEW__;
+          globalThis.__resonanceWheelEvents ||= [];
+          for (const name of ['pieceDragStart', 'pieceDrop', 'pieceDragEnd']) view?.on?.(name, event => {
+            globalThis.__resonanceWheelEvents.push({ name, uid: event?.uid, from: event?.from, target: event?.target, dropped: event?.dropped });
+          });
+          return { picked: view?.pieceAtClient?.(x, y) || null, hit: (() => { const el = document.elementFromPoint(x, y); return el ? { tag: el.tagName, className: String(el.className?.baseVal ?? el.className ?? ''), pointerEvents: getComputedStyle(el).pointerEvents } : null; })(),
+            eventCount: globalThis.__resonanceWheelEvents.length };
+        }, { x: point.x, y: point.y });
+        assert(priorEvents.picked?.uid === viewUid, `current tile hit test mismatch for ${piece.uid}: ${JSON.stringify({ point, viewUid, picked: priorEvents.picked, hit: priorEvents.hit })}`);
         await page.mouse.move(point.x, point.y); await page.mouse.down();
         await page.mouse.move(point.x + 12, point.y, { steps: 2 }); await page.mouse.move(point.x, point.y, { steps: 2 }); await page.mouse.up();
         const nextWheel = await page.waitForSelector('.fwheel[role="dialog"]', { timeout: 5_000 }).catch(() => null);
-        assert(nextWheel, `dragging ${piece.uid} onto its current tile did not open FacingWheel`);
+        const observed = await page.evaluate((start) => (globalThis.__resonanceWheelEvents || []).slice(start), priorEvents.eventCount);
+        assert(nextWheel, `dragging ${piece.uid} onto its current tile did not open FacingWheel: ${JSON.stringify({ point, picked: priorEvents.picked, events: observed })}`);
       };
       for (const dir of ['UP', 'RIGHT', 'DOWN', 'LEFT']) {
         if (placed?.dir !== dir) {
@@ -1144,6 +1199,8 @@ async function chooseNativeFieldAction(page, currentState) {
         deployMethod, wheelOpened, dragGeometry: geometry, facingGeometry, dragEvents };
     }
   }
+  if (view?.kind === 'engine') return { fieldKind, rendererVisible, view, deployed: false, directions: [],
+    failure: 'native view supplied no exact UID hit point for pointer drag; do not substitute card-click deployment' };
   if (usableUnits.length) {
     // The explicit unit card is part of the real UI; its first legal cell deploys it.
     const piece = usableUnits[0];
@@ -1193,11 +1250,16 @@ async function runUiInteractionCheck(sessionId) {
       '--disable-background-networking', '--window-size=1440,1000'] });
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+  await browser.defaultBrowserContext().overridePermissions(server.url, ['clipboard-read', 'clipboard-write']);
   const url = entryUrl(server, { session: sessionId });
   const evidence = { sessionId, url, actions: [] };
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await waitGame(page);
+    for (const sectionId of ['field', 'shop', 'equipment']) {
+      evidence.actions.push({ kind: 'section-deep-link', ...await verifySectionDeepLink(page, sectionId, sessionId) });
+    }
+    evidence.actions.push({ kind: 'section-deep-link', ...await verifySectionDeepLink(page, 'field', sessionId), finalBeforeDrag: true });
     let initial = await stateOf(page, sessionId);
     if (!initial.pieces.some(piece => piece.row == null)) {
       const piece = initial.pieces.find(candidate => candidate.row != null);
@@ -1242,6 +1304,7 @@ async function runUiInteractionCheck(sessionId) {
 
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await waitGame(page);
+    evidence.actions.push({ kind: 'section-deep-link', ...await verifySectionDeepLink(page, 'shop', sessionId), beforeShopActions: true });
     const beforeLock = await stateOf(page, sessionId);
     assert(await clickEnabled(page, '#rs-section-shop button', '锁定'), 'shop lock button is not clickable');
     const locked = await waitState(page, sessionId, next => next.shop.locked && next.revision > beforeLock.revision);

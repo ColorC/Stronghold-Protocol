@@ -14,6 +14,7 @@ import { validateSession } from '../../server/modes/resonance/session.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const DEADLINE_MS = 8 * 60 * 1000;
+let scenarioHelpers = null;
 const POOL_COPIES = Object.freeze({ 1: 30, 2: 25, 3: 18, 4: 10, 5: 9 });
 const STAR_COPIES = Object.freeze({ 1: 1, 2: 3, 3: 9 });
 const HELP = `Usage: node tools/resonance/capacity.mjs --data-dir ABS --session-dir ABS --receipt ABS --source-revision GIT_REF [options]
@@ -215,6 +216,14 @@ function prepareTerminalFixture({ data, catalog, envId, seed, state }) {
   };
 }
 
+export async function loadScenarioHelpers() {
+  if (!scenarioHelpers) scenarioHelpers = await import('./archetype-balance.mjs');
+  for (const name of ['SCENARIO_CONFIGS', 'buildScenario', 'makePactTerminalRoster']) {
+    if (!(name in scenarioHelpers)) throw new Error(`terminal scenario helper export missing: ${name}`);
+  }
+  return scenarioHelpers;
+}
+
 function percentile(values, fraction) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -247,7 +256,7 @@ async function main() {
     throw new Error('receipt must be outside source and canonical data trees');
   await ensureEmptySessionDir(sessionDir);
   process.env.SP_DATA_DIR = dataDir;
-  scenarioHelpers = await import('./archetype-balance.mjs');
+  await loadScenarioHelpers();
   const sourceProvenance = await resolveSourceRevision(options.sourcerevision, options.releasereceipt);
   const sourceRevision = sourceProvenance.revision;
   const data = loadData(dataDir, { log: { warn() {}, error() {}, info() {} } });
