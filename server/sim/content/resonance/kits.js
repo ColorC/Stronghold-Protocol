@@ -167,19 +167,38 @@ function robertaMachineTalent() {
   const hasDefenseBuff = (unit) => unit.buffs.some((buff) =>
     buff.key.startsWith('native:robrta:def:') || buff.key.startsWith('resonance:robrta:def:'));
   return { install(battle, owner) {
+    const isMachine = (token) => token?.kind === 'token' && token.defId === tokenId && token.ownerUnit === owner;
+    const record = (kind, token, extra = {}) => {
+      battle.resonanceMetric?.(`triggers.roberta_machine_${kind}`);
+      const results = battle.resonanceResults ??= { growth: [], coins: [], forge: [] };
+      const events = results.robertaMachines ??= [];
+      events.push({ kind, time: battle.time, ownerUid: owner.uid ?? null, tokenUid: token?.uid ?? null, ...extra });
+    };
+    const clearMachineBuffs = (token) => {
+      if (!token) return;
+      for (const ally of battle.alliesFor(owner)) {
+        for (const buff of [...ally.buffs]) {
+          if (buff.key === `native:robrta:def:${token.id}` || buff.key === `native:robrta:shield:${token.id}`) battle.removeBuff(ally, buff);
+        }
+      }
+    };
+    const configureMachine = (token) => {
+      if (!isMachine(token)) return;
+      if (token.profile) { token.profile.noAttack = true; token.profile.maxTargets = 0; token.profile.noHeal = true; }
+      battle.addBuff(token, {
+        key: 'trait:untargetable', flags: { untargetable: true, invulnerable: true, noHeal: true }, persist: true, allowDead: true, tags: ['talent'],
+      });
+    };
     const applyMachine = (token) => {
       if (token?.kind !== 'token' || token.defId !== tokenId || token.ownerUnit !== owner) return;
-      if (token.profile) { token.profile.noAttack = true; token.profile.maxTargets = 0; }
-      if (!token.findBuff('trait:untargetable')) battle.addBuff(token, {
-        key: 'trait:untargetable', flags: { untargetable: true }, persist: true, allowDead: true, tags: ['talent'],
-      });
+      configureMachine(token);
       if (token.mem.nativeRobertaApplied || !token.alive || !token.deployed) return;
       const effect = token.def?.talents?.[0]?.bb ?? token.def?.raw?.talents?.[0]?.bb ?? {};
       const defPct = numeric(effect.def, 0), duration = numeric(effect.duration, 0);
       if (!(defPct > 0 && duration > 0)) return;
       const range = new Set(absoluteRangeKeys(token.def?.rangeGrid ?? token.rangeGrid ?? [[0, 0]], token.tileR, token.tileC, token.dir, 0));
       const target = battle.alliesFor(owner)
-        .filter((unit) => unit.kind === 'op' && unit !== owner && unit.alive && unit.deployed
+        .filter((unit) => unit.kind === 'op' && unit.alive && unit.deployed
           && (unit.def?.position ?? unit.def?.raw?.position) === 'MELEE'
           && range.has(unit.tileR * COLS + unit.tileC) && !hasDefenseBuff(unit))
         .sort((a, b) => a.id - b.id)[0];
@@ -191,13 +210,85 @@ function robertaMachineTalent() {
       battle.addBuff(target, {
         key: `native:robrta:shield:${token.id}`, duration, source: owner, shieldHits: 1, visible: true, tags: ['talent'],
       });
+      record('support', token, { targetUid: target.uid ?? null, defPct, duration, shieldHits: 1 });
     };
-    battle.on('deploy', ({ unit }) => {
-      if (unit?.kind !== 'token' || unit.defId !== tokenId || unit.ownerUnit !== owner) return;
+    const anchor = () => battle.allyUnits.find(isMachine) ?? null;
+    const talentCount = (token) => {
+      const ownerTalent = owner.def?.talents?.[0]?.bb ?? owner.def?.raw?.talents?.[0]?.bb ?? {};
+      const nativeCount = Number(ownerTalent.cnt ?? token?.def?.count ?? token?.def?.raw?.count ?? 0);
+      const stack = Number(token?.def?.raw?.stats?.deckStack ?? token?.def?.deckStack ?? nativeCount);
+      return Math.max(0, Math.min(Math.floor(nativeCount), Math.floor(stack)));
+    };
+    const detachOwnerMachines = () => {
+      const token = anchor();
+      owner.mem.resonanceRobertaNeedsRefill = true;
+      if (!token) return;
+      clearMachineBuffs(token);
+      token.mem.nativeRobertaApplied = null;
+      if (token.alive && token.deployed) battle.retreat(token, { reason: 'resonanceRobertaOwnerLeft' });
+    };
+    battle.on('deploy', ({ unit, initial }) => {
+      if (unit === owner) {
+        if (initial || owner.mem.resonanceRobertaNeedsRefill) {
+          owner.mem.resonanceRobertaStock = talentCount(anchor());
+          owner.mem.resonanceRobertaNeedsRefill = false;
+          record('stock_refill', anchor(), { stock: owner.mem.resonanceRobertaStock });
+        }
+        return;
+      }
+      if (!isMachine(unit)) return;
+      configureMachine(unit);
+      unit.mem.resonanceRobertaPaidRedeploys ??= 0;
+      unit.mem.resonanceRobertaLastDeployAt = battle.time;
+      unit.mem.resonanceRobertaLifeUntil = battle.time + numeric(unit.def?.talents?.[0]?.bb?.duration, 25);
       applyMachine(unit);
-      battle.every(0.25, () => applyMachine(unit), { owner: unit, immediate: true });
+      if (initial && !unit.mem.resonanceRobertaInitialCounted) {
+        unit.mem.resonanceRobertaInitialCounted = true;
+        owner.mem.resonanceRobertaStock = Math.max(0, (Number(owner.mem.resonanceRobertaStock) || 0) - 1);
+        record('stock_spent', unit, { dpCost: 0, stock: owner.mem.resonanceRobertaStock, freeAnchor: true });
+      }
+      record('deployed', unit, { initial: !!initial, lifeSeconds: numeric(unit.def?.talents?.[0]?.bb?.duration, 25), stock: owner.mem.resonanceRobertaStock ?? 0 });
     }, { owner });
-    for (const token of battle.allyUnits.filter((unit) => unit.kind === 'token' && unit.defId === tokenId && unit.ownerUnit === owner)) applyMachine(token);
+    battle.on('retreating', ({ unit }) => { if (unit === owner) detachOwnerMachines(); }, { owner });
+    battle.on('death', ({ unit }) => {
+      if (unit === owner) { detachOwnerMachines(); return; }
+      if (!isMachine(unit)) return;
+      if (unit.removeReason === 'resonanceRobertaOwnerLeft') clearMachineBuffs(unit);
+      unit.mem.nativeRobertaApplied = null;
+      // `_remove` marks tokens permanently removed. Keep this one anchor through its native death/retreat lifecycle so
+      // Battle.redeploy can charge the token's native five DP when the owner has stock again.
+      unit.removed = false;
+      record(unit.removeReason === 'resonanceRobertaExpired' ? 'expired' : 'withdrawn', unit, { reason: unit.removeReason });
+    }, { owner });
+    battle.every(0.25, () => {
+      const token = anchor();
+      if (!token) return;
+      configureMachine(token);
+      if (!owner.alive || !owner.deployed) {
+        if (token.alive && token.deployed) detachOwnerMachines();
+        return;
+      }
+      if (token.alive && token.deployed) {
+        applyMachine(token);
+        if (battle.time + 1e-9 >= numeric(token.mem.resonanceRobertaLifeUntil, Infinity)) {
+          battle.retreat(token, { reason: 'resonanceRobertaExpired' });
+        }
+        return;
+      }
+      const stock = Math.max(0, Math.floor(Number(owner.mem.resonanceRobertaStock) || 0));
+      const lastDeploy = Number(token.mem.resonanceRobertaLastDeployAt ?? 0);
+      const cooldown = Math.max(0, numeric(token.base?.respawnTime, 15));
+      if (stock <= 0 || battle.time - lastDeploy < cooldown - 1e-9) return;
+      if (battle.redeploy(token, { free: false, tile: [token.homeR, token.homeC] })) {
+        owner.mem.resonanceRobertaStock = stock - 1;
+        token.mem.resonanceRobertaPaidRedeploys = (token.mem.resonanceRobertaPaidRedeploys ?? 0) + 1;
+        record('stock_spent', token, { dpCost: token.base.cost, stock: owner.mem.resonanceRobertaStock });
+      }
+    }, { owner });
+    battle.on('shieldLayersBroken', ({ unit, buff }) => {
+      if (buff?.key?.startsWith('native:robrta:shield:') && buff.source === owner && unit?.kind === 'op') record('shield_consumed', anchor(), { targetUid: unit.uid ?? null, layers: 1 });
+    }, { owner });
+    for (const token of battle.allyUnits.filter(isMachine)) configureMachine(token);
   }};
 }
 function numeric(v, fallback) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
@@ -228,7 +319,8 @@ export function createResonanceKits(catalog, state, data) {
       let picked = authoredSpec(resolved, selectedId, native) ?? signatureKit(op, recordForStar(op, state, resolved), star);
       if(yelaPermanent&&star>=3){picked??=nativeKit.skills?.[selectedId]??nativeKit.skill;if(picked)picked={...picked,duration:-1,tags:[...(picked.tags??[]),'resonanceYelaPermanent']};}
       if (!picked) return nativeKit;
-      const talents=[...(nativeKit.talents??[]),...(picked.talents??[]),...(op.charId==='char_484_robrta'?[robertaMachineTalent()]:[])].filter((t,i,a)=>a.findIndex(x=>x===t||(typeof t?.install==='function'&&x?.install===t.install))===i);
+      const inheritedTalents = op.charId === 'char_484_robrta' ? [] : (nativeKit.talents ?? []);
+      const talents=[...inheritedTalents,...(picked.talents??[]),...(op.charId==='char_484_robrta'?[robertaMachineTalent()]:[])].filter((t,i,a)=>a.findIndex(x=>x===t||(typeof t?.install==='function'&&x?.install===t.install))===i);
       return { ...nativeKit, ...(talents.length?{talents}:{}), skills: { ...(nativeKit.skills ?? {}), [selectedId]: picked }, skill: picked };
     };
   }
