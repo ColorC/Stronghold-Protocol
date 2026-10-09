@@ -104,6 +104,31 @@ test('shield growth needs five broken layers, shares the native shield concept, 
   b.dealDamage(enemy,ally,{amount:1,type:'true',isAttack:true});
   assert.equal(installed.trace.length,1);assert.ok(unit.s.atk>unit.base.atk);
 });
+
+test('Golden Oath detail reports the installed true-damage kit and the actor deals true damage', () => {
+  const data = getData();
+  const source = new DataSource(data);
+  const ownerId = 'chess_char_6_07_a';
+  const tokenId = 'token_10040_siege2_vlion';
+  const h = makeBattle({ data: source, content: 'full', autoFinish: false,
+    units: [{ chessId: ownerId, row: 10, col: 5 }],
+    enemies: [{ key: 'probe', time: 0, pos: [10, 7] }],
+    defs: { enemies: { probe: enemyRec({ key: 'probe', hp: 10000, atk: 0, def: 1000, speed: 0 }) } },
+  });
+  h.run(0.1);
+  const owner = h.unit(ownerId);
+  assert.ok(owner, 'the real Vina operator is deployed');
+  const token = h.b.spawnToken(owner, tokenId, 10, 6, { anySource: true });
+  assert.ok(token, 'the actual Golden Oath token spawns');
+  assert.equal(token.profile?.dmgType, 'true', 'the installed native token kit overrides the static physical token record');
+  const detail = unitInfo(token).runtimeDetail;
+  assert.equal(detail.damageType, token.profile.dmgType, 'snapshot detail follows the effective runtime profile');
+  const enemy = h.enemy('probe');
+  const before = enemy.hp;
+  h.b.forceAttack(token, [enemy]);
+  assert.equal(before - enemy.hp, token.s.atk, 'the actual attack ignores the probe’s high physical defense as true damage');
+  assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors));
+});
 test('Khadgar leaves native summons alone and multiplies only Workshop projections',()=>{
   const {b,unit}=fixture('DAL_575',false,['DAL_575']);
   const before=b.allyUnits.filter(u=>u.kind==='token').length;

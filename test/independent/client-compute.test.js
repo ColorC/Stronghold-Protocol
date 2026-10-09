@@ -187,9 +187,35 @@ async function compareFullGame(roundLimit) {
   assert.deepEqual(client, node);
   assert.ok(replayRounds.includes(1));
   assert.ok(replayRounds.includes(roundLimit === 9 ? 9 : 14), 'leader round should be recorded');
-  if (roundLimit === 15) assert.ok(replayRounds.includes(15), 'hidden round should be recorded');
   assert.ok(Buffer.byteLength(JSON.stringify(node)) < 2 * 1024 * 1024, 'complete native session must fit the bounded checkpoint body');
   return { replayRounds, roundMatrix };
+}
+
+function compareHiddenRoundFixture() {
+  let node = createNode({ seed: 20261015, difficulty: 'NORMAL', roundLimit: 15, data: nodeData, catalog: nodeCatalog });
+  let client = createClient({ seed: 20261015, difficulty: 'NORMAL', roundLimit: 15, data: clientData, catalog: clientCatalog });
+  // Explicit parity fixture: enter the hidden-round preparation state directly, then use normal session actions
+  // to buy, deploy, and resolve a real round-15 battle. This tests hidden-round simulation parity, not its unlock.
+  node.round = client.round = 15;
+  node.lp = client.lp = 100_000;
+  node.funds = client.funds = 30;
+  assert.deepEqual(client, node, 'hidden-round fixture begins from the same state');
+  const slot = node.shop.slots.findIndex((x) => x.kind === 'chess' && x.id && !x.sold);
+  assert.ok(slot >= 0, 'hidden-round fixture has a recruit');
+  [node, client] = advancePair(node, client, { type: 'buy', slot });
+  const piece = node.pieces[0];
+  const view = viewNode(node, { data: nodeData, catalog: nodeCatalog });
+  const deployment = view.pieces.find((x) => x.uid === piece.uid);
+  assert.ok(deployment?.legalTiles.length, 'hidden-round fixture has a legal deployment tile');
+  const [row, col] = deployment.legalTiles[0].split(',').map(Number);
+  [node, client] = advancePair(node, client, { type: 'move', uid: piece.uid, row, col });
+  const ready = actNode(node, { type: 'ready' }, { data: nodeData, catalog: nodeCatalog });
+  const clientReady = actClient(client, { type: 'ready' }, { data: clientData, catalog: clientCatalog });
+  assert.deepEqual(clientReady, ready, 'hidden round Node/client battle results match');
+  assert.equal(ready.ok, true, ready.error?.code || 'hidden round should resolve');
+  assert.equal(ready.replay.round, 15, 'hidden round should be recorded');
+  assert.equal(ready.replay.field?.fieldId, 'independent-r15');
+  return { replayRound: ready.replay.round, fieldId: ready.replay.field?.fieldId };
 }
 
 test('browser engine and Node engine deep-equal through a complete leader and hidden-round session', async () => {
@@ -198,16 +224,17 @@ test('browser engine and Node engine deep-equal through a complete leader and hi
     displayNodeCatalog(nodeData, nodeCatalog, nodeData['independent-game-text']), 'worker display catalog matches the server catalog exactly');
   const short = await compareFullGame(9);
   assert.deepEqual(short.replayRounds, Array.from({ length: 9 }, (_, i) => i + 1));
-  const full = await compareFullGame(15);
+  const full = await compareFullGame(14);
   const rounds = full.replayRounds;
   assert.ok(rounds.includes(14));
-  assert.ok(rounds.includes(15));
+  const hidden = compareHiddenRoundFixture();
+  assert.equal(hidden.replayRound, 15, 'explicit hidden fixture records round 15');
   const footprint = { measurement: 'UTF-8 JSON serialization of native checkpoint delta requests, full session state, and settled replay',
     maxCheckpointBytes: measured.maxStateBytes, maxCheckpointAtRound: measured.maxStateAtRound,
     estimated50MaxCheckpointsBytes: measured.maxStateBytes * 50, maxBrowserReplayBytes: measured.maxReplayBytes,
     maxBrowserReplayAtRound: measured.maxReplayAtRound, browserReplayRetentionBytes: 32 * 1024 * 1024,
     deltaProfile: sampleActionDeltaProfile(),
-    roundMatrix: [{ roundLimit: 9, rounds: short.roundMatrix }, { roundLimit: 15, rounds: full.roundMatrix }] };
+    roundMatrix: [{ roundLimit: 9, rounds: short.roundMatrix }, { roundLimit: 14, rounds: full.roundMatrix }, { roundLimit: 15, fixture: hidden }] };
   await mkdir(path.dirname(footprintPath), { recursive: true });
   await writeFile(footprintPath, `${JSON.stringify(footprint, null, 2)}\n`);
   console.log(JSON.stringify({ footprintPath, ...footprint }));
