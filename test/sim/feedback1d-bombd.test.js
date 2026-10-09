@@ -76,6 +76,7 @@ describe('D4 暴鸰: the bomb leaves the drone and lands', () => {
     assert.equal(atk.length, 1, 'exactly one drop (and never a normal attack)');
     const [relT, relEv] = atk[0];
     assert.equal(relEv[3], 'droneBomb', 'drawn as the drone\'s bomb');
+    assert.deepEqual(relEv.slice(4), [0, 1], 'ability cast event has no attack id; impact damage is reported separately');
     assert.ok(Math.abs(relT - castAt - RELEASE) < 1e-6, `released ${(relT - castAt).toFixed(3)} s after the trigger (OnAttack, frame 8 of the Attack clip)`);
     const phase = log.find(([, ev]) => ev[0] === 'fx' && ev[1] === 'phase');
     assert.ok(phase && phase[1][4].kind === 'bombed' && Math.abs(phase[0] - relT) < 1e-9, 'the bomb has left the drone: its bomb-less mode from the release');
