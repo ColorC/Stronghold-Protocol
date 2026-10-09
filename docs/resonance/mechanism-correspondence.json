@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "title": "共鸣模式机制对应与适配说明",
   "bootstrapComplete": true,
-  "generatedAt": "2026-10-09T19:44:54.238Z",
+  "generatedAt": "2026-10-09T19:46:00.225Z",
   "boundary": {
     "rulesVersion": 2,
     "activeOperatorIds": [
@@ -2358,6 +2358,18 @@
           }
         },
         "refs": [
+          {
+            "game": "卫戍协议原生本体",
+            "version": "4ed1ad32ec10da15c23f9d7939dade603950759b",
+            "recordID": "skchr_inside_2",
+            "parentJsonPointer": "/chess_char_1_01_a",
+            "parentRecordID": "隐现",
+            "subjectRecordID": "chess_char_1_01_a",
+            "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
+            "jsonPointer": "/chess_char_1_01_a/skills/1",
+            "sourceURL": null,
+            "nativeGit": "4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json#/chess_char_1_01_a/skills/1"
+          },
           {
             "game": "卫戍协议原生本体",
             "version": "4ed1ad32ec10da15c23f9d7939dade603950759b",
@@ -11131,6 +11143,18 @@
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_17_a/skills/2",
             "sourceURL": null,
+            "nativeGit": "4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json#/chess_char_6_17_a/skills/2"
+          },
+          {
+            "game": "卫戍协议原生本体",
+            "version": "4ed1ad32ec10da15c23f9d7939dade603950759b",
+            "recordID": "skchr_nearl2_3",
+            "parentJsonPointer": "/chess_char_6_17_a",
+            "parentRecordID": "耀骑士临光",
+            "subjectRecordID": "chess_char_6_17_a",
+            "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
+            "jsonPointer": "/chess_char_6_17_a/skills/2",
+            "sourceURL": null,
             "nativeGit": "4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_6_17_a/skills/2",
             "sourceMechanism": "在周围四格可部署地面召唤一把\"耀阳\"对周围敌人造成90%耀骑士临光攻击力的真实伤害并晕眩3秒，自身攻击范围扩大，攻击力+70%、防御力+40%，攻击自身与\"耀阳\"阻挡的单位时伤害类型变为真实"
           }
@@ -11645,7 +11669,7 @@
         "refs": [
           {
             "game": "Dota Auto Chess",
-            "version": "Drodo 原版 Dota 自走棋完整参考输入",
+            "version": "8dde7071e6f07d1b5bbe3d415bcf4ef0a6a18b8e",
             "recordID": "is_naga",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\docs\\resonance\\reference\\dota-current.json",
             "jsonPointer": "/synergies/19",
@@ -11659,12 +11683,22 @@
             "recordID": "skchr_rmixer_3",
             "parentJsonPointer": "/chess_char_4_01_a",
             "parentRecordID": "信仰搅拌机",
-            "subjectRecordID": "skchr_rmixer_3",
+            "subjectRecordID": "chess_char_4_01_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_01_a/skills/2",
             "sourceURL": null,
             "nativeGit": "4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_01_a/skills/2",
             "sourceMechanism": "技能开启时为所有其他【拉特兰】干员补弹2发；攻击范围扩大，生命上限+35%，攻击力+140%，防御力+35%，停止主动攻击敌人，受到攻击时立即向攻击范围内最多3个敌人进行1次反击，反击最小间隔为实际攻击间隔的60%\n攻击装有30发弹药，打完后结束（可随时停止技能）"
+          },
+          {
+            "game": "Dota Auto Chess",
+            "version": "Drodo 原版 Dota 自走棋完整参考输入",
+            "recordID": "is_naga",
+            "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\docs\\resonance\\reference\\dota-current.json",
+            "jsonPointer": "/synergies/19",
+            "sourceURL": "https://github.com/QFunnn/dota2-customs/blob/8dde7071e6f07d1b5bbe3d415bcf4ef0a6a18b8e/scripts/vscripts/addon_game_mode.lua",
+            "sourceCommit": "8dde7071e6f07d1b5bbe3d415bcf4ef0a6a18b8e",
+            "sourceMechanism": "<h1>种族技能：鳞甲</h1><font color=\"#656585\">需要己方场上有至少（N）个不同的此种族的棋子来触发效果（触发的多层效果可以叠加）。</font><br><br>（2）娜迦：所有友军的魔法抗性+15%%。<br>（4）娜迦：所有友军的魔法抗性+35%%。<br>（6）娜迦：所有友方娜迦棋子获得效果：每次受到非纯粹伤害时，会反弹（自身魔法抗性×1.5）点纯粹伤害。"
           }
         ],
         "nativeReferences": [
@@ -11674,7 +11708,7 @@
             "recordID": "skchr_rmixer_3",
             "parentJsonPointer": "/chess_char_4_01_a",
             "parentRecordID": "信仰搅拌机",
-            "subjectRecordID": "skchr_rmixer_3",
+            "subjectRecordID": "chess_char_4_01_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_01_a/skills/2",
             "sourceURL": null,
@@ -12384,7 +12418,7 @@
             "recordID": "skchr_ironmn_2",
             "parentJsonPointer": "/chess_native_char_4072_ironmn_a",
             "parentRecordID": "白铁",
-            "subjectRecordID": "skchr_ironmn_2",
+            "subjectRecordID": "chess_native_char_4072_ironmn_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_native_char_4072_ironmn_a/skills/1",
             "sourceURL": null,
@@ -12399,7 +12433,7 @@
             "recordID": "skchr_ironmn_2",
             "parentJsonPointer": "/chess_native_char_4072_ironmn_a",
             "parentRecordID": "白铁",
-            "subjectRecordID": "skchr_ironmn_2",
+            "subjectRecordID": "chess_native_char_4072_ironmn_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_native_char_4072_ironmn_a/skills/1",
             "sourceURL": null,
@@ -13177,7 +13211,7 @@
             "recordID": "skchr_skadi2_3",
             "parentJsonPointer": "/chess_char_6_04_a",
             "parentRecordID": "浊心斯卡蒂",
-            "subjectRecordID": "skchr_skadi2_3",
+            "subjectRecordID": "chess_char_6_04_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_04_a/skills/2",
             "sourceURL": null,
@@ -13226,7 +13260,7 @@
             "recordID": "skchr_skadi2_3",
             "parentJsonPointer": "/chess_char_6_04_a",
             "parentRecordID": "浊心斯卡蒂",
-            "subjectRecordID": "skchr_skadi2_3",
+            "subjectRecordID": "chess_char_6_04_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_04_a/skills/2",
             "sourceURL": null,
@@ -13685,7 +13719,7 @@
             "recordID": "skchr_yu_3",
             "parentJsonPointer": "/chess_char_6_03_a",
             "parentRecordID": "余",
-            "subjectRecordID": "skchr_yu_3",
+            "subjectRecordID": "chess_char_6_03_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_03_a/skills/2",
             "sourceURL": null,
@@ -13708,7 +13742,7 @@
             "recordID": "skchr_yu_3",
             "parentJsonPointer": "/chess_char_6_03_a",
             "parentRecordID": "余",
-            "subjectRecordID": "skchr_yu_3",
+            "subjectRecordID": "chess_char_6_03_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_03_a/skills/2",
             "sourceURL": null,
@@ -14454,7 +14488,7 @@
             "recordID": "skchr_excu2_1",
             "parentJsonPointer": "/chess_char_5_01_a",
             "parentRecordID": "圣约送葬人",
-            "subjectRecordID": "skchr_excu2_1",
+            "subjectRecordID": "chess_char_5_01_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_5_01_a/skills/0",
             "sourceURL": null,
@@ -14469,7 +14503,7 @@
             "recordID": "skchr_excu2_1",
             "parentJsonPointer": "/chess_char_5_01_a",
             "parentRecordID": "圣约送葬人",
-            "subjectRecordID": "skchr_excu2_1",
+            "subjectRecordID": "chess_char_5_01_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_5_01_a/skills/0",
             "sourceURL": null,
@@ -15333,7 +15367,7 @@
             "game": "卫戍协议原生本体",
             "version": "4ed1ad32ec10da15c23f9d7939dade603950759b",
             "recordID": "伺夜",
-            "subjectRecordID": "伺夜",
+            "subjectRecordID": "chess_char_3_19_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_3_19_a",
             "sourceURL": null,
@@ -15364,7 +15398,7 @@
             "game": "卫戍协议原生本体",
             "version": "4ed1ad32ec10da15c23f9d7939dade603950759b",
             "recordID": "伺夜",
-            "subjectRecordID": "伺夜",
+            "subjectRecordID": "chess_char_3_19_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_3_19_a",
             "sourceURL": null,
@@ -15373,174 +15407,6 @@
           }
         ],
         "externalRefs": [
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "direct source text; no local JSON snapshot",
-            "sourceEffectText": "击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"
-          },
           {
             "game": "Teamfight Tactics",
             "version": "Patch 11.15",
@@ -15955,7 +15821,7 @@
             "recordID": "skchr_sbell2_1",
             "parentJsonPointer": "/chess_char_6_02_a",
             "parentRecordID": "圣聆初雪",
-            "subjectRecordID": "skchr_sbell2_1",
+            "subjectRecordID": "chess_char_6_02_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_02_a/skills/0",
             "sourceURL": null,
@@ -15968,7 +15834,7 @@
             "recordID": "博览古卷",
             "parentJsonPointer": "/chess_char_2_06_a",
             "parentRecordID": "莎草",
-            "subjectRecordID": "博览古卷",
+            "subjectRecordID": "chess_char_2_06_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_2_06_a/talents/0",
             "sourceURL": null,
@@ -15983,7 +15849,7 @@
             "recordID": "skchr_sbell2_1",
             "parentJsonPointer": "/chess_char_6_02_a",
             "parentRecordID": "圣聆初雪",
-            "subjectRecordID": "skchr_sbell2_1",
+            "subjectRecordID": "chess_char_6_02_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_02_a/skills/0",
             "sourceURL": null,
@@ -15996,7 +15862,7 @@
             "recordID": "博览古卷",
             "parentJsonPointer": "/chess_char_2_06_a",
             "parentRecordID": "莎草",
-            "subjectRecordID": "博览古卷",
+            "subjectRecordID": "chess_char_2_06_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_2_06_a/talents/0",
             "sourceURL": null,
@@ -16376,7 +16242,7 @@
             "recordID": "skchr_reed2_3",
             "parentJsonPointer": "/chess_char_6_08_a",
             "parentRecordID": "焰影苇草",
-            "subjectRecordID": "skchr_reed2_3",
+            "subjectRecordID": "chess_char_6_08_a / skchr_reed2_3",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_08_a/skill",
             "sourceURL": null,
@@ -16401,7 +16267,7 @@
             "recordID": "skchr_reed2_3",
             "parentJsonPointer": "/chess_char_6_08_a",
             "parentRecordID": "焰影苇草",
-            "subjectRecordID": "skchr_reed2_3",
+            "subjectRecordID": "chess_char_6_08_a / skchr_reed2_3",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_6_08_a/skill",
             "sourceURL": null,
@@ -16417,222 +16283,6 @@
             "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
             "sourceKind": "official patch notes; historical text citation",
             "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 11.15",
-            "recordID": "Victorious",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "A kill empowers the next attack to deal bonus magic damage based on the target’s missing Health.",
-            "sourceSection": null
           }
         ],
         "candidateRefs": [],
@@ -17449,7 +17099,7 @@
           {
             "game": "Teamfight Tactics",
             "version": "TFTraits 18.4 publication / 18-18.4.0.BF63CD5E.u09ac2d13s5",
-            "recordID": "DA_18_Malphite",
+            "recordID": "Petrified Bark",
             "parentJsonPointer": "/supplement/publishedChampions/47/reference",
             "parentRecordID": "DA_18_Malphite",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\docs\\resonance\\reference\\tft-set18.json",
@@ -17958,7 +17608,7 @@
             "recordID": "skchr_ines_2",
             "parentJsonPointer": "/chess_char_4_04_a",
             "parentRecordID": "伊内丝",
-            "subjectRecordID": "skchr_ines_2",
+            "subjectRecordID": "chess_char_4_04_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_04_a/skills/1",
             "sourceURL": null,
@@ -17971,7 +17621,7 @@
             "recordID": "skchr_tippi_2",
             "parentJsonPointer": "/chess_char_2_13_a",
             "parentRecordID": "蒂比",
-            "subjectRecordID": "skchr_tippi_2",
+            "subjectRecordID": "chess_char_2_13_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_2_13_a/skills/1",
             "sourceURL": null,
@@ -17984,7 +17634,7 @@
             "recordID": "skchr_ines_3",
             "parentJsonPointer": "/chess_char_4_04_a",
             "parentRecordID": "伊内丝",
-            "subjectRecordID": "skchr_ines_3",
+            "subjectRecordID": "chess_char_4_04_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_04_a/skills/2",
             "sourceURL": null,
@@ -17999,7 +17649,7 @@
             "recordID": "skchr_ines_2",
             "parentJsonPointer": "/chess_char_4_04_a",
             "parentRecordID": "伊内丝",
-            "subjectRecordID": "skchr_ines_2",
+            "subjectRecordID": "chess_char_4_04_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_04_a/skills/1",
             "sourceURL": null,
@@ -18012,7 +17662,7 @@
             "recordID": "skchr_tippi_2",
             "parentJsonPointer": "/chess_char_2_13_a",
             "parentRecordID": "蒂比",
-            "subjectRecordID": "skchr_tippi_2",
+            "subjectRecordID": "chess_char_2_13_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_2_13_a/skills/1",
             "sourceURL": null,
@@ -18025,7 +17675,7 @@
             "recordID": "skchr_ines_3",
             "parentJsonPointer": "/chess_char_4_04_a",
             "parentRecordID": "伊内丝",
-            "subjectRecordID": "skchr_ines_3",
+            "subjectRecordID": "chess_char_4_04_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_04_a/skills/2",
             "sourceURL": null,
@@ -18979,7 +18629,7 @@
             "recordID": "skchr_inside_2",
             "parentJsonPointer": "/chess_char_1_01_a",
             "parentRecordID": "隐现",
-            "subjectRecordID": "skchr_inside_2",
+            "subjectRecordID": "chess_char_1_01_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_1_01_a/skills/1",
             "sourceURL": null,
@@ -19002,7 +18652,7 @@
             "recordID": "skchr_inside_2",
             "parentJsonPointer": "/chess_char_1_01_a",
             "parentRecordID": "隐现",
-            "subjectRecordID": "skchr_inside_2",
+            "subjectRecordID": "chess_char_1_01_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_1_01_a/skills/1",
             "sourceURL": null,
@@ -20505,7 +20155,7 @@
             "recordID": "领袖",
             "parentJsonPointer": "/chess_char_4_22_a",
             "parentRecordID": "银灰",
-            "subjectRecordID": "领袖",
+            "subjectRecordID": "chess_char_4_22_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_22_a/talents/0",
             "sourceURL": null,
@@ -20518,7 +20168,7 @@
             "recordID": "迅捷出击",
             "parentJsonPointer": "/chess_char_3_05_a",
             "parentRecordID": "斯卡蒂",
-            "subjectRecordID": "迅捷出击",
+            "subjectRecordID": "chess_char_3_05_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_3_05_a/talents/1",
             "sourceURL": null,
@@ -20531,7 +20181,7 @@
             "recordID": "skchr_texas2_3",
             "parentJsonPointer": "/chess_char_4_16_a",
             "parentRecordID": "缄默德克萨斯",
-            "subjectRecordID": "skchr_texas2_3",
+            "subjectRecordID": "chess_char_4_16_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_16_a/skill",
             "sourceURL": null,
@@ -20546,7 +20196,7 @@
             "recordID": "领袖",
             "parentJsonPointer": "/chess_char_4_22_a",
             "parentRecordID": "银灰",
-            "subjectRecordID": "领袖",
+            "subjectRecordID": "chess_char_4_22_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_22_a/talents/0",
             "sourceURL": null,
@@ -20559,7 +20209,7 @@
             "recordID": "迅捷出击",
             "parentJsonPointer": "/chess_char_3_05_a",
             "parentRecordID": "斯卡蒂",
-            "subjectRecordID": "迅捷出击",
+            "subjectRecordID": "chess_char_3_05_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_3_05_a/talents/1",
             "sourceURL": null,
@@ -20572,7 +20222,7 @@
             "recordID": "skchr_texas2_3",
             "parentJsonPointer": "/chess_char_4_16_a",
             "parentRecordID": "缄默德克萨斯",
-            "subjectRecordID": "skchr_texas2_3",
+            "subjectRecordID": "chess_char_4_16_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_4_16_a/skill",
             "sourceURL": null,
@@ -20781,7 +20431,7 @@
             "recordID": "skchr_tippi_2",
             "parentJsonPointer": "/chess_char_2_13_a",
             "parentRecordID": "蒂比",
-            "subjectRecordID": "skchr_tippi_2",
+            "subjectRecordID": "chess_char_2_13_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_2_13_a/skills/1",
             "sourceURL": null,
@@ -20796,7 +20446,7 @@
             "recordID": "skchr_tippi_2",
             "parentJsonPointer": "/chess_char_2_13_a",
             "parentRecordID": "蒂比",
-            "subjectRecordID": "skchr_tippi_2",
+            "subjectRecordID": "chess_char_2_13_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_2_13_a/skills/1",
             "sourceURL": null,
@@ -21148,6 +20798,16 @@
         "refs": [
           {
             "game": "Dota Auto Chess",
+            "version": "8dde7071e6f07d1b5bbe3d415bcf4ef0a6a18b8e",
+            "recordID": "is_mage",
+            "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\docs\\resonance\\reference\\dota-current.json",
+            "jsonPointer": "/synergies/1",
+            "sourceURL": "https://github.com/QFunnn/dota2-customs/blob/8dde7071e6f07d1b5bbe3d415bcf4ef0a6a18b8e/scripts/vscripts/addon_game_mode.lua",
+            "sourceCommit": "8dde7071e6f07d1b5bbe3d415bcf4ef0a6a18b8e",
+            "sourceMechanism": "场上每有一个存活的友方法师棋子，法师棋子就获得+10%%的法力获取，最多+60%%。\\n<h1>职业技能：法术易伤</h1><font color=\"#656585\">需要己方场上有至少（N）个不同的此职业的棋子来触发效果（触发的多层效果可以叠加）。</font><br><br>（3）法师：使所有敌军的魔法抗性-30%%。<br>（6）法师：使所有敌军的魔法抗性-35%%。<br>（9）法师：使所有敌军获得效果：受到魔法伤害时冻结，魔法伤害越高，冻结时间越长。 "
+          },
+          {
+            "game": "Dota Auto Chess",
             "version": "Drodo 原版 Dota 自走棋完整参考输入",
             "recordID": "is_mage",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\docs\\resonance\\reference\\dota-current.json",
@@ -21452,222 +21112,6 @@
             "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
             "sourceKind": "official patch notes; historical text citation",
             "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "historical official patch-note text; component-level comparison",
-            "sourceSection": null,
-            "sourceEffectText": "On Kill: gain 25% Attack Speed."
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 13.1 (historical) — ADMIN trait",
-            "recordID": "ADMIN On Kill → Attack Speed",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-13-1-notes/",
-            "sourceKind": "official historical patch-note text; component-level comparison",
-            "sourceEffectText": "On Kill: gain 25% Attack Speed.",
-            "sourceSection": null
           }
         ],
         "candidateRefs": [],
@@ -22286,7 +21730,7 @@
             "recordID": "虚弱化",
             "parentJsonPointer": "/chess_char_3_14_a",
             "parentRecordID": "初雪",
-            "subjectRecordID": "虚弱化",
+            "subjectRecordID": "chess_char_3_14_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_3_14_a/talents/0",
             "sourceURL": null,
@@ -22301,7 +21745,7 @@
             "recordID": "虚弱化",
             "parentJsonPointer": "/chess_char_3_14_a",
             "parentRecordID": "初雪",
-            "subjectRecordID": "虚弱化",
+            "subjectRecordID": "chess_char_3_14_a",
             "jsonFile": "E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\data\\resonance-native\\chess.json",
             "jsonPointer": "/chess_char_3_14_a/talents/0",
             "sourceURL": null,
@@ -32239,174 +31683,6 @@
             "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
             "sourceKind": "official source text; no local JSON snapshot",
             "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Set 11 / patch 11.15",
-            "recordID": "Tome of Traits",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/",
-            "sourceKind": "official source text; no local JSON snapshot",
-            "sourceEffectText": null
           }
         ]
       },
@@ -32934,27 +32210,6 @@
         "refs": [],
         "adaptations": [
           "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
           "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster."
         ],
         "remainingUnsupported": [],
@@ -32964,200 +32219,11 @@
           "status": "partial",
           "differences": [
             "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
             "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster."
           ],
           "remainingUnsupported": []
         },
         "externalRefs": [
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "No Encounter",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "No Encounter"
-          },
           {
             "game": "Teamfight Tactics",
             "version": "Patch 17.2 official historical notes",
@@ -33186,27 +32252,6 @@
         "refs": [],
         "adaptations": [
           "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
           "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster."
         ],
         "remainingUnsupported": [],
@@ -33216,200 +32261,11 @@
           "status": "partial",
           "differences": [
             "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
             "Original timing [\"start\",\"3-3\"]; local event is deterministically assigned by seed and shares the fixed season roster."
           ],
           "remainingUnsupported": []
         },
         "externalRefs": [
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Double Duplicators",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Double Duplicators"
-          },
           {
             "game": "Teamfight Tactics",
             "version": "Patch 17.2 official historical notes",
@@ -33438,27 +32294,6 @@
         "refs": [],
         "adaptations": [
           "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
           "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster."
         ],
         "remainingUnsupported": [],
@@ -33468,200 +32303,11 @@
           "status": "partial",
           "differences": [
             "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
             "Original timing [\"2-1\"]; local event is deterministically assigned by seed and shares the fixed season roster."
           ],
           "remainingUnsupported": []
         },
         "externalRefs": [
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Reroll Start",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Reroll Start"
-          },
           {
             "game": "Teamfight Tactics",
             "version": "Patch 17.2 official historical notes",
@@ -33690,27 +32336,6 @@
         "refs": [],
         "adaptations": [
           "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-          "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
           "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster."
         ],
         "remainingUnsupported": [],
@@ -33720,200 +32345,11 @@
           "status": "partial",
           "differences": [
             "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
-            "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.",
             "Original timing \"opening\"; local event is deterministically assigned by seed and shares the fixed season roster."
           ],
           "remainingUnsupported": []
         },
         "externalRefs": [
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
-          {
-            "game": "Teamfight Tactics",
-            "version": "Patch 17.2 official historical notes",
-            "recordID": "Cheaper Levels",
-            "sourceURL": "https://teamfighttactics.leagueoflegends.com/en-sg/news/game-updates/teamfight-tactics-patch-17-2/",
-            "sourceKind": "official Riot patch notes; section-level text citation",
-            "sourceSection": "Cheaper Levels"
-          },
           {
             "game": "Teamfight Tactics",
             "version": "Patch 17.2 official historical notes",

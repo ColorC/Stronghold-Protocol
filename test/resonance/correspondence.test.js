@@ -171,11 +171,25 @@ test('campaign, economy and UI structures preserve the intended comparison bound
   assert.doesNotMatch(md,/完整机制对应.*100%|完全同款/i,'the matrix never claims blanket equivalence');
 });
 
-test('generator regenerates from formal JSON annotations without staging reads',()=>{
+test('generator is idempotent from formal JSON annotations without staging reads',()=>{
   const env={...process.env,RESONANCE_STAGING_UNAVAILABLE:'1',SP_DATA_DIR:path.join(CANONICAL,'data/resonance-native')};
+  const jsonPath=path.join(ROOT,'docs/resonance/mechanism-correspondence.json');
+  const mdPath=path.join(ROOT,'docs/resonance/mechanism-correspondence.md');
+  const beforeJson=fs.readFileSync(jsonPath,'utf8');
+  const beforeMd=fs.readFileSync(mdPath,'utf8');
   execFileSync(process.execPath,['tools/resonance/build-correspondence.mjs'],{cwd:ROOT,env,stdio:'ignore'});
-  const regenerated=JSON.parse(fs.readFileSync(path.join(ROOT,'docs/resonance/mechanism-correspondence.json'),'utf8'));
+  const afterFirstJson=fs.readFileSync(jsonPath,'utf8');
+  const afterFirstMd=fs.readFileSync(mdPath,'utf8');
+  execFileSync(process.execPath,['tools/resonance/build-correspondence.mjs'],{cwd:ROOT,env,stdio:'ignore'});
+  const afterSecondJson=fs.readFileSync(jsonPath,'utf8');
+  const afterSecondMd=fs.readFileSync(mdPath,'utf8');
+  assert.equal(afterFirstJson,afterSecondJson,'second generation does not add duplicate evidence or metadata drift');
+  assert.equal(afterFirstMd,afterSecondMd,'second generation leaves Markdown bytes unchanged');
+  assert.equal(beforeJson,afterFirstJson,'one generation does not dirty an already generated formal matrix');
+  assert.equal(beforeMd,afterFirstMd,'one generation does not dirty already generated Markdown');
+  const regenerated=JSON.parse(afterSecondJson);
   assert.equal(regenerated.bootstrapComplete,true);
   assert.deepEqual(regenerated.coverage.catalogCounts,matrix.coverage.catalogCounts);
   assert.ok(regenerated.records.operators.chess_char_6_13_a.refs.some(ref=>ref.nativeGit));
+  for(const rows of Object.values(regenerated.records))for(const row of Object.values(rows))for(const field of ['refs','candidateRefs','externalRefs'])if(row[field])assert.equal(new Set(row[field].map(ref=>JSON.stringify([ref.game,ref.version,ref.parentRecordID??ref.recordID??ref.recordId??ref.name,ref.sourceURL??ref.sourceUrl,ref.sourceSection??ref.section,ref.sourceEffectText??ref.sourceMechanism,ref.jsonFile??ref.sourcePath,ref.jsonPointer]))).size,row[field].length,`${row.kind}/${row.catalogID}/${field} has semantic duplicates`);
 });

@@ -122,7 +122,21 @@ function extendedRefs(id) {
 }
 function uniqueRefs(rows) {
   const map = new Map();
-  for (const ref of rows.filter(Boolean)) map.set(`${ref.game}|${ref.parentRecordID??ref.recordID}|${ref.jsonPointer}`, ref);
+  for (const ref of rows.filter(Boolean)) {
+    const recordID=ref.jsonPointer?(ref.parentRecordID??ref.recordID):(ref.recordID??ref.recordId??ref.name??null);
+    const identity=[ref.game??null,ref.version??null,recordID,ref.sourceURL??ref.sourceUrl??null,ref.sourceSection??ref.section??null,ref.sourceEffectText??ref.sourceMechanism??null,ref.jsonFile??ref.sourcePath??null,ref.jsonPointer??null,ref.nativeGit??ref.sourceCommit??null];
+    const key=JSON.stringify(identity);
+    if(!map.has(key))map.set(key,ref);
+  }
+  return [...map.values()];
+}
+function uniqueSourceRefs(rows=[]) {
+  const map=new Map();
+  for(const ref of rows.filter(Boolean)){
+    const identity=[ref.game??null,ref.version??null,ref.recordID??ref.recordId??ref.name??null,ref.sourceURL??ref.sourceUrl??null,ref.sourceSection??ref.section??null,ref.sourceEffectText??ref.sourceMechanism??null,ref.jsonPointer??null];
+    const key=JSON.stringify(identity);
+    if(!map.has(key))map.set(key,ref);
+  }
   return [...map.values()];
 }
 function localRef(game, version, recordId, jsonFile, jsonPointer, sourceURL, nativeGit = null) {
@@ -275,7 +289,7 @@ for (const id of catalog.config.activeOperatorIds) {
     ...dimensionEvidence.map(row=>row.difference).filter(Boolean),
   ];
   const refs=uniqueRefs([nativeRef,...candidateRefs]);
-  const externalRefs=dimensionEvidence.map(row=>row.reference).filter(ref=>ref&&!ref.jsonPointer&&ref.sourceURL).map(ref=>({game:ref.game,version:ref.version,recordID:ref.recordID,sourceURL:ref.sourceURL,sourceKind:'official source text; no local JSON record'}));
+  const externalRefs=uniqueSourceRefs(dimensionEvidence.map(row=>row.reference).filter(ref=>ref&&!ref.jsonPointer&&ref.sourceURL).map(ref=>({game:ref.game,version:ref.version,recordID:ref.recordID,sourceURL:ref.sourceURL,sourceKind:'official source text; no local JSON record'})));
   const coverageClass=unsupported.length?'partial':'adapted';
   records.operators[id]={
     kind:'operators',catalogID:id,name:op.name,effectKind:['fixed-skill',currentPassive?.kind].filter(Boolean),mechanism:localMechanism('operators',id,op),refs,nativeReferences:[nativeRef],dimensionEvidence,
@@ -307,7 +321,7 @@ for (const [id, pact] of Object.entries(catalog.pacts)) {
   for(const row of dimensions){const source=row.source;if(source&&(source.sourceURL||source.sourceUrl)&&!source.jsonPointer)externalRefs.push({game:source.game,version:source.version,recordID:source.recordID??source.recordId??null,sourceURL:source.sourceURL??source.sourceUrl,sourceKind:source.sourceKind??'historical official patch-note text; component-level comparison',sourceSection:source.sourceSection??null,sourceEffectText:source.sourceEffectText??null});}
   for(const row of dimensions){const source=row.source;if(source&&(source.sourceURL||source.sourceUrl)&&!source.jsonPointer)externalRefs.push({game:source.game,version:source.version,recordID:source.recordId??source.recordID??null,sourceURL:source.sourceURL??source.sourceUrl,sourceKind:'official historical patch-note text; component-level comparison',sourceEffectText:source.sourceEffectText??null,sourceSection:source.sourceSection??null});}
   for(const entry of finalPactEvidence?.evidence??[])if(entry.pact===id){for(const candidate of (entry.candidates??(entry.candidate?[entry.candidate]:[])))if((candidate.sourceURL||candidate.sourceUrl)&&!candidate.jsonPointer)externalRefs.push({game:candidate.game,version:candidate.version,recordID:candidate.recordId??candidate.recordID??null,sourceURL:candidate.sourceURL??candidate.sourceUrl,sourceKind:'official patch notes; historical text citation',sourceEffectText:candidate.sourceEffectText??null});}
-  const candidates=bootstrap?[...oldRefs(old?.references??[]).filter(ref=>!refs.some(valid=>valid.jsonPointer===ref.jsonPointer&&valid.game===ref.game))]:(previous?.candidateRefs??[]);
+  const candidates=uniqueRefs(bootstrap?[...oldRefs(old?.references??[]).filter(ref=>!refs.some(valid=>valid.jsonPointer===ref.jsonPointer&&valid.game===ref.game))]:(previous?.candidateRefs??[]));
   const explicit = userExplicitPacts.has(id);
   const computedDiffs=[
     ...(oldStillHasCurrentComponent&&priorKinds.join('|')!==currentKinds.join('|')?[`Prior source applies only to retained effect component(s) ${currentKinds.filter(kind=>priorKinds.includes(kind)).join(', ')}; removed SP/other effects are not restored.`]:[]),
@@ -322,7 +336,7 @@ for (const [id, pact] of Object.entries(catalog.pacts)) {
   if(id==='babel'&&!dimensions.some(row=>row.component==='victoryAttackGrowth'&&(row.reference?.sourceURL||row.source?.sourceURL||row.source?.sourceUrl))&&!(priorRecord('pacts',id)?.externalRefs??[]).some(ref=>ref.sourceEffectText?.includes('Forgotten champions gain Attack Damage')))unresolved.push('victoryAttackGrowth: historical Forgotten source supports post-victory AD/AP growth only; its participated-champion trigger and five-stack cap differ from randomly selecting a surviving ally and the local permanent ATK cap.');
   if(bootstrap)for(const entry of finalPactEvidence?.evidence??[])if(entry.pact===id){const component={iberia:'barrierBreakDamage',lungmen:'sixMemberArtillery',breaker:'firstEliteKillAspd'}[entry.pact]??entry.element;const hasComponentEvidence=dimensions.some(row=>row.component===component&&(row.reference?.jsonPointer||row.reference?.sourceURL||row.source?.sourceURL||row.source?.sourceUrl));if(entry.remainingDifference)unresolved.push(`${component}: ${entry.remainingDifference}`);else if(String(entry.status).includes('unmatched')&&!hasComponentEvidence)unresolved.push(`${component}: ${entry.decisionNote??entry.searchNote}`);}
   const coverageClass=refs.length||externalRefs.length?'partial':'unmatched';
-  records.pacts[id]={kind:'pacts',catalogID:id,name:pact.name,effectKind:currentKinds,mechanism:localMechanism('pacts',id,pact),refs,nativeReferences:refs.filter(ref=>Boolean(ref.nativeGit)),externalRefs,candidateRefs:candidates,dimensionEvidence:dimensions,rejectedEvidence:dimensions.filter(row=>row.status==='checked-negative'),adaptations:diffs,remainingUnsupported:unresolved,decision:explicit?'user-explicit-composite':'root-adjudicated-retained-with-explicit-adaptations',coverageClass,mechanicComparison:{status:coverageClass,differences:diffs,remainingUnsupported:unresolved},userExplicit:explicit};
+  records.pacts[id]={kind:'pacts',catalogID:id,name:pact.name,effectKind:currentKinds,mechanism:localMechanism('pacts',id,pact),refs,nativeReferences:refs.filter(ref=>Boolean(ref.nativeGit)),externalRefs:uniqueSourceRefs(externalRefs),candidateRefs:candidates,dimensionEvidence:dimensions,rejectedEvidence:dimensions.filter(row=>row.status==='checked-negative'),adaptations:diffs,remainingUnsupported:unresolved,decision:explicit?'user-explicit-composite':'root-adjudicated-retained-with-explicit-adaptations',coverageClass,mechanicComparison:{status:coverageClass,differences:diffs,remainingUnsupported:unresolved},userExplicit:explicit};
 }
 
 const extRows = bootstrap?expanded.entries:{};
@@ -333,7 +347,7 @@ for (const [id, item] of Object.entries(catalog.equipment)) {
   const unsupported = bootstrap ? [...(ext?.unsupportedElements ?? [])] : [...(old?.remainingUnsupported??[])].filter(issue=>!String(issue).includes('初始资源与Tear现版持续回复不等价'));
   const effectKinds = [...new Set(effects(item).map(e=>e.kind))];
   addRecord(records, 'equipment', id, item.name, effectKinds.length ? effectKinds : item.kind, localMechanism('equipment', id, item), refs, differences, unsupported.length ? unsupported : (refs.length ? [] : ['No mechanism-specific competitor record resolved.']));
-  if(!bootstrap&&(old?.externalRefs?.length??0)>0)records.equipment[id].externalRefs=[...old.externalRefs];
+  if(!bootstrap&&(old?.externalRefs?.length??0)>0)records.equipment[id].externalRefs=uniqueSourceRefs(old.externalRefs);
   if(effects(item).some(effect=>Number(effect.params?.initialSp??0)>0)){
     const row=records.equipment[id];
     const note='初始资源适配依据 systems.equipmentStartingSP.historicalComparator：TFT历史Tear记录的是起始Mana后来改为Mana Regen；本地initial SP的资源量与生效时点是共鸣适配，不等同现版Mana Regen。';
@@ -350,7 +364,7 @@ for (const [id, item] of Object.entries(catalog.equipment)) {
   if(id==='azureTear'){
     const row=records.equipment[id];
     row.remainingUnsupported=row.remainingUnsupported.filter(issue=>!String(issue).startsWith('技能结束而非施放终结技后'));
-    row.externalRefs=[...(row.externalRefs??[]).filter(ref=>!/patch-12-11-notes/.test(ref.sourceURL)),{game:'Teamfight Tactics',version:'Patch 12.11 historical official Riot notes',recordID:'Blue Battery',sourceURL:'https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-12-11-notes/',sourceKind:'official historical patch-note text; component-level comparison',sourceSection:'Augments — Blue Battery',sourceEffectText:'Blue Battery grants Mana after casting an ability.'}];
+    row.externalRefs=uniqueSourceRefs([...(row.externalRefs??[]).filter(ref=>!/patch-12-11-notes/.test(ref.sourceURL)),{game:'Teamfight Tactics',version:'Patch 12.11 historical official Riot notes',recordID:'Blue Battery',sourceURL:'https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-12-11-notes/',sourceKind:'official historical patch-note text; component-level comparison',sourceSection:'Augments — Blue Battery',sourceEffectText:'Blue Battery grants Mana after casting an ability.'}]);
     row.adaptations=[...new Set([...row.adaptations,'TFT 12.11 Blue Battery documents resource gain after a cast; local SP is granted at skill end, after native runtime SP lock, with a 3-second cooldown. Trigger timing, resource type/value and cooldown are adaptations.'])];
     row.mechanicComparison.remainingUnsupported=[...row.remainingUnsupported];row.mechanicComparison.differences=[...row.adaptations];
   }
@@ -381,15 +395,15 @@ for (const [id, strategy] of Object.entries(catalog.strategies)) {
   const effectsNow = effects(strategy);
   const externalRefs=collectExternalSources(effectsNow).map(row=>({game:row.game,version:row.version,recordID:row.recordId??row.recordID??row.name??null,sourceURL:row.sourceURL??row.sourceUrl,sourceKind:row.sourceKind??'official source text; no local JSON snapshot',sourceEffectText:row.sourceEffectText??null}));
   addRecord(records, 'strategies', id, strategy.name, effectsNow.map(e => e.kind), localMechanism('strategies', id, strategy), refs, differences, unsupported.length ? unsupported : (refs.length||externalRefs.length ? [] : ['No verified competitor record for the full effect chain.']));
-  records.strategies[id].externalRefs=[...externalRefs,...(old?.externalRefs??[])];
+  records.strategies[id].externalRefs=uniqueSourceRefs([...externalRefs,...(old?.externalRefs??[])]);
   if(externalRefs.length&&records.strategies[id].coverageClass==='unmatched'){records.strategies[id].coverageClass='partial';records.strategies[id].mechanicComparison.status='partial';}
 }
 
 for (const [id, event] of Object.entries(resonanceOpenings)) {
   const prior=priorRecord('openingEvents',id);
   const ref={game:'Teamfight Tactics',version:`Patch ${event.reference.version} official historical notes`,recordID:event.reference.name,sourceURL:event.reference.url,sourceKind:'official Riot patch notes; section-level text citation',sourceSection:event.reference.name};
-  const diff = [`Original timing ${json(event.reference.originalTiming ?? 'opening')}; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.`, ...(prior?.adaptations??[])];
-  const externalRefs=[ref,...(prior?.externalRefs??[])];
+  const diff = [...new Set([`Original timing ${json(event.reference.originalTiming ?? 'opening')}; local event is deterministically assigned by seed and shares the fixed season roster. The source is official-page text without a local JSON Pointer.`, ...(prior?.adaptations??[])])];
+  const externalRefs=uniqueSourceRefs([ref,...(prior?.externalRefs??[])]);
   addRecord(records, 'openingEvents', id, event.name, 'automatic opening event', localMechanism('openingEvents', id, event), [], diff, [], 'root-adjudicated-retained-with-explicit-adaptations');
   records.openingEvents[id].externalRefs=externalRefs;
   records.openingEvents[id].coverageClass='partial';records.openingEvents[id].mechanicComparison.status='partial';
@@ -463,7 +477,7 @@ const document = {
   schemaVersion:1,
   title:'共鸣模式机制对应与适配说明',
   bootstrapComplete:true,
-  generatedAt:new Date().toISOString(),
+  generatedAt:priorMatrix?.generatedAt??new Date().toISOString(),
   boundary:{rulesVersion:2,activeOperatorIds:catalog.config.activeOperatorIds,seasonId:catalog.config.seasonId??catalog.season?.id??null,activeFeaturesOnly:true,allMatchesAreMechanismSpecific:false,nativeGitCommit:nativeCommit},
   sourceInputs:{catalog:'server/modes/resonance/catalog.js + shared/resonance/current-*.js',nativeData:nativeChessPath,nativeGitCommit:nativeCommit,initialAuditSources:{priorMechanicalAudit:path.join(STAGING,'strategy-equipment-correspondence-audit.json'),candidateSupplement:path.join(STAGING,'extended-strategy-equipment-candidates.json'),pactOperatorAudit:path.join(STAGING,'pact-operator-correspondence-audit.json'),seasonNativeEvidence:path.join(STAGING,'season-native-mechanism-evidence.json'),finalPactEvidence:path.join(STAGING,'final-pact-evidence.json')},note:'These locations record first-materialization provenance only. Normal regeneration reads annotations from this formal JSON and does not read staging.'},
   nativeAuditStatistics,

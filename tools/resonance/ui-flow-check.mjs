@@ -196,11 +196,15 @@ async function inspectEconomyControls(page, label) {
   check(`${label}-economy-inspection-does-not-mutate-session`, before === after, {before,after});
 }
 async function inspectPriorFightReplay(page, sessionId, round, screenshotName, expectedUnitUid=null, expectedName=null) {
+  const actionCountsAtStart={creates:receipt.creates,fights:receipt.fights};
   const before=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
-  await clickVisibleButtonText(page,'.rs-dock','战报','prior-fight-report-opener');
-  await page.waitForSelector('.rs-panel-drawer[aria-label="战斗记录"]',{timeout:8000});
-  await clickVisibleButtonText(page,'.rs-panel-drawer[aria-label="战斗记录"]','回放','prior-fight-replay-button');
-  await page.waitForSelector('.rs-replay-native[aria-label="战斗回放"]',{timeout:15000});
+  const replaySelector='.rs-replay-native[aria-label="战斗回放"]';
+  if(!await page.$(replaySelector)){
+    await clickVisibleButtonText(page,'.rs-dock','战报','prior-fight-report-opener');
+    await page.waitForSelector('.rs-panel-drawer[aria-label="战斗记录"]',{timeout:8000});
+    await clickVisibleButtonText(page,'.rs-panel-drawer[aria-label="战斗记录"]','回放','prior-fight-replay-button');
+    await page.waitForSelector(replaySelector,{timeout:15000});
+  }
   const replayTitle=await page.$eval('.rs-replay-native',element=>({label:element.getAttribute('aria-label'),text:element.innerText}));
   check('prior-fight-replay-opens-selected-round',replayTitle.label==='战斗回放'&&new RegExp(`第\\s*${round}\\s*场战斗`).test(replayTitle.text),replayTitle);
   const pause=await page.$eval('.rs-replay-native',root=>[...root.querySelectorAll('button')].find(element=>/^(暂停|继续)$/.test(element.innerText.trim()))?.innerText.trim()||null);
@@ -220,7 +224,10 @@ async function inspectPriorFightReplay(page, sessionId, round, screenshotName, e
   await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
   await clickVisibleButtonText(page,'.rs-replay-native','关闭','prior-fight-replay-close');
   await page.waitForFunction(()=>!document.querySelector('.rs-replay-native'),{timeout:8000});
-  check('prior-fight-replay-closes-without-new-actions',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
+  const actionCountsAfter={creates:receipt.creates,fights:receipt.fights};
+  const unchanged=actionCountsAfter.creates===actionCountsAtStart.creates&&actionCountsAfter.fights===actionCountsAtStart.fights;
+  const readonlyRemainsZero=(actionCountsAtStart.creates!==0||actionCountsAtStart.fights!==0)||(actionCountsAfter.creates===0&&actionCountsAfter.fights===0);
+  check('prior-fight-replay-closes-without-new-actions',unchanged&&readonlyRemainsZero,{before:actionCountsAtStart,after:actionCountsAfter,readonlyRemainsZero});
 }
 async function runFinishTail(page, sessionId) {
   await waitForGameplayReady(page,'finish-tail',{allowEmpty:true});
