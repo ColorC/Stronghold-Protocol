@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseRerollCore, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign } from '../../tools/resonance/balance-campaign.mjs';
+import { CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign, selectEconPactCopyTarget } from '../../tools/resonance/balance-campaign.mjs';
 import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
@@ -11,6 +11,14 @@ test('campaign coverage declares every environment and difficulty', () => {
   assert.equal(ENVIRONMENTS.length, 19);
   assert.equal(new Set(ENVIRONMENTS).size, 19);
   assert.deepEqual(DIFFICULTIES, ['FUNNY', 'NORMAL', 'HARD', 'ABYSS']);
+});
+
+test('offer selection skips the first eligible offer when its reserved spend is not actionable',()=>{
+  const op=(id,cost)=>({id,charId:id,cost,role:'damage',position:'RANGED',pacts:[],stars:{1:{stats:{atk:100,bat:1,aspd:0,maxHp:1000,def:0,blockCnt:0}}}});
+  const catalog={config:{environmentId:'origin_test'},environments:{origin_test:{identityPactId:'p'}},operators:{expensive:op('expensive',5),affordable:op('affordable',2)},pacts:{},equipment:{}};
+  const state={gold:10,pieces:[],strategies:[],strategyState:{},environmentId:'origin_test',shop:{offers:[{uid:'expensive-offer',operatorId:'expensive',cost:5},{uid:'affordable-offer',operatorId:'affordable',cost:2}]}};
+  const picked=chooseOffer(state,catalog,{isActionable:offer=>state.gold-offer.cost>=6});
+  assert.equal(picked?.offer.uid,'affordable-offer','an unaffordable-after-bank-floor first choice must not stop scanning later offers');
 });
 
 test('looser counterfactual clones only NORMAL enemy multipliers and runs through a real session and Battle',()=>{
@@ -54,6 +62,15 @@ test('econ-pact banks in stages, holds 30/40 during XP pushes, and never refresh
   assert.deepEqual(econPactPlan(18,8),{levelTarget:9,bankTarget:40,xpReserve:40,refreshEnabled:false});
   assert.deepEqual(econPactPlan(20,9),{levelTarget:9,bankTarget:30,xpReserve:30,refreshEnabled:true});
   assert.deepEqual(econPactPlan(24,9),{levelTarget:9,bankTarget:0,xpReserve:0,refreshEnabled:true});
+});
+
+test('econ-pact reserves universal copies for the level-9 core and spends late copies on a real merge if no core exists',()=>{
+  const core={uid:'core-piece',operatorId:'core',star:1},aux={uid:'aux-piece',operatorId:'aux',star:1};
+  const targets=[aux,core],catalog={operators:{core:{cost:5},aux:{cost:2}}};
+  assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},targets,{level:8,round:20,pieces:[core]},'core',catalog),null,'a universal copy waits before level nine rather than being consumed on a low-cost unit');
+  assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},targets,{level:9,round:20,pieces:[core]},'core',catalog),core,'a level-nine core receives the universal copy');
+  assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},[aux],{level:9,round:24,pieces:[aux]},'core',catalog),aux,'after round 24, a missing core lets the universal copy complete an auxiliary merge');
+  assert.equal(selectEconPactCopyTarget({kind:'smallCopy'},targets,{level:6,round:10,pieces:[aux]},'core',catalog),aux,'a small copy is used on an available one-copy merge');
 });
 
 test('reroll core selection compares actual anti-air DPS instead of survivability score',()=>{
@@ -176,6 +193,15 @@ test('first campaign battle buys and fields the available next-pact member befor
   assert.ok(run.rows[0].roster.some(piece=>piece.name==='耶拉'));
   assert.ok(run.rows[0].mainPacts.some(pact=>pact.id==='kjerag'&&pact.threshold===2));
   assert.equal(run.rows[0].vacantSlots,0);
+});
+
+test('econ-pact enters a native Battle with legal fielded route coverage',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:0x45434f4e,maxBattles:1,policy:ECON_PACT_POLICY});
+  assert.equal(run.policyActions.fight,1);
+  assert.equal(run.rows[0].diagnostics,0);
+  assert.ok(run.rows[0].routeCoverage.groundFrontlines.length>0);
+  assert.ok(run.rows[0].routeCoverage.groundFrontlines.every(front=>front.blocksGroundPath));
+  assert.ok(run.rows[0].roster.length<=run.rows[0].roleTargets.capacity);
 });
 
 test('fixed battle archetypes cover the requested ten identities and stay within level caps', () => {

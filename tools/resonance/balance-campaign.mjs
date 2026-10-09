@@ -472,7 +472,7 @@ function rejectCoreOffer(candidate,state,reason,context='purchase'){
   if(prior){prior.outcome='rejected';prior.rejectionReason=reason;}
   else activeMetrics?.coreOfferDecisions.push({round:state.round,context,offerUid:candidate.offer.uid,operatorId:candidate.offer.operatorId,cost:candidate.offer.cost,gold:state.gold,eligible:true,selected:true,outcome:'rejected',rejectionReason:reason});
 }
-function chooseOffer(state,catalog,{context='purchase'}={}){
+export function chooseOffer(state,catalog,{context='purchase',isActionable=null}={}){
   const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold');
   const capacity=reduced?7:9,bench=state.pieces.filter(p=>p.row===null).length,benchCanRelease=state.pieces.some(piece=>piece.row===null&&benchSaleReason(piece,state,catalog));
   const reviewed=state.shop.offers.filter(o=>o.operatorId)
@@ -482,7 +482,7 @@ function chooseOffer(state,catalog,{context='purchase'}={}){
       if(activePolicy.id===ECON_PACT_POLICY&&o.operatorId===activePolicy.coreOperatorId&&state.level<9)policy={ok:false,reason:'core-held-until-level-9',priority:0,netGain:0};
       const score=activePolicy.id==='legacy'?buyScore(o.operatorId,state,catalog):Number(policy.netGain??0);
       reason=policy.reason;
-      const hardReason=o.cost>state.gold?'insufficient-gold':bench>=capacity&&!benchCanMerge&&!(activePolicy.id!=='legacy'&&benchCanRelease)?'bench-capacity-protect-2-star-and-role-core':exceedsFrontlineBranchCap(o.operatorId,op,state,catalog,duplicate,activePolicy.coreOperatorId)?'frontline-branch-cap-2':null;
+      const hardReason=o.cost>state.gold?'insufficient-gold':bench>=capacity&&!benchCanMerge&&!(activePolicy.id!=='legacy'&&benchCanRelease)?'bench-capacity-protect-2-star-and-role-core':exceedsFrontlineBranchCap(o.operatorId,op,state,catalog,duplicate,activePolicy.coreOperatorId)?'frontline-branch-cap-2':isActionable&&!isActionable(o,op,policy)?'not-actionable-with-current-reserve-or-capacity':null;
       if(hardReason)reason=hardReason;
       return {offer:o,score,reason,priority:policy.priority??0,eligible:policy.ok&&!hardReason&&(activePolicy.id!=='legacy'||score>=2.25)};})
     .sort((a,b)=>Number(b.eligible)-Number(a.eligible)||b.priority-a.priority||b.score-a.score||a.offer.uid.localeCompare(b.offer.uid));
@@ -496,12 +496,17 @@ function chooseOffer(state,catalog,{context='purchase'}={}){
   if(activeMetrics&&activePolicy.id!=='legacy')activeMetrics.roleDecisions.push({round:state.round,offers:reviewed.map(({offer,score,reason,eligible})=>({operatorId:offer.operatorId,name:opById(catalog,offer.operatorId)?.name,role:opById(catalog,offer.operatorId)?.role,score:Number(score.toFixed(2)),eligible,reason})),chosen:chosen?.offer.operatorId??null});
   return chosen;
 }
-function makePurchaseBenchSpace(state,catalog,operatorId){
+function purchaseBenchCandidate(state,catalog,operatorId){
   const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold');
-  const capacity=reduced?7:9;if(state.pieces.filter(piece=>piece.row===null).length<capacity)return state;
+  const capacity=reduced?7:9;if(state.pieces.filter(piece=>piece.row===null).length<capacity)return null;
   const candidates=state.pieces.filter(piece=>piece.row===null&&benchSaleReason(piece,state,catalog)).sort((a,b)=>candidatePower(a,catalog)-candidatePower(b,catalog)||a.uid.localeCompare(b.uid));
-  const weak=candidates.find(piece=>evaluateCampaignOffer(operatorId,{...state,pieces:state.pieces.filter(entry=>entry.uid!==piece.uid)},catalog,activeBattleFields(state,catalog),activePolicy.coreOperatorId).ok);
-  if(!weak)return null;logSellReview(state,catalog,weak,'qualified-offer-bench-space');return runAction(state,{type:'sell',pieceUid:weak.uid},catalog).state;
+  return candidates.find(piece=>evaluateCampaignOffer(operatorId,{...state,pieces:state.pieces.filter(entry=>entry.uid!==piece.uid)},catalog,activeBattleFields(state,catalog),activePolicy.coreOperatorId).ok)??null;
+}
+function makePurchaseBenchSpace(state,catalog,operatorId){
+  const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold'),capacity=reduced?7:9;
+  if(state.pieces.filter(piece=>piece.row===null).length<capacity)return state;
+  const weak=purchaseBenchCandidate(state,catalog,operatorId);if(!weak)return null;
+  logSellReview(state,catalog,weak,'qualified-offer-bench-space');return runAction(state,{type:'sell',pieceUid:weak.uid},catalog).state;
 }
 
 export function copyTargetsForCampaign(state,catalog,coreOperatorId=null,capacityOverride=null){
@@ -703,24 +708,40 @@ function deployTeam(state,catalog){
   if(picked.length<state.level)for(const piece of candidates){if(picked.length>=state.level)break;const op=opById(catalog,piece.operatorId);if(!op||op.role==='healer'||op.role==='frontline'&&picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').length>=routeSlots)continue;const same=picked.filter(p=>opById(catalog,p.operatorId)?.charId===op.charId);if(!same.length||piece.star>Math.max(...same.map(p=>p.star)))picked.push(piece);}
   const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold');
   const capacity=reduced?7:9;
-  const makeBenchRoom=()=>{if(state.pieces.filter(p=>p.row===null).length<capacity)return true;const weak=state.pieces.filter(p=>p.row===null&&(activePolicy.id==='legacy'?legacyBenchSaleAllowed(p,state,catalog):benchSaleReason(p,state,catalog))).sort((a,b)=>candidatePower(a,catalog)-candidatePower(b,catalog)||a.uid.localeCompare(b.uid))[0];if(!weak)return false;logSellReview(state,catalog,weak,'deployment-bench-capacity');const index=picked.findIndex(p=>p.uid===weak.uid);if(index>=0)picked.splice(index,1);state=runAction(state,{type:'sell',pieceUid:weak.uid},catalog).state;return state.pieces.filter(p=>p.row===null).length<capacity;};
-  for(const piece of state.pieces.filter(p=>p.row!==null&&!picked.some(x=>x.uid===p.uid))){
-    if(!makeBenchRoom())throw new Error('policy-cannot-make-bench-room');
+  const pickedUids=new Set(picked.map(piece=>piece.uid));
+  const isPriorityTarget=piece=>activePolicy.id===ECON_PACT_POLICY&&(piece.operatorId===activePolicy.coreOperatorId||pactTargetOperatorIds.has(piece.operatorId));
+  const frontlinePicks=picked.filter(piece=>opById(catalog,piece.operatorId)?.role==='frontline').sort((a,b)=>Number(isPriorityTarget(a))-Number(isPriorityTarget(b))||candidatePower(b,catalog)-candidatePower(a,catalog));
+  const requiredFrontlinePicks=frontlinePicks.slice(0,routeSlots),extraFrontlinePicks=frontlinePicks.slice(routeSlots),requiredFrontlineUids=new Set(requiredFrontlinePicks.map(piece=>piece.uid));
+  const deploymentSaleCandidate=(exceptUid=null)=>state.pieces.filter(piece=>piece.uid!==exceptUid&&piece.row===null&&!pickedUids.has(piece.uid)&&piece.operatorId!==activePolicy.coreOperatorId&&!pactTargetOperatorIds.has(piece.operatorId)&&state.inventory.length+piece.equipment.length<=20)
+    .sort((a,b)=>candidatePower(a,catalog)-candidatePower(b,catalog)||a.uid.localeCompare(b.uid))[0]??null;
+  const makeBenchRoom=(exceptUid=null)=>{
+    if(state.pieces.filter(p=>p.row===null).length<capacity)return true;
+    const weak=activePolicy.id===ECON_PACT_POLICY?deploymentSaleCandidate(exceptUid):state.pieces.filter(p=>p.uid!==exceptUid&&p.row===null&&(activePolicy.id==='legacy'?legacyBenchSaleAllowed(p,state,catalog):benchSaleReason(p,state,catalog))).sort((a,b)=>candidatePower(a,catalog)-candidatePower(b,catalog)||a.uid.localeCompare(b.uid))[0];
+    if(!weak)return false;logSellReview(state,catalog,weak,'deployment-bench-capacity');state=runAction(state,{type:'sell',pieceUid:weak.uid},catalog).state;return state.pieces.filter(p=>p.row===null).length<capacity;
+  };
+  for(const piece of state.pieces.filter(p=>p.row!==null&&!pickedUids.has(p.uid))){
+    if(!makeBenchRoom(piece.uid)){
+      if(activePolicy.id===ECON_PACT_POLICY&&state.inventory.length+piece.equipment.length<=20){state=runAction(state,{type:'sell',pieceUid:piece.uid},catalog).state;continue;}
+      throw new Error('policy-cannot-make-bench-room');
+    }
     state=runAction(state,{type:'bench',pieceUid:piece.uid},catalog).state;
   }
-  for(const piece of picked){const live=state.pieces.find(p=>p.uid===piece.uid);if(!live||live.row===null)continue;{
-    if(!makeBenchRoom())continue;
-    state=runAction(state,{type:'bench',pieceUid:live.uid},catalog).state;
-  }}
+  if(activePolicy.id===ECON_PACT_POLICY&&bossProfileIndex!==null){
+    const routeLoad=Array(profiles.length).fill(0);
+    for(const piece of picked){const live=state.pieces.find(p=>p.uid===piece.uid);if(!live||live.row===null||!isPriorityTarget(live)||opById(catalog,live.operatorId)?.role==='frontline'&&requiredFrontlineUids.has(live.uid))continue;
+      const op=opById(catalog,live.operatorId),covers=operatorRouteCoverage(op,live.star,live.row,live.col,live.dir,profiles).includes(bossProfileIndex);if(covers)continue;
+      const occupiedNow=new Set(state.pieces.filter(other=>other.row!==null&&other.uid!==live.uid).map(other=>`${other.row},${other.col}`));
+      const frontlinesNow=state.pieces.filter(other=>other.row!==null&&other.uid!==live.uid&&opById(catalog,other.operatorId)?.role==='frontline').map(other=>({row:other.row,col:other.col,uid:other.uid,routeIndex:groundRoutes.find(entry=>routeDistance(other.row,other.col,entry.route)===0)?.index??null}));
+      const tile=deploymentCell(state,catalog,field,op,occupiedNow,routeLoad,new Set(),summonSpecs(live,catalog),{star:live.star,routeIndex:bossProfileIndex,frontlines:frontlinesNow});if(!tile)continue;
+      const action=tile.row===live.row&&tile.col===live.col?{type:'turn',pieceUid:live.uid,dir:tile.dir}:{type:'move',pieceUid:live.uid,row:tile.row,col:tile.col,dir:tile.dir};
+      state=runAction(state,action,catalog).state;
+    }
+  }
     const routeCount=profiles.length,load=Array(routeCount).fill(0);
   const reserved=new Set(),assignedRoutes=new Map(),frontlines=[];
   for(const piece of picked){const live=state.pieces.find(p=>p.uid===piece.uid);if(!live||live.row===null)continue;const key=`${live.row},${live.col}`;occupied.add(key);selected.push(live);const op=opById(catalog,live.operatorId);if(op?.role==='frontline'){const exact=groundRoutes.find(({route})=>routeDistance(live.row,live.col,route)===0);if(exact){assignedRoutes.set(live.uid,exact.index);frontlines.push({row:live.row,col:live.col,routeIndex:exact.index,uid:live.uid});}}}
-  const isPriorityTarget=piece=>activePolicy.id===ECON_PACT_POLICY&&(piece.operatorId===activePolicy.coreOperatorId||pactTargetOperatorIds.has(piece.operatorId));
-  const frontlinePicks=picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').sort((a,b)=>Number(isPriorityTarget(a))-Number(isPriorityTarget(b))||candidatePower(b,catalog)-candidatePower(a,catalog));
   const healerPicks=picked.filter(p=>opById(catalog,p.operatorId)?.role==='healer');
   const otherPicks=picked.filter(p=>!frontlinePicks.some(x=>x.uid===p.uid)&&!healerPicks.some(x=>x.uid===p.uid)).sort((a,b)=>candidatePower(b,catalog)-candidatePower(a,catalog));
-  const requiredFrontlinePicks=frontlinePicks.slice(0,routeSlots),extraFrontlinePicks=frontlinePicks.slice(routeSlots);
-  const requiredFrontlineUids=new Set(requiredFrontlinePicks.map(piece=>piece.uid));
   const isPriorityExtra=piece=>isPriorityTarget(piece)&&!requiredFrontlineUids.has(piece.uid);
   const ordered=[...requiredFrontlinePicks.slice(0,1),...healerPicks,...requiredFrontlinePicks.slice(1),...otherPicks,...extraFrontlinePicks];
   let frontCursor=0;
@@ -830,10 +851,10 @@ function improveEconomy(state,catalog){
   }
   let xpGoal=policyLevelTarget(activePolicy.id,state.round);
   if(activePolicy.id==='reroll'&&state.round>=6&&state.round<14&&!state.pieces.some(p=>p.operatorId===activePolicy.coreOperatorId&&p.star===3))xpGoal=Math.min(5,xpGoal);
-  const currentField=activeBattleFields(state,catalog),legalSlotCap=Math.min(10,currentField.deployMap?.size??10),roleFieldableCapacity=eligibleRosterCapacity(state,catalog,currentField),currentPolicyCapacity=Math.min(legalSlotCap,roleFieldableCapacity);
-  if(activePolicy.id!=='legacy'&&activePolicy.id!=='rush'&&xpGoal>currentPolicyCapacity){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:roleFieldableCapacity<=state.level?'no-eligible-new-member-for-population':'legal-deployment-capacity',targetLevel:xpGoal,roleFieldableCapacity,legalSlotCap});xpGoal=currentPolicyCapacity;}
+  const currentField=activeBattleFields(state,catalog),legalSlotCap=Math.min(10,currentField.deployMap?.size??10),roleFieldableCapacity=eligibleRosterCapacity(state,catalog,currentField),currentPolicyCapacity=activePolicy.id===ECON_PACT_POLICY?legalSlotCap:Math.min(legalSlotCap,roleFieldableCapacity);
+  if(activePolicy.id!=='legacy'&&activePolicy.id!=='rush'&&activePolicy.id!==ECON_PACT_POLICY&&xpGoal>currentPolicyCapacity){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:roleFieldableCapacity<=state.level?'no-eligible-new-member-for-population':'legal-deployment-capacity',targetLevel:xpGoal,roleFieldableCapacity,legalSlotCap});xpGoal=currentPolicyCapacity;}
   let xpBuys=0;
-  while(state.level<xpGoal&&(state.pieces.length>state.level||activePolicy.id==='rush')&&xpBuys<4){
+  while(state.level<xpGoal&&(state.pieces.length>state.level||activePolicy.id==='rush'||activePolicy.id===ECON_PACT_POLICY)&&xpBuys<4){
     const plan=campaignRolePlan(state,catalog);
     if(activePolicy.id!=='legacy'&&activePolicy.id!=='rush'&&Object.values(plan.missing).some(value=>value>0)){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'wait-for-required-team-roles',missing:plan.missing});break;}
     const cost=viewSession(state,{catalog}).actionCosts?.xpGold??4;
@@ -866,8 +887,20 @@ function improveEconomyPact(state,catalog){
   const plan=econPactPlan(state.round,state.level),field=activeBattleFields(state,catalog),identity=catalog.environments?.[state.environmentId]?.identityPactId;
   const reserve=plan.bankTarget;
   let buys=0;
-  while(buys<(state.round>=24?4:state.level>=9?2:1)){
-    const candidate=chooseOffer(state,catalog,{context:'purchase'});if(!candidate)break;
+  const initialMissing=campaignRolePlan(state,catalog,field).missing;
+  const roleStable=!initialMissing.frontline&&!initialMissing.healer&&!initialMissing.antiAir;
+  const buyLimit=state.round>=24?4:roleStable?2:1;
+  const canActOnOffer=(offer,op)=>{
+    const roleNeed=roleNeedForOffer(op,state,catalog,field),floor=roleNeed?0:reserve;
+    if(state.gold-Number(offer.cost)<floor)return false;
+    const owned=state.pieces.filter(piece=>piece.operatorId===op.id),count=pactMemberCounts(state.pieces,catalog).get(identity)??0,thresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(level=>level.threshold)??[];
+    const targetable=Boolean(roleNeed||owned.some(piece=>piece.star===1)||econPactIdentityInvestment(op,state,catalog)||op.id===activePolicy.coreOperatorId&&state.level>=9||thresholds.some(value=>value>count)&&(op.pacts??[]).includes(identity)&&!state.pieces.some(piece=>opById(catalog,piece.operatorId)?.charId===op.charId));
+    if(!targetable)return false;
+    const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold'),capacity=reduced?7:9;
+    return state.pieces.filter(piece=>piece.row===null).length<capacity||Boolean(purchaseBenchCandidate(state,catalog,op.id));
+  };
+  while(buys<buyLimit){
+    const candidate=chooseOffer(state,catalog,{context:'purchase',isActionable:canActOnOffer});if(!candidate)break;
     const op=opById(catalog,candidate.offer.operatorId);if(!op)break;
     const roleNeed=roleNeedForOffer(op,state,catalog,field),owned=state.pieces.filter(piece=>piece.operatorId===op.id);
     const canMerge=owned.some(piece=>piece.star===1);
@@ -883,10 +916,10 @@ function improveEconomyPact(state,catalog){
     const duplicate=state.pieces.find(piece=>piece.operatorId===op.id&&piece.star===1);
     state=runAction(state,{type:'buy',offerUid:candidate.offer.uid,...(duplicate?{mergeTargetUid:duplicate.uid}:{})},catalog).state;buys++;
   }
-  const xpPlan=econPactPlan(state.round,state.level),fieldNow=activeBattleFields(state,catalog),legalSlotCap=Math.min(10,fieldNow.deployMap?.size??10),roleFieldableCapacity=eligibleRosterCapacity(state,catalog,fieldNow);
-  let xpGoal=Math.min(xpPlan.levelTarget,legalSlotCap,roleFieldableCapacity);
+  const xpPlan=econPactPlan(state.round,state.level),fieldNow=activeBattleFields(state,catalog),legalSlotCap=Math.min(10,fieldNow.deployMap?.size??10);
+  const xpGoal=Math.min(xpPlan.levelTarget,legalSlotCap);
   let xpBuys=0;
-  while(state.level<xpGoal&&state.pieces.length>state.level&&xpBuys<4){
+  while(state.level<xpGoal&&xpBuys<4){
     const missing=campaignRolePlan(state,catalog,fieldNow).missing;
     if(missing.frontline||missing.healer||missing.antiAir){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-wait-for-block-heal-air',missing});break;}
     const cost=viewSession(state,{catalog}).actionCosts?.xpGold??4;
@@ -898,7 +931,14 @@ function improveEconomyPact(state,catalog){
     while(refreshed<refreshLimit){
       const cost=viewSession(state,{catalog}).actionCosts?.refreshGold??2;if(state.gold-cost<refreshReserve)break;
       state=runAction(state,{type:'refresh'},catalog).state;refreshed++;
-      const candidate=chooseOffer(state,catalog,{context:'refresh'});if(!candidate)continue;
+      const canActOnRefreshed=(offer,op)=>{
+        const currentCount=pactMemberCounts(state.pieces,catalog).get(identity)??0,currentThresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(level=>level.threshold)??[];
+        const roleNeed=roleNeedForOffer(op,state,catalog,fieldNow),ownsStar1=state.pieces.some(piece=>piece.operatorId===op.id&&piece.star===1),targetsCore=op.id===activePolicy.coreOperatorId;
+        const targetable=roleNeed||ownsStar1||targetsCore||econPactIdentityInvestment(op,state,catalog)||((op.pacts??[]).includes(identity)&&currentThresholds.some(value=>value>currentCount)&&!state.pieces.some(piece=>opById(catalog,piece.operatorId)?.charId===op.charId));
+        const floor=roleNeed?0:refreshReserve,room=state.pieces.filter(piece=>piece.row===null).length<(hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold')?7:9)||Boolean(purchaseBenchCandidate(state,catalog,op.id));
+        return targetable&&state.gold-Number(offer.cost)>=floor&&room;
+      };
+      const candidate=chooseOffer(state,catalog,{context:'refresh',isActionable:canActOnRefreshed});if(!candidate)continue;
       const op=opById(catalog,candidate.offer.operatorId),owned=state.pieces.filter(piece=>piece.operatorId===op?.id),count=pactMemberCounts(state.pieces,catalog).get(identity)??0;
       const thresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(item=>item.threshold)??[];
       const targetsCore=op?.id===activePolicy.coreOperatorId,targetsPact=Boolean((op?.pacts??[]).includes(identity)&&thresholds.some(value=>value>count)),targetsMerge=owned.some(piece=>piece.star===1);
@@ -909,8 +949,26 @@ function improveEconomyPact(state,catalog){
       state=runAction(state,{type:'buy',offerUid:candidate.offer.uid,...(duplicate?{mergeTargetUid:duplicate.uid}:{})},catalog).state;buys++;
     }
   }
-  for(const item of [...state.consumables]){const target=copyTargetsForCampaign(state,catalog,activePolicy.coreOperatorId)[0];if(!target)break;activeMetrics.copyTargets.push({round:state.round,pieceUid:target.uid,operatorId:target.operatorId,star:target.star,core:target.operatorId===activePolicy.coreOperatorId});state=runAction(state,{type:'useCopy',consumableUid:item.uid,pieceUid:target.uid},catalog).state;}
+  for(const item of [...state.consumables]){
+    const targets=copyTargetsForCampaign(state,catalog,activePolicy.coreOperatorId);
+    const target=selectEconPactCopyTarget(item,targets,state,activePolicy.coreOperatorId,catalog);if(!target)continue;
+    activeMetrics.copyTargets.push({round:state.round,kind:item.kind,pieceUid:target.uid,operatorId:target.operatorId,star:target.star,core:target.operatorId===activePolicy.coreOperatorId});
+    state=runAction(state,{type:'useCopy',consumableUid:item.uid,pieceUid:target.uid},catalog).state;
+  }
   return state;
+}
+export function selectEconPactCopyTarget(item,targets,state,coreOperatorId,catalog){
+  const core=targets.find(piece=>piece.operatorId===coreOperatorId)??null;
+  if(item?.kind==='smallCopy'){
+    const mergeReady=targets.find(piece=>state.pieces.filter(other=>other.operatorId===piece.operatorId&&other.star===1).length>=1);
+    return mergeReady??targets.find(piece=>piece.star===1)??null;
+  }
+  if(item?.kind==='universalCopy'){
+    if(state.level>=9&&core)return core;
+    if(state.round<24)return null;
+    return targets.find(piece=>piece.operatorId!==coreOperatorId&&piece.star===1)??null;
+  }
+  throw new Error(`unsupported-econ-pact-copy:${item?.kind}`);
 }
 
 export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',balanceProfile='formal'}={}){
@@ -1061,7 +1119,10 @@ export function runEconomyPactValidation({seedBase=0x45434f4e,maxMs=12*60*1000}=
   return {schemaVersion:1,policy:ECON_PACT_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',balanceProfile:'formal',environments,runs,summary:{runs:runs.length,expectedRuns:environments.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+run.battles,0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length||runs.some(run=>run.truncated),elapsedMs:Date.now()-started}};
 }
 export function appendEconomyPactValidation(result){
-  ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};document.economyPactNaturalValidation=result;fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
+  ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
+  const previous=document.economyPactNaturalValidation,priorAttempts=[...(previous?.priorAttempts??[])];
+  if(previous){const {priorAttempts:prior,...attempt}=previous;priorAttempts.push(attempt);}
+  document.economyPactNaturalValidation={...result,priorAttempts};fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
 }
 
 function ensureReportPath(){

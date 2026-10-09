@@ -60,6 +60,9 @@ test('detail fragments round-trip encoded ids for reload and hashchange navigati
  const fragment=detailHash('inventory','piece item/4');
  assert.deepEqual(parseDetailHash(fragment),{kind:'inventory',id:'piece item/4'});
  assert.equal(parseDetailHash('#broken'),null);
+ const section=detailHash('section','start-settings');
+ assert.equal(section,'#section-start-settings');
+ assert.deepEqual(parseDetailHash(section),{kind:'section',id:'start-settings'});
 });
 
 test('recipe rewards identify the selected finished item and its components',()=>{
