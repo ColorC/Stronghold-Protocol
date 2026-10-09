@@ -34,6 +34,7 @@ const REMOTE_WORKSHOP_URL = workshopUrlArg >= 0 ? process.argv[workshopUrlArg + 
 const embedUrlArg = process.argv.findIndex((arg) => arg === '--embed-url');
 const REMOTE_EMBED_URL = embedUrlArg >= 0 ? process.argv[embedUrlArg + 1] : process.argv.find((arg) => arg.startsWith('--embed-url='))?.slice('--embed-url='.length) || null;
 const REMOTE_MODE = !!REMOTE_ENTRY_URL;
+const REMOTE_ATTEMPT_ID = new Date().toISOString().replace(/[^0-9TZ-]/g, '-');
 const REMOTE_PRIOR_ATTEMPTS = (() => {
   if (!REMOTE_MODE) return [];
   try {
@@ -133,7 +134,7 @@ function entryUrl(serverInstance, params = {}) {
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function attachPageDiagnostics(page, label = 'page') {
   page.on('pageerror', (error) => errors.push(`${label} pageerror: ${error.message}`));
-  page.on('response', (response) => {
+  page.on('response', async (response) => {
     const status = response.status();
     const url = new URL(response.url());
     const sameOrigin = url.origin === new URL(page.url() || 'http://127.0.0.1').origin;
@@ -142,7 +143,10 @@ function attachPageDiagnostics(page, label = 'page') {
       if (status !== 404 && status < 500) return;
       const type = response.request().resourceType();
       if (['image','font','media'].includes(type)) missingResources.push({ status, url: response.url(), resourceType: type });
-      else if (sameOrigin) errors.push(`same-origin business HTTP ${status} ${response.url()}`);
+      else if (sameOrigin) {
+        const body = status >= 500 ? await response.text().catch(() => '') : '';
+        errors.push(`same-origin business HTTP ${status} ${response.url()}${body ? ` response=${body.slice(0, 3000)}` : ''}`);
+      }
     } else if (sameOrigin && status >= 400) errors.push(`HTTP ${status} ${response.url()}`);
   });
   if (!REMOTE_MODE) page.on('console', (message) => {
@@ -455,7 +459,13 @@ async function clickText(page, selector, text, { exact = true, timeout = 10_000 
   throw new Error(`未找到可点击文本 ${JSON.stringify(text)} (${selector})`);
 }
 async function clickButton(page, text) { return clickText(page, 'button', text, { exact: false }); }
-async function waitGame(page, timeout = 60_000) { await page.waitForSelector('.rs-game', { timeout }); }
+async function waitGame(page, timeout = 60_000) {
+  await page.waitForFunction(() => document.querySelector('.rs-game') || document.querySelector('.rs-start .rs-panel'), { timeout });
+  if (await page.$('.rs-game')) return;
+  const message = (await page.$eval('.rs-start .rs-panel', (panel) => panel.innerText.trim()).catch(() => '开局失败面板未提供错误文本'));
+  await capture(page, '02-production-start-failure.png', '生产开局失败现场');
+  throw new Error(`开局没有创建对局：${message}`);
+}
 async function stateOf(page, id) {
   const response = await page.evaluate(async (sessionId) => fetch(new URL(`resonance/api/sessions/${encodeURIComponent(sessionId)}?catalog=0`, location.href)).then((r) => r.json()), id);
   assert(response?.ok && response.state, '无法读取由页面创建的验证存档');
@@ -473,7 +483,7 @@ async function startViaUi(page, { difficulty = 'NORMAL', environmentText = null 
 }
 async function capture(page, name, purpose) {
   await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.());
-  const file = path.join(SCREENSHOT_DIR, name);
+  const file = path.join(SCREENSHOT_DIR, REMOTE_MODE ? `${REMOTE_ATTEMPT_ID}-${name}` : name);
   await page.screenshot({ path: file, fullPage: true, captureBeyondViewport: true });
   screenshots.push({ path: file, purpose });
 }
