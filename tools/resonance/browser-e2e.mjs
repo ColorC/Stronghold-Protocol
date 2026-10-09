@@ -64,6 +64,11 @@ if (process.argv.includes('--self-test-embed-url')) {
   process.stdout.write(JSON.stringify({ ok: true, expectedOrigin: new URL(expected).origin, expectedPath: new URL(expected).pathname }) + '\n');
   process.exit(0);
 }
+// Resolve module-time inputs before importing the server from a sparse checkout.
+process.env.SP_DATA_DIR ||= path.join(CANONICAL_ROOT, 'data');
+process.env.SP_INDEPENDENT_DESIGN_PATH ||= path.join(CANONICAL_ROOT, 'data/independent-design.json');
+process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH ||= path.join(CANONICAL_ROOT, 'data/independent-darkmoon-design-addon.json');
+process.env.SP_INDEPENDENT_GAME_TEXT_PATH ||= path.join(CANONICAL_ROOT, 'data/independent-game-text.json');
 const [{ startServer }, { loadData }, { getResonanceCatalog, resonanceContent }, { createSession, validateSession },
   { getResonanceField, runResonanceBattle }, { legalSummonCells },
   { ARCHETYPES, SCENARIO_CONFIGS, buildScenario, makePactTerminalRoster }] = await Promise.all([
