@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getData } from '../../server/data.js';
+import { getIndependentField } from '../../server/modes/independent/battle.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { modeIdFor } from '../../shared/constants.js';
 
@@ -45,6 +46,10 @@ function preparedWorkshopProjection(data, catalog) {
   const source = id => Object.values(catalog.operators).find(op => !op.elite && op.sourceRefs?.darkmoon19_2?.id === id);
   const trainer = source('BGS_021'); const summoner = source('CFM_316');
   assert.ok(trainer && summoner, 'real BGS021 trainer and CFM316 token source exist');
+  const wolfId = 'token_10028_vigil_wolf';
+  const gameData = new GameData(data, modeIdFor('solo', 'NORMAL'));
+  const skillIndex = [0, 1, 2].find(i => gameData.placeableTokens(summoner.chessId, { skillIndex: i, moduleId: 'none' }).some(token => token.tokenId === wolfId));
+  assert.notEqual(skillIndex, undefined, 'the live CFM316 loadout grants the native wolf stack');
   let state = createSession({ seed: 82131, growthMode: 'levels' }); state.growthMode = 'levels'; state.funds = 30;
   for (const [slot, op] of [[0, trainer], [1, summoner]]) {
     state.shop.slots[slot] = { ...state.shop.slots[slot], kind: 'chess', id: op.chessId, sold: false, price: 3 };
@@ -52,13 +57,49 @@ function preparedWorkshopProjection(data, catalog) {
     const bought = applyAction(state, { type: 'buy', slot }, { catalog });
     assert.equal(bought.ok, true, bought.error?.message); state = bought.state;
   }
-  for (const piece of [...state.pieces]) {
-    const cells = viewSession(state, { data, catalog }).pieces.find(x => x.uid === piece.uid).legalTiles;
-    assert.ok(cells.length, `${piece.chessId} has a legal deployment cell`);
-    const [row, col] = cells[0].split(',').map(Number);
-    const moved = applyAction(state, { type: 'move', uid: piece.uid, row, col }, { catalog });
-    assert.equal(moved.ok, true, moved.error?.message); state = moved.state;
-  }
+  const summonerPiece = state.pieces.find(piece => piece.chessId === summoner.chessId);
+  const trainerPiece = state.pieces.find(piece => piece.chessId === trainer.chessId);
+  assert.ok(summonerPiece && trainerPiece, 'both source operators are in the real roster');
+  summonerPiece.skillIndex = skillIndex;
+  const routeTilesForWave = wave => {
+    const tiles = new Set();
+    for (const spawn of wave.spawns || []) {
+      if (!(Number(spawn.count) > 0) || spawn.preview?.fly === true) continue;
+      const route = wave.routes?.[spawn.routeIndex];
+      if (!route || route.motion === 'FLY') continue;
+      const points = [route.start, ...(route.checkpoints || []), route.end].filter(point => Array.isArray(point) && point.length === 2);
+      for (let i = 1; i < points.length; i++) {
+        const [r0, c0] = points[i - 1], [r1, c1] = points[i];
+        const steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0), 1);
+        for (let n = 0; n <= steps; n++) tiles.add(`${Math.round(c0 + (c1 - c0) * n / steps)},${Math.round(r0 + (r1 - r0) * n / steps)}`);
+      }
+    }
+    return tiles;
+  };
+  const field = getIndependentField(state, { data, catalog });
+  const routeTiles = routeTilesForWave(field.wave);
+  assert.ok(routeTiles.size, 'the selected real wave has ground-route tiles');
+  const summonerCells = viewSession(state, { data, catalog }).pieces.find(piece => piece.uid === summonerPiece.uid).legalTiles;
+  assert.ok(summonerCells.includes('9,8'), 'the owner can stand on the validated tile that covers the route');
+  let moved = applyAction(state, { type: 'move', uid: summonerPiece.uid, row: 9, col: 8 }, { catalog });
+  assert.equal(moved.ok, true, moved.error?.message); state = moved.state;
+  const trainerCells = viewSession(state, { data, catalog }).pieces.find(piece => piece.uid === trainerPiece.uid).legalTiles;
+  const distance = tile => Math.min(...[...routeTiles].map(key => {
+    const [row, col] = key.split(',').map(Number);
+    return Math.abs(tile[0] - row) + Math.abs(tile[1] - col);
+  }));
+  const trainerCell = trainerCells.map(key => key.split(',').map(Number)).sort((a, b) => distance(b) - distance(a))[0];
+  assert.ok(trainerCell, 'the trainer has a legal real deployment cell');
+  moved = applyAction(state, { type: 'move', uid: trainerPiece.uid, row: trainerCell[0], col: trainerCell[1] }, { catalog });
+  assert.equal(moved.ok, true, moved.error?.message); state = moved.state;
+  const stack = state.summons.find(piece => piece.ownerUid === summonerPiece.uid && piece.tokenId === wolfId);
+  assert.ok(stack, 'the deployed owner generates its native wolf marker stack');
+  const wolfTiles = viewSession(state, { data, catalog }).pieces.find(piece => piece.uid === stack.uid).legalTiles;
+  const wolfCellText = wolfTiles.find(tile => routeTiles.has(tile));
+  assert.ok(wolfCellText, `the native marker has a legal tile on the current ground route: ${JSON.stringify({ wolfTiles, wave: field.wave })}`);
+  const [wolfRow, wolfCol] = wolfCellText.split(',').map(Number);
+  moved = applyAction(state, { type: 'move', uid: stack.uid, row: wolfRow, col: wolfCol }, { catalog });
+  assert.equal(moved.ok, true, moved.error?.message); state = moved.state;
   const preparedView = viewSession(state, { data, catalog });
   const ready = applyAction(state, { type: 'ready' }, { catalog });
   assert.equal(ready.ok, true, ready.error?.message);
@@ -68,7 +109,7 @@ function preparedWorkshopProjection(data, catalog) {
   assert.equal(projection.ownerName, summoner.name, 'the projection is attributed to the actual CFM316 summoner; BGS021 only supplies its training');
   const live = [...(ready.replay.frames || [])].reverse().map(frame => frame.stats?.[projection.id]).find(Boolean);
   assert.ok(live && Number.isFinite(live.atk), 'battle replay records the projected token live attack');
-  const native = data.tokens.token_10028_vigil_wolf;
+  const native = data.tokens[wolfId];
   const prototypeOwner = 'chess_char_3_19_a';
   const baseAttack = Math.round(native.variants[prototypeOwner].stats.atk * 0.4);
   assert.ok(live.atk > baseAttack, `opening training raises projected attack above untrained ${baseAttack}`);
