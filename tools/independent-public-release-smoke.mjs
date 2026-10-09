@@ -6,6 +6,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { publicRecordingUrl, publicReplayUrl, publicSessionUrl } from './independent-public-release-urls.mjs';
 
 const DEFAULT_BASES = [
   'https://colorc.cc/stronghold/independent.html',
@@ -46,15 +47,15 @@ export function parseArgs(argv) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const safeName = (s) => String(s).normalize('NFKD').replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-|-$/g, '').slice(0, 64) || 'capture';
-async function readSession(page) {
-  return page.evaluate(async () => {
-    const id = new URL(location.href).searchParams.get('session');
-    if (!id) throw new Error('UI start did not put session id in URL');
-    const response = await fetch(`/independent/api/sessions/${encodeURIComponent(id)}?catalog=0`, { cache: 'no-store' });
+async function readSession(page, base) {
+  const id = new URL(page.url()).searchParams.get('session');
+  if (!id) throw new Error('UI start did not put session id in URL');
+  return page.evaluate(async (url) => {
+    const response = await fetch(url, { cache: 'no-store' });
     const packet = await response.json();
     if (!response.ok || !packet.ok) throw new Error(`session read failed: HTTP ${response.status}`);
     return packet.state;
-  });
+  }, publicSessionUrl(base, id));
 }
 
 async function takeShot(page, output, artifacts, name) {
@@ -95,7 +96,7 @@ async function exerciseEntry(page, base, mode, output, receipt) {
   await page.waitForSelector('[data-testid="ix-game"]', { timeout: 60000 });
   await page.waitForFunction(() => !document.querySelector('.gm__loading') && globalThis.__SP_VIEW__, { timeout: 90000 });
   await page.waitForFunction(() => new URL(location.href).searchParams.has('session'), { timeout: 30000 });
-  let state = await readSession(page);
+  let state = await readSession(page, base);
   assert.equal(state.phase, 'prep'); assert.equal(state.growthMode, mode); assert.equal(state.roundLimit, 14);
   record.checks.newNormalSession = { sessionId: new URL(page.url()).searchParams.get('session'), phase: state.phase, growthMode: state.growthMode, roundLimit: state.roundLimit };
   record.checks.renderer = await page.evaluate(() => ({ kind: globalThis.__SP_VIEW__?.kind, webgl: !!globalThis.__SP_VIEW__?.raw?.stats?.().board3d?.on }));
@@ -106,7 +107,7 @@ async function exerciseEntry(page, base, mode, output, receipt) {
   const offerEvidence = [];
   for (let i = 0; i < slots.length; i += 1) {
     const slot = slots[i]; if (!slot || slot.sold) continue;
-    state = await readSession(page);
+    state = await readSession(page, base);
     const selector = slot.kind === 'item' ? '.shopbar__item .scard:not(.scard--sold)' : '.shopbar__cards > .scard, .shopbar__cards > .scard-wrap > .scard';
     const cards = await page.$$(selector);
     let target = null;
@@ -158,18 +159,17 @@ async function exerciseEntry(page, base, mode, output, receipt) {
   assert.ok(record.checks.originalCard, 'no offer exposes full ordinary and elite source card text');
 
   // Buy one offered operator via its visible two-tap card, then deploy through the original pointer/facing UI.
-  state = await readSession(page);
+  state = await readSession(page, base);
   const candidateIndex = state.shop.slots.findIndex((s) => s && s.kind !== 'item' && !s.sold && s.price <= state.funds);
   assert.ok(candidateIndex >= 0, 'no currently affordable operator offer');
   const visibleChess = await page.$$('.shopbar__cards > .scard, .shopbar__cards > .scard-wrap > .scard');
   const candidate = visibleChess[candidateIndex]; assert.ok(candidate, `visible operator card missing at ${candidateIndex}`);
   await candidate.click(); await sleep(200); await candidate.click();
-  await page.waitForFunction(async () => {
-    const id = new URL(location.href).searchParams.get('session');
-    const r = await fetch(`/independent/api/sessions/${encodeURIComponent(id)}?catalog=0`, { cache: 'no-store' });
+  await page.waitForFunction(async (url) => {
+    const r = await fetch(url, { cache: 'no-store' });
     const p = await r.json(); return p.ok && p.state.pieces?.length > 0;
-  }, { timeout: 15000 });
-  state = await readSession(page);
+  }, { timeout: 15000 }, publicSessionUrl(base, new URL(page.url()).searchParams.get('session')));
+  state = await readSession(page, base);
   const piece = state.pieces.find((p) => !Number.isInteger(p.row) && !p.temp);
   assert.ok(piece, 'purchased operator did not enter the visible hand');
   const targetTile = (piece.legalTiles || []).map((x) => Array.isArray(x) ? x : String(x).split(',').map(Number)).find((x) => x.length >= 2);
@@ -183,10 +183,10 @@ async function exerciseEntry(page, base, mode, output, receipt) {
   const sectors = await page.$eval('.fwheel__dia', (el) => { const r = el.getBoundingClientRect(); return { start: { x: r.left + r.width * .78, y: r.top + r.height * .5 }, end: { x: r.left + r.width * .84, y: r.top + r.height * .5 } }; });
   await page.mouse.move(sectors.start.x, sectors.start.y); await page.mouse.down(); await sleep(120);
   await page.mouse.move(sectors.end.x, sectors.end.y); await sleep(100); await page.mouse.up();
-  await page.waitForFunction(async () => {
-    const id = new URL(location.href).searchParams.get('session'); const r = await fetch(`/independent/api/sessions/${encodeURIComponent(id)}?catalog=0`, { cache: 'no-store' }); const p = await r.json();
+  await page.waitForFunction(async (url) => {
+    const r = await fetch(url, { cache: 'no-store' }); const p = await r.json();
     return p.ok && p.state.pieces?.some((x) => Number.isInteger(x.row));
-  }, { timeout: 15000 });
+  }, { timeout: 15000 }, publicSessionUrl(base, new URL(page.url()).searchParams.get('session')));
   record.checks.deploy = { uid: piece.uid, legalTile: targetTile };
   const fsButton = await page.$('button.gm__fs'); assert.ok(fsButton, 'fullscreen control missing');
   await fsButton.click(); await page.waitForFunction(() => !!document.fullscreenElement, { timeout: 5000 }); record.checks.fullscreen = true;
@@ -219,13 +219,13 @@ async function exerciseEntry(page, base, mode, output, receipt) {
 
 async function exerciseReplay(page, base, recording, output, receipt) {
   const record = { base, recording, checks: {} };
-  const replayUrl = new URL(`/stronghold/independent-replay.html?recording=${encodeURIComponent(recording)}`, base).href;
+  const replayUrl = publicReplayUrl(base, recording);
   const metaResponse = await page.goto(replayUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
   assert.ok(metaResponse && metaResponse.status() < 400, `replay page returned ${metaResponse?.status()}`);
-  const packet = await page.evaluate(async (id) => {
-    const response = await fetch(`/independent/api/recordings/${encodeURIComponent(id)}`, { cache: 'no-store' });
+  const packet = await page.evaluate(async (url) => {
+    const response = await fetch(url, { cache: 'no-store' });
     const body = await response.json(); if (!response.ok || !body.ok) throw new Error(`recording metadata HTTP ${response.status}`); return body;
-  }, recording);
+  }, publicRecordingUrl(base, recording));
   assert.ok(packet.meta?.endedAt, 'recording lacks endedAt');
   assert.equal(packet.meta?.mediaPlaybackReady, true, 'recording media playback is not finalized');
   const cue = (packet.events || []).find((event) => event.kind === 'caption' && event.p?.key === 'first-native-mechanic');
