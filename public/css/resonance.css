@@ -31,6 +31,11 @@ body { background: #101512; color: var(--rs-text); }
 .rs-hud-actions > .btn, .rs-hud-actions > a { min-width: .38rem; min-height: .38rem; padding: .04rem .09rem; font-size: .14rem; }
 .rs-hud-actions .icon { width: .19rem; height: .19rem; }
 .rs-fullscreen-small { display: inline-grid; place-items: center; color: var(--text-hi); background: rgba(8,13,11,.86); border: 1px solid var(--line-2); text-decoration: none; }
+@media (pointer: coarse), (any-pointer: coarse) {
+  .sp-coarse .rs-game .rs-hud-actions { width: max-content; max-width: 32vw; flex-wrap: wrap; gap: 4px; }
+  .sp-coarse .rs-game .rs-hud-actions > .btn, .sp-coarse .rs-game .rs-hud-actions > a { box-sizing: border-box; min-width: 44px; min-height: 44px; height: 44px; flex: none; font-size: max(.14rem,11px); }
+  .sp-coarse .rs-game .rs-hud-actions .icon, .sp-coarse .rs-game .rs-hud-actions .rs-item-icon { min-width: 20px; min-height: 20px; }
+}
 .rs-xp { display: flex; flex-direction: column; gap: .02rem; min-width: 1.25rem; padding: .03rem .08rem; background: rgba(8,13,11,.84); }
 .rs-xp b { color: var(--gold); font-size: .15rem; }
 .rs-xp small { color: var(--text-lo); font-size: .12rem; white-space: nowrap; }

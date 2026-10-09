@@ -673,7 +673,7 @@ try {
     const equipmentBefore = await readFresh();
     check('starter-equipment-available-for-real-drag', equipmentBefore.inventory?.length > 0,
       { inventory: equipmentBefore.inventory?.length || 0 });
-    await page.click('.rs-hud-actions button[title="装备"]');
+    await clickVisibleButtonText(page, '.rs-hud-actions', '装备背包', 'drag-equipment-drawer-opener');
     await page.waitForSelector('.rs-inventory__main[draggable="true"]', { timeout: 10000 });
     const itemUid = equipmentBefore.inventory[0].uid;
     const itemButton = await page.$(`[id="inventory-${itemUid}"] .rs-inventory__main[draggable="true"]`);
