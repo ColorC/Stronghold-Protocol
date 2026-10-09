@@ -1,7 +1,7 @@
 // 卫戍协议：工坊 game screen on the original renderer (render/app.js through ui/fieldHost.js): the own board in 3D with
 // Spine operators, drag & drop deploy with the direction wheel, and every ready's battle replayed from the server's
 // recording (server/modes/independent/battle.js) — the battle the result was settled on, never a re-simulation.
-import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
+import { useCallback, useEffect, useMemo, useRef, useState, useErrorBoundary } from '../../vendor/hooks.module.js';
 import { html, Icon, Button, Spinner, PhaseBanner, confirmDialog } from '../ui/components.js';
 import { GIcon } from '../ui/gameComponents.js';
 import { SettingsModal } from '../ui/settings.js';
@@ -29,6 +29,27 @@ import { DetailCard } from './detail.js';
 import { parseComponentLinkHash } from './componentLinkHash.js';
 import { ElementPicker } from './picker.js';
 import { buyTargetSpec } from './targetSelection.js';
+import { battleEndControl } from './battleEndControl.js';
+
+/** Keep battle completion reachable even if result details fail to render. */
+function GuardedResultPanel(props) {
+  const [error] = useErrorBoundary((err) => {
+    console.error('[independent] battle result panel render failed', err);
+    try {
+      globalThis.dispatchEvent(new CustomEvent('sp:ui-render-error', {
+        detail: { scope: 'battle-result', message: String(err?.message || err), stack: String(err?.stack || '') },
+      }));
+    } catch { /* diagnostics must not replace the recovery action */ }
+  });
+  if (error) return html`<div class="ix-result" role="dialog" aria-label="战斗结算" data-testid="ix-result-error">
+    <div class="ix-result__box">
+      <header><h2>战斗已结束</h2><span class="ix-muted">结算内容暂时无法显示</span></header>
+      <footer><${Button} variant="primary" onClick=${props.onClose} data-testid="ix-result-error-ok">${props.finished ? '查看结算' : '继续备战'}<//></footer>
+    </div>
+  </div>`;
+  return html`<${ResultPanel} battle=${props.battle} catalog=${props.catalog} pieces=${props.pieces}
+    finished=${props.finished} onClose=${props.onClose} />`;
+}
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -672,7 +693,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       ` : html`<${DpCounter} dp=${battle.hud?.dp} />
       <div class="ix-battlebar" data-testid="ix-battlebar">
         ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}
-        <${Button} size="sm" variant="secondary" disabled=${battle.done} onClick=${() => seekRef.current?.()} data-testid="ix-skip">跳到结尾<//>
+        ${(() => { const endControl = battleEndControl(battle.done, !!battle.finished); return html`<${Button} size="sm" variant="secondary" onClick=${endControl.action === 'close' ? closeBattle : () => seekRef.current?.()} data-testid="ix-skip">${endControl.label}<//>`; })()}
       </div>`}
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
         onClose=${() => { cancelFieldTarget(); setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onBeginTarget=${beginFieldTarget} onCancelTarget=${cancelFieldTarget} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}
@@ -696,7 +717,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     ${state.phase === 'finished' && !battle && !finalHidden ? html`<${FinalScreen} state=${state} catalog=${catalog} onLook=${() => setFinalHidden(true)} onLeave=${onLeave} />` : null}
     ${reportOpen && !battle && state.lastBattle ? html`<${ResultPanel} review=${true} catalog=${catalog} pieces=${state.pieces} onClose=${() => setReportOpen(false)}
       battle=${{ round: state.lastBattle.round, result: state.lastBattle.result, lpLost: state.lastBattle.lpLost || 0 }} />` : null}
-    ${battle?.done ? html`<${ResultPanel} battle=${battle} catalog=${catalog} pieces=${state.pieces} finished=${battle.finished} onClose=${closeBattle} />` : null}
+    ${battle?.done ? html`<${GuardedResultPanel} battle=${battle} catalog=${catalog} pieces=${state.pieces} finished=${battle.finished} onClose=${closeBattle} />` : null}
     <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />
     ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} onClose=${() => setDrawer(null)} info=${html`<${MatchInfo} state=${state} catalog=${catalog} />`}
       pub=${{ round: state.round, factions: state.board?.factions || [], bossId: state.board?.bossId || null, lastRound: state.board?.bossRound ?? state.roundLimit }}
