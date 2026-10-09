@@ -19,6 +19,7 @@
 // `loadData(...)` to await, or the `useData(...)` hook to re-render when files arrive.
 
 import { useEffect, useReducer } from '../vendor/hooks.module.js';
+import { pageResourcePath } from './resourceBase.js';
 
 /** Known data files (name → URL basename). Unknown names are allowed too (`/data/<name>.json`). */
 export const DATA_FILES = Object.freeze({
@@ -90,6 +91,24 @@ export const ART_MANIFEST_TIMEOUT_MS = 8000;
 
 /** Manifests the emote button waits on. A hang here used to leave every cell blank (GitHub #99). */
 const ART_MANIFESTS = new Set(['local', 'assets']);
+
+/** Browser singleton data follows this module, including when served from a versioned CDN path. */
+export function defaultDataBase(moduleUrl = import.meta.url) {
+  try {
+    const url = new URL(moduleUrl);
+    if (url.protocol === 'http:' || url.protocol === 'https:') return new URL('../data/', url).href;
+  } catch { /* Node and non-HTTP callers keep the historical root-relative default. */ }
+  return '/data/';
+}
+
+function rebaseManifestAssets(value) {
+  if (typeof value === 'string') return pageResourcePath(value);
+  if (Array.isArray(value)) return value.map(rebaseManifestAssets);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, rebaseManifestAssets(child)]));
+  }
+  return value;
+}
 
 /**
  * A failed load worth retrying: the request itself failed (network error) or the server answered 5xx / 408 / 429 — not a
@@ -177,7 +196,10 @@ export function createDataStore(opts = {}) {
       let toldMissing = false;
       for (let attempt = 0; ; attempt++) {
         try {
-          entry.value = await readJson(name);
+          const value = await readJson(name);
+          // These manifests contain root-relative paths from the canonical standalone app. Keep their downloaded
+          // JSON untouched while adapting the cached/browser view to an optional same-origin mount prefix.
+          entry.value = ART_MANIFESTS.has(name) ? rebaseManifestAssets(value) : value;
           entry.status = 'ready';
           break;
         } catch (err) {
@@ -260,7 +282,8 @@ export function createDataStore(opts = {}) {
 }
 
 /** Browser data store singleton. */
-export const data = createDataStore();
+export const DATA_BASE = defaultDataBase();
+export const data = createDataStore({ base: DATA_BASE });
 
 /** @param {...string} names @returns {Promise<any[]>} */
 export const loadData = (...names) => data.loadAll(...names);

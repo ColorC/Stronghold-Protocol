@@ -1,5 +1,6 @@
 // Optional original-client VFX playback. The extractor writes one atlas per Unity prefab under
 // /assets/vfx/rosmon; this player turns the colour/coverage pair into premultiplied-alpha Pixi textures.
+import { pageResourcePath } from '../resourceBase.js';
 
 const DEFAULT_ROOT = '/assets/vfx/rosmon';
 
@@ -190,7 +191,7 @@ export class OriginalVfxPlayer {
     this.layers = layers;
     this.cam = cam;
     this.view = typeof view === 'function' ? view : () => null;
-    this.root = String(root || DEFAULT_ROOT).replace(/\/$/, '');
+    this.root = pageResourcePath(String(root || DEFAULT_ROOT)).replace(/\/$/, '');
     // Atlas files are replaceable runtime assets. Keep a batch key so a
     // browser cannot silently combine a new manifest with an old atlas.
     this.cacheKey = cacheKey == null || cacheKey === '' ? null : String(cacheKey);
