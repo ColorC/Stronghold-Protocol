@@ -20,6 +20,8 @@ const RECEIPT_PATH = path.join(VERIFY_ROOT, 'browser-receipt.json');
 const PROFILE_DIR = path.join(CANONICAL_ROOT, '.omni/tmp/resonance/browser-profile');
 const fixtureCatalogCache = new Map();
 const WSH_CONFIG_PATH = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
+const WSH_CLI_PATH = process.env.WSH_CLI_PATH
+  || 'E:/WindowsWorkspace/spark.workshop/releases/remote-play-card-20261004/wt/remote-play-card-20261004-5ba073215a31/workshop/cli/dist/wsh.mjs';
 const DEADLINE_MS = 25 * 60 * 1000;
 const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const nativeSourceState = () => ({
@@ -34,6 +36,19 @@ const REMOTE_WORKSHOP_URL = workshopUrlArg >= 0 ? process.argv[workshopUrlArg + 
 const embedUrlArg = process.argv.findIndex((arg) => arg === '--embed-url');
 const REMOTE_EMBED_URL = embedUrlArg >= 0 ? process.argv[embedUrlArg + 1] : process.argv.find((arg) => arg.startsWith('--embed-url='))?.slice('--embed-url='.length) || null;
 const REMOTE_MODE = !!REMOTE_ENTRY_URL;
+const resumeSessionArg = process.argv.findIndex((arg) => arg === '--resume-production-session');
+const REMOTE_RESUME_SESSION_ID = resumeSessionArg >= 0 ? process.argv[resumeSessionArg + 1] : null;
+const productionFollowupArg = process.argv.findIndex((arg) => arg === '--check-production-followups');
+const REMOTE_FOLLOWUP_SESSION_ID = productionFollowupArg >= 0 ? process.argv[productionFollowupArg + 1] : null;
+const existingVisualReplayArg = process.argv.findIndex((arg) => arg === '--replay-existing-session');
+const EXISTING_VISUAL_REPLAY_SESSION_ID = existingVisualReplayArg >= 0 ? process.argv[existingVisualReplayArg + 1] : null;
+const existingFollowupArg = process.argv.findIndex((arg) => arg === '--followup-existing-sessions');
+const REMOTE_FOLLOWUP_EXISTING_SESSIONS = existingFollowupArg >= 0
+  ? (process.argv[existingFollowupArg + 1] || '').split(',').map((id) => id.trim()).filter(Boolean) : [];
+const productNativeArg = process.argv.findIndex((arg) => arg === '--product-native');
+const REMOTE_PRODUCT_NATIVE_REVISION = productNativeArg >= 0 ? process.argv[productNativeArg + 1] : null;
+const auditNativeArg = process.argv.findIndex((arg) => arg === '--audit-native');
+const REMOTE_AUDIT_NATIVE_REVISION = auditNativeArg >= 0 ? process.argv[auditNativeArg + 1] : REMOTE_PRODUCT_NATIVE_REVISION;
 const REMOTE_ATTEMPT_ID = new Date().toISOString().replace(/[^0-9TZ-]/g, '-');
 const REMOTE_PRIOR_ATTEMPTS = (() => {
   if (!REMOTE_MODE) return [];
@@ -113,6 +128,7 @@ const naturalSupplyClaims = [];
 const screenshots = [];
 const errors = [];
 const missingResources = [];
+const pendingResponseDiagnostics = new Set();
 let server;
 let fixtureServer;
 let browser;
@@ -134,22 +150,41 @@ function entryUrl(serverInstance, params = {}) {
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function attachPageDiagnostics(page, label = 'page') {
   page.on('pageerror', (error) => errors.push(`${label} pageerror: ${error.message}`));
-  page.on('response', async (response) => {
+  page.on('requestfailed', (request) => {
+    if (!REMOTE_MODE) return;
+    const url = request.url();
+    const scoped = REMOTE_WORKSHOP_URL && isScopedWorkshopBearerUrl(url, REMOTE_WORKSHOP_URL);
+    const sameOrigin = (() => { try { return new URL(url).origin === new URL(page.url() || 'http://127.0.0.1').origin; } catch { return false; } })();
+    if (scoped || sameOrigin) errors.push(`${label} requestfailed ${url}: ${request.failure()?.errorText || 'unknown network failure'}`);
+  });
+  page.on('response', (response) => {
     const status = response.status();
     const url = new URL(response.url());
     const sameOrigin = url.origin === new URL(page.url() || 'http://127.0.0.1').origin;
     if (url.pathname.endsWith('/favicon.ico')) return;
     if (REMOTE_MODE) {
-      if (status !== 404 && status < 500) return;
+      const workshopScoped = REMOTE_WORKSHOP_URL && isScopedWorkshopBearerUrl(response.url(), REMOTE_WORKSHOP_URL);
+      if (status >= 400 && (sameOrigin || workshopScoped)) {
+        const task = response.text().catch(() => '').then((body) => {
+          errors.push(`${workshopScoped ? 'Workshop scoped' : 'same-origin'} HTTP ${status} ${response.url()}${body ? ` response=${body.slice(0, 5000)}` : ''}`);
+        });
+        pendingResponseDiagnostics.add(task);
+        void task.finally(() => pendingResponseDiagnostics.delete(task));
+        return;
+      }
+      if (status < 400) return;
       const type = response.request().resourceType();
       if (['image','font','media'].includes(type)) missingResources.push({ status, url: response.url(), resourceType: type });
       else if (sameOrigin) {
-        const body = status >= 500 ? await response.text().catch(() => '') : '';
-        errors.push(`same-origin business HTTP ${status} ${response.url()}${body ? ` response=${body.slice(0, 3000)}` : ''}`);
+        const task = response.text().catch(() => '').then((body) => {
+          errors.push(`same-origin business HTTP ${status} ${response.url()}${body ? ` response=${body.slice(0, 3000)}` : ''}`);
+        });
+        pendingResponseDiagnostics.add(task);
+        void task.finally(() => pendingResponseDiagnostics.delete(task));
       }
     } else if (sameOrigin && status >= 400) errors.push(`HTTP ${status} ${response.url()}`);
   });
-  if (!REMOTE_MODE) page.on('console', (message) => {
+  page.on('console', (message) => {
     if (message.type() !== 'error') return;
     const location = message.location()?.url || '';
     if (/\/favicon\.ico(?:[?#]|$)/.test(location)) return;
@@ -460,9 +495,10 @@ async function clickText(page, selector, text, { exact = true, timeout = 10_000 
 }
 async function clickButton(page, text) { return clickText(page, 'button', text, { exact: false }); }
 async function waitGame(page, timeout = 60_000) {
-  await page.waitForFunction(() => document.querySelector('.rs-game') || document.querySelector('.rs-start .rs-panel'), { timeout });
+  await page.waitForFunction(() => document.querySelector('.rs-game')
+    || [...document.querySelectorAll('main.rs-start .panel__title')].some((title) => title.textContent.trim() === '暂时无法进入共鸣'), { timeout });
   if (await page.$('.rs-game')) return;
-  const message = (await page.$eval('.rs-start .rs-panel', (panel) => panel.innerText.trim()).catch(() => '开局失败面板未提供错误文本'));
+  const message = (await page.$eval('main.rs-start .panel__title', (title) => title.closest('.panel')?.innerText?.trim() || title.textContent.trim()).catch(() => '开局错误面板未提供错误文本'));
   await capture(page, '02-production-start-failure.png', '生产开局失败现场');
   throw new Error(`开局没有创建对局：${message}`);
 }
@@ -935,7 +971,16 @@ async function copyLiveLinkForKind(page, serverInstance, kind, onProgress = () =
     onProgress({ stage: 'candidate-visible', selector, index });
     if (!await bounded(visible(button), 1_500, `visibility ${kind} copy control ${index}`).catch(() => false)) continue;
     onProgress({ stage: 'candidate-click', selector, index });
+    const previousClipboard = await bounded(page.evaluate(() => navigator.clipboard.readText()), 1_000, `read prior ${kind} clipboard`).catch(() => '');
     await bounded(button.click({ timeout: 1_500 }), 2_000, `click ${kind} copy control ${index}`).catch(() => {});
+    onProgress({ stage: 'wait-for-copied-link', selector, index });
+    await page.waitForFunction(async ({ expectedKind, expectedSession, previous }) => {
+      try {
+        const value = await navigator.clipboard.readText();
+        const url = new URL(value), rawHash = decodeURIComponent(url.hash.slice(1));
+        return value !== previous && url.searchParams.get('session') === expectedSession && rawHash.startsWith(`${expectedKind}-`);
+      } catch { return false; }
+    }, { timeout: 2_500 }, { expectedKind: kind, expectedSession: sessionId, previous: previousClipboard }).catch(() => {});
     onProgress({ stage: 'read-clipboard', selector, index });
     const raw = await bounded(page.evaluate(() => navigator.clipboard.readText()), 2_000, `read ${kind} clipboard`).catch(() => '');
     let url, parsed;
@@ -1162,104 +1207,144 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       if (!card) await new Promise((resolve) => setTimeout(resolve, 150));
     }
     if (!card) throw new Error(`notes-web画布宿主中不存在URL指定的目标卡 ${focusCardId}`);
+    await capture(workshop, '05-workshop-card.png', 'Workshop画布中的正式玩法卡');
+    const locateEmbeddedGame = () => workshop.frames().find((candidate) => {
+      try {
+        const url = new URL(candidate.url()); let parent = candidate.parentFrame(), nestedInHost = false;
+        while (parent) { if (parent === hostFrame) { nestedInHost = true; break; } parent = parent.parentFrame(); }
+        return nestedInHost && matchesExpectedEmbeddedGame(url.href, expectedEmbeddedURL);
+      } catch { return false; }
+    }) || null;
     let activate = await card.$('button[aria-label="游玩"]');
     let activationLabel = '游玩';
     if (!activate || !(await visible(activate))) {
       activate = await findTextHandle(card, 'button', '全屏查看', false);
       activationLabel = '全屏查看';
     }
-    if (!activate || !(await visible(activate))) throw new Error(`目标卡 ${focusCardId} 没有可用的“游玩”或“全屏查看”入口`);
-    await activate.click();
-    const deadline = Date.now() + 30_000;
-    let frame = null;
-    while (!frame && Date.now() < deadline) {
-      frame = workshop.frames().find((candidate) => {
-        try {
-          const url = new URL(candidate.url());
-          let parent = candidate.parentFrame();
-          let nestedInHost = false;
-          while (parent) { if (parent === hostFrame) { nestedInHost = true; break; } parent = parent.parentFrame(); }
-          return nestedInHost && matchesExpectedEmbeddedGame(url.href, expectedEmbeddedURL);
-        } catch { return false; }
-      }) || null;
-      if (!frame) await new Promise((resolve) => setTimeout(resolve, 150));
+    if (!activate || !(await visible(activate))) {
+      await card.hover().catch(() => {});
+      await card.click().catch(() => {});
+      await hostFrame.waitForFunction((id) => {
+        const node = [...document.querySelectorAll('.react-flow__node')].find((entry) => entry.getAttribute('data-id') === id);
+        if (!node) return false;
+        const controls = [...node.querySelectorAll('button,a,[role="button"]')];
+        return controls.some((control) => {
+          const rect = control.getBoundingClientRect(), style = getComputedStyle(control);
+          return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+        });
+      }, { timeout: 2_000 }, focusCardId).catch(() => {});
+      activate = await card.$('button[aria-label="游玩"]');
+      activationLabel = '游玩';
+      if (!activate || !(await visible(activate))) {
+        activate = await findTextHandle(card, 'button', '全屏查看', false);
+        activationLabel = '全屏查看';
+      }
     }
-    if (!frame) throw new Error(`点击目标卡 ${focusCardId} 的“${activationLabel}”后未出现嵌套于notes-web画布的同源Resonance页面`);
-    const { id: sessionId } = await startViaUi(frame);
-    await frame.waitForSelector('.rs-game', { timeout: 60_000 });
-    const rosterButton = await findTextHandle(frame, '.rs-game button', '展开全部干员', true);
-    if (!rosterButton) throw new Error('新开的Workshop本局没有干员图鉴入口');
-    await rosterButton.click();
-    const operatorButton = await frame.$('.rs-roster article.rs-card button.rs-card__main');
-    if (!operatorButton) throw new Error('新开的Workshop本局未显示可定位的干员详情');
-    const operatorId = await operatorButton.evaluate((el) => el.closest('article')?.id?.slice('operator-'.length) || '');
-    if (!operatorId) throw new Error('图鉴干员详情缺少可定位ID');
-    await operatorButton.click();
-    await frame.waitForSelector('.rs-detail', { timeout: 15_000 });
-    const copyDetail = await frame.$('.rs-detail button[aria-label="复制定位链接"]');
-    if (!copyDetail) throw new Error('打开的干员详情没有复制定位链接');
-    await browserInstance.defaultBrowserContext().overridePermissions(expectedOrigin, ['clipboard-read', 'clipboard-write']).catch(() => {});
-    await copyDetail.click();
-    const detailUrl = await frame.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-    const detailTarget = detailUrl ? new URL(detailUrl) : null;
-    if (!detailTarget || detailTarget.searchParams.get('session') !== sessionId || detailHashParts(detailTarget).kind !== 'operator' || detailHashParts(detailTarget).id !== operatorId)
-      throw new Error('干员详情复制链接未包含该iframe本局session和干员hash');
-    await frame.goto(detailTarget.href, { waitUntil: 'domcontentloaded' });
-    await frame.waitForSelector('.rs-detail', { timeout: 15_000 });
-    let fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
-    if (!fullscreen) throw new Error('Workshop新局的干员详情没有全屏入口');
-    const iframeUrl = new URL(frame.url());
-    const href = new URL(await fullscreen.evaluate((el) => el.href));
-    if (href.searchParams.get('session') !== sessionId || href.hash !== iframeUrl.hash) throw new Error('Workshop iframe 的全屏链接未保留当前session/hash');
-    const initialHit = await fullscreen.evaluate((el) => {
-      const r = el.getBoundingClientRect();
-      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      const frame = window.frameElement;
-      const fr = frame?.getBoundingClientRect();
-      return { rect: { x: r.x, y: r.y, width: r.width, height: r.height }, hitTag: hit?.tagName,
-        hitText: hit?.textContent?.trim(), detailOpen: !!document.querySelector('.rs-detail'),
-        frameViewport: fr ? { width: fr.width, height: fr.height } : null,
-        documentViewport: { width: innerWidth, height: innerHeight } };
-    });
-    if (initialHit.detailOpen) {
-      const close = await frame.$('button[aria-label="关闭详情"]');
-      if (!close) throw new Error('Workshop干员详情遮挡全屏入口，且没有关闭控件');
-      await close.click();
-      await frame.waitForSelector('.rs-detail', { hidden: true, timeout: 10_000 });
-      fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
-      if (!fullscreen) throw new Error('关闭干员详情后Workshop全屏入口不存在');
+    let embeddedFrame = locateEmbeddedGame();
+    if (!embeddedFrame && (!activate || !(await visible(activate)))) {
+      await card.click({ clickCount: 2 }).catch(() => {});
+      for (let attempt = 0; attempt < 30 && !embeddedFrame; attempt++) {
+        embeddedFrame = locateEmbeddedGame();
+        if (!embeddedFrame) await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
-    await frame.waitForFunction(() => {
-      const el = [...document.querySelectorAll('a')].find((candidate) => candidate.textContent.trim() === '全屏打开');
-      if (!el) return false;
-      const r = el.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      const frame = window.frameElement, fr = frame?.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight &&
-        hit === el && !document.querySelector('.rs-detail') && (!fr || (fr.width > 0 && fr.height > 0));
-    }, { timeout: 10_000 });
-    let popupHandler;
-    let popupTimeout;
-    const popupPromise = new Promise((resolve) => {
-      popupHandler = (page) => resolve(page);
-      workshop.once('popup', popupHandler);
-    });
-    let popup;
-    try {
-      await fullscreen.click();
-      popup = await Promise.race([popupPromise, new Promise((_, reject) => {
-        popupTimeout = setTimeout(() => reject(new Error('Workshop全屏点击未打开新页（15秒超时）')), 15_000);
-      })]);
-    } finally {
-      if (popupHandler) workshop.off('popup', popupHandler);
-      if (popupTimeout) clearTimeout(popupTimeout);
+    if (!embeddedFrame && (!activate || !(await visible(activate)))) {
+      await card.click({ button: 'right' }).catch(() => {});
+      const menuOptions = await hostFrame.$$eval('button,[role="menuitem"],a', (elements) => elements.map((el) => {
+        const rect = el.getBoundingClientRect(), style = getComputedStyle(el);
+        return { text: (el.innerText || '').trim(), aria: el.getAttribute('aria-label'), visible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none' };
+      })).catch(() => []);
+      for (const label of ['全屏查看','全屏打开','全屏预览','预览','游玩','打开玩法']) {
+        activate = await findTextHandle(hostFrame, 'button,[role="menuitem"]', label, false).catch(() => null);
+        if (activate && await visible(activate)) { activationLabel = `右键菜单${label}`; break; }
+      }
+      if (!activate || !(await visible(activate))) {
+        const cardInspection = await card.evaluate((el) => ({
+          cardId: el.getAttribute('data-id'), className: typeof el.className === 'string' ? el.className : '',
+          rect: (() => { const r = el.getBoundingClientRect(); return { x:r.x,y:r.y,width:r.width,height:r.height,intersectsViewport:r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight }; })(),
+          text: (el.innerText || '').trim().slice(0, 1000), menuOptions,
+          controls: [...el.querySelectorAll('button,a,[role="button"]')].map((control) => {
+            const rect = control.getBoundingClientRect(), style = getComputedStyle(control), href = control.getAttribute('href');
+            return { tag: control.tagName.toLowerCase(), text: (control.innerText || '').trim().slice(0, 120),
+              ariaLabel: control.getAttribute('aria-label'), title: control.getAttribute('title'), disabled: !!control.disabled,
+              visible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+              hrefPath: href ? (() => { try { const url = new URL(href, location.href); return `${url.origin}${url.pathname}${url.hash}`; } catch { return null; } })() : null };
+          })
+        }));
+        await capture(workshop, '07-workshop-card-action-inspection.png', 'Workshop目标卡实际界面');
+        throw new Error(`目标卡 ${focusCardId} 在选中/双击/右键后仍无嵌入iframe或可用游玩控件；实际卡UI摘要=${JSON.stringify(cardInspection)}`);
+      }
     }
-    try {
-      await scopePage(popup);
-      await waitGame(popup);
-      const opened = new URL(popup.url());
-      if (opened.searchParams.get('session') !== sessionId || opened.hash !== iframeUrl.hash) throw new Error('Workshop 全屏页未保留当前session/hash');
-    } finally { await popup.close(); }
-    return `实际Workshop入口聚焦卡 ${focusCardId}，点击“${activationLabel}”后在notes-web画布内新开局 ${sessionId}；通过干员详情真实复制链接，关闭详情遮挡后确认全屏链接中心无遮挡，再实际点击全屏并保留session与hash；嵌入视口${JSON.stringify(initialHit.frameViewport)}；同源凭据范围${workshopAuth.enabled ? '已启用' : '使用现有cookies/公开访问'}`;
+    if (!embeddedFrame && activate && await visible(activate)) {
+      await activate.click();
+      const activationDeadline = Date.now() + 30_000;
+      while (!embeddedFrame && Date.now() < activationDeadline) {
+        embeddedFrame = locateEmbeddedGame();
+        if (!embeddedFrame) await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    }
+    if (!embeddedFrame) {
+      const controls = await hostFrame.$$eval('button,a,[role="button"],[role="menuitem"]', (elements) => elements.map((el) => {
+        const rect=el.getBoundingClientRect(),style=getComputedStyle(el),href=el.getAttribute('href');
+        return { tag:el.tagName.toLowerCase(),text:(el.innerText||'').trim().slice(0,120),aria:el.getAttribute('aria-label'),
+          visible:rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden',
+          hrefPath:href?(()=>{try{const url=new URL(href,location.href);return `${url.origin}${url.pathname}${url.hash}`}catch{return null}})():null };
+      })).catch(()=>[]);
+      await capture(workshop,'07-workshop-no-embedded-game.png','Workshop卡片操作后的实时界面');
+      throw new Error(`目标卡 ${focusCardId} 经真实${activationLabel}操作仍未出现HD游戏iframe；可见控件=${JSON.stringify(controls)}`);
+    }
+    if (embeddedFrame) {
+      const frameGame = await startViaUi(embeddedFrame);
+      const openingRender = await inspectEmbeddedRender(embeddedFrame, frameGame.id);
+      await capture(workshop, '05-workshop-embedded.png', 'Workshop画布内的真实对局界面');
+      await appendWorkshopProof('production-workshop-opening-render-audit', { productNativeRevision: REMOTE_AUDIT_NATIVE_REVISION,
+        sessionId: frameGame.id, screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-05-workshop-embedded.png`), openingRender });
+      const rosterButton = await findTextHandle(embeddedFrame, '.rs-game button', '展开全部干员', true);
+      if (!rosterButton) throw new Error('Workshop新局没有干员图鉴入口');
+      await rosterButton.click();
+      const operatorButton = await embeddedFrame.$('.rs-roster article.rs-card button.rs-card__main');
+      if (!operatorButton) throw new Error('Workshop新局未显示可定位的干员详情');
+      const operatorId = await operatorButton.evaluate((el) => el.closest('article')?.id?.slice('operator-'.length) || '');
+      await operatorButton.click(); await embeddedFrame.waitForSelector('.rs-detail', { timeout: 15_000 });
+      let fullscreen = await findTextHandle(embeddedFrame, 'a', '全屏打开', false);
+      if (!fullscreen) throw new Error('高清嵌入游戏中没有全屏入口');
+      const iframeHash = new URL(embeddedFrame.url()).hash;
+      const href = new URL(await fullscreen.evaluate((el) => el.href));
+      if (href.searchParams.get('session') !== frameGame.id || href.hash !== iframeHash) throw new Error('卡片高清iframe全屏URL未保留当前session/hash');
+      const hit = await fullscreen.evaluate((el) => { const r=el.getBoundingClientRect(); const target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2); return { hit:target===el,rect:{width:r.width,height:r.height},modal:!!document.querySelector('.rs-detail') }; });
+      if (hit.modal) {
+        const close=await embeddedFrame.$('button[aria-label="关闭详情"]'); if(!close)throw new Error('高清iframe的干员详情遮挡全屏且无关闭入口');
+        await close.click(); await embeddedFrame.waitForSelector('.rs-detail',{hidden:true,timeout:10_000});
+        fullscreen=await findTextHandle(embeddedFrame,'a','全屏打开',false);
+      }
+      await fullscreen.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
+      await embeddedFrame.waitForFunction(()=>{const el=[...document.querySelectorAll('a')].find(x=>x.textContent.trim()==='全屏打开');if(!el)return false;const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&el.contains(hit)&&!document.querySelector('.rs-detail')},{timeout:10_000});
+      let popupHandler; let popupTimeout;
+      const popupPromise=new Promise(resolve=>{popupHandler=popup=>resolve(popup);workshop.once('popup',popupHandler)});
+      let popup;
+      try { await fullscreen.click(); popup=await Promise.race([popupPromise,new Promise((_,reject)=>{popupTimeout=setTimeout(()=>reject(new Error('卡片高清iframe全屏点击未打开新页（15秒超时）')),15_000)})]); }
+      finally { if(popupHandler)workshop.off('popup',popupHandler);if(popupTimeout)clearTimeout(popupTimeout); }
+      try {
+        await scopePage(popup); await waitGame(popup);
+        const popupUrl=new URL(popup.url());
+        if(popupUrl.searchParams.get('session')!==frameGame.id||popupUrl.hash!==iframeHash)throw new Error('卡片高清iframe全屏页没有保留session/hash');
+        await capture(popup,'09-workshop-fullscreen.png','Workshop卡片内游戏全屏打开');
+        const fullscreenEvidence = `Workshop Canvas正式卡片HD iframe通过游戏UI打开全屏popup；实际popup session=${frameGame.id}与嵌入局相同、hash=${iframeHash}与嵌入页相同；全屏图=${path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-09-workshop-fullscreen.png`)}`;
+        remoteStory('production-workshop-embedded-fullscreen', 'passed', fullscreenEvidence);
+        await appendWorkshopProof('production-workshop-fullscreen-ui-proof', { sessionId: frameGame.id, iframeUrl: embeddedFrame.url(), popupUrl: popup.url(), hash: iframeHash,
+          gameNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION, deliveryAuditRevision: REMOTE_AUDIT_NATIVE_REVISION,
+          screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-09-workshop-fullscreen.png`), status: 'passed', rendererAudit: 'pending' });
+        const savedSessionId = REMOTE_FOLLOWUP_SESSION_ID;
+        const replay = await replayExistingBattleInWorkshopFrame(embeddedFrame, savedSessionId);
+        await capture(workshop, '10-workshop-native-battle-replay.png', 'Workshop嵌入的既有战斗客户端回放');
+        const battleRender = await inspectEmbeddedRender(embeddedFrame, savedSessionId);
+        const audit = { status: 'captured', productNativeRevision: REMOTE_AUDIT_NATIVE_REVISION, unchangedGameNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
+          screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-workshop-native-battle-replay.png`), replay, openingRender, battleRender,
+          consoleErrors: errors.filter((item) => item.includes('remote Workshop') || item.includes('production followup')), missingResources };
+        await appendWorkshopProof('production-workshop-native-render-audit', audit);
+        return `${fullscreenEvidence}；卡片预览入口=${activationLabel}；干员${operatorId}用于定位。既有已结算战斗仅客户端回放，未执行新Battle；Native渲染与资源诊断=${JSON.stringify(audit)}`;
+      } finally { await popup.close(); }
+    }
   } finally {
     browserInstance.off('targetcreated', targetHandler);
     for (const page of scopedPageList) {
@@ -1267,6 +1352,477 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       if (scoped) await scoped.then((value) => value.dispose()).catch(() => {});
     }
     await workshop.close();
+  }
+}
+async function appendWorkshopProof(kind, evidence) {
+  const receipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+  receipt.followupEvidence ??= [];
+  receipt.followupEvidence.push({ createdAt: new Date().toISOString(), kind, productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
+    auditNativeRevision: REMOTE_AUDIT_NATIVE_REVISION,
+    nativeSource: nativeSourceState(), evidence });
+  if (kind === 'production-workshop-native-render-audit') receipt.workshopRendererAudit = evidence;
+  if (kind === 'production-existing-session-native-render-audit') receipt.directColorcVisualAudit = evidence;
+  await writeFile(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+}
+async function inspectEmbeddedRender(frame, sessionId) {
+  const savedState = await stateOf(frame, sessionId);
+  await frame.waitForFunction(() => {
+    const view = globalThis.__SP_VIEW__, host = document.querySelector('.rs-field__canvas');
+    if (!view || !host || !['engine','fallback'].includes(view.kind)) return false;
+    if (view.kind === 'fallback') return true;
+    return [...host.querySelectorAll('canvas')].some((canvas) => canvas.width > 0 && canvas.height > 0);
+  }, { timeout: 45_000 });
+  await frame.waitForFunction(() => {
+    const view = globalThis.__SP_VIEW__;
+    if (!view || view.kind === 'fallback') return true;
+    let stats;
+    try { stats = view.raw?.stats?.(); } catch { return true; }
+    const spine = stats?.spine;
+    return !spine || spine.loading === 0 || spine.ready > 0 || spine.failed > 0;
+  }, { timeout: 30_000 }).catch(() => {});
+  await frame.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  return frame.evaluate(async (state) => {
+    const host = document.querySelector('.rs-field__canvas');
+    const view = globalThis.__SP_VIEW__;
+    let stats = null;
+    try { stats = view?.raw?.stats?.() ?? null; } catch (error) { stats = { error: error.message }; }
+    const rect = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height), visible: r.width > 0 && r.height > 0 };
+    };
+    const canvases = [...(host?.querySelectorAll('canvas') || [])].map((canvas) => ({
+      width: canvas.width, height: canvas.height, css: rect(canvas), ready: canvas.width > 0 && canvas.height > 0,
+      webgl: (() => { try { return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl')); } catch { return false; } })(),
+    }));
+    const resourceEntries = performance.getEntriesByType('resource').map((entry) => entry.name);
+    const moduleUrls = resourceEntries.filter((name) => /(?:\/|^)data\.js(?:[?#]|$)|(?:\/|^)gameComponents\.js(?:[?#]|$)|(?:\/|^)resonance\/app\.js(?:[?#]|$)/i.test(name));
+    const resources = resourceEntries
+      .filter((name) => /\.(?:png|webp|jpe?g|json|skel|atlas|webm|mp3|ogg)(?:[?#]|$)/i.test(name))
+      .slice(-80);
+    const spineResources = resourceEntries.filter((name) => /\.(?:skel|atlas)(?:[?#]|$)/i.test(name));
+    const app = view?.raw?.app, tiles = app?.tiles;
+    let tileSurface = null;
+    try { tileSurface = { tileKeys: Object.keys(tiles || {}).slice(0, 40), atlasKeys: Object.keys(tiles?.atlas || {}).slice(0, 30), stageId: state.node?.stageId || state.stageId || null }; }
+    catch (error) { tileSurface = { error: error.message }; }
+    let dataGraph = null;
+    try {
+      const appModuleUrl = moduleUrls.find((name) => /\/resonance\/app\.js(?:[?#]|$)/i.test(name));
+      const componentsUrl = moduleUrls.find((name) => /\/gameComponents\.js(?:[?#]|$)/i.test(name));
+      if (appModuleUrl && componentsUrl) {
+        const aUrl = new URL('../data.js', appModuleUrl).href, bUrl = new URL('../data.js', componentsUrl).href;
+        const [a, b] = await Promise.all([import(aUrl), import(bUrl)]);
+        const stageData = a.data.get('stages');
+      const dataFiles = ['assets','local','stages','chess','tokens','enemies'];
+        dataGraph = { appDataUrl: aUrl, gameComponentDataUrl: bUrl, sameModuleObject: a.data === b.data,
+          appDataStatus: Object.fromEntries(dataFiles.map((name) => [name, a.data.status(name)])),
+          gameComponentDataStatus: Object.fromEntries(dataFiles.map((name) => [name, b.data.status(name)])),
+          stageEntryCount: Array.isArray(stageData) ? stageData.length : stageData && typeof stageData === 'object' ? Object.keys(stageData).length : 0,
+          selectedStageFound: Boolean((Array.isArray(stageData) ? stageData : Object.values(stageData || {})).find((entry) => entry?.id === (state.node?.stageId || state.stageId))) };
+      }
+    } catch (error) { dataGraph = { error: error.message, moduleUrls }; }
+    let webglSample = null;
+    try {
+      const canvas = host?.querySelector('canvas'), gl = canvas?.getContext('webgl2') || canvas?.getContext('webgl');
+      if (gl && canvas.width && canvas.height) {
+        const points = [[.2,.2],[.5,.2],[.8,.2],[.2,.5],[.5,.5],[.8,.5],[.2,.8],[.5,.8],[.8,.8]];
+        webglSample = points.map(([x,y]) => { const px=new Uint8Array(4); gl.readPixels(Math.floor(canvas.width*x),Math.floor(canvas.height*y),1,1,gl.RGBA,gl.UNSIGNED_BYTE,px); return [...px]; });
+      }
+    } catch (error) { webglSample = { error: error.message }; }
+    return {
+      phase: state.phase, round: state.round, node: { id: state.node?.id, kind: state.node?.kind, stageId: state.node?.stageId || state.stageId || null },
+      historyBattles: (state.history || []).filter((entry) => entry.type === 'fight-settled').map((entry) => ({ round: entry.round, won: entry.won, hpLoss: entry.hpLoss })),
+      rendererKind: view?.kind ?? null, rendererClass: view?.raw?.constructor?.name ?? null,
+      fieldHost: rect(host), canvases, stats, pixiVersion: globalThis.PIXI?.VERSION ?? null,
+      tileSurface, webglSample, moduleUrls, dataGraph,
+      spineResources,
+      sceneElements: host ? { children: host.children.length, images: host.querySelectorAll('img').length,
+        appKeys: Object.keys(app || {}).slice(0, 60), rendererKeys: Object.keys(view || {}).slice(0, 30),
+        spineSummary: stats?.spine ? { ready: stats.spine.ready, loading: stats.spine.loading, failed: stats.spine.failed,
+          active: stats.spine.active, queued: stats.spine.queued, originalMissing: stats.originalMissing } : null,
+        visibleText: (host.innerText || '').slice(0, 160) } : null,
+      resourceTail: resources,
+    };
+  }, savedState);
+}
+async function replayExistingBattleInWorkshopFrame(frame, sessionId) {
+  assert(sessionId, 'missing existing production session for client-side battle replay');
+  const replayUrl = new URL(REMOTE_EMBED_URL || REMOTE_ENTRY_URL);
+  replayUrl.searchParams.set('session', sessionId);
+  replayUrl.searchParams.set('execution', 'client');
+  replayUrl.hash = 'section-battle-report';
+  await frame.goto(replayUrl.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await waitGame(frame, 45_000);
+  const state = await stateOf(frame, sessionId);
+  const settled = (state.history || []).filter((entry) => entry.type === 'fight-settled');
+  assert(settled.length > 0, `existing production session ${sessionId} has no settled battle to replay`);
+  const last = settled.at(-1);
+  await frame.waitForSelector('#rs-section-battle-report', { timeout: 15_000 });
+  const battleButton = await findTextHandle(frame, '#rs-section-battle-report button', `第${last.round}场`, false);
+  assert(battleButton, `existing report lacks settled round ${last.round}`);
+  await battleButton.click();
+  await frame.waitForSelector('.rs-replay', { timeout: 15_000 });
+  const renderer = await frame.evaluate(() => ({
+    viewKind: globalThis.__SP_VIEW__?.kind ?? null,
+    canvasCount: document.querySelectorAll('.rs-field__canvas canvas').length,
+    replayLabel: document.querySelector('.rs-replay b')?.textContent?.trim() || null,
+  }));
+  return { sessionId, round: last.round, won: last.won, hpLoss: last.hpLoss, battleExecuted: false,
+    replayVisible: Boolean(renderer.replayLabel), renderer, openedUrl: frame.url() };
+}
+async function runExistingSessionVisualReplay(sessionId) {
+  assert(REMOTE_MODE && REMOTE_ENTRY_URL, 'existing-session visual replay requires a direct production entry URL');
+  assert(sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId),
+    'existing-session visual replay requires a persisted session UUID');
+  const chromePath = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+  const { access } = await import('node:fs/promises');
+  await access(chromePath); await mkdir(SCREENSHOT_DIR, { recursive: true });
+  server = { url: new URL(REMOTE_ENTRY_URL).origin, entryUrl: REMOTE_ENTRY_URL, close: async () => {} };
+  browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE_DIR,
+    args: ['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist',
+      '--no-first-run','--no-default-browser-check','--disable-background-networking','--window-size=1440,1000'] });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+  attachPageDiagnostics(page, 'existing session visual replay');
+  const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+    void page.close().catch(() => {}); void browser?.close().catch(() => {});
+    reject(new Error('existing-session visual replay exceeded 3-minute deadline'));
+  }, 3 * 60 * 1000); });
+  const work = (async () => {
+    const target = new URL(REMOTE_ENTRY_URL);
+    target.searchParams.set('session', sessionId); target.searchParams.set('execution', 'client'); target.hash = 'section-battle-report';
+    await page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await waitGame(page, 60_000);
+    const state = await stateOf(page, sessionId);
+    const settled = (state.history || []).filter(entry => entry.type === 'fight-settled');
+    assert(settled.length, `persisted session ${sessionId} has no completed battle report`);
+    const last = settled.at(-1);
+    await page.waitForSelector('#rs-section-battle-report', { timeout: 15_000 });
+    const button = await findTextHandle(page, '#rs-section-battle-report button', `第${last.round}场`, false);
+    assert(button, `battle report has no replay button for settled round ${last.round}`);
+    await button.click();
+    await page.waitForSelector('.rs-replay', { timeout: 15_000 });
+    let replayPaused = false;
+    const pauseButton = await findTextHandle(page, '.rs-replay button', '暂停', false).catch(() => null);
+    if (pauseButton) {
+      await pauseButton.click();
+      replayPaused = await page.waitForFunction(() => [...document.querySelectorAll('.rs-replay button')]
+        .some(node => /继续|播放/.test(node.textContent || '')), { timeout: 5_000 }).then(() => true).catch(() => false);
+    }
+    const render = await inspectEmbeddedRender(page, sessionId);
+    const replayLabel = await page.$eval('.rs-replay b', node => node.textContent.trim()).catch(() => null);
+    await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.());
+    const screenshot = path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-existing-session-native-replay.png`);
+    await page.screenshot({ path: screenshot, fullPage: true, captureBeyondViewport: true });
+    const fieldHost = await page.$('.rs-field__canvas');
+    const fieldScreenshot = path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-existing-session-field.png`);
+    if (fieldHost) await fieldHost.screenshot({ path: fieldScreenshot });
+    await Promise.allSettled([...pendingResponseDiagnostics]);
+    const evidence = { sessionId, target: target.href, phase: state.phase, round: state.round,
+      settled: { round: last.round, won: last.won, hpLoss: last.hpLoss }, replayLabel,
+      battleExecuted: false, replayPaused, screenshot, fieldScreenshot, render, errors: [...errors], missingResources: [...missingResources] };
+    await appendWorkshopProof('production-existing-session-native-render-audit', evidence);
+    return { status: render.rendererKind === 'engine' && render.dataGraph?.sameModuleObject && render.dataGraph?.selectedStageFound
+      && render.canvases.some(canvas => canvas.ready) ? 'passed' : 'incomplete', evidence, receipt: RECEIPT_PATH };
+  })();
+  try { return await Promise.race([work, deadline]); }
+  catch (error) {
+    const screenshot = path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-existing-session-native-replay-failure.png`);
+    await page.evaluate(() => window.getSelection?.()?.removeAllRanges?.()).catch(() => {});
+    await page.screenshot({ path: screenshot, fullPage: true, captureBeyondViewport: true }).catch(() => {});
+    const evidence = { sessionId, error: error.stack || String(error), screenshot, pageUrl: page.url(), errors: [...errors], missingResources: [...missingResources] };
+    await appendWorkshopProof('production-existing-session-native-render-audit', evidence);
+    return { status: 'failed', evidence, receipt: RECEIPT_PATH };
+  } finally { clearTimeout(timeoutHandle); await page.close().catch(() => {}); await browser?.close().catch(() => {}); }
+}
+async function runRemoteProductionFollowups(sessionId) {
+  assert(REMOTE_MODE && REMOTE_WORKSHOP_URL, 'production followup requires remote entry and Workshop URLs');
+  assert(sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId), 'production followup requires the existing production session UUID');
+  const oldReceipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+  assert(oldReceipt.mode === 'remote-production' && oldReceipt.resumedSessionId === sessionId,
+    'production followup session does not match the saved same-session attempt');
+  assert(oldReceipt.productNativeRevision === REMOTE_PRODUCT_NATIVE_REVISION,
+    'product Native revision does not match the previous production attempt');
+  const mustRemainPassed = ['production-starts','production-renderers','production-natural-battles-and-supply',
+    'production-shop-actions','production-session-reload','production-selection-and-layout','production-section-copy-links'];
+  assert(mustRemainPassed.every((name) => oldReceipt.remoteStories?.[name]?.status === 'passed'),
+    'followup must preserve the seven previously passed production stories');
+  const chromePath = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+  const { access } = await import('node:fs/promises');
+  await access(chromePath); await mkdir(SCREENSHOT_DIR, { recursive: true }); await mkdir(PROFILE_DIR, { recursive: true });
+  server = { url: new URL(REMOTE_ENTRY_URL).origin, entryUrl: REMOTE_ENTRY_URL, close: async () => {} };
+  browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE_DIR,
+    args: ['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist',
+      '--no-first-run','--no-default-browser-check','--disable-background-networking','--window-size=1440,1000'] });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 1000 });
+  await browser.defaultBrowserContext().overridePermissions(server.url, ['clipboard-read','clipboard-write']);
+  attachPageDiagnostics(page, 'production followup');
+  const appendCheckpoint = async (kind, evidence) => {
+    const receipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+    receipt.followupEvidence ??= [];
+    receipt.followupEvidence.push({ createdAt: new Date().toISOString(), kind, nativeSource: nativeSourceState(), productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION, evidence });
+    await writeFile(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+    return receipt;
+  };
+  const kinds = ['operator','pact','item','recipe','strategy','environment','member','inventory','equipped','offer','choice','node','battleNode','session'];
+  const latestLinkEvidence = new Map();
+  for (const entry of oldReceipt.followupEvidence || []) {
+    if (entry.kind === 'production-link-kind-checkpoint' && entry.evidence?.kind) latestLinkEvidence.set(entry.evidence.kind, entry.evidence);
+  }
+  const linkResults = kinds.map((kind) => latestLinkEvidence.get(kind) || { kind, status: 'unavailable', error: 'not yet checked' });
+  const resultByKind = new Map(linkResults.map((entry) => [entry.kind, entry]));
+  const candidateSessionIds = [...new Set([sessionId, ...REMOTE_FOLLOWUP_EXISTING_SESSIONS])];
+  let primaryState;
+  const workshopOnly = process.argv.includes('--workshop-only');
+  try {
+    for (let sourceIndex = 0; !workshopOnly && sourceIndex < candidateSessionIds.length; sourceIndex++) {
+      const sourceSessionId = candidateSessionIds[sourceIndex];
+      const unresolved = kinds.filter((kind) => resultByKind.get(kind)?.status !== 'passed');
+      if (!unresolved.length) break;
+      await page.goto(entryUrl(server, { session: sourceSessionId }), { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await waitGame(page);
+      const state = await stateOf(page, sourceSessionId);
+      assert(new URL(page.url()).searchParams.get('session') === sourceSessionId, 'production followup did not open the existing persisted session');
+      if (sourceIndex === 0) {
+        primaryState = state;
+        await capture(page, '06-production-deep-link-source.png', '生产对局中的可复制链接');
+      }
+      await appendCheckpoint('production-existing-session-inspection', { sessionId: sourceSessionId, phase: state.phase, round: state.round,
+        revision: state.revision, pendingChoiceCount: state.pendingChoices?.length || 0, inventoryCount: state.inventory?.length || 0,
+        equippedCount: (state.pieces || []).reduce((n, piece) => n + (piece.equipment?.length || 0), 0), unresolvedKinds: unresolved });
+      process.stdout.write(`${JSON.stringify({ event: 'production-link-source', sourceIndex, sessionId: sourceSessionId, phase: state.phase, round: state.round,
+        revision: state.revision, pendingChoiceCount: state.pendingChoices?.length || 0, unresolvedKinds: unresolved, native: nativeSourceState() })}\n`);
+      for (const kind of unresolved) {
+        const checkpoint = { kind, sessionId: sourceSessionId, phase: state.phase, round: state.round, revision: state.revision, stage: 'copy-live-component' };
+        process.stdout.write(`${JSON.stringify({ event: 'production-link-start', kind, sessionId: sourceSessionId, native: nativeSourceState() })}\n`);
+        try {
+          const copied = await copyLiveLinkForKind(page, server, kind, (detail) => { checkpoint.copyProgress = detail; });
+          assert(copied, `no current live ${kind} component on source page; ${JSON.stringify(checkpoint.copyProgress || {})}`);
+          checkpoint.url = copied.url; checkpoint.targetId = copied.targetId;
+          const targetPage = await browser.newPage();
+          try {
+            checkpoint.stage = 'open-copied-link';
+            await targetPage.goto(copied.url, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+            await waitGame(targetPage, 25_000);
+            const parsed = detailHashParts(new URL(copied.url));
+            assert(parsed.kind === kind, `copied ${kind} URL resolved to ${parsed.kind}`);
+            if (new Set(['operator','pact','item','recipe','strategy','environment']).has(kind)) await targetPage.waitForSelector('.rs-detail', { timeout: 12_000 });
+            else if (kind === 'member') await targetPage.waitForFunction((id) => !!document.getElementById(`member-${encodeURIComponent(id)}`)?.matches(':focus'), { timeout: 12_000 }, parsed.id);
+            else if (kind === 'session') {
+              assert(new URL(targetPage.url()).searchParams.get('session') === parsed.id, 'session copy lost the session ID');
+              const actual = await stateOf(targetPage, parsed.id);
+              checkpoint.targetState = { phase: actual.phase, round: actual.round, revision: actual.revision };
+            } else await targetPage.waitForSelector(`[id="${copied.targetId.replaceAll('"','\\"')}"]`, { timeout: 12_000 });
+            checkpoint.status = 'passed'; checkpoint.openedUrl = targetPage.url(); checkpoint.targetVisible = true;
+          } finally { await targetPage.close().catch(() => {}); }
+        } catch (error) { checkpoint.status = 'unavailable'; checkpoint.error = error.stack || String(error); }
+        resultByKind.set(kind, checkpoint);
+        await appendCheckpoint('production-link-kind-checkpoint', checkpoint);
+        process.stdout.write(`${JSON.stringify({ event: 'production-link-terminal', kind, status: checkpoint.status, sessionId: sourceSessionId, targetId: checkpoint.targetId || null })}\n`);
+      }
+    }
+    const finalLinkResults = kinds.map((kind) => resultByKind.get(kind));
+    const passedLinks = finalLinkResults.filter((entry) => entry.status === 'passed');
+    const deepLinksPassed = finalLinkResults.length === kinds.length && passedLinks.length === kinds.length;
+    if (!workshopOnly) await appendCheckpoint('production-deep-links-and-copy', { sessionId, inspectedSessions: candidateSessionIds, phase: primaryState?.phase, round: primaryState?.round,
+      expectedKinds: kinds, passedKinds: passedLinks.map((entry) => ({ kind: entry.kind, sessionId: entry.sessionId })),
+      missing: finalLinkResults.filter((entry) => entry.status !== 'passed'), battleReplayed: false });
+    let workshopEvidence = null;
+    let workshopFailure = null;
+    try {
+      workshopEvidence = await verifyRemoteWorkshopEmbed(browser, REMOTE_WORKSHOP_URL);
+      await appendCheckpoint('production-workshop-embedded-fullscreen', { sessionId, workshopEvidence, battleReplayed: false });
+    } catch (error) {
+      workshopFailure = error.stack || String(error);
+      errors.push(`production-workshop-embedded-fullscreen: ${workshopFailure}`);
+      await appendCheckpoint('production-workshop-embedded-fullscreen', { sessionId, status: 'unavailable', error: workshopFailure, battleReplayed: false });
+    }
+
+    const receipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+    const { priorAttempts: _previousHistory, ...previousAttempt } = receipt;
+    receipt.priorAttempts = [...(Array.isArray(receipt.priorAttempts) ? receipt.priorAttempts : []), previousAttempt];
+    if (!workshopOnly) receipt.remoteStories['production-deep-links-and-copy'] = { status: deepLinksPassed ? 'passed' : 'unavailable', evidence: `既有真实SID ${candidateSessionIds.length} 个页面中的当前可复制组件逐一点击、打开并定位：${passedLinks.map((entry) => `${entry.kind}@${entry.sessionId}`).join('、') || '无'}；缺失：${finalLinkResults.filter((entry) => entry.status !== 'passed').map((entry) => entry.kind).join('、') || '无'}；未重放战斗。` };
+    const fullscreenProof = remoteStories.get('production-workshop-embedded-fullscreen');
+    const priorFullscreenProof = oldReceipt.remoteStories?.['production-workshop-embedded-fullscreen'];
+    receipt.remoteStories['production-workshop-embedded-fullscreen'] = workshopFailure && priorFullscreenProof?.status === 'passed'
+      && oldReceipt.productNativeRevision === REMOTE_PRODUCT_NATIVE_REVISION
+      ? priorFullscreenProof
+      : workshopFailure && fullscreenProof?.status !== 'passed'
+        ? { status: 'unavailable', evidence: workshopFailure }
+        : workshopFailure
+          ? { status: 'passed', evidence: `${fullscreenProof.evidence}；其后native渲染回放诊断未完成：${workshopFailure}` }
+          : { status: 'passed', evidence: workshopEvidence };
+    if (!workshopOnly) receipt.verifiedLinkKinds = [...new Set([...(receipt.verifiedLinkKinds || []), ...passedLinks.map((entry) => entry.kind)])];
+    receipt.screenshots = [...(receipt.screenshots || []), ...screenshots];
+    receipt.followupNativeSources ??= [];
+    receipt.followupNativeSources.push({ before: SOURCE_BEFORE, after: nativeSourceState(), productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION });
+    receipt.errors = [...errors];
+    receipt.resolvedHistoricalErrors = [...(receipt.resolvedHistoricalErrors || []), ...(previousAttempt.errors || [])];
+    receipt.missingStories = Object.entries(receipt.remoteStories).filter(([, value]) => value.status !== 'passed').map(([name, value]) => ({ name, ...value }));
+    receipt.status = receipt.missingStories.length === 0 && receipt.errors.length === 0 ? 'passed' : 'incomplete';
+    receipt.completedAt = new Date().toISOString();
+    await writeFile(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+    return { status: receipt.status, receipt: RECEIPT_PATH, productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
+      runnerNative: receipt.followupNativeSources.at(-1), passedKinds: passedLinks.map((entry) => entry.kind),
+      missingKinds: finalLinkResults.filter((entry) => entry.status !== 'passed').map((entry) => entry.kind), remoteStories: receipt.remoteStories,
+      screenshots: receipt.screenshots, errors: receipt.errors };
+  } finally {
+    await page.close().catch(() => {}); await browser?.close().catch(() => {}); await server?.close().catch(() => {});
+  }
+}
+async function progressProductionSessionToStrategyChoice(sessionId, { targetStrategyNode = null } = {}) {
+  assert(REMOTE_MODE && REMOTE_WORKSHOP_URL, 'production choice progress requires remote entry and Workshop URLs');
+  const receipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+  assert(receipt.mode === 'remote-production' && receipt.resumedSessionId === sessionId,
+    'choice progress must reuse the same production session already in the receipt');
+  assert(receipt.productNativeRevision === REMOTE_PRODUCT_NATIVE_REVISION,
+    'choice progress product Native does not match the existing production run');
+  await mkdir(SCREENSHOT_DIR, { recursive: true }); await mkdir(PROFILE_DIR, { recursive: true });
+  server = { url: new URL(REMOTE_ENTRY_URL).origin, entryUrl: REMOTE_ENTRY_URL, close: async () => {} };
+  const chromePath = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+  await (await import('node:fs/promises')).access(chromePath);
+  browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE_DIR,
+    args: ['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist',
+      '--no-first-run','--no-default-browser-check','--disable-background-networking','--window-size=1440,1000'] });
+  const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 1000 });
+  await browser.defaultBrowserContext().overridePermissions(server.url, ['clipboard-read','clipboard-write']);
+  attachPageDiagnostics(page, 'production strategy-choice progress');
+  const appendCheckpoint = async (kind, evidence) => {
+    const current = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+    current.followupEvidence ??= [];
+    current.followupEvidence.push({ createdAt: new Date().toISOString(), kind, productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
+      nativeSource: nativeSourceState(), evidence });
+    await writeFile(RECEIPT_PATH, `${JSON.stringify(current, null, 2)}\n`, 'utf8');
+    return current;
+  };
+  const battleCheckpoints = [];
+  const supplyCheckpoints = [];
+  const startingRevision = nativeSourceState();
+  try {
+    await page.goto(entryUrl(server, { session: sessionId }), { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await waitGame(page);
+    let state = await stateOf(page, sessionId);
+    assert(new URL(page.url()).searchParams.get('session') === sessionId, 'strategy progression lost its original session');
+    if (state.phase === 'complete') return { status: 'terminal-before-choice', receipt: RECEIPT_PATH, sessionId,
+      difficulty: state.difficulty, round: state.round, terminalReason: state.terminalReason || null, battles: battleCheckpoints };
+    targetStrategyNode ??= state.difficulty === 'FUNNY' ? 9 : 3;
+    const validEntry = state.difficulty === 'FUNNY' ? state.round === 4 : state.difficulty === 'NORMAL' && state.round === 1;
+    assert(validEntry, `expected existing FUNNY node 4 or existing NORMAL node 1; got ${state.difficulty}/node ${state.round}`);
+    assert(state.difficulty === 'FUNNY' ? targetStrategyNode === 9 : targetStrategyNode === 3,
+      `strategy target ${targetStrategyNode} does not match the existing ${state.difficulty} session path`);
+    const previouslySettled = new Set((state.history || []).filter((entry) => entry.type === 'fight-settled').map((entry) => Number(entry.round)));
+    await appendCheckpoint('production-choice-progress-start', { sessionId, phase: state.phase, round: state.round, revision: state.revision,
+      nodeStarted: state.nodeStarted, terminalReason: state.terminalReason || null, previouslySettledRounds: [...previouslySettled], targetStrategyNode });
+
+    for (let step = 0; step < 10; step++) {
+      state = await stateOf(page, sessionId);
+      assert(state.phase !== 'complete', `existing session reached terminal before strategy-choice node ${targetStrategyNode}`);
+      if (state.round === targetStrategyNode && (state.node?.kind === 'logistics' || !state.nodeStarted)) {
+        if (!state.pendingChoices?.length) {
+          const before = state;
+          const buttonText = state.node?.kind === 'logistics' ? '领取后勤并继续' : '领取本节点补给';
+          const button = await findTextHandle(page, 'button', buttonText, false);
+          assert(button && await enabled(button), `node ${targetStrategyNode} has no enabled official ${buttonText} control`);
+          await button.click();
+          state = await waitState(page, sessionId, (next) => next.revision > before.revision && (next.pendingChoices?.length || next.phase !== before.phase));
+          const supply = { sessionId, round: state.round, revisionBefore: before.revision, revisionAfter: state.revision,
+            phase: state.phase, claimedNodes: state.claimedNodes?.slice(-1) || [], pendingChoices: (state.pendingChoices || []).map((choice) => ({ uid: choice.uid, type: choice.type, source: choice.source, remaining: choice.remaining })) };
+          supplyCheckpoints.push(supply);
+          await appendCheckpoint('production-choice-progress-supply', supply);
+        }
+        const strategyChoice = (state.pendingChoices || []).find((choice) => choice.type === 'strategy');
+        assert(state.phase === 'choice' && strategyChoice, `strategy node ${targetStrategyNode} did not expose a pending strategy choice; phase=${state.phase}, choices=${JSON.stringify(state.pendingChoices || [])}`);
+        await capture(page, '08-production-strategy-choice.png', '真实策略节点的待选项目');
+        const copyProgress = {};
+        const copied = await copyLiveLinkForKind(page, server, 'choice', (detail) => Object.assign(copyProgress, detail));
+        assert(copied, `strategy choice ${strategyChoice.uid} has no live copy button; ${JSON.stringify(copyProgress)}`);
+        const copiedUrl = new URL(copied.url);
+        assert(detailHashParts(copiedUrl).kind === 'choice' && detailHashParts(copiedUrl).id === strategyChoice.uid
+          && copiedUrl.searchParams.get('session') === sessionId, 'real strategy-choice copy did not preserve the pending choice and same session');
+        const targetPage = await browser.newPage();
+        let openedUrl;
+        try {
+          await targetPage.goto(copied.url, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+          await waitGame(targetPage, 25_000);
+          await targetPage.waitForFunction((uid) => !!document.getElementById(`choice-${uid}`), { timeout: 12_000 }, strategyChoice.uid);
+          const targetState = await stateOf(targetPage, sessionId);
+          assert(targetState.phase === 'choice' && targetState.pendingChoices?.some((choice) => choice.uid === strategyChoice.uid),
+            'copied link does not reopen the same pending strategy choice');
+          openedUrl = targetPage.url();
+        } finally { await targetPage.close().catch(() => {}); }
+        const proof = { sessionId, kind: 'choice', choiceUid: strategyChoice.uid, source: strategyChoice.source, round: state.round,
+          revision: state.revision, type: strategyChoice.type, remaining: strategyChoice.remaining, options: [...strategyChoice.options],
+          copiedUrl: copiedUrl.href, openedUrl, targetId: `choice-${strategyChoice.uid}`, samePendingChoice: true,
+          status: 'passed', battleRounds: battleCheckpoints.map((entry) => entry.round), supplies: supplyCheckpoints.map((entry) => entry.round),
+          choiceClaimed: false, battleReplayed: false };
+        await appendCheckpoint('production-choice-link-proof', proof);
+        const finalReceipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+        const passedKinds = new Set((finalReceipt.followupEvidence || []).filter((entry) => entry.kind === 'production-link-kind-checkpoint' && entry.evidence?.status === 'passed').map((entry) => entry.evidence.kind));
+        passedKinds.add('choice');
+        finalReceipt.verifiedLinkKinds = [...new Set([...(finalReceipt.verifiedLinkKinds || []), 'choice'])];
+        if (['operator','pact','item','recipe','strategy','environment','member','inventory','equipped','offer','choice','node','battleNode','session'].every((kind) => passedKinds.has(kind))) {
+          finalReceipt.remoteStories['production-deep-links-and-copy'] = { status: 'passed', evidence: `14类真实复制链接均已从现存玩家会话复制并打开定位；strategy=${passedKinds.has('strategy')}，choice=${sessionId}/node${state.round}待选状态，node/battleNode由各自真实节点验证；未领取本策略、未重放已结算战斗。` };
+        }
+        finalReceipt.productionChoiceProgress = { status: 'passed', productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
+          sourceNative: startingRevision, sessionId, targetStrategyNode, battles: battleCheckpoints, supplies: supplyCheckpoints, proof };
+        finalReceipt.screenshots = [...(finalReceipt.screenshots || []), ...screenshots];
+        finalReceipt.completedAt = new Date().toISOString();
+        finalReceipt.missingStories = Object.entries(finalReceipt.remoteStories).filter(([, value]) => value.status !== 'passed').map(([name, value]) => ({ name, ...value }));
+        finalReceipt.status = finalReceipt.missingStories.length === 0 && !(finalReceipt.errors || []).length ? 'passed' : 'incomplete';
+        await writeFile(RECEIPT_PATH, `${JSON.stringify(finalReceipt, null, 2)}\n`, 'utf8');
+        return { status: 'passed', receipt: RECEIPT_PATH, productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
+          sourceNative: startingRevision, sessionId, targetStrategyNode, battles: battleCheckpoints, supplies: supplyCheckpoints,
+          pendingChoice: proof, screenshot: screenshots.at(-1)?.path, workshopStillPending: finalReceipt.remoteStories['production-workshop-embedded-fullscreen']?.status !== 'passed' };
+      }
+
+      if (state.pendingChoices?.length && state.round < targetStrategyNode) {
+        const before = state;
+        state = await resolveChoicesViaUi(page, sessionId);
+        await appendCheckpoint('production-choice-progress-intermediate-choices', { sessionId, round: before.round, revisionBefore: before.revision,
+          revisionAfter: state.revision, resolvedChoiceCount: before.pendingChoices.length, remainingChoices: state.pendingChoices?.length || 0 });
+        continue;
+      }
+      const previousSupplyCount = naturalSupplyClaims.length;
+      const prepared = await advancePrepViaUi(page, sessionId);
+      state = prepared;
+      for (const supply of naturalSupplyClaims.slice(previousSupplyCount)) {
+        const record = { sessionId, round: supply.round, nodeKind: supply.nodeKind, revision: supply.revision, source: 'official-UI-advancePrepViaUi' };
+        supplyCheckpoints.push(record);
+        await appendCheckpoint('production-choice-progress-supply', record);
+      }
+      if (state.round === targetStrategyNode && (state.node?.kind === 'logistics' || !state.nodeStarted)) continue;
+      assert(state.phase !== 'complete', `existing session reached terminal before strategy-choice node ${targetStrategyNode}`);
+      if (state.pendingChoices?.length) {
+        const before = state;
+        state = await resolveChoicesViaUi(page, sessionId);
+        await appendCheckpoint('production-choice-progress-intermediate-choices', { sessionId, round: before.round, revisionBefore: before.revision,
+          revisionAfter: state.revision, resolvedChoiceCount: before.pendingChoices.length, remainingChoices: state.pendingChoices?.length || 0 });
+        continue;
+      }
+      const existingSettlement = state.history?.find((entry) => entry.type === 'fight-settled' && Number(entry.round) === Number(state.round));
+      assert(!previouslySettled.has(Number(state.round)) && !existingSettlement,
+        `refusing to replay already settled battle at node ${state.round}`);
+      const beforeRevision = state.revision;
+      const fight = await performRealFight(page, sessionId);
+      assert(fight.ran && Number(fight.battleRound) === Number(state.round),
+        `no new natural battle executed at expected node ${state.round}; actual=${fight.battleRound ?? 'none'}`);
+      state = fight.state;
+      const record = { sessionId, round: fight.battleRound, revisionBefore: beforeRevision, revisionAfter: state.revision,
+        won: !!fight.settlement.won, hpLoss: Number(fight.settlement.hpLoss || 0),
+        diagnostics: { errorCount: Number(fight.settlement.diagnostics?.errorCount || 0), summonAnchorGaps: fight.settlement.diagnostics?.summonAnchorGaps || [] },
+        nextRound: state.round, phase: state.phase, terminalReason: state.terminalReason || null };
+      battleCheckpoints.push(record);
+      previouslySettled.add(Number(fight.battleRound));
+      await appendCheckpoint('production-choice-progress-battle-settled', record);
+      process.stdout.write(`${JSON.stringify({ event: 'production-choice-battle-settled', ...record })}\n`);
+      if (state.phase === 'complete') return { status: 'terminal-before-choice', receipt: RECEIPT_PATH, sessionId,
+        difficulty: state.difficulty, round: state.round, terminalReason: state.terminalReason || null, battles: battleCheckpoints,
+        supplies: supplyCheckpoints, lastBattle: record };
+    }
+    throw new Error(`progression exceeded ten official UI steps before strategy node ${targetStrategyNode}; actual state=${JSON.stringify({ round: state.round, phase: state.phase })}`);
+  } finally {
+    await page.close().catch(() => {}); await browser?.close().catch(() => {}); await server?.close().catch(() => {});
   }
 }
 
@@ -1303,12 +1859,36 @@ function readWorkshopBearer(workshopUrl) {
 async function installWorkshopBearerScope(page, workshopUrl) {
   const token = readWorkshopBearer(workshopUrl);
   if (!token) return { enabled: false, dispose: async () => {} };
+  const serverBase = new URL(workshopUrl).origin + '/bside';
+  let writerHeaders;
+  try {
+    const stdout = execFileSync(process.execPath, [WSH_CLI_PATH, 'whoami', '--json', '--server', serverBase, '--project', 'arknights'], {
+      encoding: 'utf8', timeout: 20_000, windowsHide: true,
+    });
+    const writer = JSON.parse(stdout)?.writer;
+    writerHeaders = {
+      'x-workshop-machine': writer?.machine,
+      'x-workshop-session': writer?.session,
+      'x-workshop-runtime': writer?.runtime,
+      'x-workshop-software': writer?.software,
+    };
+    if (Object.values(writerHeaders).some(value => typeof value !== 'string' || !value.trim())) {
+      throw new Error('official whoami returned incomplete writer identity');
+    }
+  } catch (error) {
+    throw new Error(`official WSH whoami failed; no browser API request sent: ${error.message}`);
+  }
   const bearer = `Bearer ${token}`;
   await page.setRequestInterception(true);
   const onRequest = (request) => {
     const headers = { ...request.headers() };
-    if (isScopedWorkshopBearerUrl(request.url(), workshopUrl)) headers.authorization = bearer;
-    else if (headers.authorization === bearer) delete headers.authorization;
+    if (isScopedWorkshopBearerUrl(request.url(), workshopUrl)) {
+      headers.authorization = bearer;
+      Object.assign(headers, writerHeaders);
+    } else {
+      if (headers.authorization === bearer) delete headers.authorization;
+      for (const key of Object.keys(writerHeaders)) delete headers[key];
+    }
     void request.continue({ headers }).catch(() => {});
   };
   page.on('request', onRequest);
@@ -2636,7 +3216,23 @@ async function run() {
   const difficulties = [['FUNNY', '轻松'], ['NORMAL', '标准'], ['HARD', '困难'], ['ABYSS', '深渊']];
   const expectedRoundLimit = { FUNNY: 28, NORMAL: 28, HARD: 28, ABYSS: 30 };
   const difficultyEvidence = [];
-  for (const [id, label] of difficulties) {
+  let resumedPrimary = null;
+  if (REMOTE_RESUME_SESSION_ID) {
+    assert(REMOTE_MODE, '--resume-production-session 仅用于远端生产验证');
+    await clickButton(page, '继续上一局');
+    await waitGame(page);
+    const resumedId = new URL(page.url()).searchParams.get('session');
+    assert(resumedId === REMOTE_RESUME_SESSION_ID, `继续上一局恢复了意外会话 ${resumedId || '(missing)'}`);
+    const resumedState = await stateOf(page, resumedId);
+    assert(resumedState.difficulty === 'FUNNY' && resumedState.roundLimit === expectedRoundLimit.FUNNY,
+      `恢复会话并非预期FUNNY/28：${resumedState.difficulty}/${resumedState.roundLimit}`);
+    sessions.push({ id: resumedId, purpose: 'FUNNY：前次真实开局创建的会话，经继续上一局恢复' });
+    difficultyEvidence.push(`轻松:${resumedState.difficulty}/${resumedState.roundLimit}(已恢复)`);
+    resumedPrimary = { id: resumedId, state: resumedState };
+    await capture(page, '02-production-resumed-session.png', '恢复的真实生产会话');
+    await leaveToOpening(page);
+  }
+  for (const [id, label] of difficulties.filter(([id]) => !resumedPrimary || id !== 'FUNNY')) {
     const { id: sessionId, state } = await startViaUi(page, { difficulty: id });
     assert(state.difficulty === id && state.roundLimit === expectedRoundLimit[id], `开局 ${label} 状态或轮数上限错误`);
     difficultyEvidence.push(`${label}:${state.difficulty}/${state.roundLimit}`);
@@ -2664,7 +3260,18 @@ async function run() {
   if (REMOTE_MODE) remoteStory('production-starts', difficultyEvidence.length === 4 && envEvidence.length === 3 ? 'passed' : 'unavailable',
     `远端真实存档难度/轮数上限：${difficultyEvidence.join('，')}；环境：${envEvidence.join('，') || '无'}`);
 
-  const { id: mainId, state: initial } = await startViaUi(page, { difficulty: 'NORMAL' });
+  let mainId, initial;
+  if (resumedPrimary) {
+    mainId = resumedPrimary.id;
+    await page.goto(entryUrl(server, { session: mainId }), { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await waitGame(page);
+    const recoveredState = await stateOf(page, mainId);
+    assert(recoveredState.revision === resumedPrimary.state.revision, '恢复的主会话revision在后续开局验证中意外变化');
+    initial = recoveredState;
+  } else {
+    const created = await startViaUi(page, { difficulty: 'NORMAL' });
+    mainId = created.id; initial = created.state;
+  }
   await page.waitForSelector('.rs-field__canvas', { timeout: 60_000 });
   for (const sectionId of ['field', 'shop', 'equipment'])
     sectionLinkEvidence.push(await verifySectionDeepLink(page, sectionId, mainId));
@@ -2919,6 +3526,7 @@ async function run() {
 
 async function writeReceipt(error = null) {
   clearTimeout(timeoutHandle);
+  if (pendingResponseDiagnostics.size) await Promise.allSettled([...pendingResponseDiagnostics]);
   if (error) errors.push(`${timedOut ? 'timeout' : 'runner'}: ${error.stack || error.message || error}`);
   for (const name of STORIES) if (results.get(name).status === 'unavailable' && results.get(name).evidence === '尚未执行') {
     results.set(name, { status: 'unavailable', evidence: timedOut ? '整体25分钟截止' : '脚本在该故事前异常终止' });
@@ -2927,6 +3535,7 @@ async function writeReceipt(error = null) {
   const receipt = {
     schemaVersion: 1, createdAt: new Date().toISOString(), mode: REMOTE_MODE ? 'remote-production' : 'isolated-local',
     ...(REMOTE_MODE && REMOTE_PRIOR_ATTEMPTS.length ? { priorAttempts: REMOTE_PRIOR_ATTEMPTS } : {}),
+    ...(REMOTE_MODE ? { productNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION, resumedSessionId: REMOTE_RESUME_SESSION_ID } : {}),
     nativeSource: { before: SOURCE_BEFORE, after: nativeSourceState() },
     status: error || errors.length || judgedStories.some((entry) => entry.status !== 'passed') ? 'incomplete' : 'passed',
     serverUrl: server?.url || null, entryUrl: server?.entryUrl || null, fixtureServerUrl: fixtureServer?.url || null, timeoutMs: DEADLINE_MS,
@@ -3052,6 +3661,55 @@ try {
     puppeteer=requireFromCanonical('puppeteer-core');
     const startedAt=new Date().toISOString(), result=await runTerminalAndCssFollowup({ cssOnly: true });
     process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(existingVisualReplayArg>=0){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    assert(REMOTE_ENTRY_URL && REMOTE_PRODUCT_NATIVE_REVISION && EXISTING_VISUAL_REPLAY_SESSION_ID,
+      '--replay-existing-session requires --url, --product-native and a persisted session ID');
+    const startedAt=new Date().toISOString();
+    const result=await runExistingSessionVisualReplay(EXISTING_VISUAL_REPLAY_SESSION_ID);
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,productNativeRevision:REMOTE_PRODUCT_NATIVE_REVISION,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(productionFollowupArg>=0 && process.argv.includes('--progress-to-strategy-choice')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    assert(REMOTE_ENTRY_URL && REMOTE_WORKSHOP_URL && REMOTE_PRODUCT_NATIVE_REVISION,
+      '--progress-to-strategy-choice requires --url, --workshop-url and --product-native');
+    const startedAt=new Date().toISOString();
+    const hardDeadline=new Promise((_,reject)=>{timeoutHandle=setTimeout(()=>{
+      void browser?.close().catch(()=>{}); void server?.close().catch(()=>{});
+      reject(new Error('production strategy-choice progression exceeded 10-minute deadline'));
+    },10*60*1000)});
+    let result;
+    try {
+      result=await Promise.race([ (async()=>{
+        let current=await progressProductionSessionToStrategyChoice(REMOTE_FOLLOWUP_SESSION_ID,{targetStrategyNode:9});
+        if(current.status==='terminal-before-choice'){
+          const fallbackSessions=REMOTE_FOLLOWUP_EXISTING_SESSIONS.filter((id)=>id!==REMOTE_FOLLOWUP_SESSION_ID);
+          for(const fallbackId of fallbackSessions){
+            current=await progressProductionSessionToStrategyChoice(fallbackId,{targetStrategyNode:3});
+            if(current.status==='passed')break;
+            if(current.status!=='terminal-before-choice')throw new Error(`NORMAL fallback choice progression failed for ${fallbackId}: ${JSON.stringify(current)}`);
+          }
+        }
+        return current;
+      })(),hardDeadline]);
+    } finally { clearTimeout(timeoutHandle); await browser?.close().catch(()=>{}); await server?.close().catch(()=>{}); }
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,productNativeRevision:REMOTE_PRODUCT_NATIVE_REVISION,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(productionFollowupArg>=0){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    assert(REMOTE_ENTRY_URL && REMOTE_WORKSHOP_URL && REMOTE_PRODUCT_NATIVE_REVISION,
+      '--check-production-followups requires --url, --workshop-url and --product-native');
+    const startedAt=new Date().toISOString();
+    const followupTimeoutMs=process.argv.includes('--workshop-only')?5*60*1000:8*60*1000;
+    const hardDeadline=new Promise((_,reject)=>{timeoutHandle=setTimeout(()=>{
+      void browser?.close().catch(()=>{}); void server?.close().catch(()=>{});
+      reject(new Error(`production ${process.argv.includes('--workshop-only')?'Workshop-only':'followups'} exceeded ${Math.round(followupTimeoutMs/60000)}-minute deadline`));
+    },followupTimeoutMs)});
+    let result;
+    try { result=await Promise.race([runRemoteProductionFollowups(REMOTE_FOLLOWUP_SESSION_ID),hardDeadline]); }
+    finally { clearTimeout(timeoutHandle); await browser?.close().catch(()=>{}); await server?.close().catch(()=>{}); }
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,productNativeRevision:REMOTE_PRODUCT_NATIVE_REVISION,...result},null,2)}\n`);
     if(result.status!=='passed')process.exitCode=1;
   }else{
     puppeteer=requireFromCanonical('puppeteer-core');
