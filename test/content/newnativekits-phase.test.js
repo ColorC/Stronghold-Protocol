@@ -51,10 +51,11 @@ function makeData(record, extraTokens = [], includeAlly = true, allyCharId = all
   return new DataSource({ chess: chessDefs, tokens, enemies: { [enemyKey]: enemyRec({ key: enemyKey, hp: 1e7, def: enemyDef, speed: 0 }) } }, getDefaultSource());
 }
 
-function startBattle(record, { ally = false, allyCharId = allyId, allyPos = [10, 4], tokenIds = [], enemyPos = [10, 6], enemyDef = 0, unitPos = [10, 5], flags = {} } = {}) {
+function startBattle(record, { ally = false, allyCharId = allyId, allyPos = [10, 4], tokenIds = [], placeToken = false, enemyPos = [10, 6], enemyDef = 0, unitPos = [10, 5], flags = {} } = {}) {
   const data = makeData(record, tokenIds, ally, allyCharId, enemyDef);
-  const units = [{ chessId: record.chessId, row: unitPos[0], col: unitPos[1] }];
+  const units = [{ chessId: record.chessId, row: unitPos[0], col: unitPos[1], uid: 'native-owner' }];
   if (ally) units.push({ chessId: allyCharId, row: allyPos[0], col: allyPos[1] });
+  if (placeToken) units.push({ kind: 'token', tokenId: tokenIds[0], ownerUid: 'native-owner', row: 10, col: 6 });
   const h = makeBattle({ data, units, enemies: [{ key: enemyKey, pos: enemyPos }], flags: { dpPerSec: 0, dpMax: 999, ...flags } });
   assert.equal(skillSpecSource(data.getChess(record.chessId)), 'skills', `${record.charId} resolves the native source skill`);
   return h;
@@ -150,7 +151,7 @@ function probe(charId, rec) {
     activate(unit);
     h.run(3);
     assert.ok(h.eventsOf('heal').some((e) => e[1] === ally.id && e[2] > 0));
-    assert.ok(ally.buffs.some((b) => b.key === 'native:shu:seed' && b.mods.hpRegen === rec.talents[0].bb.hp_recovery_per_sec));
+    assert.ok(ally.buffs.some((b) => b.key === 'talent:shu:farm' && b.mods.hpRegen === rec.talents[0].bb.hp_recovery_per_sec));
     h.invariants();
   } else if (charId === 'char_2024_chyue') {
     const h = startBattle(rec, { enemyPos: [10, 6] });
@@ -185,43 +186,53 @@ function probe(charId, rec) {
     h.invariants();
   } else if (charId === 'char_451_robin' || charId === 'char_4048_doroth') {
     const tokenId = tokenByChar[charId][0];
-    const h = startBattle(rec, { tokenIds: [tokenId], enemyPos: [10, 6], enemyDef: 400 });
+    const h = startBattle(rec, { tokenIds: [tokenId], placeToken: charId === 'char_4048_doroth', enemyPos: [10, 6], enemyDef: 400 });
     const unit = h.unit(rec.chessId);
-    const trap = h.b.spawnToken(unit, tokenId, 10, 6);
+    let trap;
+    if (charId === 'char_451_robin') {
+      h.run(0.6);
+      trap = h.b.spawnToken(unit, tokenId, 10, 6);
+    } else trap = h.b.allyUnits.find((u) => u.kind === 'token' && u.defId === tokenId);
     assert.ok(trap);
     h.run(0.2);
     const enemy = h.enemy(enemyKey);
     assert.ok(enemy);
     assert.ok(enemy.hp < enemy.maxHp, 'source token trap damages the entering enemy');
     if (charId === 'char_451_robin') assert.ok(enemy.buffs.some((b) => b.status === 'bind' && b.timeLeft > 0));
-    else assert.ok(enemy.s.def < enemy.base.def && enemy.buffs.some((b) => b.key.startsWith(`native:skchr_doroth_1:def:${trap.id}`)));
+    else {
+      assert.ok(enemy.s.def < enemy.base.def, 'S1 lowers enemy DEF');
+      assert.ok(enemy.buffs.some((b) => b.status === 'defDown' && b.source === trap && b.timeLeft > 0), 'S1 applies its timed DEF-down status from the trap');
+    }
     assert.equal(trap.alive, false, 'triggered trap is consumed');
     h.invariants();
   } else if (charId === 'char_1034_jesca2') {
     const tokenId = tokenByChar[charId][0];
-    const h = startBattle(rec, { ally: true, allyCharId: meleeId, allyPos: [10, 4], tokenIds: [tokenId], enemyPos: [10, 8] });
+    const h = startBattle(rec, { ally: true, allyCharId: meleeId, allyPos: [10, 4], tokenIds: [tokenId], placeToken: true, enemyPos: [10, 8] });
     const unit = h.unit(rec.chessId), ally = h.unit(meleeId);
+    const shield = h.b.allyUnits.find((u) => u.kind === 'token' && u.defId === tokenId);
     h.run(0.6);
-    const shield = h.b.spawnToken(unit, tokenId, 10, 6);
     assert.ok(shield);
     const nativeTalent = shield.def.talents[0].bb;
+    const baseLifeEnd = shield.mem.lifeEnd;
     h.run(0.2);
     assert.ok(unit.s.def > unit.base.def && ally.s.def > ally.base.def);
     activate(unit);
     h.run(0.2);
     assert.ok(unit.s.atk > unit.base.atk && unit.s.def > unit.base.def);
-    h.run(nativeTalent.duration + 0.2);
-    assert.equal(shield.alive, false, 'source shield lifetime is honored');
+    assert.ok(shield.mem.lifeEnd > baseLifeEnd, 'S1 extends the deployed shield once for this deployment');
+    h.run(Math.max(0, shield.mem.lifeEnd - h.b.time) + shield.base.respawnTime + 1);
+    assert.ok(!shield.alive || shield.deploySeq > 1, `the extended lifetime ends; state=${JSON.stringify({alive:shield.alive,deploySeq:shield.deploySeq,lifeEnd:shield.mem.lifeEnd,time:h.b.time})}`);
+    if (!shield.alive) assert.equal(shield.removed, false, 'the expired placed shield remains eligible for its native redeploy loop');
     h.invariants();
   } else if (charId === 'char_2023_ling') {
     const tokenId = tokenByChar[charId][0];
-    const h = startBattle(rec, { tokenIds: [tokenId], enemyPos: [10, 8] });
+    const h = startBattle(rec, { tokenIds: [tokenId], placeToken: true, enemyPos: [10, 8] });
     const unit = h.unit(rec.chessId);
+    const spirit = h.b.allyUnits.find((u) => u.kind === 'token' && u.defId === tokenId);
     h.run(0.6);
-    const spirit = h.b.spawnToken(unit, tokenId, 10, 6);
     assert.ok(spirit);
     const beforeSp = unit.skill.spTotal;
-    h.b.retreat(spirit, { reason: 'expired', permanent: true });
+    assert.equal(unit.mem.summonDeck.recall(spirit), true, 'the placed token leaves through the native recall path');
     assert.ok(unit.skill.spTotal > beforeSp, 'source summon-loss talent returns SP');
     assert.ok(unit.s.atk >= unit.base.atk * (1 + rec.talents[1].bb.atk));
     activate(unit);
