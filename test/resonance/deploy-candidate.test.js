@@ -249,19 +249,27 @@ test('replacement preflight recognizes exact completed capacity history and acti
   assert.ok(script.includes('staging-file-unsafe:'));
   assert.ok(script.includes(`"replacedStagedRevision":"${oldRevision}"`));
   assert.ok(!script.includes('staging-source-revision-mismatch:'));
-  for (const completed of ['ee9e2d8b90f35a4d46705ad6d019ada9f684d94b', '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d', '5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538', '7727460805442d277a1e354fc4308df8aa3bde6c', '391cd33b5770d185b6c8d1ebd1f59e9f82d814c2', oldRevision]) {
+  const withoutReplacement = preflightScript('1.0.0', revision, ['server/index.js']);
+  for (const completed of ['ee9e2d8b90f35a4d46705ad6d019ada9f684d94b', '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d', '5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538', '7727460805442d277a1e354fc4308df8aa3bde6c', '391cd33b5770d185b6c8d1ebd1f59e9f82d814c2', '28dcd4101cfd520b222cff0e154f8b6036bd82bf', oldRevision]) {
     for (const name of ['capacity-receipt', 'capacity-recording-receipt', 'capacity-batch-receipt', 'capacity-http-cgroup', 'capacity-recording-cgroup']) {
       assert.ok(script.includes(`'${name}.${completed}.json'`));
     }
   }
   assert.ok(script.includes(`'stronghold-protocol.${oldRevision}.unit.backup'`));
   assert.ok(script.includes(`'stronghold-protocol.${oldRevision}.env.backup'`));
-  for (const backupRevision of ['275375842f5426ccd53ebe0915f6b2883c919fe5', oldRevision]) {
-    assert.ok(script.includes(`'stronghold-protocol.${backupRevision}.unit.backup'`));
-    assert.ok(script.includes(`'stronghold-protocol.${backupRevision}.env.backup'`));
+  for (const backupName of [
+    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
+    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
+    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.unit.backup',
+    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.env.backup',
+    'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.unit.backup',
+    'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.env.backup',
+    'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.runtime-unit.backup',
+  ]) {
+    assert.ok(script.includes(`'${backupName}'`));
+    assert.ok(withoutReplacement.includes(`'${backupName}'`), 'verified activation backups are recognized during prepare/resume');
   }
-  const withoutReplacement = preflightScript('1.0.0', revision, ['server/index.js']);
-  assert.ok(!withoutReplacement.includes(`'stronghold-protocol.${oldRevision}.unit.backup'`));
+  assert.ok(!withoutReplacement.includes(`'stronghold-protocol.9f5d25631d0aed9a6e1c3b6028f92e2aa7c400ec.unit.backup'`), 'unverified backup revisions remain rejected');
   assert.ok(!script.includes('capacity-*.json'), 'unknown archive names remain rejected');
   assert.throws(() => preflightScript('1.0.0', revision, [], { replaceStagedRevision: revision }), /invalid staged replacement/);
   assert.throws(() => preflightScript('1.0.0', revision, [], { replaceStagedRevision: 'not-a-commit' }), /invalid staged replacement/);
@@ -274,6 +282,15 @@ test('replacement preflight enumerates the existing standard five capacity files
   const stage = path.join(root, 'stage');
   fs.mkdirSync(stage);
   const standard = ['capacity-receipt.json', 'capacity-recording-receipt.json', 'capacity-batch-receipt.json', 'capacity-http-cgroup.json', 'capacity-recording-cgroup.json'];
+  const backups = [
+    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
+    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
+    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.unit.backup',
+    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.env.backup',
+    'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.unit.backup',
+    'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.env.backup',
+    'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.runtime-unit.backup',
+  ];
   const oldRevision = '44c3d344d56349487ecdf3031042ab8012136fe7';
   const extractLoop = script => {
     const marker = "for f in '/var/tmp/stronghold-protocol/resonance'/*;";
@@ -286,10 +303,14 @@ test('replacement preflight enumerates the existing standard five capacity files
   const runLoop = script => spawnSync('bash', ['-c', `set -eu\n${extractLoop(script)}`], { encoding: 'utf8' });
   try {
     for (const file of standard) fs.writeFileSync(path.join(stage, file), '{}\n');
+    for (const file of backups) fs.writeFileSync(path.join(stage, file), 'verified backup fixture\n');
     const replacement = runLoop(preflightScript('1.0.0', revision, ['server/index.js'], { replaceStagedRevision: oldRevision }));
     assert.equal(replacement.status, 0, replacement.stderr || replacement.stdout);
     const normal = runLoop(preflightScript('1.0.0', revision, ['server/index.js']));
-    assert.notEqual(normal.status, 0, 'standard prior capacity files are admitted only during explicit replacement');
+    assert.notEqual(normal.status, 0, 'standard current capacity files are admitted only during explicit replacement');
+    for (const file of standard) fs.unlinkSync(path.join(stage, file));
+    const knownBackups = runLoop(preflightScript('1.0.0', revision, ['server/index.js']));
+    assert.equal(knownBackups.status, 0, knownBackups.stderr || knownBackups.stdout);
     fs.writeFileSync(path.join(stage, 'unknown-keep.json'), '{}\n');
     const withUnknown = runLoop(preflightScript('1.0.0', revision, ['server/index.js'], { replaceStagedRevision: oldRevision }));
     assert.notEqual(withUnknown.status, 0);

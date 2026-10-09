@@ -30,6 +30,16 @@ const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
   '7727460805442d277a1e354fc4308df8aa3bde6c',
   '391cd33b5770d185b6c8d1ebd1f59e9f82d814c2',
   '44c3d344d56349487ecdf3031042ab8012136fe7',
+  '28dcd4101cfd520b222cff0e154f8b6036bd82bf',
+];
+const VERIFIED_ACTIVATION_BACKUP_NAMES = [
+  'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
+  'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
+  'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.unit.backup',
+  'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.env.backup',
+  'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.unit.backup',
+  'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.env.backup',
+  'stronghold-protocol.28dcd4101cfd520b222cff0e154f8b6036bd82bf.runtime-unit.backup',
 ];
 const RESONANCE_DIRECTORY = '/var/lib/stronghold-protocol/resonance-sessions';
 const BACKUP_ROOT = STAGING;
@@ -197,10 +207,7 @@ export function candidateRefreshPreflightScript({ oldRevision, newRevision, expe
   const knownCapacityArchives = [...new Set([
     ...CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision),
     ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
-    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
-    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
-    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.unit.backup',
-    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.env.backup',
+    ...VERIFIED_ACTIVATION_BACKUP_NAMES,
   ])].join('|');
   return `set -eu
 C='${CANDIDATE}'
@@ -855,12 +862,11 @@ export function preflightScript(wsVersion, revision, candidateFiles, { allowStag
   const stageNames = [
     ...OWNED_STAGE_NAMES,
     ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
+    ...VERIFIED_ACTIVATION_BACKUP_NAMES,
     ...(replaceStagedRevision ? [
       'capacity-receipt.json', 'capacity-recording-receipt.json', 'capacity-batch-receipt.json',
       'capacity-http-cgroup.json', 'capacity-recording-cgroup.json',
       `stronghold-protocol.${replaceStagedRevision}.unit.backup`, `stronghold-protocol.${replaceStagedRevision}.env.backup`,
-      'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
-      'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
     ] : []),
   ].map(name => `'${name}'`).join(' ');
   const expectedLines = expected.map(name => `'${name}'`).join(' ');
