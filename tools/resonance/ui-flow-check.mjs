@@ -251,6 +251,10 @@ try {
   if (!hardBounds) throw new Error('native hard difficulty card is missing a visible target');
   await page.mouse.click(hardBounds.x + hardBounds.width / 2, hardBounds.y + hardBounds.height / 2);
   await page.waitForFunction(() => [...document.querySelectorAll('.diff-card')].some(card => card.classList.contains('is-selected') && card.querySelector('.diff-card__name')?.textContent.trim() === '困难'), { timeout: 5000 });
+  await page.waitForFunction(() => {
+    const image = document.querySelector('.rs-difficulty-feature__art img');
+    return !!image && /modeChoice\/hard_rhodes_island/.test(image.src) && image.complete && image.naturalWidth > 0;
+  }, { timeout: 15000 });
   const difficultyFeature = await page.$eval('.rs-difficulty-feature__art img', image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 }));
   check('difficulty-selection-updates-art-and-campaign-summary', /modeChoice\/hard_rhodes_island/.test(difficultyFeature.src) && difficultyFeature.loaded &&
     /节点/.test(await page.$eval('.rs-difficulty-feature__schedule', node => node.innerText)),
