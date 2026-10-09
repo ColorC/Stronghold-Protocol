@@ -177,7 +177,16 @@ export function getResonanceField(state, { data = null, catalog = null } = {}) {
     enemyBalance: prepared.enemyBalance,
     tuning: prepared.tuning,
     timeLimit: effectiveTimeLimit(prepared, catalog),
-    resolveToken:(tokenId,operatorId,skillIndex)=>toDataSource(source).getToken(tokenId,operatorId,{skillIndex,moduleId:'none'}),
+    resolveToken:(tokenId,operatorId,skillIndex)=>{
+      const token=toDataSource(source).getToken(tokenId,operatorId,{skillIndex,moduleId:'none'});
+      if(!token)return null;
+      const raw=token.raw??{};
+      return {...token,
+        placeable:token.placeable??raw.placeable??false,
+        ownerRange:token.ownerRange??raw.ownerRange??false,
+        position:token.position??raw.position??'MELEE',
+      };
+    },
   };
 }
 

@@ -18,6 +18,7 @@ const FIXTURE_RECORDING_DIR = path.join(VERIFY_ROOT, 'fixture-recordings');
 const SCREENSHOT_DIR = path.join(VERIFY_ROOT, 'screenshots');
 const RECEIPT_PATH = path.join(VERIFY_ROOT, 'browser-receipt.json');
 const PROFILE_DIR = path.join(CANONICAL_ROOT, '.omni/tmp/resonance/browser-profile');
+const fixtureCatalogCache = new Map();
 const WSH_CONFIG_PATH = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 const DEADLINE_MS = 25 * 60 * 1000;
 const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -87,7 +88,7 @@ const STORIES = [
 ];
 
 const requireFromCanonical = createRequire(path.join(CANONICAL_ROOT, 'package.json'));
-const puppeteer = requireFromCanonical('puppeteer-core');
+let puppeteer;
 const results = new Map(STORIES.map((name) => [name, { status: 'unavailable', evidence: '尚未执行' }]));
 const remoteStories = new Map(['production-starts','production-renderers','production-natural-battles-and-supply','production-shop-actions','production-deep-links-and-copy','production-session-reload','production-selection-and-layout','production-workshop-embedded-fullscreen','production-section-copy-links']
   .map((name) => [name, { status: 'unavailable', evidence: '尚未执行' }]));
@@ -135,6 +136,11 @@ function attachPageDiagnostics(page, label = 'page') {
   if (!REMOTE_MODE) page.on('console', (message) => { if (message.type() === 'error') errors.push(`${label} console: ${message.text()}`); });
 }
 const copiesForStar = (star) => ({ 1: 1, 2: 3, 3: 9 })[star];
+function fixtureCatalogFor(data,environmentId,seed){
+  const key=`${environmentId}:${seed}`;
+  if(!fixtureCatalogCache.has(key))fixtureCatalogCache.set(key,getResonanceCatalog(data,{environmentId,seed}));
+  return fixtureCatalogCache.get(key);
+}
 const tokenIdsFor = (operator, star = 1) => {
   const record = operator?.stars?.[star]?.record || {};
   const tokens = record.skill?.tokens ?? record.tokens ?? [];
@@ -189,6 +195,7 @@ async function writeFixtureSession({ data, catalog, specs, strategyId = null, la
   const reserve = (operatorId, star) => {
     const required = copiesForStar(star);
     if (!catalog.config.activeOperatorIds.includes(operatorId)) throw new Error(`fixture operator outside active pool: ${operatorId}`);
+    if (!catalog.operators[operatorId]?.stars?.[star]?.record) throw new Error(`fixture selected star record missing: ${operatorId}/${star}`);
     while (state.poolRemaining[operatorId] < required) {
       const held = state.shop.offers.find((offer) => offer.operatorId === operatorId);
       if (!held) throw new Error(`fixture pool cannot supply ${operatorId} at ${star} star`);
@@ -208,6 +215,8 @@ async function writeFixtureSession({ data, catalog, specs, strategyId = null, la
     const spec = specs[index], piece = state.pieces[index], operator = catalog.operators[spec.operatorId];
     let tile = spec.tile;
     if (spec.summonTokenId) {
+      const selectedToken=field.resolveToken?.(spec.summonTokenId,operator.id,operator.fixedSkillIndex);
+      if(!selectedToken?.placeable)throw new Error(`fixture selected native skill token is not placeable: ${label}/${operator.id}/${spec.star}/${spec.summonTokenId}`);
       tile = legalTileKeys(field, operator).find((key) => {
         if (occupied.has(key)) return false;
         const [row,col]=key.split(',').map(Number);piece.row=row;piece.col=col;
@@ -220,6 +229,7 @@ async function writeFixtureSession({ data, catalog, specs, strategyId = null, la
     if (!tile || occupied.has(tile)) { if (requireAllDeployed) throw new Error(`fixture member has no selected legal tile: ${label}/${operator.name}`); continue; }
     const [row, col] = tile.split(',').map(Number);
     piece.row = row; piece.col = col; occupied.add(tile);
+    if(spec.summonTokenId&&!legalSummonCells(field,state,piece,operator,spec.summonTokenId).length)throw new Error(`fixture selected native skill token has no legal summon location: ${label}/${operator.id}/${spec.summonTokenId}`);
   }
   let recipeResult = null;
   if (catalog.recipes?.length) {
@@ -234,8 +244,18 @@ async function writeFixtureSession({ data, catalog, specs, strategyId = null, la
     state.pendingChoices.push({ uid: `c${state.nextUid++}`, type: 'strategy', source: '验收夹具', options: [strategyId], remaining: 1 });
     state.phase = 'choice';
   }
-  const validation = validateSession(state, { catalog });
+  const reconstructedCatalog=fixtureCatalogFor(data,state.environmentId,state.seed);
+  if(JSON.stringify(reconstructedCatalog.config.activeOperatorIds)!==JSON.stringify(catalog.config.activeOperatorIds))throw new Error(`fixture catalog seed mismatch: ${label}/${state.environmentId}/${state.seed}`);
+  const validation = validateSession(state, { catalog: reconstructedCatalog });
   if (!validation.ok) throw new Error(`fixture state validation failed (${label}): ${JSON.stringify(validation.errors)}`);
+  const uniqueIds=[...state.pieces.map(piece=>piece.uid),...state.pieces.flatMap(piece=>piece.equipment.map(item=>item.uid)),...state.inventory.map(item=>item.uid),...state.consumables.map(item=>item.uid)];
+  if(new Set(uniqueIds).size!==uniqueIds.length)throw new Error(`fixture duplicate uid: ${label}`);
+  if(state.pieces.length>state.level||state.pieces.filter(piece=>piece.row!=null).length>state.level)throw new Error(`fixture capacity invalid: ${label}`);
+  const tileKeys=state.pieces.filter(piece=>piece.row!=null).map(piece=>`${piece.row},${piece.col}`);if(new Set(tileKeys).size!==tileKeys.length)throw new Error(`fixture duplicate deployment tile: ${label}`);
+  for(const piece of state.pieces){
+    if(!catalog.config.activeOperatorIds.includes(piece.operatorId))throw new Error(`fixture operator outside active pool: ${label}/${piece.operatorId}`);
+    if(!catalog.operators[piece.operatorId]?.stars?.[piece.star]?.record)throw new Error(`fixture selected star record missing: ${label}/${piece.operatorId}/${piece.star}`);
+  }
   const id = randomUUID();
   if (!dryRun) {
     await writeFile(path.join(FIXTURE_SESSION_DIR, `${id}.json`), `${JSON.stringify(state)}\n`, { flag: 'wx' });
@@ -243,38 +263,68 @@ async function writeFixtureSession({ data, catalog, specs, strategyId = null, la
       summonOwnerId: specs.find((spec) => spec.summonTokenId)?.operatorId || null, summonTokenId: specs.find((spec) => spec.summonTokenId)?.summonTokenId || null,
       source: 'canonical createSession + validated isolated fixture state; browser actions still use real HTTP and runResonanceBattle' });
   }
-  return { id, state, catalog };
+  return { id, state, catalog: reconstructedCatalog,seed:fixtureSeed };
 }
-async function prepareFixtures(data) {
+function resolveFixtureSummonToken(field,catalog,operator,star=1){
+  const record=operator?.stars?.[star]?.record;if(!record)return null;
+  for(const tokenId of tokenIdsFor(operator,star)){
+    const resolved=field.resolveToken?.(tokenId,operator.id,operator.fixedSkillIndex);
+    if(resolved?.placeable)return {tokenId,resolved};
+  }
+  return null;
+}
+function fixtureHasLegalSummonPosition(field,state,operator,tokenId){
+  const piece={uid:'fixture-summon-probe',operatorId:operator.id,star:1,equipment:[],growth:{},row:null,col:null,dir:'RIGHT',summonOrders:[]};
+  for(const key of legalTileKeys(field,operator)){
+    const [row,col]=key.split(',').map(Number);piece.row=row;piece.col=col;
+    if(legalSummonCells(field,{...state,pieces:[piece]},piece,operator,tokenId).length)return true;
+  }
+  return false;
+}
+async function prepareFixtures(data,{dryRun=false}={}) {
   const envIds = Object.keys(resonanceContent.environments);
-  const byEnvironment = new Map();
-  const catalogFor = (id) => {
-    if (!byEnvironment.has(id)) byEnvironment.set(id, getResonanceCatalog(data, { environmentId: id, seed: 1 }));
-    return byEnvironment.get(id);
-  };
-  const common = catalogFor(envIds.includes('origin_laterano') ? 'origin_laterano' : envIds[0]);
-  const commonField = getResonanceField(createSession({ seed: 41, difficulty: 'NORMAL', environmentId: common.config.environmentId, catalog: common }).state, { data, catalog: common });
-  const strategyId = Object.entries(common.strategies).find(([, entry]) => entry.condition?.kind === 'choose_adjacent_pair')?.[0];
-  const pair = fixtureOpPair(common, commonField);
-  if (!pair || !strategyId) throw new Error('could not resolve a real adjacent-pair strategy fixture from the canonical catalog');
-  const summonId = firstOperator(common, (operator) => tokenIdsFor(operator, 1).some((tokenId) => commonField.resolveToken?.(tokenId, operator.id, operator.fixedSkillIndex)?.placeable));
-  const secondaryId = common.config.activeOperatorIds.find((id) => id !== summonId && common.operators[id].charId !== common.operators[summonId]?.charId);
-  if (!summonId || !secondaryId) throw new Error('could not resolve a real summon owner in the fixture active pool');
-  const summonTokenId = tokenIdsFor(common.operators[summonId], 1).find((tokenId) => commonField.resolveToken?.(tokenId, summonId, common.operators[summonId].fixedSkillIndex)?.placeable);
+  const fieldCache=new Map();
+  const catalogFor = (id,seed=1) => fixtureCatalogFor(data,id,seed);
+  const fieldFor=(id,seed,catalog)=>{const key=`${id}:${seed}`;if(!fieldCache.has(key)){const created=createSession({seed,difficulty:'NORMAL',environmentId:id,catalog});assert(created.ok,`fixture session seed failed: ${key}/${created.error}`);fieldCache.set(key,getResonanceField(created.state,{data,catalog}));}return fieldCache.get(key);};
+  const environmentOrder=['origin_laterano','origin_aegir','origin_sami','origin_kjerag',...envIds].filter((id,index,all)=>envIds.includes(id)&&all.indexOf(id)===index);
+  let selected=null;
+  for(const environmentId of environmentOrder){
+    for(let seed=1;seed<=64;seed++){
+      const catalog=catalogFor(environmentId,seed),field=fieldFor(environmentId,seed,catalog),state=createSession({seed,difficulty:'NORMAL',environmentId,catalog}).state;
+      const strategyId=Object.entries(catalog.strategies).find(([,entry])=>entry.condition?.kind==='choose_adjacent_pair')?.[0];
+      const pair=fixtureOpPair(catalog,field);if(!pair||!strategyId)continue;
+      let summon=null;
+      for(const operatorId of catalog.config.activeOperatorIds){
+        const operator=catalog.operators[operatorId],choice=resolveFixtureSummonToken(field,catalog,operator,1);
+        if(choice&&fixtureHasLegalSummonPosition(field,state,operator,choice.tokenId)){summon={operatorId,tokenId:choice.tokenId};break;}
+      }
+      if(!summon)continue;
+      const secondaryId=catalog.config.activeOperatorIds.find(id=>id!==summon.operatorId&&catalog.operators[id].charId!==catalog.operators[summon.operatorId].charId);
+      if(!secondaryId)continue;
+      selected={environmentId,seed,catalog,field,strategyId,pair,summon,secondaryId};break;
+    }
+    if(selected)break;
+  }
+  if(!selected)throw new Error('no deterministic environment/seed 1..64 has both a real adjacent-pair choice and a legal selected-star manual-summon owner in its active pool');
+  const {environmentId:commonEnvironment,seed:commonSeed, catalog:common,field:commonField,strategyId,pair,summon,secondaryId}=selected;
+  const summonId=summon.operatorId,summonTokenId=summon.tokenId;
   const summonSpecs = [{ operatorId: summonId, star: 1, summonTokenId }, { operatorId: secondaryId, star: 1 }];
-  const interactive = await writeFixtureSession({ data, catalog: common, specs: summonSpecs, label: 'copy/equipment/summon' });
-  const pairFixture = await writeFixtureSession({ data, catalog: common, specs: pair, strategyId, label: 'adjacent-pair-strategy' });
+  const interactive = await writeFixtureSession({ data, catalog: common, specs: summonSpecs, label: 'copy/equipment/summon',seed:commonSeed,dryRun,requireAllDeployed:true });
+  const pairFixture = await writeFixtureSession({ data, catalog: common, specs: pair, strategyId, label: 'adjacent-pair-strategy',seed:commonSeed,dryRun,requireAllDeployed:true });
 
   const highEnvironment = ['origin_sami', 'origin_kjerag'].find((id) => envIds.includes(id)) || common.config.environmentId;
-  const highCatalog = catalogFor(highEnvironment);
+  let highCatalog=null,highSeed=1;
+  for(;highSeed<=64;highSeed++){highCatalog=catalogFor(highEnvironment,highSeed);if(highCatalog.config.activeOperatorIds.some(id=>(highCatalog.operators[id].pacts??[]).some(pact=>['sami','kjerag'].includes(pact))&&highCatalog.operators[id].stars?.[3]?.record))break;}
+  if(highSeed>64)throw new Error('no Sami/Kjerag 3-star snow operator found in fixed high-end fixture search');
   const highIds = highCatalog.config.activeOperatorIds.filter((id) => highCatalog.operators[id].stars?.[3]?.record);
   const snowIds = highIds.filter((id) => (highCatalog.operators[id].pacts || []).some((pact) => ['sami', 'kjerag'].includes(pact)));
   const chosen = [...snowIds.slice(0, 3)];
   for (const id of highIds) if (chosen.length < 4 && !chosen.includes(id)) chosen.push(id);
   if (chosen.length < 3) throw new Error(`only ${chosen.length} real active three-star operators available for high-end fixture`);
-  const highend = await writeFixtureSession({ data, catalog: highCatalog, specs: chosen.slice(0, 4).map((operatorId) => ({ operatorId, star: 3 })), label: 'three-star-snow-environment' });
-  const endgames = await prepareEndgameFixtures(data, catalogFor('origin_laterano'));
-  return { interactive, pairFixture, highend, endgames, runner: runResonanceBattle.name };
+  const highend = await writeFixtureSession({ data, catalog: highCatalog, specs: chosen.slice(0, 4).map((operatorId) => ({ operatorId, star: 3 })), label: 'three-star-snow-environment',seed:highSeed,dryRun,requireAllDeployed:true });
+  const endgames = await prepareEndgameFixtures(data, catalogFor('origin_laterano',1),{dryRun});
+  const summarize=(fixture)=>({environmentId:fixture.catalog.config.environmentId,seed:fixture.state.seed,pieces:fixture.state.pieces.map(piece=>({operatorId:piece.operatorId,star:piece.star,recordAvailable:Boolean(fixture.catalog.operators[piece.operatorId]?.stars?.[piece.star]?.record),position:[piece.row,piece.col],equipment:piece.equipment.map(item=>item.itemId)})),summonOwnerId:fixture.state.pieces.find(piece=>piece.operatorId===summonId&&piece.star===1)?summonId:null,summonTokenId:fixture.state.pieces.some(piece=>piece.operatorId===summonId)?summonTokenId:null,sessionWritten:!dryRun});
+  return { interactive, pairFixture, highend, endgames, runner: runResonanceBattle.name,fixtureValidation:{dryRun,common:{environmentId:commonEnvironment,seed:commonSeed,strategyId,summonOwnerId:summonId,summonTokenId,tokenResolution:commonField.resolveToken(summonTokenId,summonId,common.operators[summonId].fixedSkillIndex)},fixtures:[summarize(interactive),summarize(pairFixture),summarize(highend),...Object.values(endgames.terminal).map(summarize),summarize(endgames.hpFailure),summarize(endgames.roundLoss),summarize(endgames.abyss)],fixtureSessionsWritten:dryRun?0:fixtureSessions.length}};
 }
 function matureFixtureSpecs({data,catalog,difficulty,round,seed,composition}) {
   const definition={id:`browser-terminal-${difficulty.toLowerCase()}`,env:catalog.config.environmentId,core:composition.core.name,include:[],pact:composition.mainPact};
@@ -297,48 +347,49 @@ function battleProbe(state,data,catalog,label){
   if(Number(result.diagnostics?.errorCount??0)!==0)throw new Error(`${label} real Battle diagnostics: ${JSON.stringify(result.diagnostics?.errors??[])}`);
   return result;
 }
-async function findBattleOutcomeFixture({data,catalog,label,difficulty,round,level,hp,specsForSeed,accept,maxAttempts=48}){
+async function findBattleOutcomeFixture({data,catalog,catalogForSeed=null,label,difficulty,round,level,hp,specsForSeed,accept,maxAttempts=48,dryRun=false}){
   for(let seed=0x6e000;seed<0x6e000+maxAttempts;seed++){
-    const specs=specsForSeed(seed),fixture=await writeFixtureSession({data,catalog,label,difficulty,round,level,hp,seed,specs,dryRun:true,requireAllDeployed:true});
-    const outcome=battleProbe(fixture.state,data,catalog,label);
+    const seededCatalog=catalogForSeed?catalogForSeed(seed):catalog;
+    const specs=specsForSeed(seed,seededCatalog),fixture=await writeFixtureSession({data,catalog:seededCatalog,label,difficulty,round,level,hp,seed,specs,dryRun:true,requireAllDeployed:true});
+    const outcome=battleProbe(fixture.state,data,seededCatalog,label);
     if(!accept(outcome))continue;
-    const saved=await writeFixtureSession({data,catalog,label,difficulty,round,level,hp,seed,specs,requireAllDeployed:true});
+    const saved=await writeFixtureSession({data,catalog:seededCatalog,label,difficulty,round,level,hp,seed,specs,requireAllDeployed:true,dryRun});
     return { ...saved, expected:{won:outcome.won,hpLoss:outcome.hpLoss,time:outcome.result?.time??null,bossHpLeft:outcome.result?.bossHpLeft??null},source:'validated fixture state + real recording:false Battle preflight; the UI later repeats the authoritative fight' };
   }
   throw new Error(`no deterministic real Battle outcome found for ${label} after ${maxAttempts} fixed seeds`);
 }
-async function prepareEndgameFixtures(data,catalog){
-  const composition=makePactTerminalRoster(catalog,10,3,{coreMode:'preferred'});
-  if(!composition.constructible)throw new Error(`endgame fixture cannot reach its configured main pact: ${composition.mainPact}`);
-  const specsFor=(difficulty,round)=>(seed)=>matureFixtureSpecs({data,catalog,difficulty,round,seed,composition});
+async function prepareEndgameFixtures(data,catalog,{dryRun=false}={}){
+  const environmentId=catalog.config.environmentId,catalogForSeed=(seed)=>fixtureCatalogFor(data,environmentId,seed),compositions=new Map();
+  const specsFor=(difficulty,round)=>(seed,seededCatalog)=>{const composition=makePactTerminalRoster(seededCatalog,10,3,{coreMode:'preferred'});compositions.set(`${difficulty}:${seed}`,composition);if(!composition.constructible)throw new Error(`endgame fixture cannot reach its configured main pact: ${difficulty}/${seed}/${composition.mainPact}`);return matureFixtureSpecs({data,catalog:seededCatalog,difficulty,round,seed,composition});};
   const terminal={};
   for(const difficulty of ['NORMAL','FUNNY','HARD']){
-    terminal[difficulty.toLowerCase()]=await findBattleOutcomeFixture({data,catalog,label:`terminal-${difficulty.toLowerCase()}`,difficulty,round:28,level:10,hp:100,
-      specsForSeed:specsFor(difficulty,28),accept:(outcome)=>difficulty==='NORMAL'?outcome.won&&Math.floor(outcome.hpLoss)<100:true,maxAttempts:64});
+    const fixture=await findBattleOutcomeFixture({data,catalog,catalogForSeed,label:`terminal-${difficulty.toLowerCase()}`,difficulty,round:28,level:10,hp:100,
+      specsForSeed:specsFor(difficulty,28),accept:(outcome)=>difficulty==='NORMAL'?outcome.won&&Math.floor(outcome.hpLoss)<100:true,maxAttempts:64,dryRun});
+    terminal[difficulty.toLowerCase()]={...fixture,composition:compositions.get(`${difficulty}:${fixture.seed}`)};
   }
-  const weak=firstOperator(catalog,(operator)=>operator.cost<=2&&operator.role!=='summoner'&&operator.stars?.[1]?.record);
-  if(!weak)throw new Error('no active low-cost operator is available for terminal failure fixtures');
-  const weakSpecs=()=>[{operatorId:weak,star:1}];
-  const hpFailure=await findBattleOutcomeFixture({data,catalog,label:'terminal-hp-depleted',difficulty:'NORMAL',round:12,level:3,hp:1,specsForSeed:weakSpecs,
-    accept:(outcome)=>!outcome.won&&Math.floor(outcome.hpLoss)>=1,maxAttempts:96});
-  const roundLoss=await findBattleOutcomeFixture({data,catalog,label:'terminal-round-limit-loss',difficulty:'NORMAL',round:28,level:3,hp:100,specsForSeed:weakSpecs,
-    accept:(outcome)=>!outcome.won&&Math.floor(outcome.hpLoss)<100,maxAttempts:96});
+  const weakSpecs=(_seed,seededCatalog)=>{const weak=firstOperator(seededCatalog,(operator)=>operator.cost<=2&&operator.role!=='summoner'&&operator.stars?.[1]?.record);if(!weak)throw new Error('no active low-cost operator is available for terminal failure fixtures');return [{operatorId:weak,star:1}];};
+  const hpFailure=await findBattleOutcomeFixture({data,catalog,catalogForSeed,label:'terminal-hp-depleted',difficulty:'NORMAL',round:12,level:3,hp:1,specsForSeed:weakSpecs,
+    accept:(outcome)=>!outcome.won&&Math.floor(outcome.hpLoss)>=1,maxAttempts:96,dryRun});
+  const roundLoss=await findBattleOutcomeFixture({data,catalog,catalogForSeed,label:'terminal-round-limit-loss',difficulty:'NORMAL',round:28,level:3,hp:100,specsForSeed:weakSpecs,
+    accept:(outcome)=>!outcome.won&&Math.floor(outcome.hpLoss)<100,maxAttempts:96,dryRun});
   let abyss=null;
   for(let seed=0x6f000;seed<0x6f030;seed++){
-    const specs=matureFixtureSpecs({data,catalog,difficulty:'ABYSS',round:28,seed,composition});
-    const fixture=await writeFixtureSession({data,catalog,label:'abyss-28-to-30',difficulty:'ABYSS',round:28,level:10,hp:100,seed,specs,dryRun:true,requireAllDeployed:true});
-    const early=battleProbe(fixture.state,data,catalog,'abyss-round-28');
+    const seededCatalog=catalogForSeed(seed),composition=makePactTerminalRoster(seededCatalog,10,3,{coreMode:'preferred'});if(!composition.constructible)continue;
+    const specs=matureFixtureSpecs({data,catalog:seededCatalog,difficulty:'ABYSS',round:28,seed,composition});
+    const fixture=await writeFixtureSession({data,catalog:seededCatalog,label:'abyss-28-to-30',difficulty:'ABYSS',round:28,level:10,hp:100,seed,specs,dryRun:true,requireAllDeployed:true});
+    const early=battleProbe(fixture.state,data,seededCatalog,'abyss-round-28');
     if(!early.won||Math.floor(early.hpLoss)>=100)continue;
     fixture.state.round=29;
-    const middle=battleProbe(fixture.state,data,catalog,'abyss-round-29');
+    const middle=battleProbe(fixture.state,data,seededCatalog,'abyss-round-29');
     if(!middle.won||Math.floor(early.hpLoss)+Math.floor(middle.hpLoss)>=100)continue;
     fixture.state.round=30;
-    const hidden=battleProbe(fixture.state,data,catalog,'abyss-round-30-hidden');
-    const saved=await writeFixtureSession({data,catalog,label:'abyss-28-to-30',difficulty:'ABYSS',round:28,level:10,hp:100,seed,specs,requireAllDeployed:true});
-    abyss={...saved,expectedRounds:[{round:28,won:early.won},{round:29,won:middle.won},{round:30,won:hidden.won,bossHpLeft:hidden.result?.bossHpLeft??null}],source:'three isolated stage probes use real hidden/elite/leader Battles; the browser session advances through official actions'};
+    const hidden=battleProbe(fixture.state,data,seededCatalog,'abyss-round-30-hidden');
+    const saved=await writeFixtureSession({data,catalog:seededCatalog,label:'abyss-28-to-30',difficulty:'ABYSS',round:28,level:10,hp:100,seed,specs,requireAllDeployed:true,dryRun});
+    abyss={...saved,composition,expectedRounds:[{round:28,won:early.won},{round:29,won:middle.won},{round:30,won:hidden.won,bossHpLeft:hidden.result?.bossHpLeft??null}],source:'three isolated stage probes use real hidden/elite/leader Battles; the browser session advances through official actions'};
     break;
   }
   if(!abyss)throw new Error('no deterministic ABYSS seed wins real rounds 28 and 29 and reaches a diagnostic-free hidden round 30');
+  const composition=terminal.normal.composition;
   return {terminal,hpFailure,roundLoss,abyss,mainPact:composition.mainPact,core:composition.core.name,coreStar:3,accessibility:'fixed terminal test lineup; not an economy-achievability claim'};
 }
 async function waitForAny(page, selectors, timeout = 30_000) {
@@ -1409,25 +1460,45 @@ async function writeReceipt(error = null) {
 }
 
 try {
-  const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
-    timedOut = true;
-    void browser?.close().catch(() => {});
-    void server?.close().catch(() => {});
-    void fixtureServer?.close().catch(() => {});
-    reject(new Error('Resonance browser E2E exceeded 25-minute deadline'));
-  }, DEADLINE_MS); });
-  const execution = run();
-  await Promise.race([execution, deadline]);
-} catch (error) {
-  await writeReceipt(error).catch((receiptError) => { process.stderr.write(`receipt failure ${RECEIPT_PATH}: ${receiptError.message}\n`); });
-  process.exitCode = 1;
-} finally {
-  clearTimeout(timeoutHandle);
-  await browser?.close().catch(() => {});
-  await server?.close().catch(() => {});
-  await fixtureServer?.close().catch(() => {});
-}
-if (process.exitCode !== 1) {
-  const receipt = await writeReceipt();
-  if (receipt.status !== 'passed') process.exitCode = 1;
+  if(process.argv.includes('--check-fixtures')){
+    const canonicalData=loadData(path.join(CANONICAL_ROOT,'data'),{log:{warn(){},error(){},info(){}}});
+    const prepared=await prepareFixtures(canonicalData,{dryRun:true});
+    const validation=prepared.fixtureValidation;
+    assert(validation?.dryRun===true&&validation.fixtureSessionsWritten===0,'fixture check must not write sessions');
+    assert(validation.fixtures.length>=8&&validation.fixtures.every(fixture=>fixture.pieces.length>0&&fixture.pieces.every(piece=>piece.recordAvailable&&piece.position.every(Number.isInteger))),'fixture check found incomplete star records or deployment positions');
+    assert(validation.fixtures.every(fixture=>fixture.pieces.length<=10),'fixture exceeds native field roster capacity');
+    assert(validation.common.tokenResolution?.placeable===true,'fixture summon owner does not resolve through field.resolveToken');
+    const { tokenResolution, ...common } = validation.common;
+    process.stdout.write(`${JSON.stringify({status:'fixtures-valid',serverStarted:false,browserStarted:false,sessionsWritten:0,
+      common,fixturesValidated:validation.fixtures.length,nativeTokenPlaceable:tokenResolution?.placeable===true,
+      fixtures:validation.fixtures.map(f=>({environmentId:f.environmentId,seed:f.seed,pieces:f.pieces.length,sessionWritten:f.sessionWritten}))})}\n`);
+  }else{
+    puppeteer=requireFromCanonical('puppeteer-core');
+    try {
+      const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+        timedOut = true;
+        void browser?.close().catch(() => {});
+        void server?.close().catch(() => {});
+        void fixtureServer?.close().catch(() => {});
+        reject(new Error('Resonance browser E2E exceeded 25-minute deadline'));
+      }, DEADLINE_MS); });
+      const execution = run();
+      await Promise.race([execution, deadline]);
+    } catch (error) {
+      await writeReceipt(error).catch((receiptError) => { process.stderr.write(`receipt failure ${RECEIPT_PATH}: ${receiptError.message}\n`); });
+      process.exitCode = 1;
+    } finally {
+      clearTimeout(timeoutHandle);
+      await browser?.close().catch(() => {});
+      await server?.close().catch(() => {});
+      await fixtureServer?.close().catch(() => {});
+    }
+    if (process.exitCode !== 1) {
+      const receipt = await writeReceipt();
+      if (receipt.status !== 'passed') process.exitCode = 1;
+    }
+  }
+} catch(error){
+  process.stderr.write(`${JSON.stringify({status:'fixtures-invalid',error:error.stack??error.message??String(error)})}\n`);
+  process.exitCode=1;
 }
