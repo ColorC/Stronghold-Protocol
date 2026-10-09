@@ -125,6 +125,17 @@ function parsePorcelain(text) {
   return text.split(/\r?\n/).filter(Boolean).map(line => ({ status: line.slice(0, 2), path: line.slice(3).replace(/^"|"$/g, '') }));
 }
 
+export function findIncomingDirtySourcePaths(statusText) {
+  return parsePorcelain(statusText).filter(row => isSourceOrDocPath(row.path));
+}
+
+export function reviewedFileBytesMatch(currentPath, reviewedPath) {
+  assertSafeAbsolutePath(currentPath, { allowMissingFinal: true });
+  assertSafeAbsolutePath(reviewedPath, { allowMissingFinal: false });
+  if (!fs.existsSync(currentPath)) return false;
+  return Buffer.compare(fs.readFileSync(currentPath), fs.readFileSync(reviewedPath)) === 0;
+}
+
 function readSummary(integrationDir) {
   assertSafeAbsolutePath(integrationDir, { allowMissingFinal: false });
   const planPath = path.join(integrationDir, 'plan.json');
@@ -179,10 +190,12 @@ export function buildDryRun({ canonicalRoot = CANONICAL_ROOT, incomingRoot = DEF
   if (changedCollisionPaths.length) blockers.push({ code: 'REVIEWED_COLLISION_CHANGED', paths: changedCollisionPaths });
 
   const changedPaths = [...new Set(sourceChanges.map(row => row.path))];
+  const incomingDirtySourcePaths = findIncomingDirtySourcePaths(git(incomingRoot, ['status', '--porcelain=v1', '--untracked-files=all', '--', 'server', 'shared', 'tools', 'test', 'docs', 'public/js', 'public/css', 'public/*.html']).stdout);
+  if (incomingDirtySourcePaths.length) blockers.push({ code: 'INCOMING_DIRTY_SOURCE_DOCS', paths: incomingDirtySourcePaths });
   const pathSafety = changedPaths.map(rel => ({ path: rel, ...ensureSafePath(canonicalRoot, rel) }));
   for (const check of pathSafety) if (!check.ok) blockers.push({ code: 'UNSAFE_CANONICAL_PATH', path: check.path, reason: check.reason, detail: check.path });
 
-  const canonicalStatus = parsePorcelain(gitText(canonicalRoot, ['status', '--porcelain=v1', '--untracked-files=all', '--', 'server', 'shared', 'tools', 'test', 'docs', 'public/js', 'public/css', 'public/*.html']));
+  const canonicalStatus = parsePorcelain(git(canonicalRoot, ['status', '--porcelain=v1', '--untracked-files=all', '--', 'server', 'shared', 'tools', 'test', 'docs', 'public/js', 'public/css', 'public/*.html']).stdout);
   const dirtySourcePaths = canonicalStatus.filter(row => isSourceOrDocPath(row.path));
   const knownCollisions = new Set(collisionPaths);
   const incomingPaths = new Set(changedPaths);
@@ -196,6 +209,12 @@ export function buildDryRun({ canonicalRoot = CANONICAL_ROOT, incomingRoot = DEF
 
   const collisionOutputs = [];
   for (const row of summary.mergeFiles ?? []) {
+    if (collisionDisposition(summary, row.path) !== 'preserve-canonical-doc') {
+      const currentSnapshot = row.inputs?.current;
+      if (!currentSnapshot || !reviewedFileBytesMatch(path.join(canonicalRoot, row.path), currentSnapshot)) {
+        blockers.push({ code: 'REVIEWED_CANONICAL_COLLISION_CHANGED', path: row.path, reviewedCurrent: currentSnapshot ?? null });
+      }
+    }
     const baseName = path.basename(row.output).replace(/\.merged$/, '');
     const resolvedPath = path.join(integrationDir, `${baseName}.resolved`);
     const outputPath = fs.existsSync(resolvedPath) ? resolvedPath : row.output;
@@ -210,6 +229,11 @@ export function buildDryRun({ canonicalRoot = CANONICAL_ROOT, incomingRoot = DEF
     if (disposition === 'preserve-canonical-doc' || disposition === 'exact-incoming-in-merge-tree') {
       collisionOutputs.push({ path: rel, status: disposition, output: null, incomingCommit: incomingHead });
     } else if (changedPaths.includes(rel)) blockers.push({ code: 'MISSING_COLLISION_OUTPUT', path: rel, disposition });
+  }
+  for (const row of summary.exactIncomingUntracked ?? []) {
+    if (!reviewedFileBytesMatch(path.join(canonicalRoot, row.path), path.join(incomingRoot, row.path))) {
+      blockers.push({ code: 'EXACT_INCOMING_UNTRACKED_CHANGED', path: row.path, incoming: path.join(incomingRoot, row.path) });
+    }
   }
 
   const gitDir = path.resolve(canonicalRoot, gitText(canonicalRoot, ['rev-parse', '--absolute-git-dir']));
@@ -227,7 +251,7 @@ export function buildDryRun({ canonicalRoot = CANONICAL_ROOT, incomingRoot = DEF
     mode: 'dry-run',
     ready: blockers.length === 0,
     canonical: { path: canonicalRoot, branch: canonicalBranch, head: canonicalHead, gitDir, indexPath: canonicalIndexPath, indexLockPath: canonicalIndexLockPath, indexStagedEmpty: indexQuiet, indexPresent: indexBytesAvailable },
-    incoming: { path: incomingRoot, branch: incomingBranch, head: incomingHead, reviewedHead: incomingDiffBase, sourceChangeCount: sourceChanges.length, sourceChanges, changedCollisionPaths },
+    incoming: { path: incomingRoot, branch: incomingBranch, head: incomingHead, reviewedHead: incomingDiffBase, sourceChangeCount: sourceChanges.length, sourceChanges, workingTreeChanges: incomingDirtySourcePaths, changedCollisionPaths },
     nativeMergeTree: { command: `git -C ${canonicalRoot} merge-tree --write-tree ${canonicalHead} ${incomingHead}`, exitCode: mergeTreeRun.exitCode, treeId: mergedTree },
     collisionPaths: collisionPaths.map(path => ({ path, incomingObjectAtReviewed: nativeBlob(incomingRoot, incomingDiffBase, path)?.objectId ?? null, incomingObjectAtFinal: nativeBlob(incomingRoot, incomingHead, path)?.objectId ?? null })),
     collisionOutputs,

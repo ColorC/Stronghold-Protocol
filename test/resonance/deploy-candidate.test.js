@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { absolutePath, activationCommand, activationScript, parseArgs, preflightScript, resumeVerificationScript, validateCapacityReceipt, validatePrepareResumeReceipt } from '../../tools/resonance/deploy-candidate.mjs';
+import { absolutePath, activationCommand, activationScript, capacityBatchCommand, capacityBatchReceiptFromStdout, capacityBatchScript, candidateRefreshPreflightScript, candidateRefreshScript, parseArgs, preflightScript, preserveOldFailureCgroupScript, resumeVerificationScript, scpBatchArgs, validateCapacityReceipt, validatePrepareResumeReceipt, validateStagedReplacementRevision, validateCandidateRefreshRevisions } from '../../tools/resonance/deploy-candidate.mjs';
 
 const revision = '0123456789abcdef0123456789abcdef01234567';
 function capacityReceipt() {
@@ -30,6 +30,45 @@ test('activation arguments require capacity receipt and exclude prepare', () => 
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--activate', '--prepare', '--capacity-receipt', 'C:/c.json']), /不能同时使用/);
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--capacity-receipt', 'C:/c.json']), /只能与 --activate/);
   assert.throws(() => absolutePath('relative-capacity.json', '--capacity-receipt'), /必须为绝对路径/);
+});
+
+test('capacity batch is two bounded real HTTP phases and cleans only its declared files', () => {
+  const parsed = parseArgs(['--release-receipt', 'C:/release.json', '--capacity-batch', '--local-capacity-receipt', 'E:/WindowsWorkspace/runtime/resonance/deployment/capacity-batch-receipt.json']);
+  assert.equal(parsed.capacityBatch, true);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--capacity-batch', '--local-capacity-receipt', 'relative.json']), /必须提供绝对路径/);
+  const script = capacityBatchScript(revision);
+  assert.equal((script.match(/--concurrency 4/g) || []).length, 2);
+  assert.equal((script.match(/RuntimeMaxSec=480s/g) || []).length, 2);
+  assert.equal((script.match(/MemoryMax=512M/g) || []).length, 2);
+  assert.equal((script.match(/CPUQuota=100%/g) || []).length, 2);
+  assert.match(script, /timeout --signal=TERM --kill-after=5s 520s/);
+  assert.match(script, /memory\.max_usage_in_bytes/);
+  assert.match(script, /memory\.peak/);
+  assert.match(script, /\/proc\/self\/cgroup/);
+  assert.match(script, /cpu\.stat/);
+  assert.doesNotMatch(script, /systemctl show/);
+  assert.match(script, /capacity-directory-has-unknown-or-nested-contents/);
+  assert.match(script, /fuser/);
+  assert.match(script, /capacity-session-directory-not-empty-after-clean/);
+  const command = capacityBatchCommand(revision);
+  assert.equal(command.args.at(-1), 'timeout 1080s bash -s');
+  assert.equal(command.timeoutMs, 1_090_000);
+  const bash = spawnSync('bash', ['-n'], { input: script, encoding: 'utf8', windowsHide: true });
+  if (!bash.error) assert.equal(bash.status, 0, bash.stderr);
+});
+
+test('capacity batch receipt requires both true four-session phases and real replay/cgroup evidence', () => {
+  const phase = recording => ({
+    capacity: { ...capacityReceipt(), recording, sessions: capacityReceipt().sessions.map(row => ({ ...row,
+      ...(recording ? { replay: { verifiedViaHttp: true, frames: 3, gzipBytes: 4096 } } : {}) })) },
+    cgroup: { unitResult: 'success', cpuUsageNSec: 1000, memoryPeakBytes: 4096 },
+  });
+  const receipt = { schema: 'resonance-capacity-batch-receipt/v1', sourceRevision: revision, status: 'completed',
+    cleanup: { sessionDirectoryEmpty: true }, phases: [phase(false), phase(true)] };
+  assert.deepEqual(capacityBatchReceiptFromStdout(`runner output\n${JSON.stringify(receipt)}`, revision), receipt);
+  assert.throws(() => capacityBatchReceiptFromStdout(JSON.stringify({ ...receipt, cleanup: { sessionDirectoryEmpty: false } }), revision), /终态\/清理校验/);
+  const noReplay = structuredClone(receipt); noReplay.phases[1].capacity.sessions[0].replay.gzipBytes = 0;
+  assert.throws(() => capacityBatchReceiptFromStdout(JSON.stringify(noReplay), revision), /replay证明/);
 });
 
 function prepareReleaseFixture() {
@@ -63,12 +102,36 @@ test('prepare resume accepts only the same Native builder failure prefix and ski
     [row => { row.artifactTransfers[0].source = path.resolve('E:/other/server-release.json'); }, /source/],
     [row => { row.artifactTransfers[0].target = '/tmp/unrelated/server-release.json'; }, /target/],
     [row => { row.artifactTransfers[0].role = 'different role'; }, /role/],
-    [row => { row.artifactTransfers[1].status = 'transferred'; row.artifactTransfers[0].status = 'failed'; }, /连续成功前缀/],
+    [row => { row.artifactTransfers[1].status = 'transferred'; row.artifactTransfers[0].status = 'failed'; }, /失败档案后/],
     [row => { row.artifactTransfers[4].status = 'succeeded'; }, /status无效/],
   ]) {
     const invalid = prepareFailureFixture(release); mutate(invalid);
     assert.throws(() => validatePrepareResumeReceipt(release, invalid), pattern);
   }
+  const batchFailure = prepareFailureFixture(release);
+  batchFailure.artifactTransfers.forEach(row => { row.status = 'batch-transfer-unconfirmed'; });
+  const retryAll = validatePrepareResumeReceipt(release, batchFailure);
+  assert.equal(retryAll.skipped.length, 0);
+  assert.equal(retryAll.completedNames.size, 0);
+});
+
+test('prepare batches only remaining SCP sources into one connection and reports unconfirmed batch truthfully', () => {
+  const release = prepareReleaseFixture();
+  const full = scpBatchArgs('C:/keys/server.pem', '62635', 'root@server.invalid', '/var/tmp/stronghold-protocol/resonance', release.artifacts);
+  assert.deepEqual(full.slice(-6), [
+    ...release.artifacts.map(row => row.path),
+    'root@server.invalid:/var/tmp/stronghold-protocol/resonance/',
+  ]);
+  assert.equal(full.filter(value => value === '-P').length, 1);
+  const remaining = scpBatchArgs('C:/keys/server.pem', '62635', 'root@server.invalid', '/var/tmp/stronghold-protocol/resonance', [release.artifacts[4]]);
+  assert.deepEqual(remaining.slice(-2), [release.artifacts[4].path, 'root@server.invalid:/var/tmp/stronghold-protocol/resonance/']);
+  const batchReceipt = prepareFailureFixture(release);
+  batchReceipt.artifactTransfers.forEach(row => { row.status = 'batch-transfer-unconfirmed'; });
+  assert.ok(batchReceipt.artifactTransfers.every(row => row.status !== 'transferred'));
+  const rewritePreflight = preflightScript('1.0.0', revision, ['server/index.js'], { allowStagedReceiptOverwrite: true });
+  assert.ok(rewritePreflight.includes('staging-receipt-not-ordinary:'));
+  assert.ok(!rewritePreflight.includes('staging-source-revision-mismatch:'));
+  assert.equal(spawnSync('bash', ['-n'], { input: rewritePreflight, encoding: 'utf8' }).status, 0);
 });
 
 test('resume verification checks exact remote byte lengths, ordinary files and staged Native revision without writes', () => {
@@ -98,6 +161,176 @@ test('resume CLI is available only with prepare and remains separate from activa
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--resume-receipt', 'C:/failure.json']), /只能与 --prepare/);
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--prepare', '--resume-receipt', 'relative.json']), /必须提供绝对路径/);
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--activate', '--capacity-receipt', 'C:/c.json', '--resume-receipt', 'C:/failure.json']), /只能与 --prepare/);
+});
+
+test('staged Native replacement requires an existing different Git commit and only prepare mode', () => {
+  const oldRevision = '9f5d25631d0aed9a6e1c3b6028f92e2aa7c400ec';
+  assert.deepEqual(parseArgs(['--release-receipt', 'C:/new.json', '--prepare', '--replace-staged-revision', oldRevision]), {
+    prepare: true, activate: false, receiptPath: 'C:/new.json', replaceStagedRevision: oldRevision,
+  });
+  assert.equal(validateStagedReplacementRevision(oldRevision, revision, requested => requested), oldRevision);
+  assert.equal(validateStagedReplacementRevision(oldRevision, revision), oldRevision, 'the old revision must resolve in native Git');
+  assert.throws(() => validateStagedReplacementRevision(oldRevision, oldRevision, requested => requested), /必须与新Native版本不同/);
+  assert.throws(() => validateStagedReplacementRevision('not-a-commit', revision, requested => requested), /full Native/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--replace-staged-revision', oldRevision]), /只能与 --prepare/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--prepare', '--resume-receipt', 'C:/resume.json', '--replace-staged-revision', oldRevision]), /不能与 --resume-receipt/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--prepare', '--replace-staged-revision', 'short']), /完整Native Git commit/);
+});
+
+test('replacement preflight permits only an exact old Native staging receipt with no candidate or unknown paths', () => {
+  const oldRevision = '9f5d25631d0aed9a6e1c3b6028f92e2aa7c400ec';
+  const script = preflightScript('1.0.0', revision, ['server/index.js'], { replaceStagedRevision: oldRevision });
+  assert.ok(script.includes('replacement-old-staging-revision-mismatch:'));
+  assert.ok(script.includes('replacement-old-staging-receipt-missing-or-unsafe:'));
+  assert.ok(script.includes('candidate-present-on-staged-replacement:'));
+  assert.ok(script.includes('staging-unknown:'));
+  assert.ok(script.includes('staging-file-unsafe:'));
+  assert.ok(script.includes(`"replacedStagedRevision":"${oldRevision}"`));
+  assert.ok(!script.includes('staging-source-revision-mismatch:'));
+  assert.throws(() => preflightScript('1.0.0', revision, [], { replaceStagedRevision: revision }), /invalid staged replacement/);
+  assert.throws(() => preflightScript('1.0.0', revision, [], { replaceStagedRevision: 'not-a-commit' }), /invalid staged replacement/);
+  assert.equal(spawnSync('bash', ['-n'], { input: script, encoding: 'utf8' }).status, 0);
+});
+
+test('candidate refresh is pinned to old e890 and new a81 Native revisions', () => {
+  const oldRevision = 'e890d97c2f044d085b6b1e22b41625e6390530b4';
+  const newRevision = 'a81a93031e9d024ef44b2e2f4f2d3991b3605788';
+  assert.deepEqual(parseArgs(['--release-receipt', 'C:/new.json', '--refresh-candidate', '--previous-release-receipt', 'C:/old.json', '--failure-cgroup-receipt', 'E:/runtime/resonance/deployment/cgroup.json']), {
+    prepare: false, activate: false, receiptPath: 'C:/new.json', refreshCandidate: true,
+    previousReleaseReceiptPath: 'C:/old.json', failureCgroupReceiptPath: 'E:/runtime/resonance/deployment/cgroup.json',
+  });
+  assert.deepEqual(validateCandidateRefreshRevisions(oldRevision, newRevision, value => value), { oldRevision, newRevision });
+  assert.throws(() => validateCandidateRefreshRevisions(oldRevision, oldRevision, value => value), /必须与新Native/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--refresh-candidate', '--previous-release-receipt', 'relative.json', '--failure-cgroup-receipt', 'E:/receipt.json']), /绝对路径/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--refresh-candidate', '--previous-release-receipt', 'C:/old.json']), /必须提供旧release/);
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--refresh-candidate', '--previous-release-receipt', 'C:/old.json', '--failure-cgroup-receipt', 'E:/r.json', '--prepare']), /不能同时使用/);
+
+  const files = ['tools/resonance/capacity.mjs', 'public/css/resonance.css', 'server/index.js'];
+  const selectedOldBytes = { 'tools/resonance/capacity.mjs': 'Y2Fub25pY2FsLW9sZC1ieXRlcw==', 'public/css/resonance.css': 'b2xkLWNzcw==' };
+  const preflight = candidateRefreshPreflightScript({ oldRevision, newRevision, expectedFiles: files, selectedOldBytes });
+  for (const fragment of ['candidate-native-not-expected-old', 'staged-native-not-expected-old', 'candidate-capacity-not-exact-old-native-bytes',
+    'candidate-resonance-css-not-exact-old-native-bytes', 'candidate-inventory-mismatch', 'candidate-file-in-use-pid:', 'failure-cgroup-identity-mismatch', 'capacity-http-cgroup.json', 'e890d97c2f044d085b6b1e22b41625e6390530b4']) assert.ok(preflight.includes(fragment));
+  assert.equal(spawnSync('bash', ['-n'], { input: preflight, encoding: 'utf8' }).status, 0);
+  const refresh = candidateRefreshScript(oldRevision, newRevision, files);
+  const moveLines = refresh.split('\n').filter(line => line.startsWith('mv -f '));
+  assert.equal(moveLines.length, 4);
+  assert.match(moveLines[3], /\.resonance-release-receipt\.json/);
+  assert.ok(refresh.includes('.refresh-backup') && refresh.includes('trap rollback EXIT') && refresh.includes("trap 'exit 130' INT"));
+  assert.ok(refresh.includes('new-source-bytes-mismatch:public/css/resonance.css') && refresh.includes('new-reference-bytes-mismatch') && refresh.includes('new-manifest-bytes-mismatch'));
+  assert.equal(spawnSync('bash', ['-n'], { input: refresh, encoding: 'utf8' }).status, 0);
+  assert.throws(() => candidateRefreshPreflightScript({ oldRevision: newRevision, newRevision, expectedFiles: files, selectedOldBytes }), /invalid candidate refresh revisions/);
+  assert.throws(() => candidateRefreshPreflightScript({ oldRevision, newRevision, expectedFiles: ['../unknown'], selectedOldBytes }), /invalid candidate refresh inventory/);
+  const cgroupScript = preserveOldFailureCgroupScript('observed-matching-e890-failure', 'eyJ0ZXN0IjoiZXhhY3QifQ==');
+  assert.equal(spawnSync('bash', ['-n'], { input: cgroupScript, encoding: 'utf8' }).status, 0);
+});
+
+test('candidate refresh Bash transaction preserves exact bytes on success and restores originals on explicit exit', () => {
+  const oldRevision = 'e890d97c2f044d085b6b1e22b41625e6390530b4';
+  const newRevision = 'a81a93031e9d024ef44b2e2f4f2d3991b3605788';
+  const expectedFiles = ['tools/resonance/capacity.mjs', 'public/css/resonance.css', 'server/index.js'];
+  const oldCapacity = Buffer.from('old-capacity-bytes-with-trailing-newline\n');
+  const oldCss = Buffer.from('old-css\n');
+  const template = candidateRefreshScript(oldRevision, newRevision, expectedFiles)
+    .replaceAll('/opt/stronghold-protocol/releases/resonance-candidate', '__CANDIDATE__')
+    .replaceAll('/var/tmp/stronghold-protocol/resonance', '__STAGING__')
+    .replaceAll('/opt/stronghold-protocol/toolchain/node-v22.23.3-linux-x64/bin/node', '__NODE__');
+  const selectedOldBytes = { 'tools/resonance/capacity.mjs': oldCapacity.toString('base64'), 'public/css/resonance.css': oldCss.toString('base64') };
+  const preflightTemplate = candidateRefreshPreflightScript({ oldRevision, newRevision, expectedFiles, selectedOldBytes })
+    .replaceAll('/opt/stronghold-protocol/releases/resonance-candidate', '__CANDIDATE__')
+    .replaceAll('/var/tmp/stronghold-protocol/resonance', '__STAGING__')
+    .replaceAll('/opt/stronghold-protocol/toolchain/node-v22.23.3-linux-x64/bin/node', '__NODE__')
+    .replace(/^for p in .*; do ordinary_dir .*exit 61; }; done$/m, 'for p in "$C" "$C/tools" "$C/tools/resonance" "$C/public" "$C/public/css" "$S"; do ordinary_dir "$p" || { echo "fixture-parent-invalid:$p" >&2; exit 61; }; done');
+  const cgroupJson = `${JSON.stringify({ sourceRevision: oldRevision, unit: 'resonance-cap-e890d97c2f04-http.service', recording: false, runnerExitCode: 61, cpuUsageNSec: 5, memoryPeakBytes: 6 })}\n`;
+  const cgroupBase64 = Buffer.from(cgroupJson).toString('base64');
+  const cgroupTemplate = preserveOldFailureCgroupScript('observed-matching-e890-failure', cgroupBase64)
+    .replaceAll('/var/tmp/stronghold-protocol/resonance', '__STAGING__');
+  const wrapper = `set -euo pipefail
+ROOT=$(mktemp -d /tmp/resonance-refresh-fixture.XXXXXX)
+trap 'rm -rf -- "$ROOT"' EXIT
+cat > "$ROOT/template.sh" <<'TEMPLATE'
+${template}
+TEMPLATE
+cat > "$ROOT/preflight-template.sh" <<'PREFLIGHT'
+${preflightTemplate}
+PREFLIGHT
+cat > "$ROOT/cgroup-template.sh" <<'CGROUP'
+${cgroupTemplate}
+CGROUP
+make_case() {
+  mode="$1"; d="$ROOT/$mode"; C="$d/candidate"; S="$d/stage"; B="$d/bin"; N="$B/node"
+  mkdir -p "$C/tools/resonance" "$C/public/css" "$S" "$B"
+  printf 'old-capacity-bytes-with-trailing-newline\\n' > "$C/tools/resonance/capacity.mjs"
+  printf 'old-css\\n' > "$C/public/css/resonance.css"
+  mkdir -p "$C/server"; printf 'old-server\\n' > "$C/server/index.js"
+  printf '{"sourceRevision":"${oldRevision}"}\\n' > "$C/.resonance-release-receipt.json"
+  printf 'old-reference\\n' > "$C/public/resonance-references.zip"
+  printf 'new-capacity-bytes-with-trailing-newline\\n' > "$d/new-capacity"
+  printf 'new-css\\n' > "$d/new-css"
+  printf 'opaque-archive\\n' > "$S/server-code.tar"
+  printf 'new-reference\\n' > "$S/resonance-references.zip"
+  printf '{"sourceRevision":"${oldRevision}"}\\n' > "$S/server-release.json"
+  if test "$mode" = success; then printf '%s' '${cgroupBase64}' | base64 -d > "$S/capacity-http-cgroup.json"; fi
+  printf 'package\\n' > "$S/package.json"; printf 'lock\\n' > "$S/package-lock.json"
+  cat > "$N" <<'NODE'
+#!/bin/sh
+shift
+shift
+for arg do last="$arg"; done
+sed -n 's/.*"sourceRevision"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' "$last"
+NODE
+  cat > "$B/tar" <<'TAR'
+#!/bin/sh
+case "$3" in tools/resonance/capacity.mjs) cat "$FIXTURE_ROOT/new-capacity";; public/css/resonance.css) cat "$FIXTURE_ROOT/new-css";; *) exit 2;; esac
+TAR
+  cat > "$B/fuser" <<'FUSER'
+#!/bin/sh
+if test "\${FUSER_MODE:-1}" = 0; then echo '424242'; exit 0; fi
+exit 1
+FUSER
+  chmod +x "$N" "$B/tar" "$B/fuser"
+  sed -e "s|__CANDIDATE__|$C|g" -e "s|__STAGING__|$S|g" -e "s|__NODE__|$N|g" "$ROOT/template.sh" > "$d/refresh.sh"
+  sed -e "s|__CANDIDATE__|$C|g" -e "s|__STAGING__|$S|g" -e "s|__NODE__|$N|g" "$ROOT/preflight-template.sh" > "$d/preflight.sh"
+  sed -e "s|__STAGING__|$S|g" "$ROOT/cgroup-template.sh" > "$d/preserve-cgroup.sh"
+  PATH="$B:/usr/bin:/bin" FIXTURE_STAGE="$S" FUSER_MODE=1 bash "$d/preflight.sh" > "$d/preflight.json"
+  grep -q '"preflight":"ok"' "$d/preflight.json"
+  set +e
+  PATH="$B:/usr/bin:/bin" FIXTURE_STAGE="$S" FUSER_MODE=0 bash "$d/preflight.sh" > "$d/busy.json" 2> "$d/busy.err"
+  busy_rc=$?
+  set -e
+  test "$busy_rc" -ne 0
+  grep -q 'candidate-file-in-use-pid:424242' "$d/busy.err"
+  if test "$mode" = success; then
+    PATH="$B:/usr/bin:/bin" bash "$d/preserve-cgroup.sh" > "$d/cgroup.json"
+    test ! -e "$S/capacity-http-cgroup.json"
+    printf '%s' '${cgroupBase64}' | base64 -d | cmp -s - "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json"
+  fi
+  printf '{"sourceRevision":"${newRevision}"}\\n' > "$S/server-release.json"
+  printf 'new-reference\\n' > "$S/resonance-references.zip"
+  if test "$mode" = success; then
+    PATH="$B:/usr/bin:/bin" FIXTURE_STAGE="$S" FIXTURE_ROOT="$d" FUSER_MODE=1 bash "$d/refresh.sh" > "$d/out.json"
+    grep -q '"refreshed":true' "$d/out.json"
+    cmp -s "$d/new-capacity" "$C/tools/resonance/capacity.mjs"
+    cmp -s "$d/new-css" "$C/public/css/resonance.css"
+    cmp -s "$S/resonance-references.zip" "$C/public/resonance-references.zip"
+    cmp -s "$S/server-release.json" "$C/.resonance-release-receipt.json"
+  else
+    set +e
+    PATH="$B:/usr/bin:/bin" FIXTURE_STAGE="$S" FIXTURE_ROOT="$d" FUSER_MODE=0 bash "$d/refresh.sh" > "$d/out.json" 2> "$d/err.log"
+    rc=$?
+    set -e
+    test "$rc" -ne 0
+    printf 'old-capacity-bytes-with-trailing-newline\\n' | cmp -s - "$C/tools/resonance/capacity.mjs"
+    printf 'old-css\\n' | cmp -s - "$C/public/css/resonance.css"
+    printf 'old-reference\\n' | cmp -s - "$C/public/resonance-references.zip"
+    printf '{"sourceRevision":"${oldRevision}"}\\n' | cmp -s - "$C/.resonance-release-receipt.json"
+  fi
+  test -z "$(find "$C" -type f \\( -name '*.refresh-backup' -o -name '*.refresh-pending' \\) -print)"
+}
+make_case success
+make_case failure
+`;
+  const run = spawnSync('bash', ['-s'], { input: wrapper, encoding: 'utf8', maxBuffer: 1024 * 1024, windowsHide: true });
+  assert.equal(run.status, 0, run.stderr || run.stdout);
 });
 
 test('capacity acceptance requires native matching revision and four successful official HTTP battles', () => {

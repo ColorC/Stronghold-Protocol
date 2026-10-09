@@ -7,10 +7,12 @@ import {
   countCollisionCoverage,
   collisionDisposition,
   executePlan,
+  findIncomingDirtySourcePaths,
   findUnreviewedDirtyCollisions,
   isProtectedPath,
   isSourceOrDocPath,
   parseArgs,
+  reviewedFileBytesMatch,
 } from '../../tools/resonance/integrate-canonical.mjs';
 
 test('canonical integration defaults to a read-only dry run and requires explicit absolute overrides', () => {
@@ -79,6 +81,20 @@ test('dirty source collision guard blocks only overlapping unreviewed paths, tra
   assert.deepEqual(findUnreviewedDirtyCollisions(dirty, ['tools/new-file.mjs'], []), []);
 });
 
+test('incoming worktree source and document edits are surfaced instead of silently omitted from the native merge', () => {
+  assert.deepEqual(findIncomingDirtySourcePaths([
+    ' M docs/plans/resonance/progress.md',
+    ' M tools/resonance/integrate-canonical.mjs',
+    '?? test/resonance/new.test.js',
+    ' M data/resonance-reference/private.json',
+    ' M runtime/resonance/session.json',
+  ].join('\n')), [
+    { status: ' M', path: 'docs/plans/resonance/progress.md' },
+    { status: ' M', path: 'tools/resonance/integrate-canonical.mjs' },
+    { status: '??', path: 'test/resonance/new.test.js' },
+  ]);
+});
+
 const FIXTURE = 'C:/Users/lilithgames/AppData/Local/Temp/stronghold-resonance-integration';
 
 function nativeGit(root, args, options = {}) {
@@ -90,6 +106,28 @@ function put(root, rel, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, value);
 }
+
+test('porcelain parsing keeps the first tracked source path and its leading status byte from native Git output', () => {
+  assert.equal(fs.existsSync(FIXTURE), false, `fixed fixture already exists: ${FIXTURE}`);
+  try {
+    fs.mkdirSync(FIXTURE, { recursive: false });
+    nativeGit(FIXTURE, ['init', '-b', 'main']);
+    nativeGit(FIXTURE, ['config', 'user.name', 'Resonance Fixture']);
+    nativeGit(FIXTURE, ['config', 'user.email', 'fixture@example.invalid']);
+    put(FIXTURE, 'server/changed.js', 'export const value = 1;\n');
+    nativeGit(FIXTURE, ['add', 'server/changed.js']);
+    nativeGit(FIXTURE, ['commit', '-m', 'base']);
+    put(FIXTURE, 'server/changed.js', 'export const value = 2;\n');
+    const rawStatus = nativeGit(FIXTURE, ['status', '--porcelain=v1', '--untracked-files=all']);
+    assert.equal(rawStatus.startsWith(' M server/changed.js'), true, JSON.stringify(rawStatus));
+    assert.deepEqual(findIncomingDirtySourcePaths(rawStatus), [{ status: ' M', path: 'server/changed.js' }]);
+  } finally {
+    if (fs.existsSync(FIXTURE)) {
+      assertFixtureNoSymlinks(FIXTURE);
+      fs.rmSync(path.resolve(FIXTURE), { recursive: true, force: false });
+    }
+  }
+});
 
 function initMergeFixture(root, { rollback = false } = {}) {
   const canonical = path.join(root, 'canonical');
@@ -190,6 +228,27 @@ function fixtureSizeBytes(root) {
     return sum + (entry.isDirectory() ? fixtureSizeBytes(file) : fs.statSync(file).size);
   }, 0);
 }
+
+test('reviewed collision preimages are compared as current file bytes, including changed and missing targets', () => {
+  assert.equal(fs.existsSync(FIXTURE), false, `fixed fixture already exists: ${FIXTURE}`);
+  try {
+    fs.mkdirSync(FIXTURE, { recursive: false });
+    const current = path.join(FIXTURE, 'canonical', 'server', 'index.js');
+    const reviewed = path.join(FIXTURE, 'integration', 'server-index.current.input');
+    put(FIXTURE, path.relative(FIXTURE, current), Buffer.from([0x00, 0x0d, 0x0a, 0xff]));
+    put(FIXTURE, path.relative(FIXTURE, reviewed), Buffer.from([0x00, 0x0d, 0x0a, 0xff]));
+    assert.equal(reviewedFileBytesMatch(current, reviewed), true);
+    fs.writeFileSync(current, Buffer.from([0x00, 0x0d, 0x0a, 0xfe]));
+    assert.equal(reviewedFileBytesMatch(current, reviewed), false);
+    fs.unlinkSync(current);
+    assert.equal(reviewedFileBytesMatch(current, reviewed), false);
+  } finally {
+    if (fs.existsSync(FIXTURE)) {
+      assertFixtureNoSymlinks(FIXTURE);
+      fs.rmSync(path.resolve(FIXTURE), { recursive: true, force: false });
+    }
+  }
+});
 
 test('native fixture transaction merges clean docs/new directories, preserves dirty docs and eight deletions, and excludes unknown untracked files', () => {
   assert.equal(fs.existsSync(FIXTURE), false, `fixed fixture already exists: ${FIXTURE}`);

@@ -16,6 +16,8 @@ const SERVICE_UNIT = '/etc/systemd/system/stronghold-protocol.service';
 const SERVICE_ENV = '/etc/stronghold-protocol.env';
 const CAPACITY_SESSION = '/var/lib/stronghold-protocol/capacity-tests/resonance';
 const CAPACITY_RECEIPT = `${STAGING}/capacity-receipt.json`;
+const CAPACITY_RECORDING_RECEIPT = `${STAGING}/capacity-recording-receipt.json`;
+const CAPACITY_BATCH_RECEIPT = `${STAGING}/capacity-batch-receipt.json`;
 const RESONANCE_DIRECTORY = '/var/lib/stronghold-protocol/resonance-sessions';
 const BACKUP_ROOT = STAGING;
 const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
@@ -24,7 +26,7 @@ const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/no
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
 const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
 const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';
-const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径>] | --activate --capacity-receipt <绝对路径>]\n默认dry-run只读本地receipt/档案并打印预演；--prepare准备候选；--resume-receipt仅续传通过原生版本及远端文件核验的失败批次；--activate要求匹配的四并发容量回执，有界切换服务，失败恢复原unit/env。`;
+const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径> | --replace-staged-revision <旧Native完整commit>] | --refresh-candidate --previous-release-receipt <旧receipt> --failure-cgroup-receipt <本地回执路径> | --capacity-batch --local-capacity-receipt <绝对路径> | --activate --capacity-receipt <绝对路径>]\n默认dry-run只读本地receipt/档案并打印预演；--refresh-candidate仅原位更新已核验候选中的capacity工具、references ZIP及release manifest。`;
 
 export function parseArgs(argv) {
   const options = { prepare: false, activate: false };
@@ -33,6 +35,8 @@ export function parseArgs(argv) {
     if (value === '--prepare') options.prepare = true;
     else if (value === '--dry-run') options.prepare = false;
     else if (value === '--activate') options.activate = true;
+    else if (value === '--capacity-batch') options.capacityBatch = true;
+    else if (value === '--refresh-candidate') options.refreshCandidate = true;
     else if (value === '--self-test') options.selfTest = true;
     else if (value === '--help' || value === '-h') options.help = true;
     else if (value === '--release-receipt') {
@@ -43,17 +47,46 @@ export function parseArgs(argv) {
       const next = argv[++i];
       if (!next || next.startsWith('--')) throw new Error('缺少 --capacity-receipt 路径');
       options.capacityReceiptPath = next;
+    } else if (value === '--local-capacity-receipt') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--')) throw new Error('缺少 --local-capacity-receipt 路径');
+      options.localCapacityReceiptPath = next;
     } else if (value === '--resume-receipt') {
       const next = argv[++i];
       if (!next || next.startsWith('--')) throw new Error('缺少 --resume-receipt 路径');
       options.resumeReceiptPath = next;
+    } else if (value === '--replace-staged-revision') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--')) throw new Error('缺少 --replace-staged-revision commit');
+      if (!/^[0-9a-f]{40}$/i.test(next)) throw new Error('--replace-staged-revision 必须为完整Native Git commit');
+      options.replaceStagedRevision = next.toLowerCase();
+    } else if (value === '--previous-release-receipt') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--')) throw new Error('缺少 --previous-release-receipt 路径');
+      options.previousReleaseReceiptPath = next;
+    } else if (value === '--failure-cgroup-receipt') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--')) throw new Error('缺少 --failure-cgroup-receipt 路径');
+      options.failureCgroupReceiptPath = next;
     } else throw new Error(`未知参数：${value}`);
   }
-  if (options.prepare && options.activate) throw new Error('--prepare 与 --activate 不能同时使用');
+  if ([options.prepare, options.activate, Boolean(options.capacityBatch), Boolean(options.refreshCandidate)].filter(Boolean).length > 1) throw new Error('--prepare、--refresh-candidate、--capacity-batch 与 --activate 不能同时使用');
   if (options.activate && !options.capacityReceiptPath) throw new Error('--activate 必须提供 --capacity-receipt');
   if (!options.activate && options.capacityReceiptPath) throw new Error('--capacity-receipt 只能与 --activate 一起使用');
+  if (options.capacityBatch && !options.localCapacityReceiptPath) throw new Error('--capacity-batch 必须提供 --local-capacity-receipt');
+  if (!options.capacityBatch && options.localCapacityReceiptPath) throw new Error('--local-capacity-receipt 只能与 --capacity-batch 一起使用');
+  if (options.localCapacityReceiptPath && !path.isAbsolute(options.localCapacityReceiptPath)) throw new Error('--local-capacity-receipt 必须提供绝对路径');
   if (options.resumeReceiptPath && !options.prepare) throw new Error('--resume-receipt 只能与 --prepare 一起使用');
   if (options.resumeReceiptPath && !path.isAbsolute(options.resumeReceiptPath)) throw new Error('--resume-receipt 必须提供绝对路径');
+  if (options.replaceStagedRevision && !options.prepare) throw new Error('--replace-staged-revision 只能与 --prepare 一起使用');
+  if (options.replaceStagedRevision && options.resumeReceiptPath) throw new Error('--replace-staged-revision 不能与 --resume-receipt 共用');
+  if (options.refreshCandidate && (!options.previousReleaseReceiptPath || !options.failureCgroupReceiptPath)) throw new Error('--refresh-candidate 必须提供旧release receipt与本地failure-cgroup receipt路径');
+  if (options.previousReleaseReceiptPath && !options.refreshCandidate) throw new Error('--previous-release-receipt 只能与 --refresh-candidate 一起使用');
+  if (options.failureCgroupReceiptPath && !options.refreshCandidate) throw new Error('--failure-cgroup-receipt 只能与 --refresh-candidate 一起使用');
+  if (options.refreshCandidate && (options.resumeReceiptPath || options.replaceStagedRevision)) throw new Error('--refresh-candidate 不能与prepare续传/替换staging参数共用');
+  for (const [key, label] of [['previousReleaseReceiptPath', '--previous-release-receipt'], ['failureCgroupReceiptPath', '--failure-cgroup-receipt']]) {
+    if (options[key] && !path.isAbsolute(options[key])) throw new Error(`${label} 必须提供绝对路径`);
+  }
   return options;
 }
 
@@ -84,6 +117,158 @@ function gitRevision(revision) {
   const actual = execFileSync('git', ['-C', ROOT, 'rev-parse', '--verify', `${revision}^{commit}`], { encoding: 'utf8' }).trim();
   if (actual.toLowerCase() !== revision.toLowerCase()) throw new Error('sourceRevision无法解析为原生commit');
   return actual;
+}
+
+export function validateStagedReplacementRevision(oldRevision, newRevision, resolver = gitRevision) {
+  if (!/^[0-9a-f]{40}$/i.test(oldRevision ?? '') || !/^[0-9a-f]{40}$/i.test(newRevision ?? '')) throw new Error('replacement requires full Native Git commits');
+  const resolvedOld = resolver(oldRevision);
+  if (String(resolvedOld).toLowerCase() !== oldRevision.toLowerCase()) throw new Error('replace staged revision无法解析为原生commit');
+  if (resolvedOld.toLowerCase() === newRevision.toLowerCase()) throw new Error('replace staged revision必须与新Native版本不同');
+  return resolvedOld;
+}
+
+export function validateCandidateRefreshRevisions(oldRevision, newRevision, resolver = gitRevision) {
+  const resolvedOld = validateStagedReplacementRevision(oldRevision, newRevision, resolver);
+  const resolvedNew = resolver(newRevision);
+  if (String(resolvedNew).toLowerCase() !== newRevision.toLowerCase()) throw new Error('new Native release无法解析为原生commit');
+  return { oldRevision: resolvedOld, newRevision: resolvedNew };
+}
+
+export function candidateRefreshPreflightScript({ oldRevision, newRevision, expectedFiles, selectedOldBytes }) {
+  if (!/^[0-9a-f]{40}$/i.test(oldRevision ?? '') || !/^[0-9a-f]{40}$/i.test(newRevision ?? '') || oldRevision.toLowerCase() === newRevision.toLowerCase()) throw new Error('invalid candidate refresh revisions');
+  if (!Array.isArray(expectedFiles) || !expectedFiles.includes('tools/resonance/capacity.mjs') || expectedFiles.some(file => !/^[A-Za-z0-9_./-]+$/.test(file) || file.startsWith('/') || file.split('/').includes('..'))) throw new Error('invalid candidate refresh inventory');
+  const selectedSources = ['tools/resonance/capacity.mjs', 'public/css/resonance.css'];
+  if (selectedSources.some(file => !expectedFiles.includes(file) || !/^[A-Za-z0-9+/=]+$/.test(selectedOldBytes?.[file] ?? ''))) throw new Error('refresh requires exact old-Native bytes for capacity.mjs and resonance.css');
+  const expected = [...new Set([...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
+  const expectedLines = expected.map(value => `'${value}'`).join(' ');
+  return `set -eu
+C='${CANDIDATE}'
+S='${STAGING}'
+NODE='${REMOTE_NODE}'
+OLD='${oldRevision}'
+NEW='${newRevision}'
+ordinary_dir() { test -d "$1" && test ! -L "$1"; }
+for p in /opt /opt/stronghold-protocol /opt/stronghold-protocol/releases /var /var/tmp /var/tmp/stronghold-protocol "$S" "$C" "$C/tools" "$C/tools/resonance" "$C/public"; do ordinary_dir "$p" || { echo "refresh-parent-not-ordinary:$p" >&2; exit 61; }; done
+test -f "$C/.resonance-release-receipt.json" && test ! -L "$C/.resonance-release-receipt.json" && test "$(stat -c %h "$C/.resonance-release-receipt.json")" -eq 1 || { echo 'candidate-old-receipt-unsafe' >&2; exit 62; }
+candidate_revision=$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$C/.resonance-release-receipt.json")
+test "$candidate_revision" = "$OLD" || { echo 'candidate-native-not-expected-old' >&2; exit 63; }
+test -f "$S/server-release.json" && test ! -L "$S/server-release.json" && test "$(stat -c %h "$S/server-release.json")" -eq 1 || { echo 'staged-new-receipt-unsafe' >&2; exit 64; }
+staged_revision=$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$S/server-release.json")
+test "$staged_revision" = "$OLD" || { echo 'staged-native-not-expected-old' >&2; exit 65; }
+for f in server-code.tar resonance-references.zip package.json package-lock.json server-release.json; do test -f "$S/$f" && test ! -L "$S/$f" && test "$(stat -c %h "$S/$f")" -eq 1 || { echo "staging-owned-file-unsafe:$S/$f" >&2; exit 66; }; done
+for f in "$S"/*; do test -e "$f" || continue; case "$(basename "$f")" in server-code.tar|resonance-references.zip|package.json|package-lock.json|server-release.json|capacity-http-cgroup.json|capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json) test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-unknown-or-unsafe:$f" >&2; exit 67; };; *) echo "staging-unknown:$f" >&2; exit 67;; esac; done
+links=$(find "$C" -type l -print -quit); test -z "$links" || { echo "candidate-link:$links" >&2; exit 68; }
+hard=$(find "$C" -type f -exec sh -c 'for f do test "$(stat -c %h "$f")" -eq 1 || { echo "$f"; exit 1; }; done' sh {} +) || { echo "candidate-hardlink:$hard" >&2; exit 68; }
+actual=$(find "$C" -type f -printf '%P\\n' | sort)
+expected=$(printf '%s\\n' ${expectedLines} | sort)
+test "$actual" = "$expected" || { echo 'candidate-inventory-mismatch' >&2; printf '%s\\n' "$actual" >&2; exit 69; }
+command -v fuser >/dev/null 2>&1 || { echo 'fuser-required' >&2; exit 70; }
+mapfile -d '' candidate_files < <(find "$C" -type f -print0)
+set +e
+fuser_output=$(fuser -f -- "\${candidate_files[@]}" 2>/dev/null)
+fuser_status=$?
+set -e
+if test "$fuser_status" -eq 0; then
+  fuser_pids=$(printf '%s\\n' "$fuser_output" | grep -oE '[0-9]+' | sort -u || true)
+  test -n "$fuser_pids" || { echo 'fuser-output-unparseable' >&2; exit 71; }
+  for pid in $fuser_pids; do
+    cwd=$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true)
+    argv=$(tr '\\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)
+    if { test "$pid" = "$$" || test "$pid" = "$PPID"; } && case "$cwd:$argv" in *"$C"*) false;; *) true;; esac; then continue; fi
+    echo "candidate-file-in-use-pid:$pid cwd=$cwd argvCandidatePathPresent=$([[ "$argv" == *"$C"* ]] && echo yes || echo no)" >&2; exit 71
+  done
+elif test "$fuser_status" -ne 1; then echo 'fuser-error' >&2; exit 72; fi
+proc_refs=$(grep -laF -e "$C" /proc/[0-9]*/cmdline 2>/dev/null || true)
+for cmdline in $proc_refs; do pid=\${cmdline#/proc/}; pid=\${pid%%/*}; cwd=$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true); argv=$(tr '\\0' ' ' < "$cmdline" 2>/dev/null || true); if { test "$pid" = "$$" || test "$pid" = "$PPID"; } && case "$cwd:$argv" in *"$C"*) false;; *) true;; esac; then continue; fi; echo "candidate-process-reference-pid:$pid cwd=$cwd argvCandidateSourcePresent=yes" >&2; exit 71; done
+cwd_refs=$(find /proc -mindepth 2 -maxdepth 2 -type l -name cwd -lname "$C*" -print 2>/dev/null || true)
+for cwdlink in $cwd_refs; do pid=\${cwdlink#/proc/}; pid=\${pid%%/*}; cwd=$(readlink -f "$cwdlink" 2>/dev/null || true); argv=$(tr '\\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true); if { test "$pid" = "$$" || test "$pid" = "$PPID"; } && case "$cwd:$argv" in *"$C"*) false;; *) true;; esac; then continue; fi; echo "candidate-process-reference-pid:$pid cwd=$cwd argvCandidateSourcePresent=$([[ "$argv" == *"$C"* ]] && echo yes || echo no)" >&2; exit 71; done
+printf '%s' '${selectedOldBytes['tools/resonance/capacity.mjs']}' | base64 -d | cmp -s - "$C/tools/resonance/capacity.mjs" || { echo 'candidate-capacity-not-exact-old-native-bytes' >&2; exit 73; }
+printf '%s' '${selectedOldBytes['public/css/resonance.css']}' | base64 -d | cmp -s - "$C/public/css/resonance.css" || { echo 'candidate-resonance-css-not-exact-old-native-bytes' >&2; exit 73; }
+cgroup_status=missing
+cgroup_b64=''
+cgroup_file=''
+if test -e "$S/capacity-http-cgroup.json" || test -L "$S/capacity-http-cgroup.json"; then
+  test ! -e "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json" && test ! -L "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json" || { echo 'failure-cgroup-original-and-archive-both-exist' >&2; exit 74; }
+  cgroup_file="$S/capacity-http-cgroup.json"; cgroup_status=observed-matching-e890-failure
+elif test -e "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json" || test -L "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json"; then
+  cgroup_file="$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json"; cgroup_status=already-preserved-matching-e890-failure
+fi
+if test -n "$cgroup_file"; then
+  test -f "$cgroup_file" && test ! -L "$cgroup_file" && test "$(stat -c %h "$cgroup_file")" -eq 1 || { echo 'failure-cgroup-not-ordinary' >&2; exit 74; }
+  "$NODE" -e 'const fs=require("fs"),r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.unit!=="resonance-cap-e890d97c2f04-http.service"||r.recording!==false||!Number.isInteger(r.runnerExitCode)||r.runnerExitCode===0||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0)){console.error("failure-cgroup-identity-mismatch");process.exit(1)}' "$cgroup_file" || exit 75
+  cgroup_b64=$(base64 -w0 "$cgroup_file")
+fi
+printf '{"preflight":"ok","oldRevision":"%s","newRevision":"%s","candidate":"%s","failureCgroupStatus":"%s","failureCgroupBase64":"%s"}\\n' "$OLD" "$NEW" "$C" "$cgroup_status" "$cgroup_b64"`;
+}
+
+export function candidateRefreshScript(oldRevision, newRevision, expectedFiles = ['tools/resonance/capacity.mjs', 'server/index.js']) {
+  if (!/^[0-9a-f]{40}$/i.test(oldRevision ?? '') || !/^[0-9a-f]{40}$/i.test(newRevision ?? '') || oldRevision.toLowerCase() === newRevision.toLowerCase()) throw new Error('invalid candidate refresh revisions');
+  if (!Array.isArray(expectedFiles) || expectedFiles.some(file => !/^[A-Za-z0-9_./-]+$/.test(file) || file.startsWith('/') || file.split('/').includes('..'))) throw new Error('invalid candidate refresh final inventory');
+  const expected = [...new Set([...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
+  const expectedLines = expected.map(value => `'${value}'`).join(' ');
+  const sourceFiles = ['tools/resonance/capacity.mjs', 'public/css/resonance.css'];
+  if (sourceFiles.some(file => !expectedFiles.includes(file))) throw new Error('refresh archive must contain the selected capacity and resonance CSS files');
+  const files = [...sourceFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'];
+  const backups = files.map(file => `${CANDIDATE}/${file}.refresh-backup`);
+  const pending = files.map(file => `${CANDIDATE}/${file}.refresh-pending`);
+  const extractSelected = sourceFiles.map((file, index) => `tar -xOf "$S/server-code.tar" '${file}' > '${pending[index]}'`).join('\n');
+  const moveTargets = files.map((file, index) => `mv -f '${pending[index]}' '${CANDIDATE}/${file}'`).join('\n');
+  const updatedFiles = JSON.stringify(files);
+  return `set -eu
+C='${CANDIDATE}'
+S='${STAGING}'
+OLD='${oldRevision}'
+NEW='${newRevision}'
+files='${files.map(file => `${CANDIDATE}/${file}`).join(' ')}'
+backups='${backups.join(' ')}'
+pending='${pending.join(' ')}'
+committed=0
+rollback() { rc=$?; trap - EXIT INT TERM; if test "$committed" -ne 1; then set +e; for f in $files; do b="$f.refresh-backup"; if test -f "$b" && test ! -L "$b" && test "$(stat -c %h "$b")" -eq 1; then mv -f -- "$b" "$f"; fi; p="$f.refresh-pending"; if test -f "$p" && test ! -L "$p" && test "$(stat -c %h "$p")" -eq 1; then rm -- "$p"; fi; done; fi; exit "$rc"; }
+trap rollback EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+test "$("${REMOTE_NODE}" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$C/.resonance-release-receipt.json")" = "$OLD" || { echo 'candidate-native-changed-before-refresh' >&2; exit 81; }
+test "$("${REMOTE_NODE}" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$S/server-release.json")" = "$NEW" || { echo 'staged-native-changed-before-refresh' >&2; exit 81; }
+for f in $files; do test ! -e "$f.refresh-backup" && test ! -e "$f.refresh-pending" || { echo "refresh-temp-already-exists:$f" >&2; exit 82; }; cp -p "$f" "$f.refresh-backup"; done
+${extractSelected}
+cp -p "$S/resonance-references.zip" '${pending[2]}'
+cp -p "$S/server-release.json" '${pending[3]}'
+for f in ${pending.join(' ')}; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "refresh-pending-invalid:$f" >&2; exit 83; }; done
+${moveTargets}
+test "$("${REMOTE_NODE}" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$C/.resonance-release-receipt.json")" = "$NEW" || { echo 'new-candidate-receipt-mismatch' >&2; exit 84; }
+${sourceFiles.map(file => `tar -xOf "$S/server-code.tar" '${file}' | cmp -s - "$C/${file}" || { echo 'new-source-bytes-mismatch:${file}' >&2; exit 85; }`).join('\n')}
+cmp -s "$S/resonance-references.zip" "$C/public/resonance-references.zip" || { echo 'new-reference-bytes-mismatch' >&2; exit 85; }
+cmp -s "$S/server-release.json" "$C/.resonance-release-receipt.json" || { echo 'new-manifest-bytes-mismatch' >&2; exit 85; }
+for f in $files; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "refreshed-file-invalid:$f" >&2; exit 86; }; fuser -s -- "$f" 2>/dev/null && { echo "refreshed-file-in-use:$f" >&2; exit 87; } || status=$?; test "\${status:-1}" -eq 1 || { echo "fuser-error:$f" >&2; exit 88; }; unset status; done
+links=$(find "$C" -type l -print -quit); test -z "$links" || { echo "candidate-link-after-refresh:$links" >&2; exit 89; }
+hard=$(find "$C" -type f ! -name '*.refresh-backup' -exec sh -c 'for f do test "$(stat -c %h "$f")" -eq 1 || { echo "$f"; exit 1; }; done' sh {} +) || { echo "candidate-hardlink-after-refresh:$hard" >&2; exit 89; }
+actual=$(find "$C" -type f ! -name '*.refresh-backup' -printf '%P\\n' | sort)
+expected=$(printf '%s\\n' ${expectedLines} | sort)
+test "$actual" = "$expected" || { echo 'candidate-inventory-after-refresh-mismatch' >&2; exit 89; }
+committed=1
+for f in $files; do rm -- "$f.refresh-backup"; done
+actual=$(find "$C" -type f -printf '%P\\n' | sort)
+test "$actual" = "$expected" || { echo 'candidate-final-inventory-mismatch' >&2; exit 89; }
+links=$(find "$C" -type l -print -quit); test -z "$links" || { echo "candidate-final-link:$links" >&2; exit 89; }
+hard=$(find "$C" -type f -exec sh -c 'for f do test "$(stat -c %h "$f")" -eq 1 || { echo "$f"; exit 1; }; done' sh {} +) || { echo "candidate-final-hardlink:$hard" >&2; exit 89; }
+printf '{"refreshed":true,"candidate":"%s","previousRevision":"%s","sourceRevision":"%s","updatedFiles":%s}\\n' "$C" "$OLD" "$NEW" '${updatedFiles}'`;
+}
+
+export function preserveOldFailureCgroupScript(status, cgroupBase64) {
+  const oldName = `${STAGING}/capacity-http-cgroup.json`;
+  const archiveName = `${STAGING}/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json`;
+  if (!['observed-matching-e890-failure', 'already-preserved-matching-e890-failure'].includes(status) || !/^[A-Za-z0-9+/=]+$/.test(cgroupBase64 ?? '')) throw new Error('invalid failure cgroup preservation input');
+  const source = status === 'observed-matching-e890-failure' ? oldName : archiveName;
+  const move = status === 'observed-matching-e890-failure'
+    ? `test ! -e '${archiveName}' && test ! -L '${archiveName}' || { echo 'failure-cgroup-archive-exists' >&2; exit 91; }; mv -- '${oldName}' '${archiveName}'`
+    : `test -f '${archiveName}' && test ! -L '${archiveName}' || { echo 'failure-cgroup-archive-missing' >&2; exit 91; }`;
+  return `set -euo pipefail
+src='${source}'
+printf '%s' '${cgroupBase64}' | base64 -d | cmp -s - "$src" || { echo 'failure-cgroup-bytes-changed' >&2; exit 90; }
+test -f "$src" && test ! -L "$src" && test "$(stat -c %h "$src")" -eq 1 || { echo 'failure-cgroup-unsafe' >&2; exit 90; }
+${move}
+test -f '${archiveName}' && test ! -L '${archiveName}' && test "$(stat -c %h '${archiveName}')" -eq 1 || { echo 'failure-cgroup-preservation-failed' >&2; exit 92; }
+printf '{"preserved":true,"path":"%s","source":"%s"}\\n' '${archiveName}' '${oldName}'`;
 }
 
 function readReleaseReceipt(receiptPath) {
@@ -133,13 +318,12 @@ export function validatePrepareResumeReceipt(release, receipt) {
     if (!row || path.resolve(String(row.source ?? '')).toLowerCase() !== path.resolve(artifact.path).toLowerCase()) throw new Error(`resume artifact source与当前Native builder不一致：${index}`);
     if (row.target !== expectedTarget) throw new Error(`resume artifact target与正式staging路径不一致：${index}`);
     if (String(row.role ?? '') !== String(artifact.role ?? '')) throw new Error(`resume artifact role与当前Native builder不一致：${index}`);
-    if (!['transferred', 'failed', 'pending'].includes(row.status)) throw new Error(`resume artifact status无效：${index}`);
+    if (!['transferred', 'failed', 'pending', 'batch-transfer-unconfirmed'].includes(row.status)) throw new Error(`resume artifact status无效：${index}`);
     if (row.status !== 'transferred') {
-      if (sawIncomplete || index !== receipt.artifactTransfers.length - 1) throw new Error('resume receipt必须按原顺序记录连续成功前缀及最后一个未完成档案');
       sawIncomplete = true;
     } else if (sawIncomplete) throw new Error('resume receipt在失败档案后不能标记传输成功');
   }
-  if (!sawIncomplete || !receipt.artifactTransfers.some(row => row.status === 'transferred')) throw new Error('resume receipt必须包含至少一个已传档案和一个未完成档案');
+  if (!sawIncomplete) throw new Error('resume receipt必须包含未完成档案');
   const skipped = receipt.artifactTransfers.filter(row => row.status === 'transferred').map((row, index) => ({ ...row, artifact: release.artifacts[index] }));
   return { receipt, skipped, completedNames: new Set(skipped.map(row => path.basename(row.source))) };
 }
@@ -172,6 +356,14 @@ RESUME_FILES
 printf 'resume-assets-verified\\n'`;
 }
 
+export function scpBatchArgs(identity, port, host, stage, artifacts) {
+  if (!identity || !path.isAbsolute(identity) || !/^\d{1,5}$/.test(String(port)) || !/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/.test(host)) throw new Error('invalid batch SCP connection arguments');
+  if (!path.posix.isAbsolute(stage) || !Array.isArray(artifacts) || artifacts.length === 0) throw new Error('invalid batch SCP target or artifact set');
+  const files = artifacts.map(artifact => path.resolve(artifact.path));
+  if (new Set(files).size !== files.length) throw new Error('duplicate artifact in batch SCP');
+  return ['-i', identity, '-P', String(port), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'ConnectTimeout=15', '-o', 'LogLevel=ERROR', '-o', 'ServerAliveInterval=15', ...files, `${host}:${stage}/`];
+}
+
 function readPrepareResumeReceipt(receiptPath, release) {
   checkedRegularFile(receiptPath, 'prepare resume receipt');
   return validatePrepareResumeReceipt(release, JSON.parse(fs.readFileSync(receiptPath, 'utf8')));
@@ -179,6 +371,112 @@ function readPrepareResumeReceipt(receiptPath, release) {
 
 function capacityCommand(revision) {
   return `timeout 480s ${REMOTE_NODE} --max-old-space-size=384 ${CANDIDATE}/tools/resonance/capacity.mjs --data-dir ${RULES} --session-dir ${CAPACITY_SESSION} --receipt ${CAPACITY_RECEIPT} --release-receipt ${STAGING}/server-release.json --source-revision ${revision} --concurrency 4`;
+}
+
+function capacityPhaseUnit(revision, recording) {
+  if (!/^[0-9a-f]{40}$/i.test(String(revision))) throw new Error('capacity batch requires full Native Git revision');
+  return `resonance-cap-${revision.slice(0, 12)}-${recording ? 'record' : 'http'}`;
+}
+
+function shellQuotePosix(value) { return `'${String(value).replaceAll("'", "'\\''")}'`; }
+
+export function capacityBatchScript(revision) {
+  if (!/^[0-9a-f]{40}$/i.test(String(revision))) throw new Error('capacity batch requires full Native Git revision');
+  const phases = [
+    { recording: false, receipt: CAPACITY_RECEIPT },
+    { recording: true, receipt: CAPACITY_RECORDING_RECEIPT },
+  ];
+  const phaseLines = phases.map(({ recording, receipt }) => {
+    const unit = capacityPhaseUnit(revision, recording);
+    const recordingArg = recording ? ' --recording' : '';
+    const command = `${REMOTE_NODE} --max-old-space-size=384 ${CANDIDATE}/tools/resonance/capacity.mjs --data-dir ${RULES} --session-dir ${CAPACITY_SESSION} --receipt ${receipt} --release-receipt ${STAGING}/server-release.json --source-revision ${revision} --concurrency 4${recordingArg}`;
+    const cgroupFile = `${STAGING}/capacity-${recording ? 'recording' : 'http'}-cgroup.json`;
+    const wrapper = [
+      'set +e', '"$@"', 'capacity_rc=$?',
+      'cg2=$(awk -F: \'$1=="0" && $2=="" {print $3}\' /proc/self/cgroup)',
+      'if test -n "$cg2" && test -r "/sys/fs/cgroup$cg2/memory.peak" && test -r "/sys/fs/cgroup$cg2/cpu.stat"; then',
+      '  memory_peak=$(cat "/sys/fs/cgroup$cg2/memory.peak"); cpu_ns=$(awk \'/usage_usec/ {printf "%.0f", $2*1000}\' "/sys/fs/cgroup$cg2/cpu.stat"); version=2; cg_path="$cg2"',
+      'else',
+      '  mem_cg=$(awk -F: \'$2 ~ /(^|,)memory(,|$)/ {print $3}\' /proc/self/cgroup); cpu_cg=$(awk -F: \'$2 ~ /(^|,)cpuacct(,|$)/ {print $3}\' /proc/self/cgroup)',
+      '  memory_path="/sys/fs/cgroup/memory$mem_cg/memory.max_usage_in_bytes"; cpu_path="/sys/fs/cgroup/cpuacct$cpu_cg/cpuacct.usage"',
+      '  if test ! -r "$cpu_path"; then cpu_path="/sys/fs/cgroup/cpu,cpuacct$cpu_cg/cpuacct.usage"; fi',
+      '  if test -r "$memory_path" && test -r "$cpu_path"; then memory_peak=$(cat "$memory_path"); cpu_ns=$(cat "$cpu_path"); version=1; cg_path="$mem_cg"; else echo capacity-cgroup-metrics-unavailable >&2; exit 70; fi',
+      'fi',
+      'case "$memory_peak:$cpu_ns" in *[!0-9:]*|:*|*:) echo capacity-cgroup-metrics-invalid >&2; exit 71;; esac',
+      'unit_result=failed; test "$capacity_rc" -eq 0 && unit_result=success',
+      `printf '{"recording":${recording ? 'true' : 'false'},"unit":"%s","unitResult":"%s","runnerExitCode":%s,"cpuUsageNSec":%s,"memoryPeakBytes":%s,"cgroupVersion":%s,"cgroupPath":"%s","receipt":"%s"}\\n' '${unit}.service' "$unit_result" "$capacity_rc" "$cpu_ns" "$memory_peak" "$version" "$cg_path" '${receipt}' > '${cgroupFile}'`,
+      'exit "$capacity_rc"',
+    ].join('\n');
+    return `UNIT='${unit}.service'\n` +
+      `set +e\ntimeout --signal=TERM --kill-after=5s 520s systemd-run --wait --pipe --collect --unit="$UNIT" --property=MemoryMax=512M --property=CPUQuota=100% --property=RuntimeMaxSec=480s /bin/bash -c ${shellQuotePosix(wrapper)} capacity-wrapper ${command}\nsystemd_rc=$?\nset -e\n` +
+      `test -f '${cgroupFile}' && test ! -L '${cgroupFile}' && test "$(stat -c %h '${cgroupFile}')" -eq 1 || { echo "capacity-cgroup-proof-missing:$UNIT" >&2; exit 61; }\n` +
+      `"${REMOTE_NODE}" -e 'const fs=require("fs"),r=JSON.parse(fs.readFileSync("${cgroupFile}","utf8"));if(r.unit!=="${unit}.service"||r.runnerExitCode!==0||r.cpuUsageNSec<=0||r.memoryPeakBytes<=0||r.cgroupVersion!==1&&r.cgroupVersion!==2)process.exit(61)'\ntest "$systemd_rc" -eq 0 || { echo "capacity-systemd-run-failed:$UNIT:$systemd_rc" >&2; exit 61; }\n` +
+      `"${REMOTE_NODE}" -e 'const fs=require("fs"),p="${receipt}",r=JSON.parse(fs.readFileSync(p,"utf8"));if(r.status!=="completed"||r.sourceRevision!=="${revision}"||r.concurrency!==4||r.recording!==${recording ? 'true' : 'false'}||r.sessions?.length!==4||r.error)process.exit(62);const expected="${CAPACITY_SESSION}/";for(const f of [...(r.outputPaths?.sessionFiles||[]),...(r.outputPaths?.replays||[])])if(typeof f!=="string"||!f.startsWith(expected))process.exit(63);if(${recording ? '!(r.sessions.every(s=>s.replay?.verifiedViaHttp===true&&s.replay.frames>0&&s.replay.gzipBytes>0))' : 'r.sessions.some(s=>s.replay?.verifiedViaHttp||s.replay?.frames)'} )process.exit(64);'\n` +
+      `"${REMOTE_NODE}" - "${receipt}" "${CAPACITY_SESSION}" <<'CAPACITY_CLEAN'\nconst fs=require('fs'),cp=require('child_process'),path=require('path');const [receiptPath,dir]=process.argv.slice(2);const ds=fs.lstatSync(dir);if(!ds.isDirectory()||ds.isSymbolicLink())throw Error('capacity-session-directory-not-ordinary');const r=JSON.parse(fs.readFileSync(receiptPath,'utf8'));if(r.status!=='completed'||r.sessions.length!==4)throw Error('capacity-session-receipt-not-complete');const files=[...(r.outputPaths.sessionFiles||[]),...(r.outputPaths.replays||[])];if(files.length!==(r.recording?8:4))throw Error('capacity-output-list-count-invalid');const names=files.map(f=>path.basename(f));if(new Set(names).size!==files.length||JSON.stringify(fs.readdirSync(dir).sort())!==JSON.stringify(names.sort()))throw Error('capacity-directory-has-unknown-or-nested-contents');for(const file of files){if(path.dirname(file)!==dir)throw Error('capacity-output-outside-session-directory');const st=fs.lstatSync(file);if(!st.isFile()||st.isSymbolicLink()||st.nlink!==1)throw Error('capacity-output-not-ordinary-single-link');const busy=cp.spawnSync('fuser',['-s','--',file]);if(busy.error)throw busy.error;if(busy.status===0)throw Error('capacity-output-in-use');if(busy.status!==1)throw Error('capacity-output-consumer-check-failed');}for(const file of files)fs.unlinkSync(file);if(fs.readdirSync(dir).length!==0)throw Error('capacity-session-directory-not-empty-after-clean');\nCAPACITY_CLEAN\n` +
+      ``;
+  }).join('\n');
+  return `set -eu\nREV='${revision}'\nSESSION='${CAPACITY_SESSION}'\nSTAGING='${STAGING}'\nNODE='${REMOTE_NODE}'\n` +
+    `for p in /var /var/lib /var/lib/stronghold-protocol; do test -d "$p" && test ! -L "$p" || { echo "capacity-ancestor-not-ordinary:$p" >&2; exit 55; }; done\n` +
+    `for p in /var/lib/stronghold-protocol/capacity-tests "$SESSION"; do if test -e "$p" || test -L "$p"; then test -d "$p" && test ! -L "$p" || { echo "capacity-directory-not-ordinary:$p" >&2; exit 55; }; else mkdir -m 0755 "$p"; fi; done\n` +
+    `test -d "$SESSION" && test ! -L "$SESSION" || { echo 'capacity-session-directory-not-ordinary' >&2; exit 55; }\n` +
+    `test -z "$(ls -A "$SESSION")" || { echo 'capacity-session-directory-not-empty' >&2; exit 56; }\n` +
+    `for f in '${CAPACITY_RECEIPT}' '${CAPACITY_RECORDING_RECEIPT}' '${CAPACITY_BATCH_RECEIPT}' '${STAGING}/capacity-http-cgroup.json' '${STAGING}/capacity-recording-cgroup.json'; do test ! -e "$f" && test ! -L "$f" || { echo "capacity-batch-output-already-exists:$f" >&2; exit 60; }; done\n` +
+    `test -f '${CANDIDATE}/.resonance-release-receipt.json' && test ! -L '${CANDIDATE}/.resonance-release-receipt.json' || { echo 'capacity-candidate-receipt-missing' >&2; exit 57; }\n` +
+    `candidate_rev=$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' '${CANDIDATE}/.resonance-release-receipt.json')\ntest "$candidate_rev" = "$REV" || { echo 'capacity-candidate-revision-mismatch' >&2; exit 58; }\n` +
+    `staged_rev=$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' '${STAGING}/server-release.json')\ntest "$staged_rev" = "$REV" || { echo 'capacity-staged-revision-mismatch' >&2; exit 59; }\n` +
+    `test -z "$(ls -A "$SESSION")" || { echo 'capacity-session-directory-not-empty' >&2; exit 56; }\n` + phaseLines +
+    `"$NODE" - <<'CAPACITY_BATCH' > '${CAPACITY_BATCH_RECEIPT}'\nconst fs=require('fs');const rev='${revision}';const http=JSON.parse(fs.readFileSync('${CAPACITY_RECEIPT}','utf8'));const recording=JSON.parse(fs.readFileSync('${CAPACITY_RECORDING_RECEIPT}','utf8'));const cgroupHttp=JSON.parse(fs.readFileSync('${STAGING}/capacity-http-cgroup.json','utf8'));const cgroupRecording=JSON.parse(fs.readFileSync('${STAGING}/capacity-recording-cgroup.json','utf8'));process.stdout.write(JSON.stringify({schema:'resonance-capacity-batch-receipt/v1',sourceRevision:rev,status:'completed',sessionDirectory:'${CAPACITY_SESSION}',candidate:'${CANDIDATE}',staging:'${STAGING}',phases:[{receipt:'${CAPACITY_RECEIPT}',capacity:http,cgroup:cgroupHttp},{receipt:'${CAPACITY_RECORDING_RECEIPT}',capacity:recording,cgroup:cgroupRecording}],cleanup:{sessionDirectoryEmpty:fs.readdirSync('${CAPACITY_SESSION}').length===0,removedOnlyReceiptListedFiles:true}})+'\\n');\nCAPACITY_BATCH\n` +
+    `cat '${CAPACITY_BATCH_RECEIPT}'\n`;
+}
+
+export function capacityBatchCommand(revision) {
+  return { args: [...sshArgs('15'), 'timeout 1080s bash -s'], input: capacityBatchScript(revision), timeoutMs: 1_090_000 };
+}
+
+export function capacityBatchReceiptFromStdout(stdout, revision) {
+  const line = String(stdout).trim().split(/\r?\n/).at(-1);
+  let receipt;
+  try { receipt = JSON.parse(line); } catch { throw new Error('远端容量批次未返回可读终态JSON'); }
+  if (receipt.schema !== 'resonance-capacity-batch-receipt/v1' || receipt.status !== 'completed'
+    || String(receipt.sourceRevision).toLowerCase() !== String(revision).toLowerCase()
+    || receipt.phases?.length !== 2 || receipt.cleanup?.sessionDirectoryEmpty !== true) {
+    throw new Error('远端容量批次回执未通过source/终态/清理校验');
+  }
+  const [http, recording] = receipt.phases;
+  validateCapacityReceipt(revision, { ...http.capacity, recording: false });
+  validateCapacityReceipt(revision, { ...recording.capacity, recording: false });
+  if (http.capacity?.recording !== false || recording.capacity?.recording !== true
+    || [http, recording].some(phase => phase.capacity?.status !== 'completed' || phase.capacity?.concurrency !== 4
+      || phase.capacity?.sourceRevision !== revision || phase.capacity?.sessions?.length !== 4
+      || phase.cgroup?.unitResult !== 'success' || !Number.isFinite(phase.cgroup?.cpuUsageNSec) || phase.cgroup.cpuUsageNSec <= 0
+      || !Number.isFinite(phase.cgroup?.memoryPeakBytes) || phase.cgroup.memoryPeakBytes <= 0)) {
+    throw new Error('远端容量批次缺少两阶段四并发或cgroup资源证明');
+  }
+  if (!recording.capacity.sessions.every(row => row.replay?.verifiedViaHttp === true && row.replay.frames > 0 && row.replay.gzipBytes > 0)) throw new Error('录制阶段缺少HTTP回读的gzip replay证明');
+  return receipt;
+}
+
+function prepareLocalBatchReceiptPath(file) {
+  const target = path.resolve(file);
+  if (!target.replaceAll('\\', '/').endsWith('/runtime/resonance/deployment/capacity-batch-receipt.json')) throw new Error('local capacity receipt must use runtime/resonance/deployment/capacity-batch-receipt.json');
+  let current = path.parse(target).root;
+  const relative = path.relative(current, path.dirname(target)).split(path.sep).filter(Boolean);
+  for (const part of relative) {
+    current = path.join(current, part);
+    if (fs.existsSync(current)) {
+      const st = fs.lstatSync(current);
+      if (!st.isDirectory() || st.isSymbolicLink()) throw new Error(`local capacity receipt parent is not an ordinary directory: ${current}`);
+    } else fs.mkdirSync(current);
+  }
+  if (fs.existsSync(target) || fs.existsSync(`${target}.pending`)) throw new Error(`local capacity receipt output already exists: ${target}`);
+  return target;
+}
+
+function writeLocalBatchReceipt(target, receipt) {
+  const pending = `${target}.pending`;
+  fs.writeFileSync(pending, `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx' });
+  fs.renameSync(pending, target);
+  return target;
 }
 
 export function validateCapacityReceipt(releaseRevision, receipt) {
@@ -376,10 +674,21 @@ function selfTest() {
 
 function sshArgs(connectTimeout = '15') { return ['-i', IDENTITY, '-p', PORT, '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', `ConnectTimeout=${connectTimeout}`, '-o', 'LogLevel=ERROR', '-o', 'ServerAliveInterval=15', HOST]; }
 
-export function preflightScript(wsVersion, revision, candidateFiles) {
+export function preflightScript(wsVersion, revision, candidateFiles, { allowStagedReceiptOverwrite = false, replaceStagedRevision = null } = {}) {
+  if (allowStagedReceiptOverwrite && replaceStagedRevision) throw new Error('resume receipt replacement and staged revision replacement are mutually exclusive');
+  if (replaceStagedRevision && (!/^[0-9a-f]{40}$/i.test(replaceStagedRevision) || replaceStagedRevision.toLowerCase() === revision.toLowerCase())) throw new Error('invalid staged replacement revision');
   const expected = [...new Set([...candidateFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
   const stageNames = OWNED_STAGE_NAMES.map(name => `'${name}'`).join(' ');
   const expectedLines = expected.map(name => `'${name}'`).join(' ');
+  const stagedReceiptCheck = replaceStagedRevision
+    ? `test -f '${STAGING}/server-release.json' && test ! -L '${STAGING}/server-release.json' && test "$(stat -c %h '${STAGING}/server-release.json')" -eq 1 || { echo 'replacement-old-staging-receipt-missing-or-unsafe:${STAGING}/server-release.json'; exit 25; }; staged_revision=$('${REMOTE_NODE}' -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' '${STAGING}/server-release.json'); test "$staged_revision" = '${replaceStagedRevision}' || { echo 'replacement-old-staging-revision-mismatch:${STAGING}/server-release.json'; exit 25; }`
+    : allowStagedReceiptOverwrite
+    ? `if test -e '${STAGING}/server-release.json' || test -L '${STAGING}/server-release.json'; then test -f '${STAGING}/server-release.json' && test ! -L '${STAGING}/server-release.json' && test "$(stat -c %h '${STAGING}/server-release.json')" -eq 1 || { echo 'staging-receipt-not-ordinary:${STAGING}/server-release.json'; exit 25; }; fi`
+    : `if test -f '${STAGING}/server-release.json'; then staged_revision=$('${REMOTE_NODE}' -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' '${STAGING}/server-release.json'); test "$staged_revision" = '${revision}' || { echo 'staging-source-revision-mismatch:${STAGING}/server-release.json'; exit 25; }; fi`;
+  const replacementPreflight = replaceStagedRevision
+    ? `test -d '${STAGING}' && test ! -L '${STAGING}' || { echo 'replacement-staging-root-missing-or-unsafe:${STAGING}'; exit 24; }; if test -e '${CANDIDATE}' || test -L '${CANDIDATE}'; then echo 'candidate-present-on-staged-replacement:${CANDIDATE}'; exit 23; fi`
+    : '';
+  const replacementJson = replaceStagedRevision ? `"${replaceStagedRevision}"` : 'null';
   return `set -eu
 ordinary_dir() { p="$1"; test -d "$p" && test ! -L "$p"; }
 for p in /var /var/tmp /opt /var/lib /var/lib/stronghold-protocol /var/lib/stronghold-protocol/rules /var/lib/stronghold-protocol/rules/4ed1ad32ec10da15c23f9d7939dade603950759b /var/lib/stronghold-protocol/rules/4ed1ad32ec10da15c23f9d7939dade603950759b/data /etc /etc/systemd /etc/systemd/system; do ordinary_dir "$p" || { echo "unsafe-or-missing:$p"; exit 21; }; done
@@ -390,6 +699,7 @@ test -f '${REMOTE_NODE}' && test -x '${REMOTE_NODE}' && test ! -L '${REMOTE_NODE
 test -f '${REMOTE_NPM_CLI}' && test ! -L '${REMOTE_NPM_CLI}' || { echo 'required-npm-cli-missing-or-unsafe:${REMOTE_NPM_CLI}'; exit 22; }
 if test -e '${INSTALL_ROOT}/releases' || test -L '${INSTALL_ROOT}/releases'; then ordinary_dir '${INSTALL_ROOT}/releases' || { echo 'unsafe-or-missing:${INSTALL_ROOT}/releases'; exit 22; }; fi
 candidate_state=absent
+${replacementPreflight}
 if test -e '${CANDIDATE}' || test -L '${CANDIDATE}'; then
   ordinary_dir '${CANDIDATE}' || { echo 'candidate-not-ordinary:${CANDIDATE}'; exit 23; }
   test -f '${CANDIDATE}/.resonance-release-receipt.json' && test ! -L '${CANDIDATE}/.resonance-release-receipt.json' || { echo 'candidate-receipt-missing-or-unsafe:${CANDIDATE}/.resonance-release-receipt.json'; exit 23; }
@@ -405,8 +715,8 @@ if test -e '${CANDIDATE}' || test -L '${CANDIDATE}'; then
 fi
 if test -e '${STAGING}' || test -L '${STAGING}'; then
   test -d '${STAGING}' && test ! -L '${STAGING}' || { echo 'staging-not-ordinary:${STAGING}'; exit 24; }
-  for f in '${STAGING}'/*; do test -e "$f" || continue; name=$(basename "$f"); case "$name" in 'stronghold-protocol.${revision}.unit.backup'|'stronghold-protocol.${revision}.env.backup') test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-backup-unsafe:$f"; exit 25; }; continue;; esac; case " ${stageNames} " in *" '$name' "*) ;; *) echo "staging-unknown:$f"; exit 25;; esac; test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-file-unsafe:$f"; exit 25; }; done
-  if test -f '${STAGING}/server-release.json'; then staged_revision=$('${REMOTE_NODE}' -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' '${STAGING}/server-release.json'); test "$staged_revision" = '${revision}' || { echo 'staging-source-revision-mismatch:${STAGING}/server-release.json'; exit 25; }; fi
+  for f in '${STAGING}'/*; do test -e "$f" || continue; name=$(basename "$f"); case "$name" in 'stronghold-protocol.${revision}.unit.backup'|'stronghold-protocol.${revision}.env.backup') test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-backup-unsafe:$f"; exit 25; }; continue;; 'capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json') test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-old-cgroup-archive-unsafe:$f"; exit 25; }; continue;; esac; case " ${stageNames} " in *" '$name' "*) ;; *) echo "staging-unknown:$f"; exit 25;; esac; test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-file-unsafe:$f"; exit 25; }; done
+  ${stagedReceiptCheck}
 fi
 for f in '${INSTALL_ROOT}/package.json' '${INSTALL_ROOT}/package-lock.json' '${INSTALL_ROOT}/node_modules'; do if test -e "$f" || test -L "$f"; then test ! -L "$f" || { echo "install-link:$f"; exit 26; }; fi; done
 if test -e '${INSTALL_ROOT}/package.json'; then test -f '${INSTALL_ROOT}/package.json' || { echo 'package-json-not-file:${INSTALL_ROOT}/package.json'; exit 27; }; fi
@@ -414,7 +724,7 @@ if test -e '${INSTALL_ROOT}/package-lock.json'; then test -f '${INSTALL_ROOT}/pa
 if test -e '${INSTALL_ROOT}/node_modules'; then test -d '${INSTALL_ROOT}/node_modules' || { echo 'node_modules-not-dir:${INSTALL_ROOT}/node_modules'; exit 27; }; fi
 if test -d '${INSTALL_ROOT}'; then install_state=$('${REMOTE_NODE}' -e 'const fs=require("fs"),p="${INSTALL_ROOT}",want="${wsVersion}",names=["package.json","package-lock.json","node_modules"],have=names.map(n=>fs.existsSync(p+"/"+n));if(have.every(Boolean)){for(const f of [p+"/package.json",p+"/package-lock.json",p+"/node_modules/ws",p+"/node_modules/ws/package.json"])if(fs.lstatSync(f).isSymbolicLink()){console.error("install-link:"+f);process.exit(31)}const a=require(p+"/package.json"),b=require(p+"/package-lock.json"),c=require(p+"/node_modules/ws/package.json");if(JSON.stringify(a.dependencies)!==JSON.stringify({ws:want})||b.packages?.["node_modules/ws"]?.version!==want||c.version!==want){console.error("install-version-mismatch:${INSTALL_ROOT}/package.json ${INSTALL_ROOT}/package-lock.json ${INSTALL_ROOT}/node_modules/ws/package.json");process.exit(32)}process.stdout.write("reuse")}else if(have.every(v=>!v))process.stdout.write("install");else {console.error("install-partial:${INSTALL_ROOT}");process.exit(33)}'); else install_state=install; fi
 for f in '${SERVICE_UNIT}' '${SERVICE_ENV}'; do if test -e "$f"; then test -f "$f" && test ! -L "$f" || { echo "protected-file-not-ordinary:$f"; exit 28; }; fi; done
-printf '{"preflight":"ok","installState":"%s","candidate":"%s","staging":"known-owned-only"}\\n' "$install_state" "$candidate_state"`;
+printf '{"preflight":"ok","installState":"%s","candidate":"%s","staging":"known-owned-only","replacedStagedRevision":${replacementJson}}\\n' "$install_state" "$candidate_state"`;
 }
 
 function invoke(command, args, input, timeoutMs) {
@@ -424,53 +734,106 @@ function invoke(command, args, input, timeoutMs) {
   return result.stdout.trim();
 }
 
-function prepareRemote(release, resumeInfo = null) {
+function prepareRemote(release, resumeInfo = null, replaceStagedRevision = null) {
   if (!fs.existsSync(IDENTITY)) throw new Error(`SSH identity不存在：${IDENTITY}`);
   const archiveEntries = execFileSync(TAR_COMMAND, ['-tf', release.code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
   const candidateFiles = archiveEntries.filter(name => !name.endsWith('/'));
-  const preflight = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript(release.wsVersion, release.sourceRevision, candidateFiles), 45_000);
+  const allowStagedReceiptOverwrite = Boolean(resumeInfo && resumeInfo.skipped.length === 0);
+  const preflight = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript(release.wsVersion, release.sourceRevision, candidateFiles, { allowStagedReceiptOverwrite, replaceStagedRevision }), 45_000);
   const preflightInfo = JSON.parse(preflight);
   if (preflightInfo.preflight !== 'ok' || !['install', 'reuse'].includes(preflightInfo.installState)) throw new Error('远端安全预检未通过');
   const transferReceipt = resumeInfo ? resumeInfo.receipt.artifactTransfers.map(({ source, target, role, status }) => ({ source, target, role, status })) : [];
   const skippedAlreadyTransferred = resumeInfo ? resumeInfo.skipped.map(({ source, target, role }) => ({ source, target, role })) : [];
   const actualTransferred = [];
-  if (resumeInfo) {
+  if (resumeInfo?.skipped.length) {
     const verifyRows = resumeInfo.skipped.map(row => ({ ...row, localBytes: fs.statSync(row.artifact.path).size }));
     const verified = invoke('ssh', [...sshArgs(), 'bash', '-s'], resumeVerificationScript(release.sourceRevision, verifyRows), 45_000);
     if (verified !== 'resume-assets-verified') throw new Error('远端已传档案核验未返回成功终态');
   }
   invoke('ssh', [...sshArgs(), 'bash', '-s'], `set -eu\nmkdir -p '${STAGING}' '${path.posix.dirname(CANDIDATE)}'\n`, 45_000);
-  for (const artifact of release.artifacts) {
+  const remainingArtifacts = release.artifacts.filter(artifact => !resumeInfo?.completedNames.has(path.basename(artifact.path)));
+  const pendingRows = remainingArtifacts.map(artifact => {
     const target = `${STAGING}/${path.basename(artifact.path)}`;
-    if (resumeInfo?.completedNames.has(path.basename(artifact.path))) continue;
-    let entry = transferReceipt.find(row => row.target === target);
-    if (entry) entry.status = 'pending';
-    else {
-      entry = { source: artifact.path, target, role: artifact.role, status: 'pending' };
-      transferReceipt.push(entry);
+    let row = transferReceipt.find(item => item.target === target);
+    if (row) { row.status = 'pending'; delete row.error; }
+    else { row = { source: artifact.path, target, role: artifact.role, status: 'pending' }; transferReceipt.push(row); }
+    return { artifact, row };
+  });
+  try {
+    invoke('scp', scpBatchArgs(IDENTITY, PORT, HOST, STAGING, remainingArtifacts), undefined, 180_000);
+    for (const { artifact, row } of pendingRows) {
+      row.status = 'transferred';
+      actualTransferred.push({ source: artifact.path, target: row.target, role: artifact.role });
     }
-    try {
-      invoke('scp', ['-i', IDENTITY, '-P', PORT, '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'ConnectTimeout=15', '-o', 'LogLevel=ERROR', '-o', 'ServerAliveInterval=15', artifact.path, `${HOST}:${target}`], undefined, 120_000);
-      entry.status = 'transferred';
-      actualTransferred.push({ source: artifact.path, target, role: artifact.role });
-    } catch (error) {
-      entry.status = 'failed';
-      entry.error = error instanceof Error ? error.message : String(error);
-      const failureReceipt = { mode: 'prepare', sourceRevision: release.sourceRevision, status: 'failed', commandExitCode: 1,
-        artifactTransfers: transferReceipt, skippedAlreadyTransferred, actualTransferred };
-      throw new Error(`artifact transfer failed; prepareFailureReceipt=${JSON.stringify(failureReceipt)}; ${entry.error}`);
-    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    for (const { row } of pendingRows) row.status = 'batch-transfer-unconfirmed';
+    const failureReceipt = { mode: 'prepare', sourceRevision: release.sourceRevision, status: 'failed', commandExitCode: 1,
+      artifactTransfers: transferReceipt, skippedAlreadyTransferred, actualTransferred, transferError: detail };
+    throw new Error(`artifact batch transfer failed; prepareFailureReceipt=${JSON.stringify(failureReceipt)}`);
   }
   const revision = release.sourceRevision;
   const candidateAction = preflightInfo.candidate === 'reuse'
     ? `printf 'candidate reused after receipt, link, hardlink, and occupancy checks: %s\\n' '${CANDIDATE}'`
     : `mkdir -m 0755 '${CANDIDATE}'\ntar -xf '${STAGING}/server-code.tar' --no-same-owner --no-same-permissions -C '${CANDIDATE}'\ninstall -m 0644 '${STAGING}/resonance-references.zip' '${CANDIDATE}/public/resonance-references.zip'\ninstall -m 0644 '${STAGING}/server-release.json' '${CANDIDATE}/.resonance-release-receipt.json'`;
-  const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\nprintf '{"prepared":true,"sourceRevision":"${revision}","candidate":"${CANDIDATE}","candidateAction":"${preflightInfo.candidate}","wsVersion":"${release.wsVersion}","artifactTransfers":${JSON.stringify(transferReceipt)},"skippedAlreadyTransferred":${JSON.stringify(skippedAlreadyTransferred)},"actualTransferred":${JSON.stringify(actualTransferred)}}\\n'`;
+  const replacedJson = preflightInfo.replacedStagedRevision == null ? 'null' : `"${preflightInfo.replacedStagedRevision}"`;
+  const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\nprintf '{"prepared":true,"sourceRevision":"${revision}","replacedStagedRevision":${replacedJson},"candidate":"${CANDIDATE}","candidateAction":"${preflightInfo.candidate}","wsVersion":"${release.wsVersion}","artifactTransfers":${JSON.stringify(transferReceipt)},"skippedAlreadyTransferred":${JSON.stringify(skippedAlreadyTransferred)},"actualTransferred":${JSON.stringify(actualTransferred)}}\\n'`;
   try {
     return invoke('ssh', [...sshArgs(), 'timeout 180s bash -s'], remotePrepare, 180_000);
   } catch (error) {
     throw new Error(`remote prepare failed; artifact transfers=${JSON.stringify(transferReceipt)}; ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+function readPreviousReleaseRevision(receiptPath, nextRevision) {
+  checkedRegularFile(receiptPath, 'previous release receipt');
+  const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+  const oldRevision = gitRevision(receipt.sourceRevision);
+  validateCandidateRefreshRevisions(oldRevision, nextRevision);
+  return oldRevision;
+}
+
+function refreshCandidateRemote(release, oldRevision, failureReceiptPath) {
+  if (!fs.existsSync(IDENTITY)) throw new Error(`SSH identity不存在：${IDENTITY}`);
+  if (fs.existsSync(failureReceiptPath)) throw new Error(`failure-cgroup receipt已存在，拒绝覆盖：${failureReceiptPath}`);
+  const failureParent = path.dirname(failureReceiptPath);
+  if (!fs.statSync(failureParent).isDirectory()) throw new Error(`failure-cgroup receipt父目录不存在：${failureParent}`);
+  const archiveEntries = execFileSync(TAR_COMMAND, ['-tf', release.code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+  const candidateFiles = archiveEntries.filter(name => !name.endsWith('/'));
+  if (!candidateFiles.includes('tools/resonance/capacity.mjs')) throw new Error('新release缺少容量runner源码');
+  const selectedOldBytes = Object.fromEntries(['tools/resonance/capacity.mjs', 'public/css/resonance.css'].map(file => [
+    file, execFileSync('git', ['-C', ROOT, 'show', `${oldRevision}:${file}`]).toString('base64'),
+  ]));
+  const preflightScript = candidateRefreshPreflightScript({ oldRevision, newRevision: release.sourceRevision, expectedFiles: candidateFiles, selectedOldBytes });
+  const preflightText = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript, 45_000);
+  const preflight = JSON.parse(preflightText);
+  if (preflight.preflight !== 'ok' || preflight.oldRevision !== oldRevision || preflight.newRevision !== release.sourceRevision || preflight.candidate !== CANDIDATE) throw new Error('候选原位刷新预检回执与本地Native版本不匹配');
+  let cgroupReceipt;
+  if (preflight.failureCgroupStatus === 'observed-matching-e890-failure') {
+    const parsed = JSON.parse(Buffer.from(preflight.failureCgroupBase64, 'base64').toString('utf8'));
+    cgroupReceipt = { schema: 'resonance-capacity-failure-cgroup-preservation/v1', sourceRevision: oldRevision,
+      observedRemotePath: `${STAGING}/capacity-http-cgroup.json`, observedAt: new Date().toISOString(), observation: parsed };
+    fs.writeFileSync(failureReceiptPath, `${JSON.stringify(cgroupReceipt, null, 2)}\n`, { flag: 'wx' });
+  } else if (preflight.failureCgroupStatus === 'already-preserved-matching-e890-failure') {
+    const parsed = JSON.parse(Buffer.from(preflight.failureCgroupBase64, 'base64').toString('utf8'));
+    cgroupReceipt = { schema: 'resonance-capacity-failure-cgroup-preservation/v1', sourceRevision: oldRevision,
+      observedRemotePath: `${STAGING}/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json`, observedAt: new Date().toISOString(), observation: parsed, status: 'already-preserved' };
+    fs.writeFileSync(failureReceiptPath, `${JSON.stringify(cgroupReceipt, null, 2)}\n`, { flag: 'wx' });
+  } else if (preflight.failureCgroupStatus === 'missing') {
+    cgroupReceipt = { schema: 'resonance-capacity-failure-cgroup-preservation/v1', sourceRevision: oldRevision,
+      observedRemotePath: `${STAGING}/capacity-http-cgroup.json`, observedAt: new Date().toISOString(), status: 'missing' };
+    fs.writeFileSync(failureReceiptPath, `${JSON.stringify(cgroupReceipt, null, 2)}\n`, { flag: 'wx' });
+  } else throw new Error('远端failure-cgroup状态未知，拒绝继续候选更新');
+  if (preflight.failureCgroupStatus === 'observed-matching-e890-failure' || preflight.failureCgroupStatus === 'already-preserved-matching-e890-failure') {
+    const archive = invoke('ssh', [...sshArgs(), 'bash', '-s'], preserveOldFailureCgroupScript(preflight.failureCgroupStatus, preflight.failureCgroupBase64), 45_000);
+    if (!archive.includes('"preserved":true')) throw new Error('old Native failure cgroup未能原位归档');
+  }
+  const transfers = release.artifacts.map(artifact => ({ source: artifact.path, target: `${STAGING}/${path.basename(artifact.path)}`, role: artifact.role }));
+  invoke('scp', scpBatchArgs(IDENTITY, PORT, HOST, STAGING, release.artifacts), undefined, 180_000);
+  const result = JSON.parse(invoke('ssh', [...sshArgs(), 'timeout 90s bash -s'], candidateRefreshScript(oldRevision, release.sourceRevision, candidateFiles), 120_000));
+  if (result.refreshed !== true || result.candidate !== CANDIDATE || result.previousRevision !== oldRevision || result.sourceRevision !== release.sourceRevision) throw new Error('candidate refresh终态与预期不一致');
+  return { ...result, staging: STAGING, failureCgroupReceipt: failureReceiptPath,
+    failureCgroupStatus: cgroupReceipt.status ?? 'observed-matching-e890-failure', artifactTransfers: transfers };
 }
 
 function main() {
@@ -479,8 +842,34 @@ function main() {
   if (options.selfTest) return selfTest();
   const receiptPath = absolutePath(options.receiptPath, '--release-receipt');
   const release = readReleaseReceipt(receiptPath);
+  if (options.refreshCandidate) {
+    const previousReceiptPath = absolutePath(options.previousReleaseReceiptPath, '--previous-release-receipt');
+    const failureReceiptPath = absolutePath(options.failureCgroupReceiptPath, '--failure-cgroup-receipt');
+    const oldRevision = readPreviousReleaseRevision(previousReceiptPath, release.sourceRevision);
+    const remoteResult = refreshCandidateRemote(release, oldRevision, failureReceiptPath);
+    return process.stdout.write(`${JSON.stringify({ mode: 'refresh-candidate', oldRevision,
+      sourceRevision: release.sourceRevision, previousReleaseReceipt: previousReceiptPath, failureCgroupReceipt: failureReceiptPath,
+      staging: STAGING, candidate: CANDIDATE, updatedFiles: ['tools/resonance/capacity.mjs', 'public/css/resonance.css', 'public/resonance-references.zip', '.resonance-release-receipt.json'],
+      remoteResult })}\n`);
+  }
+  if (options.capacityBatch) {
+    if (!fs.existsSync(IDENTITY)) throw new Error(`SSH identity不存在：${IDENTITY}`);
+    const localReceiptPath = prepareLocalBatchReceiptPath(options.localCapacityReceiptPath);
+    const command = capacityBatchCommand(release.sourceRevision);
+    const stdout = invoke('ssh', command.args, command.input, command.timeoutMs);
+    const batch = capacityBatchReceiptFromStdout(stdout, release.sourceRevision);
+    writeLocalBatchReceipt(localReceiptPath, batch);
+    return process.stdout.write(`${JSON.stringify({ mode: 'capacity-batch', status: batch.status, sourceRevision: batch.sourceRevision,
+      localReceipt: localReceiptPath, remoteReceipt: `${STAGING}/capacity-batch-receipt.json`, sessionDirectory: CAPACITY_SESSION,
+      phases: batch.phases.map(phase => ({ recording: phase.capacity.recording, concurrency: phase.capacity.concurrency,
+        cpuUsageNSec: phase.cgroup.cpuUsageNSec, memoryPeakBytes: phase.cgroup.memoryPeakBytes,
+        sessions: phase.capacity.sessions.length, replayGzipBytes: phase.capacity.sessions.reduce((sum, row) => sum + (row.replay?.gzipBytes || 0), 0) })) })}\n`);
+  }
   const resumeInfo = options.resumeReceiptPath
     ? readPrepareResumeReceipt(absolutePath(options.resumeReceiptPath, '--resume-receipt'), release)
+    : null;
+  const replaceStagedRevision = options.replaceStagedRevision
+    ? validateStagedReplacementRevision(options.replaceStagedRevision, release.sourceRevision)
     : null;
   if (options.activate) {
     const capacityReceiptPath = absolutePath(options.capacityReceiptPath, '--capacity-receipt');
@@ -494,13 +883,14 @@ function main() {
   const plan = {
     mode: options.prepare ? 'prepare' : 'dry-run', sourceRevision: release.sourceRevision,
     resumeReceipt: options.resumeReceiptPath ? absolutePath(options.resumeReceiptPath, '--resume-receipt') : null,
+    replacedStagedRevision: replaceStagedRevision,
     filesToStage: release.artifacts.map(item => ({ path: item.path, role: item.role })),
     staging: STAGING, rulesData: RULES, installRoot: INSTALL_ROOT, candidate: CANDIDATE,
-    protectedReadOnly: [SERVICE_UNIT, SERVICE_ENV], capacityCommand: capacityCommand(release.sourceRevision), capacityTimeoutSeconds: 480,
+    protectedReadOnly: [SERVICE_UNIT, SERVICE_ENV], capacityCommand: capacityCommand(release.sourceRevision), capacityBatchCommand: capacityBatchCommand(release.sourceRevision), capacityTimeoutSeconds: 1080,
     note: 'public-rules.tar不传输；复用现有4ed canonical rules。不会启动或变更systemd服务。',
   };
   if (!options.prepare) return process.stdout.write(`${JSON.stringify(plan)}\n`);
-  process.stdout.write(`${JSON.stringify({ ...plan, remoteResult: prepareRemote(release, resumeInfo) })}\n`);
+  process.stdout.write(`${JSON.stringify({ ...plan, remoteResult: prepareRemote(release, resumeInfo, replaceStagedRevision) })}\n`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

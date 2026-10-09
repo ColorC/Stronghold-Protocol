@@ -18,6 +18,10 @@ body{background:radial-gradient(ellipse at 50% -25%,#2a3943,var(--rs-bg) 70%);co
 .rs-card,.rs-offer,.rs-piece,.rs-pact,.rs-envs button,.rs-difficulties button{font-size:15px;line-height:1.4}
 .rs-roster .rs-card i,.rs-copy{font-size:13px;line-height:1.35}
 .rs-resources{font-size:15px;line-height:1.4}
+.rs-fullscreen{font-size:14px;line-height:1.4;padding:5px 8px;border:1px solid var(--rs-line);border-radius:6px;background:#18212aee;z-index:10}
+.rs-env-choice{flex-direction:column;min-width:0}
+.rs-env-choice>button{width:100%}
+.rs-env-choice .rs-copy{align-self:flex-end;flex:0}
 .rs-panel h3,.rs-star h3,.rs-next h3{font-size:16px;line-height:1.35}
 .rs-choice__option p,.rs-detail__body p,.rs-detail__body small{font-size:14px;line-height:1.5}
 .rs-panel h2{margin-bottom:8px}
