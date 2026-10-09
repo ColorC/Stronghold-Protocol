@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyPreviousMidTierAttempt } from '../../tools/resonance/mid-tier-terminal.mjs';
+import { classifyPreviousMidTierAttempt, resolveMidTierTerminalProfile } from '../../tools/resonance/mid-tier-terminal.mjs';
+
+test('mid-tier terminal profile uses the canonical boss node key',()=>{
+  const profile=resolveMidTierTerminalProfile({
+    regular:{hpMultiplier:.4},terminal:{hpMultiplier:.6},
+    byDifficulty:{NORMAL:{regular:{hpMultiplier:.7},terminal:{hpMultiplier:.8,bossPoolMultiplier:.5}}},
+  });
+  assert.equal(profile.hpMultiplier,.8);
+  assert.equal(profile.bossPoolMultiplier,.5);
+});
 
 test('mid-tier history marks only committed 8-case/8-battle runs as committed evidence',()=>{
   const completed={helperWorkingTreeState:'committed-or-clean-at-current-codeRevision',cases:8,summary:{battles:8}};

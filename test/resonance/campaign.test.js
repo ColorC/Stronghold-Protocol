@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, CARRY_ADAPTIVE_POLICY, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, carryItemScore, carryOperatorPowerFactor, carryTransferPreservesPacts, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, finalFormalValidationTasks, pairAdaptiveStandardRuns, planCarryAdaptiveDeployment, policyLevelTarget, repositionCarryAdaptiveTeam, routeProfiles as campaignRouteProfiles, runCampaign, selectAdaptiveCarry, selectEconPactCopyTarget, transferCarryEquipment } from '../../tools/resonance/balance-campaign.mjs';
+import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, CARRY_ADAPTIVE_POLICY, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, carryItemScore, carryOperatorPowerFactor, carryTransferPreservesPacts, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, finalFormalValidationTasks, finalFunnyValidationTasks, pairAdaptiveStandardRuns, planCarryAdaptiveDeployment, policyLevelTarget, repositionCarryAdaptiveTeam, routeProfiles as campaignRouteProfiles, runCampaign, selectAdaptiveCarry, selectEconPactCopyTarget, transferCarryEquipment } from '../../tools/resonance/balance-campaign.mjs';
 import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
@@ -20,6 +20,24 @@ test('final formal validation covers all NORMAL environments and only four FUNNY
   assert.deepEqual(funny.map(task=>task.environmentId),['origin_aegir','origin_laterano','origin_kjerag','origin_yan']);
   assert.equal(new Set(tasks.map(task=>`${task.environmentId}:${task.difficulty}`)).size,23);
   assert.ok(tasks.every(task=>task.difficulty==='NORMAL'||task.difficulty==='FUNNY'));
+});
+
+test('FUNNY logistics rounds allow official preparation actions before settling supply',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'FUNNY',seed:20261009,maxBattles:1,maxMs:120000,policy:CARRY_ADAPTIVE_POLICY});
+  assert.equal(run.battles,1);
+  assert.equal(run.rows[0].round,2,'the first battle follows the odd logistics round');
+  assert.ok((run.policyActions.deploy??0)>0,'deployment used the official preparation action');
+  assert.ok((run.policyActions.advanceSupply??0)>0,'odd-round logistics still settles through advanceSupply');
+  const logistics=run.nodeEconomy.find(node=>node.round===1);
+  assert.ok(logistics,'the logistics node has its own action record');
+  assert.ok((logistics.actions?.deploy??0)>0,'official preparation happened on the odd node itself');
+  assert.equal(logistics.actions?.fight??0,0,'logistics did not start a battle');
+});
+
+test('final FUNNY validation is the exact four-environment FUNNY subset',()=>{
+  const funny=finalFunnyValidationTasks(),full=finalFormalValidationTasks().filter(task=>task.difficulty==='FUNNY');
+  assert.deepEqual(funny,full);
+  assert.equal(funny.length,4);
 });
 
 test('offer selection skips the first eligible offer when its reserved spend is not actionable',()=>{

@@ -18,6 +18,9 @@ const WORKTREE = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktre
 const ENVIRONMENTS = ['origin_aegir', 'origin_laterano', 'origin_kjerag', 'origin_yan'];
 const COPIES_BY_STAR = { 1: 1, 2: 3, 3: 9 };
 const TERMINAL_CFG = Object.freeze({ ...SCENARIO_CONFIGS.at(-1), round: 28, level: 10, phase: 'terminal', transferLimit: 0 });
+export function resolveMidTierTerminalProfile(enemyBalance) {
+  return resolveEnemyBalance(enemyBalance, 'NORMAL', 'boss');
+}
 
 function identityPact(catalog, environmentId) {
   return catalog.environments[environmentId]?.identityPactId || null;
@@ -148,7 +151,7 @@ function runCase({ data, environmentId, kind, sourceCodeRevision }) {
   const { catalog, catalogSeed, mainPact, core, coreHasTransfer, coreIdentityPath } = findCatalogAndCore(data, environmentId, kind);
   const thresholds = catalog.pacts[mainPact]?.thresholds ?? [];
   const targetTier = thresholds.at(-2);
-  const resolvedTerminalProfile = resolveEnemyBalance(catalog.campaign.enemyBalance, 'NORMAL', 'terminal');
+  const resolvedTerminalProfile = resolveMidTierTerminalProfile(catalog.campaign.enemyBalance);
   const fixed = { environmentId, kind, catalogSeed, mainPact, coreIdentityPath, coreHasTransfer,
     core: core ? { id: core.id, name: core.name, cost: core.cost, role: core.role, star: kind === 'four-cost' ? 2 : 3 } : null,
     targetMidTier: targetTier ?? null, maxTier: thresholds.at(-1) ?? null, enemyProfile: resolvedTerminalProfile,
@@ -200,7 +203,7 @@ function runCase({ data, environmentId, kind, sourceCodeRevision }) {
       roleCoverage: { groundBlockers: actualBlockers.length, healer: party.filter(piece => piece.role === 'healer').map(piece => piece.name),
         nativeAntiAir: air.map(piece => catalog.operators[piece.operatorId].name) },
       routeCoverage: { core: built.equipment.routeCoverage.core, blockers: built.equipment.routeCoverage.groundFrontlines, party: routeCoverage },
-      equipmentCount: built.equipment.gearCount, enemyBalanceUsed: profile,
+      equipmentCount: built.equipment.gearCount, resolvedTerminalProfile: profile, enemyBalanceUsed: profile,
       stageId: field.stageId, waveSpawnCount: field.wave?.spawns?.length ?? 0, durationSeconds: run.result?.time ?? null,
       won: run.won, hpLoss: run.hpLoss, leakCount: (player.leaked ?? []).filter(leak => leak.counted !== false).length,
       leaked: (player.leaked ?? []).filter(leak => leak.counted !== false).reduce((sum, leak) => sum + (Number(leak.lpr) || 0), 0),
