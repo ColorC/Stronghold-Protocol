@@ -127,6 +127,32 @@ test('temporary training from multiple sources follows one native curve and neve
   const temp=Object.values(unit.mem.darkmoonTemporaryEquipment||{}).find(x=>x.sourceId==='BGS_047');
   assert.ok(temp?.temporaryTrainingLevels>0);assert.equal('badgeIds'in temp,false);assert.equal('attackUnits'in temp,false);assert.equal('secondaryUnits'in temp,false);
 });
+test('BGS021 trains a deployed wolf on its native token curve and frozen summoner level context',()=>{
+  const state={growthMode:'levels'};
+  const {b,ally}=fixture('BGS_021',false,[],state);
+  const curve={phases:[{maxLevel:10,attributesKeyFrames:[
+    {level:1,data:{atk:80,maxHp:800,def:50,magicResistance:0}},
+    {level:10,data:{atk:170,maxHp:1700,def:140,magicResistance:18}},
+  ]}]};
+  const wolf=b.spawnToken(ally,'token_growth_wolf',11,6,{
+    anySource:true,ownerGrowth:{phase:0,level:3},
+    def:{name:'原生狼群',stats:{atk:100,maxHp:1000,def:70,res:4,aspd:100,bat:1,blockCnt:1},nativeGrowth:curve},
+  });
+  assert.ok(wolf);
+  assert.equal(wolf.base.atk,100);
+  assert.equal(wolf.nativeOwnerGrowth.level,3);
+  assert.ok(wolf.s.atk>wolf.base.atk,'deployment growth is applied to the summoned unit');
+  const buff=wolf.findBuff('darkmoon:native-level-growth');
+  assert.equal(buff.mods.atkFlat,70,'4+4 levels are clamped from owner level 3 to the token maximum 10');
+  assert.equal(buff.mods.hpFlat,700);
+  assert.equal(buff.mods.defFlat,70);
+  assert.equal(buff.mods.resFlat,14);
+  assert.equal(wolf.nativeOwnerGrowth.level,3,'temporary training does not mutate the frozen summoner context');
+  assert.deepEqual(wolf.mem.darkmoonTemporaryEquipment[Object.keys(wolf.mem.darkmoonTemporaryEquipment)[0]],{
+    sourceId:'BGS_021',temporaryTrainingLevels:8,expires:'battleEnd',
+  });
+  assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
 for(const growthMode of ['badges','levels'])test(`random original copies keep the native kit and pristine ${growthMode} body`,()=>{
   const raw=structuredClone(getData().chess.chess_native_char_235_jesica_a);
   raw.nativeImport.playable=true;
