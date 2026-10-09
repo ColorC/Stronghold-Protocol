@@ -344,7 +344,7 @@ export function getCatalog(data = getData(), design = DESIGN) {
   }
   for (const op of Object.values(operators)) delete op.inheritance;
   const attachments = keyed(design.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
-  attachments['darkmoon-magnetic'] = { id:'darkmoon-magnetic', name:'机械合体组件', effect:'附加来源干员的本局退场效果；不同来源可以分别触发。', mechanism:'darkmoonSourceAttachment', params:{ sourceIdRequired:true }, unique:false, inheritable:true, available:true };
+  attachments['darkmoon-magnetic'] = { id:'darkmoon-magnetic', name:'机械合体组件', effect:'附加来源干员的本局战斗部署效果；不同来源可以分别触发。', mechanism:'darkmoonSourceAttachment', params:{ sourceIdRequired:true }, unique:false, inheritable:true, available:true };
   const prizes = keyed(design.prizes, (x) => PRIZE_IDS[x.name], (x, id) => ({
     ...clone(x), id,
     mechanism: PRIZE_MECHANISMS[x.name][0], params: clone(PRIZE_MECHANISMS[x.name][1]),

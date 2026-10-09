@@ -125,7 +125,7 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonBeastSummonGrowth': return `每当其他友方叙拉古干员新获得或首次上阵时，该干员获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonPlayedTribeGrowth': return `每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonPlayedFactionCountSelfGrowth': return `每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章${qty(pick(p.attackUnits, variant))}及伤害徽章${qty(pick(p.secondaryUnitsPerTarget, variant))}；按在场炎阵营干员数累加。`;
-    case 'darkmoonPlayedTagSelfGrowth': return `每有一名带有退场效果的友方干员新获得或首次上阵，自身获得${growth(attack, secondary, variant)}。`;
+    case 'darkmoonPlayedTagSelfGrowth': return `每有一名具有战斗部署效果的友方干员新获得或首次上阵时，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonAdjacentGrowth': return `招募获得或首次上阵时，相邻友方干员各获得${growth(attack, secondary, variant)}${p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : ''}。`;
     case 'darkmoonTaggedGrowth': return `招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonMagneticMerge': return sourceId === 'BOT_911'
@@ -156,7 +156,7 @@ function cleanCombat(id, variant) {
   const meta = darkmoonCombatMetadata(id, variant === 'elite');
   if (!meta?.text) return '';
   let text = meta.text;
-  text = text.replace(/攻击徽章×(\d+)，依职业配置的副属性装备×(\d+)/g, (_, a, b) => `攻击徽章${qty(a)}与伤害徽章${qty(b)}`)
+  text = text.replace(/攻击徽章×(\d+)，伤害徽章×(\d+)/g, (_, a, b) => `攻击徽章${qty(a)}与伤害徽章${qty(b)}`)
     .replace(/职业副属性装备|职业副属性徽章/g, '伤害徽章')
     .replace(/攻击徽章×(\d+)及五层护盾/g, (_, a) => `攻击徽章${qty(a)}及护盾层数+5`)
     .replaceAll('本场最多二十五次', '每3秒最多触发一次，每场最多25次')
@@ -168,14 +168,14 @@ function cleanCombat(id, variant) {
   return text;
 }
 
-function compactWording(text) {
+export function compactWording(text) {
   return text
     .replace(/；成长永久保留，并/g, '，并')
     .replace(/；成长永久保留，/g, '，')
     .replace(/([；，])(?:成长)?永久保留(?=。|$)/g, '。')
     .replace(/永久装备|永久获得|永久生效/g, value => value === '永久装备' ? '装备' : value === '永久获得' ? '获得' : '本局商店效果')
     .replace(/临时获得/g, '获得')
-    .replace(/(?:攻击成长徽章|训练等级)×0及/g, '')
+    .replace(/(?:攻击成长徽章|攻击徽章|训练等级)×0及/g, '')
     .replace(/购买符合条件的干员时，购买(?=[^，。；]*阵营干员时)/g, '购买')
     .replace(/[，；]仅本场战斗生效[。]?/g, '。')
     .replace(/。{2,}/g, '。');

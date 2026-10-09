@@ -4,7 +4,7 @@ import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandS
 import { runFactionReaction } from './warbandPrep.js';
 import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
 import { addDarkmoonShopGrowth } from './darkmoonShop.js';
-import { darkmoonCombatMetadata } from '../../sim/content/independent/darkmoonCombat.js';
+import { darkmoonCombatMetadata, hasDarkmoonDeploymentPayload } from '../../sim/content/independent/darkmoonCombat.js';
 const BADGE = Object.freeze({ precision: 'precision', agility: 'agility', vitality: 'vitality', defense: 'defense', assault: 'assault', recovery: 'recovery' });
 const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','defense','assault','recovery','arcane','foresight','miracle','investor','unyielding','harmony','coordination','solitary','mastery']);
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
@@ -411,8 +411,9 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       }
       case 'darkmoonPlayedTagSelfGrowth': {
-        const played=event.piece,ref=services.catalog?.operators?.[chessIdOf(played)]?.sourceRefs?.darkmoon19_2;
-        if(played&&(played.playerId??played.ownerId)===(piece.playerId??piece.ownerId)&&ref?.[p.tag])
+        const played=event.piece,source=services.catalog?.operators?.[chessIdOf(played)],ref=source?.sourceRefs?.darkmoon19_2;
+        const matches=p.tag==='deploymentPayload'?hasDarkmoonDeploymentPayload(ref?.id):!!ref?.[p.tag];
+        if(played&&(played.playerId??played.ownerId)===(piece.playerId??piece.ownerId)&&matches)
           darkmoonGrowth(state,piece,piece,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
         break;
       }
