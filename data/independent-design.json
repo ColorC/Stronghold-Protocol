@@ -33203,12 +33203,12 @@
             "textEn": "",
             "tags": [],
             "params": {
-              "triggerFaction": "炎",
               "outputs": [
                 "precision",
                 "damage"
               ],
-              "amount": "Elemental mapped-faction tier"
+              "amount": "Elemental mapped-faction tier",
+              "triggerTribe": "ELEMENTAL"
             },
             "adapter": [
               "darkmoonPlayedRandomTribeGrowth"
@@ -33231,12 +33231,12 @@
             "textEn": "",
             "tags": [],
             "params": {
-              "triggerFaction": "炎",
               "outputs": [
                 "precision",
                 "damage"
               ],
-              "amount": "Elemental mapped-faction tier"
+              "amount": "Elemental mapped-faction tier",
+              "triggerTribe": "ELEMENTAL"
             },
             "adapter": [
               "darkmoonPlayedRandomTribeGrowth"

@@ -26,6 +26,8 @@ test('Lil Rag auto-selects a seeded on-board friendly minion, including self, wi
   assert.ok(rag && elemental);
   assert.equal(rag.nativeTrait.effect.prep.some((rule) => rule.trigger === 'played' && rule.behavior === 'darkmoonPlayedRandomTribeGrowth'), true);
   assert.equal(rag.nativeTrait.effect.prep.some((rule) => rule.trigger === 'bought'), false);
+  assert.equal(rag.nativeTrait.effect.prep.find((rule) => rule.behavior === 'darkmoonPlayedRandomTribeGrowth').params.triggerTribe, 'ELEMENTAL');
+  assert.equal(catalog.operators[elemental.chessId].sourceRefs.darkmoon19_2.rosterTribe, 'ELEMENTAL');
   const spec = buyTargetSpec({ id: elemental.chessId, kind: 'chess' }, catalog, { pieces: [{ ...rag, row: 0, col: 0, playerId: 'p1' }] });
   assert.equal(spec, null);
   assert.equal(buyRequiresTarget(spec), false);
@@ -34,6 +36,12 @@ test('Lil Rag auto-selects a seeded on-board friendly minion, including self, wi
   assert.equal(normal.rollIndex, 1);
   assert.deepEqual(new Set(normal.grants.map((x) => x.targetUid)), new Set(['rag']));
   assert.deepEqual(normal.grants.map((x) => x.id).sort(), ['damage', 'precision']);
+  const nonElemental = Object.values(catalog.operators).find((op) => !op.elite && op.recruitable && op.sourceRefs?.darkmoon19_2?.rosterTribe !== 'ELEMENTAL');
+  const outsider = { uid: 'other', chessId: nonElemental.chessId, playerId: 'p1', row: 0, col: 2 };
+  const noTriggerState = { pieces: [normal.source, normal.ally], counters: {} };
+  let noTriggerRolls = 0;
+  runNativeHook(noTriggerState, 'played', { piece: outsider }, { catalog, rng: () => { noTriggerRolls++; return 0; }, grantEquipment() {}, record() {} });
+  assert.equal(noTriggerRolls, 0, 'the trigger checks original Elemental tribe, not a faction label or any card play');
 });
 
 test('Lil Rag golden form resolves each of its two random grants independently within the friendly field', () => {
