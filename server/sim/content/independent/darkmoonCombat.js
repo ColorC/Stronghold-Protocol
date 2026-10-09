@@ -169,11 +169,32 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const mods={atkFlat:u.base.atk*a*.02};
     if(h)mods.dmgDealtMul=1+.02*h;
     const piece=byUid.get(u.uid);
-    if(state?.growthMode==='levels'&&piece){
+    if(state?.growthMode==='levels'&&(piece||u.kind==='token')){
       for(const field of Object.keys(mods))delete mods[field];
-      const info=operatorGrowthInfo(piece,catalog),op=catalog.operators[piece.chessId],raw=piece.elite?op.source.eliteChess||op.source.normalChess:op.source.normalChess;
-      const trained=nativeLevelAttributes(raw.nativeGrowth,info.phase,Math.min(info.maximum,info.level+(a+h)*Number(catalog.config?.levelsPerBadge||1)));
-      for(const [field,key]of [['atk','atkFlat'],['maxHp','hpFlat'],['def','defFlat'],['res','resFlat']])mods[key]=trained[field]-info.stats[field];
+      if(piece){
+        const info=operatorGrowthInfo(piece,catalog),op=catalog.operators[piece.chessId],raw=piece.elite?op.source.eliteChess||op.source.normalChess:op.source.normalChess;
+        const trained=nativeLevelAttributes(raw.nativeGrowth,info.phase,Math.min(info.maximum,info.level+(a+h)*Number(catalog.config?.levelsPerBadge||1)));
+        for(const [field,key]of [['atk','atkFlat'],['maxHp','hpFlat'],['def','defFlat'],['res','resFlat']])mods[key]=trained[field]-info.stats[field];
+      }else{
+        // Summons train on their own native token curve. The summoner contributes only
+        // phase/level context; using its operator curve (or a badge-percent fallback)
+        // would give wolf packs and other tokens the wrong body.
+        const raw=u.def?.raw,sourceRaw=raw?.nativeGrowth?raw:raw?.raw?.nativeGrowth?raw.raw:raw,curve=sourceRaw?.nativeGrowth;
+        if(!curve)throw new Error(`MISSING_NATIVE_TOKEN_GROWTH:${u.defId}`);
+        // Mylsse original-operator projections carry their selected character's
+        // own phase/level in nativeGrowthStatus; native summons instead inherit a
+        // frozen owner context. Prototype projections select their prototype's
+        // variant rather than the unrelated operator that happened to summon it.
+        const prototypeOwnerId=raw?.darkmoonPrototypeOwnerChessId||sourceRaw?.darkmoonPrototypeOwnerChessId;
+        const prototypeStatus=prototypeOwnerId&&(sourceRaw?.variants?.[prototypeOwnerId]||raw?.variants?.[prototypeOwnerId]);
+        const ownerStatus=u.nativeGrowthStatus||prototypeStatus||u.nativeOwnerGrowth||raw.status||{};
+        const phase=Number(ownerStatus.phase??0),maximum=Number(curve.phases?.[phase]?.maxLevel);
+        if(!(maximum>=1))throw new Error(`BAD_NATIVE_TOKEN_GROWTH_PHASE:${u.defId}:${phase}`);
+        const level=Math.min(maximum,Math.max(1,Number(ownerStatus.level)||1));
+        const baseline=nativeLevelAttributes(curve,phase,level);
+        const trained=nativeLevelAttributes(curve,phase,Math.min(maximum,level+(a+h)*Number(catalog.config?.levelsPerBadge||1)));
+        for(const [field,key]of [['atk','atkFlat'],['maxHp','hpFlat'],['def','defFlat'],['res','resFlat']])mods[key]=trained[field]-baseline[field];
+      }
     }
     return mods;
   };
@@ -183,12 +204,15 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const contributions=u.mem.darkmoonLevelContributions||{};
     for(const [key,value]of Object.entries(contributions))if(value.expiresAt<=battle.time)delete contributions[key];
     const total=Object.values(contributions).reduce((sum,value)=>sum+value.units,0);
-    const info=operatorGrowthInfo(byUid.get(u.uid),catalog);
-    u.nativeGrowthStatus={phase:info.phase,level:Math.min(info.maximum,info.level+total*Number(catalog.config?.levelsPerBadge||1))};
+    const piece=byUid.get(u.uid);
+    if(piece){
+      const info=operatorGrowthInfo(piece,catalog);
+      u.nativeGrowthStatus={phase:info.phase,level:Math.min(info.maximum,info.level+total*Number(catalog.config?.levelsPerBadge||1))};
+    }
     battle.addBuff(u,{key:'darkmoon:native-level-growth',mods:growthMods(u,total,0),persist:true,allowDead:true,refresh:'replace'});
   };
   const applyGrowth=(u,key,a,h,duration=Infinity)=>{
-    if(state?.growthMode==='levels'&&byUid.has(u.uid)){
+    if(state?.growthMode==='levels'&&(byUid.has(u.uid)||u.kind==='token')){
       (u.mem.darkmoonLevelContributions||={})[key]={units:a+h,expiresAt:battle.time+duration};
       refreshTraining(u);
     }else battle.addBuff(u,{key,mods:growthMods(u,a,h),duration,persist:duration===Infinity,allowDead:true,refresh:'replace'});

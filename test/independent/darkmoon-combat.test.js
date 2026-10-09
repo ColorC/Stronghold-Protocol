@@ -127,6 +127,64 @@ test('temporary training from multiple sources follows one native curve and neve
   const temp=Object.values(unit.mem.darkmoonTemporaryEquipment||{}).find(x=>x.sourceId==='BGS_047');
   assert.ok(temp?.temporaryTrainingLevels>0);assert.equal('badgeIds'in temp,false);assert.equal('attackUnits'in temp,false);assert.equal('secondaryUnits'in temp,false);
 });
+test('BGS021 trains a deployed wolf on its native token curve and frozen summoner level context',()=>{
+  const state={growthMode:'levels'};
+  const {b,ally}=fixture('BGS_021',false,[],state);
+  const curve={phases:[{maxLevel:10,attributesKeyFrames:[
+    {level:1,data:{atk:80,maxHp:800,def:50,magicResistance:0}},
+    {level:10,data:{atk:170,maxHp:1700,def:140,magicResistance:18}},
+  ]}]};
+  const wolf=b.spawnToken(ally,'token_growth_wolf',11,6,{
+    anySource:true,ownerGrowth:{phase:0,level:3},
+    def:{name:'原生狼群',stats:{atk:100,maxHp:1000,def:70,res:4,aspd:100,bat:1,blockCnt:1},nativeGrowth:curve},
+  });
+  assert.ok(wolf);
+  assert.equal(wolf.base.atk,100);
+  assert.equal(wolf.nativeOwnerGrowth.level,3);
+  assert.ok(wolf.s.atk>wolf.base.atk,'deployment growth is applied to the summoned unit');
+  const buff=wolf.findBuff('darkmoon:native-level-growth');
+  assert.equal(buff.mods.atkFlat,70,'4+4 levels are clamped from owner level 3 to the token maximum 10');
+  assert.equal(buff.mods.hpFlat,700);
+  assert.equal(buff.mods.defFlat,70);
+  assert.equal(buff.mods.resFlat,14);
+  assert.equal(wolf.nativeOwnerGrowth.level,3,'temporary training does not mutate the frozen summoner context');
+  assert.deepEqual(wolf.mem.darkmoonTemporaryEquipment[Object.keys(wolf.mem.darkmoonTemporaryEquipment)[0]],{
+    sourceId:'BGS_021',temporaryTrainingLevels:8,expires:'battleEnd',
+  });
+  assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
+test('copied original operator projections train from their own native phase before summoner context',()=>{
+  const state={growthMode:'levels'};
+  const {b,ally}=fixture('BGS_021',false,[],state);
+  const curve={phases:[
+    {maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:80,maxHp:800,def:50,magicResistance:0}},{level:10,data:{atk:170,maxHp:1700,def:140,magicResistance:18}}]},
+    {maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:200,maxHp:2000,def:100,magicResistance:20}},{level:10,data:{atk:290,maxHp:2900,def:190,magicResistance:38}}]},
+  ]};
+  const phantom=b.spawnToken(ally,'token_original_projection',11,6,{
+    anySource:true,ownerGrowth:{phase:0,level:8},nativeGrowthStatus:{phase:1,level:1},
+    def:{name:'干员原始投影',stats:{atk:200,maxHp:2000,def:100,res:20,aspd:100,bat:1,blockCnt:1},darkmoonNativeChessId:'fixture_copied_operator',raw:{nativeGrowth:curve}},
+  });
+  assert.ok(phantom);
+  assert.equal(phantom.findBuff('darkmoon:native-level-growth').mods.atkFlat,80,'phase 1 grows from the copy’s own level 1 curve');
+  assert.equal(phantom.nativeOwnerGrowth.level,8,'the summoner level remains independent from the copied operator level');
+  assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
+test('Workshop prototype summons select their declared native token owner variant',()=>{
+  const state={growthMode:'levels'};
+  const {b,ally}=fixture('BGS_021',false,[],state);
+  const curve={phases:[
+    {maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:80,maxHp:800,def:50,magicResistance:0}},{level:10,data:{atk:170,maxHp:1700,def:140,magicResistance:18}}]},
+    {maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:200,maxHp:2000,def:100,magicResistance:20}},{level:10,data:{atk:290,maxHp:2900,def:190,magicResistance:38}}]},
+  ]};
+  const prototype=b.spawnToken(ally,'token_prototype_projection',11,6,{
+    anySource:true,ownerGrowth:{phase:0,level:8},
+    def:{name:'原型投影',stats:{atk:210,maxHp:2100,def:110,res:22,aspd:100,bat:1,blockCnt:1},nativeGrowth:curve,darkmoonPrototypeOwnerChessId:'prototype_owner',variants:{prototype_owner:{phase:1,level:2}}},
+  });
+  assert.ok(prototype);
+  assert.equal(prototype.findBuff('darkmoon:native-level-growth').mods.atkFlat,80,'prototype variant phase 1/level 2 overrides summoner phase 0/level 8');
+  assert.equal(prototype.nativeOwnerGrowth.level,8,'prototype training leaves the real summoner context frozen');
+  assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
 for(const growthMode of ['badges','levels'])test(`random original copies keep the native kit and pristine ${growthMode} body`,()=>{
   const raw=structuredClone(getData().chess.chess_native_char_235_jesica_a);
   raw.nativeImport.playable=true;
