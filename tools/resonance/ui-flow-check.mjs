@@ -119,6 +119,12 @@ async function clickVisibleButtonText(page, rootSelector, text, label) {
   check(`${label}-button-center-reachable`, point.reachable, point);
   await page.mouse.click(point.x, point.y); await handle.dispose();
 }
+async function clickPointerSelector(page, selector, label) {
+  const element=await page.waitForSelector(selector,{visible:true,timeout:8000});
+  const point=await element.evaluate(target=>{const r=target.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);return{x,y,enabled:!target.disabled,reachable:!!hit&&(hit===target||target.contains(hit)),hit:hit?.className?.toString?.()||hit?.tagName||null};});
+  check(`${label}-center-pointer-reachable`,point.enabled&&point.reachable,point);
+  await page.mouse.click(point.x,point.y);
+}
 async function inspectShopHoverTooltip(page) {
   const card = await page.$('.shopbar__cards .scard-wrap > .scard:not(.scard--sold)');
   if (!card) throw new Error('native preview tooltip shop card is unavailable');
@@ -134,6 +140,39 @@ async function inspectShopHoverTooltip(page) {
   const text = await page.$eval('div.tooltip.is-shown[role="tooltip"]', element => element.innerText.trim());
   check('shop-hover-shows-native-preview-tooltip', /一星/.test(text) && /生命|攻击|防御/.test(text) && /技能/.test(text), text);
   await page.mouse.move(2, 2);
+}
+async function inspectEconomyControls(page, label) {
+  const before = await page.evaluate(async () => { const id=new URL(location.href).searchParams.get('session'); return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision; });
+  const level = await page.$('.shopbar .rs-level-card');
+  if (!level) throw new Error('native level card is unavailable for odds context-menu test');
+  const levelBox = await level.boundingBox();
+  await page.mouse.click(levelBox.x + levelBox.width / 2, levelBox.y + levelBox.height / 2, { button: 'right' });
+  await page.waitForSelector('.rs-panel-drawer[aria-label="等级与招募概率"] .rs-economy-help__odds', { timeout: 8000 });
+  check(`${label}-lvcard-right-click-shows-odds`, true, await page.$eval('.rs-panel-drawer[aria-label="等级与招募概率"] .rs-economy-help__odds', element => element.innerText.trim()));
+  await clickVisibleButtonText(page, '.rs-panel-drawer[aria-label="等级与招募概率"]', '×', `${label}-odds-close`);
+  await page.waitForFunction(() => !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
+  const funds = await page.$('.rs-funds .funds__hex');
+  const fundsBox = await funds.boundingBox();
+  const fundsHit = await page.evaluate(({x,y}) => { const hit=document.elementFromPoint(x,y),target=document.querySelector('.rs-funds .funds__hex'); return !!hit&&(hit===target||target.contains(hit)); }, {x:fundsBox.x+fundsBox.width/2,y:fundsBox.y+fundsBox.height/2});
+  check(`${label}-funds-control-center-reachable`, fundsHit, {x:fundsBox.x+fundsBox.width/2,y:fundsBox.y+fundsBox.height/2});
+  await page.mouse.click(fundsBox.x + fundsBox.width / 2, fundsBox.y + fundsBox.height / 2);
+  await page.waitForSelector('.rs-panel-drawer[aria-label="收入与利息"] .rs-economy-help', { timeout: 8000 });
+  check(`${label}-funds-click-shows-income-rules`, true, await page.$eval('.rs-panel-drawer[aria-label="收入与利息"] .rs-economy-help', element => element.innerText.trim()));
+  await clickVisibleButtonText(page, '.rs-panel-drawer[aria-label="收入与利息"]', '×', `${label}-income-close`);
+  await page.waitForFunction(() => !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
+  await clickVisibleButtonText(page, 'body', '设置', `${label}-settings-opener`);
+  await page.waitForSelector('.modal', { timeout: 8000 });
+  const guide = await page.$('.set-guide');
+  if (!guide) throw new Error('native settings economy-rule guide is unavailable');
+  const guideBox=await guide.boundingBox(); if(!guideBox)throw new Error('settings guide has no visible pointer bounds');
+  await page.mouse.click(guideBox.x+guideBox.width/2,guideBox.y+guideBox.height/2);
+  await page.waitForSelector('.rs-codex-overlay #rs-section-economy-rules', { timeout: 10000 });
+  check(`${label}-settings-guide-opens-codex-economy`, /经营与补给/.test(await page.$eval('#rs-section-economy-rules', element => element.innerText)), 'native settings opens campaign rules');
+  const back = await page.$('.rs-codex-overlay .lo-top__left button');
+  if (back) await back.click(); else await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('.rs-codex-overlay'), { timeout: 8000 });
+  const after = await page.evaluate(async () => { const id=new URL(location.href).searchParams.get('session'); return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision; });
+  check(`${label}-economy-inspection-does-not-mutate-session`, before === after, {before,after});
 }
 async function inspectOverlayShopReachability(page, pieceUid) {
   await rightClickPiece(page, pieceUid);
@@ -209,9 +248,12 @@ async function layout(page, name) {
     scrollHeight: document.documentElement.scrollHeight, scrollWidth: document.documentElement.scrollWidth,
     board: (() => { const e = document.querySelector('.gm__field'); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })(),
     text: document.body.innerText, fonts: getComputedStyle(document.documentElement).fontSize,
-    selectable: getComputedStyle(document.querySelector('h1,h2,.scard__name') || document.body).userSelect }));
+    selectable: getComputedStyle(document.querySelector('h1,h2,.scard__name') || document.body).userSelect,
+    dockInventory: (() => { const dock=document.querySelector('.rs-dock'), inventory=document.querySelector('.rs-quick-inventory'); if(!dock||!inventory)return {present:false}; const a=dock.getBoundingClientRect(),b=inventory.getBoundingClientRect(); return {present:true,overlap:a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top,dock:{x:a.x,y:a.y,width:a.width,height:a.height},inventory:{x:b.x,y:b.y,width:b.width,height:b.height}}; })(),
+    inventoryReachable: [...document.querySelectorAll('.rs-quick-inventory__item')].every(element => { const r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2); return !!hit&&(hit===element||element.contains(hit)); }) }));
   check(`${name}-viewport`, value.scrollWidth <= value.width + 2 && value.scrollHeight <= value.height + 2, value);
   check(`${name}-selectable`, value.selectable !== 'none', value.selectable);
+  if(value.dockInventory.present) check(`${name}-dock-and-inventory-do-not-overlap`, !value.dockInventory.overlap && value.inventoryReachable, value.dockInventory);
   check(`${name}-product-copy`, !/真实素材|按.*标准制作|来自实际运行观测|已脱敏|sourceChess|expectedRevision|MainBoard/.test(value.text), value.text.slice(0, 1200));
   if (value.board) check(`${name}-board-dominates`, value.board.width >= value.width * .85 && value.board.height >= value.height * .85, value.board);
 }
@@ -578,9 +620,28 @@ try {
       check('resume-tail-three-starters-already-deployed', deployments.length === 3,
         { deployments, expectedStarterIds: [...starterIds] });
     }
+    const viewportRevision=(await readFresh()).revision;
+    await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
+    await layout(page,'resume-tail-1440x900'); await assertShopPointerTargets(page,'resume-tail-1440x900'); await shot(page,'19-tft-prep');
+    await page.setViewport({width:1366,height:768,deviceScaleFactor:1,isMobile:false,hasTouch:false});
+    await layout(page,'resume-tail-1366x768'); await assertShopPointerTargets(page,'resume-tail-1366x768');
+    await page.setViewport({width:844,height:390,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+    await layout(page,'resume-tail-844x390'); await assertShopPointerTargets(page,'resume-tail-844x390'); await shot(page,'20-tft-phone-landscape');
+    await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
+    check('resume-tail-viewport-probes-readonly',(await readFresh()).revision===viewportRevision,{revision:viewportRevision});
     const wTarget = deployments[0];
     await inspectShopHoverTooltip(page);
     await leftClickPiece(page, wTarget.uid);
+    await page.click('.dpanel__close'); await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
+    await inspectEconomyControls(page, 'prep');
+    const recipeItemIndex=await page.evaluate(async id=>{const state=(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state;const params=new URLSearchParams({seed:String(state.seed)});if(state.environmentId)params.set('environmentId',state.environmentId);const response=await(await fetch(`./resonance/api/catalog?${params}`)).json();const recipes=response.catalog?.recipes||[];return (state.inventory||[]).findIndex(item=>recipes.some(recipe=>recipe.parts?.includes(item.itemId)||recipe.resultId===item.itemId));},receipt.sessionId);
+    const quickItem = recipeItemIndex>=0?await page.$$('.rs-quick-inventory__item').then(items=>items[recipeItemIndex]):null;
+    if (!quickItem) throw new Error('no actual recipe-linked item is present in resident inventory for the required right-click test');
+    const quickBounds=await quickItem.boundingBox();
+    await page.mouse.click(quickBounds.x+quickBounds.width/2,quickBounds.y+quickBounds.height/2,{button:'right'});
+    await page.waitForSelector('.dpanel .dhead__name', {timeout:8000});
+    const quickDetail=await page.$eval('.dpanel',element=>({text:element.innerText.trim(),recipe:!!element.querySelector('.rs-detail__recipe')}));
+    check('quick-inventory-right-click-opens-item-recipe-detail',quickDetail.recipe,quickDetail);
     await page.click('.dpanel__close'); await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
     await inspectOverlayShopReachability(page, wTarget.uid);
     const beforeBench = await readFresh();
@@ -627,6 +688,13 @@ try {
     await page.mouse.move(saleSource.x, saleSource.y); await page.mouse.down();
     await page.mouse.move(saleSource.x + 10, saleSource.y + 8, { steps: 2 });
     await page.waitForSelector('.rs-sell-zone[data-drop="sell"]', { timeout: 5000 });
+    await page.mouse.move(2, 2, {steps:8}); await page.mouse.up();
+    const afterCancelledSale=await readFresh();
+    check('outside-sale-drop-cancels-without-session-change',afterCancelledSale.revision===beforeDragSale.revision&&afterCancelledSale.pieces.some(piece=>piece.uid===dragSale.uid),{before:beforeDragSale.revision,after:afterCancelledSale.revision,pieceStillDeployed:afterCancelledSale.pieces.some(piece=>piece.uid===dragSale.uid)});
+    const saleRetryPoint=await piecePointerPoint(page,dragSale.uid);
+    await page.mouse.move(saleRetryPoint.x,saleRetryPoint.y); await page.mouse.down();
+    await page.mouse.move(saleRetryPoint.x+10,saleRetryPoint.y+8,{steps:2});
+    await page.waitForSelector('.rs-sell-zone[data-drop="sell"]',{timeout:5000});
     const salePoint = await page.$eval('.rs-sell-zone[data-drop="sell"]', el => {
       const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     });
@@ -671,7 +739,67 @@ try {
     check('single-ui-fight-authoritative-damage', receipt.fights === 1 && damageUnits.length > 0,
       { fights: receipt.fights, damageUnits: damageUnits.map(unit => ({ uid: unit.uid, dmg: unit.dmg })) });
     receipt.freshActions.push({ action: 'single-ui-fight', round: settled.round, damageUnits: damageUnits.map(unit => ({ uid: unit.uid, dmg: unit.dmg })) });
-    if (await page.$('.rs-replay-native')) { await button(page, '跳到结算'); await button(page, '关闭'); await page.waitForFunction(() => !document.querySelector('.rs-replay-native'), { timeout: 10000 }); }
+    if (await page.$('.rs-replay-native')) {
+      const pause = await page.$eval('.rs-replay-native', root => [...root.querySelectorAll('button')].find(element => /^(暂停|继续)$/.test(element.innerText.trim())) ? [...root.querySelectorAll('button')].find(element => /^(暂停|继续)$/.test(element.innerText.trim())).innerText.trim() : null);
+      if (pause === '暂停') { const pauseButton=await page.$('.rs-replay-native button'); const pauseBox=await pauseButton.boundingBox(); await page.mouse.click(pauseBox.x+pauseBox.width/2,pauseBox.y+pauseBox.height/2); await page.waitForFunction(()=>/继续/.test(document.querySelector('.rs-replay-native')?.innerText||''),{timeout:5000}); }
+      const battlePick = await page.waitForFunction(() => {
+        const adapter=globalThis.__SP_VIEW__, raw=adapter?.raw, canvas=document.querySelector('.gm__field canvas');
+        if(!raw?.debug?.views||!canvas)return false;
+        const canvasRect=canvas.getBoundingClientRect();
+        for(const candidate of raw.debug.views.values()) {
+          const info=candidate?.info;
+          if(info?.side!=='ally'||info.kind==='device'||info.uid==null)continue;
+          const rect=adapter.pieceScreenRect(info.uid); if(!rect||rect.width<3||rect.height<3)continue;
+          for(const point of [{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-3}]) {
+            const hit=raw.debug.pick?.battleUnitAt?.(point.x-canvasRect.left,point.y-canvasRect.top);
+            if(hit?.info?.uid===info.uid||hit?.uid===info.uid)return {x:point.x,y:point.y,uid:info.uid,unitId:hit.id,side:info.side};
+          }
+        }
+        return false;
+      },{polling:'raf',timeout:10000});
+      const battlePickPoint=await battlePick.jsonValue();
+      check('paused-replay-ally-pointer-hit-is-real-render-unit',battlePickPoint?.side==='ally',battlePickPoint);
+      const beforeReplayDetail=await readFresh();
+      await page.mouse.click(battlePickPoint.x,battlePickPoint.y,{button:'right'});
+      await page.waitForSelector('.dpanel .dhead__name',{timeout:8000});
+      const replayDetail=await page.$eval('.dpanel',element=>({text:element.innerText.trim(),buttons:[...element.querySelectorAll('button')].map(button=>button.innerText.trim())}));
+      const readOnlyState=await page.$eval('.rs-replay-native',element=>({label:element.getAttribute('aria-label'),controls:[...element.querySelectorAll('button,select,progress')].length}));
+      check('replay-ally-right-click-opens-readonly-detail',readOnlyState.label==='战斗回放'&&readOnlyState.controls>0&&!!await page.$('.dpanel .rs-detail__battle-snapshot')&&!await page.$('.dpanel .rs-detail__member')&&!await page.$('.dpanel .rs-detail__actions')&&!await page.$('.dpanel select'),{replay:readOnlyState,detail:replayDetail});
+      await shot(page,'21-tft-replay-detail');
+      const afterReplayDetail=await readFresh();
+      check('replay-unit-detail-does-not-mutate-session',afterReplayDetail.revision===beforeReplayDetail.revision,{before:beforeReplayDetail.revision,after:afterReplayDetail.revision});
+      await page.click('.dpanel__close'); await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+      check('replay-controls-remain-after-ally-detail',await page.$('.rs-replay-native button')!==null,'native playback controls remain available');
+      await button(page, '跳到结算'); await button(page, '关闭'); await page.waitForFunction(() => !document.querySelector('.rs-replay-native'), { timeout: 10000 });
+    }
+    current=await readFresh();
+    if(current.phase==='prep') {
+      const refreshCost=Number(current.actionCosts?.refreshGold??2),xpCost=Number(current.actionCosts?.xpGold??4),required=refreshCost+xpCost;
+      let finance=null;
+      if(current.gold<required) finance=await page.evaluate(async ({id,required})=>{const state=(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state;const q=new URLSearchParams({seed:String(state.seed)});if(state.environmentId)q.set('environmentId',state.environmentId);const catalog=(await(await fetch(`./resonance/api/catalog?${q}`)).json()).catalog;const candidates=(state.pieces||[]).map(piece=>{const cost=Number(catalog?.operators?.[piece.operatorId]?.cost)||0,copies=piece.star===3?9:piece.star===2?3:1;return{uid:piece.uid,operatorId:piece.operatorId,star:piece.star,row:piece.row,refund:cost===1?cost*copies:Math.max(0,cost*copies-(piece.star>1?1:0)),equipped:(piece.equipment||[]).length>0};}).filter(piece=>piece.refund>0).sort((a,b)=>Number(b.row==null)-Number(a.row==null)||Number(a.equipped)-Number(b.equipped)||b.refund-a.refund);return{gold:state.gold,required,candidates};},{id:receipt.sessionId,required});
+      if(current.gold<required) {
+        const candidates=(finance?.candidates||[]).slice();
+        while(current.gold<required&&candidates.length) {
+          const candidate=candidates.shift();
+          await rightClickPiece(page,candidate.uid);
+          const beforeSale=await readFresh(); await page.keyboard.press('e');
+          current=await stateAfterRevision(page,receipt.sessionId,beforeSale.revision,'post-fight-sale-funds-mouse-e');
+          check('post-fight-sale-funds-from-real-piece',!current.pieces.some(piece=>piece.uid===candidate.uid)&&current.gold>beforeSale.gold,{candidate,before:beforeSale.gold,after:current.gold});
+          receipt.freshActions.push({action:'post-fight-sale-funds',uid:candidate.uid,refund:current.gold-beforeSale.gold});
+        }
+        check('post-fight-real-income-and-legal-sale-fund-mouse-actions',current.gold>=required,{startingGold:finance?.gold,required,candidates:finance?.candidates,endingGold:current.gold});
+      }
+      if(current.phase==='prep'&&current.gold>=required&&current.level<10) {
+        const beforeMouseXp=current;
+        await clickPointerSelector(page,'.shopbar .rs-level-card','post-fight-mouse-xp');
+        current=await stateAfterRevision(page,receipt.sessionId,beforeMouseXp.revision,'post-fight-mouse-xp');
+        check('post-fight-mouse-xp-updates-session',current.gold===beforeMouseXp.gold-xpCost&&(current.level>beforeMouseXp.level||current.xp>beforeMouseXp.xp),{goldBefore:beforeMouseXp.gold,goldAfter:current.gold,levelBefore:beforeMouseXp.level,levelAfter:current.level,xpBefore:beforeMouseXp.xp,xpAfter:current.xp,cost:xpCost});
+        const beforeMouseRefresh=current;
+        await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber','post-fight-mouse-refresh');
+        current=await stateAfterRevision(page,receipt.sessionId,beforeMouseRefresh.revision,'post-fight-mouse-refresh');
+        check('post-fight-mouse-refresh-updates-session',current.gold===beforeMouseRefresh.gold-refreshCost,{before:beforeMouseRefresh.gold,after:current.gold,cost:refreshCost});
+      } else check('post-fight-mouse-economy-actions-affordable',false,{phase:current.phase,gold:current.gold,required,level:current.level});
+    } else check('post-fight-mouse-economy-controls-reachable-in-prep',false,{phase:current.phase});
     if (await page.$('.rs-final-screen')) { await button(page, '查看战报'); await page.waitForSelector('.modal', { timeout: 10000 }); }
     else { await button(page, '战报'); await page.waitForSelector('#rs-section-battle-report', { timeout: 10000 }); }
     await page.waitForSelector('#rs-section-battle-report .rs-battle-report__unit', { timeout: 10000 });
@@ -716,8 +844,8 @@ try {
     await shot(page, '14-live-combat-report');
   }
   if (!remoteUrl) {
-    const { startServer } = await import(pathToFileURL(path.join(ROOT, 'server/index.js')).href);
-    fixtureServer = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: ROOT, dataDir: path.join(ROOT, 'data'),
+    const { startServer } = await import(pathToFileURL(path.join(SOURCE, 'server/index.js')).href);
+    fixtureServer = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: ROOT, dataDir: NATIVE_DATA,
       publicDir: path.join(SOURCE, 'public'), sharedDir: path.join(SOURCE, 'shared'),
       resonanceDirectory: path.join(ROOT, 'runtime/resonance/verification/fixture-sessions'),
       independentDirectory: path.join(OUT, 'independent-sessions'), recordingDirectory: path.join(OUT, 'recordings') });
