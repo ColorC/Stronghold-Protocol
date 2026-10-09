@@ -137,12 +137,15 @@ const activeBattleFields=(state,catalog)=>getResonanceField(state,{data,catalog}
 function cacheKey(env,seed){return `${env}:${seed>>>0}`;}
 function getCatalog(env,seed){const key=cacheKey(env,seed);if(!catalogCache.has(key))catalogCache.set(key,getResonanceCatalog(data,{environmentId:env,seed}));return catalogCache.get(key);}
 export function catalogForBalanceProfile(sourceCatalog,profile='formal',difficulty='NORMAL'){
-  if(!['formal','looser','refined-standard'].includes(profile))throw new Error(`unknown-enemy-balance-profile:${profile}`);
+  if(!['formal','looser','refined-standard','accessible-standard'].includes(profile))throw new Error(`unknown-enemy-balance-profile:${profile}`);
   if(profile==='formal'||difficulty!=='NORMAL')return sourceCatalog;
   const catalog=structuredClone(sourceCatalog);
   catalog.campaign.enemyBalance.byDifficulty.NORMAL=profile==='looser'?{
     regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},
     terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.6},
+  }:profile==='accessible-standard'?{
+    regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},
+    terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.5},
   }:{
     regular:{hpMultiplier:.75,atkMultiplier:.90,defMultiplier:.45},
     terminal:{hpMultiplier:.80,atkMultiplier:.90,defMultiplier:.45,bossPoolMultiplier:.65},
@@ -1155,7 +1158,7 @@ export function selectEconPactCopyTarget(item,targets,state,coreOperatorId,catal
 
 export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',balanceProfile='formal'}={}){
   if(!['legacy',...CAMPAIGN_POLICIES,ECON_PACT_POLICY,ADAPTIVE_STANDARD_POLICY,CARRY_ADAPTIVE_POLICY].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
-  if(!['formal','looser','refined-standard'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
+  if(!['formal','looser','refined-standard','accessible-standard'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
   const metrics={actions:{},refreshes:{},nodeEconomy:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[],adaptivePlans:[],carryPlans:{},carryTransfers:[],carryRepositionPlans:{}};activeMetrics=metrics;
   const started=Date.now(),catalog=catalogForBalanceProfile(getCatalog(environmentId,seed),balanceProfile,difficulty),created=createSession({seed,difficulty,catalog,environmentId});
   if(!created.ok)throw new Error(`session-create:${created.error}`);
@@ -1337,6 +1340,18 @@ export function runCarryAdaptiveValidation({seedBase=0x45434f4e,maxMs=12*60*1000
   const byProfile=Object.fromEntries(profiles.map(profile=>{const subset=runs.filter(run=>run.balanceProfile===profile);return [profile,{runs:subset.length,expectedRuns:environments.length,errors:subset.filter(run=>run.error).length,battles:subset.reduce((n,run)=>n+(run.battles??0),0),wins:subset.filter(run=>run.terminalReason==='victory').length,hpDepleted:subset.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:subset.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:subset.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:subset.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:subset.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:subset.some(run=>run.truncated)}];}));
   return {schemaVersion:1,policy:CARRY_ADAPTIVE_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',environments,profiles,runs,summary:{runs:runs.length,expectedRuns:environments.length*profiles.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+(run.battles??0),0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length*profiles.length||runs.some(run=>run.truncated),byProfile,elapsedMs:Date.now()-started}};
 }
+export function runAccessibleStandardValidation({seedBase=0x45434f4e,maxMs=12*60*1000}={}){
+  const started=Date.now(),environments=['origin_aegir','origin_laterano','origin_kjerag','origin_yan'];
+  const balanceProfile='accessible-standard',sourceBefore={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no']),dataSourceCommit:null},runs=[];
+  for(const environmentId of environments){
+    if(Date.now()-started>=maxMs)break;
+    const seed=seedFor(environmentId,'NORMAL',seedBase);
+    try{const nativeCatalog=getCatalog(environmentId,seed);sourceBefore.dataSourceCommit??=nativeCatalog.source?.commit??null;const run=runCampaign({environmentId,difficulty:'NORMAL',seed,maxMs:Math.max(1000,maxMs-(Date.now()-started)),policy:CARRY_ADAPTIVE_POLICY,balanceProfile});runs.push(compactEconPactRun(run));}
+    catch(error){runs.push({environmentId,difficulty:'NORMAL',seed,policy:CARRY_ADAPTIVE_POLICY,balanceProfile,error:error.message});}
+  }
+  const sourceAfter={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no'])};
+  return {schemaVersion:1,policy:CARRY_ADAPTIVE_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',balanceProfile,environments,runs,summary:{runs:runs.length,expectedRuns:environments.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+(run.battles??0),0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length||runs.some(run=>run.truncated),elapsedMs:Date.now()-started}};
+}
 export function appendAdaptiveStandardValidation(result){
   ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
   const priorAttempts=[...(document.adaptiveStandardNaturalComparison?.priorAttempts??[])];
@@ -1354,6 +1369,23 @@ export function appendCarryAdaptiveValidation(result){
   const previous=document.carryAdaptiveNaturalComparison,priorAttempts=[...(previous?.priorAttempts??[])];
   if(previous){const {priorAttempts:old,...attempt}=previous;priorAttempts.push(attempt);}
   document.carryAdaptiveNaturalComparison={...result,priorAttempts};
+  fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
+}
+export function appendAccessibleStandardValidation(result){
+  ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
+  const baseline=document.carryAdaptiveNaturalComparison;
+  if(!baseline||baseline.policy!==CARRY_ADAPTIVE_POLICY||baseline.source?.runnerHead!=='b164845f79d2ecfc8064dcdaa664ea79ddc30f08')throw new Error('accessible-standard-carry-formal-baseline-missing-or-wrong-checkpoint');
+  const baselineRuns=(baseline.runs??[]).filter(run=>run.balanceProfile==='formal');
+  if(baselineRuns.length!==result.environments.length)throw new Error('accessible-standard-formal-baseline-run-count-mismatch');
+  const byEnvironment=new Map(baselineRuns.map(run=>[run.environmentId,run]));
+  const pairs=result.environments.map(environmentId=>{
+    const candidate=result.runs.find(run=>run.environmentId===environmentId),formal=byEnvironment.get(environmentId);
+    if(!formal||!candidate||formal.seed!==candidate.seed)throw new Error(`accessible-standard-baseline-pair-missing:${environmentId}`);
+    return {environmentId,seed:candidate.seed,baselineSource:{runnerHead:baseline.source.runnerHead,dataSourceCommit:baseline.source.dataSourceCommit},formal:{terminalReason:formal.terminalReason,round:formal.round,hp:formal.hp,gold:formal.gold,level:formal.level,coreStarMilestones:formal.coreStarMilestones,lastNode:formal.nodes?.at(-1)},candidate:{terminalReason:candidate.terminalReason,round:candidate.round,hp:candidate.hp,gold:candidate.gold,level:candidate.level,coreStarMilestones:candidate.coreStarMilestones,lastNode:candidate.nodes?.at(-1),carryTransfers:candidate.carryTransfers,diagnostics:candidate.diagnostics}};
+  });
+  const previous=document.accessibleStandardNaturalValidation,priorAttempts=[...(previous?.priorAttempts??[])];
+  if(previous){const {priorAttempts:old,...attempt}=previous;priorAttempts.push(attempt);}
+  document.accessibleStandardNaturalValidation={...result,pairedFormalBaseline:{runnerHead:baseline.source.runnerHead,dataSourceCommit:baseline.source.dataSourceCommit,seedBase:baseline.seedBase},pairs,priorAttempts};
   fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
 }
 export function pairAdaptiveStandardRuns(runs){
@@ -1394,7 +1426,10 @@ function ensureReportPath(){
 }
 const isMain=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(isMain){
-  if(process.argv.includes('--carry-adaptive-validation')){
+  if(process.argv.includes('--accessible-standard-validation')){
+    const result=runAccessibleStandardValidation();const report=appendAccessibleStandardValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
+    if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps||result.summary.illegalOrRejectedActions||result.summary.truncated)process.exitCode=1;
+  }else if(process.argv.includes('--carry-adaptive-validation')){
     const result=runCarryAdaptiveValidation();const report=appendCarryAdaptiveValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
     if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps||result.summary.illegalOrRejectedActions||result.summary.truncated)process.exitCode=1;
   }else if(process.argv.includes('--adaptive-standard-validation')){
