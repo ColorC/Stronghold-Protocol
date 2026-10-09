@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { URL } from 'node:url';
 import { createStaticDelivery, loadAssetSourceMap } from '../../server/hosting/staticDelivery.js';
 const base = 'https://external.example/d31592f27b1567267ff35ac95932f08c8ae74d9d';
@@ -48,6 +49,54 @@ test('resonance entry resources stay relative at root and under the stronghold n
   }
   const source = readFileSync(new URL('../../public/js/hostingBootstrap.js', import.meta.url), 'utf8');
   assert.match(source, /import\('\.\/hostingWait\.js'\)/);
+});
+
+test('waiting POST follows the resonance entry at root and under stronghold while preserving independent routes', async () => {
+  const source = readFileSync(new URL('../../public/js/hostingWait.js', import.meta.url), 'utf8')
+    .replace(/^export function /gm, 'function ')
+    + '\nglobalThis.__startHostingWait = startHostingWait;';
+  async function postFor(href) {
+    const requests = [];
+    const status = { textContent: '' };
+    const buttons = { '#copy-link': { addEventListener() {} }, '#cancel-wait': { addEventListener() {} }, '#queue-status': status };
+    let main;
+    const app = { replaceChildren(node) { main = node; } };
+    const location = { href, pathname: new URL(href).pathname, replace() {}, reload() {} };
+    const context = {
+      URL, AbortController, Date, Math, setTimeout, clearTimeout, setImmediate,
+      location, navigator: { onLine: true }, window: { addEventListener() {} },
+      document: { hidden: false, querySelector(selector) {
+        if (selector === '#app') return app;
+        if (selector === '#hosting-wait') return main?.id === 'hosting-wait' ? main : null;
+        if (selector === '#queue-status') return status;
+        return null;
+      }, createElement(tag) {
+        if (tag !== 'main') return {};
+        return main = { dataset: {}, style: {}, setAttribute() {}, querySelector(selector) { return buttons[selector] ?? null; }, append() {} };
+      }, addEventListener() {} },
+      fetch: async (url, options) => {
+        requests.push({ url: String(url), options });
+        return { status: 410, ok: false, async json() { return { error: { message: 'ended' } }; } };
+      },
+    };
+    runInNewContext(source, context);
+    context.__startHostingWait();
+    await new Promise(resolve => setImmediate(resolve));
+    return { request: requests[0], html: main.innerHTML };
+  }
+
+  for (const [href, expected] of [
+    ['https://host.example/resonance.html', '/resonance/api/admission?wait=1'],
+    ['https://host.example/stronghold/resonance.html', '/stronghold/resonance/api/admission?wait=1'],
+    ['https://host.example/independent.html', '/independent/api/admission?wait=1'],
+    ['https://host.example/stronghold/independent.html', '/stronghold/independent/api/admission?wait=1'],
+  ]) {
+    const { request, html } = await postFor(href);
+    assert.equal(request.options.method, 'POST');
+    assert.equal(request.options.credentials, 'same-origin');
+    assert.equal(new URL(request.url).pathname + new URL(request.url).search, expected);
+    assert.match(html, href.includes('resonance.html') ? /共鸣正在为你留位/ : /工坊正在为你留位/);
+  }
 });
 test('deployment URLs and unsafe paths cannot escape the version directory', () => {
   for (const wrong of ['http://external.example/' + 'a'.repeat(40), 'https://external.example/latest', base + '?x=1', base + '#x', base.replace('external.example', 'user:pass@external.example')]) assert.throws(() => createStaticDelivery({ base: wrong }));

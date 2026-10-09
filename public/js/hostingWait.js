@@ -1,4 +1,11 @@
-const endpoint = new URL('independent/api/admission', location.href);
+export function createAdmissionEndpoint(locationLike = location) {
+  const resonanceEntry = /(?:^|\/)resonance\.html$/.test(locationLike.pathname);
+  return new URL(resonanceEntry ? 'resonance/api/admission' : 'independent/api/admission', locationLike.href);
+}
+
+const resonanceEntry = /(?:^|\/)resonance\.html$/.test(location.pathname);
+const productName = resonanceEntry ? '共鸣' : '工坊';
+const endpoint = createAdmissionEndpoint(location);
 let started = false;
 let cancelled = false;
 let currentPoll = null;
@@ -15,7 +22,7 @@ function render(initial = {}) {
     main = document.createElement('main');
     main.setAttribute('role', 'status');
     main.style.cssText = 'max-width:32rem;padding:2rem;text-align:center';
-    main.innerHTML = '<h1>稍等片刻</h1><p>工坊正在为你留位，空位一到会自动进入。</p><p id="queue-position" aria-live="polite"></p><button id="copy-link" type="button">复制等待页链接</button> <button id="cancel-wait" type="button">取消等待</button><p id="queue-status" aria-live="polite"></p>';
+    main.innerHTML = `<h1>稍等片刻</h1><p>${productName}正在为你留位，空位一到会自动进入。</p><p id="queue-position" aria-live="polite"></p><button id="copy-link" type="button">复制等待页链接</button> <button id="cancel-wait" type="button">取消等待</button><p id="queue-status" aria-live="polite"></p>`;
     const app = document.querySelector('#app') || document.body;
     app.replaceChildren(main);
     if (app === document.body) document.body.style.cssText = 'margin:0;min-height:100vh;display:grid;place-items:center;background:#101216;color:#eee;font:16px system-ui';
@@ -74,13 +81,13 @@ async function runQueue() {
       const result = await response.json();
       if (response.status === 202 && result.ok && result.queued) {
         updatePosition(result.queued.position);
-        setStatus('空位一到会自动进入。');
+        setStatus(`${productName}空位一到会自动进入。`);
         const retryDelay = duplicatePollDelayMs(result.queued);
         if (retryDelay) await new Promise((resolve) => setTimeout(resolve, retryDelay));
         continue;
       }
       if (response.ok && result.ok && result.lease) {
-        setStatus('轮到你了，正在进入工坊…');
+        setStatus(`轮到你了，正在进入${productName}…`);
         const next = new URL(location.href);
         if (result.lease.execution === 'client') next.searchParams.set('execution', 'client');
         location.replace(next.href);
