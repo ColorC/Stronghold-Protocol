@@ -21,6 +21,8 @@ test('all 101 source entries regenerate both visible variants from executable pr
       if (rendered) assert.equal(row[variant], rendered, `${entry.sourceId} ${variant} should be generated`);
       assert.ok(row[variant].trim().length > 0, `${entry.sourceId} ${variant} cannot be blank`);
       assert.doesNotMatch(row[variant], visibleText, `${entry.sourceId} ${variant} must not expose internals or placeholders`);
+      assert.doesNotMatch(row[variant], /成长永久保留|永久装备|临时获得|仅本场战斗生效|(?:攻击成长徽章|训练等级)×0|购买符合条件的干员时，购买/,
+        `${entry.sourceId} ${variant} should use concise default-duration wording`);
       assert.equal(row[`${variant}Levels`], toLevels(row[variant]), `${entry.sourceId} ${variant} levels must describe training levels`);
       for (const delivery of entry.metadata?.op?.effectDelivery?.[variant] || []) {
         if (typeof delivery.text === 'string') {
@@ -34,6 +36,18 @@ test('all 101 source entries regenerate both visible variants from executable pr
       }
     }
   }
+});
+
+test('dynamic combat delivery wording keeps its scope label without redundant permanent or temporary wording', () => {
+  const persistent = darkmoonCombatMetadata('BGS_111');
+  assert.equal(persistent.duration, '本局成长');
+  assert.match(persistent.text, /使自身装备攻击徽章/);
+  assert.doesNotMatch(persistent.text, /永久|临时/);
+  const battleOnly = darkmoonCombatMetadata('BGS_017');
+  assert.equal(battleOnly.duration, '本场战斗');
+  assert.match(battleOnly.text, /战斗中召唤叙拉古支援单位/);
+  assert.match(battleOnly.text, /获得.*战斗增益/);
+  assert.doesNotMatch(battleOnly.text, /仅本场战斗生效|临时/);
 });
 
 test('ordinary and elite text carries the real source-rule quantities and trigger differences', () => {

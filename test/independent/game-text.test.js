@@ -35,6 +35,23 @@ test('every operator form has hand-written text with the design numbers and none
   }
 });
 
+test('visible wording drops redundant persistence and temporary qualifiers while keeping later-shop scope explicit', () => {
+  const visible = [];
+  const collect = (value) => {
+    if (typeof value === 'string') visible.push(value);
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === 'object') Object.values(value).forEach(collect);
+  };
+  collect(text);
+  for (const line of visible) {
+    assert.doesNotMatch(line, /成长永久保留|永久装备|临时获得|仅本场战斗生效|购买符合条件的干员时，购买|(?:攻击成长徽章|训练等级)×0/);
+  }
+  const shopGrowth = text.operators['chess_char_5_20_a'].normal;
+  assert.match(shopGrowth, /当前及本局后续酒馆/);
+  const currentShopOnly = Object.values(text.operators).flatMap((entry) => [entry.normal, entry.elite]).find((line) => line?.includes('只影响当前商店'));
+  assert.ok(currentShopOnly, 'effects limited to the current shop still say so');
+});
+
 test('every gear a player can see has text; numbers match its effect', () => {
   const all = { ...catalog.badges, ...catalog.equipment };
   for (const [id, d] of Object.entries(all)) {
@@ -67,13 +84,13 @@ test('prizes and attachments: texts with the design numbers; the page shows them
   }
 });
 
-test('special readiness training names its field recipient, unlocked choices, and direct permanent destination', () => {
+test('special readiness training names its field recipient, unlocked choices, and direct destination', () => {
   const entry = text.prizes['special-readiness-training'];
   assert.ok(entry, 'special readiness training has player-facing text');
   assert.match(entry.text, /选择一名场上干员/);
   assert.match(entry.text, /当前科技已解锁的装备/);
   assert.match(entry.text, /随机发现三项/);
-  assert.match(entry.text, /装备直接永久穿戴在该干员身上/);
+  assert.match(entry.text, /装备直接穿戴在该干员身上/);
   assert.match(entry.text, /唯一效果不重复提供/);
   assert.match(entry.text, /没有可选项时不提供此奖品/);
 });

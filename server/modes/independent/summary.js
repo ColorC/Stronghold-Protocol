@@ -138,11 +138,11 @@ export function traitSummary(effect) {
       // index only tells the HUD that the effect permanently grows an operator.
       entry.kind = 'stat'; entry.grows = true;
       entry.faction = p.faction || p.triggerFaction;
-      entry.description = '为干员永久增加属性成长';
+      entry.description = '为干员增加属性成长';
     } else if (b === 'darkmoonBattlecryFactionGrowth' || b === 'darkmoonBoughtTribeTargetGrowth') {
       entry.kind = 'stat'; entry.grows = true;
       entry.faction = p.faction || p.triggerFaction;
-      entry.description = '为符合条件的友方永久增加徽章成长';
+      entry.description = '为符合条件的友方增加徽章成长';
     } else if (b === 'darkmoonMagneticMerge') {
       entry.kind = 'transfer'; entry.faction = p.faction;
       entry.description = '招募时可选择将退场效果附加给一名友方干员';

@@ -312,7 +312,7 @@
                 "recipient": "oneRandomFriendlyPerFaction",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，每个阵营各一名随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，每个阵营各一名随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -333,7 +333,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "每个阵营各一名随机友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -343,7 +343,7 @@
                 "recipient": "oneRandomFriendlyPerFaction",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，每个阵营各一名随机友方干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "每回合休整结束时，每个阵营各一名随机友方干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -364,7 +364,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "每个阵营各一名随机友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -622,7 +622,7 @@
                 "recipient": "newSiracusaRecruit",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×2；成长永久保留。",
+                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -643,7 +643,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "新获得或首次上阵的叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -653,7 +653,7 @@
                 "recipient": "newSiracusaRecruit",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×4；成长永久保留。",
+                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -674,7 +674,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "新获得或首次上阵的叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -801,7 +801,7 @@
                 "params": {
                   "sourceId": "BGS_018"
                 },
-                "text": "退场时使叙拉古友方临时获得攻击徽章×5与职业副属性徽章×5。",
+                "text": "退场时使叙拉古友方获得攻击徽章×5与职业副属性徽章×5。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
@@ -827,7 +827,7 @@
                 "params": {
                   "sourceId": "BGS_018"
                 },
-                "text": "退场时使叙拉古友方临时获得攻击徽章×10与职业副属性徽章×10。",
+                "text": "退场时使叙拉古友方获得攻击徽章×10与职业副属性徽章×10。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
@@ -1070,7 +1070,7 @@
                 "recipient": "newSiracusaRecruit",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -1091,7 +1091,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "新获得或首次上阵的叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -1101,7 +1101,7 @@
                 "recipient": "newSiracusaRecruit",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×8与职业副属性成长徽章×8；成长永久保留。",
+                "text": "每当其他友方叙拉古干员新获得或首次上阵时，该干员获得攻击成长徽章×8与职业副属性成长徽章×8。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -1122,7 +1122,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "新获得或首次上阵的叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -1541,7 +1541,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整开始时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -1572,7 +1572,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整开始时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -1828,7 +1828,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整开始时，若上一场战斗获胜，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整开始时，若上一场战斗获胜，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -1848,7 +1848,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整开始时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -1858,7 +1858,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整开始时，若上一场战斗获胜，自身获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "每回合休整开始时，若上一场战斗获胜，自身获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -1878,7 +1878,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整开始时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -1998,7 +1998,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -2011,7 +2011,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -2019,7 +2019,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -2032,7 +2032,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -2042,7 +2042,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -2055,7 +2055,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -2063,7 +2063,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -2076,7 +2076,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -2193,7 +2193,7 @@
                 "params": {
                   "sourceId": "BGS_035"
                 },
-                "text": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方击倒敌人（卡西米尔）时，使自身获得攻击徽章×2与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -2217,7 +2217,7 @@
                 "params": {
                   "sourceId": "BGS_035"
                 },
-                "text": "友方击倒敌人（卡西米尔）时，使自身临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方击倒敌人（卡西米尔）时，使自身获得攻击徽章×4与职业副属性徽章×4的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -2324,7 +2324,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2346,7 +2346,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -2356,7 +2356,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，每名在场友方同阵营干员各结算一次，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2378,7 +2378,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -2506,7 +2506,7 @@
                 "recipient": "currentShopOffers",
                 "duration": "currentShopOnly",
                 "kind": "shopGrowth",
-                "text": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。只影响当前商店。",
+                "text": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1。只影响当前商店。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2531,7 +2531,7 @@
                 "recipient": "currentShopOffers",
                 "duration": "currentShopOnly",
                 "kind": "shopGrowth",
-                "text": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。只影响当前商店。",
+                "text": "出售自身时，使当前酒馆所有未售出的干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2。只影响当前商店。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2644,7 +2644,7 @@
                 "recipient": "selectedFriendlyDragon",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2671,7 +2671,7 @@
                 },
                 "recipientLabel": "你选择的一名友方卡西米尔干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -2679,7 +2679,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -2692,7 +2692,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -2702,7 +2702,7 @@
                 "recipient": "selectedFriendlyDragon",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方卡西米尔阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -2729,7 +2729,7 @@
                 },
                 "recipientLabel": "你选择的一名友方卡西米尔干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -2737,7 +2737,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -2750,7 +2750,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -2894,7 +2894,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -2907,7 +2907,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -2917,7 +2917,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -2930,7 +2930,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -3178,7 +3178,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "所有友方卡西米尔干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -3206,7 +3206,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "所有友方卡西米尔干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -3721,7 +3721,7 @@
                 "params": {
                   "sourceId": "BGS_047"
                 },
-                "text": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方攻击（维多利亚）时，使所有友方获得攻击徽章×2与职业副属性徽章×1的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -3745,7 +3745,7 @@
                 "params": {
                   "sourceId": "BGS_047"
                 },
-                "text": "友方攻击（维多利亚）时，使所有友方临时获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方攻击（维多利亚）时，使所有友方获得攻击徽章×4与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -3870,7 +3870,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "你选择的一名友方维多利亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -3898,7 +3898,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "你选择的一名友方维多利亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -4174,7 +4174,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "其他友方维多利亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -4202,7 +4202,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "其他友方维多利亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -4483,7 +4483,7 @@
                 "params": {
                   "sourceId": "BGS_056"
                 },
-                "text": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方攻击（维多利亚）时，使触发效果的友方获得攻击徽章×2与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -4507,7 +4507,7 @@
                 "params": {
                   "sourceId": "BGS_056"
                 },
-                "text": "友方攻击（维多利亚）时，使触发效果的友方临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方攻击（维多利亚）时，使触发效果的友方获得攻击徽章×4与职业副属性徽章×4的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -4614,7 +4614,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -4627,7 +4627,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "战斗中",
@@ -4661,7 +4661,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -4674,7 +4674,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "战斗中",
@@ -4948,7 +4948,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -4969,7 +4969,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -4979,7 +4979,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "每回合休整结束时，仅当阵容中有进阶干员时，自身获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -5000,7 +5000,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -5127,7 +5127,7 @@
                 "params": {
                   "sourceId": "BGS_067"
                 },
-                "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方累计破裂五层护盾时，使自身获得攻击徽章×2与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -5153,7 +5153,7 @@
                 "params": {
                   "sourceId": "BGS_067"
                 },
-                "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方累计破裂五层护盾时，使自身获得攻击徽章×4与职业副属性徽章×4的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -5262,7 +5262,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -5275,7 +5275,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "召唤友方支援单位",
@@ -5286,7 +5286,7 @@
                 "params": {
                   "sourceId": "BGS_071"
                 },
-                "text": "召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×1及护盾层数+5。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "召唤友方支援单位（哥伦比亚）时，使自身获得攻击徽章×1的战斗增益及五层护盾。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -5309,7 +5309,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -5322,7 +5322,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "召唤友方支援单位",
@@ -5333,7 +5333,7 @@
                 "params": {
                   "sourceId": "BGS_071"
                 },
-                "text": "召唤友方支援单位（哥伦比亚）时，使自身临时获得攻击徽章×2及护盾层数+5。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "召唤友方支援单位（哥伦比亚）时，使自身获得攻击徽章×2的战斗增益及五层护盾。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -5592,7 +5592,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -5613,7 +5613,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -5623,7 +5623,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每有一名带有退场效果的友方干员新获得或首次上阵，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -5644,7 +5644,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -6045,7 +6045,7 @@
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "攻击后追加1次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×2与职业副属性徽章×2。",
+                "text": "攻击后追加1次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方获得攻击徽章×2与职业副属性徽章×2。",
                 "textEn": "",
                 "tags": [
                   "windfury"
@@ -6071,7 +6071,7 @@
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "攻击后追加3次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方临时获得攻击徽章×4与职业副属性徽章×4。",
+                "text": "攻击后追加3次普通攻击；每3秒最多触发一轮。攻击超杀时使其他维多利亚友方获得攻击徽章×4与职业副属性徽章×4。",
                 "textEn": "",
                 "tags": [
                   "windfury"
@@ -6180,7 +6180,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6201,7 +6201,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "购买时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -6211,7 +6211,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "购买符合条件的干员时，购买维多利亚阵营干员时，自身获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6232,7 +6232,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "购买时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -6354,7 +6354,7 @@
                 "recipient": "threeFriendlyDifferentFactions",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6379,7 +6379,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "三名不同阵营的友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -6389,7 +6389,7 @@
                 "recipient": "threeFriendlyDifferentFactions",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6414,7 +6414,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "三名不同阵营的友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -6552,7 +6552,7 @@
                 "recipient": "threeFriendlyDifferentFactions",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6577,7 +6577,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "三名不同阵营的友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -6587,7 +6587,7 @@
                 "recipient": "threeFriendlyDifferentFactions",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "招募获得或首次上阵时，3名不同阵营的随机友方干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6612,7 +6612,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "三名不同阵营的友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -6770,7 +6770,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "你选择的一名友方干员",
                 "triggerLabel": "购买时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -6798,7 +6798,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "你选择的一名友方干员",
                 "triggerLabel": "购买时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -6906,7 +6906,7 @@
                 "recipient": "matchingTribeShopOffers",
                 "duration": "permanent",
                 "kind": "shopGrowth",
-                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6922,7 +6922,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "符合阵营条件的酒馆在售干员",
                 "triggerLabel": "购买时",
-                "durationLabel": "永久生效"
+                "durationLabel": "本局商店效果"
               }
             ],
             "elite": [
@@ -6932,7 +6932,7 @@
                 "recipient": "matchingTribeShopOffers",
                 "duration": "permanent",
                 "kind": "shopGrowth",
-                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "在场时，每购买一名炎阵营干员，使当前及本局后续酒馆中的炎阵营干员累加以下成长：购买后直接获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6948,7 +6948,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "符合阵营条件的酒馆在售干员",
                 "triggerLabel": "购买时",
-                "durationLabel": "永久生效"
+                "durationLabel": "本局商店效果"
               }
             ]
           }
@@ -7048,7 +7048,7 @@
                 "recipient": "leftmostFriendly",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，最左侧友方干员获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "每回合休整结束时，最左侧友方干员获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -7070,7 +7070,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "最左侧友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -7080,7 +7080,7 @@
                 "recipient": "leftmostFriendly",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，最左侧友方干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，最左侧友方干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -7102,7 +7102,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "最左侧友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -7228,7 +7228,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7241,7 +7241,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -7249,7 +7249,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -7262,7 +7262,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -7272,7 +7272,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7285,7 +7285,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -7293,7 +7293,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -7306,7 +7306,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -7423,7 +7423,7 @@
                 "params": {
                   "sourceId": "BGS_110"
                 },
-                "text": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×3。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方受到攻击（需要坚守盟约）时，使触发效果的友方获得攻击徽章×3的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7449,7 +7449,7 @@
                 "params": {
                   "sourceId": "BGS_110"
                 },
-                "text": "友方受到攻击（需要坚守盟约）时，使触发效果的友方临时获得攻击徽章×6。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方受到攻击（需要坚守盟约）时，使触发效果的友方获得攻击徽章×6的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7559,7 +7559,7 @@
                 "params": {
                   "sourceId": "BGS_111"
                 },
-                "text": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×1与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方受到攻击（需要坚守盟约）时，使自身装备攻击徽章×1与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7572,7 +7572,7 @@
                 ],
                 "recipientLabel": "自身",
                 "triggerLabel": "友方受到攻击",
-                "durationLabel": "本局永久"
+                "durationLabel": "本局成长"
               }
             ],
             "elite": [
@@ -7585,7 +7585,7 @@
                 "params": {
                   "sourceId": "BGS_111"
                 },
-                "text": "友方受到攻击（需要坚守盟约）时，使自身永久获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方受到攻击（需要坚守盟约）时，使自身装备攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7598,7 +7598,7 @@
                 ],
                 "recipientLabel": "自身",
                 "triggerLabel": "友方受到攻击",
-                "durationLabel": "本局永久"
+                "durationLabel": "本局成长"
               }
             ]
           }
@@ -7695,7 +7695,7 @@
                 "params": {
                   "sourceId": "BGS_112"
                 },
-                "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×2与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7721,7 +7721,7 @@
                 "params": {
                   "sourceId": "BGS_112"
                 },
-                "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方退场（需要坚守盟约）时，使退场干员附近的友方获得攻击徽章×4与职业副属性徽章×4的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -7847,7 +7847,7 @@
                 },
                 "recipientLabel": "你选择的一名未售出酒馆干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久转化"
+                "durationLabel": "转化"
               }
             ],
             "elite": [
@@ -7876,7 +7876,7 @@
                 },
                 "recipientLabel": "你选择的一名未售出酒馆干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久转化"
+                "durationLabel": "转化"
               }
             ]
           }
@@ -8254,7 +8254,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -8267,7 +8267,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -8277,7 +8277,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -8290,7 +8290,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -8382,7 +8382,7 @@
                 "recipient": "oneRandomOtherFriendlyMappedFaction",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留。",
+                "text": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得攻击成长徽章×1与职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -8403,7 +8403,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方炎阵营干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -8413,7 +8413,7 @@
                 "recipient": "oneRandomOtherFriendlyMappedFaction",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -8434,7 +8434,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方炎阵营干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -8558,7 +8558,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -8571,7 +8571,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "每次退场（每场最多三次）",
@@ -8606,7 +8606,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -8619,7 +8619,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "每次退场（每场最多三次）",
@@ -9020,7 +9020,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章×0及职业副属性成长徽章×1；按在场炎阵营干员数累加，永久保留。",
+                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章×0及职业副属性成长徽章×1；按在场炎阵营干员数累加。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -9041,7 +9041,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -9049,7 +9049,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -9062,7 +9062,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -9072,7 +9072,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章×0及职业副属性成长徽章×2；按在场炎阵营干员数累加，永久保留。",
+                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击成长徽章×0及职业副属性成长徽章×2；按在场炎阵营干员数累加。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -9093,7 +9093,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -9101,7 +9101,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -9114,7 +9114,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -9388,7 +9388,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "购买符合条件的干员时，购买炎阵营干员时，自身获得职业副属性成长徽章×1；成长永久保留。",
+                "text": "购买符合条件的干员时，购买炎阵营干员时，自身获得职业副属性成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -9409,7 +9409,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "购买时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -9417,7 +9417,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -9430,7 +9430,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -9440,7 +9440,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "购买符合条件的干员时，购买炎阵营干员时，自身获得职业副属性成长徽章×2；成长永久保留。",
+                "text": "购买符合条件的干员时，购买炎阵营干员时，自身获得职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -9461,7 +9461,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "购买时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -9469,7 +9469,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -9482,7 +9482,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -9641,7 +9641,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "其他友方炎阵营干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -9670,7 +9670,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "其他友方炎阵营干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -9782,7 +9782,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备精准盟约×1。",
                 "textEn": "",
                 "tags": [
                   "poison"
@@ -9795,7 +9795,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -9805,7 +9805,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备精准盟约×1。",
                 "textEn": "",
                 "tags": [
                   "poison"
@@ -9818,7 +9818,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -10044,7 +10044,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -10057,7 +10057,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "友方受到攻击",
@@ -10068,7 +10068,7 @@
                 "params": {
                   "sourceId": "BGS_201"
                 },
-                "text": "友方受到攻击时，使自身附近的友方临时获得攻击徽章×1与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方受到攻击时，使自身附近的友方获得攻击徽章×1与职业副属性徽章×1的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -10091,7 +10091,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -10104,7 +10104,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "友方受到攻击",
@@ -10115,7 +10115,7 @@
                 "params": {
                   "sourceId": "BGS_201"
                 },
-                "text": "友方受到攻击时，使自身附近的友方临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方受到攻击时，使自身附近的友方获得攻击徽章×2与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -10238,7 +10238,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得攻击成长徽章×1与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得攻击成长徽章×1与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -10259,7 +10259,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -10269,7 +10269,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得攻击成长徽章×2与职业副属性成长徽章×4；成长永久保留。",
+                "text": "每回合休整结束时，每个不同友方阵营各结算一次，自身获得攻击成长徽章×2与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -10290,7 +10290,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -10412,7 +10412,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -10425,7 +10425,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -10433,7 +10433,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -10446,7 +10446,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "战斗中",
@@ -10482,7 +10482,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -10495,7 +10495,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -10503,7 +10503,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -10516,7 +10516,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "战斗中",
@@ -10838,7 +10838,7 @@
                 },
                 "recipientLabel": "你选择的一名友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久附加"
+                "durationLabel": "附加"
               },
               {
                 "trigger": "每次退场（每场最多三次）",
@@ -10902,7 +10902,7 @@
                 },
                 "recipientLabel": "你选择的一名友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久附加"
+                "durationLabel": "附加"
               },
               {
                 "trigger": "每次退场（每场最多三次）",
@@ -11320,7 +11320,7 @@
                 "recipient": "selectedColumbiaFriendly",
                 "duration": "permanentAttachment",
                 "kind": "magneticAttachment",
-                "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×2及职业副属性成长徽章×4；本体不进入阵容。",
+                "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×2及职业副属性成长徽章×4；本体不进入阵容。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -11348,7 +11348,7 @@
                 },
                 "recipientLabel": "你选择的一名友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久附加"
+                "durationLabel": "附加"
               },
               {
                 "trigger": "gain",
@@ -11356,7 +11356,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -11369,7 +11369,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -11377,7 +11377,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -11390,7 +11390,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -11400,7 +11400,7 @@
                 "recipient": "selectedColumbiaFriendly",
                 "duration": "permanentAttachment",
                 "kind": "magneticAttachment",
-                "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员永久装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×4及职业副属性成长徽章×8；本体不进入阵容。",
+                "text": "招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员装备坚守盟约和护盾发生器，并使其获得攻击成长徽章×4及职业副属性成长徽章×8；本体不进入阵容。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -11428,7 +11428,7 @@
                 },
                 "recipientLabel": "你选择的一名友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久附加"
+                "durationLabel": "附加"
               },
               {
                 "trigger": "gain",
@@ -11436,7 +11436,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -11449,7 +11449,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "gain",
@@ -11457,7 +11457,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -11470,7 +11470,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -11900,7 +11900,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -11927,7 +11927,7 @@
                 },
                 "recipientLabel": "你选择的一名友方叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -11937,7 +11937,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -11964,7 +11964,7 @@
                 },
                 "recipientLabel": "你选择的一名友方叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -12222,7 +12222,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留，并永久装备坚守盟约。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2，并装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12252,7 +12252,7 @@
                 },
                 "recipientLabel": "你选择的一名友方叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -12262,7 +12262,7 @@
                 "recipient": "selectedFriendlyBeast",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留，并永久装备坚守盟约。",
+                "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4，并装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12292,7 +12292,7 @@
                 },
                 "recipientLabel": "你选择的一名友方叙拉古干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -12430,7 +12430,7 @@
                 "recipient": "adjacentFriendlyOperators",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，相邻友方干员各获得攻击成长徽章×1与职业副属性成长徽章×1；成长永久保留，并永久装备坚守盟约。",
+                "text": "招募获得或首次上阵时，相邻友方干员各获得攻击成长徽章×1与职业副属性成长徽章×1，并装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12453,7 +12453,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "相邻友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -12463,7 +12463,7 @@
                 "recipient": "adjacentFriendlyOperators",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，相邻友方干员各获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留，并永久装备坚守盟约。",
+                "text": "招募获得或首次上阵时，相邻友方干员各获得攻击成长徽章×2与职业副属性成长徽章×2，并装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12486,7 +12486,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "相邻友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -12621,7 +12621,7 @@
                 "params": {
                   "sourceId": "EX1_531"
                 },
-                "text": "友方退场（叙拉古）时，使自身临时获得攻击徽章×2与职业副属性徽章×1。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方退场（叙拉古）时，使自身获得攻击徽章×2与职业副属性徽章×1的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -12645,7 +12645,7 @@
                 "params": {
                   "sourceId": "EX1_531"
                 },
-                "text": "友方退场（叙拉古）时，使自身临时获得攻击徽章×4与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方退场（叙拉古）时，使自身获得攻击徽章×4与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -13028,7 +13028,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备精准盟约×1。",
                 "textEn": "",
                 "tags": [
                   "poison"
@@ -13041,7 +13041,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -13051,7 +13051,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备精准盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备精准盟约×1。",
                 "textEn": "",
                 "tags": [
                   "poison"
@@ -13064,7 +13064,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -13154,7 +13154,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -13167,7 +13167,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "每次退场（每场最多三次）",
@@ -13202,7 +13202,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备坚守盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备坚守盟约×1。",
                 "textEn": "",
                 "tags": [
                   "taunt"
@@ -13215,7 +13215,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "每次退场（每场最多三次）",
@@ -13488,7 +13488,7 @@
                 "recipient": "randomOtherFriendlyMechanical",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -13510,7 +13510,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方哥伦比亚干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -13520,7 +13520,7 @@
                 "recipient": "randomOtherFriendlyMechanical",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "每回合休整结束时，一名随机的其他友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -13542,7 +13542,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方哥伦比亚干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -13688,7 +13688,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "所有其他友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -13716,7 +13716,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "所有其他友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -13826,7 +13826,7 @@
                 "recipient": "selectedFriendlyMechanical",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -13853,7 +13853,7 @@
                 },
                 "recipientLabel": "你选择的一名友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -13863,7 +13863,7 @@
                 "recipient": "selectedFriendlyMechanical",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "招募获得或首次上阵时，你选择的一名友方哥伦比亚阵营干员获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -13890,7 +13890,7 @@
                 },
                 "recipientLabel": "你选择的一名友方哥伦比亚干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -14021,7 +14021,7 @@
                 "params": {
                   "sourceId": "GVG_106"
                 },
-                "text": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×2与职业副属性徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方退场（哥伦比亚）时，使自身获得攻击徽章×2与职业副属性徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -14045,7 +14045,7 @@
                 "params": {
                   "sourceId": "GVG_106"
                 },
-                "text": "友方退场（哥伦比亚）时，使自身临时获得攻击徽章×4与职业副属性徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方退场（哥伦比亚）时，使自身获得攻击徽章×4与职业副属性徽章×4的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
@@ -14155,7 +14155,7 @@
                 "params": {
                   "numericLiterals": []
                 },
-                "text": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备巨锤盟约×1。",
                 "textEn": "",
                 "tags": [
                   "cleave"
@@ -14167,7 +14167,7 @@
                 ],
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -14180,7 +14180,7 @@
                 "params": {
                   "numericLiterals": []
                 },
-                "text": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备巨锤盟约×1。",
                 "textEn": "",
                 "tags": [
                   "cleave"
@@ -14192,7 +14192,7 @@
                 ],
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -14288,7 +14288,7 @@
                 "recipient": "randomOtherFriendly",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×3；成长永久保留。",
+                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×3。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -14309,7 +14309,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -14319,7 +14319,7 @@
                 "recipient": "randomOtherFriendly",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×6；成长永久保留。",
+                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×6。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -14340,7 +14340,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -14462,7 +14462,7 @@
                 "recipient": "allFriendlyWithTaunt",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得攻击成长徽章×2与职业副属性成长徽章×2；成长永久保留。",
+                "text": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得攻击成长徽章×2与职业副属性成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -14483,7 +14483,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "所有装备坚守盟约的友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ],
             "elite": [
@@ -14493,7 +14493,7 @@
                 "recipient": "allFriendlyWithTaunt",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得攻击成长徽章×4与职业副属性成长徽章×4；成长永久保留。",
+                "text": "招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得攻击成长徽章×4与职业副属性成长徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -14514,7 +14514,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "所有装备坚守盟约的友方干员",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               }
             ]
           }
@@ -14636,7 +14636,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -14649,7 +14649,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "友方累计破裂五层护盾",
@@ -14660,7 +14660,7 @@
                 "params": {
                   "sourceId": "ICC_858"
                 },
-                "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×2。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方累计破裂五层护盾时，使自身获得攻击徽章×2的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -14683,7 +14683,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备护盾发生器×1。",
+                "text": "招募获得或首次上阵时，自身装备护盾发生器×1。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -14696,7 +14696,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               },
               {
                 "trigger": "友方累计破裂五层护盾",
@@ -14707,7 +14707,7 @@
                 "params": {
                   "sourceId": "ICC_858"
                 },
-                "text": "友方累计破裂五层护盾时，使自身临时获得攻击徽章×4。同一效果每3秒最多触发一次，每场最多二十五次。",
+                "text": "友方累计破裂五层护盾时，使自身获得攻击徽章×4的战斗增益。同一效果每3秒最多触发一次，每场最多二十五次。",
                 "textEn": "",
                 "tags": [
                   "divineShield"
@@ -15111,7 +15111,7 @@
                 "params": {
                   "numericLiterals": []
                 },
-                "text": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备巨锤盟约×1。",
                 "textEn": "",
                 "tags": [
                   "cleave"
@@ -15123,7 +15123,7 @@
                 ],
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -15136,7 +15136,7 @@
                 "params": {
                   "numericLiterals": []
                 },
-                "text": "招募获得或首次上阵时，自身永久装备巨锤盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备巨锤盟约×1。",
                 "textEn": "",
                 "tags": [
                   "cleave"
@@ -15148,7 +15148,7 @@
                 ],
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }
@@ -15655,7 +15655,7 @@
                 "params": {
                   "sourceId": "OG_256"
                 },
-                "text": "退场时使所有友方临时获得攻击徽章×1与职业副属性徽章×1。",
+                "text": "退场时使所有友方获得攻击徽章×1与职业副属性徽章×1。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
@@ -15681,7 +15681,7 @@
                 "params": {
                   "sourceId": "OG_256"
                 },
-                "text": "退场时使所有友方临时获得攻击徽章×2与职业副属性徽章×2。",
+                "text": "退场时使所有友方获得攻击徽章×2与职业副属性徽章×2。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
@@ -15924,7 +15924,7 @@
                 "recipient": "oneRandomOtherFriendly",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×1；成长永久保留。",
+                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -15945,7 +15945,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -15953,7 +15953,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -15966,7 +15966,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ],
             "elite": [
@@ -15976,7 +15976,7 @@
                 "recipient": "oneRandomOtherFriendly",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×2；成长永久保留。",
+                "text": "每回合休整结束时，一名随机的其他友方干员获得攻击成长徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -15997,7 +15997,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "一名随机的其他友方干员",
                 "triggerLabel": "每回合休整结束时",
-                "durationLabel": "本局永久成长"
+                "durationLabel": "成长"
               },
               {
                 "trigger": "gain",
@@ -16005,7 +16005,7 @@
                 "recipient": "self",
                 "duration": "permanentWornGear",
                 "kind": "keywordGear",
-                "text": "招募获得或首次上阵时，自身永久装备不屈盟约×1。",
+                "text": "招募获得或首次上阵时，自身装备不屈盟约×1。",
                 "textEn": "",
                 "tags": [
                   "reborn"
@@ -16018,7 +16018,7 @@
                 "unsupportedReason": null,
                 "recipientLabel": "自身",
                 "triggerLabel": "招募获得或首次上阵时",
-                "durationLabel": "本局永久穿戴"
+                "durationLabel": "穿戴"
               }
             ]
           }

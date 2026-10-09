@@ -20,4 +20,9 @@ test('money/discount/summon/retirement summaries carry the exact form counts and
   const rendered=render({summary:entries,catalog:{traitWhen:TRAIT_WHEN},max:10});
   assert.match(rendered,/升级减费/);assert.match(rendered,/−2/);assert.match(rendered,/\+2/);assert.match(rendered,/召唤/);assert.match(rendered,/退场时/);assert.doesNotMatch(rendered,/\+null/);
   assert.doesNotMatch(render({summary:[{when:'gain',kind:'funds'}],catalog:{traitWhen:TRAIT_WHEN}}),/<b class="num">\+/,'unknown amount never renders a bare plus');
+  const gearScope=traitSummary({prep:[{trigger:'gain',behavior:'grantEquipment',params:{outputs:[{id:'oath-cover'}]}},{trigger:'gain',behavior:'shopCarry',params:{id:'precision',quantity:1}}]});
+  assert.equal(gearScope[0].lasting,undefined,'a unit wearing gear needs no extra 本局 duration tag');
+  assert.equal(gearScope[1].lasting,true,'shop carry remains marked as a match-long effect');
+  const lastingRendered=render({summary:gearScope,catalog:{traitWhen:TRAIT_WHEN},max:10});
+  assert.match(lastingRendered,/title="本局后续酒馆持续">本局<\/span>/,'the lasting tag identifies the later-shop scope');
 });

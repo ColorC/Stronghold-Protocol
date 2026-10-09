@@ -55,7 +55,7 @@ export function TraitGlyphs({ summary, elite = false, catalog, max = 2, class: c
       ${e.condition && CONDITION_WORD[e.condition] ? html`<span class="ix-trait__cond">${CONDITION_WORD[e.condition]}</span>` : null}
       ${e.total ? html`<span class="ix-trait__cond" title="按本局累计次数">每${e.total.per}次${TOTAL_WORD[e.total.counter] || ''}</span>` : null}
       ${e.grows ? html`<span class="ix-trait__cond" title="在场越久越多">成长</span>` : null}
-      ${e.lasting ? html`<span class="ix-trait__cond" title="本局持续">本局</span>` : null}
+      ${e.lasting ? html`<span class="ix-trait__cond" title="本局后续酒馆持续">本局</span>` : null}
     </span>`)}
     ${(summary || []).length > max ? html`<span class="ix-trait__more">+${summary.length - max}</span>` : null}
   </span>`;
