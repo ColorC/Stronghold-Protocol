@@ -161,6 +161,45 @@ function signatureKit(operator, record, star) {
   if (name === '正义骑士号') return { ...fixed, kind:'passive',spCost:0,initSp:0,spType:'none',trigger:'NEVER',tags:['resonance','signature',skillId],talents:[{install(battle,unit){const p=operator.stars?.[star]?.passive?.params??{};const interval=numeric(p.interval,3),radius=numeric(p.range,2),duration=numeric(p.aspdDuration,p.duration??3);battle.every(interval,()=>{const a=battle.allyUnits.filter(x=>x.kind==='op'&&x.alive&&x.deployed&&Math.hypot(x.x-unit.x,x.y-unit.y)<=radius).sort((x,y)=>x.hpRatio-y.hpRatio||x.id-y.id)[0];if(a){battle.heal(unit,a,unit.s.atk*numeric(p.healFromAtk,50)/100,{tags:['resonance']});battle.addBuff(a,{key:`resonance:judgement:${unit.id}`,duration,mods:{aspd:numeric(p.aspd,20)},tags:['resonance']});}},{owner:unit});}}] };
   return null;
 }
+
+function robertaMachineTalent() {
+  const tokenId = 'token_10018_robrta_mach';
+  const hasDefenseBuff = (unit) => unit.buffs.some((buff) =>
+    buff.key.startsWith('native:robrta:def:') || buff.key.startsWith('resonance:robrta:def:'));
+  return { install(battle, owner) {
+    const applyMachine = (token) => {
+      if (token?.kind !== 'token' || token.defId !== tokenId || token.ownerUnit !== owner) return;
+      if (token.profile) { token.profile.noAttack = true; token.profile.maxTargets = 0; }
+      if (!token.findBuff('trait:untargetable')) battle.addBuff(token, {
+        key: 'trait:untargetable', flags: { untargetable: true }, persist: true, allowDead: true, tags: ['talent'],
+      });
+      if (token.mem.nativeRobertaApplied || !token.alive || !token.deployed) return;
+      const effect = token.def?.talents?.[0]?.bb ?? token.def?.raw?.talents?.[0]?.bb ?? {};
+      const defPct = numeric(effect.def, 0), duration = numeric(effect.duration, 0);
+      if (!(defPct > 0 && duration > 0)) return;
+      const range = new Set(absoluteRangeKeys(token.def?.rangeGrid ?? token.rangeGrid ?? [[0, 0]], token.tileR, token.tileC, token.dir, 0));
+      const target = battle.alliesFor(owner)
+        .filter((unit) => unit.kind === 'op' && unit !== owner && unit.alive && unit.deployed
+          && (unit.def?.position ?? unit.def?.raw?.position) === 'MELEE'
+          && range.has(unit.tileR * COLS + unit.tileC) && !hasDefenseBuff(unit))
+        .sort((a, b) => a.id - b.id)[0];
+      if (!target) return;
+      token.mem.nativeRobertaApplied = target.id;
+      battle.addBuff(target, {
+        key: `native:robrta:def:${token.id}`, duration, source: owner, mods: { defPct }, tags: ['talent'],
+      });
+      battle.addBuff(target, {
+        key: `native:robrta:shield:${token.id}`, duration, source: owner, shieldHits: 1, visible: true, tags: ['talent'],
+      });
+    };
+    battle.on('deploy', ({ unit }) => {
+      if (unit?.kind !== 'token' || unit.defId !== tokenId || unit.ownerUnit !== owner) return;
+      applyMachine(unit);
+      battle.every(0.25, () => applyMachine(unit), { owner: unit, immediate: true });
+    }, { owner });
+    for (const token of battle.allyUnits.filter((unit) => unit.kind === 'token' && unit.defId === tokenId && unit.ownerUnit === owner)) applyMachine(token);
+  }};
+}
 function numeric(v, fallback) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
 
 /** Return the Battle `opts.kits` map, keyed by the catalog's sourceChessId. */
@@ -189,7 +228,7 @@ export function createResonanceKits(catalog, state, data) {
       let picked = authoredSpec(resolved, selectedId, native) ?? signatureKit(op, recordForStar(op, state, resolved), star);
       if(yelaPermanent&&star>=3){picked??=nativeKit.skills?.[selectedId]??nativeKit.skill;if(picked)picked={...picked,duration:-1,tags:[...(picked.tags??[]),'resonanceYelaPermanent']};}
       if (!picked) return nativeKit;
-      const talents=[...(nativeKit.talents??[]),...(picked.talents??[])].filter((t,i,a)=>a.findIndex(x=>x===t||(typeof t?.install==='function'&&x?.install===t.install))===i);
+      const talents=[...(nativeKit.talents??[]),...(picked.talents??[]),...(op.charId==='char_484_robrta'?[robertaMachineTalent()]:[])].filter((t,i,a)=>a.findIndex(x=>x===t||(typeof t?.install==='function'&&x?.install===t.install))===i);
       return { ...nativeKit, ...(talents.length?{talents}:{}), skills: { ...(nativeKit.skills ?? {}), [selectedId]: picked }, skill: picked };
     };
   }
