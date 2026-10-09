@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   applyAction, calculateRoundIncome, createSession, validateSession, viewSession, resonanceRules,
 } from '../../server/modes/resonance/session.js';
+import { combatStatsOf } from '../../server/modes/resonance/battle.js';
 
 const operators = Object.fromEntries([
   ['m1',1,'MELEE'],['m2',1,'MELEE'],['r1',1,'RANGED'],['m3',1,'MELEE'],['r2',1,'RANGED'],
@@ -40,6 +41,18 @@ function assertPoolConserved(state) {
   const validation=validateSession(state,{catalog});
   assert.equal(validation.ok,true,JSON.stringify(validation.errors));
 }
+
+test('combatStatsOf copies only the native per-unit measurements and keeps unknown values null',()=>{
+  assert.deepEqual(combatStatsOf({unitStats:[
+    {uid:41,defId:'chess_m1',kind:'op',dmg:18.5,heal:2.25,taken:4.5,kills:1,attacks:3},
+    {uid:42,defId:'token_m1',kind:'token',dmg:0,kills:0,heal:Infinity},
+  ]}),{units:[
+    {uid:41,defId:'chess_m1',kind:'op',dmg:18.5,heal:2.25,taken:4.5,kills:1,attacks:3},
+    {uid:42,defId:'token_m1',kind:'token',dmg:0,heal:null,taken:null,kills:0,attacks:null},
+  ]});
+  assert.equal(combatStatsOf({}),null);
+  assert.deepEqual(combatStatsOf({unitStats:[]}),{units:[]});
+});
 function installTargetOffer(state,operatorId='m1') {
   if(state.shop.offers.some((offer)=>offer.operatorId===operatorId))return;
   const slot=state.shop.offers.find((offer)=>offer.operatorId!==operatorId);
@@ -259,6 +272,34 @@ test('fight refuses to proceed without the injected real runner and preserves in
   const noRunner=applyAction(state,{type:'fight'},{catalog,fieldResolver:fields});
   assert.equal(noRunner.ok,false);assert.equal(noRunner.error,'BATTLE_RUNNER_REQUIRED');assertPoolConserved(noRunner.state);
   assert.deepEqual(state,before);
+});
+
+test('fight-settled preserves authoritative combat stats and leaves missing values unknown',()=>{
+  const combatStats={units:[
+    {uid:41,defId:'chess_m1',kind:'op',dmg:18.5,heal:2.25,taken:4.5,kills:1,attacks:3},
+    {uid:42,defId:'token_m1',kind:'token',dmg:0,heal:0,taken:0,kills:0,attacks:0},
+    {uid:43,defId:'chess_r1',kind:'op',dmg:7,kills:2},
+  ]};
+  const runner=()=>({won:true,hpLoss:0,result:{reason:'cleared'},diagnostics:{errorCount:0},metrics:{},combatStats,
+    replay:{version:1,frames:[],combatStats}});
+  const fought=applyAction(deployOne(session(271)),{type:'fight'},{catalog,fieldResolver:fields,battleRunner:runner});
+  assert.equal(fought.ok,true,fought.error);
+  const event=fought.events.find((entry)=>entry.type==='fight-settled');
+  const history=fought.state.history.find((entry)=>entry.type==='fight-settled');
+  assert.deepEqual(event.combatStats,combatStats);
+  assert.deepEqual(history.combatStats,combatStats);
+  assert.deepEqual(fought.replay.combatStats,combatStats);
+  assert.deepEqual(event.result,{reason:'cleared'},'the immediate fight event retains its existing result payload');
+  assert.equal(Object.hasOwn(history,'result'),false,'the persisted history keeps the existing compact result policy');
+
+  const noStatsRunner=()=>({won:true,hpLoss:0,result:{reason:'cleared'},diagnostics:{errorCount:0},metrics:{}});
+  const noStats=applyAction(deployOne(session(272)),{type:'fight'},{catalog,fieldResolver:fields,battleRunner:noStatsRunner,recording:false});
+  assert.equal(noStats.ok,true,noStats.error);
+  assert.equal(noStats.events.find((entry)=>entry.type==='fight-settled').combatStats,null);
+  assert.equal(noStats.state.history.find((entry)=>entry.type==='fight-settled').combatStats,null);
+  assert.equal(noStats.replay,null,'an unrecorded fight still has no replay');
+  const legacy=structuredClone(noStats.state);delete legacy.history.find((entry)=>entry.type==='fight-settled').combatStats;
+  assert.equal(validateSession(legacy,{catalog}).ok,true,'older history without combatStats remains valid without migration');
 });
 
 test('four facing directions and typed deployment rules are enforced for deploy and fight',()=>{

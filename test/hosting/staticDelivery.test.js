@@ -21,7 +21,9 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
   assert.equal(response.body, `import "${base}/js/independent/client-worker.js";\n`);
   for (const path of ['/independent.html', '/independent/api/sessions', '/healthz', '/js/hostingBootstrap.js', '/js/hostingWait.js', '/resonance-references.zip']) assert.equal(handler(req, res(), path), false);
   for (const path of ['/resonance/api/catalog', '/js/resonance/main.js', '/css/resonance.css',
+    '/css/resonance-entry.css', '/css/resonance-detail.css', '/css/resonance-codex.css', '/css/resonance-panels.css',
     '/js/ui/fieldHost.js', '/js/ui/fallbackField.js', '/js/render/app.js', '/js/render/interp.js',
+    '/js/ui/hud.js', '/js/ui/shopBar.js', '/js/ui/bondStrip.js', '/js/screens/title.js',
     '/js/render/resonanceFloors.js', '/js/render/board3d/scene.js']) {
     assert.equal(handler(req, res(), path), false, 'resonance host, fallback, and renderer modules must resolve from the active release');
   }

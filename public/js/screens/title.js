@@ -181,7 +181,7 @@ const STATUS_TEXT = {
 };
 
 /** Title screen component. */
-export function TitleScreen() {
+export function TitleScreen({ presentation = null } = {}) {
   const conn = useStore((s) => s.connection, shallowEqual);
   const pendingJoin = useStore((s) => s.ui.pendingJoin);
   const [name, setName] = useState(() => store.get().me.name || identity.loadName() || '');
@@ -211,7 +211,7 @@ export function TitleScreen() {
 
   // touch screens: no autofocus (it would pop the on-screen keyboard over a landscape phone's whole view)
   const touchUi = useMemo(() => detectFeatures().coarse, []);
-  return html`<div class="screen title-screen">
+  return html`<div class=${`screen title-screen${presentation ? ' title-screen--presentation' : ''}`}>
     <div class=${`title-bg${bgLoaded ? ' has-art' : ''}${ridgesLoaded ? ' has-ridges' : ''}`} aria-hidden="true">
       ${backdrop ? html`<img class="title-bg__art" src=${backdrop} alt="" draggable=${false}
         onLoad=${() => setBgLoadedUrl(backdrop)} />` : null}
@@ -232,7 +232,7 @@ export function TitleScreen() {
 
     <div class="title-corner title-corner--tl">
       <span class="title-corner__mark"></span>
-      <div><${MicroLabel} tone="mint">RHODES ISLAND // SIMULATION SERVICE<//><br /><${MicroLabel}>TACTICAL CO-OP NODE · 02<//></div>
+      ${presentation ? html`<div><${MicroLabel} tone="mint">${presentation.englishName || 'STRONGHOLD PROTOCOL'}<//></div>` : html`<div><${MicroLabel} tone="mint">RHODES ISLAND // SIMULATION SERVICE<//><br /><${MicroLabel}>TACTICAL CO-OP NODE · 02<//></div>`}
     </div>
     <div class="title-corner title-corner--tr">
       <${MicroLabel} tone="hi">TARGET POINT<//><br /><${MicroLabel}>STRONGHOLD PROTOCOL<//>
@@ -241,18 +241,18 @@ export function TitleScreen() {
     <main class="title-main">
       <${Emblem} />
       <div class="title-en">
-        <span class="title-en__a">STRONGHOLD PROTOCOL</span>
+        <span class="title-en__a">${presentation?.englishName || 'STRONGHOLD PROTOCOL'}</span>
         <span class="title-en__b">ALLIANCE</span>
       </div>
-      <h1 class="title-cn">卫戍协议<span class="title-cn__colon">：</span><em>盟约</em></h1>
-      <p class="title-tag">调配资金与干员，与同伴协同布防，抵御多波次进攻，直至击败敌方领袖。</p>
+      <h1 class="title-cn">${presentation?.name || html`卫戍协议<span class="title-cn__colon">：</span><em>盟约</em>`}</h1>
+      <p class="title-tag">${presentation?.description || '调配资金与干员，与同伴协同布防，抵御多波次进攻，直至击败敌方领袖。'}</p>
 
       <div class="title-login">
-        ${pendingJoin ? html`<div class="title-invite">
+        ${presentation ? presentation.actions?.map(action => html`<${Button} variant=${action.primary ? 'primary' : 'secondary'} size="xl" block=${true} iconRight=${action.primary ? 'chevrons' : null} onClick=${action.onClick}>${action.label}<//>`) : pendingJoin ? html`<div class="title-invite">
           <${Icon} name="key" />
           <span>收到同盟邀请</span><b class="num">${pendingJoin}</b><span class="t-lo">· 输入代号后将自动加入</span>
         </div>` : null}
-        <${TextField} label="博士代号" micro="CALLSIGN" size="lg" icon="user" value=${name} maxLength=${NAME_MAX_LEN}
+        ${!presentation ? html`<${TextField} label="博士代号" micro="CALLSIGN" size="lg" icon="user" value=${name} maxLength=${NAME_MAX_LEN}
           placeholder="输入你的代号（最多 ${NAME_MAX_LEN} 字）" autoFocus=${!touchUi}
           onInput=${setName} onEnter=${start} />
         <${Button} variant="primary" size="xl" block=${true} iconRight="chevrons" disabled=${!valid} onClick=${start}>开始<//>
@@ -265,15 +265,14 @@ export function TitleScreen() {
           <button type="button" class="title-settings fsbtn tapx" aria-label="设置" title="设置"
             onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
           <${FullscreenButton} class="title-fs" />
-        </div>
+        </div>` : null}
       </div>
     </main>
 
-    <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />
+    ${!presentation ? html`<${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />` : null}
 
     <footer class="title-foot">
-      <span>非官方同人复刻 · 游戏素材版权归 上海鹰角网络 / Yostar 所有</span>
-      <${MicroLabel}>v${APP_VERSION} · WEB SIMULATION<//>
+      ${!presentation ? html`<span>非官方同人复刻 · 游戏素材版权归 上海鹰角网络 / Yostar 所有</span><${MicroLabel}>v${APP_VERSION} · WEB SIMULATION<//>` : null}
     </footer>
   </div>`;
 }

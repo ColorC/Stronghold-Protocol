@@ -48,16 +48,17 @@ const DESIGN_BODY = (entryUrl, referenceUrl, designRules) => [
   designRules,
 ].join('\n');
 
-const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --repair-play-card [--dry-run|--execute] --embed-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
+const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --refresh-existing [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --repair-play-card [--dry-run|--execute] --embed-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
 
 function parseArgs(argv) {
-  const options = { execute: false, selfTest: false, repairPlayCard: false };
+  const options = { execute: false, selfTest: false, repairPlayCard: false, refreshExisting: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--execute') options.execute = true;
     else if (arg === '--dry-run') options.execute = false;
     else if (arg === '--self-test') options.selfTest = true;
     else if (arg === '--repair-play-card') options.repairPlayCard = true;
+    else if (arg === '--refresh-existing') options.refreshExisting = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
     else if (['--entry-url', '--embed-url', '--reference-url', '--release-receipt', '--receipt'].includes(arg)) {
       const value = argv[++i];
@@ -65,7 +66,8 @@ function parseArgs(argv) {
       options[arg.slice(2)] = value;
     } else throw new Error(`未知参数：${arg}`);
   }
-  if (options.execute && argv.includes('--dry-run')) throw new Error('--execute 与 --dry-run 不能同时使用');
+  if (argv.includes('--execute') && argv.includes('--dry-run')) throw new Error('--execute 与 --dry-run 不能同时使用');
+  if (options.repairPlayCard && options.refreshExisting) throw new Error('--repair-play-card 与 --refresh-existing 不能混用');
   return options;
 }
 
@@ -192,6 +194,91 @@ function repairedPlayCard(card, embedUrl) {
   return { ...card, material: { ...(card.material ?? {}), live_entry: embedUrl } };
 }
 
+const UI_OPERATION_SECTION = [
+  '## 界面与操作', '',
+  '进入玩法后会依次选择难度、战场并确认本局简报。对局中，金币、等级和商店常驻显示。',
+  '点击干员、盟约、装备或策略可查看详情；独立图鉴汇集完整资料。界面支持复制定位链接和全屏打开。',
+].join('\n');
+
+function refreshedDesignBody(existingBody, entryUrl, referenceUrl) {
+  if (typeof existingBody !== 'string' || !/^# 共鸣玩法与参考\r?\n/m.test(existingBody)
+    || !/^## 体验与内容范围\r?$/m.test(existingBody)) throw new Error('现有设计正文身份或玩法内容无法确认；拒绝覆盖');
+  const withoutOldUi = existingBody.split(/(?=^## )/m).filter(block => !/^## 界面与操作\s*$/m.test(block)).join('').trim();
+  const intro = `打开[共鸣玩法](${entryUrl})。完整资料可从[参考资料包](${referenceUrl})下载。`;
+  const withUpdatedLinks = withoutOldUi.replace(/^(# 共鸣玩法与参考\r?\n\r?\n)[^\r\n]*(?:\r?\n\r?\n)/m, (_match, heading) => `${heading}${intro}\n\n`);
+  if (withUpdatedLinks === withoutOldUi && !withoutOldUi.startsWith(`# 共鸣玩法与参考\n\n${intro}`)) {
+    throw new Error('现有设计正文入口段格式不明；拒绝破坏性重写');
+  }
+  return `${withUpdatedLinks.trim()}\n\n${UI_OPERATION_SECTION}\n`;
+}
+
+function validateRefreshTargets(cards, relations, embedUrl) {
+  const byId = id => cards.filter(card => card.id === id);
+  const [design] = byId(DESIGN_CARD_ID), [play] = byId(PLAY_CARD_ID);
+  if (byId(DESIGN_CARD_ID).length !== 1 || byId(PLAY_CARD_ID).length !== 1
+    || design?.kind !== 'text' || design.adapter !== 'text' || design.source?.kind !== 'file'
+    || design.source.editableId !== DESIGN_CARD_ID || typeof design.source.path !== 'string'
+    || typeof (design.source.token ?? design.source.open_token) !== 'string') {
+    throw new Error('现有设计卡身份/source与预期不符；拒绝重建或修改');
+  }
+  repairedPlayCard(play, embedUrl);
+  const expected = plannedRelations();
+  for (const relation of expected) {
+    const matches = relations.filter(item => item.id === relation.id);
+    if (matches.length !== 1 || matches[0].source !== relation.source || matches[0].target !== relation.target
+      || matches[0].kind !== relation.kind || matches[0].programLabel !== relation.programLabel) {
+      throw new Error(`既有关联身份不符：${relation.id}；拒绝重建关系`);
+    }
+  }
+  return { design, play };
+}
+
+function refreshedCards(design, play, bodyResult, embedUrl) {
+  const bodyPath = bodyResult?.path;
+  const bodyToken = bodyResult?.open_token ?? bodyResult?.token;
+  const editableId = bodyResult?.editableId ?? bodyResult?.editable_id ?? DESIGN_CARD_ID;
+  if (typeof bodyPath !== 'string' || !bodyPath || typeof bodyToken !== 'string' || !bodyToken || editableId !== DESIGN_CARD_ID) {
+    throw new Error('文字正文桥未返回design卡对应的file、token与editableId');
+  }
+  const source = { ...design.source, kind: 'file', path: bodyPath, token: bodyToken,
+    mime: bodyResult.mime ?? design.source.mime ?? 'text/markdown', editableId };
+  return [
+    { ...design, source },
+    { ...play, material: { ...(play.material ?? {}), live_entry: embedUrl } },
+  ];
+}
+
+function sameCardExceptSource(a, b) {
+  const left = structuredClone(a), right = structuredClone(b);
+  delete left.source; delete right.source;
+  if (left.provenance && typeof left.provenance === 'object') delete left.provenance.updated;
+  if (right.provenance && typeof right.provenance === 'object') delete right.provenance.updated;
+  return JSON.stringify(stable(left)) === JSON.stringify(stable(right));
+}
+
+function verifyRefreshSnapshot(beforeCards, beforeRelations, afterCards, afterRelations, expectedCards, embedUrl) {
+  if (afterCards.length !== beforeCards.length || JSON.stringify(stable(afterRelations)) !== JSON.stringify(stable(beforeRelations))) {
+    throw new Error('刷新意外改变卡片数量或既有关联');
+  }
+  const expectedById = new Map(expectedCards.map(card => [card.id, card]));
+  for (const original of beforeCards) {
+    const now = afterCards.find(card => card.id === original.id);
+    if (!now) throw new Error(`刷新后既有卡缺失：${original.id}`);
+    if (original.id === DESIGN_CARD_ID) {
+      const expected = expectedById.get(DESIGN_CARD_ID);
+      if (!sameCardExceptSource(now, original) || JSON.stringify(stable(now.source)) !== JSON.stringify(stable(expected.source))) {
+        throw new Error('设计卡几何或非source字段意外改变');
+      }
+    } else if (original.id === PLAY_CARD_ID) {
+      if (!equalExceptNativeStamps(now, original) || now.material?.live_entry !== embedUrl) {
+        throw new Error('玩法卡回读超出live_entry单字段更新');
+      }
+    } else if (JSON.stringify(stable(now)) !== JSON.stringify(stable(original))) {
+      throw new Error(`其他卡片被意外改动：${original.id}`);
+    }
+  }
+}
+
 function equalExceptNativeStamps(a, b) {
   const withoutNativeStamps = value => {
     const copy = structuredClone(value);
@@ -230,6 +317,27 @@ function selfTest() {
     material: { representations: [{ id: 'canvas-card', media_type: 'text/markdown', role: 'primary' }] },
   };
   const repaired = repairedPlayCard(testPlay, embedUrl);
+  const testDesign = { id: DESIGN_CARD_ID, kind: 'text', adapter: 'text', title: '共鸣玩法与参考',
+    source: { kind: 'file', path: '/old/design.md', token: 'old-token', mime: 'text/markdown', editableId: DESIGN_CARD_ID },
+    x: 900, y: 126, width: 560, height: 460, fontSize: 14 };
+  const oldDesignBody = '# 共鸣玩法与参考\n\n打开[共鸣玩法](https://old.invalid/resonance.html)。完整资料可从[参考资料包](https://old.invalid/reference.zip)下载。\n\n## 体验与内容范围\n\n玩家按局内节点构建阵容。\n\n## 界面与操作\n\n旧操作说明。';
+  const nextDesignBody = refreshedDesignBody(oldDesignBody, entryUrl, 'https://example.invalid/reference.zip');
+  if (!nextDesignBody.includes('玩家按局内节点构建阵容。') || nextDesignBody.includes('旧操作说明。')
+    || !nextDesignBody.includes(UI_OPERATION_SECTION) || !nextDesignBody.includes(entryUrl)) throw new Error('refresh保留玩法正文/替换操作说明纯测试失败');
+  const refreshSources = refreshedCards(testDesign, testPlay, { path: '/new/design.md', open_token: 'new-token', editableId: DESIGN_CARD_ID }, embedUrl);
+  const refreshBeforeCards = [testDesign, testPlay, { id: 'user-card', kind: 'text', source: { path: '/user.md' }, x: 10, y: 12, width: 200, height: 100 }];
+  const refreshAfterCards = [...refreshBeforeCards.filter(card => ![DESIGN_CARD_ID, PLAY_CARD_ID].includes(card.id)), ...refreshSources];
+  const refreshRelations = plannedRelations();
+  verifyRefreshSnapshot(refreshBeforeCards, refreshRelations, refreshAfterCards, refreshRelations, refreshSources, embedUrl);
+  if (refreshSources[0].source.token !== 'new-token' || refreshSources[0].source.editableId !== DESIGN_CARD_ID
+    || refreshSources[0].x !== testDesign.x || refreshSources[1].x !== testPlay.x) throw new Error('refresh只更新正文source与live_entry纯测试失败');
+  for (const args of [['--repair-play-card','--refresh-existing'], ['--refresh-existing','--execute','--dry-run']]) {
+    let rejected = false; try { parseArgs(args); } catch { rejected = true; }
+    if (!rejected) throw new Error('repair/refresh或execute/dry-run混用保护纯测试失败');
+  }
+  let missingDesignRejected = false;
+  try { validateRefreshTargets([testPlay], refreshRelations, embedUrl); } catch { missingDesignRejected = true; }
+  if (!missingDesignRejected) throw new Error('refresh固定设计目标缺失保护纯测试失败');
   const stampedPlay = structuredClone(repaired);
   stampedPlay.provenance = { created: { kind: 'agent', ref: 'original-creator' }, updated: { kind: 'agent', ref: 'native-writer' } };
   stampedPlay.material.revision_ref = { provider: 'material-note', object: 'canvas#card=play', revision: 'r265' };
@@ -323,7 +431,7 @@ async function run() {
   const embedUrl = options['embed-url'] ? httpsUrl(options['embed-url'], '--embed-url') : entryUrl;
   if (options.repairPlayCard && !options['embed-url']) throw new Error('--repair-play-card 必须提供 --embed-url');
   const referenceUrl = options.repairPlayCard ? null : httpsUrl(options['reference-url'], '--reference-url');
-  const designRules = options.repairPlayCard ? null : playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
+  const designRules = options.repairPlayCard || options.refreshExisting ? null : playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
   const releaseReceiptPath = absoluteFile(options['release-receipt'], '--release-receipt');
   const receiptPath = absoluteFile(options.receipt, '--receipt');
   if (fs.existsSync(receiptPath)) throw new Error(`receipt 已存在，为避免覆盖而停止：${receiptPath}`);
@@ -362,6 +470,68 @@ async function run() {
   const currentResponse = await readCanvas();
   const current = currentResponse?.document;
   if (!current || !Array.isArray(current.cards) || !Array.isArray(current.relations)) throw new Error('画布文档结构无效');
+  if (options.refreshExisting) {
+    const { design, play } = validateRefreshTargets(current.cards, current.relations, embedUrl);
+    const textIds = current.cards.filter(card => card.kind === 'text').map(card => card.source?.editableId ?? card.id);
+    const textsBefore = await readTexts(textIds);
+    const designText = textsBefore.find(item => (item.id ?? item.editableId) === DESIGN_CARD_ID);
+    const existingBody = designText?.content ?? designText?.text ?? designText?.body;
+    const nextBody = refreshedDesignBody(existingBody, entryUrl, referenceUrl);
+    const beforeCards = structuredClone(current.cards), beforeRelations = structuredClone(current.relations);
+    const workspaceRef = currentResponse.workspace_ref ?? current._workspaceRef;
+    if (!workspaceRef) throw new Error('画布缺少workspace_ref，无法安全提交');
+    const preview = {
+      status: options.execute ? 'prepared' : 'dry-run', mode: 'refresh-existing', canvas: CANVAS_ID,
+      baseRevision: current.revision, sourceRevision: release.sourceRevision,
+      designCardId: DESIGN_CARD_ID, playCardId: PLAY_CARD_ID, entryUrl, embedUrl,
+      existingRelationsPreserved: true, bodyRefreshPlanned: true,
+      mutationPlanned: Boolean(options.execute), receiptPath,
+    };
+    fs.writeFileSync(receiptPath, JSON.stringify(preview, null, 2) + '\n', { flag: 'wx' });
+    if (!options.execute) {
+      process.stdout.write(JSON.stringify(preview) + '\n');
+      return;
+    }
+    try {
+      const bodyResult = unwrap(await request('POST', '/lofa/overlay/invoke', {
+        cmd: 'notes_text_put', args: { id: DESIGN_CARD_ID, content: nextBody },
+      })) ?? {};
+      const nextCards = refreshedCards(design, play, bodyResult, embedUrl);
+      const mutation = await request('POST', `/api/canvases/${encodeURIComponent(CANVAS_ID)}/mutations`, {
+        workspace_ref: workspaceRef,
+        actor_ref: { kind: 'agent', ref: 'resonance-workshop-delivery' },
+        base_revision: current.revision,
+        idempotency_key: `resonance-refresh-${crypto.randomUUID()}`,
+        purpose: '刷新共鸣玩法说明与界面入口',
+        patch: { upsert_cards: nextCards },
+      });
+      const afterResponse = await readCanvas();
+      const after = afterResponse?.document;
+      if (!after || after.revision <= current.revision) throw new Error('画布回读revision未前进');
+      verifyRefreshSnapshot(beforeCards, beforeRelations, after.cards, after.relations, nextCards, embedUrl);
+      const textsAfter = await readTexts(textIds);
+      const bodyOf = item => item?.content ?? item?.text ?? item?.body;
+      for (const before of textsBefore) {
+        const id = before.id ?? before.editableId;
+        const afterText = textsAfter.find(item => (item.id ?? item.editableId) === id);
+        if (!afterText || bodyOf(afterText) !== (id === DESIGN_CARD_ID ? nextBody : bodyOf(before))) {
+          throw new Error(`文字正文回读超出设计卡更新范围：${id}`);
+        }
+      }
+      const result = {
+        ...preview, status: 'complete', revision: after.revision,
+        mutationRevision: mutation?.document?.revision ?? after.revision,
+        verified: { designBodyUpdated: true, designGeometryPreserved: true, playLiveEntryUpdated: true, otherCardsUnchanged: true, relationsUnchanged: true, otherTextBodiesUnchanged: true },
+      };
+      fs.writeFileSync(receiptPath, JSON.stringify(result, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(result) + '\n');
+    } catch (error) {
+      const failed = { ...preview, status: 'failed', error: error instanceof Error ? error.message : String(error) };
+      fs.writeFileSync(receiptPath, JSON.stringify(failed, null, 2) + '\n');
+      throw error;
+    }
+    return;
+  }
   if (options.repairPlayCard) {
     const oldPlay = current.cards.find(card => card.id === PLAY_CARD_ID);
     const nextPlay = repairedPlayCard(oldPlay, embedUrl);

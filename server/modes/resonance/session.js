@@ -890,7 +890,7 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   const event = { type:'fight-settled', round:state.round, won:result.won, hpLoss:Math.floor(result.hpLoss), income,
     winBonus, streakBonus:streak, interest, goldBefore:previousGold, goldAfter:state.gold, xpAfter:state.xp, levelAfter:state.level,
     battleGold, delayedBonus:incomeDetails.delayedBonus, strategyGold:incomeDetails.strategyGold,
-    terminalReason, result:result.result ?? null, diagnostics:result.diagnostics ?? null };
+    terminalReason, result:result.result ?? null, diagnostics:result.diagnostics ?? null, combatStats:result.combatStats ?? null };
   const compactHistoryEvent = { ...event };
   delete compactHistoryEvent.result;
   delete compactHistoryEvent.diagnostics;

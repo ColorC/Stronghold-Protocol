@@ -6,6 +6,7 @@ import path from 'node:path';
 const DEFAULT_WORKTREE = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.worktrees/resonance/stronghold-protocol';
 const CANONICAL = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const LIMIT_BYTES = 2_000_000_000;
+const GIT_QUERY_TIMEOUT_MS = 90_000;
 const BASE_COMMIT = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const DEFAULTS = [
   { role: 'worktree-full-tree', path: DEFAULT_WORKTREE, note: '本职责簇工作树全量，包含.git文件；所有文件和节点模块均计入。' },
@@ -56,7 +57,14 @@ export function parseArgs(argv) {
   return { extra, nativeExtras, worktreeRoot, remoteReceipt, sourceRevision };
 }
 function runGit(root, args, options = {}) {
-  return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024, ...options });
+  return execFileSync('git', ['-C', root, ...args], {
+    ...options,
+    encoding: options.encoding ?? 'utf8',
+    windowsHide: true,
+    maxBuffer: options.maxBuffer ?? 64 * 1024 * 1024,
+    timeout: options.timeout ?? GIT_QUERY_TIMEOUT_MS,
+    env: { ...process.env, ...(options.env || {}), GIT_NO_LAZY_FETCH: '1' },
+  });
 }
 const REMOTE_SCHEMA = 'resonance-resource-remote-receipt/v1';
 export function resourceAuditPlan({ worktreeRoot, canonicalRoot, worktreeAvailable, sourceRevision = 'HEAD' }) {
@@ -93,28 +101,47 @@ export function nativeChangedPaths(root, baseCommit, sourceRevision, gitRunner =
   return gitRunner(root, changedPathArgs(baseCommit, sourceRevision)).split('\0').filter(Boolean);
 }
 export function nativeObjectArgs(baseCommit, sourceRevision, extraRevisions = []) {
-  return ['rev-list', '--objects', sourceRevision, ...extraRevisions, '--not', baseCommit];
+  return ['rev-list', '--objects', '--missing=print', sourceRevision, ...extraRevisions, '--not', baseCommit];
+}
+export function nativeObjectInventory(root, baseCommit, sourceRevision, gitRunner = runGit, extraRevisions = []) {
+  const objectIds = new Set();
+  const missingObjectIds = new Set();
+  for (const line of gitRunner(root, nativeObjectArgs(baseCommit, sourceRevision, extraRevisions)).trim().split(/\r?\n/).filter(Boolean)) {
+    const token = line.trim().split(/\s+/, 1)[0];
+    if (!token) continue;
+    if (token.startsWith('?')) missingObjectIds.add(token.slice(1));
+    else objectIds.add(token);
+  }
+  return { objectIds: [...objectIds], missingObjectIds: [...missingObjectIds] };
 }
 export function nativeObjectIds(root, baseCommit, sourceRevision, gitRunner = runGit, extraRevisions = []) {
-  return [...new Set(gitRunner(root, nativeObjectArgs(baseCommit, sourceRevision, extraRevisions))
-    .trim().split(/\r?\n/).filter(Boolean).map((line) => line.trim().split(/\s+/, 1)[0]).filter(Boolean))];
+  return nativeObjectInventory(root, baseCommit, sourceRevision, gitRunner, extraRevisions).objectIds;
 }
 export function nativeExtraObjectIds(sourceObjectIds, accountedObjectIds) {
   const source = new Set(sourceObjectIds);
   return [...new Set(accountedObjectIds)].filter((id) => !source.has(id));
 }
 export function nativeObjectDiskSizes(root, objectIds) {
-  if (!objectIds.length) return new Map();
-  const sized = execFileSync('git', ['-C', root, 'cat-file', '--batch-check=%(objectname) %(objectsize:disk)'], {
-    input: `${objectIds.join('\n')}\n`, encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024,
-  });
+  const requestedObjectIds = [...new Set(objectIds)];
   const result = new Map();
+  result.requestedObjectIds = requestedObjectIds;
+  result.notResidentObjectIds = [];
+  if (!requestedObjectIds.length) return result;
+  const sized = execFileSync('git', ['-C', root, 'cat-file', '--batch-check=%(objectname) %(objectsize:disk)'], {
+    input: `${requestedObjectIds.join('\n')}\n`, encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024,
+    timeout: GIT_QUERY_TIMEOUT_MS,
+    env: { ...process.env, GIT_NO_LAZY_FETCH: '1' },
+  });
   for (const line of sized.split(/\r?\n/).filter(Boolean)) {
     const [objectId, diskSize] = line.trim().split(/\s+/);
-    if (!objectId || !/^\d+$/.test(diskSize ?? '')) throw new Error(`Git对象存储大小无法解析：${line}`);
+    if (!objectId) throw new Error(`Git对象存储大小无法解析：${line}`);
+    if (diskSize === 'missing') { result.notResidentObjectIds.push(objectId); continue; }
+    if (!/^\d+$/.test(diskSize ?? '')) throw new Error(`Git对象存储大小无法解析：${line}`);
     result.set(objectId, Number(diskSize));
   }
-  if (result.size !== objectIds.length) throw new Error(`Git对象存储大小条目不匹配：requested=${objectIds.length}, measured=${result.size}`);
+  const returned = result.size + result.notResidentObjectIds.length;
+  if (returned !== requestedObjectIds.length) throw new Error(`Git对象存储条目不匹配：requested=${requestedObjectIds.length}, returned=${returned}`);
+  if (new Set(result.notResidentObjectIds).size !== result.notResidentObjectIds.length) throw new Error('Git not-resident对象清单重复');
   return result;
 }
 function remoteReceiptAccounting(receipt) {
@@ -318,19 +345,37 @@ const gitStorage = {
   nativeExtraObjectDiskBytes: 0,
   accountedObjects: 0,
   accountedObjectDiskBytes: 0,
-  objectAccounting: 'deduplicated native git rev-list sourceRevision extras... --not BASE objects, sized by git cat-file --batch-check=%(objectname) %(objectsize:disk); source paths remain BASE..sourceRevision only',
+  deltaObjectsResident: 0,
+  deltaObjectsNotResident: 0,
+  nativeExtraObjectsResident: 0,
+  nativeExtraObjectsNotResident: 0,
+  accountedObjectsResident: 0,
+  accountedObjectsNotResident: 0,
+  notResidentObjectBytes: 0,
+  notResidentObjectReason: 'Object ID is in the native requested identity set but absent from the local object database; it may be a promisor omission or another missing local object. No fetch was attempted; physical contribution is zero.',
+  notResidentObjectIds: [],
+  sourceGraphMissingObjectIds: [],
+  accountedGraphMissingObjectIds: [],
+  objectAccounting: 'native Git revision/object IDs are identity-only; physical bytes are measured only for requested IDs present in cat-file --batch-check with GIT_NO_LAZY_FETCH=1; absent IDs are explicitly notResident with 0 physical bytes; source paths remain BASE..sourceRevision only',
+  objectAccountingStatus: 'not-measured',
+  noLazyFetch: true,
+  gitQueryTimeoutMs: GIT_QUERY_TIMEOUT_MS,
+  gitVersion: null,
   worktreeMetadata: null,
   independentWorktreeMetadata: sourcePlan.independentWorktree,
   error: null,
 };
 try {
+  try { gitStorage.gitVersion = runGit(SOURCE_ROOT, ['--version']).trim(); } catch (error) { gitStorage.gitVersionError = error.message; }
   gitStorage.commonGitDir = runGit(SOURCE_ROOT, ['rev-parse', '--path-format=absolute', '--git-common-dir']).trim();
   if (shouldScanIndependentWorktree(sourcePlan)) gitStorage.worktreeGitDir = runGit(WORKTREE, ['rev-parse', '--absolute-git-dir']).trim();
   else gitStorage.worktreeMetadata = { path: null, bytes: 0, files: 0, links: [], hardlinks: [], status: sourcePlan.worktreeAccounting };
   const resolvedExtras = resolveNativeExtras(SOURCE_ROOT, parsedArgs.nativeExtras);
   gitStorage.nativeExtras = resolvedExtras;
-  const sourceObjectIds = nativeObjectIds(SOURCE_ROOT, BASE_COMMIT, git.commit);
-  const objectIds = nativeObjectIds(SOURCE_ROOT, BASE_COMMIT, git.commit, runGit, resolvedExtras.map((entry) => entry.resolved));
+  const sourceInventory = nativeObjectInventory(SOURCE_ROOT, BASE_COMMIT, git.commit);
+  const combinedInventory = nativeObjectInventory(SOURCE_ROOT, BASE_COMMIT, git.commit, runGit, resolvedExtras.map((entry) => entry.resolved));
+  const sourceObjectIds = [...new Set([...sourceInventory.objectIds, ...sourceInventory.missingObjectIds])];
+  const objectIds = [...new Set([...combinedInventory.objectIds, ...combinedInventory.missingObjectIds])];
   const sourceObjectSet = new Set(sourceObjectIds);
   const extraObjectIds = nativeExtraObjectIds(sourceObjectIds, objectIds);
   const diskSizes = nativeObjectDiskSizes(SOURCE_ROOT, objectIds);
@@ -339,11 +384,25 @@ try {
     else gitStorage.nativeExtraObjectDiskBytes += diskSize;
   }
   gitStorage.deltaObjects = sourceObjectIds.length;
+  gitStorage.deltaObjectsResident = sourceObjectIds.filter((id) => diskSizes.has(id)).length;
+  gitStorage.deltaObjectsNotResident = sourceObjectIds.length - gitStorage.deltaObjectsResident;
   gitStorage.nativeExtraObjects = extraObjectIds.length;
+  gitStorage.nativeExtraObjectsResident = extraObjectIds.filter((id) => diskSizes.has(id)).length;
+  gitStorage.nativeExtraObjectsNotResident = extraObjectIds.length - gitStorage.nativeExtraObjectsResident;
   gitStorage.accountedObjects = objectIds.length;
+  gitStorage.accountedObjectsResident = diskSizes.size;
+  gitStorage.accountedObjectsNotResident = diskSizes.notResidentObjectIds.length;
+  gitStorage.notResidentObjectIds = diskSizes.notResidentObjectIds;
+  gitStorage.sourceGraphMissingObjectIds = sourceInventory.missingObjectIds;
+  gitStorage.accountedGraphMissingObjectIds = combinedInventory.missingObjectIds;
+  gitStorage.objectAccountingStatus = diskSizes.notResidentObjectIds.length ? 'resident-only-with-not-resident-objects' : 'all-requested-objects-resident';
   gitStorage.accountedObjectDiskBytes = [...diskSizes.values()].reduce((sum, size) => sum + size, 0);
   totalBytes += gitStorage.accountedObjectDiskBytes;
-  filesObserved += objectIds.length;
+  filesObserved += diskSizes.size;
+  for (const objectId of diskSizes.notResidentObjectIds) diagnostics.push({
+    code: 'git-object-not-resident', objectId, measuredBytes: 0,
+    accounting: 'native Git identity retained; no object was fetched; physical size contribution is zero',
+  });
   if (shouldScanIndependentWorktree(sourcePlan)) gitStorage.worktreeMetadata = scanGitMetadata(gitStorage.worktreeGitDir);
 } catch (error) {
   gitStorage.error = error.message;
@@ -441,7 +500,7 @@ const result = {
   diagnostics,
   overLimit,
   completeAudit: Boolean(remoteReceipt?.status === undefined && remoteReceipt?.bytes != null && canonicalPromotion.status === 'measured' && !git.error && !gitStorage.error),
-  auditStatus: overLimit ? 'over-limit' : linksObserved ? 'links-found' : git.error || gitStorage.error || canonicalPromotion.status !== 'measured' ? 'accounting-error' : remoteReceipt?.status === 'invalid' ? 'invalid-remote-receipt' : remoteReceipt?.status === 'unknown' ? 'incomplete-remote-unknown' : 'within-limit',
+  auditStatus: overLimit ? 'over-limit' : linksObserved ? 'links-found' : git.error || gitStorage.error || canonicalPromotion.status !== 'measured' ? 'accounting-error' : remoteReceipt?.status === 'invalid' ? 'invalid-remote-receipt' : remoteReceipt?.status === 'unknown' ? 'incomplete-remote-unknown' : gitStorage.notResidentObjectIds.length ? 'within-limit-with-nonresident-git-objects' : 'within-limit',
 };
 return { result, exitCode: overLimit || linksObserved || git.error || gitStorage.error || canonicalPromotion.status !== 'measured' || remoteReceipt?.status === 'invalid' ? 2 : 0 };
 }

@@ -61,18 +61,19 @@ function ArmedTag({ reason, free }) {
  * @param {{ slot:any, idx:number, priv:any, frozen?:boolean, reason?:string|null, free?:boolean, armed?:boolean,
  *   onTap?:(idx:number)=>void, onBuy:Function, onDetail:Function }} props
  */
-export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free = false, armed = false, onTap = null, onBuy, onDetail, offBonds = null }) {
-  const c = data.lookup('chess', slot.id);
+export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free = false, armed = false, onTap = null, onBuy, onDetail, offBonds = null,
+  record = null, bondRenderer = null, skill = null, merge = null, id = null }) {
+  const c = record || data.lookup('chess', slot.id);
   const m = data.get('assets');
   const tier = c?.tier ?? 1;
-  const prog = mergeProgress(priv, slot.id, (id) => data.lookup('chess', id));
-  const hint = mergeHint(priv, slot.id);
+  const prog = merge || mergeProgress(priv, slot.id, (id) => data.lookup('chess', id));
+  const hint = merge?.hint ?? mergeHint(priv, slot.id);
   const willMerge = !!hint;
   const bonds = Array.isArray(c?.bonds) ? c.bonds : [];
   const disabled = !!reason;
-  const lo = c ? chessLoadout(c, priv?.loadout, LOOKUPS.getChess) : null;
+  const lo = skill ? { skill, defaultSkill: false, module: null } : c ? chessLoadout(c, priv?.loadout, LOOKUPS.getChess) : null;
   const tap = () => { if (onTap) onTap(idx); else if (!disabled) onBuy(idx); else onDetail(slot.id, 'chess', hint); };
-  const card = html`<button type="button" class=${cx('scard', `scard--t${tier}`, frozen && 'is-frozen', disabled && 'is-disabled', willMerge && 'is-merge', armed && 'is-armed')}
+  const card = html`<button type="button" id=${id} class=${cx('scard', `scard--t${tier}`, frozen && 'is-frozen', disabled && 'is-disabled', willMerge && 'is-merge', armed && 'is-armed')}
       onClick=${tap} onContextMenu=${(e) => { e.preventDefault(); onDetail(slot.id, 'chess', hint); }}
       aria-label=${`${c?.name || '干员'}，价格 ${slot.price}${armed ? (disabled ? '，无法购买' : '，再次点击确认') : ''}`} aria-pressed=${onTap ? String(!!armed) : undefined}>
     <span class="scard__bg" aria-hidden="true"></span>
@@ -90,6 +91,7 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
       <span class="scard__name">${c?.name || slot.id}</span>
       <span class="scard__bonds">
         ${bonds.slice(0, 3).map((b) => {
+          if (bondRenderer) return html`<span key=${typeof b === 'string' ? b : b.id} class="scard__bond">${bondRenderer(b)}</span>`;
           const name = data.lookup('bonds', b)?.name || b;
           const off = !!(offBonds && offBonds.has(b)); // a bond this mode never activates (gameLogic modeOffBonds)
           return html`<span key=${b} class=${cx('scard__bond', off && 'is-off')} title=${off ? briefingBondTip(name, 'off') : undefined}><${BondGlyph} bondId=${b} /><span>${name}</span></span>`;
@@ -257,7 +259,8 @@ export function RewardCards({ offer, priv, editable, onPick, onDetail, onLater, 
  *   the bonds this mode never activates (gameLogic modeOffBonds), struck through on the operator cards
  */
 export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel, onRefresh, onFreeze, onDetail, onDetailClose, onRefuse, barRef,
-  reward = null, onReward, onRewardLater, onArm = null, offBonds = null }) {
+  reward = null, onReward, onRewardLater, onArm = null, offBonds = null, renderLevel = null, renderFunds = null,
+  cardPresentation = null, bondRenderer = null, reasonFor = null, hideItem = false, renderSlotAction = null }) {
   const shop = priv?.shop || {};
   const slots = Array.isArray(shop.slots) ? shop.slots : [];
   const chessSlots = slots.map((s, i) => ({ s, i })).filter(({ s }) => !s || s.kind !== 'item');
@@ -323,18 +326,23 @@ export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel,
       </button>
     </div>
     <div class="shopbar__row">
-      <${LevelCard} shop=${shop} reason=${lvReason} armed=${armed === 'lv'} onTap=${tapLevel} />
+      ${renderLevel ? renderLevel({ shop, reason: lvReason, armed: armed === 'lv', onTap: tapLevel }) : html`<${LevelCard} shop=${shop} reason=${lvReason} armed=${armed === 'lv'} onTap=${tapLevel} />`}
       ${showReward ? html`<${RewardCards} offer=${reward} priv=${priv} editable=${editable} onPick=${onReward} onDetail=${onDetail} onLater=${onRewardLater}
           armed=${armed} onTap=${tapCard} offBonds=${offBonds} />`
         : html`<div class="shopbar__cards">
         ${chessSlots.map(({ s, i }) => {
           if (!s || s.sold) return html`<${SoldCard} key=${`s${i}`} />`;
-          const reason = shopBlockReason('buy', { priv, editable, slot: s, ...LOOKUPS });
-          return html`<${ChessCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} priv=${priv} frozen=${frozen} onBuy=${onBuy} onDetail=${onDetail} offBonds=${offBonds}
+          const reason = reasonFor ? reasonFor('chess', s, priv, editable) : shopBlockReason('buy', { priv, editable, slot: s, ...LOOKUPS });
+          const visual = typeof cardPresentation === 'function' ? cardPresentation(s) : cardPresentation?.[s.id];
+          const card = html`<${ChessCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} priv=${priv} frozen=${frozen} onBuy=${onBuy} onDetail=${onDetail} offBonds=${offBonds}
+              record=${visual?.record} bondRenderer=${visual?.bondRenderer || bondRenderer} skill=${visual?.skill} merge=${visual?.merge} id=${s.offerUid ? `offer-${encodeURIComponent(s.offerUid)}` : null}
               reason=${reason} armed=${armed === armKey('c', i, s)} onTap=${editable ? (idx) => tapCard('c', idx, s, 'chess', reason, onBuy) : null} />`;
+          return typeof renderSlotAction === 'function'
+            ? html`<div class="shopbar__offer-wrap" key=${`wrap-c${i}:${s.id}`}>${card}${renderSlotAction(s, i)}</div>`
+            : card;
         })}
       </div>`}
-      <div class="shopbar__item">
+      ${hideItem ? null : html`<div class="shopbar__item">
         ${itemSlots.length
           ? itemSlots.map(({ s, i }) => {
             if (s.sold) return html`<${SoldCard} key=${`is${i}`} item=${true} />`;
@@ -343,15 +351,15 @@ export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel,
               armed=${armed === armKey('i', i, s)} onTap=${editable ? (idx) => tapCard('i', idx, s, 'item', reason, onBuy) : null} />`;
           })
           : html`<${SoldCard} item=${true} />`}
-      </div>
-      <div class="funds">
+      </div>`}
+      ${renderFunds != null ? renderFunds : html`<div class="funds">
         <div class="funds__hex">
           <${CoinGlyph} class="funds__coin" />
           <b class="funds__num num">${funds}</b>
         </div>
         <span class="funds__label">目前资金</span>
         <button type="button" class="funds__collapse" onClick=${() => onCollapse(true)}><${Icon} name="close" />收起</button>
-      </div>
+      </div>`}
     </div>
   </section>`;
 }

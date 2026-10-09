@@ -10,8 +10,16 @@ const RESONANCE_ENTRY = '/resonance.html';
 const LEGACY_PREACT_IMPORT = '/Stronghold-Protocol/4ed1ad32ec10da15c23f9d7939dade603950759b/vendor/preact.module.js';
 const LOCAL_RESONANCE = new Set([
   '/css/resonance.css',
+  '/css/resonance-entry.css',
+  '/css/resonance-detail.css',
+  '/css/resonance-codex.css',
+  '/css/resonance-panels.css',
   '/js/ui/fieldHost.js',
   '/js/ui/fallbackField.js',
+  '/js/ui/hud.js',
+  '/js/ui/shopBar.js',
+  '/js/ui/bondStrip.js',
+  '/js/screens/title.js',
 ]);
 const WORKER = '/js/independent/client-worker.js';
 const GIT_REVISION = /^[a-f0-9]{40}$/;

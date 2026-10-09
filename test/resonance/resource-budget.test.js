@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  changedPathArgs, nativeChangedPaths, nativeExtraObjectIds, nativeObjectArgs, nativeObjectDiskSizes, nativeObjectIds, parseArgs, REMOTE_SCHEMA, remoteReceiptAccounting,
+  changedPathArgs, nativeChangedPaths, nativeExtraObjectIds, nativeObjectArgs, nativeObjectDiskSizes, nativeObjectIds, nativeObjectInventory, parseArgs, REMOTE_SCHEMA, remoteReceiptAccounting,
   resolveNativeExtras, resolveNativeObject,
   resolveNativeRevision, resourceAuditPlan, revisionDeltaRange, shouldScanIndependentWorktree,
 } from '../../tools/resonance/resource-budget.mjs';
@@ -44,6 +45,22 @@ test('deleted worktree reads the requested commit, changed paths, and objects fr
     assert.equal(revision, taskCommit);
     assert.deepEqual(nativeChangedPaths(plan.sourceRoot, base, revision), ['docs/resonance/design.md']);
     assert.ok(nativeObjectIds(plan.sourceRoot, base, revision).length > 0);
+    const inventory = nativeObjectInventory(plan.sourceRoot, base, revision);
+    assert.deepEqual(inventory.missingObjectIds, []);
+    const residentSizes = nativeObjectDiskSizes(repo, inventory.objectIds);
+    assert.equal(residentSizes.size, inventory.objectIds.length);
+    assert.deepEqual(residentSizes.notResidentObjectIds, []);
+
+    const absentBlob = git('rev-parse', `${taskCommit}:docs/resonance/design.md`);
+    const absentPath = path.join(repo, '.git', 'objects', absentBlob.slice(0, 2), absentBlob.slice(2));
+    await rm(absentPath);
+    const incompleteInventory = nativeObjectInventory(repo, base, taskCommit);
+    assert.ok(incompleteInventory.missingObjectIds.includes(absentBlob));
+    assert.ok(!existsSync(absentPath), 'native object enumeration must not restore/fetch the missing object');
+    const absentSize = nativeObjectDiskSizes(repo, [absentBlob]);
+    assert.equal(absentSize.size, 0);
+    assert.deepEqual(absentSize.notResidentObjectIds, [absentBlob]);
+    assert.ok(!existsSync(absentPath), 'physical size lookup must not restore/fetch the missing object');
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -107,10 +124,11 @@ test('native extra merge-preview trees are counted once beside the source delta 
     assert.equal(new Set(combinedIds).size, combinedIds.length);
     const diskSizes = nativeObjectDiskSizes(repo, combinedIds);
     assert.equal(diskSizes.size, combinedIds.length);
+    assert.deepEqual(diskSizes.notResidentObjectIds, []);
     assert.ok(diskSizes.get(previewTree) > 0);
     assert.equal([...diskSizes.keys()].filter((id) => id === sharedBlob).length, 1);
     assert.ok([...extraIds].reduce((sum, id) => sum + diskSizes.get(id), 0) > 0);
-    assert.deepEqual(nativeObjectArgs(base, source, [previewTree]), ['rev-list', '--objects', source, previewTree, '--not', base]);
+    assert.deepEqual(nativeObjectArgs(base, source, [previewTree]), ['rev-list', '--objects', '--missing=print', source, previewTree, '--not', base]);
     assert.deepEqual(nativeChangedPaths(repo, base, source), ['shared.txt', 'source.txt']);
   } finally {
     await rm(root, { recursive: true, force: true });

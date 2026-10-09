@@ -1,0 +1,83 @@
+.rs-inventory .panel__body,
+.rs-pact-panel .panel__body,
+.rs-field-panel .panel__body { display: flex; flex-direction: column; gap: .14rem; }
+.rs-inventory__grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,3.9rem),1fr)); gap: .1rem; }
+.rs-inventory__card { position: relative; min-width: 0; display: flex; flex-direction: column; gap: .07rem; padding: .1rem; background: rgba(8,13,11,.78); border: 1px solid var(--line-2); border-left: 2px solid var(--mint-700); }
+.rs-inventory__select { display: inline-flex; align-items: center; gap: .04rem; align-self: flex-end; color: var(--text-lo); font-size: .12rem; }
+.rs-inventory__main { min-width: 0; display: flex; align-items: center; gap: .1rem; padding: 0; color: var(--text-hi); text-align: left; background: transparent; border: 0; cursor: pointer; }
+.rs-inventory__main .lo-card__art { width: .72rem; height: .82rem; flex: none; }
+.rs-inventory__info { min-width: 0; display: flex; flex-direction: column; gap: .035rem; }
+.rs-inventory__info b { font-size: .17rem; }
+.rs-inventory__info small { color: var(--text-lo); font-size: .12rem; }
+.rs-inventory__effect { display: -webkit-box; overflow: hidden; color: var(--text-md); font-size: .13rem; line-height: 1.35; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rs-inventory__actions { display: flex; align-items: center; flex-wrap: wrap; gap: .055rem; }
+.rs-inventory__actions .lo-select { min-width: 1.3rem; flex: 1; }
+.rs-inventory__actions .lo-select select { width: 100%; min-height: .34rem; }
+.rs-inventory__recipes { border-top: 1px solid var(--line); padding-top: .08rem; color: var(--text-md); font-size: .14rem; }
+.rs-inventory__recipes summary { cursor: pointer; color: var(--mint-300); }
+.rs-inventory__recipes p { display: flex; align-items: center; gap: .1rem; margin: .07rem 0; }
+.rs-inventory__recipes p span { flex: 1; }
+.rs-inventory__combine { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: .12rem; padding: .1rem; background: rgba(8,13,11,.97); border-top: 1px solid var(--mint-700); font-size: .13rem; }
+.rs-inventory__combine > span { color: var(--text-lo); }
+.rs-pact-panel__list { display: flex; flex-direction: column; gap: .055rem; }
+.rs-pact-panel__entry { display: flex; align-items: center; gap: .08rem; padding: .045rem .07rem; border-bottom: 1px solid var(--line); }
+.rs-pact-panel__detail { min-width: 0; flex: 1; display: flex; align-items: center; gap: .1rem; padding: .035rem; color: var(--text-hi); text-align: left; background: transparent; border: 0; cursor: pointer; }
+.rs-pact-panel__detail .bond { --disc: .42rem; flex: none; }
+.rs-pact-panel__detail > span:nth-child(2) { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: .025rem; }
+.rs-pact-panel__detail b { font-size: .16rem; }
+.rs-pact-panel__detail small { color: var(--text-lo); font-size: .13rem; }
+.rs-pact-panel__detail.is-active b { color: var(--mint-300); }
+.rs-pact-panel__empty { width: max-content; margin: 0; padding: .07rem .12rem; color: var(--text-lo); font-size: .14rem; border: 1px solid var(--line); }
+.rs-field-panel__list { display: flex; flex-direction: column; gap: .035rem; }
+.rs-field-panel__member { min-width: 0; display: flex; align-items: center; gap: .08rem; padding: .06rem .07rem; background: rgba(255,255,255,.025); border-bottom: 1px solid var(--line); }
+.rs-field-panel__person { min-width: 0; flex: 1; display: flex; align-items: center; gap: .08rem; padding: 0; color: var(--text-hi); text-align: left; background: transparent; border: 0; cursor: pointer; }
+.rs-field-panel__person > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: .02rem; }
+.rs-field-panel__person b { overflow: hidden; font-size: .16rem; text-overflow: ellipsis; white-space: nowrap; }
+.rs-field-panel__person small { color: var(--text-lo); font-size: .12rem; white-space: nowrap; }
+.rs-field-panel__gear { display: flex; align-items: center; gap: .035rem; }
+.rs-field-panel__gear button { width: .34rem; height: .38rem; padding: .015rem; overflow: hidden; background: transparent; border: 1px solid var(--line); cursor: pointer; }
+.rs-field-panel__gear .lo-card__art { width: 100%; height: 100%; }
+.rs-field-panel__gear .lo-card__art img { object-fit: contain; }
+.rs-field-panel__gear > small { color: var(--text-lo); font-size: .12rem; }
+.rs-field-panel__node { display: flex; flex-direction: column; gap: .07rem; padding: .1rem; background: rgba(8,13,11,.76); border-top: 1px solid var(--line-2); }
+.rs-field-panel__node > div:first-child { display: flex; align-items: center; gap: .1rem; font-size: .16rem; }
+.rs-field-panel__enemies { display: flex; flex-wrap: wrap; gap: .05rem; color: var(--text-lo); font-size: .13rem; }
+.rs-field-panel__enemies span { padding: .025rem .06rem; border: 1px solid var(--line); }
+@media (max-width: 600px) {
+ .rs-inventory__grid { grid-template-columns: 1fr; }
+ .rs-field-panel__member { flex-wrap: wrap; }
+ .rs-field-panel__person { flex-basis: 65%; }
+}
+.rs-battle-report .panel__body { display: flex; flex-direction: column; gap: .12rem; }
+.rs-battle-report__rounds { display: flex; gap: .055rem; overflow-x: auto; padding: .025rem 0 .07rem; border-bottom: 1px solid var(--line); }
+.rs-battle-report__round-entry { flex: none; display: inline-flex; align-items: stretch; gap: .02rem; }
+.rs-battle-report__round { flex: none; padding: .055rem .09rem; color: var(--text-md); background: rgba(8,13,11,.8); border: 1px solid var(--line-2); font-size: .13rem; white-space: nowrap; cursor: pointer; }
+.rs-battle-report__round-entry > .btn { min-width: .3rem; min-height: .3rem; padding: .02rem .035rem; font-size: .11rem; }
+.rs-battle-report__round.is-selected { color: var(--mint-300); border-color: var(--mint-500); background: rgba(45,105,82,.2); }
+.rs-battle-report__summary { display: flex; align-items: center; flex-wrap: wrap; gap: .08rem .14rem; padding: .075rem .1rem; background: rgba(8,13,11,.72); border-left: 2px solid var(--gold); font-size: .14rem; }
+.rs-battle-report__summary h3 { margin: 0; margin-right: auto; color: var(--text-hi); font-size: .19rem; }
+.rs-battle-report__summary > span { color: var(--text-lo); white-space: nowrap; }
+.rs-battle-report__summary > span b { color: var(--text-hi); font-size: .16rem; }
+.rs-battle-report__metrics { align-self: flex-start; }
+.rs-battle-report__chart { display: flex; flex-direction: column; gap: .025rem; max-height: min(58vh,6.2rem); overflow: auto; padding-right: .04rem; }
+.rs-battle-report__unit { display: grid; grid-template-columns: minmax(1.2rem,1.7rem) minmax(1rem,1fr) minmax(.58rem,.8rem); align-items: center; gap: .1rem; min-height: .46rem; padding: .035rem .07rem; background: rgba(255,255,255,.025); border-bottom: 1px solid var(--line); }
+.rs-battle-report__identity { min-width: 0; display: flex; align-items: center; gap: .07rem; padding: 0; color: var(--text-hi); text-align: left; background: transparent; border: 0; cursor: pointer; }
+.rs-battle-report__identity:disabled { cursor: default; opacity: 1; }
+.rs-battle-report__identity > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: .015rem; }
+.rs-battle-report__identity b { overflow: hidden; font-size: .14rem; text-overflow: ellipsis; white-space: nowrap; }
+.rs-battle-report__identity small { color: var(--text-lo); font-size: .11rem; }
+.rs-battle-report__avatar { width: max(.38rem,24px); height: max(.38rem,24px); flex: none; display: grid; place-items: center; overflow: hidden; color: var(--mint-300); background: rgba(25,40,33,.9); border: 1px solid var(--line-2); font-size: .13rem; }
+.rs-battle-report__avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.rs-battle-report__bar { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) .48rem; align-items: center; gap: .06rem; }
+.rs-battle-report__bar .pbar { min-width: 0; }
+.rs-battle-report__bar .pbar__track { height: .13rem; }
+.rs-battle-report__unknown { overflow: hidden; color: var(--text-lo); font-size: .11rem; }
+.rs-battle-report__bar > b { color: var(--text-hi); text-align: right; font-size: .13rem; font-variant-numeric: tabular-nums; }
+.rs-battle-report__aux { display: flex; justify-content: flex-end; gap: .08rem; color: var(--text-lo); font-size: .11rem; white-space: nowrap; }
+.rs-battle-report__aux b { color: var(--text-md); font-size: .12rem; }
+.rs-battle-report__empty { margin: .12rem 0; padding: .18rem; color: var(--text-lo); text-align: center; background: rgba(8,13,11,.65); border: 1px solid var(--line); font-size: .15rem; }
+@media (max-width: 720px) {
+ .rs-battle-report__unit { grid-template-columns: minmax(1.1rem,1.4rem) minmax(.8rem,1fr); gap: .06rem; }
+ .rs-battle-report__aux { grid-column: 2; justify-content: flex-start; }
+ .rs-battle-report__summary h3 { width: 100%; }
+}
