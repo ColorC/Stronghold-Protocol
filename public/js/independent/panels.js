@@ -11,8 +11,9 @@ import { TraitGlyphs } from './hud.js';
 import { GearIcon, GameText, TermNotes } from './text.js';
 import { formEntry, groupEquipment, inventoryStacks, isDeployed, renderChessId, inheritedLevel, permitsOf } from './model.js';
 import { badgeEffectText } from './badgeText.js';
-import { eligiblePiecesForEffect } from '../../../shared/independentEligibility.js';
+import { fieldConditionPiecesForEffect } from '../../../shared/independentEligibility.js';
 import { trainingChoiceOptions } from '../../../shared/independentTrainingChoice.js';
+import { PROF_NAME } from '../ui/loadoutModel.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -40,26 +41,94 @@ export function HammerPicker({ g, item, busy, catalog, onSave }) {
 
 export const PRODUCTION_BADGES = ['precision', 'agility', 'damage', 'recovery'];
 
-function GearRecipients({ gear, state, catalog, source }) {
-  if (!source || !gear || !(gear.params?.targets || gear.params?.match || gear.params?.requiresFactionOnField || gear.params?.scope === 'boardonly')) return null;
-  const effect = { behavior: gear.mechanism || 'gear', params: gear.params || {}, effectDelivery: gear.effectDelivery };
-  const eligible = eligiblePiecesForEffect(effect, { pieces: state?.pieces || [], catalog, source });
-  const recipient = gear.effectDelivery?.recipients || gear.effectDelivery?.recipient;
-  const recipients = { self: '自身', target: '指定对象', other: '其他干员', all: '全部干员', inventory: '库存', shop: '商店', player: '玩家' };
-  const note = typeof gear.effectDelivery === 'string' ? gear.effectDelivery
-    : [recipients[recipient] || recipient, gear.effectDelivery?.duration || gear.effectDelivery?.term, gear.effectDelivery?.text].filter(Boolean).join(' · ');
-  return html`<details class="ix-effect-targets__item"><summary>当前符合条件 ${eligible.length} 名</summary>
-    ${note ? html`<p>${note}</p>` : null}<ul>${eligible.map((piece) => html`<li key=${piece.uid} onContextMenu=${(e) => copyComponentLink(e, `piece-${piece.uid}`)}>${formEntry(catalog, piece)?.name || piece.uid}</li>`)}
-      ${eligible.length ? null : html`<li class="ix-muted">当前没有符合条件的干员</li>`}</ul></details>`;
+const deliveryText = (delivery) => typeof delivery === 'string' ? delivery
+  : [delivery?.text, delivery?.description, delivery?.message].filter((x) => typeof x === 'string' && x.trim()).join(' · ');
+const fieldPlacementKey = (pieces) => pieces.map((p) => `${p.uid}:${p.row ?? ''},${p.col ?? ''}`).sort().join('|');
+
+/** A count belongs beside the effect text; focusing or hovering it previews the matching field tiles. */
+export function fieldConditionRows(effects = [], { source, state, catalog, rangeTilesFor = null } = {}) {
+  const rows = [];
+  const seen = new Set();
+  for (const entry of effects || []) {
+    const effect = entry?.rule || entry;
+    const pieces = fieldConditionPiecesForEffect(effect, { pieces: state?.pieces || [], catalog, source,
+      rangeTiles: effect?.behavior === 'aura' ? rangeTilesFor?.(source) : null });
+    if (pieces == null) continue;
+    const ids = pieces.map((p) => p.uid).sort();
+    const key = `${effect?.behavior}:${JSON.stringify(effect?.params || {})}:${ids.join(',')}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({ key, pieces, effect, trigger: entry?.when || effect?.trigger, title: deliveryText(entry?.effectDelivery || effect?.effectDelivery) || '当前场上符合这一效果条件的干员' });
+  }
+  return rows;
+}
+
+export function FieldConditionCounts({ effects = [], rows = null, source, state, catalog, active = false, defaultParticipants = [], onFieldHighlight = null, rangeTilesFor = null }) {
+  const fieldRows = rows || fieldConditionRows(effects, { source, state, catalog, rangeTilesFor });
+  const union = [...new Map((active ? fieldRows.flatMap((row) => row.pieces) : defaultParticipants).map((p) => [p.uid, p])).values()];
+  const highlightKey = fieldPlacementKey(union);
+  useEffect(() => {
+    if (!active) return undefined;
+    onFieldHighlight?.(union);
+    return () => onFieldHighlight?.([]);
+  }, [onFieldHighlight, active, highlightKey]);
+  if (!fieldRows.length) return null;
+  const restore = (event) => {
+    if (event?.relatedTarget?.closest?.('.ix-dtabs')) return;
+    onFieldHighlight?.(union);
+  };
+  return html`<span class="ix-field-counts" aria-label="当前场上符合条件的干员">${fieldRows.map((row) => html`<button type="button" key=${row.key}
+      class="ix-field-count" title=${row.title} aria-label=${`${row.title}（${row.pieces.length}）`}
+      onMouseEnter=${() => onFieldHighlight?.(row.pieces)} onMouseLeave=${restore}
+      onFocus=${() => onFieldHighlight?.(row.pieces)} onBlur=${restore}>（${row.pieces.length}）</button>`)}</span>`;
 }
 
 /** Both forms' trait texts (the current one lit) and, under them, every item and term they name. */
-export function TraitTexts({ op, elite, catalog, growthMode='badges' }) {
+export function TraitTexts({ op, elite, catalog, growthMode='badges', piece = null, state = null, onFieldHighlight = null, rangeTilesFor = null }) {
   const t = op?.traitTexts || {};
   const normal=growthMode==='levels'?t.normalLevels||t.normal:t.normal, advanced=growthMode==='levels'?t.eliteLevels||t.elite:t.elite;
+  const source = piece || { chessId: op?.chessId, elite, growthMode, growthLevel: 1 };
+  const normalRows = fieldConditionRows(op?.summary || [], { source, state, catalog, rangeTilesFor });
+  const eliteSource = piece ? { ...piece, elite: true } : { ...source, elite: true };
+  const eliteRows = fieldConditionRows(op?.summaryElite || [], { source: eliteSource, state, catalog, rangeTilesFor });
+  const currentRows = elite ? eliteRows : normalRows;
+  const defaultParticipants = [...new Map(currentRows.flatMap((row) => row.pieces).map((p) => [p.uid, p])).values()];
+  const highlightKey = fieldPlacementKey(defaultParticipants);
+  useEffect(() => {
+    onFieldHighlight?.(defaultParticipants);
+    return () => onFieldHighlight?.([]);
+  }, [onFieldHighlight, highlightKey]);
+  const renderForm = (text, rows) => {
+    const clauses = String(text || '').split(/(?<=[；;。\n])/).filter(Boolean);
+    const assigned = clauses.map(() => []);
+    for (const row of rows) {
+      const p = row.effect?.params || {};
+      const trigger = row.trigger || '';
+      const matchesClause = (clause) => {
+        const target = typeof p.targets === 'string' ? p.targets : '';
+        const factionTerms = [p.faction, p.triggerFaction, p.targetFaction, p.requiresFactionOnField, p.match?.faction,
+          target.startsWith('faction:') ? target.slice('faction:'.length) : null].filter(Boolean);
+        if (factionTerms.some((faction) => clause.includes(faction))) return true;
+        if (p.match?.keywordGear && clause.includes(p.match.keywordGear)) return true;
+        const professions = [...(p.match?.professions || []), p.match?.profession,
+          target.startsWith('profession:') ? target.slice('profession:'.length) : null].filter(Boolean);
+        if (professions.some((profession) => clause.includes(PROF_NAME[profession] || profession))) return true;
+        if (row.effect?.behavior === 'dominantFactionRecruit' && clause.includes('所在行')) return true;
+        if (row.effect?.behavior === 'forgeAdjacent' && /身前|前方|相邻|周围/.test(clause)) return true;
+        const triggerWords = { prepEnd: ['整备结束', '休整期结束'], roundStart: ['进入休整期'], battleStart: ['战斗开始', '开战'], deploy: ['部署'], attack: ['攻击'], allyKill: ['击倒敌人'], kill: ['击倒敌人'], death: ['退场'], allyDeath: ['退场'], shieldLayersBroken: ['护盾'], gain: ['新获得', '首次上阵'] }[trigger] || [];
+        return triggerWords.some((word) => clause.includes(word));
+      };
+      let index = clauses.findIndex(matchesClause);
+      if (index < 0 && rows.length === 1 && clauses.length === 1) index = 0;
+      if (index >= 0) assigned[index].push(row);
+    }
+    return clauses.map((clause, index) => html`<span class="ix-traittext__line" key=${index}><${GameText} text=${clause} catalog=${catalog} />
+      <${FieldConditionCounts} rows=${assigned[index]} state=${state} catalog=${catalog} source=${source} active=${false}
+        defaultParticipants=${defaultParticipants} onFieldHighlight=${onFieldHighlight} /></span>`);
+  };
   return html`<div class="ix-traittext">
-    <p class=${cx(!elite && 'is-on')}><b>普通</b><${GameText} text=${normal} catalog=${catalog} /></p>
-    <p class=${cx(elite && 'is-on')}><b>精锐</b><${GameText} text=${advanced} catalog=${catalog} /></p>
+    <p class=${cx(!elite && 'is-on')}><b>普通</b>${renderForm(normal, normalRows)}</p>
+    <p class=${cx(elite && 'is-on')}><b>精锐</b>${renderForm(advanced, eliteRows)}</p>
     <${TermNotes} texts=${[normal,advanced]} catalog=${catalog} />
   </div>`;
 }

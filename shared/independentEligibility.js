@@ -145,6 +145,110 @@ export function eligiblePiecesForEffect(effect, { pieces = [], catalog, source =
   return target == null ? roster.filter(piece=>!excludeSource||piece.uid!==source?.uid) : [];
 }
 
+const NON_FIELD_EFFECTS = new Set([
+  'darkmoonBoughtSelfGrowth', 'darkmoonShopGrowth', 'darkmoonRosterTribePurchaseFunds',
+  'darkmoonAddTribeShopOffer', 'darkmoonRecruitTribeToHand', 'darkmoonBoughtTribeTargetGrowth',
+]);
+const FIELD_RULES = new Set([
+  'teamForge', 'allyConditionStats', 'battleStartBuff', 'darkmoonCombat',
+  'darkmoonBattlecryTargetGrowth', 'darkmoonBattlecryFactionGrowth', 'darkmoonAdjacentGrowth',
+  'darkmoonTaggedGrowth', 'darkmoonEndTurnGrowth', 'darkmoonPlayedFactionCountSelfGrowth',
+  'darkmoonPlayedTribeGrowth', 'forgeFactionTierPair', 'forgeAdjacent', 'deathrattleEcho',
+  'dominantFactionRecruit', 'warbandEvent', 'aura',
+]);
+
+/**
+ * UI-only list of current field operators relevant to a conditional effect.
+ * null means the effect is not conditioned on the current field; [] is a real zero.
+ * This deliberately does not replace eligiblePiecesForEffect, which also serves action selectors.
+ */
+export function fieldConditionPiecesForEffect(effect, { pieces = [], catalog, source = null, rangeTiles = null } = {}) {
+  const raw = effectRule(effect);
+  if (!raw || NON_FIELD_EFFECTS.has(raw.behavior) || !FIELD_RULES.has(raw.behavior)) return null;
+  const p = raw.params || {};
+  if (raw.behavior === 'darkmoonPlayedTribeGrowth' && p.scope !== 'boardonly' && p.scope !== 'board') return null;
+
+  let params = { ...p, scope: 'boardonly' };
+  let excludeSelf = p.excludeSelf === true;
+  switch (raw.behavior) {
+    case 'forgeFactionTierPair':
+      if (!p.faction) return null;
+      params.targets = `faction:${p.faction}`;
+      params.excludeSelf = false;
+      break;
+    case 'forgeAdjacent':
+      if (!deployed(source)) return null;
+      params.targets = p.direction === 'front' ? ['self', 'front'] : ['self', 'adjacent'];
+      params.excludeSelf = false;
+      break;
+    case 'deathrattleEcho':
+      if (!p.faction) return null;
+      params.targets = `faction:${p.faction}`;
+      params.excludeSelf = true;
+      break;
+    case 'dominantFactionRecruit':
+      if (!deployed(source) || !String(p.normalRequires || p.eliteRequires || '').startsWith('sameRowCount>=')) return null;
+      params.targets = 'row';
+      params.excludeSelf = false;
+      break;
+    case 'darkmoonPlayedFactionCountSelfGrowth':
+      if (!p.faction) return null;
+      params.targets = `faction:${p.faction}`;
+      params.excludeSelf = false;
+      break;
+    case 'warbandEvent':
+      // For effects received by self, the condition is the triggering ally (e.g. a Siracusan retiree).
+      if (p.targets === 'self' && p.faction) {
+        params.targets = `faction:${p.faction}`;
+        params.excludeSelf = p.event === 'death';
+      } else if (p.targets === 'actor' && p.faction) {
+        params.targets = `faction:${p.faction}`;
+        params.excludeSelf = false;
+      } else if (p.targetFaction) {
+        params.targets = `faction:${p.targetFaction}`;
+        params.excludeSelf = false;
+      } else if (!p.match && !p.targets) return null;
+      break;
+    case 'darkmoonCombat':
+      // This adapter can describe a future summon or a field trigger. Only its board trigger is counted here.
+      if (!p.match && !p.requiresFactionOnField && p.scope !== 'boardonly') return null;
+      params.targets = 'all';
+      break;
+    case 'aura':
+      if (p.targets !== 'inRange' || !Array.isArray(rangeTiles) || !deployed(source)) return null;
+      params.targets = 'boardonly';
+      break;
+    case 'darkmoonBattlecryTargetGrowth':
+    case 'darkmoonBattlecryFactionGrowth':
+    case 'darkmoonAdjacentGrowth':
+    case 'darkmoonTaggedGrowth':
+    case 'darkmoonEndTurnGrowth':
+      params = projectionRule(raw).params;
+      params.scope = 'boardonly';
+      break;
+    case 'darkmoonPlayedTribeGrowth':
+      if (!p.faction && !p.match) return null;
+      params.targets = p.targets || (p.faction ? `faction:${p.faction}` : 'all');
+      break;
+    default:
+      break;
+  }
+
+  const rule = { ...raw, params };
+  let matched = eligiblePiecesForEffect(rule, { pieces, catalog, source });
+  if (raw.behavior === 'aura') {
+    const allowed = new Set(rangeTiles.map((x) => Array.isArray(x) ? `${x[0]},${x[1]}` : `${x.row},${x.col}`));
+    matched = matched.filter((piece) => piece.uid !== source?.uid && allowed.has(`${piece.row},${piece.col}`));
+    const hpAbove = p.only?.hpAbove;
+    if (hpAbove != null) matched = matched.filter((piece) => {
+      const maxHp = Number(piece.maxHp ?? piece.maxHP ?? statsForPiece(piece, catalog)?.maxHp);
+      const hp = Number(piece.hp ?? piece.currentHp ?? maxHp);
+      return maxHp > 0 && hp / maxHp > Number(hpAbove);
+    });
+  }
+  return matched.filter((piece) => deployed(piece) && (!excludeSelf || piece.uid !== source?.uid));
+}
+
 /** Deployed purchase reactors request one shared recipient before any funds or pool stock are consumed. */
 export function reactiveBuyTargetSpec(slot, state, catalog) {
   if(!slot?.id || !state?.pieces) return null;

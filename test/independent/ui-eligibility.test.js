@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { eligiblePiecesForEffect, hasConditionalTargets } from '../../shared/independentEligibility.js';
+import { eligiblePiecesForEffect, fieldConditionPiecesForEffect, hasConditionalTargets } from '../../shared/independentEligibility.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
 
 const mkOp = (id, profession, faction, atk = 100) => ({ chessId: id, tier: 3, profession, nativeFactionTags: [faction], nativeFactions: [faction], nativeStats: { atk },
@@ -17,6 +17,7 @@ const pieces = () => [
   { uid: 'other', chessId: 'other', row: 2, col: 1, ownerId: 'p2', kind: 'op', equipment: [] },
 ];
 const ids = (effect, roster = pieces(), catalog = realCatalog(), source = roster[0]) => eligiblePiecesForEffect(effect, { pieces: roster, catalog, source }).map((x) => x.uid);
+const fieldIds = (effect, roster = pieces(), catalog = realCatalog(), source = roster[0], more = {}) => fieldConditionPiecesForEffect(effect, { pieces: roster, catalog, source, ...more })?.map((x) => x.uid) ?? null;
 
 test('structured scopes report current self, faction, profession, keyword gear, adjacent, row, front and board-only operators', () => {
   const catalog = realCatalog(); const roster = pieces(); const source = roster[0];
@@ -101,4 +102,43 @@ test('purchase-faction conditions count currently owned native members including
   const catalog=realCatalog();catalog.config.factionIdentityEquipment=false;
   assert.deepEqual(ids({behavior:'darkmoonShopGrowth',params:{faction:'炎'}},pieces(),catalog),['maker','adjacent','bench']);
   assert.deepEqual(ids({behavior:'darkmoonRosterTribePurchaseFunds',params:{faction:'维多利亚'}},pieces(),catalog),[]);
+});
+
+test('field-only display projection distinguishes no field condition from zero and excludes bench candidates',()=>{
+  const catalog=realCatalog(),roster=pieces(),effect={behavior:'allyConditionStats',params:{match:{faction:'炎'},stats:{maxHpPercent:.1}}};
+  assert.deepEqual(fieldIds(effect,roster,catalog,roster[0]),['adjacent']);
+  const noMatch=roster.map(p=>({...p,chessId:'row'}));
+  assert.deepEqual(fieldIds(effect,noMatch,catalog,noMatch[0]),[],'a field-conditioned effect may have zero visible matches');
+  const future={behavior:'darkmoonShopGrowth',params:{faction:'炎'}};
+  assert.equal(fieldConditionPiecesForEffect(future,{pieces:roster,catalog,source:roster[0]}),null,'future shop effects have no current field count');
+  assert.equal(fieldConditionPiecesForEffect({behavior:'darkmoonRosterTribePurchaseFunds',params:{faction:'炎'}},{pieces:roster,catalog,source:roster[0]}),null);
+  assert.equal(fieldConditionPiecesForEffect({behavior:'darkmoonPlayedTribeGrowth',params:{faction:'炎'}},{pieces:roster,catalog,source:roster[0]}),null,'played-trait scope is not assumed to be board-only');
+});
+
+test('field projection preserves exact faction, adjacency, row, source-exclusion, and aura range conditions',()=>{
+  const catalog=realCatalog(),roster=pieces(),source=roster[0];
+  assert.deepEqual(fieldIds({behavior:'forgeFactionTierPair',params:{faction:'炎',countBy:'operators'}},roster,catalog,source),['maker','adjacent'],'the source itself counts when the native rule includes it');
+  assert.deepEqual(fieldIds({behavior:'forgeAdjacent',params:{direction:'front'}},roster,catalog,source),['maker','adjacent']);
+  assert.deepEqual(fieldIds({behavior:'warbandEvent',params:{event:'shieldLayersBroken',faction:'炎',targets:'self'}},roster,catalog,source),['maker','adjacent'],'self-benefit rules highlight the field actors whose event can trigger it');
+  assert.deepEqual(fieldIds({behavior:'warbandEvent',params:{event:'death',faction:'炎',targets:'self'}},roster,catalog,source),['adjacent'],'the source cannot trigger its own death benefit');
+  assert.deepEqual(fieldIds({behavior:'warbandEvent',params:{event:'kill',faction:'炎',targets:'actor'}},roster,catalog,source),['maker','adjacent']);
+  assert.deepEqual(fieldIds({behavior:'deathrattleEcho',params:{faction:'叙拉古'}},roster,catalog,source),['row']);
+  assert.deepEqual(fieldIds({behavior:'dominantFactionRecruit',params:{normalRequires:'sameRowCount>=3'}},roster,catalog,source),['maker','adjacent','row']);
+  assert.deepEqual(fieldIds({behavior:'darkmoonPlayedFactionCountSelfGrowth',params:{faction:'炎'}},roster,catalog,source),['maker','adjacent']);
+  catalog.operators.adjacent.nativeStats.maxHp=100;
+  const aura={behavior:'aura',params:{targets:'inRange',only:{hpAbove:.5}}};
+  roster[1].hp=60;roster[1].maxHp=100;
+  assert.deepEqual(fieldIds(aura,roster,catalog,source,{rangeTiles:[[2,3],[4,4]]}),['adjacent']);
+  roster[1].hp=50;
+  assert.deepEqual(fieldIds(aura,roster,catalog,source,{rangeTiles:[[2,3],[4,4]]}),[],'native hpAbove is strict and follows the displayed frame health');
+});
+
+test('field count reuses module-adjusted base-stat, equipment keyword and normal/gold-form thresholds',()=>{
+  const catalog=realCatalog(),roster=pieces(),source=roster[0];
+  catalog.operators.adjacent.source.normalChess.modules=[{uniEquipId:'strong',attr:{atk:30}}];
+  roster[1].moduleId='strong';
+  const effect={behavior:'allyConditionStats',params:{match:{baseStat:'atk',minBaseStatRatioToSelf:1.5,keywordGear:'冷却背心'}}};
+  assert.deepEqual(fieldIds(effect,roster,catalog,source),['adjacent']);
+  roster[1].bodyPenaltyApplied=true;
+  assert.deepEqual(fieldIds(effect,roster,catalog,source),[]);
 });
