@@ -199,7 +199,7 @@ export function installKeywordGear(battle, { catalog, pieces = [], units = null 
         battle.on('deploy', ({ unit: who }) => { if (who === unit) banked = false; }, { owner: unit });
         battle.on('death', ({ unit: who, reason }) => {
           if (who !== unit || !['killed', 'retreat', 'merchant'].includes(reason) || unit.removed || unit.alive) return;
-          if (banked || (unit.def?.position === 'MELEE' && battle.rng() < probability)) {
+          if (banked || battle.rng() < probability) {
             banked = false;
             battle.redeploy(unit, { free: true });
           }
