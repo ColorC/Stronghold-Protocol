@@ -669,6 +669,9 @@ test('activation script fails closed on unknown paths and preserves exact rollba
     'timeout 25s systemctl restart', 'timeout 40s systemctl restart', 'systemctl daemon-reload', 'trap \'on_signal 143\' TERM',
     'trap \'on_signal 130\' INT', 'service-cwd-mismatch', 'health-timeout',
     'cp -p "$UNIT_BACKUP" "$UNIT"', 'cp -p "$ENV_BACKUP" "$ENVFILE"',
+    'unit must define one explicit safe Service User and Group', 'systemctl show -p User --value',
+    'systemctl show -p Group --value', 'chown -- "$service_user:$service_group" "$RESONANCE_DIR"',
+    'chmod 0750 "$RESONANCE_DIR"', 'ReadWritePaths=',
   ]) assert.ok(script.includes(fragment), `missing activation guard: ${fragment}`);
   const command = activationCommand(revision);
   assert.ok(command.args.includes('timeout 120s bash -s'));
@@ -688,19 +691,59 @@ test('activation script fails closed on unknown paths and preserves exact rollba
     const unitPath = path.join(dir, 'unit'); const envPath = path.join(dir, 'env');
     const releasePath = `/opt/stronghold-protocol/releases/${revision}`;
     const resonancePath = '/var/lib/stronghold-protocol/resonance-sessions';
-    const originalUnit = '[Unit]\nDescription=Keep this\n[Service]\nUser=service-user\nWorkingDirectory=/opt/stronghold-protocol/releases/old\nExecStart=/usr/bin/node server/index.js\nRestart=always\n';
+    const originalUnit = '[Unit]\nDescription=Keep this\n[Service]\nUser=service-user\nGroup=service-group\nWorkingDirectory=/opt/stronghold-protocol/releases/old\nExecStart=/usr/bin/node server/index.js\nProtectSystem=strict\nReadWritePaths=/var/log/stronghold-protocol /var/lib/stronghold-protocol/recordings\nMemoryMax=512M\nRestart=always\n';
     const originalEnv = 'PORT=3000\nKEEP_THIS=value\nSP_RESONANCE_DIRECTORY=/old/state\n';
     fs.writeFileSync(unitPath, originalUnit); fs.writeFileSync(envPath, originalEnv);
     const apply = spawnSync(process.execPath, ['-', unitPath, envPath, releasePath, resonancePath], { input: nodeBlocks[0], encoding: 'utf8' });
     assert.equal(apply.status, 0, apply.stderr);
+    assert.equal(apply.stdout, 'service-user:service-group', 'unit identity comes from the existing Service stanza');
     const changedUnit = fs.readFileSync(unitPath, 'utf8');
     assert.ok(changedUnit.includes(`WorkingDirectory=${releasePath}\n`));
     assert.ok(changedUnit.includes(`ExecStart=/usr/bin/node ${releasePath}/server/index.js\n`));
     assert.ok(changedUnit.includes('User=service-user\n'));
+    assert.ok(changedUnit.includes('Group=service-group\n'));
+    assert.ok(changedUnit.includes('ProtectSystem=strict\n'));
+    assert.ok(changedUnit.includes('ReadWritePaths=/var/log/stronghold-protocol /var/lib/stronghold-protocol/recordings\n'));
+    assert.ok(changedUnit.includes(`ReadWritePaths=${resonancePath}\n`));
+    assert.ok(changedUnit.includes('MemoryMax=512M\n'));
     assert.ok(changedUnit.includes('Restart=always\n'));
     assert.equal(fs.readFileSync(envPath, 'utf8'), `PORT=3000\nKEEP_THIS=value\nSP_RESONANCE_DIRECTORY=${resonancePath}\n`);
+
+    const noUserUnit = path.join(dir, 'unit-no-user'); const noUserEnv = path.join(dir, 'env-no-user');
+    const noUserContent = originalUnit.replace('User=service-user\n', '');
+    fs.writeFileSync(noUserUnit, noUserContent); fs.writeFileSync(noUserEnv, originalEnv);
+    const rejected = spawnSync(process.execPath, ['-', noUserUnit, noUserEnv, releasePath, resonancePath], { input: nodeBlocks[0], encoding: 'utf8' });
+    assert.notEqual(rejected.status, 0, 'unit without explicit service user is refused');
+    assert.match(rejected.stderr, /explicit safe Service User and Group/);
+    assert.equal(fs.readFileSync(noUserUnit, 'utf8'), noUserContent);
+    assert.equal(fs.readFileSync(noUserEnv, 'utf8'), originalEnv);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
   assert.throws(() => activationScript('short'), /full native Git commit/);
+});
+
+test('activation grants only the resonance root to the exact loaded service identity', () => {
+  const script = activationScript(revision);
+  const start = script.indexOf('IFS=: read -r service_user service_group');
+  const end = script.indexOf('\nsystemctl daemon-reload', start);
+  assert.notEqual(start, -1); assert.notEqual(end, -1);
+  const permissionBlock = script.slice(start, end);
+  const runtime = '/var/lib/stronghold-protocol/resonance-sessions';
+  const run = (loadedUser, loadedGroup) => spawnSync('bash', ['-s'], { encoding: 'utf8', input: `set -euo pipefail
+RESONANCE_DIR='${runtime}'
+systemctl(){ case "$*" in *'-p User'*) printf '%s\\n' '${loadedUser}';; *'-p Group'*) printf '%s\\n' '${loadedGroup}';; *) return 1;; esac; }
+chown(){ printf 'CHOWN %s\\n' "$*"; }
+chmod(){ printf 'CHMOD %s\\n' "$*"; }
+stat(){ printf 'service-user:service-group\\n'; }
+service_identity='service-user:service-group'
+${permissionBlock}` });
+  const allowed = run('service-user', 'service-group');
+  assert.equal(allowed.status, 0, allowed.stderr);
+  assert.equal(allowed.stdout, `CHOWN -- service-user:service-group ${runtime}\nCHMOD 0750 ${runtime}\n`);
+  assert.doesNotMatch(allowed.stdout, /-R|stronghold-protocol\/data|\/runtime/);
+  const mismatch = run('different-user', 'service-group');
+  assert.equal(mismatch.status, 35);
+  assert.match(mismatch.stderr + mismatch.stdout, /service-identity-mismatch/);
+  assert.doesNotMatch(mismatch.stdout, /CHOWN/);
 });

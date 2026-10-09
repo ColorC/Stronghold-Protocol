@@ -746,19 +746,21 @@ old_release=$(printf '%s\\n' "$old_path" | sed -nE 's#^.*/releases/([0-9a-fA-F]{
 test -n "$old_release" || old_release=unknown
 if test "$release_action" = move-candidate; then mv -- "$CANDIDATE" "$RELEASE"; fi
 mutated=1
-"${REMOTE_NODE}" - "$UNIT" "$ENVFILE" "$RELEASE" "$RESONANCE_DIR" <<'NODE'
+service_identity=$("${REMOTE_NODE}" - "$UNIT" "$ENVFILE" "$RELEASE" "$RESONANCE_DIR" <<'NODE'
 const fs=require('fs');
 const [unitPath,envPath,release,resonanceDir]=process.argv.slice(2);
 const unit=fs.readFileSync(unitPath,'utf8');
-const lines=unit.split(/(?<=\\n)/); let section='', working=[], exec=[];
-for(let i=0;i<lines.length;i++){const line=lines[i],plain=line.replace(/\\r?\\n$/,'');const head=plain.match(/^\\s*\\[([^\\]]+)\\]\\s*$/);if(head){section=head[1];continue;}if(section==='Service'){if(/^\\s*WorkingDirectory\\s*=/.test(plain))working.push(i);if(/^\\s*ExecStart\\s*=/.test(plain))exec.push(i);}}
+const lines=unit.split(/(?<=\\n)/); let section='', serviceEnd=lines.length, working=[], exec=[], users=[], groups=[], writable=[];
+for(let i=0;i<lines.length;i++){const line=lines[i],plain=line.replace(/\\r?\\n$/,'');const head=plain.match(/^\\s*\\[([^\\]]+)\\]\\s*$/);if(head){if(section==='Service'&&serviceEnd===lines.length)serviceEnd=i;section=head[1];continue;}if(section==='Service'){if(/^\\s*WorkingDirectory\\s*=/.test(plain))working.push(i);if(/^\\s*ExecStart\\s*=/.test(plain))exec.push(i);const u=plain.match(/^\\s*User\\s*=\\s*(.*?)\\s*$/);if(u)users.push(u[1]);const g=plain.match(/^\\s*Group\\s*=\\s*(.*?)\\s*$/);if(g)groups.push(g[1]);const rw=plain.match(/^\\s*ReadWritePaths\\s*=\\s*(.*?)\\s*$/);if(rw)writable.push(...rw[1].split(/\\s+/).filter(Boolean));}}
 if(working.length!==1||exec.length!==1)throw new Error('unit must contain exactly one Service WorkingDirectory and ExecStart');
+if(users.length!==1||groups.length!==1||!users[0]||!groups[0]||!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(users[0])||!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(groups[0]))throw new Error('unit must define one explicit safe Service User and Group');
 const wi=working[0], ei=exec[0];
 lines[wi]=lines[wi].replace(/^(\\s*WorkingDirectory\\s*=).*/,'$1'+release);
 const execLine=lines[ei];const matches=[...execLine.matchAll(/(?:^|\\s)(?:[^\\s]*\\/)?server\\/index\\.js(?=\\s|\\r?\\n|$)/g)];
 if(matches.length!==1)throw new Error('ExecStart must contain exactly one server/index.js source argument');
 const match=matches[0], start=match.index+(match[0].startsWith(' ')?1:0), end=match.index+match[0].length;
 lines[ei]=execLine.slice(0,start)+release+'/server/index.js'+execLine.slice(end);
+if(!writable.includes(resonanceDir))lines.splice(serviceEnd,0,'ReadWritePaths='+resonanceDir+'\\n');
 fs.writeFileSync(unitPath,lines.join(''));
 let env=fs.readFileSync(envPath,'utf8');const envLines=env.split(/(?<=\\n)/);const found=[];
 for(let i=0;i<envLines.length;i++)if(/^\\s*SP_RESONANCE_DIRECTORY\\s*=/.test(envLines[i]))found.push(i);
@@ -766,7 +768,17 @@ if(found.length>1)throw new Error('multiple SP_RESONANCE_DIRECTORY entries');
 if(found.length===1)envLines[found[0]]=envLines[found[0]].replace(/^(\\s*SP_RESONANCE_DIRECTORY\\s*=).*/,'$1'+resonanceDir);
 else {if(envLines.length&&envLines.at(-1)!=='')envLines.push('\\n');envLines.push('SP_RESONANCE_DIRECTORY='+resonanceDir+'\\n');}
 fs.writeFileSync(envPath,envLines.join(''));
+process.stdout.write(users[0]+':'+groups[0]);
 NODE
+)
+IFS=: read -r service_user service_group <<< "$service_identity"
+[[ "$service_user" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ && "$service_group" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]] || { echo 'service-user-or-group-missing' >&2; exit 35; }
+loaded_user=$(systemctl show -p User --value stronghold-protocol.service)
+loaded_group=$(systemctl show -p Group --value stronghold-protocol.service)
+test "$loaded_user" = "$service_user" && test "$loaded_group" = "$service_group" || { echo 'service-identity-mismatch' >&2; exit 35; }
+chown -- "$service_user:$service_group" "$RESONANCE_DIR"
+chmod 0750 "$RESONANCE_DIR"
+test "$(stat -c %U:%G "$RESONANCE_DIR")" = "$service_user:$service_group" || { echo 'resonance-directory-owner-mismatch' >&2; exit 35; }
 systemctl daemon-reload
 timeout 25s systemctl restart stronghold-protocol.service
 systemctl is-active --quiet stronghold-protocol.service
