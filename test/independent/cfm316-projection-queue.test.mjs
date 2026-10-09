@@ -50,6 +50,7 @@ function runRealWave(markerCell, round = 1) {
     if (unit?.kind === 'token' && unit.defId === 'token_10028_vigil_wolf') deployments.push({
       time: this.time, row: unit.tileR, col: unit.tileC, name: unit.name,
       ownerId: unit.ownerUnit?.defId, ownerAlive: unit.ownerUnit?.alive, initial: !!options.initial, output, unit,
+      atDeploy: { alive: unit.alive, deployed: unit.deployed, removed: unit.removed, replaced: !!unit.mem.replaced },
       activeWolves: this.allyUnits.filter(x => x.kind === 'token' && x.defId === 'token_10028_vigil_wolf' && x.alive && x.deployed).map(x => ({id:x.id,name:x.name,fromTokens:x.kit?.fromTokens,wolves:x.mem.wolves ?? x.mem.shadows,replaced:!!x.mem.replaced,darkmoonPrototypeId:x.def?.raw?.darkmoonPrototypeTokenId})),
     });
     return output;
@@ -122,4 +123,14 @@ test('a native wolf and CFM316 projection coexist on distinct real enemy routes 
   assert.equal(dualDeployment.unit.ownerUnit.trait.reinforcement, nativeMarker.unit, 'native reinforcement pointer remains attached to the player-selected marker');
   assert.ok(!dualDeployment.unit.ownerUnit.trait.reinforcement.def?.raw?.darkmoonPrototypeTokenId, 'projection identity never replaces the native reinforcement');
   assert.ok(!retreats.some(x => x.id === nativeMarker.unit.id), 'the selected native marker is never retired by the Workshop projection');
+});
+
+test('a native marker deployed after a projection keeps its source deploy limit on a real later route', (t) => {
+  const { output, deployments } = runRealWave('10,8', 4);
+  const projection = deployments.find(x => x.name === '狼群投影' && x.time > 0);
+  const native = deployments.find(x => x.name === '狼群' && x.time > 0);
+  t.diagnostic(JSON.stringify({errors:output.diagnostics.errorCount,deployments:deployments.map(x=>({time:x.time,name:x.name,tile:[x.row,x.col],output:x.output,atDeploy:x.atDeploy,projection:!!x.unit.def?.raw?.darkmoonPrototypeTokenId,activeWolves:x.activeWolves}))}));
+  assert.equal(output.diagnostics.errorCount, 0, JSON.stringify(output.diagnostics));
+  assert.ok(projection && native && projection.time < native.time, 'a real wave releases the Workshop projection before the selected native marker can engage');
+  assert.ok(native.atDeploy.alive && native.atDeploy.deployed && !native.atDeploy.replaced, 'the later native marker deploys without counting the projection against native deployLimit');
 });

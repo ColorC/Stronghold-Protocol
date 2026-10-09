@@ -1812,7 +1812,7 @@ export function install(battle) {
     if (!u || u.kind !== 'token' || !u.ownerUnit || u.mem.isClone || u.def?.raw?.darkmoonPrototypeTokenId || !u.kit?.fromTokens || SKILL_SUMMON_UNCAPPED.has(u.defId)) return;
     const lim = deployLimitOf(u);
     if (!(lim >= 1) || !Number.isFinite(lim)) return;
-    const same = battle.allyUnits.filter((t) => t.alive && t.kind === 'token' && t.defId === u.defId && t.ownerUnit === u.ownerUnit && !t.mem.isClone && t.kit?.fromTokens);
+    const same = battle.allyUnits.filter((t) => t.alive && t.kind === 'token' && t.defId === u.defId && t.ownerUnit === u.ownerUnit && !t.mem.isClone && !t.def?.raw?.darkmoonPrototypeTokenId && t.kit?.fromTokens);
     if (same.length <= lim) return;
     same.sort((a, b) => a.deploySeq - b.deploySeq);
     for (const t of same.slice(0, same.length - lim)) {
