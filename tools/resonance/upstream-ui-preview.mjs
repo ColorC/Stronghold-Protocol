@@ -311,4 +311,3 @@ main().catch(async error => {
   process.stderr.write(`${JSON.stringify(receipt, null, 2)}\n`);
   process.exitCode = 1;
 });
-
