@@ -33,9 +33,9 @@ test('all 101 source entries regenerate both visible variants from executable pr
       assert.doesNotMatch(row[variant], /成长永久保留|永久装备|临时获得|仅本场战斗生效|(?:攻击成长徽章|训练等级)×0|购买符合条件的干员时，购买/,
         `${entry.sourceId} ${variant} should use concise default-duration wording`);
       if (entry.sourceId === 'BGS_100') {
-        assert.match(row[variant], /元素科技等级的攻击徽章和伤害徽章/);
+        assert.match(row[variant], /干员科技等级的攻击徽章和伤害徽章/);
         assert.doesNotMatch(row[variant], /所购干员星级/);
-        assert.match(row[`${variant}Levels`], /元素科技等级两倍的训练等级/, `${entry.sourceId} ${variant} levels use purchased tier as both growth inputs`);
+        assert.match(row[`${variant}Levels`], /干员科技等级两倍的训练等级/, `${entry.sourceId} ${variant} levels use purchased tier as both growth inputs`);
         assert.doesNotMatch(row[`${variant}Levels`], /徽章|星级等量/);
         if (variant === 'elite') assert.match(row.eliteLevels, /结算两次/);
       } else {
@@ -126,6 +126,34 @@ test('Darkmoon game text and design delivery copy stays synchronized with execut
   }
 });
 
+test('workshop allocation evidence labels match same-index effect delivery across the full design pool', () => {
+  assert.equal(design.operators.length, 154);
+  let matched = 0;
+  for (const operator of design.operators) {
+    for (const variant of ['normal', 'elite']) {
+      const deliveries = operator.effectDelivery?.[variant] || [];
+      const evidence = operator.allocationEvidence?.workshop?.[variant] || [];
+      assert.equal(evidence.length, deliveries.length, `${operator.chessId} ${variant} evidence row count`);
+      for (let i = 0; i < deliveries.length; i++) {
+        const delivery = deliveries[i], row = evidence[i];
+        assert.equal(row.trigger, delivery.triggerLabel ?? delivery.trigger, `${operator.chessId} ${variant}/${i} trigger`);
+        assert.equal(row.recipient, delivery.recipientLabel ?? delivery.recipient, `${operator.chessId} ${variant}/${i} recipient`);
+        assert.equal(row.duration, delivery.durationLabel ?? delivery.duration, `${operator.chessId} ${variant}/${i} duration`);
+        if (row.rule !== undefined && delivery.text) assert.equal(row.rule, delivery.text, `${operator.chessId} ${variant}/${i} rule`);
+        matched++;
+      }
+    }
+  }
+  assert.ok(matched > 0);
+  const chongyue = design.operators.find(op => op.sourceRefs?.darkmoon19_2?.id === 'BGS_100');
+  assert.ok(chongyue);
+  for (const text of [chongyue.nativeTrait.normal, chongyue.nativeTrait.elite, chongyue.effectDelivery.normal[0].text, chongyue.effectDelivery.elite[0].text, gameText.operators[chongyue.chessId].normal, gameText.operators[chongyue.chessId].elite]) {
+    assert.match(text, /干员科技等级/);
+    assert.doesNotMatch(text, /元素科技等级/);
+  }
+  assert.match(chongyue.sourceRefs.cards[0].text, /元素牌.*元素等级/);
+});
+
 test('ordinary and elite text carries the real source-rule quantities and trigger differences', () => {
   for (const entry of blueprints.entries) {
     const ordinary = darkmoonPrepRulesFor({ darkmoonSourceId: entry.sourceId }, false);
@@ -158,8 +186,8 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('BGS_048').elite, /每购买一名维多利亚阵营干员.*攻击徽章×2与伤害徽章×2/);
   assert.match(card('BGS_055').normal, /升级费用减少1金币/);
   assert.match(card('BGS_055').elite, /升级费用减少2金币/);
-  assert.match(card('BGS_100').normal, /随机.*场上友方干员.*元素科技等级/);
-  assert.match(card('BGS_100').elite, /随机.*场上友方干员.*元素科技等级.*结算两次/);
+  assert.match(card('BGS_100').normal, /随机.*场上友方干员.*干员科技等级/);
+  assert.match(card('BGS_100').elite, /随机.*场上友方干员.*干员科技等级.*结算两次/);
   assert.match(card('GVG_113').normal, /巨锤盟约/);
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /获得时效果共触发2次/);

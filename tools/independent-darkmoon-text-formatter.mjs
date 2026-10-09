@@ -120,7 +120,7 @@ function prepText(sourceId, rule, variant) {
       const bonus = p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : '';
       return `${when}，${selected(p.faction)}获得${n}${bonus}。`;
     }
-    case 'darkmoonPlayedRandomTribeGrowth': return `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章${variant === 'elite' ? '；该效果结算两次' : ''}。`;
+    case 'darkmoonPlayedRandomTribeGrowth': return `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级的攻击徽章和伤害徽章${variant === 'elite' ? '；该效果结算两次' : ''}。`;
     case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员科技等级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
     case 'darkmoonBoughtSelfGrowth': return `${p.faction ? `购买${factionText(p.faction)}干员时` : when}，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonBeastSummonGrowth': return `每当其他友方叙拉古干员新获得或首次上阵时，该干员获得${growth(attack, secondary, variant)}。`;
@@ -242,7 +242,7 @@ function main() {
     const normalText = normal.join('\n') || cleanCombat(item.sourceId, 'normal') || '战斗中执行对应的干员效果。';
     const eliteText = elite.join('\n') || cleanCombat(item.sourceId, 'elite') || normalText;
     const levelText = (variantText, variant) => item.sourceId === 'BGS_100'
-      ? `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级两倍的训练等级${variant === 'elite' ? '；该效果结算两次' : ''}。`
+      ? `每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级两倍的训练等级${variant === 'elite' ? '；该效果结算两次' : ''}。`
       : toLevels(variantText);
     const next = { ...item, normal: normalText, elite: eliteText, normalLevels: levelText(normalText, 'normal'), eliteLevels: levelText(eliteText, 'elite') };
     item.normal = next.normal; item.elite = next.elite; item.normalLevels = next.normalLevels; item.eliteLevels = next.eliteLevels;
@@ -368,7 +368,14 @@ function main() {
         for (const field of ['text','adaptation','triggerLabel','recipientLabel','durationLabel']) if (source[field] !== undefined) target[field] = source[field];
       }
       const workshopRows = operator.allocationEvidence?.workshop?.[variant] || [];
-      for (let i = 0; i < workshopRows.length; i++) if (targetRows[i]?.text && workshopRows[i].rule !== undefined) workshopRows[i].rule = targetRows[i].text;
+      for (let i = 0; i < workshopRows.length; i++) {
+        const delivery = targetRows[i], evidence = workshopRows[i];
+        if (!delivery || !evidence) continue;
+        if (delivery.triggerLabel !== undefined) evidence.trigger = delivery.triggerLabel;
+        if (delivery.recipientLabel !== undefined) evidence.recipient = delivery.recipientLabel;
+        if (delivery.durationLabel !== undefined) evidence.duration = delivery.durationLabel;
+        if (delivery.text && evidence.rule !== undefined) evidence.rule = delivery.text;
+      }
     }
   }
   fs.writeFileSync(addonPath, `${JSON.stringify(addon, null, 2)}\n`);

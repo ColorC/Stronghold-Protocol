@@ -6752,7 +6752,7 @@
                 "recipient": "randomFriendlyOperator",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
+                "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级的攻击徽章和伤害徽章。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6780,7 +6780,7 @@
                 "recipient": "randomFriendlyOperator",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；该效果结算两次。",
+                "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级的攻击徽章和伤害徽章；该效果结算两次。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6843,7 +6843,7 @@
             "sourceTrigger": "playElemental",
             "recipient": "randomFriendlyOperator",
             "duration": "permanentWornGrowth",
-            "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
+            "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级的攻击徽章和伤害徽章。",
             "params": {
               "outputs": [
                 "precision",
@@ -6860,7 +6860,7 @@
             "sourceTrigger": "playElemental",
             "recipient": "randomFriendlyOperator",
             "duration": "permanentWornGrowth",
-            "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；该效果结算两次。",
+            "text": "每次炎阵营干员上阵时，随机使一名场上友方干员获得等同于该干员科技等级的攻击徽章和伤害徽章；该效果结算两次。",
             "params": {
               "outputs": [
                 "precision",
