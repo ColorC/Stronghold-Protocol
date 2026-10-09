@@ -478,14 +478,15 @@ test('elite beast projections double attack and health but keep defense at 40%, 
   assert.ok(projection,'elite CFM_316 creates the real Vigil wolf projection on deployment');
   const token=getData().tokens.token_10028_vigil_wolf;
   const prototypeId='chess_char_3_19_a';
-  const proto=f.b.tokenDef('token_10028_vigil_wolf',prototypeId);
+  const phase=token.variants[prototypeId].phase,level=1;
+  const proto=nativeLevelAttributes(token.nativeGrowth,phase,level);
   const expectedScale={attack:.8,health:.8,defense:.4};
   assert.deepEqual(projection.def.raw.darkmoonPrototypeScale,expectedScale);
-  assert.equal(projection.base.atk,Math.round(proto.stats.atk*expectedScale.attack));
-  assert.equal(projection.base.maxHp,Math.round(proto.stats.maxHp*expectedScale.health));
-  assert.equal(projection.base.def,Math.round(proto.stats.def*expectedScale.defense),'elite does not double prototype defense');
+  assert.deepEqual(projection.nativeGrowthStatus,{phase,level},'level mode freezes the prototype phase at its level-1 baseline');
+  assert.equal(projection.base.atk,Math.round(proto.atk*expectedScale.attack));
+  assert.equal(projection.base.maxHp,Math.round(proto.maxHp*expectedScale.health));
+  assert.equal(projection.base.def,Math.round(proto.def*expectedScale.defense),'elite does not double prototype defense');
 
-  const phase=token.variants[prototypeId].phase,level=token.variants[prototypeId].level;
   const units=8*Number(f.catalog.config?.levelsPerBadge||1);
   const baseline=nativeLevelAttributes(token.nativeGrowth,phase,level);
   const trained=nativeLevelAttributes(token.nativeGrowth,phase,Math.min(token.nativeGrowth.phases[phase].maxLevel,level+units));
@@ -496,6 +497,29 @@ test('elite beast projections double attack and health but keep defense at 40%, 
   assert.equal(buff.mods.defFlat,(trained.def-baseline.def)*expectedScale.defense);
   assert.equal(buff.mods.resFlat,trained.res-baseline.res);
   assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
+
+test('Darkmoon projections use their own native token phase and growth-mode baseline in ordinary and elite forms',()=>{
+  const cases=[
+    {sourceId:'BOT_312',tokenId:'token_10004_otter_motter',ownerId:'chess_native_char_242_otter_a',label:'mechanical otter'},
+    {sourceId:'CFM_316',tokenId:'token_10028_vigil_wolf',ownerId:'chess_char_3_19_a',label:'Vigil wolf'},
+    {sourceId:'BGS_061',tokenId:'token_10040_siege2_vlion',ownerId:'chess_char_6_07_a',label:'golden lion'},
+  ];
+  for(const {sourceId,tokenId,ownerId,label} of cases){
+    const token=getData().tokens[tokenId],variant=token.variants[ownerId],phase=variant.phase;
+    for(const growthMode of ['badges','levels'])for(const elite of [false,true]){
+      const f=fixture(sourceId,elite,[],{growthMode});
+      const projection=f.b.allyUnits.find(u=>u.kind==='token'&&u.mem.darkmoonSummon&&u.defId===tokenId);
+      assert.ok(projection,`${label}/${growthMode}/${elite?'elite':'ordinary'}: source deployment created a projection`);
+      const level=growthMode==='levels'?1:variant.level,expected=nativeLevelAttributes(token.nativeGrowth,phase,level),multiplier=elite?2:1;
+      const scale={attack:.4*multiplier,health:.4*multiplier,defense:.4};
+      assert.deepEqual(projection.nativeGrowthStatus,{phase,level},`${label}/${growthMode} carries the token variant context into battle`);
+      assert.equal(projection.base.atk,Math.round(expected.atk*scale.attack),`${label}/${growthMode} attack comes from its own token curve before scaling`);
+      assert.equal(projection.base.maxHp,Math.round(expected.maxHp*scale.health),`${label}/${growthMode} health comes from its own token curve before scaling`);
+      assert.equal(projection.base.def,Math.round(expected.def*scale.defense),`${label}/${growthMode} defense comes from its own token curve; elite never doubles it`);
+      assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+    }
+  }
 });
 
 test('summoned cover metadata is visible before its deploy actor event for BGS112',()=>{

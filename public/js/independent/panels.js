@@ -145,11 +145,11 @@ export function TraitTexts({ op, elite, catalog, growthMode='badges', piece = nu
 /** Words for the gear kinds that are ids in the catalog. */
 const KIND_LABEL = { equipment: '装备', prizeGear: '特供装备' };
 
-/** The line under a shop gear's name: what kind of gear it is, its level and the rule it carries. */
+/** The line under a shop gear's name: what kind of gear it is, its stack contribution and the rule it carries. */
 export function gearMeta(g) {
   if(g.mechanism==='growthTraining')return '用于提升干员训练等级';
   if (g.kind === 'badge' || g.kind === '徽章') return '基础徽章 · 可重复装备';
-  return `${KIND_LABEL[g.kind] || g.kind || ''} · ${g.level ?? 1}级${g.unique ? ' · 同名只能装备一件' : ''}`;
+  return `${KIND_LABEL[g.kind] || g.kind || ''} · 装备叠加×${g.level ?? 1}${g.unique ? ' · 同名只能装备一件' : ''}`;
 }
 
 // ---- inventory ----------------------------------------------------------------------------------------------------
@@ -217,7 +217,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
       <span>穿戴到</span>
       <select value=${targetUid || ''} onChange=${(e) => onTarget(e.currentTarget.value || null)} data-testid="ix-inv-target">
         <option value="">选择干员</option>
-        ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备${p.equipmentLevel}级</option>`)}
+        ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备叠加×${p.equipmentLevel}</option>`)}
       </select>
       ${target ? html`<span class=${room <= 0 ? 'ix-warn' : 'ix-muted'}>${room <= 0 ? '装备已满' : '穿上后无法卸下'}</span>` : html`<span class="ix-muted">先选干员，再点「穿戴」</span>`}
       ${stacks.filter((x) => x.kind !== '奖品').length >= (catalog.rules?.inventoryCapacity ?? 20) ? html`<span class="ix-warn" role="status">库存已满</span>` : null}
@@ -237,7 +237,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
       </div>
       <div class="ix-inv__sel">
         ${s ? html`<header class="ix-inv__head"><${GearIcon} id=${s.id} catalog=${catalog} plain=${true} />
-            <div class="ix-inv__text"><b>${s.name}</b><span class="num">${!s.badge && !s.used && s.level != null ? `${s.level}级 · ` : ''}×${s.count}</span></div></header>
+            <div class="ix-inv__text"><b>${s.name}</b><span class="num">${!s.badge && !s.used && s.level != null ? `装备叠加×${s.level} · ` : ''}库存×${s.count}</span></div></header>
           <p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>
           <${GearRecipients} gear=${g} state=${state} catalog=${catalog} source=${target} />
           <${TermNotes} texts=${[s.text]} catalog=${catalog} exclude=${s.name} />
@@ -408,7 +408,7 @@ export function InheritPanel({ open, state, catalog, busy, fromUid, onClose, pre
           <${StatLine} label="原生生命" before=${pv.newBodyStats?.maxHp} after=${Math.floor((pv.newBodyStats?.maxHp || 0) * (catalog.rules?.bodyPenalty?.baseLifeRatio ?? ratio))} />
           <p class="ix-note"><${GameText} text="承受接装损耗" catalog=${catalog} /></p>`
           : html`<p class="ix-note"><${GameText} text="已承受过接装损耗，不再扣减" catalog=${catalog} /></p>`}
-        <${StatLine} label="装备总等级" before=${receiver?.equipmentLevel} after=${inheritedLevel(receiver, donor, pv, picks, catalog) ?? '待选择'} />
+        <${StatLine} label="装备叠加总数" before=${receiver?.equipmentLevel} after=${inheritedLevel(receiver, donor, pv, picks, catalog) ?? '待选择'} />
         <p>部署到交出方的位置，接收其装备${(pv.transferredAttachments || []).length ? html`与附加效果（${pv.transferredAttachments.map((a) => catalog.attachments?.[a.id]?.name || '').join('、')}）` : ''}</p>
       </div>
     </div>
@@ -464,7 +464,7 @@ export function FinalScreen({ state, catalog, onLook, onLeave }) {
     ['击倒敌人', ms.kills || 0],
     ['损失生命', ms.lpLost || 0],
     ['精锐干员', state.pieces.filter((p) => p.elite).length],
-    ['装备总等级', state.pieces.reduce((n, p) => n + (p.equipmentLevel || 0), 0)],
+    ['装备叠加总数', state.pieces.reduce((n, p) => n + (p.equipmentLevel || 0), 0)],
     ['在场干员', state.pieces.filter(isDeployed).length],
     ['调度中心', state.shop?.level ?? 1],
   ];

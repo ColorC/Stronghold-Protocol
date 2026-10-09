@@ -10,7 +10,7 @@ import { battleUnits, runIndependentBattle } from '../../server/modes/independen
 import { benchCount, tempCount } from '../../server/modes/independent/session.js';
 import { prepView } from '../../public/js/independent/model.js';
 
-function buyOperator(chessId, growthMode = 'badges') {
+function buyOperator(chessId, growthMode='badges') {
   const state = createSession({ seed: 90210, growthMode });
   state.shop.slots[0] = { ...state.shop.slots[0], kind: 'chess', id: chessId, sold: false, price: 3 };
   state.pool[chessId] ||= { left: 10, cap: 10 };
