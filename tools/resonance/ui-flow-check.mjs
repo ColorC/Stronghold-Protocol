@@ -10,20 +10,23 @@ const OUT = path.join(ROOT, 'runtime/resonance/ui-verification');
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const REPORT = path.join(OUT, 'ui-flow-receipt.json');
 const args = process.argv.slice(2);
-let remoteUrl = null, replaySession = null, battleUi = false;
+let remoteUrl = null, replaySession = null, createdSession = null, battleUi = false;
 for (let i = 0; i < args.length;) {
   if (args[i] === '--battle-ui' && !battleUi) { battleUi = true; i++; }
   else if (args[i] === '--url' && args[i + 1] && !remoteUrl) { remoteUrl = args[i + 1]; i += 2; }
   else if (args[i] === '--session' && args[i + 1] && !replaySession) { replaySession = args[i + 1]; i += 2; }
+  else if (args[i] === '--created-session' && args[i + 1] && !createdSession) { createdSession = args[i + 1]; i += 2; }
   else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-production-session-id>] [--battle-ui requires --url and forbids --session]; no work started');
 }
 if (replaySession && !/^[a-zA-Z0-9-]{8,80}$/.test(replaySession)) throw new Error('--session must be an existing session id; no work started');
+if (createdSession && !/^[a-zA-Z0-9-]{8,80}$/.test(createdSession)) throw new Error('--created-session must be an existing session id; no work started');
 if (battleUi && (!remoteUrl || replaySession)) throw new Error('--battle-ui requires --url and cannot be combined with --session; no work started');
+if (createdSession && (!battleUi || !remoteUrl || replaySession)) throw new Error('--created-session requires --url and --battle-ui and cannot be combined with --session; no work started');
 const require = createRequire(path.join(ROOT, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   sourceStatus: execFileSync('git', ['-C', SOURCE, 'status', '--short', '--untracked-files=no'], { encoding: 'utf8' }).trim(),
-  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession, battleUi,
+  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || createdSession, battleUi,
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
@@ -76,11 +79,23 @@ try {
   const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await browser.defaultBrowserContext().overridePermissions(new URL(url).origin, ['clipboard-read', 'clipboard-write']);
   page.on('pageerror', error => receipt.errors.push(error.message));
-  page.on('response', response => { if(response.status() >= 400) (receipt.httpErrors ||= []).push({status:response.status(),url:response.url()}); });
+  const dataResponses = [];
+  page.on('response', response => {
+    if(response.status() >= 400) (receipt.httpErrors ||= []).push({status:response.status(),url:response.url()});
+    if (new URL(response.url()).pathname === '/vendor/three.core.js') (receipt.nativeResourceResponses ||= []).push({ url: response.url(), status: response.status() });
+    if (new URL(response.url()).pathname === '/data/chess.json') dataResponses.push((async () => {
+      const body = await response.buffer();
+      const native = await import('node:fs/promises').then(fs => fs.readFile(path.join(ROOT, 'data/resonance-native/chess.json')));
+      const evidence = { url: response.url(), status: response.status(), referer: response.request().headers().referer || null,
+        responseBytes: body.length, nativeBytes: native.length, dataNativeMatch: body.equals(native) };
+      (receipt.dataNativeResponses ||= []).push(evidence);
+    })());
+  });
   page.on('console', message => { if (message.type() === 'error' || (message.type() === 'warn' && /\[field\]|render/.test(message.text()))) (receipt.console ||= []).push(message.text()); });
-  page.on('request', request => { if (request.method() === 'POST' && /\/resonance\/api\/sessions$/.test(new URL(request.url()).pathname)) receipt.creates++;
+  page.on('request', request => { (receipt.requestUrls ||= []).push(request.url()); if (request.method() === 'POST' && /\/resonance\/api\/sessions$/.test(new URL(request.url()).pathname)) receipt.creates++;
     if (request.method() === 'POST' && request.postData()?.includes('"type":"fight"')) receipt.fights++; });
   if (replaySession) { const replayUrl = new URL(url); replayUrl.searchParams.set('session', replaySession); url = replayUrl.href; receipt.url = url; }
+  if (createdSession) { const resumeUrl = new URL(url); resumeUrl.searchParams.set('session', createdSession); url = resumeUrl.href; receipt.url = url; }
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   if (replaySession) {
     await page.waitForSelector('.gm', { timeout: 30000 });
@@ -138,6 +153,14 @@ try {
     if (await page.$('.modal')) { await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.modal'), { timeout: 5000 }); }
     receipt.status = 'passed';
   } else {
+  if (createdSession) {
+    await page.waitForSelector('.gm', { timeout: 30000 });
+    await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30000 });
+    const resumed = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, createdSession);
+    check('created-session-resumed-at-prep', resumed?.phase === 'prep' && resumed?.revision === 0 && !(resumed?.history || []).some(x => x.type === 'fight-settled'),
+      { phase: resumed?.phase, revision: resumed?.revision, history: resumed?.history?.length });
+    check('resume-skips-create', receipt.creates === 0, receipt.creates);
+  } else {
   await page.waitForSelector('.title-screen', { timeout: 30000 });
   await page.waitForFunction(() => { const e = document.querySelector('.title-cn'); return e && Number(getComputedStyle(e).opacity) > .99; }, { timeout: 15000 });
   await shot(page, '01-title'); await layout(page, 'title');
@@ -151,6 +174,7 @@ try {
   await button(page, '确认并开始本局|开始本局'); await page.waitForSelector('.gm', { timeout: 30000 });
   check('single-create', receipt.creates === 1, receipt.creates);
   receipt.sessionId = new URL(page.url()).searchParams.get('session'); check('session-url', !!receipt.sessionId, page.url());
+  }
   await page.waitForSelector('.gm__field canvas,.fbfield', { timeout: 30000 });
   await page.waitForFunction(() => { const view = globalThis.__SP_VIEW__; return view?.kind === 'fallback' || Number(view?.raw?.stats?.().units) > 0; }, { timeout: 30000 });
   receipt.renderer = await page.evaluate(() => ({ kind: globalThis.__SP_VIEW__?.kind, stats: globalThis.__SP_VIEW__?.raw?.stats?.() }));
@@ -395,6 +419,15 @@ try {
     await page.click('.dpanel__close'); await button(page, '返回开始界面'); await page.waitForSelector('.title-screen', { timeout: 15000 });
   }
   }
+  await Promise.all(dataResponses);
+  if (replaySession) check('local-three-core-response', (receipt.nativeResourceResponses || []).length > 0 && receipt.nativeResourceResponses.every(item => item.status === 200 || item.status === 304), receipt.nativeResourceResponses || []);
+  check('native-chess-response-observed', (receipt.dataNativeResponses || []).length > 0 && receipt.dataNativeResponses.every(item => item.status === 200 || item.status === 304), receipt.dataNativeResponses || []);
+  check('native-chess-response-bytes-match', receipt.dataNativeResponses.every(item => item.dataNativeMatch), receipt.dataNativeResponses);
+  const forbiddenRequests = [...new Set((receipt.requestUrls || []).filter(value => {
+    const parsed = new URL(value);
+    return (parsed.hostname === 'colorc.cc' && parsed.pathname.startsWith('/stronghold')) || parsed.hostname.endsWith('.pages.dev');
+  }))];
+  check('no-cloud-game-or-pages-dependency', forbiddenRequests.length === 0, forbiddenRequests);
   check('expected-fight-count', receipt.fights === (battleUi ? 1 : 0), { expected: battleUi ? 1 : 0, actual: receipt.fights }); check('no-js-error', receipt.errors.length === 0, receipt.errors);
   receipt.status = 'passed';
 } catch (error) { receipt.status = 'failed'; receipt.failure = error.stack || String(error);
