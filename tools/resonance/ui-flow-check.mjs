@@ -176,9 +176,8 @@ async function inspectEconomyControls(page, label) {
 }
 async function inspectOverlayShopReachability(page, pieceUid) {
   await rightClickPiece(page, pieceUid);
-  check('operator-detail-visible-for-pointer-overlay-test', await page.$('.rs-detail-panel[role="dialog"]') !== null,
+  check('operator-detail-visible-for-context-switch-test', await page.$('.rs-detail-panel[role="dialog"]') !== null,
     await page.$eval('.rs-detail-panel[role="dialog"]', element => element.getAttribute('aria-label')));
-  await assertShopPointerTargets(page, 'operator-detail');
   const drawers = [
     { root: '.rs-dock', text: '盟约', selector: '.rs-panel-drawer[aria-label="盟约"]', name: 'pacts' },
     { root: '.rs-hud-actions', text: '装备背包', selector: '.rs-panel-drawer[aria-label="装备"]', name: 'equipment' },
@@ -187,11 +186,16 @@ async function inspectOverlayShopReachability(page, pieceUid) {
   for (const drawer of drawers) {
     await clickVisibleButtonText(page, drawer.root, drawer.text, `${drawer.name}-drawer-opener`);
     await page.waitForSelector(drawer.selector, { timeout: 5000 });
-    check(`${drawer.name}-drawer-and-detail-coexist`, await page.$('.rs-detail-panel[role="dialog"]') !== null,
+    await page.waitForFunction(() => !document.querySelector('.rs-detail-panel[role="dialog"]'), { timeout: 5000 });
+    check(`${drawer.name}-drawer-replaces-operator-detail`, await page.$(drawer.selector) !== null && await page.$('.rs-detail-panel[role="dialog"]') === null,
       await page.$eval(drawer.selector, element => element.getAttribute('aria-label')));
     await assertShopPointerTargets(page, drawer.name);
     await clickVisibleButtonText(page, drawer.selector, '×', `${drawer.name}-drawer-closer`);
     await page.waitForFunction(selector => !document.querySelector(selector), { timeout: 5000 }, drawer.selector);
+    await rightClickPiece(page, pieceUid);
+    await page.waitForFunction(() => !!document.querySelector('.rs-detail-panel[role="dialog"]') && !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
+    check(`${drawer.name}-drawer-close-restores-operator-detail`, await page.$('.rs-detail-panel[role="dialog"]') !== null && await page.$('.rs-panel-drawer') === null,
+      `selected piece ${pieceUid} is restored for the next action`);
   }
 }
 async function rightClickPiece(page, uid) {

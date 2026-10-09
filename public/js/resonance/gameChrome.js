@@ -3,7 +3,7 @@ import { TopBar } from '../ui/hud.js';
 import { ShopBar } from '../ui/shopBar.js';
 import { BondStrip } from '../ui/bondStrip.js';
 import { GIcon, CoinGlyph } from '../ui/gameComponents.js';
-import { useLayoutEffect, useRef, useState } from '../../vendor/hooks.module.js';
+import { useCallback, useLayoutEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { SettingsModal } from '../ui/settings.js';
 import { data } from '../data.js';
 import { assets } from '../assets.js';
@@ -25,10 +25,11 @@ export function GameChrome(p) {
   const [settingsOpen,setSettingsOpen]=useState(false);
   const [codexInitialTab,setCodexInitialTab]=useState('operators');
   const rootRef=useRef(null);
-  const {state,catalog,host,detail,setDetail,setPanel,panel,busy,act,onLeave,shopCollapsed,setShopCollapsed,
+  const {state,catalog,host,detail,setDetail,setPanel:setPanelState,panel,busy,act,onLeave,shopCollapsed,setShopCollapsed,
     replay,setReplay,playing,setPlaying,speed,setSpeed,frame,jumpToEnd,view,summary,showReplay,
     move,openDetail,facing,commitFacing,cancelFacing,choiceSelections,setChoiceSelections,strategyTargets,setStrategyTargets,
     makeChoice,choiceOpen,saleZoneRef,sellingPiece,equipDrop} = p;
+  const setPanel=useCallback(next=>{if(next!=null)setDetail(null);setPanelState(next)},[setPanelState,setDetail]);
   useLayoutEffect(()=>{
     const root=rootRef.current;if(!root)return;
     const selector='.shopbar__cards .scard, .shopbar__reward .spcard, .shopbar__tools .toolbtn, .lvcard, .rs-turn-action button, .rs-quick-inventory__item, .rs-replay-native button, .rs-replay-native select, .rs-replay-native progress, .rs-sell-zone';
