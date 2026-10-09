@@ -36,7 +36,7 @@ const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
-let completedWCheckpoint = false, completedEquipmentSellCheckpoint = false, completedFightCheckpoint = false;
+let completedWCheckpoint = false, completedEquipmentSellCheckpoint = false, completedFightCheckpoint = false, completedP12SaleCheckpoint = false;
 const check = (name, value, detail) => { receipt.tests.push({ name, passed: !!value, detail }); if (!value) throw new Error(`${name}: ${JSON.stringify(detail)}`); };
 async function button(page, pattern) {
   const h = await page.waitForFunction((source) => { const re = new RegExp(source);
@@ -454,8 +454,33 @@ try {
       validResumeState=completedFightCheckpoint;
       check('resume-tail-validates-stored-fight-and-live-round-two-checkpoint',completedFightCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,priorTests:testsDone.map(name=>({name,passed:priorTests.get(name)?.passed})),revision:resumed.revision,round:resumed.round,gold:resumed.gold,p1,p12,historyTail:history.slice(-5),settled});
     }
+    if (!validResumeState && resumed?.phase === 'prep' && resumed?.revision === 14 && resumed?.round === 2 && resumed?.gold === 5) {
+      const priorPath=path.join(ROOT,'runtime/resonance/ui-verification/ui-tft-tail-attempt-10.json');
+      const prior=JSON.parse(await readFile(priorPath,'utf8'));
+      const priorTests=new Map((prior.tests||[]).map(test=>[test.name,test]));
+      const priorFightPath=path.join(ROOT,'runtime/resonance/ui-verification/ui-tft-tail-attempt-9.json');
+      const priorFight=JSON.parse(await readFile(priorFightPath,'utf8'));
+      const priorFightTests=new Map((priorFight.tests||[]).map(test=>[test.name,test]));
+      const fightTests=['resume-tail-validates-stored-equip-and-sale-checkpoint','outside-sale-drop-cancels-without-session-change','drag-sells-real-deployed-piece','F-buys-xp-with-detail-open','mouse-move-p1-preserves-uid-position-facing-and-equipment','single-ui-fight-authoritative-damage','paused-replay-ally-pointer-hit-is-real-render-unit'];
+      const history=resumed.history||[],settled=[...history].reverse().find(event=>event.type==='fight-settled'&&event.round===1);
+      const p1=resumed.pieces?.find(piece=>piece.uid==='p1'),p12=resumed.pieces?.find(piece=>piece.uid==='p12');
+      const sale=history.find(event=>event.type==='operator-sold'&&event.uid==='p12'&&event.round===2&&event.refund===1);
+      const saleAction=priorTests.get('checkpoint13-sells-bench-p12-through-real-detail-action');
+      const saleRevision=priorTests.get('checkpoint13-sell-bench-p12-revision-advanced');
+      const priorFightValid=priorFight.status==='failed'&&priorFight.sessionId===resumeTailSession&&priorFight.initialRevision===9&&priorFight.fights===1&&fightTests.every(name=>priorFightTests.get(name)?.passed===true);
+      completedFightCheckpoint=priorFightValid&&p1?.row===9&&p1?.col===3&&p1?.dir==='RIGHT'&&p1?.equipment?.some(item=>item.uid==='i4'&&item.itemId==='bow')&&
+        !resumed.pieces?.some(piece=>piece.uid==='p2'||piece.uid==='p3')&&resumed.inventory?.some(item=>item.uid==='i5')&&resumed.xp===0&&resumed.level===4&&resumed.hp===97&&
+        history.some(event=>event.type==='operator-sold'&&event.uid==='p3'&&event.refund===1)&&history.some(event=>event.type==='xp-purchased'&&event.gold===4)&&
+        history.some(event=>event.type==='piece-moved'&&event.uid==='p1'&&event.row===9&&event.col===3)&&settled?.combatStats?.units?.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.taken===840&&unit.kills===2);
+      completedP12SaleCheckpoint=prior.status==='failed'&&prior.sessionId===resumeTailSession&&prior.initialRevision===13&&prior.creates===0&&prior.fights===0&&
+        saleAction?.passed===true&&saleAction.detail?.goldBefore===4&&saleAction.detail?.goldAfter===5&&saleRevision?.passed===true&&saleRevision.detail?.previous===13&&saleRevision.detail?.current===14&&
+        !p12&&!!sale&&p1?.uid==='p1'&&resumed.gold===5&&completedFightCheckpoint;
+      validResumeState=completedP12SaleCheckpoint;
+      check('resume-tail-validates-attempt10-p12-sale-and-live-checkpoint14',completedP12SaleCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,priorSalePassed:saleAction?.passed===true,priorRevisionPassed:saleRevision?.passed===true,priorFightPath,priorFightValid,revision:resumed.revision,round:resumed.round,gold:resumed.gold,p1,p12,sale,settled});
+    }
     check('resume-tail-existing-session-at-valid-prep-checkpoint',validResumeState,
       { phase: resumed?.phase, revision: resumed?.revision, gold: resumed?.gold, historyTypes, deployed: resumed?.pieces?.filter(piece => piece.row != null).length, completedWCheckpoint });
+    if (!validResumeState) throw new Error(`Unrecognized or invalid resume-tail checkpoint at revision ${resumed?.revision}; no session actions will run`);
     check('resume-tail-no-new-session', receipt.creates === 0 && new URL(page.url()).searchParams.get('session') === resumeTailSession,
       { creates: receipt.creates, sessionId: resumeTailSession });
     receipt.initialRevision = resumed.revision;
@@ -952,32 +977,36 @@ try {
       await inspectPriorFightReplay(page,receipt.sessionId,1,'21-tft-replay-detail');
       current=await readFresh();
       const benchPiece=current.pieces.find(piece=>piece.uid==='p12');
-      check('round-two-bench-p12-is-available-for-legal-financing',current.phase==='prep'&&benchPiece?.row==null,{phase:current.phase,gold:current.gold,p12:benchPiece});
-      await rightClickPiece(page,'p12');
-      const beforeP12Sale=await readFresh();await page.keyboard.press('e');
-      current=await stateAfterRevision(page,receipt.sessionId,beforeP12Sale.revision,'checkpoint13-sell-bench-p12');
-      check('checkpoint13-sells-bench-p12-through-real-detail-action',!current.pieces.some(piece=>piece.uid==='p12')&&current.gold>beforeP12Sale.gold,{goldBefore:beforeP12Sale.gold,goldAfter:current.gold,history:[...current.history].slice(-1)});
-      await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+      if(completedP12SaleCheckpoint) {
+        check('checkpoint14-reuses-real-p12-sale-without-repeating-it',!benchPiece&&current.gold===5&&current.history.some(event=>event.type==='operator-sold'&&event.uid==='p12'&&event.round===2&&event.refund===1),{phase:current.phase,gold:current.gold,p12:benchPiece||null,revision:current.revision});
+      } else {
+        check('round-two-bench-p12-is-available-for-legal-financing',current.phase==='prep'&&benchPiece?.row==null,{phase:current.phase,gold:current.gold,p12:benchPiece});
+        await rightClickPiece(page,'p12');
+        const beforeP12Sale=await readFresh();await page.keyboard.press('e');
+        current=await stateAfterRevision(page,receipt.sessionId,beforeP12Sale.revision,'checkpoint13-sell-bench-p12');
+        check('checkpoint13-sells-bench-p12-through-real-detail-action',!current.pieces.some(piece=>piece.uid==='p12')&&current.gold>beforeP12Sale.gold,{goldBefore:beforeP12Sale.gold,goldAfter:current.gold,history:[...current.history].slice(-1)});
+        await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+      }
       const refreshCost=Number(current.actionCosts?.refreshGold??2),xpCost=Number(current.actionCosts?.xpGold??4),required=refreshCost+xpCost;
       if(current.gold<required) {
         const p1=current.pieces.find(piece=>piece.uid==='p1');
-        check('checkpoint13-legal-p1-sale-needed-for-exact-economy-budget',!!p1,{gold:current.gold,required,p1:p1||null});
+        check(completedP12SaleCheckpoint?'checkpoint14-legal-p1-sale-needed-for-exact-economy-budget':'checkpoint13-legal-p1-sale-needed-for-exact-economy-budget',!!p1,{gold:current.gold,required,p1:p1||null});
         await rightClickPiece(page,'p1');const beforeP1Sale=await readFresh();await page.keyboard.press('e');
         current=await stateAfterRevision(page,receipt.sessionId,beforeP1Sale.revision,'checkpoint13-sell-p1-budget');
-        check('checkpoint13-additional-live-piece-sale-funds-mouse-economy',!current.pieces.some(piece=>piece.uid==='p1')&&current.gold>=required,{goldBefore:beforeP1Sale.gold,goldAfter:current.gold,required});
+        check(completedP12SaleCheckpoint?'checkpoint14-additional-live-piece-sale-funds-mouse-economy':'checkpoint13-additional-live-piece-sale-funds-mouse-economy',!current.pieces.some(piece=>piece.uid==='p1')&&current.gold>=required,{goldBefore:beforeP1Sale.gold,goldAfter:current.gold,required});
         await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       }
-      check('checkpoint13-exact-mouse-economy-cost-is-funded',current.gold>=required,{gold:current.gold,refreshCost,xpCost,required});
+      check(completedP12SaleCheckpoint?'checkpoint14-exact-mouse-economy-cost-is-funded':'checkpoint13-exact-mouse-economy-cost-is-funded',current.gold>=required,{gold:current.gold,refreshCost,xpCost,required});
       const beforeMouseXp=current;
-      await clickPointerSelector(page,'.shopbar .rs-level-card','checkpoint13-mouse-xp');
-      current=await stateAfterRevision(page,receipt.sessionId,beforeMouseXp.revision,'checkpoint13-mouse-xp');
-      check('checkpoint13-real-mouse-xp-purchase',current.gold===beforeMouseXp.gold-xpCost&&(current.level>beforeMouseXp.level||current.xp>beforeMouseXp.xp),{goldBefore:beforeMouseXp.gold,goldAfter:current.gold,xpBefore:beforeMouseXp.xp,xpAfter:current.xp,levelBefore:beforeMouseXp.level,levelAfter:current.level,cost:xpCost});
+      await clickPointerSelector(page,'.shopbar .rs-level-card',completedP12SaleCheckpoint?'checkpoint14-mouse-xp':'checkpoint13-mouse-xp');
+      current=await stateAfterRevision(page,receipt.sessionId,beforeMouseXp.revision,completedP12SaleCheckpoint?'checkpoint14-mouse-xp':'checkpoint13-mouse-xp');
+      check(completedP12SaleCheckpoint?'checkpoint14-real-mouse-xp-purchase':'checkpoint13-real-mouse-xp-purchase',current.gold===beforeMouseXp.gold-xpCost&&(current.level>beforeMouseXp.level||current.xp>beforeMouseXp.xp),{goldBefore:beforeMouseXp.gold,goldAfter:current.gold,xpBefore:beforeMouseXp.xp,xpAfter:current.xp,levelBefore:beforeMouseXp.level,levelAfter:current.level,cost:xpCost});
       const beforeMouseRefresh=current;
-      await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber','checkpoint13-mouse-refresh');
-      current=await stateAfterRevision(page,receipt.sessionId,beforeMouseRefresh.revision,'checkpoint13-mouse-refresh');
-      check('checkpoint13-real-mouse-refresh-purchase',current.gold===beforeMouseRefresh.gold-refreshCost,{goldBefore:beforeMouseRefresh.gold,goldAfter:current.gold,cost:refreshCost});
-      check('checkpoint13-does-not-create-or-fight-again',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights,priorReceiptFightCount:1});
-      await inspectPriorFightReplay(page,receipt.sessionId,1,'22-tft-replay-sold-ally','p1','角峰');
+      await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber',completedP12SaleCheckpoint?'checkpoint14-mouse-refresh':'checkpoint13-mouse-refresh');
+      current=await stateAfterRevision(page,receipt.sessionId,beforeMouseRefresh.revision,completedP12SaleCheckpoint?'checkpoint14-mouse-refresh':'checkpoint13-mouse-refresh');
+      check(completedP12SaleCheckpoint?'checkpoint14-real-mouse-refresh-purchase':'checkpoint13-real-mouse-refresh-purchase',current.gold===beforeMouseRefresh.gold-refreshCost,{goldBefore:beforeMouseRefresh.gold,goldAfter:current.gold,cost:refreshCost});
+      check(completedP12SaleCheckpoint?'checkpoint14-does-not-create-or-fight-again':'checkpoint13-does-not-create-or-fight-again',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights,priorReceiptFightCount:1});
+      await inspectPriorFightReplay(page,receipt.sessionId,1,completedP12SaleCheckpoint?'23-tft-replay-sold-ally':'22-tft-replay-sold-ally','p1','角峰');
       current=await readFresh();settled=[...current.history].reverse().find(entry=>entry.type==='fight-settled'&&entry.round===1);
       damageUnits=settled?.combatStats?.units?.filter(unit=>Number.isFinite(unit.dmg)&&unit.dmg>0)||[];
       check('checkpoint13-prior-fight-stats-remain-authoritative',!!settled&&damageUnits.some(unit=>unit.uid==='p1'&&unit.dmg===4872),{round:settled?.round,damageUnits});
