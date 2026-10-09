@@ -29,11 +29,11 @@ const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const REMOTE_NODE = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/bin/node`;
 const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/node_modules/npm/bin/npm-cli.js`;
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
-const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/css/resonance.css'];
+const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/js/resonance/panels.js', 'public/css/resonance.css'];
 const CANDIDATE_REFRESH_INVARIANTS = ['tools/resonance/capacity.mjs'];
 const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
 const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';
-const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径> | --replace-staged-revision <旧Native完整commit>] | --refresh-candidate --previous-release-receipt <旧receipt> --previous-capacity-batch-receipt <已完成回执> | --capacity-batch --local-capacity-receipt <绝对路径> | --activate --capacity-receipt <绝对路径>]\n--refresh-candidate仅更新候选中的session DTO、references ZIP及manifest，并将旧Native容量回执原位归档。`;
+const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径> | --replace-staged-revision <旧Native完整commit>] | --refresh-candidate --previous-release-receipt <旧receipt> --previous-capacity-batch-receipt <已完成回执> | --capacity-batch --local-capacity-receipt <绝对路径> | --activate --capacity-receipt <绝对路径> [--capacity-tested-revision <已测Native完整commit>]]\n--refresh-candidate只替换新旧Native间实际变化的获准共鸣源文件；容量回执可在核心源码未变时复用并保留其原测试版本。`;
 
 export function parseArgs(argv) {
   const options = { prepare: false, activate: false };
@@ -54,6 +54,10 @@ export function parseArgs(argv) {
       const next = argv[++i];
       if (!next || next.startsWith('--')) throw new Error('缺少 --capacity-receipt 路径');
       options.capacityReceiptPath = next;
+    } else if (value === '--capacity-tested-revision') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--') || !/^[0-9a-f]{40}$/i.test(next)) throw new Error('--capacity-tested-revision 必须为完整Native Git commit');
+      options.capacityTestedRevision = next.toLowerCase();
     } else if (value === '--local-capacity-receipt') {
       const next = argv[++i];
       if (!next || next.startsWith('--')) throw new Error('缺少 --local-capacity-receipt 路径');
@@ -84,6 +88,7 @@ export function parseArgs(argv) {
   if ([options.prepare, options.activate, Boolean(options.capacityBatch), Boolean(options.refreshCandidate)].filter(Boolean).length > 1) throw new Error('--prepare、--refresh-candidate、--capacity-batch 与 --activate 不能同时使用');
   if (options.activate && !options.capacityReceiptPath) throw new Error('--activate 必须提供 --capacity-receipt');
   if (!options.activate && options.capacityReceiptPath) throw new Error('--capacity-receipt 只能与 --activate 一起使用');
+  if (options.capacityTestedRevision && !options.activate) throw new Error('--capacity-tested-revision 只能与 --activate 一起使用');
   if (options.capacityBatch && !options.localCapacityReceiptPath) throw new Error('--capacity-batch 必须提供 --local-capacity-receipt');
   if (!options.capacityBatch && options.localCapacityReceiptPath) throw new Error('--local-capacity-receipt 只能与 --capacity-batch 一起使用');
   if (options.localCapacityReceiptPath && !path.isAbsolute(options.localCapacityReceiptPath)) throw new Error('--local-capacity-receipt 必须提供绝对路径');
@@ -150,9 +155,20 @@ export function validateCandidateRefreshRevisions(oldRevision, newRevision, reso
 export function validateCandidateRefreshChangeSet(changedArchivePaths) {
   if (!Array.isArray(changedArchivePaths)) throw new Error('candidate refresh change set must be an array');
   const actual = [...new Set(changedArchivePaths)].sort();
-  const expected = [...CANDIDATE_REFRESH_SOURCES].sort();
-  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) throw new Error(`candidate refresh archive changes must be exactly: ${expected.join(', ')}`);
+  const allowed = new Set(CANDIDATE_REFRESH_SOURCES);
+  if (actual.length === 0 || actual.some(value => !allowed.has(value))) throw new Error(`candidate refresh archive changes must be a nonempty subset of: ${[...allowed].sort().join(', ')}`);
   return actual;
+}
+
+export function validateCapacityReuseEvidence(testedRevision, releaseRevision, receipt, changedPaths) {
+  const tested = String(testedRevision ?? '').toLowerCase();
+  const release = String(releaseRevision ?? '').toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(tested) || !/^[0-9a-f]{40}$/.test(release) || tested === release) throw new Error('capacity reuse requires distinct full Native revisions');
+  const capacity = validateCapacityReceipt(tested, receipt);
+  if (!Array.isArray(changedPaths)) throw new Error('capacity reuse requires a Native Git diff path list');
+  const forbidden = changedPaths.filter(file => /^(server\/|shared\/|data\/)|(^|\/)package(?:-lock)?\.json$|^tools\/resonance\/capacity\.mjs$/.test(file));
+  if (forbidden.length) throw new Error(`capacity reuse Native diff changes core paths: ${forbidden.sort().join(', ')}`);
+  return { testedRevision: tested, releaseRevision: release, capacity, nativeUnchangedPaths: ['server/', 'shared/', 'data/', 'tools/resonance/capacity.mjs', 'package.json', 'package-lock.json'] };
 }
 
 export function validateCandidateRefreshInvariantBytes(oldNativeBytes, newNativeBytes) {
@@ -170,7 +186,7 @@ export function candidateRefreshPreflightScript({ oldRevision, newRevision, expe
   if (selectedSources.some(file => !expectedFiles.includes(file) || !/^[A-Za-z0-9+/=]+$/.test(selectedOldBytes?.[file] ?? ''))) throw new Error('refresh requires exact old-Native bytes for capacity.mjs and resonance.css');
   const expected = [...new Set([...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
   const expectedLines = expected.map(value => `'${value}'`).join(' ');
-  const knownCapacityArchives = CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision).join('|');
+  const knownCapacityArchives = [...new Set([...CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision), ...CAPACITY_BATCH_ARCHIVE_NAMES('ee9e2d8b90f35a4d46705ad6d019ada9f684d94b')])].join('|');
   return `set -eu
 C='${CANDIDATE}'
 S='${STAGING}'
@@ -306,10 +322,10 @@ fi`).join('');
   return `set -eu\nNODE='${REMOTE_NODE}'\n${checks}\n${sources.map((source, i) => `if test -e '${source}'; then mv -- '${source}' '${targets[i]}'; fi\n`).join('')}\nfor f in ${targets.map(v => `'${v}'`).join(' ')}; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || exit 94; done\nprintf '{"archived":true,"sourceRevision":"${oldRevision}","files":${JSON.stringify(targets)}}\\n'`;
 }
 
-export function candidateSessionRefreshScript(oldRevision, newRevision, expectedFiles, unchangedOldBytes, oldSelectedBytes) {
+export function candidateSessionRefreshScript(oldRevision, newRevision, expectedFiles, unchangedOldBytes, oldSelectedBytes, selectedSources = CANDIDATE_REFRESH_SOURCES) {
   for (const r of [oldRevision, newRevision]) if (!/^[0-9a-f]{40}$/i.test(r ?? '')) throw new Error('invalid candidate session refresh revision');
   if (oldRevision.toLowerCase() === newRevision.toLowerCase()) throw new Error('candidate session refresh Native revisions must differ');
-  const update = CANDIDATE_REFRESH_SOURCES;
+  const update = validateCandidateRefreshChangeSet(selectedSources);
   const referenceIndex = update.length;
   const manifestIndex = update.length + 1;
   const invariant = CANDIDATE_REFRESH_INVARIANTS;
@@ -926,17 +942,17 @@ function refreshCandidateRemote(release, oldRevision, priorBatchReceipt) {
   const candidateFileSet = new Set(candidateFiles);
   const changedPaths = execFileSync('git', ['-C', ROOT, 'diff', '--name-only', oldRevision, release.sourceRevision], { encoding: 'utf8' })
     .split(/\r?\n/).filter(file => candidateFileSet.has(file));
-  validateCandidateRefreshChangeSet(changedPaths);
+  const selectedSources = validateCandidateRefreshChangeSet(changedPaths);
   const selectedOldBytes = Object.fromEntries(['tools/resonance/capacity.mjs', 'public/css/resonance.css'].map(file => [
     file, execFileSync('git', ['-C', ROOT, 'show', `${oldRevision}:${file}`]).toString('base64'),
   ]));
-  const oldProductBytes = Object.fromEntries(CANDIDATE_REFRESH_SOURCES.map(file => [
+  const oldProductBytes = Object.fromEntries(selectedSources.map(file => [
     file, execFileSync('git', ['-C', ROOT, 'show', `${oldRevision}:${file}`]).toString('base64'),
   ]));
-  const newProductBytes = Object.fromEntries(CANDIDATE_REFRESH_SOURCES.map(file => [
+  const newProductBytes = Object.fromEntries(selectedSources.map(file => [
     file, execFileSync('git', ['-C', ROOT, 'show', `${release.sourceRevision}:${file}`]).toString('base64'),
   ]));
-  for (const file of CANDIDATE_REFRESH_SOURCES) {
+  for (const file of selectedSources) {
     if (execFileSync(TAR_COMMAND, ['-xOf', release.code.path, file]).toString('base64') !== newProductBytes[file]) throw new Error(`new tar product bytes differ from Native Git: ${file}`);
   }
   const oldInvariantBytes = Object.fromEntries(CANDIDATE_REFRESH_INVARIANTS.map(file => [file, Buffer.from(selectedOldBytes[file], 'base64')]));
@@ -953,10 +969,11 @@ function refreshCandidateRemote(release, oldRevision, priorBatchReceipt) {
   const transfers = release.artifacts.map(artifact => ({ source: artifact.path, target: `${STAGING}/${path.basename(artifact.path)}`, role: artifact.role }));
   invoke('scp', scpBatchArgs(IDENTITY, PORT, HOST, STAGING, release.artifacts), undefined, 180_000);
   const result = JSON.parse(invoke('ssh', [...sshArgs(), 'timeout 90s bash -s'], candidateSessionRefreshScript(oldRevision, release.sourceRevision,
-    candidateFiles, selectedOldBytes, oldProductBytes), 120_000));
+    candidateFiles, selectedOldBytes, oldProductBytes, selectedSources), 120_000));
   if (result.refreshed !== true || result.candidate !== CANDIDATE || result.previousRevision !== oldRevision || result.sourceRevision !== release.sourceRevision) throw new Error('candidate refresh终态与预期不一致');
   return { ...result, staging: STAGING, archivedCapacityReceipt: priorBatchReceipt.localPath,
-    archivedCapacityFiles: archived.files, artifactTransfers: transfers };
+    archivedCapacityFiles: archived.files, artifactTransfers: transfers,
+    updatedFiles: [...selectedSources, 'public/resonance-references.zip', '.resonance-release-receipt.json'] };
 }
 
 function main() {
@@ -975,7 +992,7 @@ function main() {
     const remoteResult = refreshCandidateRemote(release, oldRevision, { ...previousBatch, localPath: previousBatchPath });
     return process.stdout.write(`${JSON.stringify({ mode: 'refresh-candidate', oldRevision,
       sourceRevision: release.sourceRevision, previousReleaseReceipt: previousReceiptPath, previousCapacityBatchReceipt: previousBatchPath,
-      staging: STAGING, candidate: CANDIDATE, updatedFiles: [...CANDIDATE_REFRESH_SOURCES, 'public/resonance-references.zip', '.resonance-release-receipt.json'],
+      staging: STAGING, candidate: CANDIDATE, updatedFiles: remoteResult.updatedFiles,
       remoteResult })}\n`);
   }
   if (options.capacityBatch) {
@@ -1004,11 +1021,18 @@ function main() {
   if (options.activate) {
     const capacityReceiptPath = absolutePath(options.capacityReceiptPath, '--capacity-receipt');
     const capacity = readCapacityReceipt(capacityReceiptPath);
-    const capacityCheck = validateCapacityReceipt(release.sourceRevision, capacity);
+    let capacityCheck;
+    let reuseEvidence = null;
+    if (options.capacityTestedRevision) {
+      const testedRevision = gitRevision(options.capacityTestedRevision);
+      const changedPaths = execFileSync('git', ['-C', ROOT, 'diff', '--name-only', testedRevision, release.sourceRevision], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+      reuseEvidence = validateCapacityReuseEvidence(testedRevision, release.sourceRevision, capacity, changedPaths);
+      capacityCheck = reuseEvidence.capacity;
+    } else capacityCheck = validateCapacityReceipt(release.sourceRevision, capacity);
     const remoteResult = JSON.parse(activateRemote(release.sourceRevision));
     if (remoteResult.terminalStatus !== 'activated' || remoteResult.sourceRevision !== release.sourceRevision) throw new Error('远端activation terminal receipt与本地release不匹配');
     return process.stdout.write(`${JSON.stringify({ mode: 'activate', sourceRevision: release.sourceRevision,
-      capacityReceipt: capacityReceiptPath, capacity: capacityCheck, remoteResult })}\n`);
+      capacityReceipt: capacityReceiptPath, capacity: capacityCheck, ...(reuseEvidence ? { capacityReuseEvidence: reuseEvidence } : {}), remoteResult })}\n`);
   }
   const plan = {
     mode: options.prepare ? 'prepare' : 'dry-run', sourceRevision: release.sourceRevision,

@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { absolutePath, activationCommand, activationScript, capacityBatchCommand, capacityBatchReceiptFromStdout, capacityBatchScript, candidateRefreshPreflightScript, candidateRefreshScript, candidateSessionRefreshScript, archiveCompletedCapacityBatchScript, parseArgs, prepareLocalBatchReceiptPath, writeLocalBatchReceipt, preflightScript, preserveOldFailureCgroupScript, resumeVerificationScript, scpBatchArgs, validateCapacityReceipt, validatePrepareResumeReceipt, validateStagedReplacementRevision, validateCandidateRefreshRevisions, validateCandidateRefreshChangeSet, validateCandidateRefreshInvariantBytes } from '../../tools/resonance/deploy-candidate.mjs';
+import { absolutePath, activationCommand, activationScript, capacityBatchCommand, capacityBatchReceiptFromStdout, capacityBatchScript, candidateRefreshPreflightScript, candidateRefreshScript, candidateSessionRefreshScript, archiveCompletedCapacityBatchScript, parseArgs, prepareLocalBatchReceiptPath, writeLocalBatchReceipt, preflightScript, preserveOldFailureCgroupScript, resumeVerificationScript, scpBatchArgs, validateCapacityReceipt, validatePrepareResumeReceipt, validateStagedReplacementRevision, validateCandidateRefreshRevisions, validateCandidateRefreshChangeSet, validateCandidateRefreshInvariantBytes, validateCapacityReuseEvidence } from '../../tools/resonance/deploy-candidate.mjs';
 
 const revision = '0123456789abcdef0123456789abcdef01234567';
 function capacityReceipt() {
@@ -30,6 +30,10 @@ test('activation arguments require capacity receipt and exclude prepare', () => 
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--activate', '--prepare', '--capacity-receipt', 'C:/c.json']), /不能同时使用/);
   assert.throws(() => parseArgs(['--release-receipt', 'C:/r.json', '--capacity-receipt', 'C:/c.json']), /只能与 --activate/);
   assert.throws(() => absolutePath('relative-capacity.json', '--capacity-receipt'), /必须为绝对路径/);
+  assert.deepEqual(parseArgs(['--release-receipt', 'C:/release.json', '--activate', '--capacity-receipt', 'C:/capacity.json', '--capacity-tested-revision', revision]), {
+    prepare: false, activate: true, receiptPath: 'C:/release.json', capacityReceiptPath: 'C:/capacity.json', capacityTestedRevision: revision,
+  });
+  assert.throws(() => parseArgs(['--release-receipt', 'C:/release.json', '--capacity-tested-revision', revision]), /只能与 --activate/);
 });
 
 test('capacity batch is two bounded real HTTP phases and cleans only its declared files', () => {
@@ -256,8 +260,10 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
   const selectedOldBytes = { 'tools/resonance/capacity.mjs': 'Y2Fub25pY2FsLW9sZC1ieXRlcw==', 'public/css/resonance.css': 'b2xkLWNzcw==' };
   const oldProductBytes = { 'server/modes/resonance/session.js': 'b2xkLXNlc3Npb24=', 'server/modes/resonance/display.js': 'b2xkLWRpc3BsYXk=', 'public/js/resonance/game.js': 'b2xkLWdhbWU=', 'public/js/resonance/model.js': 'b2xkLW1vZGVs', 'public/css/resonance.css': 'b2xkLWNzcw==' };
   assert.deepEqual(validateCandidateRefreshChangeSet(Object.keys(oldProductBytes).reverse()), Object.keys(oldProductBytes).sort());
-  assert.throws(() => validateCandidateRefreshChangeSet([...Object.keys(oldProductBytes), 'server/index.js']), /exactly/);
-  assert.throws(() => validateCandidateRefreshChangeSet(['server/modes/resonance/session.js']), /exactly/);
+  assert.deepEqual(validateCandidateRefreshChangeSet(['public/js/resonance/panels.js']), ['public/js/resonance/panels.js']);
+  assert.throws(() => validateCandidateRefreshChangeSet([...Object.keys(oldProductBytes), 'server/index.js']), /nonempty subset/);
+  assert.throws(() => validateCandidateRefreshChangeSet([]), /nonempty subset/);
+  assert.throws(() => validateCandidateRefreshChangeSet(['server/index.js']), /nonempty subset/);
   assert.equal(validateCandidateRefreshInvariantBytes({ 'tools/resonance/capacity.mjs': Buffer.from('capacity-old'), 'public/css/resonance.css': Buffer.from('css-old') },
     { 'tools/resonance/capacity.mjs': Buffer.from('capacity-old'), 'public/css/resonance.css': Buffer.from('css-new') }), true);
   assert.throws(() => validateCandidateRefreshInvariantBytes({ 'tools/resonance/capacity.mjs': Buffer.from('capacity-old') },
@@ -266,7 +272,7 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
   for (const fragment of ['candidate-native-not-expected-old', 'staged-native-not-expected-old', 'candidate-capacity-not-exact-old-native-bytes',
     'candidate-resonance-css-not-exact-old-native-bytes', 'candidate-inventory-mismatch', 'candidate-file-in-use-pid:', 'capacity-batch-receipt.json']) assert.ok(preflight.includes(fragment));
   assert.equal(spawnSync('bash', ['-n'], { input: preflight, encoding: 'utf8' }).status, 0);
-  const refresh = candidateSessionRefreshScript(oldRevision, newRevision, files, selectedOldBytes, oldProductBytes);
+  const refresh = candidateSessionRefreshScript(oldRevision, newRevision, files, selectedOldBytes, oldProductBytes, Object.keys(oldProductBytes));
   assert.ok(refresh.includes('.refresh-backup') && refresh.includes('trap rollback EXIT') && refresh.includes("trap 'exit 130' INT"));
   assert.ok(refresh.includes('new-capacity-must-remain-identical') && !refresh.includes('new-css-must-remain-identical') && Object.keys(oldProductBytes).every(file => refresh.includes(file)));
   assert.ok(refresh.includes('candidate-link-after-session-refresh') && refresh.includes('candidate-hardlink-after-session-refresh') && refresh.includes('fuser -f --'));
@@ -329,7 +335,8 @@ test('candidate five-source refresh updates all five files and rolls all five ba
     'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'server/index.js'];
   const invariantOld = { 'tools/resonance/capacity.mjs': Buffer.from('capacity-old\n').toString('base64') };
   const oldProducts = Object.fromEntries(expectedFiles.filter(file => file.startsWith('server/modes/resonance/') || file.startsWith('public/js/resonance/') || file === 'public/css/resonance.css').map(file => [file, Buffer.from(`old:${file}\n`).toString('base64')]));
-  const template = candidateSessionRefreshScript(oldRevision, newRevision, expectedFiles, invariantOld, oldProducts)
+  const selectedSources = Object.keys(oldProducts);
+  const template = candidateSessionRefreshScript(oldRevision, newRevision, expectedFiles, invariantOld, oldProducts, selectedSources)
     .replaceAll('/opt/stronghold-protocol/releases/resonance-candidate', '__CANDIDATE__')
     .replaceAll('/var/tmp/stronghold-protocol/resonance', '__STAGING__')
     .replaceAll('/opt/stronghold-protocol/toolchain/node-v22.23.3-linux-x64/bin/node', '__NODE__');
@@ -386,6 +393,73 @@ make_case failure
     const trace = String(bash.stderr || '').split(/\r?\n/);
     throw new Error(`${bash.error.message}\n${trace.slice(-30).join('\n')}\n${bash.stdout}`);
   }
+  assert.equal(bash.status, 0, bash.stderr || bash.stdout);
+});
+
+test('capacity proof can be reused for a UI-only Native diff while core or data changes are rejected', () => {
+  const tested = '0123456789abcdef0123456789abcdef01234567';
+  const release = '1123456789abcdef0123456789abcdef01234567';
+  const receipt = { ...capacityReceipt(), sourceRevision: tested, providedSourceRevision: tested };
+  const uiPaths = ['public/js/resonance/panels.js'];
+  assert.equal(validateCapacityReuseEvidence(tested, release, receipt, uiPaths).testedRevision, tested);
+  assert.throws(() => validateCapacityReuseEvidence(tested, release, receipt, ['server/modes/resonance/session.js']), /core paths/);
+  assert.throws(() => validateCapacityReuseEvidence(tested, release, receipt, ['data/resonance.json']), /core paths/);
+  assert.throws(() => validateCapacityReuseEvidence(tested, release, receipt, ['tools/resonance/capacity.mjs']), /core paths/);
+  assert.throws(() => validateCapacityReuseEvidence(tested, release, receipt, ['package.json']), /core paths/);
+  assert.throws(() => validateCapacityReuseEvidence(tested, release, receipt, ['package-lock.json']), /core paths/);
+  assert.throws(() => validateCapacityReuseEvidence(tested, release, { ...receipt, sourceRevision: release }, uiPaths), /原生sourceRevision不一致/);
+});
+
+test('candidate refresh updates and rolls back only a single changed panel source', () => {
+  const oldRevision = 'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b';
+  const newRevision = '1234567890abcdef1234567890abcdef12345678';
+  const panel = 'public/js/resonance/panels.js';
+  const expectedFiles = ['tools/resonance/capacity.mjs', 'public/css/resonance.css', 'server/modes/resonance/session.js',
+    'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', panel, 'server/index.js'];
+  const oldPanel = Buffer.from('old panel\n');
+  const oldCapacity = Buffer.from('capacity unchanged\n');
+  const oldBytes = { [panel]: oldPanel.toString('base64') };
+  const invariantBytes = { 'tools/resonance/capacity.mjs': oldCapacity.toString('base64') };
+  const template = candidateSessionRefreshScript(oldRevision, newRevision, expectedFiles, invariantBytes, oldBytes, [panel])
+    .replaceAll('/opt/stronghold-protocol/releases/resonance-candidate', '__CANDIDATE__')
+    .replaceAll('/var/tmp/stronghold-protocol/resonance', '__STAGING__')
+    .replaceAll('/opt/stronghold-protocol/toolchain/node-v22.23.3-linux-x64/bin/node', '__NODE__');
+  const encoded = Buffer.from(template).toString('base64');
+  const wrapper = `set -euo pipefail
+ROOT=$(mktemp -d /tmp/resonance-panel-refresh.XXXXXX); trap 'rm -rf -- "$ROOT"' EXIT
+for mode in success busy; do
+ D="$ROOT/$mode"; C="$D/candidate"; S="$D/stage"; B="$D/bin"; mkdir -p "$C/tools/resonance" "$C/public/css" "$C/public/js/resonance" "$C/server/modes/resonance" "$S" "$B"
+ printf 'capacity unchanged\\n' > "$C/tools/resonance/capacity.mjs"; printf 'old panel\\n' > "$C/public/js/resonance/panels.js"
+ printf 'unchanged\\n' > "$C/public/css/resonance.css"; printf 'unchanged\\n' > "$C/server/modes/resonance/session.js"; printf 'unchanged\\n' > "$C/server/modes/resonance/display.js"
+ printf 'unchanged\\n' > "$C/public/js/resonance/game.js"; printf 'unchanged\\n' > "$C/public/js/resonance/model.js"; printf 'legacy\\n' > "$C/server/index.js"
+ printf 'zip old\\n' > "$C/public/resonance-references.zip"; printf '{"sourceRevision":"${oldRevision}"}\\n' > "$C/.resonance-release-receipt.json"
+ mkdir -p "$S/public/js/resonance" "$S/tools/resonance"; printf 'new panel\\n' > "$S/public/js/resonance/panels.js"; printf 'capacity unchanged\\n' > "$S/tools/resonance/capacity.mjs"
+ printf 'opaque\\n' > "$S/server-code.tar"; printf 'zip new\\n' > "$S/resonance-references.zip"; printf '{"sourceRevision":"${newRevision}"}\\n' > "$S/server-release.json"
+ cat > "$B/node" <<'NODE'
+#!/bin/sh
+last=''; for arg do last="$arg"; done; sed -n 's/.*"sourceRevision"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' "$last"
+NODE
+ cat > "$B/tar" <<'TAR'
+#!/bin/sh
+test "$1" = -xOf || exit 2
+case "$3" in public/js/resonance/panels.js|tools/resonance/capacity.mjs) cat "$S/$3";; *) exit 2;; esac
+TAR
+ cat > "$B/fuser" <<'FUSER'
+#!/bin/sh
+test "$MODE" = busy && { echo 424242; exit 0; }; exit 1
+FUSER
+ chmod +x "$B/node" "$B/tar" "$B/fuser"
+ printf '%s' '${encoded}' | base64 -d | sed -e "s|__CANDIDATE__|$C|g" -e "s|__STAGING__|$S|g" -e "s|__NODE__|$B/node|g" > "$D/refresh.sh"
+ if test "$mode" = success; then MODE=success PATH="$B:/usr/bin:/bin" S="$S" bash -x "$D/refresh.sh" > "$D/out" 2> "$D/trace" || { tail -n 30 "$D/trace" >&2; exit 41; }
+   grep -q 'new panel' "$C/public/js/resonance/panels.js"; grep -q 'unchanged' "$C/public/js/resonance/model.js"; grep -q 'zip new' "$C/public/resonance-references.zip"
+ else set +e; MODE=busy PATH="$B:/usr/bin:/bin" S="$S" bash -x "$D/refresh.sh" > "$D/out" 2> "$D/trace"; rc=$?; set -e
+   test "$rc" -ne 0; grep -q 'candidate-file-in-use-after-session-refresh' "$D/trace"; grep -q 'old panel' "$C/public/js/resonance/panels.js"; grep -q 'zip old' "$C/public/resonance-references.zip"; grep -q '${oldRevision}' "$C/.resonance-release-receipt.json"
+ fi
+ test -z "$(find "$C" -type f \\( -name '*.refresh-pending' -o -name '*.refresh-backup' \\) -print -quit)"
+done
+`;
+  const bash = spawnSync('bash', ['-euo', 'pipefail'], { input: wrapper, encoding: 'utf8', windowsHide: true, timeout: 90_000 });
+  assert.equal(bash.error, undefined, bash.error?.message);
   assert.equal(bash.status, 0, bash.stderr || bash.stdout);
 });
 
