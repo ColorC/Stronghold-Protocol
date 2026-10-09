@@ -179,9 +179,15 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         // Summons train on their own native token curve. The summoner contributes only
         // phase/level context; using its operator curve (or a badge-percent fallback)
         // would give wolf packs and other tokens the wrong body.
-        const raw=u.def?.raw,curve=raw?.nativeGrowth;
+        const raw=u.def?.raw,sourceRaw=raw?.nativeGrowth?raw:raw?.raw?.nativeGrowth?raw.raw:raw,curve=sourceRaw?.nativeGrowth;
         if(!curve)throw new Error(`MISSING_NATIVE_TOKEN_GROWTH:${u.defId}`);
-        const ownerStatus=u.nativeOwnerGrowth||raw.variants?.[u.ownerUnit?.defId]||raw.status||{};
+        // Mylsse original-operator projections carry their selected character's
+        // own phase/level in nativeGrowthStatus; native summons instead inherit a
+        // frozen owner context. Prototype projections select their prototype's
+        // variant rather than the unrelated operator that happened to summon it.
+        const prototypeOwnerId=raw?.darkmoonPrototypeOwnerChessId||sourceRaw?.darkmoonPrototypeOwnerChessId;
+        const prototypeStatus=prototypeOwnerId&&(sourceRaw?.variants?.[prototypeOwnerId]||raw?.variants?.[prototypeOwnerId]);
+        const ownerStatus=u.nativeGrowthStatus||prototypeStatus||u.nativeOwnerGrowth||raw.status||{};
         const phase=Number(ownerStatus.phase??0),maximum=Number(curve.phases?.[phase]?.maxLevel);
         if(!(maximum>=1))throw new Error(`BAD_NATIVE_TOKEN_GROWTH_PHASE:${u.defId}:${phase}`);
         const level=Math.min(maximum,Math.max(1,Number(ownerStatus.level)||1));
