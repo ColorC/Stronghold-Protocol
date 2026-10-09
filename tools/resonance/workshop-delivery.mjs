@@ -13,6 +13,8 @@ const DESIGN_CARD_ID = 'resonance-design-20261009';
 const SERVER_FALLBACK = 'https://workshop.colorc.cc/bside';
 const PROJECT_ID = 'arknights';
 const CONFIG_PATH = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
+const WSH_CLI_PATH = process.env.WSH_CLI_PATH
+  || 'E:/WindowsWorkspace/spark.workshop/releases/remote-play-card-20261004/wt/remote-play-card-20261004-5ba073215a31/workshop/cli/dist/wsh.mjs';
 
 const DESIGN_SECTIONS = new Set([
   '体验与内容范围', '经济与招募', '费用与角色职责', '盟约设计原则',
@@ -184,6 +186,11 @@ function plannedRelations() {
 function selfTest() {
   if (httpErrorDetail({ error: 'workspace_scope_required', code: 'WORKSPACE_SCOPE' }) !== 'error=workspace_scope_required; code=WORKSPACE_SCOPE'
     || httpErrorDetail({ ok: false }) !== '') throw new Error('Workshop响应错误诊断纯测试失败');
+  const headers = cliWriterHeaders({ machine: 'cm-1234567890abcdef', session: 'codex-thread', runtime: 'codex/1.0', software: 'wsh/0.18.0' });
+  if (headers['x-workshop-machine'] !== 'cm-1234567890abcdef' || headers['x-workshop-session'] !== 'codex-thread'
+    || headers['x-workshop-runtime'] !== 'codex/1.0' || headers['x-workshop-software'] !== 'wsh/0.18.0') {
+    throw new Error('WSH写入身份头映射纯测试失败');
+  }
   const layout = layoutFor([
     { id: 'a', x: 80, y: 80, width: 400, height: 300 },
     { id: 'group', x: 520, y: 100, width: 300, height: 500 },
@@ -231,11 +238,38 @@ function contentItems(response) {
 function httpErrorDetail(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return '';
   const parts = [];
-  for (const key of ['error', 'message', 'code']) {
+  for (const key of ['error', 'message', 'code', 'hint', 'detail']) {
     const value = payload[key];
     if (typeof value === 'string' && value.trim()) parts.push(`${key}=${value.trim().slice(0, 400)}`);
   }
+  if (Array.isArray(payload.missing)) parts.push(`missing=${payload.missing.filter(value => typeof value === 'string').join(',').slice(0, 200)}`);
   return parts.join('; ');
+}
+
+function cliWriterHeaders(writer) {
+  const values = {
+    'x-workshop-machine': writer?.machine,
+    'x-workshop-session': writer?.session,
+    'x-workshop-runtime': writer?.runtime,
+    'x-workshop-software': writer?.software,
+  };
+  if (Object.values(values).some(value => typeof value !== 'string' || !value.trim())) {
+    throw new Error('WSH写入身份不完整；请按官方CLI登记机器并确认会话身份');
+  }
+  return values;
+}
+
+function readCliWriterHeaders(serverBase) {
+  let response;
+  try {
+    const stdout = execFileSync(process.execPath, [WSH_CLI_PATH, 'whoami', '--json', '--server', serverBase, '--project', PROJECT_ID], {
+      encoding: 'utf8', timeout: 20_000, windowsHide: true,
+    });
+    response = JSON.parse(stdout);
+  } catch {
+    throw new Error('无法从正式 WSH CLI 读取写入身份；未发送任何写请求');
+  }
+  return cliWriterHeaders(response?.writer);
 }
 
 async function run() {
@@ -257,9 +291,11 @@ async function run() {
   if (serverUrl.protocol !== 'https:' || serverUrl.username || serverUrl.password) throw new Error('WSH server 必须是无凭据的 HTTPS URL');
   if (options['embed-url']) validateEmbedUrl(embedUrl, serverUrl.origin);
   const serverBase = serverUrl.toString().replace(/\/+$/, '');
+  const writerHeaders = readCliWriterHeaders(serverBase);
   const headers = {
     accept: 'application/json', authorization: `Bearer ${localConfig.token}`,
     'content-type': 'application/json', 'x-workshop-project': PROJECT_ID,
+    ...writerHeaders,
   };
   async function request(method, endpoint, body) {
     const response = await fetch(apiUrl(serverBase, endpoint), {
