@@ -10,28 +10,31 @@ const SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const OUT = path.join(ROOT, 'runtime/resonance/ui-verification');
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const args = process.argv.slice(2);
-let remoteUrl = null, replaySession = null, createdSession = null, resumeTailSession = null, battleUi = false;
+let remoteUrl = null, replaySession = null, createdSession = null, resumeTailSession = null, finishTailSession = null, battleUi = false;
 for (let i = 0; i < args.length;) {
   if (args[i] === '--battle-ui' && !battleUi) { battleUi = true; i++; }
   else if (args[i] === '--url' && args[i + 1] && !remoteUrl) { remoteUrl = args[i + 1]; i += 2; }
   else if (args[i] === '--session' && args[i + 1] && !replaySession) { replaySession = args[i + 1]; i += 2; }
   else if (args[i] === '--created-session' && args[i + 1] && !createdSession) { createdSession = args[i + 1]; i += 2; }
   else if (args[i] === '--resume-tail' && args[i + 1] && !resumeTailSession) { resumeTailSession = args[i + 1]; i += 2; }
-  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-session-id>] [--battle-ui fresh flow] [--resume-tail <existing-ephemeral-session-id>]; no work started');
+  else if (args[i] === '--finish-tail' && args[i + 1] && !finishTailSession) { finishTailSession = args[i + 1]; i += 2; }
+  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-session-id>] [--battle-ui fresh flow] [--resume-tail <existing-ephemeral-session-id>] [--finish-tail <existing-ephemeral-session-id>]; no work started');
 }
 if (replaySession && !/^[a-zA-Z0-9-]{8,80}$/.test(replaySession)) throw new Error('--session must be an existing session id; no work started');
 if (createdSession && !/^[a-zA-Z0-9-]{8,80}$/.test(createdSession)) throw new Error('--created-session must be an existing session id; no work started');
 if (resumeTailSession && !/^[a-zA-Z0-9-]{8,80}$/.test(resumeTailSession)) throw new Error('--resume-tail must be an existing ephemeral session id; no work started');
+if (finishTailSession && !/^[a-zA-Z0-9-]{8,80}$/.test(finishTailSession)) throw new Error('--finish-tail must be an existing ephemeral session id; no work started');
 if (resumeTailSession && (remoteUrl || replaySession || createdSession || battleUi)) throw new Error('--resume-tail is an isolated existing ephemeral session flow and cannot be combined with other session/url flags; no work started');
+if (finishTailSession && (remoteUrl || replaySession || createdSession || resumeTailSession || battleUi)) throw new Error('--finish-tail is an isolated existing session flow and cannot be combined with other session/url flags; no work started');
 if (resumeTailSession) battleUi = true;
 if (battleUi && replaySession) throw new Error('--battle-ui cannot be combined with --session; no work started');
 if (createdSession && (!battleUi || !remoteUrl || replaySession)) throw new Error('--created-session requires --url and --battle-ui and cannot be combined with --session; no work started');
-const REPORT = path.join(OUT, resumeTailSession ? 'ui-flow-tail-receipt.json' : 'ui-flow-receipt.json');
+const REPORT = path.join(OUT, finishTailSession ? 'ui-tft-finish-receipt.json' : resumeTailSession ? 'ui-flow-tail-receipt.json' : 'ui-flow-receipt.json');
 const require = createRequire(path.join(ROOT, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   sourceStatus: execFileSync('git', ['-C', SOURCE, 'status', '--short', '--untracked-files=no'], { encoding: 'utf8' }).trim(),
-  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : resumeTailSession ? 'resume-tail-live-session' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || resumeTailSession || createdSession, battleUi,
+  startedAt: new Date().toISOString(), deadlineMs: 600000, mode: replaySession ? 'existing-session-read-only' : finishTailSession ? 'finish-tail-live-session' : resumeTailSession ? 'resume-tail-live-session' : createdSession ? 'created-session-battle-ui-resume' : battleUi ? 'fresh-flow-battle-ui' : 'fresh-flow', sessionId: replaySession || finishTailSession || resumeTailSession || createdSession, battleUi,
   resumeTailReference: resumeTailSession ? path.join(OUT, 'ui-flow-receipt.json') : null,
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
@@ -200,6 +203,126 @@ async function inspectPriorFightReplay(page, sessionId, round, screenshotName, e
   await page.waitForFunction(()=>!document.querySelector('.rs-replay-native'),{timeout:8000});
   check('prior-fight-replay-closes-without-new-actions',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
 }
+async function runFinishTail(page, sessionId) {
+  await waitForGameplayReady(page,'finish-tail');
+  const attempt10Path=path.join(OUT,'ui-tft-tail-attempt-10.json'),attempt9Path=path.join(OUT,'ui-tft-tail-attempt-9.json');
+  const attempt10=JSON.parse(await readFile(attempt10Path,'utf8')),attempt9=JSON.parse(await readFile(attempt9Path,'utf8'));
+  const tests10=new Map((attempt10.tests||[]).map(test=>[test.name,test])),tests9=new Map((attempt9.tests||[]).map(test=>[test.name,test]));
+  const priorFightNames=['resume-tail-validates-stored-equip-and-sale-checkpoint','outside-sale-drop-cancels-without-session-change','drag-sells-real-deployed-piece','F-buys-xp-with-detail-open','mouse-move-p1-preserves-uid-position-facing-and-equipment','single-ui-fight-authoritative-damage','paused-replay-ally-pointer-hit-is-real-render-unit'];
+  let state=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
+  const history=state.history||[],p1=state.pieces?.find(piece=>piece.uid==='p1'),p12Sale=history.find(event=>event.type==='operator-sold'&&event.uid==='p12'&&event.round===2&&event.refund===1);
+  const attempt10Sale=tests10.get('checkpoint13-sells-bench-p12-through-real-detail-action'),attempt10Revision=tests10.get('checkpoint13-sell-bench-p12-revision-advanced');
+  const settled=[...history].reverse().find(event=>event.type==='fight-settled'&&event.round===1);
+  const checkpointValid=attempt10.status==='failed'&&attempt10.sessionId===sessionId&&attempt10.initialRevision===13&&attempt10.creates===0&&attempt10.fights===0&&
+    attempt10Sale?.passed===true&&attempt10Sale.detail?.goldBefore===4&&attempt10Sale.detail?.goldAfter===5&&attempt10Revision?.passed===true&&attempt10Revision.detail?.previous===13&&attempt10Revision.detail?.current===14&&
+    attempt9.status==='failed'&&attempt9.sessionId===sessionId&&attempt9.initialRevision===9&&attempt9.creates===0&&attempt9.fights===1&&priorFightNames.every(name=>tests9.get(name)?.passed===true)&&
+    state.phase==='prep'&&state.revision===17&&state.round===2&&state.gold===5&&state.level===4&&state.xp===0&&state.hp===97&&p1?.row===9&&p1?.col===3&&p1?.dir==='RIGHT'&&
+    p1.equipment?.some(item=>item.uid==='i4'&&item.itemId==='bow')&&p1.equipment?.some(item=>item.uid==='i5'&&item.itemId==='blade')&&!state.inventory?.length&&state.pieces?.length===1&&!!p12Sale&&
+    history.some(event=>event.type==='piece-benched'&&event.uid==='p1'&&event.round===2)&&history.some(event=>event.type==='piece-deployed'&&event.uid==='p1'&&event.row===9&&event.col===3&&event.round===2)&&
+    history.some(event=>event.type==='item-equipped'&&event.uid==='i5'&&event.pieceUid==='p1'&&event.itemId==='blade'&&event.round===2)&&settled?.combatStats?.units?.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.heal===0&&unit.taken===840&&unit.kills===2);
+  check('finish-tail-validates-attempts-and-strict-rev17-history',checkpointValid,{attempt10Path,attempt9Path,attempt10Sale:attempt10Sale?.passed,attempt10Revision:attempt10Revision?.detail,revision:state.revision,round:state.round,gold:state.gold,p1,p12Sale,settled,priorActions:history.slice(-3)});
+  receipt.initialRevision=state.revision;
+  check('finish-tail-preserves-three-previously-repeated-actions-without-replay',history.slice(-3).map(event=>event.type).join('|')==='piece-benched|piece-deployed|item-equipped'&&history.at(-1)?.uid==='i5'&&state.revision===17,{revision:state.revision,actions:history.slice(-3)});
+
+  await rightClickPiece(page,'p1');
+  const beforeSale=state;
+  await page.keyboard.press('e');
+  state=await stateAfterRevision(page,sessionId,beforeSale.revision,'finish-tail-sell-p1');
+  const sold=state.history?.find(event=>event.type==='operator-sold'&&event.uid==='p1'&&event.round===2&&event.refund===1);
+  check('finish-tail-e-sells-p1-for-one-gold',!state.pieces?.some(piece=>piece.uid==='p1')&&state.gold===6&&!!sold,{goldBefore:beforeSale.gold,goldAfter:state.gold,sold});
+  await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:10000});
+  check('finish-tail-e-sale-closes-member-detail',await page.$('.dpanel')===null,'operator detail closes after its selected member is sold');
+  const xpCost=Number(state.actionCosts?.xpGold??4),refreshCost=Number(state.actionCosts?.refreshGold??2),required=xpCost+refreshCost;
+  check('finish-tail-mouse-economy-is-exactly-funded',state.gold===required,{gold:state.gold,xpCost,refreshCost});
+  const beforeXp=state;
+  await clickPointerSelector(page,'.shopbar .rs-level-card','finish-tail-mouse-xp');
+  state=await stateAfterRevision(page,sessionId,beforeXp.revision,'finish-tail-mouse-xp');
+  check('finish-tail-mouse-xp-spends-four-gold',state.gold===beforeXp.gold-xpCost&&(state.level>beforeXp.level||state.xp>beforeXp.xp),{goldBefore:beforeXp.gold,goldAfter:state.gold,levelBefore:beforeXp.level,levelAfter:state.level,xpBefore:beforeXp.xp,xpAfter:state.xp});
+  const beforeRefresh=state;
+  await clickPointerSelector(page,'.shopbar__tools .toolbtn--amber','finish-tail-mouse-refresh');
+  state=await stateAfterRevision(page,sessionId,beforeRefresh.revision,'finish-tail-mouse-refresh');
+  check('finish-tail-mouse-refresh-spends-two-gold',state.gold===beforeRefresh.gold-refreshCost,{goldBefore:beforeRefresh.gold,goldAfter:state.gold,refreshCost});
+  const readOnlyExpectedRevision=state.revision;
+  check('finish-tail-no-new-session-or-fight',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
+
+  await inspectPriorFightReplay(page,sessionId,1,'23-finish-tail-sold-ally-detail','p1','角峰');
+  state=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
+  const fight=[...state.history].reverse().find(event=>event.type==='fight-settled'&&event.round===1);
+  const damageUnits=(fight?.combatStats?.units||[]).filter(unit=>Number.isFinite(unit.dmg)&&unit.dmg>0);
+  check('finish-tail-stored-round-one-damage-is-authoritative',damageUnits.some(unit=>unit.uid==='p1'&&unit.dmg===4872&&unit.heal===0&&unit.taken===840),{revision:state.revision,round:fight?.round,damageUnits});
+  await clickVisibleButtonText(page,'.rs-dock','战报','finish-tail-report-identity-opener');
+  await page.waitForSelector('#rs-section-battle-report .rs-battle-report__identity',{timeout:10000});
+  const identityPoint=await page.evaluate(()=>{const button=[...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__unit')].find(row=>row.querySelector('.rs-battle-report__identity')?.innerText.includes('角峰'))?.querySelector('.rs-battle-report__identity');if(!button)return null;const r=button.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return document.elementFromPoint(x,y)?.closest('.rs-battle-report__identity')===button?{x,y,text:button.innerText.trim()}:null;});
+  check('finish-tail-report-identity-is-real-pointer-target',!!identityPoint,identityPoint);
+  const beforeIdentity=state;
+  await page.mouse.click(identityPoint.x,identityPoint.y);
+  await page.waitForFunction(()=>document.querySelector('.dpanel .dhead__name')?.innerText.includes('角峰'),{timeout:8000});
+  const detail=await page.evaluate(()=>{const panel=document.querySelector('.dpanel');return{title:panel?.querySelector('.dhead__name')?.innerText.trim(),snapshot:panel?.querySelector('.rs-detail__battle-snapshot')?.innerText.trim(),oneStar:panel?.querySelector('.rs-detail__stars [aria-label="一星"]')?.getAttribute('aria-selected'),member:!!panel?.querySelector('.rs-detail__member'),actions:!!panel?.querySelector('.rs-detail__actions'),selects:panel?.querySelectorAll('select').length||0};});
+  check('finish-tail-report-identity-opens-readonly-one-star-detail',detail.title?.includes('角峰')&&detail.snapshot?.includes('1星')&&detail.oneStar==='true'&&!detail.member&&!detail.actions&&!detail.selects,detail);
+  state=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
+  check('finish-tail-report-identity-does-not-mutate-session',state.revision===beforeIdentity.revision,{before:beforeIdentity.revision,after:state.revision});
+  await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
+  await clickVisibleButtonText(page,'.rs-dock','战报','finish-tail-report-chart-opener');
+  await page.waitForSelector('#rs-section-battle-report .rs-battle-report__unit',{timeout:10000});
+  const shown=value=>Number.isInteger(value)?String(value):String(Number(value.toFixed(1)));
+  const evidence={};
+  for(const [field,label] of [['dmg','伤害'],['heal','治疗'],['taken','承伤']]) {
+    if(field!=='dmg') {
+      await page.$eval('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]',(first,target)=>{const tab=[...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]')].find(node=>node.innerText.trim()===target);if(!tab)throw new Error(`missing report metric ${target}`);tab.click();},label);
+      await page.waitForFunction(target=>[...document.querySelectorAll('#rs-section-battle-report .rs-battle-report__metrics [role="tab"]')].some(tab=>tab.innerText.trim()===target&&tab.getAttribute('aria-selected')==='true'),{timeout:5000},label);
+    }
+    const actual=await page.$$eval('#rs-section-battle-report .rs-battle-report__unit',rows=>rows.map(row=>({value:row.querySelector('.rs-battle-report__bar > b')?.textContent?.trim(),title:row.querySelector('.rs-battle-report__bar > b')?.getAttribute('title'),bar:Number(row.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'))})).filter(row=>row.bar>0));
+    const expected=(fight?.combatStats?.units||[]).filter(unit=>Number.isFinite(Number(unit[field]))&&Number(unit[field])>0).map(unit=>({value:shown(Number(unit[field])),title:`精确值：${String(unit[field])}`})).sort((a,b)=>Number(b.value)-Number(a.value));
+    check(`finish-tail-report-${field}-matches-stored-stats`,actual.length===expected.length&&actual.every((row,index)=>row.value===expected[index]?.value&&row.title===expected[index]?.title),{expected,actual});
+    evidence[field]={expected,actual};
+  }
+  receipt.combatStatsEvidence={round:1,source:'existing session history combatStats',metrics:evidence};
+  await shot(page,'24-finish-tail-report');
+  state=await page.evaluate(async id=>(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state,sessionId);
+  check('finish-tail-final-session-unchanged-after-read-only-inspection',state.revision===readOnlyExpectedRevision,{expected:readOnlyExpectedRevision,actual:state.revision});
+  check('finish-tail-no-new-session-or-fight-final',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
+}
+async function inspectReadOnlyFixtures(page, screenshotPrefix='') {
+  const { startServer } = await import(pathToFileURL(path.join(SOURCE, 'server/index.js')).href);
+  fixtureServer = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: ROOT, dataDir: NATIVE_DATA,
+    publicDir: path.join(SOURCE, 'public'), sharedDir: path.join(SOURCE, 'shared'),
+    resonanceDirectory: path.join(ROOT, 'runtime/resonance/verification/fixture-sessions'),
+    independentDirectory: path.join(OUT, 'independent-sessions'), recordingDirectory: path.join(OUT, 'recordings') });
+  const fixture = new URL(`${fixtureServer.url}/resonance.html`);
+  fixture.searchParams.set('session', '071b719c-cf27-4a7d-a615-5ab597d0fe0b');
+  await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
+  await page.goto(fixture.href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.waitForSelector('.rs-choice-full', { timeout: 30000 });
+  await shot(page, `${screenshotPrefix}10-existing-choice`);
+  const choiceBefore = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b');
+  await page.$eval('.rs-choice-full .rs-choice-option button', el => el.click());
+  await page.waitForSelector('.dpanel', { timeout: 5000 });
+  check('choice-option-preview-without-claim', (await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b')).revision === choiceBefore.revision,
+    'option card selection remains client-side until confirmation');
+  await page.click('.dpanel__close');
+  check('choice-card-remains-previewed', await page.$('.rs-choice-full .rs-choice-option button.is-armed') !== null, 'selected card remains previewed');
+  await page.waitForSelector('.rs-choice-full .rs-choice-option select', { timeout: 10000 });
+  const pairState = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b');
+  const pairValue = await page.$eval('.rs-choice-full .rs-choice-option select', el => el.options[1]?.value || '');
+  check('adjacent-pair-option-available', !!pairValue && pairValue.includes('|'), await page.$eval('.rs-choice-full .rs-choice-option select', el => [...el.options].map(o => ({ value: o.value, text: o.textContent }))));
+  await page.select('.rs-choice-full .rs-choice-option select', pairValue);
+  check('adjacent-pair-target-selection-local-only', await page.$eval('.rs-choice-full .rs-choice-option select', el => el.value) === pairValue &&
+    (await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b')).revision === pairState.revision,
+    { selected: await page.$eval('.rs-choice-full .rs-choice-option select', el => el.value), revision: pairState.revision });
+  await button(page, '收起整备'); check('choice-can-minimize', await page.$('.rs-choice-full') === null, 'returns to board for capacity arrangement');
+  await button(page, '继续选择'); await page.waitForSelector('.rs-choice-full', { timeout: 5000 });
+  check('choice-can-restore', await page.$('.rs-choice-full') !== null, 'choice overlay reopens from HUD');
+  await shot(page, `${screenshotPrefix}13-existing-adjacent-target`);
+  fixture.searchParams.set('session', '14f5ff81-2a70-4b2d-b15b-9d88e19eb9c1');
+  await page.goto(fixture.href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.waitForSelector('.rs-final-screen', { timeout: 30000 });
+  await shot(page, `${screenshotPrefix}11-existing-final-result`);
+  await button(page, '查看战报'); await page.waitForSelector('.modal', { timeout: 10000 });
+  check('completed-report-modal-visible', /战斗记录/.test(await page.$eval('.modal', e => e.innerText)), await page.$eval('.modal', e => e.innerText.slice(0, 400)));
+  await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.modal'), { timeout: 5000 });
+  await page.click('.rs-final-screen .rs-result-member > summary');
+  await page.click('.rs-final-screen .rs-result-member[open] .rs-inline-detail'); await page.waitForSelector('.dpanel .dstats', { timeout: 10000 });
+  check('completed-member-detail-eight-stats', await page.$$eval('.dpanel .dstat', nodes => nodes.length) === 8, 'member detail is readable from completed result');
+  await page.click('.dpanel__close'); await button(page, '返回开始界面'); await page.waitForSelector('.title-screen', { timeout: 15000 });
+}
 async function inspectOverlayShopReachability(page, pieceUid) {
   await rightClickPiece(page, pieceUid);
   check('operator-detail-visible-for-context-switch-test', await page.$('.rs-detail-panel[role="dialog"]') !== null,
@@ -337,8 +460,12 @@ try {
   if (replaySession) { const replayUrl = new URL(url); replayUrl.searchParams.set('session', replaySession); url = replayUrl.href; receipt.url = url; }
   if (createdSession) { const resumeUrl = new URL(url); resumeUrl.searchParams.set('session', createdSession); url = resumeUrl.href; receipt.url = url; }
   if (resumeTailSession) { const tailUrl = new URL(url); tailUrl.searchParams.set('session', resumeTailSession); url = tailUrl.href; receipt.url = url; }
+  if (finishTailSession) { const finishUrl = new URL(url); finishUrl.searchParams.set('session', finishTailSession); url = finishUrl.href; receipt.url = url; }
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  if (replaySession) {
+  if (finishTailSession) {
+    await runFinishTail(page,finishTailSession);
+    await inspectReadOnlyFixtures(page,'finish-');
+  } else if (replaySession) {
     await page.waitForSelector('.gm', { timeout: 30000 });
     await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30000 });
     const state = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, replaySession);
@@ -475,6 +602,7 @@ try {
       completedP12SaleCheckpoint=prior.status==='failed'&&prior.sessionId===resumeTailSession&&prior.initialRevision===13&&prior.creates===0&&prior.fights===0&&
         saleAction?.passed===true&&saleAction.detail?.goldBefore===4&&saleAction.detail?.goldAfter===5&&saleRevision?.passed===true&&saleRevision.detail?.previous===13&&saleRevision.detail?.current===14&&
         !p12&&!!sale&&p1?.uid==='p1'&&resumed.gold===5&&completedFightCheckpoint;
+      if(completedFightCheckpoint) completedWCheckpoint=completedEquipmentSellCheckpoint=true;
       validResumeState=completedP12SaleCheckpoint;
       check('resume-tail-validates-attempt10-p12-sale-and-live-checkpoint14',completedP12SaleCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,priorSalePassed:saleAction?.passed===true,priorRevisionPassed:saleRevision?.passed===true,priorFightPath,priorFightValid,revision:resumed.revision,round:resumed.round,gold:resumed.gold,p1,p12,sale,settled});
     }
@@ -1064,47 +1192,7 @@ try {
     receipt.combatStatsEvidence = { round: settled.round, source: 'GET session state.history[].combatStats.units', damageUnits, metricEvidence };
     await shot(page, '14-live-combat-report');
   }
-  if (!remoteUrl) {
-    const { startServer } = await import(pathToFileURL(path.join(SOURCE, 'server/index.js')).href);
-    fixtureServer = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: ROOT, dataDir: NATIVE_DATA,
-      publicDir: path.join(SOURCE, 'public'), sharedDir: path.join(SOURCE, 'shared'),
-      resonanceDirectory: path.join(ROOT, 'runtime/resonance/verification/fixture-sessions'),
-      independentDirectory: path.join(OUT, 'independent-sessions'), recordingDirectory: path.join(OUT, 'recordings') });
-    const fixture = new URL(`${fixtureServer.url}/resonance.html`);
-    fixture.searchParams.set('session', '071b719c-cf27-4a7d-a615-5ab597d0fe0b');
-    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
-    await page.goto(fixture.href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.waitForSelector('.rs-choice-full', { timeout: 30000 });
-    await shot(page, '10-existing-choice');
-    const choiceBefore = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b');
-    await page.$eval('.rs-choice-full .rs-choice-option button', el => el.click());
-    await page.waitForSelector('.dpanel', { timeout: 5000 });
-    check('choice-option-preview-without-claim', (await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b')).revision === choiceBefore.revision,
-      'option card selection remains client-side until confirmation');
-    await page.click('.dpanel__close');
-    check('choice-card-remains-previewed', await page.$('.rs-choice-full .rs-choice-option button.is-armed') !== null, 'selected card remains previewed');
-    await page.waitForSelector('.rs-choice-full .rs-choice-option select', { timeout: 10000 });
-    const pairState = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b');
-    const pairValue = await page.$eval('.rs-choice-full .rs-choice-option select', el => el.options[1]?.value || '');
-    check('adjacent-pair-option-available', !!pairValue && pairValue.includes('|'), await page.$eval('.rs-choice-full .rs-choice-option select', el => [...el.options].map(o => ({ value: o.value, text: o.textContent }))));
-    await page.select('.rs-choice-full .rs-choice-option select', pairValue);
-    check('adjacent-pair-target-selection-local-only', await page.$eval('.rs-choice-full .rs-choice-option select', el => el.value) === pairValue &&
-      (await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, '071b719c-cf27-4a7d-a615-5ab597d0fe0b')).revision === pairState.revision,
-      { selected: await page.$eval('.rs-choice-full .rs-choice-option select', el => el.value), revision: pairState.revision });
-    await button(page, '收起整备'); check('choice-can-minimize', await page.$('.rs-choice-full') === null, 'returns to board for capacity arrangement');
-    await button(page, '继续选择'); await page.waitForSelector('.rs-choice-full', { timeout: 5000 });
-    check('choice-can-restore', await page.$('.rs-choice-full') !== null, 'choice overlay reopens from HUD');
-    await shot(page, '13-existing-adjacent-target');
-    fixture.searchParams.set('session', '14f5ff81-2a70-4b2d-b15b-9d88e19eb9c1');
-    await page.goto(fixture.href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.waitForSelector('.rs-final-screen', { timeout: 30000 });
-    await shot(page, '11-existing-final-result');
-    await button(page, '查看战报'); await page.waitForSelector('.modal', { timeout: 10000 });
-    check('completed-report-modal-visible', /战斗记录/.test(await page.$eval('.modal', e => e.innerText)), await page.$eval('.modal', e => e.innerText.slice(0, 400)));
-    await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.modal'), { timeout: 5000 });
-    await page.click('.rs-final-screen .rs-result-member > summary');
-    await page.click('.rs-final-screen .rs-result-member[open] .rs-inline-detail'); await page.waitForSelector('.dpanel .dstats', { timeout: 10000 });
-    check('completed-member-detail-eight-stats', await page.$$eval('.dpanel .dstat', nodes => nodes.length) === 8, 'member detail is readable from completed result');
-    await page.click('.dpanel__close'); await button(page, '返回开始界面'); await page.waitForSelector('.title-screen', { timeout: 15000 });
-  }
+  if (!remoteUrl) await inspectReadOnlyFixtures(page);
   }
   await Promise.all(dataResponses);
   if (replaySession) check('local-three-core-response', (receipt.nativeResourceResponses || []).length > 0 && receipt.nativeResourceResponses.every(item => item.status === 200 || item.status === 304), receipt.nativeResourceResponses || []);
