@@ -116,7 +116,7 @@ const EQUIPMENT_RULES = Object.freeze({
   '增压臂铠': { mechanism: 'escalatingForge', params: { id: 'precision', start: 1, max: 16 } },
   '重型武装校准章': { mechanism: 'badgeAmplifier', params: { badgeIds: ['precision', 'assault'], multiplier: 2, stats: ['attackFlat', 'attackPercent'] } },
   '调和识别牌': { mechanism: 'identityTag', params: { chooseOnEquip: true } },
-  '罗德岛便携锻炉': { mechanism: 'prepEndForge', params: { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], requiresOnField: true } },
+  '罗德岛便携锻炉': { mechanism: 'prepEndForge', params: { outputs: [{ id: 'precision', quantity: 1 }, { id: 'damage', quantity: 1 }], requiresOnField: true } },
   // ---- retired (design `retired`): nobody brings them; old saves keep them working, read with their normal values ----
   '迅捷作战口粮': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'deploy', behavior: 'deploySpRecovery', params: { base: 3, perSharedFactionAlly: 1, maxBonus: 5 } }] } },
   '歌利亚防护盔': { mechanism: 'combatEquipment', params: { effects: [{ trigger: 'deploy', behavior: 'deployWindowStats', params: { noFrontAllyBonus: 0.1, duration: 'deployment' } }] }, stats: { maxHpPercent: 0.15 } },
@@ -150,8 +150,8 @@ const PRIZE_MECHANISMS = Object.freeze({
   应急营养补给: ['grantItems', { outputs: [{ id: 'precision', quantity: 3 }, { id: 'vitality', quantity: 3 }] }],
   额外采购配额: ['grantItems', { outputs: [{ id: 'chess_item_1_03_e_a', quantity: 2 }] }],
   新人征调令: ['recruitOffer', { tier: 1, elite: false, choices: 3, applyGainTrait: true }],
-  全队战备支援: ['grantAllOperators', { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], cap: 8 }],
-  标准战备升级: ['futureShopEquipment', { id: 'vitality', quantity: 1, shopChessOnly: true, currentUnclaimed: true, noDuplicateOnFreeze: true }],
+  全队战备支援: ['grantAllOperators', { outputs: [{ id: 'precision', quantity: 1 }, { id: 'damage', quantity: 1 }], cap: 8 }],
+  标准战备升级: ['futureShopEquipment', { id: 'damage', quantity: 1, shopChessOnly: true, currentUnclaimed: true, noDuplicateOnFreeze: true }],
   紧急情报更新: ['freeRefreshes', { count: 3, expires: 'prepEnd' }],
   便携锻造站: ['grantGear', { gearId: 'rhodes-portable-forge' }],
   重复验收许可: ['repeatNativeForging', { extraRepeats: 1, scope: 'prep', excludeRepeat: true }],
@@ -344,7 +344,7 @@ export function getCatalog(data = getData(), design = DESIGN) {
   }
   for (const op of Object.values(operators)) delete op.inheritance;
   const attachments = keyed(design.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
-  attachments['darkmoon-magnetic'] = { id:'darkmoon-magnetic', name:'机械合体组件', effect:'附加来源干员的本局退场效果；不同来源可以分别触发。', mechanism:'darkmoonSourceAttachment', params:{ sourceIdRequired:true }, unique:false, inheritable:true, available:true };
+  attachments['darkmoon-magnetic'] = { id:'darkmoon-magnetic', name:'机械合体组件', effect:'附加来源干员的本局战斗部署效果；不同来源可以分别触发。', mechanism:'darkmoonSourceAttachment', params:{ sourceIdRequired:true }, unique:false, inheritable:true, available:true };
   const prizes = keyed(design.prizes, (x) => PRIZE_IDS[x.name], (x, id) => ({
     ...clone(x), id,
     mechanism: PRIZE_MECHANISMS[x.name][0], params: clone(PRIZE_MECHANISMS[x.name][1]),

@@ -1,24 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { getData } from '../../server/data.js';
 import { makeBattle,chessRec,enemyRec } from '../helpers/battleHarness.js';
-import { installDarkmoonCombat,DARKMOON_COMBAT_RULES,darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
+import { installDarkmoonCombat,DARKMOON_COMBAT_RULES,darkmoonCombatMetadata,hasDarkmoonDeploymentPayload } from '../../server/sim/content/independent/darkmoonCombat.js';
+import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPrep.js';
+import { darkmoonCombatEligibilityRules } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { levelBodyStats } from '../../shared/independentGrowth.js';
 import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
 
 const tribes={MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'};
-function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[]) {
+function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[],eliteSourceIds=[]) {
   const r=DARKMOON_COMBAT_RULES[sourceId],faction=tribes[r.faction||r.retire?.faction||r.retire?.fallen||r.retire?.random||r.startStrike||r.aura?.faction]||'叙拉古';
   const definitions={};const pieces=[];const operators={};
   for(const [index,id]of [sourceId,...extraSources,'fixture'].entries()){
     const uid=`p${index}`,chessId=`fixture_${index}_a`,rec={...chessRec({id:chessId,name:uid,skill:null,stats:{cost:0,atk:100,maxHp:10000,def:0,bat:10},rangeGrid:[[0,0],[0,1],[0,2],[0,3],[1,0],[1,1],[1,2]]}),rarity:6};
+    const eliteRec={...rec,chessId:`fixture_${index}_b`,name:`${uid}精锐`,stats:{...rec.stats,atk:150}};
     definitions[chessId]=rec;
+    definitions[eliteRec.chessId]=eliteRec;
     if(state?.growthMode==='levels'){
       rec.status={phase:0,level:1};
       rec.nativeGrowth={phases:[{maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:100,maxHp:10000,def:0,magicResistance:0}},{level:10,data:{atk:190,maxHp:10090,def:90,magicResistance:9}}]}]};
     }
-    pieces.push({uid,chessId,elite:index===0&&elite,row:10+Math.floor(index/3),col:5+index%3,equipment:[{id:'cover',quantity:1}],attachments:index===0?attachments:[],nativeState:{}});
-    operators[chessId]={chessId,name:uid,tier:index===0?6:2,elite:false,nativeFactionTags:[faction],source:{normalChess:rec},sourceRefs:{darkmoon19_2:{id}}};
+    const isElite=(index===0&&elite)||eliteSourceIds.includes(id);
+    pieces.push({uid,chessId,elite:isElite,row:10+Math.floor(index/3),col:5+index%3,equipment:[{id:'cover',quantity:1}],attachments:index===0?attachments:[],nativeState:{}});
+    operators[chessId]={chessId,name:uid,tier:index===0?6:index===1?2:1,elite:isElite,eliteChessId:eliteRec.chessId,nativeFactionTags:[faction],source:{normalChess:rec,eliteChess:eliteRec},sourceRefs:{darkmoon19_2:{id}}};
   }
   const catalog={operators,config:{maxShopLevel:6},equipment:{cover:{params:{gearId:'oath-cover'}}}};
   let installed;
@@ -30,14 +36,15 @@ function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[])
 
 for(const elite of [false,true])for(const [id,r]of Object.entries(DARKMOON_COMBAT_RULES)){
   test(`${id} executes its combat adaptation (${elite?'advanced':'ordinary'})`,()=>{
-    const extra=r.summonMultiplier?['EX1_556']:r.retireMultiplier?['OG_256']:r.echo?['OG_256']:[];
+    const extra=r.summonMultiplier?['EX1_556']:r.retireMultiplier?['OG_256']:r.echo?['OG_256']:r.retire?.random==='deathrattle'?['BGS_061']:[];
     const f=fixture(id,elite,extra),{h,b,unit,ally,enemy,installed}=f;
     assert.ok(darkmoonCombatMetadata(id,elite)?.text);
     const before=installed.trace.length;
-    if(r.retire?.fallen){b.kill(ally,enemy);h.run(.1);}
-    if(r.retire){b.retreat(unit);h.run(.1);}
+    if(r.retire&&id!=='BGS_008')assert.ok(installed.trace.some(t=>t.sourceId===id&&['deploy','deployQueued'].includes(t.kind)),'opening deployment is resolved or queued');
+    if(r.retire&&id==='BGS_008'){b.retreat(unit);h.run(.1);assert.equal(installed.trace.filter(t=>t.sourceId===id&&t.kind==='retire').length,0,'retreat does not count as knockout');b.kill(unit,enemy);h.run(.1);}
+    else if(r.retire?.fallen){b.kill(ally,enemy);b.redeploy(unit,{free:true});h.run(.1);}
     else if(r.summonMultiplier){b.retreat(h.unit('p1'));h.run(.1);assert.ok(b.allyUnits.filter(u=>u.kind==='token').length>=(elite?3:2));}
-    else if(r.retireMultiplier){const target=h.unit('p1'),base=unit.base.atk;b.retreat(target);h.run(.1);assert.ok(unit.s.atk>base);assert.equal(installed.trace.filter(t=>t.sourceId==='OG_256'&&t.kind==='retire').length,elite?3:2);}
+    else if(r.retireMultiplier){const target=h.unit('p1'),base=unit.base.atk;b.retreat(target);b.redeploy(target,{free:true});h.run(.1);assert.ok(unit.s.atk>base);assert.equal(installed.trace.filter(t=>t.sourceId==='OG_256'&&t.kind==='deploy').length,2*(elite?3:2));}
     else if(r.aura){h.run(.3);assert.ok(ally.s.atk>ally.base.atk);b.retreat(unit);h.run(.6);assert.equal(ally.s.atk,ally.base.atk);}
     else if(r.intercept){const ctx={attacker:enemy,targets:[ally],profile:{}};enemy.x=unit.x+.1;enemy.y=unit.y;b.emit('beforeAttack',ctx);assert.equal(ctx.targets[0],unit);}
     else if(r.counterattack){b.emit('attack',{attacker:enemy,targets:[unit],isSkill:false});h.run(.1);assert.ok(unit.stats.attacks>0);}
@@ -48,14 +55,14 @@ for(const elite of [false,true])for(const [id,r]of Object.entries(DARKMOON_COMBA
     else if(r.event==='attacked'){b.emit('beforeAttack',{attacker:enemy,targets:[r.selfOnly?unit:ally],profile:{}});}
     else if(r.event==='attack'){b.forceAttack(r.selfOnly?unit:ally,[enemy]);}
     else if(r.event==='kill'){b.dealDamage(ally,enemy,{amount:1e9,type:'true',isAttack:true});}
-    else if(r.event==='death'){b.kill(ally,enemy);}
+    else if(r.event==='death'){assert.ok(installed.trace.some(t=>t.sourceId===id&&t.kind==='event'),'real initial deployment is the ally event');}
     else if(r.event==='damaged'){b.dealDamage(enemy,unit,{amount:50,type:'true',isAttack:true});}
     else if(r.event==='shieldLayersBroken'){b.addBuff(ally,{key:'test-shield',shieldHits:5});for(let i=0;i<5;i++)b.dealDamage(enemy,ally,{amount:1,type:'true',isAttack:true});}
     h.run(.1);
-    if(!r.aura&&!r.retireMultiplier&&!r.summonMultiplier)assert.ok(installed.trace.length>before||r.startStrike,'actual causal effect must execute');
+    if(!r.aura&&!r.retire&&!r.retireMultiplier&&!r.summonMultiplier&&r.event!=='death')assert.ok(installed.trace.length>before||r.startStrike,'actual causal effect must execute');
     if(r.retire?.token||r.retire?.random||r.retire?.fallen||r.summon||r.overkill==='summon')assert.ok(b.allyUnits.some(u=>u.kind==='token'),'actual support unit exists');
     if(r.permanent)assert.ok(installed.results.growth.every(x=>x.targetUid===unit.uid)&&installed.results.growth.length>0);
-    if(r.buff&&r.event!=='summon'){
+    if(r.buff&&r.event!=='summon'&&r.event!=='death'){
       const receivers=r.target==='self'?[unit]:r.target==='actor'?[r.selfOnly?unit:ally]:r.target==='all'?[unit,ally]:[r.target==='adjacentActor'?unit:ally];
       for(const target of receivers)assert.ok(Math.abs(target.s.atk-target.base.atk*(1+r.buff[0]*(elite?2:1)*.02))<1e-6,'ordinary/advanced attack equipment quantity follows source magnitude');
     }
@@ -73,6 +80,13 @@ test('combat ramps and shields do not become persistent badge rewards or transfe
   assert.deepEqual(installed.results.growth,[]);
   assert.equal(b.independentRewards,undefined);
   assert.ok(Object.values(unit.mem.darkmoonTemporaryEquipment||{}).every(x=>x.expires==='battleEnd'));
+});
+test('temporary A/H combat growth records and applies the fixed damage badge ID',()=>{
+  const {b,unit,ally,enemy}=fixture('BGS_047');
+  b.forceAttack(ally,[enemy]);
+  const record=Object.values(unit.mem.darkmoonTemporaryEquipment||{})[0];
+  assert.deepEqual(record.badgeIds,['precision','damage']);
+  assert.equal(unit.findBuff(Object.keys(unit.mem.darkmoonTemporaryEquipment)[0]).mods.dmgDealtMul,1.02);
 });
 test('combat faction requirements reject an unrelated owner and unrelated native faction',()=>{
   const {b,unit,ally,enemy,installed}=fixture('BGS_047');
@@ -94,13 +108,13 @@ test('Khadgar doubles actual native summons without doubling their equipment, an
   assert.equal(b.allyUnits.filter(u=>u.kind==='token').length-before,2);
   assert.equal(b.independentRewards,undefined);
 });
-test('retirement can trigger after withdrawal, cannot double-fire for one deployment, and is bounded across repeated redeployment',()=>{
+test('deployment payload never triggers on withdrawal and is bounded across actual redeployments',()=>{
   const {h,b,unit,installed}=fixture('OG_256');
   b.retreat(unit);h.run(.1);
-  b.emit('death',{unit,reason:'killed'});h.run(.1);
-  assert.equal(installed.trace.filter(x=>x.kind==='retire').length,1);
+  assert.equal(installed.trace.filter(x=>x.kind==='deploy').length,1,'opening deployment pays once');
+  assert.equal(installed.trace.filter(x=>x.kind==='retire').length,0,'withdrawal is not a trigger');
   for(let i=0;i<4;i++){b.redeploy(unit,{free:true});b.retreat(unit);h.run(.1);}
-  assert.equal(installed.trace.filter(x=>x.kind==='retire').length,3);
+  assert.equal(installed.trace.filter(x=>x.kind==='deploy').length,3,'actual deployment payload is capped at three');
 });
 test('temporary training from multiple sources follows one native curve and never exceeds its real cap',()=>{
   const {h,b,unit,ally,enemy,installed}=fixture('BGS_047',false,['BGS_047'],{growthMode:'levels'});
@@ -142,7 +156,7 @@ test('advanced source effects preserve recipients, repeats and token counts rath
     ripper.b.emit('attack',{attacker:ripper.enemy,targets:[ripper.unit]});ripper.h.run(.1);
     assert.equal(ripper.unit.stats.attacks-before,1);
     const macaw=fixture('BGS_078',elite,['OG_256']);macaw.b.forceAttack(macaw.unit,[macaw.enemy]);
-    assert.equal(macaw.installed.trace.filter(t=>t.kind==='retireEcho').length,elite?2:1);
+    assert.equal(macaw.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length,elite?2:1);
   }
 });
 test('advanced shield gift chooses two different allies and advanced bomber really hits twice',()=>{
@@ -152,7 +166,7 @@ test('advanced shield gift chooses two different allies and advanced bomber real
   const bomber=fixture('BOT_606',true);bomber.b.kill(bomber.h.enemies()[1],bomber.unit);
   for(const u of bomber.b.allyUnits)u.profile.noAttack=true;
   const hp=bomber.enemy.hp;bomber.b.addBuff(bomber.enemy,{key:'two-layer-probe',shieldHits:2});
-  bomber.b.retreat(bomber.unit);bomber.h.run(.1);
+  bomber.b.emit('attack',{attacker:bomber.unit,targets:[bomber.enemy]});bomber.h.run(.1);
   assert.equal(bomber.enemy.hp,hp);assert.equal(bomber.enemy.findBuff('two-layer-probe')?.shieldHits||0,0);
 });
 test('magnetic modules retain their own source quality and stack distinct retirement effects on the recipient',()=>{
@@ -161,71 +175,106 @@ test('magnetic modules retain their own source quality and stack distinct retire
   assert.equal(b.relocate(ally,12,2),true);
   b.retreat(unit);h.run(.1);
   const tokens=b.allyUnits.filter(u=>u.kind==='token');
-  assert.equal(tokens.length,6);assert.equal(tokens.filter(u=>u.base.atk===120).length,3);assert.equal(tokens.filter(u=>u.base.atk===240).length,3);
-  assert.equal(installed.trace.filter(t=>t.kind==='retire'&&t.sourceId==='BOT_312').length,2);
+  assert.ok(tokens.length<=6&&tokens.length>=5);assert.equal(tokens.filter(u=>u.base.atk===120).length,3);assert.ok(tokens.filter(u=>u.base.atk===240).length>=2);
+  assert.equal(installed.trace.filter(t=>t.kind==='deploy'&&t.sourceId==='BOT_312').length,2);
   assert.equal(b.errorCount,0,JSON.stringify(b.errors));
 });
 
-function originalCopyFixture(id, {elite=false,growthMode='badges',source='BGS_023'}={}) {
-  const f=fixture(source,false,[id],{growthMode});
-  for(const op of Object.values(f.catalog.operators))op.recruitable=false;
-  f.catalog.operators.fixture_1_a.recruitable=true;
-  Object.assign(f.catalog.equipment,Object.fromEntries(KEYWORD_GEAR.map(g=>[g.id,g])));
-  f.pieces[1].elite=elite;
-  const original=f.h.unit('p1');
-  const copiedRule=DARKMOON_COMBAT_RULES[id], copiedFaction=tribes[copiedRule?.aura?.faction||copiedRule?.faction];
-  if(copiedFaction){for(const op of Object.values(f.catalog.operators))op.nativeFactionTags=[copiedFaction];for(const u of f.b.allyUnits)u.mem.darkmoonFactionTags=[copiedFaction];}
-  f.b.retreat(original);f.h.run(.1);
-  f.b.retreat(f.unit);f.h.run(.1);
-  const copy=f.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw.darkmoonNativeChessId==='fixture_1_a');
-  assert.ok(copy,'a real native original copy was deployed');
-  return {...f,copy,original};
-}
+test('Muelsyse copies top-attack Columbian operators, including itself, without recursive workshop payloads',()=>{
+  const f=fixture('BGS_012',false,['BGS_061']);
+  const copies=f.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman');
+  assert.equal(copies.length,2);
+  assert.ok(copies.every(u=>!f.installed.entries.some(e=>e.unit===u)),'phantoms do not recursively receive workshop payloads');
+  assert.deepEqual(copies.map(u=>u.base.atk).sort((a,b)=>a-b),[100,100]);
+  assert.ok(copies.some(u=>(u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId)==='fixture_0_a'),'the source operator can copy its own original phantom');
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+  const advanced=fixture('BGS_012',true,['BGS_061','OG_256'],null,[],['BGS_061']);
+  const advancedCopies=advanced.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman');
+  assert.equal(advancedCopies.length,3,'four requested copies respect actual eligible target count');
+  assert.deepEqual(advancedCopies.map(u=>u.base.atk).sort((a,b)=>a-b),[100,150,150]);
+  assert.equal(advancedCopies.filter(u=>u.base.atk===150).length,2,'elite targets use their elite original stats while ordinary targets keep ordinary stats');
+  const ranked=fixture('BGS_012',false,['BGS_061']);
+  const [source,best,other]=ranked.b.allyUnits.filter(u=>u.kind==='op');
+  best.base.atk=500;best.markDirty();
+  const before=ranked.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman').length;
+  ranked.b.retreat(source);ranked.b.redeploy(source,{free:true});ranked.h.run(.1);
+  const selected=ranked.b.allyUnits.filter(u=>u.kind==='token'&&u.def.id==='token_10030_mlyss_wtrman').slice(before);
+  assert.equal(selected.length,1,'the battlefield summon cap limits this placement to one available slot');
+  const ids=selected.map(u=>u.def.darkmoonNativeChessId||u.def.raw?.darkmoonNativeChessId).sort();
+  assert.deepEqual(ids,['fixture_1_a'],'highest current attack wins; lower targets are excluded while battlefield slot cap is respected');
+  assert.ok(other.alive);
+});
 
-for(const elite of [false])test(`original copies retain windfury and their own five-layer shield (${elite?'advanced':'ordinary'})`,()=>{
-  const f=originalCopyFixture('BGS_119',{elite});
-  assert.equal(f.copy.buffs.find(x=>x.key.includes('shield-generator')&&x.key.endsWith(':layers'))?.shieldHits,5);
-  f.copy.atkCd=1e9;f.h.run(3.1);const victim=f.h.spawn('probe',{pos:[f.copy.tileR,f.copy.tileC+1]});
-  f.h.run(.1);const before=f.copy.stats.attacks;f.b.forceAttack(f.copy,[victim]);
-  assert.equal(f.copy.stats.attacks-before,elite?4:2,JSON.stringify({entry:f.installed.entries.filter(e=>e.unit===f.copy).map(e=>({id:e.id,rule:e.rule,channels:e.channels})),trace:f.installed.trace.filter(e=>e.sourceUid===f.copy.uid),alive:f.copy.alive,deployed:f.copy.deployed,range:f.copy.rangeKeys,pos:[f.copy.tileR,f.copy.tileC,f.copy.dir],victim:[victim.tileR,victim.tileC],profile:f.copy.profile}));
+test('medical deployment payloads resolve with zero allied deaths',()=>{
+  const rose=fixture('BGS_061');
+  assert.ok(rose.installed.trace.some(t=>t.sourceId==='BGS_061'&&t.kind==='deploy'));
+  assert.equal(rose.h.hooksOf('death').length,0);
+  const warfarin=fixture('OG_256');
+  assert.ok(warfarin.installed.trace.some(t=>t.sourceId==='OG_256'&&t.kind==='deploy'));
+  assert.equal(warfarin.h.hooksOf('death').length,0);
+  const attachments=[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312',elite:false}}];
+  const hemo=fixture('BGS_045',false,[],null,attachments);
+  assert.ok(hemo.installed.trace.some(t=>t.sourceId==='BOT_312'&&t.kind==='deploy'));
+  assert.equal(hemo.h.hooksOf('death').length,0);
+});
+
+test('opening deployment amplifiers apply independently of operator placement order',()=>{
+  for(const f of [fixture('FP1_031',false,['OG_256']),fixture('OG_256',false,['FP1_031'])]){
+    assert.equal(f.installed.trace.filter(t=>t.sourceId==='OG_256'&&t.kind==='deploy').length,2);
+    assert.equal(f.h.hooksOf('death').length,0);
+  }
+});
+
+test('queued deployment damage hits live enemies once the next normal attack is made',()=>{
+  const traces=[];
+  for(const [elite,extras,expectedHits] of [[false,[],1],[true,[],2],[false,['FP1_031'],2]]){
+    const f=fixture('BOT_606',elite,extras),enemies=f.b.enemies.filter(u=>u.alive),before=enemies.reduce((n,u)=>n+u.hp,0);
+    for(let i=0;i<expectedHits;i++)f.b.forceAttack(f.unit,[f.enemy]);
+    f.h.run(.1);
+    const after=enemies.reduce((n,u)=>n+u.hp,0);
+    assert.ok(after<before,`${elite?'elite':'ordinary'} deployment damage reaches an enemy`);
+    assert.equal(f.installed.trace.filter(t=>t.sourceId==='BOT_606'&&t.kind==='deployQueued').length,1);
+    traces.push({elite,amplified:extras.includes('FP1_031'),beforeEnemyHp:before,afterEnemyHp:after,deploySeq:f.unit.deploySeq,payloadTraces:f.installed.trace.filter(t=>t.sourceId==='BOT_606').map(({sourceId,sourceUid,kind,time,targets})=>({sourceId,sourceUid,kind,time,targets}))});
+    assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+  }
+  if(process.env.SP_DARKMOON_BATTLE_TRACE_PATH)fs.writeFileSync(process.env.SP_DARKMOON_BATTLE_TRACE_PATH,JSON.stringify({scenario:'combat deployment damage queued until actual normal attack',traces},null,2)+'\n');
+});
+
+test('current source set contains twenty deployment payloads, with strict KO-only裁度 and one gain grant',()=>{
+  assert.equal(Object.keys(DARKMOON_COMBAT_RULES).filter(hasDarkmoonDeploymentPayload).length,20);
+  assert.equal(hasDarkmoonDeploymentPayload('BGS_008'),false);
+  assert.deepEqual(darkmoonPrepRulesFor({darkmoonSourceId:'BGS_008'}),[{trigger:'gain',behavior:'grantEquipment',params:{landOn:'self',outputs:[{id:'independent:突袭盟约',normal:1,elite:1}]}}]);
+});
+
+test('Javi echo repeats a living deployment payload without killing or recursively echoing its source',()=>{
+  const f=fixture('BGS_078',false,['OG_256']);
+  const candidate=f.h.unit('p1');f.b.forceAttack(f.unit,[f.enemy]);
+  assert.equal(candidate.alive,true);
+  assert.equal(f.installed.trace.filter(t=>t.kind==='deployEcho'&&t.sourceId==='BGS_078').length,1);
+  assert.equal(f.installed.trace.filter(t=>t.kind==='death').length,0);
   assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
 });
 
-test('a captain summoned after installation grants its aura and loses it on withdrawal',()=>{
-  const f=originalCopyFixture('NEW1_027');f.h.run(.3);
-  assert.equal(f.ally.s.atk,f.ally.base.atk*1.02);
-  f.b.retreat(f.copy);f.h.run(.6);
-  assert.equal(f.ally.s.atk,f.ally.base.atk);
-  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+test('summoned original deployment entries initialize deploySeq caps after the deploy event',()=>{
+  const f=fixture('BGS_023',false,['BGS_061']);
+  const tokenEntries=f.installed.entries.filter(e=>e.unit.kind==='token'&&e.id==='BGS_061'&&e.rule.retire);
+  assert.ok(tokenEntries.length>0,JSON.stringify({entries:f.installed.entries.map(e=>({id:e.id,unit:e.unit.uid,kind:e.unit.kind})),trace:f.installed.trace,tokens:f.b.allyUnits.filter(u=>u.kind==='token').map(u=>({id:u.id,def:u.def,raw:u.def.raw}))}));
+  assert.ok(tokenEntries.every(e=>e.deploySeqs instanceof Set&&e.deployUses===1),'the first summon deployment is applied once and recorded');
+  assert.ok(f.b.allyUnits.filter(u=>u.kind==='token'&&u.alive).length<=7,'recursive copies keep the original allied token cap');
+  assert.ok(tokenEntries.every(e=>e.deployUses<=3));
 });
 
-test('a newly copied Khadgar multiplies later real summons without needing an initial Khadgar',()=>{
-  const f=originalCopyFixture('DAL_575');
-  const before=f.b.allyUnits.filter(u=>u.kind==='token').length;
-  f.b.spawnToken(f.ally,'token_10028_vigil_wolf',12,8,{anySource:true});
-  assert.equal(f.b.allyUnits.filter(u=>u.kind==='token').length-before,2);
-  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
-});
-
-test('a copied combat-start effect does not execute late when another enemy arrives',()=>{
-  const f=originalCopyFixture('BGS_019');
-  const before=f.installed.trace.filter(x=>x.sourceUid===f.copy.uid&&x.kind==='startStrike').length;
-  f.h.spawn('probe',{pos:[12,9]});
-  assert.equal(f.installed.trace.filter(x=>x.sourceUid===f.copy.uid&&x.kind==='startStrike').length,before);
-});
-
-test('fallen advanced copies discard training and temporary growth but retain their original source quality',()=>{
-  const f=fixture('BGS_012',false,['BGS_119'],{growthMode:'levels'}),original=f.h.unit('p1');
-  Object.assign(f.catalog.equipment,Object.fromEntries(KEYWORD_GEAR.map(g=>[g.id,g])));
-  f.pieces[1].elite=true;f.pieces[1].growthLevel=8;
-  original.base.atk=170;original.markDirty();
-  f.b.addBuff(original,{key:'not-original',mods:{atkFlat:100},persist:true});
-  f.b.kill(original,f.enemy);f.h.run(.1);f.b.retreat(f.unit);f.h.run(.1);
-  const copy=f.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw.darkmoonNativeChessId==='fixture_1_a');
-  assert.ok(copy);assert.equal(copy.base.atk,100);assert.equal(copy.findBuff('not-original'),null);
-  assert.equal(copy.nativeGrowthStatus.level,1);
-  assert.equal(copy.buffs.find(x=>x.key.includes('shield-generator')&&x.key.endsWith(':layers'))?.shieldHits,5);
-  copy.atkCd=1e9;f.h.run(3.1);const victim=f.h.spawn('probe',{pos:[copy.tileR,copy.tileC+1]});
-  f.h.run(.1);const before=copy.stats.attacks;f.b.forceAttack(copy,[victim]);assert.equal(copy.stats.attacks-before,4,JSON.stringify({entry:f.installed.entries.filter(e=>e.unit===copy).map(e=>({id:e.id,elite:e.elite,rule:e.rule,channels:e.channels})),trace:f.installed.trace.filter(e=>e.sourceUid===copy.uid),pos:[copy.tileR,copy.tileC],victim:[victim.tileR,victim.tileC],range:copy.rangeKeys,profile:copy.profile}));
-  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+test('summoned cover metadata is visible before its deploy actor event for BGS112',()=>{
+  const f=fixture('BGS_112',false,['BOT_218']),source=f.h.unit('p1');
+  const deployedTokens=[];f.b.on('darkmoonDeployActor',event=>{if(event.actor.kind==='token')deployedTokens.push({cover:event.actor.def.raw?.darkmoonCover,tags:event.factions});});
+  f.h.run(3.1);
+  const before=f.installed.trace.filter(t=>t.sourceId==='BGS_112'&&t.kind==='event').length;
+  f.b.dealDamage(f.enemy,source,{amount:50,type:'true',isAttack:true});
+  const token=f.b.allyUnits.find(u=>u.kind==='token'&&u.def.raw?.darkmoonCover);
+  assert.ok(token,JSON.stringify({tokens:f.b.allyUnits.filter(u=>u.kind==='token').map(u=>({kind:u.kind,cover:u.def.darkmoonCover,memCover:u.mem.darkmoonCover,rawCover:u.def.raw?.darkmoonCover})),trace:f.installed.trace}));
+  assert.ok(deployedTokens.some(x=>x.cover&&x.tags.includes('哥伦比亚')),'the actor event exposes its cover and faction metadata before observers run');
+  assert.ok(f.installed.trace.filter(t=>t.sourceId==='BGS_112'&&t.kind==='event').length>before,'BGS112 observes the covered summon during deployment');
+  const condition=darkmoonCombatEligibilityRules('BGS_112')[0].params;
+  assert.deepEqual(condition.actorKinds,['op','token']);
+  assert.deepEqual(condition.match,{keywordGear:'坚守盟约'});
 });

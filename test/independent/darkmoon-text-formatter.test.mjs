@@ -2,13 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import addon from '../../data/independent-darkmoon-game-text-addon.json' with { type: 'json' };
 import blueprints from '../../data/independent-darkmoon-blueprints.json' with { type: 'json' };
+import design from '../../data/independent-design.json' with { type: 'json' };
+import designAddon from '../../data/independent-darkmoon-design-addon.json' with { type: 'json' };
+import gameText from '../../data/independent-game-text.json' with { type: 'json' };
 import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPrep.js';
 import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
-import { textsFor, toLevels } from '../../tools/independent-darkmoon-text-formatter.mjs';
+import { compactWording, textsFor, toLevels } from '../../tools/independent-darkmoon-text-formatter.mjs';
 
 const byId = new Map(blueprints.entries.map(entry => [entry.sourceId, entry]));
 const byAddonId = new Map(Object.values(addon.operators).map(row => [row.sourceId, row]));
+const byDesignAddonId = new Map(designAddon.operators.map(row => [row.sourceId, row]));
 const visibleText = /undefined|NaN|\[object Object\]|\b(?:BGS|BOT|CFM|DAL|DS1|EX1|FP1|GVG|ICC|KAR|LOE|LOOT|NEW1|OG|TRL|ULD)_\d+|newSiracusaRecruit|selectedFriendly|allFriendlyDragonOperators|otherFriendly|randomOtherFriendly|originalBattlecryOutputs|battlecryMultiplier|原型|副属性装备/;
+
+test('zero attack badges compact cleanly while preserving nonzero damage badge quantities', () => {
+  assert.equal(compactWording('获得攻击徽章×0及伤害徽章×2。'), '获得伤害徽章×2。');
+});
 
 test('all 101 source entries regenerate both visible variants from executable preparation/combat rules', () => {
   assert.equal(blueprints.entries.length, 101);
@@ -45,9 +53,61 @@ test('dynamic combat delivery wording keeps its scope label without redundant pe
   assert.doesNotMatch(persistent.text, /永久|临时/);
   const battleOnly = darkmoonCombatMetadata('BGS_017');
   assert.equal(battleOnly.duration, '本场战斗');
-  assert.match(battleOnly.text, /战斗中召唤叙拉古支援单位/);
+  assert.match(battleOnly.text, /叙拉古支援单位被召唤时/);
   assert.match(battleOnly.text, /获得.*战斗增益/);
   assert.doesNotMatch(battleOnly.text, /仅本场战斗生效|临时/);
+});
+
+test('growth text names the exact badge and its combat actor', () => {
+  for (const id of ['BGS_041','BGS_048','BGS_100','BGS_128']) {
+    const rules = ['normal','elite'].map(elite => darkmoonPrepRulesFor({ darkmoonSourceId:id }, elite === 'elite')[0]);
+    for (const rule of rules) assert.deepEqual(rule.params.outputs, ['precision','damage'], `${id} executable output IDs`);
+    for (const variant of ['normal','elite']) {
+      const entry = byId.get(id), source = byDesignAddonId.get(id);
+      assert.deepEqual(entry.metadata.op.effectDelivery[variant][0].params.outputs, ['precision','damage'], `${id} blueprint delivery IDs`);
+      if (source) {
+        assert.deepEqual(source.authoredRule[variant].params.outputs, ['precision','damage'], `${id} source adapter IDs`);
+        assert.deepEqual(source.effectDelivery[variant][0].params.outputs, ['precision','damage'], `${id} effect delivery IDs`);
+        assert.deepEqual(source.metadata.op.effectDelivery[variant][0].params.outputs, ['precision','damage'], `${id} metadata output IDs`);
+      }
+    }
+    assert.match(byAddonId.get(id).normal, /攻击徽章.*伤害徽章/);
+    assert.doesNotMatch(byAddonId.get(id).normal, /生命徽章/);
+  }
+  for (const row of byAddonId.values()) {
+    assert.doesNotMatch(`${row.normal}\n${row.elite}`, /职业副属性|成长徽章|徽章成长/);
+  }
+  assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔干员击倒敌人时/);
+  assert.match(darkmoonCombatMetadata('BGS_047').text, /维多利亚干员攻击敌人时/);
+  assert.match(darkmoonCombatMetadata('BGS_111').text, /佩戴坚守盟约的友方干员受到攻击时/);
+  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位被召唤时/);
+  assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位被召唤时/);
+});
+
+test('Darkmoon game text and design delivery copy stays synchronized with executable outputs', () => {
+  const operators = new Map(design.operators.filter(op => op.sourceRefs?.darkmoon19_2?.id).map(op => [op.sourceRefs.darkmoon19_2.id, op]));
+  const authored = new Map(designAddon.operators.map(op => [op.sourceId, op]));
+  for (const row of byAddonId.values()) {
+    const operator = operators.get(row.sourceId);
+    assert.ok(operator, `${row.sourceId} has a design operator`);
+    assert.equal(operator.nativeTrait?.normal, row.normal, `${row.sourceId} normal trait copy`);
+    assert.equal(operator.nativeTrait?.elite, row.elite, `${row.sourceId} elite trait copy`);
+    assert.equal(gameText.operators[operator.chessId]?.normal, row.normal, `${row.sourceId} normal game text`);
+    assert.equal(gameText.operators[operator.chessId]?.elite, row.elite, `${row.sourceId} elite game text`);
+    for (const variant of ['normal','elite']) {
+      for (const authoredRow of authored.get(row.sourceId)?.effectDelivery?.[variant] || []) {
+        assert.doesNotMatch(`${authoredRow.text}\n${authoredRow.adaptation || ''}`, /职业副属性|副属性装备|攻击成长徽章|伤害成长徽章/);
+        assert.doesNotMatch(authoredRow.text || '', /购买符合条件的干员时，购买/);
+      }
+      for (const delivery of operator.effectDelivery?.[variant] || []) {
+        assert.doesNotMatch(`${delivery.text}\n${delivery.adaptation || ''}`, /职业副属性|副属性装备|成长徽章/);
+      }
+      for (const evidence of operator.allocationEvidence?.workshop?.[variant] || []) {
+        assert.doesNotMatch(evidence.rule || '', /职业副属性|副属性装备|成长徽章/);
+        assert.doesNotMatch(evidence.rule || '', /购买符合条件的干员时，购买/);
+      }
+    }
+  }
 });
 
 test('ordinary and elite text carries the real source-rule quantities and trigger differences', () => {
@@ -69,8 +129,8 @@ test('ordinary and elite text carries the real source-rule quantities and trigge
 
 test('source-specific text states tested quantities, recipient and elite multiplier instead of descriptor labels', () => {
   const card = id => byAddonId.get(id);
-  assert.match(card('BGS_017').normal, /叙拉古.*攻击成长徽章×2/);
-  assert.match(card('BGS_017').elite, /叙拉古.*攻击成长徽章×4/);
+  assert.match(card('BGS_017').normal, /叙拉古.*攻击徽章×2/);
+  assert.match(card('BGS_017').elite, /叙拉古.*攻击徽章×4/);
   assert.match(card('BGS_021').normalLevels, /训练等级×8/);
   assert.match(card('BGS_021').eliteLevels, /训练等级×16/);
   assert.match(card('BGS_027').normalLevels, /训练等级×1/);
@@ -78,8 +138,8 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.doesNotMatch(card('BGS_027').normalLevels, /精准徽章/);
   assert.match(card('BGS_043').normal, /随机招募一名干员.*普通形态/);
   assert.match(card('BGS_043').elite, /随机招募一名干员.*进阶形态/);
-  assert.match(card('BGS_048').normal, /每购买一名维多利亚阵营干员.*攻击成长徽章×1与职业副属性成长徽章×1/);
-  assert.match(card('BGS_048').elite, /每购买一名维多利亚阵营干员.*攻击成长徽章×2与职业副属性成长徽章×2/);
+  assert.match(card('BGS_048').normal, /每购买一名维多利亚阵营干员.*攻击徽章×1与伤害徽章×1/);
+  assert.match(card('BGS_048').elite, /每购买一名维多利亚阵营干员.*攻击徽章×2与伤害徽章×2/);
   assert.match(card('BGS_055').normal, /升级费用减少1金币/);
   assert.match(card('BGS_055').elite, /升级费用减少2金币/);
   assert.match(card('BGS_100').normal, /效果触发1次.*所购干员星级/);
@@ -88,10 +148,10 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /获得时效果共触发2次/);
   assert.match(card('LOE_077').elite, /获得时效果共触发3次/);
-  assert.match(card('BOT_312').normal, /亡语.*攻击成长徽章×3及职业副属性成长徽章×1/);
-  assert.match(card('BOT_312').elite, /亡语.*攻击成长徽章×6及职业副属性成长徽章×2/);
-  assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击成长徽章×2及职业副属性成长徽章×4/);
-  assert.match(card('BOT_911').elite, /坚守盟约和护盾发生器.*攻击成长徽章×4及职业副属性成长徽章×8/);
+  assert.match(card('BOT_312').normal, /亡语.*攻击徽章×3及伤害徽章×1/);
+  assert.match(card('BOT_312').elite, /亡语.*攻击徽章×6及伤害徽章×2/);
+  assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击徽章×2及伤害徽章×4/);
+  assert.match(card('BOT_911').elite, /坚守盟约和护盾发生器.*攻击徽章×4及伤害徽章×8/);
   for (const [id,normal,elite] of [['BOT_312',[3,1],[6,2]],['BOT_911',[2,4],[4,8]]]) {
     const rows=byId.get(id).metadata.op.effectDelivery;
     for (const [variant,expected] of [['normal',normal],['elite',elite]]) {
@@ -119,7 +179,7 @@ test('shop-growth text describes direct purchased-operator badges and combined n
     });
     assert.deepEqual(grants.map(g => g.quantity), [rule.params.attack, rule.params.health]);
     assert.ok(calls.every(call => call.extra.targetUid === recipient.uid && call.extra.landOn === 'self'));
-    assert.match(row[variant], new RegExp(`购买后直接获得攻击成长徽章×${grants[0].quantity}与职业副属性成长徽章×${grants[1].quantity}`));
+    assert.match(row[variant], new RegExp(`购买后直接获得攻击徽章×${grants[0].quantity}与伤害徽章×${grants[1].quantity}`));
     assert.match(row[`${variant}Levels`], new RegExp(`购买后直接获得训练等级×${grants.reduce((sum,g) => sum + g.quantity, 0)}`));
     assert.doesNotMatch(row[variant], /攻击与生命各|元素干员/);
     assert.doesNotMatch(row[`${variant}Levels`], /徽章|攻击与生命各/);

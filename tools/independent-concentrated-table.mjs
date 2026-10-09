@@ -28,7 +28,7 @@ const gearNotes = {
   '突袭盟约': '每次部署即开攻速窗口；连续10秒未攻击触发合法再部署。一件对基础攻速100提升频率30%。',
   '巨锤盟约': '当前攻击力1000、零防御时一件每动作额外500伤害；五件900。仅实际0.9格内目标，独立扣除防御。',
   '精准盟约': '攻击1000对800防御：一件使单次200→360；零防御无收益。40法抗伤害倍率0.60→0.68。',
-  '不屈盟约': '一/二/五件概率18%/18.4%/19.6%。沿用适用退场条件和替身免费复归，不补虚构技力。',
+  '不屈盟约': '主效果在干员被击倒时判定；主动撤回不会触发。原始幻影等替身兼容，不补虚构技力。',
   '爆破部署台': '一/二/五件每个范围内目标1000/1300/2200真伤。只有部署时有效。',
   '反冲空降仓': '六本装备；部署时选合法格，优先有敌人的格，对格上敌人造成15000法术伤害，每多一件加500。',
   '便携式融毁教学仪': '六本装备；每战限一次，指定离场时全场10000真实伤害，每多一件加3000；攻击过携带者的敌人双倍；再部署时间翻倍。',
@@ -88,12 +88,14 @@ function roleBasis(op, moments) {
 
 function functionalRole(op) {
   const r=DARKMOON_COMBAT_RULES[op.sourceRefs?.darkmoon19_2?.id];
-  if(r?.retire?.fallen)return '原始复生';
-  if(r?.retire?.random||r?.retire?.token)return '退场召唤';
-  if(r?.retire?.buff)return '退场团队增益';
-  if(r?.retireMultiplier)return '重复退场效果';
+  if(r?.retire&&op.sourceRefs?.darkmoon19_2?.id==='BGS_008')return '击倒召唤';
+  if(r?.retire?.fallen)return '部署原始幻影';
+  if(r?.retire?.damage)return '部署后普攻伤害';
+  if(r?.retire?.random||r?.retire?.token)return '部署召唤';
+  if(r?.retire?.buff||r?.retire?.shield)return '部署团队增益';
+  if(r?.retireMultiplier)return '部署效果放大';
   if(r?.summonMultiplier)return '倍增召唤';
-  if(r?.echo)return '重放退场效果';
+  if(r?.echo)return '部署效果复制';
   if(r?.aura)return '在场光环';
   if(r?.windfury)return '连续攻击';
   if(r?.overkill)return '超杀联动';

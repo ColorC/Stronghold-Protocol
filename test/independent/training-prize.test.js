@@ -204,7 +204,7 @@ test('all sixteen configured supplementary items have a live direct-equip traini
   for (const id of ids) assert.equal(table.rows.find((row) => row.id === id)?.from, '专项战备授训奖品：永久直接装备给指定干员', id);
   const prize = catalog.prizes['special-readiness-training'];
   assert.match(prize.effect, /已解锁.*装备/);
-  assert.match(prize.effect, /直接永久穿戴/);
+  assert.match(prize.effect, /装备直接穿戴在该干员身上/);
   assert.doesNotMatch(prize.effect, /chess_item|independent:|special-readiness-training|undefined/);
 });
 

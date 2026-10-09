@@ -246,7 +246,7 @@ test('shop growth remains a fixed shop recipient and purchase grants growth dire
 });
 
 test('original Battlecry buffs inspect the acquired source tag and wear permanent growth only on the fixed tribe targets',()=>{
-  const base=getCatalog(),specs=[['BGS_041','DRAGON',1,2,['precision','vitality']],['BGS_053','PIRATE',3,6,['precision']],['BGS_128','ELEMENTAL',1,2,['precision','vitality']]];
+  const base=getCatalog(),specs=[['BGS_041','DRAGON',1,2,['precision','damage']],['BGS_053','PIRATE',3,6,['precision']],['BGS_128','ELEMENTAL',1,2,['precision','damage']]];
   for(const [id,tribe,normalCount,goldenCount] of specs)for(const elite of [false,true]) {
     const ops=Object.values(base.operators).filter(x=>Boolean(x.elite)===elite&&x.recruitable!==false);
     const holderOp=ops.find(x=>x.source?.normalChess?.profession==='TANK'&&x.name!==byId.get(id).operator),otherOp=ops.find(x=>x.chessId!==holderOp.chessId&&x.name!==byId.get(id).operator),gainOp=ops.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==otherOp.chessId);
@@ -258,10 +258,10 @@ test('original Battlecry buffs inspect the acquired source tag and wear permanen
     const state={round:1,shop:{level:1,freeRefreshes:0,slots:[]},pieces:[],counters:{gained:0,spent:0,paidRefreshes:0},pendingFunds:0,nextUid:1,inventory:[]};
     const host={uid:'host',chessId:holderOp.chessId,ownerId:'p1',elite,nativeState:{},row:0,col:0,equipment:[]},other={uid:'other',chessId:otherOp.chessId,ownerId:'p1',nativeState:{},row:0,col:1,equipment:[]},gained={uid:'gained',chessId:gainOp.chessId,ownerId:'p1',nativeState:{},equipment:[]};state.pieces.push(host,other);
     const services={catalog,data:{},rng:()=>0,grantEquipment:(s,badge,n,extra)=>grantEquipment(s,catalog,badge,n,extra),grantChess(){},addOffer(){},record(){}};
-    const count=elite?goldenCount:normalCount,recipientBadges=id==='BGS_053'?['precision']:darkmoonGrowthBadges(other,catalog);
+    const count=elite?goldenCount:normalCount,recipientBadges=specs.find(x=>x[0]===id)[4];
     runNativeHook(state,'gain',{piece:gained,source:'buy',paid:true},services);
-    assert.deepEqual(host.equipment.map(x=>x.id).sort(),(id==='BGS_041'?['precision','vitality']:[]).sort(),`${id} ${elite?'golden':'normal'} applies to self only when the source says all Dragons`);
-    assert.deepEqual(other.equipment.map(x=>x.id).sort(),recipientBadges.slice().sort(),`${id} ${elite?'golden':'normal'} grants the fixed tribe recipient's profession-mapped output`);
+    assert.deepEqual(host.equipment.map(x=>x.id).sort(),(id==='BGS_041'?['precision','damage']:[]).sort(),`${id} ${elite?'golden':'normal'} applies to self only when the source says all Dragons`);
+    assert.deepEqual(other.equipment.map(x=>x.id).sort(),recipientBadges.slice().sort(),`${id} ${elite?'golden':'normal'} grants its fixed badge IDs`);
     assert.ok(other.equipment.every(x=>x.quantity===count),`${id} ${elite?'golden':'normal'} uses its printed quantity`);
     assert.equal(state.inventory.length,0,`${id} fixed target growth never spills into free inventory`);
   }
@@ -501,7 +501,7 @@ test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; 
   const result=applyAction(state,{type:'buy',slot:0,targetUid:'pirate-target'},{catalog});
   assert.equal(result.ok,true,JSON.stringify(result.error));
   const target=result.state.pieces.find(x=>x.uid==='pirate-target');
-  assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),darkmoonGrowthBadges(target,catalog).map(id=>[id,3]),'the current bought Pirate joins two earlier same-turn purchases before gain resolves and uses the target profession');
+  assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),['precision','damage'].map(id=>[id,3]),'the current bought Pirate joins two earlier same-turn purchases before gain resolves and uses the fixed attack/damage IDs');
   assert.equal(result.state.inventory.length,0,'selected Pirate receives permanent direct growth');
 
   const elemental={...holderOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},elementalEffect=nativeEffectFor(holderOp.chessId,elemental,false);
@@ -512,7 +512,7 @@ test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; 
   runNativeHook(state2,'bought',{piece:{uid:'elemental-bought',chessId:targetOp.chessId,ownerId:'p1'},targetUid:'selected'},services);
   const tier=Number(targetOp.tier||1);
   const selected=state2.pieces.find(x=>x.uid==='selected');
-  assert.deepEqual(selected.equipment.map(x=>[x.id,x.quantity]),darkmoonGrowthBadges(selected,catalog2).map(id=>[id,tier]),'BGS 100 uses the purchased Elemental tier on the exact selected friend using that target profession');
+  assert.deepEqual(selected.equipment.map(x=>[x.id,x.quantity]),['precision','damage'].map(id=>[id,tier]),'BGS 100 uses the purchased Elemental tier on the exact selected friend and uses the fixed attack/damage IDs');
 });
 
 test('a generated hand card defers its native Battlecry until its first field move, then cannot replay it on redeploy',()=>{
@@ -817,8 +817,8 @@ test('golden Lil Rag repeats its Elemental-tier growth twice and rejects missing
       holder={uid:'rag',chessId:sourceOp.chessId,ownerId:'p1',elite,row:0,col:0,nativeState:{},equipment:[]},target={uid:'selected',chessId:targetOp.chessId,ownerId:'p1',row:0,col:1,equipment:[]},
       state={round:1,pieces:[holder,target],inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
     runNativeHook(state,'bought',{piece:{uid:'bought',chessId:buyerOp.chessId,ownerId:'p1'},targetUid:target.uid},services);
-    const times=elite?2:1,tier=Number(buyerOp.tier||1),[attackBadge,secondaryBadge]=darkmoonGrowthBadges(target,catalog);
-    assert.deepEqual(growth(target),[[attackBadge,tier*times],[secondaryBadge,tier*times]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_100 ${elite?'golden':'normal'} repeats the tier-sized effect ${times} time(s)`);
+    const times=elite?2:1,tier=Number(buyerOp.tier||1);
+    assert.deepEqual(growth(target),[['precision',tier*times],['damage',tier*times]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_100 ${elite?'golden':'normal'} repeats the tier-sized effect ${times} time(s) with fixed attack/damage IDs`);
     assert.deepEqual(growth(holder),[],'growth stays on the explicitly selected friendly target');
     const uiState={pieces:[holder,target],shop:{slots:[]}},uiSpec=buyTargetSpec({id:buyerOp.chessId},catalog,uiState);
     assert.equal(uiSpec.kind,'friendly','a deployed Rag dynamically opens the eligible recipient picker for a newly bought Yan operator');
@@ -864,12 +864,12 @@ test('golden source triggers preserve authored counts for sold tokens, played El
       const [atk,health]=darkmoonGrowthBadges(friend,catalog);assert.deepEqual(friend.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,mult],[health,mult]].sort((a,b)=>a[0].localeCompare(b[0])));
       assert.deepEqual(holder.equipment,[]);assert.deepEqual(play.equipment,[],'played Elemental is not eligible as the other friendly recipient');
     }
-    // BGS 124 receives only its own profession-mapped health output, while ULD 217 gives attack to another friend.
+    // BGS 124 receives the fixed damage badge output, while ULD 217 gives attack to another friend.
     {
       const source={...make('BGS_124',elite),nativeFactionTags:['炎']},uld=make('ULD_217',elite,ops[3]),elemental={...targetOp,nativeFactionTags:['炎']},
         catalog={...base,operators:{...base.operators,[source.chessId]:source,[uld.chessId]:uld,[elemental.chessId]:elemental}},holder=piece('holder',source,'p1',0,elite),endHolder=piece('uld',uld,'p1',1,elite),friend=piece('friend',elemental,'p1',2),played=piece('played',elemental,'p1',3),state={round:1,pieces:[holder,endHolder,friend,played],inventory:[]};
       runNativeHook(state,'gain',{piece:played,source:'buy'},servicesFor(catalog));
-      const [,secondary]=darkmoonGrowthBadges(holder,catalog);assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),[[secondary,3*mult]],`BGS_124 ${elite?'golden':'normal'} counts all three owned Elementals including the one played`);
+      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),[['damage',3*mult]],`BGS_124 ${elite?'golden':'normal'} counts all three owned Elementals including the one played`);
       runNativeHook(state,'prepEnd',{round:1},servicesFor(catalog));
       const [attack]=darkmoonGrowthBadges(friend,catalog),grown=state.pieces.filter(x=>x.uid!==endHolder.uid&&x.equipment.some(item=>item.id===attack));
       assert.equal(grown.length,1,`ULD_217 ${elite?'golden':'normal'} affects exactly one random other friend`);assert.equal(grown[0].equipment.find(x=>x.id===attack).quantity,mult);
@@ -887,7 +887,7 @@ test('remaining explicitly targeted Pirate Battlecries and support summons prese
         targetDef={...targetOp,nativeFactionTags:['维多利亚']},wrongDef={...wrongOp,nativeFactionTags:['叙拉古']},catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect}},[targetOp.chessId]:targetDef,[wrongOp.chessId]:wrongDef}},
         holder={uid:'source',chessId:sourceOp.chessId,ownerId:'p1',elite,row:0,col:0,equipment:[]},target={uid:'pirate',chessId:targetOp.chessId,ownerId:'p1',row:0,col:1,equipment:[]},wrong={uid:'wrong',chessId:wrongOp.chessId,ownerId:'p1',row:0,col:2,equipment:[]},state={round:1,pieces:[holder,target,wrong],counters:{factionBought:{维多利亚:2}},inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
       runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:target.uid},services);
-      const [atk,health]=darkmoonGrowthBadges(target,catalog),amount=2*(elite?2:1);
+      const [atk,health]=['precision','damage'],amount=2*(elite?2:1);
       assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,amount],[health,amount]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_048 ${elite?'golden':'normal'} applies its per-purchase amount to the selected Pirate`);
       assert.deepEqual(holder.equipment,[]);assert.deepEqual(wrong.equipment,[]);
       assert.throws(()=>runNativeHook(state,'gain',{piece:holder,source:'buy',targetUid:wrong.uid},services),/DARKMOON_TARGET_REQUIRED/);

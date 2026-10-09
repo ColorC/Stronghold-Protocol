@@ -43,12 +43,12 @@ test('a hand resource stays freely allocatable until the player equips it', () =
   equipItem(s, catalog, s.inventory[0].uid, 'a', 1);
   assert.equal(s.pieces[0].equipment[0].quantity, 1); assert.equal(s.inventory[0].quantity, 1);
 });
-test('Might of Stormwind permanently buffs every deployed operator, no inventory', () => {
+test('Might of Stormwind equips every deployed operator with precision and damage, with no bench or inventory grant', () => {
   const s = state({ phase: 'prize', pieces: [piece('a'), piece('b', { col: 6 }), piece('bench', { row: null, col: null })],
     offers: [{ id: 'offer', type: 'prize', choices: ['team-readiness-support'] }] });
   choosePrize(s, catalog, 'offer', 0);
   assert.equal(s.inventory.length, 0);
-  for (const p of s.pieces.slice(0, 2)) assert.deepEqual(p.equipment.map((x) => [x.id, x.quantity]), [['precision', 1], ['vitality', 1]]);
+  for (const p of s.pieces.slice(0, 2)) assert.deepEqual(p.equipment.map((x) => [x.id, x.quantity]), [['precision', 1], ['damage', 1]]);
   assert.equal(s.pieces[2].equipment.length, 0);
 });
 test('level mode consumes fixed-target growth as native levels, never badge equipment', () => {

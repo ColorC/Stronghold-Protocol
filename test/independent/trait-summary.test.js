@@ -30,7 +30,7 @@ test('each form reads its own counts: an elite form uses its own catalog entry',
   assert.equal(undertakerElite.summary[0].items[0].elite, 2);
   assert.equal(display.operators[undertaker.eliteChessId].name, '送葬人');
   assert.equal(find('薄绿', true).summary[0].grows, true);
-  assert.match(find('薄绿', true).summary[0].effectDelivery.text, /获得攻击成长徽章/);
+  assert.match(find('薄绿', true).summary[0].effectDelivery.text, /各获得攻击徽章×3/);
   assert.equal(find('薄绿', false).summary[0].faction, '维多利亚');
   assert.match(undertaker.traitTexts.elite, /2枚攻击徽章/);
   assert.deepEqual(display.rules.bodyPenalty, { baseAttackRatio: 0.8, baseLifeRatio: 0.8 });

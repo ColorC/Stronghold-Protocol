@@ -38,7 +38,8 @@ const RULES = Object.freeze({
   BGS_036: [{trigger:'prepEnd',behavior:'darkmoonEndTurnGrowth',params:{mode:'selfPerFaction',faction:'卡西米尔',attackPer:{normal:1,elite:2},secondaryPer:{normal:1,elite:2}}}],
   BGS_038: [grantSelf(gear('坚守盟约')),{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'卡西米尔',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}}],
   BGS_066: [{trigger:'prepEnd',behavior:'darkmoonEndTurnGrowth',params:{mode:'selfIfGolden',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}}],
-  BGS_075: [{trigger:'gain',behavior:'darkmoonPlayedTagSelfGrowth',params:{tag:'deathrattle',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}}],
+  BGS_075: [{trigger:'gain',behavior:'darkmoonPlayedTagSelfGrowth',params:{tag:'deploymentPayload',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}}],
+  BGS_008: [grantSelf(gear('突袭盟约'))],
   BGS_081: [{trigger:'bought',behavior:'darkmoonBoughtSelfGrowth',params:{faction:'维多利亚',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}}],
   BGS_082: [{trigger:'gain',behavior:'darkmoonEndTurnGrowth',params:{mode:'randomDistinctFaction',targets:{normal:3,elite:3},attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}}],
   BGS_083: [{trigger:'gain',behavior:'darkmoonEndTurnGrowth',params:{mode:'randomDistinctFaction',targets:{normal:3,elite:3},attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}}],
@@ -70,13 +71,13 @@ export function darkmoonPrepRulesFor(source,isElite=false) {
   if(id==='BGS_037') return [{trigger:'sold',behavior:'darkmoonShopGrowth',params:{rosterTribe:'*',attack:isElite?2:1,health:isElite?2:1,persistent:false}}];
   if(id==='BGS_104') return [{trigger:'bought',behavior:'darkmoonShopGrowth',params:{rosterTribe:'ELEMENTAL',faction:'炎',attack:isElite?2:1,health:isElite?2:1,persistent:true}}];
   if(id==='BGS_113') return [{trigger:'gain',behavior:'darkmoonTransformFromShop',params:{eliteCopy:isElite}}];
-  if(id==='BGS_041') return [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{faction:'卡西米尔',count:isElite?2:1,outputs:['precision','vitality']}}];
+  if(id==='BGS_041') return [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{faction:'卡西米尔',count:isElite?2:1,outputs:['precision','damage']}}];
   if(id==='BGS_053') return [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{faction:'维多利亚',count:isElite?6:3,outputs:['precision'],excludeSelf:true}}];
-  if(id==='BGS_128') return [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{faction:'炎',count:isElite?2:1,outputs:['precision','vitality'],excludeSelf:true}}];
+  if(id==='BGS_128') return [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{faction:'炎',count:isElite?2:1,outputs:['precision','damage'],excludeSelf:true}}];
   if(id==='BGS_122') return [{trigger:'gain',behavior:'darkmoonAddTribeShopOffer',params:{faction:'炎',count:isElite?2:1}}];
   if(id==='BGS_123') return [{trigger:'gain',behavior:'darkmoonRecruitTribeToHand',params:{faction:'炎',count:isElite?2:1}}];
-  if(id==='BGS_048') return [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'维多利亚',perTribeBought:isElite?2:1,outputs:['precision','vitality']}}];
-  if(id==='BGS_100') return [{trigger:'bought',behavior:'darkmoonBoughtTribeTargetGrowth',params:{triggerFaction:'炎',outputs:['precision','vitality'],repeatCount:{normal:1,elite:2}}}];
+  if(id==='BGS_048') return [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'维多利亚',perTribeBought:isElite?2:1,outputs:['precision','damage']}}];
+  if(id==='BGS_100') return [{trigger:'bought',behavior:'darkmoonBoughtTribeTargetGrowth',params:{triggerFaction:'炎',outputs:['precision','damage'],repeatCount:{normal:1,elite:2}}}];
   if(id==='LOE_077') return [{trigger:'aura',behavior:'triggerMultiplier',params:{hook:'gain',extra:isElite?2:1,filter:'darkmoonBattlecry'}}];
   return structuredClone(RULES[id] || []);
 }

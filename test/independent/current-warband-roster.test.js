@@ -95,7 +95,7 @@ for(const elite of [false,true]){
   test(`current Kazimierz seven ${form}: Battlecry and end-of-prep growth`,()=>{
    const pieces=roster(groups[3],elite),{state,hook}=prep(pieces),man=pieces.find(p=>p.name==='玛恩纳'),manRule=catalog.operators[man.chessId].nativeTrait.effect.prep.find(r=>r.behavior==='darkmoonEndTurnGrowth');
    const sameFaction=pieces.filter(p=>nativeFactions(p,catalog).includes(manRule.params.faction)).length,per=elite?manRule.params.attackPer.elite:manRule.params.attackPer.normal;
-   hook('prepEnd',man);const [attackBadge,secondaryBadge]=darkmoonGrowthBadges(man,catalog);assert.equal(qty(man,attackBadge),sameFaction*per,'Maanen scales by current same-faction bodies on the field');assert.equal(qty(man,secondaryBadge),sameFaction*per,'the source grants the profession-appropriate secondary badge');
+   hook('prepEnd',man);const [attackBadge,secondaryBadge]=darkmoonGrowthBadges(man,catalog);assert.equal(qty(man,attackBadge),sameFaction*per,'Maanen scales by current same-faction bodies on the field');assert.equal(qty(man,secondaryBadge),sameFaction*per,'the source grants the fixed damage badge');
    const h=battle(pieces);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
   test(`current Victoria seven ${form}: Battlecry, buying and native attack effects`,()=>{

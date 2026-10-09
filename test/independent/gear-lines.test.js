@@ -84,11 +84,16 @@ test('a trait that hands out a named piece of gear names it in its text', () => 
   assert.deepEqual(wrong, []);
 });
 
-test('damage badge comes from the current caster shop-growth mapping, not a fabricated operator source', () => {
+test('A/H growth uses fixed attack and damage badges across professions and skills', () => {
+  const professions = ['WARRIOR','CASTER','MEDIC','TANK'];
+  for (const profession of professions) {
+    const op = Object.values(catalog.operators).find((item) => !item.elite && item.source?.normalChess?.profession === profession);
+    assert.ok(op, `fixture exists for ${profession}`);
+    const piece = { uid: `fixed-${profession}`, chessId: op.chessId, row: 10, col: 3, equipment: [], attachments: [] };
+    assert.deepEqual(darkmoonGrowthBadges(piece, catalog), ['precision', 'damage']);
+  }
   const caster = Object.values(catalog.operators).find((op) => !op.elite && op.source?.normalChess?.profession === 'CASTER');
-  assert.ok(caster);
-  const piece = { uid: 'dynamic-caster', chessId: caster.chessId, row: 10, col: 3, equipment: [], attachments: [] };
-  assert.deepEqual(darkmoonGrowthBadges(piece, catalog), ['precision', 'damage']);
+  const piece = { uid: 'fixed-caster', chessId: caster.chessId, row: 10, col: 3, equipment: [], attachments: [] };
   const state = { round: 1, revision: 0, nextUid: 1, growthMode: 'badges', pieces: [piece], inventory: [], production: [] };
   const services = { catalog, grantEquipment: (s, id, quantity, extra) => grantEquipment(s, catalog, id, quantity, extra) };
   applyDarkmoonAHGrowth(state, catalog, piece, 0, 2, services, { sourceUid: piece.uid, landOn: 'self', targetUid: piece.uid, shopGrowth: true });
