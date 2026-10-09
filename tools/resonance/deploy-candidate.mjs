@@ -33,7 +33,7 @@ const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const REMOTE_NODE = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/bin/node`;
 const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/node_modules/npm/bin/npm-cli.js`;
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
-const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/js/resonance/panels.js', 'public/css/resonance.css'];
+const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'server/hosting/staticDelivery.js', 'public/resonance.html', 'public/js/hostingBootstrap.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/js/resonance/panels.js', 'public/css/resonance.css'];
 const CANDIDATE_REFRESH_INVARIANTS = ['tools/resonance/capacity.mjs'];
 const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
 const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';
@@ -190,7 +190,12 @@ export function candidateRefreshPreflightScript({ oldRevision, newRevision, expe
   if (selectedSources.some(file => !expectedFiles.includes(file) || !/^[A-Za-z0-9+/=]+$/.test(selectedOldBytes?.[file] ?? ''))) throw new Error('refresh requires exact old-Native bytes for capacity.mjs and resonance.css');
   const expected = [...new Set([...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
   const expectedLines = expected.map(value => `'${value}'`).join(' ');
-  const knownCapacityArchives = [...new Set([...CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision), ...CAPACITY_BATCH_ARCHIVE_NAMES('ee9e2d8b90f35a4d46705ad6d019ada9f684d94b')])].join('|');
+  const knownCapacityArchives = [...new Set([
+    ...CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision),
+    ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
+    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
+    'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
+  ])].join('|');
   return `set -eu
 C='${CANDIDATE}'
 S='${STAGING}'
