@@ -227,7 +227,7 @@ export function App() {
   if (codex) return html`<${CodexScreen} catalog=${catalog} activeIds=${activeIds}
     initialTab=${codexTab}
     overlayDetail=${html`<${DetailPanel} detail=${detail} catalog=${catalog} onDetail=${setDetail} onClose=${() => setDetail(null)}/>`}
-    onBack=${() => { setCodex(false); setCodexTab('operators'); const url = new URL(location.href); url.searchParams.delete('view'); history.replaceState(null, '', url); }} onDetail=${setDetail}/>`;
+    onBack=${() => { setCodex(false); setCodexTab('operators'); setDetail(null); const url = new URL(location.href); url.searchParams.delete('view'); url.hash = ''; history.replaceState(null, '', url); }} onDetail=${setDetail}/>`;
 
   const selected = catalog.environments?.[env];
   const selectedPact = catalog.pacts?.[selected?.identityPactId];

@@ -22,13 +22,14 @@ function StatGrid({stats,kind}) {
  const rows=[['生命',stats.health],['攻击',stats.attack],['防御',stats.defense],['法抗',stats.resistance],['部署费用',stats.deploymentCost],['阻挡',stats.block],['攻击速度',stats.attackSpeed],['攻击间隔',stats.attackInterval]];
  return html`<section class="dsec"><h3 class="dsec__title">属性 <small>${kind==='deployed'?'当前上阵':'基础预览'}</small></h3><div class="dstats">${rows.map(([label,value])=>html`<div class="dstat"><span class="dstat__k">${label}</span><b class="dstat__v">${fmt(value)}</b></div>`)}</div></section>`;
 }
-function OperatorBody({id,operator,catalog,state,detail,onDetail,onAction,busy}) {
- const piece=detail.pieceUid!=null?(state?.pieces||[]).find(p=>p.uid===detail.pieceUid):null;
- const initial=piece?.star||detail.star||1;const [star,setStar]=useState(initial);const [advanced,setAdvanced]=useState(false);
- useEffect(()=>{setStar(piece?.star||detail.star||1)},[id,detail.pieceUid,piece?.star]);
+function OperatorBody({id,operator,catalog,state,detail,onDetail,onAction,busy,readOnly=false}) {
+ const piece=!readOnly&&!detail.battleUnit&&detail.pieceUid!=null?(state?.pieces||[]).find(p=>p.uid===detail.pieceUid):null;
+ const initial=detail.battleUnit?(detail.star||1):piece?.star||detail.star||1;const [star,setStar]=useState(initial);const [advanced,setAdvanced]=useState(false);
+ useEffect(()=>{setStar(detail.battleUnit?(detail.star||1):piece?.star||detail.star||1)},[id,detail.pieceUid,detail.star,detail.battleUnit?.uid,detail.battleUnit?.resonanceStar,piece?.star]);
  const selected=operator.stars?.[star]||operator.stars?.[1]||{};
  const live=piece&&piece.star===star?piece.operator?.stats:null;
  const stats={...(selected.stats||{}),...(live||{})};const skill=selected.skill;
+ const battleUnit=detail.battleUnit;
  const isCurrent=!!piece&&piece.star===star;
  const invoke=action=>onAction?.(action);
  const sell=async()=>{if(await confirmDialog({title:'出售干员',text:`确认出售${operator.name}？`,okText:'出售',cancelText:'保留',tone:'red',danger:true}))invoke({type:'sell',pieceUid:piece.uid})};
@@ -43,6 +44,7 @@ function OperatorBody({id,operator,catalog,state,detail,onDetail,onAction,busy})
  <div class="rs-detail__stars" role="tablist" aria-label="干员星级">${[1,2,3].map(n=>html`<button role="tab" aria-label=${`${['一','二','三'][n-1]}星`} aria-selected=${star===n} class=${star===n?'is-active':''} onClick=${()=>setStar(n)}>${['一星','二星','三星'][n-1]}</button>`)}</div>
  ${piece&&piece.star!==star?html`<p class="rs-detail__note">当前成员为${piece.star}星；这里显示${star}星基础数值预览。</p>`:null}
  <${StatGrid} stats=${stats} kind=${isCurrent?piece.operator?.statsKind:null}/>
+ ${battleUnit?html`<section class="dsec rs-detail__battle-snapshot"><h3 class="dsec__title">战斗快照</h3><p class="dtext">${battleUnit.name||operator.name} · 我方${battleUnit.resonanceStar?` · ${battleUnit.resonanceStar}星`:''}${battleUnit.tier?` · ${battleUnit.tier}费`:''}</p>${battleUnit.maxHp!=null?html`<p class="dtext">战斗生命上限 ${fmt(battleUnit.maxHp)}</p>`:null}${battleUnit.items?.length?html`<div class="rs-detail__battle-items">${battleUnit.items.map(itemId=>html`<button class="rs-detail__related" key=${itemId} onClick=${()=>onDetail?.({kind:'item',id:itemId})}>${catalog.equipment?.[itemId]?.name||'装备'}</button>`)}</div>`:null}</section>`:null}
  ${skill?html`<section class="dsec"><h3 class="dsec__title">技能</h3><div class="dskill"><span class="dskill__icon dskill__icon--empty"><${Icon} name="sword"/></span><div class="dskill__meta"><b class="dskill__name">${skill.name||'战线应答'}</b><div class="dskill__tags"><span class="dsp dsp--time">${skill.recovery||'技力回复'}</span><span class="dsp__num">初始技力 <b>${fmt(skill.initialSp)}</b></span><span class="dsp__num">消耗 <b>${fmt(skill.spCost)}</b></span><span class="dsp__num">持续 <b>${skill.duration||'瞬发'}</b></span></div></div></div><p class="dtext">${skill.description||'技能详情暂不可用。'}</p></section>`:null}
  <details class="rs-detail__advanced" open=${advanced} onToggle=${e=>setAdvanced(e.currentTarget.open)}><summary>天赋、技能参数与召唤物</summary>${(selected.talents||[]).map(t=>html`<section class="dsec"><h3 class="dsec__title">${t.name}</h3><p class="dtext">${t.description}</p></section>`)}${selected.passive?html`<section class="dsec"><h3 class="dsec__title">升星特性</h3><p class="dtext">${selected.passive}</p></section>`:null}${skill?.values?.length?html`<section class="dsec"><h3 class="dsec__title">技能参数</h3>${skill.values.map(v=>html`<p class="dtext">${v.label}：${v.value}</p>`)}</section>`:null}${(selected.summons||[]).length?html`<section class="dsec"><h3 class="dsec__title">召唤物</h3>${selected.summons.map(token=>html`<p class="dtext">${token.name}</p>`)}</section>`:null}</details>
  ${piece?html`<section class="dsec rs-detail__member"><h3 class="dsec__title">本局操作</h3><div class="rs-detail__actions"><${Button} disabled=${busy||!['prep','choice'].includes(state?.phase)} onClick=${()=>invoke({type:'bench',pieceUid:piece.uid})}>撤退<//><${Button} variant="danger" disabled=${busy||!['prep','choice'].includes(state?.phase)} onClick=${sell}>出售<//></div>${equipmentRows}${equipSelect}${copySelect}${turnSelect}${summonRows?.length?html`<section class="dsec"><h4 class="dsec__title">召唤位置</h4>${summonRows}</section>`:null}</section>`:null}`;
@@ -67,10 +69,10 @@ function ItemBody({id,item,catalog,onDetail}) {
 function RecipeBody({id,recipe,catalog,onDetail}) {
  return html`<div class="dhead__info"><div class="dhead__chips"><span class="dtag-kind">装备配方</span></div><h2 class="dhead__name">${recipe.resultName}</h2></div><section class="dsec"><h3 class="dsec__title">所需部件</h3><div class="rs-detail__recipe">${recipe.parts.map((part,i)=>html`<button onClick=${()=>onDetail?.({kind:'item',id:part})}><${TierChip} tier=${catalog.equipment?.[part]?.tier||1} size="sm"/> ${recipe.names[i]||catalog.equipment?.[part]?.name||'装备'}</button>`)}<${Icon} name="chevronRight"/><button onClick=${()=>onDetail?.({kind:'item',id:recipe.resultId})}>${recipe.resultName}</button></div></section>`;
 }
-export function DetailPanel({detail,catalog,onClose=()=>{},state=null,onDetail,onAction,busy=false}) {
+export function DetailPanel({detail,catalog,onClose=()=>{},state=null,onDetail,onAction,busy=false,readOnly=false}) {
  if(!detail||!catalog)return null;
  const {kind,id}=detail;let title='详情',body=null;let operator=null;
- if(kind==='operator'){operator=catalog.operators?.[id];if(!operator)return null;title=operator.name;body=html`<${OperatorBody} id=${id} operator=${operator} catalog=${catalog} state=${state} detail=${detail} onDetail=${onDetail} onAction=${onAction} busy=${busy}/>`;}
+ if(kind==='operator'){operator=catalog.operators?.[id];if(!operator)return null;title=operator.name;body=html`<${OperatorBody} id=${id} operator=${operator} catalog=${catalog} state=${state} detail=${detail} onDetail=${onDetail} onAction=${onAction} busy=${busy} readOnly=${readOnly}/>`;}
  else if(kind==='pact'){const pact=catalog.pacts?.[id];if(!pact)return null;title=pact.name;body=html`<${PactBody} id=${id} pact=${pact} catalog=${catalog} state=${state} onDetail=${onDetail}/>`;}
  else if(kind==='item'){const item=catalog.equipment?.[id];if(!item)return null;title=item.name;body=html`<${ItemBody} id=${id} item=${item} catalog=${catalog} onDetail=${onDetail}/>`;}
  else if(kind==='recipe'){const recipe=catalog.recipes?.[Number(id)];if(!recipe)return null;title=recipe.resultName;body=html`<${RecipeBody} id=${id} recipe=${recipe} catalog=${catalog} onDetail=${onDetail}/>`;}

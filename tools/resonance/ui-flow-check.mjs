@@ -33,9 +33,14 @@ const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 
 let browser, server, fixtureServer, deadline;
 const check = (name, value, detail) => { receipt.tests.push({ name, passed: !!value, detail }); if (!value) throw new Error(`${name}: ${JSON.stringify(detail)}`); };
 async function button(page, pattern) {
-  const h = await page.evaluateHandle((source) => { const re = new RegExp(source);
-    return [...document.querySelectorAll('button,a.btn')].find(e => !e.disabled && e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height > 0 && re.test(e.innerText.trim())); }, pattern);
-  const el = h.asElement(); if (!el) { await h.dispose(); throw new Error(`visible button not found: ${pattern}`); }
+  const h = await page.waitForFunction((source) => { const re = new RegExp(source);
+    return [...document.querySelectorAll('button,a.btn')].find(e => {
+      const rect = e.getBoundingClientRect(), style = getComputedStyle(e);
+      return !e.disabled && rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' &&
+        Number(style.opacity) > 0 && re.test(e.innerText.trim());
+    }) || false;
+  }, { timeout: 15000 }, pattern);
+  const el = h.asElement(); if (!el) { await h.dispose(); throw new Error(`visible enabled button not found: ${pattern}`); }
   await el.click(); await h.dispose();
 }
 async function stateAfterRevision(page, id, revision, label) {
@@ -262,7 +267,9 @@ try {
       summary: await page.$eval('.rs-difficulty-feature__schedule', node => node.innerText.trim()) });
   await shot(page, '02-difficulty');
   check('no-premature-create-after-difficulty', receipt.creates === 0, receipt.creates);
-  await button(page, '^选择战场$'); await page.waitForFunction(() => /选择战场/.test(document.body.innerText), { timeout: 15000 });
+  await button(page, '^选择战场$');
+  await page.waitForFunction(() => !!document.querySelector('.rs-flow--environment') && !document.querySelector('.rs-codex') &&
+    document.querySelector('.rs-env-card'), { timeout: 15000 });
   const environmentIndex = await page.$$eval('.rs-env-card', cards => cards.findIndex(card => card.getAttribute('aria-selected') !== 'true' && card.querySelector('.rs-env-card__portrait')));
   if (environmentIndex >= 0) {
     const environmentCards = await page.$$('.rs-env-card');

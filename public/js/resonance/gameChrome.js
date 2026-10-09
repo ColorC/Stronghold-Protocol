@@ -27,7 +27,7 @@ export function GameChrome(p) {
     replay,setReplay,playing,setPlaying,speed,setSpeed,frame,jumpToEnd,view,summary,showReplay,
     move,openDetail,facing,commitFacing,cancelFacing,choiceSelections,setChoiceSelections,strategyTargets,setStrategyTargets,
     makeChoice,choiceOpen,saleZoneRef,sellingPiece,equipDrop} = p;
-  const xpNeed=xpForLevel(state.level);
+  const xpNeed=Number(catalog.campaign?.economy?.xpToLevel?.[state.level]??xpForLevel(state.level));
   const prep=prepView(state,catalog);
   const shopPriv={funds:state.gold,deployCount:state.deployedCount,deployCap:state.level,hand:prep.hand,board:prep.board,temp:prep.temp,loadout:null,
     shop:{slots:(state.shop?.offers||[]).map(o=>({kind:'chess',id:o.operatorId,price:o.cost??catalog.operators?.[o.operatorId]?.cost??0,sold:!o.operatorId||!!o.sold,offerUid:o.uid})),
@@ -119,7 +119,7 @@ export function GameChrome(p) {
       </section></main></div></section>`:null}
     ${!replay&&summary?html`<aside class="rs-settlement-toast"><b>${summary.won?'本场守住防线':'本场防线失守'}</b><button onClick=${()=>setPanel('settlement')}>结算明细</button><button onClick=${()=>showReplay(summary.round)}>回放</button></aside>`:null}
     ${!replay&&facing&&view?html`<${FacingWheel} key=${`${facing.piece.uid}:${facing.row},${facing.col}`} view=${view} row=${facing.row} col=${facing.col} grid=${facing.grid} name=${facing.name} onPreview=${dir=>setPieceDir(view,pieceNum(facing.piece.uid),dir||facing.piece.dir||'RIGHT')} onCommit=${commitFacing} onCancel=${cancelFacing}/>`:null}
-    ${replay||panel==='codex'?null:html`<${DetailPanel} detail=${detail} catalog=${catalog} state=${state} onDetail=${openDetail} onAction=${act} busy=${busy} onClose=${()=>setDetail(null)}/>`}
+    ${panel==='codex'?null:html`<${DetailPanel} detail=${detail} catalog=${catalog} state=${state} onDetail=${openDetail} onAction=${replay||!['prep','choice'].includes(state.phase)?null:act} busy=${busy} readOnly=${!!replay||!['prep','choice'].includes(state.phase)} onClose=${()=>setDetail(null)}/>`}
     ${settingsOpen?html`<${SettingsModal} open=${true} onClose=${()=>setSettingsOpen(false)} onGuide=${()=>{setSettingsOpen(false);setDetail(null);setCodexInitialTab('economy');setPanel('codex')}} guideLabel="经营规则" helpText="左键招募干员 · 右键查看详情 · D 刷新 · F 购买经验 · E 出售指向或详情中的干员 · W 撤退或部署目标干员 · 拖动装备到干员 · 右键装备查看配方"/>`:null}
   </main>`;
 }
