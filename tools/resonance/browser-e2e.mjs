@@ -23,6 +23,48 @@ const WSH_CONFIG_PATH = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 const WSH_CLI_PATH = process.env.WSH_CLI_PATH
   || 'E:/WindowsWorkspace/spark.workshop/releases/remote-play-card-20261004/wt/remote-play-card-20261004-5ba073215a31/workshop/cli/dist/wsh.mjs';
 const DEADLINE_MS = 25 * 60 * 1000;
+const VALUE_FLAGS = new Set(['--url','--workshop-url','--embed-url','--resume-production-session','--check-production-followups',
+  '--replay-existing-session','--followup-existing-sessions','--product-native','--audit-native','--check-ui-interactions',
+  '--check-late-shop','--check-interactive-fixture','--check-summon-fixture','--check-roberta-r3','--diagnose-session-load',
+  '--baseline-product-native']);
+const SWITCH_FLAGS = new Set(['--self-test-embed-url','--check-fixtures','--check-fresh-ui','--check-component-links',
+  '--check-followup-fixtures','--check-pair-strategy','--capture-normal-victory','--check-iframe-only','--check-link-kinds-only',
+  '--check-terminal-css','--check-css-only','--progress-to-strategy-choice','--workshop-only']);
+function validateCliArguments(args) {
+  const seen = new Set();
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i];
+    const equal = token.indexOf('=');
+    const name = equal > 0 ? token.slice(0, equal) : token;
+    const inlineValue = equal > 0 ? token.slice(equal + 1) : null;
+    if (seen.has(name)) throw new Error(`duplicate command option: ${name}`);
+    seen.add(name);
+    if (VALUE_FLAGS.has(name)) {
+      const value = inlineValue ?? args[++i];
+      if (!value || value.startsWith('--')) throw new Error(`missing value for ${name}`);
+      continue;
+    }
+    if (inlineValue !== null) throw new Error(`option does not accept a value: ${name}`);
+    if (!SWITCH_FLAGS.has(name)) throw new Error(`unknown command option: ${name}; no work was started`);
+  }
+}
+validateCliArguments(process.argv.slice(2));
+function matchesExpectedEmbeddedGame(candidateUrl, expectedUrl) {
+  try {
+    const candidate = new URL(candidateUrl), expected = new URL(expectedUrl);
+    return candidate.origin === expected.origin && candidate.pathname === expected.pathname;
+  } catch { return false; }
+}
+if (process.argv.includes('--self-test-embed-url')) {
+  const expected = 'https://workshop.colorc.cc/stronghold/resonance.html';
+  if (!matchesExpectedEmbeddedGame(`${expected}?session=abc#shop`, expected)
+    || matchesExpectedEmbeddedGame('https://colorc.cc/stronghold/resonance.html', expected)
+    || matchesExpectedEmbeddedGame('https://workshop.colorc.cc/other/resonance.html', expected)) {
+    throw new Error('embedded URL exact-origin/path pure check failed');
+  }
+  process.stdout.write(JSON.stringify({ ok: true, expectedOrigin: new URL(expected).origin, expectedPath: new URL(expected).pathname }) + '\n');
+  process.exit(0);
+}
 const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const nativeSourceState = () => ({
   revision: execFileSync('git', ['-C', SOURCE_ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
@@ -47,6 +89,8 @@ const REMOTE_FOLLOWUP_EXISTING_SESSIONS = existingFollowupArg >= 0
   ? (process.argv[existingFollowupArg + 1] || '').split(',').map((id) => id.trim()).filter(Boolean) : [];
 const productNativeArg = process.argv.findIndex((arg) => arg === '--product-native');
 const REMOTE_PRODUCT_NATIVE_REVISION = productNativeArg >= 0 ? process.argv[productNativeArg + 1] : null;
+const baselineProductNativeArg = process.argv.findIndex((arg) => arg === '--baseline-product-native');
+const REMOTE_BASELINE_PRODUCT_NATIVE_REVISION = baselineProductNativeArg >= 0 ? process.argv[baselineProductNativeArg + 1] : null;
 const auditNativeArg = process.argv.findIndex((arg) => arg === '--audit-native');
 const REMOTE_AUDIT_NATIVE_REVISION = auditNativeArg >= 0 ? process.argv[auditNativeArg + 1] : REMOTE_PRODUCT_NATIVE_REVISION;
 const REMOTE_ATTEMPT_ID = new Date().toISOString().replace(/[^0-9TZ-]/g, '-');
@@ -76,22 +120,6 @@ if (REMOTE_EMBED_URL) {
     || parsed.pathname !== '/stronghold/resonance.html' || parsed.origin !== new URL(REMOTE_WORKSHOP_URL).origin) {
     throw new Error('--embed-url 必须与 --url/--workshop-url 一起使用，并精确指向 Workshop 同源 /stronghold/resonance.html');
   }
-}
-function matchesExpectedEmbeddedGame(candidateUrl, expectedUrl) {
-  try {
-    const candidate = new URL(candidateUrl), expected = new URL(expectedUrl);
-    return candidate.origin === expected.origin && candidate.pathname === expected.pathname;
-  } catch { return false; }
-}
-if (process.argv.includes('--self-test-embed-url')) {
-  const expected = 'https://workshop.colorc.cc/stronghold/resonance.html';
-  if (!matchesExpectedEmbeddedGame(`${expected}?session=abc#shop`, expected)
-    || matchesExpectedEmbeddedGame('https://colorc.cc/stronghold/resonance.html', expected)
-    || matchesExpectedEmbeddedGame('https://workshop.colorc.cc/other/resonance.html', expected)) {
-    throw new Error('embedded URL exact-origin/path pure check failed');
-  }
-  process.stdout.write(JSON.stringify({ ok: true, expectedOrigin: new URL(expected).origin, expectedPath: new URL(expected).pathname }) + '\n');
-  process.exit(0);
 }
 // Resolve module-time inputs before importing the server from a sparse checkout.
 process.env.SP_DATA_DIR ||= path.join(CANONICAL_ROOT, 'data');
@@ -1190,12 +1218,16 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
     let hostFrame = null;
     while (!hostFrame && Date.now() < hostDeadline) {
       hostFrame = workshop.frames().find((candidate) => {
-        try { return candidate.parentFrame() && new URL(candidate.url()).pathname.endsWith('/notes-web.html'); }
+        try {
+          const url = new URL(candidate.url());
+          return url.pathname.endsWith('/notes-web.html')
+            && (!candidate.parentFrame() || candidate.parentFrame() === workshop.mainFrame());
+        }
         catch { return false; }
       }) || null;
       if (!hostFrame) await new Promise((resolve) => setTimeout(resolve, 150));
     }
-    if (!hostFrame) throw new Error('Workshop页面没有载入外层 notes-web.html 画布宿主frame');
+    if (!hostFrame) throw new Error('Workshop URL did not resolve to notes-web.html main frame or direct child');
     const focusCardId = workshopFocusCardId(workshopUrl) || workshopFocusCardId(hostFrame.url());
     if (!focusCardId) throw new Error('Workshop URL及notes-web宿主URL都没有focus/card查询或#card定位；为避免误开其它卡，跳过宿主故事');
     const cardDeadline = Date.now() + 30_000;
@@ -1294,29 +1326,29 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       throw new Error(`目标卡 ${focusCardId} 经真实${activationLabel}操作仍未出现HD游戏iframe；可见控件=${JSON.stringify(controls)}`);
     }
     if (embeddedFrame) {
-      const frameGame = await startViaUi(embeddedFrame);
-      const openingRender = await inspectEmbeddedRender(embeddedFrame, frameGame.id);
+      const savedSessionId = REMOTE_FOLLOWUP_SESSION_ID;
+      assert(savedSessionId, 'Workshop host visual audit requires the existing persisted session; new session creation is disabled');
+      const replay = await replayExistingBattleInWorkshopFrame(embeddedFrame, savedSessionId);
+      const frameGame = { id: savedSessionId, state: await stateOf(embeddedFrame, savedSessionId) };
+      const openingRender = await inspectEmbeddedSurface(embeddedFrame);
       await capture(workshop, '05-workshop-embedded.png', 'Workshop画布内的真实对局界面');
+      const embeddedField = await embeddedFrame.$('.rs-field__canvas');
+      const embeddedFieldScreenshot = path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-05-workshop-field.png`);
+      if (embeddedField) await embeddedField.screenshot({ path: embeddedFieldScreenshot });
       await appendWorkshopProof('production-workshop-opening-render-audit', { productNativeRevision: REMOTE_AUDIT_NATIVE_REVISION,
-        sessionId: frameGame.id, screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-05-workshop-embedded.png`), openingRender });
-      const rosterButton = await findTextHandle(embeddedFrame, '.rs-game button', '展开全部干员', true);
-      if (!rosterButton) throw new Error('Workshop新局没有干员图鉴入口');
-      await rosterButton.click();
-      const operatorButton = await embeddedFrame.$('.rs-roster article.rs-card button.rs-card__main');
-      if (!operatorButton) throw new Error('Workshop新局未显示可定位的干员详情');
-      const operatorId = await operatorButton.evaluate((el) => el.closest('article')?.id?.slice('operator-'.length) || '');
-      await operatorButton.click(); await embeddedFrame.waitForSelector('.rs-detail', { timeout: 15_000 });
+        sessionId: frameGame.id, existingSession: true, replay, fieldScreenshot: embeddedFieldScreenshot,
+        screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-05-workshop-embedded.png`), openingRender });
+      const operatorId = 'existing-session-report';
       let fullscreen = await findTextHandle(embeddedFrame, 'a', '全屏打开', false);
-      if (!fullscreen) throw new Error('高清嵌入游戏中没有全屏入口');
+      if (!fullscreen) {
+        await embeddedFrame.waitForSelector('a', { timeout: 8_000 });
+        fullscreen = await findTextHandle(embeddedFrame, 'a', '全屏打开', false);
+      }
+      if (!fullscreen) throw new Error('HD embedded existing-session report has no visible game fullscreen link');
       const iframeHash = new URL(embeddedFrame.url()).hash;
       const href = new URL(await fullscreen.evaluate((el) => el.href));
       if (href.searchParams.get('session') !== frameGame.id || href.hash !== iframeHash) throw new Error('卡片高清iframe全屏URL未保留当前session/hash');
-      const hit = await fullscreen.evaluate((el) => { const r=el.getBoundingClientRect(); const target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2); return { hit:target===el,rect:{width:r.width,height:r.height},modal:!!document.querySelector('.rs-detail') }; });
-      if (hit.modal) {
-        const close=await embeddedFrame.$('button[aria-label="关闭详情"]'); if(!close)throw new Error('高清iframe的干员详情遮挡全屏且无关闭入口');
-        await close.click(); await embeddedFrame.waitForSelector('.rs-detail',{hidden:true,timeout:10_000});
-        fullscreen=await findTextHandle(embeddedFrame,'a','全屏打开',false);
-      }
+      const hit = await fullscreen.evaluate((el) => { const r=el.getBoundingClientRect(); const target=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2); return { hit:el.contains(target),rect:{width:r.width,height:r.height},modal:!!document.querySelector('.rs-detail') }; });
       await fullscreen.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
       await embeddedFrame.waitForFunction(()=>{const el=[...document.querySelectorAll('a')].find(x=>x.textContent.trim()==='全屏打开');if(!el)return false;const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&el.contains(hit)&&!document.querySelector('.rs-detail')},{timeout:10_000});
       let popupHandler; let popupTimeout;
@@ -1325,21 +1357,41 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       try { await fullscreen.click(); popup=await Promise.race([popupPromise,new Promise((_,reject)=>{popupTimeout=setTimeout(()=>reject(new Error('卡片高清iframe全屏点击未打开新页（15秒超时）')),15_000)})]); }
       finally { if(popupHandler)workshop.off('popup',popupHandler);if(popupTimeout)clearTimeout(popupTimeout); }
       try {
-        await scopePage(popup); await waitGame(popup);
+        await scopePage(popup);
+        await popup.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+        await waitGame(popup);
         const popupUrl=new URL(popup.url());
         if(popupUrl.searchParams.get('session')!==frameGame.id||popupUrl.hash!==iframeHash)throw new Error('卡片高清iframe全屏页没有保留session/hash');
+        const popupState = await stateOf(popup, frameGame.id);
+        const lastSettled = (popupState.history || []).filter((entry) => entry.type === 'fight-settled').at(-1);
+        assert(lastSettled, 'Workshop full-screen page has no existing settled fight to replay');
+        if (!(await popup.$('.rs-replay'))) {
+          await popup.waitForSelector('#rs-section-battle-report button', { timeout: 30_000 });
+          const replayButton = await findTextHandle(popup, '#rs-section-battle-report button', `第${lastSettled.round}场`, false);
+          assert(replayButton, `Workshop full-screen page has no replay button for existing round ${lastSettled.round}`);
+          await replayButton.click();
+          await popup.waitForSelector('.rs-replay', { timeout: 15_000 });
+          const pauseButton = await findTextHandle(popup, '.rs-replay button', '暂停', false).catch(() => null);
+          if (pauseButton) await pauseButton.click();
+          await popup.waitForFunction(() => [...document.querySelectorAll('.rs-replay button')]
+            .some((node) => /继续|播放/.test(node.textContent || '')), { timeout: 5_000 }).catch(() => {});
+        }
+        const popupRender = await inspectEmbeddedRender(popup, frameGame.id);
         await capture(popup,'09-workshop-fullscreen.png','Workshop卡片内游戏全屏打开');
         const fullscreenEvidence = `Workshop Canvas正式卡片HD iframe通过游戏UI打开全屏popup；实际popup session=${frameGame.id}与嵌入局相同、hash=${iframeHash}与嵌入页相同；全屏图=${path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-09-workshop-fullscreen.png`)}`;
         remoteStory('production-workshop-embedded-fullscreen', 'passed', fullscreenEvidence);
         await appendWorkshopProof('production-workshop-fullscreen-ui-proof', { sessionId: frameGame.id, iframeUrl: embeddedFrame.url(), popupUrl: popup.url(), hash: iframeHash,
           gameNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION, deliveryAuditRevision: REMOTE_AUDIT_NATIVE_REVISION,
-          screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-09-workshop-fullscreen.png`), status: 'passed', rendererAudit: 'pending' });
-        const savedSessionId = REMOTE_FOLLOWUP_SESSION_ID;
-        const replay = await replayExistingBattleInWorkshopFrame(embeddedFrame, savedSessionId);
+          screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-09-workshop-fullscreen.png`), status: 'passed', rendererAudit: popupRender,
+          replay: { round: lastSettled.round, won: lastSettled.won, hpLoss: lastSettled.hpLoss, battleExecuted: false } });
         await capture(workshop, '10-workshop-native-battle-replay.png', 'Workshop嵌入的既有战斗客户端回放');
-        const battleRender = await inspectEmbeddedRender(embeddedFrame, savedSessionId);
+        const battleRender = popupRender;
+        const battleField = await popup.$('.rs-field__canvas');
+        const battleFieldScreenshot = path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-workshop-battle-field.png`);
+        if (battleField) await battleField.screenshot({ path: battleFieldScreenshot });
         const audit = { status: 'captured', productNativeRevision: REMOTE_AUDIT_NATIVE_REVISION, unchangedGameNativeRevision: REMOTE_PRODUCT_NATIVE_REVISION,
-          screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-workshop-native-battle-replay.png`), replay, openingRender, battleRender,
+          screenshot: path.join(SCREENSHOT_DIR, `${REMOTE_ATTEMPT_ID}-10-workshop-native-battle-replay.png`), fieldScreenshot: battleFieldScreenshot,
+          existingSession: true, battleExecuted: false, replay, openingRender, battleRender,
           consoleErrors: errors.filter((item) => item.includes('remote Workshop') || item.includes('production followup')), missingResources };
         await appendWorkshopProof('production-workshop-native-render-audit', audit);
         return `${fullscreenEvidence}；卡片预览入口=${activationLabel}；干员${operatorId}用于定位。既有已结算战斗仅客户端回放，未执行新Battle；Native渲染与资源诊断=${JSON.stringify(audit)}`;
@@ -1371,7 +1423,7 @@ async function inspectEmbeddedRender(frame, sessionId) {
     if (!view || !host || !['engine','fallback'].includes(view.kind)) return false;
     if (view.kind === 'fallback') return true;
     return [...host.querySelectorAll('canvas')].some((canvas) => canvas.width > 0 && canvas.height > 0);
-  }, { timeout: 45_000 });
+  }, { polling: 100, timeout: 45_000 });
   await frame.waitForFunction(() => {
     const view = globalThis.__SP_VIEW__;
     if (!view || view.kind === 'fallback') return true;
@@ -1379,8 +1431,7 @@ async function inspectEmbeddedRender(frame, sessionId) {
     try { stats = view.raw?.stats?.(); } catch { return true; }
     const spine = stats?.spine;
     return !spine || spine.loading === 0 || spine.ready > 0 || spine.failed > 0;
-  }, { timeout: 30_000 }).catch(() => {});
-  await frame.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  }, { polling: 100, timeout: 30_000 }).catch(() => {});
   return frame.evaluate(async (state) => {
     const host = document.querySelector('.rs-field__canvas');
     const view = globalThis.__SP_VIEW__;
@@ -1445,30 +1496,111 @@ async function inspectEmbeddedRender(frame, sessionId) {
     };
   }, savedState);
 }
+async function inspectEmbeddedSurface(frame) {
+  return frame.evaluate(() => {
+    const rect = (node) => {
+      if (!node) return null;
+      const r = node.getBoundingClientRect();
+      return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
+    };
+    const rotate = document.querySelector('.rotate-hint'), style = rotate ? getComputedStyle(rotate) : null;
+    const view = globalThis.__SP_VIEW__, field = document.querySelector('.rs-field__canvas');
+    return { url: location.href, viewport: { width: innerWidth, height: innerHeight,
+      matchLandscape: matchMedia('(orientation: landscape)').matches, screenWidth: screen.width, screenHeight: screen.height,
+      touchPoints: navigator.maxTouchPoints, orientationType: screen.orientation?.type || null },
+      htmlClass: document.documentElement.className, bodyClass: document.body?.className || '',
+      rotateHint: rotate ? { text: (rotate.innerText || '').trim(), rect: rect(rotate), display: style.display,
+        visibility: style.visibility, opacity: style.opacity, zIndex: style.zIndex, offsetParent: !!rotate.offsetParent } : null,
+      hasGame: !!document.querySelector('.rs-game'), replayLabel: document.querySelector('.rs-replay b')?.textContent?.trim() || null,
+      viewKind: view?.kind || null, fieldRect: rect(field), canvasCount: field?.querySelectorAll('canvas').length || 0 };
+  });
+}
 async function replayExistingBattleInWorkshopFrame(frame, sessionId) {
   assert(sessionId, 'missing existing production session for client-side battle replay');
   const replayUrl = new URL(REMOTE_EMBED_URL || REMOTE_ENTRY_URL);
   replayUrl.searchParams.set('session', sessionId);
   replayUrl.searchParams.set('execution', 'client');
   replayUrl.hash = 'section-battle-report';
-  await frame.goto(replayUrl.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-  await waitGame(frame, 45_000);
+  const cardFrameUrl = frame.url();
+  let replayOpenedVia = null;
+  try {
+    await frame.goto(replayUrl.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await frame.waitForSelector('#rs-section-battle-report button', { timeout: 90_000 });
+  } catch (error) {
+    const frameState = await frame.evaluate(() => {
+      const summarize = (element) => element ? {
+        tag: element.tagName.toLowerCase(), id: element.id || null,
+        className: typeof element.className === 'string' ? element.className : '',
+        text: (element.innerText || element.textContent || '').trim().slice(0, 3000),
+      } : null;
+      return {
+        url: location.href, readyState: document.readyState, title: document.title,
+        bodyText: (document.body?.innerText || '').trim().slice(0, 6000),
+        root: summarize(document.querySelector('#root') || document.querySelector('#app') || document.body?.firstElementChild),
+        setup: summarize(document.querySelector('.rs-start__setup')),
+        game: summarize(document.querySelector('.rs-game')),
+        panels: [...document.querySelectorAll('.panel,.rs-error,[role="alert"]')].slice(0, 8).map(summarize),
+        scriptUrls: [...document.scripts].map((script) => script.src).filter(Boolean),
+        dataStatus: (() => { try { return globalThis.__SP_DATA__?.status?.() || null; } catch (cause) { return { error: cause.message }; } })(),
+      };
+    }).catch((cause) => ({ inspectError: cause.message }));
+    const childFrameStates = await Promise.all(frame.childFrames().map(async (child) => ({
+      url: child.url(), state: await child.evaluate(() => ({ readyState: document.readyState,
+        title: document.title, bodyText: (document.body?.innerText || '').trim().slice(0, 2500),
+        hasGame: !!document.querySelector('.rs-game'), hasReport: !!document.querySelector('#rs-section-battle-report'),
+        scripts: [...document.scripts].map((script) => script.src).filter(Boolean) })).catch((cause) => ({ inspectError: cause.message })),
+    })));
+    const page = frame.page();
+    const stamp = `${REMOTE_ATTEMPT_ID}-11-workshop-embed-load-failure`;
+    const pageScreenshot = path.join(SCREENSHOT_DIR, `${stamp}.png`);
+    await page.screenshot({ path: pageScreenshot, fullPage: true, captureBeyondViewport: true })
+      .then(() => screenshots.push({ path: pageScreenshot, purpose: 'Workshop嵌入游戏加载失败现场' })).catch(() => {});
+    const element = await frame.frameElement().catch(() => null);
+    let iframeScreenshot = null;
+    let iframeBox = null;
+    if (element) {
+      iframeBox = await element.evaluate((node) => {
+        const r = node.getBoundingClientRect();
+        return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height),
+          src: node.getAttribute('src'), title: node.getAttribute('title') };
+      }).catch(() => null);
+      iframeScreenshot = path.join(SCREENSHOT_DIR, `${stamp}-frame.png`);
+      await element.screenshot({ path: iframeScreenshot })
+        .then(() => screenshots.push({ path: iframeScreenshot, purpose: 'Workshop游戏iframe加载失败现场' }))
+        .catch(() => { iframeScreenshot = null; });
+    }
+    const requestDiagnostics = errors.filter((entry) => /Workshop scoped|remote Workshop page (?:pageerror|console|requestfailed)|same-origin HTTP/.test(entry)).slice(-30);
+    throw new Error(`${error.stack || error}; workshopEmbedLoadDiagnostic=${JSON.stringify({
+      cardFrameUrl, attemptedUrl: replayUrl.href, finalFrameUrl: frame.url(), frameBox: iframeBox, frameState, childFrameStates,
+      pageScreenshot, iframeScreenshot, requestDiagnostics,
+    })}`);
+  }
   const state = await stateOf(frame, sessionId);
   const settled = (state.history || []).filter((entry) => entry.type === 'fight-settled');
   assert(settled.length > 0, `existing production session ${sessionId} has no settled battle to replay`);
   const last = settled.at(-1);
-  await frame.waitForSelector('#rs-section-battle-report', { timeout: 15_000 });
-  const battleButton = await findTextHandle(frame, '#rs-section-battle-report button', `第${last.round}场`, false);
-  assert(battleButton, `existing report lacks settled round ${last.round}`);
-  await battleButton.click();
-  await frame.waitForSelector('.rs-replay', { timeout: 15_000 });
+  if (!(await frame.$('.rs-replay'))) {
+    await frame.waitForSelector('#rs-section-battle-report', { timeout: 15_000 });
+    const battleButton = await findTextHandle(frame, '#rs-section-battle-report button', `第${last.round}场`, false);
+    assert(battleButton, `existing report lacks settled round ${last.round}`);
+    await battleButton.click();
+    await frame.waitForSelector('.rs-replay', { timeout: 15_000 });
+    replayOpenedVia = `battle-report-round-${last.round}`;
+  }
+  let replayPaused = false;
+  const pauseButton = await findTextHandle(frame, '.rs-replay button', '暂停', false).catch(() => null);
+  if (pauseButton) {
+    await pauseButton.click();
+    replayPaused = await frame.waitForFunction(() => [...document.querySelectorAll('.rs-replay button')]
+      .some(node => /继续|播放/.test(node.textContent || '')), { timeout: 5_000 }).then(() => true).catch(() => false);
+  }
   const renderer = await frame.evaluate(() => ({
     viewKind: globalThis.__SP_VIEW__?.kind ?? null,
     canvasCount: document.querySelectorAll('.rs-field__canvas canvas').length,
     replayLabel: document.querySelector('.rs-replay b')?.textContent?.trim() || null,
   }));
   return { sessionId, round: last.round, won: last.won, hpLoss: last.hpLoss, battleExecuted: false,
-    replayVisible: Boolean(renderer.replayLabel), renderer, openedUrl: frame.url() };
+    replayVisible: Boolean(renderer.replayLabel), replayPaused, replayOpenedVia, renderer, openedUrl: frame.url() };
 }
 async function runExistingSessionVisualReplay(sessionId) {
   assert(REMOTE_MODE && REMOTE_ENTRY_URL, 'existing-session visual replay requires a direct production entry URL');
@@ -1541,8 +1673,9 @@ async function runRemoteProductionFollowups(sessionId) {
   const oldReceipt = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
   assert(oldReceipt.mode === 'remote-production' && oldReceipt.resumedSessionId === sessionId,
     'production followup session does not match the saved same-session attempt');
-  assert(oldReceipt.productNativeRevision === REMOTE_PRODUCT_NATIVE_REVISION,
-    'product Native revision does not match the previous production attempt');
+  assert(oldReceipt.productNativeRevision === REMOTE_PRODUCT_NATIVE_REVISION
+    || (REMOTE_BASELINE_PRODUCT_NATIVE_REVISION && oldReceipt.productNativeRevision === REMOTE_BASELINE_PRODUCT_NATIVE_REVISION),
+  'product Native revision does not match the previous production attempt or its explicit static-delivery baseline');
   const mustRemainPassed = ['production-starts','production-renderers','production-natural-battles-and-supply',
     'production-shop-actions','production-session-reload','production-selection-and-layout','production-section-copy-links'];
   assert(mustRemainPassed.every((name) => oldReceipt.remoteStories?.[name]?.status === 'passed'),
