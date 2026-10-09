@@ -201,12 +201,12 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     if (await simple({ type: 'sell', uid })) { setSel(null); audio.sfx('sell', { volume: 0.6 }); }
   }, [simple]);
 
-  const buy = useCallback(async (slot, targets = undefined) => {
+  const buy = useCallback(async (slot, targets = undefined, { preserveDetail = false } = {}) => {
     const current=stateRef.current,shopSlot=current?.shop?.slots?.[slot];
     if(targets===undefined&&buyTargetSpec(shopSlot,catalog,current)) { setDetail({kind:'shop',slot}); return false; }
     setArmed(null);
     const res = await act({ type: 'buy', slot, ...(targets||{}) });
-    if (res) { audio.sfx('buy', { volume: 0.6 }); setDetail(null); }
+    if (res) { audio.sfx('buy', { volume: 0.6 }); if (!preserveDetail) setDetail(null); }
     return res;
   }, [act,catalog]);
 
@@ -229,8 +229,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     const payload = mode.spec.kind === 'shopSlot' ? { shopSlots: [choice.slot] }
       : mode.spec.kind === 'magnetic' ? { magneticTargetUid: choice.uid } : { targetUid: choice.uid };
     cancelFieldTarget();
-    setDetail(null);
-    buy(mode.slot, payload);
+    buy(mode.slot, payload, { preserveDetail: true });
     return true;
   }, [buy, cancelFieldTarget]);
 
@@ -544,7 +543,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       if (shortcutBlocked(a, { modal: !!L.panel || !!document.querySelector('.modal, .guide'), drawer: !!L.drawer })) return;
       if (a === 'escape') {
         if (L.facing) return; // the wheel takes its own Escape
-        if (L.fieldTarget) { cancelFieldTarget(); setDetail(null); e.preventDefault(); return; }
+        if (L.fieldTarget) { cancelFieldTarget(); e.preventDefault(); return; }
         if (L.reportOpen) setReportOpen(false);
         else if (L.drawer) setDrawer(null);
         else if (L.pen && !L.detail) setPen(false);
@@ -670,7 +669,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     ${loading ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>
     <div class="gm__hud">
-      ${fieldTarget ? html`<div class="ix-target-prompt" role="status"><span>${fieldTarget.spec.kind === 'shopSlot' ? '点击高亮的商店卡牌进行分配' : '点击高亮友方干员作为目标'}</span><button type="button" onClick=${() => { cancelFieldTarget(); setDetail(null); }}>取消 <kbd>Esc</kbd></button></div>` : null}
+      ${fieldTarget ? html`<div class="ix-target-prompt" role="status"><span>${fieldTarget.spec.kind === 'shopSlot' ? '点击高亮的商店卡牌进行分配' : '点击高亮友方干员作为目标'}</span><button type="button" onClick=${() => { cancelFieldTarget(); }}>取消 <kbd>Esc</kbd></button></div>` : null}
       <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${leave} drawer=${drawer} onDrawer=${setDrawer}
         pen=${pen} onPen=${() => setPen((x) => !x)} production=${!battle ? html`<${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />` : null} />
       ${!battle ? html`

@@ -36,3 +36,12 @@ test('field targeting uses only the compact prompt and hides the detail pane whi
   assert.doesNotMatch(detail, /ix-buy-targets--field/);
   assert.doesNotMatch(css, /ix-buy-targets--field/);
 });
+
+
+test('field target cancel and success preserve the detail selection hidden underneath', () => {
+  const game = fs.readFileSync(new URL('../../public/js/independent/game.js', import.meta.url), 'utf8');
+  assert.ok(game.includes('if (L.fieldTarget) { cancelFieldTarget(); e.preventDefault(); return; }'));
+  assert.ok(game.includes('cancelFieldTarget(); }}>取消'));
+  assert.ok(game.includes('buy(mode.slot, payload, { preserveDetail: true })'));
+  assert.ok(game.includes('if (!preserveDetail) setDetail(null)'));
+});
