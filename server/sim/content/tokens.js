@@ -98,6 +98,9 @@ import { normDir, localOrder } from '../dir.js';
 import { SKILL_SUMMON_START_DEPLOY } from '../../../shared/constants.js';
 import { hypot } from '../detmath.js';
 import { atPotential } from '../../../shared/potential.js';
+import { Unit } from '../units.js';
+import { acquireTargets } from '../ai.js';
+import { resolveProfile } from '../professions.js';
 
 const num = (v, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(+v) ? +v : d));
 const GRID_3X3 = Object.freeze([[1, -1], [1, 0], [1, 1], [0, -1], [0, 0], [0, 1], [-1, -1], [-1, 0], [-1, 1]]);
@@ -368,7 +371,8 @@ function deployDocked(battle, u) {
   const stock = u.ownerUnit?.mem.summonStock;
   if (!stock || !(stock[u.defId] > 0) || u.alive || u.removed || battle.finished || !u.ownerUnit.alive) return false;
   const wait = u.mem.readyAt - battle.time;
-  if (wait > 1e-9 || !battle.redeploy(u, { free: true })) {
+  const engagementReady = u.tileR != null && tokenCanEngageAt(battle, u.ownerUnit, u.def, u.tileR, u.tileC);
+  if (wait > 1e-9 || !engagementReady || !battle.redeploy(u, { free: true })) {
     if (!u.mem.dockRetry) {
       u.mem.dockRetry = true;
       battle.after(Math.max(wait, DOCK_RETRY), () => { u.mem.dockRetry = false; deployDocked(battle, u); }, { owner: u });
@@ -403,7 +407,8 @@ function inRectTile(battle, r, c) { return Number.isInteger(r) && Number.isInteg
  * unit's tile).
  */
 export function tileFree(battle, r, c) {
-  return inRectTile(battle, r, c) && !battle.isReservedTile(r, c);
+  return inRectTile(battle, r, c) && !battle.isReservedTile(r, c)
+    && !battle.enemies.some((enemy) => enemy.alive && enemy.deployed !== false && Math.round(enemy.y) === r && Math.round(enemy.x) === c);
 }
 
 function mostAdvancedEnemy(battle) {
@@ -454,6 +459,7 @@ export function findSummonTile(battle, owner, placement = 'melee', opts = {}) {
     const r = (k / COLS) | 0, c = k % COLS;
     if (!tileFree(battle, r, c)) continue;
     if (!battle.grid.canStand(r, c, { ranged: !melee })) continue;
+    if (opts.canUseTile && !opts.canUseTile(r, c)) continue;
     const gp = battle.grid.groundPassable(r, c, true) ? 1 : 0;
     if (placement === 'path' && !gp) continue;
     let cover = 0;
@@ -476,6 +482,56 @@ export function summonToken(battle, owner, tokenId, placement = 'melee', opts = 
   const tile = opts.tile ?? findSummonTile(battle, owner, placement, opts);
   if (!tile) return null;
   return battle.spawnToken(owner, tokenId, tile[0], tile[1], opts.spawn ?? {});
+}
+
+/** Return whether this exact token definition can select an active enemy from a candidate tile. */
+export function tokenCanEngageAt(battle, owner, def, r, c) {
+  if (!battle.enemies.some(e => e.alive && e.deployed)) return false;
+  const probe = new Unit({id:-1,side:'ally',kind:'token',def,defId:def.id,ownerId:owner.ownerId,ownerUnit:owner,x:c,y:r,tileR:r,tileC:c,dir:owner.dir,base:{...(def.stats||{}),maxHp:def.stats?.maxHp||1,atk:def.stats?.atk||0,blockCnt:def.stats?.blockCnt||0}});
+  probe.rangeGrid = def.rangeGrid || [[0,0]];
+  probe.alive=true; probe.deployed=true; probe.ground=battle.grid.isLow(r,c); probe.blocking=[]; probe.kit={};
+  probe.profile=resolveProfile(def, def.profileTrait || null);
+  battle._refreshRange(probe);
+  const support=probe.profile?.noAttack||probe.profile?.dmgType==='heal';
+  if (support) return battle.enemies.some(e=>e.alive&&e.deployed);
+  if (acquireTargets(battle,probe,probe.profile).length) return true;
+  if(probe.s.blockCnt<=0||probe.profile?.attack!=='melee')return false;
+  const tile=battle.grid.tile(r,c);
+  if(!probe.ground||!tile||tile.pass!=='ALL')return false;
+  return battle.enemies.some(enemy=>{
+    if(!enemy.alive||!enemy.deployed||!canTargetEnemy(probe,enemy,probe.profile))return false;
+    const flags=enemy.s.flags;
+    if(flags.unblockable||flags.levitate||flags.fear||flags.sleep)return false;
+    if(enemy.isFlying&&!(probe.s.flags.blockFly||probe.profile.blockFly))return false;
+    if(!enemy.isFlying&&(!probe.ground||probe.s.flags.liftoff))return false;
+    const dy=enemy.y-r,dx=enemy.x-c;
+    if(!enemy.isFlying&&Math.abs(dy)>1e-9)return false;
+    const radiusSq=enemy.isFlying?0.5:0.5;
+    return dx*dx+dy*dy<radiusSq;
+  });
+}
+
+/** Queue a combat summon until a real target and legal tile exist; only deployment emits summon effects. */
+export function summonWhenEngageable(battle,owner,tokenId,def,opts={}) {
+  const placement=opts.placement||'near', support=!!opts.support;
+  const generation=owner.deploySeq;
+  let timer=null,done=false;
+  const attempt=()=>{
+    if(done)return null;
+    if(owner.removed||owner.deploySeq!==generation||(!opts.allowInactiveOwner&&(!owner.alive||!owner.deployed))){done=true;timer?.cancel();return null;}
+    const hasEnemy=battle.enemies.some(e=>e.alive&&e.deployed);
+    if(!hasEnemy)return null;
+    const canUseTile=support?()=>true:(r,c)=>tokenCanEngageAt(battle,owner,def,r,c);
+    const tile=findSummonTile(battle,owner,placement,{allBoard:true,melee:def.position!=='RANGED',canUseTile});
+    if(!tile)return null;
+    const token=opts.onDeploy ? opts.onDeploy(tile) : battle.spawnToken(owner,tokenId,tile[0],tile[1],{...opts.spawn,def,anySource:true});
+    if(!token)return null;
+    done=true;timer?.cancel();
+    return token;
+  };
+  const immediate=attempt(); if(immediate)return immediate;
+  timer=battle.every(0.1,attempt,{owner});
+  return null;
 }
 
 // ---------------------------------------------------------------------------------------------------------------

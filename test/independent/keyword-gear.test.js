@@ -200,7 +200,7 @@ test('不屈盟约 works for ranged deepindigo, stacks its probability, banks do
   assert.ok(!wearer.alive, 'redeployment consumes the stored chance; the next failed exit roll does not revive');
 });
 
-test('爆破部署台 and 融毁教学仪 scale damage by quantity; trainer triggers on retreat, not death, once per battle', () => {
+test('爆破部署台 and 融毁教学仪 scale damage by quantity; every eligible retreat triggers the trainer, not death', () => {
   const h = setup([{ uid: 'w', chessId: 'w', row: 10, col: 3, equipment: [worn('blast-deploy-platform', 2), worn('portable-meltdown-trainer', 2)] }], { enemyHp: 200000 });
   h.b.flags.independent = true;
   const w = h.unit('w'); const local = enemy(h, [10, 6]); const far = enemy(h, [10, 19]);
@@ -220,7 +220,7 @@ test('爆破部署台 and 融毁教学仪 scale damage by quantity; trainer trig
   assert.ok(w.alive, 'the deferred free redeploy executes when the doubled timer expires');
   const afterNextDeploy = local.hp;
   h.b.retreat(w, { reason: 'retreat' });
-  assert.equal(local.hp, afterNextDeploy, 'duplicate pieces add damage, not per-departure uses');
+  assert.ok(Math.abs(afterNextDeploy-local.hp-20800)<1e-6,'the next eligible retreat triggers again with the captured 1.6 damage increase');
   assert.ok(afterNextDeploy < after, 'the independent deploy platform still fires on later deployments');
 });
 

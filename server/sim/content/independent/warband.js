@@ -1,7 +1,7 @@
 import { hypot } from '../../detmath.js';
 import { tavernFactions } from '../../../../shared/independentRules.js';
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../../shared/warbandSchema.js';
-import { findSummonTile } from '../tokens.js';
+import { findSummonTile, tokenCanEngageAt } from '../tokens.js';
 const live = u => !!u && u.side === 'ally' && u.alive && u.deployed && !u.removed;
 const stable = (a,b) => String(a.uid ?? a.id).localeCompare(String(b.uid ?? b.id));
 const STAT = { attackPercent:'atkPct',maxHpPercent:'hpPct',attackSpeedFlat:'aspd' };
@@ -20,7 +20,7 @@ export function installWarband(battle,{catalog,pieces}) {
     const piece=byUid.get(unit.uid);
     (catalog.operators?.[piece?.chessId]?.nativeTrait?.effect?.combat || []).forEach((rule,index)=>{
       if (!WARBAND_BEHAVIORS.includes(rule.behavior) || rule.behavior==='factionReaction') return;
-      validateWarbandRule(rule); entries.push({unit,rule,index,key:`independent:warband:${unit.uid}:${index}`,used:0,echoes:0});
+      validateWarbandRule(rule); entries.push({unit,rule,index,key:`independent:warband:${unit.uid}:${index}`,echoes:0});
     });
   }
   const fallen=[];
@@ -44,7 +44,7 @@ export function installWarband(battle,{catalog,pieces}) {
     }
     return out.sort((a,b)=>hypot(a[0]-owner.tileR,a[1]-owner.tileC)-hypot(b[0]-owner.tileR,b[1]-owner.tileC)||a[0]-b[0]||a[1]-b[1]);
   };
-  const spawn = (owner,def,count,ratio,duration,original=false) => {
+  const spawn = (owner,def,count,ratio,original=false) => {
     const clean=structuredClone(def); clean.stats={...clean.stats};
     for(const key of ['atk','maxHp']) {
       const scaled=Number(clean.stats[key] || 1)*ratio;
@@ -53,8 +53,18 @@ export function installWarband(battle,{catalog,pieces}) {
     clean.skill=null; clean.skills=[]; clean.talents=[]; clean.trait=''; clean.traitBb={};
     const out=[];
     for(let i=0;i<count;i++) {
-      const cell=findSummonTile(battle,owner,'melee')||ground(owner)[0]; if(!cell)break;
-      const token=battle.spawnToken(owner,clean.id || 'warband-summon',...cell,{def:clean,anySource:true,kit:{},duration});
+      const cell=findSummonTile(battle,owner,'near',{melee:clean.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,owner,clean,r,c)});
+      if(!cell){
+        const seq=owner.deploySeq; let timer;
+        timer=battle.every(0.1,()=>{
+          if(owner.removed||owner.deploySeq!==seq){timer.cancel();return;}
+          const ready=findSummonTile(battle,owner,'near',{melee:clean.position!=='RANGED',allBoard:true,canUseTile:(r,c)=>tokenCanEngageAt(battle,owner,clean,r,c)});
+          if(!ready)return;
+          timer.cancel();spawn(owner,def,count-i,ratio,original);
+        },{owner});
+        break;
+      }
+      const token=battle.spawnToken(owner,clean.id || 'warband-summon',...cell,{def:clean,anySource:true,kit:{}});
       if(token) { token.mem.warbandOriginalCopy=original; out.push(token); }
     }
     return out;
@@ -69,12 +79,12 @@ export function installWarband(battle,{catalog,pieces}) {
     }
     if(p.shield)for(const target of members(p.shield.faction))shield(target,`${key}:shield:${target.id}`,p.shield.layers,unit);
     if(p.summon) {
-      const def=p.summon.tokenId ? battle.tokenDef(p.summon.tokenId,unit) : {id:`warband:${unit.defId}`,name:unit.name,stats:{...unit.base},rangeGrid:unit.def.rangeGrid,profession:'TOKEN',position:'MELEE',dmgType:unit.def.dmgType};
+      const def=p.summon.tokenId ? battle.tokenDef(p.summon.tokenId,unit) : {id:`warband:${unit.defId}`,name:unit.name,stats:{...unit.base},rangeGrid:unit.def.rangeGrid,profession:'TOKEN',position:unit.def.position || 'MELEE',attackKind:unit.profile?.attack,dmgType:unit.profile?.dmgType || unit.def.dmgType,canHitFly:unit.profile?.canHitFly,groundOnly:unit.profile?.groundOnly};
       if(!def)throw new Error(`UNKNOWN_WARBAND_TOKEN:${p.summon.tokenId}`);
-      spawn(unit,def,p.summon.count,p.summon.statRatio,p.summon.durationSeconds);
+      spawn(unit,def,p.summon.count,p.summon.statRatio);
     }
     if(p.returnFallen)for(const original of fallen.filter(x=>x.owner.ownerId===unit.ownerId&&x.factions.includes(p.returnFallen.faction)).slice(0,p.returnFallen.count)) {
-      spawn(original.owner,original.def,1,p.returnFallen.statRatio,p.returnFallen.duration,true);
+      spawn(original.owner,original.def,1,p.returnFallen.statRatio,true);
     }
     battle.emit('warbandRetiringEffect',{unit,ruleIndex:entry.index,echo});
   };
@@ -86,8 +96,8 @@ export function installWarband(battle,{catalog,pieces}) {
       const retire=event=>{
         if(event.unit!==unit||!reasons.has(event.reason))return;
         const identity=unit.deploySeq;
-        if(seen.has(identity)||entry.used>=p.perBattle)return;
-        seen.add(identity); entry.used++;
+        if(seen.has(identity))return;
+        seen.add(identity);
         const times=multiplier(unit);
         // Execute after removal, so summons cannot overwrite a currently retiring body's occupied cell.
         battle.after(0,()=>{for(let i=0;i<times;i++)action(entry);});
@@ -97,19 +107,18 @@ export function installWarband(battle,{catalog,pieces}) {
     } else if(rule.behavior==='deathrattleEcho') {
       let attacks=0;
       battle.on('attack',event=>{
-        if(!live(unit)||!nativeAttack(unit,event)||++attacks%p.every||entry.used>=p.perBattle)return;
+        if(!live(unit)||!nativeAttack(unit,event)||++attacks%p.every)return;
         const echoed=typeof battle.echoDarkmoonRetirement==='function'&&battle.echoDarkmoonRetirement(unit,p.faction);
-        if(echoed)entry.used++;
-        else {
-          const candidate=entries.filter(x=>x.rule.behavior==='retiringEffect'&&x.unit!==unit&&live(x.unit)&&eligible(x.unit,unit,p.faction)&&x.echoes<6).sort((a,b)=>stable(a.unit,b.unit)||a.index-b.index)[0];
-          if(candidate){entry.used++;candidate.echoes++;for(let i=0;i<multiplier(candidate.unit);i++)action(candidate,true);}
+        if(!echoed) {
+          const candidate=entries.filter(x=>x.rule.behavior==='retiringEffect'&&x.unit!==unit&&live(x.unit)&&eligible(x.unit,unit,p.faction)).sort((a,b)=>stable(a.unit,b.unit)||a.index-b.index)[0];
+          if(candidate){for(let i=0;i<multiplier(candidate.unit);i++)action(candidate,true);}
          }
       },{owner:unit});
     } else if(rule.behavior==='warbandEvent') {
       const stacks=new Map(),last=new Map(),pending=new Map();let broken=0;
       const apply=(target,triggers)=>{
-        if(!live(unit)||!live(target)||battle.time<(last.get(target.id)??-Infinity)+p.cooldownSeconds)return false;
-        const n=stacks.get(target.id)||0,next=Math.min(p.maxStacks,n+triggers);
+        if(!live(unit)||!live(target))return false;
+        const n=stacks.get(target.id)||0,next=n+triggers;
         if(next===n&&!p.shieldLayers)return true;
         stacks.set(target.id,next);last.set(target.id,battle.time);
         if(p.stats&&next>n)battle.addBuff(target,{key:`${key}:event:${target.id}`,mods:mods(p.stats,next,target),persist:true,allowDead:true,refresh:'replace'});

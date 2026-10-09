@@ -487,13 +487,14 @@ function handleSaleEquipment(state, catalog) {
       const def = equipmentRecord(catalog, item.id);
       if (def?.mechanism !== 'saleThresholdRecruit') continue;
       const used = Number(item.state?.saleTriggersThisPrep || 0);
-      if (used >= Number(def.params?.maxPerPrep || 1)) continue;
-      const threshold = Number(def.params.normalSaleThreshold);
-      if (state.counters.sold < threshold) continue;
+      const threshold = Number(piece.elite ? def.params.eliteSaleThreshold : def.params.normalSaleThreshold);
+      if (!(threshold > 0)) continue;
+      const wanted = Math.floor(Number(state.counters.sold || 0) / threshold);
       const tier = state.shop.level; const candidates = Object.values(catalog.operators).filter((op) => !op.elite && op.recruitable !== false && op.tier <= tier && tavernFactions({ chessId: op.chessId }, catalog).some((f) => factions.has(f)) && state.pool?.[op.chessId]?.left > 0).map((op) => op.chessId).sort();
-      if (!candidates.length) continue;
-      item.state = { ...(item.state || {}), saleTriggersThisPrep: used + 1 };
-      state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, Number(def.params.choices || 3)), source: item.id, sourceUid: piece.uid });
+      while (used < wanted && candidates.length) {
+        state.offers.push({ id: `o${state.nextUid++}`, type: 'recruit', choices: candidates.slice(0, Number(def.params.choices || 3)), source: item.id, sourceUid: piece.uid });
+        item.state = { ...(item.state || {}), saleTriggersThisPrep: ++used };
+      }
     }
   }
 }

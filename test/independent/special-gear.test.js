@@ -76,7 +76,7 @@ test('溅射: every other enemy within the radius of the main target takes a sha
   assert.ok(Math.abs(lost(main) - 100) < 1e-6);
 });
 
-test('造成伤害时治疗周围随机友军: a hurt ally nearby gets a share of the damage, once per cooldown; the wearer never', () => {
+test('造成伤害时治疗周围随机友军: each damage event heals a hurt ally nearby; the wearer never', () => {
   const h = setup([
     { uid: 'w', chessId: OPS.loner, row: 10, col: 3, equipment: [{ id: 'test:heal' }] },
     { uid: 'ally', chessId: OPS.loner2, row: 10, col: 2 },
@@ -90,10 +90,10 @@ test('造成伤害时治疗周围随机友军: a hurt ally nearby gets a share o
   assert.equal(w.hp, 500);
   assert.equal(far.hp, 500);
   h.b.forceAttack(w, [e]);
-  assert.equal(ally.hp, 550, 'still cooling down');
+  assert.equal(ally.hp, 600, 'the next damage event heals again without a synthetic cooldown');
   h.run(1.1);
   h.b.forceAttack(w, [e]);
-  assert.equal(ally.hp, 600);
+  assert.ok(ally.hp>600,'later attack events continue to heal');
 });
 
 test('盟约脆弱: an enemy the wearer hit takes more damage from its faction only, for a while', () => {

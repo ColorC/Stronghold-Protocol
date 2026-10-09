@@ -33,7 +33,7 @@ function fixture(sourceId,elite=false,extraSources=[],state=null,attachments=[],
   let installed;
   const h=makeBattle({defs:{chess:definitions,enemies:{probe:enemyRec({key:'probe',hp:1e8,atk:0,def:0,speed:0})}},units:pieces,content:'none',autoFinish:false,extraContent:[b=>{installed=installDarkmoonCombat(b,{catalog,pieces,state});}]});
   h.run(.2);
-  h.spawn('probe',{pos:[10,7]});h.spawn('probe',{pos:[11,7]});
+  h.spawn('probe',{pos:[10,7]});h.spawn('probe',{pos:[11,7]});h.run(.2);
   return {h,b:h.b,unit:h.unit('p0'),ally:h.unit(`p${pieces.length-1}`),enemy:h.enemies()[0],installed,catalog,pieces};
 }
 

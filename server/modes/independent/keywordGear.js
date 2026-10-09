@@ -11,7 +11,7 @@ export const KEYWORD_GEAR = Object.freeze([
   gear('shield-generator', '护盾发生器', { layersBase: 5, layersPerPiece: 3, growthLayerThreshold: 5 }),
   gear('assault-oath', '突袭盟约', {
     idleSeconds: 10, attackSpeedBase: 30, attackSpeedPerPiece: 20,
-    durationBase: 10, durationPerPiece: 1, durationCap: 30, pollSeconds: 0.1,
+    durationBase: 10, durationPerPiece: 1, pollSeconds: 0.1,
   }),
   // Provisional root-side balance values; final player clarification may replace them in the design data.
   gear('hammer-oath', '巨锤盟约', { radius: 0.9, baseAtkRatio: 0.5, perPieceAtkRatio: 0.1 }),
@@ -20,7 +20,7 @@ export const KEYWORD_GEAR = Object.freeze([
   gear('blast-deploy-platform', '爆破部署台', { damageBase: 1000, damagePerPiece: 300, radius: 4, damageType: 'true' }),
   gear('recoil-airdrop', '反冲空降仓', { damageBase: 15000, damagePerPiece: 500, damageType: 'arts' }),
   gear('portable-meltdown-trainer', '便携式融毁教学仪', {
-    damageBase: 10000, damagePerPiece: 3000, damageType: 'true', oncePerBattle: true, hitEnemyMultiplier: 2, redeployTimeMultiplier: 2,
+    damageBase: 10000, damagePerPiece: 3000, damageType: 'true', hitEnemyMultiplier: 2, redeployTimeMultiplier: 2,
   }),
 ]);
 

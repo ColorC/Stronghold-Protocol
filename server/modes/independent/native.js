@@ -31,8 +31,8 @@ const positiveInt = (v) => Number.isInteger(v) && v > 0;
 /** Shared schema validation also protects synthetic/direct battle catalog consumers. */
 export function validateAllyConditionStats(p) {
   const m = p?.match;
-  if (!exactKeys(p, ['match','countBy','maxCount','stats']) || !exactKeys(m, ['faction','professions','profession','keywordGear','baseStat','minBaseStatRatioToSelf','minBaseStat'])
-      || !['operators','professions','factions'].includes(p.countBy) || !positiveInt(p.maxCount)
+  if (!exactKeys(p, ['match','countBy','stats']) || !exactKeys(m, ['faction','professions','profession','keywordGear','baseStat','minBaseStatRatioToSelf','minBaseStat'])
+      || !['operators','professions','factions'].includes(p.countBy)
       || !exactKeys(p.stats, [...CONDITION_STATS]) || !Object.keys(p.stats).length
       || !Object.values(p.stats).every((v) => typeof v === 'number' && Number.isFinite(v) && v > 0)
       || (m.faction !== undefined && !nonempty(m.faction)) || (m.keywordGear !== undefined && !nonempty(m.keywordGear))
@@ -103,7 +103,7 @@ const PREP = Object.freeze({
   德克萨斯: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:叙拉古狼嚎哨', normal: 1, elite: 2 }] }), rule('sold', 'freeRefresh', { normal: 1, elite: 2 })],
   格雷伊: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_1_05_e_a', normal: 1, elite: 2 }] }), rule('sold', 'deferredFunds', { normal: 1, elite: 2 })],
   琳琅诗怀雅: [rule('prepEnd', 'deferredFundsIf', { normal: 1, elite: 2, requiresFactionOnField: '炎' })],
-  薄绿: [rule('prepEnd', 'forgeFactionTierCount', { faction: '维多利亚', id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
+  薄绿: [rule('prepEnd', 'forgeFactionTierCount', { faction: '维多利亚', id: BADGE.precision, normal: 1, elite: 2 })],
   松果: [rule('sold', 'recruitOffer', { normalTier: 1, eliteTier: 5 })],
   至简: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_03_e_a', normal: 1, elite: 2 }] }), rule('gain', 'freeRefreshOnce', { normal: 2, elite: 2, paidOnly: true, expires: 'prepEnd' })],
   耶拉: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_02_e_a', normal: 1, elite: 2 }] })],
@@ -118,12 +118,12 @@ const PREP = Object.freeze({
   铃兰: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_01_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'replayAdjacentNative', { sourceTrigger: 'gain', allow: GAIN_COPYABLE, neverReenter: true, normalRange: 1, eliteRange: 2 })],
   塞雷娅: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_03_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'copyFrontNative', { hook: 'prepEnd', eliteValues: { normal: false, elite: true } })],
   引星棘刺: [rule('prepEnd', 'forgeAdjacent', { id: BADGE.agility, normal: 1, elite: 2, direction: 'front', each: true })],
-  安洁莉娜: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_01_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerRefresh', { id: BADGE.agility, normal: 1, elite: 2, capNormal: 3, capElite: 6, landOn: 'front' })],
+  安洁莉娜: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_5_01_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerRefresh', { id: BADGE.agility, normal: 1, elite: 2, landOn: 'front' })],
   余: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_08_e_a', normal: 1, elite: 2 }] }), rule('roundStart', 'dominantFactionRecruit', { normalRequires: 'sameRowCount>=3', eliteRequires: null })],
-  维娜·维多利亚: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:熔铸模具', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeFactionTierPair', { faction: '维多利亚', ids: [BADGE.precision, BADGE.vitality], normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
+  维娜·维多利亚: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:熔铸模具', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgeFactionTierPair', { faction: '维多利亚', ids: [BADGE.precision, BADGE.vitality], normal: 1, elite: 2 })],
   缪尔赛思: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:莱茵生命浮空发生器', normal: 1, elite: 2 }] }), rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_identity_gear', normal: 1, elite: 2 }] })],
   新约能天使: [rule('gain', 'randomEquipment', { ids: ['chess_item_2_02_e_a', 'chess_item_2_05_e_a', 'chess_item_2_06_e_a', 'chess_item_2_07_e_a', 'chess_item_3_12_e_a', 'chess_item_4_01_e_a', 'chess_item_5_05_e_a', 'chess_item_5_06_e_a'], normal: 1, elite: 2 }), rule('gain', 'deferredFunds', { normal: 2, elite: 4 })],
-  溯光星源: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:工程部节拍校准器', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerFundsSpent', { id: BADGE.recovery, spendPer: 3, normal: 1, elite: 2, capNormal: 6, capElite: 12 }), rule('prepEnd', 'forgePerFundsSpent', { id: 'investor', spendPer: 3, normal: 1, elite: 2, capNormal: 6, capElite: 12 })],
+  溯光星源: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:工程部节拍校准器', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerFundsSpent', { id: BADGE.recovery, spendPer: 3, normal: 1, elite: 2 }), rule('prepEnd', 'forgePerFundsSpent', { id: 'investor', spendPer: 3, normal: 1, elite: 2 })],
   风丸: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_2_01_e_a', normal: 1, elite: 2 }] }), rule('merge', 'twoCopyElite', { copiesRequired: 2, retainsNativeTrait: true })],
   // 2026-10-06 gear lines: operators whose original trait is combat-only, and who now also bring a piece of gear
   乌尔比安: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_04_e_a', normal: 1, elite: 2 }] })],
@@ -134,7 +134,7 @@ const PREP = Object.freeze({
   // 干员表 v3 (2026-10-07): rewritten operators (pure fighters have no rule at all)
   刺玫: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:维多利亚荆棘纹章', normal: 1, elite: 2 }] })],
   送葬人: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:拉特兰跳弹模块', normal: 1, elite: 2 }] })],
-  小满: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_04_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerGainedChess', { id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12, landOn: 'front' })],
+  小满: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_3_04_e_a', normal: 1, elite: 2 }] }), rule('prepEnd', 'forgePerGainedChess', { id: BADGE.precision, normal: 1, elite: 2, landOn: 'front' })],
   莎草: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_2_04_e_a', normal: 1, elite: 2 }] })],
   幽灵鲨: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:阿戈尔裂潮重刃', normal: 1, elite: 2 }] })],
   洛洛: [rule('gain', 'randomEquipment', { ids: ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_4_09_e_a', 'chess_item_3_10_e_a'], normal: 1, elite: 2 })],
@@ -151,10 +151,10 @@ const PREP = Object.freeze({
   华法琳: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:医疗部共生血囊', normal: 1, elite: 2 }] })],
   烛煌: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_05_e_a', normal: 1, elite: 2 }] })],
   归溟幽灵鲨: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_4_12_e_a', normal: 1, elite: 2 }] })],
-  山: [rule('prepEnd', 'forgePerGainedChess', { id: 'mastery', normal: 1, elite: 2, capNormal: 4, capElite: 8, landOn: 'self' })],
+  山: [rule('prepEnd', 'forgePerGainedChess', { id: 'mastery', normal: 1, elite: 2, landOn: 'self' })],
   录武官: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_03_e_a', normal: 1, elite: 2 }, { id: 'chess_item_3_04_e_a', normal: 1, elite: 2 }] })],
   佩佩: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:增压臂铠', normal: 1, elite: 2 }] })],
-  流明: [rule('prepEnd', 'forgeBenchCount', { id: BADGE.precision, normal: 1, elite: 2, capNormal: 6, capElite: 12, landOn: 'lowest' })],
+  流明: [rule('prepEnd', 'forgeBenchCount', { id: BADGE.precision, normal: 1, elite: 2, landOn: 'lowest' })],
   耀骑士临光: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_01_e_a', normal: 1, elite: 2 }] })],
   荒芜拉普兰德: [rule('gain', 'grantEquipment', { outputs: [{ id: 'chess_item_6_11_e_a', normal: 1, elite: 2 }] })],
   纯烬艾雅法拉: [rule('gain', 'grantEquipment', { outputs: [{ id: 'independent:医疗部蓄能电容', normal: 1, elite: 2 }] })],
@@ -173,8 +173,8 @@ const PREP = Object.freeze({
 
 const combatBadge = (ids, every, stats, extra = {}) => rule('passive', 'badgeThresholdStat', { badgeIds: ids, every, stats, ...extra });
 const combatStatic = (stats) => rule('passive', 'staticStats', { stats });
-const combatEvent = (trigger, id, quantity, cap, filter = { actor: 'self' }, every = 1, extra = {}) => rule(trigger, 'eventProduction', {
-  counterEvent: trigger, counterEvery: every, outputs: [{ id, quantity }], maxPerBattle: cap, filter, ...extra,
+const combatEvent = (trigger, id, quantity, _normalCap, _eliteCap, filter = { actor: 'self' }, every = 1, extra = {}) => rule(trigger, 'eventProduction', {
+  counterEvent: trigger, counterEvery: every, outputs: [{ id, quantity }], filter, ...extra,
 });
 function combatRules(name, elite) {
   const q = (n, e) => elite ? e : n;
@@ -192,9 +192,9 @@ function combatRules(name, elite) {
     case '锡人': return [staticScale({attackPercent:[0.2,0.4],maxHpPercent:[0.2,0.4]}),rule('passive','staticStats',{factions:['炎','萨尔贡','维多利亚','谢拉格','拉特兰','阿戈尔','叙拉古','卡西米尔'],excludeNativeInheritance:true})];
     case '菲莱': return [eventScale('skillStart','recovery',1,2,3,6,{actor:'self'})];
     case '初雪': return [eventScale('statusApplied','assault',1,2,4,8,{targetSide:'enemy',status:'frozen',entered:true,range:'attacker'},1,{probability:0.5})];
-    case '风笛': return [eventScale('kill','agility',1,2,3,6,{actor:'self',targetSide:'enemy'},1,{firstN:3})];
-    case '圣约送葬人': return [rule('ammoUsed','eventProduction',{counterEvent:'ammoUsed',counterEvery:7,outputs:[{id:'agility',quantity:q(1,2)},{id:'recovery',quantity:q(1,2)}],maxPerBattle:q(7,14),filter:{actor:'self',ammoOnly:true},capPerOutput:q(7,14)})];
-    case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[{idFromEvent:true,quantity:q(1,2)}],copyOutputFromEvent:true,quantity:q(1,2),maxPerBattle:q(4,8),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},fallbackPreference:'productionBadge',fallback:'firstStableOutput',copied:true})];
+    case '风笛': return [eventScale('kill','agility',1,2,null,null,{actor:'self',targetSide:'enemy'})];
+    case '圣约送葬人': return [rule('ammoUsed','eventProduction',{counterEvent:'ammoUsed',counterEvery:7,outputs:[{id:'agility',quantity:q(1,2)},{id:'recovery',quantity:q(1,2)}],filter:{actor:'self',ammoOnly:true}})];
+    case '魔王': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[{idFromEvent:true,quantity:q(1,2)}],copyOutputFromEvent:true,quantity:q(1,2),filter:{actor:'adjacentAllies',direction:'front',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true},fallbackPreference:'productionBadge',fallback:'firstStableOutput',copied:true})];
     case '蕾缪安': return [eventScale('ammoUsed','precision',2,4,8,16,{actor:'self',ammoOnly:true,sameRowCount:3},10)];
     // 干员特质 v4 (2026-10-07, 方舟化): a battle event counted, the badge after the battle
     case '雷蛇': return [eventScale('damaged','defense',1,2,3,6,{actor:'target',targetSide:'ally',sourceSide:'enemy'},20)];
@@ -204,7 +204,7 @@ function combatRules(name, elite) {
     case '烛煌': return [eventScale('elementBurst','precision',1,2,4,8,{element:'burn',targetSide:'enemy'})];
     case '夕': return [eventScale('kill','assault',1,2,5,10,{actor:'selfOrSummon',targetSide:'enemy'},2)];
     // 自身开启技能时，同一行友方下一次通过特质获得的徽章+1: a skill start arms one extra badge for the row's next trait production
-    case '塑心': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[],copyOutputFromEvent:true,quantity:1,armedBy:'skillStart',maxPerBattle:q(3,6),filter:{actor:'sameRowAllies',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true}})];
+    case '塑心': return [rule('nativeProduction','eventProduction',{counterEvent:'nativeProduction',counterEvery:1,outputs:[],copyOutputFromEvent:true,quantity:1,armedBy:'skillStart',filter:{actor:'sameRowAllies',nativeTraitProduction:true,baseBadgeOnly:true,excludeCopy:true}})];
     // 干员表 v3 / 干员特质 v4 (2026-10-07): temporary combat traits (battle.js installTemporaryNativeRules)
     case '星熊': return [rule('hit','blockRetaliate',{condition:'blocking',defPct:q(0.2,0.4),type:'phys'})];
     case '刺玫': return [rule('skillStart','skillStartBuff',{targets:'inRange',only:{faction:'维多利亚'},stats:{damageTakenPct:q(-0.15,-0.3)},duration:'skill'})];
@@ -608,16 +608,16 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
       case 'deferredFundsIf':
         if (roster(state).some((x) => isPresent(x) && hasFaction(x, p.requiresFactionOnField, services))) state.pendingFunds = (state.pendingFunds || 0) + value(p, elite); break;
       case 'forgePerGainedChess': {
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, (state.counters?.gained || 0) * value(p, elite)); output(ruleServices, state, p.id, amount, piece); break;
+        const amount = (state.counters?.gained || 0) * value(p, elite); output(ruleServices, state, p.id, amount, piece); break;
       }
       case 'forgePerFundsSpent': {
-        const spent = state.counters?.spent || 0; const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, Math.floor(spent / p.spendPer) * value(p, elite)); output(ruleServices, state, p.id, amount, piece); break;
+        const spent = state.counters?.spent || 0; const amount = Math.floor(spent / p.spendPer) * value(p, elite); output(ruleServices, state, p.id, amount, piece); break;
       }
       case 'forgeBenchCount': {
-        const n = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, (state.pieces || []).filter((x) => !isPresent(x)).length * value(p, elite)); output(ruleServices, state, p.id, n, piece); break;
+        const n = (state.pieces || []).filter((x) => !isPresent(x)).length * value(p, elite); output(ruleServices, state, p.id, n, piece); break;
       }
       case 'forgeBenchPairs': {
-        const n = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, Math.floor((state.pieces || []).filter((x) => !isPresent(x)).length / p.pairSize) * value(p, elite)); output(ruleServices, state, p.id, n, piece); break;
+        const n = Math.floor((state.pieces || []).filter((x) => !isPresent(x)).length / p.pairSize) * value(p, elite); output(ruleServices, state, p.id, n, piece); break;
       }
       case 'forgeDominantFaction':
         for (const [id, quantity] of dominantRecipe(state, piece, services, p, elite)) output(ruleServices, state, id, quantity, piece);
@@ -629,7 +629,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         if (r.behavior === 'forgeDominantFactionTierCount' && !faction && hasAnyFaction(state, services)) throw new Error('Dominant faction could not be resolved from the catalog faction order');
         const ranks = roster(state).filter((x) => isPresent(x) && hasFaction(x, faction, services)).map((x) => services.catalog.operators[chessIdOf(x)]?.tier || 0);
         const count = r.behavior === 'forgeFactionTierPair' && p.countBy === 'operators' ? ranks.length : new Set(ranks).size;
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, count * value(p, elite));
+        const amount = count * value(p, elite);
         if (r.behavior === 'forgeFactionTierPair') for (const id of p.ids) output(ruleServices, state, id, amount, piece);
         else output(ruleServices, state, p.id, amount, piece);
         break;
@@ -644,11 +644,11 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
           }
           break;
         }
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, targets.length * value(p, elite));
+        const amount = targets.length * value(p, elite);
         output(ruleServices, state, p.id, amount, piece); break;
       }
       case 'forgeRowCount': {
-        const n = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, roster(state).filter((x) => isPresent(x) && x.row === piece.row).length * value(p, elite));
+        const n = roster(state).filter((x) => isPresent(x) && x.row === piece.row).length * value(p, elite);
         output(ruleServices, state, p.id, n, piece); break;
       }
       case 'attachShopBadgeFirstRefresh':
@@ -656,7 +656,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       case 'forgePerRefresh': {
         // 本次休整期每主动刷新1次 (安洁莉娜): badges for the refreshes of this prep phase, landing where the rule says
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshCount(state) * value(p, elite));
+        const amount = refreshCount(state) * value(p, elite);
         output(ruleServices, state, p.id, amount, piece); break;
       }
       case 'copyFrontNative': {
@@ -672,7 +672,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       }
       case 'attachShopByRefreshCount': {
-        const amount = Math.min(p[elite ? 'capElite' : 'capNormal'] ?? Infinity, refreshCount(state) * value(p, elite));
+        const amount = refreshCount(state) * value(p, elite);
         attachShopEquipment(state, p.id, amount, piece, true); break;
       }
       case 'randomEquipment': {

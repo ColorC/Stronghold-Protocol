@@ -141,7 +141,7 @@ export function installKeywordGear(battle, { catalog, pieces = [], units = null 
       }
       case 'assault-oath': {
         const idle = Number(p.idleSeconds ?? 10);
-        const duration = Math.min(Number(p.durationCap ?? 30), Number(p.durationBase ?? 10) + Number(p.durationPerPiece ?? 1) * (quantity - 1));
+        const duration = Number(p.durationBase ?? 10) + Number(p.durationPerPiece ?? 1) * (quantity - 1);
         const aspd = Number(p.attackSpeedBase ?? 30) + Number(p.attackSpeedPerPiece ?? 20) * (quantity - 1);
         const poll = Math.max(0.05, Number(p.pollSeconds ?? 0.1));
         battle.on('deploy', ({ unit: who }) => {
@@ -248,7 +248,6 @@ export function installKeywordGear(battle, { catalog, pieces = [], units = null 
         unit.mem[`${key}:installed`] = true;
         unit.mem[`${key}:attacked`] = new Set();
         unit.mem[`${key}:snapshot`] = null;
-        unit.mem[`${key}:used`] = false;
         battle.on('deploy', ({ unit: who }) => { if (who === unit) delete unit.mem.keywordGearDeferredRedeploy; }, { owner: unit, priority: -10 });
         battle.on('attack', ({ attacker, targets }) => {
           if (attacker?.side !== 'enemy' || !targets?.includes(unit)) return;
@@ -259,8 +258,7 @@ export function installKeywordGear(battle, { catalog, pieces = [], units = null 
           unit.mem[`${key}:snapshot`] = { dmgDealtMul: Number(unit.s?.dmgDealtMul ?? 1) };
         }, { owner: unit });
         battle.on('death', ({ unit: who, reason }) => {
-          if (who !== unit || unit.mem[`${key}:used`] || !['retreat', 'merchant', 'raid'].includes(reason)) return;
-          unit.mem[`${key}:used`] = true;
+          if (who !== unit || !['retreat', 'merchant', 'raid'].includes(reason)) return;
           const snapshot = unit.mem[`${key}:snapshot`] ?? { dmgDealtMul: 1 };
           const base = Number(p.damageBase ?? 10000) + Number(p.damagePerPiece ?? 3000) * (quantity - 1);
           const multiplier = Number(p.hitEnemyMultiplier ?? 2);

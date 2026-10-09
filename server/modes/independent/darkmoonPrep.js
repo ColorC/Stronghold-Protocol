@@ -63,10 +63,10 @@ export function darkmoonPrepRulesFor(source,isElite=false) {
   // from a matching operator name: it is activated only when a compiled source ref is attached.
   const id = source?.sourceRefs?.darkmoon19_2?.id || source?.darkmoonSourceId;
   if(id==='BOT_312') return [{trigger:'gain',behavior:'darkmoonMagneticMerge',params:{sourceId:'BOT_312',faction:'哥伦比亚',attackUnits:{normal:3,elite:6},secondaryUnits:{normal:1,elite:2}}}];
-  if(id==='BGS_055') return [{trigger:'gain',behavior:'factionReaction',params:{mode:'discount',targets:'self',count:isElite?2:1,excludeSelf:false,maxEventsPerPrep:3}}];
+  if(id==='BGS_055') return [{trigger:'gain',behavior:'factionReaction',params:{mode:'discount',targets:'self',count:isElite?2:1,excludeSelf:false}}];
   if(id==='BGS_043') return [{trigger:'gain',behavior:'darkmoonLastWarbandRecruit',params:{source:'previousRoundFriendlyWarband',pristine:true}}];
   if(id==='BGS_115') return [{trigger:'sold',behavior:'darkmoonElementalTokenOffer',params:{supportId:'darkmoon:support-elemental-2-2',count:isElite?2:1}}];
-  if(id==='BGS_049') return [{trigger:'sold',behavior:'factionReaction',params:{mode:'funds',targets:'all',count:isElite?5:2,maxEventsPerPrep:1}}];
+  if(id==='BGS_049') return [{trigger:'sold',behavior:'factionReaction',params:{mode:'funds',targets:'all',count:isElite?5:2}}];
   if(id==='BGS_072') return [{trigger:'bought',behavior:'darkmoonRosterTribePurchaseFunds',params:{faction:'维多利亚',count:isElite?2:1}}];
   if(id==='BGS_037') return [{trigger:'sold',behavior:'darkmoonShopGrowth',params:{rosterTribe:'*',attack:isElite?2:1,health:isElite?2:1,persistent:false}}];
   if(id==='BGS_104') return [{trigger:'bought',behavior:'darkmoonShopGrowth',params:{rosterTribe:'ELEMENTAL',faction:'炎',attack:isElite?2:1,health:isElite?2:1,persistent:true}}];

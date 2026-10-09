@@ -13,11 +13,6 @@ export function runFactionReaction(state, holder, event, rule, services) {
   if (['gain','sold'].includes(rule.trigger) && gained.uid !== holder.uid) return;
   if (!['discount','funds'].includes(p.mode) && !p.anyGainFaction && !tavernFactions(gained,catalog).includes(p.faction)) return;
   if ((p.requireGainTrait||p.anyGainFaction) && !(catalog.operators?.[gained.chessId]?.nativeTrait?.effect?.prep || []).some(r => r.trigger === 'gain')) return;
-  const memo = ((holder.nativeState ||= {}).warbandReactions ||= {});
-  const key = JSON.stringify(rule);
-  if (memo[key]?.round !== state.round) memo[key] = { round: state.round, count: 0 };
-  if (memo[key].count >= p.maxEventsPerPrep) return;
-  memo[key].count++;
   const scale = p.perTier ? Number(catalog.operators?.[gained.chessId]?.tier || 1) : 1;
   if (p.mode === 'refund' || p.mode === 'funds') { state.funds = Number(state.funds || 0) + p.count * scale; return; }
   if (p.mode === 'discount') { state.shop.upgradePrice = Math.max(0, Number(state.shop.upgradePrice || 0) - p.count * scale); return; }
