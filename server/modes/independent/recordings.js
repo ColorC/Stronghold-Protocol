@@ -217,19 +217,23 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
       const relative = pathname.slice('/independent/api/recordings'.length).replace(/^\//, '');
       if (relative === 'start' && req.method === 'POST') {
         const body = await readBody(req);
-        if (!UUID.test(body.sessionId || '') || (body.recordingId && !UUID.test(body.recordingId))) return json(res, 422, { ok: false, error: 'INVALID_ID' }), true;
-        try { await readFile(path.join(sessionDirectory, `${body.sessionId}.json`)); }
-        catch { return json(res, 404, { ok: false, error: 'SESSION_NOT_FOUND' }), true; }
+        const sessionId = UUID.test(body.sessionId || '') ? body.sessionId : null;
+        const surface = typeof body.surface === 'string' && /^[a-z0-9._-]{1,80}$/i.test(body.surface) ? body.surface : '';
+        if ((!sessionId && !surface) || (body.sessionId && !sessionId) || (body.recordingId && !UUID.test(body.recordingId))) return json(res, 422, { ok: false, error: 'INVALID_ID' }), true;
+        if (sessionId) {
+          try { await readFile(path.join(sessionDirectory, `${sessionId}.json`)); }
+          catch { return json(res, 404, { ok: false, error: 'SESSION_NOT_FOUND' }), true; }
+        }
         const id = body.recordingId || randomUUID();
         let nextSeq = 1; let nextMediaSeq = 1;let endedAt = null;let seenMechanisms=[];
         await exclusive(id, async () => {
           let meta;
           try { meta = await loadMeta(id); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-          if (meta && meta.sessionId !== body.sessionId) throw Object.assign(new Error('RECORDING_SESSION_MISMATCH'), { status: 409 });
+          if (meta && (meta.sessionId || null) !== sessionId) throw Object.assign(new Error('RECORDING_SESSION_MISMATCH'), { status: 409 });
           if (meta) { nextSeq = meta.nextSeq; nextMediaSeq=meta.nextMediaSeq||1; endedAt = meta.endedAt;seenMechanisms=(meta.captions||[]).map(x=>x.key).filter(Boolean); }
           if (!meta) {
             await mkdir(dirOf(id), { recursive: true });
-            meta = { id, sessionId: body.sessionId, startedAt: new Date().toISOString(), endedAt: null, viewport: body.viewport || null, nextSeq: 1, captions: [] };
+            meta = { id, sessionId, surface: surface || 'independent', startedAt: new Date().toISOString(), endedAt: null, viewport: body.viewport || null, nextSeq: 1, captions: [] };
             await saveMeta(id, meta); await writeFile(eventsFile(id), '', { flag: 'wx' });
           } else if (!meta.endedAt) await saveMeta(id, { ...meta, resumedAt: new Date().toISOString() });
         });

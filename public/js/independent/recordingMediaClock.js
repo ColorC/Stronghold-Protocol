@@ -1,9 +1,9 @@
-export function startRecordingMediaAtFirstCapture(state, { paintCaptureFrame, requestFrame }) {
+export function startRecordingMediaAtFirstCapture(state, { paintCaptureFrame, requestFrame }, timesliceMs = 5000) {
   if (state.mediaStartCancelled || state.mediaRecorderStarted || !state.mediaRecorder || !state.hasPaintedFrame) return false;
   try {
     if (!paintCaptureFrame()) return false;
     state.firstCaptureAt = Date.now();
-    state.mediaRecorder.start(5000);
+    state.mediaRecorder.start(timesliceMs);
     state.mediaRecorderStarted = true;
     state.mediaStartedAt = Date.now();
     state.actualRecorderStartedAt = state.mediaStartedAt;

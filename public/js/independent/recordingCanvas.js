@@ -1,3 +1,5 @@
+import { fitRecordingDimensions, DEFAULT_MEDIA_OPTIONS } from '../recording/canvasMedia.js';
+
 const cssNumber = (value) => Number.parseFloat(value) || 0;
 
 function visibleCanvasEntries(field) {
@@ -28,14 +30,14 @@ function entriesFor(field) {
   return { host: canvas.parentElement, entries: [{ canvas, bounds, order: 0, zIndex: 0 }] };
 }
 
-export function recordingCanvasLayout(field) {
+export function recordingCanvasLayout(field, maxDimension = DEFAULT_MEDIA_OPTIONS.maxDimension) {
   const { host, entries } = entriesFor(field);
   if (!host || !entries.length) return null;
   const bounds = host.getBoundingClientRect();
   if (!bounds.width || !bounds.height) return null;
   const ratioX = Math.max(...entries.map(({ canvas, bounds: rect }) => canvas.width / rect.width));
   const ratioY = Math.max(...entries.map(({ canvas, bounds: rect }) => canvas.height / rect.height));
-  return { width: Math.max(1, Math.round(bounds.width * ratioX)), height: Math.max(1, Math.round(bounds.height * ratioY)) };
+  return fitRecordingDimensions(Math.max(1, Math.round(bounds.width * ratioX)), Math.max(1, Math.round(bounds.height * ratioY)), maxDimension);
 }
 
 export function drawRecordingCanvasFrame(field, context, width, height) {

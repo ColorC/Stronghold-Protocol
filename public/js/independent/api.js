@@ -28,7 +28,7 @@ const serverApi = {
       return response.ok ? await response.json() : null;
     } catch { return null; }
   },
-  recordingStart(sessionId, recordingId, viewport) { return call('recordings/start', { method: 'POST', body: JSON.stringify({ sessionId, recordingId, viewport }) }); },
+  recordingStart(sessionId, recordingId, viewport, surface = 'independent') { return call('recordings/start', { method: 'POST', body: JSON.stringify({ sessionId: sessionId || null, recordingId, viewport, surface }) }); },
   recordingEvents(id, events, keepalive = false) { return call(`recordings/${encodeURIComponent(id)}/events`, { method: 'POST', keepalive, body: JSON.stringify({ events }) }); },
   recordingMedia(id, seq, blob, startedAt, timeMs) {
     return fetch(new URL(`recordings/${encodeURIComponent(id)}/media/${seq}`, base()), { method: 'POST', credentials: 'same-origin',

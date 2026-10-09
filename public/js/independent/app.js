@@ -1,6 +1,7 @@
 // 卫戍协议：工坊 app shell: the display catalog (fetched once), the start page and the game screen. The session id
 // lives in the address (?session=…), so a reload or a shared link resumes the same drill.
 import { useCallback, useEffect, useState } from '../../vendor/hooks.module.js';
+import { Fragment } from '../../vendor/preact.module.js';
 import { html, Button, Panel, MicroLabel, Spinner, TextField } from '../ui/components.js';
 import { GIcon } from '../ui/gameComponents.js';
 import { SettingsModal } from '../ui/settings.js';
@@ -8,6 +9,7 @@ import { audio } from '../audio.js';
 import { toast } from '../ui/toasts.js';
 import { api } from './api.js';
 import { GameScreen } from './game.js';
+import { RecordingControls } from './recorder.js';
 
 const cx = (...parts) => parts.flat().filter(Boolean).join(' ');
 
@@ -52,8 +54,11 @@ export function App() {
 
   if (failure) return html`<main class="ix-start"><${Panel} title="无法进入工坊" tone="danger"><p>${failure}</p></${Panel}></main>`;
   if (!catalog) return html`<main class="ix-start"><${Spinner} label="LOADING" /></main>`;
-  if (session) return html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${catalog} onLeave=${leave} />`;
-  return html`<${StartScreen} catalog=${catalog} onStart=${start} onResume=${resume} last=${lastSession()} />`;
+  return html`<${Fragment}>
+    ${session ? html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${catalog} onLeave=${leave} />`
+      : html`<${StartScreen} catalog=${catalog} onStart=${start} onResume=${resume} last=${lastSession()} />`}
+    <${RecordingControls} sessionId=${session?.id || null} />
+  <//>`;
 }
 
 const MODE_TEXT = {

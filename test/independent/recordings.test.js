@@ -147,6 +147,26 @@ test('recording GET checks the events file before headers and does not silently 
   await assert.rejects(() => malformed.text(), /terminated|aborted|reset|socket/i);
 });
 
+test('lobby recordings can start without a game session while invalid unscoped starts stay rejected', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'sp-recording-lobby-test-'));
+  const sessions = path.join(root, 'sessions'); const records = path.join(root, 'recordings');
+  await mkdir(sessions);
+  const handle = createRecordingHttp({ directory: records, sessionDirectory: sessions });
+  const server = http.createServer(async (req, res) => {
+    if (!await handle(req, res, new URL(req.url, 'http://localhost').pathname)) { res.writeHead(404); res.end(); }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { await new Promise((resolve) => server.close(resolve)); await rm(root, { recursive: true, force: true }); });
+  const startUrl = `http://127.0.0.1:${server.address().port}/independent/api/recordings/start`;
+  const post = (body) => fetch(startUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const started = await post({ surface: 'independent-lobby', viewport: { width: 1280, height: 720 } });
+  assert.equal(started.status, 200);
+  const packet = await started.json(); assert.equal(packet.ok, true);
+  const meta = await fetch(`http://127.0.0.1:${server.address().port}/independent/api/recordings/${packet.id}?meta=1`).then((r) => r.json());
+  assert.equal(meta.meta.sessionId, null); assert.equal(meta.meta.surface, 'independent-lobby');
+  assert.equal((await post({})).status, 422, 'an unscoped recording still needs a named page surface');
+});
+
 test('failed ffmpeg remux preserves process exit and stderr in recording metadata and diagnostics', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sp-recording-remux-error-'));
   const sessions = path.join(root, 'sessions'); const records = path.join(root, 'recordings'); const diagnosticsPath = path.join(root, 'remux-diagnostics.jsonl');

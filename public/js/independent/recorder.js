@@ -5,6 +5,8 @@ import { html } from '../ui/components.js';
 import { api } from './api.js';
 import { drawRecordingCanvasFrame, recordingCanvasLayout } from './recordingCanvas.js';
 import { captureRecordingMediaFrame, startRecordingMediaAtFirstCapture } from './recordingMediaClock.js';
+import { startPageCapture } from '../recording/pageCapture.js';
+import { createCanvasMediaRecorder, resolveMediaOptions } from '../recording/canvasMedia.js';
 
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
@@ -19,11 +21,13 @@ export function RecordingControls({ sessionId }) {
   const [recordId, setRecordId] = useState('');
   const [message, setMessage] = useState('');
   const ctx = useRef(null);
+  const sessionRef = useRef(sessionId || null);
+  sessionRef.current = sessionId || null;
   useEffect(() => {
     const url = new URL(location.href);
     const enabled = url.searchParams.get('record') === '1' || !!url.searchParams.get('recording');
-    if (!enabled) return undefined;
     let active = true; let timer;
+    const mediaOptions = resolveMediaOptions(url.searchParams);
     const state = { id: '', seq: 0, queue: [], stopped: false, pushing: false, seen: new Set(), rrwebStop: null, observer: null, lastAnchor: null, timer: null,
       mediaSeq: 0, mediaStartedAt: 0, mediaLastTimeMs: 0, mediaCaptureStoppedAt: 0, mediaRecorder: null, mediaObserver: null, mediaCaptureTimer: null, mediaPush: Promise.resolve(),mediaPending:[],mediaPushing:false, mediaError: false,
       mediaBoundView: null, mediaViewOff: null, lastCompositeAt: 0, hasPaintedFrame: false, mediaRecorderStarted: false,
@@ -105,10 +109,13 @@ export function RecordingControls({ sessionId }) {
       }
     };
     const start = async () => {
+      if (state.id || state.starting || !active) return;
+      state.starting = true;
       try {
-        const started = await api.recordingStart(sessionId, url.searchParams.get('recording') || null, { width: innerWidth, height: innerHeight });
+        const attachedSessionId = sessionRef.current;
+        const started = await api.recordingStart(attachedSessionId, url.searchParams.get('recording') || null, { width: innerWidth, height: innerHeight }, attachedSessionId ? 'independent-game' : 'independent-lobby');
         if (!active || !started.ok) { setMessage('录制暂时不可用'); return; }
-        state.id = started.id; state.seq = Number(started.nextSeq) - 1 || 0;
+        state.id = started.id; state.sessionId = attachedSessionId; state.seq = Number(started.nextSeq) - 1 || 0;
         state.mediaSeq=(Number(started.nextMediaSeq)||1)-1;state.seen=new Set(started.seenMechanisms||[]);
         try {
           const buffered = JSON.parse(sessionStorage.getItem(`sp:recording-buffer:${state.id}`) || '[]');
@@ -120,11 +127,7 @@ export function RecordingControls({ sessionId }) {
         if (started.endedAt) { setRecording(false); setMessage('录制已结束'); return; }
         const rr = globalThis.rrweb;
         if (!rr?.record) { setMessage('页面记录模块未载入'); return; }
-        state.rrwebStop = rr.record({ emit: (item) => event('rrweb', item), checkoutEveryNms: 30000,
-          recordCanvas: false, sampling: { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' },
-          maskAllInputs: true, maskInputOptions: { color: true, date: true, 'datetime-local': true, email: true, month: true, number: true, password: true, search: true, tel: true, text: true, time: true, url: true, week: true },
-          slimDOMOptions: { script: true, comment: true, headFavicon: true, headWhitespace: true, headMetaDesc: true, headMetaSocial: true, headMetaRobots: true, headMetaHttpEquiv: true, headMetaAuthorship: true, headMetaVerification: true },
-        });
+        state.rrwebStop = startPageCapture({ rrweb: rr, emit: event, doc: document, win: window });
         const bindViewFrames = () => {
           const view = globalThis.__SP_VIEW__;
           if (!view?.on || state.mediaBoundView === view) return;
@@ -151,7 +154,7 @@ export function RecordingControls({ sessionId }) {
           // rrweb owns the HUD; the native media track composites the field's visible
           // render layers (3D board below Pixi when enabled) into one 2D surface.
           const field = document.querySelector('.gm__field');
-          const layout = recordingCanvasLayout(field);
+          const layout = recordingCanvasLayout(field, mediaOptions.maxDimension);
           if (!layout) return;
           try {
             // Copy each visible canvas frame into a dedicated 2D surface. requestFrame() alone still
@@ -177,18 +180,16 @@ export function RecordingControls({ sessionId }) {
               captureSurface.remove();
               return;
             }
-            const mimeType = ['video/webm;codecs=vp8', 'video/webm'].find((type) => MediaRecorder.isTypeSupported(type));
-            if (!mimeType) { stream.getTracks().forEach((track) => track.stop()); captureSurface.remove(); return; }
-            const recorder = state.mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1800000, videoKeyFrameIntervalDuration: 1000 });
-            recorder.addEventListener('dataavailable', (e) => {
-              if (!e.data?.size || !state.id) return;
+            const media = state.mediaPipeline = createCanvasMediaRecorder({ stream, options: mediaOptions, onChunk: ({ blob, timecode }) => {
+              if (!blob?.size || !state.id) return;
               const seq = ++state.mediaSeq; const elapsedMs = Date.now() - state.mediaStartedAt;
-              const timeMs = Math.max(Number.isFinite(e.timecode) ? e.timecode : 0, elapsedMs);
+              const timeMs = Math.max(Number.isFinite(timecode) ? timecode : 0, elapsedMs);
               state.mediaLastTimeMs = timeMs;
-              state.mediaPending.push({seq,blob:e.data,startedAt:state.mediaStartedAt,timeMs});
+              state.mediaPending.push({seq,blob,startedAt:state.mediaStartedAt,timeMs});
               state.mediaPush = state.mediaPush.then(flushMedia).catch(() => { state.mediaError = true; });
-            });
-            recorder.addEventListener('error', () => { state.mediaError = true; });
+            }, onError: () => { state.mediaError = true; } });
+            const recorder = state.mediaRecorder = media.recorder;
+            const mimeType = media.mimeType;
             const paintCaptureFrame = () => {
               state.captureContext.drawImage(state.frameCache, 0, 0, state.captureSurface.width, state.captureSurface.height);
               return true;
@@ -198,9 +199,9 @@ export function RecordingControls({ sessionId }) {
               captureRecordingMediaFrame(state, { paintCaptureFrame, requestFrame });
             };
             state.startMediaCapture = () => {
-              const started = startRecordingMediaAtFirstCapture(state, { paintCaptureFrame, requestFrame });
+              const started = startRecordingMediaAtFirstCapture(state, { paintCaptureFrame, requestFrame }, mediaOptions.timesliceMs);
               if (!started) return false;
-              state.mediaCaptureTimer = setInterval(captureFrame, 1000 / 24);
+              state.mediaCaptureTimer = setInterval(captureFrame, 1000 / mediaOptions.fps);
               event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height, mimeType });
               return true;
             };
@@ -210,10 +211,13 @@ export function RecordingControls({ sessionId }) {
         state.mediaObserver = new MutationObserver(captureCanvas); state.mediaObserver.observe(document.body, { childList: true, subtree: true });
         state.observer = new MutationObserver(bindDetails); state.observer.observe(document.body, { childList: true, subtree: true }); bindDetails();
         timer = state.timer = setInterval(() => { bindViewFrames(); void flush();state.mediaPush=state.mediaPush.then(flushMedia); }, 1000);
-        event('custom', { tag: 'recording-start', sessionId, viewport: { width: innerWidth, height: innerHeight } });
+        event('custom', { tag: 'recording-start', sessionId: state.sessionId, surface: state.sessionId ? 'independent-game' : 'independent-lobby', viewport: { width: innerWidth, height: innerHeight } });
       } catch { setMessage('录制暂时不可用'); }
+      finally { state.starting = false; }
     };
-    void start();
+    state.start = start;
+    ctx.current = state;
+    if (enabled) void start();
     const onHide = () => { void flush(true); };
     window.addEventListener('pagehide', onHide);
     return () => {
@@ -228,7 +232,7 @@ export function RecordingControls({ sessionId }) {
       delete globalThis.__SP_RECORD_NOTE__;
       ctx.current = null;
     };
-  }, [sessionId]);
+  }, []);
 
   const stop = async () => {
     const state = ctx.current;
@@ -241,11 +245,8 @@ export function RecordingControls({ sessionId }) {
       const recorder = state.mediaRecorder;
       clearInterval(state.mediaCaptureTimer); state.mediaCaptureTimer = null;
       state.mediaCaptureStoppedAt = Date.now();
-      await new Promise((resolve) => {
-        if (recorder.state === 'inactive') { resolve(); return; }
-        recorder.addEventListener('stop', resolve, { once: true }); try { recorder.stop(); } catch { resolve(); }
-      });
-      try { recorder.stream.getTracks().forEach((track) => track.stop()); } catch { /* stopped with recorder */ }
+      try { await state.mediaPipeline?.stop(); } catch { try { recorder.stop(); } catch { /* preserve stop path */ } }
+      try { state.mediaPipeline?.dispose(); } catch { /* stopped with recorder */ }
       state.captureSurface?.remove();
       state.emit?.('custom', { tag: 'canvas-media-stopped', captureStoppedAt: state.mediaCaptureStoppedAt,
         lastPaintedAt: state.lastCaptureAt, mediaLastTimeMs: state.mediaLastTimeMs, mediaFinalSeq: state.mediaSeq });
@@ -268,11 +269,11 @@ export function RecordingControls({ sessionId }) {
     try { sessionStorage.removeItem(`sp:recording-buffer:${state.id}`); } catch { /* private mode */ }
     const url = new URL(location.href); url.searchParams.delete('record'); history.replaceState(null, '', url); setMessage('录制已结束');
   };
-  if (!recordId && !message) return null;
   const playback = recordId ? new URL(`independent-replay.html?recording=${encodeURIComponent(recordId)}`, location.href).href : '';
   return html`<aside class="ix-recording" aria-live="polite">
     <span class=${recording ? 'ix-recording__dot is-live' : 'ix-recording__dot'}></span>
-    <span>${message || (recording ? '正在录制' : '录制已结束')}</span>
+    <span>${message || (recording ? '正在录制' : recordId ? '录制已结束' : '录制未开始')}</span>
+    ${!recording && !recordId ? html`<button type="button" onClick=${() => void ctx.current?.start?.()}>开始录制</button>` : null}
     ${recording ? html`<button type="button" onClick=${stop}>结束录制</button>` : null}
     ${playback && !recording ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
   </aside>`;

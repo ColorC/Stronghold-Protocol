@@ -3,18 +3,21 @@ import { recordingCanvasElements, recordingCanvasField } from './recordingCanvas
 import { createReplayCueState } from './replayCueState.js';
 import { clampReplayMediaTime } from './replayMediaTime.js';
 import { applyReplayNarration } from './replayNarration.js';
+import { selectionAt } from '../recording/selectionTimeline.js';
 import { workshopShowcaseNarration } from './workshopShowcaseNarration.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
+const textSelection = $('text-selection');
 const API = new URL('independent/api/', location.href);
 let player; let items = []; let cues = []; let duration = 0; let baseTimestamp = 0; let baseWall = 0; let mediaVideo; let mediaStartSecond = Infinity; let mediaReady = Promise.resolve(); let mediaDuration = 0;
 let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let selecting = false; let drag = null;
 let zoomRect = null;
 let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let activeMediaIndex=0;
+let selectionEvents=[];let paintedSelection=null;
 const cueState = createReplayCueState(() => cues);
 function keepReplayAnimationsVisible() {
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument;
@@ -66,9 +69,36 @@ const paintCue = (second) => {
   }
 };
 function position(second) {
-  timeline.value = String(second); clock.textContent = `${fmt(second)} / ${fmt(duration)}`; paintCue(second);
+  timeline.value = String(second); clock.textContent = `${fmt(second)} / ${fmt(duration)}`; paintCue(second); paintTextSelection(second);
   if (mediaVideo && !playing) syncMediaTime(second);
   paintMediaLayer();
+}
+function paintTextSelection(second) {
+  const current = selectionAt(selectionEvents, second);
+  if (current === paintedSelection) return;
+  paintedSelection = current;
+  textSelection.replaceChildren();
+  if (!current) { textSelection.hidden = true; return; }
+  const frame = stage.querySelector('iframe') || player?.iframe;
+  const screen = stage.parentElement.getBoundingClientRect(); const bounds = frame?.getBoundingClientRect();
+  if (!bounds) { textSelection.hidden = true; return; }
+  const viewport = current.p.viewport || { width: 1280, height: 720 };
+  const sx = bounds.width / Math.max(1, viewport.width); const sy = bounds.height / Math.max(1, viewport.height);
+  const outerScale = screen.width / Math.max(1, stage.clientWidth);
+  for (const rect of current.p.rects || []) {
+    const mark = document.createElement('span'); mark.className = 'ix-replay__text-selection-rect';
+    Object.assign(mark.style, {
+      left: `${(bounds.left - screen.left + rect.x * sx) / outerScale}px`,
+      top: `${(bounds.top - screen.top + rect.y * sy) / outerScale}px`,
+      width: `${rect.width * sx / outerScale}px`, height: `${rect.height * sy / outerScale}px`,
+    });
+    textSelection.append(mark);
+  }
+  const label = document.createElement('span'); label.className = 'ix-replay__text-selection-label';
+  label.textContent = current.p.text || '';
+  const first = current.p.rects?.[0];
+  if (first) Object.assign(label.style, { left: `${Math.max(0, (bounds.left - screen.left + first.x * sx) / outerScale)}px`, top: `${Math.max(0, (bounds.top - screen.top + first.y * sy) / outerScale - 28)}px` });
+  textSelection.append(label); textSelection.hidden = false;
 }
 function syncMediaTime(second) {
   if (!mediaVideo) return;
@@ -89,7 +119,6 @@ function syncMediaTime(second) {
 function attachCanvasMedia(id) {
   mediaId=id;
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const field = recordingCanvasField(doc);
-  if (!field) return;
   if (!mediaVideo || mediaVideo.ownerDocument !== document) {
     mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
@@ -100,7 +129,7 @@ function attachCanvasMedia(id) {
     });
   }
   if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
-  for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
+  if (field) for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
   syncMediaTime(Number(timeline.value));
   fitReplay();
 }
@@ -134,15 +163,13 @@ function pause() {
 }
 async function seek(value) {
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
-  const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible();
+  const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible();
   clearTimeout(narrationTimer);narrating=false;resetZoom();
   timeline.value = String(second); position(second); player?.play(Math.max(0,second-rrOffset) * 1000);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   player?.pause(); keepReplayAnimationsVisible(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
   if (mediaVideo && second >= mediaStartSecond) {
     await mediaReady; syncMediaTime(second);
-    if (resume) void mediaVideo.play().catch(() => {});
-    else { void mediaVideo.play().then(() => new Promise((resolve) => { if (mediaVideo.requestVideoFrameCallback) mediaVideo.requestVideoFrameCallback(resolve); else setTimeout(resolve, 80); })).then(() => { mediaVideo.pause(); }).catch(() => {}); }
   }
   if (resume) { playing = false; play(); }
 }
@@ -181,6 +208,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const packet = await response.json(); if (!response.ok || !packet.ok) throw new Error('无法载入本局回放');
   const records = packet.events || []; items = records.filter((e) => e.kind === 'rrweb').map((e) => e.p); rebaseRecordedAssets(items);
   const recordedCues = records.filter((e) => e.kind === 'caption' && e.p?.text).map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), ...e.p }));
+  selectionEvents = records.filter((e) => e.kind === 'selection').map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), p: e.p })).sort((a, b) => a.at - b.at);
   cues = applyReplayNarration(id, recordedCues, workshopShowcaseNarration);
   if (!items.length || !globalThis.rrweb?.Replayer) throw new Error('这段记录还没有可播放的画面');
   const visibleRecords = records.filter((event) => !(event.kind === 'custom' && event.p?.tag === 'canvas-media-stopped'));

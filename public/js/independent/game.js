@@ -28,7 +28,6 @@ import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, U
 import { DetailCard } from './detail.js';
 import { parseComponentLinkHash } from './componentLinkHash.js';
 import { ElementPicker } from './picker.js';
-import { RecordingControls } from './recorder.js';
 import { buyTargetSpec } from './targetSelection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -667,7 +666,6 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   } : null;
 
   return html`<div class=${cx('screen', 'gm', battle ? 'gm--combat' : 'gm--prep', 'ix-game', shopCollapsed && 'is-collapsed', pen && 'is-pen')} data-testid="ix-game">
-    <${RecordingControls} sessionId=${id} />
     <div class="gm__field" ref=${hostRef} onContextMenu=${(e) => e.preventDefault()}></div>
     ${loading ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>
