@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { applyAction, createSession, validateSession } from '../../server/modes/resonance/session.js';
-import { getResonanceField } from '../../server/modes/resonance/battle.js';
+import { buildResonanceBattle, getResonanceField } from '../../server/modes/resonance/battle.js';
 import { legalSummonCells, selectedSummonIds } from '../../server/modes/resonance/summons.js';
 import { canPlace, ownerRangeKeys, positionClass } from '../../server/match/board.js';
 
@@ -58,10 +58,65 @@ test('getResonanceField exposes native summon metadata and official actions enfo
   assert.equal(robertaToken,'token_10018_robrta_mach');
   const field=fieldFor(state),legal=legalSummonCells(field,state,roberta,robertaOp,robertaToken);
   assert.ok(legal.length,'native Roberta summon has at least one legal cell');
-  const [row,col]=legal[0].split(',').map(Number);
+  const robertaRange=ownerRangeKeys(robertaOp.stars[roberta.star].record.rangeGrid,roberta.row,roberta.col,roberta.dir);
+  const outsideOwnerRange=legal.find(key=>!robertaRange.has(key));
+  assert.ok(outsideOwnerRange,'non-ownerRange Roberta token may use any legal field tile, including outside the owner attack range');
+  const [row,col]=outsideOwnerRange.split(',').map(Number);
   let action=applyAction(state,{type:'setSummonOrder',pieceUid:roberta.uid,tokenId:robertaToken,row,col},{catalog,fieldResolver:fieldFor});
   assert.equal(action.ok,true,action.error);state=action.state;
   assert.deepEqual(state.pieces.find(piece=>piece.uid===roberta.uid).summonOrders,[{tokenId:robertaToken,row,col}]);
+  const {battle:robertaBattle}=buildResonanceBattle(state,{data,catalog,recording:false});
+  const robertaMachine=robertaBattle.allyUnits.find(unit=>unit.kind==='token'&&unit.defId===robertaToken);
+  assert.ok(robertaMachine,'talent-authored Roberta token variant is materialized into the real Battle');
+  assert.equal(robertaMachine.ownerUnit?.uid,roberta.uid);
+  assert.equal(robertaMachine.name,'全自动造型仪');
+  assert.deepEqual([robertaMachine.tileR,robertaMachine.tileC],[row,col],'the explicit outside-range position reaches the real Battle unchanged');
+  assert.ok(robertaBattle.resonanceSummonAnchors.some(anchor=>anchor.ownerUid===roberta.uid&&anchor.tokenId===robertaToken&&anchor.row===row&&anchor.col===col));
+  assert.equal(robertaBattle.resonanceSummonAnchorGaps.length,0);
+  assert.equal(robertaBattle.errorCount,0);
+
+  const automaticState=structuredClone(state),automaticOwner=automaticState.pieces.find(piece=>piece.uid===roberta.uid);
+  automaticOwner.summonOrders=[];
+  const automaticField=fieldFor(automaticState);
+  const otherPieces=automaticState.pieces.filter(piece=>piece.uid!==automaticOwner.uid);
+  const preferred= [...automaticField.deployMap].find(([ownerKey])=>{
+    const [ownerRow,ownerCol]=ownerKey.split(',').map(Number);
+    if(otherPieces.some(other=>other.row===ownerRow&&other.col===ownerCol)||!canPlace(automaticField.deployMap,positionClass(robertaOp),ownerRow,ownerCol))return false;
+    const grid=ownerRangeKeys(robertaOp.stars[1].record.rangeGrid,ownerRow,ownerCol,automaticOwner.dir);
+    return [...grid].some(key=>{const [r,c]=key.split(',').map(Number);return !otherPieces.some(other=>other.row===r&&other.col===c)&&!(r===ownerRow&&c===ownerCol)&&canPlace(automaticField.deployMap,positionClass(data.tokens[robertaToken]),r,c);});
+  });
+  assert.ok(preferred,'test field allows an operator placement with a free summon tile inside owner range');
+  [automaticOwner.row,automaticOwner.col]=preferred[0].split(',').map(Number);
+  const automaticRange=ownerRangeKeys(robertaOp.stars[1].record.rangeGrid,automaticOwner.row,automaticOwner.col,automaticOwner.dir);
+  const freeOwnerRange=[...automaticRange].find(key=>{const [r,c]=key.split(',').map(Number);return !otherPieces.some(other=>other.row===r&&other.col===c)&&canPlace(automaticField.deployMap,positionClass(data.tokens[robertaToken]),r,c);});
+  assert.ok(freeOwnerRange,'test field has a legal owner-range tile for default placement preference');
+  const automaticBattle=buildResonanceBattle(automaticState,{data,catalog}).battle;
+  const automaticAnchor=automaticBattle.resonanceSummonAnchors.find(anchor=>anchor.ownerUid===roberta.uid&&anchor.tokenId===robertaToken);
+  assert.ok(automaticRange.has(`${automaticAnchor.row},${automaticAnchor.col}`),'automatic anchor prefers an available owner-range tile before local-order fallback');
+
+  const reservedState=structuredClone(automaticState),firstOwner=reservedState.pieces.find(piece=>piece.uid===roberta.uid);
+  const secondOwner={...structuredClone(firstOwner),uid:'roberta-reserved-owner',summonOrders:[]};
+  const occupiedKeys=new Set(reservedState.pieces.map(piece=>`${piece.row},${piece.col}`));
+  const secondDeploy=[...automaticField.deployMap].find(([key])=>!occupiedKeys.has(key)&&canPlace(automaticField.deployMap,positionClass(robertaOp),...key.split(',').map(Number)));
+  assert.ok(secondDeploy,'test field has a legal deployment tile for the second summon owner');
+  [secondOwner.row,secondOwner.col]=secondDeploy[0].split(',').map(Number);
+  reservedState.pieces.push(secondOwner);
+  const reservedField=fieldFor(reservedState),reservedCells=legalSummonCells(reservedField,reservedState,secondOwner,robertaOp,robertaToken);
+  const reservedCell=reservedCells.find(key=>!occupiedKeys.has(key));
+  assert.ok(reservedCell,'second owner has a legal explicit summon cell');
+  secondOwner.summonOrders=[{tokenId:robertaToken,row:Number(reservedCell.split(',')[0]),col:Number(reservedCell.split(',')[1])}];
+  const reservedBattle=buildResonanceBattle(reservedState,{data,catalog}).battle;
+  const firstAnchor=reservedBattle.resonanceSummonAnchors.find(anchor=>anchor.ownerUid===firstOwner.uid&&anchor.tokenId===robertaToken);
+  const secondAnchor=reservedBattle.resonanceSummonAnchors.find(anchor=>anchor.ownerUid===secondOwner.uid&&anchor.tokenId===robertaToken);
+  assert.ok(secondAnchor,'explicit order is not rejected by its own reservation');
+  assert.deepEqual([secondAnchor.row,secondAnchor.col],[secondOwner.summonOrders[0].row,secondOwner.summonOrders[0].col]);
+  assert.notDeepEqual([firstAnchor.row,firstAnchor.col],[secondAnchor.row,secondAnchor.col],'automatic earlier owner does not consume a later explicit order cell');
+
+  for(const sources of [['display'],[]]){
+    const excludedTokenData={...data,tokens:{...data.tokens,[robertaToken]:{...data.tokens[robertaToken],variants:{...data.tokens[robertaToken].variants,[ROberta]:{...data.tokens[robertaToken].variants[ROberta],sources}}}}};
+    const excludedBattle=buildResonanceBattle(state,{data:excludedTokenData,catalog}).battle;
+    assert.equal(excludedBattle.allyUnits.some(unit=>unit.kind==='token'&&unit.ownerUnit?.uid===roberta.uid&&unit.defId===robertaToken),false,`${sources.length?sources[0]:'unknown'} token sources are not promoted to placeable owner variants`);
+  }
 
   const occupied=state.pieces.find(piece=>piece.uid!==roberta.uid);
   action=applyAction(state,{type:'setSummonOrder',pieceUid:roberta.uid,tokenId:robertaToken,row:occupied.row,col:occupied.col},{catalog,fieldResolver:fieldFor});

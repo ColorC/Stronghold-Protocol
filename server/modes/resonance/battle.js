@@ -215,6 +215,14 @@ function battleInputUnits(state, data, catalog, prepared, starData) {
   });
   const deployMap = buildDeployMap(prepared.stage, { field: prepared.field });
   const occupied = new Set(deployed.map((piece) => `${Number(piece.row)},${Number(piece.col)}`));
+  const reservedExplicit = new Map();
+  for (const piece of deployed) for (const order of (piece.summonOrders ?? [])) {
+    if (!order || !Number.isInteger(order.row) || !Number.isInteger(order.col) || typeof order.tokenId !== 'string') continue;
+    const key = `${order.row},${order.col}`;
+    const entries = reservedExplicit.get(key) ?? [];
+    entries.push({ ownerUid: piece.uid, tokenId: order.tokenId });
+    reservedExplicit.set(key, entries);
+  }
   const summonAnchors = [];
   const summonAnchorGaps = [];
   for (const piece of deployed) {
@@ -235,22 +243,34 @@ function battleInputUnits(state, data, catalog, prepared, starData) {
       const rangeGrid = Array.isArray(raw.rangeGrid) ? raw.rangeGrid : [];
       const range = ownerRangeKeys(rangeGrid, Number(piece.row), Number(piece.col), piece.dir ?? 'RIGHT');
       const pos = positionClass(token);
-      const candidates = [...range].map((key) => key.split(',').map(Number))
-        .filter(([row, col]) => !occupied.has(`${row},${col}`) && canPlace(deployMap, pos, row, col))
+      const explicit = (piece.summonOrders ?? []).find((order) => order?.tokenId === tokenId);
+      const candidates = [...deployMap.keys()].map((key) => key.split(',').map(Number))
+        .filter(([row, col]) => {
+          const key = `${row},${col}`;
+          if (occupied.has(key) || !canPlace(deployMap, pos, row, col) || (token.ownerRange === true && !range.has(key))) return false;
+          const reservations = reservedExplicit.get(key) ?? [];
+          return reservations.every((entry) => entry.ownerUid === piece.uid && entry.tokenId === tokenId);
+        })
         .sort(([ar, ac], [br, bc]) => {
+          if (token.ownerRange !== true) {
+            const aInRange = range.has(`${ar},${ac}`);
+            const bInRange = range.has(`${br},${bc}`);
+            if (aInRange !== bInRange) return aInRange ? -1 : 1;
+          }
           const a = localOrder(ar - Number(piece.row), ac - Number(piece.col), piece.dir ?? 'RIGHT');
           const b = localOrder(br - Number(piece.row), bc - Number(piece.col), piece.dir ?? 'RIGHT');
           return b[1] - a[1] || a[0] - b[0];
         });
-      const explicit = (piece.summonOrders ?? []).find((order) => order?.tokenId === tokenId);
       const requested = explicit ? candidates.find(([row,col]) => row === explicit.row && col === explicit.col) : null;
       if (explicit && !requested) {
-        summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: 'explicit-summon-order-not-legal-in-native-owner-range' });
+        summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: token.ownerRange === true
+          ? 'explicit-summon-order-not-legal-in-native-owner-range' : 'explicit-summon-order-not-legal-on-field' });
         continue;
       }
       const tile = requested ?? candidates[0];
       if (!tile) {
-        summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: 'no-free-legal-tile-in-native-owner-range' });
+        summonAnchorGaps.push({ ownerUid: piece.uid, tokenId, reason: token.ownerRange === true
+          ? 'no-free-legal-tile-in-native-owner-range' : 'no-free-legal-tile-on-field' });
         continue;
       }
       const uid = `resonance-summon-${String(piece.uid)}-${tokenId}`;
@@ -291,7 +311,7 @@ function withStarRecords(state, data, catalog) {
       const nativeToken = data.tokens?.[tokenId];
       if (nativeToken?.placeable !== true) continue;
       const tokenDef = source.getToken(tokenId, piece.operatorId, { skillIndex, moduleId: 'none' });
-      if (!tokenDef || !tokenDef.sources?.includes('skill')) continue;
+      if (!tokenDef || !['skill', 'talent'].some((sourceName) => tokenDef.sources?.includes(sourceName))) continue;
       const ownerVariant = tokenDef.raw?.variants
         ? tokenDef.raw.variants[piece.operatorId]
         : tokenDef.raw;
