@@ -8,6 +8,7 @@ import { SettingsModal } from '../ui/settings.js';
 import { useFieldView } from '../ui/fieldHost.js';
 import { useGameData } from '../ui/gameComponents.js';
 import { FacingWheel, holdPiece, setPieceDir, showRange } from '../ui/facingWheel.js';
+import { rangeTiles as rotatedRangeTiles } from '../ui/facing.js';
 import { Underframe } from '../ui/underframe.js';
 import { MODULE_NONE } from '../ui/loadoutModel.js';
 import { attackRangeGrid } from '../../../shared/loadoutRecord.js';
@@ -52,6 +53,7 @@ const FIELD_OPTS = Object.freeze({ tierChips: 'pips' });
 const SEL_RANGE = Object.freeze({ group: 'selRange', color: 0xff9c33, fill: 0.3, line: 0.95 });
 // the tile an armed merge card's elite takes (screens/game.js MERGE_HL)
 const MERGE_HL = Object.freeze({ group: 'mergeTile', color: 0xffd45a, fill: 0.34, line: 1 });
+const FIELD_CONDITION_HL = Object.freeze({ group: 'detailFieldCondition', color: 0x61d8c8, fill: 0.18, line: 0.72 });
 
 /**
  * The grid a piece fights with: its form (elite or not) under its own skill / module choice (an elite module can
@@ -103,6 +105,16 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const stateRef = useRef(state); stateRef.current = state;
   const hostRef = useRef(null);
   const { view, kind: viewKind } = useFieldView(hostRef, FIELD_OPTS);
+  const onFieldHighlight = useCallback((pieces = []) => {
+    if (!view) return;
+    const tiles = (pieces || []).filter((p) => Number.isInteger(p?.row) && Number.isInteger(p?.col)).map((p) => [p.row, p.col]);
+    try { view.highlightTiles(tiles, FIELD_CONDITION_HL); } catch { /* field highlighting is cosmetic */ }
+  }, [view]);
+  const rangeTilesFor = useCallback((piece) => {
+    if (!piece || !isDeployed(piece)) return null;
+    const grid = rangeGridOf(catalog, piece);
+    return grid ? rotatedRangeTiles(grid, piece.row, piece.col, piece.dir || 'RIGHT') : null;
+  }, [catalog]);
   const gd = useGameData();
   const [busy, setBusy] = useState(false); const busyRef = useRef(false);
   const [armed, setArmed] = useState(null);
@@ -576,6 +588,20 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       for (let i = Math.min(fr.length - 1, Math.max(0, replayPosRef.current)); i >= 0; i--) { const e = fr[i].stats?.[unitId]; if (e) return e; }
       return null;
     },
+    fieldPieceUids: () => {
+      const frames = battle.replay.frames;
+      const frame = frames[Math.max(0, replayPosRef.current)];
+      const liveIds = new Set((frame?.snap?.units || []).map((unit) => unit[0]));
+      return (battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && unit.kind === 'op'
+        && liveIds.has(unit.id) && typeof unit.uid === 'string').map((unit) => unit.uid);
+    },
+    fieldPieceStats: () => {
+      const frames = battle.replay.frames;
+      const frame = frames[Math.max(0, replayPosRef.current)];
+      const live = new Map((frame?.snap?.units || []).map((unit) => [unit[0], { hp: unit[3], maxHp: unit[4] }]));
+      return Object.fromEntries((battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && unit.kind === 'op'
+        && live.has(unit.id) && typeof unit.uid === 'string').map((unit) => [unit.uid, live.get(unit.id)]));
+    },
   } : null;
 
   return html`<div class=${cx('screen', 'gm', battle ? 'gm--combat' : 'gm--prep', 'ix-game', shopCollapsed && 'is-collapsed', pen && 'is-pen')} data-testid="ix-game">
@@ -603,7 +629,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         <${Button} size="sm" variant="secondary" disabled=${battle.done} onClick=${() => seekRef.current?.()} data-testid="ix-skip">跳到结尾<//>
       </div>`}
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
-        onClose=${() => { setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)} />
+        onClose=${() => { setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}
+        onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />
       ${selPiece && selTile && view && !facing && !battle && state.phase === 'prep' ? html`<${Underframe} key=${selPiece.uid} view=${view}
         row=${selTile.row} col=${selTile.col} busy=${busy} name=${catalog.operators?.[selPiece.chessId]?.name || ''}
         actions=${{ retreat: isDeployed(selPiece), sell: catalog.rules?.sellPrice ?? 1, destroy: false }}

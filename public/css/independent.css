@@ -471,16 +471,15 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-strip__slot { user-select: none; }
 
 /* New independent-mode details stay selectable and offer a touch-friendly native disclosure. */
-.ix-original-card, .ix-effect-targets__item { margin-top: .12rem; border: 1px solid rgba(177, 203, 193, .24); border-radius: 5px; background: rgba(8, 15, 13, .52); color: #dce8e1; }
+.ix-original-card { margin-top: .12rem; border: 1px solid rgba(177, 203, 193, .24); border-radius: 5px; background: rgba(8, 15, 13, .52); color: #dce8e1; }
 .ix-original-card { display: flex; flex-direction: column; }
-.ix-effect-targets__item > summary { cursor: pointer; padding: .1rem .14rem; color: #e7c987; font-weight: 700; user-select: text; }
 .ix-original-card__item { padding: .1rem .14rem .15rem; border-top: 1px solid rgba(177, 203, 193, .16); }
 .ix-original-card__item header { display: flex; flex-wrap: wrap; gap: .08rem .16rem; align-items: center; font-size: max(.13rem, 12px); }
 .ix-original-card__item pre { margin: .04rem 0 .08rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: max(.14rem, 13px); line-height: 1.5; user-select: text; }
 .ix-original-card__item h4 { margin: .08rem 0 .02rem; color: #9fc6b5; }
-.ix-effect-targets { display: grid; gap: .06rem; margin-top: .1rem; }
-.ix-effect-targets__item ul { margin: 0; padding: .04rem .2rem .1rem .35rem; columns: 2; }
-.ix-effect-targets__item li { break-inside: avoid; padding: .02rem 0; user-select: text; }
+.ix-field-counts { display: inline-flex; flex-wrap: wrap; gap: .025rem; margin-inline-start: .06rem; vertical-align: baseline; }
+.ix-field-count { border: 0; padding: 0 .025rem; background: transparent; color: #79d8c9; font: inherit; line-height: inherit; cursor: pointer; user-select: text; }
+.ix-field-count:hover, .ix-field-count:focus-visible { color: #b8fff1; text-decoration: underline; outline: none; }
 .ix-faction-icon { object-fit: contain; }
 .ix-growth-info { display: flex; flex-wrap: wrap; gap: .05rem .14rem; padding: .08rem .1rem; border: 1px solid rgba(231, 201, 135, .3); border-radius: 4px; color: #e7d8ad; }
 .ix-growth-mode { display: flex; flex-wrap: wrap; gap: .08rem; margin: .12rem 0; padding: .1rem; border: 1px solid rgba(180, 203, 189, .24); }
@@ -488,7 +487,7 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-growth-mode__option { display: grid; gap: .02rem; min-width: 145px; padding: .08rem .12rem; border: 1px solid rgba(180, 203, 189, .26); border-radius: 4px; background: rgba(14, 26, 21, .65); color: inherit; text-align: left; cursor: pointer; }
 .ix-growth-mode__option.is-on { border-color: #d5b66f; background: rgba(90, 71, 37, .42); }
 .ix-growth-mode__option span { color: #aebdb4; font-size: max(.13rem, 12px); }
-.ix-game :is(.ix-original-card, .ix-effect-targets, .ix-growth-info, .ix-growth-mode) { user-select: text; }
+.ix-game :is(.ix-original-card, .ix-growth-info, .ix-growth-mode) { user-select: text; }
 @media (max-height: 460px) {
   .ix-strip { width: 148px; top: 53px; bottom: 150px; right: 8px; }
   .ix-strip__head { min-height: 24px; font-size: 12px; }
