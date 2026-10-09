@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -84,12 +84,21 @@ function selfTest() {
   for (const url of ['https://workshop.colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/resonance/api/sessions/id', 'https://cdn.example/js/game.js']) {
     if (isScopedWorkshopBearerUrl(url, target)) throw new Error(`non-Workshop route received bearer scope: ${new URL(url).origin}${new URL(url).pathname}`);
   }
+  for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
+    if (!isGameApiPath(pathname) || !isForbiddenMutation('POST', pathname)) throw new Error(`mutation audit missed ${pathname}`);
+  }
+  if (isForbiddenMutation('GET', '/stronghold/resonance/api/sessions/id')) throw new Error('read-only session GET was misclassified as a mutation');
   const valid = parseArgs(['--session', '01234567-89ab-4def-8123-456789abcdef', '--product-native', 'a'.repeat(40)]);
   if (valid.session !== '01234567-89ab-4def-8123-456789abcdef') throw new Error('CLI self-test failed');
   process.stdout.write(JSON.stringify({ ok: true, workshopOnlyBearerScope: true, sessionReadonly: true }) + '\n');
 }
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
+function isGameApiPath(pathname) { return pathname.startsWith('/resonance/api/') || pathname.startsWith('/stronghold/resonance/api/'); }
+function isForbiddenMutation(method, pathname) {
+  return method !== 'GET' && method !== 'HEAD'
+    && /\/(?:sessions(?:\/|$)|actions?(?:\/|$)|fight(?:\/|$)|create(?:\/|$))/.test(pathname);
+}
 function frameIsGame(frame, hostFrame) {
   if (frame === hostFrame) return false;
   let parent = frame.parentFrame();
@@ -106,18 +115,37 @@ async function run() {
     return;
   }
   if (options.selfTest) return selfTest();
+  let priorReceipt = null;
+  if (existsSync(RECEIPT)) {
+    priorReceipt = JSON.parse(readFileSync(RECEIPT, 'utf8'));
+    if (priorReceipt.status !== 'failed' || priorReceipt.sessionId !== options.session
+      || priorReceipt.productNative !== options['product-native'] || typeof priorReceipt.error !== 'string' || !priorReceipt.error.trim()) {
+      throw new Error(`refusing to overwrite unrelated receipt: ${RECEIPT}`);
+    }
+  }
+  if (existsSync(LOG) && (!priorReceipt || !readFileSync(LOG, 'utf8').includes(priorReceipt.error))) {
+    throw new Error(`refusing to append to unrelated log: ${LOG}`);
+  }
   for (const output of [RECEIPT, LOG, EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT]) {
-    if (existsSync(output)) throw new Error(`refusing to overwrite existing output: ${output}`);
+    if (output === RECEIPT || output === LOG) continue;
+    if (existsSync(output) && (!priorReceipt || !priorReceipt.screenshots?.includes(output))) throw new Error(`refusing to overwrite existing output: ${output}`);
   }
   const logLines = [];
   const log = message => logLines.push(`${new Date().toISOString()} ${message}`);
-  const writeLog = () => writeFileSync(LOG, `${logLines.join('\n')}\n`, { flag: 'wx' });
+  const writeLog = () => {
+    const content = `${logLines.join('\n')}\n`;
+    if (existsSync(LOG)) appendFileSync(LOG, content);
+    else writeFileSync(LOG, content, { flag: 'wx' });
+  };
+  const priorAttempts = [...(priorReceipt?.priorAttempts || []), ...(priorReceipt ? [{ status: priorReceipt.status, error: priorReceipt.error }] : [])];
+  const writeReceipt = receipt => writeFileSync(RECEIPT, `${JSON.stringify({ ...receipt, ...(priorAttempts.length ? { priorAttempts } : {}) }, null, 2)}\n`, { flag: priorReceipt ? 'w' : 'wx' });
   let browser;
   let deadlineTimer;
   let timedOut = false;
   const mutatingRequests = [];
   const requestRows = [];
   const requiredResourceFailures = [];
+  const browserErrors = [];
   const scopedPages = new WeakMap();
   const pages = new Set();
   const target = new URL(WORKSHOP_URL);
@@ -135,11 +163,9 @@ async function run() {
         try { parsed = new URL(request.url()); } catch { parsed = null; }
         const pathName = parsed?.pathname || '';
         const method = request.method();
-        if (parsed?.origin === 'https://workshop.colorc.cc' && pathName.startsWith('/resonance/api/')) {
+        if (parsed?.origin === 'https://workshop.colorc.cc' && isGameApiPath(pathName)) {
           requestRows.push({ method, path: pathName });
-          if (method !== 'GET' && method !== 'HEAD' && /\/(?:sessions(?:\/|$)|actions?(?:\/|$)|fight(?:\/|$)|create(?:\/|$))/.test(pathName)) {
-            mutatingRequests.push({ method, path: pathName });
-          }
+          if (isForbiddenMutation(method, pathName)) mutatingRequests.push({ method, path: pathName });
         }
         const headers = { ...request.headers() };
         if (isScopedWorkshopBearerUrl(request.url(), WORKSHOP_URL)) {
@@ -157,7 +183,8 @@ async function run() {
         if (['/css/screens/draft.css', '/css/screens/title.css', '/css/screens/briefing.css', '/css/screens/lobby.css', '/js/net.js'].includes(url.pathname)
           && response.status() >= 400) requiredResourceFailures.push({ status: response.status(), path: url.pathname });
       });
-      page.on('pageerror', error => log(`pageerror: ${error.message}`));
+      page.on('pageerror', error => { browserErrors.push(`pageerror: ${error.message}`); log(`pageerror: ${error.message}`); });
+      page.on('console', message => { if (message.type() === 'error') browserErrors.push(`console: ${message.text().slice(0, 400)}`); });
       pages.add(page);
       return { dispose: async () => { page.off('request', handler); await page.setRequestInterception(false).catch(() => {}); } };
     })();
@@ -165,7 +192,7 @@ async function run() {
     return ready;
   };
   const evidence = { status: 'running', sessionId: options.session, productNative: options['product-native'], workshopUrl: WORKSHOP_URL,
-    cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests, requiredResourceFailures };
+    cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests, requiredResourceFailures, browserErrors };
   const work = (async () => {
     browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
@@ -222,6 +249,14 @@ async function run() {
       await collapse.click();
       await embeddedFrame.waitForFunction(() => !document.querySelector('.rs-choice-full'), { timeout: 5_000 });
     }
+    await embeddedFrame.waitForFunction(() => {
+      const view = globalThis.__SP_VIEW__;
+      return view?.kind === 'engine' || view?.kind === 'fallback';
+    }, { timeout: 45_000 });
+    await embeddedFrame.waitForFunction(() => {
+      const view = globalThis.__SP_VIEW__;
+      return view?.kind !== 'engine' || Number(view.raw?.stats?.()?.units) > 0;
+    }, { timeout: 15_000 });
     const gameProof = await embeddedFrame.evaluate(() => {
       const view = globalThis.__SP_VIEW__;
       const stats = view?.raw?.stats?.() || null;
@@ -253,6 +288,20 @@ async function run() {
       return url.searchParams.get('session') === session && url.hash === hash && document.readyState !== 'loading';
     }, { timeout: 45_000 }, { session: options.session, hash: '#section-shop' });
     await popup.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30_000 });
+    try {
+      await popup.waitForFunction(() => {
+        const view = globalThis.__SP_VIEW__;
+        return view?.kind === 'engine' && Number(view.raw?.stats?.()?.units) > 0;
+      }, { timeout: 15_000 });
+    } catch {
+      await popup.screenshot({ path: FULLSCREEN_SCREENSHOT, type: 'jpeg', quality: 90, fullPage: true }).catch(() => {});
+      const diagnostic = await popup.evaluate(() => {
+        const view = globalThis.__SP_VIEW__, stats = view?.raw?.stats?.() || null;
+        return { url: location.href, title: document.title, viewKind: view?.kind || null, engineUnits: stats?.units ?? null,
+          fieldHost: !!document.querySelector('.gm__field'), shop: !!document.querySelector('.shopbar'), body: document.body?.innerText?.slice(0, 300) };
+      }).catch(error => ({ error: error.message }));
+      throw new Error(`fullscreen native engine did not expose units after 15 seconds: ${JSON.stringify(diagnostic)}`);
+    }
     const popupProof = await popup.evaluate(() => {
       const view = globalThis.__SP_VIEW__, stats = view?.raw?.stats?.() || null;
       return { url: location.href, title: document.querySelector('.rs-gmeta b')?.textContent?.trim() || document.title?.trim() || '',
@@ -283,7 +332,7 @@ async function run() {
     const result = await Promise.race([work, deadline]);
     if (result.mutatingRequests.length) throw new Error(`mutation requests observed: ${JSON.stringify(result.mutatingRequests)}`);
     result.status = 'passed';
-    writeFileSync(RECEIPT, `${JSON.stringify(result, null, 2)}\n`, { flag: 'wx' });
+    writeReceipt(result);
     log('receipt written; no session creation or gameplay mutation requests observed');
     writeLog();
     process.stdout.write(JSON.stringify({ status: result.status, receipt: RECEIPT, log: LOG, screenshots: result.screenshots }) + '\n');
@@ -291,7 +340,7 @@ async function run() {
     evidence.status = timedOut ? 'timeout' : 'failed';
     evidence.error = error instanceof Error ? error.message : String(error);
     log(`${evidence.status}: ${evidence.error}`);
-    if (!existsSync(RECEIPT)) writeFileSync(RECEIPT, `${JSON.stringify(evidence, null, 2)}\n`, { flag: 'wx' });
+    writeReceipt(evidence);
     writeLog();
     process.stderr.write(`${JSON.stringify({ status: evidence.status, receipt: RECEIPT, log: LOG, error: evidence.error })}\n`);
     process.exitCode = 1;
