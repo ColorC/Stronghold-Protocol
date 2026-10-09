@@ -149,7 +149,7 @@ test('content compiler writes byte-identical formal outputs on repeated builds',
   const outputPath = path.join(ROOT, 'shared/resonance/catalog.js');
   const reviewPath = path.join(ROOT, 'docs/resonance/catalog.md');
   const compilerPath = path.join(ROOT, 'tools/resonance/build-content.mjs');
-  const env = { ...process.env, SP_DATA_DIR: path.resolve(ROOT, '../../../data') };
+  const env = { ...process.env, SP_DATA_DIR: process.env.SP_DATA_DIR || path.resolve(ROOT, '../../../data/resonance-native') };
   execFileSync(process.execPath, [compilerPath], { cwd: ROOT, env, stdio: 'ignore' });
   const firstConfig = fs.readFileSync(outputPath, 'utf8');
   const firstReview = fs.readFileSync(reviewPath, 'utf8');

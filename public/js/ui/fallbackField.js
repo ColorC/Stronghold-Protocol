@@ -546,6 +546,14 @@ export function createFallbackView(host, opts = {}) {
       const el = root.querySelector(`[data-uid="${Number(uid)}"]`);
       return el ? el.getBoundingClientRect() : null;
     },
+    /** Match the engine's client hit-test for DOM-originating drags (equipment → exact unit). */
+    pieceAtClient(clientX, clientY) {
+      if (st.destroyed || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+      const el = document.elementFromPoint(clientX, clientY)?.closest?.('.ff-piece[data-uid]');
+      if (!el || !root.contains(el)) return null;
+      const uid = Number(el.dataset.uid);
+      return Number.isFinite(uid) ? { uid, area: el.closest('.ff-hand') ? 'hand' : 'board' } : null;
+    },
     /** Client geometry of a tile: centre, px per tile, corners (board tiles and 整备区 slots of the prep layout). */
     tileScreen(row, col) {
       const L = layout();

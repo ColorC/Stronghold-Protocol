@@ -208,21 +208,24 @@ function ModeCard({ card, selected, onSelect }) {
   </button>`;
 }
 
-function DifficultyCard({ roomMode, difficulty, selected, onSelect }) {
+export function DifficultyCard({ roomMode, difficulty, selected, onSelect, presentation = null }) {
   const info = difficultyInfo(roomMode, difficulty);
+  const select = presentation?.onSelect || onSelect;
+  const description = presentation?.description ?? info.desc;
+  const name = presentation?.name ?? DIFFICULTY_NAMES[difficulty];
   return html`<button type="button" class=${`diff-card${selected ? ' is-selected' : ''}`}
-      style=${`--d-color:${DIFFICULTY_COLORS[difficulty]}`} onClick=${() => onSelect(difficulty)} aria-pressed=${selected ? 'true' : 'false'}>
+      style=${`--d-color:${DIFFICULTY_COLORS[difficulty]}`} onClick=${() => select(difficulty)} aria-pressed=${selected ? 'true' : 'false'}>
     <span class="diff-card__bar" aria-hidden="true"></span>
     <span class="diff-card__head">
       <${DifficultyIcon} difficulty=${difficulty} class="diff-card__glyph" />
-      <span class="diff-card__name">${DIFFICULTY_NAMES[difficulty]}</span>
-      <span class="diff-card__code num">${info.code}</span>
+      <span class="diff-card__name">${name}</span>
+      ${presentation ? null : html`<span class="diff-card__code num">${info.code}</span>
       <span class="diff-card__meta">
         <span class="num">${info.rounds}</span> 回合${info.hidden ? html`<span class="diff-card__hidden">+ 隐秘核心</span>` : null}
-      </span>
+      </span>`}
     </span>
-    <span class="diff-card__desc">${info.desc}</span>
-    <span class="diff-card__effects">${info.effects.map((e) => html`<span key=${e}>${e}</span>`)}${info.stageNote ? html`<span key="stage" class="diff-card__stage"><${Icon} name="rook" />${info.stageNote}</span>` : null}</span>
+    <span class="diff-card__desc">${description}</span>
+    ${presentation ? null : html`<span class="diff-card__effects">${info.effects.map((e) => html`<span key=${e}>${e}</span>`)}${info.stageNote ? html`<span key="stage" class="diff-card__stage"><${Icon} name="rook" />${info.stageNote}</span>` : null}</span>`}
     <span class="diff-card__check" aria-hidden="true"><${Icon} name="check" /><span>已选定</span></span>
   </button>`;
 }

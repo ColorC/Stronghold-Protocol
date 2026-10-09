@@ -189,7 +189,7 @@ export function seedAssets(store) {
 /**
  * Create a field view in `host`: the render engine when available, else the DOM fallback.
  * @param {HTMLElement} host
- * @param {{ tierChips?: 'roman'|'pips' }|null} [extra] a mode's own view options (render/app.js createFieldView)
+ * @param {{ tierChips?: 'roman'|'pips'|'color' }|null} [extra] a mode's own view options (render/app.js createFieldView)
  * @returns {Promise<ReturnType<typeof guardView>>}
  */
 export async function mountFieldView(host, extra = null) {
@@ -225,7 +225,7 @@ export async function mountFieldView(host, extra = null) {
 /**
  * Preact hook: mount a field view into `hostRef` once; returns { view, kind } (view null while loading).
  * @param {{ current: HTMLElement|null }} hostRef
- * @param {{ tierChips?: 'roman'|'pips' }|null} [extra] view options of the mode (read once, at mount)
+ * @param {{ tierChips?: 'roman'|'pips'|'color' }|null} [extra] view options of the mode (read once, at mount)
  */
 export function useFieldView(hostRef, extra = null) {
   const [state, setState] = useState({ view: null, kind: 'loading' });

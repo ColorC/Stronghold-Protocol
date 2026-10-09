@@ -51,12 +51,12 @@ const QUALITY = [['high', '高'], ['medium', '中'], ['low', '低']];
  * Settings modal.
  * @param {{ open: boolean, onClose: Function }} props
  */
-export function SettingsModal({ open, onClose }) {
+export function SettingsModal({ open, onClose, onGuide = null, guideLabel = '玩法说明', helpText = null }) {
   const s = useSettings();
   const [tested, setTested] = useState(false);
   const [touchUi] = useState(() => detectFeatures().coarse && !detectFeatures().fine);
   return html`<${Modal} open=${open} onClose=${onClose} title="设置" micro="SETTINGS" width="7.4rem"
-    actions=${html`<${Button} variant="secondary" icon="book" class="set-guide" onClick=${() => openGuide(0)}>玩法说明<//>
+    actions=${html`<${Button} variant="secondary" icon="book" class="set-guide" onClick=${onGuide || (() => openGuide(0))}>${guideLabel}<//>
       <${Button} variant="primary" icon="check" onClick=${onClose}>完成<//>`}>
     <div class="set-list">
       <${Slider} label="背景音乐" micro="BGM" icon="play" value=${s.bgm} onInput=${(v) => updateSettings({ bgm: v })} />
@@ -72,7 +72,7 @@ export function SettingsModal({ open, onClose }) {
             class=${s.quality === id ? 'is-on' : ''} onClick=${() => updateSettings({ quality: id })}>${label}</button>`)}
         </div>
       </div>
-      ${touchUi
+      ${helpText ? html`<p class="set-hint">${helpText}</p>` : touchUi
         ? html`<p class="set-hint">触屏操作：点击单位选中（撤退 / 出售）· 长按单位或卡牌查看详情 · 拖动部署后滑动选择朝向</p>`
         : html`<p class="set-hint">快捷键：<kbd>R</kbd> 刷新 · <kbd>F</kbd> 冻结 · <kbd>D</kbd> 升级 · <kbd>Q</kbd> 撤退选中干员 · <kbd>X</kbd> 出售选中干员 · <kbd>Space</kbd> 准备就绪 · <kbd>Esc</kbd> 关闭弹窗 · 右键查看详情</p>`}
     </div>

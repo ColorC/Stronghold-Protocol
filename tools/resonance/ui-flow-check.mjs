@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
 const ROOT = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
+const NATIVE_DATA = path.join(ROOT, 'data/resonance-native');
 const SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(ROOT, 'runtime/resonance/ui-verification');
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
@@ -16,11 +17,11 @@ for (let i = 0; i < args.length;) {
   else if (args[i] === '--url' && args[i + 1] && !remoteUrl) { remoteUrl = args[i + 1]; i += 2; }
   else if (args[i] === '--session' && args[i + 1] && !replaySession) { replaySession = args[i + 1]; i += 2; }
   else if (args[i] === '--created-session' && args[i + 1] && !createdSession) { createdSession = args[i + 1]; i += 2; }
-  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-production-session-id>] [--battle-ui requires --url and forbids --session]; no work started');
+  else throw new Error('usage: [--url <fresh-flow-entry>] [--session <existing-production-session-id>] [--battle-ui fresh flow (optional --url, forbids --session)]; no work started');
 }
 if (replaySession && !/^[a-zA-Z0-9-]{8,80}$/.test(replaySession)) throw new Error('--session must be an existing session id; no work started');
 if (createdSession && !/^[a-zA-Z0-9-]{8,80}$/.test(createdSession)) throw new Error('--created-session must be an existing session id; no work started');
-if (battleUi && (!remoteUrl || replaySession)) throw new Error('--battle-ui requires --url and cannot be combined with --session; no work started');
+if (battleUi && replaySession) throw new Error('--battle-ui cannot be combined with --session; no work started');
 if (createdSession && (!battleUi || !remoteUrl || replaySession)) throw new Error('--created-session requires --url and --battle-ui and cannot be combined with --session; no work started');
 const require = createRequire(path.join(ROOT, 'package.json'));
 const puppeteer = require('puppeteer-core');
@@ -36,6 +37,68 @@ async function button(page, pattern) {
     return [...document.querySelectorAll('button,a.btn')].find(e => !e.disabled && e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height > 0 && re.test(e.innerText.trim())); }, pattern);
   const el = h.asElement(); if (!el) { await h.dispose(); throw new Error(`visible button not found: ${pattern}`); }
   await el.click(); await h.dispose();
+}
+async function stateAfterRevision(page, id, revision, label) {
+  const handle = await page.waitForFunction(async (sessionId, previousRevision) => {
+    const result = await (await fetch(`./resonance/api/sessions/${sessionId}`)).json();
+    return result.state?.revision > previousRevision ? result.state : false;
+  }, { timeout: 10000 }, id, revision);
+  const state = await handle.jsonValue();
+  check(`${label}-revision-advanced`, state.revision > revision, { previous: revision, current: state.revision });
+  await page.evaluate(value => { document.body.dataset.uiFlowRevision = String(value); }, state.revision);
+  return state;
+}
+async function rightClickPiece(page, uid) {
+  const beforeRevision = await page.evaluate(async () => {
+    const id = new URL(location.href).searchParams.get('session');
+    return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision;
+  });
+  const point = await page.evaluate(value => {
+    const numeric = Number(String(value).replace(/^\D+/, ''));
+    const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
+    if (!rect || rect.width <= 2 || rect.height <= 2) return null;
+    return [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }]
+      .find(candidate => document.elementFromPoint(candidate.x, candidate.y)?.tagName === 'CANVAS') || null;
+  }, uid);
+  if (!point) throw new Error(`visible piece bounds unavailable for ${uid}`);
+  await page.mouse.click(point.x, point.y, { button: 'right' });
+  await page.waitForSelector('.dpanel .rs-detail__member', { timeout: 10000 });
+  const afterRevision = await page.evaluate(async () => {
+    const id = new URL(location.href).searchParams.get('session');
+    return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision;
+  });
+  check('right-click-piece-opens-detail-without-action', afterRevision === beforeRevision,
+    { uid, beforeRevision, afterRevision });
+}
+async function leftClickPiece(page, uid) {
+  const beforeRevision = await page.evaluate(async () => {
+    const id = new URL(location.href).searchParams.get('session');
+    return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision;
+  });
+  const point = await page.evaluate(value => {
+    const numeric = Number(String(value).replace(/^\D+/, ''));
+    const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
+    if (!rect) return null;
+    return [{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }, { x: rect.x + rect.width / 2, y: rect.bottom - 2 }]
+      .find(candidate => document.elementFromPoint(candidate.x, candidate.y)?.tagName === 'CANVAS') || null;
+  }, uid);
+  if (!point) throw new Error(`visible piece bounds unavailable for left click ${uid}`);
+  await page.mouse.click(point.x, point.y);
+  await page.waitForSelector('.dpanel .rs-detail__member', { timeout: 10000 });
+  const afterRevision = await page.evaluate(async () => {
+    const id = new URL(location.href).searchParams.get('session');
+    return (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision;
+  });
+  check('left-click-piece-opens-detail-without-action', afterRevision === beforeRevision,
+    { uid, beforeRevision, afterRevision });
+}
+async function dragPointer(page, source, destination) {
+  const from = await source.boundingBox();
+  if (!from) throw new Error('drag source is not visible');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(destination.x, destination.y, { steps: 12 });
+  await page.mouse.up();
 }
 async function shot(page, name) {
   await page.evaluate(async () => {
@@ -63,11 +126,17 @@ try {
   await mkdir(OUT, { recursive: true });
   let url = remoteUrl;
   if (!url) {
-    process.env.SP_DATA_DIR = path.join(ROOT, 'data');
-    const { startServer } = await import(pathToFileURL(path.join(ROOT, 'server/index.js')).href);
-    server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: ROOT, dataDir: path.join(ROOT, 'data'),
+    process.env.SP_DATA_DIR = NATIVE_DATA;
+    process.env.SP_INDEPENDENT_DESIGN_PATH = path.join(NATIVE_DATA, 'independent-design.json');
+    process.env.SP_INDEPENDENT_GAME_TEXT_PATH = path.join(NATIVE_DATA, 'independent-game-text.json');
+    process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH = path.join(NATIVE_DATA, 'independent-darkmoon-design-addon.json');
+    process.env.SP_INDEPENDENT_DIRECTORY = path.join(OUT, 'independent-sessions');
+    process.env.SP_RESONANCE_DIRECTORY = path.join(OUT, 'sessions');
+    process.env.SP_RECORDING_DIRECTORY = path.join(OUT, 'recordings');
+    const { startServer } = await import(pathToFileURL(path.join(SOURCE, 'server/index.js')).href);
+    server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, installDir: ROOT, dataDir: NATIVE_DATA,
       publicDir: path.join(SOURCE, 'public'), sharedDir: path.join(SOURCE, 'shared'),
-      resonanceDirectory: replaySession ? path.join(ROOT, 'runtime/resonance/sessions') : path.join(OUT, 'sessions'), independentDirectory: path.join(OUT, 'independent-sessions'),
+      resonanceDirectory: path.join(OUT, 'sessions'), independentDirectory: path.join(OUT, 'independent-sessions'),
       recordingDirectory: path.join(OUT, 'recordings') });
     url = `${server.url}/resonance.html`;
   }
@@ -166,10 +235,52 @@ try {
   await shot(page, '01-title'); await layout(page, 'title');
   check('title-no-pool', await page.$('.rs-roster') === null, 'full pool is absent from title');
   await button(page, '开始整备|开始模拟'); await page.waitForFunction(() => /选择难度/.test(document.body.innerText), { timeout: 15000 });
-  await shot(page, '02-difficulty'); await layout(page, 'difficulty'); check('no-premature-create', receipt.creates === 0, receipt.creates);
-  await button(page, '选择环境|选择战场|下一步'); await page.waitForFunction(() => /选择战场|选择环境/.test(document.body.innerText), { timeout: 15000 });
+  await layout(page, 'difficulty'); check('no-premature-create', receipt.creates === 0, receipt.creates);
+  await page.click('.rs-flow__header .stephead__guide');
+  await page.waitForSelector('.rs-codex.rs-codex--economy #rs-section-economy-rules', { timeout: 15000 });
+  check('entry-guide-opens-current-economy-rules', /经营与补给/.test(await page.$eval('#rs-section-economy-rules', node => node.innerText)),
+    'StepHeader guide opens the resonance campaign economy section');
+  await page.click('.rs-codex .lo-top__left button');
+  await page.waitForFunction(() => !document.querySelector('.rs-codex') && !!document.querySelector('.rs-flow--difficulty'), { timeout: 10000 });
+  const returnedStepText = await page.evaluate(() => document.body.innerText);
+  check('entry-guide-returns-to-same-step-without-create', receipt.creates === 0 && /选择难度/.test(returnedStepText),
+    { creates: receipt.creates, step: 'difficulty' });
+  const hardCard = await page.$$('.diff-card');
+  const hardIndex = await page.$$eval('.diff-card', cards => cards.findIndex(card => card.querySelector('.diff-card__name')?.textContent.trim() === '困难'));
+  const hardBounds = await hardCard[hardIndex]?.boundingBox();
+  if (!hardBounds) throw new Error('native hard difficulty card is missing a visible target');
+  await page.mouse.click(hardBounds.x + hardBounds.width / 2, hardBounds.y + hardBounds.height / 2);
+  await page.waitForFunction(() => [...document.querySelectorAll('.diff-card')].some(card => card.classList.contains('is-selected') && card.querySelector('.diff-card__name')?.textContent.trim() === '困难'), { timeout: 5000 });
+  const difficultyFeature = await page.$eval('.rs-difficulty-feature__art img', image => ({ src: image.src, loaded: image.complete && image.naturalWidth > 0 }));
+  check('difficulty-selection-updates-art-and-campaign-summary', /modeChoice\/hard_rhodes_island/.test(difficultyFeature.src) && difficultyFeature.loaded &&
+    /节点/.test(await page.$eval('.rs-difficulty-feature__schedule', node => node.innerText)),
+    { selected: await page.$eval('.diff-card.is-selected .diff-card__name', node => node.textContent.trim()), art: difficultyFeature,
+      summary: await page.$eval('.rs-difficulty-feature__schedule', node => node.innerText.trim()) });
+  await shot(page, '02-difficulty');
+  check('no-premature-create-after-difficulty', receipt.creates === 0, receipt.creates);
+  await button(page, '^选择战场$'); await page.waitForFunction(() => /选择战场/.test(document.body.innerText), { timeout: 15000 });
+  const environmentIndex = await page.$$eval('.rs-env-card', cards => cards.findIndex(card => card.getAttribute('aria-selected') !== 'true' && card.querySelector('.rs-env-card__portrait')));
+  if (environmentIndex >= 0) {
+    const environmentCards = await page.$$('.rs-env-card');
+    const environmentBounds = await environmentCards[environmentIndex].boundingBox();
+    if (!environmentBounds) throw new Error('recommended environment card has no visible target');
+    await page.mouse.click(environmentBounds.x + environmentBounds.width / 2, environmentBounds.y + environmentBounds.height / 2);
+  }
+  await page.waitForFunction(() => document.querySelectorAll('.rs-env-card[aria-selected="true"]').length === 1 &&
+    !!document.querySelector('.rs-env-card.is-sel .rs-env-card__portrait'), { timeout: 5000 });
+  check('environment-selection-single-and-real', await page.$$eval('.rs-env-card[aria-selected="true"]', cards => cards.length) === 1 &&
+    await page.$('.rs-env-card.is-sel .rs-env-card__portrait') !== null, 'one selected environment with its representative operator portrait');
   await shot(page, '03-environment'); await layout(page, 'environment'); check('no-create-before-briefing', receipt.creates === 0, receipt.creates);
   await button(page, '查看本局简报|下一步'); await page.waitForFunction(() => /本局简报|确认本局信息/.test(document.body.innerText), { timeout: 15000 });
+  await page.click('.rs-advanced'); await page.waitForSelector('.rs-seed-field input', { timeout: 10000 });
+  await page.click('.rs-seed-field input'); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control'); await page.keyboard.type('0');
+  await page.waitForFunction(() => {
+    const start = [...document.querySelectorAll('.brief__foot button')].find(button => /确认并开始本局/.test(button.innerText));
+    return document.querySelector('.rs-seed-field input')?.value === '0' && !!start && !start.disabled;
+  }, { timeout: 15000 });
+  check('advanced-seed-zero-valid-without-create', receipt.creates === 0 && await page.$eval('.rs-seed-field input', input => input.value) === '0',
+    { creates: receipt.creates, seed: await page.$eval('.rs-seed-field input', input => input.value) });
+  await button(page, '完成'); await page.waitForFunction(() => !document.querySelector('.rs-seed-field'), { timeout: 5000 });
   await shot(page, '04-briefing'); await layout(page, 'briefing');
   await button(page, '确认并开始本局|开始本局'); await page.waitForSelector('.gm', { timeout: 30000 });
   check('single-create', receipt.creates === 1, receipt.creates);
@@ -187,44 +298,69 @@ try {
   check('fresh-opening-five-gold', before.gold === 5, { gold: before.gold });
   const readFresh = () => page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
   let current = before;
-  await page.keyboard.press('f');
-  await page.waitForFunction(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision > Number(document.body.dataset.uiFlowRevision || 0), { timeout: 8000 }, receipt.sessionId);
-  current = await readFresh(); receipt.freshActions.push({ action: 'F-freeze', revision: current.revision, locked: current.shop?.locked });
-  check('ui-freeze-locks-shop', current.shop?.locked === true, current.shop?.locked);
-  await page.waitForSelector('.toolbtn--ice.is-on:not([disabled])', { timeout: 10000 });
-  await page.evaluate(revision => { document.body.dataset.uiFlowRevision = String(revision); }, current.revision);
-  await page.keyboard.press('f');
-  await page.waitForFunction(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision > Number(document.body.dataset.uiFlowRevision || 0), { timeout: 8000 }, receipt.sessionId);
-  current = await readFresh(); receipt.freshActions.push({ action: 'F-unfreeze', revision: current.revision, locked: current.shop?.locked });
-  check('ui-unfreeze-unlocks-shop', current.shop?.locked === false, current.shop?.locked);
-  await page.waitForSelector('.toolbtn--ice:not(.is-on):not([disabled])', { timeout: 10000 });
-  await page.evaluate(revision => { document.body.dataset.uiFlowRevision = String(revision); }, current.revision);
-  await page.keyboard.press('d');
-  await page.waitForFunction(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision > Number(document.body.dataset.uiFlowRevision || 0), { timeout: 8000 }, receipt.sessionId);
-  current = await readFresh(); receipt.freshActions.push({ action: 'D-buy-xp', revision: current.revision, gold: current.gold, xp: current.xp });
-  check('ui-buy-xp-updates-gold-xp', current.gold === 1 && current.xp > before.xp, { gold: current.gold, xp: current.xp, beforeXp: before.xp });
   const oneCostIndex = await page.$$eval('.shopbar__cards .scard:not(.scard--sold)', cards => cards.findIndex(card => {
     const price = card.querySelector('.scard__price'); return price && Number(price.textContent.trim()) === 1;
   }));
   check('one-cost-shop-offer-visible', oneCostIndex >= 0, oneCostIndex);
-  const preBuy = current; const oldUids = new Set(preBuy.pieces.map(piece => piece.uid));
-  await page.$$eval('.shopbar__cards .scard:not(.scard--sold)', (cards, i) => cards[i].click(), oneCostIndex);
+  const preBuy = current;
+  const shopCards = await page.$$('.shopbar__cards .scard:not(.scard--sold)');
+  const offerBounds = await shopCards[oneCostIndex]?.boundingBox();
+  if (!offerBounds) throw new Error('one-cost shop offer has no visible pointer bounds');
+  await page.mouse.click(offerBounds.x + offerBounds.width / 2, offerBounds.y + offerBounds.height / 2, { button: 'right' });
   await page.waitForSelector('.dpanel', { timeout: 10000 });
-  await page.click('.dpanel__close');
-  check('first-card-tap-arms-only', (await readFresh()).revision === preBuy.revision, 'first tap only arms and previews');
-  await page.$$eval('.shopbar__cards .scard:not(.scard--sold)', (cards, i) => cards[i].click(), oneCostIndex);
-  await page.waitForFunction(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state?.revision > Number(document.body.dataset.uiFlowRevision || 0), { timeout: 8000 }, receipt.sessionId);
-  current = await readFresh();
+  check('right-click-shop-opens-detail-without-action', (await readFresh()).revision === preBuy.revision && await page.$('.dpanel .dhead__name') !== null,
+    { revision: preBuy.revision, title: await page.$eval('.dpanel .dhead__name', node => node.innerText.trim()) });
+  const pactLink = await page.$('.dpanel .dhead__class .dbond');
+  check('operator-detail-exposes-pact', !!pactLink, 'operator detail has a native pact link');
+  await pactLink.click();
+  await page.waitForSelector('.dpanel .rs-detail__levels', { timeout: 10000 });
+  const pactLevelState = await page.evaluate(() => {
+    const levels = [...document.querySelectorAll('.dpanel .rs-detail__level')];
+    const icon = document.querySelector('.dpanel .rs-pact-icon > i');
+    return { levels: levels.length, selected: levels.filter(node => node.classList.contains('is-selected')).length,
+      effectCount: document.querySelectorAll('.dpanel .rs-detail__selected-effect').length,
+      effect: document.querySelector('.dpanel .rs-detail__selected-effect')?.innerText.trim() || '',
+      mask: icon ? getComputedStyle(icon).maskImage : 'missing',
+      color: icon ? getComputedStyle(icon.parentElement).color : 'missing',
+      mint: (() => { const probe = document.createElement('span'); probe.style.color = 'var(--mint-300)'; document.body.append(probe); const color = getComputedStyle(probe).color; probe.remove(); return color; })() };
+  });
+  check('pact-detail-single-level-and-icon', pactLevelState.selected === 1 && pactLevelState.effectCount === 1 && /url\(/.test(pactLevelState.mask) && pactLevelState.color === pactLevelState.mint,
+    pactLevelState);
+  const pactResource = await page.evaluate(async id => {
+    const { state } = (await (await fetch(`./resonance/api/sessions/${id}`)).json());
+    const { resonanceApi } = await import('./js/resonance/api.js');
+    const { pactIconUrl } = await import('./js/resonance/pactIcon.js');
+    const result = await resonanceApi.catalog(state.seed, state.environmentId);
+    const pactId = result.catalog?.environments?.[state.environmentId]?.identityPactId;
+    const url = pactId ? pactIconUrl(result.catalog, pactId) : null;
+    const response = url ? await fetch(url) : null;
+    return { pactId, url, status: response?.status || 0, contentType: response?.headers.get('content-type') || '' };
+  }, receipt.sessionId);
+  check('pact-icon-resolves-and-serves-native-image', !!pactResource.pactId && !!pactResource.url && pactResource.status === 200 && /^image\//.test(pactResource.contentType), pactResource);
+  if (pactLevelState.levels > 1) {
+    const beforeEffect = pactLevelState.effect;
+    await page.click('.dpanel .rs-detail__level:not(.is-selected)');
+    const selectedLevel = await page.evaluate(() => ({ selected: document.querySelectorAll('.dpanel .rs-detail__level.is-selected').length,
+      effectCount: document.querySelectorAll('.dpanel .rs-detail__selected-effect').length,
+      effect: document.querySelector('.dpanel .rs-detail__selected-effect')?.innerText.trim() || '' }));
+    check('pact-detail-switches-one-level-effect', selectedLevel.selected === 1 && selectedLevel.effectCount === 1 && selectedLevel.effect !== beforeEffect, selectedLevel);
+  }
+  const oldUids = new Set(preBuy.pieces.map(piece => piece.uid));
+  await page.mouse.click(offerBounds.x + offerBounds.width / 2, offerBounds.y + offerBounds.height / 2);
+  current = await stateAfterRevision(page, receipt.sessionId, preBuy.revision, 'single-click-buy');
   const purchased = current.pieces.find(piece => !oldUids.has(piece.uid));
-  receipt.freshActions.push({ action: 'one-cost-card-two-tap-buy', revision: current.revision, gold: current.gold, purchasedUid: purchased?.uid });
-  check('second-card-tap-buys-one-cost', !!purchased && current.gold === 0 && current.pieces.length === preBuy.pieces.length + 1,
+  receipt.freshActions.push({ action: 'single-click-buy-with-detail-open', revision: current.revision, gold: current.gold, purchasedUid: purchased?.uid });
+  check('single-card-click-buys-one-cost', !!purchased && current.gold === 4 && current.pieces.length === preBuy.pieces.length + 1,
     { gold: current.gold, piecesBefore: preBuy.pieces.length, piecesAfter: current.pieces.length, purchased: purchased?.uid });
-  await page.evaluate(revision => { document.body.dataset.uiFlowRevision = String(revision); }, current.revision);
-  await page.keyboard.press('r'); await new Promise(resolve => setTimeout(resolve, 350));
-  const afterPoorRefresh = await readFresh();
-  check('insufficient-R-refresh-is-blocked', afterPoorRefresh.revision === current.revision && afterPoorRefresh.gold === 0,
-    { revision: afterPoorRefresh.revision, gold: afterPoorRefresh.gold });
-  receipt.freshActions.push({ action: 'R-refresh-insufficient-funds', revision: afterPoorRefresh.revision, gold: afterPoorRefresh.gold, blocked: true });
+  check('detail-remains-open-after-buy', await page.$('.dpanel') !== null, 'shop detail stays visible while a card is purchased');
+  const beforeRefresh = current;
+  await page.keyboard.press('d');
+  current = await stateAfterRevision(page, receipt.sessionId, beforeRefresh.revision, 'D-refresh');
+  receipt.freshActions.push({ action: 'D-refresh-with-detail-open', revision: current.revision, gold: current.gold });
+  check('D-refresh-updates-real-session', current.gold === 2 && current.shop?.offers?.some(offer => !offer.sold), { gold: current.gold, offers: current.shop?.offers?.length });
+  check('detail-remains-open-after-refresh', await page.$('.dpanel') !== null, 'detail stays open during D refresh');
+  check('F-is-not-shop-freeze-control', await page.$('.toolbtn--ice kbd') === null, 'shop freeze has no F shortcut');
+  await page.click('.dpanel__close');
   const member = purchased || current.pieces[0];
   await page.evaluate(() => { window.__uiFlowViewRef = globalThis.__SP_VIEW__; });
   await page.evaluate(uid => { location.hash = `member-${encodeURIComponent(uid)}`; }, member.uid);
@@ -316,6 +452,90 @@ try {
     }
     check('three-starters-deployed-by-native-pointer-and-facing-wheel', deployments.length === 3, { deployments, expectedStarterIds: [...starterIds] });
     receipt.freshActions.push({ action: 'mouse-drag-three-starters-facing-wheel', deployments });
+    const wTarget = deployments[0];
+    await leftClickPiece(page, wTarget.uid);
+    await page.click('.dpanel__close'); await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
+    await rightClickPiece(page, wTarget.uid);
+    const beforeBench = await readFresh();
+    await page.keyboard.press('w');
+    current = await stateAfterRevision(page, receipt.sessionId, beforeBench.revision, 'W-bench');
+    const benched = current.pieces.find(piece => piece.uid === wTarget.uid);
+    check('W-bench-selected-piece', benched?.row == null, { uid: wTarget.uid, row: benched?.row });
+    await page.keyboard.press('w');
+    current = await stateAfterRevision(page, receipt.sessionId, current.revision, 'W-redeploy');
+    const redeployed = current.pieces.find(piece => piece.uid === wTarget.uid);
+    check('W-restores-previous-placement', redeployed?.row === wTarget.row && redeployed?.col === wTarget.col,
+      { expected: { row: wTarget.row, col: wTarget.col }, actual: { row: redeployed?.row, col: redeployed?.col } });
+    receipt.freshActions.push({ action: 'W-bench-and-restore', uid: wTarget.uid, row: redeployed?.row, col: redeployed?.col });
+    const equipmentBefore = await readFresh();
+    check('starter-equipment-available-for-real-drag', equipmentBefore.inventory?.length > 0,
+      { inventory: equipmentBefore.inventory?.length || 0 });
+    await page.click('.rs-hud-actions button[title="装备"]');
+    await page.waitForSelector('.rs-inventory__main[draggable="true"]', { timeout: 10000 });
+    const itemUid = equipmentBefore.inventory[0].uid;
+    const itemButton = await page.$(`[id="inventory-${itemUid}"] .rs-inventory__main[draggable="true"]`);
+    const equipPoint = await page.evaluate(uid => {
+      const numeric = Number(String(uid).replace(/^\D+/, ''));
+      const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
+      const point = rect && { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+      return point && document.elementFromPoint(point.x, point.y)?.tagName === 'CANVAS' ? point : null;
+    }, wTarget.uid);
+    if (!itemButton || !equipPoint) throw new Error('real equipment drag source or board target is unavailable');
+    await dragPointer(page, itemButton, equipPoint);
+    current = await stateAfterRevision(page, receipt.sessionId, equipmentBefore.revision, 'drag-equip');
+    const equippedTarget = current.pieces.find(piece => piece.uid === wTarget.uid);
+    check('drag-equips-real-inventory-item', !current.inventory.some(item => item.uid === itemUid) && equippedTarget?.equipment?.some(item => item.uid === itemUid),
+      { itemUid, inventoryAfter: current.inventory?.map(item => item.uid), equipmentAfter: equippedTarget?.equipment?.map(item => item.uid) });
+    receipt.freshActions.push({ action: 'native-drag-equip', pieceUid: wTarget.uid, itemUid });
+    await page.click('.rs-panel-drawer > header > button[aria-label="关闭面板"]');
+    await page.waitForFunction(() => !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
+    const eTarget = deployments[1];
+    await rightClickPiece(page, eTarget.uid);
+    const beforeESell = await readFresh();
+    await page.keyboard.press('e');
+    current = await stateAfterRevision(page, receipt.sessionId, beforeESell.revision, 'E-sell');
+    check('E-sells-selected-piece', !current.pieces.some(piece => piece.uid === eTarget.uid) && current.gold > beforeESell.gold,
+      { uid: eTarget.uid, goldBefore: beforeESell.gold, goldAfter: current.gold });
+    receipt.freshActions.push({ action: 'E-sell-selected-piece', uid: eTarget.uid, gold: current.gold });
+    const dragSale = deployments[2];
+    await page.evaluate(() => { const close = document.querySelector('.dpanel__close'); close?.click(); });
+    await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
+    const beforeDragSale = await readFresh();
+    const saleSource = await page.evaluate(uid => {
+      const numeric = Number(String(uid).replace(/^\D+/, ''));
+      const rect = globalThis.__SP_VIEW__?.pieceScreenRect?.(numeric);
+      return rect && { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    }, dragSale.uid);
+    if (!saleSource) throw new Error(`sale drag source unavailable for ${dragSale.uid}`);
+    await page.mouse.move(saleSource.x, saleSource.y); await page.mouse.down();
+    await page.mouse.move(saleSource.x + 10, saleSource.y + 8, { steps: 2 });
+    await page.waitForSelector('.rs-sell-zone[data-drop="sell"]', { timeout: 5000 });
+    const salePoint = await page.$eval('.rs-sell-zone[data-drop="sell"]', el => {
+      const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    });
+    await page.mouse.move(salePoint.x, salePoint.y, { steps: 12 }); await page.mouse.up();
+    current = await stateAfterRevision(page, receipt.sessionId, beforeDragSale.revision, 'drag-sell');
+    check('drag-sells-real-deployed-piece', !current.pieces.some(piece => piece.uid === dragSale.uid) && current.gold > beforeDragSale.gold,
+      { uid: dragSale.uid, goldBefore: beforeDragSale.gold, goldAfter: current.gold });
+    receipt.freshActions.push({ action: 'native-drag-sell', pieceUid: dragSale.uid, gold: current.gold });
+    await rightClickPiece(page, wTarget.uid);
+    const beforeXp = current;
+    check('F-xp-cost-is-affordable', beforeXp.gold >= Number(beforeXp.actionCosts?.xpGold ?? 4), { gold: beforeXp.gold, cost: beforeXp.actionCosts?.xpGold ?? 4 });
+    check('operator-detail-still-open-before-F', await page.$('.dpanel') !== null, 'selected operator detail remains open');
+    await page.keyboard.press('f');
+    current = await stateAfterRevision(page, receipt.sessionId, beforeXp.revision, 'F-buy-xp');
+    check('F-buys-xp-with-detail-open', current.gold === beforeXp.gold - Number(beforeXp.actionCosts?.xpGold ?? 4) && current.xp > beforeXp.xp,
+      { goldBefore: beforeXp.gold, goldAfter: current.gold, xpBefore: beforeXp.xp, xpAfter: current.xp });
+    check('operator-detail-still-open-after-F', await page.$('.dpanel') !== null, 'selected operator detail remains open after XP purchase');
+    receipt.freshActions.push({ action: 'F-buy-xp-with-detail-open', gold: current.gold, xp: current.xp });
+    const beforePoorRefresh = current;
+    await page.keyboard.press('d');
+    await new Promise(resolve => setTimeout(resolve, 350));
+    const afterPoorRefresh = await readFresh();
+    check('insufficient-D-refresh-is-blocked', afterPoorRefresh.revision === beforePoorRefresh.revision && afterPoorRefresh.gold === beforePoorRefresh.gold,
+      { revision: afterPoorRefresh.revision, gold: afterPoorRefresh.gold });
+    receipt.freshActions.push({ action: 'D-refresh-insufficient-funds', revision: afterPoorRefresh.revision, gold: afterPoorRefresh.gold, blocked: true });
+    await page.click('.dpanel__close');
     if (live.node?.kind === 'logistics' || !live.nodeStarted) {
       await button(page, '领取补给');
       const handle = await page.waitForFunction(async id => { const state=(await (await fetch(`./resonance/api/sessions/${id}`)).json()).state; return state.nodeStarted ? state : false; }, { timeout: 12000 }, receipt.sessionId);

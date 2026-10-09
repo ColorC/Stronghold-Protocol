@@ -190,8 +190,8 @@ export function tierChipUrl(t) {
 // The page's tier look. 'roman' is the original game's (official chip art, else a numeral octagon); a mode with its own
 // look sets 'pips' once at start-up (卫戍协议：工坊, js/independent/main.js): the tier as that many pips on a tag.
 let tierLook = 'roman';
-/** @param {'roman'|'pips'} look */
-export function setTierLook(look) { tierLook = look === 'pips' ? 'pips' : 'roman'; }
+/** @param {'roman'|'pips'|'color'} look */
+export function setTierLook(look) { tierLook = ['pips', 'color'].includes(look) ? look : 'roman'; }
 export const tierLookOf = () => tierLook;
 
 /**
@@ -210,10 +210,12 @@ export function TierPips({ tier, golden = false, size = 'md', class: cls }) {
  * one row up to three, a second row for 4–6.
  * @param {{ tier: number, golden?: boolean, size?: 'sm'|'md'|'lg', class?: string }} props
  */
-export function TierChip({ tier, golden = false, size = 'md', class: cls }) {
+export function TierChip({ tier, golden = false, size = 'md', look = null, class: cls }) {
   const t = Math.max(1, Math.min(6, Number(tier) | 0 || 1));
   const [bad, setBad] = useState(null);
-  if (tierLook === 'pips') return TierPips({ tier: t, golden, size, class: cls });
+  const appearance = look || tierLook;
+  if (appearance === 'pips') return TierPips({ tier: t, golden, size, class: cls });
+  if (appearance === 'color') return html`<span class=${cx('tier', `tier--${t}`, `tier--${size}`, 'tier--color', golden && 'tier--golden', cls)} aria-label=${`${t}费`} title=${`${t}费`}></span>`;
   const src = tierChipUrl(t);
   const img = !!src && bad !== src;
   return html`<span class=${cx('tier', `tier--${t}`, `tier--${size}`, golden && 'tier--golden', img && 'tier--img', cls)} aria-label=${`${t}阶`}>
@@ -225,11 +227,11 @@ export function TierChip({ tier, golden = false, size = 'md', class: cls }) {
  * Bond disc: round glyph disc with segmented tier ring, stack count and name.
  * @param {{ name?: string, icon?: string, count?: number, layers?: number, tier?: number, maxTier?: number,
  *   active?: boolean, disabled?: boolean, layersDisabled?: boolean, size?: 'sm'|'md'|'lg', showName?: boolean,
- *   onClick?: Function, class?: string, title?: string }} props
+ *   onClick?: Function, class?: string, title?: string, iconMask?: boolean }} props
  */
 export function BondDisc({
   name = '', icon, count, layers, tier = 0, maxTier = 3, active = false, disabled = false, layersDisabled = false,
-  size = 'md', showName = true, onClick, class: cls, title,
+  size = 'md', showName = true, onClick, class: cls, title, iconMask = false,
 }) {
   // Remember which URL failed (a per-URL flag can't race a reset effect).
   const [badSrc, setBadSrc] = useState(null);
@@ -254,7 +256,8 @@ export function BondDisc({
       </svg>
       <span class="bond__core">
         ${imgOk
-          ? html`<img class="bond__icon" src=${icon} alt="" draggable=${false} onError=${() => setBadSrc(icon)} />`
+          ? iconMask ? html`<span class="bond__icon-mask" style=${{ maskImage: `url("${icon}")`, WebkitMaskImage: `url("${icon}")` }} aria-hidden="true"></span>`
+            : html`<img class="bond__icon" src=${icon} alt="" draggable=${false} onError=${() => setBadSrc(icon)} />`
           : html`<span class="bond__glyph">${glyph}</span>`}
       </span>
       ${stack != null ? html`<span class="bond__count">${stack}</span>` : null}

@@ -6,31 +6,32 @@ function statText(p) {
   return `${names[p.stat] ?? '属性'}${p.mode === 'percent' ? '+' : '+'}${nfmt(p.value)}${p.mode === 'percent' ? '%' : ''}`;
 }
 
-function pactEffectText(e) {
+function pactEffectText(e, threshold = Infinity) {
   const p=e.params??{};
+  const hasTier = (at) => Number.isFinite(Number(at)) && Number(threshold) >= Number(at);
   switch(e.kind) {
     case 'stat': return statText(p);
     case 'aegir_cycle': return `每秒恢复最大生命${p.regen}%；生命上限转攻击${p.atkFromHp}%；受敌人有效攻击后，对${p.retaliationRadius}格内地面和空中敌人造成最大生命${p.retaliation}%法术伤害，个人冷却${p.cd}秒${p.block?`，阻挡数+${p.block}`:''}。`;
-    case 'laterano_ammo': return `技能获得${p.skillAmmo}枚弹药。每消耗${p.ammoSpend}枚弹药，全体成员下一击追加自身攻击力${p.bonus}%物理伤害。${p.droneAt?`${p.droneAt}人时无人机每${p.droneInterval}秒发射${p.droneShots}发、每发造成最高成员攻击力${p.droneDamage}%的${p.antiAir?'对空':''}伤害。`:''}`;
-    case 'kjerag_frost': return `自然技力每秒+${p.sp}；每${p.attackEvery}次攻击施加${p.coldDuration}秒寒冷，已有寒冷时冻结。冻结使其他成员下一击追加${p.frozenHit}%攻击力法术伤害，同一目标冷却${p.frozenTargetCooldown}秒。${p.snowAt?`${p.snowAt}人时行走格铺雪，每格冷却${p.snowTileCooldown}秒，触发${p.coldFromSnow}秒寒冷。`:''}`;
-    case 'yan_combo': return `成员施法使其他成员恢复${p.teamSp}技力，个人冷却${p.receiverCooldown}秒；每${p.comboEvery}次全队施法，各成员分别对最近目标造成${p.comboDamage}%攻击力法术伤害。${p.formationAt?`${p.formationAt}人时召唤阵每${p.formationInterval}秒对路格造成最高攻击力${p.formationDamage}%法术伤害。`:''}`;
-    case 'victoria_artillery': return `每累计${p.shots}次攻击，由最高攻击者对同一目标及${p.radius}格范围造成${p.damage}%攻击力物理伤害。${p.firewallAt?`${p.firewallAt}人时留下${p.firewallDuration}秒火墙，每秒造成${p.firewallDps}%攻击力伤害。`:''}`;
-    case 'columbia_construct': return `造物生命+${p.hp}%、攻击+${p.atk}%；无造物时每${p.interval}秒召唤持续${p.constructDuration}秒、攻击为主人的${p.constructAtk}%的无人机，最多${p.maxConstructs}只。${p.rebuildAt?`${p.rebuildAt}人时首次阵亡造物可重构一次。`:''}`;
-    case 'kazimierz_true_damage': return `攻击穿透防御${p.pierce}%；每${p.attackEvery}次攻击追加${p.trueDamage}%攻击力真实伤害。${p.solarAt?`${p.solarAt}人时每次施法在目标处召唤${p.solarDuration}秒耀阳，每秒造成${p.solarDps}%攻击力真实伤害，个人冷却${p.solarCooldown}秒。`:''}`;
-    case 'siracusa_execute': return `敌人生命低于${p.executeBelow}%时伤害提高${p.executeBonus}%；每累计造成${p.damageCycle}实际伤害，恢复${p.sp}技力并使下一击追加${p.nextHit}%攻击力物理伤害，个人冷却${p.personalCooldown}秒。${p.wolfAt?`${p.wolfAt}人时狼影每${p.wolfInterval}秒对最近敌人造成${p.wolfDamage}%最高攻击力物理伤害，领袖不会被处决。`:''}`;
+    case 'laterano_ammo': return `技能获得${p.skillAmmo}枚弹药。每消耗${p.ammoSpend}枚弹药，全体成员下一击追加自身攻击力${p.bonus}%物理伤害。${hasTier(p.droneAt)?`${p.droneAt}人时无人机每${p.droneInterval}秒发射${p.droneShots}发、每发造成最高成员攻击力${p.droneDamage}%的${p.antiAir?'对空':''}伤害。`:''}`;
+    case 'kjerag_coordination': return `谢拉格成员分别累计普攻，达到${p.attackEvery}次后为该次攻击目标标记${p.markDuration}秒；标记有效期间，任何友方干员随后首次普攻该目标时追加自身攻击力${p.responseDamage}%物理伤害，同一时间仅标记一个目标且不切换或刷新。${hasTier(p.crossfireAt) ? `标记期间第三名不同友方响应时，存活在场的谢拉格成员各向该目标援射一次，造成自身攻击力${p.crossfireDamage}%物理伤害。` : ''}`;
+    case 'yan_combo': return `成员施法使其他成员恢复${p.teamSp}技力，个人冷却${p.receiverCooldown}秒；每${p.comboEvery}次全队施法，各成员分别对最近目标造成${p.comboDamage}%攻击力法术伤害。${hasTier(p.formationAt)?`${p.formationAt}人时召唤阵每${p.formationInterval}秒对路格造成最高攻击力${p.formationDamage}%法术伤害。`:''}`;
+    case 'victoria_artillery': return `每累计${p.shots}次攻击，由最高攻击者对同一目标及${p.radius}格范围造成${p.damage}%攻击力物理伤害。${hasTier(p.firewallAt)?`${p.firewallAt}人时留下${p.firewallDuration}秒火墙，每秒造成${p.firewallDps}%攻击力伤害。`:''}`;
+    case 'columbia_construct': return `造物生命+${p.hp}%、攻击+${p.atk}%；无造物时每${p.interval}秒召唤持续${p.constructDuration}秒、攻击为主人的${p.constructAtk}%的无人机，最多${p.maxConstructs}只。${hasTier(p.rebuildAt)?`${p.rebuildAt}人时首次阵亡造物可重构一次。`:''}`;
+    case 'kazimierz_true_damage': return `攻击穿透防御${p.pierce}%；每${p.attackEvery}次攻击追加${p.trueDamage}%攻击力真实伤害。${hasTier(p.solarAt)?`${p.solarAt}人时每次施法在目标处召唤${p.solarDuration}秒耀阳，每秒造成${p.solarDps}%攻击力真实伤害，个人冷却${p.solarCooldown}秒。`:''}`;
+    case 'siracusa_execute': return `敌人生命低于${p.executeBelow}%时伤害提高${p.executeBonus}%；每累计造成${p.damageCycle}实际伤害，恢复${p.sp}技力并使下一击追加${p.nextHit}%攻击力物理伤害，个人冷却${p.personalCooldown}秒。${hasTier(p.wolfAt)?`${p.wolfAt}人时狼影每${p.wolfInterval}秒对最近敌人造成${p.wolfDamage}%最高攻击力物理伤害，领袖不会被处决。`:''}`;
     case 'rhodes_first_cast': return `每名成员本场首次施法前减伤${p.mitigation}%，施法后恢复${p.heal}%最大生命并获得${p.duration}秒攻速+${p.aspd}。`;
     case 'lungmen_reward': return `前线击倒敌人时全队恢复${p.killSp}技力（团队每秒上限${p.teamSpCap}）；获胜每个经营节点获得${p.victoryGold}金币。${p.artilleryEvery?`每第${p.artilleryEvery}次击倒触发半径${p.artilleryRadius}格炮击，造成${p.artilleryDamage}%最高攻击力物理伤害。`:''}`;
     case 'sargon_sand': return `每${p.interval}秒治疗生命最低成员${p.heal}%最大生命，并在其最近敌人处形成${p.duration}秒流沙：减速${p.slow}%，每秒造成受益者攻击力${p.dps}%法术伤害。`;
-    case 'leithania_sound': return `每第${p.castEvery}次施法留下${p.areaDuration}秒音域，每秒造成${p.dps}%攻击力法术伤害；最多${p.maxAreas}片，同源覆盖。${p.silenceAt?`${p.silenceAt}人时音域每${p.silenceInterval}秒沉默${p.silenceDuration}秒。`:''}`;
+    case 'leithania_sound': return `每第${p.castEvery}次施法留下${p.areaDuration}秒音域，每秒造成${p.dps}%攻击力法术伤害；最多${p.maxAreas}片，同源覆盖。${hasTier(p.silenceAt)?`${p.silenceAt}人时音域每${p.silenceInterval}秒沉默${p.silenceDuration}秒。`:''}`;
     case 'iberia_barrier': return `每名成员本场首次阻挡获得最大生命${p.barrier}%屏障；屏障破裂时对${p.radius}格内地面和空中敌人造成${p.breakDamage}%攻击力法术伤害。`;
-    case 'higashi_redeploy': return `部署后${p.stealthSeconds}秒闪避${p.dodge}%；退出后为最近队友恢复${p.returnSp}技力，每名成员每场最多${p.returnLimit}次。${p.deployTrueDamageAt?`${p.deployTrueDamageAt}人时部署造成${p.deployTrueDamage}%攻击力真实伤害。`:''}`;
+    case 'higashi_redeploy': return `部署后${p.stealthSeconds}秒闪避${p.dodge}%；退出后为最近队友恢复${p.returnSp}技力，每名成员每场最多${p.returnLimit}次。${hasTier(p.deployTrueDamageAt)?`${p.deployTrueDamageAt}人时部署造成${p.deployTrueDamage}%攻击力真实伤害。`:''}`;
     case 'ursus_adjacency': return `相邻盟约成员防御+${p.adjacentDef}；无论胜负，结算时存活成员永久增加${p.victoryHp}生命，个人成长上限${p.personalGrowthCap}。`;
     case 'bolivar_slow': return `对减速、寒冷或束缚目标伤害+${p.controlledDamage}%；获胜时成员永久增加${p.victoryAtk}攻击，个人上限${p.growthCap}。`;
     case 'rim_forge': return `每${p.skillCount}次成员施法获得一份锻造进度，每经营节点最多${p.nodeLimit}份；跨场累计五份进度后，任选${p.choiceCount}件基础组件并重新累计。`;
     case 'babel_exit': return `成员本场首次退出时全队恢复${p.exitSp}技力；胜利后随机一名在场成员永久增加${p.victoryAtk}攻击，个人上限${p.growthCap}。`;
     case 'sami_cold': return `对寒冷或冻结目标的伤害与治疗提高${p.coldTargetBonus}%；本场首次施法为全队恢复${p.firstCastHeal}%最大生命。`;
     case 'ammo_last_round': return `每次真实消耗弹药有${p.refundChance}%几率恢复${p.refundSp}技力；技能最后一发追加${p.lastDamage}%攻击力物理伤害。`;
-    case 'combo_sixth': return `每次攻击攻速+${p.aspdPerAttack}，最多+${p.speedCap}；每第${p.every}次攻击追加${p.damage}%攻击力物理伤害。${p.otherTargetAt?`达到${p.otherTargetAt}人后额外击打最近另一敌人。`:''}`;
+    case 'combo_sixth': return `每次攻击攻速+${p.aspdPerAttack}，最多+${p.speedCap}；每第${p.every}次攻击追加${p.damage}%攻击力物理伤害。${hasTier(p.otherTargetAt)?`达到${p.otherTargetAt}人后额外击打最近另一敌人。`:''}`;
     case 'control_first': return `每名成员首次控制同一目标时造成${p.damage}%攻击力法术伤害，目标冷却${p.sameTargetCooldown}秒；控制时间延长${p.durationBonus}%，领袖抗控规则不变。`;
     case 'creation_construct': return `造物攻击为主人恢复${p.ownerSp}技力（主人每秒最多${p.ownerSpCap}）；主人施法使自身造物恢复${p.heal}%生命并获得攻速+${p.aspd}，持续${p.duration}秒。`;
     case 'symbiosis_barrier': return `有效治疗的${p.healToShield}%转为屏障，屏障上限为目标最大生命${p.barrierCap}%，同一目标冷却${p.targetCooldown}秒；屏障破裂后下一击追加${p.breakBonus}%攻击力伤害。`;
@@ -148,7 +149,7 @@ export function compileResonancePlayerText(catalog, skillTable) {
     }
   }
   const pacts=Object.fromEntries(Object.entries(catalog.pacts).map(([id,pact])=>[id,{levels:pact.levels.map(level=>{
-    const sentences=level.effects.map(pactEffectText);
+    const sentences=level.effects.map(effect=>pactEffectText(effect,level.threshold));
     if(sentences.some(x=>!x))diagnostics.push({type:'unknown-pact-effect',pactId:id,threshold:level.threshold,kinds:level.effects.filter((_,i)=>!sentences[i]).map(e=>e.kind)});
     return {threshold:level.threshold,description:sentences.filter(Boolean).join(' ')};
   })}]));

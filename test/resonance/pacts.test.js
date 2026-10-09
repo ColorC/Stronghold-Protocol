@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.SP_DATA_DIR = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data';
+process.env.SP_DATA_DIR ??= 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native';
 
 const [{ getData }, { getResonanceCatalog }, { Battle }, { installResonancePacts }, { installResonanceEquipment }, { createResonanceKits }, { installResonanceBattle }] = await Promise.all([
   import('../../server/data.js'),
@@ -73,6 +73,89 @@ test('every ordinary pact tier resolves at its configured unique-operator thresh
   }
 });
 
+function emitBasicAttack(battle, attacker, target, isSkill=false) { battle.emit('attack', { attacker, targets: [target], isSkill }); }
+
+test('Kjerag tiers mark on each member personal attack count and use the tier response damage',()=>{
+  for(const [count,every,percent] of [[2,5,80],[4,4,140],[7,3,220]]){
+    const setup=makeBattle(uniqueLoadouts('kjerag',count));setup.battle.start();const {battle,units}=setup;const target=spawnDummy(battle);for(const unit of units)unit.deployed=true;
+    const fxCalls=[],nativeFx=battle.fx.bind(battle);battle.fx=(...args)=>{fxCalls.push(args);return nativeFx(...args);};
+    assert.equal(setup.active.get('kjerag').tier,count);
+    emitBasicAttack(battle,units[0],target,true);assert.equal(units[0].mem.pactKjeragCount??0,0,'skill attacks do not advance the personal basic-attack counter');
+    for(let i=0;i<every-1;i++)emitBasicAttack(battle,units[0],target);
+    for(let i=0;i<every-1;i++)emitBasicAttack(battle,units[1],target);
+    assert.equal(battle.resonanceKjeragMark,null,'each operator keeps an independent mark counter');
+    emitBasicAttack(battle,units[0],target);
+    assert.equal(battle.resonanceKjeragMark?.target,target);
+    assert.deepEqual(fxCalls.at(-1),['wanted',{id:target.id,x:target.x,y:target.y,dur:6}],'mark creation uses the existing wanted reticle FX tuple');
+    assert.equal(battle.drainEvents().some((row)=>row[0]==='fx'&&row[1]==='wanted'),false,'recordEvents:false does not persist the reticle event');
+    assert.equal(battle.resonanceKjeragMark?.until,6);
+    assert.equal(battle.resonanceMetrics.triggers.kjeragMark,1);
+    const before=target.hp;emitBasicAttack(battle,units[1],target);
+    assert.ok(Math.abs((before-target.hp)-units[1].s.atk*percent/100)<1e-6,`${count}-member response applies ${percent}% physical damage`);
+    assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,1);
+    assert.equal(battle.resonanceMetrics.triggers.kjeragCrossfire??0,count===7?0:0);
+    assert.equal(battle.errorCount,0);
+  }
+});
+
+test('Kjerag marker is single-target, non-refreshing, once per uid, and seven-member crossfire waits for three distinct friends',()=>{
+  const setup=makeBattle(uniqueLoadouts('kjerag',7));setup.battle.start();const {battle,units}=setup;for(const unit of units)unit.deployed=true;
+  const marked=spawnDummy(battle),other=spawnDummy(battle,[9,12]);
+  for(let i=0;i<2;i++)emitBasicAttack(battle,units[0],marked);emitBasicAttack(battle,units[0],marked);
+  assert.equal(battle.resonanceKjeragMark?.target,marked);
+  const until=battle.resonanceKjeragMark.until;
+  for(let i=0;i<3;i++)emitBasicAttack(battle,units[1],other);
+  assert.equal(battle.resonanceKjeragMark?.target,marked,'a later proc cannot replace the live marked target');
+  assert.equal(battle.resonanceKjeragMark.until,until,'a live mark is not refreshed');
+  const before=marked.hp;emitBasicAttack(battle,units[3],marked);const oneResponse=marked.hp;
+  emitBasicAttack(battle,units[3],marked);assert.equal(marked.hp,oneResponse,'one uid can respond only once per mark');
+  assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,1);
+  emitBasicAttack(battle,units[4],marked);assert.equal(battle.resonanceMetrics.triggers.kjeragCrossfire??0,0,'two friends do not trigger the seven-member volley');
+  const beforeCrossfire=marked.hp;emitBasicAttack(battle,units[5],marked);
+  assert.equal(battle.resonanceMetrics.triggers.kjeragCrossfire,1);
+  assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,3);
+  const shotDamage=units.slice(0,7).reduce((sum,unit)=>sum+unit.s.atk,0);
+  assert.ok(Math.abs((beforeCrossfire-marked.hp)-(shotDamage+units[5].s.atk*220/100))<1e-6,'the third friend adds its response damage and one physical attack from every deployed Kjerag operator');
+  assert.ok(before-marked.hp>0);
+  emitBasicAttack(battle,units[6],marked);assert.equal(battle.resonanceMetrics.triggers.kjeragCrossfire,1,'a mark can trigger crossfire only once');
+  const token={id:999,uid:'test-token',side:'ally',kind:'token',alive:true,deployed:true,s:{atk:500},mem:{}};
+  emitBasicAttack(battle,token,marked);assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,4,'tokens never count as responders');
+  assert.equal(battle.errorCount,0);
+});
+
+test('Kjerag two- and four-member tiers never unlock the three-response crossfire',()=>{
+  const nonMembers=[...new Map(Object.values(catalog.operators).filter(op=>!op.pacts.includes('kjerag')).map(op=>[op.charId,op])).values()];
+  for(const count of [2,4]){
+    const setup=makeBattle([...uniqueLoadouts('kjerag',count),...nonMembers.slice(0,3).map(operator=>({operator}))]);
+    const {battle,units}=setup;battle.start();for(const unit of units)unit.deployed=true;const target=spawnDummy(battle);
+    const every=setup.active.get('kjerag').effects.find(row=>row.kind==='kjerag_coordination').params.attackEvery;
+    for(let i=0;i<every;i++)emitBasicAttack(battle,units[0],target);
+    for(const friend of units.slice(1,4))emitBasicAttack(battle,friend,target);
+    assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,3,`${count}-member tier still supports three actual allied responses`);
+    assert.equal(battle.resonanceMetrics.triggers.kjeragCrossfire??0,0,`${count}-member tier does not unlock seven-member crossfire`);
+    assert.equal(battle.errorCount,0);
+  }
+});
+
+test('Kjerag cooldown and target removal/expiry clear marks without carrying responses to a new enemy uid',()=>{
+  const setup=makeBattle(uniqueLoadouts('kjerag',2));setup.battle.start();const {battle,units}=setup;for(const unit of units)unit.deployed=true;
+  const first=spawnDummy(battle),second=spawnDummy(battle,[9,12]);
+  for(let i=0;i<5;i++)emitBasicAttack(battle,units[0],first);
+  emitBasicAttack(battle,units[1],first);assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,1);
+  battle.emit('death',{unit:first});assert.equal(battle.resonanceKjeragMark,null,'death clears the current mark');
+  for(let i=0;i<4;i++)emitBasicAttack(battle,units[1],second);
+  assert.equal(battle.resonanceKjeragMark,null,'the shared six-second cooldown prevents immediate retargeting');
+  battle.time=6;for(let i=0;i<5;i++)emitBasicAttack(battle,units[0],second);
+  assert.equal(battle.resonanceKjeragMark?.target,second,'the next target receives its own fresh marker after cooldown');
+  emitBasicAttack(battle,units[1],second);assert.equal(battle.resonanceMetrics.triggers.kjeragResponse,2,'the same uid can respond once to the new enemy marker');
+  const mark=battle.resonanceKjeragMark;battle.time=mark.until;battle.emit('tick',{dt:battle.dt});
+  assert.equal(battle.resonanceKjeragMark,null,'expiry clears the mark');
+  assert.equal(second.mem.resonanceKjeragMark,undefined);
+  for(let i=0;i<5;i++)emitBasicAttack(battle,units[0],second);assert.equal(battle.resonanceKjeragMark?.target,second);
+  second.removed=true;battle.emit('tick',{dt:battle.dt});assert.equal(battle.resonanceKjeragMark,null,'unit removal clears the mark even before its expiry');
+  assert.equal(battle.errorCount,0);
+});
+
 test('transfer gear is applied before unique-member tier resolution and control observes cooldown and membership',()=>{
   const controller=Object.values(catalog.operators).find((op)=>op.pacts.includes('control'));
   const transferred=Object.values(catalog.operators).find((op)=>!op.pacts.includes('control')&&!op.pacts.includes('symbiosis'));
@@ -129,21 +212,17 @@ test('Rhodes first-cast support and Arts cycle proc through natural SkillRuntime
   assert.equal(arts.battle.errorCount,0);
 });
 
-test('Kjerag frost, Kazimierz true strike, and Combo six-hit cadence run on core attacks at low and terminal tiers',()=>{
+test('Kjerag coordination, Kazimierz true strike, and Combo six-hit cadence run on core attacks at low and terminal tiers',()=>{
   for(const [pact,every,terminalCount] of [['kjerag',5,7],['kazimierz',3,9]]){
     const lower=makeBattle(uniqueLoadouts(pact,2));lower.battle.start();const target=spawnDummy(lower.battle,[lower.units[0].y,lower.units[0].x+1]);
     for(let index=0;index<every-1;index++)performAttack(lower.battle,lower.units[0],lower.battle.effectiveProfile(lower.units[0]),[target]);
-    assert.equal(target.buffs.some((row)=>['cold'].includes(row.status)),false,`${pact} does not proc one attack early`);
+    assert.equal(pact==='kjerag'?!!lower.battle.resonanceKjeragMark:target.buffs.some((row)=>['cold'].includes(row.status)),false,`${pact} does not proc one attack early`);
     const prior=target.hp;performAttack(lower.battle,lower.units[0],lower.battle.effectiveProfile(lower.units[0]),[target]);
-    assert.ok(pact==='kjerag'?target.buffs.some((row)=>row.status==='cold'):(lower.units[0].mem.pactKazCount===every&&prior-target.hp>20),`${pact} reaches its configured minimum tier cadence and effect`);
-    if(pact==='kjerag'){
-      const frozen=spawnDummy(lower.battle,[9,12]);lower.battle.applyStatus(frozen,'freeze',{duration:2,source:lower.units[0]});const stored=lower.units[0].mem.pactKjeragNextHit;
-      lower.battle.applyStatus(frozen,'freeze',{duration:2,source:lower.units[0]});assert.equal(lower.units[0].mem.pactKjeragNextHit,stored,'repeated freeze on one target respects its configured cooldown');
-      advance(lower.battle,2.1);lower.battle.applyStatus(frozen,'freeze',{duration:2,source:lower.units[0]});assert.ok(lower.units[0].mem.pactKjeragNextHit>stored,'the freeze reward becomes available after its cooldown');
-    }
+    assert.ok(pact==='kjerag'?lower.battle.resonanceKjeragMark?.target===target:(lower.units[0].mem.pactKazCount===every&&prior-target.hp>20),`${pact} reaches its configured minimum tier cadence and effect`);
+    if(pact==='kjerag')assert.equal(!!(target.s.flags.cold||target.s.flags.freeze),false,'Kjerag mark does not apply cold or freeze');
     const terminal=makeBattle(uniqueLoadouts(pact,terminalCount));terminal.battle.start();const high=spawnDummy(terminal.battle,[terminal.units[0].y,terminal.units[0].x+1]);
     for(let index=0;index<3;index++)performAttack(terminal.battle,terminal.units[0],terminal.battle.effectiveProfile(terminal.units[0]),[high]);
-    assert.ok(pact==='kjerag'?high.buffs.some((row)=>row.status==='cold'):(terminal.units[0].mem.pactKazCount===3&&high.hp<high.s.maxHp),`${pact} terminal tier uses its resolved three-attack cadence`);
+    assert.ok(pact==='kjerag'?terminal.battle.resonanceKjeragMark?.target===high:(terminal.units[0].mem.pactKazCount===3&&high.hp<high.s.maxHp),`${pact} terminal tier uses its resolved three-attack cadence`);
     assert.equal(lower.battle.errorCount+terminal.battle.errorCount,0);
   }
   const lower=makeBattle(uniqueLoadouts('combo',2));lower.battle.start();const lowTarget=spawnDummy(lower.battle,[lower.units[0].y,lower.units[0].x+1]);

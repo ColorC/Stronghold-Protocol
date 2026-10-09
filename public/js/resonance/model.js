@@ -63,8 +63,3 @@ export function choiceLabel(choice, option, state, catalog) {
   if(choice?.type==='recipe'){const recipe=(catalog.recipes||[]).find(entry=>entry.resultId===option);if(recipe)return recipe.resultName;}
   return catalog.equipment?.[option]?.name??catalog.operators?.[option]?.name??'选择目标';
 }
-export async function copyLink(kind, id) {
-  const url = new URL(location.href); url.hash = detailHash(kind, id);
-  try { await navigator.clipboard.writeText(url.href); return true; }
-  catch { const field = document.createElement('textarea'); field.value = url.href; field.style.position = 'fixed'; field.style.opacity = '0'; document.body.append(field); field.select(); const ok = document.execCommand('copy'); field.remove(); return ok; }
-}

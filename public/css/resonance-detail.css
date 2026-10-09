@@ -1,5 +1,5 @@
 @import url('/css/screens/game-panels.css');
-.rs-detail-panel{position:fixed;z-index:120;left:auto;right:clamp(8px,1vw,18px);top:clamp(8px,1vh,14px);bottom:clamp(8px,1vh,14px);width:min(4.8rem,38vw);max-width:520px;max-height:none;background:rgba(12,16,15,.98);border-color:var(--line-2);box-shadow:0 .14rem .4rem rgba(0,0,0,.72)}
+.rs-detail-panel{position:fixed;z-index:120;left:auto;right:clamp(8px,1vw,18px);top:clamp(8px,1vh,14px);bottom:calc(2.82rem + env(safe-area-inset-bottom,0px));width:min(4.8rem,38vw);max-width:520px;max-height:none;background:rgba(12,16,15,.98);border-color:var(--line-2);box-shadow:0 .14rem .4rem rgba(0,0,0,.72);pointer-events:auto}
 .rs-detail-panel__head{position:relative;flex:none;display:flex;align-items:center;justify-content:space-between;min-height:.48rem;padding:.08rem .58rem .08rem .16rem;border-bottom:1px solid var(--line)}
 .rs-detail-panel__head .micro{color:var(--mint-400)}
 .rs-detail-panel .dpanel__scroll{gap:.12rem;padding:.14rem .16rem .2rem}
@@ -50,5 +50,8 @@
 .rs-detail-panel .bpop__tier b{font-family:var(--font-num)}
 .rs-detail-panel .bpop__tier small{font-size:.1rem}
 .rs-detail-panel button,.rs-detail-panel summary,.rs-detail-panel select{user-select:text}
-@media(max-width:800px){.rs-detail-panel{width:min(460px,52vw);right:6px;top:6px;bottom:6px}.rs-detail-panel .dstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){.rs-detail-panel{width:min(430px,calc(100vw - 12px));right:6px;top:6px;bottom:6px}.rs-detail-panel .dhead__art{width:.78rem;height:1.06rem}.rs-detail-panel .dhead__name{font-size:max(.23rem,18px)}}
+@media(max-width:800px){.rs-detail-panel{width:min(460px,52vw);right:6px;top:6px;bottom:calc(2.82rem + env(safe-area-inset-bottom,0px))}.rs-detail-panel .dstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.rs-detail-panel{width:min(430px,calc(100vw - 12px));right:6px;top:6px;bottom:calc(2.82rem + env(safe-area-inset-bottom,0px))}.rs-detail-panel .dhead__art{width:.78rem;height:1.06rem}.rs-detail-panel .dhead__name{font-size:max(.23rem,18px)}}
+.rs-detail__levels{display:flex;align-items:center;gap:.035rem;flex-wrap:nowrap;overflow-x:auto;padding:.02rem 0 .04rem}
+.rs-detail__level{flex:none;display:flex;align-items:baseline;gap:.035rem;padding:.035rem .08rem;background:rgba(7,12,10,.76);cursor:pointer}
+.rs-detail__level.is-selected{color:var(--mint-300);border-color:var(--mint-400);background:rgba(45,105,82,.2)}

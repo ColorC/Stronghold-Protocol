@@ -5,7 +5,7 @@ const PACT_IDS = new Set([
   'laterano','kjerag','yan','victoria','columbia','kazimierz','siracusa','rhodes','lungmen','sargon','leithania','iberia','higashi','ursus','bolivar','rim','babel','sami',
   'ammo','combo','control','creation','symbiosis','logistics','redeploy','flight','arts','breaker','burn','necrosis','sui','crown',
 ]);
-const SUPPORTED = new Set(['stat','aegir_cycle','laterano_ammo','kjerag_frost','yan_combo','victoria_artillery','columbia_construct','kazimierz_true_damage','siracusa_execute','rhodes_first_cast','lungmen_reward','sargon_sand','leithania_sound','iberia_barrier','higashi_redeploy','ursus_adjacency','bolivar_slow','rim_forge','babel_exit','sami_cold','ammo_last_round','combo_sixth','control_first','creation_construct','symbiosis_barrier','logistics_dp','redeploy_return','flight_dive','arts_cycle','breaker_front','burn_spread','necrosis_burst','sui_shadow','crown_memory','holy_gun','yela_breath']);
+const SUPPORTED = new Set(['stat','aegir_cycle','laterano_ammo','kjerag_coordination','yan_combo','victoria_artillery','columbia_construct','kazimierz_true_damage','siracusa_execute','rhodes_first_cast','lungmen_reward','sargon_sand','leithania_sound','iberia_barrier','higashi_redeploy','ursus_adjacency','bolivar_slow','rim_forge','babel_exit','sami_cold','ammo_last_round','combo_sixth','control_first','creation_construct','symbiosis_barrier','logistics_dp','redeploy_return','flight_dive','arts_cycle','breaker_front','burn_spread','necrosis_burst','sui_shadow','crown_memory','holy_gun','yela_breath']);
 const n = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const norm = (value) => String(value ?? '').replace(/_[ab]$/, '');
 const contentOf = (catalog) => catalog?.resonanceContent ?? catalog ?? {};
@@ -151,6 +151,52 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
   const counters = new Map();
   const nextAt = (unit, key) => { const id = `${unit.id}:${key}`; const value = counters.get(id) ?? -Infinity; return { id, value, set: (at) => counters.set(id, at) }; };
 
+  battle.resonanceKjeragMark = null;
+  battle.resonanceKjeragMarkNextAt = -Infinity;
+  const clearKjeragMark = () => {
+    const mark = battle.resonanceKjeragMark;
+    if (mark?.target?.mem) delete mark.target.mem.resonanceKjeragMark;
+    battle.resonanceKjeragMark = null;
+  };
+  const liveKjeragMark = () => {
+    const mark = battle.resonanceKjeragMark;
+    if (!mark) return null;
+    const target = mark.target;
+    if (battle.time >= mark.until || !target?.alive || target.removed || !(battle.enemies ?? []).includes(target)) {
+      clearKjeragMark();
+      return null;
+    }
+    return mark;
+  };
+  const makeKjeragMark = (source, target, p) => {
+    if (liveKjeragMark() || battle.time < battle.resonanceKjeragMarkNextAt || !target?.alive) return false;
+    const until = battle.time + n(p.markDuration, 6);
+    const mark = { target, targetUid: target.uid ?? target.id, until, responders: new Set(), crossfireUsed: false, crossfireAt: n(p.crossfireAt, Infinity), responseDamage: n(p.responseDamage, 80), crossfireResponders: n(p.crossfireResponders, 3), crossfireDamage: n(p.crossfireDamage, 100) };
+    battle.resonanceKjeragMark = mark;
+    battle.resonanceKjeragMarkNextAt = battle.time + n(p.markCooldown, 6);
+    target.mem ??= {};
+    target.mem.resonanceKjeragMark = { until, sourceUid: source.uid ?? source.id };
+    battle.fx?.('wanted', { id: target.id, x: target.x, y: target.y, dur: n(p.markDuration, 6) });
+    metric(battle, 'kjeragMark');
+    return true;
+  };
+  const answerKjeragMark = (source, target) => {
+    const mark = liveKjeragMark();
+    if (!mark || mark.target !== target) return;
+    const uid = String(source.uid ?? source.id);
+    if (mark.responders.has(uid)) return;
+    mark.responders.add(uid);
+    deal(battle, source, target, source.s.atk * mark.responseDamage / 100, 'phys', ['kjeragAssist']);
+    metric(battle, 'kjeragResponse');
+    if (mark.crossfireUsed || active.get('kjerag')?.count < mark.crossfireAt || mark.responders.size < mark.crossfireResponders) return;
+    mark.crossfireUsed = true;
+    metric(battle, 'kjeragCrossfire');
+    for (const shooter of memberUnits(active.get('kjerag'))) {
+      if (shooter.kind !== 'op' || !shooter.alive || !shooter.deployed || shooter.removed || !mark.target.alive) continue;
+      deal(battle, shooter, mark.target, shooter.s.atk * mark.crossfireDamage / 100, 'phys', ['kjeragAssist']);
+    }
+  };
+
   battle.on('hit', (event) => {
     const source = event?.source, target = event?.target, dmg = event?.dmg;
     if(source?.side==='enemy'&&target?.side==='ally'&&target.kind==='op'&&target.motion==='FLY'){const defender=idsFor(target);if(defender?.ids.has('flight'))dmg.mul=(dmg.mul??1)*(1-n(params(active,'flight','flight_dive').mitigation,10)/100);return;}
@@ -191,10 +237,15 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
       }
     }
     if (ids.has('kazimierz')) { const p=params(active,'kazimierz','kazimierz_true_damage');unit.mem.pactKazCount=(unit.mem.pactKazCount??0)+1;if(unit.mem.pactKazCount%n(p.attackEvery,3)===0)deal(battle,unit,target,unit.s.atk*n(p.trueDamage,25)/100,'true'); }
-    if (ids.has('kjerag')) { const p=params(active,'kjerag','kjerag_frost');unit.mem.pactKjeragCount=(unit.mem.pactKjeragCount??0)+1;if(unit.mem.pactKjeragCount%n(p.attackEvery,5)===0)battle.applyStatus(target,'cold',{duration:n(p.coldDuration,2),source:unit}); }
+    let createdKjeragMark = false;
+    if (ids.has('kjerag') && !event.isSkill) {
+      const p = params(active, 'kjerag', 'kjerag_coordination');
+      unit.mem.pactKjeragCount = (unit.mem.pactKjeragCount ?? 0) + 1;
+      if (unit.mem.pactKjeragCount % n(p.attackEvery, 5) === 0) createdKjeragMark = makeKjeragMark(unit, target, p);
+    }
     if (ids.has('laterano') && unit.mem.pactLateranoCharge > 0) { deal(battle,unit,target,unit.mem.pactLateranoCharge,'phys');unit.mem.pactLateranoCharge=0; }
     if (ids.has('victoria')) { const p=params(active,'victoria','victoria_artillery');battle.resonanceAttackCount=(battle.resonanceAttackCount??0)+1;if(battle.resonanceAttackCount%n(p.shots,20)===0){const owner=memberUnits(active.get('victoria')).sort((a,b)=>b.s.atk-a.s.atk||a.id-b.id)[0];if(owner)for(const enemy of battle.foesInRadius(target.x,target.y,n(p.radius,1.5),true))deal(battle,owner,enemy,owner.s.atk*n(p.damage,180)/100,'phys');} }
-    if (ids.has('kjerag') && unit.mem.pactKjeragNextHit) { deal(battle,unit,target,unit.mem.pactKjeragNextHit,'arts');unit.mem.pactKjeragNextHit=0; }
+    if (!event.isSkill && !createdKjeragMark && unit.kind === 'op') answerKjeragMark(unit, target);
     if (ids.has('sami') && (target.s?.flags?.cold||target.s?.flags?.freeze) && event.dmg) event.dmg.mul=(event.dmg.mul??1)*(1+n(params(active,'sami','sami_cold').coldTargetBonus,20)/100);
     for (const passive of profile.passives) {
       if (passive.kind === 'star3_combo') { unit.mem.star3Combo = (unit.mem.star3Combo ?? 0) + 1; if (unit.mem.star3Combo % n(passive.params?.everyAttacks, 6) === 0) unit.skill?.gainSp?.(n(passive.params?.sp, 2), 'resonanceStar3Combo'); }
@@ -264,7 +315,6 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
     if(event?.cancel||target?.side!=='enemy'||!source||source.side!=='ally'||!['cold','freeze','stun','bind','sleep','levitate','sluggish'].includes(event.status))return;
     const matched=idsFor(source);if(!matched)return;
     if(matched.ids.has('control')){const p=params(active,'control','control_first');event.duration*=1+n(p.durationBonus,10)/100;procControl(battle,active,source,target);}
-    if(event.status==='freeze'&&matched.ids.has('kjerag')){const p=params(active,'kjerag','kjerag_frost'),cd=nextAt(target,'kjerag-freeze');if(battle.time>=cd.value){cd.set(battle.time+n(p.frozenTargetCooldown,2));for(const ally of memberUnits(active.get('kjerag')))ally.mem.pactKjeragNextHit=(ally.mem.pactKjeragNextHit??0)+ally.s.atk*n(p.frozenHit,40)/100;}}
     for(const passive of matched.profile.passives)if(passive.kind==='star3_control'&&!source.mem.star3ControlUsed){source.mem.star3ControlUsed=true;source.skill?.gainSp?.(n(passive.params?.firstControlSp,15),'resonanceStar3Control');}
   },{owner:battle});
 
@@ -273,6 +323,10 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
     if(matched.ids.has('lungmen')){const p=params(active,'lungmen','lungmen_reward');battle.resonanceKills=(battle.resonanceKills??0)+1;if(battle.resonanceKills<=n(p.teamSpCap,6))for(const ally of memberUnits(active.get('lungmen')))ally.skill?.gainSp?.(n(p.killSp,1),'resonanceLungmen');}
     if(matched.ids.has('breaker')&&/ELITE|BOSS/i.test(String(victim.def?.rank))&&!killer.mem.pactBreakerElite){killer.mem.pactBreakerElite=true;const p=params(active,'breaker','breaker_front');buff(battle,killer,'breaker-elite',{aspd:n(p.eliteAspd,20)},n(p.duration,8));}
   },{owner:battle});
+
+  battle.on('death', ({ unit }) => {
+    if (unit?.side === 'enemy' && battle.resonanceKjeragMark?.target === unit) clearKjeragMark();
+  }, { owner: battle });
 
   battle.on('deploy', (event) => {
     const unit=event?.unit;if(!unit||unit.side!=='ally')return;
@@ -326,7 +380,7 @@ export function installResonancePacts(battle, { catalog, state } = {}) {
     if(passive){unit.mem.star3NecrosisUsed=true;unit.skill?.gainSp?.(n(passive.params?.firstElementBurstSp,10),'resonanceStar3Necrosis');}
   },{owner:battle});
 
-  battle.on('tick', ({dt}) => tickPacts(battle,active,dt,counters));
+  battle.on('tick', ({dt}) => { liveKjeragMark(); tickPacts(battle,active,dt,counters); });
   return active;
 }
 

@@ -9,5 +9,5 @@ import {data} from '../data.js';
 import {App} from './app.js';
 installDeviceSupport();
 installAudio({getManifest:()=>data.get('assets'),settings:settingsStore.get()});
-setTierLook('pips');
+setTierLook('color');
 const root=document.getElementById('app');root.textContent='';render(html`<${App}/><${ToastHost}/><${UiHosts}/>`,root);

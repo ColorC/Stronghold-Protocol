@@ -260,7 +260,7 @@ export function RewardCards({ offer, priv, editable, onPick, onDetail, onLater, 
  */
 export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel, onRefresh, onFreeze, onDetail, onDetailClose, onRefuse, barRef,
   reward = null, onReward, onRewardLater, onArm = null, offBonds = null, renderLevel = null, renderFunds = null,
-  cardPresentation = null, bondRenderer = null, reasonFor = null, hideItem = false, renderSlotAction = null }) {
+  cardPresentation = null, bondRenderer = null, reasonFor = null, hideItem = false, renderSlotAction = null, interaction = 'two-tap' }) {
   const shop = priv?.shop || {};
   const slots = Array.isArray(shop.slots) ? shop.slots : [];
   const chessSlots = slots.map((s, i) => ({ s, i })).filter(({ s }) => !s || s.kind !== 'item');
@@ -314,15 +314,15 @@ export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel,
     <div class="shopbar__tools">
       <span class="shopbar__remain">剩余可放置角色：<b class=${cx('num', remaining === 0 && 't-orange')}>${remaining}</b></span>
       <button type="button" class=${cx('toolbtn', 'toolbtn--ice', frozen && 'is-on')} disabled=${!!frzReason} onClick=${onFreeze}
-        title=${frzReason || (frozen ? '解冻商店 · F' : '冻结商店（下回合保留） · F')}>
+        title=${frzReason || `${frozen ? '解锁商店' : '锁定商店（下回合保留）'}${interaction === 'direct' ? '' : ' · F'}`}>
         <${Img} src=${uiUrl(data.get('assets'), frozen ? 'shopPanel/frozen_icon2' : 'shopPanel/frozen_icon')} class="toolbtn__img" fallback=${html`<${Icon} name="snow" />`} />
-        <span>${frozen ? '解冻' : '冻结'}</span><kbd>F</kbd>
+        <span>${frozen ? '解锁' : '锁定'}</span>${interaction === 'direct' ? null : html`<kbd>F</kbd>`}
       </button>
       <button type="button" class="toolbtn toolbtn--amber" disabled=${!!refReason} onClick=${onRefresh} title=${refReason || '刷新商店 · R'}>
         <${Img} src=${uiUrl(data.get('assets'), 'shopPanel/refresh_icon')} class="toolbtn__img" fallback=${html`<${Icon} name="refresh" />`} />
         <span>刷新</span>
         ${free > 0 ? html`<span class="toolbtn__free">免费 ×${free}</span>` : html`<${HexBadge} value=${shop.refreshPrice ?? 1} tone=${refReason ? 'dark' : 'gold'} size="sm" />`}
-        <kbd>R</kbd>
+        <kbd>${interaction === 'direct' ? 'D' : 'R'}</kbd>
       </button>
     </div>
     <div class="shopbar__row">
@@ -336,7 +336,7 @@ export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel,
           const visual = typeof cardPresentation === 'function' ? cardPresentation(s) : cardPresentation?.[s.id];
           const card = html`<${ChessCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} priv=${priv} frozen=${frozen} onBuy=${onBuy} onDetail=${onDetail} offBonds=${offBonds}
               record=${visual?.record} bondRenderer=${visual?.bondRenderer || bondRenderer} skill=${visual?.skill} merge=${visual?.merge} id=${s.offerUid ? `offer-${encodeURIComponent(s.offerUid)}` : null}
-              reason=${reason} armed=${armed === armKey('c', i, s)} onTap=${editable ? (idx) => tapCard('c', idx, s, 'chess', reason, onBuy) : null} />`;
+              reason=${reason} armed=${interaction === 'two-tap' && armed === armKey('c', i, s)} onTap=${editable && interaction !== 'direct' ? (idx) => tapCard('c', idx, s, 'chess', reason, onBuy) : null} />`;
           return typeof renderSlotAction === 'function'
             ? html`<div class="shopbar__offer-wrap" key=${`wrap-c${i}:${s.id}`}>${card}${renderSlotAction(s, i)}</div>`
             : card;
@@ -348,7 +348,7 @@ export function ShopBar({ priv, editable, collapsed, onCollapse, onBuy, onLevel,
             if (s.sold) return html`<${SoldCard} key=${`is${i}`} item=${true} />`;
             const reason = shopBlockReason('buy', { priv, editable, slot: s, ...LOOKUPS });
             return html`<${ItemCard} key=${`i${i}:${s.id}`} slot=${s} idx=${i} frozen=${frozen} onBuy=${onBuy} onDetail=${onDetail} reason=${reason}
-              armed=${armed === armKey('i', i, s)} onTap=${editable ? (idx) => tapCard('i', idx, s, 'item', reason, onBuy) : null} />`;
+              armed=${interaction === 'two-tap' && armed === armKey('i', i, s)} onTap=${editable && interaction !== 'direct' ? (idx) => tapCard('i', idx, s, 'item', reason, onBuy) : null} />`;
           })
           : html`<${SoldCard} item=${true} />`}
       </div>`}

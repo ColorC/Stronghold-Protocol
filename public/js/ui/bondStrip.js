@@ -39,7 +39,7 @@ function OwnerTag({ owner }) {
  * @param {{ bonds: any[], layersDisabled?: boolean, onOpen:(bondId:string)=>void, openId?: string|null, max?: number,
  *   owner?: string|null }} props — owner: the watched teammate's name (null = your own bonds)
  */
-export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, max = 14, owner = null, records = null, iconFor = null, emptyLabel = null }) {
+export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, max = 14, owner = null, records = null, iconFor = null, emptyLabel = null, iconMask = false }) {
   const lookup = (id) => records?.[id] || data.lookup('bonds', id);
   const sorted = sortBonds(bonds, lookup);
   if (!sorted.length) {
@@ -60,7 +60,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
         const name = rec?.name || b.bondId;
         return html`<div key=${b.bondId} role="listitem" data-bond=${b.bondId} data-off="1"
             class=${cx('bslot', 'is-off', openId === b.bondId && 'is-open')}>
-          <${BondDisc} name=${name} icon=${icon} tier=${0} maxTier=${Math.max(1, th.length)} active=${false}
+          <${BondDisc} name=${name} icon=${icon} iconMask=${iconMask} tier=${0} maxTier=${Math.max(1, th.length)} active=${false}
             disabled=${true} size="sm" showName=${true} layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
             title=${`${briefingBondTip(name, 'off')} · ${b.count ?? 0} 名成员`} />
           <span class="bslot__count bslot__off">本局禁用</span>
@@ -69,7 +69,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
       const next = nextThreshold(b.count ?? 0, th);
       return html`<div key=${b.bondId} role="listitem" data-bond=${b.bondId} data-harmony=${b.harmony > 0 ? b.harmony : null}
           class=${cx('bslot', b.active && 'is-active', openId === b.bondId && 'is-open')}>
-        <${BondDisc} name=${rec?.name || b.bondId} icon=${icon} layers=${rec?.noStack ? undefined : b.layers ?? 0}
+        <${BondDisc} name=${rec?.name || b.bondId} icon=${icon} iconMask=${iconMask} layers=${rec?.noStack ? undefined : b.layers ?? 0}
           tier=${b.tier ?? 0} maxTier=${Math.max(1, th.length)} active=${!!b.active} size="sm" showName=${true}
           layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
           title=${`${rec?.name || b.bondId} ${b.count ?? 0}/${next ?? th[th.length - 1] ?? '-'}${b.harmony > 0 ? `（含调和 +${b.harmony}）` : ''}`} />

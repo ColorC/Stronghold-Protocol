@@ -407,7 +407,7 @@ export function releaseGl(renderer) {
  * @param {{ data?: any, assets?: any, audio?: any, settings?: { damageNumbers?: boolean, quality?: string },
  *           padding?: object|((kind:string, size:{width:number,height:number}) => object),
  *           hud?: {top:number,bottom:number}|((kind:'prep'|'bossPrep', size:{width:number,height:number}, o:{shop:boolean}) => {top:number,bottom:number}|null),
- *           tierChips?: 'roman'|'pips' }} [opts] `tierChips`: the units' tier chips — roman numerals (default) or pips (卫戍协议：工坊)
+ *           tierChips?: 'roman'|'pips'|'color' }} [opts] `tierChips`: the units' tier chips — roman numerals (default), pips or color tags
  */
 export async function createFieldView(host, options = {}) {
   if (!host || typeof host.appendChild !== 'function') throw new TypeError('createFieldView: host element required');

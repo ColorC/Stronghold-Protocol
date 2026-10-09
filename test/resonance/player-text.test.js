@@ -37,6 +37,28 @@ test('formal player text covers every fixed skill star and all pact/equipment ef
   assert.match(text.operators[cetsyr.id].stars[3].skillDescription,/65%/);
 });
 
+test('pact prose only exposes conditional abilities at their selected threshold and separates Kjerag from Yela snow',()=>{
+  const gated=[
+    ['laterano','droneAt','无人机每'],['yan','formationAt','召唤阵'],['victoria','firewallAt','火墙'],
+    ['columbia','rebuildAt','重构一次'],['kazimierz','solarAt','耀阳'],['siracusa','wolfAt','狼影'],
+    ['leithania','silenceAt','沉默'],['higashi','deployTrueDamageAt','部署造成'],['combo','otherTargetAt','最近另一敌人'],
+  ];
+  for(const [id,key,phrase] of gated){
+    const pact=resonanceContent.pacts[id],gate=pact.levels[0].effects.find(row=>row.params?.[key]!=null)?.params[key];
+    if(!gate)continue;
+    for(const tier of resonanceContent.playerText.pacts[id].levels){
+      if(tier.threshold<gate)assert.doesNotMatch(tier.description,new RegExp(phrase),`${id} ${tier.threshold} does not preview ${key}`);
+      else assert.match(tier.description,new RegExp(phrase),`${id} ${tier.threshold} includes ${key}`);
+    }
+  }
+  const kjerag=resonanceContent.pacts.kjerag;
+  assert.deepEqual(kjerag.levels.map(level=>level.effects.map(row=>row.kind)),[['kjerag_coordination'],['kjerag_coordination'],['kjerag_coordination']]);
+  const [two,four,seven]=resonanceContent.playerText.pacts.kjerag.levels;
+  for(const text of [two.description,four.description,seven.description])assert.doesNotMatch(text,/自然技力|寒冷|冻结|铺雪|雪地|法术伤害/);
+  assert.doesNotMatch(two.description,/援射/);assert.doesNotMatch(four.description,/援射/);assert.match(seven.description,/第三名不同友方响应/);
+  assert.match(resonanceContent.playerText.pacts.yela.levels[0].description,/铺雪/);
+});
+
 test('player projection presents finalized text rather than old skill description plus value appendix',async()=>{
   const {resonanceDisplayCatalog}=await import('../../server/modes/resonance/display.js');
   const display=resonanceDisplayCatalog(resonanceContent,null);

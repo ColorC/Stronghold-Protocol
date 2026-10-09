@@ -1061,7 +1061,7 @@ export function statusTexture(key) {
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
 let _chips = null;
-// 'roman' (the original game) | 'pips' (卫戍协议：工坊: createFieldView({ tierChips: 'pips' }), set per mount)
+// 'roman' (the original game) | 'pips' (卫戍协议：工坊) | 'color' (共鸣 fee tag), set per mount
 let _chipLook = 'roman';
 // pip colour per tier (theme.css --tier-1..6)
 const PIP = ['', '#b4b4b4', '#f2f2f2', '#34e6b2', '#34b8d8', '#f8bf00', '#ff8a1a'];
@@ -1095,11 +1095,22 @@ function drawPipChip(c, x, y, w, h, t, gold) {
   }
 }
 
+function drawColorChip(c, x, y, w, h, t, gold) {
+  roundRect(c, x + 3, y + 3, w - 6, h - 6, 7);
+  const color = ({1:'#777d7a',2:'#57ad72',3:'#4286c8',4:'#986bcb',5:'#d3a53d',6:'#d86643'})[t] || '#777d7a';
+  c.fillStyle = color;
+  c.fill();
+  c.lineWidth = 2.5;
+  c.strokeStyle = c.fillStyle;
+  c.stroke();
+}
+
 function drawChips(c, w, h) {
   c.clearRect(0, 0, w * 7, h * 2);
   for (let g = 0; g < 2; g++) for (let t = 1; t <= 6; t++) {
     const x = t * w, y = g * h;
     if (_chipLook === 'pips') { c.save(); drawPipChip(c, x, y, w, h, t, !!g); c.restore(); continue; }
+    if (_chipLook === 'color') { c.save(); drawColorChip(c, x, y, w, h, t, !!g); c.restore(); continue; }
     c.save();
     roundRect(c, x + 3, y + 3, w - 6, h - 6, 7);
     const grad = c.createLinearGradient(0, y, 0, y + h);
@@ -1152,10 +1163,10 @@ export function refreshTierChips() {
 /**
  * The chips' look for the field view being mounted: 'roman' (default, the original game) or 'pips'. A change redraws
  * the atlas in place, so chips already handed out follow.
- * @param {'roman'|'pips'} look
+ * @param {'roman'|'pips'|'color'} look
  */
 export function setTierChipLook(look) {
-  const next = look === 'pips' ? 'pips' : 'roman';
+  const next = look === 'pips' || look === 'color' ? look : 'roman';
   if (next === _chipLook) return;
   _chipLook = next;
   refreshTierChips();
