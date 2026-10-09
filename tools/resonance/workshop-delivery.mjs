@@ -48,15 +48,16 @@ const DESIGN_BODY = (entryUrl, referenceUrl, designRules) => [
   designRules,
 ].join('\n');
 
-const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
+const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --repair-play-card [--dry-run|--execute] --embed-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
 
 function parseArgs(argv) {
-  const options = { execute: false, selfTest: false };
+  const options = { execute: false, selfTest: false, repairPlayCard: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--execute') options.execute = true;
     else if (arg === '--dry-run') options.execute = false;
     else if (arg === '--self-test') options.selfTest = true;
+    else if (arg === '--repair-play-card') options.repairPlayCard = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
     else if (['--entry-url', '--embed-url', '--reference-url', '--release-receipt', '--receipt'].includes(arg)) {
       const value = argv[++i];
@@ -183,6 +184,27 @@ function plannedRelations() {
   ];
 }
 
+function repairedPlayCard(card, embedUrl) {
+  if (!card || card.id !== PLAY_CARD_ID || card.kind !== 'material' || card.adapter !== 'web'
+    || card.source?.kind !== 'link' || card.source?.url !== embedUrl) {
+    throw new Error('现有游玩卡身份或source与预期不符；拒绝改动');
+  }
+  return { ...card, material: { ...(card.material ?? {}), live_entry: embedUrl } };
+}
+
+function equalExceptNativeStamps(a, b) {
+  const withoutNativeStamps = value => {
+    const copy = structuredClone(value);
+    if (copy.material && typeof copy.material === 'object') delete copy.material.live_entry;
+    if (copy.provenance && typeof copy.provenance === 'object') delete copy.provenance.updated;
+    if (copy.material?.revision_ref && typeof copy.material.revision_ref === 'object') {
+      delete copy.material.revision_ref.revision;
+    }
+    return stable(copy);
+  };
+  return JSON.stringify(withoutNativeStamps(a)) === JSON.stringify(withoutNativeStamps(b));
+}
+
 function selfTest() {
   if (httpErrorDetail({ error: 'workspace_scope_required', code: 'WORKSPACE_SCOPE' }) !== 'error=workspace_scope_required; code=WORKSPACE_SCOPE'
     || httpErrorDetail({ ok: false }) !== '') throw new Error('Workshop响应错误诊断纯测试失败');
@@ -202,6 +224,26 @@ function selfTest() {
   const designRules = playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
   const cards = plannedCards(layout, embedUrl, { kind: 'file', path: '/tmp/ref.md', token: 'not-used' });
   const relations = plannedRelations();
+  const testPlay = {
+    id: PLAY_CARD_ID, kind: 'material', adapter: 'web', title: '进入共鸣玩法',
+    source: { kind: 'link', url: embedUrl }, x: 100, y: 200, width: 1120, height: 800,
+    material: { representations: [{ id: 'canvas-card', media_type: 'text/markdown', role: 'primary' }] },
+  };
+  const repaired = repairedPlayCard(testPlay, embedUrl);
+  const stampedPlay = structuredClone(repaired);
+  stampedPlay.provenance = { created: { kind: 'agent', ref: 'original-creator' }, updated: { kind: 'agent', ref: 'native-writer' } };
+  stampedPlay.material.revision_ref = { provider: 'material-note', object: 'canvas#card=play', revision: 'r265' };
+  testPlay.provenance = { created: { kind: 'agent', ref: 'original-creator' }, updated: { kind: 'agent', ref: 'original-writer' } };
+  testPlay.material.revision_ref = { provider: 'material-note', object: 'canvas#card=play', revision: 'r264' };
+  if (!equalExceptNativeStamps(testPlay, stampedPlay) || repaired.material.live_entry !== embedUrl
+    || repairedPlayCard(repaired, embedUrl).material.live_entry !== embedUrl) throw new Error('游玩卡单字段/幂等纯测试失败');
+  const semanticallyChanged = structuredClone(stampedPlay);
+  semanticallyChanged.material.displaySummary = 'unexpected semantic change';
+  if (equalExceptNativeStamps(testPlay, semanticallyChanged)) throw new Error('非系统戳语义字段变更未被拒绝');
+  let wrongSourceRejected = false;
+  try { repairedPlayCard({ ...testPlay, source: { kind: 'link', url: 'https://elsewhere.invalid/resonance.html' } }, embedUrl); }
+  catch { wrongSourceRejected = true; }
+  if (!wrongSourceRejected) throw new Error('游玩卡source保护纯测试失败');
   if (!noOverlap([...cards.map(card => ({ ...card })), { x: 0, y: 0, width: 1, height: 1 }])) throw new Error('布局纯测试失败');
   if (cards[0].kind !== 'text' || cards[0].source.kind !== 'file' || cards[1].kind !== 'material'
     || cards[1].adapter !== 'web' || cards[1].source.url !== embedUrl || cards[1].source.url === entryUrl
@@ -276,10 +318,12 @@ async function run() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) return process.stdout.write(`${HELP}\n`);
   if (options.selfTest) return selfTest();
-  const entryUrl = httpsUrl(options['entry-url'], '--entry-url');
+  if (options.repairPlayCard && (options['entry-url'] || options['reference-url'])) throw new Error('--repair-play-card 不接受新交付内容参数');
+  const entryUrl = options.repairPlayCard ? null : httpsUrl(options['entry-url'], '--entry-url');
   const embedUrl = options['embed-url'] ? httpsUrl(options['embed-url'], '--embed-url') : entryUrl;
-  const referenceUrl = httpsUrl(options['reference-url'], '--reference-url');
-  const designRules = playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
+  if (options.repairPlayCard && !options['embed-url']) throw new Error('--repair-play-card 必须提供 --embed-url');
+  const referenceUrl = options.repairPlayCard ? null : httpsUrl(options['reference-url'], '--reference-url');
+  const designRules = options.repairPlayCard ? null : playerFacingDesign(fs.readFileSync(path.join(ROOT, 'docs/resonance/design.md'), 'utf8'));
   const releaseReceiptPath = absoluteFile(options['release-receipt'], '--release-receipt');
   const receiptPath = absoluteFile(options.receipt, '--receipt');
   if (fs.existsSync(receiptPath)) throw new Error(`receipt 已存在，为避免覆盖而停止：${receiptPath}`);
@@ -318,6 +362,69 @@ async function run() {
   const currentResponse = await readCanvas();
   const current = currentResponse?.document;
   if (!current || !Array.isArray(current.cards) || !Array.isArray(current.relations)) throw new Error('画布文档结构无效');
+  if (options.repairPlayCard) {
+    const oldPlay = current.cards.find(card => card.id === PLAY_CARD_ID);
+    const nextPlay = repairedPlayCard(oldPlay, embedUrl);
+    const beforeCards = new Map(current.cards.map(card => [card.id, stable(card)]));
+    const beforeRelations = stable(current.relations);
+    const textIds = current.cards.filter(card => card.kind === 'text').map(card => card.id);
+    const textsBefore = stable(await readTexts(textIds));
+    const workspaceRef = currentResponse.workspace_ref ?? current._workspaceRef;
+    if (!workspaceRef) throw new Error('画布缺少workspace_ref，无法安全提交');
+    const alreadyCorrect = oldPlay.material?.live_entry === embedUrl;
+    const preview = {
+      status: options.execute ? 'prepared' : 'dry-run', mode: 'repair-play-card', canvas: CANVAS_ID,
+      baseRevision: current.revision, sourceRevision: release.sourceRevision,
+      cardId: PLAY_CARD_ID, embedUrl, alreadyCorrect,
+      mutationPlanned: Boolean(options.execute && !alreadyCorrect), receiptPath,
+    };
+    fs.writeFileSync(receiptPath, JSON.stringify(preview, null, 2) + '\n', { flag: 'wx' });
+    if (!options.execute || alreadyCorrect) {
+      const result = { ...preview, status: alreadyCorrect ? 'already-correct' : 'dry-run', verified: { targetIdentity: true, sourceUnchanged: true } };
+      fs.writeFileSync(receiptPath, JSON.stringify(result, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(result) + '\n');
+      return;
+    }
+    try {
+      const mutation = await request('POST', `/api/canvases/${encodeURIComponent(CANVAS_ID)}/mutations`, {
+        workspace_ref: workspaceRef,
+        actor_ref: { kind: 'agent', ref: 'resonance-workshop-delivery' },
+        base_revision: current.revision,
+        idempotency_key: `resonance-play-repair-${crypto.randomUUID()}`,
+        purpose: '为现有共鸣玩法卡补充游玩入口',
+        patch: { upsert_cards: [nextPlay] },
+      });
+      const afterResponse = await readCanvas();
+      const after = afterResponse?.document;
+      if (!after || after.revision <= current.revision) throw new Error('画布回读revision未前进');
+      if (after.cards.length !== beforeCards.size || JSON.stringify(stable(after.relations)) !== JSON.stringify(beforeRelations)) {
+        throw new Error('卡片数量或关系被意外改动');
+      }
+      for (const [id, original] of beforeCards) {
+        const now = after.cards.find(card => card.id === id);
+        if (!now) throw new Error(`既有卡缺失：${id}`);
+        if (id === PLAY_CARD_ID) {
+          if (!equalExceptNativeStamps(now, JSON.parse(JSON.stringify(oldPlay))) || now.material?.live_entry !== embedUrl) {
+            throw new Error('游玩卡回读超出live_entry单字段变更');
+          }
+        } else if (JSON.stringify(stable(now)) !== JSON.stringify(original)) throw new Error(`既有卡被意外改动：${id}`);
+      }
+      const textsAfter = stable(await readTexts(textIds));
+      if (JSON.stringify(textsAfter) !== JSON.stringify(textsBefore)) throw new Error('既有文字正文发生变化');
+      const result = {
+        ...preview, status: 'complete', revision: after.revision,
+        mutationRevision: mutation?.document?.revision ?? after.revision,
+        verified: { onlyLiveEntryChanged: true, allOtherCardsUnchanged: true, relationsUnchanged: true, textBodiesUnchanged: true },
+      };
+      fs.writeFileSync(receiptPath, JSON.stringify(result, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(result) + '\n');
+    } catch (error) {
+      const failed = { ...preview, status: 'failed', error: error instanceof Error ? error.message : String(error) };
+      fs.writeFileSync(receiptPath, JSON.stringify(failed, null, 2) + '\n');
+      throw error;
+    }
+    return;
+  }
   const upstream = current.cards.find(card => card.id === UPSTREAM_CARD_ID);
   if (!upstream || upstream.kind !== 'text') throw new Error('指定上游卡不存在或不是文字卡');
   const currentText = (await readTexts([UPSTREAM_CARD_ID])).find(item => (item.id ?? item.editableId) === UPSTREAM_CARD_ID);
