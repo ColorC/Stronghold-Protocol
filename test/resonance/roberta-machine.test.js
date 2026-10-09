@@ -247,7 +247,7 @@ test('real resonance settlement reports Roberta native support parameters withou
   const supportedPiece = state.pieces.find((piece) => piece.uid === target.uid);
   supportedPiece.row = placement.target[0];
   supportedPiece.col = placement.target[1];
-  const output = runResonanceBattle(state, { data, catalog, recording: false });
+  const output = runResonanceBattle(state, { data, catalog, recording: true });
   assert.equal(output.diagnostics.errorCount, 0);
   const support = output.diagnostics.robertaMachines.find((entry) => entry.kind === 'support');
   assert.ok(support, `terminal Battle contains a real Roberta support event: ${JSON.stringify({ events: output.diagnostics.robertaMachines, anchors: output.diagnostics.summonAnchors, gaps: output.diagnostics.summonAnchorGaps, stageId: output.diagnostics.stageId, round: output.diagnostics.round })}`);
@@ -261,4 +261,18 @@ test('real resonance settlement reports Roberta native support parameters withou
   assert.ok(machineStats, 'the settlement includes the real machine unit statistics');
   assert.equal(machineStats.defId, MACHINE, 'the matched statistics belong to the Roberta machine token');
   assert.equal(machineStats.attacks, 0, 'the machine does not perform ordinary attacks in a real settlement');
+});
+
+test('Roberta support remains active without recording lifecycle events in recording:false battles', () => {
+  const { data, catalog, state, target, placement } = fixture();
+  const supportedPiece = state.pieces.find((piece) => piece.uid === target.uid);
+  [supportedPiece.row, supportedPiece.col] = placement.target;
+  const output = runResonanceBattle(state, { data, catalog, recording: false });
+  assert.equal(output.diagnostics.errorCount, 0);
+  assert.ok(output.metrics.triggers.roberta_machine_support > 0, 'the live support still contributes its final counter');
+  assert.deepEqual(output.diagnostics.robertaMachines, [], 'headless balancing keeps no device event trace');
+  assert.equal(output.replay, null, 'headless balancing keeps no replay');
+  const machine = Object.values(output.result.perPlayer).flatMap((player) => player.unitStats).find((entry) => entry.kind === 'token' && entry.defId === MACHINE);
+  assert.ok(machine);
+  assert.equal(machine.attacks, 0);
 });

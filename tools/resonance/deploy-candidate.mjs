@@ -27,6 +27,7 @@ const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
   'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b',
   '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d',
   '5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538',
+  '7727460805442d277a1e354fc4308df8aa3bde6c',
 ];
 const RESONANCE_DIRECTORY = '/var/lib/stronghold-protocol/resonance-sessions';
 const BACKUP_ROOT = STAGING;

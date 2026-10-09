@@ -170,6 +170,7 @@ function robertaMachineTalent() {
     const isMachine = (token) => token?.kind === 'token' && token.defId === tokenId && token.ownerUnit === owner;
     const record = (kind, token, extra = {}) => {
       battle.resonanceMetric?.(`triggers.roberta_machine_${kind}`);
+      if (!battle.recordEvents) return;
       const results = battle.resonanceResults ??= { growth: [], coins: [], forge: [] };
       const events = results.robertaMachines ??= [];
       events.push({ kind, time: battle.time, ownerUid: owner.uid ?? null, tokenUid: token?.uid ?? null, ...extra });
