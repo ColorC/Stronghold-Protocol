@@ -2,7 +2,7 @@
 //
 // b.snap  = { fieldId, t, units: [[id, x, y, hp, maxHp, sp, spMax, flags, anim]], dp, killed, total }
 // UnitInfo = { id, kind, side, ownerId, defId, name, tier, golden, spine, avatar, x, y, facing, dir, maxHp, motion?, boss?, uid?, row?, col?, darkmoonFactionTags?, darkmoonCover?,
-//   form?, skillIndex?, moduleId?, items? }  (form = the unit's current model form — an enemy's, content/enemies.js setForm:
+//   form?, skillIndex?, moduleId?, items?, darkmoonDeploymentSources? }  (form = the unit's current model form — an enemy's, content/enemies.js setForm:
 //   掠海漂移体 'crawl', 暴鸰 'bombed', 转译基底·α's forms …; a 傀儡师 fighting as its 替身 'doll', professions.js — a view built
 //   after the change, a field opened mid-battle, draws it: render/units.js FORMS)
 //   dir = 'UP'|'RIGHT'|'DOWN'|'LEFT' (allies: the deploy direction, sim/dir.js); facing = its horizontal sign (±1).
@@ -62,8 +62,8 @@ export function unitInfo(u) {
     ...(u.side === 'ally' && darkmoonCover ? { darkmoonCover: true } : {}),
     // Display-only evidence of currently installed deployment adapters (native source plus magnetic attachment).
     // Eligibility consumers must not infer this from original-card keywords or tags.
-    darkmoonDeploymentSources: u.side === 'ally' && Array.isArray(u.mem?.darkmoonDeploymentSources) && u.mem.darkmoonDeploymentSources.length
-      ? [...u.mem.darkmoonDeploymentSources] : undefined,
+    ...(u.side === 'ally' && Array.isArray(u.mem?.darkmoonDeploymentSources) && u.mem.darkmoonDeploymentSources.length
+      ? { darkmoonDeploymentSources: [...u.mem.darkmoonDeploymentSources] } : {}),
   };
 }
 

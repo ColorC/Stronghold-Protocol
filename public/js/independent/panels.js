@@ -110,12 +110,14 @@ export function TraitTexts({ op, elite, catalog, growthMode='badges', piece = nu
       const keywordTerms = [p.match?.keywordGear].filter(Boolean);
       const professions = [...(p.match?.professions || []), p.match?.profession,
         target.startsWith('profession:') ? target.slice('profession:'.length) : null].filter(Boolean);
+      const deploymentPayloadCondition = p.match?.deploymentPayload === true;
       const explicitCondition = factionTerms.length || keywordTerms.length || professions.length
-        || row.effect?.behavior === 'dominantFactionRecruit' || row.effect?.behavior === 'forgeAdjacent';
+        || deploymentPayloadCondition || row.effect?.behavior === 'dominantFactionRecruit' || row.effect?.behavior === 'forgeAdjacent';
       const matchesSpecificClause = (clause) => {
         if (factionTerms.some((faction) => clause.includes(faction))) return true;
         if (keywordTerms.some((keyword) => clause.includes(keyword))) return true;
         if (professions.some((profession) => clause.includes(PROF_NAME[profession] || profession))) return true;
+        if (deploymentPayloadCondition && /战斗部署效果/.test(clause)) return true;
         if (row.effect?.behavior === 'dominantFactionRecruit' && clause.includes('所在行')) return true;
         if (row.effect?.behavior === 'forgeAdjacent' && /身前|前方|相邻|周围/.test(clause)) return true;
         return false;
