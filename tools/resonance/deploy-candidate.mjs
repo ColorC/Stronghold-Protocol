@@ -29,7 +29,8 @@ const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const REMOTE_NODE = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/bin/node`;
 const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/node_modules/npm/bin/npm-cli.js`;
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
-const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js'];
+const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js', 'public/css/resonance.css'];
+const CANDIDATE_REFRESH_INVARIANTS = ['tools/resonance/capacity.mjs'];
 const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
 const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';
 const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径> | --replace-staged-revision <旧Native完整commit>] | --refresh-candidate --previous-release-receipt <旧receipt> --previous-capacity-batch-receipt <已完成回执> | --capacity-batch --local-capacity-receipt <绝对路径> | --activate --capacity-receipt <绝对路径>]\n--refresh-candidate仅更新候选中的session DTO、references ZIP及manifest，并将旧Native容量回执原位归档。`;
@@ -154,10 +155,18 @@ export function validateCandidateRefreshChangeSet(changedArchivePaths) {
   return actual;
 }
 
+export function validateCandidateRefreshInvariantBytes(oldNativeBytes, newNativeBytes) {
+  for (const file of CANDIDATE_REFRESH_INVARIANTS) {
+    if (!Buffer.isBuffer(oldNativeBytes?.[file]) || !Buffer.isBuffer(newNativeBytes?.[file])) throw new Error(`candidate refresh invariant bytes missing: ${file}`);
+    if (!oldNativeBytes[file].equals(newNativeBytes[file])) throw new Error(`candidate refresh invariant differs from old Native: ${file}`);
+  }
+  return true;
+}
+
 export function candidateRefreshPreflightScript({ oldRevision, newRevision, expectedFiles, selectedOldBytes }) {
   if (!/^[0-9a-f]{40}$/i.test(oldRevision ?? '') || !/^[0-9a-f]{40}$/i.test(newRevision ?? '') || oldRevision.toLowerCase() === newRevision.toLowerCase()) throw new Error('invalid candidate refresh revisions');
   if (!Array.isArray(expectedFiles) || !expectedFiles.includes('tools/resonance/capacity.mjs') || expectedFiles.some(file => !/^[A-Za-z0-9_./-]+$/.test(file) || file.startsWith('/') || file.split('/').includes('..'))) throw new Error('invalid candidate refresh inventory');
-  const selectedSources = ['tools/resonance/capacity.mjs', 'public/css/resonance.css'];
+  const selectedSources = [...CANDIDATE_REFRESH_INVARIANTS, 'public/css/resonance.css'];
   if (selectedSources.some(file => !expectedFiles.includes(file) || !/^[A-Za-z0-9+/=]+$/.test(selectedOldBytes?.[file] ?? ''))) throw new Error('refresh requires exact old-Native bytes for capacity.mjs and resonance.css');
   const expected = [...new Set([...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
   const expectedLines = expected.map(value => `'${value}'`).join(' ');
@@ -295,7 +304,7 @@ export function candidateSessionRefreshScript(oldRevision, newRevision, expected
   const update = CANDIDATE_REFRESH_SOURCES;
   const referenceIndex = update.length;
   const manifestIndex = update.length + 1;
-  const invariant = ['tools/resonance/capacity.mjs', 'public/css/resonance.css'];
+  const invariant = CANDIDATE_REFRESH_INVARIANTS;
   if (!Array.isArray(expectedFiles) || [...update, ...invariant].some(f => !expectedFiles.includes(f))) throw new Error('new archive lacks selected or invariant source');
   if (update.some(f => !/^[A-Za-z0-9+/=]+$/.test(oldSelectedBytes?.[f] ?? '')) || invariant.some(f => !/^[A-Za-z0-9+/=]+$/.test(unchangedOldBytes?.[f] ?? ''))) throw new Error('session refresh requires exact old Native bytes');
   const files = [...update, 'public/resonance-references.zip', '.resonance-release-receipt.json'];
@@ -314,7 +323,6 @@ ${invariant.map(f => `printf '%s' '${unchangedOldBytes[f]}' | base64 -d | cmp -s
 for f in $files; do test ! -e "$f.refresh-backup" && test ! -e "$f.refresh-pending" || exit 84; cp -p -- "$f" "$f.refresh-backup"; done
 ${update.map((f, i) => `tar -xOf "$S/server-code.tar" '${f}' > '${pending[i]}'`).join('\n')}
 tar -xOf "$S/server-code.tar" 'tools/resonance/capacity.mjs' | cmp -s - "$C/tools/resonance/capacity.mjs" || { echo 'new-capacity-must-remain-identical' >&2; exit 85; }
-tar -xOf "$S/server-code.tar" 'public/css/resonance.css' | cmp -s - "$C/public/css/resonance.css" || { echo 'new-css-must-remain-identical' >&2; exit 85; }
 cp -p "$S/resonance-references.zip" '${pending[referenceIndex]}'; cp -p "$S/server-release.json" '${pending[manifestIndex]}'
 for f in ${pending.map(f => `'${f}'`).join(' ')}; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || exit 86; done
 ${update.map((f, i) => `mv -- '${pending[i]}' '${CANDIDATE}/${f}'`).join('\n')}
@@ -919,10 +927,9 @@ function refreshCandidateRemote(release, oldRevision, priorBatchReceipt) {
   for (const file of CANDIDATE_REFRESH_SOURCES) {
     if (execFileSync(TAR_COMMAND, ['-xOf', release.code.path, file]).toString('base64') !== newProductBytes[file]) throw new Error(`new tar product bytes differ from Native Git: ${file}`);
   }
-  for (const file of ['tools/resonance/capacity.mjs', 'public/css/resonance.css']) {
-    const next = execFileSync(TAR_COMMAND, ['-xOf', release.code.path, file]).toString('base64');
-    if (next !== selectedOldBytes[file]) throw new Error(`新Native非授权变更：${file} 与旧Native不同`);
-  }
+  const oldInvariantBytes = Object.fromEntries(CANDIDATE_REFRESH_INVARIANTS.map(file => [file, Buffer.from(selectedOldBytes[file], 'base64')]));
+  const newInvariantBytes = Object.fromEntries(CANDIDATE_REFRESH_INVARIANTS.map(file => [file, execFileSync(TAR_COMMAND, ['-xOf', release.code.path, file])]));
+  validateCandidateRefreshInvariantBytes(oldInvariantBytes, newInvariantBytes);
   const preflightScript = candidateRefreshPreflightScript({ oldRevision, newRevision: release.sourceRevision, expectedFiles: candidateFiles, selectedOldBytes });
   const preflightText = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript, 45_000);
   const preflight = JSON.parse(preflightText);
