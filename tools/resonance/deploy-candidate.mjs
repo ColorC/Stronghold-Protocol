@@ -28,6 +28,8 @@ const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
   '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d',
   '5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538',
   '7727460805442d277a1e354fc4308df8aa3bde6c',
+  '391cd33b5770d185b6c8d1ebd1f59e9f82d814c2',
+  '44c3d344d56349487ecdf3031042ab8012136fe7',
 ];
 const RESONANCE_DIRECTORY = '/var/lib/stronghold-protocol/resonance-sessions';
 const BACKUP_ROOT = STAGING;
@@ -197,6 +199,8 @@ export function candidateRefreshPreflightScript({ oldRevision, newRevision, expe
     ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
     'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
     'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
+    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.unit.backup',
+    'stronghold-protocol.44c3d344d56349487ecdf3031042ab8012136fe7.env.backup',
   ])].join('|');
   return `set -eu
 C='${CANDIDATE}'
@@ -833,7 +837,11 @@ export function preflightScript(wsVersion, revision, candidateFiles, { allowStag
   const stageNames = [
     ...OWNED_STAGE_NAMES,
     ...COMPLETED_CAPACITY_ARCHIVE_REVISIONS.flatMap(CAPACITY_BATCH_ARCHIVE_NAMES),
-    ...(replaceStagedRevision ? [`stronghold-protocol.${replaceStagedRevision}.unit.backup`, `stronghold-protocol.${replaceStagedRevision}.env.backup`] : []),
+    ...(replaceStagedRevision ? [
+      `stronghold-protocol.${replaceStagedRevision}.unit.backup`, `stronghold-protocol.${replaceStagedRevision}.env.backup`,
+      'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
+      'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.env.backup',
+    ] : []),
   ].map(name => `'${name}'`).join(' ');
   const expectedLines = expected.map(name => `'${name}'`).join(' ');
   const stagedReceiptCheck = replaceStagedRevision
@@ -898,6 +906,12 @@ function prepareRemote(release, resumeInfo = null, replaceStagedRevision = null)
   const preflight = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript(release.wsVersion, release.sourceRevision, candidateFiles, { allowStagedReceiptOverwrite, replaceStagedRevision }), 45_000);
   const preflightInfo = JSON.parse(preflight);
   if (preflightInfo.preflight !== 'ok' || !['install', 'reuse'].includes(preflightInfo.installState)) throw new Error('远端安全预检未通过');
+  let archivedPriorCapacityBatch = null;
+  if (replaceStagedRevision) {
+    const archivedText = invoke('ssh', [...sshArgs(), 'bash', '-s'], archiveCompletedCapacityBatchScript(replaceStagedRevision), 60_000);
+    archivedPriorCapacityBatch = JSON.parse(archivedText);
+    if (archivedPriorCapacityBatch.archived !== true || archivedPriorCapacityBatch.sourceRevision !== replaceStagedRevision || archivedPriorCapacityBatch.files?.length !== 5) throw new Error('替换staging前旧Native容量批次未能精确保全归档');
+  }
   const transferReceipt = resumeInfo ? resumeInfo.receipt.artifactTransfers.map(({ source, target, role, status }) => ({ source, target, role, status })) : [];
   const skippedAlreadyTransferred = resumeInfo ? resumeInfo.skipped.map(({ source, target, role }) => ({ source, target, role })) : [];
   const actualTransferred = [];
@@ -935,7 +949,9 @@ function prepareRemote(release, resumeInfo = null, replaceStagedRevision = null)
   const replacedJson = preflightInfo.replacedStagedRevision == null ? 'null' : `"${preflightInfo.replacedStagedRevision}"`;
   const remotePrepare = `set -eu\nfor f in '${STAGING}/server-code.tar' '${STAGING}/resonance-references.zip' '${STAGING}/package.json' '${STAGING}/package-lock.json' '${STAGING}/server-release.json'; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staged-file-invalid:$f"; exit 41; }; done\nif test '${preflightInfo.installState}' = install; then test ! -e '${INSTALL_ROOT}/package.json' && test ! -e '${INSTALL_ROOT}/package-lock.json' && test ! -e '${INSTALL_ROOT}/node_modules'; cp '${STAGING}/package.json' '${INSTALL_ROOT}/package.json'; cp '${STAGING}/package-lock.json' '${INSTALL_ROOT}/package-lock.json'; timeout 180s '${REMOTE_NODE}' '${REMOTE_NPM_CLI}' ci --ignore-scripts --omit=dev --no-audit --no-fund --prefix '${INSTALL_ROOT}'; fi\n${candidateAction}\ntest -f '${CANDIDATE}/server/index.js'\ntest -f '${CANDIDATE}/public/resonance.html'\nprintf '{"prepared":true,"sourceRevision":"${revision}","replacedStagedRevision":${replacedJson},"candidate":"${CANDIDATE}","candidateAction":"${preflightInfo.candidate}","wsVersion":"${release.wsVersion}","artifactTransfers":${JSON.stringify(transferReceipt)},"skippedAlreadyTransferred":${JSON.stringify(skippedAlreadyTransferred)},"actualTransferred":${JSON.stringify(actualTransferred)}}\\n'`;
   try {
-    return invoke('ssh', [...sshArgs(), 'timeout 180s bash -s'], remotePrepare, 180_000);
+    const preparedText = invoke('ssh', [...sshArgs(), 'timeout 180s bash -s'], remotePrepare, 180_000);
+    if (!archivedPriorCapacityBatch) return preparedText;
+    return JSON.stringify({ ...JSON.parse(preparedText), archivedPriorCapacityBatch });
   } catch (error) {
     throw new Error(`remote prepare failed; artifact transfers=${JSON.stringify(transferReceipt)}; ${error instanceof Error ? error.message : String(error)}`);
   }

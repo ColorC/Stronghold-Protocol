@@ -227,8 +227,8 @@ test('staged Native replacement requires an existing different Git commit and on
   assert.throws(() => parseArgs(['--release-receipt', 'C:/new.json', '--prepare', '--replace-staged-revision', 'short']), /完整Native Git commit/);
 });
 
-test('replacement preflight permits only an exact old Native staging receipt with no candidate or unknown paths', () => {
-  const oldRevision = '9f5d25631d0aed9a6e1c3b6028f92e2aa7c400ec';
+test('replacement preflight recognizes exact completed capacity history and activation backups without allowing unknown paths', () => {
+  const oldRevision = '44c3d344d56349487ecdf3031042ab8012136fe7';
   const script = preflightScript('1.0.0', revision, ['server/index.js'], { replaceStagedRevision: oldRevision });
   assert.ok(script.includes('replacement-old-staging-revision-mismatch:'));
   assert.ok(script.includes('replacement-old-staging-receipt-missing-or-unsafe:'));
@@ -237,13 +237,17 @@ test('replacement preflight permits only an exact old Native staging receipt wit
   assert.ok(script.includes('staging-file-unsafe:'));
   assert.ok(script.includes(`"replacedStagedRevision":"${oldRevision}"`));
   assert.ok(!script.includes('staging-source-revision-mismatch:'));
-  for (const completed of ['ee9e2d8b90f35a4d46705ad6d019ada9f684d94b', '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d']) {
+  for (const completed of ['ee9e2d8b90f35a4d46705ad6d019ada9f684d94b', '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d', '5fdd4abb283c47eabf6fe1f4c1fb406a2cfbc538', '7727460805442d277a1e354fc4308df8aa3bde6c', '391cd33b5770d185b6c8d1ebd1f59e9f82d814c2', oldRevision]) {
     for (const name of ['capacity-receipt', 'capacity-recording-receipt', 'capacity-batch-receipt', 'capacity-http-cgroup', 'capacity-recording-cgroup']) {
       assert.ok(script.includes(`'${name}.${completed}.json'`));
     }
   }
   assert.ok(script.includes(`'stronghold-protocol.${oldRevision}.unit.backup'`));
   assert.ok(script.includes(`'stronghold-protocol.${oldRevision}.env.backup'`));
+  for (const backupRevision of ['275375842f5426ccd53ebe0915f6b2883c919fe5', oldRevision]) {
+    assert.ok(script.includes(`'stronghold-protocol.${backupRevision}.unit.backup'`));
+    assert.ok(script.includes(`'stronghold-protocol.${backupRevision}.env.backup'`));
+  }
   const withoutReplacement = preflightScript('1.0.0', revision, ['server/index.js']);
   assert.ok(!withoutReplacement.includes(`'stronghold-protocol.${oldRevision}.unit.backup'`));
   assert.ok(!script.includes('capacity-*.json'), 'unknown archive names remain rejected');
@@ -308,7 +312,7 @@ test('candidate session refresh archives completed ee9e capacity receipts and ch
 });
 
 test('capacity receipt archive validates both native cgroup records against the completed batch schema', () => {
-  const oldRevision = 'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b';
+  const oldRevision = '44c3d344d56349487ecdf3031042ab8012136fe7';
   const stageToken = '__STAGE__';
   const batch = completeBatchReceipt(oldRevision, stageToken);
   const mismatchedHttp = { ...batch.phases[0].cgroup, cpuUsageNSec: batch.phases[0].cgroup.cpuUsageNSec + 1 };
