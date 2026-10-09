@@ -22,7 +22,9 @@ import { getDefaultSource, hasGeneratedData } from '../../server/sim/simdata.js'
 import { GEO } from '../../shared/constants.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const LEVELS = join(ROOT, '.cache', 'gamedata', 'levels', 'activities');
+// Large generated reference levels may live in a shared read-only cache rather than this sparse test checkout.
+const LEVELS_ROOT = process.env.SP_TEST_GAMEDATA_LEVELS_DIR || join(ROOT, '.cache', 'gamedata', 'levels');
+const LEVELS = join(LEVELS_ROOT, 'activities');
 const STAGES = ['act1autochess_m01', 'act1autochess_m02', 'act1autochess_m03', 'act1autochess_m04', 'act2autochess_m01', 'act2autochess_m02', 'act2autochess_m03', 'act2autochess_m04'];
 const file = (sid) => join(LEVELS, sid.slice(0, 13), `level_${sid}.json`);
 const SKIP = { skip: (!hasGeneratedData() && 'no generated data') || (!STAGES.every((s) => existsSync(file(s))) && 'no .cache/gamedata levels') };
