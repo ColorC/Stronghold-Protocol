@@ -257,6 +257,11 @@ async function layout(page, name) {
   check(`${name}-product-copy`, !/真实素材|按.*标准制作|来自实际运行观测|已脱敏|sourceChess|expectedRevision|MainBoard/.test(value.text), value.text.slice(0, 1200));
   if (value.board) check(`${name}-board-dominates`, value.board.width >= value.width * .85 && value.board.height >= value.height * .85, value.board);
 }
+async function waitForGameplayReady(page, label) {
+  await page.waitForSelector('.gm .shopbar', { timeout: 30000 });
+  await page.waitForFunction(() => { const view=globalThis.__SP_VIEW__; return !!view&&(view.kind==='fallback'||Number(view.raw?.stats?.().units)>0); }, { timeout: 30000 });
+  check(`${label}-renderer-ready`, await page.evaluate(() => ({kind:globalThis.__SP_VIEW__?.kind,units:globalThis.__SP_VIEW__?.raw?.stats?.().units||0})), 'game shell, shop and native renderer are ready');
+}
 try {
   await mkdir(OUT, { recursive: true });
   let url = remoteUrl;
@@ -622,12 +627,16 @@ try {
     }
     const viewportRevision=(await readFresh()).revision;
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
+    await waitForGameplayReady(page,'resume-tail-1440x900');
     await layout(page,'resume-tail-1440x900'); await assertShopPointerTargets(page,'resume-tail-1440x900'); await shot(page,'19-tft-prep');
     await page.setViewport({width:1366,height:768,deviceScaleFactor:1,isMobile:false,hasTouch:false});
+    await waitForGameplayReady(page,'resume-tail-1366x768');
     await layout(page,'resume-tail-1366x768'); await assertShopPointerTargets(page,'resume-tail-1366x768');
     await page.setViewport({width:844,height:390,deviceScaleFactor:1,isMobile:true,hasTouch:true});
+    await waitForGameplayReady(page,'resume-tail-844x390');
     await layout(page,'resume-tail-844x390'); await assertShopPointerTargets(page,'resume-tail-844x390'); await shot(page,'20-tft-phone-landscape');
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
+    await waitForGameplayReady(page,'resume-tail-restored-1440x900');
     check('resume-tail-viewport-probes-readonly',(await readFresh()).revision===viewportRevision,{revision:viewportRevision});
     const wTarget = deployments[0];
     await inspectShopHoverTooltip(page);
