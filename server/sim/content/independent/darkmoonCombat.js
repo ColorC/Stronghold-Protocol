@@ -198,8 +198,12 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const m=scale(e),key=`darkmoon:${e.unit.uid}:${e.id}${e.instanceKey||''}:${u.id}`;
     const v=e.stacks.get(u.id)||{a:0,h:0};v.a+=a*m;v.h+=h*m;e.stacks.set(u.id,v);
     applyGrowth(u,key,v.a,v.h);
-    (u.mem.darkmoonTemporaryEquipment||={})[key]={sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,badgeIds:['precision','damage'],...(state?.growthMode==='levels'?{trainingLevels:(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1)}:{}),expires:'battleEnd'};
-    if(persistent&&u.kind==='op')results.growth.push({sourceUid:e.unit.uid,targetUid:u.uid,attackUnits:a*m,secondaryUnits:h*m,badgeIds:['precision','damage']});
+    (u.mem.darkmoonTemporaryEquipment||={})[key]=state?.growthMode==='levels'
+      ? {sourceId:e.id,temporaryTrainingLevels:(v.a+v.h)*Number(catalog.config?.levelsPerBadge||1),expires:'battleEnd'}
+      : {sourceId:e.id,attackUnits:v.a,secondaryUnits:v.h,badgeIds:['precision','damage'],expires:'battleEnd'};
+    if(persistent&&u.kind==='op')results.growth.push(state?.growthMode==='levels'
+      ? {sourceUid:e.unit.uid,targetUid:u.uid,growthLevels:(a+h)*m*Number(catalog.config?.levelsPerBadge||1)}
+      : {sourceUid:e.unit.uid,targetUid:u.uid,attackUnits:a*m,secondaryUnits:h*m,badgeIds:['precision','damage']});
   };
   const shield=(e,u,layers)=>{const key=`darkmoon:shield:${e.unit.uid}${e.instanceKey||''}:${u.id}`,n=Number(u.findBuff(key)?.shieldHits||0);battle.addBuff(u,{key,shieldHits:n+layers,source:e.unit,duration:Infinity,persist:true,allowDead:true,refresh:'replace'});};
   const auras=[];

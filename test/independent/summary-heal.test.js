@@ -25,4 +25,10 @@ test('money/discount/summon/retirement summaries carry the exact form counts and
   assert.equal(gearScope[1].lasting,true,'shop carry remains marked as a match-long effect');
   const lastingRendered=render({summary:gearScope,catalog:{traitWhen:TRAIT_WHEN},max:10});
   assert.match(lastingRendered,/title="本局后续酒馆持续">本局<\/span>/,'the lasting tag identifies the later-shop scope');
+  const glyphItems=runInNewContext(source.slice(start,end).replace('export function TraitGlyphs','function TraitGlyphs')+';traitGlyphItems;',{});
+  const glyphCatalog={gear:{precision:{kind:'badge'},damage:{kind:'徽章'},'oath-cover':{kind:'equipment'}}};
+  assert.deepEqual(JSON.parse(JSON.stringify(glyphItems([{id:'precision'},{id:'damage'},{id:'oath-cover'}],glyphCatalog,'levels'))),
+    [{id:'oath-cover'},{id:'growth-training-record'}], 'levels mode hides badge icons and retains actual equipment outputs');
+  assert.deepEqual(JSON.parse(JSON.stringify(glyphItems([{id:'precision'},{id:'damage'}],glyphCatalog,'badges'))),
+    [{id:'precision'},{id:'damage'}], 'badge mode keeps its explicit badge outputs');
 });
