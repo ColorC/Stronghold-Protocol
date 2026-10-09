@@ -24,6 +24,7 @@ const CAPACITY_BATCH_ARCHIVE_NAMES = revision => [
   `capacity-recording-cgroup.${revision}.json`,
 ];
 const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
+  '5afeb772f9e31d745204b84d379972d1fc4a4533',
   'a619f2c8e5eae4adc9ff75119c95ef45f4219129',
   'ee9e2d8b90f35a4d46705ad6d019ada9f684d94b',
   '20c9011d0d4afe82ea5350aa6fddb463b0d6cf2d',
@@ -34,6 +35,8 @@ const COMPLETED_CAPACITY_ARCHIVE_REVISIONS = [
   '28dcd4101cfd520b222cff0e154f8b6036bd82bf',
 ];
 const VERIFIED_ACTIVATION_BACKUP_NAMES = [
+  'stronghold-protocol.5afeb772f9e31d745204b84d379972d1fc4a4533.unit.backup',
+  'stronghold-protocol.5afeb772f9e31d745204b84d379972d1fc4a4533.env.backup',
   'stronghold-protocol.a619f2c8e5eae4adc9ff75119c95ef45f4219129.unit.backup',
   'stronghold-protocol.a619f2c8e5eae4adc9ff75119c95ef45f4219129.env.backup',
   'stronghold-protocol.275375842f5426ccd53ebe0915f6b2883c919fe5.unit.backup',
@@ -459,7 +462,14 @@ export function validatePrepareResumeReceipt(release, receipt) {
       sawIncomplete = true;
     } else if (sawIncomplete) throw new Error('resume receipt在失败档案后不能标记传输成功');
   }
-  if (!sawIncomplete) throw new Error('resume receipt必须包含未完成档案');
+  if (!sawIncomplete) {
+    const allTransferred = receipt.artifactTransfers.length === release.artifacts.length
+      && receipt.artifactTransfers.every(row => row.status === 'transferred');
+    if (!allTransferred) throw new Error('resume receipt必须包含未完成档案或完整已传档案失败状态');
+    if (receipt.commandExitCode !== 1 || typeof receipt.remotePrepareError !== 'string' || !receipt.remotePrepareError.trim()) {
+      throw new Error('全档案已传的失败resume receipt必须有commandExitCode=1与非空remotePrepareError');
+    }
+  }
   const skipped = receipt.artifactTransfers.filter(row => row.status === 'transferred').map((row, index) => ({ ...row, artifact: release.artifacts[index] }));
   return { receipt, skipped, completedNames: new Set(skipped.map(row => path.basename(row.source))) };
 }
@@ -958,18 +968,20 @@ function prepareRemote(release, resumeInfo = null, replaceStagedRevision = null)
     else { row = { source: artifact.path, target, role: artifact.role, status: 'pending' }; transferReceipt.push(row); }
     return { artifact, row };
   });
-  try {
-    invoke('scp', scpBatchArgs(IDENTITY, PORT, HOST, STAGING, remainingArtifacts), undefined, 180_000);
-    for (const { artifact, row } of pendingRows) {
-      row.status = 'transferred';
-      actualTransferred.push({ source: artifact.path, target: row.target, role: artifact.role });
+  if (remainingArtifacts.length > 0) {
+    try {
+      invoke('scp', scpBatchArgs(IDENTITY, PORT, HOST, STAGING, remainingArtifacts), undefined, 180_000);
+      for (const { artifact, row } of pendingRows) {
+        row.status = 'transferred';
+        actualTransferred.push({ source: artifact.path, target: row.target, role: artifact.role });
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      for (const { row } of pendingRows) row.status = 'batch-transfer-unconfirmed';
+      const failureReceipt = { mode: 'prepare', sourceRevision: release.sourceRevision, status: 'failed', commandExitCode: 1,
+        artifactTransfers: transferReceipt, skippedAlreadyTransferred, actualTransferred, transferError: detail };
+      throw new Error(`artifact batch transfer failed; prepareFailureReceipt=${JSON.stringify(failureReceipt)}`);
     }
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    for (const { row } of pendingRows) row.status = 'batch-transfer-unconfirmed';
-    const failureReceipt = { mode: 'prepare', sourceRevision: release.sourceRevision, status: 'failed', commandExitCode: 1,
-      artifactTransfers: transferReceipt, skippedAlreadyTransferred, actualTransferred, transferError: detail };
-    throw new Error(`artifact batch transfer failed; prepareFailureReceipt=${JSON.stringify(failureReceipt)}`);
   }
   const revision = release.sourceRevision;
   const candidateAction = preflightInfo.candidate === 'reuse'
