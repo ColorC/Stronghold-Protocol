@@ -12,6 +12,9 @@ import { GameData } from '../server/match/gamedata.js';
 import { planLayout } from '../server/match/bot.js';
 import { modeIdFor } from '../shared/constants.js';
 import { loadoutRecord } from '../shared/loadoutRecord.js';
+import { nativeFactions } from '../shared/independentRules.js';
+import { quantityEquippable } from '../shared/independentInventory.js';
+import { operatorGrowthInfo } from '../shared/independentGrowth.js';
 import { createRng, deriveSeed } from '../server/sim/rng.js';
 
 const data = getData({log:{info(){},warn(){},error(){}}});
@@ -20,28 +23,103 @@ const ROUTES = ['assault', 'defense', 'skill'];
 const role = (p) => data.chess[p.chessId]?.profession;
 const healing = (p) => role(p) === 'MEDIC';
 const blocking = (p) => !healing(p) && Number(data.chess[p.chessId]?.stats?.blockCnt) > 0 && data.chess[p.chessId]?.position === 'MELEE';
+const primaryDamage = (p) => !['MEDIC','TANK','PIONEER','TOKEN'].includes(role(p)) && Number(loadoutRecord(data.chess[p.chessId],p)?.stats?.atk || 0) > 0;
+const damagePreference = (p) => {
+  const profession=role(p);
+  return (['CASTER','SNIPER','WARRIOR'].includes(profession)?160:['SPECIAL','SUPPORT'].includes(profession)?80:0) +
+    Number(loadoutRecord(data.chess[p.chessId],p)?.stats?.atk || 0)/8;
+};
 
-function score(p, route) {
+function score(p, route, growthMode='badges', targetId='') {
   const rec = loadoutRecord(data.chess[p.chessId], p);
   const stats = rec?.stats || {};
   const gear = totalEquipmentLevel(p, catalog);
   const production = catalog.operators[p.chessId]?.nativeTrait?.effect;
+  const prep=production?.prep||[];
+  const selfGrowth=prep.some(x=>x.behavior==='badge'&&x.params?.targets==='self');
+  const growthValue=selfGrowth?(growthMode==='levels'?55:35):prep.some(x=>x.behavior==='badge')?20:0;
+  const growthSupport=prep.some(x=>x.behavior.startsWith('darkmoon')&&x.behavior.toLowerCase().includes('growth'))?125:0;
   return Number(catalog.operators[p.chessId]?.tier || rec?.tier || 1) * 100 + (p.elite ? 110 : 0) + gear * 15 +
     Number(stats.atk || 0) / 12 + Number(stats.maxHp || 0) / 150 +
-    (route === 'defense' && blocking(p) ? 80 : route === 'skill' && production?.combat?.length ? 60 : 0) +
-    (production?.prep?.length ? 35 : 0);
+    (route === 'defense' ? (blocking(p) ? 20 : damagePreference(p)) : route === 'skill' && production?.combat?.length ? 60 : 0) +
+    (production?.prep?.length ? 35 : 0) + growthValue + growthSupport + (targetId&&p.chessId===targetId?10000:0);
+}
+function mainFaction(pieces) {
+  const counts=new Map();
+  for(const p of pieces||[])for(const faction of nativeFactions(p,catalog))counts.set(faction,(counts.get(faction)||0)+1);
+  return [...counts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0]?.[0]||null;
+}
+function factionScore(chessId,pieces) {
+  const faction=mainFaction(pieces);
+  return faction?nativeFactions({chessId,equipment:[]},catalog).includes(faction)?90:0:0;
+}
+function shopTargets(state,excludeIndex=-1) {
+  return state.shop.slots.map((slot,index)=>({slot,index})).filter(({slot,index})=>index!==excludeIndex&&!slot.sold&&slot.kind==='chess'&&slot.id)
+    .sort((a,b)=>score({chessId:b.slot.id,equipment:[]},'assault')-score({chessId:a.slot.id,equipment:[]},'assault')).map(x=>x.index);
+}
+function actionTargetUid(state, candidateId,targetId='') {
+  const candidateFactions=nativeFactions({chessId:candidateId,equipment:[]},catalog);
+  const candidate=catalog.operators[candidateId];
+  const requirements=(candidate?.nativeTrait?.effect?.prep||[]).filter(x=>x.behavior==='darkmoonBattlecryTargetGrowth').map(x=>x.params?.faction).filter(Boolean);
+  const boughtTargetRequired=state.pieces.some(p=>(catalog.operators[p.chessId]?.nativeTrait?.effect?.prep||[])
+    .some(x=>x.behavior==='darkmoonBoughtTribeTargetGrowth'&&candidateFactions.includes(x.params?.triggerFaction)));
+  for(const p of state.pieces)for(const effect of catalog.operators[p.chessId]?.nativeTrait?.effect?.prep||[]) {
+    if(effect.behavior==='darkmoonBattlecryTargetGrowth'&&candidateFactions.includes(effect.params?.faction))requirements.push(effect.params.faction);
+  }
+  const required=[...new Set(requirements)];
+  const eligible=state.pieces.filter(p=>p.row!==null&&p.row!==undefined&&p.col!==null&&p.col!==undefined&&required.every(f=>nativeFactions(p,catalog).includes(f)))
+    .sort((a,b)=>Number(b.chessId===targetId)-Number(a.chessId===targetId)+score(b,'assault')-score(a,'assault'));
+  if(boughtTargetRequired&&eligible.length)return eligible[0].uid;
+  if(eligible.length)return eligible[0].uid;
+  if(required.every(f=>candidateFactions.includes(f))&&required.length)return `p${state.nextUid}`;
+  const newPieceCouldReceive=(candidate?.nativeTrait?.effect?.prep||[]).some(x=>['darkmoonBoughtTribeTargetGrowth','darkmoonBattlecryTargetGrowth'].includes(x.behavior));
+  return newPieceCouldReceive?(state.pieces.slice().sort((a,b)=>score(b,'assault')-score(a,'assault'))[0]?.uid||`p${state.nextUid}`):undefined;
 }
 
-export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assault'}={}) {
+export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', growthMode='badges', targetId=''}={}) {
   if (!ROUTES.includes(route)) throw new Error('Unknown route');
-  let state = createSession({seed, difficulty, roundLimit});
+  difficulty=difficulty|| (roundLimit===9?'FUNNY':'NORMAL');
+  let state = createSession({seed, difficulty, roundLimit, growthMode});
   const trace = [];
   const actionLog = [];
+  const rejectedActions = [];
+  const rejectedSignatures = new Set();
+  const repeatedRejectSkips = [];
+  const battleReceipts=[];
   let actions = 0;
   const act = (action, strict=false) => {
+    const actionRound=state.round;
+    const signature=JSON.stringify(action);
+    if(rejectedSignatures.has(signature)) {
+      repeatedRejectSkips.push({round:state.round,action:structuredClone(action)});
+      return {ok:false,error:{code:'PILOT_DUPLICATE_REJECTION_SKIPPED'}};
+    }
     const result = applyAction(state, action, {data,catalog});
-    if (result.ok) { state=result.state; actions++; actionLog.push(structuredClone(action)); }
-    else if (strict) throw Object.assign(new Error(`${action.type}: ${result.error.code}: ${result.error.message}`),{pilotState:state,action,trace});
+    if (result.ok) {
+      state=result.state; actions++; actionLog.push(structuredClone(action));
+      if(result.replay) {
+        const enemies=new Map();
+        const allies=new Map();
+        for(const frame of result.replay.frames||[])for(const entry of Object.values(frame.stats||{})) {
+          if(!entry.base?.maxHp)continue;
+          const target=String(entry.defId||'').startsWith('enemy_')?enemies:String(entry.defId||'').startsWith('chess_')?allies:null;
+          if(!target)continue;
+          const old=target.get(entry.defId);
+          target.set(entry.defId,{defId:entry.defId,maxHp:Math.max(old?.maxHp||0,Number(entry.maxHp||entry.base.maxHp)),
+            atk:Math.max(old?.atk||0,Number(entry.atk||entry.base.atk)),baseHp:Number(entry.base.maxHp),baseAtk:Number(entry.base.atk)});
+        }
+        battleReceipts.push({round:actionRound,duration:result.replay.duration,frameCount:result.replay.frames?.length||0,
+          enemies:[...enemies.values()],allies:[...allies.values()]});
+      }
+    }
+    else {
+      rejectedSignatures.add(signature);
+      const slot=action.type==='buy'?state.shop.slots[action.slot]:null;
+      rejectedActions.push({round:state.round,action:structuredClone(action),code:result.error?.code,message:result.error?.message,
+        ...(slot?{slotId:slot.id,slotKind:slot.kind}:{}),
+        ...(action.type==='buy'?{nextUid:state.nextUid,ownedUids:state.pieces.map(p=>p.uid),ownedFactions:state.pieces.map(p=>({uid:p.uid,factions:nativeFactions(p,catalog)})),triggerSources:state.pieces.flatMap(p=>(catalog.operators[p.chessId]?.nativeTrait?.effect?.prep||[]).filter(x=>['darkmoonBoughtTribeTargetGrowth','darkmoonBattlecryTargetGrowth'].includes(x.behavior)).map(x=>({uid:p.uid,chessId:p.chessId,behavior:x.behavior,params:x.params})))}:{})});
+      if (strict) throw Object.assign(new Error(`${action.type}: ${result.error.code}: ${result.error.message}`),{pilotState:state,action,trace});
+    }
     return result;
   };
   const pickOffers = () => {
@@ -69,11 +147,17 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
         if(result.error?.code==='CAPACITY') break;
         throw new Error(`Merge offer failed: ${result.error?.message}`);
       }
-      for (let i=0; i<offer.choices.length && !chosen; i++) {
-        const targets=[undefined,...state.pieces.map(p=>p.uid)];
+      const rankedChoices=offer.choices.map((id,index)=>({id,index,value:(catalog.operators?.[id]?score({chessId:id,equipment:[]},route,growthMode,targetId):
+        id==='growth-training-record'&&growthMode==='levels'?600:catalog.badges?.[id]&&growthMode==='levels'?450:catalog.badges?.[id]?350:catalog.equipment?.[id]?.mechanism==='growthTraining'&&growthMode==='levels'?500:0)}))
+        .sort((a,b)=>b.value-a.value||a.index-b.index);
+      for (const choice of rankedChoices) {
+        const targets=[undefined,...state.pieces.slice().sort((a,b)=>score(b,route,growthMode,targetId)-score(a,route,growthMode,targetId)).map(p=>p.uid)];
         for (const targetUid of targets) {
-          if (act({type:'choose',offerId:offer.id,index:i,targetUid}).ok) { chosen=true; break; }
+          const action={type:'choose',offerId:offer.id,index:choice.index,targetUid:targetUid||actionTargetUid(state,choice.id,targetId)};
+          const slots=shopTargets(state); if(slots.length){action.shopSlot=slots[0];action.shopSlots=slots;}
+          if (act(action).ok) { chosen=true; break; }
         }
+        if(chosen)break;
       }
       if (!chosen) throw new Error(`Unresolvable legal offer ${offer.id}`);
     }
@@ -90,27 +174,39 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
     for (let pass=0;pass<5 && state.funds>=3;pass++) {
       const ranked=state.shop.slots.map((slot,i)=>({slot,i})).filter(({slot})=>!slot.sold && slot.id)
         .sort((a,b)=>{
-          const value=({slot})=>slot.kind==='chess' ? score({chessId:slot.id, equipment:[]},route)+
+        const value=({slot})=>slot.kind==='chess' ? score({chessId:slot.id, equipment:[]},route,growthMode,targetId)+factionScore(slot.id,state.pieces)+
             state.pieces.filter(p=>p.chessId===slot.id).length*130 +
-            (data.chess[slot.id]?.profession==='MEDIC' && !state.pieces.some(healing)?300:0) : -100;
+            (route==='defense'&&blocking({chessId:slot.id})?(state.pieces.filter(blocking).length<2?220:-180):0) +
+            (data.chess[slot.id]?.profession==='MEDIC' && !state.pieces.some(healing) &&
+              (route!=='defense' || state.pieces.some(p=>!healing(p)))?300:0) : -100;
           return value(b)-value(a);
         });
       let bought=false;
       for (const {slot,i} of ranked) {
         if (slot.kind==='equipment' && state.pieces.length<5) continue;
         if (slot.kind==='chess' && state.pieces.length>=12 &&
-          !state.pieces.some(p=>p.chessId===slot.id) && score({chessId:slot.id,equipment:[]},route)<Math.min(...state.pieces.map(p=>score(p,route)))) continue;
-        if (act({type:'buy',slot:i}).ok) { bought=true; pickOffers(); if(state.funds<3) break; }
+          !state.pieces.some(p=>p.chessId===slot.id) && score({chessId:slot.id,equipment:[]},route,growthMode,targetId)<Math.min(...state.pieces.map(p=>score(p,route,growthMode,targetId)))) continue;
+        const action={type:'buy',slot:i};
+        action.targetUid=actionTargetUid(state,slot.id,targetId);
+        const shopSlots=shopTargets(state,i); if(shopSlots.length){action.shopSlot=shopSlots[0];action.shopSlots=shopSlots;}
+        if (act(action).ok) { bought=true; pickOffers(); if(state.funds<3) break; }
       }
       if (state.funds>=4 && pass<4) { if (!act({type:'refresh'}).ok) break; }
       else if (!bought) break;
     }
     pickOffers();
-    const ranked=state.pieces.slice().sort((a,b)=>score(b,route)-score(a,route));
+    const ranked=state.pieces.slice().sort((a,b)=>(score(b,route,growthMode,targetId)+factionScore(b.chessId,state.pieces))-(score(a,route,growthMode,targetId)+factionScore(a.chessId,state.pieces)));
     const selected=[];
     const add=(p)=>{if(p && !selected.includes(p) && selected.length<state.deployCap)selected.push(p);};
     add(ranked.find(healing));
-    ranked.filter(blocking).slice(0,2).forEach(add);
+    ranked.filter(blocking).sort((a,b)=>{
+      const priority=p=>factionScore(p.chessId,state.pieces)+score(p,route,growthMode,targetId);
+      return priority(b)-priority(a);
+    }).slice(0,2).forEach(add);
+    if(route==='defense') ranked.filter(primaryDamage).sort((a,b)=>
+      damagePreference(b)+score(b,route,growthMode,targetId)-damagePreference(a)-score(a,route,growthMode,targetId)
+    ).slice(0,2).forEach(add);
+    ranked.filter(p=>!blocking(p)).forEach(add);
     ranked.forEach(add);
     // 整备区 10 格 (session.js BENCH_SIZE): everyone goes back to the bench before the new layout, so the pilot keeps at
     // most BENCH_SIZE operators — it sells the weakest of those it will not deploy (temp ones included)
@@ -121,10 +217,10 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
     for(const piece of state.pieces.slice()) act({type:'bench',uid:piece.uid},true);
     const selectedUids=selected.map(p=>p.uid);
     for(const item of state.inventory.slice()) {
-      const definition=equipmentRecord(catalog,item.id);
+      const definition=equipmentRecord(catalog,item.id)||catalog.prizes?.[item.id];
       const targets=state.pieces.filter(p=>selectedUids.includes(p.uid)).sort((a,b)=>{
         const preference=p=>{
-          let value=score(p,route);
+          let value=score(p,route,growthMode,targetId);
           if (['vitality','defense','unyielding'].includes(item.id)) value+=blocking(p)?300:0;
           if (item.id==='harmony') value+=healing(p)?500:0;
           return value-totalEquipmentLevel(p,catalog)*8;
@@ -133,10 +229,11 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
       });
       const remaining=state.inventory.find(x=>x.uid===item.uid);
       if(!remaining) continue;
-      if(['补给','玩家设施','supply','facility'].includes(definition?.kind)) {
+      if(['补给','玩家设施','supply','facility'].includes(definition?.kind)||definition?.mechanism==='activeFundTopUp') {
         for(const target of [undefined,...targets]) if(act({type:'use-item',itemUid:item.uid,targetUid:target?.uid}).ok)break;
       } else {
-        for(const target of targets) if(act({type:'equip',itemUid:item.uid,targetUid:target.uid,quantity:definition?.unique?1:remaining.quantity}).ok)break;
+        const quantity=(growthMode==='levels'&&definition?.mechanism==='growthTraining')||quantityEquippable(definition)?remaining.quantity:1;
+        for(const target of targets) if(act({type:'equip',itemUid:item.uid,targetUid:target.uid,quantity}).ok)break;
       }
     }
     const field=getIndependentField(state,{data,catalog});
@@ -154,14 +251,31 @@ export function playSeed({seed=1, difficulty='FUNNY', roundLimit=9, route='assau
       act({type:'move',uid,row,col,dir:layout.dirs.get(uid)},true);
     }
     if(!state.pieces.some(p=>p.row!==null)) throw new Error('Pilot has no legal deployed piece');
-    const before={round,lp:state.lp,funds:state.funds,equipmentLevels:state.pieces.filter(p=>p.row!==null).map(p=>totalEquipmentLevel(p,catalog)),inventoryCount:state.inventory.reduce((n,i)=>n+i.quantity,0)};
+    const before={round,lp:state.lp,funds:state.funds,shopLevel:state.shop.level,mainFaction:mainFaction(state.pieces),
+      deployed:state.pieces.filter(p=>p.row!==null).map(p=>({chessId:p.chessId,level:p.growthLevel||null,equipmentLevel:totalEquipmentLevel(p,catalog),
+        profession:data.chess[p.chessId]?.profession||null,blockCnt:Number(data.chess[p.chessId]?.stats?.blockCnt||0),position:data.chess[p.chessId]?.position||null,
+        factions:nativeFactions(p,catalog)})),
+      inventoryCount:state.inventory.reduce((n,i)=>n+i.quantity,0)};
+    const whiteAndStartStats=Object.fromEntries(state.pieces.filter(p=>p.row!==null).map(p=>{
+      const white=loadoutRecord(data.chess[p.chessId],p)?.stats||{};
+      const growth=p.growthMode==='levels'?operatorGrowthInfo(p,catalog):null;
+      const whiteAtk=Number(white.atk||0),whiteHp=Number(white.maxHp||0);
+      return [p.uid,{chessId:p.chessId,white:{atk:whiteAtk,maxHp:whiteHp},
+        levelCurve:growth?.stats||null,growthLevel:growth?.level??null,
+        badgeIds:p.equipment.filter(x=>catalog.badges?.[x.id]).map(x=>({id:x.id,quantity:x.quantity}))}];
+    }));
     act({type:'ready'},true);
     const errors=validateSession(state);
     if(errors.length) throw new Error('Pilot state invalid: '+errors.join(','));
-    trace.push({...before,afterLp:state.lp,battle:state.battleSummary,production:(state.history||[]).filter(e=>e.round===round && (e.type==='forge' || e.type==='production')).length});
+    const combatUnits=(state.battleSummary?.result?.perPlayer?.independent?.unitStats||[]).filter(x=>x.kind==='op');
+    const growth=state.pieces.map(p=>({uid:p.uid,chessId:p.chessId,level:p.growthLevel||null,badges:p.equipment.filter(x=>catalog.badges?.[x.id]).map(x=>({id:x.id,quantity:x.quantity})),nativeGrowth:p.nativeState?.growth||0}));
+    trace.push({...before,afterLp:state.lp,battle:state.battleSummary,combatUnits,growth,whiteAndStartStats,
+      battleReceipt:battleReceipts.find(x=>x.round===round),
+      production:(state.production||[]).filter(e=>e.round===round),battleEvents:(state.history||[]).filter(e=>e.round===round && e.type==='battle').length});
   }
   if(state.phase!=='finished') throw new Error('Pilot exceeded bounded turns');
-  return {seed,difficulty,roundLimit,route,actions,actionLog,rounds:trace.length,lp:state.lp,completed:trace.length===roundLimit && state.lp>0 && state.battleSummary?.result?.bossHpLeft===0,trace,state};
+  return {seed,difficulty,roundLimit,route,growthMode,targetId,actions,rejectedActions,repeatedRejectSkips,actionLog,rounds:trace.length,lp:state.lp,
+    outcome:state.outcome,completed:state.phase==='finished'&&state.outcome==='win',bossHpLeft:state.battleSummary?.result?.bossHpLeft,trace,state};
 }
 
 async function main() {
@@ -172,15 +286,20 @@ async function main() {
   }
   const count=Number(options.seeds||3);
   if(!Number.isInteger(count)||count<1||count>100)throw new Error('seeds must be 1..100');
+  const startSeed=Number(options['start-seed']||1);
+  if(!Number.isInteger(startSeed)||startSeed<1)throw new Error('start-seed must be a positive integer');
+  const modes=(options['growth-modes']||'badges,levels').split(',');
+  const roundLimits=(options['round-limits']||options['round-limit']||'9,14').split(',').map(Number);
   const runs=[];
-  for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=1;seed<=count;seed++) {
-    try { runs.push(playSeed({seed,route,difficulty:options.difficulty||'FUNNY',roundLimit:Number(options['round-limit']||9)})); }
-    catch(error) { runs.push({seed,route,error:error.message,action:error.action,state:error.pilotState,trace:error.trace,rounds:error.trace?.length||0,lp:error.pilotState?.lp||0,completed:false}); }
+  for(const growthMode of modes)for(const roundLimit of roundLimits)for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=startSeed;seed<startSeed+count;seed++) {
+    try { runs.push(playSeed({seed,route,growthMode,targetId:options['target-id']||'',difficulty:options.difficulty,roundLimit})); }
+    catch(error) { runs.push({seed,route,growthMode,roundLimit,error:error.message,action:error.action,state:error.pilotState,trace:error.trace,rounds:error.trace?.length||0,lp:error.pilotState?.lp||0,completed:false}); }
   }
-  const report={createdAt:new Date().toISOString(),routes:ROUTES.map(route=>{const r=runs.filter(x=>x.route===route);return {route,runs:r.length,completed:r.filter(x=>x.completed).length,meanRounds:r.reduce((n,x)=>n+x.rounds,0)/(r.length||1),meanLp:r.reduce((n,x)=>n+x.lp,0)/(r.length||1)};}),runs};
-  const output=resolve(options.output||'runtime/independent-mode-20261005/balance.json');
+  const groups=[...new Set(runs.map(x=>`${x.growthMode}/${x.roundLimit}/${x.route}`))].map(key=>{const [growthMode,roundLimit,route]=key.split('/');const r=runs.filter(x=>x.growthMode===growthMode&&x.roundLimit===Number(roundLimit)&&x.route===route);return {growthMode,roundLimit:Number(roundLimit),route,runs:r.length,wins:r.filter(x=>x.outcome==='win').length,losses:r.filter(x=>x.outcome==='loss').length,completed:r.filter(x=>x.completed).length,meanRounds:r.reduce((n,x)=>n+x.rounds,0)/(r.length||1),meanLp:r.reduce((n,x)=>n+x.lp,0)/(r.length||1),rejectedActions:r.reduce((n,x)=>n+(x.rejectedActions?.length||0),0)};});
+  const report={createdAt:new Date().toISOString(),groups,runs};
+  const output=resolve(options.output||'runtime/growth-destination-20261008/balance-qa/balance.json');
   await mkdir(dirname(output),{recursive:true});await writeFile(output,JSON.stringify(report,null,2));
-  console.log(JSON.stringify({output,role:'seeded real-action balance experiment',routes:report.routes,errors:runs.filter(r=>r.error).map(r=>({seed:r.seed,route:r.route,error:r.error,round:r.state?.round}))},null,2));
+  console.log(JSON.stringify({output,role:'seeded real-action balance experiment',groups:report.groups,errors:runs.filter(r=>r.error).map(r=>({seed:r.seed,route:r.route,growthMode:r.growthMode,round:r.state?.round,error:r.error}))},null,2));
   if(runs.some(r=>r.error))process.exitCode=1;
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();

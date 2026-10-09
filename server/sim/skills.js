@@ -77,7 +77,11 @@ export class SkillRuntime {
     this.id = s.id ?? d.id ?? 'skill';
     this.name = s.name ?? d.name ?? '';
     this.kind = s.kind ?? 'instant';
-    this.duration = Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
+    // Explicitly tagged resonance permanent skills use -1 as a sentinel. Keep the exception opt-in so an
+    // untagged -1 or Infinity cannot silently make a skill permanent.
+    this.resonancePermanentDuration = s.duration === -1 && Array.isArray(s.tags)
+      && (s.tags.includes('resonancePermanentDuration') || s.tags.includes('resonanceYelaPermanent'));
+    this.duration = this.resonancePermanentDuration ? -1 : Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
     this.ammo = Math.max(0, Math.floor(+s.ammo || 0));
     this.baseSpCost = Math.max(0, Number.isFinite(+s.spCost) ? +s.spCost : (d.spCost ?? 0));
     this.initSp = Math.max(0, Number.isFinite(+s.initSp) ? +s.initSp : (d.initSp ?? 0));
@@ -453,7 +457,7 @@ export class SkillRuntime {
     if (this.manual) this.opReadyAt = b.time + AUTO_OP_COOLDOWN;
     if (this.isTimed) {
       this.active = true;
-      this.timeLeft = this.kind === 'duration' ? Math.max(0.01, this.duration) : (this.kind === 'ammo' && this.duration > 0 ? this.duration : Infinity);
+      this.timeLeft = this.kind === 'duration' ? (this.resonancePermanentDuration ? Infinity : Math.max(0.01, this.duration)) : (this.kind === 'ammo' && this.duration > 0 ? this.duration : Infinity);
       this.ammoLeft = this.kind === 'ammo' ? Math.max(1, this.ammo) : 0;
       this.ammoMax = this.ammoLeft;
       this._applyMods();
@@ -496,7 +500,7 @@ export class SkillRuntime {
       // an extra attack that spends no bullet
     } else if (this.active && this.kind === 'ammo') {
       this.ammoLeft--;
-      if (b._hooks.ammoUsed) b.emit('ammoUsed', { unit: this.unit, left: this.ammoLeft, skill: this });
+      if (b._hooks.ammoUsed) b.emit('ammoUsed', { unit: this.unit, left: this.ammoLeft, skill: this, targets: targets.slice() });
       if (this.ammoLeft <= 0) this.end('ammo');
     } else if (usedOverride && this.pending && !this.isTimed) {
       this.pending = false;

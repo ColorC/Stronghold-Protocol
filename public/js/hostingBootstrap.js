@@ -1,5 +1,6 @@
 // Admission happens before importing the game's module graph. Heartbeats count active visitors, not saved games.
-const endpoint = new URL('independent/api/admission', location.href);
+const resonanceEntry = /(?:^|\/)resonance\.html$/.test(location.pathname);
+const endpoint = new URL(resonanceEntry ? 'resonance/api/admission' : 'independent/api/admission', location.href);
 let timer;
 let blocked;
 function showBlocked(message) {
@@ -22,7 +23,7 @@ async function renew() {
     const result = await response.json();
     if (response.status === 202 && result.ok && result.queued) {
       blocked?.remove(); blocked = null;
-      const { startHostingWait } = await import('/js/hostingWait.js');
+      const { startHostingWait } = await import('./hostingWait.js');
       startHostingWait(result.queued);
       return false;
     }
@@ -40,7 +41,7 @@ async function renew() {
   }
 }
 if (await renew()) {
-  await import('./independent/main.js');
+  await import(resonanceEntry ? './resonance/main.js' : './independent/main.js');
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renew(); });
   window.addEventListener('online', renew);
 }

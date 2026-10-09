@@ -24,14 +24,28 @@ test('the operator table has every operator once, with a known kind; an untouche
   assert.deepEqual(cardTableDiff('operators', legacy), []);
 });
 
-test('the editable operator table accepts the one-time tool kind', () => {
-  assert.ok(ROSTER_KINDS.includes('一次性工具'));
+test('active flags and primary grouping match the authoritative active roster and authored delivery rules', () => {
+  const design = JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH, 'utf8'));
+  const activeIds = new Set(design.rules.activeRosterIds);
+  assert.equal(activeIds.size, 101);
+  assert.ok(design.operators.every((op) => op.active === activeIds.has(op.chessId)), 'retained rows are explicitly inactive');
+  assert.ok(design.operators.filter((op) => activeIds.has(op.chessId)).every((op) => op.roster && ROSTER_KINDS.includes(op.roster)), 'every active row has one supported primary grouping');
+  assert.equal(design.operators.find((op) => op.name === '梅尔').roster, '生成', 'combat summon is grouped by its authored summon effect');
+  assert.equal(design.operators.find((op) => op.name === '香草').roster, '成长', 'permanent growth is grouped by its authored delivery');
+});
+
+test('the editable operator table exposes the six source-effect groupings', () => {
+  assert.deepEqual(ROSTER_KINDS, ['成长', '生成', '经济', '辅助', '战斗', '交接']);
 });
 
 test('generated gear sources do not list any inactive operator', () => {
   const block = gearSourcesBlock();
   const design = JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH, 'utf8'));
-  for (const op of design.operators.filter((x) => x.active === false)) assert.ok(!block.includes(op.name), op.name);
+  const sourceNames = new Set(block.split('\n').flatMap((line) => {
+    const row = line.match(/^- \*\*[^*]+\*\*：(.+)$/);
+    return row ? row[1].split('、').map((name) => name.trim()) : [];
+  }));
+  for (const op of design.operators.filter((x) => x.active === false)) assert.ok(!sourceNames.has(op.name), op.name);
 });
 
 test('an edited cell, an added row and a removed row are all reported', () => {

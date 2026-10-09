@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { operatorRow, tableDiff, writeOperatorTable } from '../../tools/independent-design-table.mjs';
 
-const op = (name, tier, role, active = true) => ({ name, tier, skill: '测试\n技能|一', active, nativeTrait: { normal: '普通\n特质|甲', elite: '精锐特质' }, role });
+const op = (name, tier, role, active = true) => ({ chessId: name, name, tier, skill: '测试\n技能|一', active, nativeTrait: { normal: '普通\n特质|甲', elite: '精锐特质' }, role });
 const fixture = {
+  rules: { activeRosterIds: ['甲', '乙'] },
   operators: [op('甲', 1, '职责\n含|竖线'), op('乙', 2, '第二职责'), op('旧干员', 1, '停用内容', false)],
 };
 const docFixture = () => [
@@ -38,7 +39,7 @@ test('writer rebuilds only tier table blocks, removes inactive/missing rows, and
 test('canonical candidate generates 101 active rows in expected tiers without writing the document', { skip: !process.env.SP_INDEPENDENT_DESIGN_PATH }, () => {
   const design = JSON.parse(readFileSync(process.env.SP_INDEPENDENT_DESIGN_PATH, 'utf8'));
   const source = readFileSync(new URL('../../docs/independent-mode/design.md', import.meta.url), 'utf8');
-  const expected = [11, 19, 21, 18, 18, 14];
+  const expected = [10, 19, 22, 17, 18, 15];
   assert.equal(design.operators.filter((entry) => entry.active !== false).length, 101);
   assert.deepEqual(expected.map((_, i) => design.operators.filter((entry) => entry.active !== false && Number(entry.tier) === i + 1).length), expected);
   const regenerated = writeOperatorTable(design, source);

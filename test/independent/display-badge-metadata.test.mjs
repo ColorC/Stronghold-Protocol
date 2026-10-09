@@ -4,12 +4,13 @@ import { getData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
 
-test('all fifteen badge projection records expose a Chinese stat name and ratio metadata', () => {
+test('all sixteen badge projection records expose a Chinese stat name and ratio metadata', () => {
   const data = getData({ log: { warn() {}, error() {}, info() {} } });
   const catalog = getCatalog(data);
   const display = independentDisplayCatalog(data, catalog);
   const badges = Object.entries(display.gear).filter(([, item]) => item.kind === 'badge');
-  assert.equal(badges.length, 15);
+  assert.equal(badges.length, 16);
+  assert.ok(badges.some(([id]) => id === 'damage'), 'the added damage badge remains part of the visible catalog');
   for (const [id, badge] of badges) {
     assert.equal(typeof badge.statName, 'string', `${id} has a stat label`);
     assert.ok(badge.statName.length > 0, `${id} has a non-empty stat label`);

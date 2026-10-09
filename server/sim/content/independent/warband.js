@@ -97,8 +97,12 @@ export function installWarband(battle,{catalog,pieces}) {
       let attacks=0;
       battle.on('attack',event=>{
         if(!live(unit)||!nativeAttack(unit,event)||++attacks%p.every||entry.used>=p.perBattle)return;
-        const candidate=entries.filter(x=>x.rule.behavior==='retiringEffect'&&x.unit!==unit&&live(x.unit)&&eligible(x.unit,unit,p.faction)&&x.echoes<6).sort((a,b)=>stable(a.unit,b.unit)||a.index-b.index)[0];
-        if(candidate){entry.used++;candidate.echoes++;for(let i=0;i<multiplier(candidate.unit);i++)action(candidate,true);}
+        const echoed=typeof battle.echoDarkmoonRetirement==='function'&&battle.echoDarkmoonRetirement(unit,p.faction);
+        if(echoed)entry.used++;
+        else {
+          const candidate=entries.filter(x=>x.rule.behavior==='retiringEffect'&&x.unit!==unit&&live(x.unit)&&eligible(x.unit,unit,p.faction)&&x.echoes<6).sort((a,b)=>stable(a.unit,b.unit)||a.index-b.index)[0];
+          if(candidate){entry.used++;candidate.echoes++;for(let i=0;i<multiplier(candidate.unit);i++)action(candidate,true);}
+         }
       },{owner:unit});
     } else if(rule.behavior==='warbandEvent') {
       const stacks=new Map(),last=new Map(),pending=new Map();let broken=0;

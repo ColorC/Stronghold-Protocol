@@ -15,6 +15,9 @@ import { audio } from '../audio.js';
 import { settingsStore } from './settings.js';
 
 const LOAD_TIMEOUT_MS = 12000;
+// The renderer initializes Pixi/WebGL and its field assets together. Cold software-WebGL startup can exceed the
+// module-load budget; let that initialization finish before selecting the simplified fallback.
+const FIELD_VIEW_INIT_TIMEOUT_MS = 30000;
 const METHODS = ['setStage', 'setCamera', 'setPrep', 'enterBattle', 'pushSnapshot', 'pushEvents', 'highlightTiles', 'on', 'resize', 'destroy'];
 // direction-step hooks (ui/facingWheel.js): optional — the wheel falls back to the engine's dev hooks when absent;
 // setPen (enemy preview pen list), prepField ({ kind, side, mirror } of the Final Assault prep), stripesUnder (the view
@@ -203,7 +206,7 @@ export async function mountFieldView(host, extra = null) {
       }
       const mod = await withTimeout(import('../render/app.js'), LOAD_TIMEOUT_MS, 'render engine import');
       if (typeof mod?.createFieldView !== 'function') throw new Error('createFieldView missing');
-      const view = await withTimeout(Promise.resolve(mod.createFieldView(host, opts)), LOAD_TIMEOUT_MS, 'createFieldView');
+      const view = await withTimeout(Promise.resolve(mod.createFieldView(host, opts)), FIELD_VIEW_INIT_TIMEOUT_MS, 'createFieldView');
       const missing = METHODS.filter((k) => typeof view?.[k] !== 'function');
       if (missing.length) {
         try { view?.destroy?.(); } catch { /* ignore */ }

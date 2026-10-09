@@ -24,13 +24,19 @@ export function permitLine(op) {
 // Markdown table cells must stay on one physical line. Escape pipes as cell
 // content and render source newlines as HTML breaks so neither changes columns.
 export const tableCell = (value) => String(value ?? '').replace(/\r\n|\r|\n/g, '<br>').replace(/\|/g, '\\|');
-export const operatorRow = (op) => `| ${tableCell(`${op.name} · 科技等级${op.tier}\n原技能：${op.skill}`)} | ${tableCell(`普通：${op.nativeTrait.normal}\n精锐：${op.nativeTrait.elite}`)} | ${tableCell(`${op.role}${permitLine(op) ? `\n${permitLine(op)}` : ''}`)} |`;
+const legacyKinds = new Set(['纯战斗', '临时战斗', '联动', '一次性工具', '成长', '经济', '生成']);
+export const operatorRow = (op) => {
+  const role = [op.roster, op.role && !legacyKinds.has(op.role) ? op.role : ''].filter(Boolean).join('\n');
+  return `| ${tableCell(`${op.name} · 科技等级${op.tier}\n原技能：${op.skill || '无主动技能'}`)} | ${tableCell(`普通：${op.nativeTrait.normal}\n精锐：${op.nativeTrait.elite}`)} | ${tableCell(`${role}${permitLine(op) ? `\n${permitLine(op)}` : ''}`)} |`;
+};
 
-const activeOperators = (design) => design.operators.filter((op) => op.active !== false);
+const activeIds = (design) => new Set(design.rules.activeRosterIds);
+const activeOperators = (design) => design.operators.filter((op) => activeIds(design).has(op.chessId));
 const HANDOVER_HEADER = '| 干员／方向 | 获得时自带的交接凭证与限制 |';
 
 export function writeHandoverTable(design, doc) {
-  const rows = design.operators.filter((op) => op.active !== false && op.inheritance).map((op) =>
+  const active = activeIds(design);
+  const rows = design.operators.filter((op) => active.has(op.chessId) && op.inheritance).map((op) =>
     `| ${op.name} · ${op.inheritance.direction === '给予' ? '可被继承' : '可继承其他干员'} | ${op.inheritance.gear}。${op.inheritance.limit} |`);
   const lines = doc.split('\n'); const start = lines.indexOf(HANDOVER_HEADER);
   if (start < 0) throw new Error('design.md has no handover table');
@@ -79,7 +85,7 @@ function main() {
     const doc = readFileSync(DOC, 'utf8');
     const out = writeOperatorTable(design, doc);
     writeFileSync(DOC, out);
-    console.log(JSON.stringify({ written: activeOperators(design).length, removedInactive: design.operators.filter((op) => op.active === false).length, doc: DOC }));
+    console.log(JSON.stringify({ written: activeOperators(design).length, removedInactive: design.operators.filter((op) => !activeIds(design).has(op.chessId)).length, doc: DOC }));
   } else if (mode === 'check') {
     const diff = tableDiff(design);
     console.log(JSON.stringify({ operators: activeOperators(design).length, differing: diff.map((x) => x.name), doc: DOC, data: DESIGN }));

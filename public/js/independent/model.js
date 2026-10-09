@@ -3,9 +3,9 @@
 // page-model.test.js runs them in Node. The rules stay on the server: legal tiles, forecasts and prices come from it.
 import { INVENTORY_STACK_LIMIT, inventoryStackGroups } from '../../../shared/independentInventory.js';
 
-/** The 15 badges reuse the names of the 15 small bonds, so they wear those bonds' glyphs (public/assets/bond). */
+/** Basic equipment reuses the native bond glyphs (public/assets/bond). */
 export const BADGE_BOND = Object.freeze({
-  precision: 'preciShip', agility: 'skillfulShip', vitality: 'steadShip', defense: 'deputShip', assault: 'raidShip',
+  precision: 'preciShip', agility: 'skillfulShip', damage: 'raidShip', vitality: 'steadShip', defense: 'deputShip', assault: 'raidShip',
   recovery: 'swiftShip', arcane: 'arcaneShip', foresight: 'visiShip', miracle: 'miraShip', investor: 'investShip',
   unyielding: 'indomShip', harmony: 'maniShip', coordination: 'emptyShip', solitary: 'soloShip', mastery: 'suntShip',
 });

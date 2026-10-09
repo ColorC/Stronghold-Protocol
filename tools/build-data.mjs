@@ -33,7 +33,7 @@
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Grid, DEPLOY_REFUSED_TILES } from '../server/sim/grid.js';
 import { bandBondIds } from '../shared/bandBonds.js';
 
@@ -44,6 +44,8 @@ const RESEARCH_DIR = join(ROOT, 'docs', 'research');
 const GAMEDATA_URL = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/';
 const SEASON = 'act2autochess';
 const USAGE = 'usage: node tools/build-data.mjs [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--quiet] [--no-research] [--force]';
+
+class CliUsageError extends Error {}
 
 /**
  * Parse the command line strictly (unknown options and missing values are errors, so a typo can
@@ -64,24 +66,20 @@ function parseArgs(argv) {
     if (flags[name] && inline === null) { opts[flags[name]] = true; continue; }
     if (dirs[name]) {
       const v = inline ?? argv[++i];
-      if (!v || v.startsWith('--')) throw new Error(`${name} needs a path argument\n${USAGE}`);
+      if (!v || v.startsWith('--')) throw new CliUsageError(`${name} needs a path argument\n${USAGE}`);
       opts[dirs[name]] = resolve(v);
       continue;
     }
-    throw new Error(`unknown option ${argv[i]}\n${USAGE}`);
+    throw new CliUsageError(`unknown option ${argv[i]}\n${USAGE}`);
   }
-  if (opts.refresh && opts.offline) throw new Error(`--refresh and --offline are mutually exclusive\n${USAGE}`);
+  if (opts.refresh && opts.offline) throw new CliUsageError(`--refresh and --offline are mutually exclusive\n${USAGE}`);
   return opts;
 }
 
-let OPTS;
-try {
-  OPTS = parseArgs(process.argv.slice(2));
-} catch (e) {
-  console.error(`build-data: ${e.message}`);
-  process.exit(2);
-}
-const CACHE_DIR = OPTS.cache;
+// Keep the pipeline reusable by importers without parsing the caller's CLI arguments or starting
+// the full build as a side effect. The CLI applies its arguments only when this file is executed.
+let OPTS = parseArgs([]);
+let CACHE_DIR = OPTS.cache;
 
 const log = (...a) => { if (!OPTS.quiet) console.log(...a); };
 const warnings = [];
@@ -354,7 +352,7 @@ async function loadManifest() {
 // ===== shared game-object helpers ===============================================================
 
 /** Range grid [[dRow,dCol]…] of a range_table id (facing right), or null. */
-function rangeGrid(ctx, rangeId) {
+export function rangeGrid(ctx, rangeId) {
   if (!rangeId) return null;
   const r = ctx.rangeTable[rangeId];
   if (!r) { warn(`unknown rangeId ${rangeId}`); return null; }
@@ -362,7 +360,7 @@ function rangeGrid(ctx, rangeId) {
 }
 
 /** Interpolate character attribute keyframes at (phase, level); returns the raw float data object. */
-function interpolateAttrs(char, phase, level) {
+export function interpolateAttrs(char, phase, level) {
   const ph = char.phases?.[phase];
   if (!ph) return null;
   const kfs = ph.attributesKeyFrames || [];
@@ -389,7 +387,7 @@ const MODULE_ATTR_MAP = {
 };
 
 /** Convert interpolated attributes (+ optional additive module bonus) into the compact stats object. */
-function statsFrom(attrs, bonus = {}) {
+export function statsFrom(attrs, bonus = {}) {
   if (!attrs) return null;
   const r = (v) => Math.round(v);
   const s = {
@@ -419,7 +417,7 @@ function statsFrom(attrs, bonus = {}) {
 }
 
 /** Immunity flags of a character/enemy attribute object. */
-function immunitiesOf(attrs) {
+export function immunitiesOf(attrs) {
   return {
     stun: !!attrs?.stunImmune, silence: !!attrs?.silenceImmune, sleep: !!attrs?.sleepImmune,
     frozen: !!attrs?.frozenImmune, levitate: !!attrs?.levitateImmune,
@@ -477,7 +475,7 @@ const TRIGGER_DEVIATIONS = Object.freeze({
  * @param {{operator?: boolean, chessId?: string}} opts operator = a chess (the 技能范围 strategy is written for 干员;
  *   summons keep DEFAULT); chessId = the chess's NORMAL id (TRIGGER_DEVIATIONS key)
  */
-function resolveTrigger(ctx, char, charId, skillIdx, skill, { operator = false, chessId = null } = {}) {
+export function resolveTrigger(ctx, char, charId, skillIdx, skill, { operator = false, chessId = null } = {}) {
   const rows = Object.values(ctx.ac.skillTriggerDataList || {});
   const manual = skill.skillType === 'MANUAL';
   const pick =
@@ -512,7 +510,7 @@ const SP_TYPE_NAMES = { 1: 'INCREASE_WITH_TIME', 2: 'INCREASE_WHEN_ATTACK', 4: '
  * Build a skill record (default skill of a chess or a token) at a given level.
  * @returns {object|null}
  */
-function buildSkill(ctx, skillId, level, trigger, label) {
+export function buildSkill(ctx, skillId, level, trigger, label) {
   if (!skillId) return null;
   const s = ctx.skillTable[skillId];
   if (!s) { warn(`${label}: skill ${skillId} missing from skill_table`); return null; }
@@ -585,7 +583,7 @@ function applyModuleTraitParts(parts, phase, level, traitBB, template, rangeId, 
  * combat classification derived from its text.
  * @returns {{ trait: object, classify: object }}
  */
-function traitRecord(ctx, char, phase, level, opParts, chessId) {
+export function traitRecord(ctx, char, phase, level, opParts, chessId) {
   const tc = bestCandidate(char.trait?.candidates, phase, level);
   const traitBB = flattenBB(tc?.blackboard, `${chessId} trait`);
   const traitMod = applyModuleTraitParts(opParts, phase, level, traitBB,
@@ -630,7 +628,7 @@ function buildTalents(ctx, char, phase, level, moduleParts, label, modPhase = ph
 }
 
 /** The character's own talents at (phase, level), unfiltered (no module). */
-function baseTalentList(ctx, char, phase, level, label) {
+export function baseTalentList(ctx, char, phase, level, label) {
   const talents = [];
   (char.talents || []).forEach((t, index) => {
     const c = bestCandidate(t.candidates, phase, level);
@@ -1015,7 +1013,7 @@ function classifyToken(char, traitText) {
  * Build one owner-specific variant of a token / map character at (phase, level, skill level).
  * @returns {object}
  */
-function tokenVariant(ctx, tokenId, char, { phase, level, skillIndex, skillLevel, modulePhase, moduleTokenParts, label }) {
+export function tokenVariant(ctx, tokenId, char, { phase, level, skillIndex, skillLevel, modulePhase, moduleTokenParts, label }) {
   const ph = Math.min(phase, (char.phases?.length || 1) - 1);
   const lv = Math.min(level, char.phases?.[ph]?.maxLevel || level);
   const bonus = {};
@@ -3230,6 +3228,8 @@ function validateAll(f) {
 // ===== main =====================================================================================
 
 async function main() {
+  OPTS = parseArgs(process.argv.slice(2));
+  CACHE_DIR = OPTS.cache;
   const t0 = Date.now();
   const ctx = await loadContext();
   log('building…');
@@ -3302,7 +3302,9 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error('build-data failed:', e && e.stack ? e.stack : e);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  main().catch((e) => {
+    console.error('build-data failed:', e && e.stack ? e.stack : e);
+    process.exitCode = e instanceof CliUsageError ? 2 : 1;
+  });
+}

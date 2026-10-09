@@ -50,9 +50,9 @@ test('module loadout base attributes receive white badge percentages before equi
   assert.equal(u.s.aspd,122.4);
 });
 
-test('all fifteen canonical badge effects stay percentage-valued, including the retired alias',()=>{
+test('all fifteen canonical badge effects and the damage alias stay percentage-valued',()=>{
   assert.deepEqual(Object.fromEntries(Object.entries(INDEPENDENT_BADGE_STATS).map(([id, x])=>[id,[x.stat,x.value]])),{
-    precision:['attackBasePercent',0.02],agility:['attackSpeedPercent',0.02],vitality:['maxLifeBasePercent',0.03],
+    damage:['damageDealtPercent',0.02],precision:['attackBasePercent',0.02],agility:['attackSpeedPercent',0.02],vitality:['maxLifeBasePercent',0.03],
     defense:['defenseBasePercent',0.02],assault:['attackPercent',0.02],recovery:['naturalSkillRecoveryPercent',0.02],
     arcane:['artsDamageReduction',0.005],foresight:['skillCostInitialPercent',0.02],miracle:['physicalAndArtsDodge',0.01],
     investor:['maxLifeRecoveryPercent',0.001],unyielding:['maxLifePercent',0.03],harmony:['healingDealtPercent',0.01],

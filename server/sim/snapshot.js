@@ -30,6 +30,8 @@ export function unitInfo(u) {
     name: u.name,
     tier: d.tier ?? (d.rank === 'BOSS' ? 3 : d.rank === 'ELITE' ? 2 : 1),
     golden: !!d.golden,
+    ...(u.side === 'ally' && u.kind === 'op' && Number.isInteger(d.resonanceStar) && d.resonanceStar >= 1 && d.resonanceStar <= 3
+      ? { resonanceStar: d.resonanceStar } : {}),
     spine: d.spine ?? d.charId ?? u.defId,
     avatar: d.avatar ?? d.charId ?? u.defId,
     x: r2(u.x),

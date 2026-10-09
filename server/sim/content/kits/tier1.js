@@ -592,7 +592,7 @@ export default {
         kind: 'instant', trigger: 'SP_FULL',
         onStart({ battle, unit }) {
           const n = num(skillBbOf(chess, 'skcom_charge_cost[3]').cost);
-          battle.addDp(unit.ownerId, n);
+          battle.addDp(unit.ownerId, n, { sourceUnitId: unit.id });
           battle.fx('dp', { x: unit.x, y: unit.y, n, id: unit.id });
         },
       },
@@ -600,7 +600,7 @@ export default {
     skill: {
       kind: 'instant',
       onStart({ battle, unit }) {
-        battle.addDp(unit.ownerId, num(bb.cost));
+        battle.addDp(unit.ownerId, num(bb.cost), { sourceUnitId: unit.id });
         battle.fx('dp', { x: unit.x, y: unit.y, n: num(bb.cost), id: unit.id });
         const grid = def?.skill?.rangeGrid;
         const foes = grid ? enemiesInGrid(battle, unit, grid) : battle.foesInRadius(unit.x, unit.y, RING1).filter((e) => !e.s.flags.untargetable);
@@ -613,7 +613,7 @@ export default {
     },
     talents: [{ install(battle, unit) {
       const n = num(talentBb(chess, 0).cost);
-      if (n > 0) battle.on('battleStart', () => battle.addDp(unit.ownerId, n), { owner: unit });
+      if (n > 0) battle.on('battleStart', () => battle.addDp(unit.ownerId, n, { source: 'initial' }), { owner: unit });
     } }],
   }),
 
@@ -1073,4 +1073,3 @@ export default {
     };
   },
 };
-

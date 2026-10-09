@@ -27,5 +27,5 @@ export function inventoryStackGroups(items = []) {
 
 /** Only mechanisms that already multiply their effect by quantity permit batch equipping. */
 export function quantityEquippable(record) {
-  return !!record && !record.unique && (!record.mechanism || ['badge', 'stats'].includes(record.mechanism));
+  return !!record && !record.unique && (!record.mechanism || ['badge', 'stats', 'growthTraining'].includes(record.mechanism));
 }

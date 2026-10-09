@@ -11,9 +11,10 @@ const OPS = { provence: 'chess_char_1_07_a', texas: 'chess_char_1_08_a', lateran
 
 function setup(pieces, rulesByUid, recs = {}) {
   const operators = { ...base.operators };
-  for (const p of pieces) if (rulesByUid[p.uid]) {
+  for (const p of pieces) {
     const op = operators[p.chessId];
-    operators[p.chessId] = { ...op, nativeTrait: { ...op.nativeTrait, effect: { ...op.nativeTrait.effect, combat: rulesByUid[p.uid] } } };
+    operators[p.chessId] = { ...op, sourceRefs: {}, darkmoonSourceId: undefined,
+      nativeTrait: { ...op.nativeTrait, effect: { prep: [], combat: rulesByUid[p.uid] || [] } } };
   }
   const catalog = { ...base, operators };
   const chess = {};

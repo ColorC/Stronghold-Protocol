@@ -1,0 +1,594 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, CARRY_ADAPTIVE_POLICY, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, carryItemScore, carryOperatorPowerFactor, carryTransferPreservesPacts, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, finalFormalValidationTasks, finalFunnyValidationTasks, pairAdaptiveStandardRuns, planCarryAdaptiveDeployment, policyLevelTarget, repositionCarryAdaptiveTeam, routeProfiles as campaignRouteProfiles, runCampaign, selectAdaptiveCarry, selectEconPactCopyTarget, transferCarryEquipment } from '../../tools/resonance/balance-campaign.mjs';
+import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
+import { loadData } from '../../server/data.js';
+import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
+import { getResonanceField } from '../../server/modes/resonance/battle.js';
+import { applyAction, createSession, validateSession } from '../../server/modes/resonance/session.js';
+
+test('campaign coverage declares every environment and difficulty', () => {
+  assert.equal(ENVIRONMENTS.length, 19);
+  assert.equal(new Set(ENVIRONMENTS).size, 19);
+  assert.deepEqual(DIFFICULTIES, ['FUNNY', 'NORMAL', 'HARD', 'ABYSS']);
+});
+
+test('final formal validation covers all NORMAL environments and only four FUNNY environments',()=>{
+  const tasks=finalFormalValidationTasks(),normal=tasks.filter(task=>task.difficulty==='NORMAL'),funny=tasks.filter(task=>task.difficulty==='FUNNY');
+  assert.equal(tasks.length,23);
+  assert.deepEqual(normal.map(task=>task.environmentId),ENVIRONMENTS);
+  assert.deepEqual(funny.map(task=>task.environmentId),['origin_aegir','origin_laterano','origin_kjerag','origin_yan']);
+  assert.equal(new Set(tasks.map(task=>`${task.environmentId}:${task.difficulty}`)).size,23);
+  assert.ok(tasks.every(task=>task.difficulty==='NORMAL'||task.difficulty==='FUNNY'));
+});
+
+test('FUNNY logistics rounds allow official preparation actions before settling supply',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'FUNNY',seed:20261009,maxBattles:1,maxMs:120000,policy:CARRY_ADAPTIVE_POLICY});
+  assert.equal(run.battles,1);
+  assert.equal(run.rows[0].round,2,'the first battle follows the odd logistics round');
+  assert.ok((run.policyActions.deploy??0)>0,'deployment used the official preparation action');
+  assert.ok((run.policyActions.advanceSupply??0)>0,'odd-round logistics still settles through advanceSupply');
+  const logistics=run.nodeEconomy.find(node=>node.round===1);
+  assert.ok(logistics,'the logistics node has its own action record');
+  assert.ok((logistics.actions?.deploy??0)>0,'official preparation happened on the odd node itself');
+  assert.equal(logistics.actions?.fight??0,0,'logistics did not start a battle');
+});
+
+test('final FUNNY validation is the exact four-environment FUNNY subset',()=>{
+  const funny=finalFunnyValidationTasks(),full=finalFormalValidationTasks().filter(task=>task.difficulty==='FUNNY');
+  assert.deepEqual(funny,full);
+  assert.equal(funny.length,4);
+});
+
+test('offer selection skips the first eligible offer when its reserved spend is not actionable',()=>{
+  const op=(id,cost)=>({id,charId:id,cost,role:'damage',position:'RANGED',pacts:[],stars:{1:{stats:{atk:100,bat:1,aspd:0,maxHp:1000,def:0,blockCnt:0}}}});
+  const catalog={config:{environmentId:'origin_test'},environments:{origin_test:{identityPactId:'p'}},operators:{expensive:op('expensive',5),affordable:op('affordable',2)},pacts:{},equipment:{}};
+  const state={gold:10,pieces:[],strategies:[],strategyState:{},environmentId:'origin_test',shop:{offers:[{uid:'expensive-offer',operatorId:'expensive',cost:5},{uid:'affordable-offer',operatorId:'affordable',cost:2}]}};
+  const picked=chooseOffer(state,catalog,{isActionable:offer=>state.gold-offer.cost>=6});
+  assert.equal(picked?.offer.uid,'affordable-offer','an unaffordable-after-bank-floor first choice must not stop scanning later offers');
+});
+
+test('enemy-balance counterfactuals clone only NORMAL multipliers and run through a real session and Battle',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const source=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:20261009});
+  const adjusted=catalogForBalanceProfile(source,'looser','NORMAL');
+  assert.notEqual(adjusted,source);
+  assert.equal(adjusted.campaign.enemyBalance.byDifficulty.NORMAL.regular.hpMultiplier,.65);
+  assert.equal(adjusted.campaign.enemyBalance.byDifficulty.NORMAL.regular.atkMultiplier,.85);
+  assert.equal(adjusted.campaign.enemyBalance.byDifficulty.NORMAL.regular.defMultiplier,.35);
+  assert.equal(adjusted.campaign.enemyBalance.byDifficulty.NORMAL.terminal.hpMultiplier,.75);
+  assert.equal(adjusted.campaign.enemyBalance.byDifficulty.NORMAL.terminal.bossPoolMultiplier,.6);
+  assert.equal(source.campaign.enemyBalance.byDifficulty.NORMAL,undefined,'the compiled catalog remains unchanged');
+  assert.equal(catalogForBalanceProfile(source,'looser','HARD'),source,'other difficulties retain their official profile');
+  const refined=catalogForBalanceProfile(source,'refined-standard','NORMAL');
+  assert.notEqual(refined,source);
+  assert.deepEqual(refined.campaign.enemyBalance.byDifficulty.NORMAL,{regular:{hpMultiplier:.75,atkMultiplier:.90,defMultiplier:.45},terminal:{hpMultiplier:.80,atkMultiplier:.90,defMultiplier:.45,bossPoolMultiplier:.65}});
+  assert.equal(catalogForBalanceProfile(source,'refined-standard','HARD'),source,'the candidate does not alter other difficulties');
+  const accessible=catalogForBalanceProfile(source,'accessible-standard','NORMAL');
+  assert.notEqual(accessible,source);
+  assert.deepEqual(accessible.campaign.enemyBalance.byDifficulty.NORMAL,{regular:{hpMultiplier:.65,atkMultiplier:.85,defMultiplier:.35},terminal:{hpMultiplier:.75,atkMultiplier:.85,defMultiplier:.35,bossPoolMultiplier:.5}});
+  assert.equal(catalogForBalanceProfile(source,'accessible-standard','HARD'),source,'accessible-standard affects NORMAL only');
+  assert.equal(catalogForBalanceProfile(source,'accessible-standard','ABYSS'),source,'accessible-standard leaves ABYSS unchanged');
+  const formal=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo'});
+  const looser=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo',balanceProfile:'looser'});
+  const candidate=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:'tempo',balanceProfile:'refined-standard'});
+  const accessibleBattle=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:20261009,maxBattles:1,policy:CARRY_ADAPTIVE_POLICY,balanceProfile:'accessible-standard'});
+  assert.equal(formal.rows[0].enemyBalance.hpMultiplier,.65);
+  assert.equal(formal.rows[0].enemyBalance.atkMultiplier,.85);
+  assert.equal(formal.rows[0].enemyBalance.defMultiplier,.35);
+  assert.equal(looser.rows[0].enemyBalance.hpMultiplier,.65);
+  assert.equal(candidate.rows[0].enemyBalance.hpMultiplier,.75);
+  assert.equal(candidate.rows[0].enemyBalance.atkMultiplier,.90);
+  assert.equal(candidate.rows[0].enemyBalance.defMultiplier,.45);
+  assert.equal(accessibleBattle.balanceProfile,'accessible-standard');
+  assert.equal(accessibleBattle.rows.length,1);
+  assert.equal(accessibleBattle.rows[0].enemyBalance.hpMultiplier,.65);
+  assert.equal(accessibleBattle.rows[0].enemyBalance.atkMultiplier,.85);
+  assert.equal(accessibleBattle.rows[0].enemyBalance.defMultiplier,.35);
+  assert.equal(accessibleBattle.rows[0].enemyBalance.resMultiplier,1);
+  assert.equal(accessibleBattle.rows[0].enemyBalance.speedMultiplier,1);
+  assert.equal(looser.rows[0].enemyBalance.resMultiplier,1);
+  assert.equal(looser.rows[0].enemyBalance.speedMultiplier,1);
+  assert.equal(candidate.rows[0].enemyBalance.resMultiplier,1);
+  assert.equal(candidate.rows[0].enemyBalance.speedMultiplier,1);
+  assert.equal(formal.rows[0].diagnostics,0);
+  assert.equal(looser.rows[0].diagnostics,0);
+  assert.equal(candidate.rows[0].diagnostics,0);
+  assert.equal(accessibleBattle.rows[0].diagnostics,0);
+  assert.equal(formal.rows[0].summonAnchorGaps.length,0);
+  assert.equal(looser.rows[0].summonAnchorGaps.length,0);
+  assert.equal(candidate.rows[0].summonAnchorGaps.length,0);
+});
+
+test('tempo, reroll, and rush have explicit level schedules',()=>{
+  assert.deepEqual(CAMPAIGN_POLICIES,['tempo','reroll','rush']);
+  assert.deepEqual([3,5,9,13,18,24].map(round=>policyLevelTarget('tempo',round)),[4,5,6,7,8,9]);
+  assert.deepEqual([3,5,9,13,18,24].map(round=>policyLevelTarget('reroll',round)),[4,4,6,7,8,9]);
+  assert.deepEqual([3,5,9,13,18,24].map(round=>policyLevelTarget('rush',round)),[3,3,6,6,9,9]);
+  assert.ok(estimateOperatorPower({role:'damage',stars:{1:{stats:{atk:200,bat:1,aspd:100,maxHp:1000,def:100,blockCnt:1}}}})>400);
+});
+
+test('econ-pact banks in stages, holds 30/40 during XP pushes, and never refreshes before level 9',()=>{
+  assert.equal(CAMPAIGN_POLICIES.includes(ECON_PACT_POLICY),false);
+  assert.deepEqual(econPactPlan(4,3),{levelTarget:4,bankTarget:0,xpReserve:0,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(5,4),{levelTarget:4,bankTarget:10,xpReserve:10,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(9,5),{levelTarget:6,bankTarget:30,xpReserve:30,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(13,6),{levelTarget:7,bankTarget:50,xpReserve:30,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(18,8),{levelTarget:9,bankTarget:40,xpReserve:40,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(20,9),{levelTarget:9,bankTarget:30,xpReserve:30,refreshEnabled:true});
+  assert.deepEqual(econPactPlan(24,9),{levelTarget:9,bankTarget:0,xpReserve:0,refreshEnabled:true});
+});
+
+test('adaptive-standard lowers reserves and gates refresh and population XP by HP and legal unique roster',()=>{
+  assert.equal(ADAPTIVE_STANDARD_POLICY,'adaptive-standard');
+  const gate='legal-unique-roster-over-current-level-or-level8-to9-when-hp-at-least-40';
+  assert.deepEqual(adaptiveStandardPlan(13,6,80),{levelTarget:7,bankTarget:50,xpReserve:30,refreshEnabled:false,refreshLimit:0,refreshReserve:40,initialBuyLimit:null,lowHp:false,critical:false,xpGateRule:gate});
+  assert.deepEqual(adaptiveStandardPlan(13,6,69),{levelTarget:7,bankTarget:10,xpReserve:10,refreshEnabled:true,refreshLimit:3,refreshReserve:10,initialBuyLimit:4,lowHp:true,critical:false,xpGateRule:gate});
+  assert.deepEqual(adaptiveStandardPlan(13,6,39),{levelTarget:7,bankTarget:0,xpReserve:0,refreshEnabled:true,refreshLimit:5,refreshReserve:0,initialBuyLimit:4,lowHp:true,critical:true,xpGateRule:gate});
+  assert.equal(adaptiveStandardPlan(13,4,39).refreshEnabled,false,'critical HP alone does not refresh before the level-five gate');
+  assert.equal(adaptiveStandardPlan(13,4,39).initialBuyLimit,4,'low HP raises initial offer scanning independently of refresh level gate');
+  assert.equal(adaptiveStandardAllowsXp({level:6,hp:75,legalUniqueOwned:6}),false,'XP cannot raise population without an extra legal unique operator');
+  assert.equal(adaptiveStandardAllowsXp({level:6,hp:75,legalUniqueOwned:7}),true);
+  assert.equal(adaptiveStandardAllowsXp({level:3,hp:100,legalUniqueOwned:4}),true,'an extra legal member permits the current level purchase');
+  assert.equal(adaptiveStandardAllowsXp({level:4,hp:100,legalUniqueOwned:4}),false,'reevaluating after leveling prevents buying toward a fifth member that does not exist');
+  assert.equal(adaptiveStandardAllowsXp({level:8,hp:39,legalUniqueOwned:9}),false,'critical HP prioritizes upgrades over unlocking five-cost offers');
+  assert.equal(adaptiveStandardAllowsXp({level:8,hp:40,legalUniqueOwned:8}),true,'the level-eight to nine exception unlocks five-cost offers at safe HP');
+});
+
+test('adaptive compact runs retain profile identity and pair formal/refined runs by environment',()=>{
+  const compact=compactEconPactRun({environmentId:'origin_test',difficulty:'NORMAL',seed:7,policy:ADAPTIVE_STANDARD_POLICY,balanceProfile:'refined-standard',rows:[{round:1,level:3,roster:[{uid:'unit-uid',operatorId:'op',star:2,row:4,col:2,dir:null,equipment:['gear'],name:'Operator'}],mainPacts:['aegir'],goldAfter:4,goldBefore:6,won:true}],nodeEconomy:[],adaptivePlans:[{round:1,hp:50}],designatedCoreId:'op',coreStarMilestones:{2:1,3:null},diagnostics:{}} ,{includeAdaptiveDetails:true});
+  assert.equal(compact.balanceProfile,'refined-standard');
+  assert.deepEqual(compact.nodes[0].deployed,[{uid:'unit-uid',operatorId:'op',star:2,row:4,col:2,dir:null,gearIds:['gear']}]);
+  assert.equal(compact.nodes[0].hpPlan.hp,50);
+
+  const formal={environmentId:'origin_aegir',balanceProfile:'formal',seed:11};
+  const refined={environmentId:'origin_aegir',balanceProfile:'refined-standard',seed:11};
+  const other={environmentId:'origin_yan',balanceProfile:'formal',seed:12};
+  const pairs=new Map(pairAdaptiveStandardRuns([refined,other,formal]));
+  assert.equal(pairs.get('origin_aegir:formal'),formal);
+  assert.equal(pairs.get('origin_aegir:refined-standard'),refined);
+  assert.equal(pairs.get('origin_yan:formal'),other);
+  assert.equal(pairAdaptiveStandardRuns([{environmentId:'bad',balanceProfile:'looser'}]).length,0,'unrelated candidate profiles cannot enter adaptive pairing');
+});
+
+test('adaptive-standard executes a real no-recording campaign Battle and records the deployed field and HP plan',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:0x45434f4e,maxBattles:1,policy:ADAPTIVE_STANDARD_POLICY});
+  assert.equal(run.battles,1);
+  assert.equal(run.diagnostics.battleErrors,0);
+  assert.equal(run.diagnostics.summonAnchorGaps.length,0);
+  assert.equal(run.adaptivePlans.length,1);
+  assert.equal(run.adaptivePlans[0].hp,100);
+  assert.equal(run.adaptivePlans[0].bankTarget,0);
+  assert.ok(run.rows[0].roster.length>0);
+  for(const piece of run.rows[0].roster){assert.ok(Number.isInteger(piece.row));assert.ok(Number.isInteger(piece.col));assert.ok('dir'in piece);assert.ok(Array.isArray(piece.equipment));}
+});
+
+test('carry-adaptive chooses a 2-star designated core before a real main-pact fallback',()=>{
+  const catalog={environments:{origin_test:{identityPactId:'aegir'}},pacts:{},operators:{core:{cost:5,role:'frontline',charId:'core',pacts:['aegir']},fallback:{cost:4,role:'damage',charId:'fallback',pacts:['aegir']},wanqin:{cost:4,role:'damage',charId:'char_4119_wanqin',pacts:['aegir']},support:{cost:4,role:'support',charId:'support',pacts:['aegir']}}};
+  const state={environmentId:'origin_test',pieces:[{uid:'c',operatorId:'core',star:2,row:9,col:2,equipment:[]},{uid:'f',operatorId:'fallback',star:3,row:10,col:2,equipment:[]},{uid:'w',operatorId:'wanqin',star:3,row:11,col:2,equipment:[]},{uid:'s',operatorId:'support',star:3,row:12,col:2,equipment:[]}]};
+  assert.equal(selectAdaptiveCarry(state,catalog,'core').piece.uid,'c','the native 5-cost 2-star core wins even when alternatives have higher stars');
+  assert.equal(selectAdaptiveCarry(state,catalog,'missing').piece.uid,'f','fallback excludes Wanqin and support while preferring the strongest eligible main-pact damage/control');
+  const armor={effects:[{kind:'component_stat',params:{atk:15}},{kind:'component_stat',params:{hp:150}},{kind:'guardian',params:{}}]};
+  assert.ok(carryItemScore(armor,{role:'frontline'})>carryItemScore(armor,{role:'damage'}),'HP and defense components score for a frontline carry instead of only raw attack');
+});
+
+test('carry-adaptive completes one no-recording official Battle and emits carry/reposition plans',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:0x45434f4e,maxBattles:1,policy:CARRY_ADAPTIVE_POLICY});
+  assert.equal(run.battles,1);assert.equal(run.diagnostics.battleErrors,0);assert.equal(run.diagnostics.summonAnchorGaps.length,0);
+  const plan=run.carryPlans[run.rows[0].round];assert.ok(plan,'each node records the carry selected and gear carried');
+  assert.ok(plan.reposition&&Array.isArray(plan.reposition.desired)&&Array.isArray(plan.reposition.actual)&&Array.isArray(plan.reposition.moves));
+  assert.ok(plan.reposition.routeCoverage.frontlines.every(unit=>unit.blocksGround&&unit.nativeGroundRoutes.length>0),'frontline positions block actual native ground routes');
+  assert.ok(plan.reposition.routeCoverage.healers.every(unit=>unit.coveredFrontlines.length>0),'healer positions cover deployed frontlines when the field allows it');
+  const compact=compactEconPactRun(run);assert.ok(compact.nodes[0].carry.reposition.routeCoverage);assert.deepEqual(compact.carryTransfers,run.carryTransfers);
+});
+
+test('carry-adaptive repositions a real legal team through move-cycle buffer without changing bench or pool',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:123}),definition=ARCHETYPES.find(entry=>entry.id==='aegir-counter');
+  const scenario=buildScenario({data,catalog,definition,config:SCENARIO_CONFIGS.at(-1),coreStar:2,seed:319});let state=structuredClone(scenario.state);
+  const initial=createSession({seed:319,difficulty:'NORMAL',catalog,environmentId:'origin_aegir'}).state;
+  const expected=new Map(catalog.config.activeOperatorIds.map(id=>[id,Number(initial.poolRemaining[id]??0)+initial.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+initial.shop.offers.filter(offer=>offer.operatorId===id).length]));
+  for(const id of catalog.config.activeOperatorIds){const consumed=state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length;state.poolRemaining[id]=expected.get(id)-consumed;}
+  let gearUid=0;for(const piece of state.pieces)for(const item of piece.equipment)item.uid??=`scenario-gear-${gearUid++}`;
+  assert.equal(validateSession(state,{catalog}).ok,true);
+  const initialBench=state.pieces.filter(piece=>piece.row===null).length,initialPool=structuredClone(state.poolRemaining),coreId=state.pieces[0].operatorId;
+  const first=repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId:coreId});state=first.state;
+  assert.ok(first.plan.moves.length>0,'the runtime realizes desired native placements through official moves/turns');
+  const classOf=piece=>catalog.operators[piece.operatorId]?.position;
+  const eligible=state.pieces.filter(piece=>piece.row!==null);
+  const pair=eligible.flatMap((a,index)=>eligible.slice(index+1).filter(b=>classOf(a)===classOf(b)&&`${a.row},${a.col}`!==`${b.row},${b.col}`).map(b=>[a,b]))[0];
+  assert.ok(pair,'fixture has a same-class pair suitable for an occupied-target cycle');
+  const [a,b]=pair,[ar,ac]=[a.row,a.col];a.row=b.row;a.col=b.col;b.row=ar;b.col=ac;
+  assert.equal(validateSession(state,{catalog}).ok,true,'swapping same-class legal cells retains a valid session state');
+  const cycled=repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId:coreId});state=cycled.state;
+  assert.ok(cycled.plan.moves.some(move=>move.action==='buffer'),'the occupied cycle is resolved by a real temporary legal move');
+  assert.equal(state.pieces.filter(piece=>piece.row===null).length,initialBench,'reposition never uses the finite bench as temporary storage');
+  assert.deepEqual(state.poolRemaining,initialPool,'movement preserves the native operator pool');
+  assert.equal(validateSession(state,{catalog}).ok,true,'all final positions remain legal under the session validator');
+});
+
+test('carry-adaptive transfers finished gear via official unequip/equip actions and refuses full inventory or pact breakpoint loss',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:123}),definition=ARCHETYPES.find(entry=>entry.id==='aegir-counter');
+  const scenario=buildScenario({data,catalog,definition,config:SCENARIO_CONFIGS.at(-1),coreStar:2,seed:319});let state=structuredClone(scenario.state);
+  const initial=createSession({seed:319,difficulty:'NORMAL',catalog,environmentId:'origin_aegir'}).state;
+  const expected=new Map(catalog.config.activeOperatorIds.map(id=>[id,Number(initial.poolRemaining[id]??0)+initial.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+initial.shop.offers.filter(offer=>offer.operatorId===id).length]));
+  for(const id of catalog.config.activeOperatorIds){const consumed=state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length;state.poolRemaining[id]=expected.get(id)-consumed;}
+  let gearUid=0;for(const piece of state.pieces)for(const item of piece.equipment)item.uid??=`scenario-gear-${gearUid++}`;
+  const sourceCore=state.pieces[0],donor=state.pieces.find(piece=>piece.uid!==sourceCore.uid&&catalog.operators[piece.operatorId]?.role==='frontline'&&!piece.equipment.length),target=state.pieces.find(piece=>catalog.operators[piece.operatorId]?.role==='damage'&&catalog.operators[piece.operatorId]?.cost===3&&catalog.operators[piece.operatorId]?.pacts?.includes('aegir'));
+  const item=sourceCore.equipment.find(entry=>entry.itemId==='giantSlayer');assert.ok(donor&&target&&item);
+  const dispatch=(current,action)=>{const result=applyAction(current,{...action,expectedRevision:current.revision},{catalog});assert.equal(result.ok,true,`official ${action.type} action is legal: ${result.error??''}`);return result.state;};
+  state=dispatch(state,{type:'unequip',pieceUid:sourceCore.uid,itemUid:item.uid});state=dispatch(state,{type:'equip',pieceUid:donor.uid,itemUid:item.uid});
+  const uniqueBefore=[...state.inventory,...state.pieces.flatMap(piece=>piece.equipment)].map(entry=>entry.uid).sort(),poolBefore=structuredClone(state.poolRemaining),goldBefore=state.gold,aegirCountBefore=new Set(state.pieces.filter(piece=>piece.row!==null&&[...(catalog.operators[piece.operatorId]?.pacts??[]),...(piece.extraPacts??[])].includes('aegir')).map(piece=>catalog.operators[piece.operatorId]?.charId)).size;
+  const moved=transferCarryEquipment(state,catalog,{coreOperatorId:target.operatorId});state=moved.state;
+  assert.ok(moved.moves.length>0&&moved.moves.length<=3,'finished gear moves only when it yields clear role-specific gain and respects the carry three-slot cap');
+  assert.ok(moved.moves.every(move=>move.targetUid===target.uid&&move.targetCost===3&&move.sourceUid!==target.uid&&Number.isFinite(move.sourceCost)));
+  assert.ok(state.pieces.find(piece=>piece.uid===target.uid).equipment.some(entry=>entry.uid===item.uid));
+  assert.deepEqual([...state.inventory,...state.pieces.flatMap(piece=>piece.equipment)].map(entry=>entry.uid).sort(),uniqueBefore,'equipment instance UIDs are conserved across the official actions');
+  assert.deepEqual(state.poolRemaining,poolBefore,'equipment transfer does not change native operator pool');
+  assert.equal(state.gold,goldBefore,'official unequip/equip transfer has no invented gold cost or income');
+  const aegirCountAfter=new Set(state.pieces.filter(piece=>piece.row!==null&&[...(catalog.operators[piece.operatorId]?.pacts??[]),...(piece.extraPacts??[])].includes('aegir')).map(piece=>catalog.operators[piece.operatorId]?.charId)).size;assert.equal(aegirCountAfter,aegirCountBefore,'non-pact item transfer preserves current main-pact membership');
+  assert.equal(validateSession(state,{catalog}).ok,true);
+
+  const full=structuredClone(state);while(full.inventory.length<20)full.inventory.push({uid:`capacity-${full.inventory.length}`,itemId:'blade'});assert.equal(validateSession(full,{catalog}).ok,true,'full but valid inventory fixture sits at the native capacity');
+  const fullBefore=JSON.stringify(full.pieces.map(piece=>piece.equipment.map(entry=>entry.uid))),blocked=transferCarryEquipment(full,catalog,{coreOperatorId:target.operatorId});
+  assert.equal(blocked.moves.length,0,'a full 20-item inventory blocks unequip-based transfer without a failing action');assert.equal(JSON.stringify(blocked.state.pieces.map(piece=>piece.equipment.map(entry=>entry.uid))),fullBefore);
+  const pactState={environmentId:'origin_test',pieces:[{uid:'source',operatorId:'nonAegir',row:1,col:1,extraPacts:[],equipment:[{uid:'transfer',itemId:'aegirTransfer'}]},{uid:'carry',operatorId:'aegirNative',row:1,col:2,extraPacts:[],equipment:[]}]};
+  const pactCatalog={operators:{nonAegir:{charId:'non-aegir',pacts:[]},aegirNative:{charId:'aegir-carry',pacts:['aegir']}},equipment:catalog.equipment,pacts:{aegir:{thresholds:[2]}},environments:{origin_test:{identityPactId:'aegir'}}};
+  assert.equal(carryTransferPreservesPacts(pactState,pactCatalog,pactState.pieces[0],pactState.pieces[1],pactState.pieces[0].equipment[0]),false,'a transfer emblem stays with its owner when moving it would remove the active two-member breakpoint');
+});
+
+test('carry-adaptive transfers finished damage gear from a 1-cost carrier to a stronger 3-cost main-pact SilverAsh through legal actions',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_kjerag',seed:2}),definition=ARCHETYPES.find(entry=>entry.id==='snow');
+  const roster=makePactTerminalRoster(catalog,10,2).roster,replace=roster.findIndex(piece=>piece.name==='烛煌'),donorSlot=roster.findIndex(piece=>piece.name==='荒芜拉普兰德');assert.ok(replace>=0&&donorSlot>=0);
+  roster[replace]={...roster[replace],operatorId:'chess_char_4_22_a',name:'银灰',role:'damage',equipment:[],extraPacts:[]};
+  roster[donorSlot]={...roster[donorSlot],operatorId:'chess_char_1_06_a',name:'刺玫',role:'damage',equipment:[],extraPacts:[]};
+  const scenario=buildScenario({data,catalog,definition,config:SCENARIO_CONFIGS.at(-1),coreStar:2,seed:319,rosterOverride:roster});let state=structuredClone(scenario.state);
+  const initial=createSession({seed:319,difficulty:'NORMAL',catalog,environmentId:'origin_kjerag'}).state;
+  const expected=new Map(catalog.config.activeOperatorIds.map(id=>[id,Number(initial.poolRemaining[id]??0)+initial.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+initial.shop.offers.filter(offer=>offer.operatorId===id).length]));
+  for(const id of catalog.config.activeOperatorIds){const consumed=state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length;state.poolRemaining[id]=expected.get(id)-consumed;}
+  let gearUid=0;for(const piece of state.pieces)for(const item of piece.equipment)item.uid??=`silverash-gear-${gearUid++}`;
+  const silverash=state.pieces.find(piece=>piece.operatorId==='chess_char_4_22_a'),donor=state.pieces.find(piece=>piece.operatorId==='chess_char_1_06_a'),source=state.pieces[0];
+  assert.ok(silverash&&donor&&silverash.star===2&&donor.star===2);
+  assert.equal(catalog.operators[silverash.operatorId].cost,3);assert.equal(catalog.operators[silverash.operatorId].role,'damage');assert.ok(catalog.operators[silverash.operatorId].pacts.includes('kjerag'));
+  assert.equal(catalog.operators[donor.operatorId].cost,1);assert.equal(catalog.operators[donor.operatorId].role,'damage');
+  const dispatch=(current,action)=>{const result=applyAction(current,{...action,expectedRevision:current.revision},{catalog});assert.equal(result.ok,true,`official ${action.type} action is legal: ${result.error??''}`);return result.state;};
+  const item=source.equipment[0];assert.ok(item,'fixture has a finished item available for the native transfer path');
+  state=dispatch(state,{type:'unequip',pieceUid:source.uid,itemUid:item.uid});state=dispatch(state,{type:'equip',pieceUid:donor.uid,itemUid:item.uid});
+  assert.equal(validateSession(state,{catalog}).ok,true);
+  const sourcePower=estimateOperatorPower(catalog.operators[donor.operatorId],donor.star),targetPower=estimateOperatorPower(catalog.operators[silverash.operatorId],silverash.star);
+  assert.ok(targetPower>sourcePower*1.05,`compiled same-role star power differentiates SilverAsh (${targetPower}) from the low-cost carrier (${sourcePower})`);
+  assert.ok(carryOperatorPowerFactor(catalog.operators[silverash.operatorId],2,catalog)>carryOperatorPowerFactor(catalog.operators[donor.operatorId],2,catalog),'same-star same-role scoring retains actual compiled operator power');
+  assert.ok(carryOperatorPowerFactor(catalog.operators[silverash.operatorId],2,catalog)>carryOperatorPowerFactor(catalog.operators[silverash.operatorId],1,catalog),'the fixed one-star role baseline preserves the actual 1-to-2-star power increase');
+  const moved=transferCarryEquipment(state,catalog,{coreOperatorId:silverash.operatorId});
+  assert.ok(moved.moves.some(entry=>entry.sourceUid===donor.uid&&entry.targetUid===silverash.uid&&entry.itemUid===item.uid),`the real finished item transfers to SilverAsh; moves=${JSON.stringify(moved.moves)}`);
+  const record=moved.moves.find(entry=>entry.itemUid===item.uid);assert.equal(record.sourceCost,1);assert.equal(record.targetCost,3);assert.ok(record.targetPowerFactor>record.sourcePowerFactor);
+  assert.equal(validateSession(moved.state,{catalog}).ok,true,'official unequip/equip transfer preserves a valid native session');
+});
+
+test('econ-pact reserves universal copies for the level-9 core and spends late copies on a real merge if no core exists',()=>{
+  const core={uid:'core-piece',operatorId:'core',star:1},aux={uid:'aux-piece',operatorId:'aux',star:1};
+  const targets=[aux,core],catalog={operators:{core:{cost:5},aux:{cost:2}}};
+  assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},targets,{level:8,round:20,pieces:[core]},'core',catalog),null,'a universal copy waits before level nine rather than being consumed on a low-cost unit');
+  assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},targets,{level:9,round:20,pieces:[core]},'core',catalog),core,'a level-nine core receives the universal copy');
+  assert.equal(selectEconPactCopyTarget({kind:'universalCopy'},[aux],{level:9,round:24,pieces:[aux]},'core',catalog),aux,'after round 24, a missing core lets the universal copy complete an auxiliary merge');
+  assert.equal(selectEconPactCopyTarget({kind:'smallCopy'},targets,{level:6,round:10,pieces:[aux]},'core',catalog),aux,'a small copy is used on an available one-copy merge');
+});
+
+test('reroll core selection compares actual anti-air DPS instead of survivability score',()=>{
+  const make=(id,atk,bat,hp)=>({id,charId:id,cost:2,role:'damage',pacts:[],stars:{1:{stats:{atk,bat,aspd:0,maxHp:hp,def:0,blockCnt:0},record:{canHitFly:true}}}});
+  const catalog={config:{environmentId:'origin_test'},environments:{origin_test:{identityPactId:'p'}},operators:{fast:make('fast',160,1,600),durable:make('durable',220,3,90000),lowCost:{...make('lowCost',1000,1,1000),cost:1}}};
+  const state={shop:{offers:[{operatorId:'fast',cost:2},{operatorId:'durable',cost:2},{operatorId:'lowCost',cost:1}]}};
+  assert.equal(chooseRerollCore(catalog,state),'fast','higher real DPS wins even when the slower candidate has extreme HP');
+});
+
+test('policy role plan requires native anti-air, healer, and legal blocker branches without counting duplicates',()=>{
+  const catalog={operators:{
+    blocker:{charId:'front',role:'frontline',stars:{1:{record:{canHitFly:false}}}},
+    healer:{charId:'heal',role:'healer',stars:{1:{record:{canHitFly:false}}}},
+    ranged:{charId:'air',role:'damage',stars:{1:{record:{canHitFly:true}}}},
+    melee:{charId:'close',role:'damage',stars:{1:{record:{canHitFly:false}}}},
+  }};
+  const field={field:'normal',deployMap:new Map([['9,2','melee'],['9,3','melee'],['9,4','melee'],['10,2','melee']]),stage:{rows:Array(10).fill('.....'),tiles:{'.':{height:'LOW',buildable:'MELEE',groundPassable:true}}},wave:{routes:[{motion:'WALK',start:[9,2],end:[9,4]},{motion:'FLY',start:[9,4],end:[9,2]}]}};
+  const pieces=[{uid:'f1',operatorId:'blocker'},{uid:'h1',operatorId:'healer'},{uid:'a1',operatorId:'ranged'},{uid:'a2',operatorId:'ranged'}];
+  const state={level:4,pieces,environmentId:'origin_test'};
+  assert.deepEqual(campaignRolePlan(state,catalog,field),{targets:{frontlines:1,healers:1,antiAir:2,combatOutput:2,capacity:4,unblockableGroundRoutes:0},owned:{frontline:1,healer:1,antiAir:2,combatOutput:2},missing:{frontline:0,healer:0,antiAir:0,combatOutput:0}});
+});
+
+test('each campaign policy uses real, deterministic session actions and battle outcomes',()=>{
+  for(const policy of CAMPAIGN_POLICIES){
+    const options={environmentId:'origin_laterano',difficulty:'NORMAL',seed:20261009,maxBattles:2,policy};
+    const first=runCampaign(options),second=runCampaign(options);
+    assert.equal(first.policy,policy);
+    assert.equal(first.battles,2);
+    assert.deepEqual(first.rows,second.rows);
+    assert.equal(first.policyActions.fight,2);
+    assert.equal(first.coreOffersSeen,first.coreOfferDecisions.length);
+    assert.equal(first.coreOffersBought,first.coreOfferPurchases.length);
+    assert.equal(first.coreOffersBought,first.designatedCorePurchases);
+    for(const row of first.rows){
+      assert.ok(Number.isFinite(row.battleTime),`${policy} stores native battle duration`);
+      assert.ok(Number.isFinite(row.totalDamage)&&Number.isFinite(row.totalAttacks),`${policy} stores native damage/attack totals`);
+      assert.ok(Number.isFinite(row.coreDamage)&&Number.isFinite(row.coreAttacks),`${policy} stores designated-core totals`);
+      assert.equal(row.coreStock.operatorId,first.designatedCoreId,`${policy} records the exact selected core stock`);
+      assert.ok(row.coreStock.owned>=row.coreStock.deployed,`${policy} core deployment is bounded by owned copies`);
+    }
+    assert.equal(first.diagnostics.battleErrors,0);
+    assert.deepEqual(first.diagnostics.summonAnchorGaps,[]);
+    assert.ok(first.rows.at(-1).roleCounts.healer>=1,`${policy} acquires and fields a healer as offers permit`);
+    assert.ok(first.rows.every(row=>row.roleCounts.frontline>=row.roleTargets.frontlines),`${policy} blocks each required ground route`);
+    assert.ok(first.rows.every(row=>row.roleCounts.antiAir>=row.roleTargets.antiAir),`${policy} fields native anti-air damage/control`);
+    assert.ok(first.rows.every(row=>row.roleCounts.combatOutput>=row.roleTargets.combatOutput),`${policy} fills remaining capacity with real damage/control operators`);
+    assert.ok(first.rows.every(row=>row.routeCoverage.uncoveredGroundRoutes.length===0),`${policy} puts each native ground blocker on its route`);
+    assert.ok(first.rows.every(row=>row.vacantSlots===0||Object.values(row.roleDeficits).some(value=>value>0)),`${policy} never levels past its available role-complete roster`);
+    assert.ok(Object.values(first.rows.at(-1).roleDeficits).every(value=>value===0),`${policy} fills role gaps once the native pool offers missing roles`);
+    assert.ok(first.roleDecisions.some(decision=>decision.offers?.some(offer=>offer.reason==='no-role-merge-or-pact-upgrade'||offer.reason==='no-25-percent-net-improvement-or-pact-loss')),`${policy} rejects offers without an actual board/pact/merge reason`);
+    assert.ok(first.roleDecisions.some(decision=>decision.chosen&&decision.offers?.some(offer=>offer.operatorId===decision.chosen&&['missing-route-blocker','missing-healer','missing-native-anti-air','missing-combat-output','next-copy-completes-2-star-merge','next-copy-completes-3-star-merge','advance-auxiliary-branch-to-2-copies','advance-core-toward-2-star','advance-core-toward-3-star','acquire-reroll-core','cross-next-main-pact-threshold','build-next-main-pact-tier','same-role-net-upgrade-25'].includes(offer.reason))),`${policy} buys only after a concrete progression/roster qualification`);
+  }
+});
+
+test('campaign offer admission requires a real role, merge, pact, or 25-percent field upgrade',()=>{
+  const field={field:'normal',deployMap:new Map([['9,2','melee'],['9,3','melee'],['9,4','ranged'],['10,2','ranged'],['10,3','ranged'],['10,4','melee'],['11,2','melee']]),stage:{rows:Array(14).fill('.............'),tiles:{'.':{height:'LOW',buildable:'ALL',groundPassable:true}}},wave:{routes:[{motion:'WALK',start:[9,2],end:[9,3]}]}};
+  const op=(id,role,atk,pacts=[],canHitFly=false)=>({id,charId:id,role,cost:1,position:canHitFly?'RANGED':'MELEE',canDeployHighGround:canHitFly,pacts,stars:{1:{stats:{atk,bat:1,aspd:0,maxHp:1000,def:0,blockCnt:role==='frontline'?1:0},record:{canHitFly,rangeGrid:[[0,0]]}},2:{stats:{atk:atk*2,bat:1,aspd:0,maxHp:1000,def:0,blockCnt:1},record:{canHitFly,rangeGrid:[[0,0]]}},3:{stats:{atk:atk*3,bat:1,aspd:0,maxHp:1000,def:0,blockCnt:1},record:{canHitFly,rangeGrid:[[0,0]]}}}});
+  const catalog={operators:{front:op('front','frontline',100,['p']),healer:op('healer','healer',10),air1:op('air1','damage',100,[],true),air2:op('air2','damage',100,[],true),weak:op('weak','damage',100),equal:op('equal','damage',100),upgrade:op('upgrade','damage',130,[],true),pactmate:op('pactmate','damage',140,['p'],true),q1:op('q1','damage',90,['q'],true),q2:op('q2','damage',100,['q'],true),branch:op('branch','damage',30),core:op('core','damage',60)},equipment:{},pacts:{p:{thresholds:[2]},q:{thresholds:[4]}},environments:{origin_test:{identityPactId:'p'},origin_acc:{identityPactId:'q'}}};
+  const piece=(uid,operatorId,star=1,row=1,col=1)=>({uid,operatorId,star,row,col,extraPacts:[],equipment:[]});
+  const base=[piece('f','front',1,9,2),piece('h','healer',1,9,3),piece('a','air1',1,10,2)];
+  const state={level:3,pieces:base,strategies:[],environmentId:'origin_test'};
+  assert.equal(evaluateCampaignOffer('healer', {level:3,pieces:[base[0],base[2]],strategies:[],environmentId:'origin_test'},catalog,field).reason,'missing-healer');
+  assert.equal(evaluateCampaignOffer('equal',{...state,pieces:[...base,piece('w','weak',1,null,null)]},catalog,field).ok,false,'equal absolute utility is not a board improvement');
+  assert.equal(evaluateCampaignOffer('upgrade',{...state,pieces:[...base,piece('w','weak',1,null,null)]},catalog,field).reason,'same-role-net-upgrade-25');
+  const pactState={level:4,pieces:[base[0],base[1],base[2],piece('a2','air2',1,10,3)],strategies:[],environmentId:'origin_test'};
+  assert.equal(evaluateCampaignOffer('pactmate',pactState,catalog,field).reason,'cross-next-main-pact-threshold');
+  const accumulatingState={...pactState,environmentId:'origin_acc',pieces:[base[0],base[1],base[2],piece('q1p','q1',1,10,3)]};
+  assert.equal(evaluateCampaignOffer('q2',accumulatingState,catalog,field).reason,'build-next-main-pact-tier','a useful distinct member can progress an incomplete tier without claiming immediate activation');
+  assert.equal(evaluateCampaignOffer('branch',{...state,pieces:[...base,piece('b1','branch',1,null,null),piece('b2','branch',1,null,null)]},catalog,field).reason,'next-copy-completes-2-star-merge');
+  const oneAuxiliary={...state,pieces:[...base,piece('b1','branch',1,null,null)]};
+  assert.equal(evaluateCampaignOffer('branch',oneAuxiliary,catalog,field,'core').reason,'advance-auxiliary-branch-to-2-copies','one held auxiliary copy may acquire its second merge copy');
+  const twoBranches={...state,pieces:[...base,piece('b1','branch',1,null,null),piece('x1','weak',1,null,null),piece('x2','weak',1,null,null),piece('y1','upgrade',1,null,null),piece('y2','upgrade',1,null,null)]};
+  assert.equal(evaluateCampaignOffer('branch',twoBranches,catalog,field,'core').reason,'auxiliary-merge-branch-cap-2','a third auxiliary branch is rejected once two other merge branches are reserved');
+  const finishedAuxiliaries={...state,pieces:[...base,piece('x2star','weak',2,null,null),piece('y2star','upgrade',2,null,null),piece('branch1','branch',1,null,null)]};
+  assert.equal(evaluateCampaignOffer('branch',finishedAuxiliaries,catalog,field,'core').reason,'advance-auxiliary-branch-to-2-copies','completed two-star auxiliaries no longer occupy unfinished merge branch slots');
+  const surplusOnTwoStar={...state,pieces:[...base,piece('branch2star','branch',2,null,null),piece('branchSurplus','branch',1,null,null)]};
+  assert.equal(evaluateCampaignOffer('branch',surplusOnTwoStar,catalog,field,'core').reason,'auxiliary-already-2-star','non-core units do not accumulate extra copies to chase three stars');
+  const coreProtected={...state,pieces:[piece('f','front',1,1,1),piece('h','healer',1,1,2),piece('c','core',2,2,1)]};
+  assert.equal(evaluateCampaignOffer('upgrade',coreProtected,catalog,field,'core').ok,false,'a full board cannot sell the deployed core to admit an upgrade');
+});
+
+test('designated high-cost core has one legal investment branch beyond frontline cap and copy chase stops at three stars',()=>{
+  const field={field:'normal',deployMap:new Map([['9,2','melee'],['9,3','melee'],['9,4','ranged'],['10,2','ranged'],['10,3','ranged'],['10,4','melee'],['11,2','melee']]),stage:{rows:Array(14).fill('.............'),tiles:{'.':{height:'LOW',buildable:'ALL',groundPassable:true}}},wave:{routes:[{motion:'WALK',start:[9,2],end:[9,3]}]}};
+  const mk=(id,role,cost,pacts=[])=>({id,charId:id,role,cost,pacts,stars:{1:{stats:{atk:120,bat:1,aspd:0,maxHp:1000,def:100,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}},2:{stats:{atk:240,bat:1,aspd:0,maxHp:2000,def:200,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}},3:{stats:{atk:360,bat:1,aspd:0,maxHp:3000,def:300,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}}}});
+  const catalog={operators:{f1:mk('f1','frontline',2,['p']),f2:mk('f2','frontline',2,['p']),core:mk('core','frontline',5,['p']),healer:mk('healer','healer',2),air:mk('air','damage',2)},equipment:{},pacts:{p:{thresholds:[2]}},environments:{origin_test:{identityPactId:'p'}}};
+  const piece=(uid,operatorId,star=1,row=null,col=null)=>({uid,operatorId,star,row,col,extraPacts:[],equipment:[]});
+  const state={level:5,pieces:[piece('f1','f1',1,9,2),piece('f2','f2',1,null,null),piece('h','healer',1,9,3),piece('a','air',1,10,2)],strategies:[],environmentId:'origin_test',poolRemaining:{core:7}};
+  assert.equal(evaluateCampaignOffer('core',state,catalog,field,'core').reason,'designated-core-investment','the intended five-cost core may be held even while two frontline branches exist');
+  assert.equal(designatedCoreInvestment('core',catalog.operators.core,[],'core'),true);
+  assert.equal(designatedCoreInvestment('other',catalog.operators.core,[],'core'),false,'unselected five-cost offers stay on ordinary qualification');
+  assert.equal(exceedsFrontlineBranchCap('core',catalog.operators.core,state,catalog,false,'core'),false,'the designated core does not consume an auxiliary frontline branch slot');
+  assert.equal(exceedsFrontlineBranchCap('other',catalog.operators.core,state,catalog,false,'core'),true,'a non-target frontline still obeys the two-branch limit');
+  const copyState={...state,pieces:[...state.pieces,piece('core2','core',2)],poolRemaining:{core:5}};
+  assert.ok(copyTargetsForCampaign(copyState,catalog,'core').some(target=>target.uid==='core2'&&target.star===2),'a two-star designated core remains a legal universal-copy target');
+  const maxed={...copyState,pieces:[...copyState.pieces,piece('core3','core',3)]};
+  assert.ok(!copyTargetsForCampaign(maxed,catalog,'core').some(target=>target.operatorId==='core'),'once the core is three-star, spare copies are reserved for other eligible branches');
+  assert.equal(evaluateCampaignOffer('core',maxed,catalog,field,'core').reason,'designated-core-already-3-star','the shop stops buying extra copies after the core reaches three stars');
+});
+
+test('econ-pact admits only distinct main-identity frontline investments past the auxiliary cap',()=>{
+  const field={field:'normal',deployMap:new Map([['9,2','melee'],['9,3','melee'],['9,4','ranged'],['10,2','ranged'],['10,3','ranged'],['10,4','melee'],['11,2','melee']]),stage:{rows:Array(14).fill('.............'),tiles:{'.':{height:'LOW',buildable:'ALL',groundPassable:true}}},wave:{routes:[{motion:'WALK',start:[9,2],end:[9,3]}]}};
+  const mk=(id,charId,role,pacts=[])=>({id,charId,role,cost:2,pacts,stars:{1:{stats:{atk:160,bat:1,aspd:0,maxHp:1300,def:100,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}},2:{stats:{atk:320,bat:1,aspd:0,maxHp:2600,def:200,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}},3:{stats:{atk:480,bat:1,aspd:0,maxHp:3900,def:300,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}}}});
+  const catalog={operators:{frontA:mk('frontA','charA','frontline',['p']),frontB:mk('frontB','charB','frontline',['p']),frontC:mk('frontC','charC','frontline',['p']),frontD:mk('frontD','charD','frontline',['p']),frontAAlt:mk('frontAAlt','charA','frontline',['p']),healer:mk('healer','heal','healer'),air1:mk('air1','air1','damage'),air2:mk('air2','air2','damage')},equipment:{},pacts:{p:{thresholds:[2,4]}},environments:{origin_test:{identityPactId:'p'}}};
+  const piece=(uid,operatorId,row,col)=>({uid,operatorId,star:1,row,col,extraPacts:[],equipment:[]});
+  const state={level:5,pieces:[piece('a','frontA',9,2),piece('b','frontB',9,3),piece('h','healer',9,4),piece('aa','air1',10,2)],strategies:[],environmentId:'origin_test'};
+  assert.equal(evaluateCampaignOffer('frontC',state,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','a new distinct identity member advances the unfinished main pact despite two frontline branches');
+  assert.equal(exceedsFrontlineBranchCap('frontC',catalog.operators.frontC,state,catalog,false,null,ECON_PACT_POLICY),false,'the identity investment is exempt from the auxiliary frontline cap');
+  const afterOne={...state,pieces:[...state.pieces,piece('c','frontC',null,null)]};
+  assert.equal(evaluateCampaignOffer('frontD',afterOne,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','a second distinct member may be held to reach the next configured tier');
+  const reachedNext={...afterOne,pieces:[...afterOne.pieces,piece('d','frontD',null,null)]};
+  assert.notEqual(evaluateCampaignOffer('frontAAlt',reachedNext,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','a duplicate character never counts as another identity member');
+  assert.notEqual(evaluateCampaignOffer('frontC',reachedNext,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','once the next identity threshold is reached, the special investment path closes');
+});
+
+test('first campaign battle buys and fields the available next-pact member before fighting',()=>{
+  const run=runCampaign({environmentId:'origin_kjerag',difficulty:'NORMAL',seed:0x504f4c49,maxBattles:1,policy:'tempo'});
+  assert.ok(run.policyActions.buy>=1);
+  assert.equal(run.policyActions.fight,1);
+  assert.ok(run.roleDecisions.some(decision=>decision.chosen&&decision.offers?.some(offer=>offer.operatorId===decision.chosen&&offer.reason==='cross-next-main-pact-threshold')));
+  assert.ok(run.rows[0].roster.some(piece=>piece.name==='耶拉'));
+  assert.ok(run.rows[0].mainPacts.some(pact=>pact.id==='kjerag'&&pact.threshold===2));
+  assert.equal(run.rows[0].vacantSlots,0);
+});
+
+test('econ-pact enters a native Battle with legal fielded route coverage',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:0x45434f4e,maxBattles:1,policy:ECON_PACT_POLICY});
+  assert.equal(run.policyActions.fight,1);
+  assert.equal(run.rows[0].diagnostics,0);
+  assert.ok(run.rows[0].routeCoverage.groundFrontlines.length>0);
+  assert.ok(run.rows[0].routeCoverage.groundFrontlines.every(front=>front.blocksGroundPath));
+  assert.ok(run.rows[0].roster.length<=run.rows[0].roleTargets.capacity);
+});
+
+test('fixed battle archetypes cover the requested ten identities and stay within level caps', () => {
+  assert.equal(ARCHETYPES.length,10);
+  assert.deepEqual(ARCHETYPES.map(x=>x.id),['low-cost','ammo','snow','aegir-counter','yan-skills','columbia-constructs','kazimierz-true-damage','siracusa-execution','sui-trio','element-burn-necrosis']);
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  for(const def of ARCHETYPES){
+    const {catalog}=findArchetypeCatalog(data,def);
+    assert.equal(catalog.config.activeOperatorIds.length,65);
+    assert.ok(def.include.every(name=>catalog.config.activeOperatorIds.includes(Object.values(catalog.operators).find(o=>o.name===name).id)));
+    for(const cfg of SCENARIO_CONFIGS)for(const star of [2,3]){
+      const roster=makeArchetypeRoster(catalog,def,cfg.level,star,cfg.assistantStar,2,cfg.phase==='terminal');
+      assert.ok(roster.length<=cfg.level);
+      assert.equal(roster.find(x=>x.name===def.core).star,star);
+      assert.ok(roster.filter(x=>x.name!==def.core).every(x=>x.star===2));
+      assert.ok(def.include.every(name=>roster.some(x=>x.name===name)),`fixed lineup preserves ${def.id} members`);
+      assert.ok(roster.filter(x=>x.role==='frontline').length>=2);
+      assert.ok(roster.filter(x=>x.role==='healer').length>=1);
+      assert.ok(roster.filter(x=>['damage','control','summoner'].includes(x.role)).length>=2);
+    }
+    for(const cfg of SCENARIO_CONFIGS){
+      const scenario=buildScenario({data,catalog,definition:def,config:cfg,coreStar:2,seed:371});
+      const coverage=scenario.equipment.routeCoverage;
+      assert.ok(coverage.groundFrontlines.every(x=>x.blocksGround&&x.distanceToPath===0));
+      assert.ok(coverage.healer.coveredFrontlineCells.length<=coverage.healer.frontlineCells.length);
+      assert.ok(coverage.routes.every(route=>route.originalIndices.length>0&&route.points.length>1));
+      assert.ok(coverage.uncoveredGroundRoutes.every(index=>coverage.routes[index]?.motion==='WALK'));
+      assert.ok(coverage.core.coveredRoutes.length>0);
+      assert.ok(scenario.state.pieces.every(p=>canOperatorUseTile(catalog.operators[p.operatorId],scenario.field.deployMap,p.row,p.col)));
+      if(cfg.phase==='terminal'){
+        assert.equal(scenario.state.pieces[0].equipment.length,3);
+        assert.ok(scenario.equipment.transferCount<=2);
+        assert.ok(coverage.bossRouteIndices.length>0,`${def.id} terminal battle identifies the actual leader route`);
+        assert.equal(coverage.core.coversBossRoute,true,`${def.id} core range covers the actual leader route`);
+        const pact=pactProfile(scenario.state.pieces,catalog)[def.pact];
+        assert.ok(pact.activeTier>=pact.thresholds.at(-1),`${def.id} completes its main pact tier`);
+      }
+    }
+  }
+  assert.deepEqual(SCENARIO_CONFIGS.map(x=>`${x.round}/${x.level}`),['12/6','12/7','20/8','20/9','28/10']);
+});
+
+test('19-origin terminal pact rosters stay within the active pool and preserve frontline/healing roles',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  for(const origin of ['aegir','laterano','kjerag','yan','victoria','columbia','kazimierz','siracusa','rhodes','lungmen','sargon','leithania','iberia','higashi','ursus','bolivar','rim','babel','sami']){
+    const catalog=getResonanceCatalog(data,{environmentId:`origin_${origin}`,seed:1});
+    const lineup=makePactTerminalRoster(catalog,10,2);
+    assert.equal(catalog.config.activeOperatorIds.length,65);
+    assert.equal(lineup.roster.length,10);
+    if(origin==='lungmen')assert.equal(lineup.core.lowCostCore,true,'Lungmen reports its highest-cost main-pact core exception');
+    else assert.ok(lineup.core.cost>=4,`${origin} selects a four- or five-cost terminal core`);
+    assert.ok(lineup.roster.filter(piece=>piece.role==='frontline').length<=2,`${origin} does not pad the terminal team with excess frontlines`);
+    assert.ok(lineup.roster.filter(piece=>piece.role==='frontline').length>=2,`${origin} has two frontline roles`);
+    assert.ok(lineup.roster.some(piece=>piece.role==='healer'),`${origin} has healing`);
+    assert.ok(lineup.roster.filter(piece=>['damage','control','summoner'].includes(piece.role)).length>=2,`${origin} has combat roles`);
+    assert.ok(lineup.roster.slice(1).every(piece=>piece.star===2));
+    assert.ok(lineup.roster.every(piece=>catalog.config.activeOperatorIds.includes(piece.operatorId)));
+    assert.equal(lineup.constructible,true,`${origin} reaches its highest supported terminal tier`);
+    if(lineup.constructible){
+      const scenario=buildScenario({data,catalog,definition:{id:`terminal-${origin}`,env:`origin_${origin}`,core:lineup.core.name,include:[],pact:lineup.mainPact},config:{...SCENARIO_CONFIGS.at(-1),transferLimit:lineup.transferLimit},coreStar:2,seed:319,rosterOverride:lineup.roster});
+      const pact=pactProfile(scenario.state.pieces,catalog)[lineup.mainPact];
+      assert.ok(pact.activeTier>=lineup.threshold,`${origin} reaches its main pact tier with no more than two transfers`);
+      assert.ok(scenario.state.pieces[0].equipment.length===3);
+      assert.ok(scenario.equipment.transferCount<=lineup.transferLimit);
+    }
+  }
+});
+
+test('route profiles consume native groundPathsWithDevices and preserve fly checkpoints',()=>{
+  const field={stageId:'mock',stage:{groundPathsWithDevices:{'9,10->9,2':[[9,10],[9,8],[10,8],[9,2]]}},wave:{routes:[
+    {motion:'WALK',start:[9,10],end:[9,2],checkpoints:[]},
+    {motion:'WALK',start:[9,10],end:[9,2],checkpoints:[]},
+    {motion:'FLY',start:[9,10],end:[9,2],checkpoints:[[9,8],[10,8]]},
+  ]}};
+  const routes=routeSet(field);
+  assert.equal(routes.length,2);
+  assert.deepEqual(routes[0].points,field.stage.groundPathsWithDevices['9,10->9,2']);
+  assert.equal(routes[1].motion,'FLY');
+  assert.deepEqual(routes[1].points,[[9,10],[9,8],[10,8],[9,2]]);
+});
+
+test('terminal boss targeting resolves the spawned native patrol path and retains its source route index',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_yan',seed:2});
+  const created=createSession({catalog,environmentId:'origin_yan',seed:2});
+  assert.equal(created.ok,true);
+  created.state.round=28;created.state.level=10;
+  const field=getResonanceField(created.state,{data,catalog});
+  const leaderIndex=field.wave.spawns.find(spawn=>spawn.tag==='boss')?.routeIndex;
+  assert.ok(Number.isInteger(leaderIndex),'native boss spawn selects a route');
+  const leaderRoute=routeSet(field).find(route=>route.originalIndices.includes(leaderIndex));
+  assert.ok(leaderRoute,`leader source route ${leaderIndex} is retained`);
+  assert.equal(leaderRoute.motion,'WALK');
+  assert.equal(leaderRoute.source,'native-grid-route','patrol legs are expanded using the battle grid pathfinder');
+  assert.ok(leaderRoute.points.length>field.wave.routes[leaderIndex].checkpoints.length+2,'path includes the intermediate native movement tiles');
+});
+
+test('campaign route profiles retain native paths and original indices across extra routes',()=>{
+  const field={field:'normal',stage:{groundPathsWithDevices:{'9,10->9,2':[[9,10],[9,8],[10,8],[9,2]]}},wave:{routes:[
+    {motion:'WALK',start:[9,10],end:[9,2]},
+    {motion:'WALK',start:[9,10],end:[9,2]},
+  ],extraRoutes:[{motion:'FLY',start:[12,10],end:[9,2],checkpoints:[[12,8],[9,8]]}]}};
+  const profiles=campaignRouteProfiles(field);
+  assert.equal(profiles.length,2);
+  assert.deepEqual(profiles[0].originalIndices,[0,1]);
+  assert.deepEqual(profiles[0].points,field.stage.groundPathsWithDevices['9,10->9,2']);
+  assert.deepEqual(profiles[1].originalIndices,[2]);
+  assert.deepEqual(profiles[1].points,[[12,10],[12,8],[9,8],[9,2]]);
+});
+
+test('campaign route profiles ignore unspawned templates and keep only spawned checkpoint routes',()=>{
+  const field={field:'normal',wave:{routes:[
+    {motion:'WALK',start:[9,1],end:[9,8],checkpoints:[[8,3]]},
+    {motion:'WALK',start:[8,1],end:[8,8],checkpoints:[[8,4]]},
+    {motion:'WALK',start:[7,1],end:[7,8],checkpoints:[[7,4]]},
+  ],spawns:[{routeIndex:1,tag:'normal'},{routeIndex:1,tag:'leader'}]}};
+  const routes=campaignRouteProfiles(field);
+  assert.equal(routes.length,1,'a route with several spawns is still one actual path');
+  assert.deepEqual(routes[0].originalIndices,[1]);
+  assert.deepEqual(routes[0].points,[[8,1],[8,4],[8,8]],'checkpoints are retained in travel order');
+});
+
+test('campaign resolves recipe and identity-transfer choices from live lineup value',()=>{
+  const catalog={operators:{a:{charId:'char-a',pacts:['aegir'],role:'damage'}},environments:{origin_aegir:{identityPactId:'aegir'}},pacts:{aegir:{thresholds:[2,4]},laterano:{thresholds:[2,4]}},equipment:{weak:{effects:[{kind:'component_stat',params:{atk:1}}]},strong:{effects:[{kind:'component_stat',params:{atk:100}}]}}};
+  const state={environmentId:'origin_aegir',pieces:[{uid:'p1',operatorId:'a',row:1,col:1,star:2}],inventory:[],strategies:[]};
+  assert.deepEqual(claimOptions({type:'recipe',remaining:1,options:['weak','strong']},state,{...catalog,recipes:[{resultId:'weak'},{resultId:'strong'}]}),['strong']);
+  assert.deepEqual(claimOptions({type:'identity_transfer',remaining:1,options:['laterano','aegir']},state,catalog),['aegir']);
+});
+
+test('ranged units can use a melee tile and face toward the incoming route', () => {
+  const map = new Map([['10,6', 'melee']]);
+  assert.equal(canOperatorUseTile({ position: 'RANGED' }, map, 10, 6), true);
+  assert.equal(canOperatorUseTile({ position: 'MELEE' }, map, 10, 6), true);
+  assert.equal(canOperatorUseTile({ position: 'MELEE' }, new Map([['10,6','ranged']]), 10, 6), false);
+  assert.equal(canOperatorUseTile({ position: 'MELEE', canDeployHighGround: true }, new Map([['10,6','ranged']]), 10, 6), true);
+  assert.equal(directionToward(10, 6, [10, 8]), 'RIGHT');
+  assert.equal(directionToward(10, 6, [8, 6]), 'UP');
+});
+
+test('frontline scoring rejects passable fence tiles that cannot block ground enemies', () => {
+  const field = { field:'normal', stage:{rows:['###','###','###'],tiles:{'#':{height:'LOW',buildable:'ALL',groundPassable:false},'.':{height:'LOW',buildable:'ALL',groundPassable:true}}} };
+  field.stage.rows=['...','.#.','...'];
+  assert.equal(canBlockGround(field,1,1),false);
+  assert.equal(canBlockGround(field,1,0),true);
+});
+
+test('fallback deployment preserves frontline and healer role limits', () => {
+  assert.equal(canFillFallbackRole('frontline',{frontline:1},{frontlineLimit:2}),true);
+  assert.equal(canFillFallbackRole('frontline',{frontline:2},{frontlineLimit:2}),false);
+  assert.equal(canFillFallbackRole('healer',{healer:1},{healerLimit:1}),false);
+  assert.equal(canFillFallbackRole('damage',{frontline:2,healer:1}),true);
+});
+
+test('campaign policy uses real session actions and deterministic recorded outcomes', () => {
+  const options = { environmentId: 'origin_laterano', difficulty: 'NORMAL', seed: 12345, maxBattles: 2 };
+  const first = runCampaign(options);
+  const second = runCampaign(options);
+  assert.equal(first.battles, 2);
+  assert.deepEqual(first.rows, second.rows);
+  assert.ok(first.rows.every(row => Number.isInteger(row.hpAfter) && row.hpAfter >= 0));
+  assert.ok(first.rows.every(row => Number.isInteger(row.goldBefore) && Number.isInteger(row.goldAfter)));
+  assert.ok(first.rows.every(row => row.roster.every(piece => piece.uid && piece.operatorId && Number.isInteger(piece.row) && Number.isInteger(piece.col) && piece.dir)));
+  assert.ok(first.rows.every(row => Array.isArray(row.routeCoverage.routes)&&row.routeCoverage.groundFrontlines.every(front=>front.blocksGroundPath&&front.distanceToPath===0)));
+  assert.ok(first.rows.every(row => row.routeCoverage.healerCoverage.every(healer=>healer.coveredFrontlines.length>=row.roleCounts.frontline)));
+  assert.ok(first.rows.every(row => row.roleCounts.frontline>=1&&row.roleCounts.damage+row.roleCounts.control+row.roleCounts.summoner>=(row.level>=6?2:1)));
+  assert.ok(first.rows.every(row => ![...row.roster,...row.benchReserve].some(piece=>piece.role==='healer')||row.roleCounts.healer>=1));
+  assert.ok(first.rows.every(row => Array.isArray(row.mainPacts) && Number.isInteger(row.refreshesSpent)));
+  assert.ok(first.policyActions && Number.isInteger(first.policyActions.fight));
+  assert.equal(first.diagnostics.battleErrors, 0);
+  assert.deepEqual(first.diagnostics.summonAnchorGaps, []);
+  assert.equal(first.truncated, false);
+});
+
+test('full campaign ends with a native terminal outcome instead of a fabricated win result', () => {
+  const run = runCampaign({ environmentId: 'origin_laterano', difficulty: 'NORMAL', seed: 20261009 });
+  assert.equal(run.phase, 'complete');
+  assert.ok(['hp-depleted', 'victory', 'round-limit-loss'].includes(run.terminalReason));
+  assert.ok(run.battles > 0);
+  assert.equal(run.rows.length, run.battles);
+  assert.equal(run.diagnostics.battleErrors, 0);
+  assert.deepEqual(run.diagnostics.summonAnchorGaps, []);
+  assert.ok(run.rows.every(row => Number.isInteger(row.leaked) && Number.isFinite(row.leakPoints)));
+  assert.ok(run.rows.every(row => row.roster.filter(piece => piece.role === 'healer').length <= 2));
+  assert.ok(run.rows.every(row => row.roster.filter(piece => piece.role === 'frontline').every(piece => piece.blocksGround === true)));
+  assert.ok(run.rows.filter(row => row.level >= 5).every(row => row.roster.filter(piece => piece.role === 'frontline').length >= row.roleTargets.frontlines && row.roster.filter(piece => piece.role === 'damage' || piece.role === 'control').length >= 1));
+  assert.ok(run.rows.filter(row => row.level >= 5).some(row => new Set(row.roster.filter(piece => piece.role === 'frontline').map(piece => piece.routeIndex)).size >= Math.min(2,row.roleTargets.frontlines)));
+});

@@ -11,6 +11,7 @@ import { installIndependentBattle } from '../../sim/content/independent/battle.j
 import { getCatalog } from './catalog.js';
 import { independentEnemyBalance, balanceIndependentWave } from './enemyBalance.js';
 import { unitStatsEntry } from '../../../shared/protocol.js';
+import { operatorGrowthInfo } from '../../../shared/independentGrowth.js';
 
 const PLAYER_ID = 'independent';
 const SAMPLE_LIMIT = 24;
@@ -78,7 +79,7 @@ export function getIndependentField(state, { data = null, catalog = null } = {})
   };
 }
 
-function battleUnits(state) {
+function battleUnits(state, catalog) {
   const pieces = Array.isArray(state?.pieces) ? state.pieces : [];
   const units = [];
   for (const piece of pieces) {
@@ -93,6 +94,7 @@ function battleUnits(state) {
       dir: piece.dir ?? 'RIGHT',
       skillIndex: piece.skillIndex ?? 0,
       moduleId: piece.moduleId ?? 'none',
+      ...(piece.growthMode==='levels'?{nativeGrowthStatus:(({phase,level})=>({phase,level}))(operatorGrowthInfo(piece,catalog))}:{}),
     });
   }
   return units;
@@ -123,9 +125,11 @@ function sampleBattle(battle) {
  * The Battle of a round's own board. `preview`: the start-of-battle preview the detail card reads (the original's
  * Match._unitStatsOf): no enemies, a normal field, its own seed, no event record — built, started and dropped.
  */
-function buildBattle(input, source, catalog, { preview = false } = {}) {
+function buildBattle(input, source, catalog, { preview = false, recording = true } = {}) {
   const prepared = prepare(input, source, catalog);
-  const units = battleUnits(input);
+  const units = battleUnits(input,catalog);
+  const supportChess=Object.fromEntries(Object.entries(catalog?.operators||{}).filter(([,op])=>op?.darkmoonSupport&&op.source?.normalChess).map(([id,op])=>[id,op.source.normalChess]));
+  const battleData=Object.keys(supportChess).length?{...source,chess:{...(source.chess||{}),...supportChess}}:source;
   const sharedBoss = preview || prepared.kind === 'normal' ? null : new SharedBossPool(Math.round(bossPoolHp(prepared.gd, prepared.bossId, 1) * (prepared.tuning?.bossHpMul ?? 1)));
   const battle = new Battle({
     seed: deriveSeed(Number(input.seed) >>> 0, `independent:${preview ? 'preview' : 'battle'}:${prepared.round}:${prepared.modeId}`),
@@ -141,12 +145,12 @@ function buildBattle(input, source, catalog, { preview = false } = {}) {
     sharedBoss,
     flags: {
       layerGainsEnabled: false,
-      independent: { catalog, pieces: input.pieces, counters: input.counters ?? {}, round: prepared.round, roundLimit: prepared.roundLimit },
+      independent: { catalog, pieces: input.pieces, counters: input.counters ?? {}, round: prepared.round, roundLimit: prepared.roundLimit, recordTrace: recording && !preview },
     },
     fieldId: `independent-r${prepared.round}`,
-    data: source,
+    data: battleData,
     content: 'independent',
-    recordEvents: !preview,
+    recordEvents: recording && !preview,
     logger: { warn() {}, error() {}, info() {}, log() {} },
     extraContent: [b => installIndependentBattle(b, { catalog, state: input })],
   });
@@ -171,21 +175,22 @@ export function previewUnitStats(state, { data = null, catalog = null } = {}) {
 }
 
 /** Run one real upstream Battle for the current independent-mode round. Does not mutate state. */
-export function runIndependentBattle(state, { data = null, catalog = null } = {}) {
+export function runIndependentBattle(state, { data = null, catalog = null, recording = true } = {}) {
   if (!state || typeof state !== 'object') throw new TypeError('independent battle requires a state object');
+  recording = recording !== false;
   const source = rawData(data);
   catalog ??= getCatalog(source);
   const input = structuredClone(state);
-  const { battle, prepared } = buildBattle(input, source, catalog);
-  const samples = [];
+  const { battle, prepared } = buildBattle(input, source, catalog, { recording });
+  const samples = recording ? [] : null;
   // The replay the browser plays with the original renderer is recorded from this authoritative run, in the
   // format of tools/record-battle.mjs (public/dev/render-demo.js plays those): snapshot() and drainEvents() only read
   // the field and empty the event queue, so the run and its result are the same with or without it.
-  const frames = [];
+  const frames = recording ? [] : null;
   let field = null;
   // the stats each unit was last recorded with (by unit id): a frame carries only the ones that changed
-  const lastStats = new Map();
-  const statsChanges = () => {
+  const lastStats = recording ? new Map() : null;
+  const statsChanges = recording ? () => {
     const out = {};
     for (const u of battle.units) {
       if (!u || (u.kind !== 'op' && u.side !== 'enemy') || !u.alive) continue;
@@ -193,24 +198,28 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
       if (lastStats.get(u.id) !== key) { lastStats.set(u.id, key); out[u.id] = entry; }
     }
     return Object.keys(out).length ? out : null;
-  };
+  } : null;
   while (!battle.finished && battle.tickCount < MAX_TICKS) {
     battle.step();
-    if (!field) field = battle.fieldMeta();
-    if (battle.tickCount % REPLAY_SNAP_EVERY === 0) {
-      const frame = { snap: battle.snapshot(), ev: battle.drainEvents() };
-      if (battle.tickCount % REPLAY_STATS_EVERY === REPLAY_SNAP_EVERY) { const stats = statsChanges(); if (stats) frame.stats = stats; }
-      frames.push(frame);
+    if (recording) {
+      if (!field) field = battle.fieldMeta();
+      if (battle.tickCount % REPLAY_SNAP_EVERY === 0) {
+        const frame = { snap: battle.snapshot(), ev: battle.drainEvents() };
+        if (battle.tickCount % REPLAY_STATS_EVERY === REPLAY_SNAP_EVERY) { const stats = statsChanges(); if (stats) frame.stats = stats; }
+        frames.push(frame);
+      }
+      if ((battle.tickCount % SAMPLE_INTERVAL_TICKS === 0 || battle.finished) && samples.length < SAMPLE_LIMIT) samples.push(sampleBattle(battle));
     }
-    if ((battle.tickCount % SAMPLE_INTERVAL_TICKS === 0 || battle.finished) && samples.length < SAMPLE_LIMIT) samples.push(sampleBattle(battle));
   }
   const capped = !battle.finished;
   if (capped) battle.forceEnd('timeout');
-  // the end state; a battle that ended on a frame tick only appends its trailing events
-  const tail = { snap: battle.snapshot(), ev: battle.drainEvents() };
-  const lastFrame = frames[frames.length - 1];
-  if (!lastFrame || tail.snap.t > lastFrame.snap.t) frames.push(tail);
-  else lastFrame.ev.push(...tail.ev);
+  if (recording) {
+    // the end state; a battle that ended on a frame tick only appends its trailing events
+    const tail = { snap: battle.snapshot(), ev: battle.drainEvents() };
+    const lastFrame = frames[frames.length - 1];
+    if (!lastFrame || tail.snap.t > lastFrame.snap.t) frames.push(tail);
+    else lastFrame.ev.push(...tail.ev);
+  }
   const result = battle.result();
   const rewards = battle.independentRewards ?? [];
   const pieceStates = Object.fromEntries(input.pieces.map((p) => [p.uid, {
@@ -233,11 +242,13 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
     errors: battle.errors.slice(0, 20),
   };
   if (battle.errorCount) throw Object.assign(new Error(`independent Battle recorded ${battle.errorCount} simulation/content error(s)`), { diagnostics, result });
-  const replay = {
+  const replay = recording ? {
     // field = the m.field payload, as in tools/record-battle.mjs; fieldKind = the board ('normal' | 'bossL')
     version: 1, kind: prepared.kind, fieldKind: prepared.field, stageId: prepared.stageId, modeId: prepared.modeId, round: prepared.round,
     bossId: prepared.bossId ?? null, tick: TICK, snapEvery: REPLAY_SNAP_EVERY, duration: Math.round(battle.time * 100) / 100,
     field, frames,
-  };
-  return { result, rewards, pieceStates, samples, diagnostics, replay };
+  } : null;
+  return { result, rewards, pieceStates, samples: samples ?? [], diagnostics, replay,
+    darkmoonResults: structuredClone(battle.independentDarkmoonResults ?? {growth:[],recruits:[],coins:[]}),
+    darkmoonTrace: recording ? structuredClone(battle.independentDarkmoonTrace ?? []) : [] };
 }

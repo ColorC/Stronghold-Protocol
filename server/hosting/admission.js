@@ -2,8 +2,14 @@ import { randomBytes } from 'node:crypto';
 
 const COOKIE = 'sp_ix_lease';
 const MESSAGE = '工坊已满，请稍后再试';
-const ROUTE = '/independent/api/admission';
+const ROUTES = new Set(['/independent/api/admission', '/resonance/api/admission']);
+const PAGE_ROUTES = new Set(['/independent.html', '/resonance.html']);
 const MAX_WAIT_MS = 25000;
+const RECORDING_READ_PATH = /^\/independent\/api\/recordings\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/media(?:\/\d+|\/playback(?:\/\d+)?)?)?$/i;
+
+function isReadOnlyRecordingRequest(req, pathname) {
+  return (req.method === 'GET' || req.method === 'HEAD') && RECORDING_READ_PATH.test(pathname);
+}
 
 function cookieToken(req) {
   const part = String(req.headers.cookie || '').split(';').find((x) => x.trim().startsWith(`${COOKIE}=`));
@@ -202,7 +208,7 @@ export function createAdmission({
 
   function handle(req, res, pathname) {
     if (closed) return false;
-    if (pathname === ROUTE) {
+    if (ROUTES.has(pathname)) {
       if (req.headers.origin && req.headers.origin !== `${secure(req) ? 'https' : 'http'}://${req.headers.host}`) {
         json(res, 403, { ok: false, error: { code: 'ORIGIN', message: '请在游戏页面进行操作' } }); return true;
       }
@@ -241,7 +247,7 @@ export function createAdmission({
       return true;
     }
     if (!enabled) return false;
-    if (pathname === '/independent.html' && (req.method === 'GET' || req.method === 'HEAD')) {
+    if (PAGE_ROUTES.has(pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
       pump();
       const token = cookieToken(req);
       if (token && leases.has(token)) {
@@ -259,7 +265,8 @@ export function createAdmission({
       queuedPage(req, res, queueInfo(identity));
       return true;
     }
-    if (pathname.startsWith('/independent/api/')) {
+    if (pathname.startsWith('/independent/api/') || pathname.startsWith('/resonance/api/')) {
+      if (isReadOnlyRecordingRequest(req, pathname)) return false;
       pump();
       if (!leases.has(cookieToken(req))) {
         json(res, 403, { ok: false, error: { code: 'ADMISSION_REQUIRED', message: '请重新进入工坊' } }); return true;

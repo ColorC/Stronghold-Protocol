@@ -645,7 +645,13 @@ export default {
           if (s2 && sk && sk.ready && !sk.active && unit.canAct && !unit.s.flags.silence && sk.activate('TAKE_DAMAGE')) dodged = dodgeable;
           else if (dodgeable && st > 0 && battle.time - last + 1e-9 >= st && battle.rng.chance(p)) dodged = true;
           last = battle.time;
-          if (dodged) { dmg.cancel = true; battle.fx('dodge', { x: unit.x, y: unit.y, id: unit.id }); }
+          if (dodged) {
+            dmg.cancel = true;
+            battle.fx('dodge', { x: unit.x, y: unit.y, id: unit.id });
+            // A native guaranteed dodge must publish the same event as a probability dodge.
+            // Workshop production and other observers listen to the event, not the visual cue.
+            battle.emit('dodge', { source: ctx.source, target: unit, dmg });
+          }
         }, 5);
       } }],
     };

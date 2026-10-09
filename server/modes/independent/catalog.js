@@ -10,8 +10,14 @@ const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
+const DARKMOON_ADDON_PATH=process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH
+  ? path.resolve(process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../data/independent-darkmoon-design-addon.json');
+let DARKMOON_SUPPORT_SPECS=[];
+try { DARKMOON_SUPPORT_SPECS=JSON.parse(readFileSync(DARKMOON_ADDON_PATH,'utf8')).supportOperators||[]; } catch { /* Darkmoon support definitions are an optional compiler add-on. */ }
 
 const BADGE_IDS = Object.freeze({
+  伤害徽章: 'damage',
   攻击徽章: 'precision', 攻速徽章: 'agility', 生命徽章: 'vitality', 防御徽章: 'defense',
   攻击加成徽章: 'assault', 技力徽章: 'recovery', 法抗徽章: 'arcane', 初始技力徽章: 'foresight',
   闪避徽章: 'miracle', 回复徽章: 'investor', 生命加成徽章: 'unyielding', 治疗徽章: 'harmony',
@@ -32,6 +38,7 @@ const PERMIT_GEAR_IDS = Object.freeze({
   锻锤师交工凭证: 'permit-smith-receipt', 深海遗物托付书: 'permit-deepsea-entrustment', 乡野器械移交单: 'permit-rural-transfer-slip',
   骑士装备托管证: 'permit-knight-custody', 独行者借装许可: 'permit-loner-loan', 重装器械适配单: 'permit-heavy-adapter',
   海嗣遗物容器: 'permit-seaborn-vessel', 猎人旧装承接书: 'permit-hunter-succession', 耀骑士接装敕令: 'permit-radiant-edict',
+  医疗装置交接单: 'permit-medical-device-handover',
 });
 const PERMIT_LIMIT_KEYS = ['partnerTiers', 'partnerMaxTier', 'partnerProfession', 'partnerFaction', 'direction', 'receiverTiers', 'receiverMaxTier', 'receiverProfession', 'receiverFaction', 'donorTiers', 'donorMaxTier', 'donorProfession', 'donorFaction'];
 const IDENTITY_CANONICAL = 'harmony-identity-card';
@@ -143,7 +150,7 @@ const PRIZE_MECHANISMS = Object.freeze({
   应急营养补给: ['grantItems', { outputs: [{ id: 'precision', quantity: 3 }, { id: 'vitality', quantity: 3 }] }],
   额外采购配额: ['grantItems', { outputs: [{ id: 'chess_item_1_03_e_a', quantity: 2 }] }],
   新人征调令: ['recruitOffer', { tier: 1, elite: false, choices: 3, applyGainTrait: true }],
-  全队战备支援: ['grantItemsPerPiece', { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], cap: 8 }],
+  全队战备支援: ['grantAllOperators', { outputs: [{ id: 'precision', quantity: 1 }, { id: 'vitality', quantity: 1 }], cap: 8 }],
   标准战备升级: ['futureShopEquipment', { id: 'vitality', quantity: 1, shopChessOnly: true, currentUnclaimed: true, noDuplicateOnFreeze: true }],
   紧急情报更新: ['freeRefreshes', { count: 3, expires: 'prepEnd' }],
   便携锻造站: ['grantGear', { gearId: 'rhodes-portable-forge' }],
@@ -208,6 +215,16 @@ function makeOperator(source, chess, data, eliteVariant = false) {
   };
 }
 
+export function makeDarkmoonSupport(spec) {
+  const id=String(spec.id),attack=Math.max(1,Number(spec.attack)||1)*120,health=Math.max(1,Number(spec.health)||1)*350,faction=spec.faction||null;
+  const normalChess={chessId:id,baseId:id,goldenId:null,isGolden:false,tier:1,techLevel:1,identifier:-1,isHidden:true,isDiy:false,visible:false,
+    name:spec.name,profession:'TOKEN',position:'MELEE',nationId:null,bonds:[],garrisonIds:[],stats:{maxHp:health,atk:attack,def:0,res:0,cost:0,blockCnt:1,bat:1,aspd:100,respawnTime:0,spRecovery:1,hpRecoveryPerSec:0,moveSpeed:1,tauntLevel:0,massLevel:0,deployLimit:1,deckStack:0},
+    rangeGrid:[[0,0],[0,1]],rangeId:null,dmgType:'phys',attackKind:'melee',projectile:null,canHitFly:false,targetPriority:null,trait:null,skill:null,skills:[],talents:[],tokens:[],modules:[],assets:{avatar:id.includes('cat')?'token_10028_vigil_wolf':'token_10030_mlyss_wtrman',spine:id.includes('cat')?'token_10028_vigil_wolf':'token_10030_mlyss_wtrman'},darkmoonSupport:true,nativeGrowth:{source:{type:'authored support recipe'},phases:{1:{maxLevel:90,attributesKeyFrames:[{level:1,data:{maxHp:health,atk:attack,def:0,magicResistance:0}},{level:90,data:{maxHp:health*2,atk:attack*2,def:0,magicResistance:0}}]}}},status:{phase:1,level:1,skillLevel:1,equipLevel:0}};
+  return {chessId:id,name:spec.name,tier:1,profession:'TOKEN',nativeFactionTags:faction?[faction]:[],eliteChessId:null,elite:false,recruitable:false,mergeable:false,darkmoonSupport:true,
+    nativeTrait:{normalText:'支援单位',eliteText:'支援单位',text:'支援单位',sources:{normal:[],elite:[]},origin:'Darkmoon support prototype',effect:{prep:[],combat:[],unsupported:[]}},
+    source:{charId:null,normalChess,eliteChess:null,skills:[],talents:[]}};
+}
+
 function keyed(list, idFn, mapFn) {
   const out = Object.create(null);
   for (const value of list || []) {
@@ -248,9 +265,17 @@ export function getCatalog(data = getData(), design = DESIGN) {
     operators[op.chessId].nativeTrait.text = op.nativeTrait.normalText;
     operators[op.chessId].nativeTrait.sourceRecords = clone(op.nativeTrait.sources.normal);
   }
+  for(const spec of DARKMOON_SUPPORT_SPECS) {
+    if(!spec?.id||!spec?.name||operators[spec.id])throw new Error(`BAD_DARKMOON_SUPPORT_PROTOTYPE:${spec?.id}`);
+    operators[spec.id]=makeDarkmoonSupport(spec);
+  }
 
   const badges = keyed(design.badges, (x) => BADGE_IDS[x.name], (x, id) => ({ ...clone(x), id, kind: 'badge', sourceId: null }));
   const equipment = Object.create(null);
+  equipment['growth-training-record'] = { id: 'growth-training-record', sourceId: 'growth-training-record',
+    name: '训练记录', level: 1, kind: 'equipment', mechanism: 'growthTraining', params: { levels: 1 },
+    effect: '使用后，目标干员的原生成长等级提升一级；属性按该干员的成长曲线计算。',
+    available: true, inheritable: false, unique: false, availableModes: ['levels'] };
   for (const item of design.legacy || []) {
     const canonicalId = STOPPED_LEGACY_NAMES.has(item.oldName) ? IDENTITY_CANONICAL : item.sourceId;
     const upstreamEliteId = item.sourceId.endsWith('_a') ? `${item.sourceId.slice(0, -2)}_b` : null;
@@ -308,8 +333,18 @@ export function getCatalog(data = getData(), design = DESIGN) {
       if (op.eliteChessId) delete operators[op.eliteChessId].permitGearId;
     }
   }
+  // Retain stable legacy IDs so existing saves keep their equipment and permissions.
+  for(const old of design.legacyPermissions||[]){
+    const id=PERMIT_GEAR_IDS[old.wording||old.gear];if(!id||equipment[id])continue;
+    const owner=design.operators.find(op=>op.name===old.name);
+    equipment[id]={id,sourceId:id,canonicalId:id,uniqueKey:id,name:old.wording||old.gear,kind:'permit',mechanism:'inheritancePermit',
+      params:Object.fromEntries(PERMIT_LIMIT_KEYS.filter(k=>old[k]!==undefined).map(k=>[k,clone(old[k])])),stats:null,
+      level:null,eliteLevel:null,eliteId:null,unique:true,inheritable:false,available:true,shopEligible:false,legacyOnly:true,retired:true,
+      effect:String(old.limit||'').replaceAll('被继承','接收').replaceAll('继承','交接'),ownerChessId:owner?.chessId,ownerName:old.name};
+  }
   for (const op of Object.values(operators)) delete op.inheritance;
   const attachments = keyed(design.attachments, (x) => ATTACHMENT_IDS[x.name], (x, id) => ({ ...clone(x), id, mechanism: ATTACHMENT_RULES[x.name].mechanism, params: clone(ATTACHMENT_RULES[x.name].params) }));
+  attachments['darkmoon-magnetic'] = { id:'darkmoon-magnetic', name:'机械合体组件', effect:'附加来源干员的本局退场效果；不同来源可以分别触发。', mechanism:'darkmoonSourceAttachment', params:{ sourceIdRequired:true }, unique:false, inheritable:true, available:true };
   const prizes = keyed(design.prizes, (x) => PRIZE_IDS[x.name], (x, id) => ({
     ...clone(x), id,
     mechanism: PRIZE_MECHANISMS[x.name][0], params: clone(PRIZE_MECHANISMS[x.name][1]),
@@ -321,8 +356,8 @@ export function getCatalog(data = getData(), design = DESIGN) {
     config: {
       ...clone(design.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
       balance: { incomeBonusFromRound: 8, incomeBonus: 1 },
-      equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: 15, regularProductionBadgeCount: 6,
-      rareInheritanceOperators: 12, bodyPenalty: clone(design.rules?.bodyPenalty),
+      equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: Object.values(badges).filter(b => b.available !== false && !b.retired && !b.unassigned).length, regularProductionBadgeCount: Object.values(badges).filter(b => b.regularProduction && b.available !== false && !b.retired && !b.unassigned).length,
+      rareInheritanceOperators: Object.values(operators).filter(op => !op.elite && op.recruitable && op.permitGearId).length, bodyPenalty: clone(design.rules?.bodyPenalty),
       badgeRecipes: clone(design.badgeRecipes || design.recipes || {}),
       factionRecipes: {
         炎: ['precision'], 维多利亚: ['precision', 'vitality'], 拉特兰: ['agility'], 阿戈尔: ['vitality'],

@@ -128,6 +128,7 @@ import { layoutPen, penSignature } from './pen.js';
 import { IDENTITY, bossPrepField, tilesToDisp, leaderStand } from './prepfield.js';
 import { pickOnTile, pickBattle, hitRectAt, hitTiles } from './pick.js';
 import { promotionsOf } from './promote.js';
+import { ResonanceFloorRenderer } from './resonanceFloors.js';
 
 const VENDOR = { pixi: '/vendor/pixi.min.js', spine: '/vendor/pixi-spine.js' };
 const PIECE_DIRS = new Set(['UP', 'RIGHT', 'DOWN', 'LEFT']);
@@ -297,6 +298,8 @@ export function renderInfo(u) {
     // DESIGN §16 loadout of an ally (UnitInfo.skillIndex / moduleId): the Spine actor plays that skill's clip, and a
     // tap hands them to the detail card (a teammate's unit shows its owner's skill / module)
     skillIndex: Number.isInteger(u.skillIndex) ? u.skillIndex : undefined,
+    // Resonance's authored star is display metadata; legacy modes omit the key and keep their old HUD.
+    ...(Number.isInteger(u.resonanceStar) && u.resonanceStar >= 1 && u.resonanceStar <= 3 ? { resonanceStar: u.resonanceStar } : {}),
     moduleId: typeof u.moduleId === 'string' ? u.moduleId : undefined,
     // the ally's equipped item ids (UnitInfo.items, DESIGN §16 / §21.11): the detail card needs them for a teammate's
     // unit (resolveDetail `unitItems` → the read-only 装备 section and the 变形同构体 pairing chips); the owner's own
@@ -556,6 +559,7 @@ export async function createFieldView(host, options = {}) {
     surfaceLayer: (row) => tiles.surfaceLayer(row),
   };
   const tiles = new TileField({ ground: layers.ground, overlay: layers.overlay, props: layers.units, anim: layers.anim });
+  const resonanceFloors = new ResonanceFloorRenderer(P, layers.overlay);
   const fxIds = new WeakMap();  // UnitInfo → its FX registry identity (ctx.identify)
   const fx = new FxSystem({
     P, layers, renderer: app.renderer, cam: () => cam, settings, assets, heightAt, redVignette: bg.red, surfaceLayer: ctx.surfaceLayer,
@@ -858,6 +862,7 @@ export async function createFieldView(host, options = {}) {
     if (!st || typeof st !== 'object' || !Array.isArray(st.rows)) return false;
     stageRec = st;
     tiles.setStage(st);
+    resonanceFloors.invalidate();
     tiles.setBattleRect(mode === 'battle' && battleMeta ? battleMeta.rect : null);
     if (board3d) { board3d.setStage(st); board3d.setBattleRect(mode === 'battle' && battleMeta ? battleMeta.rect : null); }
     tiles.project(cam, true);
@@ -904,7 +909,9 @@ export async function createFieldView(host, options = {}) {
       spine: rec?.assets?.spine || rec?.charId || null, avatar: rec?.assets?.avatar || rec?.charId || null,
       // the piece's own tier first: a mode with its own roster (卫戍协议：工坊) tiers operators differently from the
       // chess record; the original's server sends the record's tier anyway
-      tier: piece.tier || rec?.tier || 1, golden: !!(piece.golden || rec?.isGolden), dir,
+      tier: piece.tier || rec?.tier || 1, golden: !!(piece.golden || rec?.isGolden),
+      ...(Number.isInteger(piece.resonanceStar) && piece.resonanceStar >= 1 && piece.resonanceStar <= 3 ? { resonanceStar: piece.resonanceStar } : {}),
+      dir,
     };
   }
 
@@ -979,7 +986,7 @@ export async function createFieldView(host, options = {}) {
       const key = 'p:' + e.uid;
       e.key = key;
       const info = pieceInfo(e.piece, e.area);
-      const sig = `${info.kind}|${info.defId}|${info.golden ? 1 : 0}`;
+      const sig = `${info.kind}|${info.defId}|${info.golden ? 1 : 0}|${info.resonanceStar ?? ''}`;
       let v = views.get(key);
       if (v && v._sig !== sig) { dropView(key); v = null; }
       const w = slotWorld(e);
@@ -1051,6 +1058,7 @@ export async function createFieldView(host, options = {}) {
     gone.clear();
     battleMeta = null;
     interp.reset();
+    resonanceFloors.clear();
     fx.clear();
     fxCues.reset();
     consumedIds.clear();
@@ -1469,6 +1477,8 @@ export async function createFieldView(host, options = {}) {
     clearHl();
     renderT0Battle = null;
     mode = 'battle';
+    resonanceFloors.setStatic(meta.resonanceFloors);
+    resonanceFloors.setDynamic(null);
     const rect = meta.rect ? normRect(meta.rect) : (meta.kind === 'boss' || meta.kind === 'hidden' ? { ...GEO.BOSS_RECT } : meta.kind === 'unite' ? { ...GEO.UNITE_RECT } : { ...GEO.NORMAL_RECT });
     // prep: true = a read-only scouting board (a teammate's lineup during prep): prep-style pieces, no bars
     battleMeta = { fieldId: meta.fieldId ?? null, kind: meta.kind || 'normal', rect, stageId: meta.stageId ?? null, prep: meta.prep === true };
@@ -1805,12 +1815,15 @@ export async function createFieldView(host, options = {}) {
       updateBackdrop(clock);
       if (mode === 'battle') {
         const renderT = interp.update(now / 1000);
+        resonanceFloors.setDynamic(Number.isFinite(renderT) ? interp.resonanceFloorsAt(renderT) : null);
+        resonanceFloors.update(Number.isFinite(renderT) ? renderT : 0, cam, heightAt, (r, c) => tiles.tile(r, c).drawn);
         if (Number.isFinite(renderT)) {
           processEvents(renderT);
           syncBattle(renderT);
           windUpAttacks(renderT);
         }
       } else if (mode === 'prep') {
+        resonanceFloors.update(0, cam, heightAt, (r, c) => tiles.tile(r, c).drawn);
         for (const [key, pd] of pending) {
           if (now - pd.t > DROP_PENDING_MS) {
             pending.delete(key);
@@ -1843,7 +1856,10 @@ export async function createFieldView(host, options = {}) {
   // render-cost probe (PIXI renders at UPDATE_PRIORITY.LOW = -25)
   let renderT0 = 0, renderMs = 0;
   const preRender = () => { renderT0 = performance.now(); };
-  const postRender = () => { if (renderT0) renderMs = renderMs * 0.9 + (performance.now() - renderT0) * 0.1; };
+  const postRender = () => {
+    if (renderT0) renderMs = renderMs * 0.9 + (performance.now() - renderT0) * 0.1;
+    emit('framePainted');
+  };
   app.ticker.add(preRender, null, -24);
   app.ticker.add(postRender, null, -26);
 
@@ -2040,6 +2056,7 @@ export async function createFieldView(host, options = {}) {
       clearPen();
       holdScene(false); // no scene any more: the quiet budget may free the skeletons (lobby / room / result)
       try { fx.destroy(); } catch { /* ignore */ }
+      try { resonanceFloors.destroy(); } catch { /* ignore */ }
       try { tiles.destroy(); } catch { /* ignore */ }
       try { impostors.destroy(); } catch { /* ignore */ }
       listeners.clear();

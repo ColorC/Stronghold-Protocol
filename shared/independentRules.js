@@ -1,5 +1,6 @@
 // Shared, data-based eligibility. Descriptions are display text and never execution rules.
 import { loadoutRecord } from './loadoutRecord.js';
+import { levelBodyStats } from './independentGrowth.js';
 
 export const TAVERN_FACTIONS = Object.freeze({
   yanShip:'炎', victoriaShip:'维多利亚', lateranoShip:'拉特兰', egirShip:'阿戈尔',
@@ -21,6 +22,7 @@ export function nativeFactions(piece, catalog) {
 
 export function tavernFactions(piece, catalog) {
   const out=new Set(nativeFactions(piece,catalog));
+  if(catalog?.config?.factionIdentityEquipment===false)return [...out];
   const proxyEligible = new Set(Array.isArray(catalog?.config?.tavernFactions) ? catalog.config.tavernFactions : Object.values(TAVERN_FACTIONS));
   // Workshop faction equivalence satisfies recipes, while native identity still governs handovers.
   if(catalog?.operators?.[piece?.chessId]?.tavernFactionProxy==='ALL')for(const faction of proxyEligible)out.add(faction);
@@ -81,7 +83,7 @@ export function inheritanceQualification(donor, receiver, catalog) {
 
 export function nativeBodyStats(piece, catalog) {
   const raw=nativeRecord(piece,catalog);
-  const stats={...(loadoutRecord(raw,piece)?.stats || raw?.stats || {})};
+  const stats=levelBodyStats(piece,catalog,raw);
   if(piece?.bodyPenaltyApplied) {
     const penalty=catalog?.config?.bodyPenalty || {};
     stats.atk=Math.floor((stats.atk||0)*(penalty.baseAttackRatio ?? 0.8));

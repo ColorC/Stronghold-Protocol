@@ -10,11 +10,8 @@
 //                victim) in the hit colour; AoE ground rings for splash attackers
 //   numbers      damage numbers (phys orange-white, arts purple, true white, heal green '+', elements orange; a crit
 //                '!' with a punch, a dodge 'MISS') as pooled BitmapText (per font), by the rules of render/dmgNumbers.js
-//                (docs/damage-numbers.md): size / pop / life by the hit's share of the target's max HP (chip hits
-//                small and faint, heavy ones big); a hit with a known attacker drifts away from it, others rise
-//                straight up; rapid same-style hits merge into a running total; ≤ 4 per target; no randomness; laid
-//                out in screen space against every live number (its column first, then outwards on its drift side)
-//                so numbers of neighbouring units never cover or touch each other (see number()). A number is drawn
+//                (docs/damage-numbers.md): one base size; motion, life and animation from iGame SkillDamagePopup rows;
+//                natural overlap is allowed. A number is drawn
 //                for every 'dmg' / 'heal' cue (play()), whatever recipe draws the hit itself
 //   skill        activation burst: flash, a light pillar with a white-hot core, a shockwave + hex ring on the ground,
 //                rising motes; while active a slowly turning hex with a soft glow under the unit (+ a few motes)
@@ -45,8 +42,8 @@
 import { fxAtlas } from './textures.js';
 import { DMG_STYLE, dmgStyleKey, HIT_TINT, PROJ, COLORS } from './style.js';
 import {
-  ARC_TILES, COLUMN_LINES, POP_T, TIER_LOOK, canMerge, critPunchAt, driftAt, laneOrder, maxTier, numberChars, numberLook,
-  numberText, numberTier, pathKind, riseAt, travelDir,
+  BASE_TEXT_SCALE, CRIT_FONT_SCALE, CRIT_SCALE, CRIT_Y, POPUP_ROWS, lerpKeys, numberText, popupAlpha, popupPosition,
+  popupWaypoints, travelDir,
 } from './dmgNumbers.js';
 import { FX_KINDS } from './fxRecipes.js';
 import { fxRegistry, fxCue } from './fxRegistry.js';
@@ -88,21 +85,10 @@ export function projSpeed(kind) {
 }
 
 const MAX_PARTICLES = { high: 1400, medium: 800, low: 360 };
-const MAX_NUMBERS = 90;
 /** Particle cap multiplier per adaptive load level (render/app.js loadLevel). */
 const LOAD_PARTICLES = Object.freeze([1, 0.75, 0.55, 0.4]);
-const NUM_RISE = 0.45;        // tiles a damage number rises over dmgNumbers.RISE_T (easeOut), then it stays
-const NUM_LIFE = 0.9;         // seconds a running total stays up past a merge (base; each tier has its life, dmgNumbers.js)
-const NUM_MAX_LIFE = 1.8;
-const NUM_FADE_T = 0.27;      // fade-out at the end of its life
-const NUM_LINE_EM = 0.95;     // vertical room of one line of digits, in em of the 24 px bitmap font
-const NUM_MAX_LINES = 5;      // a number starts at most this many lines above the head
-const NUM_DIGIT_EM = 0.66;    // advance of one digit of the damage font, in em (Bender 700: 0.56–0.66, the widest kept)
-const NUM_GAP_PX = 7;         // horizontal gap between two numbers side by side (never read as one number)
-const NUM_PER_TARGET = 4;     // live numbers per unit (then hits join / the oldest fades)
-const NUM_CROWD = 6;          // more live numbers than this around a spot → shorter lives there
-/** Screen scale of a number's text (24 px font) at `s` px per tile. */
-const numScale = (s, style) => clamp(s / 115, 0.42, 1.05) * (style === 'heal' ? 0.9 : 1);
+/** Screen scale of the smaller, uniform 24 px number font at `s` px per tile. */
+const numScale = (s) => clamp(s / 115, 0.42, 1.05) * BASE_TEXT_SCALE;
 const MAX_PROJ = 260;
 /** Trail particles (and boomerang afterimages) per real second of one flying projectile (cosmetic). */
 const TRAIL_HZ = 36;
@@ -189,7 +175,7 @@ export class FxSystem {
     const P = ctx.P;
     this.ctx = ctx;
     this.P = P;
-    this.originalVfx = ctx.originalVfx ? new OriginalVfxPlayer({ P, layers: ctx.layers, cam: ctx.cam, view: ctx.view, renderer: ctx.renderer, root: ctx.originalVfx.root, cacheKey: ctx.originalVfx.cacheKey }) : null;
+    this.originalVfx = ctx.originalVfx ? new OriginalVfxPlayer({ P, layers: ctx.layers, cam: ctx.cam, view: ctx.view, root: ctx.originalVfx.root, cacheKey: ctx.originalVfx.cacheKey }) : null;
     this.atlas = fxAtlas();
     this.tex = this.atlas.tex;
     ensureDamageFonts();
@@ -1151,26 +1137,7 @@ export class FxSystem {
     }
   }
 
-  /**
-   * A damage / heal number over `view`. The rules are render/dmgNumbers.js (docs/damage-numbers.md): a tier by the hit's
-   * share of the unit's max HP (size, pop, life, opacity), a path that means something (drifts away from a known
-   * attacker / rises when none is known / a crit punches in place), rapid same-style hits merged into a running total,
-   * no randomness. `o`: true = a big hit (at least 'heavy'), or { big, crit, src: the attacker's view, label: a word
-   * ('MISS') instead of a value }. Layout in screen space, against EVERY live number (the '41509' / '201625' overlaps
-   * were numbers of neighbouring units standing side by side):
-   *   * merge: a same-style hit on the same unit within the number's merge window (longer for chip hits) while it is
-   *     still young adds to it — a running total that re-pops, is re-tiered from its total and lives a little longer;
-   *     crits and labels never merge;
-   *   * cap: a unit shows at most NUM_PER_TARGET numbers; past it the hit joins the unit's youngest same-style number,
-   *     else the unit's oldest number fades out at once;
-   *   * lanes: the new number takes its unit's head; when that is taken it stacks up in its own column (≤ COLUMN_LINES
-   *     lines), then spills outwards on the side it drifts to (dmgNumbers.laneOrder), at most NUM_MAX_LINES lines up;
-   *     a slot is free when no live number of any unit overlaps it now or later (a younger number rises faster: below
-   *     an older one it must keep that one's rise so far as a margin), its box swept over its sideways drift, with a
-   *     gap wide enough that two numbers never read as one;
-   *   * crowded (> NUM_CROWD numbers near it): it lives shorter; a pair that still ends up overlapping (units walking
-   *     into each other) resolves by fading the older one quickly (_updateNums).
-   */
+  /** One number per hit, using the native iGame row's motion and lifetime. */
   number(view, amount, style, o) {
     const opt = o && typeof o === 'object' ? o : { big: !!o };
     const label = opt.label ? String(opt.label) : null;
@@ -1181,115 +1148,28 @@ export class FxSystem {
     const base = (view.z || 0) + (view.hover || 0) + (view._headTiles || 1.2) * 0.8;
     const a = cam.project(view.x, view.y, base, this._p);
     const ax = a.x, ay = a.y, s = a.s > 0 ? a.s : 100;
-    const pxPerZ = ay - cam.project(view.x, view.y, base + 1, this._q).y;
-    const risePx = NUM_RISE * (pxPerZ > 1e-3 ? pxPerZ : s * 0.5);
     const crit = !label && style !== 'heal' && (!!opt.crit || this._critPending(view));
     const src = opt.src && opt.src !== view && !opt.src.destroyed && Number.isFinite(opt.src.x) && Number.isFinite(opt.src.y) ? opt.src : null;
-    const dir = src && !label ? travelDir(cam.project(src.x, src.y, base, this._q).x, ax, s * 0.12) : 0;
-    // the live boxes only change between frames: laid out once per frame / camera, not once per hit (a heavy AoE
-    // lands dozens of hits in one frame — re-projecting every live number for each was O(hits × numbers))
-    this._layoutNumsOnce(cam);
-    // 1. merge into this unit's running total of the same style
-    let mine = 0, youngest = null, oldest = null;
-    for (const t of this.nums) {
-      if (t.unit !== view || t.fading) continue;
-      mine++;
-      if (!oldest || t.born < oldest.born) oldest = t;
-      if (t.style === style && !t.crit && !t.label && (!youngest || t.born > youngest.born)) youngest = t;
-    }
-    if (!label && !crit) {
-      const merge = canMerge(youngest, style, false, now) || mine >= NUM_PER_TARGET ? youngest : null;
-      if (merge && this._growFits(merge, n, opt.big)) { this._addToNum(merge, n, opt.big, true); return; }
-    }
-    if (mine >= NUM_PER_TARGET && oldest) this._fadeNum(oldest, 0.1);
-    // 2. tier, look, path
-    const tier = label ? 'chip' : maxTier(numberTier(n, view.maxHp, style, crit), opt.big ? 'heavy' : 'chip');
-    const look = numberLook(tier, crit, !!label);
-    const kind = label ? 'rise' : pathKind(style, dir, crit);
-    const drift = kind === 'arc' ? ARC_TILES * s * dir : 0;
-    const sc = numScale(s, style) * look.scale;
-    const w0 = numberChars(n, style, crit, label) * NUM_DIGIT_EM * 24 * sc * look.pop + NUM_GAP_PX;
-    const w = w0 + Math.abs(drift);                       // its box, swept over its drift
-    const h = 24 * NUM_LINE_EM * sc * look.pop;
-    const lane = Math.max(w, 24 * NUM_DIGIT_EM * sc * 3.2) * 0.62;
+    const dir = src && !label ? travelDir(cam.project(src.x, src.y, base, this._q).x, ax, s * 0.12) : 1;
+    const kind = label || style === 'heal' ? 'heal' : crit ? 'crit' : 'damage';
     view._numSeq = (view._numSeq | 0) + 1;
-    // 3. its column, then outwards on its drift side
-    let best = null;
-    for (const k of laneOrder(dir, view._numSeq)) {
-      const cx = ax + k * lane;
-      const cy = this._numSlotPx(cx + drift / 2, ay, w, h, risePx);
-      const lift = ay - cy;
-      if (lift <= h * COLUMN_LINES) { best = { cx, cy, lift }; break; }
-      if (!best || lift < best.lift - 0.5) best = { cx, cy, lift };
-    }
-    const cap = h * NUM_MAX_LINES;
-    let { cx, cy } = best;
-    if (ay - cy > cap) {
-      // over capacity (a knot of units under fire): join this unit's latest same-style total when it fits, else take
-      // the capped spot and drop whatever is there (crowded numbers give way at once)
-      let same = null;
-      if (!label && !crit) for (const t of this.nums) if (t.unit === view && t.style === style && !t.fading && !t.crit && !t.label && (!same || t.born > same.born)) same = t;
-      if (same && this._growFits(same, n, opt.big)) { this._addToNum(same, n, opt.big, false); return; }
-      // (released at once, not merely ended: they would vanish before the next render anyway, and as obstacles they
-      // made every further hit of the same frame search a crowd that is no longer there — a knot under AoE)
-      cx = ax; cy = ay - cap;
-      const mx = cx + drift / 2;
-      let keep = 0;
-      for (const t of this.nums) {
-        if (Math.abs(t._x - mx) < (t._w + w) / 2 && t._y > cy - h && t._y - t._h < cy) { this._releaseNum(t); continue; }
-        this.nums[keep++] = t;
-      }
-      this.nums.length = keep;
-    }
-    // 4. crowding: numbers around this spot → a shorter life for everyone new here
-    let near = 0;
-    for (const t of this.nums) if (!t.fading && Math.abs(t._x - cx) < 150 && Math.abs(t._y - cy) < 110) near++;
-    const life = near >= NUM_CROWD ? look.life * 0.62 : look.life;
-    const maxNums = this.load >= 2 ? MAX_NUMBERS >> 1 : MAX_NUMBERS;
-    while (this.nums.length >= maxNums) this._releaseNum(this.nums.shift());
+    if (view._popupAt !== now) { view._popupAt = now; view._popupCounts = Object.create(null); }
+    const c = (view._popupCounts[kind] || 0) % 3;
+    view._popupCounts[kind] = c + 1;
+    const delay = label ? c * 0.15 : kind === 'crit' ? c * 0.09 : kind === 'heal' ? c * 0.03 : c * 0.07;
+    const path = popupWaypoints(kind, (view._numSeq + (Number(view.id) || 0) * 31) >>> 0);
+    const rowScale = POPUP_ROWS[kind].scale?.[1] ?? 1;
     const t = this._takeNum(style);
     t.text.visible = true;
-    t.text.alpha = look.alpha;
+    t.text.alpha = 1;
     t.text.text = label || numberText(n, style, crit);
     Object.assign(t, {
-      unit: view, style, value: n, life: 0, end: life, born: now, lastHit: now, pop: 1, big: !!opt.big, fading: false,
-      tier, tier0: tier, look, crit, label, kind, drift, src,
-      ox: cx - ax, oy: cy - ay, x0: view.x, y0: view.y, z0: base, risePx,
-      _tx: cx, _x: cx + drift / 2, _y: cy, _w: w, _h: h, _sc: sc, _pop: look.pop,
+      unit: view, style, value: n, life: 0, end: path.total + delay, born: now, delay, path, direction: dir,
+      crit, label, src, kind, rowScale, x0: view.x, y0: view.y, z0: base, _tx: ax, _y: ay,
     });
     this.nums.push(t);
   }
 
-  /** A hit of `n` joins the running total `t` (re-tiered from its total; `extend`: it stays up a little longer). */
-  _addToNum(t, n, big, extend) {
-    t.value += n;
-    t.big = t.big || !!big;
-    t.tier = maxTier(t.tier, maxTier(numberTier(t.value, t.unit?.maxHp, t.style, false), t.big ? 'heavy' : 'chip'));
-    t.look = numberLook(t.tier, false);
-    t.text.text = numberText(t.value, t.style, false);
-    t.pop = 1;
-    t.lastHit = this.time;
-    if (extend) {
-      const L = Math.max(t.look.life, NUM_LIFE);
-      t.end = Math.min(t.life + L * 0.75, Math.max(t.end, t.life + L * 0.6), NUM_MAX_LIFE);
-    }
-    this._sizeNum(t);
-    t._w += Math.abs(t.drift * (1 - driftAt(t.kind, t.life)));
-  }
-
-  /** Whether a merged number's grown text still fits among its neighbours (else a new number is made). */
-  _growFits(t, add, big) {
-    const tier = maxTier(t.tier, maxTier(numberTier(t.value + add, t.unit?.maxHp, t.style, false), t.big || big ? 'heavy' : 'chip'));
-    const look = numberLook(tier, false);
-    const sc = numScale(t._s || 100, t.style) * look.scale;
-    const w = numberChars(t.value + add, t.style, false) * NUM_DIGIT_EM * 24 * sc * look.pop + NUM_GAP_PX + Math.abs(t.drift * (1 - driftAt(t.kind, t.life)));
-    const h = 24 * NUM_LINE_EM * sc * look.pop;
-    for (const o of this.nums) {
-      if (o === t || o.fading) continue;
-      if (Math.abs(o._x - t._x) < (o._w + w) / 2 && o._y - o._h < t._y && t._y - h < o._y) return false;
-    }
-    return true;
-  }
 
   /** Whether a 'crit' fx of this frame names the spot of `view` (consumed): the sim sends it before the hit's 'dmg'. */
   _critPending(view) {
@@ -1317,84 +1197,29 @@ export class FxSystem {
       if (at ? Math.hypot(u.x - x, u.y - y) > ANCHOR_SNAP : u.id !== id) continue;
       this.nums.splice(i, 1);
       this._releaseNum(t);
-      this.number(u, t.value, t.style, { crit: true, src: t.src, big: t.big });
+      this.number(u, t.value, t.style, { crit: true, src: t.src });
       return;
     }
     (this._critMarks || (this._critMarks = [])).push({ x, y, id, t: this.time });
   }
 
-  /**
-   * Lowest (largest screen y) bottom for a number of size w×h centred at x, starting at y0, clear of every live number
-   * now and later: above one it must sit on its top; below one it must leave that one's rise so far as a margin
-   * (the new number rises faster and would catch up — every number rises the same curve, dmgNumbers.riseAt).
-   */
-  _numSlotPx(x, y0, w, h, risePx) {
-    let y = y0;
-    for (let pass = 0; pass <= this.nums.length; pass++) {
-      let moved = false;
-      for (const t of this.nums) {
-        if (t.fading && t.text.alpha < 0.3) continue;   // almost gone
-        if (Math.abs(t._x - x) >= (t._w + w) / 2) continue;
-        const top = t._y - t._h, bottom = t._y;
-        const risen = t.risePx * riseAt(t.life);
-        if (y <= top) continue;                                   // entirely above it (bottom at or over its top)
-        if (y - h >= bottom + risen) continue;                    // below it, for good
-        y = top;
-        moved = true;
-      }
-      if (!moved) break;
-    }
-    return y;
-  }
-
-  /**
-   * Screen boxes of the live numbers (their current anchor, rise, drift and size): t._tx = the text's x, t._y = its
-   * bottom; t._x / t._w = the box swept over the drift still to come (what other numbers keep clear of), t._h.
-   */
+  /** Project native popup motion. Intentional overlap is left untouched. */
   _layoutNums(cam) {
     const p = this._p;
     for (const t of this.nums) {
       const u = t.unit;
       if (u && !u.destroyed) { t.x0 = u.x; t.y0 = u.y; }
-      cam.project(t.x0, t.y0, t.z0, p);
-      t._s = p.s;
-      const d = driftAt(t.kind, t.life);
-      const rest = t.drift * (1 - d);
-      t._tx = p.x + t.ox + t.drift * d;
-      t._x = t._tx + rest / 2;
-      t._y = p.y + t.oy - t.risePx * riseAt(t.life);
-      this._sizeNum(t);
-      t._w += Math.abs(rest);
+      cam.project(t.x0 + t.path.ox, t.y0 + t.path.oy, t.z0, p);
+      const elapsed = Math.max(0, t.life - t.delay);
+      const [x, y] = popupPosition(t.path, elapsed, t.direction);
+      const ui = (p.s > 0 ? p.s : 100) / 56;
+      t._tx = p.x + x * ui;
+      t._y = p.y - y * ui;
+      t._sc = numScale(p.s > 0 ? p.s : 100) * t.rowScale * (t.crit ? CRIT_FONT_SCALE : 1);
+      t._animScale = t.crit ? lerpKeys(CRIT_SCALE, elapsed) : 1;
+      t._animY = t.crit ? lerpKeys(CRIT_Y, elapsed) * ui : 0;
+      t._alpha = popupAlpha(t.crit, elapsed);
     }
-    this._laidAt = this.time;
-    this._laidCam = cam;
-    this._laidKey = camKey(cam);
-  }
-
-  /** `_layoutNums` unless the boxes are already current: same frame (fx time) and the same camera framing. */
-  _layoutNumsOnce(cam) {
-    if (this._laidAt === this.time && this._laidCam === cam && this._laidKey === camKey(cam)) return;
-    this._layoutNums(cam);
-  }
-
-  /** A number's text box (no drift) from its value, look, pop / crit punch and the scale of its last layout (t._s). */
-  _sizeNum(t) {
-    const look = t.look || TIER_LOOK.normal;
-    const sc = numScale(t._s || 100, t.style) * look.scale;
-    const f = t.crit ? critPunchAt(t.life) : t.pop;
-    const pop = 1 + f * (look.pop - 1);
-    t._w = numberChars(t.value, t.style, t.crit, t.label) * NUM_DIGIT_EM * 24 * sc * pop + NUM_GAP_PX;
-    t._h = 24 * NUM_LINE_EM * sc * pop;
-    t._sc = sc;
-    t._pop = pop;
-  }
-
-  _fadeNum(t, within) {
-    if (t.fading) return;
-    t.fading = true;
-    t.fadeFrom = t.text.alpha;
-    t.end = Math.min(t.end, t.life + within);
-    t.fadeT0 = t.life;
   }
 
   _takeNum(style) {
@@ -1428,35 +1253,15 @@ export class FxSystem {
     for (const t of this.nums) {
       t.life += dt;
       if (t.life >= t.end) { this._releaseNum(t); continue; }
-      t.pop = Math.max(0, t.pop - dt / POP_T);
       this.nums[w++] = t;
     }
     this.nums.length = w;
     this._layoutNums(cam);
-    // a pair still overlapping (their units walked into each other): the older one gives way
-    const L = this.nums;
-    for (let i = 0; i < L.length; i++) {
-      const a = L[i];
-      if (a.fading) continue;
-      for (let j = i + 1; j < L.length; j++) {
-        const b = L[j];
-        if (b.fading) continue;
-        if (Math.abs(a._x - b._x) < (a._w + b._w) / 2 - NUM_GAP_PX * 0.5 && Math.abs((a._y - a._h / 2) - (b._y - b._h / 2)) < (a._h + b._h) / 2 * 0.9) {
-          this._fadeNum(a.born <= b.born ? a : b, 0.06);
-          if (a.fading) break;
-        }
-      }
-    }
-    for (const t of L) {
+    for (const t of this.nums) {
       const tx = t.text;
-      tx.scale.set(t._sc * t._pop);
-      tx.position.set(t._tx, t._y);
-      const rest = t.look ? t.look.alpha : 1;
-      let alpha = rest;
-      const left = t.end - t.life;
-      if (t.fading) alpha = (t.fadeFrom ?? rest) * clamp(left / Math.max(0.01, t.end - t.fadeT0), 0, 1);
-      else if (left < NUM_FADE_T) alpha = rest * left / NUM_FADE_T;
-      tx.alpha = alpha;
+      tx.scale.set(t._sc * t._animScale);
+      tx.position.set(t._tx, t._y - t._animY);
+      tx.alpha = t.life < t.delay ? 0 : t._alpha;
     }
   }
 

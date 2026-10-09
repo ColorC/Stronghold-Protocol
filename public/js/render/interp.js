@@ -32,6 +32,7 @@
 
 import { fxForm } from '../../../shared/protocol.js';
 import { ANIM } from '../../../shared/constants.js';
+import { normalizeDynamicFloors } from './resonanceFloors.js';
 
 export const TUPLE = Object.freeze({ ID: 0, X: 1, Y: 2, HP: 3, MAXHP: 4, SP: 5, SPMAX: 6, FLAGS: 7, ANIM: 8, EL: 9, EL_FILL: 10, EL_UNTIL: 11, EL_DUR: 12 });
 /** The unit was (re)deployed between tuples `a` and the newer `b`: `b` plays the deploy animation, `a` did not (sim snapshot animOf). */
@@ -99,7 +100,7 @@ export function normalizeSnapshot(snap) {
       (down || (down = [])).push(e);
     }
   }
-  return { t, units, down, raw: snap };
+  return { t, units, down, resonanceFloors: normalizeDynamicFloors(snap.resonanceFloors), raw: snap };
 }
 
 export class SnapshotBuffer {
@@ -261,6 +262,14 @@ export class SnapshotBuffer {
     if (!s.length || !Number.isFinite(time)) return null;
     const ia = this._indexAt(time);
     return s[ia < 0 ? 0 : ia].down || null;
+  }
+
+  /** Compact active-field floor metadata from the snapshot selected at render time, or an empty list for legacy frames. */
+  resonanceFloorsAt(time = this.renderT) {
+    const s = this.snaps;
+    if (!s.length || !Number.isFinite(time)) return [];
+    const i = this._indexAt(time);
+    return s[i < 0 ? 0 : i].resonanceFloors;
   }
 
   /**

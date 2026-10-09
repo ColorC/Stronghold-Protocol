@@ -37,6 +37,8 @@ export class Unit {
     this.ownerId = init.ownerId ?? null;  // playerId (enemies: field owner)
     this.uid = init.uid ?? null;          // match piece uid (ops/tokens from the board)
     this.ownerUnit = init.ownerUnit ?? null; // summoner (tokens)
+    this.nativeGrowthStatus = init.nativeGrowthStatus ?? null; // optional runtime owner phase/level for native summon curves
+    this.nativeOwnerGrowth = init.nativeOwnerGrowth ?? null; // frozen phase/level context on a spawned summon
     this.x = init.x ?? 0;
     this.y = init.y ?? 0;
     this.tileR = init.tileR ?? Math.round(this.y);
@@ -120,7 +122,8 @@ export class Unit {
     const maxHp = Math.max(1, fin((bHp + a('hpFlat')) * Math.max(0, 1 + a('hpPct')) * m('hpMul'), bHp));
     // PRTS 游戏数据基础 属性基本公式 A_f = F_t[(A + D_p)(1 + D_t) + F_p]: `atkFinal` is the 最终加算 (FINAL_ADDITION) —
     // added after the percentages, inside the Πmul (阿戈尔's devoured base ATK, DESIGN §24.7)
-    const atk = Math.max(0, fin(((b.atk + a('atkFlat')) * Math.max(0, 1 + a('atkPct')) + a('atkFinal')) * m('atkMul'), fin(b.atk, 0)));
+    // Resonance HP-derived attack is independent from ordinary atkPct stacking and uses the freshly recalculated max HP.
+    const atk = Math.max(0, fin(((b.atk + a('atkFlat')) * Math.max(0, 1 + a('atkPct')) + a('atkFinal') + maxHp * a('atkHpPct')) * m('atkMul'), fin(b.atk, 0)));
     const def = Math.max(0, fin((b.def + a('defFlat')) * Math.max(0, 1 + a('defPct')) * m('defMul'), fin(b.def, 0)));
     const res = clamp(fin((b.res + a('resFlat')) * m('resMul'), fin(b.res, 0)), 0, 100);
     const aspd = clamp(fin(b.aspd + a('aspd'), 100), ASPD_MIN, ASPD_MAX);

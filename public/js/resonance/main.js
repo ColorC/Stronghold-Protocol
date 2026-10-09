@@ -1,0 +1,13 @@
+import '../ui/compat.js';
+import {render} from '../../vendor/preact.module.js';
+import {html,UiHosts,setTierLook} from '../ui/components.js';
+import {ToastHost} from '../ui/toasts.js';
+import {installDeviceSupport} from '../ui/device.js';
+import {installAudio} from '../audio.js';
+import {settingsStore} from '../ui/settings.js';
+import {data} from '../data.js';
+import {App} from './app.js';
+installDeviceSupport();
+installAudio({getManifest:()=>data.get('assets'),settings:settingsStore.get()});
+setTierLook('pips');
+const root=document.getElementById('app');root.textContent='';render(html`<${App}/><${ToastHost}/><${UiHosts}/>`,root);

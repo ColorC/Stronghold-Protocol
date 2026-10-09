@@ -31,14 +31,17 @@ function fixture() {
   return { state, services, granted, offers };
 }
 
-test('catalog resolves every approved operator in ordinary and elite chessId namespaces', () => {
-  const ordinary = all.filter((x) => !x.elite);
-  const elite = all.filter((x) => x.elite);
+test('the explicit pre-v3 catalog snapshot resolves its historical 120 recruitable body pairs', () => {
+  const helpers = all.filter((x) => x.darkmoonSupport);
+  const ordinary = all.filter((x) => !x.elite && !x.darkmoonSupport);
+  const elite = all.filter((x) => x.elite && !x.darkmoonSupport);
+  assert.equal(helpers.length, 3, 'later non-recruitable support helpers sit outside the historical recruitable body pool');
+  assert.ok(helpers.every((x) => x.recruitable === false));
   assert.equal(ordinary.length, 120);
   assert.equal(elite.length, 120);
   assert.equal(ordinary.filter((x) => x.recruitable).length, 101);
   assert.equal(elite.filter((x) => x.recruitable).length, 101);
-  assert.equal(Object.keys(catalog.operators).length, 240);
+  assert.equal(Object.keys(catalog.operators).length, 243, 'historical body pairs remain queryable alongside three non-recruitable support prototypes');
   for (const base of ordinary) {
     const promoted = catalog.operators[base.eliteChessId];
     assert.ok(promoted, `${base.name} elite id is queryable`);
@@ -67,7 +70,8 @@ test('stable item catalog covers 15 badges, all 59 legacy destinations, prizes a
   assert.equal(identity[0].uniqueKey, identity[1].uniqueKey);
   assert.equal(identity[0].level, 2);
   assert.equal(identity[1].eliteLevel, null);
-  assert.equal(Object.values(catalog.attachments).length, 4);
+  assert.equal(Object.values(catalog.attachments).filter((x) => x.id !== 'darkmoon-magnetic').length, 4, 'the explicit pre-v3 snapshot preserves its four source attachments');
+  assert.ok(catalog.attachments['darkmoon-magnetic'], 'current magnetic handover helper is outside the historic source attachment pool');
   assert.equal(Object.values(catalog.prizes).length, 19);
   assert.ok(Object.values(catalog.attachments).every((x) => x.mechanism && x.params));
   assert.ok(Object.values(catalog.prizes).every((x) => x.mechanism && x.params));
@@ -112,6 +116,7 @@ test('native gain handlers emit actual ordinary and elite inventory effects and 
   runNativeHook(normal.state, 'gain', { piece: normalPiece, origin: 'native', sourceUid: 'a' }, normal.services);
   assert.equal(normal.granted.length, 1, 'a gain from a native source does not recursively repeat the ordinary gear grant');
 });
+
 
 test('白面鸮 replays the front operator\'s 获得时 effect once at the end of the prep phase, never itself', () => {
   // 2026-10-07: 白面鸮 now re-triggers the 获得时 effect in front of it at 休整期结束时 (it used to copy 休整期开始)

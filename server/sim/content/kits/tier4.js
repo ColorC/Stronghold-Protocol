@@ -486,7 +486,7 @@ const kits = {
           kind: instantKind(def),
           attack: {
             onHit({ battle, unit, target }) {
-              battle.addDp(unit.ownerId, num(bb.cost, 2));
+              battle.addDp(unit.ownerId, num(bb.cost, 2), { sourceUnitId: unit.id });
               if (!target || !target.alive || target.side !== 'enemy') return;
               const scale = num(bb.bleed_atk_scale, 0.4);
               // （不叠加）: a new DoT replaces the running one
@@ -531,7 +531,7 @@ const kits = {
         flags: { stealth: true },
         targeting: g ? { rangeGrid: g } : undefined,
         onStart({ battle, unit }) { clearAspd(battle, unit); battle.fx('stealth', { x: unit.x, y: unit.y, id: unit.id }); },
-        onAttack({ battle, unit }) { battle.addDp(unit.ownerId, num(bb.cost, 1)); },
+        onAttack({ battle, unit }) { battle.addDp(unit.ownerId, num(bb.cost, 1), { sourceUnitId: unit.id }); },
         onHit({ battle, unit, target }) {
           if (!target || !target.alive || target.side !== 'enemy') return;
           const room = maxSteal - (unit.mem.inesAspd ?? 0);
@@ -615,7 +615,7 @@ const kits = {
           // 技能期间每对一个敌人造成伤害就获得1点部署费用
           battle.on('damaged', (c) => {
             if (c.source !== unit || c.target.side !== 'enemy' || !(c.amount > 0) || c.type === 'element' || !unit.skill?.active || !(unit.skill.timeLeft > 0)) return;
-            battle.addDp(unit.ownerId, num(bb.cost, 1));
+            battle.addDp(unit.ownerId, num(bb.cost, 1), { sourceUnitId: unit.id });
           }, { owner: unit });
         }
         // module (elite): the first retreat's redeploy time is 35 % shorter
@@ -1498,7 +1498,7 @@ const kits = {
           kind: 'instant',
           trigger: 'SP_FULL',
           onStart({ battle, unit }) {
-            battle.addDp(unit.ownerId, num(bb.cost, 6));
+            battle.addDp(unit.ownerId, num(bb.cost, 6), { sourceUnitId: unit.id });
             battle.addBuff(unit, { key: 'flamtl:evade', visible: true });
             battle.fx('dp', { x: unit.x, y: unit.y, id: unit.id, n: num(bb.cost, 6) });
           },
@@ -1506,7 +1506,7 @@ const kits = {
         skchr_flamtl_2: () => ({
           kind: 'instant',
           onStart({ battle, unit }) {
-            battle.addDp(unit.ownerId, num(bb.cost, 11));
+            battle.addDp(unit.ownerId, num(bb.cost, 11), { sourceUnitId: unit.id });
             const area = g || [[0, 0], [0, 1]];
             const foes = targetsInGrid(battle, unit, area);
             sortEnemyTargets(battle, unit, foes, null);
@@ -1532,12 +1532,12 @@ const kits = {
           const F = unit.mem.flame;
           if (!F) return;
           F.acc += dt;
-          while (F.acc + 1e-9 >= F.step && F.given < total) { F.acc -= F.step; F.given++; battle.addDp(unit.ownerId, per); }
+          while (F.acc + 1e-9 >= F.step && F.given < total) { F.acc -= F.step; F.given++; battle.addDp(unit.ownerId, per, { sourceUnitId: unit.id }); }
         },
         onEnd({ battle, unit, reason }) {
           const F = unit.mem.flame;
           unit.mem.flame = null;
-          if (F && reason === 'duration' && F.given < total) battle.addDp(unit.ownerId, per * (total - F.given));
+          if (F && reason === 'duration' && F.given < total) battle.addDp(unit.ownerId, per * (total - F.given), { sourceUnitId: unit.id });
         },
       },
       install(battle, unit) {

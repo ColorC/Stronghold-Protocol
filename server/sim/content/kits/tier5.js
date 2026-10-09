@@ -1822,7 +1822,7 @@ const KITS = {
           kind: instantKind(chess, def),
           trigger: 'SP_FULL',
           onStart({ battle, unit }) {
-            battle.addDp(unit.ownerId, num(bb.cost));
+            battle.addDp(unit.ownerId, num(bb.cost), { sourceUnitId: unit.id });
             const { pick } = waitingArea(battle, unit);
             cutCost(pick, num(bb['svash2_s_1[deck].cost']));
             if (pick) pick.mem.svashShield = unit.s.maxHp * num(bb['svash2_s_1[deck].shield']);
@@ -1841,7 +1841,7 @@ const KITS = {
             },
           },
           onStart({ battle, unit }) {
-            battle.addDp(unit.ownerId, num(bb['svash2_s_3[start_cost].cost']));
+            battle.addDp(unit.ownerId, num(bb['svash2_s_3[start_cost].cost']), { sourceUnitId: unit.id });
             unit.mem.svashDpAcc = 0;
             unit.mem.svashReveal = AURA_IV;
             if (!unit.mem.svashSwapped) { // 首次开启时交换…基础部署费用
@@ -1862,7 +1862,7 @@ const KITS = {
           onTick({ battle, unit, dt }) {
             const iv = Math.max(0.1, num(bb['svash2_s_3[cost].interval'], 2));
             unit.mem.svashDpAcc += dt;
-            while (unit.mem.svashDpAcc >= iv - 1e-9) { unit.mem.svashDpAcc -= iv; battle.addDp(unit.ownerId, num(bb['svash2_s_3[cost].cost'], 1)); }
+            while (unit.mem.svashDpAcc >= iv - 1e-9) { unit.mem.svashDpAcc -= iv; battle.addDp(unit.ownerId, num(bb['svash2_s_3[cost].cost'], 1), { sourceUnitId: unit.id }); }
             unit.mem.svashReveal += dt;
             if (unit.mem.svashReveal < AURA_IV - 1e-9) return;
             unit.mem.svashReveal = 0;

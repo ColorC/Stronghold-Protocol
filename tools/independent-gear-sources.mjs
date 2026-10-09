@@ -12,6 +12,8 @@ import { getCatalog } from '../server/modes/independent/catalog.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const DOC = resolve(ROOT, 'docs/independent-mode/design.md');
+const DESIGN = JSON.parse(readFileSync(resolve(process.env.SP_INDEPENDENT_DESIGN_PATH || resolve(ROOT, 'data/independent-design.json')), 'utf8'));
+const ACTIVE_OPERATOR_IDS = new Set(DESIGN.rules.activeRosterIds);
 const START = '<!-- gear-sources:start (node tools/independent-gear-sources.mjs write) -->';
 const END = '<!-- gear-sources:end -->';
 const USED = new Set(['补给', '玩家设施']);
@@ -36,7 +38,7 @@ function sources(catalog) {
     else if (v && typeof v === 'object') Object.values(v).forEach((x) => walk(x, name, random));
   };
   for (const op of Object.values(catalog.operators)) {
-    if (op.elite || op.active === false) continue;
+    if (op.elite || !ACTIVE_OPERATOR_IDS.has(op.chessId)) continue;
     for (const r of [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat]) {
       const pool = r.params?.poolId ? catalog.pools?.[r.params.poolId] : null;
       if (pool) walk(pool, op.name, true);

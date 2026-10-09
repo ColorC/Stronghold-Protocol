@@ -1,6 +1,7 @@
 // Canonical battle effects for the fifteen independent-mode badges. Keeping this table outside
 // the simulator lets the independent battle adapter apply them against the operator's actual base.
 export const INDEPENDENT_BADGE_STATS = Object.freeze({
+  damage: Object.freeze({ stat: 'damageDealtPercent', value: 0.02 }),
   precision: Object.freeze({ stat: 'attackBasePercent', value: 0.02, base: 'atk', flat: 'attackFlat', legacy: ['attackFlat'] }),
   agility: Object.freeze({ stat: 'attackSpeedPercent', value: 0.02, base: 'aspd', flat: 'attackSpeedFlat', legacy: ['attackSpeedFlat'] }),
   vitality: Object.freeze({ stat: 'maxLifeBasePercent', value: 0.03, base: 'maxHp', flat: 'maxLifeFlat', legacy: ['maxLifeFlat'] }),
