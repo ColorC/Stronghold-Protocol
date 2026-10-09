@@ -71,10 +71,10 @@ test('copy separates badge growth from levels growth and avoids duplicate claims
 
   const chongyue = Object.values(gameText.operators).find((entry) => entry.name === '重岳');
   assert.ok(chongyue, '重岳 game copy exists');
-  assert.match(chongyue.normalLevels, /元素科技等级两倍的训练等级/g);
-  assert.match(chongyue.eliteLevels, /元素科技等级两倍的训练等级/);
+  assert.match(chongyue.normalLevels, /干员科技等级两倍的训练等级/g);
+  assert.match(chongyue.eliteLevels, /干员科技等级两倍的训练等级/);
   assert.match(chongyue.eliteLevels, /结算两次/);
-  assert.match(chongyue.normal, /随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章/);
+  assert.match(chongyue.normal, /随机使一名场上友方干员获得等同于该干员科技等级的攻击徽章和伤害徽章/);
   assert.doesNotMatch(chongyue.normal + chongyue.elite, /所购干员星级/);
   assert.doesNotMatch(chongyue.normalLevels + chongyue.eliteLevels, /徽章/);
 

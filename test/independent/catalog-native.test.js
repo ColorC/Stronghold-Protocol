@@ -32,15 +32,20 @@ function fixture() {
   return { state, services, granted, offers };
 }
 
-test('the explicit pre-v3 catalog snapshot resolves its historical 120 ordinary and elite body pairs', () => {
+test('the legacy roster keeps 120 ordinary/elite pairs while native support tokens stay outside the recruitable pool', () => {
   const ordinary = all.filter((x) => !x.elite);
   const elite = all.filter((x) => x.elite);
-  assert.equal(ordinary.length, 120);
+  const pairedOrdinary = ordinary.filter((x) => x.chessId.startsWith('chess_char_') && catalog.operators[x.eliteChessId]?.elite);
+  const support = ordinary.filter((x) => x.chessId.startsWith('darkmoon:support-'));
+  assert.equal(ordinary.length, 123);
   assert.equal(elite.length, 120);
+  assert.equal(pairedOrdinary.length, 120, 'raw operator bodies retain exactly 120 ordinary/elite pairs');
+  assert.deepEqual(support.map((x) => x.chessId).sort(), ['darkmoon:support-cat-1-1','darkmoon:support-cat-2-2','darkmoon:support-elemental-2-2']);
+  assert.ok(support.every((x) => !x.recruitable), 'native support-token records do not enter the player pool');
   assert.equal(ordinary.filter((x) => x.recruitable).length, 101);
   assert.equal(elite.filter((x) => x.recruitable).length, 101);
-  assert.equal(Object.keys(catalog.operators).length, 240, 'the historical snapshot contains 120 ordinary and 120 elite records');
-  for (const base of ordinary) {
+  assert.equal(Object.keys(catalog.operators).length, 243, '120 paired bodies plus three non-recruitable support-token records');
+  for (const base of pairedOrdinary) {
     const promoted = catalog.operators[base.eliteChessId];
     assert.ok(promoted, `${base.name} elite id is queryable`);
     assert.equal(base.nativeTrait.origin, 'operator body');

@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { nativeEffectFor, runNativeHook } from '../../server/modes/independent/native.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
 import { shopCarryApplies } from '../../server/modes/independent/warbandPrep.js';
-import { validateWarbandRule } from '../../shared/warbandSchema.js';
+import { validateWarbandRule, withoutObsoleteWorkshopLimits } from '../../shared/warbandSchema.js';
 import { traitSummary, TRAIT_WHEN } from '../../server/modes/independent/summary.js';
 import { installIndependentBattle } from '../../server/sim/content/independent/battle.js';
 import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
@@ -142,10 +142,16 @@ test('client engine import closure includes the pure new modules without Node-on
   for(const suffix of ['/shared/warbandSchema.js','/server/modes/independent/warbandPrep.js','/server/sim/content/independent/warband.js'])assert.ok([...seen].some(url=>url.endsWith(suffix)),suffix);
 });
 
-test('new schema rejects malformed keys/triggers/counts/cooldowns and trait summaries expose the authored moments',()=>{
+test('new schema rejects malformed keys/triggers/counts while ignoring obsolete caps and exposing authored moments',()=>{
   const good=[retirement(),reaction('badge'),rule('attack','deathrattleEcho',{faction:'叙拉古',every:12}),rule('passive','retirementMultiplier',{extra:2}),event('summon')];
   for(const r of good){assert.equal(validateWarbandRule(r),true);const source={modeEffects:{normal:{prep:r.behavior==='factionReaction'?[r]:[],combat:r.behavior==='factionReaction'?[]:[r]},elite:{prep:[],combat:[]}}};assert.ok(nativeEffectFor('synthetic',source));}
-  for(const r of [reaction('badge',{count:0}),event('attack',{cooldownSeconds:.5}),event('attack',{stats:{madeUpMultiplier:.1}}),retirement({perBattle:0}),rule('passive','retirementMultiplier',{extra:3}),{...retirement(),trigger:'hit'}])assert.throws(()=>validateWarbandRule(r));
+  const obsoleteCooldown=event('attack',{cooldownSeconds:.5});
+  const obsoletePerBattle=retirement({perBattle:0});
+  assert.equal(withoutObsoleteWorkshopLimits(obsoleteCooldown).params.cooldownSeconds,undefined,'obsolete cooldowns are discarded when loading authored rules');
+  assert.equal(withoutObsoleteWorkshopLimits(obsoletePerBattle).params.perBattle,undefined,'obsolete per-battle caps are discarded when loading authored rules');
+  assert.equal(validateWarbandRule(obsoleteCooldown),true,'the cooldown does not reject its underlying valid event rule');
+  assert.equal(validateWarbandRule(obsoletePerBattle),true,'the per-battle cap does not reject its underlying valid retirement rule');
+  for(const r of [reaction('badge',{count:0}),event('attack',{stats:{madeUpMultiplier:.1}}),rule('passive','retirementMultiplier',{extra:3}),{...retirement(),trigger:'hit'}])assert.throws(()=>validateWarbandRule(r));
   assert.equal(TRAIT_WHEN.allyGain,'友方获得时');assert.equal(TRAIT_WHEN.retiring,'退场时');assert.equal(traitSummary({combat:[retirement()]})[0].when,'retiring');
 });
 
