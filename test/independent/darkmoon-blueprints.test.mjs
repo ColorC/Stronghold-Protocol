@@ -269,7 +269,7 @@ test('original Battlecry buffs inspect the acquired source tag and wear permanen
 
 test('additional source keyed prep families deliver profession mapped growth on the named trigger and target',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite);
-  for(const [id,hook,targetFaction,amountMode] of [['BGS_036','prepEnd','卡西米尔','selfPerFaction'],['BGS_038','gain','卡西米尔','selected'],['BGS_075','gain',null,'deathrattleTag'],['BGS_105','prepEnd',null,'leftmost'],['BGS_127','bought',null,'healthOnly']]) for(const elite of [false,true]) {
+  for(const [id,hook,targetFaction,amountMode] of [['BGS_036','prepEnd','卡西米尔','selfPerFaction'],['BGS_038','gain','卡西米尔','selected'],['BGS_075','gain',null,'deploymentPayload'],['BGS_105','prepEnd',null,'leftmost'],['BGS_127','bought',null,'healthOnly']]) for(const elite of [false,true]) {
     const holderOp=Object.values(base.operators).find(x=>Boolean(x.elite)===elite),targetOp=normal.find(x=>x.chessId!==holderOp.chessId);
     const holderRef={id,battlecry:id==='BGS_038'};
     const holderFaction=id==='BGS_036'?'卡西米尔':null;
@@ -294,10 +294,14 @@ test('additional source keyed prep families deliver profession mapped growth on 
       assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),ids.map(x=>[x,n]),`${id} honors selected eligible fixed recipient`);
     } else if(id==='BGS_075') {
       const deathrattleOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==targetOp.chessId),played={uid:'played',chessId:deathrattleOp.chessId,ownerId:'p1'};
-      operators[deathrattleOp.chessId]={...deathrattleOp,sourceRefs:{darkmoon19_2:{id:'TEST_DEATHRATTLE',deathrattle:true}}};
+      operators[deathrattleOp.chessId]={...deathrattleOp,sourceRefs:{darkmoon19_2:{id:'CFM_316',deathrattle:true}}};
       runNativeHook(state,'gain',{piece:played,source:'buy'},services);
       const n=elite?2:1,ids=darkmoonGrowthBadges(holder,catalog);
-      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),ids.map(x=>[x,n]),`${id} reacts to the acquired card's actual source tag once`);
+      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),ids.map(x=>[x,n]),`${id} reacts to an acquired source with an executable deployment payload`);
+      const legacyOp=normal.find(x=>x.chessId!==holderOp.chessId&&x.chessId!==targetOp.chessId&&x.chessId!==deathrattleOp.chessId);
+      operators[legacyOp.chessId]={...legacyOp,sourceRefs:{darkmoon19_2:{id:'TEST_DEATHRATTLE_ONLY',deathrattle:true}}};
+      runNativeHook(state,'gain',{piece:{uid:'legacy-deathrattle',chessId:legacyOp.chessId,ownerId:'p1'},source:'buy'},services);
+      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),ids.map(x=>[x,n]),`${id} ignores an acquired source carrying only the original Hearthstone deathrattle tag`);
     } else if(id==='BGS_105') {
       runNativeHook(state,hook,{round:1},services);
       const n=elite?4:2,ids=darkmoonGrowthBadges(target,catalog);

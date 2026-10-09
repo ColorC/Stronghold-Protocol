@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { eligiblePiecesForEffect, fieldConditionPiecesForEffect, hasConditionalTargets } from '../../shared/independentEligibility.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
 import { unitInfo } from '../../server/sim/snapshot.js';
+import { getData } from '../../server/data.js';
+import { getCatalog } from '../../server/modes/independent/catalog.js';
 
 const mkOp = (id, profession, faction, atk = 100) => ({ chessId: id, tier: 3, profession, nativeFactionTags: [faction], nativeFactions: [faction], nativeStats: { atk },
   source: { normalChess: { profession, bonds: [], stats: { atk } } } });
@@ -178,4 +180,27 @@ test('UnitInfo exposes only the optional deployment actor metadata needed by fie
   assert.deepEqual(inherited.darkmoonFactionTags,['维多利亚'],'a token uses the same inherited identity that its native actor match resolves');
   const raw=unitInfo({...base,mem:{},def:{id:'support-token',raw:{darkmoonFactionTags:['哥伦比亚'],darkmoonCover:true}}});
   assert.deepEqual(raw.darkmoonFactionTags,['哥伦比亚']);assert.equal(raw.darkmoonCover,true);
+});
+
+test('Javi and Wuxian field counts require an installed deployment payload, include magnetic recipients and exclude phantom tokens',()=>{
+  const data=getData(),display=independentDisplayCatalog(data,getCatalog(data));
+  const bySource=id=>Object.values(display.operators).find(op=>op.sourceRefs?.darkmoon19_2?.id===id);
+  const javi=bySource('BGS_078'),wuxian=bySource('FP1_031'),payload=bySource('OG_256'),koOnly=bySource('BGS_008'),magneticHost=bySource('BOT_218');
+  assert.ok(javi&&wuxian&&payload&&koOnly&&magneticHost);
+  const ruleFor=op=>op.summary.find(x=>x.rule?.behavior==='darkmoonCombat'&&x.rule.params.match?.deploymentPayload);
+  const jRule=ruleFor(javi),wRule=ruleFor(wuxian);assert.ok(jRule&&wRule);
+  const roster=[
+    {uid:'javi',chessId:javi.baseChessId,kind:'op',row:1,col:1,ownerId:'p1'},
+    {uid:'wuxian',chessId:wuxian.baseChessId,kind:'op',row:1,col:2,ownerId:'p1'},
+    {uid:'adapted',chessId:payload.baseChessId,kind:'op',row:1,col:3,ownerId:'p1'},
+    {uid:'ko',chessId:koOnly.baseChessId,kind:'op',row:1,col:4,ownerId:'p1'},
+    {uid:'magnetic',chessId:magneticHost.baseChessId,kind:'op',row:1,col:5,ownerId:'p1',attachments:[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312'}}]},
+    {uid:'phantom',chessId:payload.baseChessId,kind:'token',row:1,col:6,ownerId:'p1'},
+    {uid:'token-payload',chessId:payload.baseChessId,kind:'token',x:6,y:1,ownerId:'p1',darkmoonDeploymentSources:['OG_256']},
+    {uid:'enemy-owner',chessId:payload.baseChessId,kind:'op',row:1,col:7,ownerId:'p2'},
+  ];
+  const count=(rule,source)=>fieldConditionPiecesForEffect(rule,{pieces:roster,catalog:display,source}).map(x=>x.uid);
+  assert.deepEqual(count(jRule,roster[0]),['adapted','magnetic','token-payload'],'Javi excludes itself and filters by current-owner installed payload');
+  assert.deepEqual(count(wRule,roster[1]),['adapted','magnetic','token-payload'],'Wuxian counts the same actual payload holders');
+  assert.deepEqual(count(jRule,{...roster[0],x:1,y:1}),['adapted','magnetic','token-payload'],'battle snapshots use runtime source metadata for ops and tokens');
 });
