@@ -224,7 +224,8 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   if (!target) return null;
   const liveUids = battle?.fieldPieceUids?.() || null;
   const liveStats = battle?.fieldPieceStats?.() || null;
-  const conditionState = liveUids ? { ...state, pieces: state.pieces.filter((p) => liveUids.includes(p.uid)).map((p) => {
+  const liveConditionPieces = battle?.fieldConditionPieces?.() || null;
+  const conditionState = liveConditionPieces ? { ...state, pieces: liveConditionPieces } : liveUids ? { ...state, pieces: state.pieces.filter((p) => liveUids.includes(p.uid)).map((p) => {
     const current = liveStats?.[p.uid];
     return current ? { ...p, hp: current.hp, currentHp: current.hp, maxHp: current.maxHp } : p;
   }) } : state;

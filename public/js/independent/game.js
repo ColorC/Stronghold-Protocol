@@ -591,16 +591,37 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     fieldPieceUids: () => {
       const frames = battle.replay.frames;
       const frame = frames[Math.max(0, replayPosRef.current)];
-      const liveIds = new Set((frame?.snap?.units || []).map((unit) => unit[0]));
+      const liveIds = new Set((frame?.snap?.units || []).filter((unit) => Number(unit[3]) > 0).map((unit) => unit[0]));
       return (battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && unit.kind === 'op'
         && liveIds.has(unit.id) && typeof unit.uid === 'string').map((unit) => unit.uid);
     },
     fieldPieceStats: () => {
       const frames = battle.replay.frames;
       const frame = frames[Math.max(0, replayPosRef.current)];
-      const live = new Map((frame?.snap?.units || []).map((unit) => [unit[0], { hp: unit[3], maxHp: unit[4] }]));
+      const live = new Map((frame?.snap?.units || []).filter((unit) => Number(unit[3]) > 0).map((unit) => [unit[0], { hp: unit[3], maxHp: unit[4] }]));
       return Object.fromEntries((battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && unit.kind === 'op'
         && live.has(unit.id) && typeof unit.uid === 'string').map((unit) => [unit.uid, live.get(unit.id)]));
+    },
+    fieldConditionPieces: () => {
+      const frames = battle.replay.frames;
+      const frame = frames[Math.max(0, replayPosRef.current)];
+      const live = new Map((frame?.snap?.units || []).filter((unit) => Number(unit[3]) > 0)
+        .map((unit) => [unit[0], { col: Math.round(Number(unit[1])), row: Math.round(Number(unit[2])), hp: unit[3], maxHp: unit[4] }]));
+      return (battle.replay.field?.units || []).filter((unit) => unit?.side === 'ally' && ['op', 'token'].includes(unit.kind) && live.has(unit.id))
+        .map((unit) => {
+          const piece = unit.kind === 'op' && unit.uid ? stateRef.current.pieces.find((p) => p.uid === unit.uid) : null;
+          const uid = unit.uid || `battle-unit:${unit.id}`;
+          return {
+            ...(piece || {}), uid, kind: unit.kind, chessId: piece?.chessId || unit.defId,
+            playerId: piece?.playerId ?? unit.ownerId, ownerId: unit.ownerId,
+            row: live.get(unit.id).row ?? unit.row, col: live.get(unit.id).col ?? unit.col, dir: unit.dir || piece?.dir || 'RIGHT',
+            elite: piece?.elite ?? !!unit.golden, moduleId: piece?.moduleId || unit.moduleId || 'none',
+            factions: unit.darkmoonFactionTags || piece?.factions || [],
+            darkmoonFactionTags: unit.darkmoonFactionTags || [], darkmoonCover: !!unit.darkmoonCover,
+            equipment: piece?.equipment || (unit.items || []).map((id) => ({ id, quantity: 1 })),
+            hp: live.get(unit.id).hp, currentHp: live.get(unit.id).hp, maxHp: live.get(unit.id).maxHp,
+          };
+        });
     },
   } : null;
 

@@ -78,7 +78,7 @@ export function FieldConditionCounts({ effects = [], rows = null, source, state,
     onFieldHighlight?.(union);
   };
   return html`<span class="ix-field-counts" aria-label="当前场上符合条件的干员">${fieldRows.map((row) => html`<button type="button" key=${row.key}
-      class="ix-field-count" title=${row.title} aria-label=${`${row.title}（${row.pieces.length}）`}
+      class="ix-field-count" title=${`${row.title}：${row.pieces.length ? row.pieces.map((p) => formEntry(catalog, p)?.name || p.name || '作战支援单位').join('、') : '当前没有符合条件的干员'}`} aria-label=${`${row.title}（${row.pieces.length}）`}
       onMouseEnter=${() => onFieldHighlight?.(row.pieces)} onMouseLeave=${restore}
       onFocus=${() => onFieldHighlight?.(row.pieces)} onBlur=${restore}>（${row.pieces.length}）</button>`)}</span>`;
 }
@@ -104,21 +104,28 @@ export function TraitTexts({ op, elite, catalog, growthMode='badges', piece = nu
     for (const row of rows) {
       const p = row.effect?.params || {};
       const trigger = row.trigger || '';
-      const matchesClause = (clause) => {
-        const target = typeof p.targets === 'string' ? p.targets : '';
-        const factionTerms = [p.faction, p.triggerFaction, p.targetFaction, p.requiresFactionOnField, p.match?.faction,
-          target.startsWith('faction:') ? target.slice('faction:'.length) : null].filter(Boolean);
+      const target = typeof p.targets === 'string' ? p.targets : '';
+      const factionTerms = [p.faction, p.triggerFaction, p.targetFaction, p.requiresFactionOnField, p.match?.faction,
+        target.startsWith('faction:') ? target.slice('faction:'.length) : null].filter(Boolean);
+      const keywordTerms = [p.match?.keywordGear].filter(Boolean);
+      const professions = [...(p.match?.professions || []), p.match?.profession,
+        target.startsWith('profession:') ? target.slice('profession:'.length) : null].filter(Boolean);
+      const explicitCondition = factionTerms.length || keywordTerms.length || professions.length
+        || row.effect?.behavior === 'dominantFactionRecruit' || row.effect?.behavior === 'forgeAdjacent';
+      const matchesSpecificClause = (clause) => {
         if (factionTerms.some((faction) => clause.includes(faction))) return true;
-        if (p.match?.keywordGear && clause.includes(p.match.keywordGear)) return true;
-        const professions = [...(p.match?.professions || []), p.match?.profession,
-          target.startsWith('profession:') ? target.slice('profession:'.length) : null].filter(Boolean);
+        if (keywordTerms.some((keyword) => clause.includes(keyword))) return true;
         if (professions.some((profession) => clause.includes(PROF_NAME[profession] || profession))) return true;
         if (row.effect?.behavior === 'dominantFactionRecruit' && clause.includes('所在行')) return true;
         if (row.effect?.behavior === 'forgeAdjacent' && /身前|前方|相邻|周围/.test(clause)) return true;
+        return false;
+      };
+      const matchesTriggerClause = (clause) => {
         const triggerWords = { prepEnd: ['整备结束', '休整期结束'], roundStart: ['进入休整期'], battleStart: ['战斗开始', '开战'], deploy: ['部署'], attack: ['攻击'], allyKill: ['击倒敌人'], kill: ['击倒敌人'], death: ['退场'], allyDeath: ['退场'], shieldLayersBroken: ['护盾'], gain: ['新获得', '首次上阵'] }[trigger] || [];
         return triggerWords.some((word) => clause.includes(word));
       };
-      let index = clauses.findIndex(matchesClause);
+      let index = clauses.findIndex(matchesSpecificClause);
+      if (index < 0 && !explicitCondition) index = clauses.findIndex(matchesTriggerClause);
       if (index < 0 && rows.length === 1 && clauses.length === 1) index = 0;
       if (index >= 0) assigned[index].push(row);
     }
