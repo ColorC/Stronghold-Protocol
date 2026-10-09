@@ -21,7 +21,20 @@ const nextCadence = (entry, kind) => {
 const attackIdOf = dmg => Number.isSafeInteger(dmg?.attackId) && dmg.attackId > 0 ? dmg.attackId : null;
 const darkmoonDamage = dmg => Array.isArray(dmg?.tags) && dmg.tags.includes('darkmoon');
 const enemyLifeKey = target => `${target.id}:${target.deploySeq ?? 0}`;
-const cadenceState = () => ({cadence:Object.create(null),damagedAttackIds:new Set(),overkillAttackTargets:new Set(),overkillLives:new Set(),overkillMarks:new WeakMap(),pendingOverkills:new Map()});
+const cadenceState = () => ({cadence:Object.create(null),attackedAttackIds:new Set(),damagedAttackIds:new Set(),overkillAttackTargets:new Set(),overkillLives:new Set(),overkillMarks:new WeakMap(),pendingOverkills:new Map()});
+const attackEventId = event => {
+  const id = Number(event?.attackId ?? event?.dmg?.attackId);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+};
+const firstAttackedEvent = (entry, event) => {
+  const id = attackEventId(event);
+  // Older synthetic callers may emit attack hooks without an id. Keep their
+  // one-event/one-count behavior; native attack paths always carry the id.
+  if (id == null) return true;
+  if (entry.attackedAttackIds.has(id)) return false;
+  entry.attackedAttackIds.add(id);
+  return true;
+};
 const order = (a,b) => String(a.uid ?? a.id).localeCompare(String(b.uid ?? b.id));
 const close = (a,b) => hypot(a.x-b.x,a.y-b.y);
 const FACTIONS = Object.freeze({MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'});
@@ -489,7 +502,11 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       if(ev.attacker!==unit||!attackEvent(ev)||!alive(unit)||!nextCadence(e,'attack')||!ready(e))return;
       unit.mem.darkmoonExtraAttack=true;try{for(let i=0;i<(e.elite?3:1)&&alive(unit);i++)battle.forceAttack(unit,null,{noAmmo:true});}finally{unit.mem.darkmoonExtraAttack=false;}note(e,'windfury');
     },{owner:unit,priority:-90});
-    if(r.counterattack)battle.on('attack',ev=>{if(ev.attacker?.side!=='enemy'||!ev.targets?.includes(unit)||!alive(unit)||!nextCadence(e,'attacked')||!ready(e))return;battle.after(0,()=>{if(alive(unit)){unit.mem.darkmoonExtraAttack=true;try{battle.forceAttack(unit);}finally{unit.mem.darkmoonExtraAttack=false;}note(e,'counterattack');}});},{owner:unit});
+    if(r.counterattack){
+      const counterOnAttack=ev=>{if(ev.attacker?.side!=='enemy'||!ev.targets?.includes(unit)||!firstAttackedEvent(e,ev)||!alive(unit)||!nextCadence(e,'attacked')||!ready(e))return;battle.after(0,()=>{if(alive(unit)){unit.mem.darkmoonExtraAttack=true;try{battle.forceAttack(unit);}finally{unit.mem.darkmoonExtraAttack=false;}note(e,'counterattack');}});};
+      battle.on('attack',counterOnAttack,{owner:unit});
+      battle.on('independentSharedAttack',counterOnAttack,{owner:unit});
+    }
     if(r.intercept)battle.on('beforeAttack',ctx=>{
       if(!alive(unit)||ctx.attacker?.side!=='enemy')return;
       const range=Math.max(.75,ctx.attacker.s.rangeRadius||0);
@@ -534,7 +551,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       let broken=0;
       const deploymentReactor=['EX1_531','GVG_106','BGS_112'].includes(e.id);
       const name=deploymentReactor||r.event==='summon'?'darkmoonDeployActor':r.event==='attacked'?'attack':r.event;
-      battle.on(name,event=>{
+      const onEvent=event=>{
         if(!alive(unit))return;
         let damageAttackId=null;
         let actor=deploymentReactor||r.event==='summon'?event.actor:r.event==='kill'?event.killer:r.event==='attack'?event.attacker:r.event==='damaged'?event.target:event.unit;
@@ -556,6 +573,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         actors=actors.filter(u=>eligible(u,unit,r.faction)&&(!r.selfOnly||u===unit)&&(!r.excludeSelf||u!==unit)&&(!r.requireCover||hasCover(u)));
         if(!actors.length)return;
         if(damageAttackId!=null){if(e.damagedAttackIds.has(damageAttackId))return;e.damagedAttackIds.add(damageAttackId);}
+        if(r.event==='attacked'&&!firstAttackedEvent(e,event))return;
         if(r.event==='summon'){
           e.summonActors||=new Set();
           for(const summoned of actors){
@@ -581,7 +599,9 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         if(r.summon)spawn(e,tokenDef(e,r.summon),1,['哥伦比亚'],r.summon);
         for(const t of targets){if(r.buff)equipment(e,t,...r.buff,!!r.permanent);if(r.shield)shield(e,t,r.shield);}
         note(e,'event',[...targets]);
-      },{owner:unit});
+      };
+      battle.on(name,onEvent,{owner:unit});
+      if(r.event==='attacked')battle.on('independentSharedAttack',onEvent,{owner:unit});
     }
   }
   for(const entry of [...entries])installEntry(entry);

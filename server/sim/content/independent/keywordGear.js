@@ -102,9 +102,15 @@ export function installKeywordGear(battle, { catalog, pieces = [], units = null 
       const shared = amount * shareRate;
       let removed = apply(target, amount - shared, false);
       const each = shared / active.length;
+      const sharedTargets = [];
       for (const wearer of active) {
         if (!live(wearer.unit)) continue;
+        sharedTargets.push(wearer.unit);
         removed += apply(wearer.unit, each * (1 - guardOf(wearer)), true);
+      }
+      const attackId = Number(dmg?.attackId);
+      if (shared > 0 && source?.side === 'enemy' && dmg?.isAttack === true && Number.isSafeInteger(attackId) && attackId > 0 && sharedTargets.length) {
+        battle.emit('independentSharedAttack', { attacker: source, targets: sharedTargets, attackId });
       }
       return removed;
     };
