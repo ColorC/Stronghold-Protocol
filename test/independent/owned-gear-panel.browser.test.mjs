@@ -62,12 +62,35 @@ test('owned, shop and battle operator tabs separate references from traits while
     {uid:'actual-cover-op',chessId:actualSiracusaId,playerId:'p1',kind:'op',row:2,col:3,dir:'RIGHT',factions:['叙拉古'],equipment:[],darkmoonCover:true,elite:false},
     {uid:'actual-cover-token',name:'坚守作战单位',kind:'token',ownerId:'p1',playerId:'p1',defId:'token_cover',row:3,col:2,dir:'RIGHT',darkmoonCover:true},
     {uid:'actual-cover-bench',chessId:actualSiracusaId,playerId:'p1',kind:'op',row:null,col:null,factions:['叙拉古'],equipment:[],darkmoonCover:true,elite:false}])};
+  const actualDeploymentPayloads={};
+  for(const [sourceId,operatorName] of [['BGS_078','贾维'],['FP1_031','巫恋']]){
+    const entry=Object.entries(catalog.operators).find(([,op])=>!op.elite&&op.name===operatorName);
+    assert.ok(entry,`current catalog contains ${operatorName}`);
+    const [chessId,op]=entry;
+    const rule=op.summary.find(x=>x.rule?.behavior==='darkmoonCombat'&&x.rule.params.match?.deploymentPayload);
+    assert.ok(rule,`${operatorName} exposes the current deployment-payload condition rule`);
+    const adapted=Object.entries(catalog.operators).find(([,candidate])=>!candidate.elite&&candidate.darkmoonDeploymentPayload?.event==='deploymentPayload'&&candidate.darkmoonDeploymentPayload?.sourceId!=='BGS_008');
+    assert.ok(adapted,'current catalog contains a supported deployed-source payload');
+    const [adaptedId,adaptedOp]=adapted;
+    const magneticHost=Object.entries(catalog.operators).find(([,candidate])=>!candidate.elite&&candidate.name==='奥斯塔');
+    assert.ok(magneticHost,'current catalog contains the magnetic host used by the source registry');
+    const [magneticId]=magneticHost;
+    actualDeploymentPayloads[sourceId]={operatorName,chessId,rule,text:op.traitTexts.normal,fixture:{catalog,state:actualState([
+      {uid:`source-${sourceId}`,chessId,playerId:'p1',kind:'op',row:2,col:2,dir:'RIGHT',equipment:[],elite:false},
+      {uid:`adapted-${sourceId}`,chessId:adaptedId,playerId:'p1',kind:'op',row:2,col:3,dir:'RIGHT',equipment:[],elite:false},
+      {uid:`magnetic-${sourceId}`,chessId:magneticId,playerId:'p1',kind:'op',row:3,col:2,dir:'RIGHT',equipment:[],attachments:[{id:'darkmoon-magnetic',state:{sourceId:'BOT_312'}}],elite:false},
+      {uid:`ko-${sourceId}`,chessId:Object.values(catalog.operators).find(x=>x.sourceRefs?.darkmoon19_2?.id==='BGS_008').baseChessId,playerId:'p1',kind:'op',row:3,col:3,dir:'RIGHT',equipment:[],elite:false},
+      {uid:`phantom-${sourceId}`,kind:'token',ownerId:'p1',playerId:'p1',defId:adaptedOp.baseChessId,row:4,col:2,dir:'RIGHT'},
+      {uid:`payload-token-${sourceId}`,kind:'token',ownerId:'p1',playerId:'p1',defId:adaptedOp.baseChessId,row:4,col:3,dir:'RIGHT',darkmoonDeploymentSources:[adaptedOp.darkmoonDeploymentPayload.sourceId]},
+      {uid:`foreign-${sourceId}`,chessId:adaptedId,playerId:'p2',kind:'op',row:5,col:2,dir:'RIGHT',equipment:[],elite:false},
+    ])}};
+  }
   const boot=`<!doctype html><html lang="zh-CN" class="ix-ws"><head><link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/screens/game-panels.css"><link rel="stylesheet" href="/css/independent.css"></head><body><div id="root" class="ix-game"></div><script type="module">
     import {h,render} from '/vendor/preact.module.js';
     import {DetailCard} from '/js/independent/detail.js';
     import {parseComponentLinkHash} from '/js/independent/componentLinkHash.js';
     import {loadData} from '/js/data.js';
-    const fixture=await (await fetch('/fixture.json')).json();const conditionFixture=await (await fetch('/condition-fixture.json')).json();const deploymentFixture=await (await fetch('/deployment-fixture.json')).json();const actualProvenceFixture=await (await fetch('/actual-provence-fixture.json')).json();const actualKroosFixture=await (await fetch('/actual-kroos-fixture.json')).json();window.highlightedCondition=[];
+    const fixture=await (await fetch('/fixture.json')).json();const conditionFixture=await (await fetch('/condition-fixture.json')).json();const deploymentFixture=await (await fetch('/deployment-fixture.json')).json();const actualProvenceFixture=await (await fetch('/actual-provence-fixture.json')).json();const actualKroosFixture=await (await fetch('/actual-kroos-fixture.json')).json();const actualDeploymentPayloads=await (await fetch('/actual-deployment-payload-fixtures.json')).json();window.highlightedCondition=[];
     await loadData('chess','assets','bonds','items','garrisons','tokens','enemies','config');
     window.mountDetail=(target)=>{render(null,document.querySelector('#root'));render(h(DetailCard,{...fixture,target,busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){}}),document.querySelector('#root'));};
     window.openComponentLink=(href)=>{history.replaceState(null,'',href);const link=parseComponentLinkHash(location.hash);if(link?.kind==='piece')window.mountDetail({kind:'piece',uid:link.id,tab:link.tab});else if(link?.kind==='shop')window.mountDetail({kind:'shop',slot:Number(link.id),tab:link.tab});};
@@ -80,9 +103,11 @@ test('owned, shop and battle operator tabs separate references from traits while
     window.mountDeploymentCondition=(battleMode=false)=>{render(null,document.querySelector('#root'));window.deploymentHighlight=[];const deploymentPieces=deploymentFixture.state.pieces;const battle=battleMode?{fieldConditionPieces:()=>[deploymentPieces[1],deploymentPieces[3]].filter(p=>p.row!=null)}:null;const onClose=()=>render(null,document.querySelector('#root'));render(h(DetailCard,{...deploymentFixture,state:{...deploymentFixture.state,phase:battleMode?'battle':'prep'},target:{kind:'piece',uid:'condition-source'},battle,busy:false,onClose,onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight:deploymentHighlight}),document.querySelector('#root'));};
     window.mountActualCondition=(name,mode=null)=>{render(null,document.querySelector('#root'));window.actualHighlight=[];const fixture=name==='provence'?actualProvenceFixture:actualKroosFixture;const uid=name==='provence'?'actual-provence':'actual-kroos';render(h(DetailCard,{...fixture,state:mode?{...fixture.state,growthMode:mode}:fixture.state,target:{kind:'piece',uid},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight(pieces){window.actualHighlight=pieces.map(p=>p.uid);}}),document.querySelector('#root'));};
     window.mountLevelsTemporaryGrowth=(temporaryGrowth)=>{render(null,document.querySelector('#root'));const piece={...fixture.state.pieces[0],startStats:{...fixture.state.pieces[0].startStats,temporaryGrowth}};render(h(DetailCard,{...fixture,state:{...fixture.state,growthMode:'levels',pieces:[piece]},target:{kind:'piece',uid:piece.uid},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){}}),document.querySelector('#root'));};
+    window.mountActualDeploymentPayload=(sourceId)=>{render(null,document.querySelector('#root'));const fixture=actualDeploymentPayloads[sourceId].fixture;window.actualHighlight=[];render(h(DetailCard,{...fixture,target:{kind:'piece',uid:'source-'+sourceId},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){},onFieldHighlight(pieces){window.actualHighlight=pieces.map(p=>p.uid);}}),document.querySelector('#root'));};
     window.mountEnemyDetail=()=>window.mountDetail({kind:'unit',unit:{side:'enemy',defId:'enemy_1000_gopro_2',id:'enemy-unit'}});
     window.mountSummonDetail=()=>window.mountDetail({kind:'unit',unit:{side:'ally',defId:'token_10000_silent_healrb',uid:'summon-unit',id:'summon-unit'}});
     window.mountDetail({kind:'piece',uid:'owned-pane-piece'});window.ready=true;
+    window.mountActualCopyMode=(name,growthMode)=>{const op=Object.values(fixture.catalog.operators).find(x=>!x.elite&&x.name===name);if(!op)throw new Error('missing actual operator '+name);const uid='copy-audit-'+name;const state={...fixture.state,growthMode,pieces:[{uid,chessId:op.baseChessId,elite:false,skillIndex:0,moduleId:'none',row:1,col:1,dir:'RIGHT',equipment:[],attachments:[]}],shop:{slots:[]},inventory:[]};render(null,document.querySelector('#root'));render(h(DetailCard,{...fixture,state,target:{kind:'piece',uid},busy:false,onClose(){},onAct(){},onInherit(){},onBuy(){},onEquipHere(){}}),document.querySelector('#root'));};
   </script></body></html>`;
   const installation=path.resolve(process.env.SP_INSTALL_ROOT||ROOT),dataRoot=path.resolve(process.env.SP_DATA_DIR||path.join(ROOT,'data'));
   const missingFiles=[];
@@ -94,6 +119,7 @@ test('owned, shop and battle operator tabs separate references from traits while
     if(name==='/deployment-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(deploymentFixture));}
     if(name==='/actual-provence-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(actualProvenceFixture));}
     if(name==='/actual-kroos-fixture.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(actualKroosFixture));}
+    if(name==='/actual-deployment-payload-fixtures.json'){res.setHeader('content-type','application/json');return res.end(JSON.stringify(actualDeploymentPayloads));}
     const file=name.startsWith('/vendor/')||name.startsWith('/assets/')||name.startsWith('/fonts/')?path.join(installation,'public',name):name.startsWith('/data/')?path.join(dataRoot,path.basename(name)):name.startsWith('/shared/')?path.join(ROOT,name):path.join(ROOT,'public',name);
     if(fs.existsSync(file)){const ext=path.extname(file).toLowerCase(),mime={'.js':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff':'font/woff','.woff2':'font/woff2'}[ext];if(mime){res.setHeader('content-type',mime);return res.end(fs.readFileSync(file));}}
     missingFiles.push(`${name} -> ${file}`);
@@ -120,7 +146,21 @@ test('owned, shop and battle operator tabs separate references from traits while
     await (browserContext || page.browserContext()).overridePermissions(new URL(page.url()).origin,['clipboard-read','clipboard-write']);
     browserPhase='window-ready';
     try { await page.waitForFunction(()=>window.ready,{timeout:30000}); }
-    catch (error) { throw new Error(`${error.message}; browser errors: ${errors.join(' | ') || '(none captured)'}; missing files: ${missingFiles.join(' | ') || '(none)'}`); }
+    catch (error) { throw new Error(`${error.message}; browserPhase=${browserPhase}; url=${page.url()}; pageErrors=${JSON.stringify(errors)}; missingFiles=${JSON.stringify(missingFiles)}`); }
+    browserPhase='actual-copy-modes';
+    const modeScreenshots=[];
+    for(const [name,mode,expected] of [['阿罗玛','badges','攻击徽章×1与伤害徽章×1'],['阿罗玛','levels','训练等级×2'],['重岳','badges','攻击徽章和伤害徽章'],['重岳','levels','所购干员科技等级两倍的训练等级'],['裁度','badges','突袭盟约×1']]){
+      await page.evaluate(([n,m])=>window.mountActualCopyMode(n,m),[name,mode]);
+      await page.waitForFunction(()=>document.querySelector('[role=tabpanel]'));
+      const shown=await page.$eval('[role=tabpanel]',el=>el.textContent);
+      assert.ok(shown.includes(expected),`${name} ${mode} mode shows the matching roster copy`);
+      if(mode==='levels')assert.doesNotMatch(shown,/攻击徽章|伤害徽章/,`${name} levels copy does not leak badge terminology`);
+      if(name==='裁度')assert.equal((shown.match(/突袭盟约×1/g)||[]).length,2,'the normal and elite copies each list the acquisition grant once, not again in the knockout sentence');
+      const screenshotName=name==='阿罗玛'?'aroma':name==='重岳'?'chongyue':'caidu';
+      modeScreenshots.push(await capture(`copy-${screenshotName}-${mode}.png`));
+    }
+    assert.ok(modeScreenshots.every(Boolean),'actual catalog copy is captured in both growth modes');
+    await page.evaluate(()=>window.mountDetail({kind:'piece',uid:'owned-pane-piece'}));
     browserPhase='owned-tabs';
     const ownedTraits=await page.evaluate(()=>({tabs:[...document.querySelectorAll('[role=tab]')].map(x=>x.textContent.trim()),text:document.querySelector('[role=tabpanel]').textContent,stats:document.querySelector('.ix-dpanel__stats')?.textContent||''}));
     assert.ok(ownedTraits.tabs.includes('参考原卡'),'operators with original-card data get a separate tab');assert.match(ownedTraits.text,/特质/);assert.doesNotMatch(ownedTraits.text,/暴怒的巨蜥|在你使用一张亡语随从牌后/,'default trait pane does not include original-card text');assert.match(ownedTraits.stats,/攻击/,'the permanent stats column remains visible');
@@ -192,7 +232,7 @@ test('owned, shop and battle operator tabs separate references from traits while
     const deploymentLineCounts=await page.evaluate(()=>[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(count=>count.textContent.trim())));
     assert.deepEqual(deploymentLineCounts,[['（3）'],['（1）'],['（0）'],['（3）'],['（1）'],['（0）']],'each field count is attached to the exact faction or keyword clause it describes');
     const actorTooltips=await page.evaluate(()=>[...document.querySelectorAll('.ix-field-count')].slice(0,3).map(x=>x.title));
-    assert.ok(actorTooltips[0].includes(kjeragOp.name));assert.match(actorTooltips[0],/叙拉古支援/);assert.match(actorTooltips[1],/坚守作战单位/);assert.match(actorTooltips[2],/当前没有符合条件的干员/);assert.doesNotMatch(actorTooltips[0],/field-kjerag/);
+    assert.ok(actorTooltips[0].includes(kjeragOp.name));assert.match(actorTooltips[0],/叙拉古支援/);assert.match(actorTooltips[1],/坚守作战单位/);assert.match(actorTooltips[2],/当前没有符合条件的友方单位/);assert.doesNotMatch(actorTooltips[0],/field-kjerag/);
     const actorScreenshot=await capture('deployment-actors-inline-count.png');
     const actorCountRect=await page.evaluate(()=>{const r=document.querySelectorAll('.ix-field-count')[0].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});await page.mouse.move(actorCountRect.x,actorCountRect.y);
     const factionHighlight=await page.evaluate(()=>window.deploymentHighlight);assert.deepEqual(factionHighlight,['condition-source','field-kjerag','sira-token']);
@@ -218,6 +258,19 @@ test('owned, shop and battle operator tabs separate references from traits while
     const actualKroosView=await page.evaluate(()=>{const panel=document.querySelector('[role=tabpanel]'),text=panel.cloneNode(true);text.querySelectorAll('.ix-field-count').forEach(x=>x.remove());return {name:document.querySelector('.ix-dpanel__head .dhead__name')?.textContent||'',text:panel.innerText,compact:text.innerText.replace(/\s+/g,''),counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),lineCounts:[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim())).filter(x=>x.length),highlighted:window.actualHighlight};});
     assert.equal(actualKroosView.name,'寒芒克洛丝');assert.ok(actualKroosView.compact.includes(actualKroosOp.traitTexts.normal.replace(/\s+/g,'')),'the visible trait matches the current directory catalog text');assert.deepEqual(actualKroosView.counts,['（2）','（2）']);assert.deepEqual(actualKroosView.lineCounts,[['（2）'],['（2）']]);assert.deepEqual(actualKroosView.highlighted,['actual-cover-op','actual-cover-token'],'actual Kroos counts matching cover-marked deployed operators and tokens only');
     const actualKroosScreenshot=await capture('actual-kroos-field-counts.png');
+    const actualDeploymentPayloadViews={};
+    for(const [sourceId,operatorName] of [['BGS_078','贾维'],['FP1_031','巫恋']]){
+      browserPhase=`actual-${operatorName}-deployment-payload`;
+      await page.evaluate(id=>window.mountActualDeploymentPayload(id),sourceId);
+      await page.waitForFunction(()=>window.actualHighlight.length===3,{timeout:5000});
+      const view=await page.evaluate(()=>({name:document.querySelector('.ix-dpanel__head .dhead__name')?.textContent||'',text:document.querySelector('[role=tabpanel]').innerText,compact:document.querySelector('[role=tabpanel]').innerText.replace(/\s+/g,''),counts:[...document.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim()),lineCounts:[...document.querySelectorAll('.ix-traittext__line')].map(line=>[...line.querySelectorAll('.ix-field-count')].map(x=>x.textContent.trim())),highlighted:window.actualHighlight}));
+      const expected=actualDeploymentPayloads[sourceId];
+      assert.equal(view.name,operatorName);assert.ok(view.compact.replace(/（\d+）/g,'').includes(expected.text.replace(/\s+/g,'')),'visible text is from the active directory catalog after removing inline counts');
+      assert.deepEqual(view.counts,['（3）','（3）']);assert.deepEqual(view.lineCounts.filter(line=>line.length),[['（3）'],['（3）']],'normal and advanced counts are attached to this operator’s actual effect line');
+      assert.deepEqual(view.highlighted,[`adapted-${sourceId}`,`magnetic-${sourceId}`,`payload-token-${sourceId}`],'only current friendly installed payload actors are highlighted');
+      actualDeploymentPayloadViews[sourceId]=view;
+      actualDeploymentPayloadViews[sourceId].screenshot=await capture(`actual-${sourceId}-deployment-payload.png`);
+    }
     const skillTabRect2=await page.evaluate(()=>{const r=[...document.querySelectorAll('[role=tab]')].find(x=>x.textContent.trim()==='技能').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});await page.mouse.click(skillTabRect2.x,skillTabRect2.y);
     assert.deepEqual(await page.evaluate(()=>window.deploymentHighlight),[],'tab changes clear deployment actor highlights');
     await page.evaluate(()=>window.mountDeploymentCondition());await page.click('.dpanel__close');
@@ -225,6 +278,6 @@ test('owned, shop and battle operator tabs separate references from traits while
     await page.evaluate(()=>window.mountEnemyDetail());const enemy=await page.evaluate(()=>({dialog:!!document.querySelector('[data-testid="ix-detail"]'),referenceTab:[...document.querySelectorAll('[role=tab]')].some(x=>x.textContent.trim()==='参考原卡')}));assert.equal(enemy.dialog,true);assert.equal(enemy.referenceTab,false);
     await page.evaluate(()=>window.mountSummonDetail());const summon=await page.evaluate(()=>({dialog:!!document.querySelector('[data-testid="ix-detail"]'),referenceTab:[...document.querySelectorAll('[role=tab]')].some(x=>x.textContent.trim()==='参考原卡')}));assert.equal(summon.dialog,true);assert.equal(summon.referenceTab,false);
     assert.deepEqual(errors,[]);
-    if(process.env.SP_DETAIL_PANEL_REPORT)fs.writeFileSync(process.env.SP_DETAIL_PANEL_REPORT,JSON.stringify({ok:true,ownedTraits,ownedReference,reopenedReference,copiedReferenceLink,copiedReferencePaneLink,copiedGearTabLink,returnedTraits,owned,visibleIcons,shopReferences,shop,battleReferences,conditionView,hover,focusHighlight,secondHover,movedHighlight,cleared,battleCondition,deploymentView,deploymentLineCounts,actorTooltips,factionHighlight,coverHighlight,battleDeployment,actualProvenceView,actualKroosView,enemy,summon,fixtureScope:{deploymentRows:'受控UI投影场景，用于验证多条件逐行绑定；不是实战局或源文本快照',activeOperatorRows:'当前目录普罗旺斯与寒芒克洛丝的实际catalog文案/规则，场上actor集合为受控验证状态'},screenshots:[ownedReferenceScreenshot,traitsScreenshot,ownedGearScreenshot,shopReferenceScreenshot,battleReferenceScreenshot,conditionScreenshot,actorScreenshot,actualProvenceScreenshot,actualKroosScreenshot].filter(Boolean),pageErrors:errors,browserProfile,browserConnectionMode,pageUrl:'127.0.0.1 ephemeral test server',browserArgs:browserOwned?['--disable-gpu','--disable-software-rasterizer']:[],gameRendererStarted:false},null,2)+'\n');
+    if(process.env.SP_DETAIL_PANEL_REPORT)fs.writeFileSync(process.env.SP_DETAIL_PANEL_REPORT,JSON.stringify({ok:true,ownedTraits,ownedReference,reopenedReference,copiedReferenceLink,copiedReferencePaneLink,copiedGearTabLink,returnedTraits,owned,visibleIcons,shopReferences,shop,battleReferences,conditionView,hover,focusHighlight,secondHover,movedHighlight,cleared,battleCondition,deploymentView,deploymentLineCounts,actorTooltips,factionHighlight,coverHighlight,battleDeployment,actualProvenceView,actualKroosView,actualDeploymentPayloadViews,enemy,summon,fixtureScope:{deploymentRows:'受控UI投影场景，用于验证多条件逐行绑定；不是实战局或源文本快照',activeOperatorRows:'当前目录干员普罗旺斯、寒芒克洛丝、贾维与巫恋的实际catalog文案/规则；场上actor集合为受控验证状态'},screenshots:[ownedReferenceScreenshot,traitsScreenshot,ownedGearScreenshot,shopReferenceScreenshot,battleReferenceScreenshot,conditionScreenshot,actorScreenshot,actualProvenceScreenshot,actualKroosScreenshot,...Object.values(actualDeploymentPayloadViews).map(x=>x.screenshot)].filter(Boolean),pageErrors:errors,browserProfile,browserConnectionMode,pageUrl:'127.0.0.1 ephemeral test server',browserArgs:browserOwned?['--disable-gpu','--disable-software-rasterizer']:[],gameRendererStarted:false},null,2)+'\n');
   }finally{clearTimeout(browserPhaseGuard);await browserContext?.close();if(browserOwned)await browser?.close();else browser?.disconnect();await new Promise(resolve=>server.close(resolve));}
 });

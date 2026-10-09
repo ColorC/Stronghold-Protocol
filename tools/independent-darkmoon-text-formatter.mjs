@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { darkmoonPrepRulesFor } from '../server/modes/independent/darkmoonPrep.js';
-import { darkmoonCombatMetadata } from '../server/sim/content/independent/darkmoonCombat.js';
+import { DARKMOON_COMBAT_RULES, darkmoonCombatMetadata } from '../server/sim/content/independent/darkmoonCombat.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const addonPath = path.join(root, 'data/independent-darkmoon-game-text-addon.json');
@@ -15,7 +15,7 @@ const gameTextPath = path.join(root, 'data/independent-game-text.json');
 const designPath = path.join(root, 'data/independent-design.json');
 const gears = new Map([
   ['坚守盟约', '坚守盟约'], ['护盾发生器', '护盾发生器'], ['不屈盟约', '不屈盟约'],
-  ['精准盟约', '精准盟约'], ['巨锤盟约', '巨锤盟约'], ['oath-cover', '坚守盟约'],
+  ['精准盟约', '精准盟约'], ['巨锤盟约', '巨锤盟约'], ['突袭盟约', '突袭盟约'], ['oath-cover', '坚守盟约'],
 ]);
 const badgeNames = Object.freeze({ precision: '攻击徽章', agility: '攻速徽章', damage: '伤害徽章', vitality: '生命徽章', defense: '防御徽章', assault: '攻击加成徽章', recovery: '技力徽章', arcane: '法抗徽章', foresight: '初始技力徽章', miracle: '闪避徽章', investor: '回复徽章', unyielding: '生命加成徽章', harmony: '治疗徽章', coordination: '减伤徽章', solitary: '再部署徽章', mastery: '普通攻击徽章' });
 const legacyPlusPlusGrowthSources = new Set(['BGS_041', 'BGS_048', 'BGS_100', 'BGS_128']);
@@ -120,7 +120,7 @@ function prepText(sourceId, rule, variant) {
       const bonus = p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : '';
       return `${when}，${selected(p.faction)}获得${n}${bonus}。`;
     }
-    case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员星级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
+    case 'darkmoonBoughtTribeTargetGrowth': return `每次购买炎阵营干员时，选择一名友方干员；效果触发${pick(p.repeatCount, variant)}次，每次使其获得与所购干员科技等级等量的攻击徽章和${badgeNames[p.outputs?.find(x => x !== 'precision')] || '伤害徽章'}。`;
     case 'darkmoonBoughtSelfGrowth': return `${p.faction ? `购买${factionText(p.faction)}干员时` : when}，自身获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonBeastSummonGrowth': return `每当其他友方叙拉古干员新获得或首次上阵时，该干员获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonPlayedTribeGrowth': return `每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得${growth(attack, secondary, variant)}。`;
@@ -164,7 +164,18 @@ function cleanCombat(id, variant) {
     .replaceAll('每三秒一轮', '每3秒最多触发一轮')
     .replaceAll('原型', '干员的作战投影')
     .replaceAll('作战支援单位', '作战支援单位')
+    .replace(/；?获得时装备1件突袭盟约[。]?/g, '')
     .replace(/按当前攻击成长计算，最多七个个/g, '按当前攻击成长计算，最多7个');
+  if (['EX1_531', 'GVG_106'].includes(id)) {
+    const faction = DARKMOON_COMBAT_RULES[id]?.faction === 'BEAST' ? '叙拉古'
+      : DARKMOON_COMBAT_RULES[id]?.faction === 'MECHANICAL' ? '哥伦比亚' : null;
+    if (faction && DARKMOON_COMBAT_RULES[id]?.excludeSelf) {
+      text = text.replace(`${faction}友方战斗部署时`, `其他${faction}友方单位战斗部署时`);
+    }
+  }
+  if (DARKMOON_COMBAT_RULES[id]?.retire && !text.includes('每场最多触发3次')) {
+    text = `${text.replace(/[。；]?\s*$/, '')}；每场最多触发3次。`;
+  }
   return text;
 }
 
@@ -199,7 +210,8 @@ export function renderedPrepRows(entry, variant) {
 }
 export function textsFor(entry, variant) {
   const prep = renderedPrepRows(entry, variant).map(row => row.text);
-  const combat = cleanCombat(entry.sourceId, variant);
+  const combatMetadata = darkmoonCombatMetadata(entry.sourceId, variant === 'elite');
+  const combat = combatMetadata?.adapter?.includes('darkmoonCombat') ? cleanCombat(entry.sourceId, variant) : '';
   return [...prep, ...(combat ? [combat] : [])].map(compactWording);
 }
 function main() {
@@ -217,7 +229,10 @@ function main() {
     const elite = textsFor(entry, 'elite');
     const normalText = normal.join('\n') || cleanCombat(item.sourceId, 'normal') || '战斗中执行对应的干员效果。';
     const eliteText = elite.join('\n') || cleanCombat(item.sourceId, 'elite') || normalText;
-    const next = { ...item, normal: normalText, elite: eliteText, normalLevels: toLevels(normalText), eliteLevels: toLevels(eliteText) };
+    const levelText = (variantText, variant) => item.sourceId === 'BGS_100'
+      ? `每次购买炎阵营干员时，选择一名友方干员；${variant === 'elite' ? '该效果结算两次，每次' : '该干员'}获得所购干员科技等级两倍的训练等级。`
+      : toLevels(variantText);
+    const next = { ...item, normal: normalText, elite: eliteText, normalLevels: levelText(normalText, 'normal'), eliteLevels: levelText(eliteText, 'elite') };
     item.normal = next.normal; item.elite = next.elite; item.normalLevels = next.normalLevels; item.eliteLevels = next.eliteLevels;
     rewritten.set(item.sourceId, { normal, elite });
   }

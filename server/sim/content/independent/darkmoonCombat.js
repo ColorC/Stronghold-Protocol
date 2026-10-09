@@ -212,7 +212,12 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
         const level=Math.min(maximum,Math.max(1,Number(ownerStatus.level)||1));
         const baseline=nativeLevelAttributes(curve,phase,level);
         const trained=nativeLevelAttributes(curve,phase,Math.min(maximum,level+(a+h)*Number(catalog.config?.levelsPerBadge||1)));
-        for(const [field,key]of [['atk','atkFlat'],['maxHp','hpFlat'],['def','defFlat'],['res','resFlat']])mods[key]=trained[field]-baseline[field];
+        const prototypeScale=raw?.darkmoonPrototypeScale||sourceRaw?.darkmoonPrototypeScale||{};
+        for(const [field,key,scaleKey]of [['atk','atkFlat','attack'],['maxHp','hpFlat','health'],['def','defFlat','defense'],['res','resFlat',null]]){
+          const scale=scaleKey&&Object.hasOwn(prototypeScale,scaleKey)?Number(prototypeScale[scaleKey]):1;
+          if(!Number.isFinite(scale))throw new Error(`BAD_NATIVE_TOKEN_PROTOTYPE_SCALE:${u.defId}:${scaleKey}`);
+          mods[key]=(trained[field]-baseline[field])*scale;
+        }
       }
     }
     return mods;
@@ -286,9 +291,10 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     const nativeId=prototype.tokenId;
     const record=battle.tokenDef(nativeId,prototype.ownerId)||{id:nativeId,rangeGrid:[[0,0],[0,1]]};
     const [a,h]=p.stats, m=scale(e), proto=record.stats||{};
-    const stats={...proto,maxHp:Math.round((Number(proto.maxHp)||0)*h*.4*m),atk:Math.round((Number(proto.atk)||0)*a*.4*m),def:Math.round((Number(proto.def)||0)*.4*m),blockCnt:p.cover?2:1,cost:0};
+    const darkmoonPrototypeScale={attack:a*.4*m,health:h*.4*m,defense:.4};
+    const stats={...proto,maxHp:Math.round((Number(proto.maxHp)||0)*darkmoonPrototypeScale.health),atk:Math.round((Number(proto.atk)||0)*darkmoonPrototypeScale.attack),def:Math.round((Number(proto.def)||0)*darkmoonPrototypeScale.defense),blockCnt:p.cover?2:1,cost:0};
     return {...record,id:nativeId,name:prototype.name,darkmoonPrototypeTokenId:nativeId,darkmoonPrototypeOwnerChessId:prototype.ownerId,darkmoonPrototypeName:prototype.prototypeName,
-      darkmoonPrototypeScale:{attack:a*.4,health:h*.4,defense:.4},darkmoonSummonSourceText:`由${e.unit.name||'干员'}的额外特质生成`,darkmoonCover:!!p.cover,profession:'TOKEN',stats};
+      darkmoonPrototypeScale,darkmoonSummonSourceText:`由${e.unit.name||'干员'}的额外特质生成`,darkmoonCover:!!p.cover,profession:'TOKEN',stats};
   };
   const spawn=(e,def,count,tags=[],p={})=>{
     const out=[],limit=Math.max(0,7-battle.allyUnits.filter(u=>u.kind==='token'&&alive(u)&&own(u,e.unit)&&u.mem.darkmoonSummon).length);

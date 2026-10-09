@@ -46,7 +46,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
+          "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影；每场最多触发3次。",
           "sourceId": "BGS_006",
           "implementation": "supported",
           "adapter": [
@@ -57,7 +57,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
+          "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影；每场最多触发3次。",
           "sourceId": "BGS_006",
           "implementation": "supported",
           "adapter": [
@@ -80,14 +80,14 @@
                 "params": {
                   "sourceId": "BGS_006"
                 },
-                "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
+                "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
+                "adaptation": "战斗中每次实际部署时召唤1名随机六星干员的作战投影；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -106,14 +106,14 @@
                 "params": {
                   "sourceId": "BGS_006"
                 },
-                "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
+                "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
+                "adaptation": "战斗中每次实际部署时召唤2名随机六星干员的作战投影；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -136,14 +136,14 @@
             "params": {
               "sourceId": "BGS_006"
             },
-            "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤1名随机六星干员的作战投影；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤1名随机六星干员的作战投影。",
+            "adaptation": "战斗中每次实际部署时召唤1名随机六星干员的作战投影；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -162,14 +162,14 @@
             "params": {
               "sourceId": "BGS_006"
             },
-            "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤2名随机六星干员的作战投影；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤2名随机六星干员的作战投影。",
+            "adaptation": "战斗中每次实际部署时召唤2名随机六星干员的作战投影；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -430,7 +430,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+          "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
           "sourceId": "BGS_012",
           "implementation": "supported",
           "adapter": [
@@ -441,7 +441,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+          "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
           "sourceId": "BGS_012",
           "implementation": "supported",
           "adapter": [
@@ -464,14 +464,14 @@
                 "params": {
                   "sourceId": "BGS_012"
                 },
-                "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+                "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+                "adaptation": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -490,14 +490,14 @@
                 "params": {
                   "sourceId": "BGS_012"
                 },
-                "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+                "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+                "adaptation": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -520,14 +520,14 @@
             "params": {
               "sourceId": "BGS_012"
             },
-            "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+            "text": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+            "adaptation": "战斗中每次实际部署时复制场上攻击力最高的2名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -546,14 +546,14 @@
             "params": {
               "sourceId": "BGS_012"
             },
-            "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+            "text": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤。",
+            "adaptation": "战斗中每次实际部署时复制场上攻击力最高的4名哥伦比亚干员（包含自身）的原始幻影；人数不足时按实际人数召唤；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -816,7 +816,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "叙拉古友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5。",
+          "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5；每场最多触发3次。",
           "sourceId": "BGS_018",
           "implementation": "supported",
           "adapter": [
@@ -827,7 +827,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "叙拉古友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10。",
+          "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10；每场最多触发3次。",
           "sourceId": "BGS_018",
           "implementation": "supported",
           "adapter": [
@@ -850,14 +850,14 @@
                 "params": {
                   "sourceId": "BGS_018"
                 },
-                "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5。",
+                "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5。",
+                "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -876,14 +876,14 @@
                 "params": {
                   "sourceId": "BGS_018"
                 },
-                "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10。",
+                "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10。",
+                "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -906,14 +906,14 @@
             "params": {
               "sourceId": "BGS_018"
             },
-            "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5。",
+            "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5。",
+            "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×5与伤害徽章×5；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -932,14 +932,14 @@
             "params": {
               "sourceId": "BGS_018"
             },
-            "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10。",
+            "text": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10。",
+            "adaptation": "战斗中每次实际部署时使叙拉古友方获得攻击徽章×10与伤害徽章×10；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -2418,7 +2418,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "卡西米尔友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+          "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
           "sourceId": "BGS_040",
           "implementation": "supported",
           "adapter": [
@@ -2429,7 +2429,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "卡西米尔友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+          "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
           "sourceId": "BGS_040",
           "implementation": "supported",
           "adapter": [
@@ -2452,7 +2452,7 @@
                 "params": {
                   "sourceId": "BGS_040"
                 },
-                "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+                "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -2460,7 +2460,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+                "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -2479,7 +2479,7 @@
                 "params": {
                   "sourceId": "BGS_040"
                 },
-                "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+                "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -2487,7 +2487,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+                "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -2510,7 +2510,7 @@
             "params": {
               "sourceId": "BGS_040"
             },
-            "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -2518,7 +2518,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -2537,7 +2537,7 @@
             "params": {
               "sourceId": "BGS_040"
             },
-            "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -2545,7 +2545,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为卡西米尔友方各增加5层护盾；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -3860,7 +3860,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+          "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350；每场最多触发3次。",
           "sourceId": "BGS_061",
           "implementation": "supported",
           "adapter": [
@@ -3871,7 +3871,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+          "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700；每场最多触发3次。",
           "sourceId": "BGS_061",
           "implementation": "supported",
           "adapter": [
@@ -3894,14 +3894,14 @@
                 "params": {
                   "sourceId": "BGS_061"
                 },
-                "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+                "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+                "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -3920,14 +3920,14 @@
                 "params": {
                   "sourceId": "BGS_061"
                 },
-                "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+                "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+                "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -3950,14 +3950,14 @@
             "params": {
               "sourceId": "BGS_061"
             },
-            "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+            "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350。",
+            "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击120、生命350；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -3976,14 +3976,14 @@
             "params": {
               "sourceId": "BGS_061"
             },
-            "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+            "text": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700。",
+            "adaptation": "战斗中每次实际部署时召唤维多利亚作战支援单位1个；每个攻击240、生命700；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -4686,7 +4686,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
+          "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影；每场最多触发3次。",
           "sourceId": "BGS_079",
           "implementation": "supported",
           "adapter": [
@@ -4697,7 +4697,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
+          "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影；每场最多触发3次。",
           "sourceId": "BGS_079",
           "implementation": "supported",
           "adapter": [
@@ -4720,14 +4720,14 @@
                 "params": {
                   "sourceId": "BGS_079"
                 },
-                "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
+                "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
+                "adaptation": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -4746,14 +4746,14 @@
                 "params": {
                   "sourceId": "BGS_079"
                 },
-                "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
+                "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
+                "adaptation": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -4776,14 +4776,14 @@
             "params": {
               "sourceId": "BGS_079"
             },
-            "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影。",
+            "adaptation": "战斗中每次实际部署时召唤3个随机维多利亚干员的作战投影；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -4802,14 +4802,14 @@
             "params": {
               "sourceId": "BGS_079"
             },
-            "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
+            "text": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影。",
+            "adaptation": "战斗中每次实际部署时召唤6个随机维多利亚干员的作战投影；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -8228,7 +8228,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+          "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
           "sourceId": "BGS_200",
           "implementation": "supported",
           "adapter": [
@@ -8239,7 +8239,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+          "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
           "sourceId": "BGS_200",
           "implementation": "supported",
           "adapter": [
@@ -8262,14 +8262,14 @@
                 "params": {
                   "sourceId": "BGS_200"
                 },
-                "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+                "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+                "adaptation": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -8288,14 +8288,14 @@
                 "params": {
                   "sourceId": "BGS_200"
                 },
-                "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+                "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+                "adaptation": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -8318,14 +8318,14 @@
             "params": {
               "sourceId": "BGS_200"
             },
-            "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "text": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "adaptation": "战斗中每次实际部署时将1张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -8344,14 +8344,14 @@
             "params": {
               "sourceId": "BGS_200"
             },
-            "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "text": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币。",
+            "adaptation": "战斗中每次实际部署时将2张罗德岛采购券加入装备栏；使用一张可获得一枚金币；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -9226,7 +9226,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+          "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350；每场最多触发3次。",
           "sourceId": "BOT_312",
           "implementation": "supported",
           "adapter": [
@@ -9237,7 +9237,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+          "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700；每场最多触发3次。",
           "sourceId": "BOT_312",
           "implementation": "supported",
           "adapter": [
@@ -9290,14 +9290,14 @@
                 "params": {
                   "sourceId": "BOT_312"
                 },
-                "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+                "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+                "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9346,14 +9346,14 @@
                 "params": {
                   "sourceId": "BOT_312"
                 },
-                "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+                "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+                "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9406,14 +9406,14 @@
             "params": {
               "sourceId": "BOT_312"
             },
-            "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+            "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350。",
+            "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击120、生命350；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -9462,14 +9462,14 @@
             "params": {
               "sourceId": "BOT_312"
             },
-            "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+            "text": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700。",
+            "adaptation": "战斗中每次实际部署时召唤3个哥伦比亚机械支援单位；每个攻击240、生命700；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -9932,7 +9932,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+          "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350；每场最多触发3次。",
           "sourceId": "CFM_316",
           "implementation": "supported",
           "adapter": [
@@ -9943,7 +9943,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+          "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700；每场最多触发3次。",
           "sourceId": "CFM_316",
           "implementation": "supported",
           "adapter": [
@@ -9966,14 +9966,14 @@
                 "params": {
                   "sourceId": "CFM_316"
                 },
-                "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+                "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+                "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9992,14 +9992,14 @@
                 "params": {
                   "sourceId": "CFM_316"
                 },
-                "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+                "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+                "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -10022,14 +10022,14 @@
             "params": {
               "sourceId": "CFM_316"
             },
-            "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+            "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350。",
+            "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击120、生命350；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -10048,14 +10048,14 @@
             "params": {
               "sourceId": "CFM_316"
             },
-            "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+            "text": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700。",
+            "adaptation": "战斗中每次实际部署时按自身当前攻击与基础攻击之比×2召唤协同狼群（至少1个，至多7个）；每个单位攻击240、生命700；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -10984,7 +10984,7 @@
           "trigger": "友方退场",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
+          "text": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
           "sourceId": "EX1_531",
           "implementation": "supported",
           "adapter": [
@@ -10995,7 +10995,7 @@
           "trigger": "友方退场",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
+          "text": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
           "sourceId": "EX1_531",
           "implementation": "supported",
           "adapter": [
@@ -11018,12 +11018,12 @@
                 "params": {
                   "sourceId": "EX1_531"
                 },
-                "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
+                "text": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
+                "adaptation": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -11042,12 +11042,12 @@
                 "params": {
                   "sourceId": "EX1_531"
                 },
-                "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
+                "text": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
+                "adaptation": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -11070,12 +11070,12 @@
             "params": {
               "sourceId": "EX1_531"
             },
-            "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
+            "text": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "叙拉古友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
+            "adaptation": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×1。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11094,12 +11094,12 @@
             "params": {
               "sourceId": "EX1_531"
             },
-            "text": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
+            "text": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "叙拉古友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
+            "adaptation": "其他叙拉古友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×2。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11154,7 +11154,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤1个作战支援单位。",
+          "text": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
           "sourceId": "EX1_556",
           "implementation": "supported",
           "adapter": [
@@ -11165,7 +11165,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时召唤1个作战支援单位。",
+          "text": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
           "sourceId": "EX1_556",
           "implementation": "supported",
           "adapter": [
@@ -11188,14 +11188,14 @@
                 "params": {
                   "sourceId": "EX1_556"
                 },
-                "text": "战斗中每次实际部署时召唤1个作战支援单位。",
+                "text": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
+                "adaptation": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -11214,14 +11214,14 @@
                 "params": {
                   "sourceId": "EX1_556"
                 },
-                "text": "战斗中每次实际部署时召唤1个作战支援单位。",
+                "text": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
+                "adaptation": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -11244,14 +11244,14 @@
             "params": {
               "sourceId": "EX1_556"
             },
-            "text": "战斗中每次实际部署时召唤1个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11270,14 +11270,14 @@
             "params": {
               "sourceId": "EX1_556"
             },
-            "text": "战斗中每次实际部署时召唤1个作战支援单位。",
+            "text": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位。",
+            "adaptation": "战斗中每次实际部署时召唤1个作战支援单位；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11330,7 +11330,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次。",
+          "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次；每场最多触发3次。",
           "sourceId": "FP1_024",
           "implementation": "supported",
           "adapter": [
@@ -11341,7 +11341,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "战场",
           "duration": "本场战斗",
-          "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次。",
+          "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次；每场最多触发3次。",
           "sourceId": "FP1_024",
           "implementation": "supported",
           "adapter": [
@@ -11385,7 +11385,7 @@
                 "params": {
                   "sourceId": "FP1_024"
                 },
-                "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次。",
+                "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "taunt",
@@ -11393,7 +11393,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次。",
+                "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -11433,7 +11433,7 @@
                 "params": {
                   "sourceId": "FP1_024"
                 },
-                "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次。",
+                "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "taunt",
@@ -11441,7 +11441,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次。",
+                "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -11485,7 +11485,7 @@
             "params": {
               "sourceId": "FP1_024"
             },
-            "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次。",
+            "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -11493,7 +11493,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次。",
+            "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害；每次部署各排队一次；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -11533,7 +11533,7 @@
             "params": {
               "sourceId": "FP1_024"
             },
-            "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次。",
+            "text": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "taunt",
@@ -11541,7 +11541,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次。",
+            "adaptation": "战斗部署后，下一次普通攻击时对场上所有单位造成自身基础攻击40%的法术伤害，触发两次；每次部署各排队一次；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -12224,7 +12224,7 @@
           "trigger": "友方退场",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
+          "text": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
           "sourceId": "GVG_106",
           "implementation": "supported",
           "adapter": [
@@ -12235,7 +12235,7 @@
           "trigger": "友方退场",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
+          "text": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
           "sourceId": "GVG_106",
           "implementation": "supported",
           "adapter": [
@@ -12258,12 +12258,12 @@
                 "params": {
                   "sourceId": "GVG_106"
                 },
-                "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
+                "text": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
+                "adaptation": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -12282,12 +12282,12 @@
                 "params": {
                   "sourceId": "GVG_106"
                 },
-                "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
+                "text": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
+                "adaptation": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -12310,12 +12310,12 @@
             "params": {
               "sourceId": "GVG_106"
             },
-            "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
+            "text": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
+            "adaptation": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×2与伤害徽章×2。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -12334,12 +12334,12 @@
             "params": {
               "sourceId": "GVG_106"
             },
-            "text": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
+            "text": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
             "textEn": "",
             "tags": [],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "哥伦比亚友方战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
+            "adaptation": "其他哥伦比亚友方单位战斗部署时，使自身获得攻击徽章×4与伤害徽章×4。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13416,7 +13416,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "随机友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
+          "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾；每场最多触发3次。",
           "sourceId": "OG_221",
           "implementation": "supported",
           "adapter": [
@@ -13427,7 +13427,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "随机友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
+          "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾；每场最多触发3次。",
           "sourceId": "OG_221",
           "implementation": "supported",
           "adapter": [
@@ -13450,7 +13450,7 @@
                 "params": {
                   "sourceId": "OG_221"
                 },
-                "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
+                "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -13458,7 +13458,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
+                "adaptation": "战斗中每次实际部署时为随机1名友方各增加5层护盾；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -13477,7 +13477,7 @@
                 "params": {
                   "sourceId": "OG_221"
                 },
-                "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
+                "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "divineShield",
@@ -13485,7 +13485,7 @@
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
+                "adaptation": "战斗中每次实际部署时为随机2名友方各增加5层护盾；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -13508,7 +13508,7 @@
             "params": {
               "sourceId": "OG_221"
             },
-            "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为随机1名友方各增加5层护盾；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -13516,7 +13516,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时为随机1名友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为随机1名友方各增加5层护盾；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13535,7 +13535,7 @@
             "params": {
               "sourceId": "OG_221"
             },
-            "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
+            "text": "战斗中每次实际部署时为随机2名友方各增加5层护盾；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "divineShield",
@@ -13543,7 +13543,7 @@
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时为随机2名友方各增加5层护盾。",
+            "adaptation": "战斗中每次实际部署时为随机2名友方各增加5层护盾；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13596,7 +13596,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "所有友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1。",
+          "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1；每场最多触发3次。",
           "sourceId": "OG_256",
           "implementation": "supported",
           "adapter": [
@@ -13607,7 +13607,7 @@
           "trigger": "每次退场（每场最多三次）",
           "recipient": "所有友方",
           "duration": "本场战斗",
-          "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2。",
+          "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2；每场最多触发3次。",
           "sourceId": "OG_256",
           "implementation": "supported",
           "adapter": [
@@ -13630,14 +13630,14 @@
                 "params": {
                   "sourceId": "OG_256"
                 },
-                "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1。",
+                "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1。",
+                "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -13656,14 +13656,14 @@
                 "params": {
                   "sourceId": "OG_256"
                 },
-                "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2。",
+                "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2；每场最多触发3次。",
                 "textEn": "",
                 "tags": [
                   "deathrattle"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2。",
+                "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2；每场最多触发3次。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -13686,14 +13686,14 @@
             "params": {
               "sourceId": "OG_256"
             },
-            "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1。",
+            "text": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1。",
+            "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×1与伤害徽章×1；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],
@@ -13712,14 +13712,14 @@
             "params": {
               "sourceId": "OG_256"
             },
-            "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2。",
+            "text": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2；每场最多触发3次。",
             "textEn": "",
             "tags": [
               "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2。",
+            "adaptation": "战斗中每次实际部署时使所有友方获得攻击徽章×2与伤害徽章×2；每场最多触发3次。",
             "adapter": [
               "darkmoonCombat"
             ],

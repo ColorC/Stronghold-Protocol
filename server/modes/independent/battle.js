@@ -220,7 +220,8 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
   const statsChanges = () => {
     const out = {};
     for (const u of battle.units) {
-      if (!u || (u.kind !== 'op' && u.side !== 'enemy') || !u.alive) continue;
+      const liveAlly = u?.side === 'ally' && (u.kind === 'op' || u.kind === 'token');
+      if (!u || (!liveAlly && u.side !== 'enemy') || !u.alive) continue;
       const entry = unitStatsEntry(u, u.s); const key = JSON.stringify(entry);
       if (lastStats.get(u.id) !== key) { lastStats.set(u.id, key); out[u.id] = entry; }
     }

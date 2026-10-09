@@ -170,17 +170,17 @@ test('deployment actor projection counts only matching live operators and tokens
   assert.deepEqual(fieldIds({...factionRule,params:{...factionRule.params,match:{faction:'哥伦比亚'}}},roster,catalog,source),[],'a medical source outside the match is not counted as a deployment actor');
 });
 
-test('UnitInfo exposes only the optional deployment actor metadata needed by field-condition display',()=>{
-  const base={id:8,kind:'token',side:'ally',ownerId:'player-a',defId:'support-token',name:'作战支援单位',def:{id:'support-token',raw:{}},x:4,y:6,tileR:6,tileC:4,dir:'RIGHT',s:{maxHp:100},mem:{darkmoonFactionTags:['哥伦比亚'],darkmoonCover:true}};
+test('UnitInfo exposes only optional actor metadata needed by field-condition display',()=>{
+  const base={id:8,kind:'token',side:'ally',ownerId:'player-a',defId:'support-token',name:'作战支援单位',def:{id:'support-token',raw:{}},x:4,y:6,tileR:6,tileC:4,dir:'RIGHT',s:{maxHp:100},mem:{darkmoonFactionTags:['哥伦比亚'],darkmoonCover:true,darkmoonDeploymentSources:['OG_256','BOT_312']}};
   const info=unitInfo(base);
-  assert.deepEqual([info.row,info.col],[6,4]);assert.deepEqual(info.darkmoonFactionTags,['哥伦比亚']);assert.equal(info.darkmoonCover,true);
+  assert.deepEqual([info.row,info.col],[6,4]);assert.deepEqual(info.darkmoonFactionTags,['哥伦比亚']);assert.equal(info.darkmoonCover,true);assert.deepEqual(info.darkmoonDeploymentSources,['OG_256','BOT_312']);
+  base.mem.darkmoonDeploymentSources.push('mutated');assert.deepEqual(info.darkmoonDeploymentSources,['OG_256','BOT_312'],'snapshot metadata is an isolated display copy');
   const ordinary=unitInfo({...base,mem:{},def:{id:'support-token',raw:{}}});
-  assert.equal('darkmoonFactionTags' in ordinary,false);assert.equal('darkmoonCover' in ordinary,false);
+  assert.equal('darkmoonFactionTags' in ordinary,false);assert.equal('darkmoonCover' in ordinary,false);assert.equal('darkmoonDeploymentSources' in ordinary,false);
   const inherited=unitInfo({...base,mem:{},def:{id:'support-token',raw:{}},ownerUnit:{mem:{darkmoonFactionTags:['维多利亚']},def:{raw:{}}}});
   assert.deepEqual(inherited.darkmoonFactionTags,['维多利亚'],'a token uses the same inherited identity that its native actor match resolves');
   const raw=unitInfo({...base,mem:{},def:{id:'support-token',raw:{darkmoonFactionTags:['哥伦比亚'],darkmoonCover:true}}});
   assert.deepEqual(raw.darkmoonFactionTags,['哥伦比亚']);assert.equal(raw.darkmoonCover,true);
-
 });
 
 test('Javi and Wuxian field counts require an installed deployment payload, include magnetic recipients and exclude phantom tokens',()=>{

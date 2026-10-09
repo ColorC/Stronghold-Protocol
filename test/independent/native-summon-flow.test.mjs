@@ -5,6 +5,7 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getData } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { modeIdFor } from '../../shared/constants.js';
+import { nativeLevelAttributes } from '../../shared/independentGrowth.js';
 import { battleUnits, runIndependentBattle } from '../../server/modes/independent/battle.js';
 import { benchCount, tempCount } from '../../server/modes/independent/session.js';
 import { prepView } from '../../public/js/independent/model.js';
@@ -162,9 +163,16 @@ test('a prep-placed Vigil wolf gets BGS021 growth through the real opening battl
   const battle=runIndependentBattle(placed.state,{data,catalog});
   const sourceEvents=battle.darkmoonTrace.filter(entry=>entry.sourceId==='BGS_021'&&entry.kind==='event');
   assert.ok(sourceEvents.some(entry=>entry.targets.includes(stack.uid)),`the actual placed wolf is in the BGS021 opening-deploy trace: ${JSON.stringify({sourceEvents,errors:battle.diagnostics.errors})}`);
+  const replayStats=battle.replay.frames.flatMap(frame=>Object.values(frame.stats||{})).filter(entry=>entry.defId===wolfId);
+  assert.ok(replayStats.length,'replay stats include the placed token actor');
+  const live=replayStats.find(entry=>entry.temporaryGrowth?.some(growth=>growth.sourceId==='BGS_021'));
+  assert.ok(live,'token replay stats carry the BGS021 temporary-growth source');
+  const curve=data.tokens[wolfId].nativeGrowth,phase=tokenInput.ownerGrowth.phase,level=tokenInput.ownerGrowth.level,levelsPerBadge=Number(catalog.config?.levelsPerBadge||1);
+  const base=nativeLevelAttributes(curve,phase,level),trained=nativeLevelAttributes(curve,phase,Math.min(curve.phases[phase].maxLevel,level+8*levelsPerBadge));
+  assert.deepEqual({atk:live.base.atk,maxHp:live.base.maxHp,def:live.base.def,res:live.base.res},{atk:base.atk,maxHp:base.maxHp,def:base.def,res:base.res},'replay token baseline matches its pinned native curve');
+  assert.deepEqual({atk:live.atk,maxHp:live.maxHp,def:live.def,res:live.res},{atk:trained.atk,maxHp:trained.maxHp,def:trained.def,res:trained.res},'replay live token values include the exact BGS021 curve growth');
   assert.equal(battle.diagnostics.errorCount,0,JSON.stringify(battle.diagnostics.errors));
 });
-
 test('an unplaced Vigil wolf stack still uses the original automatic summon without a generic tactician placeholder', () => {
   const data = getData(); const catalog = getCatalog(data); const gd = new GameData(data, modeIdFor('solo', 'NORMAL'));
   const vigil = Object.values(catalog.operators).find((op) => op.name === '伺夜' && !op.elite); const wolfId = 'token_10028_vigil_wolf';
