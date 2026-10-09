@@ -16,6 +16,7 @@ const visibleText = /undefined|NaN|\[object Object\]|\b(?:BGS|BOT|CFM|DAL|DS1|EX
 
 test('zero attack badges compact cleanly while preserving nonzero damage badge quantities', () => {
   assert.equal(compactWording('获得攻击徽章×0及伤害徽章×2。'), '获得伤害徽章×2。');
+  assert.equal(toLevels('获得攻击徽章×3及伤害徽章×1。'), '获得训练等级×4。');
 });
 
 test('all 101 source entries regenerate both visible variants from executable preparation/combat rules', () => {
@@ -163,8 +164,17 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /获得时效果共触发2次/);
   assert.match(card('LOE_077').elite, /获得时效果共触发3次/);
-  assert.match(card('BOT_312').normal, /亡语.*攻击徽章×3及伤害徽章×1/);
-  assert.match(card('BOT_312').elite, /亡语.*攻击徽章×6及伤害徽章×2/);
+  assert.match(card('BOT_312').normal, /战斗部署效果附加.*攻击徽章×3及伤害徽章×1/);
+  assert.match(card('BOT_312').elite, /战斗部署效果附加.*攻击徽章×6及伤害徽章×2/);
+  assert.match(card('BOT_312').normal, /携带此效果的干员实际部署时/);
+  assert.match(card('BOT_312').normalLevels, /训练等级×4/);
+  assert.match(card('BOT_312').eliteLevels, /训练等级×8/);
+  assert.doesNotMatch(card('BOT_312').normal, /亡语附加/);
+  assert.match(card('BOT_312').normal, /机械水獭投影.*攻击为机械水獭基础攻击的40%.*生命为其基础生命的40%/);
+  assert.match(card('BOT_312').elite, /机械水獭投影.*攻击为机械水獭基础攻击的80%.*生命为其基础生命的80%/);
+  assert.match(card('BOT_312').normal, /每个投影在场45秒.*最多保留7个投影/);
+  assert.match(card('BGS_061').normal, /黄金盟誓投影.*攻击为黄金盟誓基础攻击的40%.*生命为其基础生命的40%/);
+  assert.match(card('BGS_061').elite, /黄金盟誓投影.*攻击为黄金盟誓基础攻击的80%.*生命为其基础生命的80%/);
   assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击徽章×2及伤害徽章×4/);
   assert.match(card('BOT_911').elite, /坚守盟约和护盾发生器.*攻击徽章×4及伤害徽章×8/);
   for (const [id,normal,elite] of [['BOT_312',[3,1],[6,2]],['BOT_911',[2,4],[4,8]]]) {
