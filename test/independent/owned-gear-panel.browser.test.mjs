@@ -149,13 +149,15 @@ test('owned, shop and battle operator tabs separate references from traits while
     catch (error) { throw new Error(`${error.message}; browserPhase=${browserPhase}; url=${page.url()}; pageErrors=${JSON.stringify(errors)}; missingFiles=${JSON.stringify(missingFiles)}`); }
     browserPhase='actual-copy-modes';
     const modeScreenshots=[];
-    for(const [name,mode,expected] of [['阿罗玛','badges','攻击徽章×1与伤害徽章×1'],['阿罗玛','levels','训练等级×2'],['重岳','badges','攻击徽章和伤害徽章'],['重岳','levels','所购干员科技等级两倍的训练等级']]){
+    for(const [name,mode,expected] of [['阿罗玛','badges','攻击徽章×1与伤害徽章×1'],['阿罗玛','levels','训练等级×2'],['重岳','badges','攻击徽章和伤害徽章'],['重岳','levels','所购干员科技等级两倍的训练等级'],['裁度','badges','突袭盟约×1']]){
       await page.evaluate(([n,m])=>window.mountActualCopyMode(n,m),[name,mode]);
       await page.waitForFunction(()=>document.querySelector('[role=tabpanel]'));
       const shown=await page.$eval('[role=tabpanel]',el=>el.textContent);
       assert.ok(shown.includes(expected),`${name} ${mode} mode shows the matching roster copy`);
       if(mode==='levels')assert.doesNotMatch(shown,/攻击徽章|伤害徽章/,`${name} levels copy does not leak badge terminology`);
-      modeScreenshots.push(await capture(`copy-${name==='阿罗玛'?'aroma':'chongyue'}-${mode}.png`));
+      if(name==='裁度')assert.equal((shown.match(/突袭盟约×1/g)||[]).length,2,'the normal and elite copies each list the acquisition grant once, not again in the knockout sentence');
+      const screenshotName=name==='阿罗玛'?'aroma':name==='重岳'?'chongyue':'caidu';
+      modeScreenshots.push(await capture(`copy-${screenshotName}-${mode}.png`));
     }
     assert.ok(modeScreenshots.every(Boolean),'actual catalog copy is captured in both growth modes');
     await page.evaluate(()=>window.mountDetail({kind:'piece',uid:'owned-pane-piece'}));
