@@ -49,6 +49,9 @@ try {
     recordingDirectory: RECORDING_DIR,
     staticBase: '',
     assetSources: {},
+    independentExecution: 'server',
+    independentMaxActive: 50,
+    independentMaxWaiting: 200,
   });
   process.stdout.write(`[resonance-local] listening at ${service.url}\n`);
   process.stdout.write(`[resonance-local] resonance sessions: ${RESONANCE_DIR}\n`);

@@ -9,6 +9,7 @@ const ROOT = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const WORKSHOP_URL = 'https://workshop.colorc.cc/bside/canvas/notes-web.html?theme=workshop&product_ref=spark-workshop&project=arknights&session_id=canvas%3Acanvas-0470c0a1&focus=resonance-play-20261009&fullscreen=1';
 const CARD_ID = 'resonance-play-20261009';
 const GAME_URL = 'https://workshop.colorc.cc/stronghold/resonance.html';
+const LOCAL_GAME_PATH = '/stronghold/resonance/resonance.html';
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const CONFIG = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 const WSH_CLI = process.env.WSH_CLI_PATH
@@ -84,7 +85,7 @@ function selfTest() {
   for (const url of ['https://workshop.colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/resonance/api/sessions/id', 'https://cdn.example/js/game.js']) {
     if (isScopedWorkshopBearerUrl(url, target)) throw new Error(`non-Workshop route received bearer scope: ${new URL(url).origin}${new URL(url).pathname}`);
   }
-  for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
+  for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/stronghold/resonance/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
     if (!isGameApiPath(pathname) || !isForbiddenMutation('POST', pathname)) throw new Error(`mutation audit missed ${pathname}`);
   }
   if (isForbiddenMutation('GET', '/stronghold/resonance/api/sessions/id')) throw new Error('read-only session GET was misclassified as a mutation');
@@ -94,7 +95,7 @@ function selfTest() {
 }
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
-function isGameApiPath(pathname) { return pathname.startsWith('/resonance/api/') || pathname.startsWith('/stronghold/resonance/api/'); }
+function isGameApiPath(pathname) { return /(?:^|\/)resonance\/api\//.test(pathname); }
 function isForbiddenMutation(method, pathname) {
   return method !== 'GET' && method !== 'HEAD'
     && /\/(?:sessions(?:\/|$)|actions?(?:\/|$)|fight(?:\/|$)|create(?:\/|$))/.test(pathname);
@@ -104,7 +105,7 @@ function frameIsGame(frame, hostFrame) {
   let parent = frame.parentFrame();
   while (parent && parent !== hostFrame) parent = parent.parentFrame();
   if (parent !== hostFrame) return false;
-  try { const url = new URL(frame.url()); return url.origin === new URL(GAME_URL).origin && url.pathname === new URL(GAME_URL).pathname; }
+  try { const url = new URL(frame.url()); return url.origin === new URL(GAME_URL).origin && [new URL(GAME_URL).pathname, LOCAL_GAME_PATH].includes(url.pathname); }
   catch { return false; }
 }
 
