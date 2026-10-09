@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { getData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { applyAction, createSession, viewSession } from '../../server/modes/independent/session.js';
-import { canDrop, dropRefusal, pieceNum } from '../../public/js/independent/model.js';
+import { canDrop, dropRefusal, legalTilesOf, pieceNum } from '../../public/js/independent/model.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 const catalog = getCatalog(data);
@@ -54,6 +54,9 @@ test('deployment cap blocks only adding another operator to the board, with imme
   const secondTile = tileFor(state, secondUid);
   assert.equal(canDrop(cappedView, secondN, secondTile), false, 'renderer must not open the facing wheel for a capped deployment');
   assert.match(dropRefusal(cappedView, secondN, secondTile), /最多 1 名干员/);
+  assert.match(dropRefusal(cappedView, secondN, { row: secondTile.row, col: secondTile.col }), /最多 1 名干员/, 'a renderer tile without area metadata still gets the cap message');
+  assert.deepEqual(legalTilesOf(cappedView, secondN), [], 'drag preview must not highlight tiles that cap validation will reject');
+  assert.match(dropRefusal(cappedView, secondN, { row: secondTile.row, col: 99 }), /无法部署在该位置/, 'non-legal field coordinates retain the terrain refusal');
   result = applyAction(state, { type: 'move', uid: secondUid, row: secondTile.row, col: secondTile.col }, { data, catalog });
   assert.equal(result.ok, false);
   assert.equal(result.error.code, 'DEPLOY_CAP');
@@ -63,6 +66,7 @@ test('deployment cap blocks only adding another operator to the board, with imme
   const firstLegal = view(result.state).pieces.find((p) => p.uid === firstUid).legalTiles;
   const candidate = firstLegal.map((s) => s.split(',').map(Number)).find(([r, c]) => r !== firstTile.row || c !== firstTile.col);
   assert.ok(candidate, 'fixture has another legal tile for the deployed operator');
+  assert.ok(legalTilesOf(view(result.state), pieceNum(firstUid)).length > 0, 'an on-field operator still has legal reposition highlights at cap');
   const moved = applyAction(result.state, { type: 'move', uid: firstUid, row: candidate[0], col: candidate[1] }, { data, catalog });
   assert.equal(moved.ok, true, moved.error?.message);
   assert.equal(moved.state.pieces.filter((p) => p.row != null && p.col != null).length, 1);
@@ -81,6 +85,7 @@ test('native token markers do not count as deployed operators in the client cap 
   const summon = { uid: 't10', kind: 'token', row: 9, col: 8, legalTiles: ['9,9'] };
   const state = { phase: 'prep', deployCap: 1, pieces: [operator, summon, candidate], summons: [summon] };
   assert.equal(canDrop(state, 9, { area: 'board', row: 9, col: 9 }), true, 'a token on the board does not occupy an operator deployment slot');
+  assert.deepEqual(legalTilesOf(state, 10), [[9, 9]], 'native summon placement preview remains available at the operator cap');
 });
 
 test('a legacy save over the current cap stays readable and can be recovered by benching an operator', () => {
