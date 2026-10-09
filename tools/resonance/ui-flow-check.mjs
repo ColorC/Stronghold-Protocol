@@ -87,23 +87,51 @@ try {
     await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30000 });
     const state = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, replaySession);
     check('existing-session-loaded', !!state?.sessionId || !!state?.phase, state?.phase);
-    check('existing-session-has-round-8', (state?.history || []).some(x => x.type === 'fight-settled' && x.round === 8), (state?.history || []).map(x => x.round));
+    const round8 = (state?.history || []).find(x => x.type === 'fight-settled' && x.round === 8);
+    check('existing-session-has-round-8', !!round8, (state?.history || []).map(x => x.round));
+    check('existing-session-rests-at-choice', state.phase === 'choice', state.phase);
     receipt.initialRevision = state.revision;
     await button(page, '查看战报|战报'); await page.waitForSelector('#rs-section-battle-report', { timeout: 15000 });
-    const row = await page.$('#rs-section-battle-report article');
-    if (!row) throw new Error('battle report has no settled round to replay');
-    const round8Row = await page.evaluateHandle(() => [...document.querySelectorAll('#rs-section-battle-report article')].find(e => /第\s*8\s*场/.test(e.innerText)) || null);
-    const targetRow = round8Row.asElement();
-    if (!targetRow) { await round8Row.dispose(); throw new Error('round 8 report row is missing'); }
-    await targetRow.$eval('button', el => el.click()); await round8Row.dispose(); await row.dispose();
+    if (Array.isArray(round8?.combatStats?.units) && round8.combatStats.units.length) {
+      check('round-8-stats-rendered', await page.$$('#rs-section-battle-report .rs-battle-report__unit').then(rows => rows.length) > 0,
+        'stored round-8 unit statistics appear in the report');
+    } else {
+      check('round-8-missing-stats-stay-unknown', await page.$eval('#rs-section-battle-report .rs-battle-report__empty', e => e.innerText.trim()).catch(() => '') === '此场战斗没有单位统计。',
+        'old history without unit statistics is shown as unknown, not zero');
+    }
+    const round8Button = await page.$('#rs-section-battle-report .rs-battle-report__rounds #battle-report-8');
+    if (!round8Button) throw new Error('round 8 report selector is missing');
+    await round8Button.click();
+    await page.waitForFunction(() => document.querySelector('#rs-section-battle-report #battle-report-8')?.classList.contains('is-selected'), { timeout: 5000 });
+    await button(page, '回放');
     await page.waitForSelector('.rs-replay-native', { timeout: 15000 });
     check('stored-replay-round-8', /第\s*8\s*场/.test(await page.$eval('.rs-replay-native', e => e.innerText)), await page.$eval('.rs-replay-native', e => e.innerText));
+    const replayLayers = await page.evaluate(() => ({
+      shop: !!document.querySelector('.shopbar'), choice: !!document.querySelector('.rs-choice-full'),
+      result: !!document.querySelector('.rs-final-screen'), modal: !!document.querySelector('.modal'),
+      turnAction: !!document.querySelector('.rs-turn-action')
+    }));
+    check('replay-hides-gameplay-overlays', !Object.values(replayLayers).some(Boolean), replayLayers);
     await button(page, '暂停|继续');
     await page.waitForFunction(() => /继续/.test(document.querySelector('.rs-replay-native')?.innerText || ''), { timeout: 5000 });
     await page.select('.rs-replay-native select', '2');
     check('replay-speed-two', await page.$eval('.rs-replay-native select', e => e.value) === '2', 'speed selector is UI-driven');
     await shot(page, '12-existing-replay-r8');
     await button(page, '关闭'); await page.waitForFunction(() => !document.querySelector('.rs-replay-native'), { timeout: 5000 });
+    await page.waitForSelector('.rs-choice-full', { timeout: 10000 });
+    check('replay-close-restores-choice', await page.$('.rs-choice-full') !== null, 'pending choice overlay returns after replay closes');
+    await page.evaluate(() => { location.hash = 'replay-8'; });
+    await page.waitForSelector('.rs-replay-native', { timeout: 15000 });
+    check('replay-eight-deeplink', /第\s*8\s*场/.test(await page.$eval('.rs-replay-native', e => e.innerText)) &&
+      new URL(page.url()).searchParams.get('session') === replaySession, page.url());
+    const deepLinkLayers = await page.evaluate(() => ({
+      shop: !!document.querySelector('.shopbar'), choice: !!document.querySelector('.rs-choice-full'),
+      result: !!document.querySelector('.rs-final-screen'), modal: !!document.querySelector('.modal'),
+      turnAction: !!document.querySelector('.rs-turn-action')
+    }));
+    check('replay-deeplink-hides-gameplay-overlays', !Object.values(deepLinkLayers).some(Boolean), deepLinkLayers);
+    await button(page, '关闭'); await page.waitForFunction(() => !document.querySelector('.rs-replay-native'), { timeout: 5000 });
+    await page.waitForSelector('.rs-choice-full', { timeout: 10000 });
     const after = await page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, replaySession);
     check('replay-read-only-state', after.revision === state.revision, { before: state.revision, after: after.revision });
     check('replay-no-create-or-fight', receipt.creates === 0 && receipt.fights === 0, { creates: receipt.creates, fights: receipt.fights });
