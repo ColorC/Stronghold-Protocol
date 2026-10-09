@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, pairAdaptiveStandardRuns, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign, selectEconPactCopyTarget } from '../../tools/resonance/balance-campaign.mjs';
+import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, CARRY_ADAPTIVE_POLICY, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, carryItemScore, carryOperatorPowerFactor, carryTransferPreservesPacts, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, pairAdaptiveStandardRuns, planCarryAdaptiveDeployment, policyLevelTarget, repositionCarryAdaptiveTeam, routeProfiles as campaignRouteProfiles, runCampaign, selectAdaptiveCarry, selectEconPactCopyTarget, transferCarryEquipment } from '../../tools/resonance/balance-campaign.mjs';
 import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { getResonanceField } from '../../server/modes/resonance/battle.js';
-import { createSession } from '../../server/modes/resonance/session.js';
+import { applyAction, createSession, validateSession } from '../../server/modes/resonance/session.js';
 
 test('campaign coverage declares every environment and difficulty', () => {
   assert.equal(ENVIRONMENTS.length, 19);
@@ -93,9 +93,9 @@ test('adaptive-standard lowers reserves and gates refresh and population XP by H
 });
 
 test('adaptive compact runs retain profile identity and pair formal/refined runs by environment',()=>{
-  const compact=compactEconPactRun({environmentId:'origin_test',difficulty:'NORMAL',seed:7,policy:ADAPTIVE_STANDARD_POLICY,balanceProfile:'refined-standard',rows:[{round:1,level:3,roster:[{operatorId:'op',star:2,row:4,col:2,dir:null,equipment:['gear'],name:'Operator'}],mainPacts:['aegir'],goldAfter:4,goldBefore:6,won:true}],nodeEconomy:[],adaptivePlans:[{round:1,hp:50}],designatedCoreId:'op',coreStarMilestones:{2:1,3:null},diagnostics:{}} ,{includeAdaptiveDetails:true});
+  const compact=compactEconPactRun({environmentId:'origin_test',difficulty:'NORMAL',seed:7,policy:ADAPTIVE_STANDARD_POLICY,balanceProfile:'refined-standard',rows:[{round:1,level:3,roster:[{uid:'unit-uid',operatorId:'op',star:2,row:4,col:2,dir:null,equipment:['gear'],name:'Operator'}],mainPacts:['aegir'],goldAfter:4,goldBefore:6,won:true}],nodeEconomy:[],adaptivePlans:[{round:1,hp:50}],designatedCoreId:'op',coreStarMilestones:{2:1,3:null},diagnostics:{}} ,{includeAdaptiveDetails:true});
   assert.equal(compact.balanceProfile,'refined-standard');
-  assert.deepEqual(compact.nodes[0].deployed,[{operatorId:'op',star:2,row:4,col:2,dir:null,gearIds:['gear']}]);
+  assert.deepEqual(compact.nodes[0].deployed,[{uid:'unit-uid',operatorId:'op',star:2,row:4,col:2,dir:null,gearIds:['gear']}]);
   assert.equal(compact.nodes[0].hpPlan.hp,50);
 
   const formal={environmentId:'origin_aegir',balanceProfile:'formal',seed:11};
@@ -118,6 +118,110 @@ test('adaptive-standard executes a real no-recording campaign Battle and records
   assert.equal(run.adaptivePlans[0].bankTarget,0);
   assert.ok(run.rows[0].roster.length>0);
   for(const piece of run.rows[0].roster){assert.ok(Number.isInteger(piece.row));assert.ok(Number.isInteger(piece.col));assert.ok('dir'in piece);assert.ok(Array.isArray(piece.equipment));}
+});
+
+test('carry-adaptive chooses a 2-star designated core before a real main-pact fallback',()=>{
+  const catalog={environments:{origin_test:{identityPactId:'aegir'}},pacts:{},operators:{core:{cost:5,role:'frontline',charId:'core',pacts:['aegir']},fallback:{cost:4,role:'damage',charId:'fallback',pacts:['aegir']},wanqin:{cost:4,role:'damage',charId:'char_4119_wanqin',pacts:['aegir']},support:{cost:4,role:'support',charId:'support',pacts:['aegir']}}};
+  const state={environmentId:'origin_test',pieces:[{uid:'c',operatorId:'core',star:2,row:9,col:2,equipment:[]},{uid:'f',operatorId:'fallback',star:3,row:10,col:2,equipment:[]},{uid:'w',operatorId:'wanqin',star:3,row:11,col:2,equipment:[]},{uid:'s',operatorId:'support',star:3,row:12,col:2,equipment:[]}]};
+  assert.equal(selectAdaptiveCarry(state,catalog,'core').piece.uid,'c','the native 5-cost 2-star core wins even when alternatives have higher stars');
+  assert.equal(selectAdaptiveCarry(state,catalog,'missing').piece.uid,'f','fallback excludes Wanqin and support while preferring the strongest eligible main-pact damage/control');
+  const armor={effects:[{kind:'component_stat',params:{atk:15}},{kind:'component_stat',params:{hp:150}},{kind:'guardian',params:{}}]};
+  assert.ok(carryItemScore(armor,{role:'frontline'})>carryItemScore(armor,{role:'damage'}),'HP and defense components score for a frontline carry instead of only raw attack');
+});
+
+test('carry-adaptive completes one no-recording official Battle and emits carry/reposition plans',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:0x45434f4e,maxBattles:1,policy:CARRY_ADAPTIVE_POLICY});
+  assert.equal(run.battles,1);assert.equal(run.diagnostics.battleErrors,0);assert.equal(run.diagnostics.summonAnchorGaps.length,0);
+  const plan=run.carryPlans[run.rows[0].round];assert.ok(plan,'each node records the carry selected and gear carried');
+  assert.ok(plan.reposition&&Array.isArray(plan.reposition.desired)&&Array.isArray(plan.reposition.actual)&&Array.isArray(plan.reposition.moves));
+  assert.ok(plan.reposition.routeCoverage.frontlines.every(unit=>unit.blocksGround&&unit.nativeGroundRoutes.length>0),'frontline positions block actual native ground routes');
+  assert.ok(plan.reposition.routeCoverage.healers.every(unit=>unit.coveredFrontlines.length>0),'healer positions cover deployed frontlines when the field allows it');
+  const compact=compactEconPactRun(run);assert.ok(compact.nodes[0].carry.reposition.routeCoverage);assert.deepEqual(compact.carryTransfers,run.carryTransfers);
+});
+
+test('carry-adaptive repositions a real legal team through move-cycle buffer without changing bench or pool',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:123}),definition=ARCHETYPES.find(entry=>entry.id==='aegir-counter');
+  const scenario=buildScenario({data,catalog,definition,config:SCENARIO_CONFIGS.at(-1),coreStar:2,seed:319});let state=structuredClone(scenario.state);
+  const initial=createSession({seed:319,difficulty:'NORMAL',catalog,environmentId:'origin_aegir'}).state;
+  const expected=new Map(catalog.config.activeOperatorIds.map(id=>[id,Number(initial.poolRemaining[id]??0)+initial.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+initial.shop.offers.filter(offer=>offer.operatorId===id).length]));
+  for(const id of catalog.config.activeOperatorIds){const consumed=state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length;state.poolRemaining[id]=expected.get(id)-consumed;}
+  let gearUid=0;for(const piece of state.pieces)for(const item of piece.equipment)item.uid??=`scenario-gear-${gearUid++}`;
+  assert.equal(validateSession(state,{catalog}).ok,true);
+  const initialBench=state.pieces.filter(piece=>piece.row===null).length,initialPool=structuredClone(state.poolRemaining),coreId=state.pieces[0].operatorId;
+  const first=repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId:coreId});state=first.state;
+  assert.ok(first.plan.moves.length>0,'the runtime realizes desired native placements through official moves/turns');
+  const classOf=piece=>catalog.operators[piece.operatorId]?.position;
+  const eligible=state.pieces.filter(piece=>piece.row!==null);
+  const pair=eligible.flatMap((a,index)=>eligible.slice(index+1).filter(b=>classOf(a)===classOf(b)&&`${a.row},${a.col}`!==`${b.row},${b.col}`).map(b=>[a,b]))[0];
+  assert.ok(pair,'fixture has a same-class pair suitable for an occupied-target cycle');
+  const [a,b]=pair,[ar,ac]=[a.row,a.col];a.row=b.row;a.col=b.col;b.row=ar;b.col=ac;
+  assert.equal(validateSession(state,{catalog}).ok,true,'swapping same-class legal cells retains a valid session state');
+  const cycled=repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId:coreId});state=cycled.state;
+  assert.ok(cycled.plan.moves.some(move=>move.action==='buffer'),'the occupied cycle is resolved by a real temporary legal move');
+  assert.equal(state.pieces.filter(piece=>piece.row===null).length,initialBench,'reposition never uses the finite bench as temporary storage');
+  assert.deepEqual(state.poolRemaining,initialPool,'movement preserves the native operator pool');
+  assert.equal(validateSession(state,{catalog}).ok,true,'all final positions remain legal under the session validator');
+});
+
+test('carry-adaptive transfers finished gear via official unequip/equip actions and refuses full inventory or pact breakpoint loss',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_aegir',seed:123}),definition=ARCHETYPES.find(entry=>entry.id==='aegir-counter');
+  const scenario=buildScenario({data,catalog,definition,config:SCENARIO_CONFIGS.at(-1),coreStar:2,seed:319});let state=structuredClone(scenario.state);
+  const initial=createSession({seed:319,difficulty:'NORMAL',catalog,environmentId:'origin_aegir'}).state;
+  const expected=new Map(catalog.config.activeOperatorIds.map(id=>[id,Number(initial.poolRemaining[id]??0)+initial.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+initial.shop.offers.filter(offer=>offer.operatorId===id).length]));
+  for(const id of catalog.config.activeOperatorIds){const consumed=state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length;state.poolRemaining[id]=expected.get(id)-consumed;}
+  let gearUid=0;for(const piece of state.pieces)for(const item of piece.equipment)item.uid??=`scenario-gear-${gearUid++}`;
+  const sourceCore=state.pieces[0],donor=state.pieces.find(piece=>piece.uid!==sourceCore.uid&&catalog.operators[piece.operatorId]?.role==='frontline'&&!piece.equipment.length),target=state.pieces.find(piece=>catalog.operators[piece.operatorId]?.role==='damage'&&catalog.operators[piece.operatorId]?.cost===3&&catalog.operators[piece.operatorId]?.pacts?.includes('aegir'));
+  const item=sourceCore.equipment.find(entry=>entry.itemId==='giantSlayer');assert.ok(donor&&target&&item);
+  const dispatch=(current,action)=>{const result=applyAction(current,{...action,expectedRevision:current.revision},{catalog});assert.equal(result.ok,true,`official ${action.type} action is legal: ${result.error??''}`);return result.state;};
+  state=dispatch(state,{type:'unequip',pieceUid:sourceCore.uid,itemUid:item.uid});state=dispatch(state,{type:'equip',pieceUid:donor.uid,itemUid:item.uid});
+  const uniqueBefore=[...state.inventory,...state.pieces.flatMap(piece=>piece.equipment)].map(entry=>entry.uid).sort(),poolBefore=structuredClone(state.poolRemaining),goldBefore=state.gold,aegirCountBefore=new Set(state.pieces.filter(piece=>piece.row!==null&&[...(catalog.operators[piece.operatorId]?.pacts??[]),...(piece.extraPacts??[])].includes('aegir')).map(piece=>catalog.operators[piece.operatorId]?.charId)).size;
+  const moved=transferCarryEquipment(state,catalog,{coreOperatorId:target.operatorId});state=moved.state;
+  assert.ok(moved.moves.length>0&&moved.moves.length<=3,'finished gear moves only when it yields clear role-specific gain and respects the carry three-slot cap');
+  assert.ok(moved.moves.every(move=>move.targetUid===target.uid&&move.targetCost===3&&move.sourceUid!==target.uid&&Number.isFinite(move.sourceCost)));
+  assert.ok(state.pieces.find(piece=>piece.uid===target.uid).equipment.some(entry=>entry.uid===item.uid));
+  assert.deepEqual([...state.inventory,...state.pieces.flatMap(piece=>piece.equipment)].map(entry=>entry.uid).sort(),uniqueBefore,'equipment instance UIDs are conserved across the official actions');
+  assert.deepEqual(state.poolRemaining,poolBefore,'equipment transfer does not change native operator pool');
+  assert.equal(state.gold,goldBefore,'official unequip/equip transfer has no invented gold cost or income');
+  const aegirCountAfter=new Set(state.pieces.filter(piece=>piece.row!==null&&[...(catalog.operators[piece.operatorId]?.pacts??[]),...(piece.extraPacts??[])].includes('aegir')).map(piece=>catalog.operators[piece.operatorId]?.charId)).size;assert.equal(aegirCountAfter,aegirCountBefore,'non-pact item transfer preserves current main-pact membership');
+  assert.equal(validateSession(state,{catalog}).ok,true);
+
+  const full=structuredClone(state);while(full.inventory.length<20)full.inventory.push({uid:`capacity-${full.inventory.length}`,itemId:'blade'});assert.equal(validateSession(full,{catalog}).ok,true,'full but valid inventory fixture sits at the native capacity');
+  const fullBefore=JSON.stringify(full.pieces.map(piece=>piece.equipment.map(entry=>entry.uid))),blocked=transferCarryEquipment(full,catalog,{coreOperatorId:target.operatorId});
+  assert.equal(blocked.moves.length,0,'a full 20-item inventory blocks unequip-based transfer without a failing action');assert.equal(JSON.stringify(blocked.state.pieces.map(piece=>piece.equipment.map(entry=>entry.uid))),fullBefore);
+  const pactState={environmentId:'origin_test',pieces:[{uid:'source',operatorId:'nonAegir',row:1,col:1,extraPacts:[],equipment:[{uid:'transfer',itemId:'aegirTransfer'}]},{uid:'carry',operatorId:'aegirNative',row:1,col:2,extraPacts:[],equipment:[]}]};
+  const pactCatalog={operators:{nonAegir:{charId:'non-aegir',pacts:[]},aegirNative:{charId:'aegir-carry',pacts:['aegir']}},equipment:catalog.equipment,pacts:{aegir:{thresholds:[2]}},environments:{origin_test:{identityPactId:'aegir'}}};
+  assert.equal(carryTransferPreservesPacts(pactState,pactCatalog,pactState.pieces[0],pactState.pieces[1],pactState.pieces[0].equipment[0]),false,'a transfer emblem stays with its owner when moving it would remove the active two-member breakpoint');
+});
+
+test('carry-adaptive transfers finished damage gear from a 1-cost carrier to a stronger 3-cost main-pact SilverAsh through legal actions',()=>{
+  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data',{log:{warn(){},error(){},info(){}}});
+  const catalog=getResonanceCatalog(data,{environmentId:'origin_kjerag',seed:2}),definition=ARCHETYPES.find(entry=>entry.id==='snow');
+  const roster=makePactTerminalRoster(catalog,10,2).roster,replace=roster.findIndex(piece=>piece.name==='烛煌'),donorSlot=roster.findIndex(piece=>piece.name==='荒芜拉普兰德');assert.ok(replace>=0&&donorSlot>=0);
+  roster[replace]={...roster[replace],operatorId:'chess_char_4_22_a',name:'银灰',role:'damage',equipment:[],extraPacts:[]};
+  roster[donorSlot]={...roster[donorSlot],operatorId:'chess_char_1_06_a',name:'刺玫',role:'damage',equipment:[],extraPacts:[]};
+  const scenario=buildScenario({data,catalog,definition,config:SCENARIO_CONFIGS.at(-1),coreStar:2,seed:319,rosterOverride:roster});let state=structuredClone(scenario.state);
+  const initial=createSession({seed:319,difficulty:'NORMAL',catalog,environmentId:'origin_kjerag'}).state;
+  const expected=new Map(catalog.config.activeOperatorIds.map(id=>[id,Number(initial.poolRemaining[id]??0)+initial.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+initial.shop.offers.filter(offer=>offer.operatorId===id).length]));
+  for(const id of catalog.config.activeOperatorIds){const consumed=state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length;state.poolRemaining[id]=expected.get(id)-consumed;}
+  let gearUid=0;for(const piece of state.pieces)for(const item of piece.equipment)item.uid??=`silverash-gear-${gearUid++}`;
+  const silverash=state.pieces.find(piece=>piece.operatorId==='chess_char_4_22_a'),donor=state.pieces.find(piece=>piece.operatorId==='chess_char_1_06_a'),source=state.pieces[0];
+  assert.ok(silverash&&donor&&silverash.star===2&&donor.star===2);
+  assert.equal(catalog.operators[silverash.operatorId].cost,3);assert.equal(catalog.operators[silverash.operatorId].role,'damage');assert.ok(catalog.operators[silverash.operatorId].pacts.includes('kjerag'));
+  assert.equal(catalog.operators[donor.operatorId].cost,1);assert.equal(catalog.operators[donor.operatorId].role,'damage');
+  const dispatch=(current,action)=>{const result=applyAction(current,{...action,expectedRevision:current.revision},{catalog});assert.equal(result.ok,true,`official ${action.type} action is legal: ${result.error??''}`);return result.state;};
+  const item=source.equipment[0];assert.ok(item,'fixture has a finished item available for the native transfer path');
+  state=dispatch(state,{type:'unequip',pieceUid:source.uid,itemUid:item.uid});state=dispatch(state,{type:'equip',pieceUid:donor.uid,itemUid:item.uid});
+  assert.equal(validateSession(state,{catalog}).ok,true);
+  const sourcePower=estimateOperatorPower(catalog.operators[donor.operatorId],donor.star),targetPower=estimateOperatorPower(catalog.operators[silverash.operatorId],silverash.star);
+  assert.ok(targetPower>sourcePower*1.05,`compiled same-role star power differentiates SilverAsh (${targetPower}) from the low-cost carrier (${sourcePower})`);
+  assert.ok(carryOperatorPowerFactor(catalog.operators[silverash.operatorId],2,catalog)>carryOperatorPowerFactor(catalog.operators[donor.operatorId],2,catalog),'same-star same-role scoring retains actual compiled operator power');
+  assert.ok(carryOperatorPowerFactor(catalog.operators[silverash.operatorId],2,catalog)>carryOperatorPowerFactor(catalog.operators[silverash.operatorId],1,catalog),'the fixed one-star role baseline preserves the actual 1-to-2-star power increase');
+  const moved=transferCarryEquipment(state,catalog,{coreOperatorId:silverash.operatorId});
+  assert.ok(moved.moves.some(entry=>entry.sourceUid===donor.uid&&entry.targetUid===silverash.uid&&entry.itemUid===item.uid),`the real finished item transfers to SilverAsh; moves=${JSON.stringify(moved.moves)}`);
+  const record=moved.moves.find(entry=>entry.itemUid===item.uid);assert.equal(record.sourceCost,1);assert.equal(record.targetCost,3);assert.ok(record.targetPowerFactor>record.sourcePowerFactor);
+  assert.equal(validateSession(moved.state,{catalog}).ok,true,'official unequip/equip transfer preserves a valid native session');
 });
 
 test('econ-pact reserves universal copies for the level-9 core and spends late copies on a real merge if no core exists',()=>{

@@ -23,6 +23,7 @@ const nativeDataSource=toDataSource(data);
 const catalogCache=new Map();
 const poolLedgers=new WeakMap();
 const routeAssignmentsByState=new WeakMap();
+const carryPowerBaselines=new WeakMap();
 let activeMetrics=null;
 let activePolicy={id:'legacy',coreOperatorId:null,rushReleased:false};
 const goalLevel=(round)=>round>=26?10:round>=22?9:round>=17?8:round>=9?6:3;
@@ -30,7 +31,8 @@ const bankFloor=(round)=>round>=24?0:round>=18?10:round>=9?20:round>=4?10:0;
 export const CAMPAIGN_POLICIES=Object.freeze(['tempo','reroll','rush']);
 export const ECON_PACT_POLICY='econ-pact';
 export const ADAPTIVE_STANDARD_POLICY='adaptive-standard';
-const isEconomyCampaignPolicy=policy=>policy===ECON_PACT_POLICY||policy===ADAPTIVE_STANDARD_POLICY;
+export const CARRY_ADAPTIVE_POLICY='carry-adaptive';
+const isEconomyCampaignPolicy=policy=>policy===ECON_PACT_POLICY||policy===ADAPTIVE_STANDARD_POLICY||policy===CARRY_ADAPTIVE_POLICY;
 export function policyLevelTarget(policy,round){
   if(policy==='tempo')return round>=24?9:round>=18?8:round>=13?7:round>=9?6:round>=5?5:round>=3?4:3;
   if(policy==='reroll')return round>=24?9:round>=18?8:round>=13?7:round>=9?6:round>=6?5:round>=3?4:3;
@@ -226,13 +228,47 @@ function itemUtility(item,operator){
   }
   return value;
 }
-function equipmentOwnerUtility(item,piece,state,catalog){
-  const op=opById(catalog,piece.operatorId),base=itemUtility(item,op);if(!op)return base;
+export function carryOperatorPowerFactor(operator,star,catalog){
+  if(!operator||!catalog?.operators)return 1;
+  const key=`${operator.role??'damage'}:${star}`;
+  let baselines=carryPowerBaselines.get(catalog);
+  if(!baselines){baselines=new Map();carryPowerBaselines.set(catalog,baselines);}
+  let baseline=baselines.get(key);
+  if(!baseline){
+    const values=Object.values(catalog.operators).filter(candidate=>candidate.role===(operator.role??'damage'))
+      .map(candidate=>estimateOperatorPower(candidate,1)).filter(value=>Number.isFinite(value)&&value>0).sort((a,b)=>a-b);
+    baseline=values.length?values[Math.floor(values.length/2)]:estimateOperatorPower(operator,star)||1;
+    baselines.set(key,baseline);
+  }
+  const power=estimateOperatorPower(operator,star);
+  return Math.max(.5,Math.min(2.5,(power>0?power:baseline)/baseline));
+}
+function equipmentTransferBonus(item,piece,state,catalog){
+  const op=opById(catalog,piece.operatorId);if(!op)return 0;
   let bonus=0;for(const effect of item?.effects??[]){if(!['transfer_pact','pact_transfer'].includes(effect.kind))continue;const id=effect.params?.pactId;if(!id||piecePactIds(piece,catalog).has(id))continue;
     const members=new Set(state.pieces.filter(other=>other.row!==null&&piecePactIds(other,catalog).has(id)).map(other=>opById(catalog,other.operatorId)?.charId).filter(Boolean));
     if(!members.has(op.charId)){const thresholds=catalog.pacts?.[id]?.thresholds??[];bonus+=id===catalog.environments?.[state.environmentId]?.identityPactId?100:Math.max(5,thresholds.length*3);}
   }
-  return base+bonus;
+  return bonus;
+}
+function equipmentOwnerUtility(item,piece,state,catalog){
+  return itemUtility(item,opById(catalog,piece.operatorId))+equipmentTransferBonus(item,piece,state,catalog);
+}
+function carryEquipmentOwnerUtility(item,piece,state,catalog){
+  const op=opById(catalog,piece.operatorId);
+  return itemUtility(item,op)*carryOperatorPowerFactor(op,piece.star??1,catalog)+equipmentTransferBonus(item,piece,state,catalog);
+}
+function policyEquipmentOwnerUtility(item,piece,state,catalog){
+  return activePolicy.id===CARRY_ADAPTIVE_POLICY?carryEquipmentOwnerUtility(item,piece,state,catalog):equipmentOwnerUtility(item,piece,state,catalog);
+}
+export function carryItemScore(item,operator){
+  const role=operator?.role??'damage',attacker=role==='damage'||role==='control';let value=0;
+  for(const effect of item?.effects??[]){const p=effect.params??{};
+    if(effect.kind==='component_stat')value+=Number(p.atk??0)*(attacker ? .08 : .035)+Number(p.aspd??0)*(attacker ? .07 : .025)+Number(p.def??0)*(role==='frontline' ? .05 : .01)+Number(p.hp??0)*(role==='frontline' ? .025 : role==='healer'||role==='support' ? .018 : .006)+Number(p.res??0)*.015+Number(p.sp??0)*5+Number(p.initialSp??0)*.2;
+    else if(['transfer_pact','pact_transfer'].includes(effect.kind))continue;
+    else value+=3;
+  }
+  return value;
 }
 export function claimOptions(choice,state,catalog){
   const count=Math.min(choice.remaining,choice.options.length);
@@ -810,7 +846,7 @@ function equipAndCombine(state,catalog){
     for(let i=0;i<state.inventory.length;i++)for(let j=i+1;j<state.inventory.length;j++){
       const a=state.inventory[i],b=state.inventory[j],recipe=catalog.recipes.find(r=>r.parts?.length===2&&((r.parts[0]===a.itemId&&r.parts[1]===b.itemId)||(r.parts[0]===b.itemId&&r.parts[1]===a.itemId)));
       if(!recipe)continue;
-      const owner=state.pieces.filter(piece=>piece.row!==null).sort((x,y)=>equipmentOwnerUtility(catalog.equipment[recipe.resultId],y,state,catalog)-equipmentOwnerUtility(catalog.equipment[recipe.resultId],x,state,catalog))[0];
+      const owner=state.pieces.filter(piece=>piece.row!==null).sort((x,y)=>policyEquipmentOwnerUtility(catalog.equipment[recipe.resultId],y,state,catalog)-policyEquipmentOwnerUtility(catalog.equipment[recipe.resultId],x,state,catalog))[0];
       const base=itemUtility(catalog.equipment[a.itemId],opById(catalog,owner?.operatorId))+itemUtility(catalog.equipment[b.itemId],opById(catalog,owner?.operatorId));
       const delta=itemUtility(catalog.equipment[recipe.resultId],opById(catalog,owner?.operatorId))-base;
       if(delta>0&&(!best||delta>best.delta))best={a,b,delta};
@@ -820,20 +856,141 @@ function equipAndCombine(state,catalog){
   }
   const ordered=[...state.inventory].sort((a,b)=>{
     const deployed=state.pieces.filter(p=>p.row!==null);
-    const sa=Math.max(0,...deployed.map(p=>equipmentOwnerUtility(catalog.equipment[a.itemId],p,state,catalog)*(1+p.star*.35)));
-    const sb=Math.max(0,...deployed.map(p=>equipmentOwnerUtility(catalog.equipment[b.itemId],p,state,catalog)*(1+p.star*.35)));return sb-sa||a.uid.localeCompare(b.uid);
+    const sa=Math.max(0,...deployed.map(p=>policyEquipmentOwnerUtility(catalog.equipment[a.itemId],p,state,catalog)*(1+p.star*.35)));
+    const sb=Math.max(0,...deployed.map(p=>policyEquipmentOwnerUtility(catalog.equipment[b.itemId],p,state,catalog)*(1+p.star*.35)));return sb-sa||a.uid.localeCompare(b.uid);
   });
   for(const item of ordered){
-    const owners=state.pieces.filter(p=>p.row!==null&&p.equipment.length<3&&!p.equipment.some(owned=>owned.itemId===item.itemId)&&equipmentOwnerUtility(catalog.equipment[item.itemId],p,state,catalog)>0).sort((a,b)=>equipmentOwnerUtility(catalog.equipment[item.itemId],b,state,catalog)*(1+b.star*.35)-equipmentOwnerUtility(catalog.equipment[item.itemId],a,state,catalog)*(1+a.star*.35)||a.uid.localeCompare(b.uid));
+    const owners=state.pieces.filter(p=>p.row!==null&&p.equipment.length<3&&!p.equipment.some(owned=>owned.itemId===item.itemId)&&policyEquipmentOwnerUtility(catalog.equipment[item.itemId],p,state,catalog)>0).sort((a,b)=>policyEquipmentOwnerUtility(catalog.equipment[item.itemId],b,state,catalog)*(1+b.star*.35)-policyEquipmentOwnerUtility(catalog.equipment[item.itemId],a,state,catalog)*(1+a.star*.35)||a.uid.localeCompare(b.uid));
     const owner=owners[0];if(!owner)break;
     state=runAction(state,{type:'equip',pieceUid:owner.uid,itemUid:item.uid},catalog).state;
   }
   return state;
 }
 
+export function selectAdaptiveCarry(state,catalog,coreOperatorId=null){
+  const deployed=state.pieces.filter(piece=>piece.row!==null),core=deployed.filter(piece=>piece.operatorId===coreOperatorId&&piece.star>=2)
+    .sort((a,b)=>b.star-a.star||estimateOperatorPower(opById(catalog,b.operatorId),b.star)-estimateOperatorPower(opById(catalog,a.operatorId),a.star)||a.uid.localeCompare(b.uid))[0];
+  if(core)return {piece:core,kind:'designated-core'};
+  const pactId=catalog.environments?.[state.environmentId]?.identityPactId;
+  const eligible=deployed.filter(piece=>{
+    const op=opById(catalog,piece.operatorId);
+    return op&&[3,4].includes(Number(op.cost))&&['damage','control'].includes(op.role)&&piecePactIds(piece,catalog).has(pactId)&&!String(op.charId??'').includes('4119_wanqin')&&!String(op.sourceChessId??'').includes('4119_wanqin');
+  }).sort((a,b)=>b.star-a.star||estimateOperatorPower(opById(catalog,b.operatorId),b.star)-estimateOperatorPower(opById(catalog,a.operatorId),a.star)||(opById(catalog,b.operatorId)?.cost??0)-(opById(catalog,a.operatorId)?.cost??0)||a.uid.localeCompare(b.uid))[0];
+  return eligible?{piece:eligible,kind:'main-pact-carry'}:null;
+}
+
+export function carryTransferPreservesPacts(state,catalog,source,target,item){
+  const deployed=state.pieces.filter(piece=>piece.row!==null),before=pactMemberCounts(deployed,catalog);
+  const simulated=deployed.map(piece=>piece.uid===source.uid?{...piece,equipment:piece.equipment.filter(entry=>entry.uid!==item.uid)}:piece.uid===target.uid?{...piece,equipment:[...piece.equipment,item]}:piece);
+  const after=pactMemberCounts(simulated,catalog);
+  for(const [id,count] of before){
+    const thresholds=catalog.pacts?.[id]?.thresholds??catalog.pacts?.[id]?.levels?.map(level=>level.threshold)??[];
+    if(thresholds.some(threshold=>count>=threshold&&(after.get(id)??0)<threshold))return false;
+  }
+  return true;
+}
+
+export function transferCarryEquipment(state,catalog,{coreOperatorId=null}={}){
+  const selected=selectAdaptiveCarry(state,catalog,coreOperatorId),moves=[];
+  if(!selected){const plan={round:state.round,kind:null,uid:null,operatorId:null,name:null,cost:null,star:null,gear:[],moves,reposition:activeMetrics?.carryRepositionPlans?.[state.round]??null};if(activeMetrics)activeMetrics.carryPlans[state.round]=plan;return {state,carry:plan,moves};}
+  const targetUid=selected.piece.uid;
+  for(let pass=0;pass<3;pass++){
+    const target=state.pieces.find(piece=>piece.uid===targetUid);if(!target||target.equipment.length>=3)break;
+    const already=new Set(target.equipment.map(item=>item.itemId));
+    const candidates=[];
+    for(const source of state.pieces){
+      if(source.uid===target.uid||source.row===null)continue;
+      const sourceOp=opById(catalog,source.operatorId),sourceItems=source.equipment??[];
+      for(const item of sourceItems){
+        if(already.has(item.itemId)||catalog.recipes.some(recipe=>recipe.parts?.includes(item.itemId)))continue;
+        const itemDef=catalog.equipment?.[item.itemId];if(!itemDef)continue;
+        const donorFactor=carryOperatorPowerFactor(sourceOp,source.star??1,catalog),targetOp=opById(catalog,target.operatorId),targetFactor=carryOperatorPowerFactor(targetOp,target.star??1,catalog);
+        const donorScore=carryItemScore(itemDef,sourceOp)*donorFactor+equipmentTransferBonus(itemDef,source,state,catalog);
+        const targetScore=carryItemScore(itemDef,targetOp)*targetFactor+equipmentTransferBonus(itemDef,target,state,catalog),gain=targetScore-donorScore;
+        if(gain<1||targetScore<donorScore*1.05||!carryTransferPreservesPacts(state,catalog,source,target,item))continue;
+        candidates.push({source,item,sourceOp,donorScore,targetScore,gain});
+      }
+    }
+    candidates.sort((a,b)=>b.gain-a.gain||a.source.uid.localeCompare(b.source.uid)||a.item.uid.localeCompare(b.item.uid));
+    const best=candidates[0];
+    if(!best||state.inventory.length>=20)break;
+    const sourceBefore=best.source.equipment.map(item=>item.itemId),targetBefore=target.equipment.map(item=>item.itemId);
+    state=runAction(state,{type:'unequip',itemUid:best.item.uid},catalog).state;
+    state=runAction(state,{type:'equip',pieceUid:target.uid,itemUid:best.item.uid},catalog).state;
+    const liveTarget=state.pieces.find(piece=>piece.uid===target.uid),liveSource=state.pieces.find(piece=>piece.uid===best.source.uid);
+    const move={round:state.round,sourceUid:best.source.uid,sourceOperatorId:best.source.operatorId,sourceCost:best.sourceOp?.cost??null,sourcePower:estimateOperatorPower(best.sourceOp,best.source.star),sourcePowerFactor:carryOperatorPowerFactor(best.sourceOp,best.source.star,catalog),targetUid:target.uid,targetOperatorId:target.operatorId,targetCost:opById(catalog,target.operatorId)?.cost??null,targetPower:estimateOperatorPower(opById(catalog,target.operatorId),target.star),targetPowerFactor:carryOperatorPowerFactor(opById(catalog,target.operatorId),target.star,catalog),itemUid:best.item.uid,itemId:best.item.itemId,scoreBefore:best.donorScore,scoreAfter:best.targetScore,scoreGain:best.gain,sourceGearBefore:sourceBefore,sourceGearAfter:liveSource?.equipment.map(item=>item.itemId)??[],targetGearBefore:targetBefore,targetGearAfter:liveTarget?.equipment.map(item=>item.itemId)??[]};
+    moves.push(move);
+    if(activeMetrics){activeMetrics.carryTransfers.push(move);const record=activeMetrics.carryPlans[state.round];if(record)record.moves.push(move);}
+  }
+  const carry=state.pieces.find(piece=>piece.uid===targetUid),operator=carry&&opById(catalog,carry.operatorId);
+  const plan={round:state.round,kind:selected.kind,uid:carry?.uid??null,operatorId:carry?.operatorId??null,name:operator?.name??null,cost:operator?.cost??null,star:carry?.star??null,gear:carry?.equipment.map(item=>item.itemId)??[],moves,reposition:activeMetrics?.carryRepositionPlans?.[state.round]??null};
+  if(activeMetrics)activeMetrics.carryPlans[state.round]=plan;
+  return {state,carry:plan,moves};
+}
+
+export function planCarryAdaptiveDeployment(state,catalog,{coreOperatorId=null}={}){
+  const field=activeBattleFields(state,catalog),profiles=routeProfiles(field),ground=groundRouteEntries(field,profiles),bossIds=bossRouteIndices(field);
+  const bossIndex=profiles.findIndex(route=>route.originalIndices?.some(index=>bossIds.has(index))),units=state.pieces.filter(piece=>piece.row!==null),carry=selectAdaptiveCarry(state,catalog,coreOperatorId)?.piece??null;
+  const roleOrder=units.slice().sort((a,b)=>{
+    const ao=opById(catalog,a.operatorId),bo=opById(catalog,b.operatorId),priority=piece=>{
+      const op=opById(catalog,piece.operatorId);if(op?.role==='frontline')return 0;if(op?.role==='healer')return 1;if(piece.uid===carry?.uid)return 2;if(canAttackAir(op))return 3;if(['damage','control','summoner'].includes(op?.role))return 4;return 5;
+    };return priority(a)-priority(b)||candidatePower(b,catalog)-candidatePower(a,catalog)||a.uid.localeCompare(b.uid);
+  });
+  const occupied=new Set(),load=Array(profiles.length).fill(0),reserved=new Set(),frontlines=[],desired=[],assignedFrontRoutes=new Set();let frontCursor=0;
+  for(const piece of roleOrder){
+    const live=state.pieces.find(entry=>entry.uid===piece.uid),op=opById(catalog,live.operatorId);if(!op)continue;
+    let routeIndex=null;
+    if(op.role==='frontline'&&ground.length){
+      const bossGround=live.uid===carry?.uid&&ground.find(entry=>entry.index===bossIndex);
+      routeIndex=bossGround?.index??ground.find(entry=>!assignedFrontRoutes.has(entry.index))?.index??ground[frontCursor%ground.length].index;assignedFrontRoutes.add(routeIndex);frontCursor++;
+    }else if(bossIndex>=0&&live.uid===carry?.uid)routeIndex=bossIndex;
+    const tile=deploymentCell(state,catalog,field,op,occupied,load,reserved,summonSpecs(live,catalog),{star:live.star,routeIndex,frontlines});
+    if(!tile){desired.push({uid:live.uid,operatorId:live.operatorId,role:op.role,from:[live.row,live.col,live.dir],to:null,reason:'no-legal-target'});continue;}
+    const entry={uid:live.uid,operatorId:live.operatorId,role:op.role,from:[live.row,live.col,live.dir],to:[tile.row,tile.col,tile.dir],routeIndex:tile.routeIndex};desired.push(entry);occupied.add(tile.key);load[tile.routeIndex]=(load[tile.routeIndex]??0)+1;
+    if(op.role==='frontline')frontlines.push({row:tile.row,col:tile.col,routeIndex:tile.routeIndex,uid:live.uid});
+    const specs=summonSpecs(live,catalog);if(specs.length){const anchors=summonAnchors(op.stars[live.star].record,specs,field,tile.row,tile.col,tile.dir,occupied,reserved);for(const anchor of anchors)reserved.add(anchor);}
+  }
+  return {field,profiles,ground,bossIndex,carry,desired,reserved:[...reserved]};
+}
+
+export function repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId=null}={}){
+  const plan=planCarryAdaptiveDeployment(state,catalog,{coreOperatorId}),pending=new Set(plan.desired.filter(entry=>entry.to).map(entry=>entry.uid)),moves=[],reasons=[];
+  const destination=new Map(plan.desired.filter(entry=>entry.to).map(entry=>[entry.uid,entry.to]));
+  const planKeys=new Set([...destination.values()].map(([row,col])=>`${row},${col}`)),reserved=new Set(plan.reserved);
+  let guard=0;
+  while(pending.size&&guard++<100){
+    const ready=[...pending].find(uid=>{const piece=state.pieces.find(entry=>entry.uid===uid),to=destination.get(uid);return piece&&(piece.row===to[0]&&piece.col===to[1]||!state.pieces.some(other=>other.uid!==uid&&other.row===to[0]&&other.col===to[1]));});
+    if(ready){
+      const piece=state.pieces.find(entry=>entry.uid===ready),to=destination.get(ready),from=[piece.row,piece.col,piece.dir];
+      if(piece.row!==to[0]||piece.col!==to[1])state=runAction(state,{type:'move',pieceUid:piece.uid,row:to[0],col:to[1],dir:to[2]},catalog).state;
+      else if(piece.dir!==to[2])state=runAction(state,{type:'turn',pieceUid:piece.uid,dir:to[2]},catalog).state;
+      moves.push({uid:piece.uid,operatorId:piece.operatorId,action:from[0]===to[0]&&from[1]===to[1]?'turn':'move',from,to});pending.delete(ready);continue;
+    }
+    const uid=[...pending][0],piece=state.pieces.find(entry=>entry.uid===uid),op=opById(catalog,piece?.operatorId),target=destination.get(uid),blocker=target&&state.pieces.find(other=>other.uid!==uid&&other.row===target[0]&&other.col===target[1]);
+    if(blocker&&!pending.has(blocker.uid)){reasons.push({kind:'desired-cell-held-by-fixed-unit',uid,blockerUid:blocker.uid,target});break;}
+    const buffer=[...plan.field.deployMap.keys()].filter(key=>{
+      if(planKeys.has(key)||reserved.has(key)||state.pieces.some(other=>other.row!==null&&`${other.row},${other.col}`===key))return false;
+      const [row,col]=key.split(',').map(Number);return canOperatorUseTile(op,plan.field.deployMap,row,col)&&(op?.role!=='frontline'||canBlockGround(plan.field,row,col));
+    }).sort()[0];
+    if(!piece||!buffer){reasons.push({kind:'no-legal-buffer-for-move-cycle',uids:[...pending]});break;}
+    const [row,col]=buffer.split(',').map(Number),from=[piece.row,piece.col,piece.dir],toward=destination.get(uid),dir=toward?.[2]??piece.dir;
+    state=runAction(state,{type:'move',pieceUid:uid,row,col,dir},catalog).state;
+    moves.push({uid,operatorId:piece.operatorId,action:'buffer',from,to:[row,col,dir]});
+  }
+  if(guard>=100&&pending.size)reasons.push({kind:'move-loop-guard',uids:[...pending]});
+  const actual=plan.desired.map(entry=>{const piece=state.pieces.find(item=>item.uid===entry.uid);return {uid:entry.uid,operatorId:entry.operatorId,role:entry.role,desired:entry.to,actual:piece?[piece.row,piece.col,piece.dir]:null,routeIndex:entry.routeIndex,reason:entry.reason??null};});
+  const carry=state.pieces.find(piece=>piece.uid===plan.carry?.uid),carryOp=carry&&opById(catalog,carry.operatorId),carryRoutes=carry?operatorRouteCoverage(carryOp,carry.star,carry.row,carry.col,carry.dir,plan.profiles):[],bossRouteOriginalIndices=plan.bossIndex>=0?plan.profiles[plan.bossIndex]?.originalIndices??[]:[];
+  const frontPieces=state.pieces.filter(piece=>piece.row!==null&&opById(catalog,piece.operatorId)?.role==='frontline');
+  const routeCoverage={frontlines:frontPieces.map(piece=>({uid:piece.uid,position:[piece.row,piece.col],blocksGround:canBlockGround(plan.field,piece.row,piece.col),nativeGroundRoutes:plan.ground.filter(entry=>routeDistance(piece.row,piece.col,entry.route)===0).map(entry=>entry.index)})),healers:state.pieces.filter(piece=>piece.row!==null&&opById(catalog,piece.operatorId)?.role==='healer').map(piece=>({uid:piece.uid,coveredFrontlines:frontPieces.filter(front=>operatorRouteCoverage(opById(catalog,piece.operatorId),piece.star,piece.row,piece.col,piece.dir,[{points:[[front.row,front.col]]}]).length>0).map(front=>front.uid)})),carryBossCoverage:{uid:carry?.uid??null,coveredRoutes:carryRoutes,bossRouteOriginalIndices,coveredBossRoute:bossRouteOriginalIndices.some(index=>plan.profiles.some((route,routeIndex)=>route.originalIndices?.includes(index)&&carryRoutes.includes(routeIndex)))}};
+  const result={round:state.round,carryUid:plan.carry?.uid??null,carryOperatorId:plan.carry?.operatorId??null,bossRouteIndex:plan.bossIndex>=0?plan.bossIndex:null,desired:plan.desired.map(({uid,operatorId,role,to,routeIndex,reason})=>({uid,operatorId,role,to,routeIndex,reason:reason??null})),actual,moves,reasons,routeCoverage};
+  routeAssignmentsByState.set(state,new Map(result.routeCoverage.frontlines.flatMap(unit=>{const assigned=result.actual.find(entry=>entry.uid===unit.uid)?.routeIndex;return assigned==null?[]:[[unit.uid,assigned]];})));
+  if(activeMetrics)activeMetrics.carryRepositionPlans[state.round]=result;
+  return {state,plan:result};
+}
+
 function improveEconomy(state,catalog){
   if(activePolicy.id===ECON_PACT_POLICY)return improveEconomyPact(state,catalog);
-  if(activePolicy.id===ADAPTIVE_STANDARD_POLICY)return improveEconomyPact(state,catalog,true);
+  if(activePolicy.id===ADAPTIVE_STANDARD_POLICY||activePolicy.id===CARRY_ADAPTIVE_POLICY)return improveEconomyPact(state,catalog,true);
   if(activePolicy.id==='rush'&&!activePolicy.rushReleased&&state.gold>=50){activePolicy.rushReleased=true;activePolicy.rushReleasedRound=state.round;}
   const lacksBoardPower=state.pieces.length<state.level;
   const needsHealer=!state.pieces.some(p=>opById(catalog,p.operatorId)?.role==='healer'),refreshCost=viewSession(state,{catalog}).actionCosts?.refreshGold??2;
@@ -997,9 +1154,9 @@ export function selectEconPactCopyTarget(item,targets,state,coreOperatorId,catal
 }
 
 export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',balanceProfile='formal'}={}){
-  if(!['legacy',...CAMPAIGN_POLICIES,ECON_PACT_POLICY,ADAPTIVE_STANDARD_POLICY].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
+  if(!['legacy',...CAMPAIGN_POLICIES,ECON_PACT_POLICY,ADAPTIVE_STANDARD_POLICY,CARRY_ADAPTIVE_POLICY].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
   if(!['formal','looser','refined-standard'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
-  const metrics={actions:{},refreshes:{},nodeEconomy:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[],adaptivePlans:[]};activeMetrics=metrics;
+  const metrics={actions:{},refreshes:{},nodeEconomy:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[],adaptivePlans:[],carryPlans:{},carryTransfers:[],carryRepositionPlans:{}};activeMetrics=metrics;
   const started=Date.now(),catalog=catalogForBalanceProfile(getCatalog(environmentId,seed),balanceProfile,difficulty),created=createSession({seed,difficulty,catalog,environmentId});
   if(!created.ok)throw new Error(`session-create:${created.error}`);
   let state=created.state,battles=0,truncated=false;const battleRows=[],policyErrors=[];
@@ -1019,6 +1176,7 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
     if(state.pendingChoices.length){state=resolveChoices(state,catalog);continue;}
     state=equipAndCombine(state,catalog);
     state=deployTeam(state,catalog);
+    if(policy===CARRY_ADAPTIVE_POLICY){state=repositionCarryAdaptiveTeam(state,catalog,{coreOperatorId:activePolicy.coreOperatorId}).state;state=transferCarryEquipment(state,catalog,{coreOperatorId:activePolicy.coreOperatorId}).state;}
     const assignedRoutes=routeAssignmentsByState.get(state)??new Map();
     const field=activeBattleFields(state,catalog);
     const deployed=state.pieces.filter(p=>p.row!==null);const pactPeople=new Map();for(const p of deployed){const op=opById(catalog,p.operatorId),ids=new Set(op?.pacts??[]);for(const item of p.equipment??[])for(const effect of catalog.equipment[item.itemId]?.effects??[])if(['transfer_pact','pact_transfer'].includes(effect.kind)&&effect.params?.pactId)ids.add(effect.params.pactId);for(const id of p.extraPacts??[])ids.add(id);if(op)for(const id of ids){const members=pactPeople.get(id)??new Set();members.add(op.charId);pactPeople.set(id,members);}}
@@ -1062,7 +1220,7 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
   const nodeEconomy=Object.values(metrics.nodeEconomy).sort((a,b)=>a.round-b.round);
   const result={environmentId,difficulty,seed,policy,balanceProfile,enemyBalance:structuredClone(catalog.campaign.enemyBalance),designatedCoreId:activePolicy.coreOperatorId??null,coreSelection:{operatorId:coreOperator?.id??null,name:coreOperator?.name??null,cost:coreOperator?.cost??null,role:coreOperator?.role??null,rule:coreSelectionRule},designatedCorePurchases:metrics.corePurchases,coreOffersSeen:metrics.coreOffersSeen,coreOffersRejected:coreOfferRejections.length,coreOffersBought:metrics.coreOfferPurchases.length,coreOfferDecisions:metrics.coreOfferDecisions,coreOfferPurchases:metrics.coreOfferPurchases,coreOfferRejectionCounts,coreOfferRejections,copyTargets:metrics.copyTargets,rushReleasedRound:activePolicy.rushReleasedRound??null,operatorBuys:metrics.operatorBuys,roleAcquisitions,roleDecisions:metrics.roleDecisions,sellDecisions:metrics.sellDecisions,placementDecisions:metrics.placementDecisions,nodeEconomy,roundLimit:state.roundLimit,battles:battleRows.length,rows:battleRows,policyActions:metrics.actions,
     terminalReason:state.terminalReason??null,phase:state.phase,round:state.round,hp:state.hp,gold:state.gold,level:state.level,xp:state.xp,
-    roster:state.pieces.map(p=>({operatorId:p.operatorId,name:opById(catalog,p.operatorId)?.name,cost:opById(catalog,p.operatorId)?.cost,star:p.star,role:opById(catalog,p.operatorId)?.role,items:p.equipment.map(i=>catalog.equipment[i.itemId]?.name)})),
+    roster:state.pieces.map(p=>({operatorId:p.operatorId,name:opById(catalog,p.operatorId)?.name,cost:opById(catalog,p.operatorId)?.cost,star:p.star,role:opById(catalog,p.operatorId)?.role,items:p.equipment.map(i=>catalog.equipment[i.itemId]?.name)})),carryPlans:metrics.carryPlans,carryTransfers:metrics.carryTransfers,
     claimedNodes:[...state.claimedNodes],inventory:state.inventory.map(i=>catalog.equipment[i.itemId]?.name),strategies:state.strategies.map(s=>catalog.strategies[typeof s==='string'?s:s.id]?.name),
     diagnostics:{battleErrors:policyErrors.filter(e=>e.kind==='battle-diagnostics').length,summonAnchorGaps:policyErrors.filter(e=>e.kind==='summon-anchor-gaps').flatMap(e=>e.gaps),policyErrors},adaptivePlans:metrics.adaptivePlans,elapsedMs:Date.now()-started,truncated};
   activePolicy={id:'legacy',coreOperatorId:null,rushReleased:false};
@@ -1132,13 +1290,14 @@ export function runCampaignMatrix({maxMs=DEFAULT_TIMEOUT,seedBase=0x5245534f}={}
 function gitRead(args){try{return execFileSync('git',['-C',ROOT,...args],{encoding:'utf8'}).trim();}catch{return 'unavailable';}}
 export function compactEconPactRun(run,{includeAdaptiveDetails=false}={}){
   const ledgers=new Map((run.nodeEconomy??[]).map(entry=>[entry.round,entry]));
-  const plans=new Map((run.adaptivePlans??[]).map(entry=>[entry.round,entry]));
+  const plans=new Map((run.adaptivePlans??[]).map(entry=>[entry.round,entry])),carryPlans=run.carryPlans??{};
   const nodes=run.rows.map(row=>{const money=ledgers.get(row.round)??{},core=row.roster.find(piece=>piece.operatorId===run.designatedCoreId)??null;
     const node={round:row.round,level:row.level,gold:{start:money.goldStart??row.goldBefore,end:money.goldAfter,delta:money.goldDelta??row.goldAfter-row.goldBefore,income:money.settlement?{base:money.settlement.income,win:money.settlement.winBonus,streak:money.settlement.streakBonus,interest:money.settlement.interest,delayed:money.settlement.delayedBonus,strategy:money.settlement.strategyGold,battle:money.settlement.battleGold}:null},actions:money.actions??{},spend:{buy:money.buyGold??0,sellRefund:money.sellRefund??0,xp:money.xpGold??0,refresh:money.refreshGold??0},mainPacts:row.mainPacts,stars:{1:row.roster.filter(piece=>piece.star===1).length,2:row.roster.filter(piece=>piece.star===2).length,3:row.roster.filter(piece=>piece.star===3).length},equipment:row.roster.flatMap(piece=>piece.equipment.map(item=>({unit:piece.name,star:piece.star,item}))),core:core?{name:core.name,star:core.star,position:[core.row,core.col],equipment:core.equipment,coveredRoutes:core.coveredRoutes,bossCoverage:row.coreBossCoverage}:null,boss:{id:row.bossId,hpLeft:row.bossHp,damage:row.bossDamage,coreDamage:row.coreDamage,coreAttacks:row.coreAttacks,covered:row.coreBossCoverage},won:row.won,hpLoss:row.hpLoss,hpAfter:row.hpAfter,leaked:row.leaked,capped:row.capped,diagnostics:row.diagnostics,summonAnchorGaps:row.summonAnchorGaps};
-    if(includeAdaptiveDetails){node.deployed=row.roster.map(piece=>({operatorId:piece.operatorId,star:piece.star,row:piece.row,col:piece.col,dir:piece.dir,gearIds:piece.equipment}));node.hpPlan=plans.get(row.round)??null;}
+    if(includeAdaptiveDetails||run.policy===CARRY_ADAPTIVE_POLICY){node.deployed=row.roster.map(piece=>({uid:piece.uid,operatorId:piece.operatorId,star:piece.star,row:piece.row,col:piece.col,dir:piece.dir,gearIds:piece.equipment}));node.hpPlan=plans.get(row.round)??null;}
+    if(run.policy===CARRY_ADAPTIVE_POLICY)node.carry=carryPlans[row.round]??null;
     return node;});
   const coreStarMilestones={2:nodes.find(node=>node.core?.star>=2)?.round??null,3:nodes.find(node=>node.core?.star>=3)?.round??null};
-  return {environmentId:run.environmentId,difficulty:run.difficulty,seed:run.seed,policy:run.policy,balanceProfile:run.balanceProfile,designatedCoreId:run.designatedCoreId,coreSelection:run.coreSelection,terminalReason:run.terminalReason,round:run.round,hp:run.hp,gold:run.gold,level:run.level,xp:run.xp,battles:run.battles,policyActions:run.policyActions,coreOffersSeen:run.coreOffersSeen,coreOffersBought:run.coreOffersBought,coreOfferDecisions:run.coreOfferDecisions,coreStarMilestones,diagnostics:run.diagnostics,nodes};
+  return {environmentId:run.environmentId,difficulty:run.difficulty,seed:run.seed,policy:run.policy,balanceProfile:run.balanceProfile,designatedCoreId:run.designatedCoreId,coreSelection:run.coreSelection,terminalReason:run.terminalReason,round:run.round,hp:run.hp,gold:run.gold,level:run.level,xp:run.xp,battles:run.battles,policyActions:run.policyActions,coreOffersSeen:run.coreOffersSeen,coreOffersBought:run.coreOffersBought,coreOfferDecisions:run.coreOfferDecisions,coreStarMilestones,carryTransfers:run.carryTransfers??[],diagnostics:run.diagnostics,nodes};
 }
 export function runEconomyPactValidation({seedBase=0x45434f4e,maxMs=12*60*1000,balanceProfile='formal'}={}){
   const started=Date.now(),environments=['origin_aegir','origin_laterano','origin_kjerag','origin_yan'],sourceBefore={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no']),dataSourceCommit:null};
@@ -1162,6 +1321,22 @@ export function runAdaptiveStandardValidation({seedBase=0x45434f4e,maxMs=12*60*1
   const profileSummary=Object.fromEntries(profiles.map(profile=>{const subset=runs.filter(run=>run.balanceProfile===profile);return [profile,{runs:subset.length,expectedRuns:environments.length,errors:subset.filter(run=>run.error).length,battles:subset.reduce((n,run)=>n+(run.battles??0),0),wins:subset.filter(run=>run.terminalReason==='victory').length,hpDepleted:subset.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:subset.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:subset.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:subset.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:subset.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:subset.some(run=>run.truncated)}];}));
   return {schemaVersion:1,policy:ADAPTIVE_STANDARD_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',environments,profiles,runs,summary:{runs:runs.length,expectedRuns:environments.length*profiles.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+(run.battles??0),0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length*profiles.length||runs.some(run=>run.truncated),byProfile:profileSummary,elapsedMs:Date.now()-started}};
 }
+export function runCarryAdaptiveValidation({seedBase=0x45434f4e,maxMs=12*60*1000}={}){
+  const started=Date.now(),environments=['origin_aegir','origin_laterano','origin_kjerag','origin_yan'],profiles=['formal','refined-standard'];
+  const sourceBefore={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no']),dataSourceCommit:null},runs=[];
+  for(const environmentId of environments){
+    const seed=seedFor(environmentId,'NORMAL',seedBase);
+    for(const balanceProfile of profiles){
+      if(Date.now()-started>=maxMs)break;
+      try{const nativeCatalog=getCatalog(environmentId,seed);sourceBefore.dataSourceCommit??=nativeCatalog.source?.commit??null;const run=runCampaign({environmentId,difficulty:'NORMAL',seed,maxMs:Math.max(1000,maxMs-(Date.now()-started)),policy:CARRY_ADAPTIVE_POLICY,balanceProfile});runs.push(compactEconPactRun(run));}
+      catch(error){runs.push({environmentId,difficulty:'NORMAL',seed,policy:CARRY_ADAPTIVE_POLICY,balanceProfile,error:error.message});}
+    }
+    if(Date.now()-started>=maxMs)break;
+  }
+  const sourceAfter={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no'])};
+  const byProfile=Object.fromEntries(profiles.map(profile=>{const subset=runs.filter(run=>run.balanceProfile===profile);return [profile,{runs:subset.length,expectedRuns:environments.length,errors:subset.filter(run=>run.error).length,battles:subset.reduce((n,run)=>n+(run.battles??0),0),wins:subset.filter(run=>run.terminalReason==='victory').length,hpDepleted:subset.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:subset.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:subset.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:subset.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:subset.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:subset.some(run=>run.truncated)}];}));
+  return {schemaVersion:1,policy:CARRY_ADAPTIVE_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',environments,profiles,runs,summary:{runs:runs.length,expectedRuns:environments.length*profiles.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+(run.battles??0),0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length*profiles.length||runs.some(run=>run.truncated),byProfile,elapsedMs:Date.now()-started}};
+}
 export function appendAdaptiveStandardValidation(result){
   ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
   const priorAttempts=[...(document.adaptiveStandardNaturalComparison?.priorAttempts??[])];
@@ -1173,6 +1348,13 @@ export function appendAdaptiveStandardValidation(result){
   const byPair=new Map(pairAdaptiveStandardRuns(result.runs));
   result.comparison={baselineSources:{econPact:{balanceProfile:formal.balanceProfile,source:formal.source},refinedStandard:{balanceProfile:refined.balanceProfile,source:refined.source}},pairs:result.environments.map(environmentId=>{const adaptiveFormal=byPair.get(`${environmentId}:formal`),adaptiveRefined=byPair.get(`${environmentId}:refined-standard`);const baseFormal=formal.runs.find(run=>run.environmentId===environmentId),baseRefined=refined.runs.find(run=>run.environmentId===environmentId);return {environmentId,seed:adaptiveFormal?.seed??adaptiveRefined?.seed??null,econPactFormal:summarize(baseFormal),econPactRefined:summarize(baseRefined),adaptiveFormal:summarize(adaptiveFormal),adaptiveRefined:summarize(adaptiveRefined)};})};
   document.adaptiveStandardNaturalComparison={...result,priorAttempts};fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
+}
+export function appendCarryAdaptiveValidation(result){
+  ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};
+  const previous=document.carryAdaptiveNaturalComparison,priorAttempts=[...(previous?.priorAttempts??[])];
+  if(previous){const {priorAttempts:old,...attempt}=previous;priorAttempts.push(attempt);}
+  document.carryAdaptiveNaturalComparison={...result,priorAttempts};
+  fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
 }
 export function pairAdaptiveStandardRuns(runs){
   const allowed=new Set(['formal','refined-standard']),pairs=new Map();
@@ -1212,7 +1394,10 @@ function ensureReportPath(){
 }
 const isMain=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(isMain){
-  if(process.argv.includes('--adaptive-standard-validation')){
+  if(process.argv.includes('--carry-adaptive-validation')){
+    const result=runCarryAdaptiveValidation();const report=appendCarryAdaptiveValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
+    if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps||result.summary.illegalOrRejectedActions||result.summary.truncated)process.exitCode=1;
+  }else if(process.argv.includes('--adaptive-standard-validation')){
     const result=runAdaptiveStandardValidation();const report=appendAdaptiveStandardValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
     if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps||result.summary.illegalOrRejectedActions||result.summary.truncated)process.exitCode=1;
   }else if(process.argv.includes('--econ-pact-validation')||process.argv.includes('--refined-standard-validation')){
