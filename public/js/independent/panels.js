@@ -77,8 +77,8 @@ export function FieldConditionCounts({ effects = [], rows = null, source, state,
     if (event?.relatedTarget?.closest?.('.ix-dtabs')) return;
     onFieldHighlight?.(union);
   };
-  return html`<span class="ix-field-counts" aria-label="当前场上符合条件的干员">${fieldRows.map((row) => html`<button type="button" key=${row.key}
-      class="ix-field-count" title=${`${row.title}：${row.pieces.length ? row.pieces.map((p) => formEntry(catalog, p)?.name || p.name || '作战支援单位').join('、') : '当前没有符合条件的干员'}`} aria-label=${`${row.title}（${row.pieces.length}）`}
+  return html`<span class="ix-field-counts" aria-label="当前场上符合条件的友方单位">${fieldRows.map((row) => html`<button type="button" key=${row.key}
+      class="ix-field-count" title=${`${row.title}：${row.pieces.length ? row.pieces.map((p) => formEntry(catalog, p)?.name || p.name || '作战支援单位').join('、') : '当前没有符合条件的友方单位'}`} aria-label=${`${row.title}（${row.pieces.length}）`}
       onMouseEnter=${() => onFieldHighlight?.(row.pieces)} onMouseLeave=${restore}
       onFocus=${() => onFieldHighlight?.(row.pieces)} onBlur=${restore}>（${row.pieces.length}）</button>`)}</span>`;
 }
