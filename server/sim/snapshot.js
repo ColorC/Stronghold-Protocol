@@ -30,6 +30,34 @@ export function unitInfo(u) {
   const summonSourceText = u.kind === 'token' && u.ownerUnit
     ? u.summonSourceText || d.darkmoonSummonSourceText || `由${u.ownerUnit.name || ownerDef.name || '干员'}召唤`
     : null;
+  const runtimeDetail = u.kind === 'token' ? (() => {
+    const raw = d.raw || {};
+    const skill = d.skill || null;
+    // A definition may contain an upstream skill record even when this runtime actor's selected kit removed it.
+    // Report the ability only when the effective runtime kit installed it.
+    const hasSkill = !!skill && u.kit?.skill !== null && (u.kit?.skill != null || !!u.skill);
+    const talents = Array.isArray(d.talents) ? d.talents : [];
+    const prototype = !!(d.darkmoonPrototypeTokenId || raw.darkmoonPrototypeTokenId);
+    const note = d.description || d.desc || d.trait?.desc || d.trait?.description || raw.description || raw.desc || raw.trait?.desc || '';
+    const description = prototype ? '' : typeof note === 'string' ? note : '';
+    return {
+      name: u.name || d.name || '',
+      nativeChessId: raw.darkmoonNativeChessId || d.darkmoonNativeChessId || null,
+      prototypeName: u.prototypeName || d.darkmoonPrototypeName || raw.darkmoonPrototypeName || null,
+      description,
+      skill: hasSkill && skill?.name && skill?.desc ? { name: skill.name, desc: skill.desc, skillId: skill.skillId || null } : null,
+      talents: talents.filter(t => t?.name && (t.description || t.desc)).map(t => ({ name: t.name, desc: t.description || t.desc })),
+      rangeGrid: Array.isArray(u.rangeGrid) ? u.rangeGrid : Array.isArray(d.rangeGrid) ? d.rangeGrid : null,
+      damageType: d.dmgType || d.damageType || null,
+      stats: {
+        maxHp: Math.round(u.s?.maxHp ?? d.stats?.maxHp ?? 0), atk: Math.round(u.s?.atk ?? d.stats?.atk ?? 0),
+        def: Math.round(u.s?.def ?? d.stats?.def ?? 0), res: Math.round(u.s?.res ?? d.stats?.res ?? 0),
+        aspd: Math.round(u.s?.aspd ?? d.stats?.aspd ?? 100), bat: Number(u.s?.bat ?? d.stats?.bat ?? 0),
+        interval: Number(u.s?.bat ?? d.stats?.bat ?? 0) * 100 / Math.max(1, Number(u.s?.aspd ?? d.stats?.aspd ?? 100)),
+        blockCnt: Math.round(u.s?.blockCnt ?? d.stats?.blockCnt ?? 0),
+      },
+    };
+  })() : null;
   return {
     id: u.id,
     kind: u.kind,
@@ -45,6 +73,7 @@ export function unitInfo(u) {
       ...(u.prototypeOwnerChessId || d.darkmoonPrototypeOwnerChessId ? { prototypeOwnerChessId: u.prototypeOwnerChessId || d.darkmoonPrototypeOwnerChessId } : {}),
       prototypeName: u.prototypeName || d.darkmoonPrototypeName || d.name || u.name,
       summonSourceText,
+      runtimeDetail,
     } : {}),
     tier: d.tier ?? (d.rank === 'BOSS' ? 3 : d.rank === 'ELITE' ? 2 : 1),
     golden: !!d.golden,
