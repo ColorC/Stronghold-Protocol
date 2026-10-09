@@ -128,11 +128,11 @@ function signatureKit(operator, record, star) {
     };
   }
   if (name === '白金' && skillId === 'skchr_platnm_2') return {
-    ...fixed, kind:'duration', duration:Infinity,
+    ...fixed, kind:'duration', duration:-1,
     mods:{atkPct:numeric(bb.atk,0),aspd:numeric(bb.attack_speed,0)},
     targeting: record?.skill?.rangeGrid ? { rangeGrid: record.skill.rangeGrid } : undefined,
     talents:[{install(battle,unit){let last=battle.time;const talent=operator.source?.normalChess?.talents?.[0]?.bb??{};battle.on('hit',c=>{if(c.source!==unit||!c.dmg?.isAttack)return;const elapsed=Math.max(0,battle.time-last);last=battle.time;const min=numeric(talent['attack@min_delta'],1),max=numeric(talent['attack@max_delta'],2.5),lo=numeric(talent['attack@min_atk_scale'],1),hi=numeric(talent['attack@max_atk_scale'],1.4);const ratio=Math.max(0,Math.min(1,(elapsed-min)/Math.max(.001,max-min)));c.dmg.mul=(c.dmg.mul??1)*(lo+(hi-lo)*ratio);},{owner:unit});}}],
-    tags:['resonance','signature',skillId],
+    tags:['resonance','signature','resonancePermanentDuration',skillId],
   };
   if (name === '万顷' && skillId === 'skchr_wanqin_2') return {
     ...fixed, kind:'duration', duration:numeric(record?.skill?.duration,15), mods:{aspd:numeric(bb['attack@attack_speed'],0)}, attack:{noAttack:true},

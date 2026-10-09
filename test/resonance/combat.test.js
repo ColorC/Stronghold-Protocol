@@ -326,6 +326,132 @@ test('fixed Ling and Shu S3 kits apply their source identities and Shu returns a
   shu.skill.end('fixture');assert.ok(shu.mem.resonanceShuSeeds.size>0,'the planted seed field remains after S3 ends');
 });
 
+function compiledFixedSkillBattle(name, { allies = [], enemies = [], flags = {}, enemyRes = 0 } = {}) {
+  const operator = Object.values(resonanceContent.operators).find(row => row.name === name);
+  assert.ok(operator, `compiled resonance profile exists for ${name}`);
+  const record = structuredClone(operator.stars[1].record);
+  const uid = `compiled-${operator.id}`;
+  const catalog = { operators: { [operator.sourceChessId]: operator }, pacts: {}, equipment: {} };
+  const state = { pieces: [{ uid, operatorId: operator.sourceChessId, star: 1 }] };
+  const chess = { [operator.sourceChessId]: record };
+  for (const ally of allies) chess[ally.chessId] = ally.record;
+  const h = makeBattle({
+    defs: { chess, enemies: { dummy: enemyRec({ key: 'dummy', hp: 100000, def: 0, res: enemyRes, speed: 0 }) } },
+    units: [
+      { chessId: operator.sourceChessId, uid, row: 9, col: 5, star: 1, dir: 'RIGHT' },
+      ...allies.map(row => ({ chessId: row.chessId, uid: row.uid, row: row.row, col: row.col, dir: 'RIGHT' })),
+    ],
+    enemies: [], content: 'generic', autoFinish: false, recordEvents: false, flags,
+    kits: createResonanceKits(catalog, state),
+    extraContent: [battle => installResonanceBattle(battle, { catalog, state })],
+  });
+  h.b.start();
+  const owner = h.unit(uid);
+  assert.equal(owner.def.raw.charId, operator.charId, `${name} resolves the compiled native character profile`);
+  assert.equal(owner.skill.id, operator.fixedSkillId, `${name} uses its compiled fixed skill`);
+  for (const enemy of enemies) h.spawn(enemy.key, { pos: enemy.pos });
+  return { h, owner, operator, record };
+}
+
+test('compiled Platinum S2 keeps its ATK and expanded range after thirty seconds', () => {
+  const { h, owner, record } = compiledFixedSkillBattle('白金');
+  const baseAtk = owner.s.atk;
+  const baseRange = owner.rangeKeys.length;
+  const platinumRangeEdge = 9 * 21 + 9;
+  assert.ok(!owner.rangeKeys.includes(platinumRangeEdge), 'the extra far tile starts outside Platinum’s ordinary range');
+  owner.skill.gainSp(owner.skill.spCost - owner.skill.sp, 'fixture-ready');
+  assert.equal(owner.skill.activate('fixture'), true, 'compiled AUTO S2 activates through SkillRuntime');
+  assert.equal(owner.s.atk, baseAtk * (1 + record.skill.bb.atk), 'S2 applies its compiled ATK multiplier');
+  assert.ok(owner.rangeKeys.length > baseRange, 'S2 expands the live attack range');
+  assert.ok(owner.rangeKeys.includes(platinumRangeEdge), 'the compiled S2 adds the far target tile to the live range');
+  h.run(35.2);
+  assert.equal(owner.skill.active, true, 'compiled permanent S2 remains active past thirty-five seconds');
+  assert.equal(owner.skill.timeLeft, Infinity, 'the live runtime uses its explicit permanent-duration sentinel');
+  assert.equal(owner.s.atk, baseAtk * (1 + record.skill.bb.atk), 'the compiled ATK increase remains after thirty-five seconds');
+  assert.equal(h.b.recordEvents, false);
+});
+
+test('compiled Wanqing S2 produces twenty DP and heals an injured nearby ally during its real duration', () => {
+  const friend = { chessId: 'fixture_friend', uid: 'fixture-friend', row: 10, col: 5, record: chessRec({ id: 'fixture_friend', name: '测试友方', stats: { maxHp: 3000, atk: 100, def: 0 } }) };
+  const { h, owner, record } = compiledFixedSkillBattle('万顷', { allies: [friend], flags: { dpInit: 0, dpPerSec: 0, dpMax: 99 } });
+  const ally = h.unit(friend.uid);
+  owner.hp -= 1000;
+  const ownerInjured = owner.hp;
+  ally.hp -= 1000;
+  const injured = ally.hp;
+  let ownerSelfHeal = false;
+  h.b.on('healed', event => { if (event.source === owner && event.target === owner && event.amount > 0) ownerSelfHeal = true; });
+  const startDp = h.b.players[0].dp;
+  owner.skill.gainSp(owner.skill.spCost - owner.skill.sp, 'fixture-ready');
+  assert.equal(owner.skill.activate('fixture'), true, 'compiled manual S2 activates through SkillRuntime');
+  assert.equal(owner.s.aspd, 100 + record.skill.bb['attack@attack_speed'], 'the compiled S2 applies its ASPD modifier to live stats');
+  h.run(15.2);
+  assert.equal(h.b.players[0].dp - startDp, 20, 'the S2 performs twenty one-DP income actions');
+  assert.ok(ownerSelfHeal && owner.hp > ownerInjured, 'the skill range includes and heals Wanqing herself');
+  assert.ok(ally.hp > injured, 'the S2 restores HP through the Battle healing path');
+  assert.equal(owner.mem.wanqinRes, null, 'the timed S2 lifecycle clears its interval state when it ends');
+});
+
+test('compiled Aosta S2 binds a naturally attacked target and its talent DoT reduces enemy HP', () => {
+  const { h, owner } = compiledFixedSkillBattle('奥斯塔', { enemies: [{ key: 'dummy', pos: [9, 7] }] });
+  const target = h.enemies()[0];
+  owner.skill.gainSp(owner.skill.spCost - owner.skill.sp, 'fixture-ready');
+  assert.equal(owner.skill.activate('fixture'), true, 'compiled manual S2 activates through SkillRuntime');
+  assert.ok(h.runUntil(() => !!target.s.flags.bind, 8), 'normal Battle targeting produces an actual S2 attack and bind');
+  assert.ok(target.s.flags.bind, 'the actual S2 attack applies its bind status to the enemy');
+  const afterAttack = target.hp;
+  assert.ok(target.findBuff(`resonance:aostaDot:${owner.id}`), 'the attack installs Aosta’s talent DoT');
+  h.run(1.1);
+  assert.ok(target.hp < afterAttack, 'the DoT tick causes an additional real enemy HP decrease');
+  assert.equal(h.b.recordEvents, false);
+});
+
+test('compiled Chiave S2 immediately grants DP, deals Arts damage, and restores RES after six seconds', () => {
+  const { h, owner, record } = compiledFixedSkillBattle('贾维', { enemies: [{ key: 'dummy', pos: [9, 6] }], enemyRes: 40, flags: { dpInit: 0, dpPerSec: 0, dpMax: 99 } });
+  const target = h.enemies()[0];
+  const hp = target.hp;
+  const dp = h.b.players[0].dp;
+  owner.skill.gainSp(owner.skill.spCost - owner.skill.sp, 'fixture-ready');
+  assert.equal(owner.skill.activate('fixture'), true, 'compiled instant S2 starts through SkillRuntime');
+  assert.equal(h.b.players[0].dp - dp, 11, 'the S2 adds its compiled eleven DP immediately');
+  assert.equal(hp - target.hp, owner.s.atk * record.skill.bb.atk_scale * .6, 'the S2 deals its compiled Arts burst using the target RES before the debuff');
+  assert.equal(target.s.res, 30, 'the hit target receives the compiled ten-point RES reduction');
+  assert.equal(owner.skill.active, false, 'an instant skill is not left active indefinitely');
+  h.run(6.2);
+  assert.equal(target.s.res, 40, 'the six-second RES reduction expires');
+});
+
+test('only explicitly tagged resonance -1 durations become permanent', () => {
+  const raw = chessRec({ id: 'untagged_permanent_probe', stats: { atk: 100 }, skill: { duration: 2, spCost: 1, initSp: 0 } });
+  const h = makeBattle({ defs: { chess: { untagged_permanent_probe: raw } }, units: [{ chessId: 'untagged_permanent_probe', uid: 'probe', row: 9, col: 5 }], content: 'generic', autoFinish: false, recordEvents: false,
+    kits: { untagged_permanent_probe: () => ({ skill: { id: 'probe_skill', kind: 'duration', duration: -1, spCost: 1, initSp: 0, spType: 'time', tags: ['resonance'] } }) } });
+  h.b.start();
+  const probe = h.unit('probe');
+  probe.skill.gainSp(1, 'fixture-ready');
+  assert.equal(probe.skill.activate('fixture'), true);
+  assert.equal(probe.skill.resonancePermanentDuration, false, 'an untagged -1 does not opt into resonance permanence');
+  h.run(2.1);
+  assert.equal(probe.skill.active, false, 'the untagged sentinel falls back to the source skill duration');
+});
+
+test('compiled Shu S3 heals an injured ally on a real attack and plants a seed', () => {
+  const friend = { chessId: 'fixture_shu_friend', uid: 'fixture-shu-friend', row: 10, col: 5, record: chessRec({ id: 'fixture_shu_friend', name: '测试友方', stats: { maxHp: 3000, atk: 100, def: 0 } }) };
+  const { h, owner } = compiledFixedSkillBattle('黍', { allies: [friend], enemies: [{ key: 'dummy', pos: [9, 6] }] });
+  const ally = h.unit(friend.uid);
+  ally.hp -= 1000;
+  const before = ally.hp;
+  let attackObserved = false;
+  let healingObserved = false;
+  h.b.on('attack', event => { if (event.attacker === owner && event.targets?.length) attackObserved = true; });
+  h.b.on('healed', event => { if (event.source === owner && event.target === ally && event.amount > 0) healingObserved = true; });
+  owner.skill.gainSp(owner.skill.spCost - owner.skill.sp, 'fixture-ready');
+  assert.equal(owner.skill.activate('fixture'), true, 'compiled manual S3 activates through SkillRuntime');
+  assert.ok(h.runUntil(() => healingObserved, 8), 'a natural attack causes the S3 healing hook to fire');
+  assert.ok(attackObserved, 'the heal follows an actual owner attack lifecycle');
+  assert.ok(ally.hp > before, 'the attack-time heal increases the injured ally’s HP');
+  assert.ok(owner.mem.resonanceShuSeeds?.size > 0, 'the actual Shu heal plants a seed');
+});
+
 test('Ling S3 fuses adjacent source soul3 tokens in place into the canonical advanced form', () => {
   const lingDef={...unit('ling'),charId:'char_2023_ling',resonanceStar:3,skill:{id:'skchr_ling_3',skillId:'skchr_ling_3',duration:25,spCost:40,initSp:12,spType:'time',summonOnCast:0,bb:{atk:.55,def:.5,atk_scale:.2,interval:.5}}};
   const record={...lingDef,talents:[{bb:{cnt:4}},{bb:{max_stack_cnt:5,sp:2,atk:.02}}],tokens:['token_10020_ling_soul3']};

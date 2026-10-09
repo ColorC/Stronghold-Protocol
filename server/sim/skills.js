@@ -77,9 +77,10 @@ export class SkillRuntime {
     this.id = s.id ?? d.id ?? 'skill';
     this.name = s.name ?? d.name ?? '';
     this.kind = s.kind ?? 'instant';
-    // Resonance's explicitly tagged permanent Yela skill uses -1 as a native sentinel; keep this exception
-    // narrowly scoped so an authored Infinity does not silently fall back to the source skill's finite duration.
-    this.resonancePermanentDuration = s.duration === -1 && Array.isArray(s.tags) && s.tags.includes('resonanceYelaPermanent');
+    // Explicitly tagged resonance permanent skills use -1 as a sentinel. Keep the exception opt-in so an
+    // untagged -1 or Infinity cannot silently make a skill permanent.
+    this.resonancePermanentDuration = s.duration === -1 && Array.isArray(s.tags)
+      && (s.tags.includes('resonancePermanentDuration') || s.tags.includes('resonanceYelaPermanent'));
     this.duration = this.resonancePermanentDuration ? -1 : Number.isFinite(+s.duration) ? +s.duration : (d.duration > 0 ? d.duration : 0);
     this.ammo = Math.max(0, Math.floor(+s.ammo || 0));
     this.baseSpCost = Math.max(0, Number.isFinite(+s.spCost) ? +s.spCost : (d.spCost ?? 0));

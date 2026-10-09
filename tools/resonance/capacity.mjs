@@ -371,8 +371,9 @@ async function main() {
         row.replay = { absolutePath: compressedPath, gzipBytes: replayStat.size, verifiedViaHttp: true,
           frames: replay.json.replay.frames.length, fetchLatencyMs: replay.latencyMs };
       } else row.replay = { enabled: false, gzipBytes: 0, verifiedViaHttp: false };
-      Object.assign(sessionRows.find((entry) => entry.id === session.id), row, { status: 'battle-complete' });
-      return row;
+      const completedSession = sessionRows.find((entry) => entry.id === session.id);
+      Object.assign(completedSession, row, { status: 'battle-complete' });
+      return completedSession;
     }));
     sessionRows = battleResults;
     terminalStatus = 'completed';
