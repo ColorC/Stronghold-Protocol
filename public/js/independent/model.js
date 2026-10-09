@@ -107,8 +107,29 @@ export function canDrop(state, n, target) {
   if (target.area === 'hand') return isDeployed(piece) || !!piece.temp; // a 临时整备区 operator may go back to the bench
   if (target.area !== 'board') return false;
   if (!(piece.legalTiles || []).includes(`${target.row},${target.col}`)) return false;
+  // Deployment capacity applies to operators on the field, not shop purchases, bench cards, or native summons.
+  if (piece.kind !== 'token' && (state.pieces || []).some((p) => p.uid === piece.uid) && !isDeployed(piece)
+    && (state.pieces || []).filter((p) => p.kind !== 'token' && isDeployed(p)).length >= Number(state.deployCap)) return false;
   const holder = [...(state.pieces || []), ...(state.summons || [])].find((p) => isDeployed(p) && p.row === target.row && p.col === target.col);
   return !holder || holder.uid === piece.uid;
+}
+
+/** Player-facing reason a legal drag is refused; null means the server should accept the drop. */
+export function dropRefusal(state, n, tile) {
+  const piece = pieceByNum(state, n);
+  if (!piece || !tile || typeof tile !== 'object') return null;
+  if (tile.area === 'board') {
+    if (isDeployed(piece) && piece.row === tile.row && piece.col === tile.col) return null;
+    if (!(piece.legalTiles || []).includes(`${tile.row},${tile.col}`)) return '无法部署在该位置';
+    const holder = [...(state.pieces || []), ...(state.summons || [])].find((p) => isDeployed(p) && p.row === tile.row && p.col === tile.col);
+    if (holder && holder.uid !== piece.uid) return '这个位置已有干员';
+    if (piece.kind !== 'token' && (state.pieces || []).some((p) => p.uid === piece.uid) && !isDeployed(piece)
+      && (state.pieces || []).filter((p) => p.kind !== 'token' && isDeployed(p)).length >= Number(state.deployCap)) return `场上最多 ${state.deployCap} 名干员`;
+    return null;
+  }
+  if (tile.area === 'hand') return null;
+  if (tile.area === 'temp') return '临时整备区无法放入单位';
+  return null;
 }
 
 /** Tiles to light while piece `n` is dragged. */

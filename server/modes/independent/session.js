@@ -817,6 +817,9 @@ export function applyAction(state, action, options = {}) {
       if (!Number.isInteger(action.row) || !Number.isInteger(action.col) || !inField(action.row, action.col)) throw new Error('BAD_POSITION');
       const occupied = [...work.pieces, ...summonsOf(work)].some((x) => x !== p && onBoard(x) && x.row === action.row && x.col === action.col); if (occupied) throw new Error('OCCUPIED');
       const wasOnBoard = onBoard(p);
+      // The cap limits deployed operators only. Purchases and bench storage remain available, and a native
+      // summon marker is moved through the token branch above rather than consuming an operator slot.
+      if (!wasOnBoard && work.pieces.filter(onBoard).length >= Number(work.deployCap)) throw new Error('DEPLOY_CAP');
       const field = getIndependentField(work, { data, catalog }); const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
       const cls = positionClass(raw, p.moduleId);
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');

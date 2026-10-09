@@ -19,7 +19,7 @@ import { PHASE, GEO } from '../../../shared/constants.js';
 import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout } from '../ui/gameLogic.js';
 import { data } from '../data.js';
 import { api } from './api.js';
-import { prepView, canDrop, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
+import { prepView, canDrop, dropRefusal, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
   replayClock, frameAt, pendingOffer, renderChessId, withCatalogTiers } from './model.js';
 import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount, MatchInfo, mergeHintOf, EffectsColumn } from './hud.js';
 import { EnemyDrawer } from '../ui/enemyDrawer.js';
@@ -75,21 +75,6 @@ function rangeGridOf(catalog, piece) {
  * Why a release of piece `n` on `tile` places nothing (the original's toast, ui/gameLogic.js dropFailureReason), or
  * null when it is put back on its own slot or is a legal place.
  */
-function dropRefusal(state, n, tile) {
-  const piece = pieceByNum(state, n);
-  if (!piece || !tile || typeof tile !== 'object') return null;
-  if (tile.area === 'board') {
-    if (isDeployed(piece) && piece.row === tile.row && piece.col === tile.col) return null;
-    if (!(piece.legalTiles || []).includes(`${tile.row},${tile.col}`)) return '无法部署在该位置';
-    const holder = (state.pieces || []).find((p) => isDeployed(p) && p.row === tile.row && p.col === tile.col);
-    return holder && holder.uid !== piece.uid ? '这个位置已有干员' : null;
-  }
-  if (tile.area === 'hand') return null;
-  if (tile.area === 'temp') return '临时整备区无法放入单位';
-  if (Number.isInteger(tile.row) && tile.row >= GEO.FIELD.r0 && tile.row <= GEO.FIELD.r1) return '无法部署在该位置';
-  return null;
-}
-
 /** Field tile of a piece: its board tile, or its bench slot (the hand row of the renderer). */
 function pieceTileOf(state, piece) {
   if (isDeployed(piece)) return { row: piece.row, col: piece.col };
