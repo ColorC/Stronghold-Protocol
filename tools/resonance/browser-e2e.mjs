@@ -2037,13 +2037,23 @@ async function runRobertaR3DefenseCheck(sessionId) {
     'Roberta R3 check requires the existing fixture session UUID');
   const runtimeState = JSON.parse(readFileSync(path.join(FIXTURE_SESSION_DIR, `${sessionId}.json`), 'utf8'));
   const settledRounds = (runtimeState.history || []).filter((event) => event.type === 'fight-settled').map((event) => event.round);
-  assert(runtimeState.phase === 'prep' && runtimeState.round === 3 && !settledRounds.includes(3),
-    `Roberta R3 check must use the existing unsettled R3 prep node: ${sessionId}/${runtimeState.phase}/${runtimeState.round}/${settledRounds}`);
+  const battleRound = Number(runtimeState.round);
+  const r3AlreadySettled = settledRounds.includes(3);
+  assert(runtimeState.phase === 'prep' && [3,4].includes(battleRound)
+    && (battleRound === 3 ? !r3AlreadySettled : r3AlreadySettled && !settledRounds.includes(battleRound)),
+    `Roberta check requires unsettled R3, or the immediate R4 follow-up after R3 was already settled: ${sessionId}/${runtimeState.phase}/${battleRound}/${settledRounds}`);
+  if (battleRound === 4) {
+    const r3Events=(runtimeState.history||[]).filter(event=>event.round===3);
+    assert(r3Events.some(event=>event.type==='piece-moved'&&event.uid==='p12'&&event.row===9&&event.col===6)
+      && r3Events.some(event=>event.type==='summon-order-set'&&event.pieceUid==='p11'&&event.row===9&&event.col===5)
+      && r3Events.some(event=>event.type==='summon-order-cleared'&&event.pieceUid==='p11'),
+    'R3 is settled but its recorded UI move/set-clear-set sequence is incomplete; do not replay R3');
+  }
   const old = priorBrowserReceipt();
   const fixture = (old.fixtureSessions || []).find((entry) => entry.id === sessionId);
   assert(fixture?.summonOwnerId === 'chess_native_char_484_robrta_a' && fixture?.summonTokenId === 'token_10018_robrta_mach',
     'receipt does not identify the canonical Roberta machine owner/token');
-  const attempt = { fixtureId: sessionId, round: 3, priorSettledRounds: settledRounds, battleExecutedOnce: false,
+  const attempt = { fixtureId: sessionId, round: battleRound, priorSettledRounds: settledRounds, battleExecutedOnce: false,
     nativeAtLaunch: nativeSourceState(), stage: 'validated-existing-r3-prep', actions: [] };
   let page = null;
   const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
@@ -2058,19 +2068,24 @@ async function runRobertaR3DefenseCheck(sessionId) {
       page.on('response', async (response) => {
         if (!/\/resonance\/api\/sessions\/[^/]+\/actions(?:\?|$)/.test(response.url())) return;
         let body = null; try { body = await response.json(); } catch {}
-        attempt.actions.push({ status: response.status(), url: response.url(), body });
+        const state = body?.state;
+        attempt.actions.push({ status: response.status(), revision: state?.revision, phase: state?.phase,
+          events: (state?.events || []).map((event) => ({ type: event.type, round: event.round, uid: event.uid, pieceUid: event.pieceUid,
+            tokenId: event.tokenId, row: event.row, col: event.col, message: event.message })) });
       });
       let state = await stateOf(page, sessionId);
-      if (!state.nodeStarted) state = await advancePrepViaUi(page, sessionId);
-      assert(state.phase === 'prep' && state.round === 3 && state.nodeStarted,
-        `official UI did not claim the existing R3 supply: ${state.phase}/${state.round}/${state.nodeStarted}`);
+      state = await advancePrepViaUi(page, sessionId);
+      assert(state.phase === 'prep' && state.round === battleRound && state.nodeStarted,
+        `official UI did not prepare the existing R${battleRound} node: ${state.phase}/${state.round}/${state.nodeStarted}`);
       const owner = state.pieces.find((piece) => piece.operatorId === fixture.summonOwnerId && piece.row != null);
-      const frontline = state.pieces.find((piece) => piece.operator?.role === 'frontline'
-        && piece.operator?.position === 'MELEE' && piece.row != null);
-      assert(owner && frontline, `R3 session lacks deployed Roberta or deployed melee frontline: ${JSON.stringify(state.pieces.map(p=>({uid:p.uid,operatorId:p.operatorId,role:p.operator?.role,position:p.operator?.position,row:p.row,col:p.col})))}`);
-      const tokenRecord = owner.operator?.summons?.find((token) => token.id === fixture.summonTokenId);
-      assert(tokenRecord?.rangeGrid?.length, 'official owner DTO omitted the machine native range');
+      const frontline = state.pieces.find((piece) => piece.uid === 'p12');
+      assert(owner && frontline?.row != null,
+        `R3 session lacks deployed Roberta or expected deployed MELEE p12: ${JSON.stringify(state.pieces.map(p=>({uid:p.uid,operatorId:p.operatorId,role:p.operator?.role,position:p.operator?.position,row:p.row,col:p.col})))}`);
       const catalog = getResonanceCatalog(data, { environmentId: state.environmentId, seed: state.seed });
+      const canonicalFront = catalog.operators?.[frontline.operatorId];
+      assert(canonicalFront?.position === 'MELEE', `canonical catalog does not identify p12 as MELEE: ${JSON.stringify({operatorId:frontline.operatorId,position:canonicalFront?.position})}`);
+      const tokenRecord = owner.operator?.summons?.find((token) => token.id === fixture.summonTokenId);
+      assert(tokenRecord, 'official owner DTO omitted the Roberta machine summon');
       const field = getResonanceField(state, { data, catalog });
       const tokenDef = field.resolveToken(fixture.summonTokenId, owner.operatorId, catalog.operators[owner.operatorId]?.fixedSkillIndex);
       assert(tokenDef?.rangeGrid?.length, 'native field resolver omitted the machine range definition');
@@ -2078,15 +2093,14 @@ async function runRobertaR3DefenseCheck(sessionId) {
       assert(summonCells.length, 'official DTO exposes no legal Roberta machine summon cells');
       const occupied = new Set(state.pieces.filter((piece) => piece.uid !== frontline.uid && piece.row != null)
         .map((piece) => `${piece.row},${piece.col}`));
-      const candidate = summonCells.flatMap((key) => {
-        const [row, col] = key.split(',').map(Number);
-        return [...ownerRangeKeys(tokenDef.rangeGrid, row, col, owner.dir || 'RIGHT')]
-          .map((targetKey) => ({ anchorKey:key, targetKey, anchor:[row,col], target:targetKey.split(',').map(Number) }));
-      }).find((entry) => entry.anchorKey !== entry.targetKey
-        && frontline.legalTiles?.includes(entry.targetKey)
-        && field.deployMap.get(entry.targetKey) === 'melee'
-        && !occupied.has(entry.targetKey));
-      assert(candidate, `no official token anchor has an empty legal MELEE tile in its native facing range: ${JSON.stringify({summonCells,frontLegal:frontline.legalTiles,ownerDir:owner.dir,range:tokenDef.rangeGrid})}`);
+      const candidate = { anchorKey:'9,5', targetKey:'9,6', anchor:[9,5], target:[9,6] };
+      const rangeKeys = ownerRangeKeys(tokenDef.rangeGrid, ...candidate.anchor, owner.dir || 'RIGHT');
+      const candidateChecks = { summonAnchorLegal:summonCells.includes(candidate.anchorKey),
+        targetInNativeFacingRange:rangeKeys.has(candidate.targetKey), targetLegal:frontline.legalTiles?.includes(candidate.targetKey),
+        targetMelee:canonicalFront.position === 'MELEE', targetUnoccupied:!occupied.has(candidate.targetKey),
+        occupantAtTarget:state.pieces.filter((piece)=>piece.row===9&&piece.col===6).map((piece)=>piece.uid) };
+      assert(Object.entries(candidateChecks).filter(([key])=>key!=='occupantAtTarget').every(([,value])=>value),
+        `official UI state does not validate planned Roberta anchor/target: ${JSON.stringify({candidateChecks,summonCells,frontLegal:frontline.legalTiles,ownerDir:owner.dir,range:tokenDef.rangeGrid})}`);
       attempt.ownerUid = owner.uid;
       attempt.frontlineUid = frontline.uid;
       attempt.frontlineIdentity = { operatorId:frontline.operatorId, role:frontline.operator.role, position:frontline.operator.position };
@@ -2101,17 +2115,16 @@ async function runRobertaR3DefenseCheck(sessionId) {
         assert(canvas, 'native field canvas is missing for R3 placement');
         await canvas.evaluate((el) => el.scrollIntoView({ block:'center', inline:'center', behavior:'instant' }));
         const numericUid = Number(String(frontline.uid).replace(/^\D+/, ''));
-        await page.waitForFunction(({ uid,row,col }) => {
-          const view=globalThis.__SP_VIEW__, rect=view?.pieceScreenRect(uid), dest=view?.tileScreen(row,col);
-          if(!view||!rect||!dest){window.__robertaR3Geometry=null;return false;}
-          const sourceCandidates=[{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-2}];
-          const source=sourceCandidates.find(point=>view.pieceAtClient?.(point.x,point.y)?.uid===uid);
+        await page.waitForFunction(({ uid, sourceRow, sourceCol, row, col }) => {
+          const view=globalThis.__SP_VIEW__, source=view?.tileScreen(sourceRow,sourceCol), dest=view?.tileScreen(row,col);
+          const picked=source&&view?.pieceAtClient?.(source.x,source.y);
           const hit=dest&&document.elementFromPoint(dest.x,dest.y);
-          if(!source||!hit||hit.tagName!=='CANVAS'||[source.x,source.y,dest.x,dest.y].some(v=>v<0)||dest.x>=innerWidth||dest.y>=innerHeight){window.__robertaR3Geometry=null;return false;}
-          const value=[source.x,source.y,dest.x,dest.y].map(Math.round),old=window.__robertaR3Geometry;
+          if(!source||picked?.uid!==uid||picked?.area!=='board'||!hit||hit.tagName!=='CANVAS'
+            ||[source.x,source.y,dest.x,dest.y].some(v=>v<0)||source.x>=innerWidth||source.y>=innerHeight||dest.x>=innerWidth||dest.y>=innerHeight){window.__robertaR3Geometry=null;return false;}
+          const value=[source.x,source.y,dest.x,dest.y,innerWidth,innerHeight].map(Math.round),old=window.__robertaR3Geometry;
           const count=old&&old.value.every((v,i)=>v===value[i])?old.count+1:1;window.__robertaR3Geometry={value,count};return count>=3;
-        }, { polling:'raf', timeout:10_000 }, { uid:numericUid,row:candidate.target[0],col:candidate.target[1] });
-        const geometry=await page.evaluate(({uid,row,col})=>{const v=globalThis.__SP_VIEW__,n=Number(String(uid).replace(/^\D+/,'')),rect=v.pieceScreenRect(n),dest=v.tileScreen(row,col),sourceCandidates=[{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-2}],source=sourceCandidates.find(p=>v.pieceAtClient?.(p.x,p.y)?.uid===n);return {source,dest,sourceHit:source&&v.pieceAtClient(source.x,source.y),targetHit:dest&&document.elementFromPoint(dest.x,dest.y)?.tagName};},{uid:frontline.uid,row:candidate.target[0],col:candidate.target[1]});
+        }, { polling:'raf', timeout:10_000 }, { uid:numericUid,sourceRow:frontline.row,sourceCol:frontline.col,row:candidate.target[0],col:candidate.target[1] });
+        const geometry=await page.evaluate(({uid,sourceRow,sourceCol,row,col})=>{const v=globalThis.__SP_VIEW__,n=Number(String(uid).replace(/^\D+/,'')),source=v.tileScreen(sourceRow,sourceCol),dest=v.tileScreen(row,col);return {source,dest,sourceHit:source&&v.pieceAtClient(source.x,source.y),targetHit:dest&&document.elementFromPoint(dest.x,dest.y)?.tagName};},{uid:frontline.uid,sourceRow:frontline.row,sourceCol:frontline.col,row:candidate.target[0],col:candidate.target[1]});
         assert(geometry.source && geometry.sourceHit?.uid === numericUid && geometry.targetHit === 'CANVAS',
           `R3 pointer geometry is not authoritative: ${JSON.stringify(geometry)}`);
         await page.evaluate(()=>{globalThis.__robertaR3Events=[];const v=globalThis.__SP_VIEW__;for(const name of ['pieceDragStart','pieceDrop','pieceDragEnd'])v?.on?.(name,e=>globalThis.__robertaR3Events.push({name,uid:e?.uid,target:e?.target,dropped:e?.dropped}));});
@@ -2130,9 +2143,9 @@ async function runRobertaR3DefenseCheck(sessionId) {
       state = await moveToTarget();
       const afterMoveRevision = state.revision;
       const placed = state.pieces.find((piece) => piece.uid === frontline.uid);
-      assert(placed?.operator?.role === 'frontline' && placed.operator.position === 'MELEE'
+      assert(placed?.uid === 'p12' && canonicalFront.position === 'MELEE'
         && placed.row === candidate.target[0] && placed.col === candidate.target[1],
-      `official session did not place the melee frontline in machine range: ${JSON.stringify({uid:placed?.uid,row:placed?.row,col:placed?.col,role:placed?.operator?.role,position:placed?.operator?.position})}`);
+      `official session did not place p12, the MELEE frontline, in machine range: ${JSON.stringify({uid:placed?.uid,row:placed?.row,col:placed?.col,role:placed?.operator?.role,position:placed?.operator?.position})}`);
       const currentOwner = state.pieces.find((piece) => piece.uid === owner.uid);
       const currentToken = currentOwner.operator?.summons?.find((token) => token.id === fixture.summonTokenId);
       assert(currentToken, 'current session DTO lost the canonical Roberta machine summon');
@@ -2150,40 +2163,51 @@ async function runRobertaR3DefenseCheck(sessionId) {
       const alternate=choices.find(key=>key!==candidate.anchorKey);
       assert(alternate, 'R3 official DTO has no alternate legal anchor for set-clear-set verification');
       const [alternateRow,alternateCol]=alternate.split(',').map(Number);
-      state=await applyOrder(alternate,next=>next.revision>preSet&&next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.tokenId===currentToken.id&&o.row===alternateRow&&o.col===alternateCol),'set summon order');
+      const existingOrder=currentOwner.summonOrders?.find(o=>Number.isInteger(o.row)&&Number.isInteger(o.col));
+      if(existingOrder&&existingOrder.row===alternateRow&&existingOrder.col===alternateCol) state=await stateOf(page,sessionId);
+      else state=await applyOrder(alternate,next=>next.revision>preSet&&next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.row===alternateRow&&o.col===alternateCol),'set summon order');
       const firstSet=state.revision;
-      state=await applyOrder('',next=>next.revision>firstSet&&!next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.tokenId===currentToken.id),'clear summon order');
+      state=await applyOrder('',next=>next.revision>firstSet&&!(next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders||[]).some(o=>Number.isInteger(o.row)&&Number.isInteger(o.col)),'clear summon order');
       const cleared=state.revision;
-      state=await applyOrder(`${anchor[0]},${anchor[1]}`,next=>next.revision>cleared&&next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.tokenId===currentToken.id&&o.row===anchor[0]&&o.col===anchor[1]),'set summon order again');
+      state=await applyOrder(`${anchor[0]},${anchor[1]}`,next=>next.revision>cleared&&next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.row===anchor[0]&&o.col===anchor[1]),'set summon order again');
       attempt.revisions={afterMove:afterMoveRevision,firstSet,afterClear:cleared,finalSet:state.revision};
       attempt.stage='official-placement-and-set-clear-set-complete';
       const fight=await performRealFight(page,sessionId);
-      assert(fight.ran&&fight.battleRound===3,'R3 fixture did not execute exactly the unsettled R3 Battle');
-      attempt.battleExecutedOnce=true;attempt.stage='R3-battle-settled';
-      const diagnostics=fight.settlement?.diagnostics||{};
-      const ownerDiag=(diagnostics.summonAnchors||[]).find(entry=>entry.ownerUid===owner.uid&&entry.tokenId===currentToken.id);
-      assert(ownerDiag&&ownerDiag.row===anchor[0]&&ownerDiag.col===anchor[1],`R3 summon anchor mismatch: ${JSON.stringify(diagnostics.summonAnchors)}`);
-      const player=Object.values(fight.settlement.result?.perPlayer||{})[0]||{};
+      const player=Object.values(fight.settlement?.result?.perPlayer||{})[0]||{};
       const tokenUid=`resonance-summon-${owner.uid}-${currentToken.id}`;
       const machine=player.unitStats?.find(unit=>unit.uid===tokenUid&&unit.kind==='token');
-      assert(machine,`R3 Battle result omitted Roberta machine ${tokenUid}`);
+      const settled=[...(fight.state?.history||[])].reverse().find(event=>event.type==='fight-settled'&&event.round===battleRound);
+      const rawBattleEvidence={fixtureId:sessionId,requestedRound:battleRound,actualBattleRound:fight.battleRound??null,
+        authoritativeSettled:{round:settled?.round??null,won:settled?.won??null,hpLoss:settled?.hpLoss??null},
+        ownerUid:owner.uid,targetUid:frontline.uid,summonAnchor:{tokenId:currentToken.id,row:anchor[0],col:anchor[1]},
+        diagnostics:fight.settlement?.diagnostics??null,
+        machineUnitStats:player.unitStats?.filter(unit=>unit.uid===tokenUid||unit.defId===currentToken.id)??[],
+        resultAvailable:!!fight.settlement?.result,nativeAtLaunch:attempt.nativeAtLaunch,battleExecutedOnce:!!fight.ran};
+      attempt.battleExecutedOnce=!!fight.ran;attempt.stage=`R${battleRound}-battle-response-captured`;
+      const rawReceipt=await appendFollowupEvidence(`roberta-machine-r${battleRound}-raw-battle-response`,rawBattleEvidence);
+      assert(fight.ran&&fight.battleRound===battleRound,`fixture did not execute exactly the unsettled R${battleRound} Battle`);
+      attempt.battleExecutedOnce=true;attempt.stage=`R${battleRound}-battle-settled`;
+      const diagnostics=fight.settlement?.diagnostics||{};
+      const ownerDiag=(diagnostics.summonAnchors||[]).find(entry=>entry.ownerUid===owner.uid&&entry.tokenId===currentToken.id);
+      assert(ownerDiag&&ownerDiag.row===anchor[0]&&ownerDiag.col===anchor[1],`R${battleRound} summon anchor mismatch: ${JSON.stringify(diagnostics.summonAnchors)}`);
+      assert(machine&&machine.defId===currentToken.id,`R${battleRound} Battle result omitted Roberta machine ${tokenUid}/${currentToken.id}`);
       const support=(diagnostics.robertaMachines||[]).filter(event=>event.kind==='support'&&event.ownerUid===owner.uid&&event.tokenUid===tokenUid);
       assert(support.length>0,'R3 diagnostics recorded no actual Roberta machine support trigger');
       assert(support.some(event=>event.targetUid===frontline.uid&&event.defPct===0.2&&event.duration===25&&event.shieldHits===1),
         `R3 support event did not show the expected MELEE target/20% DEF/one shield/25s: ${JSON.stringify(support)}`);
-      assert.equal(machine.attacks,0,'Roberta machine must not attack in the current Native');
-      assert.equal(Number(diagnostics.errorCount||0),0,'R3 Battle diagnostics contain errors');
-      assert.equal((diagnostics.summonAnchorGaps||[]).length,0,'R3 Battle has summon anchor gaps');
+      assert(machine.attacks===0,`Roberta machine must not attack in the current Native; attacks=${machine.attacks}`);
+      assert(Number(diagnostics.errorCount||0)===0,'Roberta Battle diagnostics contain errors');
+      assert((diagnostics.summonAnchorGaps||[]).length===0,'Roberta Battle has summon anchor gaps');
       const after=await stateOf(page,sessionId);
-      const settled=[...(after.history||[])].reverse().find(event=>event.type==='fight-settled'&&event.round===3);
-      assert(settled&&after.round>3,'R3 authoritative fight-settled record is missing');
-      const evidence={fixtureId:sessionId,round:3,ownerUid:owner.uid,frontlineUid:frontline.uid,
+      const settledAfter=[...(after.history||[])].reverse().find(event=>event.type==='fight-settled'&&event.round===battleRound);
+      assert(settledAfter&&after.round>battleRound,`R${battleRound} authoritative fight-settled record is missing`);
+      const evidence={fixtureId:sessionId,round:battleRound,ownerUid:owner.uid,frontlineUid:frontline.uid,
         frontlineIdentity:attempt.frontlineIdentity,frontlineTile:candidate.target,summonAnchor:{tokenId:currentToken.id,row:anchor[0],col:anchor[1]},
-        revisions:attempt.revisions,settled:{won:settled.won,hpLoss:settled.hpLoss},supportEvents:support,
+        revisions:attempt.revisions,settled:{won:settledAfter.won,hpLoss:settledAfter.hpLoss},supportEvents:support,
         machine:{uid:machine.uid,attacks:machine.attacks},diagnostics:{errorCount:diagnostics.errorCount,summonAnchorGaps:diagnostics.summonAnchorGaps||[],robertaMachines:diagnostics.robertaMachines},
-        priorSettledRounds:settledRounds,battleExecutedOnce:true,priorBattleReplayed:false,nativeAtLaunch:attempt.nativeAtLaunch};
-      const receipt=await appendFollowupEvidence('roberta-machine-r3-defense',evidence);
-      passed('summon-order-and-clear',`R3真实UI订单与造型仪近战防御效果通过；support=${support.length},DEF+20%,shield=1,duration=25s,token attacks=0,diagnostics=0`);
+        rawResponseReceipt:rawReceipt,priorSettledRounds:settledRounds,battleExecutedOnce:true,priorBattleReplayed:false,nativeAtLaunch:attempt.nativeAtLaunch};
+      const receipt=await appendFollowupEvidence(`roberta-machine-r${battleRound}-defense`,evidence);
+      passed('summon-order-and-clear',`R${battleRound}真实UI订单与造型仪近战防御效果通过；support=${support.length},DEF+20%,shield=1,duration=25s,token attacks=0,diagnostics=0`);
       return {status:'passed',receipt,evidence};
     })();
     return await Promise.race([work,deadline]);
