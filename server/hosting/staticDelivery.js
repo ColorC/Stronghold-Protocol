@@ -20,6 +20,11 @@ const LOCAL_RESONANCE = new Set([
   '/js/ui/shopBar.js',
   '/js/ui/bondStrip.js',
   '/js/screens/title.js',
+  '/css/screens/draft.css',
+  '/css/screens/title.css',
+  '/css/screens/briefing.css',
+  '/css/screens/lobby.css',
+  '/js/net.js',
 ]);
 const WORKER = '/js/independent/client-worker.js';
 const GIT_REVISION = /^[a-f0-9]{40}$/;

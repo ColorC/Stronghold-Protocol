@@ -253,6 +253,8 @@ function sameCardExceptSource(a, b) {
   delete left.source; delete right.source;
   if (left.provenance && typeof left.provenance === 'object') delete left.provenance.updated;
   if (right.provenance && typeof right.provenance === 'object') delete right.provenance.updated;
+  if (left.material?.revision_ref && typeof left.material.revision_ref === 'object') delete left.material.revision_ref.revision;
+  if (right.material?.revision_ref && typeof right.material.revision_ref === 'object') delete right.material.revision_ref.revision;
   return JSON.stringify(stable(left)) === JSON.stringify(stable(right));
 }
 
@@ -319,6 +321,7 @@ function selfTest() {
   const repaired = repairedPlayCard(testPlay, embedUrl);
   const testDesign = { id: DESIGN_CARD_ID, kind: 'text', adapter: 'text', title: '共鸣玩法与参考',
     source: { kind: 'file', path: '/old/design.md', token: 'old-token', mime: 'text/markdown', editableId: DESIGN_CARD_ID },
+    material: { revision_ref: { provider: 'material-note', object: 'canvas#card=design', revision: 'r267' } },
     x: 900, y: 126, width: 560, height: 460, fontSize: 14 };
   const oldDesignBody = '# 共鸣玩法与参考\n\n打开[共鸣玩法](https://old.invalid/resonance.html)。完整资料可从[参考资料包](https://old.invalid/reference.zip)下载。\n\n## 体验与内容范围\n\n玩家按局内节点构建阵容。\n\n## 界面与操作\n\n旧操作说明。';
   const nextDesignBody = refreshedDesignBody(oldDesignBody, entryUrl, 'https://example.invalid/reference.zip');
@@ -327,8 +330,15 @@ function selfTest() {
   const refreshSources = refreshedCards(testDesign, testPlay, { path: '/new/design.md', open_token: 'new-token', editableId: DESIGN_CARD_ID }, embedUrl);
   const refreshBeforeCards = [testDesign, testPlay, { id: 'user-card', kind: 'text', source: { path: '/user.md' }, x: 10, y: 12, width: 200, height: 100 }];
   const refreshAfterCards = [...refreshBeforeCards.filter(card => ![DESIGN_CARD_ID, PLAY_CARD_ID].includes(card.id)), ...refreshSources];
+  refreshAfterCards.find(card => card.id === DESIGN_CARD_ID).material.revision_ref.revision = 'r268';
   const refreshRelations = plannedRelations();
   verifyRefreshSnapshot(refreshBeforeCards, refreshRelations, refreshAfterCards, refreshRelations, refreshSources, embedUrl);
+  const movedDesignCards = structuredClone(refreshAfterCards);
+  movedDesignCards.find(card => card.id === DESIGN_CARD_ID).x += 1;
+  let geometryChangeRejected = false;
+  try { verifyRefreshSnapshot(refreshBeforeCards, refreshRelations, movedDesignCards, refreshRelations, refreshSources, embedUrl); }
+  catch { geometryChangeRejected = true; }
+  if (!geometryChangeRejected) throw new Error('refresh必须拒绝设计卡几何变化');
   if (refreshSources[0].source.token !== 'new-token' || refreshSources[0].source.editableId !== DESIGN_CARD_ID
     || refreshSources[0].x !== testDesign.x || refreshSources[1].x !== testPlay.x) throw new Error('refresh只更新正文source与live_entry纯测试失败');
   for (const args of [['--repair-play-card','--refresh-existing'], ['--refresh-existing','--execute','--dry-run']]) {

@@ -24,6 +24,7 @@ test('worker bootstraps same-origin, API and entry stay local', () => {
     '/css/resonance-entry.css', '/css/resonance-detail.css', '/css/resonance-codex.css', '/css/resonance-panels.css',
     '/js/ui/fieldHost.js', '/js/ui/fallbackField.js', '/js/render/app.js', '/js/render/interp.js',
     '/js/ui/hud.js', '/js/ui/shopBar.js', '/js/ui/bondStrip.js', '/js/screens/title.js',
+    '/css/screens/draft.css', '/css/screens/title.css', '/css/screens/briefing.css', '/css/screens/lobby.css', '/js/net.js',
     '/js/render/resonanceFloors.js', '/js/render/board3d/scene.js']) {
     assert.equal(handler(req, res(), path), false, 'resonance host, fallback, and renderer modules must resolve from the active release');
   }
