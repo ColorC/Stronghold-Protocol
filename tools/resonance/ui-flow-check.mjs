@@ -207,7 +207,7 @@ async function inspectPriorFightReplay(page, sessionId, round, screenshotName, e
   check('prior-fight-replay-closes-without-new-actions',receipt.creates===0&&receipt.fights===0,{creates:receipt.creates,fights:receipt.fights});
 }
 async function runFinishTail(page, sessionId) {
-  await waitForGameplayReady(page,'finish-tail');
+  await waitForGameplayReady(page,'finish-tail',{allowEmpty:true});
   const attempt10Path=path.join(OUT,'ui-tft-tail-attempt-10.json'),attempt9Path=path.join(OUT,'ui-tft-tail-attempt-9.json');
   const attempt10=JSON.parse(await readFile(attempt10Path,'utf8')),attempt9=JSON.parse(await readFile(attempt9Path,'utf8'));
   const tests10=new Map((attempt10.tests||[]).map(test=>[test.name,test])),tests9=new Map((attempt9.tests||[]).map(test=>[test.name,test]));
@@ -435,10 +435,11 @@ async function layout(page, name) {
   check(`${name}-product-copy`, !/真实素材|按.*标准制作|来自实际运行观测|已脱敏|sourceChess|expectedRevision|MainBoard/.test(value.text), value.text.slice(0, 1200));
   if (value.board) check(`${name}-board-dominates`, value.board.width >= value.width * .85 && value.board.height >= value.height * .85, value.board);
 }
-async function waitForGameplayReady(page, label) {
+async function waitForGameplayReady(page, label, {allowEmpty=false}={}) {
   await page.waitForSelector('.gm .shopbar', { timeout: 30000 });
-  await page.waitForFunction(() => { const view=globalThis.__SP_VIEW__; return !!view&&(view.kind==='fallback'||Number(view.raw?.stats?.().units)>0); }, { timeout: 30000 });
-  check(`${label}-renderer-ready`, await page.evaluate(() => ({kind:globalThis.__SP_VIEW__?.kind,units:globalThis.__SP_VIEW__?.raw?.stats?.().units||0})), 'game shell, shop and native renderer are ready');
+  await page.waitForFunction(empty => { const view=globalThis.__SP_VIEW__,stats=view?.raw?.stats?.(); return !!view&&(empty?view.kind==='engine'&&stats?.mode==='prep'&&stats?.board3d?.frames>0&&stats?.board3d?.triangles>0:view.kind==='fallback'||Number(stats?.units)>0); }, { timeout: 30000 },allowEmpty);
+  const observed=await page.evaluate(() => ({kind:globalThis.__SP_VIEW__?.kind,...globalThis.__SP_VIEW__?.raw?.stats?.()}));
+  check(`${label}-renderer-ready`,allowEmpty?observed.kind==='engine'&&observed.mode==='prep'&&observed.board3d?.frames>0&&observed.board3d?.triangles>0:observed.kind==='fallback'||observed.units>0,observed);
 }
 try {
   await mkdir(OUT, { recursive: true });
