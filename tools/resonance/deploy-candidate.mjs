@@ -18,15 +18,21 @@ const CAPACITY_SESSION = '/var/lib/stronghold-protocol/capacity-tests/resonance'
 const CAPACITY_RECEIPT = `${STAGING}/capacity-receipt.json`;
 const CAPACITY_RECORDING_RECEIPT = `${STAGING}/capacity-recording-receipt.json`;
 const CAPACITY_BATCH_RECEIPT = `${STAGING}/capacity-batch-receipt.json`;
+const CAPACITY_BATCH_ARCHIVE_NAMES = revision => [
+  `capacity-receipt.${revision}.json`, `capacity-recording-receipt.${revision}.json`,
+  `capacity-batch-receipt.${revision}.json`, `capacity-http-cgroup.${revision}.json`,
+  `capacity-recording-cgroup.${revision}.json`,
+];
 const RESONANCE_DIRECTORY = '/var/lib/stronghold-protocol/resonance-sessions';
 const BACKUP_ROOT = STAGING;
 const SOURCE_RULES_REVISION = '4ed1ad32ec10da15c23f9d7939dade603950759b';
 const REMOTE_NODE = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/bin/node`;
 const REMOTE_NPM_CLI = `${INSTALL_ROOT}/toolchain/node-v22.23.3-linux-x64/lib/node_modules/npm/bin/npm-cli.js`;
 const OWNED_STAGE_NAMES = ['server-code.tar', 'resonance-references.zip', 'package.json', 'package-lock.json', 'server-release.json'];
+const CANDIDATE_REFRESH_SOURCES = ['server/modes/resonance/session.js', 'server/modes/resonance/display.js', 'public/js/resonance/game.js', 'public/js/resonance/model.js'];
 const WINDOWS_TAR = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/tar.exe');
 const TAR_COMMAND = process.platform === 'win32' && fs.existsSync(WINDOWS_TAR) ? WINDOWS_TAR : 'tar';
-const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径> | --replace-staged-revision <旧Native完整commit>] | --refresh-candidate --previous-release-receipt <旧receipt> --failure-cgroup-receipt <本地回执路径> | --capacity-batch --local-capacity-receipt <绝对路径> | --activate --capacity-receipt <绝对路径>]\n默认dry-run只读本地receipt/档案并打印预演；--refresh-candidate仅原位更新已核验候选中的capacity工具、references ZIP及release manifest。`;
+const HELP = `用法：node tools/resonance/deploy-candidate.mjs --release-receipt <绝对路径> [--prepare [--resume-receipt <失败回执绝对路径> | --replace-staged-revision <旧Native完整commit>] | --refresh-candidate --previous-release-receipt <旧receipt> --previous-capacity-batch-receipt <已完成回执> | --capacity-batch --local-capacity-receipt <绝对路径> | --activate --capacity-receipt <绝对路径>]\n--refresh-candidate仅更新候选中的session DTO、references ZIP及manifest，并将旧Native容量回执原位归档。`;
 
 export function parseArgs(argv) {
   const options = { prepare: false, activate: false };
@@ -68,6 +74,10 @@ export function parseArgs(argv) {
       const next = argv[++i];
       if (!next || next.startsWith('--')) throw new Error('缺少 --failure-cgroup-receipt 路径');
       options.failureCgroupReceiptPath = next;
+    } else if (value === '--previous-capacity-batch-receipt') {
+      const next = argv[++i];
+      if (!next || next.startsWith('--')) throw new Error('缺少 --previous-capacity-batch-receipt 路径');
+      options.previousCapacityBatchReceiptPath = next;
     } else throw new Error(`未知参数：${value}`);
   }
   if ([options.prepare, options.activate, Boolean(options.capacityBatch), Boolean(options.refreshCandidate)].filter(Boolean).length > 1) throw new Error('--prepare、--refresh-candidate、--capacity-batch 与 --activate 不能同时使用');
@@ -80,11 +90,13 @@ export function parseArgs(argv) {
   if (options.resumeReceiptPath && !path.isAbsolute(options.resumeReceiptPath)) throw new Error('--resume-receipt 必须提供绝对路径');
   if (options.replaceStagedRevision && !options.prepare) throw new Error('--replace-staged-revision 只能与 --prepare 一起使用');
   if (options.replaceStagedRevision && options.resumeReceiptPath) throw new Error('--replace-staged-revision 不能与 --resume-receipt 共用');
-  if (options.refreshCandidate && (!options.previousReleaseReceiptPath || !options.failureCgroupReceiptPath)) throw new Error('--refresh-candidate 必须提供旧release receipt与本地failure-cgroup receipt路径');
+  if (options.refreshCandidate && (!options.previousReleaseReceiptPath || !options.previousCapacityBatchReceiptPath)) throw new Error('--refresh-candidate 必须提供旧release与已完成容量批次回执');
+  if (options.refreshCandidate && options.failureCgroupReceiptPath) throw new Error('--failure-cgroup-receipt已弃用；refresh需使用完整--previous-capacity-batch-receipt');
   if (options.previousReleaseReceiptPath && !options.refreshCandidate) throw new Error('--previous-release-receipt 只能与 --refresh-candidate 一起使用');
   if (options.failureCgroupReceiptPath && !options.refreshCandidate) throw new Error('--failure-cgroup-receipt 只能与 --refresh-candidate 一起使用');
+  if (options.previousCapacityBatchReceiptPath && !options.refreshCandidate) throw new Error('--previous-capacity-batch-receipt 只能与 --refresh-candidate 一起使用');
   if (options.refreshCandidate && (options.resumeReceiptPath || options.replaceStagedRevision)) throw new Error('--refresh-candidate 不能与prepare续传/替换staging参数共用');
-  for (const [key, label] of [['previousReleaseReceiptPath', '--previous-release-receipt'], ['failureCgroupReceiptPath', '--failure-cgroup-receipt']]) {
+  for (const [key, label] of [['previousReleaseReceiptPath', '--previous-release-receipt'], ['failureCgroupReceiptPath', '--failure-cgroup-receipt'], ['previousCapacityBatchReceiptPath', '--previous-capacity-batch-receipt']]) {
     if (options[key] && !path.isAbsolute(options[key])) throw new Error(`${label} 必须提供绝对路径`);
   }
   return options;
@@ -134,6 +146,14 @@ export function validateCandidateRefreshRevisions(oldRevision, newRevision, reso
   return { oldRevision: resolvedOld, newRevision: resolvedNew };
 }
 
+export function validateCandidateRefreshChangeSet(changedArchivePaths) {
+  if (!Array.isArray(changedArchivePaths)) throw new Error('candidate refresh change set must be an array');
+  const actual = [...new Set(changedArchivePaths)].sort();
+  const expected = [...CANDIDATE_REFRESH_SOURCES].sort();
+  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) throw new Error(`candidate refresh archive changes must be exactly: ${expected.join(', ')}`);
+  return actual;
+}
+
 export function candidateRefreshPreflightScript({ oldRevision, newRevision, expectedFiles, selectedOldBytes }) {
   if (!/^[0-9a-f]{40}$/i.test(oldRevision ?? '') || !/^[0-9a-f]{40}$/i.test(newRevision ?? '') || oldRevision.toLowerCase() === newRevision.toLowerCase()) throw new Error('invalid candidate refresh revisions');
   if (!Array.isArray(expectedFiles) || !expectedFiles.includes('tools/resonance/capacity.mjs') || expectedFiles.some(file => !/^[A-Za-z0-9_./-]+$/.test(file) || file.startsWith('/') || file.split('/').includes('..'))) throw new Error('invalid candidate refresh inventory');
@@ -141,6 +161,7 @@ export function candidateRefreshPreflightScript({ oldRevision, newRevision, expe
   if (selectedSources.some(file => !expectedFiles.includes(file) || !/^[A-Za-z0-9+/=]+$/.test(selectedOldBytes?.[file] ?? ''))) throw new Error('refresh requires exact old-Native bytes for capacity.mjs and resonance.css');
   const expected = [...new Set([...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'])].sort();
   const expectedLines = expected.map(value => `'${value}'`).join(' ');
+  const knownCapacityArchives = CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision).join('|');
   return `set -eu
 C='${CANDIDATE}'
 S='${STAGING}'
@@ -156,7 +177,7 @@ test -f "$S/server-release.json" && test ! -L "$S/server-release.json" && test "
 staged_revision=$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$S/server-release.json")
 test "$staged_revision" = "$OLD" || { echo 'staged-native-not-expected-old' >&2; exit 65; }
 for f in server-code.tar resonance-references.zip package.json package-lock.json server-release.json; do test -f "$S/$f" && test ! -L "$S/$f" && test "$(stat -c %h "$S/$f")" -eq 1 || { echo "staging-owned-file-unsafe:$S/$f" >&2; exit 66; }; done
-for f in "$S"/*; do test -e "$f" || continue; case "$(basename "$f")" in server-code.tar|resonance-references.zip|package.json|package-lock.json|server-release.json|capacity-http-cgroup.json|capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json) test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-unknown-or-unsafe:$f" >&2; exit 67; };; *) echo "staging-unknown:$f" >&2; exit 67;; esac; done
+for f in "$S"/*; do test -e "$f" || continue; case "$(basename "$f")" in server-code.tar|resonance-references.zip|package.json|package-lock.json|server-release.json|capacity-http-cgroup.json|capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json|capacity-receipt.json|capacity-recording-receipt.json|capacity-batch-receipt.json|capacity-recording-cgroup.json|${knownCapacityArchives}) test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || { echo "staging-unknown-or-unsafe:$f" >&2; exit 67; };; *) echo "staging-unknown:$f" >&2; exit 67;; esac; done
 links=$(find "$C" -type l -print -quit); test -z "$links" || { echo "candidate-link:$links" >&2; exit 68; }
 hard=$(find "$C" -type f -exec sh -c 'for f do test "$(stat -c %h "$f")" -eq 1 || { echo "$f"; exit 1; }; done' sh {} +) || { echo "candidate-hardlink:$hard" >&2; exit 68; }
 actual=$(find "$C" -type f -printf '%P\\n' | sort)
@@ -184,21 +205,7 @@ cwd_refs=$(find /proc -mindepth 2 -maxdepth 2 -type l -name cwd -lname "$C*" -pr
 for cwdlink in $cwd_refs; do pid=\${cwdlink#/proc/}; pid=\${pid%%/*}; cwd=$(readlink -f "$cwdlink" 2>/dev/null || true); argv=$(tr '\\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true); if { test "$pid" = "$$" || test "$pid" = "$PPID"; } && case "$cwd:$argv" in *"$C"*) false;; *) true;; esac; then continue; fi; echo "candidate-process-reference-pid:$pid cwd=$cwd argvCandidateSourcePresent=$([[ "$argv" == *"$C"* ]] && echo yes || echo no)" >&2; exit 71; done
 printf '%s' '${selectedOldBytes['tools/resonance/capacity.mjs']}' | base64 -d | cmp -s - "$C/tools/resonance/capacity.mjs" || { echo 'candidate-capacity-not-exact-old-native-bytes' >&2; exit 73; }
 printf '%s' '${selectedOldBytes['public/css/resonance.css']}' | base64 -d | cmp -s - "$C/public/css/resonance.css" || { echo 'candidate-resonance-css-not-exact-old-native-bytes' >&2; exit 73; }
-cgroup_status=missing
-cgroup_b64=''
-cgroup_file=''
-if test -e "$S/capacity-http-cgroup.json" || test -L "$S/capacity-http-cgroup.json"; then
-  test ! -e "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json" && test ! -L "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json" || { echo 'failure-cgroup-original-and-archive-both-exist' >&2; exit 74; }
-  cgroup_file="$S/capacity-http-cgroup.json"; cgroup_status=observed-matching-e890-failure
-elif test -e "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json" || test -L "$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json"; then
-  cgroup_file="$S/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json"; cgroup_status=already-preserved-matching-e890-failure
-fi
-if test -n "$cgroup_file"; then
-  test -f "$cgroup_file" && test ! -L "$cgroup_file" && test "$(stat -c %h "$cgroup_file")" -eq 1 || { echo 'failure-cgroup-not-ordinary' >&2; exit 74; }
-  "$NODE" -e 'const fs=require("fs"),r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.unit!=="resonance-cap-e890d97c2f04-http.service"||r.recording!==false||!Number.isInteger(r.runnerExitCode)||r.runnerExitCode===0||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0)){console.error("failure-cgroup-identity-mismatch");process.exit(1)}' "$cgroup_file" || exit 75
-  cgroup_b64=$(base64 -w0 "$cgroup_file")
-fi
-printf '{"preflight":"ok","oldRevision":"%s","newRevision":"%s","candidate":"%s","failureCgroupStatus":"%s","failureCgroupBase64":"%s"}\\n' "$OLD" "$NEW" "$C" "$cgroup_status" "$cgroup_b64"`;
+printf '{"preflight":"ok","oldRevision":"%s","newRevision":"%s","candidate":"%s"}\\n' "$OLD" "$NEW" "$C"`;
 }
 
 export function candidateRefreshScript(oldRevision, newRevision, expectedFiles = ['tools/resonance/capacity.mjs', 'server/index.js']) {
@@ -252,6 +259,78 @@ test "$actual" = "$expected" || { echo 'candidate-final-inventory-mismatch' >&2;
 links=$(find "$C" -type l -print -quit); test -z "$links" || { echo "candidate-final-link:$links" >&2; exit 89; }
 hard=$(find "$C" -type f -exec sh -c 'for f do test "$(stat -c %h "$f")" -eq 1 || { echo "$f"; exit 1; }; done' sh {} +) || { echo "candidate-final-hardlink:$hard" >&2; exit 89; }
 printf '{"refreshed":true,"candidate":"%s","previousRevision":"%s","sourceRevision":"%s","updatedFiles":%s}\\n' "$C" "$OLD" "$NEW" '${updatedFiles}'`;
+}
+
+export function archiveCompletedCapacityBatchScript(oldRevision) {
+  if (!/^[0-9a-f]{40}$/i.test(oldRevision ?? '')) throw new Error('invalid old capacity Native revision');
+  const sources = [CAPACITY_RECEIPT, CAPACITY_RECORDING_RECEIPT, CAPACITY_BATCH_RECEIPT,
+    `${STAGING}/capacity-http-cgroup.json`, `${STAGING}/capacity-recording-cgroup.json`];
+  const targets = CAPACITY_BATCH_ARCHIVE_NAMES(oldRevision).map(name => `${STAGING}/${name}`);
+  const checks = sources.map((source, i) => `
+src='${source}'; dst='${targets[i]}';
+if test -e "$src" || test -L "$src"; then
+  test ! -e "$dst" && test ! -L "$dst" || { echo 'capacity-archive-source-and-target-exist' >&2; exit 91; }
+  test -f "$src" && test ! -L "$src" && test "$(stat -c %h "$src")" -eq 1 || { echo 'capacity-source-unsafe' >&2; exit 92; }
+  "$NODE" - "$src" '${oldRevision}' '${i}' <<'CHECK_CAP'
+const fs=require('fs');const [file,rev,index]=process.argv.slice(2);const r=JSON.parse(fs.readFileSync(file,'utf8'));
+if(index==='0'||index==='1'){if(r.status!=='completed'||r.sourceRevision!==rev||r.concurrency!==4||r.sessions?.length!==4)process.exit(1);if(r.recording!==(index==='1'))process.exit(1);}
+if(index==='2'){if(r.schema!=='resonance-capacity-batch-receipt/v1'||r.status!=='completed'||r.sourceRevision!==rev||r.phases?.length!==2||r.cleanup?.sessionDirectoryEmpty!==true)process.exit(1);}
+if(index==='3'||index==='4'){const phase=index==='3'?0:1;const suffix=phase===0?'http':'recording';if(r.sourceRevision!==rev||!String(r.unit||'').includes(rev.slice(0,12))||!String(r.unit||'').includes(suffix)||r.unitResult!=='success'||r.runnerExitCode!==0||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0))process.exit(1);}
+CHECK_CAP
+else
+  test -f "$dst" && test ! -L "$dst" && test "$(stat -c %h "$dst")" -eq 1 || { echo 'capacity-archive-missing-or-unsafe' >&2; exit 93; }
+  "$NODE" - "$dst" '${oldRevision}' '${i}' <<'CHECK_CAP'
+const fs=require('fs');const [file,rev,index]=process.argv.slice(2);const r=JSON.parse(fs.readFileSync(file,'utf8'));
+if((index==='0'||index==='1')&&(r.status!=='completed'||r.sourceRevision!==rev||r.concurrency!==4||r.sessions?.length!==4||r.recording!==(index==='1')))process.exit(1);
+if(index==='2'&&(r.schema!=='resonance-capacity-batch-receipt/v1'||r.status!=='completed'||r.sourceRevision!==rev||r.phases?.length!==2||r.cleanup?.sessionDirectoryEmpty!==true))process.exit(1);
+if((index==='3'||index==='4')&&(r.sourceRevision!==rev||!String(r.unit||'').includes(rev.slice(0,12))||r.unitResult!=='success'||r.runnerExitCode!==0||!(r.cpuUsageNSec>0)||!(r.memoryPeakBytes>0)))process.exit(1);
+CHECK_CAP
+fi`).join('');
+  return `set -eu\nNODE='${REMOTE_NODE}'\n${checks}\n${sources.map((source, i) => `if test -e '${source}'; then mv -- '${source}' '${targets[i]}'; fi\n`).join('')}\nfor f in ${targets.map(v => `'${v}'`).join(' ')}; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || exit 94; done\nprintf '{"archived":true,"sourceRevision":"${oldRevision}","files":${JSON.stringify(targets)}}\\n'`;
+}
+
+export function candidateSessionRefreshScript(oldRevision, newRevision, expectedFiles, unchangedOldBytes, oldSelectedBytes) {
+  for (const r of [oldRevision, newRevision]) if (!/^[0-9a-f]{40}$/i.test(r ?? '')) throw new Error('invalid candidate session refresh revision');
+  if (oldRevision.toLowerCase() === newRevision.toLowerCase()) throw new Error('candidate session refresh Native revisions must differ');
+  const update = CANDIDATE_REFRESH_SOURCES;
+  const referenceIndex = update.length;
+  const manifestIndex = update.length + 1;
+  const invariant = ['tools/resonance/capacity.mjs', 'public/css/resonance.css'];
+  if (!Array.isArray(expectedFiles) || [...update, ...invariant].some(f => !expectedFiles.includes(f))) throw new Error('new archive lacks selected or invariant source');
+  if (update.some(f => !/^[A-Za-z0-9+/=]+$/.test(oldSelectedBytes?.[f] ?? '')) || invariant.some(f => !/^[A-Za-z0-9+/=]+$/.test(unchangedOldBytes?.[f] ?? ''))) throw new Error('session refresh requires exact old Native bytes');
+  const files = [...update, 'public/resonance-references.zip', '.resonance-release-receipt.json'];
+  const backups = files.map(f => `${CANDIDATE}/${f}.refresh-backup`);
+  const pending = files.map(f => `${CANDIDATE}/${f}.refresh-pending`);
+  const expected = [...expectedFiles, 'public/resonance-references.zip', '.resonance-release-receipt.json'].sort();
+  return `set -eu
+C='${CANDIDATE}'; S='${STAGING}'; OLD='${oldRevision}'; NEW='${newRevision}'; NODE='${REMOTE_NODE}'
+files='${files.map(f => `${CANDIDATE}/${f}`).join(' ')}'; committed=0
+rollback(){ rc=$?; trap - EXIT INT TERM; if test "$committed" -ne 1; then set +e; for f in $files; do b="$f.refresh-backup"; p="$f.refresh-pending"; if test -f "$b" && test ! -L "$b" && test "$(stat -c %h "$b")" -eq 1; then mv -- "$b" "$f"; fi; if test -f "$p" && test ! -L "$p" && test "$(stat -c %h "$p")" -eq 1; then rm -- "$p"; fi; done; fi; exit "$rc"; }
+trap rollback EXIT; trap 'exit 130' INT; trap 'exit 143' TERM
+test "$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$C/.resonance-release-receipt.json")" = "$OLD" || exit 81
+test "$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$S/server-release.json")" = "$NEW" || exit 82
+${update.map(f => `printf '%s' '${oldSelectedBytes[f]}' | base64 -d | cmp -s - "$C/${f}" || { echo 'candidate-product-source-not-exact-old-native:${f}' >&2; exit 83; }`).join('\n')}
+${invariant.map(f => `printf '%s' '${unchangedOldBytes[f]}' | base64 -d | cmp -s - "$C/${f}" || { echo 'candidate-invariant-differs:${f}' >&2; exit 83; }`).join('\n')}
+for f in $files; do test ! -e "$f.refresh-backup" && test ! -e "$f.refresh-pending" || exit 84; cp -p -- "$f" "$f.refresh-backup"; done
+${update.map((f, i) => `tar -xOf "$S/server-code.tar" '${f}' > '${pending[i]}'`).join('\n')}
+tar -xOf "$S/server-code.tar" 'tools/resonance/capacity.mjs' | cmp -s - "$C/tools/resonance/capacity.mjs" || { echo 'new-capacity-must-remain-identical' >&2; exit 85; }
+tar -xOf "$S/server-code.tar" 'public/css/resonance.css' | cmp -s - "$C/public/css/resonance.css" || { echo 'new-css-must-remain-identical' >&2; exit 85; }
+cp -p "$S/resonance-references.zip" '${pending[referenceIndex]}'; cp -p "$S/server-release.json" '${pending[manifestIndex]}'
+for f in ${pending.map(f => `'${f}'`).join(' ')}; do test -f "$f" && test ! -L "$f" && test "$(stat -c %h "$f")" -eq 1 || exit 86; done
+${update.map((f, i) => `mv -- '${pending[i]}' '${CANDIDATE}/${f}'`).join('\n')}
+mv -- '${pending[referenceIndex]}' '${CANDIDATE}/public/resonance-references.zip'; mv -- '${pending[manifestIndex]}' '${CANDIDATE}/.resonance-release-receipt.json'
+test "$("$NODE" -e 'const r=require(process.argv[1]);process.stdout.write(String(r.sourceRevision||""))' "$C/.resonance-release-receipt.json")" = "$NEW" || exit 87
+${update.map(f => `tar -xOf "$S/server-code.tar" '${f}' | cmp -s - "$C/${f}" || exit 87`).join('\n')}
+cmp -s "$S/resonance-references.zip" "$C/public/resonance-references.zip" || exit 87; cmp -s "$S/server-release.json" "$C/.resonance-release-receipt.json" || exit 87
+actual=$(find "$C" -type f ! -name '*.refresh-backup' -printf '%P\\n' | sort); expected=$(printf '%s\\n' ${expected.map(f => `'${f}'`).join(' ')} | sort); test "$actual" = "$expected" || exit 88
+links=$(find "$C" -type l -print -quit); test -z "$links" || { echo "candidate-link-after-session-refresh:$links" >&2; exit 89; }
+hard=$(find "$C" -type f -exec sh -c 'for f do test "$(stat -c %h "$f")" -eq 1 || { echo "$f"; exit 1; }; done' sh {} +) || { echo "candidate-hardlink-after-session-refresh:$hard" >&2; exit 89; }
+command -v fuser >/dev/null 2>&1 || { echo 'fuser-required-after-session-refresh' >&2; exit 90; }
+mapfile -d '' candidate_files < <(find "$C" -type f -print0)
+set +e; fuser_output=$(fuser -f -- "\${candidate_files[@]}" 2>/dev/null); fuser_status=$?; set -e
+if test "$fuser_status" -eq 0; then echo "candidate-file-in-use-after-session-refresh:$fuser_output" >&2; exit 90; elif test "$fuser_status" -ne 1; then echo 'fuser-error-after-session-refresh' >&2; exit 90; fi
+committed=1; for f in $files; do rm -- "$f.refresh-backup"; done
+printf '{"refreshed":true,"candidate":"%s","previousRevision":"%s","sourceRevision":"%s","updatedFiles":%s}\\n' "$C" "$OLD" "$NEW" '${JSON.stringify(files)}'`;
 }
 
 export function preserveOldFailureCgroupScript(status, cgroupBase64) {
@@ -456,8 +535,9 @@ export function capacityBatchReceiptFromStdout(stdout, revision) {
   return receipt;
 }
 
-function prepareLocalBatchReceiptPath(file) {
+export function prepareLocalBatchReceiptPath(file, revision) {
   const target = path.resolve(file);
+  if (!/^[0-9a-f]{40}$/i.test(revision ?? '')) throw new Error('capacity receipt requires full Native revision');
   if (!target.replaceAll('\\', '/').endsWith('/runtime/resonance/deployment/capacity-batch-receipt.json')) throw new Error('local capacity receipt must use runtime/resonance/deployment/capacity-batch-receipt.json');
   let current = path.parse(target).root;
   const relative = path.relative(current, path.dirname(target)).split(path.sep).filter(Boolean);
@@ -468,14 +548,39 @@ function prepareLocalBatchReceiptPath(file) {
       if (!st.isDirectory() || st.isSymbolicLink()) throw new Error(`local capacity receipt parent is not an ordinary directory: ${current}`);
     } else fs.mkdirSync(current);
   }
-  if (fs.existsSync(target) || fs.existsSync(`${target}.pending`)) throw new Error(`local capacity receipt output already exists: ${target}`);
-  return target;
+  if (fs.existsSync(`${target}.pending`)) throw new Error(`local capacity receipt pending output already exists: ${target}.pending`);
+  if (!fs.existsSync(target)) return { target, reuse: false, archivedPreviousReceipt: null };
+  checkedRegularFile(target, 'existing local capacity receipt');
+  const existingBytes = fs.readFileSync(target);
+  const existing = capacityBatchReceiptFromStdout(JSON.stringify(JSON.parse(existingBytes.toString('utf8'))), JSON.parse(existingBytes.toString('utf8')).sourceRevision);
+  if (existing.sourceRevision.toLowerCase() === revision.toLowerCase()) return { target, reuse: true, receipt: existing, archivedPreviousReceipt: null };
+  const archivedPreviousReceipt = target.slice(0, -'.json'.length) + `.${existing.sourceRevision}.json`;
+  if (fs.existsSync(archivedPreviousReceipt)) {
+    checkedRegularFile(archivedPreviousReceipt, 'archived local capacity receipt');
+    if (!fs.readFileSync(archivedPreviousReceipt).equals(existingBytes)) throw new Error(`旧Native capacity receipt归档字节不一致：${archivedPreviousReceipt}`);
+  } else fs.writeFileSync(archivedPreviousReceipt, existingBytes, { flag: 'wx' });
+  return { target, reuse: false, receipt: existing, archivedPreviousReceipt };
 }
 
-function writeLocalBatchReceipt(target, receipt) {
+export function writeLocalBatchReceipt(target, receipt) {
   const pending = `${target}.pending`;
+  if (fs.existsSync(pending)) throw new Error(`local capacity receipt transaction path exists: ${pending}`);
+  if (fs.existsSync(target)) {
+    checkedRegularFile(target, 'replaced local capacity receipt');
+    const oldBytes = fs.readFileSync(target);
+    const old = JSON.parse(oldBytes.toString('utf8'));
+    capacityBatchReceiptFromStdout(JSON.stringify(old), old.sourceRevision);
+    const archived = target.slice(0, -'.json'.length) + `.${old.sourceRevision}.json`;
+    checkedRegularFile(archived, 'archived replaced local capacity receipt');
+    if (!fs.readFileSync(archived).equals(oldBytes)) throw new Error(`旧Native capacity receipt归档字节不一致：${archived}`);
+  }
   fs.writeFileSync(pending, `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx' });
-  fs.renameSync(pending, target);
+  try {
+    fs.renameSync(pending, target);
+  } catch (error) {
+    if (fs.existsSync(pending)) fs.unlinkSync(pending);
+    throw error;
+  }
   return target;
 }
 
@@ -793,47 +898,46 @@ function readPreviousReleaseRevision(receiptPath, nextRevision) {
   return oldRevision;
 }
 
-function refreshCandidateRemote(release, oldRevision, failureReceiptPath) {
+function refreshCandidateRemote(release, oldRevision, priorBatchReceipt) {
   if (!fs.existsSync(IDENTITY)) throw new Error(`SSH identity不存在：${IDENTITY}`);
-  if (fs.existsSync(failureReceiptPath)) throw new Error(`failure-cgroup receipt已存在，拒绝覆盖：${failureReceiptPath}`);
-  const failureParent = path.dirname(failureReceiptPath);
-  if (!fs.statSync(failureParent).isDirectory()) throw new Error(`failure-cgroup receipt父目录不存在：${failureParent}`);
   const archiveEntries = execFileSync(TAR_COMMAND, ['-tf', release.code.path], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
   const candidateFiles = archiveEntries.filter(name => !name.endsWith('/'));
-  if (!candidateFiles.includes('tools/resonance/capacity.mjs')) throw new Error('新release缺少容量runner源码');
+  if (CANDIDATE_REFRESH_SOURCES.some(file => !candidateFiles.includes(file))) throw new Error('新release缺少获准的共鸣产品源文件');
+  const candidateFileSet = new Set(candidateFiles);
+  const changedPaths = execFileSync('git', ['-C', ROOT, 'diff', '--name-only', oldRevision, release.sourceRevision], { encoding: 'utf8' })
+    .split(/\r?\n/).filter(file => candidateFileSet.has(file));
+  validateCandidateRefreshChangeSet(changedPaths);
   const selectedOldBytes = Object.fromEntries(['tools/resonance/capacity.mjs', 'public/css/resonance.css'].map(file => [
     file, execFileSync('git', ['-C', ROOT, 'show', `${oldRevision}:${file}`]).toString('base64'),
   ]));
+  const oldProductBytes = Object.fromEntries(CANDIDATE_REFRESH_SOURCES.map(file => [
+    file, execFileSync('git', ['-C', ROOT, 'show', `${oldRevision}:${file}`]).toString('base64'),
+  ]));
+  const newProductBytes = Object.fromEntries(CANDIDATE_REFRESH_SOURCES.map(file => [
+    file, execFileSync('git', ['-C', ROOT, 'show', `${release.sourceRevision}:${file}`]).toString('base64'),
+  ]));
+  for (const file of CANDIDATE_REFRESH_SOURCES) {
+    if (execFileSync(TAR_COMMAND, ['-xOf', release.code.path, file]).toString('base64') !== newProductBytes[file]) throw new Error(`new tar product bytes differ from Native Git: ${file}`);
+  }
+  for (const file of ['tools/resonance/capacity.mjs', 'public/css/resonance.css']) {
+    const next = execFileSync(TAR_COMMAND, ['-xOf', release.code.path, file]).toString('base64');
+    if (next !== selectedOldBytes[file]) throw new Error(`新Native非授权变更：${file} 与旧Native不同`);
+  }
   const preflightScript = candidateRefreshPreflightScript({ oldRevision, newRevision: release.sourceRevision, expectedFiles: candidateFiles, selectedOldBytes });
   const preflightText = invoke('ssh', [...sshArgs(), 'bash', '-s'], preflightScript, 45_000);
   const preflight = JSON.parse(preflightText);
   if (preflight.preflight !== 'ok' || preflight.oldRevision !== oldRevision || preflight.newRevision !== release.sourceRevision || preflight.candidate !== CANDIDATE) throw new Error('候选原位刷新预检回执与本地Native版本不匹配');
-  let cgroupReceipt;
-  if (preflight.failureCgroupStatus === 'observed-matching-e890-failure') {
-    const parsed = JSON.parse(Buffer.from(preflight.failureCgroupBase64, 'base64').toString('utf8'));
-    cgroupReceipt = { schema: 'resonance-capacity-failure-cgroup-preservation/v1', sourceRevision: oldRevision,
-      observedRemotePath: `${STAGING}/capacity-http-cgroup.json`, observedAt: new Date().toISOString(), observation: parsed };
-    fs.writeFileSync(failureReceiptPath, `${JSON.stringify(cgroupReceipt, null, 2)}\n`, { flag: 'wx' });
-  } else if (preflight.failureCgroupStatus === 'already-preserved-matching-e890-failure') {
-    const parsed = JSON.parse(Buffer.from(preflight.failureCgroupBase64, 'base64').toString('utf8'));
-    cgroupReceipt = { schema: 'resonance-capacity-failure-cgroup-preservation/v1', sourceRevision: oldRevision,
-      observedRemotePath: `${STAGING}/capacity-http-cgroup.e890d97c2f044d085b6b1e22b41625e6390530b4.json`, observedAt: new Date().toISOString(), observation: parsed, status: 'already-preserved' };
-    fs.writeFileSync(failureReceiptPath, `${JSON.stringify(cgroupReceipt, null, 2)}\n`, { flag: 'wx' });
-  } else if (preflight.failureCgroupStatus === 'missing') {
-    cgroupReceipt = { schema: 'resonance-capacity-failure-cgroup-preservation/v1', sourceRevision: oldRevision,
-      observedRemotePath: `${STAGING}/capacity-http-cgroup.json`, observedAt: new Date().toISOString(), status: 'missing' };
-    fs.writeFileSync(failureReceiptPath, `${JSON.stringify(cgroupReceipt, null, 2)}\n`, { flag: 'wx' });
-  } else throw new Error('远端failure-cgroup状态未知，拒绝继续候选更新');
-  if (preflight.failureCgroupStatus === 'observed-matching-e890-failure' || preflight.failureCgroupStatus === 'already-preserved-matching-e890-failure') {
-    const archive = invoke('ssh', [...sshArgs(), 'bash', '-s'], preserveOldFailureCgroupScript(preflight.failureCgroupStatus, preflight.failureCgroupBase64), 45_000);
-    if (!archive.includes('"preserved":true')) throw new Error('old Native failure cgroup未能原位归档');
-  }
+  if (!priorBatchReceipt || priorBatchReceipt.sourceRevision !== oldRevision) throw new Error('本地已完成容量批次不属于候选旧Native');
+  const archiveText = invoke('ssh', [...sshArgs(), 'bash', '-s'], archiveCompletedCapacityBatchScript(oldRevision), 60_000);
+  const archived = JSON.parse(archiveText);
+  if (archived.archived !== true || archived.sourceRevision !== oldRevision || archived.files?.length !== 5) throw new Error('旧Native容量批次未能精确保全归档');
   const transfers = release.artifacts.map(artifact => ({ source: artifact.path, target: `${STAGING}/${path.basename(artifact.path)}`, role: artifact.role }));
   invoke('scp', scpBatchArgs(IDENTITY, PORT, HOST, STAGING, release.artifacts), undefined, 180_000);
-  const result = JSON.parse(invoke('ssh', [...sshArgs(), 'timeout 90s bash -s'], candidateRefreshScript(oldRevision, release.sourceRevision, candidateFiles), 120_000));
+  const result = JSON.parse(invoke('ssh', [...sshArgs(), 'timeout 90s bash -s'], candidateSessionRefreshScript(oldRevision, release.sourceRevision,
+    candidateFiles, selectedOldBytes, oldProductBytes), 120_000));
   if (result.refreshed !== true || result.candidate !== CANDIDATE || result.previousRevision !== oldRevision || result.sourceRevision !== release.sourceRevision) throw new Error('candidate refresh终态与预期不一致');
-  return { ...result, staging: STAGING, failureCgroupReceipt: failureReceiptPath,
-    failureCgroupStatus: cgroupReceipt.status ?? 'observed-matching-e890-failure', artifactTransfers: transfers };
+  return { ...result, staging: STAGING, archivedCapacityReceipt: priorBatchReceipt.localPath,
+    archivedCapacityFiles: archived.files, artifactTransfers: transfers };
 }
 
 function main() {
@@ -844,23 +948,30 @@ function main() {
   const release = readReleaseReceipt(receiptPath);
   if (options.refreshCandidate) {
     const previousReceiptPath = absolutePath(options.previousReleaseReceiptPath, '--previous-release-receipt');
-    const failureReceiptPath = absolutePath(options.failureCgroupReceiptPath, '--failure-cgroup-receipt');
+    const previousBatchPath = absolutePath(options.previousCapacityBatchReceiptPath, '--previous-capacity-batch-receipt');
     const oldRevision = readPreviousReleaseRevision(previousReceiptPath, release.sourceRevision);
-    const remoteResult = refreshCandidateRemote(release, oldRevision, failureReceiptPath);
+    if (!previousBatchPath.replaceAll('\\', '/').endsWith('/runtime/resonance/deployment/capacity-batch-receipt.json')) throw new Error('previous capacity receipt must use runtime/resonance/deployment/capacity-batch-receipt.json');
+    checkedRegularFile(previousBatchPath, 'previous capacity batch receipt');
+    const previousBatch = capacityBatchReceiptFromStdout(fs.readFileSync(previousBatchPath, 'utf8'), oldRevision);
+    const remoteResult = refreshCandidateRemote(release, oldRevision, { ...previousBatch, localPath: previousBatchPath });
     return process.stdout.write(`${JSON.stringify({ mode: 'refresh-candidate', oldRevision,
-      sourceRevision: release.sourceRevision, previousReleaseReceipt: previousReceiptPath, failureCgroupReceipt: failureReceiptPath,
-      staging: STAGING, candidate: CANDIDATE, updatedFiles: ['tools/resonance/capacity.mjs', 'public/css/resonance.css', 'public/resonance-references.zip', '.resonance-release-receipt.json'],
+      sourceRevision: release.sourceRevision, previousReleaseReceipt: previousReceiptPath, previousCapacityBatchReceipt: previousBatchPath,
+      staging: STAGING, candidate: CANDIDATE, updatedFiles: [...CANDIDATE_REFRESH_SOURCES, 'public/resonance-references.zip', '.resonance-release-receipt.json'],
       remoteResult })}\n`);
   }
   if (options.capacityBatch) {
     if (!fs.existsSync(IDENTITY)) throw new Error(`SSH identity不存在：${IDENTITY}`);
-    const localReceiptPath = prepareLocalBatchReceiptPath(options.localCapacityReceiptPath);
+    const localReceipt = prepareLocalBatchReceiptPath(options.localCapacityReceiptPath, release.sourceRevision);
+    if (localReceipt.reuse) return process.stdout.write(`${JSON.stringify({ mode: 'capacity-batch', status: localReceipt.receipt.status,
+      sourceRevision: release.sourceRevision, reusedExistingReceipt: true, localReceipt: localReceipt.target,
+      archivedPreviousReceipt: null, remoteReceipt: `${STAGING}/capacity-batch-receipt.json`, sessionDirectory: CAPACITY_SESSION })}\n`);
     const command = capacityBatchCommand(release.sourceRevision);
     const stdout = invoke('ssh', command.args, command.input, command.timeoutMs);
     const batch = capacityBatchReceiptFromStdout(stdout, release.sourceRevision);
-    writeLocalBatchReceipt(localReceiptPath, batch);
+    writeLocalBatchReceipt(localReceipt.target, batch);
     return process.stdout.write(`${JSON.stringify({ mode: 'capacity-batch', status: batch.status, sourceRevision: batch.sourceRevision,
-      localReceipt: localReceiptPath, remoteReceipt: `${STAGING}/capacity-batch-receipt.json`, sessionDirectory: CAPACITY_SESSION,
+      localReceipt: localReceipt.target, archivedPreviousReceipt: localReceipt.archivedPreviousReceipt,
+      remoteReceipt: `${STAGING}/capacity-batch-receipt.json`, sessionDirectory: CAPACITY_SESSION,
       phases: batch.phases.map(phase => ({ recording: phase.capacity.recording, concurrency: phase.capacity.concurrency,
         cpuUsageNSec: phase.cgroup.cpuUsageNSec, memoryPeakBytes: phase.cgroup.memoryPeakBytes,
         sessions: phase.capacity.sessions.length, replayGzipBytes: phase.capacity.sessions.reduce((sum, row) => sum + (row.replay?.gzipBytes || 0), 0) })) })}\n`);
