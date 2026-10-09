@@ -72,10 +72,10 @@ process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH ||= path.join(CANONICAL_ROOT, 'da
 process.env.SP_INDEPENDENT_GAME_TEXT_PATH ||= path.join(CANONICAL_ROOT, 'data/independent-game-text.json');
 const [{ startServer }, { loadData }, { getResonanceCatalog, resonanceContent }, { createSession, validateSession },
   { getResonanceField, runResonanceBattle }, { legalSummonCells },
-  { ARCHETYPES, SCENARIO_CONFIGS, buildScenario, makePactTerminalRoster }] = await Promise.all([
+  { ownerRangeKeys }, { ARCHETYPES, SCENARIO_CONFIGS, buildScenario, makePactTerminalRoster }] = await Promise.all([
   import('../../server/index.js'), import('../../server/data.js'), import('../../server/modes/resonance/catalog.js'),
   import('../../server/modes/resonance/session.js'), import('../../server/modes/resonance/battle.js'),
-  import('../../server/modes/resonance/summons.js'), import('./archetype-balance.mjs'),
+  import('../../server/modes/resonance/summons.js'), import('../../server/match/board.js'), import('./archetype-balance.mjs'),
 ]);
 const STORIES = [
   'opening-four-difficulties', 'opening-three-environments', 'renderer-native', 'renderer-dom-fallback',
@@ -1184,21 +1184,60 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
       throw new Error('干员详情复制链接未包含该iframe本局session和干员hash');
     await frame.goto(detailTarget.href, { waitUntil: 'domcontentloaded' });
     await frame.waitForSelector('.rs-detail', { timeout: 15_000 });
-    const fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
+    let fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
     if (!fullscreen) throw new Error('Workshop新局的干员详情没有全屏入口');
     const iframeUrl = new URL(frame.url());
     const href = new URL(await fullscreen.evaluate((el) => el.href));
     if (href.searchParams.get('session') !== sessionId || href.hash !== iframeUrl.hash) throw new Error('Workshop iframe 的全屏链接未保留当前session/hash');
-    const popupPromise = new Promise((resolve) => workshop.once('popup', resolve));
-    await fullscreen.click();
-    const popup = await popupPromise;
+    const initialHit = await fullscreen.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const frame = window.frameElement;
+      const fr = frame?.getBoundingClientRect();
+      return { rect: { x: r.x, y: r.y, width: r.width, height: r.height }, hitTag: hit?.tagName,
+        hitText: hit?.textContent?.trim(), detailOpen: !!document.querySelector('.rs-detail'),
+        frameViewport: fr ? { width: fr.width, height: fr.height } : null,
+        documentViewport: { width: innerWidth, height: innerHeight } };
+    });
+    if (initialHit.detailOpen) {
+      const close = await frame.$('button[aria-label="关闭详情"]');
+      if (!close) throw new Error('Workshop干员详情遮挡全屏入口，且没有关闭控件');
+      await close.click();
+      await frame.waitForSelector('.rs-detail', { hidden: true, timeout: 10_000 });
+      fullscreen = await findTextHandle(frame, 'a', '全屏打开', false);
+      if (!fullscreen) throw new Error('关闭干员详情后Workshop全屏入口不存在');
+    }
+    await frame.waitForFunction(() => {
+      const el = [...document.querySelectorAll('a')].find((candidate) => candidate.textContent.trim() === '全屏打开');
+      if (!el) return false;
+      const r = el.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const frame = window.frameElement, fr = frame?.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight &&
+        hit === el && !document.querySelector('.rs-detail') && (!fr || (fr.width > 0 && fr.height > 0));
+    }, { timeout: 10_000 });
+    let popupHandler;
+    let popupTimeout;
+    const popupPromise = new Promise((resolve) => {
+      popupHandler = (page) => resolve(page);
+      workshop.once('popup', popupHandler);
+    });
+    let popup;
+    try {
+      await fullscreen.click();
+      popup = await Promise.race([popupPromise, new Promise((_, reject) => {
+        popupTimeout = setTimeout(() => reject(new Error('Workshop全屏点击未打开新页（15秒超时）')), 15_000);
+      })]);
+    } finally {
+      if (popupHandler) workshop.off('popup', popupHandler);
+      if (popupTimeout) clearTimeout(popupTimeout);
+    }
     try {
       await scopePage(popup);
       await waitGame(popup);
       const opened = new URL(popup.url());
       if (opened.searchParams.get('session') !== sessionId || opened.hash !== iframeUrl.hash) throw new Error('Workshop 全屏页未保留当前session/hash');
     } finally { await popup.close(); }
-    return `实际Workshop入口聚焦卡 ${focusCardId}，点击“${activationLabel}”后在notes-web画布内新开局 ${sessionId}；通过干员详情真实复制链接后全屏打开并保留session与hash；同源凭据范围${workshopAuth.enabled ? '已启用' : '使用现有cookies/公开访问'}`;
+    return `实际Workshop入口聚焦卡 ${focusCardId}，点击“${activationLabel}”后在notes-web画布内新开局 ${sessionId}；通过干员详情真实复制链接，关闭详情遮挡后确认全屏链接中心无遮挡，再实际点击全屏并保留session与hash；嵌入视口${JSON.stringify(initialHit.frameViewport)}；同源凭据范围${workshopAuth.enabled ? '已启用' : '使用现有cookies/公开访问'}`;
   } finally {
     browserInstance.off('targetcreated', targetHandler);
     for (const page of scopedPageList) {
@@ -1993,6 +2032,171 @@ async function runSummonFixtureCheck(sessionId) {
     await server?.close().catch(() => {}); await fixtureServer?.close().catch(() => {});
   }
 }
+async function runRobertaR3DefenseCheck(sessionId) {
+  assert(sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId),
+    'Roberta R3 check requires the existing fixture session UUID');
+  const runtimeState = JSON.parse(readFileSync(path.join(FIXTURE_SESSION_DIR, `${sessionId}.json`), 'utf8'));
+  const settledRounds = (runtimeState.history || []).filter((event) => event.type === 'fight-settled').map((event) => event.round);
+  assert(runtimeState.phase === 'prep' && runtimeState.round === 3 && !settledRounds.includes(3),
+    `Roberta R3 check must use the existing unsettled R3 prep node: ${sessionId}/${runtimeState.phase}/${runtimeState.round}/${settledRounds}`);
+  const old = priorBrowserReceipt();
+  const fixture = (old.fixtureSessions || []).find((entry) => entry.id === sessionId);
+  assert(fixture?.summonOwnerId === 'chess_native_char_484_robrta_a' && fixture?.summonTokenId === 'token_10018_robrta_mach',
+    'receipt does not identify the canonical Roberta machine owner/token');
+  const attempt = { fixtureId: sessionId, round: 3, priorSettledRounds: settledRounds, battleExecutedOnce: false,
+    nativeAtLaunch: nativeSourceState(), stage: 'validated-existing-r3-prep', actions: [] };
+  let page = null;
+  const deadline = new Promise((_, reject) => { timeoutHandle = setTimeout(() => {
+    void page?.close().catch(() => {}); void browser?.close().catch(() => {});
+    void server?.close().catch(() => {}); void fixtureServer?.close().catch(() => {});
+    reject(new Error('Roberta R3 defense check exceeded 5-minute deadline'));
+  }, 5 * 60 * 1000); });
+  try {
+    const work = (async () => {
+      const { data } = await startNarrowBrowser({ fixture: true });
+      page = await openSessionPage(browser, fixtureServer, sessionId);
+      page.on('response', async (response) => {
+        if (!/\/resonance\/api\/sessions\/[^/]+\/actions(?:\?|$)/.test(response.url())) return;
+        let body = null; try { body = await response.json(); } catch {}
+        attempt.actions.push({ status: response.status(), url: response.url(), body });
+      });
+      let state = await stateOf(page, sessionId);
+      if (!state.nodeStarted) state = await advancePrepViaUi(page, sessionId);
+      assert(state.phase === 'prep' && state.round === 3 && state.nodeStarted,
+        `official UI did not claim the existing R3 supply: ${state.phase}/${state.round}/${state.nodeStarted}`);
+      const owner = state.pieces.find((piece) => piece.operatorId === fixture.summonOwnerId && piece.row != null);
+      const frontline = state.pieces.find((piece) => piece.operator?.role === 'frontline'
+        && piece.operator?.position === 'MELEE' && piece.row != null);
+      assert(owner && frontline, `R3 session lacks deployed Roberta or deployed melee frontline: ${JSON.stringify(state.pieces.map(p=>({uid:p.uid,operatorId:p.operatorId,role:p.operator?.role,position:p.operator?.position,row:p.row,col:p.col})))}`);
+      const tokenRecord = owner.operator?.summons?.find((token) => token.id === fixture.summonTokenId);
+      assert(tokenRecord?.rangeGrid?.length, 'official owner DTO omitted the machine native range');
+      const catalog = getResonanceCatalog(data, { environmentId: state.environmentId, seed: state.seed });
+      const field = getResonanceField(state, { data, catalog });
+      const tokenDef = field.resolveToken(fixture.summonTokenId, owner.operatorId, catalog.operators[owner.operatorId]?.fixedSkillIndex);
+      assert(tokenDef?.rangeGrid?.length, 'native field resolver omitted the machine range definition');
+      const summonCells = owner.summonLegalTiles?.[fixture.summonTokenId] || [];
+      assert(summonCells.length, 'official DTO exposes no legal Roberta machine summon cells');
+      const occupied = new Set(state.pieces.filter((piece) => piece.uid !== frontline.uid && piece.row != null)
+        .map((piece) => `${piece.row},${piece.col}`));
+      const candidate = summonCells.flatMap((key) => {
+        const [row, col] = key.split(',').map(Number);
+        return [...ownerRangeKeys(tokenDef.rangeGrid, row, col, owner.dir || 'RIGHT')]
+          .map((targetKey) => ({ anchorKey:key, targetKey, anchor:[row,col], target:targetKey.split(',').map(Number) }));
+      }).find((entry) => entry.anchorKey !== entry.targetKey
+        && frontline.legalTiles?.includes(entry.targetKey)
+        && field.deployMap.get(entry.targetKey) === 'melee'
+        && !occupied.has(entry.targetKey));
+      assert(candidate, `no official token anchor has an empty legal MELEE tile in its native facing range: ${JSON.stringify({summonCells,frontLegal:frontline.legalTiles,ownerDir:owner.dir,range:tokenDef.rangeGrid})}`);
+      attempt.ownerUid = owner.uid;
+      attempt.frontlineUid = frontline.uid;
+      attempt.frontlineIdentity = { operatorId:frontline.operatorId, role:frontline.operator.role, position:frontline.operator.position };
+      attempt.targetPlan = { anchor: candidate.anchor, frontlineTarget: candidate.target, tokenRangeGrid: tokenDef.rangeGrid, direction: owner.dir || 'RIGHT' };
+      const moveToTarget = async () => {
+        const live = await stateOf(page, sessionId);
+        const current = live.pieces.find((piece) => piece.uid === frontline.uid);
+        assert(current?.row != null && current.legalTiles?.includes(candidate.targetKey),
+          `official DTO no longer permits the selected melee target tile: ${candidate.targetKey}`);
+        if (current.row === candidate.target[0] && current.col === candidate.target[1]) return live;
+        const canvas = await page.$('.rs-field__canvas');
+        assert(canvas, 'native field canvas is missing for R3 placement');
+        await canvas.evaluate((el) => el.scrollIntoView({ block:'center', inline:'center', behavior:'instant' }));
+        const numericUid = Number(String(frontline.uid).replace(/^\D+/, ''));
+        await page.waitForFunction(({ uid,row,col }) => {
+          const view=globalThis.__SP_VIEW__, rect=view?.pieceScreenRect(uid), dest=view?.tileScreen(row,col);
+          if(!view||!rect||!dest){window.__robertaR3Geometry=null;return false;}
+          const sourceCandidates=[{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-2}];
+          const source=sourceCandidates.find(point=>view.pieceAtClient?.(point.x,point.y)?.uid===uid);
+          const hit=dest&&document.elementFromPoint(dest.x,dest.y);
+          if(!source||!hit||hit.tagName!=='CANVAS'||[source.x,source.y,dest.x,dest.y].some(v=>v<0)||dest.x>=innerWidth||dest.y>=innerHeight){window.__robertaR3Geometry=null;return false;}
+          const value=[source.x,source.y,dest.x,dest.y].map(Math.round),old=window.__robertaR3Geometry;
+          const count=old&&old.value.every((v,i)=>v===value[i])?old.count+1:1;window.__robertaR3Geometry={value,count};return count>=3;
+        }, { polling:'raf', timeout:10_000 }, { uid:numericUid,row:candidate.target[0],col:candidate.target[1] });
+        const geometry=await page.evaluate(({uid,row,col})=>{const v=globalThis.__SP_VIEW__,n=Number(String(uid).replace(/^\D+/,'')),rect=v.pieceScreenRect(n),dest=v.tileScreen(row,col),sourceCandidates=[{x:rect.x+rect.width/2,y:rect.y+rect.height/2},{x:rect.x+rect.width/2,y:rect.bottom-2}],source=sourceCandidates.find(p=>v.pieceAtClient?.(p.x,p.y)?.uid===n);return {source,dest,sourceHit:source&&v.pieceAtClient(source.x,source.y),targetHit:dest&&document.elementFromPoint(dest.x,dest.y)?.tagName};},{uid:frontline.uid,row:candidate.target[0],col:candidate.target[1]});
+        assert(geometry.source && geometry.sourceHit?.uid === numericUid && geometry.targetHit === 'CANVAS',
+          `R3 pointer geometry is not authoritative: ${JSON.stringify(geometry)}`);
+        await page.evaluate(()=>{globalThis.__robertaR3Events=[];const v=globalThis.__SP_VIEW__;for(const name of ['pieceDragStart','pieceDrop','pieceDragEnd'])v?.on?.(name,e=>globalThis.__robertaR3Events.push({name,uid:e?.uid,target:e?.target,dropped:e?.dropped}));});
+        await page.mouse.move(geometry.source.x,geometry.source.y);await page.mouse.down();await page.mouse.move(geometry.dest.x,geometry.dest.y,{steps:8});await page.mouse.up();
+        await page.waitForSelector('.fwheel[role="dialog"]',{timeout:8_000});
+        const dragEvents=await page.evaluate(()=>globalThis.__robertaR3Events||[]);
+        assert(dragEvents.some(event=>event.name==='pieceDrop'&&event.uid===numericUid&&event.target?.row===candidate.target[0]&&event.target?.col===candidate.target[1]),
+          `real UI drag did not drop the selected frontline on ${candidate.targetKey}: ${JSON.stringify(dragEvents)}`);
+        await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(()=>document.querySelector('.fwheel[role="dialog"]')?.classList.contains('is-right'),{timeout:5_000});
+        const priorRevision=live.revision;
+        await page.keyboard.press('Enter');
+        await page.waitForFunction(()=>!document.querySelector('.fwheel[role="dialog"]'),{timeout:10_000});
+        return waitState(page,sessionId,next=>{const p=next.pieces.find(piece=>piece.uid===frontline.uid);return next.revision>priorRevision&&p?.row===candidate.target[0]&&p?.col===candidate.target[1]&&p?.dir==='RIGHT';},15_000);
+      };
+      state = await moveToTarget();
+      const afterMoveRevision = state.revision;
+      const placed = state.pieces.find((piece) => piece.uid === frontline.uid);
+      assert(placed?.operator?.role === 'frontline' && placed.operator.position === 'MELEE'
+        && placed.row === candidate.target[0] && placed.col === candidate.target[1],
+      `official session did not place the melee frontline in machine range: ${JSON.stringify({uid:placed?.uid,row:placed?.row,col:placed?.col,role:placed?.operator?.role,position:placed?.operator?.position})}`);
+      const currentOwner = state.pieces.find((piece) => piece.uid === owner.uid);
+      const currentToken = currentOwner.operator?.summons?.find((token) => token.id === fixture.summonTokenId);
+      assert(currentToken, 'current session DTO lost the canonical Roberta machine summon');
+      const choices = currentOwner.summonLegalTiles?.[fixture.summonTokenId] || [];
+      assert(choices.includes(candidate.anchorKey), `official summon options no longer include planned anchor ${candidate.anchorKey}`);
+      const controlSelector = `#member-${currentOwner.uid} .rs-summons select`;
+      const applyOrder = async (value, predicate, label) => {
+        const control=await page.$(controlSelector);assert(control,`R3 summon selector missing during ${label}`);
+        await selectOption(control,value);
+        return waitState(page,sessionId,predicate,15_000).catch(async error=>{
+          const latest=await stateOf(page,sessionId);throw new Error(`${label} failed: ${error.message}; current=${JSON.stringify(latest.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders)}`);
+        });
+      };
+      const preSet=state.revision, anchor=candidate.anchor;
+      const alternate=choices.find(key=>key!==candidate.anchorKey);
+      assert(alternate, 'R3 official DTO has no alternate legal anchor for set-clear-set verification');
+      const [alternateRow,alternateCol]=alternate.split(',').map(Number);
+      state=await applyOrder(alternate,next=>next.revision>preSet&&next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.tokenId===currentToken.id&&o.row===alternateRow&&o.col===alternateCol),'set summon order');
+      const firstSet=state.revision;
+      state=await applyOrder('',next=>next.revision>firstSet&&!next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.tokenId===currentToken.id),'clear summon order');
+      const cleared=state.revision;
+      state=await applyOrder(`${anchor[0]},${anchor[1]}`,next=>next.revision>cleared&&next.pieces.find(p=>p.uid===currentOwner.uid)?.summonOrders?.some(o=>o.tokenId===currentToken.id&&o.row===anchor[0]&&o.col===anchor[1]),'set summon order again');
+      attempt.revisions={afterMove:afterMoveRevision,firstSet,afterClear:cleared,finalSet:state.revision};
+      attempt.stage='official-placement-and-set-clear-set-complete';
+      const fight=await performRealFight(page,sessionId);
+      assert(fight.ran&&fight.battleRound===3,'R3 fixture did not execute exactly the unsettled R3 Battle');
+      attempt.battleExecutedOnce=true;attempt.stage='R3-battle-settled';
+      const diagnostics=fight.settlement?.diagnostics||{};
+      const ownerDiag=(diagnostics.summonAnchors||[]).find(entry=>entry.ownerUid===owner.uid&&entry.tokenId===currentToken.id);
+      assert(ownerDiag&&ownerDiag.row===anchor[0]&&ownerDiag.col===anchor[1],`R3 summon anchor mismatch: ${JSON.stringify(diagnostics.summonAnchors)}`);
+      const player=Object.values(fight.settlement.result?.perPlayer||{})[0]||{};
+      const tokenUid=`resonance-summon-${owner.uid}-${currentToken.id}`;
+      const machine=player.unitStats?.find(unit=>unit.uid===tokenUid&&unit.kind==='token');
+      assert(machine,`R3 Battle result omitted Roberta machine ${tokenUid}`);
+      const support=(diagnostics.robertaMachines||[]).filter(event=>event.kind==='support'&&event.ownerUid===owner.uid&&event.tokenUid===tokenUid);
+      assert(support.length>0,'R3 diagnostics recorded no actual Roberta machine support trigger');
+      assert(support.some(event=>event.targetUid===frontline.uid&&event.defPct===0.2&&event.duration===25&&event.shieldHits===1),
+        `R3 support event did not show the expected MELEE target/20% DEF/one shield/25s: ${JSON.stringify(support)}`);
+      assert.equal(machine.attacks,0,'Roberta machine must not attack in the current Native');
+      assert.equal(Number(diagnostics.errorCount||0),0,'R3 Battle diagnostics contain errors');
+      assert.equal((diagnostics.summonAnchorGaps||[]).length,0,'R3 Battle has summon anchor gaps');
+      const after=await stateOf(page,sessionId);
+      const settled=[...(after.history||[])].reverse().find(event=>event.type==='fight-settled'&&event.round===3);
+      assert(settled&&after.round>3,'R3 authoritative fight-settled record is missing');
+      const evidence={fixtureId:sessionId,round:3,ownerUid:owner.uid,frontlineUid:frontline.uid,
+        frontlineIdentity:attempt.frontlineIdentity,frontlineTile:candidate.target,summonAnchor:{tokenId:currentToken.id,row:anchor[0],col:anchor[1]},
+        revisions:attempt.revisions,settled:{won:settled.won,hpLoss:settled.hpLoss},supportEvents:support,
+        machine:{uid:machine.uid,attacks:machine.attacks},diagnostics:{errorCount:diagnostics.errorCount,summonAnchorGaps:diagnostics.summonAnchorGaps||[],robertaMachines:diagnostics.robertaMachines},
+        priorSettledRounds:settledRounds,battleExecutedOnce:true,priorBattleReplayed:false,nativeAtLaunch:attempt.nativeAtLaunch};
+      const receipt=await appendFollowupEvidence('roberta-machine-r3-defense',evidence);
+      passed('summon-order-and-clear',`R3真实UI订单与造型仪近战防御效果通过；support=${support.length},DEF+20%,shield=1,duration=25s,token attacks=0,diagnostics=0`);
+      return {status:'passed',receipt,evidence};
+    })();
+    return await Promise.race([work,deadline]);
+  } catch(error) {
+    attempt.status='failed';attempt.error=error.stack||String(error);
+    const receipt=await appendFollowupEvidence('roberta-machine-r3-defense',attempt);
+    return {status:'failed',receipt,evidence:attempt};
+  } finally {
+    clearTimeout(timeoutHandle);
+    await page?.close().catch(()=>{});await browser?.close().catch(()=>{});
+    await server?.close().catch(()=>{});await fixtureServer?.close().catch(()=>{});
+  }
+}
 async function runTerminalAndCssFollowup({ cssOnly = false } = {}) {
   const old = priorBrowserReceipt(), fixtures = old.fixtureSessions || [];
   const labels = ['terminal-normal', 'terminal-funny', 'terminal-hard', 'terminal-hp-depleted', 'terminal-round-limit-loss', 'abyss-28-to-30'];
@@ -2761,6 +2965,13 @@ try {
     const index=process.argv.indexOf('--check-summon-fixture');
     const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
     const startedAt=new Date().toISOString(),result=await runSummonFixtureCheck(sessionId);
+    process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
+    if(result.status!=='passed')process.exitCode=1;
+  }else if(process.argv.includes('--check-roberta-r3')){
+    puppeteer=requireFromCanonical('puppeteer-core');
+    const index=process.argv.indexOf('--check-roberta-r3');
+    const sessionId=process.argv[index+1]&&!process.argv[index+1].startsWith('--')?process.argv[index+1]:null;
+    const startedAt=new Date().toISOString(),result=await runRobertaR3DefenseCheck(sessionId);
     process.stdout.write(`${JSON.stringify({startedAt,nativeSource:SOURCE_BEFORE,...result},null,2)}\n`);
     if(result.status!=='passed')process.exitCode=1;
   }else if(process.argv.includes('--capture-normal-victory')){
