@@ -7,6 +7,9 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
 import { publicRecordingUrl, publicReplayUrl, publicSessionUrl } from './independent-public-release-urls.mjs';
+import { expectedReplayCaption } from './independent-public-release-captions.mjs';
+import { isExpectedMediaSeekCancellation } from './independent-public-release-checks.mjs';
+import { workshopShowcaseNarration } from '../public/js/independent/workshopShowcaseNarration.js';
 
 const DEFAULT_BASES = [
   'https://colorc.cc/stronghold/independent.html',
@@ -68,7 +71,11 @@ async function takeShot(page, output, artifacts, name) {
 function monitor(page, bucket, base) {
   page.on('console', (message) => { if (message.type() === 'error') bucket.consoleErrors.push({ base, text: message.text() }); });
   page.on('pageerror', (error) => bucket.pageErrors.push({ base, message: error.stack || error.message }));
-  page.on('requestfailed', (request) => bucket.requestFailures.push({ base, url: request.url(), error: request.failure()?.errorText || 'request failed' }));
+  page.on('requestfailed', (request) => {
+    const failure = { base, url: request.url(), error: request.failure()?.errorText || 'request failed' };
+    if (isExpectedMediaSeekCancellation(failure.url, failure.error)) bucket.mediaRequestCancellations.push(failure);
+    else bucket.requestFailures.push(failure);
+  });
   page.on('response', (response) => {
     const url = response.url(); const status = response.status();
     if (/\/recordings\/[^/]+\/media\//.test(url)) bucket.mediaResponses.push({ base, url, status, contentRange: response.headers()['content-range'] || null });
@@ -187,9 +194,42 @@ async function exerciseEntry(page, base, mode, output, receipt) {
     return p.ok && p.state.pieces?.some((x) => Number.isInteger(x.row));
   }, { timeout: 15000 }, publicSessionUrl(base, new URL(page.url()).searchParams.get('session')));
   record.checks.deploy = { uid: piece.uid, legalTile: targetTile };
+  const detailClose = await page.$('[data-testid="ix-detail"] .dpanel__close');
+  if (detailClose && await detailClose.isVisible()) {
+    await detailClose.click();
+    await page.waitForSelector('[data-testid="ix-detail"]', { hidden: true, timeout: 5000 });
+  }
+  await page.bringToFront();
   const fsButton = await page.$('button.gm__fs'); assert.ok(fsButton, 'fullscreen control missing');
-  await fsButton.click(); await page.waitForFunction(() => !!document.fullscreenElement, { timeout: 5000 }); record.checks.fullscreen = true;
-  await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.fullscreenElement, { timeout: 5000 });
+  const fsTarget = await fsButton.evaluate((button) => {
+    const rect = button.getBoundingClientRect(); const x = rect.left + rect.width / 2; const y = rect.top + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return { x, y, visible: rect.width > 0 && rect.height > 0, supported: document.fullscreenEnabled, hitButton: hit === button || button.contains(hit), hitTag: hit?.tagName || null, hitClass: typeof hit?.className === 'string' ? hit.className : '' };
+  });
+  record.checks.fullscreenTarget = fsTarget;
+  assert.ok(fsTarget.visible && fsTarget.hitButton, `fullscreen control center is not the actual pointer target: ${JSON.stringify(fsTarget)}`);
+  await page.mouse.click(fsTarget.x, fsTarget.y);
+  try {
+    await page.waitForFunction(() => !!document.fullscreenElement, { timeout: 5000 });
+    record.checks.fullscreen = true;
+  } catch (error) {
+    const fullscreenState = await page.evaluate(() => ({ enabled: document.fullscreenEnabled, active: !!document.fullscreenElement, visibility: document.visibilityState,
+      userActivation: { supported: !!navigator.userActivation, active: navigator.userActivation?.isActive ?? null },
+      button: (() => { const button = document.querySelector('button.gm__fs'); return button && { pressed: button.getAttribute('aria-pressed'), label: button.getAttribute('aria-label') }; })() }));
+    await takeShot(page, output, receipt.artifacts, `${mode}-fullscreen-failure-state`);
+    throw new Error(`fullscreen failed after a visible pointer hit: ${JSON.stringify({ fsTarget, fullscreenState })}; ${error.message}`, { cause: error });
+  }
+  await takeShot(page, output, receipt.artifacts, `${mode}-battle-fullscreen`);
+  const fsExit = await page.$('button.gm__fs');
+  assert.ok(fsExit, 'fullscreen toggle disappeared while active');
+  const fsExitTarget = await fsExit.evaluate((button) => {
+    const rect = button.getBoundingClientRect(); const x = rect.left + rect.width / 2; const y = rect.top + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return { x, y, visible: rect.width > 0 && rect.height > 0, hitButton: hit === button || button.contains(hit), hitTag: hit?.tagName || null, hitClass: typeof hit?.className === 'string' ? hit.className : '' };
+  });
+  assert.ok(fsExitTarget.visible && fsExitTarget.hitButton, `fullscreen exit toggle is not the actual pointer target: ${JSON.stringify(fsExitTarget)}`);
+  await page.mouse.click(fsExitTarget.x, fsExitTarget.y);
+  await page.waitForFunction(() => !document.fullscreenElement, { timeout: 5000 });
   const ready = await page.$('[data-testid="ix-ready"]');
   if (ready) await ready.click();
   else {
@@ -218,6 +258,7 @@ async function exerciseEntry(page, base, mode, output, receipt) {
 
 async function exerciseReplay(page, base, recording, output, receipt) {
   const record = { base, recording, checks: {} };
+  receipt.replay = record;
   const replayUrl = publicReplayUrl(base, recording);
   const metaResponse = await page.goto(replayUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
   assert.ok(metaResponse && metaResponse.status() < 400, `replay page returned ${metaResponse?.status()}`);
@@ -256,13 +297,27 @@ async function exerciseReplay(page, base, recording, output, receipt) {
   const cueTimeline = await page.$('#timeline');
   await cueTimeline.evaluate((el, value) => { el.value = String(value); el.dispatchEvent(new Event('input', { bubbles: true })); }, Math.min(duration, cueSecond + .05));
   await page.click('#play');
-  await page.waitForFunction((text) => document.querySelector('#caption')?.textContent === text && document.querySelector('#play')?.textContent === '播放' && /scale\(/.test(document.querySelector('#stage')?.style.transform || ''), { timeout: 12000 }, cue.p.text);
+  const visibleCaption = expectedReplayCaption(recording, cue.p, workshopShowcaseNarration);
+  try {
+    await page.waitForFunction((text) => document.querySelector('#caption')?.textContent === text && document.querySelector('#play')?.textContent === '播放' && /scale\(/.test(document.querySelector('#stage')?.style.transform || ''), { timeout: 12000 }, visibleCaption);
+  } catch (error) {
+    const firstMechanicState = await page.evaluate(() => ({ caption: document.querySelector('#caption')?.textContent || '', playLabel: document.querySelector('#play')?.textContent || '',
+      zoom: document.querySelector('#stage')?.style.transform || '', timeline: { value: document.querySelector('#timeline')?.value || '', max: document.querySelector('#timeline')?.max || '' },
+      video: (() => { const video = document.querySelector('#stage video[data-sp-canvas-media]'); return video && { readyState: video.readyState, currentTime: video.currentTime, duration: video.duration, paused: video.paused }; })(),
+      status: document.querySelector('#status')?.textContent || '', iframeText: document.querySelector('#stage iframe')?.contentDocument?.body?.innerText?.slice(0, 1000) || '' }));
+    record.checks.firstMechanicDiagnostic = { expectedCaption: visibleCaption, recordedSourceCaption: cue.p.text, cueTimestamp: cue.ts, recordingStartedAt: packet.meta.startedAt, cueSecond, ...firstMechanicState };
+    await takeShot(page, output, receipt.artifacts, 'replay-first-mechanic-timeout-state');
+    throw new Error(`first mechanic explanation state did not settle: ${JSON.stringify(record.checks.firstMechanicDiagnostic)}; ${error.message}`, { cause: error });
+  }
   record.checks.firstMechanic = await page.evaluate(() => ({ caption: document.querySelector('#caption')?.textContent || '', zoom: document.querySelector('#stage')?.style.transform || '', paused: document.querySelector('#play')?.textContent === '播放', iframe: !!document.querySelector('#stage iframe') }));
   assert.ok(record.checks.firstMechanic.caption && record.checks.firstMechanic.zoom && record.checks.firstMechanic.paused, 'first mechanic did not auto-pause and zoom');
   await takeShot(page, output, receipt.artifacts, 'replay-first-mechanic-caption-zoom');
   await page.waitForFunction(() => { const v = document.querySelector('#stage video[data-sp-canvas-media]'); return v && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0; }, { timeout: 30000 });
   record.checks.media = await page.$eval('#stage video[data-sp-canvas-media]', (video) => ({ readyState: video.readyState, width: video.videoWidth, height: video.videoHeight, currentTime: video.currentTime }));
   assert.ok(receipt.mediaResponses.some((r) => r.base === base && [200, 206].includes(r.status)), 'no successful 200/206 media request observed');
+  const unbackedMediaCancellations = receipt.mediaRequestCancellations.filter((request) => request.base === base
+    && !receipt.mediaResponses.some((response) => response.base === request.base && response.url === request.url && [200, 206].includes(response.status)));
+  assert.deepEqual(unbackedMediaCancellations, [], 'a cancelled replay-media seek had no successful response for the same media URL');
   record.checks.meta = { endedAt: packet.meta.endedAt, mediaPlaybackReady: packet.meta.mediaPlaybackReady, mediaSegments: packet.meta.mediaSegments?.length || 0 };
   return record;
 }
@@ -275,10 +330,10 @@ async function main() {
   await mkdir(args.output, { recursive: true });
   const reportPath = path.join(args.output, 'public-release-smoke.json');
   const receipt = { ok: false, startedAt: new Date().toISOString(), bases: args.bases, recording: args.recording, output: args.output,
-    policy: 'Only real browser UI input changes game state; metadata/session checks are GET-only. One isolated context per public base.',
+    policy: 'Only real browser UI input changes game state; metadata/session checks are GET-only. Each public base runs both growth modes in one isolated context. Media range requests cancelled by explicit timeline seeks are recorded separately and require a successful response for the same URL.',
     browserConnectionMode: process.env.SP_DETAIL_PANEL_CDP ? 'connected-existing-browser-with-isolated-contexts' : 'owned-browser-with-isolated-contexts',
     entries: [], replay: null, artifacts: [{ path: reportPath, role: 'public release browser QA receipt' }],
-    consoleErrors: [], pageErrors: [], requestFailures: [], httpErrors: [], mediaResponses: [] };
+    consoleErrors: [], pageErrors: [], requestFailures: [], mediaRequestCancellations: [], httpErrors: [], mediaResponses: [] };
   let browser; let browserOwned = false; const contexts = []; let browserStartedAt = 0;
   try {
     if (process.env.SP_DETAIL_PANEL_CDP) browser = await puppeteer.connect({ browserURL: process.env.SP_DETAIL_PANEL_CDP });
@@ -292,11 +347,12 @@ async function main() {
       const page = await context.newPage(); await page.setViewport({ width: 1600, height: 900 });
       await context.overridePermissions(new URL(base).origin, ['clipboard-read', 'clipboard-write']);
       monitor(page, receipt, base);
-      const run = exerciseEntry(page, base, i === 0 ? 'badges' : 'levels', args.output, receipt);
-      const result = await beforeDeadline(run, browserStartedAt, 'public entry acceptance');
-      receipt.entries.push(result);
-      // Capture UI result plus all diagnostics before the isolated context is closed.
-      receipt.entries.at(-1).urlAfter = page.url();
+      for (const mode of ['badges', 'levels']) {
+        const run = exerciseEntry(page, base, mode, args.output, receipt);
+        const result = await beforeDeadline(run, browserStartedAt, `public entry acceptance (${mode})`);
+        result.urlAfter = page.url();
+        receipt.entries.push(result);
+      }
     }
     if (args.recording) {
       const base = args.bases[0]; const context = contexts[0]; const page = await context.newPage(); await page.setViewport({ width: 1600, height: 900 }); monitor(page, receipt, base);
@@ -315,7 +371,7 @@ async function main() {
     else browser?.disconnect();
     receipt.finishedAt = new Date().toISOString();
     await writeFile(reportPath, `${JSON.stringify(receipt, null, 2)}\n`);
-    process.stdout.write(`${JSON.stringify({ ok: receipt.ok, report: reportPath, artifactCount: receipt.artifacts.length, entries: receipt.entries.length, replay: !!receipt.replay, error: receipt.error, diagnostics: { console: receipt.consoleErrors.length, page: receipt.pageErrors.length, request: receipt.requestFailures.length, http: receipt.httpErrors.length } }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ ok: receipt.ok, report: reportPath, artifactCount: receipt.artifacts.length, entries: receipt.entries.length, replay: !!receipt.replay, error: receipt.error, diagnostics: { console: receipt.consoleErrors.length, page: receipt.pageErrors.length, request: receipt.requestFailures.length, mediaRequestCancellations: receipt.mediaRequestCancellations.length, http: receipt.httpErrors.length } }, null, 2)}\n`);
     process.exitCode = receipt.ok ? 0 : 1;
   }
 }
