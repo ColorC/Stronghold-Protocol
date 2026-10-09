@@ -111,10 +111,11 @@ function preparedWorkshopProjection(data, catalog) {
   const replayFrames = ready.replay.frames || [];
   const replayStats = replayFrames.flatMap(frame => Object.entries(frame.stats || {}).map(([id, entry]) => ({ id: Number(id), ...entry })));
   const spawnedActors = replayFrames.flatMap(frame => frame.ev || []).filter(([type, info]) => type === 'spawn' && info?.kind === 'token').map(([, info]) => info);
-  const projection = spawnedActors.find(unit => unit.defId === wolfId && unit.ownerName === summoner.name && unit.summonSourceText === `由${summoner.name}的额外特质生成`);
+  const projection = spawnedActors.find(unit => unit.defId === wolfId && unit.ownerName === summoner.name && unit.name === '狼群投影');
   assert.ok(projection, `real placed CFM316 marker creates a Workshop wolf projection in replay; initialActors=${JSON.stringify(fieldUnits.map(u => ({ kind: u.kind, defId: u.defId, name: u.name, ownerName: u.ownerName })))}; spawnedActors=${JSON.stringify(spawnedActors)}`);
   assert.equal(projection.ownerName, summoner.name, 'the projection is attributed to the actual CFM316 summoner; BGS021 only supplies its training');
   assert.equal(projection.name, '狼群投影', 'the replay actor keeps the Workshop projection identity');
+  assert.equal(projection.summonSourceText, `由${summoner.name}召唤`, 'the detail uses the battle snapshot source text');
   const live = [...replayFrames].reverse().map(frame => frame.stats?.[projection.id]).find(Boolean);
   assert.ok(live && Number.isFinite(live.atk), 'battle replay records the projected token live attack');
   const native = data.tokens[wolfId];
@@ -247,7 +248,7 @@ test('native summon marker is mouse-placed within owner range, details identify 
     assert.match(projectionText, /狼群投影/, JSON.stringify({ unit: workshopProjection.unit, live: workshopProjection.live }));
     assert.match(projectionText, /原型：狼群/);
     assert.match(projectionText, new RegExp(workshopProjection.unit.ownerName));
-    assert.match(projectionText, /额外特质生成/);
+    assert.match(projectionText, new RegExp(workshopProjection.unit.summonSourceText));
     assert.doesNotMatch(projectionText, /技能/,'the effective projected token has no installed skill, so its prototype record is not used as a fallback');
     assert.doesNotMatch(projectionText, /攻击范围/,'the all-board Workshop projection must not show native ownerRange placement text');
     assert.match(projectionText, new RegExp(`攻击\\s*${workshopProjection.live.atk}`),'the detail uses the post-training replay attack');
