@@ -40,6 +40,9 @@ export function unitInfo(u) {
     const prototype = !!(d.darkmoonPrototypeTokenId || raw.darkmoonPrototypeTokenId);
     const note = d.description || d.desc || d.trait?.desc || d.trait?.description || raw.description || raw.desc || raw.trait?.desc || '';
     const description = prototype ? '' : typeof note === 'string' ? note : '';
+    const effectiveDamageType = ['phys', 'arts', 'true', 'heal', 'none'].includes(u.profile?.dmgType)
+      ? u.profile.dmgType
+      : d.dmgType || d.damageType || null;
     return {
       name: u.name || d.name || '',
       nativeChessId: raw.darkmoonNativeChessId || d.darkmoonNativeChessId || null,
@@ -48,7 +51,7 @@ export function unitInfo(u) {
       skill: hasSkill && skill?.name && skill?.desc ? { name: skill.name, desc: skill.desc, skillId: skill.skillId || null } : null,
       talents: talents.filter(t => t?.name && (t.description || t.desc)).map(t => ({ name: t.name, desc: t.description || t.desc })),
       rangeGrid: Array.isArray(u.rangeGrid) ? u.rangeGrid : Array.isArray(d.rangeGrid) ? d.rangeGrid : null,
-      damageType: d.dmgType || d.damageType || null,
+      damageType: effectiveDamageType,
       stats: {
         maxHp: Math.round(u.s?.maxHp ?? d.stats?.maxHp ?? 0), atk: Math.round(u.s?.atk ?? d.stats?.atk ?? 0),
         def: Math.round(u.s?.def ?? d.stats?.def ?? 0), res: Math.round(u.s?.res ?? d.stats?.res ?? 0),

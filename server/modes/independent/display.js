@@ -86,7 +86,7 @@ export function independentSessionView(state, { data, catalog, display, viewSess
   const { pool, history, catalog: ignoredCatalog, ...thin } = view;
   thin.lastBattle = history.findLast((x) => x.type === 'battle') || null;
   thin.pieces = thin.pieces.map((piece) => ({ ...piece,
-    equipmentDetails: piece.equipmentDetails.map((item) => ({ ...item, record: display.gear[item.id] })),
-    attachmentDetails: piece.attachmentDetails.map((item) => ({ ...item, record: display.attachments[item.id] })) }));
+    equipmentDetails: (piece.equipmentDetails || []).map((item) => ({ ...item, record: display.gear[item.id] })),
+    attachmentDetails: (piece.attachmentDetails || []).map((item) => ({ ...item, record: display.attachments[item.id] })) }));
   return thin;
 }
