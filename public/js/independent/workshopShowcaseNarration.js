@@ -29,7 +29,7 @@ export const workshopShowcaseNarration = {
     {
       "sourceKey": "choice-profile-4",
       "key": "workshop-prize-current-board",
-      "text": "全队战备支援直接强化当前在场干员：攻击白值+2%、生命白值+3%。收益留在各自身上，后来入队者不会补领。"
+      "text": "全队战备支援为当前在场干员各装备1枚攻击徽章和1枚伤害徽章。收益留在各自身上，后来入队者不会补领。"
     },
     {
       "sourceKey": "native-mechanic-chess_char_4_11_a",

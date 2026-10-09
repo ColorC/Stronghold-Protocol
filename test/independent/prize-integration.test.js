@@ -44,15 +44,25 @@ for(const prize of Object.values(catalog.prizes))test(`prize ${prize.name} resol
   assert.ok(!state.offers.some(x=>x.id==='test-offer'));
 });
 
-test('team support counts deployed bodies while nutrition grants exact independent badge quantities',()=>{
+test('team support counts deployed bodies while nutrition remains a movable life-supply option',()=>{
   const team=choose('team-readiness-support').state;
   assert.equal(wornQuantity(team,'precision'),3, 'the first deployed operator keeps its pre-existing badge and both deployed operators gain one');
-  assert.equal(wornQuantity(team,'vitality'),2);
+  assert.equal(wornQuantity(team,'damage'),2);
   assert.equal(quantity(team,'precision'),0, 'fixed-recipient prize gains do not become movable inventory');
-  assert.equal(quantity(team,'vitality'),0);
+  assert.equal(quantity(team,'damage'),0);
   const food=choose('emergency-rations').state;
   assert.equal(quantity(food,'precision'),3);
   assert.equal(quantity(food,'vitality'),3);
+});
+
+test('portable forge and team support use attack and damage outputs',()=>{
+  assert.deepEqual(catalog.equipment['rhodes-portable-forge'].params.outputs,[
+    {id:'precision',quantity:1},{id:'damage',quantity:1},
+  ]);
+  assert.deepEqual(catalog.prizes['team-readiness-support'].params.outputs,[
+    {id:'precision',quantity:1},{id:'damage',quantity:1},
+  ]);
+  assert.equal(catalog.prizes['standard-readiness-upgrade'].params.id,'damage');
 });
 
 test('logistics quota pays immediately and cannot stack its persistent income',()=>{
@@ -101,9 +111,9 @@ test('standard shop support is attached to the purchased body and is lost with t
   const result=applyAction(state,{type:'buy',slot});
   assert.equal(result.ok,true,result.error?.message);
   const bought=result.state.pieces.find(x=>!state.pieces.some(p=>p.uid===x.uid));
-  assert.ok(bought.equipment.some(x=>x.id==='vitality' && x.quantity===1));
-  const inventoryBefore=quantity(result.state,'vitality');
+  assert.ok(bought.equipment.some(x=>x.id==='damage' && x.quantity===1));
+  const inventoryBefore=quantity(result.state,'damage');
   const sold=applyAction(result.state,{type:'sell',uid:bought.uid});
   assert.equal(sold.ok,true);
-  assert.equal(quantity(sold.state,'vitality'),inventoryBefore);
+  assert.equal(quantity(sold.state,'damage'),inventoryBefore);
 });

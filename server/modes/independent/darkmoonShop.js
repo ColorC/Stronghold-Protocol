@@ -1,4 +1,4 @@
-import { nativeFactions, nativeRecord } from '../../../shared/independentRules.js';
+import { nativeFactions } from '../../../shared/independentRules.js';
 
 const matches = (catalog,slot,effect) => effect.rosterTribe==='*' || nativeFactions({chessId:slot.id,equipment:[]},catalog).includes(effect.faction);
 function addGrowth(target,attack,health) {
@@ -31,20 +31,12 @@ export function applyDarkmoonShopGrowth(state,slot,piece,services) {
 }
 
 export function darkmoonGrowthBadges(piece,catalog) {
-  const raw=nativeRecord(piece,catalog)||{},profession=raw.profession||catalog?.operators?.[piece?.chessId]?.profession;
-  let secondary='agility';
-  if(profession==='CASTER') secondary='damage';
-  else if(profession==='TANK') secondary='vitality';
-  else if(['MEDIC','SUPPORT','PIONEER'].includes(profession)) {
-    const skill=raw.skills?.find(x=>Number(x.index)===Number(piece?.skillIndex))||raw.skill;
-    secondary=skill?.spType==='INCREASE_WITH_TIME'?'recovery':'agility';
-  }
-  return ['precision',secondary];
+  return ['precision','damage'];
 }
 
 export function applyDarkmoonAHGrowth(state,catalog,piece,attackUnits,healthUnits,services,extra={}) {
   if(!piece)return [];
-  const [attackBadge,healthBadge]=darkmoonGrowthBadges(piece,catalog),grants=[];
+  const [attackBadge,healthBadge]=extra.badgeIds||darkmoonGrowthBadges(piece,catalog),grants=[];
   for(const [id,quantity] of [[attackBadge,Number(attackUnits||0)],[healthBadge,Number(healthUnits||0)]]) if(quantity>0) {
     services.grantEquipment(state,id,quantity,{origin:'native',sourceUid:extra.sourceUid||piece.uid,targetUid:piece.uid,landOn:extra.landOn||'self',...extra});
     grants.push({id,quantity,targetUid:piece.uid});
