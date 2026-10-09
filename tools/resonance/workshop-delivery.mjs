@@ -182,6 +182,8 @@ function plannedRelations() {
 }
 
 function selfTest() {
+  if (httpErrorDetail({ error: 'workspace_scope_required', code: 'WORKSPACE_SCOPE' }) !== 'error=workspace_scope_required; code=WORKSPACE_SCOPE'
+    || httpErrorDetail({ ok: false }) !== '') throw new Error('Workshop响应错误诊断纯测试失败');
   const layout = layoutFor([
     { id: 'a', x: 80, y: 80, width: 400, height: 300 },
     { id: 'group', x: 520, y: 100, width: 300, height: 500 },
@@ -226,6 +228,16 @@ function contentItems(response) {
   return Array.isArray(items) ? items : Object.values(items);
 }
 
+function httpErrorDetail(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return '';
+  const parts = [];
+  for (const key of ['error', 'message', 'code']) {
+    const value = payload[key];
+    if (typeof value === 'string' && value.trim()) parts.push(`${key}=${value.trim().slice(0, 400)}`);
+  }
+  return parts.join('; ');
+}
+
 async function run() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) return process.stdout.write(`${HELP}\n`);
@@ -257,7 +269,10 @@ async function run() {
     const raw = await response.text();
     let result;
     try { result = raw ? JSON.parse(raw) : null; } catch { throw new Error(`Workshop 返回非JSON响应（HTTP ${response.status}）`); }
-    if (!response.ok) throw new Error(`Workshop 请求失败（HTTP ${response.status}，${method} ${endpoint}）`);
+    if (!response.ok) {
+      const detail = httpErrorDetail(result);
+      throw new Error(`Workshop 请求失败（HTTP ${response.status}，${method} ${endpoint}${detail ? `：${detail}` : ''}）`);
+    }
     return result;
   }
   const readCanvas = () => request('GET', `/api/canvases/${encodeURIComponent(CANVAS_ID)}`);
