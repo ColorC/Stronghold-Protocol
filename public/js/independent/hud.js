@@ -389,7 +389,7 @@ function GearCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
       onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }} data-testid=${`ix-shop-${idx}`} aria-label=${`${g.name || '装备'}，价格 ${slot.price}`}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__top">
-      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">${g.level ?? 1}级</span>`}
+      ${g.kind === 'badge' || g.kind === '徽章' ? html`<span class="ix-lv">徽章</span>` : html`<span class="ix-lv num">×${g.level ?? 1}</span>`}
       <${HexBadge} value=${slot.price} tone=${reason === '资金不足' ? 'dark' : 'gold'} size="md" class="scard__price" />
     </span>
     <span class="scard__itemart"><${GearIcon} id=${slot.id} catalog=${catalog} /></span>
@@ -479,7 +479,7 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
 // ---- unit plates and bench overflow -------------------------------------------------------------------------------
 
 /**
- * The equipment level chip under every own unit (design: 常驻装备总等级), plus markers for attachments and a worn
+ * The equipment stack chip under every own unit, plus markers for attachments and a worn
  * 交接凭证. Positions follow the renderer every frame (camera moves, drags, resizes).
  */
 export function UnitBadges({ view, pieces, catalog, hidden }) {
@@ -505,7 +505,7 @@ export function UnitBadges({ view, pieces, catalog, hidden }) {
   if (hidden) return null;
   return html`<div class="ix-badges" ref=${boxRef} aria-hidden="true">
     ${pieces.map((p) => html`<span key=${p.uid} class="ix-badge" data-n=${String(p.uid).replace(/^\D+/, '')}>
-        <b class="num">${p.equipmentLevel ?? 0}</b><small>级</small>
+        <b class="num">×${p.equipmentLevel ?? 0}</b>
         ${p.attachments?.length ? html`<i class="ix-badge__att" title="外来附加效果"></i>` : null}
         ${permitsOf(p, catalog).length ? html`<i class="ix-badge__perm" title="携带交接凭证"></i>` : null}
       </span>`)}
@@ -519,7 +519,7 @@ export function BenchOverflow({ pieces, catalog, onPick }) {
     <span class="ix-overflow__label">整备区另有 <b class="num">${pieces.length}</b> 名</span>
     ${pieces.map((p) => html`<button type="button" key=${p.uid} class="ix-overflow__item" data-piece-uid=${p.uid} onClick=${() => onPick(p.uid)} title=${formEntry(catalog, p)?.name || ''}>
       <${UnitThumb} kind="chess" id=${renderChessId(catalog, p)} golden=${!!p.elite} size="sm" />
-      <span class="num">${p.equipmentLevel ?? 0}级</span>
+      <span class="num">×${p.equipmentLevel ?? 0}</span>
     </button>`)}
   </div>`;
 }

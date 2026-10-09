@@ -289,12 +289,15 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     };
     const prototype=prototypes[p.token]||prototypes.mechanical;
     const nativeId=prototype.tokenId;
-    const record=battle.tokenDef(nativeId,prototype.ownerId)||{id:nativeId,rangeGrid:[[0,0],[0,1]]};
+    const sourceRecord=battle.tokenDef(nativeId,prototype.ownerId)||{id:nativeId,rangeGrid:[[0,0],[0,1]]};
+    const variant=sourceRecord.raw?.variants?.[prototype.ownerId]||{};
+    const prototypeGrowthStatus={phase:Number(variant.phase??sourceRecord.raw?.status?.phase??0),level:state?.growthMode==='levels'?1:Number(variant.level??sourceRecord.raw?.status?.level??1)};
+    const record=battle.tokenDef(nativeId,prototype.ownerId,prototypeGrowthStatus)||sourceRecord;
     const [a,h]=p.stats, m=scale(e), proto=record.stats||{};
     const darkmoonPrototypeScale={attack:a*.4*m,health:h*.4*m,defense:.4};
     const stats={...proto,maxHp:Math.round((Number(proto.maxHp)||0)*darkmoonPrototypeScale.health),atk:Math.round((Number(proto.atk)||0)*darkmoonPrototypeScale.attack),def:Math.round((Number(proto.def)||0)*darkmoonPrototypeScale.defense),blockCnt:p.cover?2:1,cost:0};
     return {...record,id:nativeId,name:prototype.name,darkmoonPrototypeTokenId:nativeId,darkmoonPrototypeOwnerChessId:prototype.ownerId,darkmoonPrototypeName:prototype.prototypeName,
-      darkmoonPrototypeScale,darkmoonSummonSourceText:`由${e.unit.name||'干员'}的额外特质生成`,darkmoonCover:!!p.cover,profession:'TOKEN',stats};
+      darkmoonPrototypeScale,darkmoonPrototypeGrowthStatus:prototypeGrowthStatus,darkmoonSummonSourceText:`由${e.unit.name||'干员'}的额外特质生成`,darkmoonCover:!!p.cover,profession:'TOKEN',stats};
   };
   const spawn=(e,def,count,tags=[],p={})=>{
     const out=[],limit=Math.max(0,7-battle.allyUnits.filter(u=>u.kind==='token'&&alive(u)&&own(u,e.unit)&&u.mem.darkmoonSummon).length);
@@ -313,7 +316,7 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       const kitDef=nativeDef?{...nativeDef,skill:nativeRaw.skill||nativeDef.skill,talents:nativeRaw.talents||nativeDef.talents}:null;
       const authored=factory?(factory(nativeRaw.skill?.bb||{},nativeRaw,kitDef)||{}):{};
       const kit=prototypeOwnerId?undefined:(nativeId?selectSkillSpec(authored,nativeRaw.skill?.bb||kitDef?.skill?.bb||{},nativeRaw,kitDef):undefined);
-      const nativeGrowthStatus=nativeDef?{phase:nativeRaw.status?.phase??0,level:state?.growthMode==='levels'?1:nativeRaw.status?.level??1}:null;
+      const nativeGrowthStatus=clean.darkmoonPrototypeGrowthStatus|| (nativeDef?{phase:nativeRaw.status?.phase??0,level:state?.growthMode==='levels'?1:nativeRaw.status?.level??1}:null);
       const token=battle.spawnToken(e.unit,clean.id,...cell,{def:clean,anySource:true,...(kit?{kit}:{}),ownerGrowth:nativeGrowthStatus,nativeGrowthStatus,duration:45,darkmoonHandled:true});
       if(token){
         token.ownerChessId=e.unit.defId||null;

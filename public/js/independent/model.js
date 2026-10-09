@@ -209,7 +209,7 @@ export function forecastRows(state, catalog) {
   return { rows, idle, funds: Number(state?.forecast?.pendingFunds || 0) };
 }
 
-/** Equipment level an item stack contributes (design: 装备总等级 = 每件等级之和). */
+/** Equipment stack units an item contributes (the gear's stack value times its quantity). */
 export function itemLevel(item, catalog) {
   const g = catalog?.gear?.[item.id] || {};
   if(g.mechanism==='growthTraining')return 0;

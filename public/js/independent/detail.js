@@ -26,12 +26,12 @@ const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], [
 /** Which tab each block of the original card goes to (ui/detailPanel.js CHESS_SECTIONS); the header stays on top. */
 const TAB_OF = { garrison: 'traits', trait: 'skill', stats: 'stats', skill: 'skill', module: 'talent', talents: 'talent', equip: 'gear' };
 
-/** The header's chips: the operator's tavern factions with their original bond glyphs, and its total equipment level. */
+/** The header's chips: the operator's tavern factions with their original bond glyphs, and its equipment stack total. */
 function FactionChips({ factions, level, catalog }) {
   return html`<div class="dbonds dbonds--top ix-dchips" role="list" aria-label="所属阵营">
     ${(factions || []).map((f) => html`<span key=${f} role="listitem" class="dbond is-active">
       <${FactionIcon} faction=${f} catalog=${catalog} /><span class="dbond__name">${f}</span></span>`)}
-    ${level != null ? html`<span class="ix-dchips__lv"><${GameText} text="装备总等级" catalog=${catalog} /> <b class="num">${level}</b></span>` : null}
+    ${level != null ? html`<span class="ix-dchips__lv">装备叠加 <b class="num">×${level}</b></span>` : null}
   </div>`;
 }
 
@@ -118,7 +118,7 @@ function GearSection({ items, attachments = [], catalog, busy, onConfigure, titl
     ${rows.length ? html`<div class="ix-dgear__tiles">${rows.map((r) => html`<button type="button" key=${r.uids[0]} class=${cx('ix-dgear__tile', r === row && 'is-on')}
         onClick=${() => setPick(r.uids[0])} aria-label=${`${r.name} ×${r.count}`}>
         <${GearIcon} id=${r.id} catalog=${catalog} plain=${true} /><b class="num">${r.count}</b>
-        ${r.permit ? html`<i class="ix-dgear__permit" aria-hidden="true"></i>` : !r.badge && r.level ? html`<small class="num">${r.level}级</small>` : null}
+        ${r.permit ? html`<i class="ix-dgear__permit" aria-hidden="true"></i>` : !r.badge && r.level ? html`<small class="num">×${r.level}</small>` : null}
       </button>`)}</div>
       <div class="ix-dgear__text"><b>${row.name}</b>${row.permit ? html`<span class="ix-perm"><${GameText} text="交接凭证" catalog=${catalog} /></span>` : null}
         <${GameText} text=${row.badge && row.count > 1 ? (badgeTotal(g, row.count) || g.normal) : g.normal} catalog=${catalog} />
