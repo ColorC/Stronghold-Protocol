@@ -34,6 +34,18 @@ const REMOTE_WORKSHOP_URL = workshopUrlArg >= 0 ? process.argv[workshopUrlArg + 
 const embedUrlArg = process.argv.findIndex((arg) => arg === '--embed-url');
 const REMOTE_EMBED_URL = embedUrlArg >= 0 ? process.argv[embedUrlArg + 1] : process.argv.find((arg) => arg.startsWith('--embed-url='))?.slice('--embed-url='.length) || null;
 const REMOTE_MODE = !!REMOTE_ENTRY_URL;
+const REMOTE_PRIOR_ATTEMPTS = (() => {
+  if (!REMOTE_MODE) return [];
+  try {
+    const previous = JSON.parse(readFileSync(RECEIPT_PATH, 'utf8'));
+    if (previous.mode !== 'remote-production') return [];
+    const history = Array.isArray(previous.priorAttempts) ? previous.priorAttempts : [];
+    const { priorAttempts: _priorAttempts, ...previousAttempt } = previous;
+    return [...history, previousAttempt];
+  } catch {
+    return [];
+  }
+})();
 if (REMOTE_ENTRY_URL) {
   const parsed = new URL(REMOTE_ENTRY_URL);
   if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.pathname.endsWith('/resonance.html')) throw new Error('--url 必须是可访问的 resonance.html HTTP(S) 页面地址');
@@ -2904,6 +2916,7 @@ async function writeReceipt(error = null) {
   const judgedStories = REMOTE_MODE ? [...remoteStories.values()] : [...results.values()];
   const receipt = {
     schemaVersion: 1, createdAt: new Date().toISOString(), mode: REMOTE_MODE ? 'remote-production' : 'isolated-local',
+    ...(REMOTE_MODE && REMOTE_PRIOR_ATTEMPTS.length ? { priorAttempts: REMOTE_PRIOR_ATTEMPTS } : {}),
     nativeSource: { before: SOURCE_BEFORE, after: nativeSourceState() },
     status: error || errors.length || judgedStories.some((entry) => entry.status !== 'passed') ? 'incomplete' : 'passed',
     serverUrl: server?.url || null, entryUrl: server?.entryUrl || null, fixtureServerUrl: fixtureServer?.url || null, timeoutMs: DEADLINE_MS,
