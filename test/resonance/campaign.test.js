@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign, selectEconPactCopyTarget } from '../../tools/resonance/balance-campaign.mjs';
+import { ADAPTIVE_STANDARD_POLICY, adaptiveStandardAllowsXp, adaptiveStandardPlan, CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseOffer, chooseRerollCore, compactEconPactRun, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, pairAdaptiveStandardRuns, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign, selectEconPactCopyTarget } from '../../tools/resonance/balance-campaign.mjs';
 import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
@@ -74,6 +74,50 @@ test('econ-pact banks in stages, holds 30/40 during XP pushes, and never refresh
   assert.deepEqual(econPactPlan(18,8),{levelTarget:9,bankTarget:40,xpReserve:40,refreshEnabled:false});
   assert.deepEqual(econPactPlan(20,9),{levelTarget:9,bankTarget:30,xpReserve:30,refreshEnabled:true});
   assert.deepEqual(econPactPlan(24,9),{levelTarget:9,bankTarget:0,xpReserve:0,refreshEnabled:true});
+});
+
+test('adaptive-standard lowers reserves and gates refresh and population XP by HP and legal unique roster',()=>{
+  assert.equal(ADAPTIVE_STANDARD_POLICY,'adaptive-standard');
+  const gate='legal-unique-roster-over-current-level-or-level8-to9-when-hp-at-least-40';
+  assert.deepEqual(adaptiveStandardPlan(13,6,80),{levelTarget:7,bankTarget:50,xpReserve:30,refreshEnabled:false,refreshLimit:0,refreshReserve:40,initialBuyLimit:null,lowHp:false,critical:false,xpGateRule:gate});
+  assert.deepEqual(adaptiveStandardPlan(13,6,69),{levelTarget:7,bankTarget:10,xpReserve:10,refreshEnabled:true,refreshLimit:3,refreshReserve:10,initialBuyLimit:4,lowHp:true,critical:false,xpGateRule:gate});
+  assert.deepEqual(adaptiveStandardPlan(13,6,39),{levelTarget:7,bankTarget:0,xpReserve:0,refreshEnabled:true,refreshLimit:5,refreshReserve:0,initialBuyLimit:4,lowHp:true,critical:true,xpGateRule:gate});
+  assert.equal(adaptiveStandardPlan(13,4,39).refreshEnabled,false,'critical HP alone does not refresh before the level-five gate');
+  assert.equal(adaptiveStandardPlan(13,4,39).initialBuyLimit,4,'low HP raises initial offer scanning independently of refresh level gate');
+  assert.equal(adaptiveStandardAllowsXp({level:6,hp:75,legalUniqueOwned:6}),false,'XP cannot raise population without an extra legal unique operator');
+  assert.equal(adaptiveStandardAllowsXp({level:6,hp:75,legalUniqueOwned:7}),true);
+  assert.equal(adaptiveStandardAllowsXp({level:3,hp:100,legalUniqueOwned:4}),true,'an extra legal member permits the current level purchase');
+  assert.equal(adaptiveStandardAllowsXp({level:4,hp:100,legalUniqueOwned:4}),false,'reevaluating after leveling prevents buying toward a fifth member that does not exist');
+  assert.equal(adaptiveStandardAllowsXp({level:8,hp:39,legalUniqueOwned:9}),false,'critical HP prioritizes upgrades over unlocking five-cost offers');
+  assert.equal(adaptiveStandardAllowsXp({level:8,hp:40,legalUniqueOwned:8}),true,'the level-eight to nine exception unlocks five-cost offers at safe HP');
+});
+
+test('adaptive compact runs retain profile identity and pair formal/refined runs by environment',()=>{
+  const compact=compactEconPactRun({environmentId:'origin_test',difficulty:'NORMAL',seed:7,policy:ADAPTIVE_STANDARD_POLICY,balanceProfile:'refined-standard',rows:[{round:1,level:3,roster:[{operatorId:'op',star:2,row:4,col:2,dir:null,equipment:['gear'],name:'Operator'}],mainPacts:['aegir'],goldAfter:4,goldBefore:6,won:true}],nodeEconomy:[],adaptivePlans:[{round:1,hp:50}],designatedCoreId:'op',coreStarMilestones:{2:1,3:null},diagnostics:{}} ,{includeAdaptiveDetails:true});
+  assert.equal(compact.balanceProfile,'refined-standard');
+  assert.deepEqual(compact.nodes[0].deployed,[{operatorId:'op',star:2,row:4,col:2,dir:null,gearIds:['gear']}]);
+  assert.equal(compact.nodes[0].hpPlan.hp,50);
+
+  const formal={environmentId:'origin_aegir',balanceProfile:'formal',seed:11};
+  const refined={environmentId:'origin_aegir',balanceProfile:'refined-standard',seed:11};
+  const other={environmentId:'origin_yan',balanceProfile:'formal',seed:12};
+  const pairs=new Map(pairAdaptiveStandardRuns([refined,other,formal]));
+  assert.equal(pairs.get('origin_aegir:formal'),formal);
+  assert.equal(pairs.get('origin_aegir:refined-standard'),refined);
+  assert.equal(pairs.get('origin_yan:formal'),other);
+  assert.equal(pairAdaptiveStandardRuns([{environmentId:'bad',balanceProfile:'looser'}]).length,0,'unrelated candidate profiles cannot enter adaptive pairing');
+});
+
+test('adaptive-standard executes a real no-recording campaign Battle and records the deployed field and HP plan',()=>{
+  const run=runCampaign({environmentId:'origin_aegir',difficulty:'NORMAL',seed:0x45434f4e,maxBattles:1,policy:ADAPTIVE_STANDARD_POLICY});
+  assert.equal(run.battles,1);
+  assert.equal(run.diagnostics.battleErrors,0);
+  assert.equal(run.diagnostics.summonAnchorGaps.length,0);
+  assert.equal(run.adaptivePlans.length,1);
+  assert.equal(run.adaptivePlans[0].hp,100);
+  assert.equal(run.adaptivePlans[0].bankTarget,0);
+  assert.ok(run.rows[0].roster.length>0);
+  for(const piece of run.rows[0].roster){assert.ok(Number.isInteger(piece.row));assert.ok(Number.isInteger(piece.col));assert.ok('dir'in piece);assert.ok(Array.isArray(piece.equipment));}
 });
 
 test('econ-pact reserves universal copies for the level-9 core and spends late copies on a real merge if no core exists',()=>{

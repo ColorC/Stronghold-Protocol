@@ -437,6 +437,15 @@ const starLine=(op,star)=>{
   const spec=op.stars[star];
   return `- 星${star}：属性 \`${JSON.stringify(spec.stats)}\`；固定技能参数 \`${JSON.stringify(spec.skillOverrides)}\`；天赋覆盖 \`${JSON.stringify(spec.talentOverrides)}\`；被动 ${spec.passive.description||'沿用原生天赋，无额外盟约被动'} \`${JSON.stringify(spec.passive.params)}\``;
 };
+const enemyBalanceRows=['NORMAL','FUNNY','HARD','ABYSS'].map(difficulty=>{
+  const configured=campaign.enemyBalance??{};
+  const override=configured.byDifficulty?.[difficulty]??{};
+  const regular={...configured.regular,...override.regular};
+  const terminal={...configured.terminal,...override.terminal};
+  const factors=rule=>['hpMultiplier','atkMultiplier','defMultiplier','resMultiplier','speedMultiplier']
+    .map(key=>(rule[key]??1).toFixed(2)).join(' / ');
+  return `| ${difficulty} | ${factors(regular)} | ${factors(terminal)} | ${(terminal.bossPoolMultiplier??1).toFixed(2)} |`;
+});
 const lines=[
   '# 共鸣正式配置终值清单','',
   `来源 commit：${sourceCommit}。名单 ${crew.length} 人；费用分布 ${JSON.stringify(counts)}。`,
@@ -444,7 +453,12 @@ const lines=[
   '', '## 环境自然成员核验','',
   '| 环境 | 主盟约 | 自然人数 | 本局保证人数 | 固定终端 |','|---|---|---:|---:|---|',
   ...envChecks.map(e=>`| ${e.name} | ${pacts[e.identityPactId].name} | ${e.natural} | ${e.required} | ${e.terminal} |`),
-  '', '## 原生 Kit 来源缺口',`实际 normalize/KITS 检查发现 ${sourceSkillGaps.length} 名固定项为 generic/none；运行时不替换这些技能。`,'',
+  '', '职责按正式角色配置读取：魔王与普通吟游者海蒂为支援；职责分类不从职业名推导盟约。',
+  '', '## 敌方强度终值','',
+  '普通波与终端波分别应用下表倍率；终端领袖生命池单独应用最后一列。未配置的 RES 与移速倍率按 1 计算。','',
+  '| 难度 | 普通波 HP / ATK / DEF / RES / 移速 | 终端波 HP / ATK / DEF / RES / 移速 | 领袖生命池 |','|---|---|---|---:|',
+  ...enemyBalanceRows,
+  '', '## 原生 Kit 分类记录',`${sourceSkillGaps.length} 名干员的原生分类为 generic/none；该字段保留原始 Kit 分类。运行时由共鸣固定技能承接这些分类例外，其中正义骑士号使用周期支援被动。`,'',
   ...sourceSkillGaps.map(o=>`- ${o.name}（${o.charId}，${o.sourceChessId}）：${o.fixedSkillId} — ${o.skillSpecSource}`),
   '', '## 干员逐项终值','',
   ...crew.flatMap(o=>[
