@@ -207,7 +207,8 @@ function refreshedDesignBody(existingBody, entryUrl, referenceUrl) {
     || !/^## 体验与内容范围\r?$/m.test(existingBody)) throw new Error('现有设计正文身份或玩法内容无法确认；拒绝覆盖');
   const withoutOldUi = existingBody.split(/(?=^## )/m).filter(block => !/^## 界面与操作\s*$/m.test(block)).join('').trim();
   const intro = `打开[共鸣玩法](${entryUrl})。完整资料可从[参考资料包](${referenceUrl})下载。`;
-  const withUpdatedLinks = withoutOldUi.replace(/^(# 共鸣玩法与参考\r?\n\r?\n)[^\r\n]*(?:\r?\n\r?\n)/m, (_match, heading) => `${heading}${intro}\n\n`);
+  const withUpdatedLinks = withoutOldUi.replace(/^(# 共鸣玩法与参考\r?\n\r?\n)[^\r\n]*(?:\r?\n\r?\n)/m, (_match, heading) => `${heading}${intro}\n\n`)
+    .replaceAll('谢拉格寒冷/冻结/地板', '谢拉格目标标记、友方响应与集火');
   if (withUpdatedLinks === withoutOldUi && !withoutOldUi.startsWith(`# 共鸣玩法与参考\n\n${intro}`)) {
     throw new Error('现有设计正文入口段格式不明；拒绝破坏性重写');
   }
@@ -325,10 +326,11 @@ function selfTest() {
     source: { kind: 'file', path: '/old/design.md', token: 'old-token', mime: 'text/markdown', editableId: DESIGN_CARD_ID },
     material: { revision_ref: { provider: 'material-note', object: 'canvas#card=design', revision: 'r267' } },
     x: 900, y: 126, width: 560, height: 460, fontSize: 14 };
-  const oldDesignBody = '# 共鸣玩法与参考\n\n打开[共鸣玩法](https://old.invalid/resonance.html)。完整资料可从[参考资料包](https://old.invalid/reference.zip)下载。\n\n## 体验与内容范围\n\n玩家按局内节点构建阵容。\n\n## 界面与操作\n\n旧操作说明。';
+  const oldDesignBody = '# 共鸣玩法与参考\n\n打开[共鸣玩法](https://old.invalid/resonance.html)。完整资料可从[参考资料包](https://old.invalid/reference.zip)下载。\n\n## 体验与内容范围\n\n玩家按局内节点构建阵容。\n\n谢拉格寒冷/冻结/地板。\n\n## 界面与操作\n\n旧操作说明。';
   const nextDesignBody = refreshedDesignBody(oldDesignBody, entryUrl, 'https://example.invalid/reference.zip');
   if (!nextDesignBody.includes('玩家按局内节点构建阵容。') || nextDesignBody.includes('旧操作说明。')
-    || !nextDesignBody.includes(UI_OPERATION_SECTION) || !nextDesignBody.includes(entryUrl)) throw new Error('refresh保留玩法正文/替换操作说明纯测试失败');
+    || !nextDesignBody.includes('谢拉格目标标记、友方响应与集火。') || nextDesignBody.includes('谢拉格寒冷/冻结/地板')
+    || !nextDesignBody.includes(UI_OPERATION_SECTION) || !nextDesignBody.includes(entryUrl)) throw new Error('refresh保留玩法正文/更新谢拉格机制说明/替换操作说明纯测试失败');
   const refreshSources = refreshedCards(testDesign, testPlay, { path: '/new/design.md', open_token: 'new-token', editableId: DESIGN_CARD_ID }, embedUrl);
   const refreshBeforeCards = [testDesign, testPlay, { id: 'user-card', kind: 'text', source: { path: '/user.md' }, x: 10, y: 12, width: 200, height: 100 }];
   const refreshAfterCards = [...refreshBeforeCards.filter(card => ![DESIGN_CARD_ID, PLAY_CARD_ID].includes(card.id)), ...refreshSources];

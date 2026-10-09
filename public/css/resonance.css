@@ -92,7 +92,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-choice-option > label { display: flex; align-items: center; gap: .08rem; padding-top: .07rem; }
 .rs-choice-option select { min-width: 0; flex: 1; }
 .rs-choice-collapse { position: absolute; z-index: 2; right: .2rem; top: .2rem; }
-.rs-panel-drawer { position: fixed; z-index: 110; top: clamp(8px,1vh,14px); right: clamp(8px,1vw,18px); bottom: var(--rs-dock-bottom,calc(2.82rem + env(safe-area-inset-bottom,0px))); width: min(7.2rem,58vw); display: flex; flex-direction: column; overflow: hidden; color: var(--text-hi); background: rgba(8,13,11,.98); border: 1px solid var(--line-2); box-shadow: 0 .14rem .4rem rgba(0,0,0,.72); }
+.rs-panel-drawer { position: fixed; z-index: 110; top: var(--rs-panel-top,calc(.92rem + env(safe-area-inset-top,0px))); right: clamp(8px,1vw,18px); bottom: var(--rs-dock-bottom,calc(2.82rem + env(safe-area-inset-bottom,0px))); width: min(7.2rem,58vw); display: flex; flex-direction: column; overflow: hidden; color: var(--text-hi); background: rgba(8,13,11,.98); border: 1px solid var(--line-2); box-shadow: 0 .14rem .4rem rgba(0,0,0,.72); }
 .rs-panel-drawer > header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: .1rem; padding: .08rem .12rem; background: rgba(22,32,27,.96); border-bottom: 1px solid var(--line); }
 .rs-panel-drawer > header h2 { margin: .015rem 0 0; font-size: .2rem; }
 .rs-panel-drawer > header > button { width: .38rem; height: .38rem; color: var(--text-hi); background: transparent; border: 1px solid var(--line-2); font-size: .26rem; cursor: pointer; }

@@ -32,25 +32,29 @@ export function GameChrome(p) {
   const setPanel=useCallback(next=>{if(next!=null)setDetail(null);setPanelState(next)},[setPanelState,setDetail]);
   useLayoutEffect(()=>{
     const root=rootRef.current;if(!root)return;
-    const selector='.shopbar__cards .scard, .shopbar__reward .spcard, .shopbar__tools .toolbtn, .lvcard, .rs-turn-action button, .rs-quick-inventory__item, .rs-replay-native button, .rs-replay-native select, .rs-replay-native progress, .rs-sell-zone';
+    const selector='.shopbar__cards .scard, .shopbar__reward .spcard, .shopbar__tools .toolbtn, .lvcard, .rs-turn-action button, .rs-quick-inventory__item, .rs-replay-native button, .rs-replay-native select, .rs-replay-native progress, .rs-sell-zone, .rs-hud-actions button, .rs-hud-actions a';
     let frame=0;const observed=new Set([root]);
     const observer=typeof ResizeObserver==='function'?new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure)}):null;
     observer?.observe(root);
     const measure=()=>{
-      let top=Infinity;const nextObserved=new Set([root]);
+      let top=Infinity,headerBottom=0,hasHeaderControl=false;const nextObserved=new Set([root]);
       for(const element of root.querySelectorAll(selector)){
         const rect=element.getBoundingClientRect(),style=getComputedStyle(element);
         if(!element.getClientRects().length||style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0||rect.width<=0||rect.height<=0||rect.bottom<=0||rect.top>=innerHeight)continue;
-        top=Math.min(top,Math.max(0,rect.top));nextObserved.add(element);
+        if(element.matches('.rs-hud-actions button, .rs-hud-actions a')){headerBottom=Math.max(headerBottom,rect.bottom);hasHeaderControl=true}
+        else top=Math.min(top,Math.max(0,rect.top));
+        nextObserved.add(element);
       }
       if(Number.isFinite(top))root.style.setProperty('--rs-dock-bottom',`${Math.max(0,innerHeight-top+8)}px`);
       else root.style.removeProperty('--rs-dock-bottom');
+      if(hasHeaderControl)root.style.setProperty('--rs-panel-top',`${headerBottom+8}px`);
+      else root.style.removeProperty('--rs-panel-top');
       for(const element of observed)if(!nextObserved.has(element)){observer?.unobserve(element);observed.delete(element)}
       for(const element of nextObserved)if(!observed.has(element)){observed.add(element);observer?.observe(element)}
     };
     const onResize=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure)};
     measure();addEventListener('resize',onResize);
-    return()=>{removeEventListener('resize',onResize);cancelAnimationFrame(frame);observer?.disconnect();root.style.removeProperty('--rs-dock-bottom')};
+    return()=>{removeEventListener('resize',onResize);cancelAnimationFrame(frame);observer?.disconnect();root.style.removeProperty('--rs-dock-bottom');root.style.removeProperty('--rs-panel-top')};
   },[state,panel,replay,shopCollapsed,sellingPiece,choiceOpen,busy]);
   const xpNeed=Number(catalog.campaign?.economy?.xpToLevel?.[state.level]??xpForLevel(state.level));
   const prep=prepView(state,catalog);

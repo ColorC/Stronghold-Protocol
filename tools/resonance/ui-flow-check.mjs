@@ -88,6 +88,7 @@ async function assertShopPointerTargets(page, scope) {
     const controls = [
       ...[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')].map((element, index) => ({ element, label: `shop-card-${index + 1}:${element.querySelector('.scard__name')?.textContent?.trim() || element.getAttribute('aria-label') || 'offer'}` })),
       ...[...document.querySelectorAll('.shopbar__tools .toolbtn--amber, .shopbar__tools .toolbtn--ice, .shopbar .rs-level-card')].map(element => ({ element, label: element.innerText.trim() || element.title })),
+      ...[...document.querySelectorAll('.rs-hud-actions button, .rs-hud-actions a')].map(element => ({ element, label: element.getAttribute('aria-label') || element.title || element.innerText.trim() || 'hud-action' })),
       ...[...document.querySelectorAll('.rs-turn-action button')].map(element => ({ element, label: `main-action:${element.innerText.trim()}` })),
     ].filter(({ element }) => visible(element));
     return { count: controls.length, shopCards: controls.filter(row => row.label.startsWith('shop-card-')).length,
@@ -178,6 +179,7 @@ async function inspectOverlayShopReachability(page, pieceUid) {
   await rightClickPiece(page, pieceUid);
   check('operator-detail-visible-for-context-switch-test', await page.$('.rs-detail-panel[role="dialog"]') !== null,
     await page.$eval('.rs-detail-panel[role="dialog"]', element => element.getAttribute('aria-label')));
+  await assertShopPointerTargets(page, 'operator-detail');
   const drawers = [
     { root: '.rs-dock', text: '盟约', selector: '.rs-panel-drawer[aria-label="盟约"]', name: 'pacts' },
     { root: '.rs-hud-actions', text: '装备背包', selector: '.rs-panel-drawer[aria-label="装备"]', name: 'equipment' },
