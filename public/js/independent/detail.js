@@ -258,8 +258,19 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
   if (target.kind === 'unit') {
     const u = target.unit || {};
     const live = battle?.stats(u.id); const hp = battle?.snapHp(u.id) || null;
-    const liveEntry = live ? { ...live, src: 'battle' } : null;
+    const liveEntry = live ? { ...live, src: 'battle' }
+      : u.kind === 'token' && u.runtimeDetail?.stats ? { ...u.runtimeDetail.stats, src: 'battle snapshot' } : null;
     if (u.side === 'enemy') { const en = data.lookup('enemies', u.defId); return en ? frame(html`<${EnemyDetail} enemy=${en} snapHp=${hp} live=${liveEntry} />`, 'enemy') : null; }
+    if (u.kind === 'token') {
+      const piece = state.pieces.find((p) => p.uid === u.uid) || null;
+      const token = data.lookup('tokens', u.defId || piece?.tokenId) || {
+        tokenId: u.defId || u.runtimeDetail?.nativeChessId || 'runtime-token', name: u.name || u.runtimeDetail?.name || '召唤物', stats: {},
+      };
+      return frame(html`<${TokenDetail} token=${token} piece=${piece} ownerId=${u.ownerChessId || piece?.ownerChessId || null}
+        snapHp=${hp} live=${liveEntry} runtimeDetail=${u.runtimeDetail || null} />
+        ${u.ownerName || piece?.ownerName ? html`<p class="ix-muted">主人：${u.ownerName || piece.ownerName}</p>` : null}
+        ${u.summonSourceText || piece?.summonSourceText ? html`<p class="ix-muted">${u.summonSourceText || piece.summonSourceText}</p>` : null}`, 'token');
+    }
     const piece = state.pieces.find((p) => p.uid === u.uid);
     if (piece?.kind === 'token') {
       const tok = data.lookup('tokens', u.defId || piece.tokenId);
