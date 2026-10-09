@@ -36,7 +36,7 @@ const receipt = { sourceNative: execFileSync('git', ['-C', SOURCE, 'rev-parse', 
   status: 'running', tests: [], screenshots: [], errors: [], creates: 0, fights: 0,
   paths: { report: REPORT, profile: PROFILE, source: SOURCE, sessionDirectory: path.join(OUT, 'sessions') } };
 let browser, server, fixtureServer, deadline;
-let completedWCheckpoint = false;
+let completedWCheckpoint = false, completedEquipmentSellCheckpoint = false;
 const check = (name, value, detail) => { receipt.tests.push({ name, passed: !!value, detail }); if (!value) throw new Error(`${name}: ${JSON.stringify(detail)}`); };
 async function button(page, pattern) {
   const h = await page.waitForFunction((source) => { const re = new RegExp(source);
@@ -395,6 +395,25 @@ try {
       validResumeState=completedWCheckpoint;
       check('resume-tail-validates-stored-W-checkpoint-and-live-state',completedWCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,revision:resumed.revision,p1,p2,p3,p12,laterHistory});
     }
+    if (!validResumeState && resumed?.phase === 'prep' && resumed?.revision === 9 && resumed?.gold === 3) {
+      const priorPath=path.join(ROOT,'runtime/resonance/ui-verification/ui-tft-tail-attempt-8.json');
+      const prior=JSON.parse(await readFile(priorPath,'utf8'));
+      const priorTests=new Map((prior.tests||[]).map(test=>[test.name,test]));
+      const checkpoint=priorTests.get('resume-tail-validates-stored-W-checkpoint-and-live-state');
+      const equipped=priorTests.get('drag-equips-real-inventory-item'),sold=priorTests.get('E-sells-selected-piece');
+      const events=resumed.history||[],deployments=events.filter(event=>event.type==='piece-deployed').slice(0,3).map(event=>event.uid);
+      const p1=resumed.pieces?.find(piece=>piece.uid==='p1'),p2=resumed.pieces?.find(piece=>piece.uid==='p2'),p3=resumed.pieces?.find(piece=>piece.uid==='p3'),p12=resumed.pieces?.find(piece=>piece.uid==='p12');
+      const equipEvent=events.find(event=>event.type==='item-equipped'&&event.uid==='i4'&&event.pieceUid==='p1'&&event.itemId==='bow');
+      const saleEvent=events.find(event=>event.type==='operator-sold'&&event.uid==='p2'&&event.refund===1);
+      completedEquipmentSellCheckpoint=prior.status==='failed'&&prior.sessionId===resumeTailSession&&prior.initialRevision===7&&checkpoint?.passed===true&&
+        equipped?.passed===true&&equipped.detail?.itemUid==='i4'&&equipped.detail?.equipmentAfter?.includes('i4')&&sold?.passed===true&&sold.detail?.uid==='p2'&&sold.detail?.goldBefore===2&&sold.detail?.goldAfter===3&&
+        resumed.revision===9&&resumed.gold===3&&deployments.join('|')==='p1|p2|p3'&&!!equipEvent&&!!saleEvent&&
+        p1?.row===10&&p1?.col===3&&p1?.equipment?.some(item=>item.uid==='i4'&&item.itemId==='bow')&&!p2&&p3?.row===9&&p3?.col===5&&p12?.row==null&&
+        resumed.inventory?.some(item=>item.uid==='i5')&&!resumed.inventory?.some(item=>item.uid==='i4');
+      completedWCheckpoint=completedEquipmentSellCheckpoint;
+      validResumeState=completedEquipmentSellCheckpoint;
+      check('resume-tail-validates-stored-equip-and-sale-checkpoint',completedEquipmentSellCheckpoint,{priorPath,priorStatus:prior.status,priorSession:prior.sessionId,revision:resumed.revision,originalStarterIds:deployments,p1,p2,p3,p12,inventory:resumed.inventory,equipEvent,saleEvent});
+    }
     check('resume-tail-existing-session-at-valid-prep-checkpoint',validResumeState,
       { phase: resumed?.phase, revision: resumed?.revision, gold: resumed?.gold, historyTypes, deployed: resumed?.pieces?.filter(piece => piece.row != null).length, completedWCheckpoint });
     check('resume-tail-no-new-session', receipt.creates === 0 && new URL(page.url()).searchParams.get('session') === resumeTailSession,
@@ -601,7 +620,8 @@ try {
     check('codex-return-board-interactive', !!boardPointValue && await page.evaluate(() => !!globalThis.__SP_VIEW__), boardPointValue);
     }
     let live = await readFresh();
-    const starterIds = new Set(before.pieces.slice(0, 3).map(piece => piece.uid));
+    const starterHistoryIds=(before.history||[]).filter(event=>event.type==='piece-deployed').slice(0,3).map(event=>event.uid);
+    const starterIds = new Set(resumeTailSession&&starterHistoryIds.length===3?starterHistoryIds:before.pieces.slice(0, 3).map(piece => piece.uid));
     const deployments = resumeTailSession
       ? live.pieces.filter(piece => starterIds.has(piece.uid) && piece.row != null).map(piece => ({ uid: piece.uid, row: piece.row, col: piece.col, dir: piece.dir || 'RIGHT' }))
       : [];
@@ -647,8 +667,10 @@ try {
     check('three-starters-deployed-by-native-pointer-and-facing-wheel', deployments.length === 3, { deployments, expectedStarterIds: [...starterIds] });
     receipt.freshActions.push({ action: 'mouse-drag-three-starters-facing-wheel', deployments });
     } else {
-      check('resume-tail-three-starters-already-deployed', deployments.length === 3,
-        { deployments, expectedStarterIds: [...starterIds] });
+      const expectedDeployed=completedEquipmentSellCheckpoint?['p1','p3']:['p1','p2','p3'];
+      check(completedEquipmentSellCheckpoint?'resume-tail-original-starters-tracked-after-sale':'resume-tail-three-starters-already-deployed',
+        [...starterIds].join('|')==='p1|p2|p3'&&deployments.map(piece=>piece.uid).join('|')===expectedDeployed.join('|'),
+        { deployments, expectedOriginalStarterIds: [...starterIds], expectedCurrentlyDeployed:expectedDeployed, soldStarter:completedEquipmentSellCheckpoint?'p2':null });
     }
     const viewportRevision=(await readFresh()).revision;
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
@@ -708,31 +730,38 @@ try {
       receipt.freshActions.push({ action: 'W-bench-and-restore-to-pointer-legal-tile', uid: wTarget.uid, row: redeployed?.row, col: redeployed?.col });
     }
     const equipmentBefore = await readFresh();
-    check('starter-equipment-available-for-real-drag', equipmentBefore.inventory?.length > 0,
-      { inventory: equipmentBefore.inventory?.length || 0 });
-    await clickVisibleButtonText(page, '.rs-hud-actions', '装备背包', 'drag-equipment-drawer-opener');
-    await page.waitForSelector('.rs-inventory__main[draggable="true"]', { timeout: 10000 });
-    const itemUid = equipmentBefore.inventory[0].uid;
-    const itemButton = await page.$(`[id="inventory-${itemUid}"] .rs-inventory__main[draggable="true"]`);
-    const equipPoint = await piecePointerPoint(page, wTarget.uid);
-    if (!itemButton) throw new Error('real equipment drag source is unavailable');
-    await dragPointer(page, itemButton, equipPoint);
-    current = await stateAfterRevision(page, receipt.sessionId, equipmentBefore.revision, 'drag-equip');
-    const equippedTarget = current.pieces.find(piece => piece.uid === wTarget.uid);
-    check('drag-equips-real-inventory-item', !current.inventory.some(item => item.uid === itemUid) && equippedTarget?.equipment?.some(item => item.uid === itemUid),
-      { itemUid, inventoryAfter: current.inventory?.map(item => item.uid), equipmentAfter: equippedTarget?.equipment?.map(item => item.uid) });
-    receipt.freshActions.push({ action: 'native-drag-equip', pieceUid: wTarget.uid, itemUid });
-    await page.click('.rs-panel-drawer > header > button[aria-label="关闭面板"]');
-    await page.waitForFunction(() => !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
-    const eTarget = deployments[1];
-    await rightClickPiece(page, eTarget.uid);
-    const beforeESell = await readFresh();
-    await page.keyboard.press('e');
-    current = await stateAfterRevision(page, receipt.sessionId, beforeESell.revision, 'E-sell');
-    check('E-sells-selected-piece', !current.pieces.some(piece => piece.uid === eTarget.uid) && current.gold > beforeESell.gold,
-      { uid: eTarget.uid, goldBefore: beforeESell.gold, goldAfter: current.gold });
-    receipt.freshActions.push({ action: 'E-sell-selected-piece', uid: eTarget.uid, gold: current.gold });
-    const dragSale = deployments[2];
+    let dragSale;
+    if(completedEquipmentSellCheckpoint) {
+      check('equip-and-E-sale-already-validated-by-attempt-8',equipmentBefore.revision===9&&equipmentBefore.pieces.some(piece=>piece.uid==='p1'&&piece.equipment?.some(item=>item.uid==='i4'))&&!equipmentBefore.pieces.some(piece=>piece.uid==='p2')&&equipmentBefore.history?.some(event=>event.type==='operator-sold'&&event.uid==='p2'&&event.refund===1),{revision:equipmentBefore.revision,gold:equipmentBefore.gold,p1:equipmentBefore.pieces.find(piece=>piece.uid==='p1'),p2:equipmentBefore.pieces.find(piece=>piece.uid==='p2')||null});
+      dragSale=deployments.find(piece=>piece.uid==='p3');
+    } else {
+      check('starter-equipment-available-for-real-drag', equipmentBefore.inventory?.length > 0,
+        { inventory: equipmentBefore.inventory?.length || 0 });
+      await clickVisibleButtonText(page, '.rs-hud-actions', '装备背包', 'drag-equipment-drawer-opener');
+      await page.waitForSelector('.rs-inventory__main[draggable="true"]', { timeout: 10000 });
+      const itemUid = equipmentBefore.inventory[0].uid;
+      const itemButton = await page.$(`[id="inventory-${itemUid}"] .rs-inventory__main[draggable="true"]`);
+      const equipPoint = await piecePointerPoint(page, wTarget.uid);
+      if (!itemButton) throw new Error('real equipment drag source is unavailable');
+      await dragPointer(page, itemButton, equipPoint);
+      current = await stateAfterRevision(page, receipt.sessionId, equipmentBefore.revision, 'drag-equip');
+      const equippedTarget = current.pieces.find(piece => piece.uid === wTarget.uid);
+      check('drag-equips-real-inventory-item', !current.inventory.some(item => item.uid === itemUid) && equippedTarget?.equipment?.some(item => item.uid === itemUid),
+        { itemUid, inventoryAfter: current.inventory?.map(item => item.uid), equipmentAfter: equippedTarget?.equipment?.map(item => item.uid) });
+      receipt.freshActions.push({ action: 'native-drag-equip', pieceUid: wTarget.uid, itemUid });
+      await page.click('.rs-panel-drawer > header > button[aria-label="关闭面板"]');
+      await page.waitForFunction(() => !document.querySelector('.rs-panel-drawer'), { timeout: 5000 });
+      const eTarget = deployments[1];
+      await rightClickPiece(page, eTarget.uid);
+      const beforeESell = await readFresh();
+      await page.keyboard.press('e');
+      current = await stateAfterRevision(page, receipt.sessionId, beforeESell.revision, 'E-sell');
+      check('E-sells-selected-piece', !current.pieces.some(piece => piece.uid === eTarget.uid) && current.gold > beforeESell.gold,
+        { uid: eTarget.uid, goldBefore: beforeESell.gold, goldAfter: current.gold });
+      receipt.freshActions.push({ action: 'E-sell-selected-piece', uid: eTarget.uid, gold: current.gold });
+      dragSale = deployments[2];
+    }
+    check('drag-sale-target-is-still-a-live-deployed-starter',!!dragSale&&equipmentBefore.pieces.some(piece=>piece.uid===dragSale.uid&&piece.row!=null),{dragSale,currentlyDeployed:equipmentBefore.pieces.filter(piece=>starterIds.has(piece.uid)&&piece.row!=null).map(piece=>piece.uid)});
     await page.evaluate(() => { const close = document.querySelector('.dpanel__close'); close?.click(); });
     await page.waitForFunction(() => !document.querySelector('.dpanel'), { timeout: 5000 });
     const beforeDragSale = await readFresh();
@@ -774,6 +803,26 @@ try {
       { revision: afterPoorRefresh.revision, gold: afterPoorRefresh.gold });
     receipt.freshActions.push({ action: 'D-refresh-insufficient-funds', revision: afterPoorRefresh.revision, gold: afterPoorRefresh.gold, blocked: true });
     await page.click('.dpanel__close');
+    const beforeMove=await readFresh(),origin=beforeMove.history?.find(event=>event.type==='piece-deployed'&&event.uid==='p1'),movingPiece=beforeMove.pieces.find(piece=>piece.uid==='p1'),equipmentBeforeMove=(movingPiece?.equipment||[]).map(item=>({uid:item.uid,itemId:item.itemId})).sort((a,b)=>a.uid.localeCompare(b.uid));
+    check('p1-original-history-deployment-is-known',!!origin&&origin.row===9&&origin.col===3,{origin});
+    if(movingPiece?.row===origin?.row&&movingPiece?.col===origin?.col) {
+      const equipmentNow=(movingPiece.equipment||[]).map(item=>({uid:item.uid,itemId:item.itemId})).sort((a,b)=>a.uid.localeCompare(b.uid));
+      check('p1-original-position-already-restored',movingPiece.uid==='p1'&&JSON.stringify(equipmentNow)===JSON.stringify(equipmentBeforeMove),{piece:movingPiece,equipmentBeforeMove});
+    } else {
+      check('p1-can-return-to-original-legal-empty-tile',movingPiece?.row===10&&movingPiece?.col===3&&movingPiece.legalTiles?.includes(`${origin?.row},${origin?.col}`)&&!beforeMove.pieces.some(piece=>piece.uid!=='p1'&&piece.row===origin?.row&&piece.col===origin?.col),{piece:movingPiece,target:{row:origin?.row,col:origin?.col}});
+      const moveGeometry=await page.evaluate(({row,col})=>{const view=globalThis.__SP_VIEW__,dest=view?.tileScreen(row,col),canvas=document.querySelector('.gm__field canvas'),rect=canvas?.getBoundingClientRect();if(!dest||!rect)return null;const tile=view.raw?.debug?.pick?.groundTile?.(dest.x-rect.left,dest.y-rect.top);return tile?.row===row&&tile?.col===col&&document.elementFromPoint(dest.x,dest.y)?.tagName==='CANVAS'?{x:dest.x,y:dest.y,row,col}:null;},{row:origin.row,col:origin.col});
+      check('p1-move-target-is-real-history-tile',!!moveGeometry,moveGeometry);
+      const moveSource=await piecePointerPoint(page,'p1');
+      await page.mouse.move(moveSource.x,moveSource.y);await page.mouse.down();await page.mouse.move(moveGeometry.x,moveGeometry.y,{steps:10});await page.mouse.up();
+      await page.waitForSelector('.fwheel[role="dialog"]',{timeout:8000});
+      await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.querySelector('.fwheel[role="dialog"]')?.classList.contains('is-right'),{timeout:5000});
+      await page.keyboard.press('Enter');await page.waitForFunction(()=>!document.querySelector('.fwheel[role="dialog"]'),{timeout:10000});
+      current=await stateAfterRevision(page,receipt.sessionId,beforeMove.revision,'mouse-move-p1-to-original-tile');
+      const movedPiece=current.pieces.find(piece=>piece.uid==='p1');
+      const equipmentAfterMove=(movedPiece?.equipment||[]).map(item=>({uid:item.uid,itemId:item.itemId})).sort((a,b)=>a.uid.localeCompare(b.uid));
+      check('mouse-move-p1-preserves-uid-position-facing-and-equipment',movedPiece?.uid==='p1'&&movedPiece.row===origin.row&&movedPiece.col===origin.col&&movedPiece.dir==='RIGHT'&&JSON.stringify(equipmentAfterMove)===JSON.stringify(equipmentBeforeMove),{uid:movedPiece?.uid,position:{row:movedPiece?.row,col:movedPiece?.col,dir:movedPiece?.dir},equipmentBeforeMove,equipmentAfterMove});
+      receipt.freshActions.push({action:'mouse-move-p1-to-original-history-tile',uid:'p1',row:movedPiece?.row,col:movedPiece?.col,dir:movedPiece?.dir,equipment:movedPiece?.equipment?.map(item=>item.uid)});
+    }
     if (live.node?.kind === 'logistics' || !live.nodeStarted) {
       await button(page, '领取补给');
       const handle = await page.waitForFunction(async id => { const state=(await (await fetch(`./resonance/api/sessions/${id}`)).json()).state; return state.nodeStarted ? state : false; }, { timeout: 12000 }, receipt.sessionId);
