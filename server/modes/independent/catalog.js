@@ -215,12 +215,34 @@ function makeOperator(source, chess, data, eliteVariant = false) {
   };
 }
 
-export function makeDarkmoonSupport(spec) {
-  const id=String(spec.id),attack=Math.max(1,Number(spec.attack)||1)*120,health=Math.max(1,Number(spec.health)||1)*350,faction=spec.faction||null;
-  const normalChess={chessId:id,baseId:id,goldenId:null,isGolden:false,tier:1,techLevel:1,identifier:-1,isHidden:true,isDiy:false,visible:false,
-    name:spec.name,profession:'TOKEN',position:'MELEE',nationId:null,bonds:[],garrisonIds:[],stats:{maxHp:health,atk:attack,def:0,res:0,cost:0,blockCnt:1,bat:1,aspd:100,respawnTime:0,spRecovery:1,hpRecoveryPerSec:0,moveSpeed:1,tauntLevel:0,massLevel:0,deployLimit:1,deckStack:0},
-    rangeGrid:[[0,0],[0,1]],rangeId:null,dmgType:'phys',attackKind:'melee',projectile:null,canHitFly:false,targetPriority:null,trait:null,skill:null,skills:[],talents:[],tokens:[],modules:[],assets:{avatar:id.includes('cat')?'token_10028_vigil_wolf':'token_10030_mlyss_wtrman',spine:id.includes('cat')?'token_10028_vigil_wolf':'token_10030_mlyss_wtrman'},darkmoonSupport:true,nativeGrowth:{source:{type:'authored support recipe'},phases:{1:{maxLevel:90,attributesKeyFrames:[{level:1,data:{maxHp:health,atk:attack,def:0,magicResistance:0}},{level:90,data:{maxHp:health*2,atk:attack*2,def:0,magicResistance:0}}]}}},status:{phase:1,level:1,skillLevel:1,equipLevel:0}};
-  return {chessId:id,name:spec.name,tier:1,profession:'TOKEN',nativeFactionTags:faction?[faction]:[],eliteChessId:null,elite:false,recruitable:false,mergeable:false,darkmoonSupport:true,
+export function makeDarkmoonSupport(spec, data = getData()) {
+  const id = String(spec.id); const faction = spec.faction || null;
+  const prototypeTokenId = String(spec.prototypeTokenId || '');
+  const token = data?.tokens?.[prototypeTokenId] || Object.values(data?.tokens || {}).find((x) => x?.tokenId === prototypeTokenId);
+  const prototypeOwnerChessId = String(spec.prototypeOwnerChessId || token?.owners?.find((x) => x.endsWith('_a')) || '');
+  const variant = token?.variants?.[prototypeOwnerChessId] || token;
+  const prototypeStats = variant?.stats || token?.stats;
+  if (!token || !prototypeStats || !prototypeOwnerChessId) throw new Error(`BAD_DARKMOON_SUPPORT_PROTOTYPE:${id}`);
+  const scale = { attack: Number(spec.prototypeScale?.attack ?? 0.4), health: Number(spec.prototypeScale?.health ?? 0.4), defense: Number(spec.prototypeScale?.defense ?? 0.4) };
+  const attack = Math.round(Math.max(1, Number(spec.attack) || 1) * Number(prototypeStats.atk || 0) * scale.attack);
+  const health = Math.round(Math.max(1, Number(spec.health) || 1) * Number(prototypeStats.maxHp || 0) * scale.health);
+  const defense = Math.round(Number(prototypeStats.def || 0) * scale.defense);
+  const variantSkill = variant?.skill || token.skill || null;
+  const normalChess = { ...clone(token), chessId: id, baseId: id, goldenId: null, isGolden: false, tier: 1, techLevel: 1, identifier: -1, isHidden: true, isDiy: false, visible: false,
+    tokenId: prototypeTokenId, darkmoonPrototypeTokenId: prototypeTokenId, darkmoonPrototypeOwnerChessId: prototypeOwnerChessId,
+    darkmoonPrototypeName: token.name || prototypeTokenId,
+    darkmoonPrototypeScale: scale, darkmoonNativeChessId: prototypeOwnerChessId, darkmoonSupport: true,
+    nativeGrowth: clone(token.nativeGrowth || null),
+    name: spec.name, profession: 'TOKEN', position: token.position || 'MELEE', nationId: null, bonds: [], garrisonIds: [],
+    stats: { ...clone(prototypeStats), maxHp: health, atk: attack, def: defense, blockCnt: 1 },
+    rangeGrid: clone(variant?.rangeGrid || token.rangeGrid || [[0, 0], [0, 1]]),
+    dmgType: variant?.dmgType || token.dmgType || 'phys', attackKind: variant?.attackKind || token.attackKind || 'melee',
+    projectile: variant?.projectile || token.projectile || null, canHitFly: variant?.canHitFly ?? token.canHitFly ?? false,
+    trait: clone(variant?.trait || token.trait || null), skill: clone(variantSkill), skills: variantSkill ? [clone(variantSkill)] : [],
+    talents: clone(variant?.talents || token.talents || []), tokens: [], modules: [],
+    assets: { avatar: prototypeTokenId, spine: prototypeTokenId }, status: { phase: Number(variant?.phase ?? 1), level: Number(variant?.level ?? 1), skillLevel: 1, equipLevel: 0 } };
+  return { chessId: id, name: spec.name, tier: 1, profession: 'TOKEN', nativeFactionTags: faction ? [faction] : [], eliteChessId: null, elite: false, recruitable: false, mergeable: false, darkmoonSupport: true,
+    darkmoonPrototypeTokenId: prototypeTokenId, darkmoonPrototypeOwnerChessId: prototypeOwnerChessId, darkmoonPrototypeName: token.name || prototypeTokenId, darkmoonPrototypeScale: scale,
     nativeTrait:{normalText:'支援单位',eliteText:'支援单位',text:'支援单位',sources:{normal:[],elite:[]},origin:'Darkmoon support prototype',effect:{prep:[],combat:[],unsupported:[]}},
     source:{charId:null,normalChess,eliteChess:null,skills:[],talents:[]}};
 }
@@ -267,7 +289,7 @@ export function getCatalog(data = getData(), design = DESIGN) {
   }
   for(const spec of DARKMOON_SUPPORT_SPECS) {
     if(!spec?.id||!spec?.name||operators[spec.id])throw new Error(`BAD_DARKMOON_SUPPORT_PROTOTYPE:${spec?.id}`);
-    operators[spec.id]=makeDarkmoonSupport(spec);
+    operators[spec.id]=makeDarkmoonSupport(spec, data);
   }
 
   const badges = keyed(design.badges, (x) => BADGE_IDS[x.name], (x, id) => ({ ...clone(x), id, kind: 'badge', sourceId: null }));
