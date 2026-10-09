@@ -6,7 +6,7 @@ import design from '../../data/independent-design.json' with { type: 'json' };
 import designAddon from '../../data/independent-darkmoon-design-addon.json' with { type: 'json' };
 import gameText from '../../data/independent-game-text.json' with { type: 'json' };
 import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPrep.js';
-import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
+import { darkmoonCombatMetadata, darkmoonCombatEligibilityRules } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { compactWording, textsFor, toLevels } from '../../tools/independent-darkmoon-text-formatter.mjs';
 
 const byId = new Map(blueprints.entries.map(entry => [entry.sourceId, entry]));
@@ -53,7 +53,7 @@ test('dynamic combat delivery wording keeps its scope label without redundant pe
   assert.doesNotMatch(persistent.text, /永久|临时/);
   const battleOnly = darkmoonCombatMetadata('BGS_017');
   assert.equal(battleOnly.duration, '本场战斗');
-  assert.match(battleOnly.text, /叙拉古支援单位被召唤时/);
+  assert.match(battleOnly.text, /叙拉古支援单位实际部署时/);
   assert.match(battleOnly.text, /获得.*战斗增益/);
   assert.doesNotMatch(battleOnly.text, /仅本场战斗生效|临时/);
 });
@@ -80,8 +80,15 @@ test('growth text names the exact badge and its combat actor', () => {
   assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔干员击倒敌人时/);
   assert.match(darkmoonCombatMetadata('BGS_047').text, /维多利亚干员攻击敌人时/);
   assert.match(darkmoonCombatMetadata('BGS_111').text, /佩戴坚守盟约的友方干员受到攻击时/);
-  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位被召唤时/);
-  assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位被召唤时/);
+  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位实际部署时.*护盾刷新至五层/);
+  assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位实际部署时/);
+  for(const id of ['BGS_017','BGS_021','BGS_071']){
+    const rule=darkmoonCombatEligibilityRules(id)[0];
+    assert.equal(rule.params.event,'deploy',`${id} uses the actual token deployment actor`);
+    assert.deepEqual(rule.params.actorKinds,['token']);
+    assert.equal(rule.params.targets,'newSummonedToken');
+    assert.doesNotMatch(darkmoonCombatMetadata(id).text,/3秒|三秒/);
+  }
 });
 
 test('Darkmoon game text and design delivery copy stays synchronized with executable outputs', () => {
