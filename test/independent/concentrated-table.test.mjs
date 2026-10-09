@@ -17,6 +17,13 @@ const nativePower = read('independent-native-power.json');
 const catalog = getCatalog();
 const table = buildTable({ design, gameText, chessData, catalog, sourceReference, nativePower });
 const bySection = (name) => table.rows.filter((row) => row.section === name);
+const currentWarbandChains = new Map([
+  ['叙拉古退场与召唤', '伺夜战斗部署时召唤狼群投影，波登可和铃兰强化实际部署的叙拉古支援单位；贾维在普通攻击后随机复制另一名在场友方的战斗部署效果，巫恋放大部署效果，拉普兰德负责溅射输出。'],
+  ['卡西米尔护盾与成长', '白金带护盾与复生，灰毫在整备结束时增强攻击，瑕光利用护盾破裂获得临时成长；玛恩纳按在场卡西米尔数量持续成长，流星提供定向成长，耀骑士临光把每次招募联动转为阵营永久成长，圣聆初雪部署时为卡西米尔单位补盾。'],
+  ['哥伦比亚召唤回收', '雷蛇在哥伦比亚支援单位实际部署时提升攻击并将护盾刷新至五层；罗宾、多萝西、松果与赫默补充支援单位，缪尔赛思部署时复制当前攻击力最高的哥伦比亚干员原始幻影（包含自身），白面鸮在整备结束时强化其他哥伦比亚干员。'],
+  ['维多利亚采购与攻击', '格拉尼售出提供采购资金，白铁在购买维多利亚时返金，洛洛按维多利亚购买获得永久成长；号角强化其他维多利亚攻击者，维娜·维多利亚的攻击联动强化全队，风笛提供连击与超杀增益，刺玫战斗部署时召唤立即攻击的支援。'],
+  ['炎国商店与招募成长', '清流补充免费刷新，风絮和小满响应炎国购买成长；安洁莉娜永久强化商店中的炎国干员，重岳按买入干员科技向指定友方授予成长；黍随炎阵营干员新获得或首次上阵积累伤害成长；令战斗部署时召唤炎国作战投影并把对应干员的原始复制加入整备区。'],
+]);
 
 test('concentrated table cites source rules, default-only native skills, 90-second totals and per-card tier evidence', () => {
   assert.equal(table.columns.length, 15);
@@ -72,7 +79,8 @@ test('concentrated table cites source rules, default-only native skills, 90-seco
     assert.ok(archetype);
     assert.equal(archetype.operators.length, 7);
     for (const member of archetype.operators) assert.ok(row.native.includes(member));
-    assert.ok(row.basis.includes(archetype.chain));
+    assert.ok(currentWarbandChains.has(row.name));
+    assert.ok(row.basis.startsWith(currentWarbandChains.get(row.name)), `${row.name} uses current trigger/recipient copy`);
     assert.ok(row.reference.includes('；'));
   }
   const victoria = warbands.find((row) => row.name === '炎国商店与招募成长');
@@ -115,6 +123,7 @@ test('current table omits retired and unassigned equipment while keeping catalog
 
 test('current combat trigger roles and warband chains describe deployment payloads and strict knockout gear',()=>{
   const roles=new Map(bySection('干员').map(row=>[row.name,row.role]));
+  const warbands=bySection('七人阵容');
   assert.equal(roles.get('裁度'),'击倒召唤');
   assert.equal(roles.get('缪尔赛思'),'部署原始幻影');
   assert.equal(roles.get('刺玫'),'部署召唤');
@@ -124,7 +133,9 @@ test('current combat trigger roles and warband chains describe deployment payloa
   const gear=bySection('装备').find(row=>row.name==='不屈盟约');
   assert.match(gear?.basis||gear?.normal||'',/被击倒时判定.*撤回不会触发.*替身/);
   for(const archetype of sourceReference.archetypes){
-    if(['哥伦比亚召唤与机械支援','维多利亚商店与召唤','叙拉古召唤与攻击成长'].includes(archetype.name))
-      assert.doesNotMatch(archetype.chain,/退场|倒下|死亡/);
+    const row=warbands.find(item=>item.name===archetype.name);
+    assert.ok(row);
+    if(['叙拉古退场与召唤','卡西米尔护盾与成长','哥伦比亚召唤回收','维多利亚采购与攻击','炎国商店与招募成长'].includes(archetype.name))
+      assert.doesNotMatch(row.basis,/伺夜退场召唤|新召唤的哥伦比亚支援|圣聆初雪退场|刺玫退场|令退场/);
   }
 });

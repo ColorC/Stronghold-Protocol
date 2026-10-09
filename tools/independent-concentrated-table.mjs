@@ -35,6 +35,20 @@ const gearNotes = {
   '叙拉古狼嚎哨': '同一干员唯一；每发动12次普通攻击使主目标恐惧0.75秒，冷却8秒。可以从装备商店获得。',
 };
 
+// The reference archetype copy predates the current deployment-payload conversion.
+// Keep the source roster and ordering, but render the current trigger and recipient behavior.
+const workshopWarbandChains = new Map([
+  ['叙拉古退场与召唤', '伺夜战斗部署时召唤狼群投影，波登可和铃兰强化实际部署的叙拉古支援单位；贾维在普通攻击后随机复制另一名在场友方的战斗部署效果，巫恋放大部署效果，拉普兰德负责溅射输出。'],
+  ['卡西米尔护盾与成长', '白金带护盾与复生，灰毫在整备结束时增强攻击，瑕光利用护盾破裂获得临时成长；玛恩纳按在场卡西米尔数量持续成长，流星提供定向成长，耀骑士临光把每次招募联动转为阵营永久成长，圣聆初雪部署时为卡西米尔单位补盾。'],
+  ['哥伦比亚召唤回收', '雷蛇在哥伦比亚支援单位实际部署时提升攻击并将护盾刷新至五层；罗宾、多萝西、松果与赫默补充支援单位，缪尔赛思部署时复制当前攻击力最高的哥伦比亚干员原始幻影（包含自身），白面鸮在整备结束时强化其他哥伦比亚干员。'],
+  ['维多利亚采购与攻击', '格拉尼售出提供采购资金，白铁在购买维多利亚时返金，洛洛按维多利亚购买获得永久成长；号角强化其他维多利亚攻击者，维娜·维多利亚的攻击联动强化全队，风笛提供连击与超杀增益，刺玫战斗部署时召唤立即攻击的支援。'],
+  ['炎国商店与招募成长', '清流补充免费刷新，风絮和小满响应炎国购买成长；安洁莉娜永久强化商店中的炎国干员，重岳按买入干员科技向指定友方授予成长；黍随炎阵营干员新获得或首次上阵积累伤害成长；令战斗部署时召唤炎国作战投影并把对应干员的原始复制加入整备区。'],
+]);
+
+function workshopWarbandChain(warband) {
+  return workshopWarbandChains.get(warband.name) || warband.chain;
+}
+
 function nativeSummary(chess) {
   const parts = [];
   const stats = chess.stats || {};
@@ -185,7 +199,7 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
     rows.push({ section: '七人阵容', level: `参考族群：${warband.sourceTribe}`, name: warband.name, role: '完整构筑阵容', faction: warband.faction,
       native: members.map((op) => `${op.name}（科技${op.tier}${neutralMembers.has(op.name) ? '；中立成员' : ''}）`).join('、'),
       reference: members.map((op) => `${op.name}：${sourceCardSummary(op.sourceRefs)}`).join('；'), nativePower: '',
-      normal: '', upgrade: '', basis: `${warband.chain}${neutralMembers.size ? `；中立成员（阵营按本体资料）：${[...neutralMembers].join('、')}` : ''}` });
+      normal: '', upgrade: '', basis: `${workshopWarbandChain(warband)}${neutralMembers.size ? `；中立成员（阵营按本体资料）：${[...neutralMembers].join('、')}` : ''}` });
   }
   const enemyTracks = Object.entries(design.rules.enemyBalance || {}).filter(([difficulty]) => !Object.values(design.rules.enemyBalanceByGrowthMode || {}).some(mode => mode[difficulty])).map(([difficulty, phases]) => ({ difficulty, phases, mode: null }));
   for (const [mode, difficulties] of Object.entries(design.rules.enemyBalanceByGrowthMode || {})) for (const [difficulty, phases] of Object.entries(difficulties)) enemyTracks.push({ difficulty, phases, mode });
