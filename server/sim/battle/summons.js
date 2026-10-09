@@ -8,8 +8,87 @@ import { SkillRuntime } from '../skills.js';
 import { unitInfo } from '../snapshot.js';
 import { normalizeToken } from '../simdata.js';
 import { fin } from './util.js';
+import { findSummonTile, tokenCanEngageAt } from '../content/tokens.js';
 
 export class BattleSummons {
+  _nativeSummonHasTarget(u, r, c) {
+    if (!u?.ownerUnit || !this.enemies.some((e) => e.alive && e.deployed)) return false;
+    const support = u.profile?.noAttack || u.profile?.dmgType === 'heal';
+    return support ? true : tokenCanEngageAt(this, u.ownerUnit, { ...u.def, stats: { ...u.def.stats, blockCnt: Math.max(u.def.stats?.blockCnt || 0, u.s?.blockCnt || 0) } }, r, c, u.dir);
+  }
+
+  _nativeSummonLegal(u, r, c, allowOwnReservation = false) {
+    if (!Number.isInteger(r) || !Number.isInteger(c) || !this.grid.inRect(r, c)) return false;
+    const occ = this._occ[r * COLS + c];
+    if (occ && occ !== u && occ.alive && occ.deployed) return false;
+    if (this.downOn(r, c, u)) return false;
+    const ranged = u.def?.position === 'RANGED';
+    if (!this.grid.canStand(r, c, { ranged })) return false;
+    if (!allowOwnReservation) return !this.isReservedTile(r, c);
+    for (const a of this.allyUnits) {
+      if (a === u || a.alive || a.removed || (a.kind !== 'op' && a.kind !== 'token')) continue;
+      const [ar, ac] = this.restTile(a);
+      if (ar === r && ac === c) return false;
+    }
+    return true;
+  }
+
+  _nativeSummonTile(u, preferred = null, fixed = false) {
+    const owner = u.ownerUnit;
+    if (!owner?.alive || !owner.deployed) return null;
+    if (preferred && this._nativeSummonLegal(u, preferred[0], preferred[1], true)
+      && this._nativeSummonHasTarget(u, preferred[0], preferred[1])) return preferred;
+    if (fixed) return null;
+    const canUseTile = (r, c) => this._nativeSummonLegal(u, r, c, true) && this._nativeSummonHasTarget(u, r, c);
+    // Native melee blockers may validly engage on the enemy tile; tileFree only treats ally occupancy as placement blocking.
+    const placementView = Object.create(this);
+    placementView.enemies = [];
+    return findSummonTile(placementView, owner, 'near', { allBoard: true, melee: u.def?.position !== 'RANGED', canUseTile, at: preferred ? { x: preferred[1], y: preferred[0] } : undefined });
+  }
+
+  _queueIndependentNativeSummon(u, entry = {}) {
+    const queue = this._independentNativeSummons || (this._independentNativeSummons = new Map());
+    if (queue.has(u.id)) return;
+    queue.set(u.id, { unit: u, ...entry });
+    if (!this._independentNativeSummonTimer) {
+      this._independentNativeSummonTimer = this.every(0.1, (_battle, timer) => {
+        if (this.finished) { this._independentNativeSummons?.clear(); timer.cancel(); this._independentNativeSummonTimer = null; return; }
+        const pending = this._independentNativeSummons;
+        if (!pending?.size) { timer.cancel(); this._independentNativeSummonTimer = null; return; }
+        for (const [id, p] of pending) {
+          const u = p.unit, owner = u.ownerUnit;
+          if (!u || u.removed || !this.allyUnits.includes(u)) {
+            pending.delete(id); if (u) this.offOwner(u); continue;
+          }
+          if (p.kind === 'auto' && (!owner || owner.removed || !owner.alive || !owner.deployed || owner.deploySeq !== p.ownerGeneration)) {
+            pending.delete(id); u.removed = true; u.mem.nativeEngagementPending = false; this.offOwner(u); continue;
+          }
+          if (!owner?.alive || !owner.deployed) continue;
+          const tile = this._nativeSummonTile(u, p.preferred, p.kind === 'board');
+          if (!tile || !this._deploy(u, { initial: !!p.initial, tile })) continue;
+          pending.delete(id);
+          u.mem.nativeEngagementPending = false;
+          const opts = p.opts || {};
+          if (opts.hp != null && Number.isFinite(Number(opts.hp))) u.hp = Math.max(1, Math.min(u.s.maxHp, Number(opts.hp)));
+          if (opts.duration > 0 && Number.isFinite(Number(opts.duration))) this.after(Number(opts.duration), () => { if (u.alive) this.retreat(u, { reason: 'expired', permanent: true }); }, { owner: u });
+        }
+        if (!pending.size) { timer.cancel(); this._independentNativeSummonTimer = null; }
+      });
+    }
+  }
+
+  _forgetIndependentNativeSummon(u) {
+    this._independentNativeSummons?.delete(u?.id);
+    if (u?.mem) u.mem.nativeEngagementPending = false;
+  }
+
+  _cancelPendingNativeSummonsForOwner(owner) {
+    for (const [id, p] of this._independentNativeSummons || []) {
+      if (p.kind !== 'auto' || p.unit.ownerUnit !== owner) continue;
+      this._independentNativeSummons.delete(id); p.unit.removed = true; p.unit.mem.nativeEngagementPending = false; this.offOwner(p.unit);
+    }
+  }
+
   /**
    * Token def of `tokenId` as `owner` (an ally unit: its chess + selected skill / module; or a chess id) summons it —
    * the def spawnToken uses. For content that reads summon stats / skill blackboards: exact in a multi-player field
@@ -53,14 +132,24 @@ export class BattleSummons {
       return null;
     }
     if (!Number.isInteger(row) || !Number.isInteger(col) || !this.grid.inRect(row, col)) return null;
+    const independentNative = !!(this.flags.independent && !opts.def && ownerUnit);
     const occ = this._occ[row * COLS + col];
-    if (occ && occ.alive && !opts.force) return null;
+    if (occ && occ.alive && !opts.force && !independentNative) return null;
     const dir = opts.dir != null ? normDir(opts.dir) : opts.facing != null ? normDir(opts.facing) : ownerUnit ? ownerUnit.dir : ps ? ps.dir : 'RIGHT';
     const u = this._makeAlly(ps, def, 'token', row, col, { ownerUnit, dir, nativeGrowthStatus: opts.nativeGrowthStatus ?? null, nativeOwnerGrowth: opts.ownerGrowth ?? ownerUnit?.nativeGrowthStatus ?? null });
     if (opts.stats) for (const [k, v] of Object.entries(opts.stats)) if (Number.isFinite(v)) u.base[k] = v;
     this._setupUnit(u, opts.kit ?? null);
     if (opts.untargetable) this.addBuff(u, { key: 'trait:untargetable', flags: { untargetable: true }, persist: true, allowDead: true });
-    if (!this._deploy(u, { initial: false })) {
+    if (independentNative) {
+      const preferred = [row, col];
+      const tile = this._nativeSummonTile(u, preferred);
+      const ownerGeneration = ownerUnit.deploySeq;
+      if (!tile || !this._deploy(u, { initial: false, tile })) {
+        u.mem.nativeEngagementPending = true;
+        this._queueIndependentNativeSummon(u, { kind: 'auto', preferred, ownerGeneration, opts: { hp: opts.hp, duration: opts.duration } });
+        return u;
+      }
+    } else if (!this._deploy(u, { initial: false })) {
       // tile still busy (a unit stands there even with `force`): drop the half-built token and its hooks
       u.removed = true;
       this.offOwner(u);

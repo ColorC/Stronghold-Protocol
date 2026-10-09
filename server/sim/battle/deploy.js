@@ -26,6 +26,12 @@ export class BattleDeploy {
     if (occ && occ !== u && occ.alive && occ.deployed) { this.log(`tile ${R0},${C0} occupied; ${u} not deployed`); return false; }
     // "倒地干员所在地块视为可部署，但所有我方单位在此处的部署行为将被阻止" (PRTS 卫戍协议/帮助 §作战阶段 单位部署)
     if (this.downOn(R0, C0, u)) { this.log(`a knocked-out operator lies on ${R0},${C0}; ${u} not deployed`); return false; }
+    if (this.flags.independent && u.kind === 'token' && u.uid != null && u.mem?.independentSummon === true && u.ownerUnit
+      && !this._nativeSummonTile(u, [R0, C0], true)) {
+      this._queueIndependentNativeSummon(u, { kind: 'board', preferred: [R0, C0], initial });
+      u.mem.nativeEngagementPending = true;
+      return true; // accepted for retry; do not let callers issue a duplicate summon
+    }
     const first = u.deploySeq === 0;
     u.alive = true;
     u.deployed = true;
@@ -102,6 +108,8 @@ export class BattleDeploy {
   }
 
   _remove(unit, reason, killer = null, permanent = false, dying = false) {
+    this._forgetIndependentNativeSummon?.(unit);
+    this._cancelPendingNativeSummonsForOwner?.(unit);
     this._cutAttackStand(unit);
     unit.alive = false;
     unit.removeReason = reason;

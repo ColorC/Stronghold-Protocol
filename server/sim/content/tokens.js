@@ -485,10 +485,11 @@ export function summonToken(battle, owner, tokenId, placement = 'melee', opts = 
 }
 
 /** Return whether this exact token definition can select an active enemy from a candidate tile. */
-export function tokenCanEngageAt(battle, owner, def, r, c) {
+export function tokenCanEngageAt(battle, owner, def, r, c, dir = owner?.dir) {
   if (!battle.enemies.some(e => e.alive && e.deployed)) return false;
-  const probe = new Unit({id:-1,side:'ally',kind:'token',def,defId:def.id,ownerId:owner.ownerId,ownerUnit:owner,x:c,y:r,tileR:r,tileC:c,dir:owner.dir,base:{...(def.stats||{}),maxHp:def.stats?.maxHp||1,atk:def.stats?.atk||0,blockCnt:def.stats?.blockCnt||0}});
-  probe.rangeGrid = def.rangeGrid || [[0,0]];
+  const projected = tokenEngagementDef(def, owner);
+  const probe = new Unit({id:-1,side:'ally',kind:'token',def:projected,defId:def.id,ownerId:owner.ownerId,ownerUnit:owner,x:c,y:r,tileR:r,tileC:c,dir:dir||owner.dir,base:{...(projected.stats||{}),maxHp:projected.stats?.maxHp||1,atk:projected.stats?.atk||0,blockCnt:projected.stats?.blockCnt||0}});
+  probe.rangeGrid = projected.rangeGrid || [[0,0]];
   probe.alive=true; probe.deployed=true; probe.ground=battle.grid.isLow(r,c); probe.blocking=[]; probe.kit={};
   probe.profile=resolveProfile(def, def.profileTrait || null);
   battle._refreshRange(probe);
@@ -745,6 +746,25 @@ const WOLF_RETURN_RETRY = 0.25;
 /** The 狼群领袖 talent of a 狼群 def (its 狼影 stack talent), else its first talent. */
 const wolfLeader = (def) => talentWith(def, 'vigil_wolf_t_1_enhance[trigger].max_stack_cnt') ?? def?.talents?.[0] ?? null;
 
+/** Pure pre-deploy projection of a wolf pack's initial shadow block; shared with its deploy effect. */
+export function wolfInitialBlock(def, owner) {
+  const leader = wolfLeader(def);
+  const bb = leader?.bb ?? {};
+  const perBlock = num(bb['vigil_wolf_t_1_enhance[trigger].block_cnt'] ?? bb.block_cnt, 1);
+  const mMax = String(leader?.description ?? '').match(/至多(\d+)只/);
+  const maxShadows = mMax ? +mMax[1] : 1 + num(bb['vigil_wolf_t_1_enhance[trigger].max_stack_cnt'], 0);
+  const text = (owner?.def?.talents || []).map((t) => t.description || '').join(' ');
+  const initial = text.match(/初始(两|二|\d+)只/);
+  const shadows = Math.max(1, Math.min(maxShadows, initial ? (/\d/.test(initial[1]) ? +initial[1] : 2) : maxShadows - 1));
+  return shadows * perBlock;
+}
+
+function tokenEngagementDef(def, owner) {
+  if (def?.id !== TOKEN_IDS.wolfPack) return def;
+  const blockCnt = Math.max(num(def.stats?.blockCnt, 0), wolfInitialBlock(def, owner));
+  return { ...def, stats: { ...def.stats, blockCnt } };
+}
+
 /**
  * “狼影” recovery time of a 狼群 def: its 狼群领袖 talent interval ("每25秒增加一只"; data — 25 s for both 伺夜 chess). The
  * growth cycle and the length of the 战术点形态. 0 when the data has none.
@@ -838,9 +858,7 @@ function wolfPack(bb, raw, def) {
     install(battle, unit) {
       unit.mem.wolfCapacity = maxShadows; // (b.snap `wolves`, snapshot.js wolfView: the pips under the HP bar)
       // initial shadows: 伺夜's talent text ("初始两只"), else one below the maximum
-      const ot = (ownerOf(unit)?.def?.talents || []).map((t) => t.description || '').join(' ');
-      const mi = ot.match(/初始(两|二|\d+)只/);
-      const initShadows = Math.max(1, Math.min(maxShadows, mi ? (/\d/.test(mi[1]) ? +mi[1] : 2) : maxShadows - 1));
+      const initShadows = Math.max(1, Math.min(maxShadows, wolfInitialBlock(def, ownerOf(unit)) / perBlock));
       onDeploy(battle, unit, () => {
         // back from its 战术点形态 (wolfReturnNow): 1 狼影 (PRTS 狼群 "从战术点形态转变为召唤物形态后拥有1只“狼影”") and a
         // fresh growth cycle; any other deployment: the initial count
