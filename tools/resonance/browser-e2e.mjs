@@ -6,13 +6,6 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { startServer } from '../../server/index.js';
-import { loadData } from '../../server/data.js';
-import { getResonanceCatalog, resonanceContent } from '../../server/modes/resonance/catalog.js';
-import { createSession, validateSession } from '../../server/modes/resonance/session.js';
-import { getResonanceField, runResonanceBattle } from '../../server/modes/resonance/battle.js';
-import { legalSummonCells } from '../../server/modes/resonance/summons.js';
-import { ARCHETYPES, SCENARIO_CONFIGS, buildScenario, makePactTerminalRoster } from './archetype-balance.mjs';
 
 const CANONICAL_ROOT = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const VERIFY_ROOT = path.join(CANONICAL_ROOT, 'runtime/resonance/verification');
@@ -29,6 +22,8 @@ const urlArg = process.argv.findIndex((arg) => arg === '--url');
 const REMOTE_ENTRY_URL = urlArg >= 0 ? process.argv[urlArg + 1] : process.argv.find((arg) => arg.startsWith('--url='))?.slice('--url='.length) || null;
 const workshopUrlArg = process.argv.findIndex((arg) => arg === '--workshop-url');
 const REMOTE_WORKSHOP_URL = workshopUrlArg >= 0 ? process.argv[workshopUrlArg + 1] : process.argv.find((arg) => arg.startsWith('--workshop-url='))?.slice('--workshop-url='.length) || null;
+const embedUrlArg = process.argv.findIndex((arg) => arg === '--embed-url');
+const REMOTE_EMBED_URL = embedUrlArg >= 0 ? process.argv[embedUrlArg + 1] : process.argv.find((arg) => arg.startsWith('--embed-url='))?.slice('--embed-url='.length) || null;
 const REMOTE_MODE = !!REMOTE_ENTRY_URL;
 if (REMOTE_ENTRY_URL) {
   const parsed = new URL(REMOTE_ENTRY_URL);
@@ -38,6 +33,36 @@ if (REMOTE_WORKSHOP_URL) {
   const parsed = new URL(REMOTE_WORKSHOP_URL);
   if (!REMOTE_MODE || !['http:', 'https:'].includes(parsed.protocol)) throw new Error('--workshop-url 需要与 --url 一起使用，并且必须是 HTTP(S) Workshop 入口');
 }
+if (REMOTE_EMBED_URL) {
+  const parsed = new URL(REMOTE_EMBED_URL);
+  if (!REMOTE_MODE || !REMOTE_WORKSHOP_URL || !['http:', 'https:'].includes(parsed.protocol)
+    || parsed.pathname !== '/stronghold/resonance.html' || parsed.origin !== new URL(REMOTE_WORKSHOP_URL).origin) {
+    throw new Error('--embed-url 必须与 --url/--workshop-url 一起使用，并精确指向 Workshop 同源 /stronghold/resonance.html');
+  }
+}
+function matchesExpectedEmbeddedGame(candidateUrl, expectedUrl) {
+  try {
+    const candidate = new URL(candidateUrl), expected = new URL(expectedUrl);
+    return candidate.origin === expected.origin && candidate.pathname === expected.pathname;
+  } catch { return false; }
+}
+if (process.argv.includes('--self-test-embed-url')) {
+  const expected = 'https://workshop.colorc.cc/stronghold/resonance.html';
+  if (!matchesExpectedEmbeddedGame(`${expected}?session=abc#shop`, expected)
+    || matchesExpectedEmbeddedGame('https://colorc.cc/stronghold/resonance.html', expected)
+    || matchesExpectedEmbeddedGame('https://workshop.colorc.cc/other/resonance.html', expected)) {
+    throw new Error('embedded URL exact-origin/path pure check failed');
+  }
+  process.stdout.write(JSON.stringify({ ok: true, expectedOrigin: new URL(expected).origin, expectedPath: new URL(expected).pathname }) + '\n');
+  process.exit(0);
+}
+const [{ startServer }, { loadData }, { getResonanceCatalog, resonanceContent }, { createSession, validateSession },
+  { getResonanceField, runResonanceBattle }, { legalSummonCells },
+  { ARCHETYPES, SCENARIO_CONFIGS, buildScenario, makePactTerminalRoster }] = await Promise.all([
+  import('../../server/index.js'), import('../../server/data.js'), import('../../server/modes/resonance/catalog.js'),
+  import('../../server/modes/resonance/session.js'), import('../../server/modes/resonance/battle.js'),
+  import('../../server/modes/resonance/summons.js'), import('./archetype-balance.mjs'),
+]);
 const STORIES = [
   'opening-four-difficulties', 'opening-three-environments', 'renderer-native', 'renderer-dom-fallback',
   'purchase-refresh-xp-shop-lock', 'natural-flow-supply-claims', 'equip-unequip-combine-recycle', 'move-and-four-directions',
@@ -810,7 +835,8 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
   try {
     const workshopAuth = await scopePage(workshop);
     await workshop.goto(workshopUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    const expectedOrigin = new URL(REMOTE_ENTRY_URL).origin;
+    const expectedEmbeddedURL = REMOTE_EMBED_URL || REMOTE_ENTRY_URL;
+    const expectedOrigin = new URL(expectedEmbeddedURL).origin;
     const hostDeadline = Date.now() + 30_000;
     let hostFrame = null;
     while (!hostFrame && Date.now() < hostDeadline) {
@@ -849,7 +875,7 @@ async function verifyRemoteWorkshopEmbed(browserInstance, workshopUrl) {
           let parent = candidate.parentFrame();
           let nestedInHost = false;
           while (parent) { if (parent === hostFrame) { nestedInHost = true; break; } parent = parent.parentFrame(); }
-          return nestedInHost && url.origin === expectedOrigin && url.pathname.endsWith('/resonance.html');
+          return nestedInHost && matchesExpectedEmbeddedGame(url.href, expectedEmbeddedURL);
         } catch { return false; }
       }) || null;
       if (!frame) await new Promise((resolve) => setTimeout(resolve, 150));

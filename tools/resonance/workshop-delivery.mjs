@@ -29,7 +29,7 @@ const DESIGN_BODY = (entryUrl, referenceUrl) => [
   '装备由组件按配方合成，可在干员之间调整。经营节点提供策略选择；策略可能带来即时收益、任务目标、延迟回报或规则变化。详情中可以查看技能、盟约、装备配方与策略条件。',
 ].join('\n');
 
-const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
+const HELP = `用法：node tools/resonance/workshop-delivery.mjs [--dry-run|--execute] --entry-url URL [--embed-url URL] --reference-url URL --release-receipt FILE --receipt FILE\n       node tools/resonance/workshop-delivery.mjs --self-test\n默认只执行只读预览；只有显式 --execute 才写入 Workshop。`;
 
 function parseArgs(argv) {
   const options = { execute: false, selfTest: false };
@@ -39,7 +39,7 @@ function parseArgs(argv) {
     else if (arg === '--dry-run') options.execute = false;
     else if (arg === '--self-test') options.selfTest = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
-    else if (['--entry-url', '--reference-url', '--release-receipt', '--receipt'].includes(arg)) {
+    else if (['--entry-url', '--embed-url', '--reference-url', '--release-receipt', '--receipt'].includes(arg)) {
       const value = argv[++i];
       if (!value || value.startsWith('--')) throw new Error(`缺少 ${arg} 的值`);
       options[arg.slice(2)] = value;
@@ -96,6 +96,14 @@ function apiUrl(serverBase, endpoint) {
   return new URL(`${serverBase.replace(/\/+$/, '')}${endpoint}`);
 }
 
+function validateEmbedUrl(embedUrl, workshopOrigin) {
+  const target = new URL(embedUrl);
+  if (target.origin !== workshopOrigin || !target.pathname.endsWith('/resonance.html')) {
+    throw new Error('--embed-url 必须是 Workshop 同源的 resonance.html 页面');
+  }
+  return target.toString();
+}
+
 function absoluteBoxes(cards) {
   const byId = new Map(cards.map(card => [card.id, card]));
   const memo = new Map();
@@ -128,7 +136,7 @@ function layoutFor(cards) {
   return { design, play };
 }
 
-function plannedCards(layout, entryUrl, textSource) {
+function plannedCards(layout, embedUrl, textSource) {
   return [
     {
       id: DESIGN_CARD_ID, kind: 'text', adapter: 'text', title: '共鸣玩法与参考',
@@ -137,7 +145,7 @@ function plannedCards(layout, entryUrl, textSource) {
     },
     {
       id: PLAY_CARD_ID, kind: 'material', adapter: 'web', title: '进入共鸣玩法',
-      source: { kind: 'link', url: entryUrl }, x: layout.play.x, y: layout.play.y,
+      source: { kind: 'link', url: embedUrl }, x: layout.play.x, y: layout.play.y,
       width: layout.play.width, height: layout.play.height,
     },
   ];
@@ -163,11 +171,19 @@ function selfTest() {
     { id: UPSTREAM_CARD_ID, x: 80, y: 126, width: 100, height: 100 },
     { id: 'inside', parentId: 'group', x: 20, y: 40, width: 100, height: 100 },
   ]);
-  const cards = plannedCards(layout, 'https://example.invalid/game', { kind: 'file', path: '/tmp/ref.md', token: 'not-used' });
+  const entryUrl = 'https://colorc.cc/stronghold/resonance.html';
+  const embedUrl = 'https://workshop.colorc.cc/stronghold/resonance.html';
+  const cards = plannedCards(layout, embedUrl, { kind: 'file', path: '/tmp/ref.md', token: 'not-used' });
   const relations = plannedRelations();
   if (!noOverlap([...cards.map(card => ({ ...card })), { x: 0, y: 0, width: 1, height: 1 }])) throw new Error('布局纯测试失败');
   if (cards[0].kind !== 'text' || cards[0].source.kind !== 'file' || cards[1].kind !== 'material'
-    || cards[1].adapter !== 'web' || cards[1].source.url !== 'https://example.invalid/game') throw new Error('卡片source schema纯测试失败');
+    || cards[1].adapter !== 'web' || cards[1].source.url !== embedUrl || cards[1].source.url === entryUrl
+    || !DESIGN_BODY(entryUrl, 'https://example.invalid/reference.zip').includes(entryUrl)) throw new Error('独立入口与嵌入入口分离纯测试失败');
+  if (validateEmbedUrl(embedUrl, 'https://workshop.colorc.cc') !== embedUrl) throw new Error('Workshop同源嵌入页验证失败');
+  for (const invalid of ['https://colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/stronghold/independent.html']) {
+    let rejected = false; try { validateEmbedUrl(invalid, 'https://workshop.colorc.cc'); } catch { rejected = true; }
+    if (!rejected) throw new Error('非Workshop同源或非共鸣页面未被拒绝');
+  }
   if (relations.length !== 2 || relations.some(relation => relation.source !== UPSTREAM_CARD_ID || relation.arrow !== 'closed' || relation.kind !== 'derived')
     || relations[0].programLabel !== '设计与参考' || relations[1].programLabel !== '玩法实现') throw new Error('关系schema纯测试失败');
   if (apiUrl('https://workshop.colorc.cc/bside/', '/api/canvases/x').pathname !== '/bside/api/canvases/x') throw new Error('Workshop网关路径纯测试失败');
@@ -195,6 +211,7 @@ async function run() {
   if (options.help) return process.stdout.write(`${HELP}\n`);
   if (options.selfTest) return selfTest();
   const entryUrl = httpsUrl(options['entry-url'], '--entry-url');
+  const embedUrl = options['embed-url'] ? httpsUrl(options['embed-url'], '--embed-url') : entryUrl;
   const referenceUrl = httpsUrl(options['reference-url'], '--reference-url');
   const releaseReceiptPath = absoluteFile(options['release-receipt'], '--release-receipt');
   const receiptPath = absoluteFile(options.receipt, '--receipt');
@@ -205,6 +222,7 @@ async function run() {
   if (typeof localConfig.token !== 'string' || !localConfig.token.trim()) throw new Error('WSH 配置中没有有效令牌');
   const serverUrl = new URL(localConfig.server || SERVER_FALLBACK);
   if (serverUrl.protocol !== 'https:' || serverUrl.username || serverUrl.password) throw new Error('WSH server 必须是无凭据的 HTTPS URL');
+  if (options['embed-url']) validateEmbedUrl(embedUrl, serverUrl.origin);
   const serverBase = serverUrl.toString().replace(/\/+$/, '');
   const headers = {
     accept: 'application/json', authorization: `Bearer ${localConfig.token}`,
@@ -245,8 +263,9 @@ async function run() {
     sourceCard: { id: UPSTREAM_CARD_ID, bodyReadable: true },
     plannedCards: [
       { id: DESIGN_CARD_ID, kind: 'text', title: '共鸣玩法与参考', geometry: layout.design },
-      { id: PLAY_CARD_ID, kind: 'material', adapter: 'web', title: '进入共鸣玩法', sourceUrl: entryUrl, geometry: layout.play },
+      { id: PLAY_CARD_ID, kind: 'material', adapter: 'web', title: '进入共鸣玩法', sourceUrl: embedUrl, geometry: layout.play },
     ],
+    entryUrl, embedUrl,
     plannedRelations: plannedRelations().map(({ id, source, target, kind, trigger, programLabel }) => ({ id, source, target, kind, trigger, label: programLabel })),
     referencesUrl: referenceUrl, releaseArchivePath: release.archivePath,
     mutationPlanned: Boolean(options.execute), receiptPath,
@@ -264,7 +283,7 @@ async function run() {
     const bodyPath = bodyResult.path;
     const bodyToken = bodyResult.open_token ?? bodyResult.token;
     if (typeof bodyPath !== 'string' || typeof bodyToken !== 'string') throw new Error('文字正文桥未返回file source');
-    const cards = plannedCards(layout, entryUrl, { kind: 'file', path: bodyPath, token: bodyToken, mime: bodyResult.mime ?? 'text/markdown', editableId: DESIGN_CARD_ID });
+    const cards = plannedCards(layout, embedUrl, { kind: 'file', path: bodyPath, token: bodyToken, mime: bodyResult.mime ?? 'text/markdown', editableId: DESIGN_CARD_ID });
     const relations = plannedRelations();
     const workspaceRef = currentResponse.workspace_ref ?? current._workspaceRef;
     if (!workspaceRef) throw new Error('画布缺少workspace_ref，无法安全提交');
@@ -298,7 +317,7 @@ async function run() {
       throw new Error('新卡几何或关系回读校验失败');
     }
     if (newDesign.source?.kind !== 'file' || newDesign.source?.editableId !== DESIGN_CARD_ID) throw new Error('设计文字卡source回读失败');
-    if (newPlay.source?.kind !== 'link' || newPlay.source?.url !== entryUrl || newPlay.adapter !== 'web') throw new Error('游玩卡语义source回读失败');
+    if (newPlay.source?.kind !== 'link' || newPlay.source?.url !== embedUrl || newPlay.adapter !== 'web') throw new Error('游玩卡嵌入source回读失败');
     const expectedRelations = plannedRelations();
     for (const expected of expectedRelations) {
       const actual = relationById.get(expected.id);
