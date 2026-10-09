@@ -521,9 +521,13 @@ export function capacityBatchCommand(revision) {
 }
 
 export function capacityBatchReceiptFromStdout(stdout, revision) {
-  const line = String(stdout).trim().split(/\r?\n/).at(-1);
+  const text = String(stdout).trim();
   let receipt;
-  try { receipt = JSON.parse(line); } catch { throw new Error('远端容量批次未返回可读终态JSON'); }
+  try { receipt = JSON.parse(text); }
+  catch {
+    const line = text.split(/\r?\n/).at(-1);
+    try { receipt = JSON.parse(line); } catch { throw new Error('远端容量批次未返回可读终态JSON'); }
+  }
   if (receipt.schema !== 'resonance-capacity-batch-receipt/v1' || receipt.status !== 'completed'
     || String(receipt.sourceRevision).toLowerCase() !== String(revision).toLowerCase()
     || receipt.phases?.length !== 2 || receipt.cleanup?.sessionDirectoryEmpty !== true) {

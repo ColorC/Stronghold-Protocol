@@ -66,6 +66,13 @@ test('capacity batch receipt requires both true four-session phases and real rep
   const receipt = { schema: 'resonance-capacity-batch-receipt/v1', sourceRevision: revision, status: 'completed',
     cleanup: { sessionDirectoryEmpty: true }, phases: [phase(false), phase(true)] };
   assert.deepEqual(capacityBatchReceiptFromStdout(`runner output\n${JSON.stringify(receipt)}`, revision), receipt);
+  const localDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resonance-batch-receipt-'));
+  try {
+    const receiptFile = path.join(localDir, 'capacity-batch-receipt.json');
+    fs.writeFileSync(receiptFile, `${JSON.stringify(receipt, null, 2)}\n`);
+    assert.deepEqual(capacityBatchReceiptFromStdout(fs.readFileSync(receiptFile, 'utf8'), revision), receipt);
+    assert.deepEqual(capacityBatchReceiptFromStdout(`runner diagnostics\n${JSON.stringify(receipt)}`, revision), receipt);
+  } finally { fs.rmSync(localDir, { recursive: true, force: true }); }
   assert.throws(() => capacityBatchReceiptFromStdout(JSON.stringify({ ...receipt, cleanup: { sessionDirectoryEmpty: false } }), revision), /终态\/清理校验/);
   const noReplay = structuredClone(receipt); noReplay.phases[1].capacity.sessions[0].replay.gzipBytes = 0;
   assert.throws(() => capacityBatchReceiptFromStdout(JSON.stringify(noReplay), revision), /replay证明/);
