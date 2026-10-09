@@ -39,6 +39,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
       sourceRefs: op.sourceRefs || null,
       effectDelivery: op.effectDelivery || op.nativeTrait.effectDelivery || null,
       effectDeliveryElite: eliteOp?.effectDelivery || eliteOp?.nativeTrait.effectDelivery || null,
+      darkmoonDeploymentPayload: darkmoonCombatMetadata(op.sourceRefs?.darkmoon19_2?.id,!!op.elite),
       nativeStats: raw.stats || {}, nativeFactions: op.nativeFactionTags || (raw.bonds || []).map((bond) => ({ yanShip: '炎', victoriaShip: '维多利亚', lateranoShip: '拉特兰', egirShip: '阿戈尔', kjeragShip: '谢拉格', sargonShip: '萨尔贡', siracusaShip: '叙拉古', kazimierzShip: '卡西米尔' })[bond]).filter(Boolean),
       effectRules: { prep: op.nativeTrait.effect?.prep || [], combat: op.nativeTrait.effect?.combat || [] },
       effectRulesElite: { prep: eliteOp?.nativeTrait.effect?.prep || [], combat: eliteOp?.nativeTrait.effect?.combat || [] },

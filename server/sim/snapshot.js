@@ -51,6 +51,10 @@ export function unitInfo(u) {
     // an ally operator's equipped item ids (display: a 变形同构体 wearer counts for the bond it grants — the bond popup's
     // member list and the detail card's bond chips of a teammate's unit)
     items: u.side === 'ally' && u.kind === 'op' && Array.isArray(u.items) && u.items.length ? [...u.items] : undefined,
+    // Display-only evidence of currently installed deployment adapters (native source plus magnetic attachment).
+    // Eligibility consumers must not infer this from original-card keywords or tags.
+    darkmoonDeploymentSources: u.side === 'ally' && Array.isArray(u.mem?.darkmoonDeploymentSources) && u.mem.darkmoonDeploymentSources.length
+      ? [...u.mem.darkmoonDeploymentSources] : undefined,
   };
 }
 
