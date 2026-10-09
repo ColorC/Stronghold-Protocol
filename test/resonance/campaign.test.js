@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseRerollCore, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign } from '../../tools/resonance/balance-campaign.mjs';
+import { CAMPAIGN_POLICIES, campaignRolePlan, canBlockGround, canFillFallbackRole, canOperatorUseTile, catalogForBalanceProfile, claimOptions, chooseRerollCore, copyTargetsForCampaign, designatedCoreInvestment, DIFFICULTIES, directionToward, ECON_PACT_POLICY, econPactPlan, ENVIRONMENTS, estimateOperatorPower, evaluateCampaignOffer, exceedsFrontlineBranchCap, policyLevelTarget, routeProfiles as campaignRouteProfiles, runCampaign } from '../../tools/resonance/balance-campaign.mjs';
 import { ARCHETYPES, buildScenario, findArchetypeCatalog, makeArchetypeRoster, makePactTerminalRoster, pactProfile, routeSet, SCENARIO_CONFIGS } from '../../tools/resonance/archetype-balance.mjs';
 import { loadData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
@@ -43,6 +43,17 @@ test('tempo, reroll, and rush have explicit level schedules',()=>{
   assert.deepEqual([3,5,9,13,18,24].map(round=>policyLevelTarget('reroll',round)),[4,4,6,7,8,9]);
   assert.deepEqual([3,5,9,13,18,24].map(round=>policyLevelTarget('rush',round)),[3,3,6,6,9,9]);
   assert.ok(estimateOperatorPower({role:'damage',stars:{1:{stats:{atk:200,bat:1,aspd:100,maxHp:1000,def:100,blockCnt:1}}}})>400);
+});
+
+test('econ-pact banks in stages, holds 30/40 during XP pushes, and never refreshes before level 9',()=>{
+  assert.equal(CAMPAIGN_POLICIES.includes(ECON_PACT_POLICY),false);
+  assert.deepEqual(econPactPlan(4,3),{levelTarget:4,bankTarget:0,xpReserve:0,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(5,4),{levelTarget:4,bankTarget:10,xpReserve:10,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(9,5),{levelTarget:6,bankTarget:30,xpReserve:30,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(13,6),{levelTarget:7,bankTarget:50,xpReserve:30,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(18,8),{levelTarget:9,bankTarget:40,xpReserve:40,refreshEnabled:false});
+  assert.deepEqual(econPactPlan(20,9),{levelTarget:9,bankTarget:30,xpReserve:30,refreshEnabled:true});
+  assert.deepEqual(econPactPlan(24,9),{levelTarget:9,bankTarget:0,xpReserve:0,refreshEnabled:true});
 });
 
 test('reroll core selection compares actual anti-air DPS instead of survivability score',()=>{
@@ -140,6 +151,21 @@ test('designated high-cost core has one legal investment branch beyond frontline
   const maxed={...copyState,pieces:[...copyState.pieces,piece('core3','core',3)]};
   assert.ok(!copyTargetsForCampaign(maxed,catalog,'core').some(target=>target.operatorId==='core'),'once the core is three-star, spare copies are reserved for other eligible branches');
   assert.equal(evaluateCampaignOffer('core',maxed,catalog,field,'core').reason,'designated-core-already-3-star','the shop stops buying extra copies after the core reaches three stars');
+});
+
+test('econ-pact admits only distinct main-identity frontline investments past the auxiliary cap',()=>{
+  const field={field:'normal',deployMap:new Map([['9,2','melee'],['9,3','melee'],['9,4','ranged'],['10,2','ranged'],['10,3','ranged'],['10,4','melee'],['11,2','melee']]),stage:{rows:Array(14).fill('.............'),tiles:{'.':{height:'LOW',buildable:'ALL',groundPassable:true}}},wave:{routes:[{motion:'WALK',start:[9,2],end:[9,3]}]}};
+  const mk=(id,charId,role,pacts=[])=>({id,charId,role,cost:2,pacts,stars:{1:{stats:{atk:160,bat:1,aspd:0,maxHp:1300,def:100,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}},2:{stats:{atk:320,bat:1,aspd:0,maxHp:2600,def:200,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}},3:{stats:{atk:480,bat:1,aspd:0,maxHp:3900,def:300,blockCnt:role==='frontline'?1:0},record:{canHitFly:false,rangeGrid:[[0,0]]}}}});
+  const catalog={operators:{frontA:mk('frontA','charA','frontline',['p']),frontB:mk('frontB','charB','frontline',['p']),frontC:mk('frontC','charC','frontline',['p']),frontD:mk('frontD','charD','frontline',['p']),frontAAlt:mk('frontAAlt','charA','frontline',['p']),healer:mk('healer','heal','healer'),air1:mk('air1','air1','damage'),air2:mk('air2','air2','damage')},equipment:{},pacts:{p:{thresholds:[2,4]}},environments:{origin_test:{identityPactId:'p'}}};
+  const piece=(uid,operatorId,row,col)=>({uid,operatorId,star:1,row,col,extraPacts:[],equipment:[]});
+  const state={level:5,pieces:[piece('a','frontA',9,2),piece('b','frontB',9,3),piece('h','healer',9,4),piece('aa','air1',10,2)],strategies:[],environmentId:'origin_test'};
+  assert.equal(evaluateCampaignOffer('frontC',state,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','a new distinct identity member advances the unfinished main pact despite two frontline branches');
+  assert.equal(exceedsFrontlineBranchCap('frontC',catalog.operators.frontC,state,catalog,false,null,ECON_PACT_POLICY),false,'the identity investment is exempt from the auxiliary frontline cap');
+  const afterOne={...state,pieces:[...state.pieces,piece('c','frontC',null,null)]};
+  assert.equal(evaluateCampaignOffer('frontD',afterOne,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','a second distinct member may be held to reach the next configured tier');
+  const reachedNext={...afterOne,pieces:[...afterOne.pieces,piece('d','frontD',null,null)]};
+  assert.notEqual(evaluateCampaignOffer('frontAAlt',reachedNext,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','a duplicate character never counts as another identity member');
+  assert.notEqual(evaluateCampaignOffer('frontC',reachedNext,catalog,field,null,ECON_PACT_POLICY).reason,'build-next-main-pact-tier','once the next identity threshold is reached, the special investment path closes');
 });
 
 test('first campaign battle buys and fields the available next-pact member before fighting',()=>{

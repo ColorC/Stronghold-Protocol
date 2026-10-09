@@ -28,11 +28,18 @@ let activePolicy={id:'legacy',coreOperatorId:null,rushReleased:false};
 const goalLevel=(round)=>round>=26?10:round>=22?9:round>=17?8:round>=9?6:3;
 const bankFloor=(round)=>round>=24?0:round>=18?10:round>=9?20:round>=4?10:0;
 export const CAMPAIGN_POLICIES=Object.freeze(['tempo','reroll','rush']);
+export const ECON_PACT_POLICY='econ-pact';
 export function policyLevelTarget(policy,round){
   if(policy==='tempo')return round>=24?9:round>=18?8:round>=13?7:round>=9?6:round>=5?5:round>=3?4:3;
   if(policy==='reroll')return round>=24?9:round>=18?8:round>=13?7:round>=9?6:round>=6?5:round>=3?4:3;
   if(policy==='rush')return round>=18?9:round>=9?6:3;
+  if(policy===ECON_PACT_POLICY)return round>=18?9:round>=15?8:round>=13?7:round>=9?6:round>=6?5:round>=3?4:3;
   return goalLevel(round);
+}
+export function econPactPlan(round,level){
+  const bankTarget=round<5?0:round<9?10:round<13?30:round<18?50:round<24?(level<9?40:30):0;
+  const xpReserve=round>=24?0:round>=18&&level<9?40:round>=13?30:bankTarget;
+  return {levelTarget:policyLevelTarget(ECON_PACT_POLICY,round),bankTarget,xpReserve,refreshEnabled:level>=9};
 }
 export function estimateOperatorPower(operator,star=1){
   const stats=operator?.stars?.[star]?.stats??{};
@@ -60,6 +67,11 @@ export function campaignRolePlan(state,catalog,field){
   return {targets:target,owned:count,missing:{frontline:Math.max(0,target.frontlines-count.frontline),healer:Math.max(0,target.healers-count.healer),antiAir:Math.max(0,target.antiAir-count.antiAir),combatOutput:Math.max(0,target.combatOutput-count.combatOutput)}};
 }
 function eligibleRosterCapacity(state,catalog,field){
+  if(activePolicy.id===ECON_PACT_POLICY){
+    const chars=new Set();
+    for(const piece of state.pieces){const op=opById(catalog,piece.operatorId);if(op&&legalCandidateCell(op,field,new Set()))chars.add(op.charId);}
+    return Math.min(chars.size,field.deployMap?.size??chars.size,10);
+  }
   const targets=campaignRoleTargets(state,catalog,field),counts=roleCountsForPieces(state.pieces,catalog);
   return Math.max(0,state.pieces.length-Math.max(0,counts.frontline-targets.frontlines)-Math.max(0,counts.healer-2));
 }
@@ -135,6 +147,7 @@ function assertInvariants(state,catalog){
 }
 function runAction(state,action,catalog){
   if(activeMetrics){activeMetrics.actions[action.type]=(activeMetrics.actions[action.type]??0)+1;if(action.type==='refresh')activeMetrics.refreshes[state.round]=(activeMetrics.refreshes[state.round]??0)+1;
+    activeMetrics.nodeEconomy??={};const node=activeMetrics.nodeEconomy[state.round]??(activeMetrics.nodeEconomy[state.round]={round:state.round,actions:{},goldStart:state.gold});node.actions[action.type]=(node.actions[action.type]??0)+1;node.goldStart??=state.gold;
     if(action.type==='buy'){const offer=state.shop.offers.find(entry=>entry.uid===action.offerUid),id=offer?.operatorId;if(id){activeMetrics.operatorBuys[id]=(activeMetrics.operatorBuys[id]??0)+1;if(id===activePolicy.coreOperatorId){activeMetrics.corePurchases++;activeMetrics.coreOfferPurchases.push({round:state.round,offerUid:offer.uid,operatorId:id,cost:offer.cost});const prior=activeMetrics.coreOfferDecisions.findLast(entry=>entry.round===state.round&&entry.offerUid===offer.uid);if(prior)prior.outcome='bought';}}}
   }
   const result=applyAction(state,{...action,expectedRevision:state.revision},{catalog,
@@ -142,6 +155,7 @@ function runAction(state,action,catalog){
     battleRunner:(battleState,opts)=>runResonanceBattle(battleState,{...opts,data,catalog,recording:false}),
     recording:false});
   if(!result.ok)throw new Error(`action:${action.type}:${result.error}`);
+  const node=activeMetrics?.nodeEconomy?.[state.round];if(node){node.goldEnd=result.state.gold;node.goldDelta=(node.goldDelta??0)+(result.state.gold-state.gold);for(const event of result.events??[]){if(event.type==='fight-settled'){node.settlement={income:event.income,winBonus:event.winBonus,streakBonus:event.streakBonus,interest:event.interest,delayedBonus:event.delayedBonus,strategyGold:event.strategyGold,battleGold:event.battleGold,goldBefore:event.goldBefore,goldAfter:event.goldAfter};}else if(event.type==='operator-bought')node.buyGold=(node.buyGold??0)+Number(event.cost||0);else if(event.type==='operator-sold')node.sellRefund=(node.sellRefund??0)+Number(event.refund||0)+Number(event.bonus||0);else if(event.type==='xp-purchased')node.xpGold=(node.xpGold??0)+Number(event.gold||0);else if(event.type==='shop-refreshed')node.refreshGold=(node.refreshGold??0)+Number(event.cost||0);}}
   assertInvariants(result.state,catalog);
   return result;
 }
@@ -382,7 +396,7 @@ function replacementFor(operator,state,catalog,field,roleNeeded,coreOperatorId=a
   }
   return null;
 }
-export function evaluateCampaignOffer(operatorId,state,catalog,field,coreOperatorId=null){
+export function evaluateCampaignOffer(operatorId,state,catalog,field,coreOperatorId=null,policy=activePolicy.id){
   const operator=opById(catalog,operatorId);if(!operator)return {ok:false,reason:'unknown-operator',priority:0};
   const legalCell=legalCandidateCell(operator,field,new Set());if(!legalCell)return {ok:false,reason:'no-legal-deployment-tile',priority:0};
   const owned=state.pieces.filter(piece=>piece.operatorId===operatorId);
@@ -395,6 +409,9 @@ export function evaluateCampaignOffer(operatorId,state,catalog,field,coreOperato
   if(designatedCoreInvestment(operatorId,operator,owned,coreOperatorId)){
     return {ok:true,reason:'designated-core-investment',priority:4,netGain:0,heldOnBench:true};
   }
+  if(econPactIdentityInvestment(operator,state,catalog,policy)){
+    return {ok:true,reason:'build-next-main-pact-tier',priority:3,netGain:estimateOperatorPower(operator,1),heldOnBench:true};
+  }
   if(operatorId!==coreOperatorId&&owned.some(piece=>piece.star>=2))return {ok:false,reason:'auxiliary-already-2-star',priority:0};
   const roleNeed=roleNeedForOffer(operator,state,catalog,field);
   const roleCounts=roleCountsForPieces(state.pieces,catalog),targets=campaignRoleTargets(state,catalog,field);
@@ -402,12 +419,12 @@ export function evaluateCampaignOffer(operatorId,state,catalog,field,coreOperato
   if(roleFits){const slot=replacementFor(operator,state,catalog,field,roleNeed,coreOperatorId);if(slot)return {ok:true,reason:roleNeed,priority:5,netGain:estimateOperatorPower(operator,1)-(slot.replace?estimateOperatorPower(opById(catalog,slot.replace.operatorId),slot.replace.star):0),replaceUid:slot.replace?.uid??null};}
   const merge=mergeProgress(state,operatorId,coreOperatorId);
   if(merge.ready&&owned.length){
-    const auxiliary=operatorId!==coreOperatorId&&owned.length===1&&branchCount(state,coreOperatorId)>=2;
+    const auxiliary=operatorId!==coreOperatorId&&owned.length===1&&branchCount(state,coreOperatorId)>=2&&!econPactIdentityInvestment(operator,state,catalog);
     if(!auxiliary){const targetStar=merge.reason.includes('3-star')?3:2;return {ok:true,reason:merge.reason,priority:operatorId===coreOperatorId?4:3,netGain:estimateOperatorPower(operator,targetStar)-estimateOperatorPower(operator,Math.max(1,Math.min(2,owned[0]?.star??1)))};}
   } else if(merge.ready&&!owned.length&&operatorId===coreOperatorId){
     const slot=replacementFor(operator,state,catalog,field,roleNeed,coreOperatorId);if(slot?.freeSlot)return {ok:true,reason:merge.reason,priority:4,netGain:estimateOperatorPower(operator,1)};
   }
-  const auxiliary=operatorId!==coreOperatorId&&owned.length===1&&branchCount(state,coreOperatorId)>=2;
+  const auxiliary=operatorId!==coreOperatorId&&owned.length===1&&branchCount(state,coreOperatorId)>=2&&!econPactIdentityInvestment(operator,state,catalog);
   if(auxiliary)return {ok:false,reason:'auxiliary-merge-branch-cap-2',priority:0};
   const deployed=state.pieces.filter(piece=>piece.row!==null),pactBase=pactLineup(state),capacity=Math.min(state.level,field.deployMap?.size??state.level);
   const freeSlot=deployed.length<capacity;
@@ -434,8 +451,19 @@ export function designatedCoreInvestment(operatorId,operator,owned,coreOperatorI
   // the policy boundary, independent of caller context.
   return operatorId===coreOperatorId&&!owned.length&&operator?.cost>=5;
 }
-export function exceedsFrontlineBranchCap(operatorId,operator,state,catalog,duplicate,coreOperatorId){
+export function econPactIdentityInvestment(operator,state,catalog,policy=activePolicy.id){
+  if(policy!==ECON_PACT_POLICY)return false;
+  const pactId=catalog.environments?.[state.environmentId]?.identityPactId;
+  if(!pactId||!(operator?.pacts??[]).includes(pactId))return false;
+  const alreadyOwnedChars=new Set(state.pieces.map(piece=>opById(catalog,piece.operatorId)?.charId).filter(Boolean));
+  if(!operator.charId||alreadyOwnedChars.has(operator.charId))return false;
+  const count=pactMemberCounts(state.pieces,catalog).get(pactId)??0;
+  const thresholds=catalog.pacts?.[pactId]?.thresholds??catalog.pacts?.[pactId]?.levels?.map(level=>level.threshold)??[];
+  return thresholds.some(value=>value>count);
+}
+export function exceedsFrontlineBranchCap(operatorId,operator,state,catalog,duplicate,coreOperatorId,policy=activePolicy.id){
   if(designatedCoreInvestment(operatorId,operator,state.pieces.filter(piece=>piece.operatorId===operatorId),coreOperatorId))return false;
+  if(econPactIdentityInvestment(operator,state,catalog,policy))return false;
   return operator?.role==='frontline'&&new Set(state.pieces.map(piece=>opById(catalog,piece.operatorId)).filter(entry=>entry?.role==='frontline').map(entry=>entry.charId)).size>=2&&!duplicate;
 }
 function rejectCoreOffer(candidate,state,reason,context='purchase'){
@@ -450,7 +478,8 @@ function chooseOffer(state,catalog,{context='purchase'}={}){
   const reviewed=state.shop.offers.filter(o=>o.operatorId)
     .map(o=>{const op=opById(catalog,o.operatorId),duplicate=state.pieces.some(p=>p.operatorId===o.operatorId&&p.star<3);let reason='incremental-combat-value';
       const benchCanMerge=state.pieces.filter(p=>p.operatorId===o.operatorId&&p.star===1).length>=2;
-      const policy=activePolicy.id==='legacy'?{ok:buyScore(o.operatorId,state,catalog)>=2.25,reason:'legacy-score'}:evaluateCampaignOffer(o.operatorId,state,catalog,activeBattleFields(state,catalog),activePolicy.coreOperatorId);
+      let policy=activePolicy.id==='legacy'?{ok:buyScore(o.operatorId,state,catalog)>=2.25,reason:'legacy-score'}:evaluateCampaignOffer(o.operatorId,state,catalog,activeBattleFields(state,catalog),activePolicy.coreOperatorId);
+      if(activePolicy.id===ECON_PACT_POLICY&&o.operatorId===activePolicy.coreOperatorId&&state.level<9)policy={ok:false,reason:'core-held-until-level-9',priority:0,netGain:0};
       const score=activePolicy.id==='legacy'?buyScore(o.operatorId,state,catalog):Number(policy.netGain??0);
       reason=policy.reason;
       const hardReason=o.cost>state.gold?'insufficient-gold':bench>=capacity&&!benchCanMerge&&!(activePolicy.id!=='legacy'&&benchCanRelease)?'bench-capacity-protect-2-star-and-role-core':exceedsFrontlineBranchCap(o.operatorId,op,state,catalog,duplicate,activePolicy.coreOperatorId)?'frontline-branch-cap-2':null;
@@ -640,7 +669,7 @@ function deployTeam(state,catalog){
   const occupied=new Set();
   const selected=[];
   const candidates=state.pieces.slice().sort((a,b)=>candidatePower(b,catalog)-candidatePower(a,catalog)||a.uid.localeCompare(b.uid));
-  const picked=[];const profiles=routeProfiles(field),groundRoutes=groundRouteEntries(field,profiles);const targets=activePolicy.id==='legacy'?{frontlines:Math.min(2,groundRoutes.length,Math.max(1,state.level-2)),antiAir:0}:campaignRoleTargets(state,catalog,field),routeSlots=targets.frontlines;
+  const picked=[];const profiles=routeProfiles(field),groundRoutes=groundRouteEntries(field,profiles);const targets=activePolicy.id==='legacy'?{frontlines:Math.min(2,groundRoutes.length,Math.max(1,state.level-2)),antiAir:0}:campaignRoleTargets(state,catalog,field),routeSlots=activePolicy.id===ECON_PACT_POLICY?Math.min(2,targets.frontlines):targets.frontlines;
   const bossIndices=bossRouteIndices(field),bossRoute=profiles.find(route=>route.originalIndices?.some(index=>bossIndices.has(index))),bossProfileIndex=bossRoute?profiles.indexOf(bossRoute):null;
   const addBest=(predicate,limit)=>{while(picked.length<state.level&&picked.filter(p=>predicate(opById(catalog,p.operatorId))).length<limit){
     const candidate=candidates.filter(p=>!picked.includes(p)&&predicate(opById(catalog,p.operatorId))).map(piece=>({piece,op:opById(catalog,piece.operatorId)}))
@@ -652,7 +681,24 @@ function deployTeam(state,catalog){
   addBest(op=>op?.role==='frontline'&&hasBlockableTile(op),routeSlots);
   addBest(op=>op?.role==='healer',1);
   if(activePolicy.id!=='legacy')addBest(op=>canAttackAir(op),targets.antiAir);
-  addBest(op=>op?.role==='damage'||op?.role==='control',targets.combatOutput??2);
+  let pactTargetOperatorIds=new Set(),pactTargetLimit=0;
+  const identityPactId=catalog.environments?.[state.environmentId]?.identityPactId;
+  if(activePolicy.id===ECON_PACT_POLICY&&identityPactId){
+    const identityCount=pactMemberCounts(picked,catalog).get(identityPactId)??0;
+    const thresholds=catalog.pacts?.[identityPactId]?.thresholds??catalog.pacts?.[identityPactId]?.levels?.map(level=>level.threshold)??[];
+    const nextThreshold=thresholds.find(value=>value>identityCount);
+    const alreadyPickedChars=new Set(picked.map(piece=>opById(catalog,piece.operatorId)?.charId).filter(Boolean));
+    const candidatesByIdentity=state.pieces.filter(piece=>!alreadyPickedChars.has(opById(catalog,piece.operatorId)?.charId)&&(opById(catalog,piece.operatorId)?.pacts??[]).includes(identityPactId))
+      .sort((a,b)=>candidatePower(b,catalog)-candidatePower(a,catalog)||a.uid.localeCompare(b.uid));
+    pactTargetLimit=nextThreshold?Math.min(nextThreshold-identityCount,candidatesByIdentity.length):0;
+    pactTargetOperatorIds=new Set(candidatesByIdentity.slice(0,pactTargetLimit).map(piece=>piece.operatorId));
+  }
+  const mandatorySlots=routeSlots+1+targets.antiAir;
+  const reservedIdentitySlots=activePolicy.id===ECON_PACT_POLICY?Math.min(pactTargetLimit,Math.max(0,state.level-mandatorySlots-2)):0;
+  const outputLimit=activePolicy.id===ECON_PACT_POLICY?Math.min(targets.combatOutput??2,Math.max(2,state.level-mandatorySlots-reservedIdentitySlots)):targets.combatOutput??2;
+  addBest(op=>(op?.role==='damage'||op?.role==='control')&&!(activePolicy.id===ECON_PACT_POLICY&&op.id===activePolicy.coreOperatorId&&outputLimit<=2),outputLimit);
+  if(activePolicy.id===ECON_PACT_POLICY&&activePolicy.coreOperatorId)addBest(op=>op?.id===activePolicy.coreOperatorId,1);
+  if(activePolicy.id===ECON_PACT_POLICY&&pactTargetOperatorIds.size)addBest(op=>pactTargetOperatorIds.has(op?.id),pactTargetLimit);
   addBest(op=>op&&op.role!=='healer'&&op.role!=='frontline',state.level);
   if(picked.length<state.level)for(const piece of candidates){if(picked.length>=state.level)break;const op=opById(catalog,piece.operatorId);if(!op||op.role==='healer'||op.role==='frontline'&&picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').length>=routeSlots)continue;const same=picked.filter(p=>opById(catalog,p.operatorId)?.charId===op.charId);if(!same.length||piece.star>Math.max(...same.map(p=>p.star)))picked.push(piece);}
   const reduced=hasActiveStrategyEffect(state,catalog,'bench_capacity_and_gold');
@@ -669,17 +715,22 @@ function deployTeam(state,catalog){
     const routeCount=profiles.length,load=Array(routeCount).fill(0);
   const reserved=new Set(),assignedRoutes=new Map(),frontlines=[];
   for(const piece of picked){const live=state.pieces.find(p=>p.uid===piece.uid);if(!live||live.row===null)continue;const key=`${live.row},${live.col}`;occupied.add(key);selected.push(live);const op=opById(catalog,live.operatorId);if(op?.role==='frontline'){const exact=groundRoutes.find(({route})=>routeDistance(live.row,live.col,route)===0);if(exact){assignedRoutes.set(live.uid,exact.index);frontlines.push({row:live.row,col:live.col,routeIndex:exact.index,uid:live.uid});}}}
-  const frontlinePicks=picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').sort((a,b)=>candidatePower(b,catalog)-candidatePower(a,catalog));
+  const isPriorityTarget=piece=>activePolicy.id===ECON_PACT_POLICY&&(piece.operatorId===activePolicy.coreOperatorId||pactTargetOperatorIds.has(piece.operatorId));
+  const frontlinePicks=picked.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').sort((a,b)=>Number(isPriorityTarget(a))-Number(isPriorityTarget(b))||candidatePower(b,catalog)-candidatePower(a,catalog));
   const healerPicks=picked.filter(p=>opById(catalog,p.operatorId)?.role==='healer');
   const otherPicks=picked.filter(p=>!frontlinePicks.some(x=>x.uid===p.uid)&&!healerPicks.some(x=>x.uid===p.uid)).sort((a,b)=>candidatePower(b,catalog)-candidatePower(a,catalog));
-  const ordered=[...frontlinePicks.slice(0,1),...healerPicks,...frontlinePicks.slice(1),...otherPicks];
+  const requiredFrontlinePicks=frontlinePicks.slice(0,routeSlots),extraFrontlinePicks=frontlinePicks.slice(routeSlots);
+  const requiredFrontlineUids=new Set(requiredFrontlinePicks.map(piece=>piece.uid));
+  const isPriorityExtra=piece=>isPriorityTarget(piece)&&!requiredFrontlineUids.has(piece.uid);
+  const ordered=[...requiredFrontlinePicks.slice(0,1),...healerPicks,...requiredFrontlinePicks.slice(1),...otherPicks,...extraFrontlinePicks];
   let frontCursor=0;
   for(const piece of ordered){const live=state.pieces.find(p=>p.uid===piece.uid);if(!live||live.row!==null)continue;
     const op=opById(catalog,live.operatorId);if(!op)continue;const summon=summonSpecs(live,catalog);
     let routeIndex=null;
-    if(bossProfileIndex!==null&&live.operatorId===activePolicy.coreOperatorId&&['damage','control','summoner'].includes(op.role))routeIndex=bossProfileIndex;
+    if(bossProfileIndex!==null&&live.operatorId===activePolicy.coreOperatorId&&(activePolicy.id===ECON_PACT_POLICY||['damage','control','summoner'].includes(op.role)))routeIndex=bossProfileIndex;
+    if(bossProfileIndex!==null&&activePolicy.id===ECON_PACT_POLICY&&pactTargetOperatorIds.has(live.operatorId))routeIndex=bossProfileIndex;
     if(op.role==='frontline'){
-      const route=groundRoutes[frontCursor%Math.max(1,groundRoutes.length)];routeIndex=route?.index??null;frontCursor++;
+      if(!isPriorityExtra(live)){const route=groundRoutes[frontCursor%Math.max(1,groundRoutes.length)];routeIndex=route?.index??null;frontCursor++;}
     }
     const tile=deploymentCell(state,catalog,field,op,occupied,load,reserved,summon,{star:live.star,routeIndex,frontlines});if(!tile)continue;
     const action=runAction(state,{type:'deploy',pieceUid:live.uid,row:tile.row,col:tile.col,dir:tile.dir},catalog);state=action.state;
@@ -691,7 +742,7 @@ function deployTeam(state,catalog){
   while(state.pieces.filter(p=>p.row!==null).length<state.level){
     const deployed=state.pieces.filter(p=>p.row!==null),roleCounts=roleCountsForPieces(deployed,catalog);
     const orderedFallback=candidates.filter(piece=>!deployedUids.has(piece.uid)).map(piece=>({piece,op:opById(catalog,piece.operatorId)}))
-      .filter(({piece,op})=>op&&canFillFallbackRole(op.role,roleCounts,{frontlineLimit:routeSlots,healerLimit:2})&&state.pieces.find(p=>p.uid===piece.uid)?.row===null)
+      .filter(({piece,op})=>op&&(canFillFallbackRole(op.role,roleCounts,{frontlineLimit:routeSlots,healerLimit:2})||(activePolicy.id===ECON_PACT_POLICY&&op.role==='frontline'&&isPriorityExtra(piece)))&&state.pieces.find(p=>p.uid===piece.uid)?.row===null)
       .sort((a,b)=>{
         const priority=op=>op.role==='healer'&&roleCounts.healer===0?0:op.role==='frontline'&&roleCounts.frontline<routeSlots?1:canAttackAir(op)&&roleCounts.antiAir<targets.antiAir?2:['damage','control'].includes(op.role)&&roleCounts.combatOutput<targets.combatOutput?3:op.role==='healer'?5:4;
         return priority(a.op)-priority(b.op)||candidatePower(b.piece,catalog)-candidatePower(a.piece,catalog)||a.piece.uid.localeCompare(b.piece.uid);
@@ -699,7 +750,8 @@ function deployTeam(state,catalog){
     let placed=false;
     for(const {piece,op} of orderedFallback){
       const live=state.pieces.find(p=>p.uid===piece.uid);if(!live||live.row!==null)continue;const summon=summonSpecs(live,catalog);
-      const tile=deploymentCell(state,catalog,field,op,occupied,load,reserved,summon,{star:live.star,frontlines});if(!tile)continue;
+      const routeIndex=bossProfileIndex!==null&&activePolicy.id===ECON_PACT_POLICY&&(live.operatorId===activePolicy.coreOperatorId||pactTargetOperatorIds.has(live.operatorId))?bossProfileIndex:null;
+      const tile=deploymentCell(state,catalog,field,op,occupied,load,reserved,summon,{star:live.star,routeIndex,frontlines});if(!tile)continue;
       state=runAction(state,{type:'deploy',pieceUid:live.uid,row:tile.row,col:tile.col,dir:tile.dir},catalog).state;const key=`${tile.row},${tile.col}`;occupied.add(key);load[tile.routeIndex]=(load[tile.routeIndex]??0)+1;selected.push(live);deployedUids.add(live.uid);if(op.role==='frontline'){assignedRoutes.set(live.uid,tile.routeIndex);frontlines.push({row:tile.row,col:tile.col,routeIndex:tile.routeIndex,uid:live.uid});}
       if(summon.length){const anchors=summonAnchors(op.stars[live.star].record,summon,field,tile.row,tile.col,tile.dir,occupied,reserved);for(const anchor of anchors)reserved.add(anchor);}
       placed=true;break;
@@ -740,6 +792,7 @@ function equipAndCombine(state,catalog){
 }
 
 function improveEconomy(state,catalog){
+  if(activePolicy.id===ECON_PACT_POLICY)return improveEconomyPact(state,catalog);
   if(activePolicy.id==='rush'&&!activePolicy.rushReleased&&state.gold>=50){activePolicy.rushReleased=true;activePolicy.rushReleasedRound=state.round;}
   const lacksBoardPower=state.pieces.length<state.level;
   const needsHealer=!state.pieces.some(p=>opById(catalog,p.operatorId)?.role==='healer'),refreshCost=viewSession(state,{catalog}).actionCosts?.refreshGold??2;
@@ -809,14 +862,65 @@ function improveEconomy(state,catalog){
   return state;
 }
 
+function improveEconomyPact(state,catalog){
+  const plan=econPactPlan(state.round,state.level),field=activeBattleFields(state,catalog),identity=catalog.environments?.[state.environmentId]?.identityPactId;
+  const reserve=plan.bankTarget;
+  let buys=0;
+  while(buys<(state.round>=24?4:state.level>=9?2:1)){
+    const candidate=chooseOffer(state,catalog,{context:'purchase'});if(!candidate)break;
+    const op=opById(catalog,candidate.offer.operatorId);if(!op)break;
+    const roleNeed=roleNeedForOffer(op,state,catalog,field),owned=state.pieces.filter(piece=>piece.operatorId===op.id);
+    const canMerge=owned.some(piece=>piece.star===1);
+    const count=pactMemberCounts(state.pieces,catalog).get(identity)??0;
+    const thresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(item=>item.threshold)??[];
+    const nextThreshold=thresholds.find(value=>value>count);
+    const advancesIdentity=Boolean(nextThreshold&&(op.pacts??[]).includes(identity));
+    const isCore=op.id===activePolicy.coreOperatorId&&state.level>=9;
+    if(!roleNeed&&!canMerge&&!advancesIdentity&&!isCore)break;
+    const cost=Number(candidate.offer.cost),purchaseReserve=roleNeed?0:reserve;
+    if(state.gold-cost<purchaseReserve){activeMetrics.roleDecisions.push({round:state.round,action:'buy',operatorId:op.id,reason:'econ-pact-bank-floor',gold:state.gold,cost,reserve:purchaseReserve});rejectCoreOffer(candidate,state,'econ-pact-bank-floor');break;}
+    const room=makePurchaseBenchSpace(state,catalog,op.id);if(!room){activeMetrics.roleDecisions.push({round:state.round,action:'buy',operatorId:op.id,reason:'bench-full-no-unrequired-piece-to-sell'});break;}state=room;
+    const duplicate=state.pieces.find(piece=>piece.operatorId===op.id&&piece.star===1);
+    state=runAction(state,{type:'buy',offerUid:candidate.offer.uid,...(duplicate?{mergeTargetUid:duplicate.uid}:{})},catalog).state;buys++;
+  }
+  const xpPlan=econPactPlan(state.round,state.level),fieldNow=activeBattleFields(state,catalog),legalSlotCap=Math.min(10,fieldNow.deployMap?.size??10),roleFieldableCapacity=eligibleRosterCapacity(state,catalog,fieldNow);
+  let xpGoal=Math.min(xpPlan.levelTarget,legalSlotCap,roleFieldableCapacity);
+  let xpBuys=0;
+  while(state.level<xpGoal&&state.pieces.length>state.level&&xpBuys<4){
+    const missing=campaignRolePlan(state,catalog,fieldNow).missing;
+    if(missing.frontline||missing.healer||missing.antiAir){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-wait-for-block-heal-air',missing});break;}
+    const cost=viewSession(state,{catalog}).actionCosts?.xpGold??4;
+    if(state.gold-cost<xpPlan.xpReserve){activeMetrics.roleDecisions.push({round:state.round,action:'buyXp',reason:'econ-pact-bank-floor',gold:state.gold,cost,reserve:xpPlan.xpReserve});break;}
+    state=runAction(state,{type:'buyXp'},catalog).state;xpBuys++;
+  }
+  if(econPactPlan(state.round,state.level).refreshEnabled){
+    const refreshLimit=state.round>=24?5:3,refreshReserve=state.round>=24?0:state.level<9?40:30;let refreshed=0;
+    while(refreshed<refreshLimit){
+      const cost=viewSession(state,{catalog}).actionCosts?.refreshGold??2;if(state.gold-cost<refreshReserve)break;
+      state=runAction(state,{type:'refresh'},catalog).state;refreshed++;
+      const candidate=chooseOffer(state,catalog,{context:'refresh'});if(!candidate)continue;
+      const op=opById(catalog,candidate.offer.operatorId),owned=state.pieces.filter(piece=>piece.operatorId===op?.id),count=pactMemberCounts(state.pieces,catalog).get(identity)??0;
+      const thresholds=catalog.pacts?.[identity]?.thresholds??catalog.pacts?.[identity]?.levels?.map(item=>item.threshold)??[];
+      const targetsCore=op?.id===activePolicy.coreOperatorId,targetsPact=Boolean((op?.pacts??[]).includes(identity)&&thresholds.some(value=>value>count)),targetsMerge=owned.some(piece=>piece.star===1);
+      if(!targetsCore&&!targetsPact&&!targetsMerge)continue;
+      if(state.gold-Number(candidate.offer.cost)<refreshReserve)continue;
+      const room=makePurchaseBenchSpace(state,catalog,candidate.offer.operatorId);if(!room)continue;state=room;
+      const duplicate=state.pieces.find(piece=>piece.operatorId===candidate.offer.operatorId&&piece.star===1);
+      state=runAction(state,{type:'buy',offerUid:candidate.offer.uid,...(duplicate?{mergeTargetUid:duplicate.uid}:{})},catalog).state;buys++;
+    }
+  }
+  for(const item of [...state.consumables]){const target=copyTargetsForCampaign(state,catalog,activePolicy.coreOperatorId)[0];if(!target)break;activeMetrics.copyTargets.push({round:state.round,pieceUid:target.uid,operatorId:target.operatorId,star:target.star,core:target.operatorId===activePolicy.coreOperatorId});state=runAction(state,{type:'useCopy',consumableUid:item.uid,pieceUid:target.uid},catalog).state;}
+  return state;
+}
+
 export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL',seed=1,maxBattles=Infinity,maxMs=DEFAULT_TIMEOUT,policy='legacy',balanceProfile='formal'}={}){
-  if(!['legacy',...CAMPAIGN_POLICIES].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
+  if(!['legacy',...CAMPAIGN_POLICIES,ECON_PACT_POLICY].includes(policy))throw new Error(`unknown-campaign-policy:${policy}`);
   if(!['formal','looser'].includes(balanceProfile))throw new Error(`unknown-enemy-balance-profile:${balanceProfile}`);
-  const metrics={actions:{},refreshes:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[]};activeMetrics=metrics;
+  const metrics={actions:{},refreshes:{},nodeEconomy:{},operatorBuys:{},corePurchases:0,coreOffersSeen:0,coreOfferDecisions:[],coreOfferPurchases:[],copyTargets:[],roleDecisions:[],sellDecisions:[],placementDecisions:[]};activeMetrics=metrics;
   const started=Date.now(),catalog=catalogForBalanceProfile(getCatalog(environmentId,seed),balanceProfile,difficulty),created=createSession({seed,difficulty,catalog,environmentId});
   if(!created.ok)throw new Error(`session-create:${created.error}`);
   let state=created.state,battles=0,truncated=false;const battleRows=[],policyErrors=[];
-  activePolicy={id:policy,coreOperatorId:policy==='reroll'?chooseRerollCore(catalog,state):policy==='tempo'||policy==='rush'?chooseEnvironmentCore(catalog):null,rushReleased:false,rushReleasedRound:null};
+  activePolicy={id:policy,coreOperatorId:policy==='reroll'?chooseRerollCore(catalog,state):policy==='tempo'||policy==='rush'||policy===ECON_PACT_POLICY?chooseEnvironmentCore(catalog):null,rushReleased:false,rushReleasedRound:null};
   if(!poolLedgers.has(catalog))poolLedgers.set(catalog,new Map(catalog.config.activeOperatorIds.map(id=>[id,
     Number(state.poolRemaining[id]??0)+state.pieces.filter(piece=>piece.operatorId===id).reduce((sum,piece)=>sum+3**(piece.star-1),0)+state.shop.offers.filter(offer=>offer.operatorId===id).length])));
   assertInvariants(state,catalog);
@@ -839,7 +943,8 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
     const battleProfiles=routeProfiles(field),battleRoutes=battleProfiles.map(x=>x.points[0]),battleGroundRoutes=groundRouteEntries(field,battleProfiles);
     const deployedRoleCounts=roleCountsForPieces(deployed,catalog),roleTargets=campaignRoleTargets(state,catalog,field),roleDeficits={frontline:Math.max(0,roleTargets.frontlines-deployedRoleCounts.frontline),healer:Math.max(0,roleTargets.healers-deployedRoleCounts.healer),antiAir:Math.max(0,roleTargets.antiAir-deployedRoleCounts.antiAir)};
     const coreId=activePolicy.coreOperatorId??null;
-    const before={round:state.round,gold:state.gold,hp:state.hp,level:state.level,coreStock:{operatorId:coreId,owned:coreId?state.pieces.filter(piece=>piece.operatorId===coreId).length:0,deployed:coreId?deployed.filter(piece=>piece.operatorId===coreId).length:0,shopOffers:coreId?state.shop.offers.filter(offer=>offer.operatorId===coreId).length:0,poolRemaining:coreId?Number(state.poolRemaining[coreId]??0):0},routeCount:battleRoutes.length,
+    const bossOriginalRouteIndices=[...bossRouteIndices(field)],coreUnit=deployed.find(piece=>piece.operatorId===coreId),coreCoveredBossRoutes=(coreUnit?.coveredRoutes??[]).flatMap(index=>battleProfiles[index]?.originalIndices??[]).filter(index=>bossOriginalRouteIndices.includes(index));
+    const before={round:state.round,gold:state.gold,hp:state.hp,level:state.level,coreStock:{operatorId:coreId,owned:coreId?state.pieces.filter(piece=>piece.operatorId===coreId).length:0,deployed:coreId?deployed.filter(piece=>piece.operatorId===coreId).length:0,shopOffers:coreId?state.shop.offers.filter(offer=>offer.operatorId===coreId).length:0,poolRemaining:coreId?Number(state.poolRemaining[coreId]??0):0},bossOriginalRouteIndices,coreBossCoverage:{deployed:Boolean(coreUnit),coveredBossRouteIndices:coreCoveredBossRoutes,coversBossRoute:coreCoveredBossRoutes.length>0},routeCount:battleRoutes.length,
       roster:deployed.map(p=>{const op=opById(catalog,p.operatorId),nearest=battleProfiles.map((route,index)=>({index,d:routeDistance(p.row,p.col,route)})).sort((a,b)=>a.d-b.d)[0],nativePacts=new Set(op?.pacts??[]),pacts=new Set([...nativePacts,...(p.extraPacts??[])]),transferPacts=new Set();for(const item of p.equipment??[])for(const effect of catalog.equipment[item.itemId]?.effects??[])if(['transfer_pact','pact_transfer'].includes(effect.kind)&&effect.params?.pactId){pacts.add(effect.params.pactId);if(!nativePacts.has(effect.params.pactId))transferPacts.add(effect.params.pactId);}return {uid:p.uid,operatorId:p.operatorId,name:op?.name,cost:op?.cost,star:p.star,role:op?.role,position:op?.position,canHitFly:canAttackAir(op),row:p.row,col:p.col,dir:p.dir,blocksGround:op?.role==='frontline'?canBlockGround(field,p.row,p.col):null,routeIndex:op?.role==='frontline'?(assignedRoutes.get(p.uid)??nearest?.index??null):null,coveredRoutes:operatorRouteCoverage(op,p.star,p.row,p.col,p.dir,battleProfiles),pacts:[...pacts],transferPacts:[...transferPacts],equipment:p.equipment.map(item=>item.itemId)};}),benchReserve:state.pieces.filter(p=>p.row===null).map(p=>({uid:p.uid,operatorId:p.operatorId,name:opById(catalog,p.operatorId)?.name,cost:opById(catalog,p.operatorId)?.cost,role:opById(catalog,p.operatorId)?.role,star:p.star})),mainPacts,refreshesSpent:metrics.refreshes[state.round]??0,
       roleCounts:Object.fromEntries(['frontline','healer','damage','control','summoner','support'].map(role=>[role,deployed.filter(p=>opById(catalog,p.operatorId)?.role===role).length]).concat([['antiAir',deployedRoleCounts.antiAir],['combatOutput',deployedRoleCounts.combatOutput]])),roleTargets,roleDeficits,vacantSlots:Math.max(0,state.level-deployed.length),deployCellCount:field.deployMap?.size??null,
       routeCoverage:{routes:battleProfiles.map((route,index)=>({index,originalIndices:route.originalIndices,motion:route.motion,source:route.source,points:route.points})),groundFrontlines:deployed.filter(p=>opById(catalog,p.operatorId)?.role==='frontline').map(p=>{const routeIndex=assignedRoutes.get(p.uid),route=routeIndex==null?null:battleProfiles[routeIndex],distanceToPath=route?routeDistance(p.row,p.col,route):null;return {uid:p.uid,routeIndex,originalRouteIndices:route?.originalIndices??[],position:[p.row,p.col],distanceToPath,blocksGround:canBlockGround(field,p.row,p.col),onNativePath:distanceToPath===0,blocksGroundPath:distanceToPath===0&&canBlockGround(field,p.row,p.col)};}),uncoveredGroundRoutes:battleGroundRoutes.map(({index})=>index).filter(index=>!deployed.some(p=>opById(catalog,p.operatorId)?.role==='frontline'&&canBlockGround(field,p.row,p.col)&&routeDistance(p.row,p.col,battleProfiles[index])===0)),healerCoverage:deployed.filter(p=>opById(catalog,p.operatorId)?.role==='healer').map(p=>({uid:p.uid,coveredFrontlines:deployed.filter(x=>opById(catalog,x.operatorId)?.role==='frontline').filter(x=>operatorRouteCoverage(opById(catalog,p.operatorId),p.star,p.row,p.col,p.dir,[{points:[[x.row,x.col]]}]).length>0).map(x=>x.uid)}))}};
@@ -858,7 +963,7 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
     const coreUnits=unitStats.filter(unit=>coreUids.has(unit.uid));
     const coreDamage=coreUnits.reduce((sum,unit)=>sum+(Number(unit.dmg)||0),0),coreAttacks=coreUnits.reduce((sum,unit)=>sum+(Number(unit.attacks)||0),0);
     const row={round:before.round,won:event.won,hpLoss:event.hpLoss,hpAfter:state.hp,goldBefore:event.goldBefore,goldAfter:event.goldAfter,
-      level:before.level,coreStock:before.coreStock,roster:before.roster,benchReserve:before.benchReserve,mainPacts:before.mainPacts,roleCounts:before.roleCounts,roleTargets:before.roleTargets,roleDeficits:before.roleDeficits,vacantSlots:before.vacantSlots,deployCellCount:before.deployCellCount,routeCoverage:before.routeCoverage,refreshesSpent:before.refreshesSpent,routeCount:before.routeCount,stageId:diagnostic.stageId,battleTicks:diagnostic.ticks,capped:diagnostic.capped,
+      level:before.level,coreStock:before.coreStock,bossOriginalRouteIndices:before.bossOriginalRouteIndices,coreBossCoverage:before.coreBossCoverage,roster:before.roster,benchReserve:before.benchReserve,mainPacts:before.mainPacts,roleCounts:before.roleCounts,roleTargets:before.roleTargets,roleDeficits:before.roleDeficits,vacantSlots:before.vacantSlots,deployCellCount:before.deployCellCount,routeCoverage:before.routeCoverage,refreshesSpent:before.refreshesSpent,routeCount:before.routeCount,stageId:diagnostic.stageId,battleTicks:diagnostic.ticks,capped:diagnostic.capped,
       battleTime:sourceResult.time??null,battleReason:sourceResult.reason??null,enemyBalance:diagnostic.enemyBalance??null,totalDamage:unitStats.reduce((sum,unit)=>sum+(Number(unit.dmg)||0),0),totalAttacks:unitStats.reduce((sum,unit)=>sum+(Number(unit.attacks)||0),0),
       coreDamage,coreAttacks,bossDamage:Number(playerResult.bossDamage)||0,bossId:diagnostic.bossId??null,bossHp:sourceResult.bossHpLeft??sourceResult.bossHp??sourceResult.bossHpRemaining??null,leaked,leakPoints:leakEntries?.reduce((n,entry)=>n+Math.max(0,Number(entry.lpr)||1),0)??null,diagnostics:Number(diagnostic.errorCount??0),summonAnchorGaps:summonGaps};
     battleRows.push(row);
@@ -870,8 +975,9 @@ export function runCampaign({environmentId='origin_laterano',difficulty='NORMAL'
   const coreOfferRejections=metrics.coreOfferDecisions.filter(entry=>entry.rejectionReason);
   const coreOfferRejectionCounts=Object.fromEntries([...new Set(coreOfferRejections.map(entry=>entry.rejectionReason))].map(reason=>[reason,coreOfferRejections.filter(entry=>entry.rejectionReason===reason).length]));
   const coreOperator=activePolicy.coreOperatorId?catalog.operators[activePolicy.coreOperatorId]:null;
-  const coreSelectionRule=policy==='reroll'?'highest score among offered 2/3-cost native anti-air operators after real-DPS qualification':'highest-cost identity-pact damage/control/frontline/summoner, then estimated star-3 power, then stable operator ID';
-  const result={environmentId,difficulty,seed,policy,balanceProfile,enemyBalance:structuredClone(catalog.campaign.enemyBalance),designatedCoreId:activePolicy.coreOperatorId??null,coreSelection:{operatorId:coreOperator?.id??null,name:coreOperator?.name??null,cost:coreOperator?.cost??null,role:coreOperator?.role??null,rule:coreSelectionRule},designatedCorePurchases:metrics.corePurchases,coreOffersSeen:metrics.coreOffersSeen,coreOffersRejected:coreOfferRejections.length,coreOffersBought:metrics.coreOfferPurchases.length,coreOfferDecisions:metrics.coreOfferDecisions,coreOfferPurchases:metrics.coreOfferPurchases,coreOfferRejectionCounts,coreOfferRejections,copyTargets:metrics.copyTargets,rushReleasedRound:activePolicy.rushReleasedRound??null,operatorBuys:metrics.operatorBuys,roleAcquisitions,roleDecisions:metrics.roleDecisions,sellDecisions:metrics.sellDecisions,placementDecisions:metrics.placementDecisions,roundLimit:state.roundLimit,battles:battleRows.length,rows:battleRows,policyActions:metrics.actions,
+  const coreSelectionRule=policy==='reroll'?'highest score among offered 2/3-cost native anti-air operators after real-DPS qualification':policy===ECON_PACT_POLICY?'highest-cost identity-pact damage/control/frontline/summoner, available after level 9':'highest-cost identity-pact damage/control/frontline/summoner, then estimated star-3 power, then stable operator ID';
+  const nodeEconomy=Object.values(metrics.nodeEconomy).sort((a,b)=>a.round-b.round);
+  const result={environmentId,difficulty,seed,policy,balanceProfile,enemyBalance:structuredClone(catalog.campaign.enemyBalance),designatedCoreId:activePolicy.coreOperatorId??null,coreSelection:{operatorId:coreOperator?.id??null,name:coreOperator?.name??null,cost:coreOperator?.cost??null,role:coreOperator?.role??null,rule:coreSelectionRule},designatedCorePurchases:metrics.corePurchases,coreOffersSeen:metrics.coreOffersSeen,coreOffersRejected:coreOfferRejections.length,coreOffersBought:metrics.coreOfferPurchases.length,coreOfferDecisions:metrics.coreOfferDecisions,coreOfferPurchases:metrics.coreOfferPurchases,coreOfferRejectionCounts,coreOfferRejections,copyTargets:metrics.copyTargets,rushReleasedRound:activePolicy.rushReleasedRound??null,operatorBuys:metrics.operatorBuys,roleAcquisitions,roleDecisions:metrics.roleDecisions,sellDecisions:metrics.sellDecisions,placementDecisions:metrics.placementDecisions,nodeEconomy,roundLimit:state.roundLimit,battles:battleRows.length,rows:battleRows,policyActions:metrics.actions,
     terminalReason:state.terminalReason??null,phase:state.phase,round:state.round,hp:state.hp,gold:state.gold,level:state.level,xp:state.xp,
     roster:state.pieces.map(p=>({operatorId:p.operatorId,name:opById(catalog,p.operatorId)?.name,cost:opById(catalog,p.operatorId)?.cost,star:p.star,role:opById(catalog,p.operatorId)?.role,items:p.equipment.map(i=>catalog.equipment[i.itemId]?.name)})),
     claimedNodes:[...state.claimedNodes],inventory:state.inventory.map(i=>catalog.equipment[i.itemId]?.name),strategies:state.strategies.map(s=>catalog.strategies[typeof s==='string'?s:s.id]?.name),
@@ -940,15 +1046,38 @@ export function runCampaignMatrix({maxMs=DEFAULT_TIMEOUT,seedBase=0x5245534f}={}
       summonAnchorGaps:runs.reduce((n,x)=>n+(x.diagnostics?.summonAnchorGaps?.length??0),0)+firstBattles.reduce((n,x)=>n+(x.diagnostics?.summonAnchorGaps?.length??0),0),elapsedMs:Date.now()-started,truncated}};
 }
 
+function gitRead(args){try{return execFileSync('git',['-C',ROOT,...args],{encoding:'utf8'}).trim();}catch{return 'unavailable';}}
+function compactEconPactRun(run){
+  const ledgers=new Map((run.nodeEconomy??[]).map(entry=>[entry.round,entry]));
+  const nodes=run.rows.map(row=>{const money=ledgers.get(row.round)??{},core=row.roster.find(piece=>piece.operatorId===run.designatedCoreId)??null;
+    return {round:row.round,level:row.level,gold:{start:money.goldStart??row.goldBefore,end:row.goldAfter,delta:money.goldDelta??row.goldAfter-row.goldBefore,income:money.settlement?{base:money.settlement.income,win:money.settlement.winBonus,streak:money.settlement.streakBonus,interest:money.settlement.interest,delayed:money.settlement.delayedBonus,strategy:money.settlement.strategyGold,battle:money.settlement.battleGold}:null},actions:money.actions??{},spend:{buy:money.buyGold??0,sellRefund:money.sellRefund??0,xp:money.xpGold??0,refresh:money.refreshGold??0},mainPacts:row.mainPacts,stars:{1:row.roster.filter(piece=>piece.star===1).length,2:row.roster.filter(piece=>piece.star===2).length,3:row.roster.filter(piece=>piece.star===3).length},equipment:row.roster.flatMap(piece=>piece.equipment.map(item=>({unit:piece.name,star:piece.star,item}))),core:core?{name:core.name,star:core.star,position:[core.row,core.col],equipment:core.equipment,coveredRoutes:core.coveredRoutes,bossCoverage:row.coreBossCoverage}:null,boss:{id:row.bossId,hpLeft:row.bossHp,damage:row.bossDamage,coreDamage:row.coreDamage,coreAttacks:row.coreAttacks,covered:row.coreBossCoverage},won:row.won,hpLoss:row.hpLoss,hpAfter:row.hpAfter,leaked:row.leaked,capped:row.capped,diagnostics:row.diagnostics,summonAnchorGaps:row.summonAnchorGaps};});
+  const coreStarMilestones={2:nodes.find(node=>node.core?.star>=2)?.round??null,3:nodes.find(node=>node.core?.star>=3)?.round??null};
+  return {environmentId:run.environmentId,difficulty:run.difficulty,seed:run.seed,policy:run.policy,designatedCoreId:run.designatedCoreId,coreSelection:run.coreSelection,terminalReason:run.terminalReason,round:run.round,hp:run.hp,gold:run.gold,level:run.level,xp:run.xp,battles:run.battles,policyActions:run.policyActions,coreOffersSeen:run.coreOffersSeen,coreOffersBought:run.coreOffersBought,coreOfferDecisions:run.coreOfferDecisions,coreStarMilestones,diagnostics:run.diagnostics,nodes};
+}
+export function runEconomyPactValidation({seedBase=0x45434f4e,maxMs=12*60*1000}={}){
+  const started=Date.now(),environments=['origin_aegir','origin_laterano','origin_kjerag','origin_yan'],sourceBefore={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no']),dataSourceCommit:null};
+  const runs=[];for(const environmentId of environments){if(Date.now()-started>=maxMs)break;const seed=seedFor(environmentId,'NORMAL',seedBase);try{const nativeCatalog=getCatalog(environmentId,seed);sourceBefore.dataSourceCommit??=nativeCatalog.source?.commit??null;const run=runCampaign({environmentId,difficulty:'NORMAL',seed,maxMs:Math.max(1000,maxMs-(Date.now()-started)),policy:ECON_PACT_POLICY,balanceProfile:'formal'});runs.push(compactEconPactRun(run));}catch(error){runs.push({environmentId,difficulty:'NORMAL',seed,policy:ECON_PACT_POLICY,error:error.message});}}
+  const sourceAfter={runnerHead:gitRead(['rev-parse','HEAD']),runnerStatus:gitRead(['status','--short','--untracked-files=no'])};
+  return {schemaVersion:1,policy:ECON_PACT_POLICY,source:{...sourceBefore,runnerHeadAfter:sourceAfter.runnerHead,runnerStatusAfter:sourceAfter.runnerStatus},seedBase,difficulty:'NORMAL',balanceProfile:'formal',environments,runs,summary:{runs:runs.length,expectedRuns:environments.length,errors:runs.filter(run=>run.error).length,battles:runs.reduce((n,run)=>n+run.battles,0),wins:runs.filter(run=>run.terminalReason==='victory').length,hpDepleted:runs.filter(run=>run.terminalReason==='hp-depleted').length,roundLimitLoss:runs.filter(run=>run.terminalReason==='round-limit-loss').length,battleDiagnostics:runs.reduce((n,run)=>n+(run.diagnostics?.battleErrors??0),0),summonAnchorGaps:runs.reduce((n,run)=>n+(run.diagnostics?.summonAnchorGaps?.length??0),0),illegalOrRejectedActions:runs.reduce((n,run)=>n+(run.diagnostics?.policyErrors?.length??0),0),truncated:runs.length!==environments.length||runs.some(run=>run.truncated),elapsedMs:Date.now()-started}};
+}
+export function appendEconomyPactValidation(result){
+  ensureReportPath();const document=fs.existsSync(REPORT)?JSON.parse(fs.readFileSync(REPORT,'utf8')):{};document.economyPactNaturalValidation=result;fs.writeFileSync(REPORT,`${JSON.stringify(document,null,2)}\n`,'utf8');return REPORT;
+}
+
 function ensureReportPath(){
   let current='E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
   for(const part of ['.omni','tmp','resonance']){current=path.join(current,part);if(fs.existsSync(current)){const stat=fs.lstatSync(current);if(stat.isSymbolicLink()||!stat.isDirectory())throw new Error(`unsafe-report-ancestor:${current}`);}else fs.mkdirSync(current);}
 }
 const isMain=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(isMain){
-  const maxMs=Number(process.env.SP_RESONANCE_BALANCE_TIMEOUT_MS??DEFAULT_TIMEOUT);
-  const result=runCampaignMatrix({maxMs:Number.isFinite(maxMs)&&maxMs>0?maxMs:DEFAULT_TIMEOUT});
-  ensureReportPath();fs.writeFileSync(REPORT,`${JSON.stringify(result,null,2)}\n`,'utf8');
-  console.log(JSON.stringify({report:REPORT,...result.summary},null,2));
-  if(result.summary.firstBattleErrors||result.summary.fullCampaignErrors||result.summary.battleDiagnostics)process.exitCode=1;
+  if(process.argv.includes('--econ-pact-validation')){
+    const result=runEconomyPactValidation();const report=appendEconomyPactValidation(result);console.log(JSON.stringify({report,...result.summary,source:result.source},null,2));
+    if(result.summary.runs!==result.summary.expectedRuns||result.summary.errors||result.summary.battleDiagnostics||result.summary.summonAnchorGaps)process.exitCode=1;
+  }else{
+    const maxMs=Number(process.env.SP_RESONANCE_BALANCE_TIMEOUT_MS??DEFAULT_TIMEOUT);
+    const result=runCampaignMatrix({maxMs:Number.isFinite(maxMs)&&maxMs>0?maxMs:DEFAULT_TIMEOUT});
+    ensureReportPath();fs.writeFileSync(REPORT,`${JSON.stringify(result,null,2)}\n`,'utf8');
+    console.log(JSON.stringify({report:REPORT,...result.summary},null,2));
+    if(result.summary.firstBattleErrors||result.summary.fullCampaignErrors||result.summary.battleDiagnostics)process.exitCode=1;
+  }
 }
