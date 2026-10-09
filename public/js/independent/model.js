@@ -170,6 +170,38 @@ export function groupEquipment(items, catalog) {
   return [...rows.values()].sort((a, b) => (a.badge - b.badge) || (b.level ?? 0) - (a.level ?? 0) || b.count - a.count);
 }
 
+/** Project battle-frame temporary growth into display-only equipment rows; never mutates piece equipment. */
+export function temporaryGrowthDisplay(entries, catalog, growthMode = 'badges') {
+  const sourceName = (sourceId) => Object.values(catalog?.operators || {})
+    .find((op) => op.sourceRefs?.darkmoon19_2?.id === sourceId)?.name || null;
+  const sources = new Set();
+  if (growthMode === 'levels') {
+    let levels = 0;
+    for (const entry of entries || []) {
+      const amount = Number(entry?.temporaryTrainingLevels || 0);
+      if (Number.isFinite(amount) && amount > 0) {
+        levels += amount;
+        const name = sourceName(entry.sourceId); if (name) sources.add(name);
+      }
+    }
+    return { mode: 'levels', levels, items: [], sources: [...sources] };
+  }
+  const quantities = new Map();
+  for (const entry of entries || []) {
+    const ids = Array.isArray(entry?.badgeIds) ? entry.badgeIds : [];
+    const counts = [Number(entry?.attackUnits || 0), Number(entry?.secondaryUnits || 0)];
+    let contributed = false;
+    for (let i = 0; i < ids.length && i < counts.length; i++) {
+      const id = ids[i], count = counts[i], gear = catalog?.gear?.[id];
+      if (!id || !gear || !isBadge(catalog, id) || !Number.isFinite(count) || count <= 0) continue;
+      quantities.set(id, (quantities.get(id) || 0) + count); contributed = true;
+    }
+    const name = contributed && sourceName(entry.sourceId); if (name) sources.add(name);
+  }
+  const items = [...quantities].map(([id, quantity]) => ({ id, uid: `temporary:${id}`, quantity }));
+  return { mode: 'badges', levels: 0, items, total: items.reduce((n, item) => n + item.quantity, 0), sources: [...sources] };
+}
+
 /** Kinds of inventory items that are used (补给, 玩家设施) rather than worn; a prize kept in the inventory too. */
 export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
 

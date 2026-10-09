@@ -183,6 +183,8 @@
 .ix-dgear__tiles { display: flex; flex-wrap: wrap; gap: .05rem; }
 .ix-dgear__tile { position: relative; display: inline-flex; align-items: center; gap: .03rem; height: .38rem; padding: 0 .06rem; font: inherit;
   background: rgba(8, 11, 10, .82); border: 1px solid var(--line-2); color: var(--text-hi); cursor: pointer; }
+.ix-dgear__temporary-tag { position: absolute; inset-block-start: -.04rem; inset-inline-end: -.04rem; z-index: 1; padding: 0 .025rem;
+  font-size: max(.09rem, 9px); line-height: 1.25; color: var(--bg-0); background: var(--mint-400); border-radius: .02rem; pointer-events: none; }
 .ix-dgear__tile.is-on { border-color: var(--mint-400); }
 .ix-dgear__tile .ix-gear { width: .28rem; height: .28rem; }
 .ix-dgear__tile small { font-size: max(.12rem, 11px); color: var(--gold); }

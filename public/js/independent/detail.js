@@ -15,7 +15,7 @@ import { data } from '../data.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { TraitGlyphs, mergeHintOf } from './hud.js';
 import { GameText, TermNotes, GearIcon } from './text.js';
-import { groupEquipment, permitsOf, isDeployed } from './model.js';
+import { groupEquipment, permitsOf, isDeployed, temporaryGrowthDisplay, itemLevel } from './model.js';
 import { TraitTexts, FieldConditionCounts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } from './panels.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from './targetSelection.js';
 
@@ -27,11 +27,12 @@ const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], [
 const TAB_OF = { garrison: 'traits', trait: 'skill', stats: 'stats', skill: 'skill', module: 'talent', talents: 'talent', equip: 'gear' };
 
 /** The header's chips: the operator's tavern factions with their original bond glyphs, and its equipment stack total. */
-function FactionChips({ factions, level, catalog }) {
+function FactionChips({ factions, level, catalog, temporaryBadgeCount = 0 }) {
   return html`<div class="dbonds dbonds--top ix-dchips" role="list" aria-label="所属阵营">
     ${(factions || []).map((f) => html`<span key=${f} role="listitem" class="dbond is-active">
       <${FactionIcon} faction=${f} catalog=${catalog} /><span class="dbond__name">${f}</span></span>`)}
     ${level != null ? html`<span class="ix-dchips__lv">装备叠加 <b class="num">×${level}</b></span>` : null}
+    ${temporaryBadgeCount > 0 ? html`<span class="ix-dchips__lv ix-dchips__temporary">临时装备 <b class="num">×${temporaryBadgeCount}</b></span>` : null}
   </div>`;
 }
 
@@ -47,20 +48,6 @@ function sourceCardRefs(op) {
   if (!refs) return [];
   const cards = Array.isArray(refs) ? refs : [refs];
   return cards.filter((x) => x && typeof x === 'object' && (x.text || x.textElite || x.name || x.sourceUrl));
-}
-
-function TemporaryGrowth({live,catalog,growthMode='badges'}) {
-  const entries=live?.temporaryGrowth||[];
-  if(!entries.length)return null;
-  const lines=entries.map((entry,index)=>{
-    const source=Object.values(catalog.operators||{}).find(op=>op.sourceRefs?.darkmoon19_2?.id===entry.sourceId);
-    const body=growthMode==='levels'
-      ? (entry.temporaryTrainingLevels!=null?`本场临时训练等级 +${entry.temporaryTrainingLevels}`:null)
-      : `攻击徽章×${entry.attackUnits||0}${entry.secondaryUnits?`，${entry.badgeIds?.[1]==='vitality'?'生命徽章':'伤害徽章'}×${entry.secondaryUnits}`:''}`;
-    return body?html`<p key=${index}>${source?.name?`${source.name}：`:''}${body}。</p>`:null;
-  }).filter(Boolean);
-  if(!lines.length)return null;
-  return html`<section class="ix-detail__text"><b>本场临时增益</b>${lines}</section>`;
 }
 
 function readableCardText(value) {
@@ -113,24 +100,26 @@ function GrowthInfo({ piece }) {
  * Worn gear as tiles (one per item; badges merged per kind) with the chosen tile's text under them — a long list of
  * gear never makes the card scroll. Attachments and the 交接凭证 note follow.
  */
-function GearSection({ items, attachments = [], catalog, busy, onConfigure, title, note, state = null, sourcePiece = null, onFieldHighlight = null, rangeTilesFor = null }) {
+function GearSection({ items, attachments = [], catalog, busy, onConfigure, title, note, state = null, sourcePiece = null, onFieldHighlight = null, rangeTilesFor = null, capacityLimited = true, sourceNames = [], temporary = false }) {
   const rows = groupEquipment(items, catalog);
   const [pick, setPick] = useState(null);
   const row = rows.find((r) => r.uids[0] === pick) || rows[0] || null;
   const g = row ? catalog.gear[row.id] || {} : null;
   const item = row ? (items || []).find((x) => x.uid === row.uids[0]) : null;
   const total = (items || []).reduce((n, x) => n + (x.quantity || 1), 0);
-  return html`<section key="equip" class="dsec ix-dgear" aria-label=${title}>
-    <header class="dsec__head ix-dgear__head"><b>${title}</b>${total >= (catalog.rules?.equipmentCapacity ?? 999) ? html`<span class="num ix-muted">已满</span>` : null}</header>
+  return html`<section key=${title} class="dsec ix-dgear" aria-label=${title}>
+    <header class="dsec__head ix-dgear__head"><b>${title}</b>${capacityLimited && total >= (catalog.rules?.equipmentCapacity ?? 999) ? html`<span class="num ix-muted">已满</span>` : null}</header>
     ${rows.length ? html`<div class="ix-dgear__tiles">${rows.map((r) => html`<button type="button" key=${r.uids[0]} class=${cx('ix-dgear__tile', r === row && 'is-on')}
-        onClick=${() => setPick(r.uids[0])} aria-label=${`${r.name} ×${r.count}`}>
+        onClick=${() => setPick(r.uids[0])} aria-label=${`${r.name} ×${r.count}${temporary ? '，临时' : ''}`}>
         <${GearIcon} id=${r.id} catalog=${catalog} plain=${true} /><b class="num">${r.count}</b>
+        ${temporary ? html`<span class="ix-dgear__temporary-tag">临时</span>` : null}
         ${r.permit ? html`<i class="ix-dgear__permit" aria-hidden="true"></i>` : !r.badge && r.level ? html`<small class="num">×${r.level}</small>` : null}
       </button>`)}</div>
       <div class="ix-dgear__text"><b>${row.name}</b>${row.permit ? html`<span class="ix-perm"><${GameText} text="交接凭证" catalog=${catalog} /></span>` : null}
         <${GameText} text=${row.badge && row.count > 1 ? (badgeTotal(g, row.count) || g.normal) : g.normal} catalog=${catalog} />
         ${state && sourcePiece ? html`<${FieldConditionCounts} effects=${[{ rule: { behavior: g.mechanism, params: g.params || {} }, effectDelivery: g.effectDelivery }]}
           source=${sourcePiece} state=${state} catalog=${catalog} active=${isDeployed(sourcePiece)} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />` : null}
+        ${sourceNames.length ? html`<small class="ix-muted" aria-label="临时装备来源">来源：${sourceNames.join('、')}</small>` : null}
         ${onConfigure && g.steamOptions?.length ? html`<${HammerPicker} g=${g} item=${item} busy=${busy} catalog=${catalog} onSave=${(ids) => onConfigure(item.uid, ids)} />` : null}</div>`
       : html`<p class="t-dim dempty">${note || '尚未穿戴装备：把库存格子拖到干员身上即可穿戴'}</p>`}
     ${attachments.length ? html`<div class="ix-dgear__att"><b>附加效果</b>${attachments.map((a,index) => {
@@ -190,14 +179,20 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
   const tier = formOp?.tier ?? opBase?.tier;
   const chess = Number.isInteger(tier) && tier !== record.tier ? { ...record, tier } : record;
   const loadout = piece ? { [base.chessId]: { skill: piece.skillIndex, module: piece.elite ? piece.moduleId || MODULE_NONE : undefined } } : null;
+  const growthMode = state?.growthMode || piece?.growthMode || 'badges';
+  const temporaryGrowth = piece && inBattle && live ? temporaryGrowthDisplay(live.temporaryGrowth, catalog, growthMode) : null;
+  const temporaryItems = temporaryGrowth?.mode === 'badges' ? temporaryGrowth.items : [];
+  const permanentEquipmentLevel = piece ? piece.equipmentLevel ?? (piece.equipment || []).reduce((n, item) => n + itemLevel(item, catalog), 0) : null;
   const gear = piece
     ? html`<div key="equip"><${GearSection} items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${conditionState} sourcePiece=${piece} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor}
-        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} /><${TemporaryGrowth} live=${live} catalog=${catalog} growthMode=${state?.growthMode||piece?.growthMode||'badges'} /></div>`
+        onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />
+        ${temporaryItems.length ? html`<${GearSection} items=${temporaryItems} catalog=${catalog} busy=${busy} title=${`临时装备 ×${temporaryGrowth.total}`} capacityLimited=${false} sourceNames=${temporaryGrowth.sources} temporary=${true} />` : null}
+        ${temporaryGrowth?.mode === 'levels' && temporaryGrowth.levels > 0 ? html`<section class="dsec ix-dgear" aria-label="临时训练等级"><header class="dsec__head ix-dgear__head"><b>临时训练等级 +${temporaryGrowth.levels}</b></header>${temporaryGrowth.sources.length ? html`<small class="ix-muted">来源：${temporaryGrowth.sources.join('、')}</small>` : null}</section>` : null}</div>`
     : html`<${GearSection} key="equip" items=${[...(opBase?.permitGear ? [{ id: opBase.permitGear, uid: 'permit', quantity: 1 }] : []), ...(slot.equipment || []).map((x, i) => ({ ...x, uid: `c${i}` }))]}
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,
     chips: html`<${FactionChips} factions=${piece ? piece.factions : catalog.operators?.[slot.id]?.nativeFactions || (data.lookup('chess', slot.id)?.bonds || []).map((b) => TAVERN_FACTIONS[b]).filter(Boolean)}
-      level=${piece ? piece.equipmentLevel ?? 0 : null} catalog=${catalog} />`,
+      level=${piece ? permanentEquipmentLevel : null} catalog=${catalog} temporaryBadgeCount=${inBattle && growthMode === 'badges' ? temporaryGrowth?.total || 0 : 0} />`,
     overrides: { garrison: html`<${TraitSection} key="garrison" op=${opBase} elite=${!!piece?.elite} catalog=${catalog} piece=${piece} state=${state} conditionState=${conditionState} busy=${busy} prep=${prep} onAct=${onAct} linkAnchor=${linkAnchor} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, equip: gear, actions: null } });
   const head = blocks.find((b) => b?.key === 'head');
   const panes = { traits: [], stats: [], skill: [], talent: [], gear: [], reference: [] };
