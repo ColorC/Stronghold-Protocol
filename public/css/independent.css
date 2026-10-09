@@ -477,6 +477,7 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-original-card__item header { display: flex; flex-wrap: wrap; gap: .08rem .16rem; align-items: center; font-size: max(.13rem, 12px); }
 .ix-original-card__item pre { margin: .04rem 0 .08rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: max(.14rem, 13px); line-height: 1.5; user-select: text; }
 .ix-original-card__item h4 { margin: .08rem 0 .02rem; color: #9fc6b5; }
+.ix-original-card__stats { margin: .02rem 0 .04rem; color: #c9d9d1; font-variant-numeric: tabular-nums; }
 .ix-field-counts { display: inline-flex; flex-wrap: wrap; gap: .025rem; margin-inline-start: .06rem; vertical-align: baseline; }
 .ix-field-count { border: 0; padding: 0 .025rem; background: transparent; color: #79d8c9; font: inherit; line-height: inherit; cursor: pointer; user-select: text; }
 .ix-field-count:hover, .ix-field-count:focus-visible { color: #b8fff1; text-decoration: underline; outline: none; }

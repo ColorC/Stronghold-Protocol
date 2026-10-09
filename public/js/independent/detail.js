@@ -69,16 +69,23 @@ function readableCardText(value) {
     .replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").trim();
 }
 
+function originalCardStats(ref, golden = false) {
+  const attack = golden ? ref.goldenAttack : ref.attack;
+  const health = golden ? ref.goldenHealth : ref.health;
+  if (ref.cardType === 'MINION') return Number.isInteger(attack) && Number.isInteger(health) ? `攻击 ${attack} · 生命 ${health}` : '攻血数据未收录';
+  if (ref.cardType) return `非随从（${ref.cardType}），无攻击力/生命值`;
+  return '卡牌类型未收录，未显示攻血';
+}
+
 function OriginalCardRefs({ op, piece, linkAnchor = null }) {
   const refs = sourceCardRefs(op);
   if (!refs.length) return null;
   const anchor = linkAnchor || (piece ? `piece-${piece.uid}` : null);
   return html`<section class="ix-original-card" aria-label="参考原卡" onContextMenu=${(e) => anchor && copyComponentLink(e, `${anchor}:tab=reference`)}>
     ${refs.map((ref, index) => html`<article class="ix-original-card__item" key=${index}>
-      <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>${ref.version.startsWith('19.2')?'暗月奖品初版 · 19.2':`版本 ${ref.version}`}</span>` : null}${ref.tier != null ? html`<span>酒馆科技 ${ref.tier}</span>` : null}
-        ${ref.sourceUrl ? html`<a href=${ref.sourceUrl} target="_blank" rel="noreferrer">來源卡片</a>` : null}</header>
-      ${ref.text ? html`<section><h4>普通</h4><pre>${readableCardText(ref.text)}</pre></section>` : null}
-      ${ref.textElite ? html`<section><h4>金色</h4><pre>${readableCardText(ref.textElite)}</pre></section>` : null}
+      <header><b>${ref.name || '原卡'}</b>${ref.version ? html`<span>${ref.version.startsWith('19.2')?'暗月奖品初版 · 19.2':`版本 ${ref.version}`}</span>` : null}${ref.tier != null ? html`<span>酒馆科技 ${ref.tier}</span>` : null}</header>
+      <section><h4>普通</h4><p class="ix-original-card__stats">${originalCardStats(ref)}</p>${ref.text ? html`<pre>${readableCardText(ref.text)}</pre>` : null}</section>
+      <section><h4>金色</h4><p class="ix-original-card__stats">${originalCardStats(ref, true)}</p>${ref.textElite ? html`<pre>${readableCardText(ref.textElite)}</pre>` : null}</section>
     </article>`)}
   </section>`;
 }
