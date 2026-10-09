@@ -41,9 +41,7 @@ export class BattleSummons {
     if (fixed) return null;
     const canUseTile = (r, c) => this._nativeSummonLegal(u, r, c, true) && this._nativeSummonHasTarget(u, r, c);
     // Native melee blockers may validly engage on the enemy tile; tileFree only treats ally occupancy as placement blocking.
-    const placementView = Object.create(this);
-    placementView.enemies = [];
-    return findSummonTile(placementView, owner, 'near', { allBoard: true, melee: u.def?.position !== 'RANGED', canUseTile, at: preferred ? { x: preferred[1], y: preferred[0] } : undefined });
+    return findSummonTile(this, owner, 'near', { allBoard: true, melee: u.def?.position !== 'RANGED', canUseTile, at: preferred ? { x: preferred[1], y: preferred[0] } : undefined });
   }
 
   _queueIndependentNativeSummon(u, entry = {}) {

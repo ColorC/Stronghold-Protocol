@@ -5,8 +5,9 @@ import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 const ranged={id:'independent-native-ranged',name:'native ranged',profession:'SNIPER',attackKind:'RANGED',position:'RANGED',dmgType:'phys',groundOnly:true,canHitFly:false,rangeGrid:[[0,0],[0,1]],stats:{maxHp:100,atk:10,def:0,res:0,aspd:100,bat:1,blockCnt:0}};
 const ownerDef=chessRec({id:'engagement-owner',name:'owner',skill:null,stats:{cost:0,atk:20,maxHp:500,def:0,bat:1},rangeGrid:[[0,0],[0,1]]});
 const enemy=enemyRec({key:'engagement-enemy',hp:5000,atk:0,speed:0});
-function fixture({marker=false}={}) {
+function fixture({marker=false,blocker=false}={}) {
   const units=[{uid:'owner',chessId:'engagement-owner',row:10,col:3}];
+  if(blocker)units.push({uid:'blocker',chessId:'engagement-owner',row:10,col:5});
   if(marker)units.push({uid:'marker',kind:'token',tokenId:ranged.id,def:ranged,ownerUid:'owner',row:10,col:5,independentSummon:true});
   const h=makeBattle({defs:{chess:{'engagement-owner':ownerDef},enemies:{probe:enemy},tokens:{[ranged.id]:ranged}},units,flags:{independent:true},content:'none',autoFinish:false});
   return h;
@@ -65,5 +66,15 @@ test('real Vigil wolf waits for a blockable same-tile target and previews its au
   assert.equal(wolf.s.blockCnt,2,'deployment applies the authored initial two wolf shadows');
   assert.deepEqual([wolf.tileR,wolf.tileC],[r,c]);
   assert.ok(owner.trait.reinforcement===wolf,'owner keeps the single returned wolf reference');
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+});
+
+test('an occupied fixed marker keeps its request and deploys after the allied tile is freed',()=>{
+  const h=fixture({marker:true,blocker:true});h.spawn('probe',{pos:[10,6]});h.run(.2);
+  const marker=h.b.units.find(u=>u.uid==='marker'),blocker=h.unit('blocker');
+  assert.equal(marker.deployed,false);assert.equal(marker.mem.nativeEngagementPending,true);
+  assert.ok(h.b._independentNativeSummons.has(marker.id));
+  h.b.retreat(blocker,{permanent:true});h.runUntil(()=>marker.deployed,1);
+  assert.equal(marker.deployed,true);assert.deepEqual([marker.tileR,marker.tileC],[10,5]);
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
