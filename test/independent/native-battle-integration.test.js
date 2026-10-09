@@ -89,7 +89,7 @@ test('空弦 and 泥岩 keep their native one-layer shield beside 2-piece equipm
       if (name === '泥岩') {
         assert.ok(expectedRule, 'Mudrock has the authored native layer-growth rule');
         const wanted = expectedRule.params.outputs[0];
-        const expectedQty = Math.min(expectedRule.params.maxPerBattle, wanted.quantity);
+        const expectedQty = Number(wanted.quantity);
         assert.equal(rewards.filter((reward) => reward.origin === 'native' && reward.sourceUid === uid && reward.id === wanted.id).reduce((n, reward) => n + reward.quantity, 0), expectedQty,
           'five broken layers make the authored native reward once, rather than one reward per layer');
       }
@@ -99,7 +99,7 @@ test('空弦 and 泥岩 keep their native one-layer shield beside 2-piece equipm
   }
 });
 
-test('six native heal-growth operators earn only their native effective-heal production at ordinary/elite quantities and caps', { timeout: 900_000 }, () => {
+test('six native heal-growth operators earn only their native effective-heal production at ordinary/elite quantities without retired caps', { timeout: 900_000 }, () => {
   for (const name of HEALERS) {
     for (const elite of [false, true]) {
       const source = operatorNamed(name);
@@ -160,11 +160,11 @@ test('six native heal-growth operators earn only their native effective-heal pro
       });
       const batches = Math.floor(countableNativeHeals.length / Number(rule.params.counterEvery));
       const output = rule.params.outputs[0];
-      const expectedQuantity = Math.min(Number(rule.params.maxPerBattle), batches * Number(output.quantity ?? 1));
+      const expectedQuantity = batches * Number(output.quantity ?? 1);
       const actualQuantity = (h.b.independentRewards ?? []).filter((reward) => reward.origin === 'native'
         && reward.sourceUid === uid && reward.id === output.id).reduce((n, reward) => n + reward.quantity, 0);
       assert.equal(actualQuantity, expectedQuantity, `${name} ${elite ? 'elite' : 'normal'} produces from effective native heals only`);
-      assert.equal(expectedQuantity, Number(rule.params.maxPerBattle), `${name} ${elite ? 'elite' : 'normal'} reaches the authored battle cap`);
+      assert.equal(Object.hasOwn(rule.params, 'maxPerBattle'), false, `${name} ${elite ? 'elite' : 'normal'} has no retired Workshop reward cap`);
       RECEIPTS.push({ kind: 'healGrowth', name, form: elite ? 'elite' : 'normal', chessId, rule: rule.params,
         heals: heals.length, nativeEffectiveHeals: nativeEffectiveHeals.length, equipmentHeals: equipmentHeals.length,
         partialOverheals: nativeEffectiveHeals.filter((event) => event.excess > 0).length, ineffectiveNativeHeals: heals.filter((event) => !event.equipment && event.effective <= 0).length, expectedQuantity, actualQuantity,

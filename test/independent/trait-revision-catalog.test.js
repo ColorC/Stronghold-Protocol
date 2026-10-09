@@ -28,16 +28,16 @@ function battle(pieces,{content='none',state=stateFor(pieces)}={}){
   return h;
 }
 const conditions={
-  红豆:{match:{baseStat:'atk',minBaseStatRatioToSelf:1.2},countBy:'operators',maxCount:1,stats:{attackPercent:0.15}},
-  艾丝黛尔:{match:{faction:'萨尔贡'},countBy:'operators',maxCount:3,stats:{maxHpPercent:0.08}},
-  深靛:{match:{professions:['CASTER','SUPPORT']},countBy:'professions',maxCount:2,stats:{attackSpeedFlat:8}},
-  拉普兰德:{match:{faction:'叙拉古'},countBy:'operators',maxCount:3,stats:{attackSpeedFlat:8}},
-  休谟斯:{match:{keywordGear:'坚守盟约'},countBy:'operators',maxCount:3,stats:{attackPercent:0.1}},
-  能天使:{match:{profession:'TANK',baseStat:'def',minBaseStatRatioToSelf:2},countBy:'operators',maxCount:2,stats:{attackPercent:0.12}},
-  斯卡蒂:{match:{faction:'深海猎人'},countBy:'operators',maxCount:3,stats:{attackPercent:0.1,maxHpPercent:0.1}},
-  百炼嘉维尔:{match:{faction:'罗德岛'},countBy:'professions',maxCount:4,stats:{defensePercent:0.08,attackSpeedFlat:5}},
-  空弦:{match:{keywordGear:'护盾发生器'},countBy:'operators',maxCount:3,stats:{attackSpeedFlat:10}},
-  银灰:{match:{faction:'谢拉格'},countBy:'professions',maxCount:3,stats:{attackPercent:0.12}},
+  红豆:{match:{baseStat:'atk',minBaseStatRatioToSelf:1.2},countBy:'operators',stats:{attackPercent:0.15}},
+  艾丝黛尔:{match:{faction:'萨尔贡'},countBy:'operators',stats:{maxHpPercent:0.08}},
+  深靛:{match:{professions:['CASTER','SUPPORT']},countBy:'professions',stats:{attackSpeedFlat:8}},
+  拉普兰德:{match:{faction:'叙拉古'},countBy:'operators',stats:{attackSpeedFlat:8}},
+  休谟斯:{match:{keywordGear:'坚守盟约'},countBy:'operators',stats:{attackPercent:0.1}},
+  能天使:{match:{profession:'TANK',baseStat:'def',minBaseStatRatioToSelf:2},countBy:'operators',stats:{attackPercent:0.12}},
+  斯卡蒂:{match:{faction:'深海猎人'},countBy:'operators',stats:{attackPercent:0.1,maxHpPercent:0.1}},
+  百炼嘉维尔:{match:{faction:'罗德岛'},countBy:'professions',stats:{defensePercent:0.08,attackSpeedFlat:5}},
+  空弦:{match:{keywordGear:'护盾发生器'},countBy:'operators',stats:{attackSpeedFlat:10}},
+  银灰:{match:{faction:'谢拉格'},countBy:'professions',stats:{attackPercent:0.12}},
 };
 const forgeCases={号角:['profession:TANK',2,false],乌尔比安:['faction:深海猎人',3,false],荒芜拉普兰德:['faction:叙拉古',3,false],玛恩纳:['all',2,true],迷迭香:['row',3,true],佩佩:['adjacent',2,true]};
 test('canonical active roster has 101 ordinary/elite pairs and no blank authored traits',()=>{
@@ -156,7 +156,7 @@ test('锏 excludes her own purchase and grows real bought-operator badges to ord
     assert.equal(maker.nativeState.boughtGear,10);
   }
 });
-test('妮芙/仇白/圣约 actual engine events produce capped native rewards and preserve them in prep equipment',()=>{
+test('妮芙/仇白/圣约 actual engine events produce uncapped native rewards and preserve them in prep equipment',()=>{
   for(const name of ['妮芙','仇白','圣约送葬人'])for(const elite of [false,true]){
     const p=piece(name,'w',elite),h=battle([p],{content:'full'}),u=h.unit('w');
     const r=op(name,elite).nativeTrait.effect.combat.find(r=>r.behavior==='eventProduction'),before=JSON.stringify(p.equipment);
@@ -183,9 +183,12 @@ test('妮芙/仇白/圣约 actual engine events produce capped native rewards an
     }
     assert.equal(JSON.stringify(p.equipment),before,'battle rewards await settlement');
     const rewards=(h.b.independentRewards||[]).filter(x=>x.sourceUid==='w'&&x.origin==='native');
-    for(const output of r.params.outputs)assert.equal(rewards.filter(x=>x.id===output.id).reduce((n,x)=>n+x.quantity,0),elite?8:4,`${name} ${output.id} cap`);
+    const eventCount=name==='妮芙'?12:name==='仇白'?80:h.hooksOf('ammoUsed').length;
+    const expectedBatches=Math.floor(eventCount/Number(r.params.counterEvery));
+    assert.equal(Object.hasOwn(r.params,'maxPerBattle'),false,`${name} has no retired Workshop reward cap`);
+    for(const output of r.params.outputs)assert.equal(rewards.filter(x=>x.id===output.id).reduce((n,x)=>n+x.quantity,0),expectedBatches*Number(output.quantity),`${name} ${output.id} equals its real event batches`);
     h.b.forceEnd();const state=stateFor([p]);for(const reward of rewards)grantEquipment(state,catalog,reward.id,reward.quantity,{origin:reward.origin,sourceUid:reward.sourceUid,phase:'battle'});
-    for(const output of r.params.outputs)assert.equal(sum(p,output.id),elite?8:4,`${name} persistent settled ${output.id}`);
+    for(const output of r.params.outputs)assert.equal(sum(p,output.id),expectedBatches*Number(output.quantity),`${name} persistent settled ${output.id}`);
     assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
   }
 });

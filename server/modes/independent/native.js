@@ -1,6 +1,6 @@
 // Independent mode uses authored, structured native effects. The original game text is metadata only.
 import { tavernFactions as sharedTavernFactions, nativeFactions, nativeBodyStats, nativeRecord } from '../../../shared/independentRules.js';
-import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../shared/warbandSchema.js';
+import { validateWarbandRule, WARBAND_BEHAVIORS, withoutObsoleteWorkshopLimits } from '../../../shared/warbandSchema.js';
 import { runFactionReaction } from './warbandPrep.js';
 import { darkmoonPrepRulesFor } from './darkmoonPrep.js';
 import { addDarkmoonShopGrowth } from './darkmoonShop.js';
@@ -67,7 +67,10 @@ function authoredModeEffects(source, isElite) {
   const all = source?.modeEffects;
   if (!all || typeof all !== 'object' || Array.isArray(all)) throw new Error(`BAD_MODE_EFFECTS:${source?.chessId}`);
   if (source?.sourceRefs?.darkmoon19_2?.id) return { prep:darkmoonPrepRulesFor(source,isElite), combat:[], unsupported:[] };
-  const variant = all[isElite ? 'elite' : 'normal'];
+  const authoredVariant = all[isElite ? 'elite' : 'normal'];
+  // Older saved Workshop variants carried retired caps. Normalize a copy before
+  // validation and execution so those fields cannot silently restore limits.
+  const variant = withoutObsoleteWorkshopLimits(authoredVariant);
   if (!variant || typeof variant !== 'object' || Array.isArray(variant) || !Array.isArray(variant.prep) || !Array.isArray(variant.combat)) throw new Error(`BAD_MODE_EFFECTS_VARIANT:${source?.chessId}:${isElite ? 'elite' : 'normal'}`);
   for (const [kind, rules, triggers, behaviors] of [['prep', variant.prep, PREP_TRIGGERS, PREP_BEHAVIORS], ['combat', variant.combat, COMBAT_TRIGGERS, COMBAT_BEHAVIORS]]) {
     for (const r of rules) {
@@ -173,7 +176,7 @@ const PREP = Object.freeze({
 
 const combatBadge = (ids, every, stats, extra = {}) => rule('passive', 'badgeThresholdStat', { badgeIds: ids, every, stats, ...extra });
 const combatStatic = (stats) => rule('passive', 'staticStats', { stats });
-const combatEvent = (trigger, id, quantity, _normalCap, _eliteCap, filter = { actor: 'self' }, every = 1, extra = {}) => rule(trigger, 'eventProduction', {
+const combatEvent = (trigger, id, quantity, filter = { actor: 'self' }, every = 1, extra = {}) => rule(trigger, 'eventProduction', {
   counterEvent: trigger, counterEvery: every, outputs: [{ id, quantity }], filter, ...extra,
 });
 function combatRules(name, elite) {
@@ -181,7 +184,9 @@ function combatRules(name, elite) {
   const flat = (...r) => r;
   const badgeScale = (ids, every, stats) => combatBadge(ids, every, Object.fromEntries(Object.entries(stats).map(([k, [n, e]]) => [k, q(n, e)])));
   const staticScale = (stats) => combatStatic(Object.fromEntries(Object.entries(stats).map(([k, [n, e]]) => [k, q(n, e)])));
-  const eventScale = (trigger, id, normalQ, eliteQ, normalCap, eliteCap, filter, every = 1, extra = {}) => combatEvent(trigger, id, q(normalQ, eliteQ), q(normalCap, eliteCap), filter, every, extra);
+  // The cap slots are obsolete authoring metadata. Do not forward them into the
+  // live filter/threshold positions; each qualifying event now produces normally.
+  const eventScale = (trigger, id, normalQ, eliteQ, _normalCap, _eliteCap, filter, every = 1, extra = {}) => combatEvent(trigger, id, q(normalQ, eliteQ), filter, every, extra);
   switch (name) {
     case '哈洛德': return [staticScale({attackPercent:[0.2,0.4],maxHpPercent:[0.2,0.4]}),badgeScale(ALL_BADGES,5,{attackPercent:[0.01,0.02],maxHpPercent:[0.01,0.02]})];
     case '泡泡': return [badgeScale(['vitality','defense'],5,{defensePercent:[0.02,0.04]})];

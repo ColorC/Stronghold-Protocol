@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { nativeTraitFor, runNativeHook } from '../../server/modes/independent/native.js';
+import { withoutObsoleteWorkshopLimits } from '../../shared/warbandSchema.js';
 import { tavernFactions } from '../../shared/independentRules.js';
 import { preWarbandCatalog } from './helpers/preWarband.js';
 import { preV3Catalog } from './helpers/preV3.js';
@@ -31,17 +32,14 @@ function fixture() {
   return { state, services, granted, offers };
 }
 
-test('the explicit pre-v3 catalog snapshot resolves its historical 120 recruitable body pairs', () => {
-  const helpers = all.filter((x) => x.darkmoonSupport);
-  const ordinary = all.filter((x) => !x.elite && !x.darkmoonSupport);
-  const elite = all.filter((x) => x.elite && !x.darkmoonSupport);
-  assert.equal(helpers.length, 3, 'later non-recruitable support helpers sit outside the historical recruitable body pool');
-  assert.ok(helpers.every((x) => x.recruitable === false));
+test('the explicit pre-v3 catalog snapshot resolves its historical 120 ordinary and elite body pairs', () => {
+  const ordinary = all.filter((x) => !x.elite);
+  const elite = all.filter((x) => x.elite);
   assert.equal(ordinary.length, 120);
   assert.equal(elite.length, 120);
   assert.equal(ordinary.filter((x) => x.recruitable).length, 101);
   assert.equal(elite.filter((x) => x.recruitable).length, 101);
-  assert.equal(Object.keys(catalog.operators).length, 243, 'historical body pairs remain queryable alongside three non-recruitable support prototypes');
+  assert.equal(Object.keys(catalog.operators).length, 240, 'the historical snapshot contains 120 ordinary and 120 elite records');
   for (const base of ordinary) {
     const promoted = catalog.operators[base.eliteChessId];
     assert.ok(promoted, `${base.name} elite id is queryable`);
@@ -170,7 +168,7 @@ test('native sale, spend and refresh rules mutate the concrete prep state exactl
   spent.state.pieces.push(xiaoman);
   runNativeHook(spent.state, 'prepEnd', { origin: 'player' }, spent.services);
   runNativeHook(spent.state, 'prepEnd', { origin: 'player' }, spent.services);
-  assert.deepEqual(spent.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 6 }]);
+  assert.deepEqual(spent.granted.map(({ id, quantity }) => ({ id, quantity })), [{ id: 'precision', quantity: 7 }], 'all seven qualifying roster gains count; retired caps are ignored');
 
   const refreshed = fixture();
   refreshed.state.counters.refreshes = 1;
@@ -399,21 +397,21 @@ test('native status production observes targets in range regardless of status so
   assert.equal(rinyu.params.probability, 0.6);
 });
 
-test('Specter the Unchained combines first death and dollSwap output under the shared badge cap', () => {
+test('Specter the Unchained keeps death and dollSwap outputs after legacy Workshop limits are normalized', () => {
   const normal = all.find((x) => x.name === '归溟幽灵鲨' && !x.elite);
   const elite = catalog.operators[normal.eliteChessId];
-  for (const [operator, expectedQuantity, expectedCap] of [[normal, 1, 4], [elite, 2, 8]]) {
-    const rules = operator.nativeTrait.effect.combat.filter((x) => ['death', 'dollSwap'].includes(x.trigger));
+  for (const [operator, expectedQuantity] of [[normal, 1], [elite, 2]]) {
+    const rules = operator.nativeTrait.effect.combat.filter((x) => ['death', 'dollSwap'].includes(x.trigger)).map(withoutObsoleteWorkshopLimits);
     assert.deepEqual(rules.map((x) => x.trigger).sort(), ['death', 'dollSwap']);
     const death = rules.find((x) => x.trigger === 'death');
     const swap = rules.find((x) => x.trigger === 'dollSwap');
     for (const rule of [death, swap]) {
       assert.equal(rule.params.outputs[0].id, 'vitality');
       assert.equal(rule.params.outputs[0].quantity, expectedQuantity);
-      assert.equal(rule.params.maxPerBattle, expectedCap);
+      assert.equal(Object.hasOwn(rule.params, 'maxPerBattle'), false);
       assert.equal(rule.params.filter.actor, 'self');
     }
-    assert.equal(death.params.firstOnly, true);
+    assert.equal(Object.hasOwn(death.params, 'firstOnly'), false);
     assert.equal(Object.hasOwn(swap.params, 'firstOnly'), false);
   }
 });

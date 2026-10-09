@@ -33,9 +33,13 @@ for (const elite of [false, true]) {
     h.b.on('dodge', (e) => { if (e.target === unit) dodges.push(e); });
     const before = unit.hp;
     h.b.dealDamage(attacker, unit, { amount: 100, type: 'phys', canDodge: true, isAttack: true });
-    assert.equal(unit.hp, before, 'native talent really avoids damage');
-    assert.equal(dodges.length, 1, 'one logical dodge, not just the visual MISS');
-    assert.equal(h.b.independentRewards.find((r) => r.id === 'agility' && r.sourceUid === 'tippi')?.quantity, elite ? 2 : 1);
+    assert.equal(unit.hp, before, 'the kit performs a real dodge before production');
+    attacker.x = 0; attacker.y = 0;
+    h.run(13.1);
+    h.b.dealDamage(attacker, unit, { amount: 100, type: 'phys', canDodge: true, isAttack: true });
+    assert.equal(dodges.length, 2, 'two spaced hits produce two engine dodge events');
+    assert.equal(h.b.independentRewards.filter((r) => r.id === 'agility' && r.sourceUid === 'tippi').reduce((n, r) => n + r.quantity, 0), (elite ? 2 : 1) * dodges.length,
+      'a historical cooldown/cap field is ignored; both dodges produce');
     assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors));
   });
 }

@@ -86,7 +86,7 @@ test('泥岩 sold: its own funds and the 售出时 trait of the operator in fron
   assert.equal(state.pendingFunds, 2 + 1);
 });
 
-test('引星棘刺: itself and the operator in front each wear one; 安洁莉娜: the one in front, per refresh, capped; 山: per operator gained', () => {
+test('引星棘刺: itself and the operator in front each wear one; 安洁莉娜: the one in front per refresh; 山: per operator gained', () => {
   const a = fixture();
   a.state.pieces.push(piece('thorn', '引星棘刺', 1, 1), piece('f', '耶拉', 1, 2));
   runNativeHook(a.state, 'prepEnd', { round: 1 }, a.services);
@@ -95,12 +95,12 @@ test('引星棘刺: itself and the operator in front each wear one; 安洁莉娜
   b.state.counters.refreshes = 5;
   b.state.pieces.push(piece('ang', '安洁莉娜', 1, 1), piece('f', '耶拉', 1, 2));
   runNativeHook(b.state, 'prepEnd', { round: 1 }, b.services);
-  assert.deepEqual(b.granted.filter((x) => x.id === 'agility').map((x) => [x.quantity, x.landOn]), [[3, 'front']]);
+  assert.deepEqual(b.granted.filter((x) => x.id === 'agility').map((x) => [x.quantity, x.landOn]), [[5, 'front']], 'all five refreshes count without the retired Workshop cap');
   const c = fixture();
   c.state.counters.gained = 6;
   c.state.pieces.push(piece('shan', '山', 1, 1));
   runNativeHook(c.state, 'prepEnd', { round: 1 }, c.services);
-  assert.equal(sum(c.granted, 'mastery'), 4, '至多4枚');
+  assert.equal(sum(c.granted, 'mastery'), 6, 'all six qualifying operator gains count without the retired Workshop cap');
 });
 
 test('native recruits read a session pool ({ id: { cap, left, tier } }): 歌蕾蒂娅 only picks operators with copies left', () => {

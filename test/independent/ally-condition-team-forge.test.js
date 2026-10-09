@@ -8,7 +8,7 @@ import { installIndependentBattle } from '../../server/sim/content/independent/b
 import { makeBattle, chessRec } from '../helpers/battleHarness.js';
 
 const base = getCatalog();
-const condition = (match = {}, more = {}) => ({ trigger: 'passive', behavior: 'allyConditionStats', params: { match, countBy: 'operators', maxCount: 2, stats: { attackPercent: 0.1 }, ...more } });
+const condition = (match = {}, more = {}) => ({ trigger: 'passive', behavior: 'allyConditionStats', params: { match, countBy: 'operators', stats: { attackPercent: 0.1 }, ...more } });
 const forge = (more = {}) => ({ trigger: 'prepEnd', behavior: 'teamForge', params: { targets: 'all', excludeSelf: true, count: 2, sort: 'leastEquipment', outputs: [{ id: 'precision', normal: 2, elite: 4 }], ...more } });
 const piece = (uid, row = 10, col = 3, more = {}) => ({ uid, chessId: `test_${uid}_a`, row, col, dir: 'RIGHT', skillIndex: 0, moduleId: 'none', equipment: [], attachments: [], nativeState: {}, ...more });
 
@@ -28,10 +28,10 @@ function fixture(pieces, rule, overrides = {}) {
   return { ...h, catalog, pieces };
 }
 
-test('condition excludes self/bench/other owner/nonoperators, caps, removes instantly and restores without stacking', () => {
+test('condition excludes self/bench/other owner/nonoperators, removes instantly and restores without stacking', () => {
   const h = fixture([piece('w'), piece('a',10,4), piece('b',11,3), piece('c',11,4), piece('bench',null,null)], condition());
   const w = h.unit('w');
-  assert.equal(Math.round(w.s.atk),120);
+  assert.equal(Math.round(w.s.atk),130, 'all three matching allies contribute without a cap');
   h.unit('a').ownerId = 'p2'; h.unit('b').kind = 'token'; h.unit('c').kind = 'device';
   h.run(0.25); assert.equal(w.s.atk,100);
   h.unit('a').ownerId = w.ownerId; h.unit('b').kind = 'op';
@@ -49,11 +49,11 @@ test('native profession and faction diversity deduplicate operators; identity ge
   const ident = Object.values(base.equipment).find((d) => d.mechanism === 'identityTag');
   assert.ok(ident);
   const pieces = [piece('w'), piece('a',10,4,{factions:['炎'],equipment:[{id:ident.id,quantity:1,state:{faction:'维多利亚'}}]}),piece('b',11,3,{factions:['炎']})];
-  const h = fixture(pieces,condition({}, { countBy:'factions',maxCount:8 }));
+  const h = fixture(pieces,condition({}, { countBy:'factions' }));
   assert.equal(Math.round(h.unit('w').s.atk),110, 'two operators with the same native faction count once');
   pieces[1].equipment[0].state.faction='拉特兰'; h.run(0.25); assert.equal(Math.round(h.unit('w').s.atk),110, 'identity equipment cannot rewrite native faction');
   pieces[1].equipment=[]; h.run(0.25); assert.equal(Math.round(h.unit('w').s.atk),110);
-  const prof = fixture([piece('w'),piece('a',10,4),piece('b',11,3),piece('c',11,4)], condition({ professions:['WARRIOR','MEDIC'] },{countBy:'professions',maxCount:8}),{c:{profession:'MEDIC'}});
+  const prof = fixture([piece('w'),piece('a',10,4),piece('b',11,3),piece('c',11,4)], condition({ professions:['WARRIOR','MEDIC'] },{countBy:'professions'}),{c:{profession:'MEDIC'}});
   assert.equal(Math.round(prof.unit('w').s.atk),120);
   const faction = fixture(pieces,condition({faction:'拉特兰'}));
   assert.equal(faction.unit('w').s.atk,100);
@@ -139,14 +139,30 @@ test('team forge preserves the existing full-inventory loss rule and records its
   assert.equal(f.state.production.at(-1).quantity,2);
   assert.equal(f.state.production.at(-1).sourceUid,'w'); assert.equal(f.state.production.at(-1).targetUid,'a');
 });
-test('authored schema fails fast for unsupported fields/values/NaN/zero caps and exposes summaries',()=>{
+test('authored schema fails fast for unsupported fields/values/NaN and exposes summaries',()=>{
   const authored=(r,kind='combat')=>({chessId:'test',modeEffects:{normal:{prep:[],combat:[],[kind]:[r]},elite:{prep:[],combat:[],[kind]:[r]}}});
   const good=condition(); assert.equal(nativeEffectFor('test',authored(good)).combat.length,1);
-  for(const p of [{maxCount:0},{countBy:'pets'},{stats:{atkPct:0.1}},{stats:{attackPercent:NaN}},{match:{profession:'GUARD'}},{match:{baseStat:'attack'}},{match:{minBaseStat:100}},{match:{faction:'炎',typo:1}},{typo:1}])assert.throws(()=>nativeEffectFor('test',authored(condition({},p))));
+  for(const p of [{countBy:'pets'},{stats:{atkPct:0.1}},{stats:{attackPercent:NaN}},{match:{profession:'GUARD'}},{match:{baseStat:'attack'}},{match:{minBaseStat:100}},{match:{faction:'炎',typo:1}},{typo:1}])assert.throws(()=>nativeEffectFor('test',authored(condition({},p))));
   for(const p of [{count:0},{targets:'around8'},{sort:'attack'},{outputs:[{id:'precision',normal:0,elite:2}]}])assert.throws(()=>nativeEffectFor('test',authored(forge(p),'prep')));
   assert.equal(nativeEffectFor('test',authored(forge(),'prep')).prep.length,1);
   assert.equal(nativeEffectFor('test',authored({trigger:'passive',behavior:'badgeAmplifier',params:{badgeIds:['precision'],multiplier:2}})).combat.length,1);
   const summary=traitSummary({combat:[condition({faction:'炎'})],prep:[forge()]});
   assert.equal(summary[0].kind,'forge'); assert.equal(summary[0].grows,true);
   assert.equal(summary[1].temporary,true); assert.equal(summary[1].kind,'stat'); assert.equal(summary[1].condition,'炎友方');
+});
+
+test('authored legacy ally limits are stripped from a copy and never cap matching allies', () => {
+  const authored = (rule) => ({ chessId: 'legacy-condition', modeEffects: {
+    normal: { prep: [], combat: [rule] }, elite: { prep: [], combat: [rule] },
+  } });
+  const oldRule = condition({ faction: '炎', firstOnly: true }, { maxCount: 1, stats: { attackPercent: 0.1, maxStacks: 9 } });
+  const source = authored(oldRule), before = structuredClone(source);
+  const normalized = nativeEffectFor('legacy-condition', source);
+  assert.deepEqual(source, before, 'normalization does not mutate historical input');
+  assert.equal(normalized.combat[0].params.maxCount, undefined);
+  assert.equal(normalized.combat[0].params.stats.maxStacks, undefined);
+  assert.equal(normalized.combat[0].params.match.firstOnly, undefined, 'nested obsolete fields are stripped recursively');
+  const compatible = nativeEffectFor('legacy-condition', authored(oldRule)).combat[0];
+  const h = fixture([piece('w'), piece('a', 10, 4, { factions: ['炎'] }), piece('b', 11, 3, { factions: ['炎'] }), piece('c', 11, 4, { factions: ['炎'] })], compatible);
+  assert.equal(Math.round(h.unit('w').s.atk), 130, 'all three matching allies contribute despite the saved maxCount:1');
 });
