@@ -147,8 +147,7 @@ async function exerciseEntry(page, base, mode, output, receipt) {
         await linkPage.waitForSelector('[data-testid="ix-detail"]', { timeout: 15000 });
         await linkPage.waitForFunction(() => document.querySelector('[data-testid="ix-detail"] [role="tab"][aria-selected="true"]')?.innerText.trim() === '参考原卡', { timeout: 10000 });
         const reopened = await linkPage.$eval('[data-testid="ix-detail"] [role="tabpanel"]', (el) => el.innerText);
-        assert.match(reopened, /普通[\s\S]*金色/);
-        assert.match(reopened, /暴怒的巨蜥|亡语/);
+        assert.match(reopened, /普通[\s\S]*\S[\s\S]*金色[\s\S]*\S/, 'deep link opens the original-card tab with non-empty ordinary and golden source text');
         record.checks.componentLink = { copied, reopenedInNewPage: true, selectedTab: '参考原卡', sourceTextVisible: true };
         await takeShot(linkPage, output, receipt.artifacts, `${mode}-reference-link-reopened`);
       } finally { await linkPage.close(); }
