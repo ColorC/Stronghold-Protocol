@@ -509,3 +509,10 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 }
 .ix-buy-targets{display:grid;gap:.45rem;padding:.55rem;border:1px solid rgba(130,190,255,.32);border-radius:.4rem;background:rgba(12,22,36,.82);flex-basis:100%}.ix-buy-targets p{margin:0;font-size:.82rem;color:var(--text-muted,#b8c4d2)}.ix-buy-targets__choices{display:flex;flex-wrap:wrap;gap:.35rem}.ix-buy-targets__choice,.ix-buy-targets__actions button{border:1px solid rgba(150,190,230,.38);border-radius:.3rem;padding:.35rem .55rem;background:#17283b;color:inherit;cursor:pointer}.ix-buy-targets__choice.is-on{border-color:#7dd3fc;background:#1c4661}.ix-buy-targets__actions{display:flex;justify-content:flex-end;gap:.4rem}.ix-buy-targets__actions button:disabled{opacity:.5;cursor:not-allowed}
 .ix-buy-targets__normal{justify-self:start;border:1px solid rgba(150,190,230,.38);border-radius:.3rem;padding:.35rem .55rem;background:#17283b;color:inherit;cursor:pointer}.ix-dgear__att small{display:block;padding-left:.2rem;color:var(--text-lo);font-size:.8em;line-height:1.4}
+
+/* Direct field targeting for true choice effects. */
+.ix-target-prompt{position:absolute;z-index:100;left:50%;top:8rem;transform:translateX(-50%);display:flex;gap:.75rem;align-items:center;padding:.65rem 1rem;border:1px solid rgba(236,190,92,.65);border-radius:12px;background:rgba(20,25,31,.96);color:#fff;box-shadow:0 8px 28px #0009}
+.ix-target-prompt button{color:#f5d78b;background:#32302a;border:1px solid #88764d;border-radius:6px;padding:.35rem .65rem;cursor:pointer}
+.scard.is-targetable{outline:3px solid #f4d26c;outline-offset:3px;filter:brightness(1.18);cursor:crosshair}
+.scard.is-targetable:hover{transform:translateY(-4px)}
+.ix-buy-targets--field{display:flex;gap:.5rem;align-items:center}

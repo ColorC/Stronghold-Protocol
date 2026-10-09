@@ -815,6 +815,7 @@ export function applyAction(state, action, options = {}) {
       const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       if (!Number.isInteger(action.row) || !Number.isInteger(action.col) || !inField(action.row, action.col)) throw new Error('BAD_POSITION');
       const occupied = [...work.pieces, ...summonsOf(work)].some((x) => x !== p && onBoard(x) && x.row === action.row && x.col === action.col); if (occupied) throw new Error('OCCUPIED');
+      const wasOnBoard = onBoard(p);
       const field = getIndependentField(work, { data, catalog }); const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
       const cls = positionClass(raw, p.moduleId);
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');
@@ -822,6 +823,7 @@ export function applyAction(state, action, options = {}) {
       if (onBoard(p) && (p.row !== action.row || p.col !== action.col || (action.dir && action.dir !== p.dir))) liftSummonsForOwner(work, p.uid);
       p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; delete p.temp; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
       syncSummonsForOwner(work, data, catalog, p);
+      if(!wasOnBoard) invokeHook(work,'played',{piece:p,source:'hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);
       if(p.darkmoonPendingPlay) {
         delete p.darkmoonPendingPlay;
         invokeHook(work,'gain',{piece:p,source:'darkmoon-hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);

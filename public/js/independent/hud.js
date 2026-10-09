@@ -352,7 +352,7 @@ export function mergeHintOf(state, catalog, chessId) {
   return fielded ? { text: '精锐干员将出现在作战区原位置', tile: { row: fielded.row, col: fielded.col } } : { text: '精锐干员将进入整备区', tile: null };
 }
 
-function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail }) {
+function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail, targetable = false }) {
   const op = catalog.operators[slot.id] || {};
   const c = data.lookup('chess', slot.id);
   const m = data.get('assets');
@@ -361,7 +361,7 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail })
   // the skill it fights with when bought (the default one: the choice is made per operator afterwards) and its factions
   const lo = c ? chessLoadout(c, null, (id) => data.lookup('chess', id)) : null;
   const factions = (c?.bonds || []).filter((b) => TAVERN_FACTIONS[b]);
-  const card = html`<button type="button" class=${cx('scard', `scard--t${op.tier || 1}`, state.shop.frozen && 'is-frozen', reason && 'is-disabled', hint && 'is-merge', armed && 'is-armed')}
+  const card = html`<button type="button" class=${cx('scard', `scard--t${op.tier || 1}`, state.shop.frozen && 'is-frozen', reason && 'is-disabled', hint && 'is-merge', armed && 'is-armed', targetable && 'is-targetable')}
       onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }}
       data-testid=${`ix-shop-${idx}`} aria-label=${`${op.name || '干员'}${armed ? (reason ? '，无法购买' : '，再次点击确认') : ''}`} aria-pressed=${String(!!armed)}>
     <span class="scard__bg" aria-hidden="true"></span>
@@ -414,7 +414,7 @@ function SoldCard({ item }) {
  * reasons a tap cannot buy come from the state only. 收起 folds it to the original's tab (funds + 展开商店) so the
  * field behind it can be seen.
  */
-export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, onRefresh, onFreeze, onDetail, deployed, deployCap, collapsed = false, onCollapse }) {
+export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, onRefresh, onFreeze, onDetail, deployed, deployCap, collapsed = false, onCollapse, targetSlots = [], onTargetShopSlot }) {
   const shop = state.shop;
   const price = catalog.rules?.refreshPrice ?? 1;
   const free = shop.freeRefreshes || 0;
@@ -461,7 +461,7 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
       </button>
       <div class="shopbar__cards">
         ${chess.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`s${i}`} />`
-          : html`<${ShopCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} onDetail=${onDetail} />`))}
+          : html`<${ShopCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} state=${state} catalog=${catalog} armed=${armed === `s${i}`} reason=${reasonFor(s)} onTap=${tap} onDetail=${onDetail} targetable=${targetSlots.includes(i)} />`))}
       </div>
       ${gear.length ? html`<div class="shopbar__item">
         ${gear.map(({ s, i }) => (s.sold ? html`<${SoldCard} key=${`g${i}`} item=${true} />`

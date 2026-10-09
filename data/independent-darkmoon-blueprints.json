@@ -6747,12 +6747,12 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "bought",
-                "sourceTrigger": "buyElemental",
-                "recipient": "selectedFriendlyOperator",
+                "trigger": "played",
+                "sourceTrigger": "playElemental",
+                "recipient": "randomFriendlyOperator",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每次购买炎阵营干员时，选择一名友方干员；效果触发1次，每次使其获得与所购干员科技等级等量的攻击徽章和伤害徽章。",
+                "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6764,23 +6764,23 @@
                   "amount": "Elemental mapped-faction tier"
                 },
                 "adapter": [
-                  "darkmoonBoughtTribeTargetGrowth"
+                  "darkmoonPlayedRandomTribeGrowth"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "recipientLabel": "你选择的一名友方干员",
-                "triggerLabel": "购买时",
+                "recipientLabel": "随机一名场上友方干员（可包含自身）",
+                "triggerLabel": "打出元素牌后",
                 "durationLabel": "成长"
               }
             ],
             "elite": [
               {
-                "trigger": "bought",
-                "sourceTrigger": "buyElemental",
-                "recipient": "selectedFriendlyOperator",
+                "trigger": "played",
+                "sourceTrigger": "playElemental",
+                "recipient": "randomFriendlyOperator",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每次购买炎阵营干员时，选择一名友方干员；效果触发2次，每次使其获得与所购干员科技等级等量的攻击徽章和伤害徽章。",
+                "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；效果触发两次。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -6792,12 +6792,12 @@
                   "amount": "Elemental mapped-faction tier"
                 },
                 "adapter": [
-                  "darkmoonBoughtTribeTargetGrowth"
+                  "darkmoonPlayedRandomTribeGrowth"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "recipientLabel": "你选择的一名友方干员",
-                "triggerLabel": "购买时",
+                "recipientLabel": "随机一名场上友方干员（可包含自身）",
+                "triggerLabel": "打出元素牌后",
                 "durationLabel": "成长"
               }
             ]
@@ -6808,10 +6808,10 @@
         "sourceId": "BGS_100",
         "mechanic": "badgeGrowth",
         "normal": {
-          "trigger": "bought",
-          "recipient": "selectedFriendlyOperator",
+          "trigger": "played",
+          "recipient": "randomFriendlyOperator",
           "duration": "permanentWornGrowth",
-          "adapter": "darkmoonBoughtTribeTargetGrowth",
+          "adapter": "darkmoonPlayedRandomTribeGrowth",
           "params": {
             "triggerFaction": "炎",
             "outputs": [
@@ -6821,10 +6821,10 @@
           }
         },
         "elite": {
-          "trigger": "bought",
-          "recipient": "selectedFriendlyOperator",
+          "trigger": "played",
+          "recipient": "randomFriendlyOperator",
           "duration": "permanentWornGrowth",
-          "adapter": "darkmoonBoughtTribeTargetGrowth",
+          "adapter": "darkmoonPlayedRandomTribeGrowth",
           "params": {
             "triggerFaction": "炎",
             "outputs": [
@@ -6839,11 +6839,11 @@
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "bought",
-            "sourceTrigger": "buyElemental",
-            "recipient": "selectedFriendlyOperator",
+            "trigger": "played",
+            "sourceTrigger": "playElemental",
+            "recipient": "randomFriendlyOperator",
             "duration": "permanentWornGrowth",
-            "text": "每次购买炎阵营干员时，选择一名友方干员；效果触发1次，每次使其获得与所购干员科技等级等量的攻击徽章和伤害徽章。",
+            "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章。",
             "params": {
               "triggerFaction": "炎",
               "outputs": [
@@ -6856,11 +6856,11 @@
         ],
         "elite": [
           {
-            "trigger": "bought",
-            "sourceTrigger": "buyElemental",
-            "recipient": "selectedFriendlyOperator",
+            "trigger": "played",
+            "sourceTrigger": "playElemental",
+            "recipient": "randomFriendlyOperator",
             "duration": "permanentWornGrowth",
-            "text": "每次购买炎阵营干员时，选择一名友方干员；效果触发2次，每次使其获得与所购干员科技等级等量的攻击徽章和伤害徽章。",
+            "text": "打出炎阵营元素后，随机使一名场上友方干员获得等同于该元素科技等级的攻击徽章和伤害徽章；效果触发两次。",
             "params": {
               "triggerFaction": "炎",
               "outputs": [

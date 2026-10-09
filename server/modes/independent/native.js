@@ -10,10 +10,10 @@ const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','def
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
 const REPEATABLE_BADGE_FORGES = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
-const PREP_TRIGGERS = new Set(['aura','gain','bought','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
+const PREP_TRIGGERS = new Set(['aura','gain','bought','played','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
 const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','damaged','death','deploy','dodge','dollSwap','elementBurst','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
-const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonAdjacentGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBeastSummonGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtSelfGrowth','darkmoonElementalTokenOffer','darkmoonEndTurnGrowth','darkmoonLastWarbandRecruit','darkmoonMagneticMerge','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonPlayedTribeGrowth','darkmoonPreviousWinSelfGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonSummonSupport','darkmoonTaggedGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
+const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonAdjacentGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBeastSummonGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtRandomTribeGrowth','darkmoonPlayedRandomTribeGrowth','darkmoonBoughtSelfGrowth','darkmoonElementalTokenOffer','darkmoonEndTurnGrowth','darkmoonLastWarbandRecruit','darkmoonMagneticMerge','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonPlayedTribeGrowth','darkmoonPreviousWinSelfGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonSummonSupport','darkmoonTaggedGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
 const COMBAT_BEHAVIORS = new Set(['aura','badgeThresholdStat','battleStartBuff','blockRetaliate','deployBuff','eventProduction','healedBuff','markSpread','onDown','onKillSp','rangeDebuff','shieldAllies','skillStartBuff','staticStats','statusOnHit']);
 PREP_BEHAVIORS.add('teamForge');
 COMBAT_BEHAVIORS.add('allyConditionStats');
@@ -553,6 +553,20 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         for(let i=0;i<repeats;i++)darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services,p.outputs||['precision','damage']);
         break;
       }
+      case 'darkmoonPlayedRandomTribeGrowth': {
+        const buyer=event.piece;
+        if(!buyer||!nativeFactions(buyer,services.catalog).includes(p.triggerFaction)||(buyer.playerId??buyer.ownerId)!==(piece.playerId??piece.ownerId))break;
+        const owner=piece.playerId??piece.ownerId;
+        const targets=roster(state).filter(x=>isPresent(x)&&(x.playerId??x.ownerId)===owner);
+        const count=Number(services.catalog?.operators?.[chessIdOf(buyer)]?.tier||1);
+        const hasAttack=p.outputs?.includes('precision')??true,hasSecondary=p.outputs?.some(id=>id!=='precision')??true;
+        const repeats=Math.max(1,Math.floor(pick(p.repeatCount,elite)));
+        for(let i=0;i<repeats;i++) {
+          const target=choose(targets,services);
+          if(target)darkmoonGrowth(state,piece,target,hasAttack?count:0,hasSecondary?count:0,services,p.outputs||['precision','damage']);
+        }
+        break;
+      }
       case 'grantEquipment':
         if(event.magneticTargetUid && p.landOn==='self')break;
         for (const x of p.outputs || []) output(ruleServices, state, x.id, value(x, elite) + bonus(p, piece, state, elite), piece);
@@ -989,7 +1003,7 @@ export function runEquipmentPrepEnd(state, services = {}) {
 export function runNativeHook(state, hook, event = {}, services = {}) {
   if (!state || !services.catalog) throw new TypeError('runNativeHook requires state and services.catalog');
   if (suppressed(event)) return state;
-  if (!['gain', 'bought', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
+  if (!['gain', 'bought', 'played', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
   const piece = event.piece || (event.uid && roster(state).find((x) => x.uid === event.uid));
   if (['gain', 'selling', 'sold', 'merge'].includes(hook)) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));

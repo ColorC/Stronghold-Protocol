@@ -523,7 +523,7 @@ test('frozen Battlecry-added tavern slots survive refresh even beyond the normal
   assert.ok(result.state.shop.slots.some(x=>x.id===normal.chessId&&x.frozen&&!x.sold),'the added frozen slot persists through the refresh and stays available');
 });
 
-test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; BGS 100 targets a selected friend from bought Elemental tier',()=>{
+test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),buyerOp=normal[0],targetOp=normal[1],holderOp=normal[2];
   const buyerRef={id:'BGS_048',rosterTribe:'PIRATE',battlecry:true},targetRef={id:'TEST_PIRATE',rosterTribe:'PIRATE'};
   const buyer={...buyerOp,nativeFactionTags:['维多利亚'],sourceRefs:{darkmoon19_2:buyerRef}},effect=nativeEffectFor(buyerOp.chessId,buyer,false);
@@ -537,15 +537,6 @@ test('BGS 048 uses this turns Pirate purchases and an explicit friendly Pirate; 
   assert.deepEqual(target.equipment.map(x=>[x.id,x.quantity]),['precision','damage'].map(id=>[id,3]),'the current bought Pirate joins two earlier same-turn purchases before gain resolves and uses the fixed attack/damage IDs');
   assert.equal(result.state.inventory.length,0,'selected Pirate receives permanent direct growth');
 
-  const elemental={...holderOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},elementalEffect=nativeEffectFor(holderOp.chessId,elemental,false);
-  const bought={...targetOp,nativeFactionTags:['炎'],sourceRefs:{darkmoon19_2:{id:'TEST_ELEMENTAL',rosterTribe:'ELEMENTAL'}}};
-  const catalog2={...base,operators:{...base.operators,[holderOp.chessId]:{...holderOp,nativeFactionTags:['哥伦比亚'],sourceRefs:elemental.sourceRefs,nativeTrait:{...holderOp.nativeTrait,effect:elementalEffect}},[targetOp.chessId]:{...targetOp,nativeFactionTags:['炎'],sourceRefs:bought.sourceRefs}}};
-  const state2={round:1,shop:{slots:[]},pieces:[{uid:'holder',chessId:holderOp.chessId,ownerId:'p1',nativeState:{},row:9,col:2,equipment:[]},{uid:'selected',chessId:targetOp.chessId,ownerId:'p1',nativeState:{},row:9,col:3,equipment:[]}],counters:{},inventory:[]};
-  const services={catalog:catalog2,data:{},rng:()=>0,grantEquipment:(s,id,n,extra)=>grantEquipment(s,catalog2,id,n,extra),grantChess(){},addOffer(){},record(){}};
-  runNativeHook(state2,'bought',{piece:{uid:'elemental-bought',chessId:targetOp.chessId,ownerId:'p1'},targetUid:'selected'},services);
-  const tier=Number(targetOp.tier||1);
-  const selected=state2.pieces.find(x=>x.uid==='selected');
-  assert.deepEqual(selected.equipment.map(x=>[x.id,x.quantity]),['precision','damage'].map(id=>[id,tier]),'BGS 100 uses the purchased Elemental tier on the exact selected friend and uses the fixed attack/damage IDs');
 });
 
 test('a generated hand card defers its native Battlecry until its first field move, then cannot replay it on redeploy',()=>{
@@ -843,40 +834,6 @@ test('golden Murozond delivers a golden prior-warband copy while normal stays or
     assert.equal(recruited.darkmoonPendingPlay,true,'the copy stays a hand reward and does not replay its native hooks');
     assert.equal(grantOptions.poolTaken,true);assert.equal(grantOptions.deferNativeGain,true);assert.equal(grantOptions.poolCopies,1);
   }
-});
-
-test('golden Lil Rag repeats its Elemental-tier growth twice and rejects missing targets before purchase spend',()=>{
-  const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=normal[0],buyerOp=normal[1],targetOp=normal.find(x=>x.chessId!==sourceOp.chessId&&x.chessId!==buyerOp.chessId);
-  const growth=(piece)=>piece.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0]));
-  for(const elite of [false,true]) {
-    const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},effect=nativeEffectFor(sourceOp.chessId,source,elite),
-      buyer={...buyerOp,nativeFactionTags:['炎']},targetDef={...targetOp,nativeFactionTags:['卡西米尔']},
-      catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect}},[buyerOp.chessId]:buyer,[targetOp.chessId]:targetDef}},
-      holder={uid:'rag',chessId:sourceOp.chessId,ownerId:'p1',elite,row:0,col:0,nativeState:{},equipment:[]},target={uid:'selected',chessId:targetOp.chessId,ownerId:'p1',row:0,col:1,equipment:[]},
-      state={round:1,pieces:[holder,target],inventory:[]},services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
-    runNativeHook(state,'bought',{piece:{uid:'bought',chessId:buyerOp.chessId,ownerId:'p1'},targetUid:target.uid},services);
-    const times=elite?2:1,tier=Number(buyerOp.tier||1);
-    assert.deepEqual(growth(target),[['precision',tier*times],['damage',tier*times]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_100 ${elite?'golden':'normal'} repeats the tier-sized effect ${times} time(s) with fixed attack/damage IDs`);
-    assert.deepEqual(growth(holder),[],'growth stays on the explicitly selected friendly target');
-    const uiState={pieces:[holder,target],shop:{slots:[]}},uiSpec=buyTargetSpec({id:buyerOp.chessId},catalog,uiState);
-    assert.equal(uiSpec.kind,'friendly','a deployed Rag dynamically opens the eligible recipient picker for a newly bought Yan operator');
-    assert.deepEqual(buyTargetChoices(uiSpec,uiState,catalog,0).map(x=>x.uid),['rag','selected'],'the picker lists current friendly recipients');
-    const nonYan={...buyerOp,nativeFactionTags:['卡西米尔']};
-    assert.equal(buyTargetSpec({id:nonYan.chessId}, {...catalog,operators:{...catalog.operators,[nonYan.chessId]:nonYan}},uiState),null,'a non-Yan purchase does not request a Rag recipient');
-    const wrong={uid:'wrong',chessId:targetOp.chessId,ownerId:'p2',row:0,col:2,equipment:[]};state.pieces.push(wrong);
-    assert.throws(()=>runNativeHook(state,'bought',{piece:{uid:'bought2',chessId:buyerOp.chessId,ownerId:'p1'},targetUid:wrong.uid},services),/DARKMOON_TARGET_REQUIRED/);
-  }
-
-  const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_100'}}},sourceEffect=nativeEffectFor(sourceOp.chessId,source,false),buyer={...buyerOp,nativeFactionTags:['炎']};
-  const catalog={...base,operators:{...base.operators,[sourceOp.chessId]:{...sourceOp,nativeTrait:{...sourceOp.nativeTrait,effect:sourceEffect}},[buyerOp.chessId]:buyer}};
-  const state=createSession({seed:100,catalog});state.funds=20;state.shop.slots[0]={kind:'chess',id:sourceOp.chessId,price:3,sold:false,equipment:[]};
-  assert.equal(buyTargetSpec({id:buyerOp.chessId},catalog,state),null,'buying the first Rag never requires a pre-existing growth target');
-  const sourceBuy=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(sourceBuy.ok,true,JSON.stringify(sourceBuy.error));
-  const holder=sourceBuy.state.pieces.find(x=>x.chessId===sourceOp.chessId),tile=viewSession(sourceBuy.state,{catalog}).pieces.find(x=>x.uid===holder.uid).legalTiles[0].split(',').map(Number),deployed=applyAction(sourceBuy.state,{type:'move',uid:holder.uid,row:tile[0],col:tile[1]},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
-  deployed.state.funds=12;deployed.state.shop.slots[0]={kind:'chess',id:buyerOp.chessId,price:3,sold:false,equipment:[]};
-  const funds=deployed.state.funds,pool=deployed.state.pool[buyerOp.chessId].left,result=applyAction(deployed.state,{type:'buy',slot:0},{catalog});
-  assert.equal(result.ok,false,'missing target is rejected as an invalid purchase action');assert.equal(result.error?.message,'DARKMOON_TARGET_REQUIRED');
-  assert.equal(deployed.state.funds,funds,'target validation runs before funds are spent');assert.equal(deployed.state.pool[buyerOp.chessId].left,pool,'target validation runs before the shop copy is consumed');
 });
 
 test('golden source triggers preserve authored counts for sold tokens, played Elementals, and Uldum end-turn attack',()=>{

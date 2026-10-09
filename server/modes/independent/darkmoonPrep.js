@@ -77,7 +77,7 @@ export function darkmoonPrepRulesFor(source,isElite=false) {
   if(id==='BGS_122') return [{trigger:'gain',behavior:'darkmoonAddTribeShopOffer',params:{faction:'炎',count:isElite?2:1}}];
   if(id==='BGS_123') return [{trigger:'gain',behavior:'darkmoonRecruitTribeToHand',params:{faction:'炎',count:isElite?2:1}}];
   if(id==='BGS_048') return [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'维多利亚',perTribeBought:isElite?2:1,outputs:['precision','damage']}}];
-  if(id==='BGS_100') return [{trigger:'bought',behavior:'darkmoonBoughtTribeTargetGrowth',params:{triggerFaction:'炎',outputs:['precision','damage'],repeatCount:{normal:1,elite:2}}}];
+  if(id==='BGS_100') return [{trigger:'played',behavior:'darkmoonPlayedRandomTribeGrowth',params:{triggerFaction:'炎',outputs:['precision','damage'],repeatCount:{normal:1,elite:2}}}];
   if(id==='LOE_077') return [{trigger:'aura',behavior:'triggerMultiplier',params:{hook:'gain',extra:isElite?2:1,filter:'darkmoonBattlecry'}}];
   return structuredClone(RULES[id] || []);
 }

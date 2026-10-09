@@ -33,9 +33,9 @@ test('all 101 source entries regenerate both visible variants from executable pr
       assert.doesNotMatch(row[variant], /成长永久保留|永久装备|临时获得|仅本场战斗生效|(?:攻击成长徽章|训练等级)×0|购买符合条件的干员时，购买/,
         `${entry.sourceId} ${variant} should use concise default-duration wording`);
       if (entry.sourceId === 'BGS_100') {
-        assert.match(row[variant], /所购干员科技等级等量的攻击徽章和伤害徽章/);
+        assert.match(row[variant], /元素科技等级的攻击徽章和伤害徽章/);
         assert.doesNotMatch(row[variant], /所购干员星级/);
-        assert.match(row[`${variant}Levels`], /所购干员科技等级两倍的训练等级/, `${entry.sourceId} ${variant} levels use purchased tier as both growth inputs`);
+        assert.match(row[`${variant}Levels`], /元素科技等级两倍的训练等级/, `${entry.sourceId} ${variant} levels use purchased tier as both growth inputs`);
         assert.doesNotMatch(row[`${variant}Levels`], /徽章|星级等量/);
         if (variant === 'elite') assert.match(row.eliteLevels, /结算两次/);
       } else {
@@ -158,8 +158,8 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('BGS_048').elite, /每购买一名维多利亚阵营干员.*攻击徽章×2与伤害徽章×2/);
   assert.match(card('BGS_055').normal, /升级费用减少1金币/);
   assert.match(card('BGS_055').elite, /升级费用减少2金币/);
-  assert.match(card('BGS_100').normal, /效果触发1次.*所购干员科技等级等量/);
-  assert.match(card('BGS_100').elite, /效果触发2次.*所购干员科技等级等量/);
+  assert.match(card('BGS_100').normal, /随机.*场上友方干员.*元素科技等级/);
+  assert.match(card('BGS_100').elite, /随机.*场上友方干员.*元素科技等级.*触发两次/);
   assert.match(card('GVG_113').normal, /巨锤盟约/);
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /获得时效果共触发2次/);

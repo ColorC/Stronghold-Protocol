@@ -119,6 +119,8 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
   const gd = useGameData();
   const [busy, setBusy] = useState(false); const busyRef = useRef(false);
   const [armed, setArmed] = useState(null);
+  const [fieldTarget, setFieldTarget] = useState(null);
+  const fieldTargetRef = useRef(null);
   const [detail, setDetailState] = useState(null);
   // closing what a component link (#piece-…, #shop-…) opened drops the link, so a reload does not open it again
   const setDetail = useCallback((next) => setDetailState((cur) => {
@@ -209,6 +211,30 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     return res;
   }, [act,catalog]);
 
+  const cancelFieldTarget = useCallback(() => {
+    fieldTargetRef.current = null;
+    setFieldTarget(null);
+    onFieldHighlight([]);
+  }, [onFieldHighlight]);
+  const beginFieldTarget = useCallback((mode) => {
+    const active = { ...mode, allowedUids: new Set(mode.choices.filter((x) => x.kind === 'friendly').map((x) => x.uid)), allowedSlots: new Set(mode.choices.filter((x) => x.kind === 'shopSlot').map((x) => x.slot)) };
+    fieldTargetRef.current = active;
+    setFieldTarget(active);
+    const pieces = active.choices.filter((x) => x.kind === 'friendly').map((x) => stateRef.current.pieces.find((p) => p.uid === x.uid)).filter(Boolean);
+    onFieldHighlight(pieces);
+  }, [onFieldHighlight]);
+  const chooseFieldTarget = useCallback((choice) => {
+    const mode = fieldTargetRef.current;
+    if (!mode) return false;
+    if (!mode.choices.some((x) => x.kind === choice.kind && (x.uid ?? x.slot) === (choice.uid ?? choice.slot))) return false;
+    const payload = mode.spec.kind === 'shopSlot' ? { shopSlots: [choice.slot] }
+      : mode.spec.kind === 'magnetic' ? { magneticTargetUid: choice.uid } : { targetUid: choice.uid };
+    cancelFieldTarget();
+    setDetail(null);
+    buy(mode.slot, payload);
+    return true;
+  }, [buy, cancelFieldTarget]);
+
   const ready = useCallback(async () => {
     const before = stateRef.current;
     if (before.phase !== 'prep' || battleRef.current) return;
@@ -296,6 +322,13 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       }),
       view.on('pieceClick', (e) => {
         if (!e) return;
+        const mode = fieldTargetRef.current;
+        if (mode && (mode.spec.kind === 'friendly' || mode.spec.kind === 'magnetic')) {
+          const uid = pieceByNum(stateRef.current, e.uid)?.uid;
+          if (uid && chooseFieldTarget({ kind: 'friendly', uid })) return;
+          toast('请点击高亮的友方目标；按 Esc 取消', 'info');
+          return;
+        }
         // an enemy of the preview pen, then any unit of a battle (the original game screen's order)
         const penKey = previewEnemyKey(e);
         if (penKey) { audio.sfx('click', { volume: 0.4 }); setDetail({ kind: 'enemy', id: penKey }); return; }
@@ -332,7 +365,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       }),
     ];
     return () => { ptr.off?.(); for (const off of offs) { try { off?.(); } catch { /* ignore */ } } };
-  }, [view, act]);
+  }, [view, act, chooseFieldTarget]);
 
   // a press on the field deselects and closes a card the field opened (a tap on a piece re-opens it at release)
   useEffect(() => {
@@ -502,7 +535,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
 
   // ---- keyboard ----------------------------------------------------------------------------------------------------
   const keysRef = useRef({});
-  keysRef.current = { panel, drawer, pen, detail, sel, armed, facing, reportOpen };
+  keysRef.current = { panel, drawer, pen, detail, sel, armed, facing, reportOpen, fieldTarget };
   useEffect(() => {
     // the original's keys (ui/gameLogic.js shortcutFor): R refresh, F freeze, D level-up, Q retreat, X sell, Space
     // ready, Esc closes the topmost thing; dialogs own the keyboard, behind the drawer only Esc acts
@@ -512,6 +545,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
       if (shortcutBlocked(a, { modal: !!L.panel || !!document.querySelector('.modal, .guide'), drawer: !!L.drawer })) return;
       if (a === 'escape') {
         if (L.facing) return; // the wheel takes its own Escape
+        if (L.fieldTarget) { cancelFieldTarget(); setDetail(null); e.preventDefault(); return; }
         if (L.reportOpen) setReportOpen(false);
         else if (L.drawer) setDrawer(null);
         else if (L.pen && !L.detail) setPen(false);
@@ -638,6 +672,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
     ${loading ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>
     <div class="gm__hud">
+      ${fieldTarget ? html`<div class="ix-target-prompt" role="status"><span>${fieldTarget.spec.kind === 'shopSlot' ? '点击高亮的商店卡牌进行分配' : '点击高亮友方干员作为目标'}</span><button type="button" onClick=${() => { cancelFieldTarget(); setDetail(null); }}>取消 <kbd>Esc</kbd></button></div>` : null}
       <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${leave} drawer=${drawer} onDrawer=${setDrawer}
         pen=${pen} onPen=${() => setPen((x) => !x)} production=${!battle ? html`<${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />` : null} />
       ${!battle ? html`
@@ -648,6 +683,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         <${BenchOverflow} pieces=${overflow} catalog=${catalog} onPick=${(uid) => setDetail({ kind: 'piece', uid })} />
         ${state.phase === 'prep' && !pen ? html`<${ShopBar} state=${state} catalog=${catalog} busy=${busy} armed=${armed} deployed=${deployed} deployCap=${state.deployCap}
           onArm=${(key, slot) => { setArmed(key); if (slot) setDetail({ kind: slot.kind === 'chess' ? 'shop' : 'gear', slot: Number(key.slice(1)), id: slot.id }); }}
+          targetSlots=${fieldTarget?.spec.kind === 'shopSlot' ? fieldTarget.choices.map((x) => x.slot) : []} onTargetShopSlot=${(slot) => chooseFieldTarget({ kind: 'shopSlot', slot })}
           onBuy=${buy} onUpgrade=${() => { setArmed(null); act({ type: 'upgrade' }); }} onRefresh=${() => { setArmed(null); act({ type: 'refresh' }); }}
           onFreeze=${() => act({ type: 'freeze' })} collapsed=${shopCollapsed} onCollapse=${(v) => { setShopCollapsed(v); if (v) setArmed(null); }}
           onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id }); }} />` : null}
@@ -657,7 +693,7 @@ export function GameScreen({ id, initial, catalog, onLeave }) {
         <${Button} size="sm" variant="secondary" disabled=${battle.done} onClick=${() => seekRef.current?.()} data-testid="ix-skip">跳到结尾<//>
       </div>`}
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
-        onClose=${() => { setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}
+        onClose=${() => { cancelFieldTarget(); setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onBeginTarget=${beginFieldTarget} onCancelTarget=${cancelFieldTarget} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}
         onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />
       ${selPiece && selTile && view && !facing && !battle && state.phase === 'prep' ? html`<${Underframe} key=${selPiece.uid} view=${view}
         row=${selTile.row} col=${selTile.col} busy=${busy} name=${catalog.operators?.[selPiece.chessId]?.name || ''}

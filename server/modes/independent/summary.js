@@ -7,7 +7,7 @@ export const TRAIT_WHEN = Object.freeze({
   gain: '获得时', roundStart: '整备开始', prepEnd: '整备结束时', sold: '出售时', refresh: '刷新后', merge: '三连时',
   passive: '常驻', battleStart: '战斗开始', deploy: '部署时', kill: '击杀', hit: '命中', skillStart: '技能开启',
   death: '倒下时', statusApplied: '施加状态时', ammoUsed: '消耗弹药时', nativeProduction: '原生效果产出时', dollSwap: '替身切换时',
-  aura: '在场时', selling: '出售时', battleProduction: '战斗产出时', bought: '购买干员后',
+  aura: '在场时', selling: '出售时', battleProduction: '战斗产出时', bought: '购买干员后', played: '打出后',
   battle: '战斗中', attack: '攻击时',
   allyGain: '友方获得时', retiring: '退场时', summon:'召唤友方时', allyDamaged:'友方受到伤害时', allyKill:'友方击杀时', allyDeath:'友方退场时',
   // 干员特质 v4 (2026-10-07)
@@ -132,7 +132,7 @@ export function traitSummary(effect) {
     } else if (b === 'darkmoonBeastSummonGrowth' || b === 'darkmoonBoughtSelfGrowth'
       || b === 'darkmoonBattlecryTargetGrowth' || b === 'darkmoonEndTurnGrowth'
       || b === 'darkmoonPlayedTagSelfGrowth' || b === 'darkmoonAdjacentGrowth'
-      || b === 'darkmoonTaggedGrowth' || b === 'darkmoonPlayedTribeGrowth'
+      || b === 'darkmoonTaggedGrowth' || b === 'darkmoonPlayedTribeGrowth' || b === 'darkmoonPlayedRandomTribeGrowth'
       || b === 'darkmoonPlayedFactionCountSelfGrowth' || b === 'darkmoonPreviousWinSelfGrowth') {
       // Prep adapters compiled from effectDelivery: their full Chinese wording remains on the card; this compact
       // index only tells the HUD that the effect permanently grows an operator.
