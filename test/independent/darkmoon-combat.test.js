@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { getData } from '../../server/data.js';
+import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { makeBattle,chessRec,enemyRec } from '../helpers/battleHarness.js';
+import { DataSource } from '../../server/sim/simdata.js';
 import { installDarkmoonCombat,DARKMOON_COMBAT_RULES,darkmoonCombatMetadata,hasDarkmoonDeploymentPayload } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPrep.js';
 import { darkmoonCombatEligibilityRules } from '../../server/sim/content/independent/darkmoonCombat.js';
-import { levelBodyStats } from '../../shared/independentGrowth.js';
+import { levelBodyStats,nativeLevelAttributes,operatorGrowthInfo } from '../../shared/independentGrowth.js';
 import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
 import { unitInfo } from '../../server/sim/snapshot.js';
 
@@ -186,6 +188,88 @@ test('Workshop prototype summons select their declared native token owner varian
   assert.equal(prototype.findBuff('darkmoon:native-level-growth').mods.atkFlat,80,'prototype variant phase 1/level 2 overrides summoner phase 0/level 8');
   assert.equal(prototype.nativeOwnerGrowth.level,8,'prototype training leaves the real summoner context frozen');
   assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
+test('explicit parent-derived tactical reinforcements use only their declared native projection ratios',()=>{
+  const state={growthMode:'levels'};
+  const {b,ally}=fixture('BGS_021',false,[],state);
+  ally.def.raw.nativeGrowth={phases:[
+    {maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:100,maxHp:10000,def:0,magicResistance:0}},{level:10,data:{atk:190,maxHp:10090,def:90,magicResistance:9}}]},
+    {maxLevel:10,attributesKeyFrames:[{level:1,data:{atk:200,maxHp:2000,def:100,magicResistance:20}},{level:10,data:{atk:290,maxHp:2900,def:190,magicResistance:38}}]},
+  ]};
+  ally.nativeGrowthStatus={phase:1,level:8};
+  const reinforcement=b.spawnToken(ally,'token_tactician_reinforce',11,6,{
+    anySource:true,def:{name:'战术援军',stats:{atk:145,maxHp:1400,def:190,res:0,aspd:100,bat:1.2,blockCnt:1},nativeGrowthProjection:{source:'ownerOperator',scales:{atk:.5,maxHp:.7,def:1,res:0}}},
+  });
+  assert.ok(reinforcement);
+  const buff=reinforcement.findBuff('darkmoon:native-level-growth');
+  assert.ok(buff);
+  assert.equal(buff.mods.atkFlat,10,'phase 1 is capped from parent level 8 to 10 before the 0.5 transform');
+  assert.equal(buff.mods.hpFlat,140);
+  assert.equal(buff.mods.defFlat,20);
+  assert.equal(buff.mods.resFlat,0);
+  assert.deepEqual(reinforcement.nativeOwnerGrowth,{phase:1,level:8});
+  assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+});
+test('real Vigil wolf summon receives BGS021 training from the pinned wolf curve in levels mode',()=>{
+  const data=getData(),catalog=getCatalog(data),state={growthMode:'levels'};
+  const holder=Object.values(catalog.operators).find(op=>!op.elite&&op.sourceRefs?.darkmoon19_2?.id==='BGS_021');
+  const vigil=Object.values(catalog.operators).find(op=>!op.elite&&op.name==='伺夜');
+  assert.ok(holder&&vigil,'both real source operators resolve from the current catalog');
+  const pieces=[holder,vigil].map((op,index)=>({uid:`growth-${index}`,chessId:op.chessId,elite:false,row:10,col:3+index*2,dir:'RIGHT',skillIndex:0,moduleId:'none',equipment:[],attachments:[],nativeState:{},growthMode:'levels',growthLevel:1}));
+  const vigilPiece=pieces[1],vigilInfo=operatorGrowthInfo(vigilPiece,catalog);
+  vigilPiece.nativeGrowthStatus={phase:vigilInfo.phase,level:vigilInfo.level};
+  const tokenData=data.tokens.token_10028_vigil_wolf;
+  const handWolves=Array.from({length:3},(_,index)=>({uid:`hand-wolf-${index}`,kind:'token',tokenId:'token_10028_vigil_wolf',ownerUid:vigilPiece.uid,ownerChessId:vigil.chessId,ownerGrowth:{phase:2,level:1},independentSummon:true,row:11,col:3+index}));
+  const enemy=enemyRec({key:'growth-probe',hp:1e8,atk:0,def:0,speed:0});
+  const source=new DataSource({enemies:{'growth-probe':enemy}},new DataSource(data));
+  const h=makeBattle({data:source,units:[...pieces,...handWolves],content:'none',autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installDarkmoonCombat(b,{catalog,pieces,state})]});
+  h.step(1);
+  assert.equal(tokenData.nativeGrowth.source?.table,'character_table.json');
+  assert.equal(tokenData.nativeGrowth.source?.revision,'a550f5e048bb94e7cdefc6eb97a4091f0c4c7add');
+  const wolves=handWolves.map(input=>h.unit(input.uid));
+  assert.ok(wolves.every(Boolean),'all three authentic hand-placed wolf tokens deploy at battle start');
+  assert.ok(wolves.every(wolf=>wolf.nativeOwnerGrowth.phase===2&&wolf.nativeOwnerGrowth.level===1),'each token freezes the selected owner growth context');
+  const amount=8*Number(catalog.config?.levelsPerBadge||1),targetLevel=Math.min(tokenData.nativeGrowth.phases[2].maxLevel,1+amount);
+  const before=nativeLevelAttributes(tokenData.nativeGrowth,2,1),after=nativeLevelAttributes(tokenData.nativeGrowth,2,targetLevel);
+  for(const wolf of wolves){
+    const buff=wolf.findBuff('darkmoon:native-level-growth');
+    assert.ok(buff,`real BGS021 source applies training to each opening hand-placed token: ${JSON.stringify({trace:h.b.independentDarkmoonTrace,errors:h.b.errors})}`);
+    assert.equal(buff.mods.atkFlat,after.atk-before.atk);
+    assert.equal(buff.mods.hpFlat,after.maxHp-before.maxHp);
+    assert.equal(buff.mods.defFlat,after.def-before.def);
+    assert.equal(buff.mods.resFlat,after.res-before.res);
+    assert.equal(wolf.mem.darkmoonTemporaryEquipment[Object.keys(wolf.mem.darkmoonTemporaryEquipment)[0]].temporaryTrainingLevels,amount);
+  }
+  const traces=h.b.independentDarkmoonTrace.filter(x=>x.sourceId==='BGS_021'&&x.kind==='event');
+  for(const wolf of wolves)assert.equal(traces.filter(x=>x.targets.includes(wolf.uid)).length,1,`opening deploy sequence is processed exactly once for ${wolf.uid}`);
+  assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
+});
+test('summon-source growth resolves once per actual token deploy without a shared cooldown and refreshes BGS071 shield to five',()=>{
+  for(const [sourceId,tokenId]of [['BGS_017','token_10028_vigil_wolf'],['BGS_021','token_10028_vigil_wolf'],['BGS_071','token_10004_otter_motter']]){
+    const {b,unit,ally,installed}=fixture(sourceId);
+    if(sourceId==='BGS_071')b.addBuff(unit,{key:'native-other-shield',shieldHits:3,persist:true});
+    const tokens=[];
+    for(let index=0;index<6;index++){
+      const token=b.spawnToken(ally,tokenId,12,2+index,{anySource:true});
+      assert.ok(token,`${sourceId} test actor ${index} deploys`);tokens.push(token);
+    }
+    const applied=installed.trace.filter(t=>t.sourceId===sourceId&&t.kind==='event');
+    assert.equal(applied.length,6,`${sourceId} processes every distinct actor without a shared 3-second throttle`);
+    if(sourceId!=='BGS_071')for(const token of tokens)assert.equal(applied.filter(t=>t.targets.includes(token.uid??token.id)).length,1,`${sourceId} deduplicates by actor and deploy sequence`);
+    b.emit('darkmoonDeployActor',{actor:tokens[0],initial:false,kind:'token',factions:['叙拉古','哥伦比亚']});
+    assert.equal(installed.trace.filter(t=>t.sourceId===sourceId&&t.kind==='event').length,6,`${sourceId} ignores a repeated actor+deploySeq notification`);
+    if(sourceId==='BGS_017'||sourceId==='BGS_021'){
+      for(const token of tokens){
+        const key=Object.keys(token.mem.darkmoonTemporaryEquipment||{}).find(x=>x.includes(`:${sourceId}:`));
+        assert.ok(key,`${sourceId} applies its own growth to each token`);
+      }
+    }else{
+      const shield=unit.findBuff(`darkmoon:shield:${unit.uid}:${unit.id}`);
+      assert.equal(shield?.shieldHits,5,'BGS071 refreshes its own source shield to five layers instead of stacking every actor');
+      assert.equal(unit.findBuff('native-other-shield')?.shieldHits,3,'native shield sources remain independently stacked');
+    }
+    assert.equal(b.errorCount,0,JSON.stringify(b.errors));
+  }
 });
 for(const growthMode of ['badges','levels'])test(`random original copies keep the native kit and pristine ${growthMode} body`,()=>{
   const raw=structuredClone(getData().chess.chess_native_char_235_jesica_a);

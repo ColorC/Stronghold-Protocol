@@ -5,12 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { nativeEffectFor } from '../../server/modes/independent/native.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
+import { getData } from '../../server/data.js';
 import { runNativeHook } from '../../server/modes/independent/native.js';
 import { grantEquipment } from '../../server/modes/independent/equipment.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, darkmoonGrowthBadges } from '../../server/modes/independent/darkmoonShop.js';
 import { createSession, applyAction, viewSession } from '../../server/modes/independent/session.js';
 import { runIndependentBattle } from '../../server/modes/independent/battle.js';
-import { operatorGrowthInfo, grantGrowthLevels } from '../../shared/independentGrowth.js';
+import { operatorGrowthInfo, grantGrowthLevels, nativeLevelAttributes } from '../../shared/independentGrowth.js';
 import { nativeFactions } from '../../shared/independentRules.js';
 import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from '../../public/js/independent/targetSelection.js';
@@ -425,29 +426,57 @@ test('Magnetic purchases can stay normal or consume into an explicit deployed Co
 });
 
 test('CFM 315 and BGS 115 use actual non-shop, non-merge support prototypes, including native levels and battle simulation',()=>{
-  const base=getCatalog(),specs=designAddon.supportOperators;
+  const data=getData(),base=getCatalog(data),specs=designAddon.supportOperators;
   assert.equal(specs.length,3);
   for(const spec of specs) {
     const op=base.operators[spec.id];
     assert.ok(op?.darkmoonSupport&&op.recruitable===false&&op.mergeable===false,`${spec.id} is a runtime prototype outside the shop pool`);
-    assert.equal(op.source.normalChess.stats.atk,spec.attack*120);
-    assert.equal(op.source.normalChess.stats.maxHp,spec.health*350);
+    const token=data.tokens[spec.prototypeTokenId],variant=token?.variants?.[spec.prototypeOwnerChessId];
+    assert.ok(token?.nativeGrowth?.source?.table==='character_table.json',`${spec.id} uses the pinned native token curve`);
+    assert.deepEqual(op.source.normalChess.nativeGrowth,token.nativeGrowth);
+    assert.equal(op.source.normalChess.status.phase,variant.phase,'prototype owner variant supplies the phase');
+    assert.equal(op.darkmoonPrototypeScale.attack,.4*spec.attack,'effective attack curve scale includes every authored A point');
+    assert.equal(op.darkmoonPrototypeScale.health,.4*spec.health,'effective health curve scale includes every authored H point');
+    assert.equal(op.darkmoonPrototypeScale.defense,.4,'defense remains the prototype scale, independent of A/H points');
+    assert.equal(op.source.normalChess.stats.atk,Math.round(variant.stats.atk*op.darkmoonPrototypeScale.attack));
+    assert.equal(op.source.normalChess.stats.maxHp,Math.round(variant.stats.maxHp*op.darkmoonPrototypeScale.health));
+    assert.equal(op.source.normalChess.stats.def,Math.round(variant.stats.def*op.darkmoonPrototypeScale.defense));
     assert.ok(op.nativeFactionTags.length,'a support unit also has its summon origin affiliation');
     assert.ok(op.source.normalChess.nativeGrowth,'support token carries an explicit native curve for levels mode');
+    const growthAt=(level)=>{
+      const stats=nativeLevelAttributes(token.nativeGrowth,variant.phase,level),scale=op.darkmoonPrototypeScale;
+      return {maxHp:Math.round(stats.maxHp*scale.health),atk:Math.round(stats.atk*scale.attack),def:Math.round(stats.def*scale.defense),res:stats.res};
+    };
+    const maximum=token.nativeGrowth.phases[variant.phase].maxLevel;
+    for(const level of [...new Set([1,2,Math.floor(maximum/2),maximum])]) {
+      const actual=operatorGrowthInfo({chessId:spec.id,elite:false,growthMode:'levels',growthLevel:level},base).stats;
+      assert.deepEqual(actual,growthAt(level),`${spec.id} training level ${level} follows its own token curve`);
+    }
   }
+  const one=base.operators['darkmoon:support-cat-1-1'],two=base.operators['darkmoon:support-cat-2-2'];
+  assert.equal(two.darkmoonPrototypeScale.attack,2*one.darkmoonPrototypeScale.attack,'two authored attack points use exactly twice the curve scale');
+  assert.equal(two.darkmoonPrototypeScale.health,2*one.darkmoonPrototypeScale.health,'two authored health points use exactly twice the curve scale');
+  assert.equal(two.darkmoonPrototypeScale.defense,one.darkmoonPrototypeScale.defense,'A/H points never multiply the defense curve scale');
   const normal=Object.values(base.operators).find(x=>!x.elite&&x.recruitable!==false),summoner={...normal,sourceRefs:{darkmoon19_2:{id:'CFM_315'}}};
   const catalog={...base,operators:{...base.operators,[normal.chessId]:{...summoner,nativeTrait:{...normal.nativeTrait,effect:nativeEffectFor(normal.chessId,summoner,false)}}}};
   const state=createSession({seed:315,catalog,growthMode:'levels'});state.funds=20;state.shop.slots[0]={kind:'chess',id:normal.chessId,price:3,sold:false,equipment:[]};
   const recruited=applyAction(state,{type:'buy',slot:0},{catalog});assert.equal(recruited.ok,true,JSON.stringify(recruited.error));
   const cat=recruited.state.pieces.find(x=>x.chessId==='darkmoon:support-cat-1-1');assert.ok(cat);
   assert.equal(cat.growthMode,'levels');assert.equal(cat.growthLevel,1);
-  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:350,atk:120,def:0,res:0},'support starts from its translated combat body');
+  const catOp=base.operators[cat.chessId],wolf=data.tokens[catOp.darkmoonPrototypeTokenId],wolfVariant=wolf.variants[catOp.darkmoonPrototypeOwnerChessId],supportStatsAt=(level)=>{
+    const stats=nativeLevelAttributes(wolf.nativeGrowth,wolfVariant.phase,level),scale=catOp.darkmoonPrototypeScale;
+    return {maxHp:Math.round(stats.maxHp*scale.health),atk:Math.round(stats.atk*scale.attack),def:Math.round(stats.def*scale.defense),res:stats.res};
+  };
+  assert.deepEqual(operatorGrowthInfo(cat,base).stats,supportStatsAt(1),'support starts from its prototype-variant native curve body');
   grantGrowthLevels(recruited.state,base,cat,1);
-  assert.deepEqual(operatorGrowthInfo(cat,base).stats,{maxHp:354,atk:121,def:0,res:0},'support recipient advances along its authored support curve');
+  assert.deepEqual(operatorGrowthInfo(cat,base).stats,supportStatsAt(2),'support recipient advances along its authored prototype token curve');
   const legal=viewSession(recruited.state,{catalog}).pieces.find(x=>x.uid===cat.uid).legalTiles;assert.ok(legal.length);
   const [row,col]=legal[0].split(',').map(Number),deployed=applyAction(recruited.state,{type:'move',uid:cat.uid,row,col},{catalog});assert.equal(deployed.ok,true,JSON.stringify(deployed.error));
   const fight=runIndependentBattle(deployed.state,{catalog});assert.equal(fight.diagnostics.errorCount,0,JSON.stringify(fight.diagnostics.errors));
   assert.ok(fight.samples.some(frame=>frame.units.some(unit=>unit.uid===cat.uid)),'the authored support body appears as a real participant in the existing Battle simulation');
+  const battleUnit=fight.samples.flatMap(frame=>frame.units).find(unit=>unit.uid===cat.uid);
+  assert.equal(battleUnit.atk,supportStatsAt(2).atk,'battle spawn consumes the same trained token-curve projection as prep');
+  assert.equal(battleUnit.maxHp,supportStatsAt(2).maxHp,'battle spawn preserves the trained support HP projection');
 
   const source={...normal,sourceRefs:{darkmoon19_2:{id:'BGS_115'}}},catalog2={...base,operators:{...base.operators,[normal.chessId]:{...source,nativeTrait:{...normal.nativeTrait,effect:nativeEffectFor(normal.chessId,source,false)}}}};
   const sellerState=createSession({seed:115,catalog:catalog2});sellerState.funds=20;sellerState.shop.slots[0]={kind:'chess',id:normal.chessId,price:3,sold:false,equipment:[]};

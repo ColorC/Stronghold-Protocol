@@ -5,12 +5,12 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getData } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { modeIdFor } from '../../shared/constants.js';
-import { battleUnits } from '../../server/modes/independent/battle.js';
+import { battleUnits, runIndependentBattle } from '../../server/modes/independent/battle.js';
 import { benchCount, tempCount } from '../../server/modes/independent/session.js';
 import { prepView } from '../../public/js/independent/model.js';
 
-function buyOperator(chessId) {
-  const state = createSession({ seed: 90210 });
+function buyOperator(chessId, growthMode = 'badges') {
+  const state = createSession({ seed: 90210, growthMode });
   state.shop.slots[0] = { ...state.shop.slots[0], kind: 'chess', id: chessId, sold: false, price: 3 };
   state.pool[chessId] ||= { left: 10, cap: 10 };
   state.pool[chessId].left = Math.max(1, Math.min(state.pool[chessId].cap, state.pool[chessId].left));
@@ -135,6 +135,34 @@ test('a placed Vigil wolf replaces the generic tactician reinforcement and keeps
   const replay = JSON.stringify(ready.replay);
   assert.match(replay, /狼群/);
   assert.doesNotMatch(replay, /token_tactician_reinforce/);
+});
+
+test('a prep-placed Vigil wolf gets BGS021 growth through the real opening battle deploy flow', () => {
+  const data = getData(); const catalog = getCatalog(data); const gd = new GameData(data, modeIdFor('solo', 'NORMAL'));
+  const vigil = Object.values(catalog.operators).find((op) => op.name === '伺夜' && !op.elite);
+  const holder = Object.values(catalog.operators).find((op) => op.sourceRefs?.darkmoon19_2?.id === 'BGS_021' && !op.elite);
+  const wolfId = 'token_10028_vigil_wolf';
+  assert.ok(vigil && holder);
+  const skillIndex = [0, 1, 2].find((i) => gd.placeableTokens(vigil.chessId, { skillIndex: i, moduleId: 'none' }).some((x) => x.tokenId === wolfId));
+  assert.notEqual(skillIndex, undefined);
+  let state = buyOperator(vigil.chessId, 'levels');
+  const owner = state.pieces[0]; owner.skillIndex = skillIndex;
+  state.shop.slots[0] = { kind: 'chess', id: holder.chessId, price: 3, sold: false, equipment: [] };
+  state.pool[holder.chessId] ||= { left: 10, cap: 10 }; state.pool[holder.chessId].left = Math.max(1, state.pool[holder.chessId].left); state.funds = Math.max(state.funds, 10);
+  const recruited = applyAction(state, { type: 'buy', slot: 0 }); assert.equal(recruited.ok, true, recruited.error?.message); state = recruited.state;
+  const source = state.pieces.find((piece) => piece.chessId === holder.chessId); assert.ok(source);
+  const ownerCell = viewSession(state, { data, catalog }).pieces.find((p) => p.uid === owner.uid).legalTiles[0].split(',').map(Number);
+  const deployedOwner = applyAction(state, { type: 'move', uid: owner.uid, row: ownerCell[0], col: ownerCell[1] }); assert.equal(deployedOwner.ok, true, deployedOwner.error?.message); state = deployedOwner.state;
+  const sourceCell = viewSession(state, { data, catalog }).pieces.find((p) => p.uid === source.uid).legalTiles[0].split(',').map(Number);
+  const deployedSource = applyAction(state, { type: 'move', uid: source.uid, row: sourceCell[0], col: sourceCell[1] }); assert.equal(deployedSource.ok, true, deployedSource.error?.message); state = deployedSource.state;
+  const stack = state.summons.find((p) => p.ownerUid === owner.uid && p.tokenId === wolfId); assert.ok(stack);
+  const wolfCell = viewSession(state, { data, catalog }).pieces.find((p) => p.uid === stack.uid).legalTiles[0].split(',').map(Number);
+  const placed = applyAction(state, { type: 'move', uid: stack.uid, row: wolfCell[0], col: wolfCell[1] }); assert.equal(placed.ok, true, placed.error?.message);
+  const tokenInput = battleUnits(placed.state, catalog, data).find((unit) => unit.uid === stack.uid); assert.equal(tokenInput.kind, 'token'); assert.equal(tokenInput.independentSummon, true);
+  const battle = runIndependentBattle(placed.state, { data, catalog });
+  const sourceEvents = battle.darkmoonTrace.filter((entry) => entry.sourceId === 'BGS_021' && entry.kind === 'event');
+  assert.ok(sourceEvents.some((entry) => entry.targets.includes(stack.uid)), `placed wolf is in BGS021 opening-deploy trace: ${JSON.stringify({ sourceEvents, errors: battle.diagnostics.errors })}`);
+  assert.equal(battle.diagnostics.errorCount, 0, JSON.stringify(battle.diagnostics.errors));
 });
 
 test('an unplaced Vigil wolf stack still uses the original automatic summon without a generic tactician placeholder', () => {

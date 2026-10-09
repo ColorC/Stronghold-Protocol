@@ -6,7 +6,7 @@ import design from '../../data/independent-design.json' with { type: 'json' };
 import designAddon from '../../data/independent-darkmoon-design-addon.json' with { type: 'json' };
 import gameText from '../../data/independent-game-text.json' with { type: 'json' };
 import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPrep.js';
-import { darkmoonCombatMetadata } from '../../server/sim/content/independent/darkmoonCombat.js';
+import { darkmoonCombatMetadata, darkmoonCombatEligibilityRules } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { compactWording, textsFor, toLevels } from '../../tools/independent-darkmoon-text-formatter.mjs';
 
 const byId = new Map(blueprints.entries.map(entry => [entry.sourceId, entry]));
@@ -16,6 +16,7 @@ const visibleText = /undefined|NaN|\[object Object\]|\b(?:BGS|BOT|CFM|DAL|DS1|EX
 
 test('zero attack badges compact cleanly while preserving nonzero damage badge quantities', () => {
   assert.equal(compactWording('获得攻击徽章×0及伤害徽章×2。'), '获得伤害徽章×2。');
+  assert.equal(toLevels('获得攻击徽章×3及伤害徽章×1。'), '获得训练等级×4。');
 });
 
 test('all 101 source entries regenerate both visible variants from executable preparation/combat rules', () => {
@@ -61,7 +62,7 @@ test('dynamic combat delivery wording keeps its scope label without redundant pe
   assert.doesNotMatch(persistent.text, /永久|临时/);
   const battleOnly = darkmoonCombatMetadata('BGS_017');
   assert.equal(battleOnly.duration, '本场战斗');
-  assert.match(battleOnly.text, /叙拉古支援单位被召唤时/);
+  assert.match(battleOnly.text, /叙拉古支援单位实际部署时/);
   assert.match(battleOnly.text, /获得.*战斗增益/);
   assert.doesNotMatch(battleOnly.text, /仅本场战斗生效|临时/);
 });
@@ -88,8 +89,15 @@ test('growth text names the exact badge and its combat actor', () => {
   assert.match(darkmoonCombatMetadata('BGS_035').text, /卡西米尔干员击倒敌人时/);
   assert.match(darkmoonCombatMetadata('BGS_047').text, /维多利亚干员攻击敌人时/);
   assert.match(darkmoonCombatMetadata('BGS_111').text, /佩戴坚守盟约的友方干员受到攻击时/);
-  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位被召唤时/);
-  assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位被召唤时/);
+  assert.match(darkmoonCombatMetadata('BGS_071').text, /哥伦比亚支援单位实际部署时.*护盾刷新至五层/);
+  assert.match(darkmoonCombatMetadata('BGS_021').text, /叙拉古支援单位实际部署时/);
+  for(const id of ['BGS_017','BGS_021','BGS_071']){
+    const rule=darkmoonCombatEligibilityRules(id)[0];
+    assert.equal(rule.params.event,'deploy',`${id} uses the actual token deployment actor`);
+    assert.deepEqual(rule.params.actorKinds,['token']);
+    assert.equal(rule.params.targets,'newSummonedToken');
+    assert.doesNotMatch(darkmoonCombatMetadata(id).text,/3秒|三秒/);
+  }
 });
 
 test('Darkmoon game text and design delivery copy stays synchronized with executable outputs', () => {
@@ -156,8 +164,17 @@ test('source-specific text states tested quantities, recipient and elite multipl
   assert.match(card('FP1_010').normal, /精准盟约/);
   assert.match(card('LOE_077').normal, /获得时效果共触发2次/);
   assert.match(card('LOE_077').elite, /获得时效果共触发3次/);
-  assert.match(card('BOT_312').normal, /亡语.*攻击徽章×3及伤害徽章×1/);
-  assert.match(card('BOT_312').elite, /亡语.*攻击徽章×6及伤害徽章×2/);
+  assert.match(card('BOT_312').normal, /战斗部署效果附加.*攻击徽章×3及伤害徽章×1/);
+  assert.match(card('BOT_312').elite, /战斗部署效果附加.*攻击徽章×6及伤害徽章×2/);
+  assert.match(card('BOT_312').normal, /携带此效果的干员实际部署时/);
+  assert.match(card('BOT_312').normalLevels, /训练等级×4/);
+  assert.match(card('BOT_312').eliteLevels, /训练等级×8/);
+  assert.doesNotMatch(card('BOT_312').normal, /亡语附加/);
+  assert.match(card('BOT_312').normal, /机械水獭投影.*40%攻击、40%生命/);
+  assert.match(card('BOT_312').elite, /机械水獭投影.*80%攻击、80%生命/);
+  assert.match(card('BOT_312').normal, /每个投影在场45秒.*最多保留7个投影/);
+  assert.match(card('BGS_061').normal, /黄金盟誓投影.*40%攻击、40%生命/);
+  assert.match(card('BGS_061').elite, /黄金盟誓投影.*80%攻击、80%生命/);
   assert.match(card('BOT_911').normal, /坚守盟约和护盾发生器.*攻击徽章×2及伤害徽章×4/);
   assert.match(card('BOT_911').elite, /坚守盟约和护盾发生器.*攻击徽章×4及伤害徽章×8/);
   for (const [id,normal,elite] of [['BOT_312',[3,1],[6,2]],['BOT_911',[2,4],[4,8]]]) {
