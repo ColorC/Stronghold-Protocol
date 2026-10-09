@@ -1,3 +1,4 @@
+import { hypot } from '../../detmath.js';
 // Authored 19.2 source-card adaptations. Combat gains stay on the Battle instance;
 // only the three explicitly persistent/resource effects are returned to preparation.
 import { nativeFactions } from '../../../../shared/independentRules.js';
@@ -11,7 +12,7 @@ const alive = u => !!u && u.alive && u.deployed && !u.removed;
 const own = (a,b) => a?.ownerId === b?.ownerId;
 const attackEvent = e => e?.attacker?.side === 'ally' && e.targets?.some(t=>t?.side==='enemy') && !e.attacker.mem.darkmoonExtraAttack;
 const order = (a,b) => String(a.uid ?? a.id).localeCompare(String(b.uid ?? b.id));
-const close = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+const close = (a,b) => hypot(a.x-b.x,a.y-b.y);
 const FACTIONS = Object.freeze({MECHANICAL:'哥伦比亚',PIRATE:'维多利亚',ELEMENTAL:'炎',DRAGON:'卡西米尔',BEAST:'叙拉古'});
 
 // Numeric attack/health translations become attack and damage badges across operators.

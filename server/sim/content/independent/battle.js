@@ -1,3 +1,4 @@
+import { hypot } from '../../detmath.js';
 import { weaknessType, WEAKNESS_PRIORITY } from '../garrisons/battle.js';
 import { frontOf } from '../../dir.js';
 import { nativeBodyStats, nativeRecord, tavernFactions } from '../../../../shared/independentRules.js';
@@ -698,7 +699,7 @@ function stateCounter(battle, piece, key) { return piece?.nativeState?.counters?
 
 function ownerUnit(battle, uid) { return battle.allyUnits.find((u) => u.kind === 'op' && u.uid === uid) ?? null; }
 
-const tileDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const tileDistance = (a, b) => hypot(a.x - b.x, a.y - b.y);
 /**
  * The keys an ally answers to for 盟约脆弱 / 盟约庇护: its 酒馆阵营 (identity tags and 锡人's all-faction tag included) and
  * `self:<uid>`, so gear on an operator without a faction works for that operator alone.
@@ -1810,7 +1811,7 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       // 穿透: the enemies behind the main target on the line from the wearer through it, up to `depth` tiles further
       const depth = Number(p.depth ?? 1);
       normalHits(battle, unit, (target, dmg) => {
-        const dx = target.x - unit.x, dy = target.y - unit.y, len = Math.hypot(dx, dy);
+        const dx = target.x - unit.x, dy = target.y - unit.y, len = hypot(dx, dy);
         if (!(len > 1e-6)) return;
         const ux = dx / len, uy = dy / len;
         const amount = rawOf(dmg);

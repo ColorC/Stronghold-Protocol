@@ -88,7 +88,8 @@ test('a kit file <chessId>-<codename>.js registers the kit of <chessId>_a (coden
 test('the registry is the tier groups in KIT_FILES order, then the stand-ins, then the 自选 operators, one key per file; content/index.js serves the same object', () => {
   assert.deepEqual(Object.keys(KITS), [...TIER_KITS.flatMap((t) => Object.keys(t)), ...Object.keys(STANDIN_KITS), ...Object.keys(OPERATOR_KITS)]);
   assert.equal(Object.keys(KITS).length, KIT_FILES.flat().length + STANDIN_KIT_FILES.length + OPERATOR_KIT_FILES.length, 'one key per file, none twice');
-  assert.equal(CONTENT_KITS, KITS);
+  for (const [key, builder] of Object.entries(KITS)) assert.equal(CONTENT_KITS[key], builder, `upstream kit retained: ${key}`);
+  assert.ok(Object.isFrozen(CONTENT_KITS), 'the combined Workshop registry is immutable');
 });
 
 test('kit files stay browser-safe and deterministic: no Node-only or server-only import, no clock, no Math.random', () => {

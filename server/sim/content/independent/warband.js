@@ -1,3 +1,4 @@
+import { hypot } from '../../detmath.js';
 import { tavernFactions } from '../../../../shared/independentRules.js';
 import { validateWarbandRule, WARBAND_BEHAVIORS } from '../../../../shared/warbandSchema.js';
 import { findSummonTile } from '../tokens.js';
@@ -41,7 +42,7 @@ export function installWarband(battle,{catalog,pieces}) {
       const t=battle.grid.tile(r,c);
       if(t && battle.grid.canStand(r,c,{ranged:false}) && battle.grid.groundPassable(r,c,true) && !battle.isReservedTile(r,c) && !battle.downOn(r,c))out.push([r,c]);
     }
-    return out.sort((a,b)=>Math.hypot(a[0]-owner.tileR,a[1]-owner.tileC)-Math.hypot(b[0]-owner.tileR,b[1]-owner.tileC)||a[0]-b[0]||a[1]-b[1]);
+    return out.sort((a,b)=>hypot(a[0]-owner.tileR,a[1]-owner.tileC)-hypot(b[0]-owner.tileR,b[1]-owner.tileC)||a[0]-b[0]||a[1]-b[1]);
   };
   const spawn = (owner,def,count,ratio,duration,original=false) => {
     const clean=structuredClone(def); clean.stats={...clean.stats};

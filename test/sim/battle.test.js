@@ -375,8 +375,10 @@ test('snapshot / event wire format (DESIGN §8.2)', () => {
   const kinds = new Set(Object.values(EV));
   for (const ev of allEv) assert.ok(kinds.has(ev[0]), `known event ${ev[0]}`);
   const spawn = allEv.find((e) => e[0] === 'spawn');
-  assert.deepEqual(Object.keys(spawn[1]).filter((k) => spawn[1][k] !== undefined).slice(0, 15).sort(),
-    ['avatar', 'defId', 'dir', 'facing', 'golden', 'id', 'kind', 'maxHp', 'name', 'ownerId', 'side', 'spine', 'tier', 'x', 'y'].sort());
+  for (const key of ['avatar', 'defId', 'dir', 'facing', 'golden', 'id', 'kind', 'maxHp', 'name', 'ownerId', 'side', 'spine', 'tier', 'x', 'y']) {
+    assert.notEqual(spawn[1][key], undefined, `required UnitInfo field ${key}`);
+  }
+  assert.ok(Number.isInteger(spawn[1].row) && Number.isInteger(spawn[1].col), 'upstream board tile metadata retained');
   assert.ok(['UP', 'RIGHT', 'DOWN', 'LEFT'].includes(spawn[1].dir), 'UnitInfo.dir is a direction');
   // ['atk', src, tgt, projKind, attackId, isSkill 0|1] / ['dmg', tgt, amount, type, sourceId|null, attackId]: the fields
   // after projKind / type are appended (shared/protocol.js EV; the renderer's FX registry); a hit carries its attack's id

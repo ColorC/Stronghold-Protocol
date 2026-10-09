@@ -1,3 +1,4 @@
+import { hypot } from '../../detmath.js';
 import { applyHpLoss, absorbShields } from '../../damage.js';
 import { findRaidLanding, raidRedeploy } from '../bonds/addon/battle.js';
 import { KEYWORD_GEAR_BY_ID } from '../../../modes/independent/keywordGear.js';
@@ -9,7 +10,7 @@ const entryArray = (v) => Array.isArray(v) ? v : [];
 const idOf = (item) => item && typeof item === 'object' ? (item.id ?? item.sourceId ?? item.canonicalId) : item;
 const live = (u) => !!u?.alive && u.deployed && !u.removed;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-const pointDistance = (a, b) => Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
+const pointDistance = (a, b) => hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
 
 function gearQuantity(item) {
   const n = Math.floor(Number(item?.quantity));
