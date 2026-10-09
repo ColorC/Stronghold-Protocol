@@ -261,13 +261,29 @@ export function DetailCard({ target, state, catalog, busy, battle = null, shopOp
     const liveEntry = live ? { ...live, src: 'battle' } : null;
     if (u.side === 'enemy') { const en = data.lookup('enemies', u.defId); return en ? frame(html`<${EnemyDetail} enemy=${en} snapHp=${hp} live=${liveEntry} />`, 'enemy') : null; }
     const piece = state.pieces.find((p) => p.uid === u.uid);
+    if (piece?.kind === 'token') {
+      const tok = data.lookup('tokens', u.defId || piece.tokenId);
+      return tok ? frame(html`<${TokenDetail} token=${tok} piece=${piece} ownerId=${u.ownerChessId || piece.ownerChessId || null} snapHp=${hp} live=${liveEntry} />
+        ${u.ownerName || piece.ownerName ? html`<p class="ix-muted">主人：${u.ownerName || piece.ownerName}</p>` : null}
+        ${u.summonSourceText || piece.summonSourceText ? html`<p class="ix-muted">${u.summonSourceText || piece.summonSourceText}</p>` : null}`, 'token') : null;
+    }
     if (piece) return frame(html`<${OperatorCard} key=${`battle:${piece.uid}:${target.tab || 'traits'}`} piece=${piece} state=${state} conditionState=${conditionState} catalog=${catalog} busy=${busy} live=${liveEntry} snapHp=${hp} inBattle=${true} onAct=${onAct} linkAnchor=${anchor} initialTab=${target.tab || 'traits'} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, 'chess');
     const tok = data.lookup('tokens', u.defId);
-    return tok ? frame(html`<${TokenDetail} token=${tok} snapHp=${hp} live=${liveEntry} />`, 'token') : null;
+    return tok ? frame(html`<${TokenDetail} token=${tok} ownerId=${u.ownerChessId || null} snapHp=${hp} live=${liveEntry} />
+      ${u.ownerName ? html`<p class="ix-muted">主人：${u.ownerName}</p>` : null}
+      ${u.summonSourceText ? html`<p class="ix-muted">${u.summonSourceText}</p>` : null}`, 'token') : null;
   }
   const isShop = target.kind === 'shop';
   const slot = isShop ? state.shop.slots[target.slot] : null;
   const piece = isShop ? null : state.pieces.find((p) => p.uid === target.uid);
+  const tokenPiece = !isShop ? state.pieces.find((p) => p.uid === target.uid && p.kind === 'token') : null;
+  if (tokenPiece) {
+    const token = data.lookup('tokens', tokenPiece.tokenId || tokenPiece.id);
+    if (!token) return null;
+    return frame(html`<${TokenDetail} token=${token} piece=${tokenPiece} ownerId=${tokenPiece.ownerChessId || null} />
+      ${tokenPiece.ownerName ? html`<p class="ix-muted">主人：${tokenPiece.ownerName}</p>` : null}
+      ${tokenPiece.summonSourceText ? html`<p class="ix-muted">${tokenPiece.summonSourceText}</p>` : null}`, 'token');
+  }
   if (!slot && !piece) return null;
   const prep = state.phase === 'prep' && !battle;
   const live = piece?.startStats ? { ...piece.startStats, src: 'prep' } : null;

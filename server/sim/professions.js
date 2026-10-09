@@ -340,15 +340,17 @@ const installTactician = (battle, unit) => {
   const spawn = () => {
     if (!unit.alive || !unit.deployed) return;
     if (unit.trait.reinforcement && unit.trait.reinforcement.alive) return;
+    if (battle.flags.independent && unit.mem.nativeTacticianSummonTokenId) return;
     const tile = battle.findTacticalPoint(unit);
     if (!tile) return;
     unit.trait.reinforcement = battle.spawnToken(unit, 'token_tactician_reinforce', tile[0], tile[1], {
-      def: {
-        name: '援军', stats: {
-          maxHp: unit.base.maxHp * 0.7, atk: unit.base.atk * 0.5, def: unit.base.def, magicResistance: 0,
-          blockCnt: 1, baseAttackTime: 1.2, attackSpeed: 100, respawnTime: 999, cost: 0,
-        }, rangeGrid: [[0, 0]], dmgType: 'phys', attackKind: 'melee', profession: 'TOKEN',
-      },
+        def: {
+          name: '援军', stats: {
+            maxHp: unit.base.maxHp * 0.7, atk: unit.base.atk * 0.5, def: unit.base.def, magicResistance: 0,
+            blockCnt: 1, baseAttackTime: 1.2, attackSpeed: 100, respawnTime: 999, cost: 0,
+          }, rangeGrid: [[0, 0]], dmgType: 'phys', attackKind: 'melee', profession: 'TOKEN',
+          nativeGrowthProjection: { source: 'ownerOperator', scales: { atk: 0.5, maxHp: 0.7, def: 1, res: 0 } },
+        },
     });
   };
   battle.on('deploy', (ctx) => { if (ctx.unit === unit) spawn(); }, { owner: unit });

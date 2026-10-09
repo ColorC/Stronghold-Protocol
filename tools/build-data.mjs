@@ -1087,6 +1087,16 @@ const TOKEN_ABNORMAL = Object.freeze({
   enemy_9012_acloon: ['isolated'],            // “炎佑”
 });
 
+// Keep the summon body's own official curve; its owner variant selects context, not attributes.
+const TOKEN_NATIVE_GROWTH_REVISION = 'a550f5e048bb94e7cdefc6eb97a4091f0c4c7add';
+function tokenNativeGrowth(char) {
+  if (!Array.isArray(char?.phases) || !char.phases.length) return null;
+  return {
+    source: { table: 'character_table.json', revision: TOKEN_NATIVE_GROWTH_REVISION },
+    phases: char.phases.map((phase, index) => ({ phase: index, maxLevel: phase.maxLevel, attributesKeyFrames: phase.attributesKeyFrames })),
+  };
+}
+
 /**
  * Build data/tokens.json: summons of chess (per-owner variants), bond summons (炎佑) and band map
  * characters (band_amedic 预备干员-医疗 / Touch). `abnormal` = TOKEN_ABNORMAL (PRTS).
@@ -1157,6 +1167,7 @@ function buildTokens(ctx, chess, tokenOwners, enemies) {
       deployLimit: first.stats?.deployLimit ?? 1,
       count: first.count,
       abnormal: TOKEN_ABNORMAL[tokenId] ? [...TOKEN_ABNORMAL[tokenId]] : [],
+      nativeGrowth: tokenNativeGrowth(char),
       variants,
       assets: { avatar: tokenId, spine: tokenId },
     };
