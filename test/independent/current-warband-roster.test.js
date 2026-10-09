@@ -70,9 +70,10 @@ for(const elite of [false,true]){
    assert.ok(maker.alive,'echoing a deployment payload never kills its source');
    assert.ok(wuxian.alive,'the opening deployment amplifier stays alive during the echo');
   assert.ok(h.runUntil(()=>h.b.allyUnits.some(t=>t.kind==='token'&&t.alive&&t.mem.darkmoonSummon),2),'queued echo summons deploy once their real target and legal tile are available');
-   assert.ok(h.runUntil(()=>attackEvents()>=96,110),'the seven-body battle sustains 96 real Javi ordinary attacks');
-   assert.equal(attackEvents(),96);assert.equal(echoEvents(),elite?6:3,'ordinary attacks share one per-battle counter and retain the source echo cap');
-   assert.equal(copiedPayloads(),(elite?6:3)*(elite?3:2),'every Javi proc copies the deployment payload the amplified number of times');
+    assert.ok(h.runUntil(()=>attackEvents()>=96,110),'the seven-body battle sustains 96 real Javi ordinary attacks');
+    assert.equal(attackEvents(),96);
+    assert.equal(echoEvents(),attackEvents()*(elite?2:1),'each ordinary attack triggers the normal/elite number of deployment echoes; no retired Workshop cap applies');
+    assert.equal(copiedPayloads(),attackEvents()*(elite?6:2),'every Javi proc copies the deployment payload the amplified number of times');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
  test(`current Kjerag seven ${form}: cross-faction gain trait, same-tier bodies and five shield breaks`,()=>{

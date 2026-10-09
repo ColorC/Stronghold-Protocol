@@ -192,12 +192,35 @@ test('妮芙/仇白/圣约 actual engine events produce uncapped native rewards 
     assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
   }
 });
-test('耀骑士临光 deploy shields real allies in normal/elite target counts and reapply on redeploy',()=>{
-  for(const elite of [false,true]){
-    const pieces=[piece('耀骑士临光','w',elite),...['红豆','深靛','艾丝黛尔'].map((n,i)=>piece(n,`a${i}`,false,11,3+i))],h=battle(pieces);
-    const counts=()=>pieces.slice(1).map(p=>h.unit(p.uid).findBuff(`independent:equipmentShield:${p.uid}`)?.shieldHits||0);
-    assert.deepEqual(counts().sort(),elite?[2,2,2]:[0,2,2]);
-    assert.equal(h.unit('w').findBuff('independent:equipmentShield:w'),null);
-    h.b.retreat(h.unit('w'));h.b.redeploy(h.unit('w'));assert.equal(counts().filter(x=>x===2).length,3);
+test('BGS_041 Nearl rewards qualifying gain effects on present Kazimierz allies in both growth modes',()=>{
+  const liveCatalog=getCatalog(data),liveServices={...services,catalog:liveCatalog,grantEquipment:(s,id,n,e)=>grantEquipment(s,liveCatalog,id,n,e)};
+  const currentPiece=(name,uid,elite=false,row=10,col=3)=>{
+    const normal=Object.values(liveCatalog.operators).find(o=>o.name===name&&!o.elite);assert.ok(normal,name);
+    const op=elite?liveCatalog.operators[normal.eliteChessId]:normal;
+    return {uid,chessId:op.chessId,elite,row,col,dir:'RIGHT',moduleId:'none',skillIndex:0,growthLevel:1,equipment:[],attachments:[],nativeState:{}};
+  };
+  const gaining=currentPiece('莫斯提马','incoming',false,null,null),gainerRef=liveCatalog.operators[gaining.chessId].sourceRefs.darkmoon19_2;
+  assert.equal(gainerRef.battlecry,true,'the incoming operator has the authored on-gain effect');
+  for(const growthMode of ['badges','levels'])for(const elite of [false,true]){
+    const near=currentPiece('耀骑士临光','near',elite),mannan=currentPiece('玛恩纳','m1'),meteor=currentPiece('流星','m2'),outsider=currentPiece('红豆','other');
+    const pieces=[near,mannan,meteor,outsider],state=stateFor(pieces);state.growthMode=growthMode;
+    const nativeSkill=structuredClone(liveCatalog.operators[near.chessId].source.normalChess.skill);
+    runNativeHook(state,'gain',{piece:gaining,source:'buy'},liveServices);
+    const amount=elite?2:1;
+    const sourced=(targetUid,id)=>state.production.filter(x=>x.sourceUid===near.uid&&x.targetUid===targetUid&&x.id===id).reduce((n,x)=>n+Number(x.quantity||0),0);
+    for(const target of [near,mannan,meteor]){
+      if(growthMode==='badges'){
+        assert.equal(sourced(target.uid,'precision'),amount,`${growthMode} ${elite?'elite':'normal'} Nearl precision -> ${target.uid}`);
+        assert.equal(sourced(target.uid,'damage'),amount,`${growthMode} ${elite?'elite':'normal'} Nearl damage -> ${target.uid}`);
+      }else{
+        const rows=state.production.filter(x=>x.id==='growth-training-record'&&x.sourceUid===near.uid&&x.targetUid===target.uid);
+        assert.equal(rows.length,2,`${growthMode} records both badge-derived training outputs for ${target.uid}`);
+        assert.equal(rows.reduce((n,x)=>n+Number(x.growthLevels||0),0),amount*2,`${growthMode} ${elite?'elite':'normal'} amount -> ${target.uid}`);
+      }
+    }
+    assert.equal(sourced(outsider.uid,'precision'),0,'non-Kazimierz allies do not receive the faction growth');
+    assert.equal(sourced(outsider.uid,'damage'),0);
+    assert.equal(state.production.some(x=>x.id==='growth-training-record'&&x.sourceUid===near.uid&&x.targetUid===outsider.uid),false);
+    assert.deepEqual(liveCatalog.operators[near.chessId].source.normalChess.skill,nativeSkill,'gain resolution leaves the source operator skill definition intact');
   }
 });

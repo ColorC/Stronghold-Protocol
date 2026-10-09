@@ -409,17 +409,23 @@ test('magnetic modules retain their own source quality and stack distinct retire
   const {h,b,unit,ally,installed}=fixture('BGS_045',false,[],null,attachments);
   assert.equal(b.relocate(ally,12,2),true);
   b.retreat(unit);
-  const tokens=b.allyUnits.filter(u=>u.kind==='token');
-  assert.ok(tokens.length>=4);assert.equal(tokens.filter(u=>u.base.atk===134).length,3);assert.equal(tokens.filter(u=>u.base.atk===268).length,1);
-  let emitted=installed.trace.filter(t=>t.sourceId==='BOT_312'&&t.kind==='summon').reduce((n,t)=>n+t.targets.length,0);
-  assert.equal(emitted,4);assert.ok(b._sched.some(s=>!s.cancelled),'the other two triggered copies stay queued while no valid approach tile is open');
-  while(emitted<6){
-    const copy=b.allyUnits.find(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon);
+  const moduleCopies=()=>b.allyUnits.filter(u=>u.kind==='token'&&u.mem.darkmoonSummon&&u.ownerChessId===unit.defId&&u.name==='机械水獭投影');
+  let emitted=moduleCopies().length;
+  assert.equal(emitted,4,'four copies deploy while the remaining triggered copies wait for legal approach tiles');assert.ok(b._sched.some(s=>!s.cancelled),'the remaining triggered copies stay queued while no valid approach tile is open');
+  for(let attempt=0;attempt<6&&emitted<6;attempt++){
+    const copy=b.allyUnits.find(u=>u.kind==='token'&&u.alive&&u.mem.darkmoonSummon&&u.ownerChessId===unit.defId&&u.name==='机械水獭投影');
     assert.ok(copy,'an already deployed token occupies a legal tile to free for the pending request');
+    const before=emitted;
     b.retreat(copy,{permanent:true});
-    assert.ok(h.runUntil(()=>installed.trace.filter(t=>t.sourceId==='BOT_312'&&t.kind==='summon').reduce((n,t)=>n+t.targets.length,0)>emitted,3),'a queued request deploys when a legal tile opens');
-    emitted=installed.trace.filter(t=>t.sourceId==='BOT_312'&&t.kind==='summon').reduce((n,t)=>n+t.targets.length,0);
+    if(moduleCopies().length===before){
+      assert.ok(b._sched.some(s=>!s.cancelled),'a request remains queued until an actual legal tile opens');
+      h.runUntil(()=>moduleCopies().length>before,2);
+    }
+    emitted=moduleCopies().length;
   }
+  assert.equal(emitted,6,'the queued copy deploys after a legal approach tile is freed');
+  assert.equal(moduleCopies().filter(u=>u.base.atk===134).length,3,'the normal module retains its own normal token body');
+  assert.equal(moduleCopies().filter(u=>u.base.atk===268).length,3,'the elite module retains its own elite token body');
   assert.equal(installed.trace.filter(t=>t.kind==='deploy'&&t.sourceId==='BOT_312').length,2);
   assert.deepEqual(unit.mem.darkmoonDeploymentSources,['BOT_312']);
   assert.deepEqual(unitInfo(unit).darkmoonDeploymentSources,['BOT_312'],'snapshot exposes the installed attachment payload source');
