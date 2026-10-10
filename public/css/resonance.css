@@ -315,6 +315,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-detail__reward-schedule { margin-top: 12px; padding: 10px; color: #d7e5dc; background: #101814; border: 1px solid var(--line-2); }
 .rs-detail__reward-schedule > summary { color: #edf3ef; font-size: max(.16rem,16px); font-weight: 700; cursor: pointer; }
 .rs-detail__reward-milestones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.rs-detail__reward-schedule:not([open]) .rs-detail__reward-milestones { display: none; }
 .rs-detail__reward-milestones > * { display: inline-flex; align-items: center; min-height: 28px; padding: 3px 8px; color: #d7e5dc; background: #18251f; border: 1px solid var(--line-2); font-size: max(.14rem,14px); }
 .rs-detail__reward-progress { display: block; margin-top: 12px; color: #d7e5dc; font-size: max(.16rem,16px); }
 .rs-detail__reward-progress > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 8px 0; color: #d7e5dc; font-size: max(.16rem,16px); }
