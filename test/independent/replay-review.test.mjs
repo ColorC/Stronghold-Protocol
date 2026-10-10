@@ -155,7 +155,7 @@ test('abort rejects with AbortError and cleans video, frame, and abort listeners
   controller.abort();
   await assert.rejects(pending, error => error.name === 'AbortError');
   assert.equal(cancelledFrame, 42);
-  assert.deepEqual(removed.sort(), ['abort', 'error', 'loadeddata', 'seeked']);
+  assert.deepEqual(removed.sort(), ['abort', 'canplay', 'error', 'loadeddata', 'seeked']);
 
   const alreadyAborted = new AbortController();
   alreadyAborted.abort();
@@ -171,19 +171,20 @@ test('waits through insufficient readyState and completes without video-frame ca
   };
   const video = new EventTarget();
   let currentTime = 4;
-  let seeking = false;
+  let seeking = true;
   video.readyState = 1;
   video.ownerDocument = { defaultView: view };
   Object.defineProperty(video, 'seeking', { get: () => seeking });
   Object.defineProperty(video, 'currentTime', { get: () => currentTime, set: value => { currentTime = value; } });
 
   const pending = waitForVideoSeek(video, 4, { timeoutMs: 100 });
+  video.dispatchEvent(new Event('loadeddata'));
+  seeking = false;
   video.dispatchEvent(new Event('seeked'));
-  video.dispatchEvent(new Event('loadeddata'));
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(callbacks.length, 0, 'readyState 1 cannot pass the target check');
-  video.readyState = 2;
-  video.dispatchEvent(new Event('loadeddata'));
+  assert.equal(callbacks.length, 0, 'seeked at readyState 1 cannot pass the target check');
+  video.readyState = 3;
+  video.dispatchEvent(new Event('canplay'));
   assert.equal(callbacks.length, 1);
   callbacks.shift()(0);
   assert.equal(callbacks.length, 1);

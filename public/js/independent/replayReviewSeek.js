@@ -28,6 +28,7 @@ export function waitForVideoSeek(video, target, { timeoutMs = 10000, signal } = 
       clearTimeout(timer);
       video.removeEventListener('seeked', onSeeked);
       video.removeEventListener('loadeddata', onLoadedData);
+      video.removeEventListener('canplay', onLoadedData);
       video.removeEventListener('error', onError);
       signal?.removeEventListener('abort', onAbort);
       if (frameHandle && video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(frameHandle);
@@ -83,6 +84,7 @@ export function waitForVideoSeek(video, target, { timeoutMs = 10000, signal } = 
     timer = setTimeout(() => finish(new Error('等待回放视频定位超时')), timeoutMs);
     video.addEventListener('seeked', onSeeked);
     video.addEventListener('loadeddata', onLoadedData);
+    video.addEventListener('canplay', onLoadedData);
     video.addEventListener('error', onError);
     signal?.addEventListener('abort', onAbort, { once: true });
     // Observe before changing currentTime: a paused video can present the
