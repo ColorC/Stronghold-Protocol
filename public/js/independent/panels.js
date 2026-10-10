@@ -156,7 +156,7 @@ export function gearMeta(g) {
 
 /** What a supply asks for before it is used: an own operator (target / targets / source), shop places or a faction. */
 export const USE_NEEDS = { upgradeChess: 'target', promoteOnUse: 'targets', recruitOnUse: 'source', copyOperatorOnUse: 'source', shopRecruitOnUse: 'slots',
-  factionRecruitOnUse: 'faction', saleThresholdRecruit: 'faction' };
+  factionRecruitOnUse: 'faction', saleThresholdRecruit: 'faction', darkmoonTargetPrize:'friendly' };
 
 /** The second step of a supply that needs a choice; nothing is sent until the choice is complete. */
 function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
@@ -178,14 +178,15 @@ function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
       <${Button} size="sm" variant="primary" disabled=${busy || picked.length !== count} onClick=${() => confirm({ slots: picked })}>确认（${picked.length}/${count}）<//>`;
   } else {
     const needsElite = need === 'target' || need === 'targets';
-    const eligible = state.pieces.filter((p) => !p.elite && (!needsElite || catalog.operators[p.chessId]?.eliteChessId));
+    const normalPrize=['BGS_Treasures_016','BGS_Treasures_034'].includes(stack.params?.sourceId);
+    const eligible = state.pieces.filter((p) => (need==='friendly' ? !normalPrize || !p.elite : !p.elite) && (!needsElite || catalog.operators[p.chessId]?.eliteChessId));
     const many = need === 'targets';
     body = html`${eligible.map((p) => html`<button type="button" key=${p.uid} class=${cx('ix-chip', picked.includes(p.uid) && 'is-on')} disabled=${busy}
         onClick=${() => (many ? toggle(p.uid) : confirm(need === 'source' ? { sourceUid: p.uid } : { targetUid: p.uid }))}>${formEntry(catalog, p)?.name || ''}</button>`)}
       ${many ? html`<${Button} size="sm" variant="primary" disabled=${busy || picked.length !== count} onClick=${() => confirm({ targets: picked })}>确认（${picked.length}/${count}）<//>` : null}
-      ${!eligible.length ? html`<span class="ix-muted">没有可以选择的普通干员</span>` : null}`;
+      ${!eligible.length ? html`<span class="ix-muted">没有可以选择的干员</span>` : null}`;
   }
-  return html`<div class="ix-usepick"><span class="ix-muted">${need === 'faction' ? '选择阵营' : need === 'slots' ? `选择 ${count} 个商店干员` : `选择${count > 1 ? ` ${count} 名` : '一名'}普通干员`}</span>
+  return html`<div class="ix-usepick"><span class="ix-muted">${need === 'faction' ? '选择阵营' : need === 'slots' ? `选择 ${count} 个商店干员` : `选择${count > 1 ? ` ${count} 名` : '一名'}${need==='friendly'?'':'普通'}干员`}</span>
     ${body}<button type="button" class="ix-chip" onClick=${onCancel}>取消</button></div>`;
 }
 
@@ -307,7 +308,7 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
         const p = catalog.prizes[id] || { name: '罗德岛采购券', effect: '获得1张罗德岛采购券' };
         return html`<button type="button" key=${id} class="ix-choice ix-choice--prize" disabled=${busy} data-testid=${`ix-prize-${i}`}
           onClick=${() => (PRIZE_TARGET[p.mechanism] ? setPrizeIndex(i) : onChoose({ type: 'choose', offerId: offer.id, index: i }))}>
-          <b>${p.name}</b><p><${GameText} text=${p.effect} catalog=${catalog} /></p>
+          <${GearIcon} id=${id} catalog=${catalog} plain=${true} /><b>${p.name}</b><p><${GameText} text=${p.effect} catalog=${catalog} /></p>
           <${TermNotes} texts=${[p.effect]} catalog=${catalog} /></button>`;
       })}</div>`;
     }
@@ -316,7 +317,10 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
     title = offer.source === 'merge' ? `晋升奖励 · 科技等级${offer.tier}的干员任选一名` : '免费招募'; micro = offer.source === 'merge' ? 'PROMOTION REWARD' : 'RECRUIT';
     body = html`<div class="ix-choices">${offer.choices.map((id, i) => html`<${OperatorChoice} key=${id} chessId=${id} catalog=${catalog} growthMode=${state.growthMode || 'badges'} busy=${busy}
       onPick=${() => onChoose({ type: 'choose', offerId: offer.id, index: i })} />`)}</div>`;
-  } else if (offer.type === 'attachment') {
+   } else if (offer.type === 'logistics') {
+     title='后勤改组';micro='LOGISTICS';
+     body=html`<div class="ix-choices">${offer.choices.map((id,i)=>html`<button type="button" key=${id} class="ix-choice ix-choice--prize" disabled=${busy} onClick=${()=>onChoose({type:'choose',offerId:offer.id,index:i})}><${GearIcon} id=${id} catalog=${catalog} plain=${true} /><b>${catalog.prizes[id]?.name}</b><p>${catalog.prizes[id]?.effect}</p></button>`)}</div>`;
+   } else if (offer.type === 'attachment') {
     title = '专项战备授训'; micro = 'ATTACHMENT';
     const target = state.pieces.find((p) => p.uid === offer.targetUid);
     body = html`<p class="ix-note">${offer.trainingChoice

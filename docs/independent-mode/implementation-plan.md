@@ -14,13 +14,13 @@
 
 `server/modes/independent/session.js` 导出 `createSession(options = {})`、`applyAction(state, action, options = {})`、`viewSession(state)`、`validateSession(state)`。成功动作返回 `{ ok:true, state, events:[] }`，失败返回 `{ ok:false, error:{code,message}, state }`，失败必须保持输入状态完全不变。所有调用不直接修改输入状态；state 可 JSON 往返且保存 rngState 和 nextUid。
 
-state 的字段：schemaVersion、modeId（independent）、seed、rngState、nextUid、revision、round、roundLimit（9/14/15）、difficulty（FUNNY/NORMAL/HARD/ABYSS）、phase（prep/prize/finished）、funds、pendingFunds、lp、deployCap（默认8，最多9）、shop、pieces、inventory、offers、playerEffects、counters、pool、history。
+state 的字段：schemaVersion、modeId（independent）、seed、rngState、nextUid、revision、round、roundLimit（新局9/18/19，旧存档14/15兼容）、difficulty（FUNNY/NORMAL/HARD/ABYSS）、phase（prep/prize/finished）、funds、pendingFunds、lp、deployCap（默认8，最多9）、shop、pieces、inventory、offers、playerEffects、counters、pool、history。
 
 shop 为 `{level, upgradePrice, slots:[{kind:'chess'|'equipment',id,elite:false,price,sold:false,equipment:[]}], frozen, freeRefreshes}`。pieces 为 `{uid,chessId,elite:false,row:null,col:null,dir:'RIGHT',skillIndex:0,moduleId:'none',equipment:[],attachments:[],nativeState:{},bodyPenaltyApplied:false,poolCopies:1}`。equipment/inventory 条目为 `{uid,id,elite:false,quantity:1,state:{}}`；attachments 为 `{id,state:{}}`。物品 ID 用来源 sourceId（已重命名装备保留sourceId），徽章 ID 用稳定的英文语义 id；通过catalog查名与等级。chessId保留上游普通 `_a` 或精锐 `_b` ID。offers 队列为 `{id,type:'recruit'|'prize'|'attachment',choices:[],tier,source,targetUid?}`。counters 包含 gained、bought、paidRefreshes、spent、sold，原生效果逐实例次数放在 nativeState。
 
 动作：buy(slot)、refresh、freeze、upgrade、sell(uid)、move(uid,row,col,dir)、bench(uid)、loadout(uid,skillIndex,moduleId)、equip(itemUid,targetUid,quantity?)、merge-item(firstUid,secondUid)、use-item(itemUid,targetUid?/slot?/faction?/selection?)、choose(offerId,index,targetUid?/selection?)、inherit-preview(donorUid,receiverUid)、inherit(donorUid,receiverUid,uniqueSelections?)、ready、inspect(uid?)。view要包含角色名字、原技能、自有特质、装备总等级、装备/附加效果分开表示（交接凭证在装备里）、当前阶段合法动作、真实棋盘合法格、战斗摘要与战斗采样帧。
 
-买价3、卖价1、刷新价1。复用基础收入、升级价、商店科技分布和拷贝卡池。新模式不启用旧盟约层数、策略轮选、机变、悬赏与旧物品处理器。所有徽章一级；装备容量99（10-06 改为999），数量按实际件数计算，不可卸下或替换；普通出售销毁全部穿戴装备与附加效果。库存两件同名普通物品可以按catalog规则合成精锐，不把已穿戴装备拖入合成。三连保留合法装备和附加效果，自有特质升级为精锐，容量或唯一冲突必须原子预检；保留选择必须明确，无静默丢失。
+买价3、卖价1、刷新价1。自然收入3枚起，每回合加1枚，最多12枚；自然收入重置，额外金币不截断。升本基础价5/7/8/9/10，每回合当前价降低1枚；商店基础栏位3/4/4/5/5/6，保留扩充效果；拷贝卡池沿用本模式数据。新模式不启用旧盟约层数、策略轮选、机变、悬赏与旧物品处理器。所有徽章一级；装备容量99（10-06 改为999），数量按实际件数计算，不可卸下或替换；普通出售销毁全部穿戴装备与附加效果。库存两件同名普通物品可以按catalog规则合成精锐，不把已穿戴装备拖入合成。三连保留合法装备和附加效果，自有特质升级为精锐，容量或唯一冲突必须原子预检；保留选择必须明确，无静默丢失。
 
 继承资格为本体稀有词条（10-06 改为装备「交接凭证」，见 design.md 修订记录）。给予限制满足或接收限制满足即可，限制仅用原生科技/阵营/职业。同格地形、容量、唯一冲突先预检；旧本体出售一次并退出，原身材/技能/天赋/自有特质/资格不转移。允许转移的装备和满足接收限制的附加效果整体转移；次数不能重置。新本体原生攻击和生命暂按20%损耗一次，此值放config可调且标明试验参数；装备贡献不扣。
 
@@ -46,6 +46,6 @@ root负责接口裁定、版本化设计输入、合并冲突、整局和原模�
 
 ## 验收
 
-目录112普通/112精锐全覆盖；每个效果明确可执行处理器；无未实现/空处理器。实际无头事件测试覆盖获得/出售/开始/结束/耗弹/部署/冻结/死亡/施技/击杀/治疗、转移次数保持、唯一冲突、99容量、三连、补给与玩家设施、暗月19项奖品及4附加效果。CLI新建、动作、保存、重载、完整9轮和14轮对局运行，并对seed重复产生一致结果。原模式回归全套Node测试（包括已有无头浏览器测试，浏览器为headless），单人和合作整局工具检查。平衡只改独立config，记录种子、路线、成功率、产物量、装备等级分布和调参前后证据，不宣称竞技平衡已完成。
+目录112普通/112精锐全覆盖；每个效果明确可执行处理器；无未实现/空处理器。实际无头事件测试覆盖获得/出售/开始/结束/耗弹/部署/冻结/死亡/施技/击杀/治疗、转移次数保持、唯一冲突、99容量、三连、补给与玩家设施、暗月初版30项奖品（7/8/8/7四档；旧19项仅兼容）及4附加效果。CLI新建、动作、保存、重载、完整9轮和14轮对局运行，并对seed重复产生一致结果。原模式回归全套Node测试（包括已有无头浏览器测试，浏览器为headless），单人和合作整局工具检查。平衡只改独立config，记录种子、路线、成功率、产物量、装备等级分布和调参前后证据，不宣称竞技平衡已完成。
 
 后端验收并保存Git commit后，新增复用后端动作API的简单页面，保留原首页模式。界面核心只有商店、阵地、资源、角色装备总等级和当前阶段操作；角色/装备详情折叠。文字可选中，角色和物品可复制定位链接，独立页面含全屏打开。网页不能另写经济或战斗规则。原有https://workshop.colorc.cc/stronghold/继续使用，新模式入口https://workshop.colorc.cc/stronghold/independent.html。

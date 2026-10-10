@@ -11,6 +11,7 @@ import { runIndependentBattle, getIndependentField, previewUnitStats } from './b
 import { previewOf } from '../../match/waves.js';
 import { EQUIPMENT_CAPACITY, grantEquipment, makeItem, equipItem, normalizeGearForms, equipmentRecord, capacityUsed, totalEquipmentLevel, discardPieceAssets, recordProduction } from './equipment.js';
 import { makePrizeOffer, choosePrize, useInventoryItem } from './prizes.js';
+import { choosePrizeLogistics, decorateHistoricalPrizeShop, historicalPrizePrepEnd, historicalPrizeNextRound, historicalPrizePreventFatalDamage } from './historicalPrizes.js';
 import { previewInheritance, applyInheritance } from './inheritance.js';
 import { shopCarryApplies } from './warbandPrep.js';
 import { decorateDarkmoonShopSlots, applyDarkmoonShopGrowth, applyDarkmoonAHGrowth } from './darkmoonShop.js';
@@ -123,10 +124,10 @@ function drawChess(state, catalog, rng, maxTier) {
  */
 function slotsFor(state, gd, catalog, rng) {
   const slots = [];
-  for (let i = 0; i < independentShopSlots(state.shop.level); i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
+  for (let i = 0; i < independentShopSlots(state.shop.level) + state.playerEffects.filter(x=>x.type==='darkmoonPrizeExtraSlot').reduce((n,x)=>n+x.amount,0); i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
   // 商店预增益 (native shopCarry): every new offer carries what the game has built up so far
   for (const fx of state.playerEffects || []) if (fx.type === 'shopCarry' && fx.quantity > 0) for (const slot of slots) if (shopCarryApplies(fx,slot,catalog)) slot.equipment.push({ id: fx.id, quantity: fx.quantity, origin: 'shopCarry' });
-  return decorateDarkmoonShopSlots(state,catalog,slots);
+  return decorateHistoricalPrizeShop(state,catalog,decorateDarkmoonShopSlots(state,catalog,slots));
 }
 function advanceShop(state, gd, catalog, rng) {
   const next = slotsFor(state, gd, catalog, rng);
@@ -145,7 +146,7 @@ function invokeHook(state, hook, event, services) {
 function servicesFor(state, data, catalog, rng) {
   const services = { data, catalog, rng, phase: null,
     // the running hook names the production ledger's phase (equipment.js recordProduction)
-    grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity, { phase: services.phase, ...extra }),
+    grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity * (extra.origin==='native' && catalog.badges[id] ? 1 + draft.playerEffects.filter(x=>x.type==='darkmoonPrizeProductionBoost').reduce((n,x)=>n+x.amount,0) : 1), { phase: services.phase, ...extra }),
     transformPiece: (draft, piece, slot, makeGolden = false) => transformPieceIntoShopCopy(draft, catalog, piece, slot, makeGolden),
     grantChess: (draft, chessId, extra = {}) => { const room = roomFor(draft, catalog, chessId, { allowTemp: true }); if (!room) { pushEvent(draft, { type: 'no-room', chessId }); return null; } const piece = gainChess(draft, catalog, chessId, extra); if (room === 'temp') piece.temp = true; if(extra.deferNativeGain)piece.darkmoonPendingPlay=true;else invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); if(!extra.noMerge)maybeMergeOperator(draft, catalog, chessId); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
@@ -685,7 +686,11 @@ export function applyAction(state, action, options = {}) {
       if (work.phase !== 'prize' && !work.offers.length) throw new Error('NO_OFFER');
       const offer = work.offers.find((x) => x.id === action.offerId);
       if (!offer) throw new Error('BAD_OFFER');
-      if (offer.type === 'prize') events.push(choosePrize(work, catalog, action.offerId, action.index, action));
+      if (offer.type === 'prize') events.push(choosePrize(work, catalog, action.offerId, action.index, action, services));
+      else if (offer.type === 'logistics') {
+        if(!Number.isInteger(action.index)||!offer.choices[action.index])throw new Error('BAD_CHOICE');
+        choosePrizeLogistics(work,offer.choices[action.index]);work.offers.splice(work.offers.indexOf(offer),1);
+      }
       else if (offer.type === 'operatorMerge') {
         const sourceChessId = offer.chessId;
         const merged = mergeOperator(work, catalog, offer.pieceUids, action.uniqueSelections || {}, data);
@@ -753,6 +758,7 @@ export function applyAction(state, action, options = {}) {
         work.funds -= slot.price; work.counters.spent += slot.price; work.counters.bought += 1; addTotal(work, 'bought'); addTotal(work, 'spent', slot.price); invokeHook(work, 'spend', { amount: slot.price, source: 'buy' }, services);
         for(const faction of nativeFactions({chessId:slot.id},catalog)) { work.counters.factionBought ||= {}; work.counters.factionBought[faction]=(work.counters.factionBought[faction]||0)+1; }
         pool.left -= 1; const piece = gainChess(work, catalog, slot.id, { poolCopies: 1, poolTaken: true });
+        if(slot.elite && catalog.operators[piece.chessId]?.eliteChessId) { piece.chessId=catalog.operators[piece.chessId].eliteChessId;piece.elite=true; }
         if(!magneticTarget)applyDarkmoonShopGrowth(work,slot,piece,services);
         invokeHook(work, 'gain', { piece, source: 'buy', paid: true, targetUid:action.targetUid, magneticTargetUid:magneticTarget?.uid, shopSlots: action.shopSlots, shopSlot: action.shopSlot, buySlot: action.slot }, services);
         if(magneticTarget) {
@@ -774,6 +780,7 @@ export function applyAction(state, action, options = {}) {
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
         grantEquipment(work, catalog, slot.id, 1, { origin: 'shop', phase: 'shop' }); events.push({ type: 'buy-equipment', id: slot.id });
       }
+      if(slot.kind==='chess')work.funds+=work.playerEffects.filter(x=>x.type==='darkmoonPrizeRecruitRefund').reduce((n,x)=>n+x.amount,0);
       slot.sold = true;
     } else if (act === 'refresh') {
       ensurePrep(work);
@@ -880,7 +887,7 @@ export function applyAction(state, action, options = {}) {
       item.state = { ...(item.state || {}), hammerSourceIds: [...selected] };
       events.push({ type: 'configure-equipment', targetUid: piece.uid, itemUid: item.uid, hammerSourceIds: [...selected] });
     } else if (act === 'use-item') {
-      ensurePrep(work); events.push(useInventoryItem(work, catalog, action.itemUid, action, data));
+      ensurePrep(work); events.push(useInventoryItem(work, catalog, action.itemUid, action, data, services));
     } else if (act === 'inherit-preview') {
       readOnly = true; events.push({ type: 'inherit-preview', preview: previewInheritance(work, catalog, action.donorUid, action.receiverUid, data) });
     } else if (act === 'inherit') {
@@ -909,13 +916,14 @@ export function applyAction(state, action, options = {}) {
         cells.add(cell);
       }
       invokeHook(work, 'prepEnd', { round: work.round }, services);
+      historicalPrizePrepEnd(work,catalog);
       { const outer = services.phase; services.phase = 'prepEnd'; try { runEquipmentPrepEnd(work, services); } finally { services.phase = outer; } }
       const battle = (options.battleRunner || runIndependentBattle)(work, { data, catalog });
       if (!battle || !battle.result) throw new Error('BATTLE_FAILED');
       replay = battle.replay || null;
       const gd = gdFor(work, data); const playerResult = battle.result.perPlayer?.independent || Object.values(battle.result.perPlayer || {})[0] || {};
       const leaked = Array.isArray(playerResult.leaked) ? playerResult.leaked.filter((x) => x && x.counted !== false).reduce((n, x) => n + Math.max(0, Number(x.lpr) || 1), 0) : 0;
-      const lpLost = Math.min(gd.lpCapPerRound, Math.max(0, leaked));
+      const lpLost = historicalPrizePreventFatalDamage(work,Math.min(gd.lpCapPerRound, Math.max(0, leaked)));
       work.lastCombatWon = battle.result.reason === 'cleared' && leaked === 0;
       work.battleSummary = { result: battle.result, samples: battle.samples || [], diagnostics: battle.diagnostics || {}, pieceStates: battle.pieceStates || {} };
       work.lp = Math.max(0, work.lp - lpLost);
@@ -946,7 +954,7 @@ export function applyAction(state, action, options = {}) {
       work.incomeThisRound = baseIncome; work.funds = baseIncome + Number(work.pendingFunds || 0) + facility; work.pendingFunds = 0;
       work.counters.spent = 0; work.counters.bought = 0; work.counters.refreshes = 0; work.counters.paidRefreshes = 0; work.counters.gained = 0; work.counters.factionBought = {};
       for (const piece of work.pieces) for (const item of piece.equipment) if (equipmentRecord(catalog, item.id)?.mechanism === 'saleThresholdRecruit') item.state = { ...(item.state || {}), saleTriggersThisPrep: 0 };
-      work.shop.upgradePrice = Math.max(0, work.shop.upgradePrice - 1); work.shop.freeRefreshes = 0;
+      work.shop.upgradePrice = Math.max(0, work.shop.upgradePrice - 1); work.shop.freeRefreshes = 0; historicalPrizeNextRound(work);
       work.shop.slots = advanceShop(work, gd, catalog, rng);
       work.shop.frozen = false;
       const award = roundAward(work);

@@ -51,7 +51,7 @@ export function makeItem(state, id, quantity = 1, extra = {}) {
 
 /** Where a landing badge may go (catalog.config.badgeLanding, a rule's params.landOn). */
 export const LANDING_MODES = Object.freeze(['self', 'front', 'adjacent', 'factionLowest', 'lowest', 'faction:<阵营>']);
-const LANDING_ORIGINS = new Set(['native', 'equipment', 'attachment']);
+const LANDING_ORIGINS = new Set(['native', 'equipment', 'attachment', 'prize']);
 const STEP = { RIGHT: [0, 1], LEFT: [0, -1], UP: [-1, 0], DOWN: [1, 0] };
 const onField = (p) => p && p.row != null && p.col != null;
 const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - pieceEquipmentCount(b) || String(a.uid).localeCompare(String(b.uid)))[0] || null;

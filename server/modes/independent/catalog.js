@@ -5,11 +5,13 @@ import { getData } from '../../data.js';
 import { nativeEffectFor } from './native.js';
 import { EQUIPMENT_CAPACITY, INVENTORY_CAPACITY } from './equipment.js';
 import { KEYWORD_GEAR_BY_NAME } from './keywordGear.js';
+import { compileHistoricalPrizes, installHistoricalPrizeSupport } from './historicalPrizes.js';
 
 const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DESIGN_PATH)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
+const HISTORICAL_PRIZES = JSON.parse(readFileSync(new URL('../../../data/independent-darkmoon-prizes-19.2.json',import.meta.url),'utf8'));
 const DARKMOON_ADDON_PATH=process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../data/independent-darkmoon-design-addon.json');
@@ -373,6 +375,11 @@ export function getCatalog(data = getData(), design = DESIGN) {
     mechanism: PRIZE_MECHANISMS[x.name][0], params: clone(PRIZE_MECHANISMS[x.name][1]),
     gearIds: Object.keys(PRIZE_GEAR_IDS).filter((name) => x.effect?.includes(name)).map((name) => PRIZE_GEAR_IDS[name]),
   }));
+
+  if(operators.chess_native_char_1034_jesca2_a) {
+    Object.assign(prizes,compileHistoricalPrizes(HISTORICAL_PRIZES));
+    installHistoricalPrizeSupport(operators,equipment,prizes);
+  }
 
   return {
     id: 'independent', name: '卫戍协议：工坊',

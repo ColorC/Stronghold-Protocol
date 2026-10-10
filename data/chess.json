@@ -211574,5 +211574,1202 @@
       "skillLevel": 1,
       "equipLevel": 0
     }
+  },
+  "chess_prize_jesca2_a": {
+    "chessId": "chess_prize_jesca2_a",
+    "baseId": "chess_native_char_1034_jesca2_a",
+    "goldenId": "chess_native_char_1034_jesca2_b",
+    "isGolden": false,
+    "tier": null,
+    "identifier": 90014,
+    "isHidden": true,
+    "isDiy": false,
+    "visible": false,
+    "chessType": "NATIVE_IMPORT_CANDIDATE",
+    "shopSortId": null,
+    "charId": "char_1034_jesca2",
+    "name": "涤火杰西卡",
+    "appellation": "Jessica the Liberated",
+    "rarity": 6,
+    "profession": "TANK",
+    "subProfessionId": "shotprotector",
+    "subProfessionName": null,
+    "position": "MELEE",
+    "nationId": "columbia",
+    "groupId": "blacksteel",
+    "teamId": null,
+    "bonds": [],
+    "garrisonIds": [],
+    "price": null,
+    "sellPrice": null,
+    "upgradeNum": 3,
+    "upgradeChessId": "chess_native_char_1034_jesca2_b",
+    "status": {
+      "phase": 1,
+      "level": 55,
+      "skillLevel": 4,
+      "equipLevel": 0
+    },
+    "stats": {
+      "maxHp": 2384,
+      "atk": 405,
+      "def": 479,
+      "res": 0,
+      "cost": 21,
+      "blockCnt": 3,
+      "bat": 1.2,
+      "aspd": 100,
+      "respawnTime": 70,
+      "spRecovery": 1,
+      "hpRecoveryPerSec": 0,
+      "moveSpeed": 1,
+      "tauntLevel": 0,
+      "massLevel": 0,
+      "deployLimit": 1,
+      "deckStack": 0
+    },
+    "immunities": {
+      "stun": false,
+      "silence": false,
+      "sleep": false,
+      "frozen": false,
+      "levitate": false
+    },
+    "rangeId": "2-2",
+    "rangeGrid": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ]
+    ],
+    "dmgType": "phys",
+    "attackKind": "ranged",
+    "projectile": "arrow",
+    "canHitFly": true,
+    "targetPriority": null,
+    "trait": {
+      "desc": "能够阻挡三个敌人，可以进行远程攻击",
+      "descRaw": "能够阻挡三个敌人，可以进行远程攻击",
+      "bb": {},
+      "bbStr": {},
+      "rangeGrid": null
+    },
+    "skill": {
+      "skillId": "skchr_jesca2_1",
+      "iconId": "skchr_jesca2_1",
+      "name": "坚守阵线",
+      "level": 4,
+      "desc": "攻击力+40%，自身与机动盾牌防御力+40%，机动盾牌持续时间+20秒\n持续时间无限",
+      "descRaw": "攻击力<@ba.vup>+40%</>，自身与机动盾牌防御力<@ba.vup>+40%</>，机动盾牌持续时间<@ba.vup>+20</>秒\n<@ba.rem>持续时间无限</>",
+      "skillType": "AUTO",
+      "durationType": "NONE",
+      "duration": -1,
+      "spType": "INCREASE_WITH_TIME",
+      "spCost": 100,
+      "initSp": 0,
+      "maxChargeTime": 1,
+      "increment": 1,
+      "bb": {
+        "def": 0.4,
+        "atk": 0.4,
+        "duration": 20
+      },
+      "bbStr": {},
+      "rangeId": null,
+      "rangeGrid": null,
+      "prefabId": "skchr_jesca2_1",
+      "trigger": {
+        "rule": "DEFAULT",
+        "rawRule": "DEFAULT",
+        "customRangeGrid": null
+      },
+      "index": 0,
+      "overrideTokenKey": null
+    },
+    "skills": [
+      {
+        "skillId": "skchr_jesca2_1",
+        "iconId": "skchr_jesca2_1",
+        "name": "坚守阵线",
+        "level": 4,
+        "desc": "攻击力+40%，自身与机动盾牌防御力+40%，机动盾牌持续时间+20秒\n持续时间无限",
+        "descRaw": "攻击力<@ba.vup>+40%</>，自身与机动盾牌防御力<@ba.vup>+40%</>，机动盾牌持续时间<@ba.vup>+20</>秒\n<@ba.rem>持续时间无限</>",
+        "skillType": "AUTO",
+        "durationType": "NONE",
+        "duration": -1,
+        "spType": "INCREASE_WITH_TIME",
+        "spCost": 100,
+        "initSp": 0,
+        "maxChargeTime": 1,
+        "increment": 1,
+        "bb": {
+          "def": 0.4,
+          "atk": 0.4,
+          "duration": 20
+        },
+        "bbStr": {},
+        "rangeId": null,
+        "rangeGrid": null,
+        "prefabId": "skchr_jesca2_1",
+        "trigger": {
+          "rule": "DEFAULT",
+          "rawRule": "DEFAULT",
+          "customRangeGrid": null
+        },
+        "index": 0,
+        "isDefault": true,
+        "overrideTokenKey": null
+      },
+      {
+        "skillId": "skchr_jesca2_2",
+        "iconId": "skchr_jesca2_2",
+        "name": "掩蔽护卫",
+        "level": 4,
+        "desc": "攻击范围扩大，攻击力+45%，攻击间隔大幅缩小，获得75%的物理和法术闪避",
+        "descRaw": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+45%</>，攻击间隔<@ba.vup>大幅缩小</>，获得<@ba.vup>75%</>的物理和法术闪避",
+        "skillType": "MANUAL",
+        "durationType": "NONE",
+        "duration": 15,
+        "spType": "INCREASE_WITH_TIME",
+        "spCost": 35,
+        "initSp": 15,
+        "maxChargeTime": 1,
+        "increment": 1,
+        "bb": {
+          "atk": 0.45,
+          "base_attack_time": -0.9,
+          "prob": 0.75
+        },
+        "bbStr": {},
+        "rangeId": "2-5",
+        "rangeGrid": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ]
+        ],
+        "prefabId": "skchr_jesca2_2",
+        "trigger": {
+          "rule": "TAKE_DAMAGE",
+          "rawRule": "TAKE_DAMAGE",
+          "customRangeGrid": null
+        },
+        "index": 1,
+        "isDefault": false,
+        "overrideTokenKey": null
+      },
+      {
+        "skillId": "skchr_jesca2_3",
+        "iconId": "skchr_jesca2_3",
+        "name": "饱和迸射",
+        "level": 4,
+        "desc": "攻击距离+1，攻击间隔增大，攻击力+240%，防御力+50%，机动盾牌防御力+100%\n机动盾牌存在时，立刻向前发射一枚炮弹，命中或到达终点时对范围内所有敌人造成相当于攻击力250%的物理伤害，并使其晕眩5秒\n攻击装有20发弹药，打完后结束（可随时停止技能）",
+        "descRaw": "攻击距离<@ba.vup>+1</>，攻击间隔<@ba.vdown>增大</>，攻击力<@ba.vup>+240%</>，防御力<@ba.vup>+50%</>，机动盾牌防御力<@ba.vup>+100%</>\n机动盾牌存在时，立刻向前发射一枚炮弹，命中或到达终点时对范围内所有敌人造成相当于攻击力<@ba.vup>250%</>的物理伤害，并使其<$ba.stun>晕眩</><@ba.vup>5</>秒\n<@ba.rem>攻击装有20发弹药，打完后结束（可随时停止技能）</>",
+        "skillType": "MANUAL",
+        "durationType": "AMMO",
+        "duration": -1,
+        "spType": "INCREASE_WITH_TIME",
+        "spCost": 50,
+        "initSp": 20,
+        "maxChargeTime": 1,
+        "increment": 1,
+        "bb": {
+          "atk": 2.4,
+          "jesca2_s_3_token[def].def": 1,
+          "ability_range_forward_extend": 1,
+          "base_attack_time": 0.6,
+          "attack@extrabomb.stun": 5,
+          "attack@extrabomb.atk_scale": 2.5,
+          "attack@trigger_time": 20,
+          "attack@extrabomb.projectile_range": 1.7,
+          "jesca2_s_3[def].def": 0.5
+        },
+        "bbStr": {},
+        "rangeId": null,
+        "rangeGrid": null,
+        "prefabId": "skchr_jesca2_3",
+        "trigger": {
+          "rule": "TAKE_DAMAGE",
+          "rawRule": "TAKE_DAMAGE",
+          "customRangeGrid": null
+        },
+        "index": 2,
+        "isDefault": false,
+        "overrideTokenKey": null
+      }
+    ],
+    "talents": [
+      {
+        "index": 0,
+        "name": "灵活应变",
+        "desc": "可以使用一个持续35秒的机动盾牌，机动盾牌只能放置于涤火杰西卡四周，机动盾牌部署后，涤火杰西卡立刻转向盾牌且自身与身后的单位防御力+10%",
+        "descRaw": "可以使用一个持续35秒的机动盾牌，机动盾牌只能放置于涤火杰西卡四周，机动盾牌部署后，涤火杰西卡立刻转向盾牌且自身与身后的单位防御力+10%",
+        "bb": {
+          "cnt": 1,
+          "def": 0.1
+        },
+        "bbStr": {},
+        "rangeGrid": null,
+        "tokenKey": "token_10032_jesca2_jckshd",
+        "hidden": false,
+        "fromModule": false
+      }
+    ],
+    "tokens": [
+      "token_10032_jesca2_jckshd"
+    ],
+    "module": null,
+    "assets": {
+      "avatar": "char_1034_jesca2",
+      "portrait": "char_1034_jesca2_1",
+      "spine": "char_1034_jesca2",
+      "skillIcon": "skchr_jesca2_1"
+    },
+    "nativeGrowth": {
+      "source": {
+        "table": "character_table.json",
+        "revision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
+      },
+      "phases": [
+        {
+          "phase": 0,
+          "maxLevel": 50,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 1455,
+                "atk": 269,
+                "def": 258,
+                "magicResistance": 0,
+                "cost": 19,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 50,
+              "data": {
+                "maxHp": 1941,
+                "atk": 346,
+                "def": 386,
+                "magicResistance": 0,
+                "cost": 19,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ]
+        },
+        {
+          "phase": 1,
+          "maxLevel": 80,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 1941,
+                "atk": 346,
+                "def": 386,
+                "magicResistance": 0,
+                "cost": 21,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 80,
+              "data": {
+                "maxHp": 2589,
+                "atk": 433,
+                "def": 522,
+                "magicResistance": 0,
+                "cost": 21,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ]
+        },
+        {
+          "phase": 2,
+          "maxLevel": 90,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 2589,
+                "atk": 433,
+                "def": 522,
+                "magicResistance": 0,
+                "cost": 23,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 90,
+              "data": {
+                "maxHp": 3608,
+                "atk": 522,
+                "def": 716,
+                "magicResistance": 0,
+                "cost": 23,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "nativeImport": {
+      "status": "workshop-default-kit-ready",
+      "playable": true,
+      "sourceNativeSkillIds": [
+        "skchr_jesca2_1",
+        "skchr_jesca2_2",
+        "skchr_jesca2_3"
+      ],
+      "unsupportedSkillIds": [
+        "skchr_jesca2_2",
+        "skchr_jesca2_3"
+      ],
+      "tokenIds": [
+        "token_10032_jesca2_jckshd"
+      ],
+      "supportedSkillIds": [
+        "skchr_jesca2_1"
+      ],
+      "source": {
+        "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
+        "revision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add",
+        "skillReferences": [
+          "https://prts.wiki/w/%E6%B6%A4%E7%81%AB%E6%9D%B0%E8%A5%BF%E5%8D%A1",
+          "https://prts.wiki/w/%E6%B6%A4%E7%81%AB%E6%9D%B0%E8%A5%BF%E5%8D%A1",
+          "https://prts.wiki/w/%E6%B6%A4%E7%81%AB%E6%9D%B0%E8%A5%BF%E5%8D%A1"
+        ]
+      },
+      "defaultLoadout": {
+        "skillIndex": 0,
+        "skillId": "skchr_jesca2_1",
+        "source": "explicit native skill registry"
+      },
+      "assetSources": {
+        "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/avatar/char_1034_jesca2.png",
+        "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/portrait/char_1034_jesca2_1.png",
+        "skillIcons": [
+          {
+            "skillId": "skchr_jesca2_1",
+            "iconId": "skchr_jesca2_1",
+            "url": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/skill/skill_icon_skchr_jesca2_1.png"
+          },
+          {
+            "skillId": "skchr_jesca2_2",
+            "iconId": "skchr_jesca2_2",
+            "url": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/skill/skill_icon_skchr_jesca2_2.png"
+          },
+          {
+            "skillId": "skchr_jesca2_3",
+            "iconId": "skchr_jesca2_3",
+            "url": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/skill/skill_icon_skchr_jesca2_3.png"
+          }
+        ],
+        "spine": {
+          "front": {
+            "skel": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Front/char_1034_jesca2.skel",
+            "atlas": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Front/char_1034_jesca2.atlas",
+            "png": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Front/char_1034_jesca2.png"
+          },
+          "back": {
+            "skel": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Back/char_1034_jesca2.skel",
+            "atlas": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Back/char_1034_jesca2.atlas",
+            "png": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Back/char_1034_jesca2.png"
+          }
+        },
+        "avatarE2": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/avatar/char_1034_jesca2_2.png",
+        "portraitE2": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/portrait/char_1034_jesca2_2.png"
+      },
+      "availableModes": [
+        "independent"
+      ],
+      "selectableSkillIds": [
+        "skchr_jesca2_1"
+      ]
+    },
+    "nativeSourceSkillIds": [
+      "skchr_jesca2_1",
+      "skchr_jesca2_2",
+      "skchr_jesca2_3"
+    ],
+    "id": "chess_prize_jesca2_a",
+    "darkmoonNativeChessId": "chess_prize_jesca2_a",
+    "independentOnly": true,
+    "prizeSupport": true,
+    "hidden": true
+  },
+  "chess_prize_jesca2_b": {
+    "chessId": "chess_prize_jesca2_b",
+    "baseId": "chess_native_char_1034_jesca2_b",
+    "goldenId": "chess_native_char_1034_jesca2_b",
+    "isGolden": true,
+    "tier": null,
+    "identifier": 90015,
+    "isHidden": true,
+    "isDiy": false,
+    "visible": false,
+    "chessType": "NATIVE_IMPORT_CANDIDATE",
+    "shopSortId": null,
+    "charId": "char_1034_jesca2",
+    "name": "涤火杰西卡",
+    "appellation": "Jessica the Liberated",
+    "rarity": 6,
+    "profession": "TANK",
+    "subProfessionId": "shotprotector",
+    "subProfessionName": null,
+    "position": "MELEE",
+    "nationId": "columbia",
+    "groupId": "blacksteel",
+    "teamId": null,
+    "bonds": [],
+    "garrisonIds": [],
+    "price": null,
+    "sellPrice": null,
+    "upgradeNum": 0,
+    "upgradeChessId": null,
+    "status": {
+      "phase": 2,
+      "level": 50,
+      "skillLevel": 7,
+      "equipLevel": 0
+    },
+    "stats": {
+      "maxHp": 3150,
+      "atk": 482,
+      "def": 629,
+      "res": 0,
+      "cost": 23,
+      "blockCnt": 3,
+      "bat": 1.2,
+      "aspd": 100,
+      "respawnTime": 70,
+      "spRecovery": 1,
+      "hpRecoveryPerSec": 0,
+      "moveSpeed": 1,
+      "tauntLevel": 0,
+      "massLevel": 0,
+      "deployLimit": 1,
+      "deckStack": 0
+    },
+    "immunities": {
+      "stun": false,
+      "silence": false,
+      "sleep": false,
+      "frozen": false,
+      "levitate": false
+    },
+    "rangeId": "2-2",
+    "rangeGrid": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ]
+    ],
+    "dmgType": "phys",
+    "attackKind": "ranged",
+    "projectile": "arrow",
+    "canHitFly": true,
+    "targetPriority": null,
+    "trait": {
+      "desc": "能够阻挡三个敌人，可以进行远程攻击",
+      "descRaw": "能够阻挡三个敌人，可以进行远程攻击",
+      "bb": {},
+      "bbStr": {},
+      "rangeGrid": null
+    },
+    "skill": {
+      "skillId": "skchr_jesca2_1",
+      "iconId": "skchr_jesca2_1",
+      "name": "坚守阵线",
+      "level": 7,
+      "desc": "攻击力+55%，自身与机动盾牌防御力+55%，机动盾牌持续时间+20秒\n持续时间无限",
+      "descRaw": "攻击力<@ba.vup>+55%</>，自身与机动盾牌防御力<@ba.vup>+55%</>，机动盾牌持续时间<@ba.vup>+20</>秒\n<@ba.rem>持续时间无限</>",
+      "skillType": "AUTO",
+      "durationType": "NONE",
+      "duration": -1,
+      "spType": "INCREASE_WITH_TIME",
+      "spCost": 90,
+      "initSp": 0,
+      "maxChargeTime": 1,
+      "increment": 1,
+      "bb": {
+        "def": 0.55,
+        "atk": 0.55,
+        "duration": 20
+      },
+      "bbStr": {},
+      "rangeId": null,
+      "rangeGrid": null,
+      "prefabId": "skchr_jesca2_1",
+      "trigger": {
+        "rule": "DEFAULT",
+        "rawRule": "DEFAULT",
+        "customRangeGrid": null
+      },
+      "index": 0,
+      "overrideTokenKey": null
+    },
+    "skills": [
+      {
+        "skillId": "skchr_jesca2_1",
+        "iconId": "skchr_jesca2_1",
+        "name": "坚守阵线",
+        "level": 7,
+        "desc": "攻击力+55%，自身与机动盾牌防御力+55%，机动盾牌持续时间+20秒\n持续时间无限",
+        "descRaw": "攻击力<@ba.vup>+55%</>，自身与机动盾牌防御力<@ba.vup>+55%</>，机动盾牌持续时间<@ba.vup>+20</>秒\n<@ba.rem>持续时间无限</>",
+        "skillType": "AUTO",
+        "durationType": "NONE",
+        "duration": -1,
+        "spType": "INCREASE_WITH_TIME",
+        "spCost": 90,
+        "initSp": 0,
+        "maxChargeTime": 1,
+        "increment": 1,
+        "bb": {
+          "def": 0.55,
+          "atk": 0.55,
+          "duration": 20
+        },
+        "bbStr": {},
+        "rangeId": null,
+        "rangeGrid": null,
+        "prefabId": "skchr_jesca2_1",
+        "trigger": {
+          "rule": "DEFAULT",
+          "rawRule": "DEFAULT",
+          "customRangeGrid": null
+        },
+        "index": 0,
+        "isDefault": true,
+        "overrideTokenKey": null
+      },
+      {
+        "skillId": "skchr_jesca2_2",
+        "iconId": "skchr_jesca2_2",
+        "name": "掩蔽护卫",
+        "level": 7,
+        "desc": "攻击范围扩大，攻击力+60%，攻击间隔大幅缩小，获得75%的物理和法术闪避",
+        "descRaw": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+60%</>，攻击间隔<@ba.vup>大幅缩小</>，获得<@ba.vup>75%</>的物理和法术闪避",
+        "skillType": "MANUAL",
+        "durationType": "NONE",
+        "duration": 15,
+        "spType": "INCREASE_WITH_TIME",
+        "spCost": 35,
+        "initSp": 20,
+        "maxChargeTime": 1,
+        "increment": 1,
+        "bb": {
+          "atk": 0.6,
+          "base_attack_time": -0.9,
+          "prob": 0.75
+        },
+        "bbStr": {},
+        "rangeId": "2-5",
+        "rangeGrid": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ]
+        ],
+        "prefabId": "skchr_jesca2_2",
+        "trigger": {
+          "rule": "TAKE_DAMAGE",
+          "rawRule": "TAKE_DAMAGE",
+          "customRangeGrid": null
+        },
+        "index": 1,
+        "isDefault": false,
+        "overrideTokenKey": null
+      },
+      {
+        "skillId": "skchr_jesca2_3",
+        "iconId": "skchr_jesca2_3",
+        "name": "饱和迸射",
+        "level": 7,
+        "desc": "攻击距离+1，攻击间隔增大，攻击力+270%，防御力+65%，机动盾牌防御力+135%\n机动盾牌存在时，立刻向前发射一枚炮弹，命中或到达终点时对范围内所有敌人造成相当于攻击力250%的物理伤害，并使其晕眩5秒\n攻击装有20发弹药，打完后结束（可随时停止技能）",
+        "descRaw": "攻击距离<@ba.vup>+1</>，攻击间隔<@ba.vdown>增大</>，攻击力<@ba.vup>+270%</>，防御力<@ba.vup>+65%</>，机动盾牌防御力<@ba.vup>+135%</>\n机动盾牌存在时，立刻向前发射一枚炮弹，命中或到达终点时对范围内所有敌人造成相当于攻击力<@ba.vup>250%</>的物理伤害，并使其<$ba.stun>晕眩</><@ba.vup>5</>秒\n<@ba.rem>攻击装有20发弹药，打完后结束（可随时停止技能）</>",
+        "skillType": "MANUAL",
+        "durationType": "AMMO",
+        "duration": -1,
+        "spType": "INCREASE_WITH_TIME",
+        "spCost": 45,
+        "initSp": 25,
+        "maxChargeTime": 1,
+        "increment": 1,
+        "bb": {
+          "atk": 2.7,
+          "jesca2_s_3_token[def].def": 1.35,
+          "ability_range_forward_extend": 1,
+          "base_attack_time": 0.6,
+          "attack@extrabomb.stun": 5,
+          "attack@extrabomb.atk_scale": 2.5,
+          "attack@trigger_time": 20,
+          "attack@extrabomb.projectile_range": 1.7,
+          "jesca2_s_3[def].def": 0.65
+        },
+        "bbStr": {},
+        "rangeId": null,
+        "rangeGrid": null,
+        "prefabId": "skchr_jesca2_3",
+        "trigger": {
+          "rule": "TAKE_DAMAGE",
+          "rawRule": "TAKE_DAMAGE",
+          "customRangeGrid": null
+        },
+        "index": 2,
+        "isDefault": false,
+        "overrideTokenKey": null
+      }
+    ],
+    "talents": [
+      {
+        "index": 0,
+        "name": "灵活应变",
+        "desc": "可以使用一个持续50秒的机动盾牌，机动盾牌只能放置于涤火杰西卡四周，机动盾牌部署后，涤火杰西卡立刻转向盾牌且自身与身后的单位防御力+15%",
+        "descRaw": "可以使用一个持续50秒的机动盾牌，机动盾牌只能放置于涤火杰西卡四周，机动盾牌部署后，涤火杰西卡立刻转向盾牌且自身与身后的单位防御力+15%",
+        "bb": {
+          "cnt": 1,
+          "def": 0.15
+        },
+        "bbStr": {},
+        "rangeGrid": null,
+        "tokenKey": "token_10032_jesca2_jckshd",
+        "hidden": false,
+        "fromModule": false
+      },
+      {
+        "index": 1,
+        "name": "蓄能释放",
+        "desc": "机动盾牌受到伤害时，有50%的概率使涤火杰西卡获得1点技力",
+        "descRaw": "机动盾牌受到伤害时，有50%的概率使涤火杰西卡获得1点技力",
+        "bb": {
+          "sp": 1,
+          "prob": 0.5
+        },
+        "bbStr": {},
+        "rangeGrid": null,
+        "tokenKey": null,
+        "hidden": false,
+        "fromModule": false
+      }
+    ],
+    "tokens": [
+      "token_10032_jesca2_jckshd"
+    ],
+    "module": null,
+    "assets": {
+      "avatar": "char_1034_jesca2_2",
+      "portrait": "char_1034_jesca2_2",
+      "spine": "char_1034_jesca2",
+      "skillIcon": "skchr_jesca2_1"
+    },
+    "nativeGrowth": {
+      "source": {
+        "table": "character_table.json",
+        "revision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add"
+      },
+      "phases": [
+        {
+          "phase": 0,
+          "maxLevel": 50,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 1455,
+                "atk": 269,
+                "def": 258,
+                "magicResistance": 0,
+                "cost": 19,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 50,
+              "data": {
+                "maxHp": 1941,
+                "atk": 346,
+                "def": 386,
+                "magicResistance": 0,
+                "cost": 19,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ]
+        },
+        {
+          "phase": 1,
+          "maxLevel": 80,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 1941,
+                "atk": 346,
+                "def": 386,
+                "magicResistance": 0,
+                "cost": 21,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 80,
+              "data": {
+                "maxHp": 2589,
+                "atk": 433,
+                "def": 522,
+                "magicResistance": 0,
+                "cost": 21,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ]
+        },
+        {
+          "phase": 2,
+          "maxLevel": 90,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 2589,
+                "atk": 433,
+                "def": 522,
+                "magicResistance": 0,
+                "cost": 23,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 90,
+              "data": {
+                "maxHp": 3608,
+                "atk": 522,
+                "def": 716,
+                "magicResistance": 0,
+                "cost": 23,
+                "blockCnt": 3,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 1.2,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": 0,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "nativeImport": {
+      "status": "workshop-default-kit-ready",
+      "playable": true,
+      "sourceNativeSkillIds": [
+        "skchr_jesca2_1",
+        "skchr_jesca2_2",
+        "skchr_jesca2_3"
+      ],
+      "unsupportedSkillIds": [
+        "skchr_jesca2_2",
+        "skchr_jesca2_3"
+      ],
+      "tokenIds": [
+        "token_10032_jesca2_jckshd"
+      ],
+      "supportedSkillIds": [
+        "skchr_jesca2_1"
+      ],
+      "source": {
+        "characterTableUrl": "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
+        "revision": "a550f5e048bb94e7cdefc6eb97a4091f0c4c7add",
+        "skillReferences": [
+          "https://prts.wiki/w/%E6%B6%A4%E7%81%AB%E6%9D%B0%E8%A5%BF%E5%8D%A1",
+          "https://prts.wiki/w/%E6%B6%A4%E7%81%AB%E6%9D%B0%E8%A5%BF%E5%8D%A1",
+          "https://prts.wiki/w/%E6%B6%A4%E7%81%AB%E6%9D%B0%E8%A5%BF%E5%8D%A1"
+        ]
+      },
+      "defaultLoadout": {
+        "skillIndex": 0,
+        "skillId": "skchr_jesca2_1",
+        "source": "explicit native skill registry"
+      },
+      "assetSources": {
+        "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/avatar/char_1034_jesca2.png",
+        "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/portrait/char_1034_jesca2_1.png",
+        "skillIcons": [
+          {
+            "skillId": "skchr_jesca2_1",
+            "iconId": "skchr_jesca2_1",
+            "url": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/skill/skill_icon_skchr_jesca2_1.png"
+          },
+          {
+            "skillId": "skchr_jesca2_2",
+            "iconId": "skchr_jesca2_2",
+            "url": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/skill/skill_icon_skchr_jesca2_2.png"
+          },
+          {
+            "skillId": "skchr_jesca2_3",
+            "iconId": "skchr_jesca2_3",
+            "url": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/skill/skill_icon_skchr_jesca2_3.png"
+          }
+        ],
+        "spine": {
+          "front": {
+            "skel": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Front/char_1034_jesca2.skel",
+            "atlas": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Front/char_1034_jesca2.atlas",
+            "png": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Front/char_1034_jesca2.png"
+          },
+          "back": {
+            "skel": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Back/char_1034_jesca2.skel",
+            "atlas": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Back/char_1034_jesca2.atlas",
+            "png": "https://raw.githubusercontent.com/fexli/ArknightsResource/d0b5af0b004b044d322397ce5ae79632b6d9fcdd/spine/char_1034_jesca2/char_1034_jesca2/Back/char_1034_jesca2.png"
+          }
+        },
+        "avatarE2": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/avatar/char_1034_jesca2_2.png",
+        "portraitE2": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/d89e2600c7214e13ab1042a616a9f690f7f5dd95/portrait/char_1034_jesca2_2.png"
+      },
+      "availableModes": [
+        "independent"
+      ],
+      "selectableSkillIds": [
+        "skchr_jesca2_1"
+      ]
+    },
+    "nativeSourceSkillIds": [
+      "skchr_jesca2_1",
+      "skchr_jesca2_2",
+      "skchr_jesca2_3"
+    ],
+    "id": "chess_prize_jesca2_b",
+    "darkmoonNativeChessId": "chess_prize_jesca2_b",
+    "independentOnly": true,
+    "prizeSupport": true,
+    "hidden": true
   }
 }

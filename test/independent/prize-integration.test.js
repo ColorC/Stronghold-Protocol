@@ -39,7 +39,8 @@ function choose(id,extra={}) {
 const quantity=(state,id)=>state.inventory.filter(x=>x.id===id).reduce((sum,x)=>sum+x.quantity,0);
 const wornQuantity=(state,id)=>state.pieces.reduce((sum,p)=>sum+(p.equipment||[]).filter(x=>x.id===id).reduce((n,x)=>n+x.quantity,0),0);
 
-for(const prize of Object.values(catalog.prizes))test(`prize ${prize.name} resolves through the public action without an unsupported branch`,()=>{
+// Derived supplies and logistics choices are not offered as round prizes. Their activation is covered by historical-prizes.test.js.
+for(const prize of Object.values(catalog.prizes).filter(p=>!p.historicalSupply&&!p.logisticsChoice))test(`prize ${prize.name} resolves through the public action without an unsupported branch`,()=>{
   const {state}=choose(prize.id);
   assert.ok(!state.offers.some(x=>x.id==='test-offer'));
 });

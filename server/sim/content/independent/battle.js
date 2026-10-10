@@ -190,6 +190,19 @@ function sumBadgeMods(catalog, entries, baseStats = {}, boost = () => 1, preserv
   return { mods, counts };
 }
 
+/** Permanent native body plus worn equipment, without deployment/skill/temporary combat buffs. */
+export function independentPermanentStats(piece, catalog, state = {}) {
+  const grown = { ...piece, ...(state.growthMode === 'levels' ? { growthMode:'levels' } : {}) };
+  const fullBase = nativeBodyStats({ ...grown, bodyPenaltyApplied:false }, catalog);
+  const body = nativeBodyStats(grown, catalog);
+  const boost = id => (state.playerEffects || []).filter(x => x.type === 'badgeBoost' && (!x.badgeIds || x.badgeIds.includes(id)))
+    .reduce((m,x) => m * Number(x.multiplier || 1),1);
+  const { mods } = sumBadgeMods(catalog,equipmentFor(grown,catalog),fullBase,boost,!!piece.bodyPenaltyApplied);
+  return { ...body,
+    atk:Math.max(0,(Number(body.atk||0)+Number(mods.atkFlat||0))*(1+Number(mods.atkPct||0))+Number(mods.atkFinal||0)),
+    maxHp:Math.max(1,(Number(body.maxHp||1)+Number(mods.hpFlat||0))*(1+Number(mods.hpPct||0))) };
+}
+
 function splitBattleMods(mods, unit) {
   const buffs = { ...mods };
   const initialSp = Number(buffs.initialSkillPoints || 0);
