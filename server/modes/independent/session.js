@@ -19,7 +19,7 @@ import { GROWTH_MODES, operatorGrowthInfo, grantGrowthLevels } from '../../../sh
 import { reactiveBuyTargetSpec } from '../../../shared/independentEligibility.js';
 import { trainingChoiceOptions } from '../../../shared/independentTrainingChoice.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
-import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification } from '../../../shared/independentRules.js';
+import { nativeFactions, tavernFactions, attachmentAccepted, nativeBodyStats, inheritanceQualification, deploymentSlots, countDeploymentSlots } from '../../../shared/independentRules.js';
 
 const quiet = { warn() {}, error() {}, info() {} };
 const FORBIDDEN = new Set(['__proto__', 'prototype', 'constructor', 'toString', 'valueOf', 'hasOwnProperty']);
@@ -610,7 +610,7 @@ export function viewSession(state, options = {}) {
     }); } catch { legalTiles = []; }
     const modules = (raw?.modules || []).map((x) => ({ ...clone(x), id: x.uniEquipId || x.id })).filter((x) => x.id);
     const steamOptions = ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a'];
-    return { ...clone(p), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
+    return { ...clone(p), deploymentSlots: deploymentSlots(p, catalog), name: op.name, skill: op.skill, skills: clone(raw?.skills || {}), modules: clone(modules), nativeTrait: op.nativeTrait?.[p.elite ? 'eliteText' : 'normalText'], preferences: clone(p.nativeState?.preferences || {}), equipmentLevel: totalEquipmentLevel(p, catalog), equipmentDetails: p.equipment.map((x) => ({ ...clone(x), record: clone(equipmentRecord(catalog, x.id)), steamOptions: equipmentRecord(catalog, x.id)?.mechanism === 'combatEquipment' && equipmentRecord(catalog, x.id)?.params?.effects?.some((e) => e.behavior === 'steamGearUpgrade') ? steamOptions : undefined })), attachmentDetails: p.attachments.map((x) => ({ ...clone(x), record: clone(catalog.attachments?.[x.id]) })), legalActions: ['move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'sell', 'inherit-preview'], legalTiles,
       // the body's own numbers: after the 接装损耗 when it applies, and before it (the detail card shows both)
       bodyStats: nativeBodyStats(p, catalog), rawBodyStats: p.bodyPenaltyApplied ? nativeBodyStats({ ...p, bodyPenaltyApplied: false }, catalog) : undefined,
       factions: tavernFactions(p, catalog), startStats: startStats[p.uid],
@@ -624,7 +624,7 @@ export function viewSession(state, options = {}) {
     const ownerOp = owner && opFor(catalog, owner.chessId);
     const def = data?.tokens?.[token.tokenId] || {};
     const legalTiles = state.phase === 'prep' && field ? legalSummonTiles(state, token, data, catalog, field.deployMap) : [];
-    pieces.push({ ...clone(token), id: token.tokenId, kind: 'token', name: def.name || token.tokenId, desc: def.desc || '',
+    pieces.push({ ...clone(token), id: token.tokenId, kind: 'token', deploymentSlots: 0, name: def.name || token.tokenId, desc: def.desc || '',
       ownerName: ownerOp?.name || '', ownerUnitId: Number(String(token.ownerUid).replace(/^\D+/, '')) || null,
       ownerChessId: owner?.elite ? ownerOp?.eliteChessId || owner?.chessId : owner?.chessId,
       summonSourceText: owner ? tokenSourceText(data, owner, token.tokenId, catalog) : '',
@@ -829,7 +829,7 @@ export function applyAction(state, action, options = {}) {
       const wasOnBoard = onBoard(p);
       // The cap limits deployed operators only. Purchases and bench storage remain available, and a native
       // summon marker is moved through the token branch above rather than consuming an operator slot.
-      if (!wasOnBoard && work.pieces.filter(onBoard).length >= Number(work.deployCap)) throw new Error('DEPLOY_CAP');
+      if (!wasOnBoard && deploymentSlots(p, catalog) > 0 && countDeploymentSlots(work.pieces, catalog) >= Number(work.deployCap)) throw new Error('DEPLOY_CAP');
       const field = getIndependentField(work, { data, catalog }); const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;
       const cls = positionClass(raw, p.moduleId);
       if (!canPlace(field.deployMap, cls, action.row, action.col)) throw new Error('ILLEGAL_TILE');
@@ -906,8 +906,9 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work);
       if (tempCount(work) > 0) throw new Error('TEMP_NOT_EMPTY'); // 「直到溢出情况排除才可开始进行作战」
       const deployed = work.pieces.filter((x) => x.row !== null && x.col !== null);
-      if (deployed.length < 1) throw new Error('NO_DEPLOYED_PIECES');
-      if (deployed.length > work.deployCap) throw new Error('DEPLOY_CAP');
+      const deployedSlots = countDeploymentSlots(work.pieces, catalog);
+      if (deployedSlots < 1) throw new Error('NO_DEPLOYED_PIECES');
+      if (deployedSlots > work.deployCap) throw new Error('DEPLOY_CAP');
       const field = getIndependentField(work, { data, catalog }); const cells = new Set();
       for (const p of deployed) {
         const op = opFor(catalog, p.chessId); const raw = p.elite ? (op?.source?.eliteChess || op?.source?.normalChess) : op?.source?.normalChess;

@@ -2,6 +2,19 @@
 import { loadoutRecord } from './loadoutRecord.js';
 import { levelBodyStats } from './independentGrowth.js';
 
+// Catalog data, not mutable save metadata, defines whether a deployed entity
+// consumes an operator slot. TOKEN profession narrows Darkmoon support entries
+// to summon bodies; prize-support operators remain ordinary operators.
+export function deploymentSlots(piece, catalog) {
+  if (piece?.kind === 'token') return 0;
+  const operator = catalog?.operators?.[piece?.chessId];
+  return operator?.darkmoonSupport === true && operator?.profession === 'TOKEN' ? 0 : 1;
+}
+
+export function countDeploymentSlots(pieces, catalog) {
+  return (pieces || []).reduce((total, piece) => total + (piece?.row != null && piece?.col != null ? deploymentSlots(piece, catalog) : 0), 0);
+}
+
 export const TAVERN_FACTIONS = Object.freeze({
   yanShip:'炎', victoriaShip:'维多利亚', lateranoShip:'拉特兰', egirShip:'阿戈尔',
   kjeragShip:'谢拉格', sargonShip:'萨尔贡', siracusaShip:'叙拉古', kazimierzShip:'卡西米尔',
