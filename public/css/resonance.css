@@ -291,7 +291,14 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-detail-panel :is(.rs-detail__recipe,.rs-detail__member-row,.rs-detail__item) button, .rs-native-match .rs-detail-panel .rs-detail__select select, .rs-native-match .rs-detail-panel .rs-detail__stars button, .rs-native-match .rs-detail-panel .rs-detail__related { min-height: 32px; color: #d7e5dc; background: #101814; font-size: max(.14rem,14px); }
 .rs-native-match .rs-detail-panel .rs-detail__text { display: flex; flex-direction: column; gap: 3px; color: #d7e5dc; text-align: left; }
 .rs-native-match .rs-detail-panel .rs-detail__text span { color: #b9c9c0; font-size: max(.14rem,14px); line-height: 1.4; }
-.rs-native-match .rs-detail-panel .rs-detail__recipe-flow { color: #d7e5dc; font-size: max(.14rem,14px); }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card { display: grid; grid-template-columns: minmax(0,1fr); gap: 6px; width: 100%; min-width: 0; padding: 8px; color: #d7e5dc; background: #101814; background-image: none; text-align: left; }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card::before, .rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card::after { content: none; background-image: none; }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-flow { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) 18px minmax(0,1.1fr); align-items: center; gap: 4px; width: 100%; min-width: 0; color: #d7e5dc; font-size: max(.14rem,14px); }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-flow > span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; text-align: center; }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-flow .rs-item-icon { display: grid; box-sizing: border-box; width: 32px; height: 32px; min-width: 32px; min-height: 32px; flex: none; }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-flow > .icon { width: 18px; height: 18px; justify-self: center; flex: none; }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-flow b { max-width: 100%; color: #d7e5dc; font-size: max(.14rem,14px); font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; white-space: normal; }
+.rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card > small { color: #b9c9c0; font-size: max(.14rem,14px); line-height: 1.3; }
 .rs-native-match .rs-detail-panel :is(.dstat__k,.dstat__v,.dtag-kind,.rs-detail__threshold,.rs-detail__tier-copy small,.rs-detail__select,.rs-detail__item,.rs-detail__recipe) { color: #d7e5dc; font-size: max(.14rem,14px); }
 .rs-native-match .rs-detail-panel .rs-detail__member-row button :is(b,span), .rs-native-match .rs-detail-panel .rs-detail__recipe-flow b { color: #d7e5dc; font-size: max(.14rem,14px); }
 .rs-native-match .dpanel :is(.dtext,.dsec__body,.dtalent,.ditem__desc,.dsection__body) { color: #d7e5dc; font-size: max(.16rem,16px); line-height: 1.45; }

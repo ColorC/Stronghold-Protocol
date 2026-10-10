@@ -1035,16 +1035,56 @@ async function run() {
     await clickHandleByMeasuredCenter(page, expandShop, 'expand native shop');
     await page.waitForSelector('.rs-funds .funds__collapse', { visible: true, timeout: 3_000 });
     remainingControls.shop = { collapsed: collapsedShop, expanded: true };
-    const enemyButton = await page.$('[data-testid="check-enemy"]');
-    assert(enemyButton && await enemyButton.evaluate(node => !node.disabled), 'native enemy scouting control is unavailable in the seeded prep');
+    await page.waitForFunction(async () => {
+      const root=document.querySelector('.gm'),canvas=root?.querySelector('.gm__field canvas');
+      const {store}=await import('./js/store.js'),pub=store.get().match.public,privateState=store.get().match.private?.resonance?.state;
+      return !!canvas&&canvas.getBoundingClientRect().width>100&&canvas.getBoundingClientRect().height>100
+        &&pub?.phase==='PREP'&&privateState?.phase==='prep'&&!root.classList.contains('is-pen');
+    }, { timeout: 8_000 });
+    const scoutWindowState = await page.evaluate(() => {
+      const visible=node=>{const r=node?.getBoundingClientRect();return !!r&&r.width>0&&r.height>0&&getComputedStyle(node).display!=='none'};
+      return {openPanels:[...document.querySelectorAll('.rs-native-resonance-panel,.rs-detail-panel,.modal__box[role="dialog"],.bpop')].filter(visible).map(node=>node.className),
+        camera:document.querySelector('.gm')?.dataset.camera,pen:document.querySelector('.gm')?.classList.contains('is-pen')};
+    });
+    attempt.enemyScoutEvidence = { beforeClick: scoutWindowState };
+    assert(scoutWindowState.openPanels.length===0, `close the current Native window before opening enemy scouting: ${JSON.stringify(scoutWindowState)}`);
+    const enemyButton = await page.$('.rs-native-match [data-testid="check-enemy"]');
+    assert(enemyButton, 'native enemy scouting control is missing from the Native top bar');
+    const enemyButtonState = await enemyButton.evaluate(node => {
+      const rect=node.getBoundingClientRect();
+      return {disabled:node.disabled,ariaDisabled:node.getAttribute('aria-disabled'),label:node.getAttribute('aria-label'),
+        rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},phase:node.closest('.gm')?.dataset.camera,
+        nativePhase:node.closest('.gm')?.getAttribute('data-camera')};
+    });
+    assert(!enemyButtonState.disabled&&enemyButtonState.ariaDisabled!=='true'&&enemyButtonState.rect.width>0&&enemyButtonState.rect.height>0,
+      `enemy scouting must be actionable in prep: ${JSON.stringify({enemyButtonState,scoutWindowState})}`);
+    attempt.enemyScoutEvidence.button = enemyButtonState;
     const cameraBeforeScout = await page.$eval('.gm', node => node.dataset.camera);
-    await clickHandleByMeasuredCenter(page, enemyButton, 'open native enemy scouting');
-    await page.waitForFunction(() => document.querySelector('.gm')?.classList.contains('is-pen') && document.querySelector('.gm')?.dataset.camera === 'pen', { timeout: 4_000 });
-    const returnScout = await page.$('[data-testid="check-player"]');
-    assert(returnScout && /返回/.test(await returnScout.evaluate(node => node.getAttribute('aria-label') || node.innerText)), 'native scouting view has no return control');
-    await clickHandleByMeasuredCenter(page, returnScout, 'return from native enemy scouting');
-    await page.waitForFunction((camera) => !document.querySelector('.gm')?.classList.contains('is-pen') && document.querySelector('.gm')?.dataset.camera === camera, { timeout: 4_000 }, cameraBeforeScout);
-    remainingControls.scouting = { initialCamera: cameraBeforeScout, entered: 'pen', returnedTo: cameraBeforeScout };
+    const enemyBox=await enemyButton.boundingBox();
+    const enemyHit=await page.evaluate(({x,y})=>{const hit=document.elementFromPoint(x,y),button=hit?.closest('button');return{testid:button?.dataset.testid||null,label:button?.getAttribute('aria-label')||null,tag:hit?.tagName||null,className:hit?.className||''};},
+      {x:enemyBox.x+enemyBox.width/2,y:enemyBox.y+enemyBox.height/2});
+    assert(enemyHit.testid==='check-enemy', `enemy scouting mouse target is occluded: ${JSON.stringify({enemyButtonState,enemyHit})}`);
+    attempt.enemyScoutEvidence.hit = enemyHit;
+    await page.mouse.click(enemyBox.x+enemyBox.width/2,enemyBox.y+enemyBox.height/2);
+    try {
+      await page.waitForFunction(() => document.querySelector('.gm')?.classList.contains('is-pen') && document.querySelector('.gm')?.dataset.camera === 'pen', { timeout: 5_000 });
+    } catch (error) {
+      const afterClick=await page.evaluate(async()=>{const {store}=await import('./js/store.js'),s=store.get();return{screen:document.querySelector('.gm')?.className,camera:document.querySelector('.gm')?.dataset.camera,
+        publicPhase:s.match.public?.phase,privatePhase:s.match.private?.resonance?.state?.phase,button:document.querySelector('.gm [data-testid="check-enemy"]')?.outerHTML,
+        overlays:[...document.querySelectorAll('.rs-native-resonance-panel,.rs-detail-panel,.modal__box[role="dialog"],.bpop')].map(node=>node.className)};});
+      attempt.enemyScoutEvidence.afterClick = afterClick;
+      throw new Error(`Native enemy scouting click did not enter the pen: ${JSON.stringify({scoutWindowState,enemyButtonState,enemyHit,afterClick,error:String(error)})}`);
+    }
+    attempt.enemyScoutEvidence.entered = { camera: await page.$eval('.gm', node=>node.dataset.camera), pen: true };
+    const returnScout = await page.$('.rs-native-match [data-testid="check-enemy"]');
+    assert(returnScout && /返回/.test(await returnScout.evaluate(node => node.getAttribute('aria-label') || node.innerText)), 'Native scouting control did not become the return action');
+    const returnBox=await returnScout.boundingBox();
+    const returnHit=await page.evaluate(({x,y})=>{const hit=document.elementFromPoint(x,y),button=hit?.closest('button');return{testid:button?.dataset.testid||null,label:button?.getAttribute('aria-label')||null};},
+      {x:returnBox.x+returnBox.width/2,y:returnBox.y+returnBox.height/2});
+    assert(returnHit.testid==='check-enemy'&&/返回/.test(returnHit.label||''),`Native return action is not the actual mouse target: ${JSON.stringify(returnHit)}`);
+    await page.mouse.click(returnBox.x+returnBox.width/2,returnBox.y+returnBox.height/2);
+    await page.waitForFunction((camera) => !document.querySelector('.gm')?.classList.contains('is-pen') && document.querySelector('.gm')?.dataset.camera === camera, { timeout: 5_000 }, cameraBeforeScout);
+    remainingControls.scouting = { initialCamera: cameraBeforeScout, entered: 'pen', returnedTo: cameraBeforeScout, enemyButtonState, enemyHit, returnHit };
     const settingsForGuide = await page.$('.gm__corner button[aria-label="设置"]');
     await clickHandleByMeasuredCenter(page, settingsForGuide, 'settings guide entry');
     await page.waitForSelector('.modal__box[role="dialog"] .set-guide', { visible: true, timeout: 3_000 });
