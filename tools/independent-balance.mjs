@@ -20,18 +20,19 @@ import { createRng, deriveSeed } from '../server/sim/rng.js';
 const data = getData({log:{info(){},warn(){},error(){}}});
 const catalog = getCatalog(data);
 const ROUTES = ['assault', 'defense', 'skill'];
-const role = (p) => data.chess[p.chessId]?.profession;
+const rawFor=p=>data.chess[p.chessId] || catalog.operators[p.chessId]?.source?.normalChess;
+const role = (p) => rawFor(p)?.profession;
 const healing = (p) => role(p) === 'MEDIC';
-const blocking = (p) => !healing(p) && Number(data.chess[p.chessId]?.stats?.blockCnt) > 0 && data.chess[p.chessId]?.position === 'MELEE';
-const primaryDamage = (p) => !['MEDIC','TANK','PIONEER','TOKEN'].includes(role(p)) && Number(loadoutRecord(data.chess[p.chessId],p)?.stats?.atk || 0) > 0;
+const blocking = (p) => !healing(p) && Number(rawFor(p)?.stats?.blockCnt) > 0 && rawFor(p)?.position === 'MELEE';
+const primaryDamage = (p) => !['MEDIC','TANK','PIONEER','TOKEN'].includes(role(p)) && Number(loadoutRecord(rawFor(p),p)?.stats?.atk || 0) > 0;
 const damagePreference = (p) => {
   const profession=role(p);
   return (['CASTER','SNIPER','WARRIOR'].includes(profession)?160:['SPECIAL','SUPPORT'].includes(profession)?80:0) +
-    Number(loadoutRecord(data.chess[p.chessId],p)?.stats?.atk || 0)/8;
+    Number(loadoutRecord(rawFor(p),p)?.stats?.atk || 0)/8;
 };
 
 function score(p, route, growthMode='badges', targetId='') {
-  const rec = loadoutRecord(data.chess[p.chessId], p);
+  const rec = loadoutRecord(rawFor(p), p);
   const stats = rec?.stats || {};
   const gear = totalEquipmentLevel(p, catalog);
   const production = catalog.operators[p.chessId]?.nativeTrait?.effect;
@@ -181,9 +182,31 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       if (!chosen) throw new Error(`Unresolvable legal offer ${offer.id}`);
     }
   };
+  const useKeptPrizes = () => {
+    for(let pass=0;pass<3;pass++) {
+      let changed=false;
+      for(const item of state.inventory.slice()) {
+        const def=catalog.prizes[item.id];
+        if(!['darkmoonPrize','darkmoonTargetPrize'].includes(def?.mechanism)||state.phase!=='prep')continue;
+        const source=def.params?.sourceId;
+        if(source==='BGS_Treasures_014' && item.state?.lastUsedRound===state.round)continue;
+        if(source==='BGS_Treasures_025' && state.funds>=state.incomeThisRound)continue;
+        if(source==='TB_Bacon_Secrets_12' && state.playerEffects.some(x=>x.type==='darkmoonPrizeIceBlock'))continue;
+        if(source==='BGS_Treasures_007' && !state.pieces.some(p=>p.row!=null&&p.col!=null))continue;
+        const normalOnly=['BGS_Treasures_016','BGS_Treasures_034'].includes(source);
+        const candidates=state.pieces.filter(p=>!normalOnly||!p.elite).slice().sort((a,b)=>score(b,route,growthMode,targetId)-score(a,route,growthMode,targetId));
+        const target=def.mechanism==='darkmoonTargetPrize'?candidates[0]:null;
+        if(def.mechanism==='darkmoonTargetPrize'&&!target)continue;
+        const action={type:'use-item',itemUid:item.uid,...(target?{targetUid:target.uid}:{})};
+        if(act(action).ok){changed=true;pickOffers();}
+      }
+      if(!changed)break;
+    }
+  };
   for (let turn=0; state.phase!=='finished' && turn<roundLimit+2; turn++) {
     pickOffers();
     const round=state.round;
+    useKeptPrizes();
     placeNativeSummons();
     const targetLevel=Math.min(6,1+Math.floor(round/2));
     if (state.pieces.length>=4 || state.shop.upgradePrice===0) {
@@ -197,7 +220,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
         const value=({slot})=>slot.kind==='chess' ? score({chessId:slot.id, equipment:[]},route,growthMode,targetId)+factionScore(slot.id,state.pieces)+
             state.pieces.filter(p=>p.chessId===slot.id).length*130 +
             (route==='defense'&&blocking({chessId:slot.id})?(state.pieces.filter(blocking).length<2?220:-180):0) +
-            (data.chess[slot.id]?.profession==='MEDIC' && !state.pieces.some(healing) &&
+            (rawFor({chessId:slot.id})?.profession==='MEDIC' && state.pieces.some(p=>!healing(p)) && !state.pieces.some(healing) &&
               (route!=='defense' || state.pieces.some(p=>!healing(p)))?300:0) : -100;
           return value(b)-value(a);
         });
@@ -215,6 +238,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       else if (!bought) break;
     }
     pickOffers();
+    useKeptPrizes();
     const ranked=state.pieces.slice().sort((a,b)=>(score(b,route,growthMode,targetId)+factionScore(b.chessId,state.pieces))-(score(a,route,growthMode,targetId)+factionScore(a.chessId,state.pieces)));
     const selected=[];
     const add=(p)=>{if(p && !selected.includes(p) && selected.length<state.deployCap)selected.push(p);};
@@ -249,6 +273,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       });
       const remaining=state.inventory.find(x=>x.uid===item.uid);
       if(!remaining) continue;
+      if(['darkmoonPrize','darkmoonTargetPrize'].includes(definition?.mechanism))continue;
       if(['补给','玩家设施','supply','facility'].includes(definition?.kind)||definition?.mechanism==='activeFundTopUp') {
         for(const target of [undefined,...targets]) if(act({type:'use-item',itemUid:item.uid,targetUid:target?.uid}).ok)break;
       } else {
@@ -265,7 +290,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
     const stage=shift?{...field.stage,groundPaths:{},groundPathsWithDevices:{},devices:[]}:field.stage;
     const m={gd,round:state.round,stageId:field.stageId,stage,wave,rngBots:createRng(deriveSeed(seed,`pilot-layout:${round}`))};
     const ps={deployMap:()=>field.deployMap,loadoutFor:rec=>state.pieces.find(p=>p.chessId===rec.chessId)||null};
-    const layout=planLayout(m,ps,selected.map(p=>({...p,kind:'chess',id:p.chessId})),undefined,{recOf:p=>loadoutRecord(data.chess[p.chessId],p)});
+    const layout=planLayout(m,ps,selected.map(p=>({...p,kind:'chess',id:p.chessId})),undefined,{recOf:p=>loadoutRecord(rawFor(p),p)});
     for(const [uid,key] of layout) {
       const [row,col]=key.split(',').map(Number);
       act({type:'move',uid,row,col,dir:layout.dirs.get(uid)},true);
@@ -274,11 +299,11 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
     if(!state.pieces.some(p=>p.row!==null)) throw new Error('Pilot has no legal deployed piece');
     const before={round,lp:state.lp,funds:state.funds,shopLevel:state.shop.level,mainFaction:mainFaction(state.pieces),
       deployed:state.pieces.filter(p=>p.row!==null).map(p=>({chessId:p.chessId,level:p.growthLevel||null,equipmentLevel:totalEquipmentLevel(p,catalog),
-        profession:data.chess[p.chessId]?.profession||null,blockCnt:Number(data.chess[p.chessId]?.stats?.blockCnt||0),position:data.chess[p.chessId]?.position||null,
+        profession:rawFor(p)?.profession||null,blockCnt:Number(rawFor(p)?.stats?.blockCnt||0),position:rawFor(p)?.position||null,
         factions:nativeFactions(p,catalog)})),
       inventoryCount:state.inventory.reduce((n,i)=>n+i.quantity,0)};
     const whiteAndStartStats=Object.fromEntries(state.pieces.filter(p=>p.row!==null).map(p=>{
-      const white=loadoutRecord(data.chess[p.chessId],p)?.stats||{};
+      const white=loadoutRecord(rawFor(p),p)?.stats||{};
       const growth=p.growthMode==='levels'?operatorGrowthInfo(p,catalog):null;
       const whiteAtk=Number(white.atk||0),whiteHp=Number(white.maxHp||0);
       return [p.uid,{chessId:p.chessId,white:{atk:whiteAtk,maxHp:whiteHp},
@@ -310,7 +335,7 @@ async function main() {
   const startSeed=Number(options['start-seed']||1);
   if(!Number.isInteger(startSeed)||startSeed<1)throw new Error('start-seed must be a positive integer');
   const modes=(options['growth-modes']||'badges,levels').split(',');
-  const roundLimits=(options['round-limits']||options['round-limit']||'9,14').split(',').map(Number);
+  const roundLimits=(options['round-limits']||options['round-limit']||'9,18').split(',').map(Number);
   const runs=[];
   for(const growthMode of modes)for(const roundLimit of roundLimits)for(const route of (options.routes||ROUTES.join(',')).split(','))for(let seed=startSeed;seed<startSeed+count;seed++) {
     try { runs.push(playSeed({seed,route,growthMode,targetId:options['target-id']||'',difficulty:options.difficulty,roundLimit})); }

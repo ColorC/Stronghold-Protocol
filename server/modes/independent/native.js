@@ -316,7 +316,7 @@ function bonus(p, piece, state, isElite) {
 const DOUBLED_HOOKS = new Set(['gain', 'prepEnd', 'sold']);
 /** Extra runs of a hook's effects: the strongest doubler on the field for it (doublers do not stack). */
 function extraRuns(state, hook, services, event = {}) {
-  let extra = 0;
+  let extra = hook==='gain' ? Math.max(0,...(state.playerEffects||[]).filter(x=>x.type==='darkmoonPrizeRepeatGain'&&x.expiresRound===state.round).map(x=>Number(x.extra||0))) : 0;
   for (const p of roster(state)) {
     if (!isPresent(p)) continue;
     for (const r of traitFor(p, services)?.effect?.prep || []) {

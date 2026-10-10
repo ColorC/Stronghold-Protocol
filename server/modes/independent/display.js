@@ -61,16 +61,16 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
     const text = gameText.gear?.[id];
     const steamLimit = steam ? steam.params.chooseVariantsOnEquip : undefined;
     return [id, { name: d.newName || d.name, level: d.level,
-      normal: text ? text.normal : gearDescription(d), kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
+      normal: text ? text.normal : gearDescription(d), normalLevels:d.normalLevels, kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
       ...(d.mechanism !== 'badge' && d.params ? { params: d.params } : {}), ...(d.condition ? { condition: d.condition } : {}), ...(d.effectDelivery ? { effectDelivery: d.effectDelivery } : {}), quantityEquippable: quantityEquippable(d),
-      sourceId: d.sourceId, available: d.available !== false, steamOptions: steam?.params.sourceIds,
+      sourceId: d.sourceId, iconItemId:d.iconItemId, available: d.available !== false, steamOptions: steam?.params.sourceIds,
       steamLimit: steamLimit && typeof steamLimit === 'object' ? steamLimit.normal : (steamLimit ?? (steam ? steam.params.choose ?? 1 : undefined)),
       identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,
       ...(d.kind === 'badge' ? { stat: d.stat, value: d.value, statName: BADGE_STATS[d.stat] || null, ratio: BADGE_RATIOS.has(d.stat) } : {}),
       ...(d.params?.normalCount != null ? { useCount: Number(d.params.normalCount) } : {}) }];
   }));
-  const PRIZE_STAGE = { 起步: '起步', 成型: '成型', 兑现: '决胜' };
-  const prizes = Object.fromEntries(Object.entries(catalog.prizes).map(([id, d]) => [id, { name: d.name, effect: gameText.prizes?.[id]?.text ?? d.effect, mechanism: d.mechanism, stage: PRIZE_STAGE[d.stage] || null }]));
+  const PRIZE_STAGE = { 起步: '起步', 成型: '成型', 兑现: '决胜', 终极:'终极' };
+  const prizes = Object.fromEntries(Object.entries(catalog.prizes).map(([id, d]) => [id, { name: d.name, effect: gameText.prizes?.[id]?.text ?? d.effect, mechanism: d.mechanism, normalEffect:d.normalEffect, levelsEffect:d.levelsEffect, params:d.params, sourceRefs:d.sourceRefs, iconItemId:d.iconItemId, stage: PRIZE_STAGE[d.stage] || null }]));
   for (const [id, t] of Object.entries(gameText.prizes || {})) if (!prizes[id]) prizes[id] = { name: t.name, effect: t.text, mechanism: 'fallback', stage: null };
   const attachments = Object.fromEntries(Object.entries(catalog.attachments).map(([id, d]) => [id, { name: d.name, effect: gameText.attachments?.[id]?.text ?? d.effect, mechanism: d.mechanism }]));
   return { name: catalog.name, operators, gear, prizes, attachments, terms: gameText.terms,

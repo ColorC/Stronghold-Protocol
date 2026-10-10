@@ -1,4 +1,5 @@
 import { grantEquipment, equipmentRecord } from './equipment.js';
+import { chooseHistoricalPrize, useHistoricalPrize } from './historicalPrizes.js';
 import { tavernFactions } from '../../../shared/independentRules.js';
 import { drawTrainingChoices, trainingChoiceOptions, trainingChoiceTargets } from '../../../shared/independentTrainingChoice.js';
 
@@ -6,6 +7,16 @@ const byId = (map, id) => map && typeof id === 'string' && Object.hasOwn(map, id
 const prizeIds = (catalog) => Object.keys(catalog?.prizes || {}).sort();
 
 export function makePrizeOffer(state, catalog, tier = 'start', source = 'round', rng = null) {
+  const historical = Object.values(catalog.prizes || {}).filter(p => p.historical && p.prizeTier === ({start:1,build:2,cashout:3,finale:4}[tier] ?? tier));
+  if (historical.length) {
+    const ids = historical.map(p => p.id);
+    let x=state.rngState>>>0||1;
+    const roll=()=>{if(rng)return rng();x^=x<<13;x^=x>>>17;x^=x<<5;x>>>=0;return x/0x100000000;};
+    for(let i=ids.length-1;i>0;i--){const j=Math.floor(roll()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
+    if(!rng)state.rngState=x;
+    const offer={id:'o'+state.nextUid++,type:'prize',choices:ids.slice(0,3),tier,source};
+    state.offers.push(offer);state.phase='prize';return offer;
+  }
   const available = prizeIds(catalog).filter((id) => {
     const p = catalog.prizes[id];
     if (!(p.stage === ({ start: '起步', build: '成型', cashout: '兑现' }[tier]) || p.stage === tier)) return false;
@@ -45,7 +56,7 @@ export function makePrizeOffer(state, catalog, tier = 'start', source = 'round',
 
 function prizeById(catalog, id) { return byId(catalog?.prizes, id); }
 
-export function choosePrize(state, catalog, offerId, index, selection = {}) {
+export function choosePrize(state, catalog, offerId, index, selection = {}, services = null) {
   const oi = state.offers.findIndex((x) => x.id === offerId && x.type === 'prize');
   if (oi < 0 || !Number.isInteger(index)) throw new Error('BAD_OFFER');
   const offer = state.offers[oi]; const id = offer.choices[index]; const prize = prizeById(catalog, id);
@@ -56,6 +67,7 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
     return { prizeId: id, quantity };
   }
   if (!prize) throw new Error('BAD_OFFER');
+  if(prize.historical) { const result=chooseHistoricalPrize(state,catalog,id,services);state.offers.splice(oi,1);if(!state.offers.some(x=>x.type==='prize'))state.phase='prep';return result; }
   const rule = { type: prize.mechanism, ...(prize.params || {}) };
   const grant = (itemId, n = 1, extra = {}) => grantEquipment(state, catalog, itemId, n, { origin: 'prize', phase: 'prize', prizeId: id, ...extra });
   const outputs = (rule.outputs || []).map((x) => ({ id: x.id, quantity: x.quantity || 1 }));
@@ -112,11 +124,16 @@ export function choosePrize(state, catalog, offerId, index, selection = {}) {
   return { prizeId: id };
 }
 
-export function useInventoryItem(state, catalog, itemUid, action = {}, data = null) {
+export function useInventoryItem(state, catalog, itemUid, action = {}, data = null, services = null) {
   const i = state.inventory.findIndex((x) => x.uid === itemUid); if (i < 0) throw new Error('BAD_TARGET');
   const item = state.inventory[i]; const def = equipmentRecord(catalog, item.id) || byId(catalog.prizes, item.id);
   if (!def) throw new Error('UNKNOWN_ITEM');
   const behavior = def.mechanism ? { type: def.mechanism, ...(def.params || {}) } : def.use || def.rule || def.behavior;
+  if(['darkmoonPrize','darkmoonTargetPrize'].includes(behavior?.type)) {
+    const result=useHistoricalPrize(state,catalog,item,action,services,makePrizeOffer);
+    if(!result.keep) { if(item.quantity>1)item.quantity--;else state.inventory.splice(i,1); }
+    return {itemId:item.id,...result};
+  }
   if (behavior?.type === 'immediateFundsOnUse' || behavior?.type === 'fundsOnUse' || behavior?.type === 'conditionalFundsOnUse') {
     if (behavior.type === 'conditionalFundsOnUse' && (state.shop?.level || 1) < (behavior.condition === 'tierAtLeast4' ? 4 : 1)) throw new Error('CONDITION_NOT_MET');
     state.funds += Number(item.elite ? (behavior.eliteFunds ?? behavior.elite) : (behavior.normalFunds ?? behavior.normal));

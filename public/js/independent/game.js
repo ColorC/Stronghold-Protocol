@@ -16,6 +16,7 @@ import { FullscreenButton } from '../ui/device.js';
 import { toast } from '../ui/toasts.js';
 import { audio, bgmKeyFor, combatTrackFor, resultSpeaker, resultVoiceSlot } from '../audio.js';
 import { PHASE, GEO } from '../../../shared/constants.js';
+import { independentGrowthCatalog } from '../../../shared/independentPrizeText.js';
 import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout } from '../ui/gameLogic.js';
 import { data } from '../data.js';
 import { api } from './api.js';
@@ -106,8 +107,9 @@ function pieceTileOf(state, piece) {
   return t >= 0 ? { row: GEO.TEMP_ROW, col: GEO.TEMP_C0 + t } : null;
 }
 
-export function GameScreen({ id, initial, catalog, onLeave }) {
+export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
   const [state, setState] = useState(initial);
+  const catalog=useMemo(()=>independentGrowthCatalog(sourceCatalog,state.growthMode),[sourceCatalog,state.growthMode]);
   const stateRef = useRef(state); stateRef.current = state;
   const hostRef = useRef(null);
   const { view, kind: viewKind } = useFieldView(hostRef, FIELD_OPTS);

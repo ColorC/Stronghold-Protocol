@@ -215,9 +215,9 @@ export function inventoryStacks(inventory, catalog) {
     const item = group.items[0];
     const key = `${item.id}:n${Object.keys(item.state || {}).length ? `:${encodeURIComponent(group.key)}` : ''}`;
     const prize = !gearRecord(catalog, item.id) && catalog?.prizes?.[item.id];
-    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, normal: prize.effect } : {});
+    const rec = gearRecord(catalog, item.id) || (prize ? { name: prize.name, kind: '奖品', mechanism: prize.mechanism, params:prize.params, normal: prize.effect } : {});
     const s = stacks.get(key) || { key, id: item.id, name: rec.name || '未知物品', level: rec.level,
-      kind: rec.kind || null, mechanism: rec.mechanism || null, text: rec.normal, used: USED_KINDS.has(rec.kind),
+      kind: rec.kind || null, mechanism: rec.mechanism || null, params:rec.params, text: rec.normal, used: USED_KINDS.has(rec.kind),
       badge: isBadge(catalog, item.id), count: 0, items: [] };
     s.count += group.quantity; s.items.push(...group.items);
     stacks.set(key, s);
