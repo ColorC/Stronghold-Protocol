@@ -138,7 +138,8 @@ async function main(argv) {
     const pathname = decodeURIComponent(new URL(req.url, 'http://local').pathname).replace(/^\/+/, '');
     let target = path.resolve(publicRoot, pathname);
     if (!inside(publicRoot, target)) { res.writeHead(400); return res.end(); }
-    if (pathname.startsWith('shared/') || pathname.startsWith('sim/')) target = path.resolve(wtRoot, pathname);
+    if (pathname.startsWith('shared/')) target = path.resolve(wtRoot, pathname);
+    if (pathname.startsWith('sim/')) target = path.resolve(wtRoot, 'server', pathname);
     if (pathname.startsWith('js/')) target = path.resolve(wtRoot, 'public', pathname);
     try { const body = await fsp.readFile(target); res.writeHead(200, { 'content-type': mime(target), 'cache-control': 'no-store' }); res.end(body); }
     catch (err) { stage(`static 404 ${pathname} => ${target} (${err.code || err.message})`); res.writeHead(404); res.end('not found'); }
@@ -202,8 +203,8 @@ async function main(argv) {
         for (const piece of [...prep.hand, ...prep.temp, ...prep.board]) {
           if (!piece) continue;
           const model = piece.kind === 'token'
-            ? data.token(piece.id)?.assets?.spine || piece.id
-            : data.chess(piece.id)?.assets?.spine || data.chess(piece.id)?.charId;
+            ? data.lookup('tokens', piece.id)?.assets?.spine || piece.id
+            : data.lookup('chess', piece.id)?.assets?.spine || data.lookup('chess', piece.id)?.charId;
           collect({ spine: model, dir: piece.dir });
         }
       };
@@ -297,7 +298,7 @@ async function main(argv) {
             stateIndex++;
             const snapshot = clip.states[stateIndex];
             if (snapshot.state.stageId) {
-              const stage = data.stage(snapshot.state.stageId);
+              const stage = data.lookup('stages', snapshot.state.stageId);
               if (stage) view.setStage(stage);
             }
             view.setPrep(prepView(snapshot.state, catalog), { editable: false });
