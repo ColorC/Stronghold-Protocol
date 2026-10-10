@@ -11,7 +11,7 @@ import { INDEPENDENT_BADGE_STATS, independentBadgeMod } from '../../../../shared
 import { applyDamageIncrease } from '../../../../shared/damageIncrease.js';
 import { installWarband } from './warband.js';
 import { WARBAND_BEHAVIORS } from '../../../../shared/warbandSchema.js';
-import { installDarkmoonCombat } from './darkmoonCombat.js';
+import { hasDarkmoonDeploymentPayload, installDarkmoonCombat } from './darkmoonCombat.js';
 import { findSummonTile, tokenCanEngageAt } from '../tokens.js';
 
 // temporary combat traits (2026-10-07, installTemporaryNativeRules)
@@ -2169,6 +2169,12 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
       else if (rec.mechanism === 'prepEndForge') {
         // Prep-phase forging is deliberately handled by the independent prep transaction.
         if (!Array.isArray(p.outputs)) throw new Error(`prepEndForge attachment ${id} has invalid outputs`);
+      } else if (rec.mechanism === 'darkmoonSourceAttachment') {
+        const sourceId = attachment.state?.sourceId;
+        if (p.sourceIdRequired !== true || sourceId !== 'BOT_312' || !hasDarkmoonDeploymentPayload(sourceId)) {
+          throw new Error(`darkmoonSourceAttachment ${id} has unsupported source ${sourceId ?? '(missing)'}`);
+        }
+        // installDarkmoonCombat consumes the validated BOT_312 source from this attachment below.
       } else throw new Error(`unimplemented independent attachment mechanism ${rec.mechanism ?? id}`);
     }
   }
