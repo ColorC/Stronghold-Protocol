@@ -6,8 +6,8 @@ import { levelBodyStats } from './independentGrowth.js';
 // consumes an operator slot. TOKEN profession narrows Darkmoon support entries
 // to summon bodies; prize-support operators remain ordinary operators.
 export function deploymentSlots(piece, catalog) {
-  if (piece?.kind === 'token') return 0;
   const operator = catalog?.operators?.[piece?.chessId];
+  if (!operator) return piece?.kind === 'token' ? 0 : 1;
   return operator?.darkmoonSupport === true && operator?.profession === 'TOKEN' ? 0 : 1;
 }
 

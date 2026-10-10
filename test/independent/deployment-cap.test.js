@@ -102,6 +102,8 @@ test('catalog-classified Darkmoon support summon bodies keep zero slots while re
   assert.ok(ordinary);
   assert.equal(deploymentSlots({ chessId: ordinary, source: 'native' }, catalog), 1, 'source metadata never grants a broad exemption');
   assert.equal(deploymentSlots({ chessId: ordinary, source: 'copy' }, catalog), 1, 'a copied ordinary operator still occupies one slot');
+  assert.equal(deploymentSlots({ chessId: ordinary, kind: 'token' }, catalog), 1, 'a forged legacy token kind cannot override an operator catalog entry');
+  assert.equal(deploymentSlots({ chessId: 'legacy-native-marker', kind: 'token' }, catalog), 0, 'native markers without an operator catalog entry remain exempt');
   const fixture = [
     { chessId: supports[0][0], row: 9, col: 1, deploymentSlots: 1 },
     { chessId: ordinary, row: 9, col: 2, deploymentSlots: 0 },
