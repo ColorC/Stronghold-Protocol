@@ -153,7 +153,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
   const toggleReplayPause = useCallback(() => {
     const next = !replayPausedRef.current;
     replayPausedRef.current = next;
-    view?.setReplayPaused?.(next);
+    view.setReplayPaused(next);
     if (next) setReplayRemaining(Math.max(0, replayEndTimeRef.current - replayTimeRef.current));
     setReplayPaused(next);
   }, [view]);
@@ -482,7 +482,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     view.setCamera(kind, { rect: rec.field.rect, side: 'L' });
     audio.setFieldUnits([]);
     const { t0, duration } = replayClock(rec);
-    replayPausedRef.current = false; view.setReplayPaused?.(false); replayTimeRef.current = t0; replayEndTimeRef.current = t0 + duration;
+    replayPausedRef.current = false; view.setReplayPaused(false); replayTimeRef.current = t0; replayEndTimeRef.current = t0 + duration;
     setReplayPaused(false); setReplayRemaining(duration);
     let idx = 0; let gameT = t0 - 0.001; let last = performance.now(); let raf = 0; let shown = -1; let ended = false; let leaked = 0;
     let lastClockUpdate = last;
@@ -541,11 +541,11 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
       view.raw?.debug?.interp?.snapToNewest?.();
       for (let i = 0; i <= k; i++) for (const e of frames[i].ev) if (e[0] === 'leak') leaked++;
       idx = frames.length; replayPosRef.current = k; report();
-      replayPausedRef.current = false; view.setReplayPaused?.(false); replayTimeRef.current = t0 + duration; setReplayPaused(false); setReplayRemaining(0);
+      replayPausedRef.current = false; view.setReplayPaused(false); replayTimeRef.current = t0 + duration; setReplayPaused(false); setReplayRemaining(0);
       if (!ended) { ended = true; setBattle((b) => (b ? { ...b, done: true } : b)); }
     };
     raf = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(raf); seekRef.current = null; replayPausedRef.current = false; view.setReplayPaused?.(false); replayTimeRef.current = 0; replayEndTimeRef.current = 0; setReplayPaused(false); };
+    return () => { cancelAnimationFrame(raf); seekRef.current = null; replayPausedRef.current = false; view.setReplayPaused(false); replayTimeRef.current = 0; replayEndTimeRef.current = 0; setReplayPaused(false); };
   }, [view, battle?.replay, gd.ready]);
 
   // ---- the phase as the original game screen sees it: banner, cue and BGM (gameLogic phaseBanner, audio.js bgmKeyFor) --

@@ -595,6 +595,7 @@
 .ff-unit.is-enemy .ff-unit__bars i.hp { background: #ff4a3a; }
 .ff-unit__bars i.sp { height: 3px; background: #ffd23a; }
 .ff-float { position: absolute; z-index: 5; transform: translate(-50%, 0); font-family: var(--font-num); font-weight: 700; font-size: .2rem; pointer-events: none; text-shadow: 0 1px 2px #000, 0 0 4px #000; animation: float-up 900ms var(--ease-out) forwards; }
+.sp-replay-paused .ff-board *, .sp-replay-paused .ff-float { animation-play-state: paused !important; }
 .ff-float--phys { color: #ffd7a8; }
 .ff-float--arts { color: #d59cff; }
 .ff-float--true { color: #fff; }
