@@ -208,5 +208,10 @@ describe('wiring', () => {
     // entering prep and the boss-prep re-frame take the fold state; a fold / unfold re-frames through foldCamera
     assert.equal((game.match(/const pc = prepCameraFor\(pub, myId, shopFolded\);/g) || []).length, 2);
     assert.match(game, /const next = foldCamera\(\{\n\s+pub, myId, folded: shopFolded, ownPrep: !!view && viewModeRef\.current === 'prep' && showPrep,\n\s+pen, busy: !!drag \|\| !!facing, current: camRef\.current,\n\s+\}\);\n\s+if \(next\) setCam\(next\.kind, next\.opts\);\n\s+\}, \[view, shopFolded, showPrep, pen, !!drag, !!facing, prepCamKey\]\);/);
+    const independent = read('public/js/independent/game.js');
+    assert.match(independent, /const cam = prepCameraFor\(pub, id, shopCollapsed\);/);
+    assert.match(independent, /const next = foldCamera\(\{ pub: \{ round, bossRound: boss \? round : null, hiddenRound: null, players:/);
+    assert.match(independent, /busy: !!dragging \|\| !!facing \|\| !!busy, current: cameraRef\.current/);
+    assert.match(independent, /shopOpen=\$\{!battle && state\.phase === 'prep' && !pen && !shopCollapsed\}/);
   });
 });

@@ -17,7 +17,7 @@ import { toast } from '../ui/toasts.js';
 import { audio, bgmKeyFor, combatTrackFor, resultSpeaker, resultVoiceSlot } from '../audio.js';
 import { PHASE, GEO } from '../../../shared/constants.js';
 import { independentGrowthCatalog } from '../../../shared/independentPrizeText.js';
-import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout } from '../ui/gameLogic.js';
+import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout, prepCameraFor, foldCamera } from '../ui/gameLogic.js';
 import { data } from '../data.js';
 import { api } from './api.js';
 import { prepView, canDrop, dropRefusal, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
@@ -136,6 +136,8 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     return value;
   }), []);
   const [facing, setFacing] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const cameraRef = useRef(null);
   const [panel, setPanel] = useState(null);
   const [panelUid, setPanelUid] = useState(null);
   const [panelKey, setPanelKey] = useState(null);
@@ -286,9 +288,27 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     const stageId = state.board?.stageId;
     const stage = stageId ? data.lookup('stages', stageId) : null;
     if (stage && stageKey.current !== stageId) { view.setStage(stage); stageKey.current = stageId; }
-    if (pen) view.setCamera('pen');
-    else view.setCamera(state.board?.field === 'bossL' ? 'bossPrep' : 'prep', state.board?.field === 'bossL' ? { side: 'L' } : {});
-  }, [view, battle, gd.ready, state.board?.stageId, state.board?.field, pen]);
+    if (pen) { view.setCamera('pen'); return; }
+    // The server-projected field is authoritative for boss prep; the prep camera helper supplies the matching
+    // official framing and lets resize keep the shop band's camera option.
+    const boss = state.board?.field === 'bossL';
+    const round = boss ? (state.board?.bossRound ?? state.round) : state.round;
+    const pub = { round, bossRound: boss ? round : null, hiddenRound: null, players: [{ playerId: id, seat: 0 }] };
+    const cam = prepCameraFor(pub, id, shopCollapsed);
+    cameraRef.current = cam;
+    view.setCamera(cam.kind, cam.opts);
+  }, [view, battle, gd.ready, state.board?.stageId, state.board?.field, state.board?.bossRound, state.round, pen]);
+  useEffect(() => {
+    if (!view || !gd.ready) return;
+    const boss = state.board?.field === 'bossL';
+    const round = boss ? (state.board?.bossRound ?? state.round) : state.round;
+    const next = foldCamera({ pub: { round, bossRound: boss ? round : null, hiddenRound: null, players: [{ playerId: id, seat: 0 }] },
+      myId: id, ownPrep: !battle && state.phase === 'prep', folded: shopCollapsed, pen,
+      busy: !!dragging || !!facing || !!busy, current: cameraRef.current });
+    if (!next) return;
+    cameraRef.current = next;
+    view.setCamera(next.kind, next.opts);
+  }, [view, gd.ready, id, state.board?.field, state.board?.bossRound, state.round, state.phase, battle, shopCollapsed, pen, dragging, facing, busy]);
   useEffect(() => { if (battle) setPen(false); }, [battle]);
 
   const editable = state.phase === 'prep' && !battle && !busy && !facing;
@@ -305,6 +325,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     const ptr = { released: false, tile: null, off: null };
     const offs = [
       view.on('pieceDragStart', (e) => {
+        setDragging(true);
         setSel(null);
         setDetail((d) => (d?.kind === 'piece' ? null : d));
         ptr.released = false; ptr.tile = null; ptr.off?.();
@@ -318,6 +339,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
       }),
       view.on('tileHover', (t) => { ptr.tile = t && typeof t === 'object' ? t : null; }),
       view.on('pieceDragEnd', (e) => {
+        setDragging(false);
         view.highlightTiles(null);
         const released = ptr.released; const tile = ptr.tile;
         ptr.off?.();
@@ -326,6 +348,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
         if (reason) { audio.sfx('error', { volume: 0.5 }); toast(reason, 'warn'); }
       }),
       view.on('pieceDrop', async (e) => {
+        setDragging(false);
         view.highlightTiles(null);
         const st = stateRef.current;
         const piece = pieceByNum(st, e?.uid);
@@ -467,7 +490,8 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     if (stage) { view.setStage(stage); stageKey.current = null; }
     const kind = rec.kind === 'hidden' ? 'boss' : rec.kind;
     view.enterBattle(rec.field);
-    view.setCamera(kind, { rect: rec.field.rect, side: 'L' });
+    cameraRef.current = { kind, opts: { rect: rec.field.rect, side: 'L' } };
+    view.setCamera(kind, cameraRef.current.opts);
     audio.setFieldUnits([]);
     const { t0 } = replayClock(rec);
     let idx = 0; let gameT = t0 - 0.001; let last = performance.now(); let raf = 0; let shown = -1; let ended = false; let leaked = 0;
@@ -508,7 +532,8 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
       cancelAnimationFrame(raf);
       const k = frames.length - 1;
       view.enterBattle(rec.field);
-      view.setCamera(kind, { rect: rec.field.rect, side: 'L', instant: true });
+      cameraRef.current = { kind, opts: { rect: rec.field.rect, side: 'L', instant: true } };
+      view.setCamera(kind, cameraRef.current.opts);
       const infos = new Map();
       for (let i = 0; i <= k; i++) for (const e of frames[i].ev) if (e[0] === 'spawn') infos.set(e[1].id, e[1]);
       const present = new Set(frames[k].snap.units.map((u) => u[0]));
@@ -736,7 +761,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
       </div>`}
       <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} battleUnits=${battle ? battle.replay?.field?.units || [] : null}
         targetUids=${fieldTarget?.choices?.filter((x) => x.kind === 'friendly').map((x) => x.uid) || []} />
-      <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}
+      <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen && !shopCollapsed}
         onClose=${() => { cancelFieldTarget(); setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onBeginTarget=${beginFieldTarget} onCancelTarget=${cancelFieldTarget} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}
         onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />
       ${selPiece && selTile && view && !facing && !battle && state.phase === 'prep' ? html`<${Underframe} key=${selPiece.uid} view=${view}
