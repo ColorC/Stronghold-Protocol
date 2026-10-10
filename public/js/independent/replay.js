@@ -62,7 +62,7 @@ function paintMediaLayer() {
   for(let node=frame.parentElement;node&&node!==stage;node=node.parentElement){node.style.position='relative';node.style.zIndex='5';node.style.background='transparent';}
   if (doc?.head && !doc.getElementById('sp-replay-canvas-video-layer')) {
     const style = doc.createElement('style'); style.id = 'sp-replay-canvas-video-layer';
-    style.textContent = '.gm__field canvas { display: none !important; visibility: hidden !important; }';
+    style.textContent = '.gm__field canvas, canvas[aria-hidden="true"] { display: none !important; visibility: hidden !important; }';
     doc.head.append(style);
   }
   for (const canvas of recordingCanvasElements(doc)) { canvas.style.visibility = 'hidden'; canvas.style.display = 'none'; }
