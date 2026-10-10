@@ -71,6 +71,13 @@ export class ResonanceMatch extends Match {
     });
     this.sessionId = opts.sessionId;
     this.state = structuredClone(opts.state);
+    const runtime = this.state.nativeRuntime;
+    const legacyRuntimeSpeed = runtime?.finishing === true ? null : Number(runtime?.speed);
+    this.nativeCombatSpeed = [1, 2, 4].includes(Number(this.state.nativeCombatSpeed)) ? Number(this.state.nativeCombatSpeed)
+      : [1, 2, 4].includes(Number(runtime?.selectedSpeed)) ? Number(runtime.selectedSpeed)
+        : [1, 2, 4].includes(legacyRuntimeSpeed) ? legacyRuntimeSpeed : 2;
+    this.state.nativeCombatSpeed = this.nativeCombatSpeed;
+    this.gameSpeed = this.nativeCombatSpeed;
     // Match's shared phase machine needs the campaign's terminal nodes, not the native
     // single-player defaults (R14 boss / R15 hidden). Keep GameData instance-local.
     this.gd.mode = { ...this.gd.mode, lastRound: this.state.roundLimit,
@@ -133,7 +140,7 @@ export class ResonanceMatch extends Match {
       && !field.result && field.mode === 'client' && field.authority === PLAYER
       && [PHASE.COMBAT, PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(this.phase));
     view.resonanceCombat = {
-      speed: runtime?.finishing ? 32 : ([1, 2, 4].includes(Number(runtime?.speed)) ? Number(runtime.speed) : 2),
+      speed: runtime?.finishing ? 32 : ([1, 2, 4].includes(Number(runtime?.speed)) ? Number(runtime.speed) : this.nativeCombatSpeed),
       finishing: runtime?.finishing === true,
       available,
     };
@@ -161,6 +168,8 @@ export class ResonanceMatch extends Match {
     const speed = message.speed;
     if (![1, 2, 4].includes(speed)) return FAIL(ERR.BAD_MSG, 'speed must be 1, 2, or 4');
     if (speed === this.gameSpeed) return OK;
+    this.nativeCombatSpeed = speed;
+    this.state.nativeCombatSpeed = speed;
     this.reanchorResonanceCombat(field, speed, false);
     this.persistNativeRuntime({ elapsed: this._fieldElapsed(field), force: true });
     this.markPublic(); this.flush(true);
@@ -190,6 +199,7 @@ export class ResonanceMatch extends Match {
 
     const runtime = this.state.nativeRuntime ?? (this.state.nativeRuntime = {});
     runtime.speed = nextSpeed === 32 ? 2 : nextSpeed;
+    runtime.selectedSpeed = this.nativeCombatSpeed;
     runtime.finishing = finishing === true;
     if (nextSpeed === 32) runtime.speed = 32;
 
@@ -314,7 +324,11 @@ export class ResonanceMatch extends Match {
         recording: false, completedResult });
       if (!result.ok) return FAIL(ERR.BAD_TARGET, result.error);
       this.state = result.state;
-      if (action.type === 'fight') delete this.state.nativeRuntime;
+      if (action.type === 'fight') {
+        delete this.state.nativeRuntime;
+        this.nativeCombatSpeed = [1, 2, 4].includes(Number(this.state.nativeCombatSpeed)) ? Number(this.state.nativeCombatSpeed) : 2;
+        this.gameSpeed = this.nativeCombatSpeed;
+      }
       this.syncPlayer();
       await this.store.saveSession(this.sessionId, this.state);
       this.markPrivate(this.players.get(PLAYER));
@@ -473,7 +487,7 @@ export class ResonanceMatch extends Match {
     const saved = this.state.nativeRuntime;
     if ([PHASE.COMBAT, PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(saved?.phase) && saved.spec && saved.battleId) {
       this.gameSpeed = saved.finishing === true ? 32
-        : ([1, 2, 4].includes(Number(saved.speed)) ? Number(saved.speed) : 2);
+        : ([1, 2, 4].includes(Number(saved.speed)) ? Number(saved.speed) : this.nativeCombatSpeed);
       const dataPatch = saved.spec.flags?.resonance?.dataPatch;
       this._resonanceValidationData = { chess: dataPatch?.chess ?? Object.create(null), tokens: dataPatch?.tokens ?? Object.create(null) };
       const now = this.sched.now();
@@ -506,6 +520,7 @@ export class ResonanceMatch extends Match {
       if (field.done && field.result) this._afterCombat();
       return;
     }
+    this.gameSpeed = this.nativeCombatSpeed;
     super.start();
   }
 
@@ -587,6 +602,7 @@ export class ResonanceMatch extends Match {
     if (!field || !field.cc || !this.state.nativeRuntime) return;
     const runtime = this.state.nativeRuntime;
     runtime.speed = [1, 2, 4, 32].includes(Number(this.gameSpeed)) ? Number(this.gameSpeed) : 2;
+    runtime.selectedSpeed = this.nativeCombatSpeed;
     runtime.finishing = runtime.speed === 32 || runtime.finishing === true;
     if (Number.isFinite(elapsed)) runtime.elapsed = Math.max(runtime.elapsed || 0, elapsed);
     if (paused !== undefined) runtime.paused = paused;
@@ -704,6 +720,9 @@ export class ResonanceMatch extends Match {
   }
 
   _ccField(input) {
+    // A fast-finish rate belongs to the field that requested it. The selected normal rate
+    // survives settlement and is restored before any subsequent Native field is constructed.
+    this.gameSpeed = this.nativeCombatSpeed;
     if (this.currentPrepared?.round === this.state.round) {
       const ps = this.players.get(PLAYER);
       const preparedOpts = this._normalOpts(ps);
@@ -714,7 +733,7 @@ export class ResonanceMatch extends Match {
       : this.currentPrepared.prepared.nodeKind === 'boss' ? 'boss' : 'normal';
       this.state.nativeRuntime = { phase: this.phase, kind: field.kind, fieldId: field.fieldId, battleId: field.battleId,
       spec: field.spec, elapsed: 0, paused: false, speed: [1, 2, 4].includes(this.gameSpeed) ? this.gameSpeed : 2,
-      finishing: false, progress: field.progress, uidMap: this.uidMap.snapshot() };
+      selectedSpeed: this.nativeCombatSpeed, finishing: false, progress: field.progress, uidMap: this.uidMap.snapshot() };
     this.persistNativeRuntime();
     return field;
   }
@@ -860,6 +879,7 @@ export class ResonanceMatch extends Match {
       this.finish({ victory: this.state.terminalReason === 'victory', reason: this.state.terminalReason });
       return;
     }
+    this.gameSpeed = this.nativeCombatSpeed;
     this.syncPlayer();
     super.afterSettle();
   }

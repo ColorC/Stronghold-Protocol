@@ -204,7 +204,9 @@ test('native ResonanceMatch runs a real NORMAL Battle before one session settlem
     assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', finish: true }).ok, true, 'finish is idempotent');
     await match._sessionWrite;
     assert.equal(stored.nativeRuntime.speed, 32, 'selected rate persists');
+    assert.equal(stored.nativeRuntime.selectedSpeed, 1, 'normal preference remains separate from the temporary fast-finish rate');
     assert.equal(stored.nativeRuntime.finishing, true, 'fast-finish state persists');
+    assert.equal(stored.nativeCombatSpeed, 1, 'normal preference is persisted outside the per-battle runtime');
     const resumedScheduler = new VirtualScheduler({ instantCombat: false });
     const resumed = new ResonanceMatch({ sessionId: 'test-native-match-resume', state: stored, catalog, data, store,
       scheduler: resumedScheduler, send: (_id, msg) => messages.push(msg), broadcast: (msg) => messages.push(msg),
@@ -334,6 +336,36 @@ test('native ResonanceMatch runs a real NORMAL Battle before one session settlem
     assert.equal(match.state.prototypeMeta.lastBattle.battleId, field.battleId);
     assert.equal(match.state.prototypeMeta.economy.processedBattleIds.filter((id) => id === field.battleId).length, 1,
       'the shared result/economy hook must process a native battle once even after duplicate b.result');
+    assert.equal(match.gameSpeed, 1, 'settlement restores the selected normal rate after deleting fast-finish runtime');
+    assert.equal(match.nativeCombatSpeed, 1);
+    assert.equal(match.state.nativeRuntime, undefined, 'completed field runtime is cleared before the next node');
+    assert.deepEqual(match.publicView().resonanceCombat, { speed: 1, finishing: false, available: false },
+      'settled prep state advertises the saved normal preference, never a stale 32x field');
+    const prepRestored = new ResonanceMatch({ sessionId: 'test-native-match-prep-resume', state: match.state, catalog, data, store,
+      scheduler: new VirtualScheduler({ instantCombat: false }), send: (_id, msg) => messages.push(msg), broadcast: () => {},
+      timerScale: 0, combatSpeed: 2, log: { info() {}, warn() {}, error() {}, debug() {} } });
+    prepRestored.start();
+    assert.equal(prepRestored.phase, 'INFO_CHECK', 'a saved prep state restarts through Native briefing, not as a live fast battle');
+    assert.equal(prepRestored.gameSpeed, 1, 'normal preference survives a reconnect after field runtime cleanup');
+    assert.equal(prepRestored.fields.length, 0, 'PREP restore does not reconstruct a completed 32x combat');
+    prepRestored.dispose();
+    match.afterSettle();
+    assert.equal(match.round, 2, 'the same real Match advances to its next campaign round');
+    assert.equal(match.gameSpeed, 1, 'the next round starts with the selected 1x rate, never 32x');
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 5_000 }), true,
+      'the next round follows Native ROUND_START directly into its real prep phase');
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).ok, true);
+    assert.equal(scheduler.runUntil(() => match.phase === 'COMBAT', { maxTime: 1_000 }), true);
+    const nextField = match.fields.find((entry) => entry.players.includes('resonance'));
+    assert.ok(nextField?.cc && nextField.battleId !== battleId, 'next round constructs a distinct real Native field');
+    assert.equal(match.gameSpeed, 1);
+    assert.equal(match.publicView().resonanceCombat.speed, 1);
+    assert.equal(match.publicView().resonanceCombat.finishing, false);
+    assert.ok(messages.some((msg) => msg.t === 'b.start' && msg.battleId === nextField.battleId && msg.speed === 1),
+      'next b.start uses the saved normal preference rather than leaking fast finish');
+    assert.equal(match.state.nativeRuntime.speed, 1);
+    assert.equal(match.state.nativeRuntime.selectedSpeed, 1);
+    assert.equal(match.state.nativeRuntime.finishing, false);
   } finally {
     await match._sessionWrite;
     match.dispose();

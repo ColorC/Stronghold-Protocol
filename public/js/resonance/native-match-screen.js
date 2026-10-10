@@ -327,7 +327,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
     <div class="spov__veil"></div><section class="spov__inner">
       <header class="spov__head"><div class="spov__titles"><small class="micro">共鸣 · ${strategy ? '策略' : '整备'}</small>
         <h2 class="spov__title">${choiceTitle} · 还需 ${Math.max(0, count - selected.length)} 项</h2>
-        <p class="spov__sub">选择后确认，结果会同步到本局状态</p></div>
+        <p class="spov__sub">选择后点击确认领取。</p></div>
         <div class="rs-native-choice__actions"><${Button} variant="ghost" size="sm" class="rs-native-choice__later" onClick=${() => setCollapsed(true)}>稍后整理</${Button}>
         <${Button} variant="primary" size="lg" icon="check" class="spov__confirm" disabled=${busy || selected.length < count || (needsPair && !pair) || !canAfford(selected)} onClick=${confirm}>确认选择</${Button}></div>
       </header>

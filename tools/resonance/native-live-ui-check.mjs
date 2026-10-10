@@ -1000,8 +1000,10 @@ async function run() {
       const rect=node=>{const r=node.getBoundingClientRect();return{width:r.width,height:r.height}};
       const icons=[...document.querySelectorAll('.rs-detail__recipe-flow .rs-item-icon')].map(rect);
       const images=[...document.querySelectorAll('.rs-detail__recipe-flow .rs-item-icon img')].map(img=>{
-        const r=img.getBoundingClientRect();
-        return{width:r.width,height:r.height,naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,complete:img.complete,src:img.currentSrc||img.src};
+        const r=img.getBoundingClientRect(),frame=img.closest('.rs-item-icon'),f=frame?.getBoundingClientRect(),style=getComputedStyle(img);
+        const contained=!!f&&r.left>=f.left-1&&r.top>=f.top-1&&r.right<=f.right+1&&r.bottom<=f.bottom+1;
+        return{width:r.width,height:r.height,frameWidth:f?.width??0,frameHeight:f?.height??0,contained,
+          objectFit:style.objectFit,naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,complete:img.complete,src:img.currentSrc||img.src};
       });
       const flows=[...document.querySelectorAll('.rs-detail__recipe-grid .rs-detail__recipe-flow')].map(rect);
       const cards=[...document.querySelectorAll('.rs-detail__recipe-grid .rs-detail__recipe')].map(rect);
@@ -1012,7 +1014,8 @@ async function run() {
     });
     check('native-recipe-contrast',recipeContrast.length>0&&recipeContrast.every(row=>row.text&&row.ratio>=4.5)
       &&recipeGeometry.icons.length>0&&recipeGeometry.icons.every(icon=>icon.width>=31&&icon.width<=34&&icon.height>=31&&icon.height<=34)
-      &&recipeGeometry.images.length>0&&recipeGeometry.images.every(image=>image.complete&&image.naturalWidth>0&&image.naturalHeight>0&&image.width>=31&&image.width<=34&&image.height>=31&&image.height<=34)
+      &&recipeGeometry.images.length>0&&recipeGeometry.images.every(image=>image.complete&&image.naturalWidth>0&&image.naturalHeight>0
+        &&image.contained&&image.objectFit==='contain'&&image.width>=16&&image.height>=16&&image.width<=image.frameWidth&&image.height<=image.frameHeight)
       &&recipeGeometry.maxFlowHeight<=160&&recipeGeometry.maxCardHeight<=190,{contrast:recipeContrast,geometry:recipeGeometry,lazyImageLoads});
     const recipeDetailClose=await combinePage.$('.rs-detail-panel button[aria-label="关闭详情"]');
     if(recipeDetailClose)await clickHandleByMeasuredCenter(combinePage,recipeDetailClose,'recipe detail close');
