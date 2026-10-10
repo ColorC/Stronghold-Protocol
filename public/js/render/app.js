@@ -1782,7 +1782,9 @@ export async function createFieldView(host, options = {}) {
   function frameBody(now, recordedTime = null) {
     if (mode === 'battle' && replayPresentationPaused) { lastNow = now; return; }
     frameNo++;
-    if (frameNo % 30 === 1) {
+    const offline = Number.isFinite(recordedTime);
+    if (offline) { loadLevel = 0; slowFor = 0; fastFor = 0; impInterval = 0; clipAllowed = true; }
+    if (!offline && frameNo % 30 === 1) {
       impInterval = pickImpostorInterval(); clipAllowed = pickClipping();
       culledCount = 0;
       for (const v of views.values()) if (v.culled) culledCount++;
@@ -1793,7 +1795,7 @@ export async function createFieldView(host, options = {}) {
     const dt = Math.min(0.1, Math.max(0, dtRaw));
     if (dtRaw < 0.25) frameMs = frameMs * 0.9 + dtRaw * 1000 * 0.1;
     fps = 1000 / Math.max(1, frameMs);
-    adaptLoad(dtRaw);
+    if (!offline) adaptLoad(dtRaw);
     vp.width = Math.max(1, host.clientWidth || 1); vp.height = Math.max(1, host.clientHeight || 1);
     clock += dt;
     if ((globalThis.devicePixelRatio || 1) !== lastDpr) { lastDpr = globalThis.devicePixelRatio || 1; resize(); }
