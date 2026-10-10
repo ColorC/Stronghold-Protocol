@@ -199,7 +199,7 @@ describe('make-windows-bundle.mjs: 素材整树复制', () => {
     }
   });
 
-  test('copyFiles 跳过不存在的文件，其余照常复制', async () => {
+  test('copyFiles 复制完整的必需文件清单；缺失文件或目录必须报错', async () => {
     const { copyFiles } = await mod('scripts/make-windows-bundle.mjs');
     const base = await fsp.mkdtemp(path.join(os.tmpdir(), 'sp-copyfiles-'));
     try {
@@ -210,11 +210,19 @@ describe('make-windows-bundle.mjs: 素材整树复制', () => {
       await fsp.writeFile(path.join(src, 'server', 'index.js'), 'code');
       await fsp.writeFile(path.join(src, 'data', 'local-assets.json'), '{}');
 
-      const r = await copyFiles(['server/index.js', 'data/local-assets.json', 'public/assets/missing.png'], dst, src);
-      assert.equal(r.files, 2, '缺失的那个被跳过');
+      const r = await copyFiles(['server/index.js', 'data/local-assets.json'], dst, src);
+      assert.equal(r.files, 2);
+      assert.equal(r.bytes, Buffer.byteLength('code{}'), '统计实际复制的字节');
       assert.equal(fs.existsSync(path.join(dst, 'server', 'index.js')), true, '目录自动建出来');
       assert.equal(fs.existsSync(path.join(dst, 'data', 'local-assets.json')), true);
-      assert.equal(fs.existsSync(path.join(dst, 'public')), false, '没有文件就不该建空目录');
+      await assert.rejects(copyFiles(['public/assets/missing.png'], dst, src), (error) => {
+        assert.match(error.message, /打包源文件缺失：public\/assets\/missing\.png/);
+        assert.ok(error.message.includes(path.join(src, 'public/assets/missing.png')), '回执给出源文件绝对路径');
+        assert.equal(error.cause.code, 'ENOENT', '保留首个原生错误');
+        return true;
+      });
+      assert.equal(fs.existsSync(path.join(dst, 'public')), false, '缺失文件不应建空目录');
+      await assert.rejects(copyFiles(['server'], dst, src), /打包源不是普通文件：server/);
     } finally {
       await fsp.rm(base, { recursive: true, force: true });
     }
