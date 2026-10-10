@@ -1847,7 +1847,9 @@ export async function createFieldView(host, options = {}) {
   const preRender = () => { renderT0 = performance.now(); };
   const postRender = () => {
     if (renderT0) renderMs = renderMs * 0.9 + (performance.now() - renderT0) * 0.1;
-    emit('framePainted');
+    // The paused Three canvas retains its displayed frame, but its drawing buffer is
+    // discarded. Keep the recorder's last complete composite until the field resumes.
+    if (mode !== 'battle' || !replayPresentationPaused) emit('framePainted');
   };
   app.ticker.add(preRender, null, -24);
   app.ticker.add(postRender, null, -26);
