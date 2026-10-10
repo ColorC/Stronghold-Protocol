@@ -102,6 +102,8 @@ function selfTest() {
   if (!isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc${RESONANCE_WS_PATH}?session=${sid}`, sid)) throw new Error('native live WebSocket route was not recognized');
   if (isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc${RESONANCE_WS_PATH}?session=${sid}`, `${sid.slice(0, -1)}0`)
     || isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc/stronghold/resonance/ws?session=${sid}`, sid)) throw new Error('native live WebSocket scope accepted a wrong session or route');
+  const pageToken = {};
+  if (observerPage({ page: () => pageToken }) !== pageToken || observerPage(pageToken) !== pageToken) throw new Error('Puppeteer Frame/Page observer mapping failed');
   for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/stronghold/resonance/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
     if (!isGameApiPath(pathname) || !isForbiddenMutation('POST', pathname)) throw new Error(`mutation audit missed ${pathname}`);
   }
@@ -143,6 +145,9 @@ function frameIsGame(frame, hostFrame) {
   try { const url = new URL(frame.url()); return url.origin === new URL(GAME_URL).origin && [new URL(GAME_URL).pathname, LOCAL_GAME_PATH].includes(url.pathname); }
   catch { return false; }
 }
+function observerPage(pageOrFrame) {
+  return typeof pageOrFrame?.page === 'function' ? pageOrFrame.page() : pageOrFrame;
+}
 
 async function run() {
   const options = parseArgs(process.argv.slice(2));
@@ -168,6 +173,13 @@ async function run() {
   }
   const logLines = [];
   const log = message => logLines.push(`${new Date().toISOString()} ${message}`);
+  let currentStage = 'startup';
+  const stageHistory = [];
+  const setStage = name => {
+    currentStage = name;
+    if (stageHistory.at(-1) !== name && stageHistory.length < 32) stageHistory.push(name);
+    log(`stage=${name}`);
+  };
   const writeLog = () => {
     const content = `${logLines.join('\n')}\n`;
     if (existsSync(LOG)) appendFileSync(LOG, content);
@@ -309,7 +321,7 @@ async function run() {
   };
   const nativePrepProof = page => {
     // This checker ends at Native PREP. The authoritative b.start / COMBAT proof belongs to the full-flow checker.
-    const observation = websocketPages.get(page)?.observation;
+    const observation = websocketPages.get(observerPage(page))?.observation;
     if (!observation) return { ok: false, reason: 'CDP WebSocket observation is unavailable' };
     const socket = observation.sockets.find(row => row.native);
     const welcome = observation.messages.find(row => row.type === 'welcome' && row.playerId === 'resonance' && row.tokenMatchesSession);
@@ -321,7 +333,7 @@ async function run() {
       socket, welcome, catalog, publicPrep, privatePrep, failures: observation.failures };
   };
   const nativeConnectionProof = page => {
-    const observation = websocketPages.get(page)?.observation;
+    const observation = websocketPages.get(observerPage(page))?.observation;
     if (!observation) return { ok: false, reason: 'CDP WebSocket observation is unavailable' };
     const socket = observation.sockets.find(row => row.native);
     const welcome = observation.messages.find(row => row.type === 'welcome' && row.playerId === 'resonance' && row.tokenMatchesSession);
@@ -352,23 +364,26 @@ async function run() {
     assert(connection.ok, `native WebSocket welcome/catalog/state proof is incomplete: ${JSON.stringify(connection)}`);
     if (connection.publicState.phase === 'INFO_CHECK') {
       assert(allowBriefingAck, 'fullscreen reconnect unexpectedly returned to INFO_CHECK');
+      setStage('native-info-check-ack');
       const ready = await page.waitForSelector('.brief__foot button.btn', { visible: true, timeout: 15_000 });
       assert(ready, 'Native INFO_CHECK briefing button was not visible');
       await ready.click();
       const sentUntil = Date.now() + 5_000;
-      while (!(websocketPages.get(page)?.observation.sentTypes.includes('g.infoReady')) && Date.now() < sentUntil) {
+      while (!(websocketPages.get(observerPage(page))?.observation.sentTypes.includes('g.infoReady')) && Date.now() < sentUntil) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
-      assert(websocketPages.get(page)?.observation.sentTypes.includes('g.infoReady'), 'briefing acknowledgment did not use native g.infoReady');
+      assert(websocketPages.get(observerPage(page))?.observation.sentTypes.includes('g.infoReady'), 'briefing acknowledgment did not use native g.infoReady');
     } else {
       assert(connection.publicState.phase === 'PREP', `session is not in Native PREP: ${connection.publicState.phase}`);
     }
+    setStage('native-prep-proof');
     return waitForNativePrep(page);
   };
   const evidence = { status: 'running', sessionId: options.session, productNative: options['product-native'], workshopUrl: WORKSHOP_URL,
     cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests,
-    requiredResourceFailures, unexpectedHtmlResponses, browserErrors, networkFailures };
+    requiredResourceFailures, unexpectedHtmlResponses, browserErrors, networkFailures, stageHistory };
   const work = (async () => {
+    setStage('browser-launch');
     browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
         '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--window-size=1440,1000'] });
@@ -379,7 +394,9 @@ async function run() {
     const page = await browser.newPage();
     await installScope(page);
     await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+    setStage('workshop-navigation');
     await page.goto(WORKSHOP_URL, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    setStage('workshop-host-ready');
     await page.waitForFunction(() => location.pathname.endsWith('/notes-web.html')
       || [...document.querySelectorAll('iframe')].some(frame => /notes-web\.html/.test(frame.src)), { timeout: 30_000 });
     const hostFrame = page.frames().find(frame => {
@@ -389,10 +406,12 @@ async function run() {
       } catch { return false; }
     });
     assert(hostFrame, 'Workshop notes-web host frame was not found');
+    setStage('workshop-card-ready');
     const card = await hostFrame.waitForSelector(`.react-flow__node[data-id="${CARD_ID}"]`, { timeout: 30_000 });
     assert(card, `Workshop card ${CARD_ID} was not found`);
     const cardProof = await card.evaluate(node => ({ id: node.getAttribute('data-id'), text: (node.innerText || '').trim().slice(0, 500) }));
     assert(cardProof.id === CARD_ID, 'Workshop focus resolved to another card');
+    setStage('embedded-frame-ready');
     const embeddedFrame = await new Promise((resolve, reject) => {
       const until = Date.now() + 30_000;
       const scan = () => {
@@ -403,12 +422,17 @@ async function run() {
       };
       scan();
     });
+    setStage('embedded-initial-title-ready');
+    await embeddedFrame.waitForFunction(() => document.readyState === 'complete'
+      && !!document.querySelector('.rs-entry .title-screen .title-cn')
+      && !!document.querySelector('.rs-entry .title-screen .title-login'), { timeout: 30_000 });
     const frameTitles = await hostFrame.$$eval('iframe', elements => elements.map(el => ({ src: el.src, title: el.title, id: el.id })));
     const actualFrameTitle = frameTitles.find(row => {
       try { const u = new URL(row.src); return u.origin === new URL('https://workshop.colorc.cc/stronghold/resonance.html').origin && u.pathname === '/stronghold/resonance.html'; }
       catch { return false; }
     })?.title?.trim();
     assert(actualFrameTitle, 'the actual Workshop game iframe has an empty title');
+    setStage('embedded-session-navigation');
     const embeddedUrl = new URL(embeddedFrame.url());
     embeddedUrl.searchParams.set('session', options.session);
     embeddedUrl.hash = 'section-shop';
@@ -417,12 +441,15 @@ async function run() {
       const url = new URL(location.href);
       return url.searchParams.get('session') === session && url.hash === hash && document.readyState !== 'loading';
     }, { timeout: 45_000 }, { session: options.session, hash: '#section-shop' });
+    setStage('embedded-native-info-ack-and-prep');
+    const embeddedWsProof = await enterReadonlyPrep(embeddedFrame, { allowBriefingAck: true });
     if (await embeddedFrame.$('.rs-native-choice')) {
       const collapse = await embeddedFrame.$('.rs-native-choice__later');
       assert(collapse, 'native choice overlay is open but has no local defer control');
       await collapse.click();
       await embeddedFrame.waitForFunction(() => !document.querySelector('.rs-native-choice') && !!document.querySelector('.rs-native-choice-tab'), { timeout: 5_000 });
     }
+    setStage('embedded-native-engine-ready');
     await embeddedFrame.waitForFunction(() => {
       const view = globalThis.__SP_VIEW__;
       return view?.kind === 'engine' || view?.kind === 'fallback';
@@ -431,7 +458,7 @@ async function run() {
       const view = globalThis.__SP_VIEW__;
       return view?.kind !== 'engine' || Number(view.raw?.stats?.()?.units) > 0;
     }, { timeout: 15_000 });
-    const embeddedWsProof = await enterReadonlyPrep(embeddedFrame, { allowBriefingAck: true });
+    setStage('embedded-shop-ready');
     await embeddedFrame.waitForFunction(() => document.querySelector('.rs-native-match .shopbar, .rs-native-match .shopbar-tab, #rs-section-shop') !== null, { timeout: 30_000 });
     const gameProof = await embeddedFrame.evaluate(() => {
       const view = globalThis.__SP_VIEW__;
@@ -452,6 +479,7 @@ async function run() {
     const expectedPopupUrl = await fullscreen.evaluate(el => el.href);
     const expected = new URL(expectedPopupUrl);
     assert(expected.searchParams.get('session') === options.session && expected.hash === '#section-shop', 'fullscreen href does not preserve the exact session/hash');
+    setStage('fullscreen-popup-open');
     const popupPromise = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('fullscreen link did not open a popup within 15 seconds')), 15_000);
       page.once('popup', popup => { clearTimeout(timer); resolve(popup); });
@@ -460,10 +488,14 @@ async function run() {
     const popup = await popupPromise;
     await installScope(popup);
     await popup.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+    setStage('fullscreen-session-navigation');
     await popup.waitForFunction(({ session, hash }) => {
       const url = new URL(location.href);
       return url.searchParams.get('session') === session && url.hash === hash && document.readyState !== 'loading';
     }, { timeout: 45_000 }, { session: options.session, hash: '#section-shop' });
+    setStage('fullscreen-native-prep-proof');
+    const popupWsProof = await enterReadonlyPrep(popup);
+    setStage('fullscreen-native-engine-ready');
     await popup.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30_000 });
     try {
       await popup.waitForFunction(() => {
@@ -479,7 +511,7 @@ async function run() {
       }).catch(error => ({ error: error.message }));
       throw new Error(`fullscreen native engine did not expose units after 15 seconds: ${JSON.stringify(diagnostic)}`);
     }
-    const popupWsProof = await enterReadonlyPrep(popup);
+    setStage('fullscreen-proof');
     const popupProof = await popup.evaluate(() => {
       const view = globalThis.__SP_VIEW__, stats = view?.raw?.stats?.() || null;
       return { url: location.href, title: document.querySelector('.rs-gmeta b')?.textContent?.trim() || document.title?.trim() || '',
@@ -492,7 +524,7 @@ async function run() {
     assert(mutatingRequests.length === 0, `unexpected create/act/fight network requests: ${JSON.stringify(mutatingRequests)}`);
     assert(browserErrors.length === 0, `pageerror/console errors were observed: ${JSON.stringify(browserErrors)}`);
     assert(networkFailures.length === 0, `network failures or HTTP errors were observed: ${JSON.stringify(networkFailures)}`);
-    const sentTypes = [...(websocketPages.get(embeddedFrame)?.observation.sentTypes ?? []), ...(websocketPages.get(popup)?.observation.sentTypes ?? [])];
+    const sentTypes = [...(websocketPages.get(observerPage(embeddedFrame))?.observation.sentTypes ?? []), ...(websocketPages.get(popup)?.observation.sentTypes ?? [])];
     const allowedReadonlyTypes = new Set(['hello', 'ping', 'g.infoReady', 'g.unitStats']);
     const unexpectedWsActions = sentTypes.filter(type => !allowedReadonlyTypes.has(type));
     assert(unexpectedWsActions.length === 0, `unexpected native WebSocket gameplay actions: ${JSON.stringify(unexpectedWsActions)}`);
@@ -506,6 +538,7 @@ async function run() {
     evidence.fullscreen = popupProof;
     evidence.fullscreenNativeWebSocket = popupWsProof;
     evidence.nativeWebSocketClientMessageTypes = sentTypes;
+    evidence.completedAtStage = currentStage;
     log(`passed card=${CARD_ID} iframeTitle=${actualFrameTitle} session=${options.session} hash=#section-shop nativeUnits=${gameProof.engineUnits}/${popupProof.engineUnits} ws=welcome,catalog,public-PREP,private-PREP`);
     return evidence;
   })();
@@ -527,7 +560,8 @@ async function run() {
   } catch (error) {
     evidence.status = timedOut ? 'timeout' : 'failed';
     evidence.error = error instanceof Error ? error.message : String(error);
-    log(`${evidence.status}: ${evidence.error}`);
+    evidence.failedAtStage = currentStage;
+    log(`${evidence.status} stage=${currentStage}: ${evidence.error}`);
     writeReceipt(evidence);
     writeLog();
     process.stderr.write(`${JSON.stringify({ status: evidence.status, receipt: RECEIPT, log: LOG, error: evidence.error })}\n`);
