@@ -18,7 +18,7 @@ const model=read('public/js/resonance/model.js');
 test('entry is title then native difficulty then direct preparation; legacy extra-step URLs return to difficulty',()=>{
  assert.match(app,/\['difficulty', 'environment', 'briefing'\]\.includes\(stepName\) \? 1 : 0/);
  assert.match(app,/const names = \{ 1: 'difficulty' \}/);
- assert.match(app,/step=\$\{step\} of=\$\{2\}/);
+ assert.match(app,/step=\$\{step\} of=\$\{1\}/);
  assert.match(app,/onClick=\$\{start\}>开始备战/);
  assert.match(app,/if \(creatingSession\.current \|\| !seedValid \|\| step !== 1 \|\| catalogKey !== String\(numericSeed\)\) return/);
  assert.match(app,/disabled=\$\{busy \|\| !catalogReady\} loading=\$\{busy\} onClick=\$\{start\}/);

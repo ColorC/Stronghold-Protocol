@@ -46,15 +46,30 @@ export function iconIsConcrete(iconId, src) {
 }
 export function iconMatchesExpected(iconId, actualUrl, expectedUrl) {
   if (!iconIsConcrete(iconId, actualUrl) || typeof expectedUrl !== 'string' || !expectedUrl) return false;
-  try { return new URL(actualUrl, ROOT).href === new URL(expectedUrl, ROOT).href; } catch { return false; }
+  try { return new URL(actualUrl).origin === new URL(expectedUrl, actualUrl).origin && new URL(actualUrl).pathname === new URL(expectedUrl, actualUrl).pathname; } catch { return false; }
+}
+export function backgroundCoversCard(card) {
+  return !!card && Number.isFinite(card.bgWidth) && Number.isFinite(card.bgHeight) && Number.isFinite(card.clientWidth) && Number.isFinite(card.clientHeight) &&
+    Math.abs(card.bgWidth - card.clientWidth) < 2 && Math.abs(card.bgHeight - card.clientHeight) < 2;
 }
 export function isResumableInitialization(receipt) {
   return receipt?.checker === 'native-ui-check' && receipt.status === 'failed' && receipt.sessionId === null &&
     receipt.creates === 0 && receipt.fights === 0 && Array.isArray(receipt.gameplayMutations) && receipt.gameplayMutations.length === 0;
 }
+const REQUIRED_ACCEPTANCE_CHECKS = [
+  'catalog-season-cardinality', 'population-three-deployed-zero-remaining', 'one-real-shop-purchase',
+  'real-inventory-item-equipped-to-live-unit', 'equipped-item-overlay-icon-loaded', 'unequip-removes-item-from-unit',
+  'unequip-removes-unit-overlay-icon', 're-equip-real-inventory-item', 'real-two-component-recipe-discovered',
+  'inventory-ui-offers-real-recipe', 'real-ui-synthesis-consumes-two-and-creates-result',
+  'synthesized-result-equipped-and-synced', 'synthesized-result-icon-visible-on-pawn',
+  'exactly-one-real-fight-with-native-units', 'native-replay-shows-real-history-gear-overlay',
+];
+export function missingRequiredAcceptanceChecks(checks) {
+  return REQUIRED_ACCEPTANCE_CHECKS.filter(name => checks?.[name]?.passed !== true);
+}
 export function costCardHasWholeSurfaceStyle(card) {
   return !!card && /scard--t\d/.test(card.className || '') && !!card.background && card.background !== 'transparent' && card.background !== 'rgba(0, 0, 0, 0)' &&
-    !!card.bgImage && card.bgImage !== 'none' && card.bgCoversCard === true && !!card.border && !/tier--color/.test(card.tierClass || '') &&
+    !!card.bgImage && card.bgImage !== 'none' && backgroundCoversCard(card) && !!card.border && card.tierColorPresent === true && card.tierColorVisible !== true &&
     !/^[IVXLCDM]+$/.test(String(card.tierText || '').trim());
 }
 export function config() { return { source: SOURCE, data: DATA, sessionDirectory: SESSION_DIR, profile: PROFILE, receipt: RECEIPT, log: LOG, preparationLog: PREPARATION_LOG, screenshots: SHOTS, deadlineMs: DEADLINE_MS, browserStarted: false }; }
@@ -87,10 +102,19 @@ async function run() {
   const productNative = previous?.productNative || previous?.sourceNative || sourceNative;
   const receipt = previous || { checker: 'native-ui-check', sourceNative, toolingNative: sourceNative, productNative, startedAt: stamp(), deadlineMs: DEADLINE_MS,
     status: 'running', sessionId: null, creates: 0, fights: 0, gameplayMutations: [], checks: {}, screenshots: {}, paths: config() };
-  if (options.resumeInitialization) {
-    receipt.previousFailure = receipt.failure;
-    delete receipt.failure;
+  receipt.failures ||= [];
+  if (previous) {
     receipt.previousSourceNative = receipt.sourceNative;
+    if (receipt.status === 'failed' && receipt.failure) {
+      if (!receipt.failures.some(entry=>entry.attempt===receipt.attempts&&entry.error===receipt.failure)) receipt.failures.push({ attempt:receipt.attempts,toolingNative: receipt.toolingNative || receipt.sourceNative, status: 'failed', error: receipt.failure, time: receipt.finishedAt || stamp() });
+      receipt.previousFailure ||= receipt.failure;
+    }
+    delete receipt.failure;
+    receipt.sourceNative = sourceNative;
+    receipt.toolingNative = sourceNative;
+    receipt.productNative = productNative;
+  }
+  if (options.resumeInitialization) {
     receipt.productNative = productNative;
     receipt.sourceNative = sourceNative;
     receipt.toolingNative = sourceNative;
@@ -101,6 +125,7 @@ async function run() {
   receipt.status = 'running';
   const log = [`${stamp()} ${options.resumeInitialization ? 'resume owned zero-action initialization failure' : options.resumeSession ? `resume same SID ${options.resumeSession}` : 'start native UI acceptance'}`, `source=${SOURCE}`, `data=${DATA}`, `ephemeralSessions=${SESSION_DIR}`];
   let browser, server, deadline;
+  let page;
   const save = async () => writeFile(RECEIPT, `${JSON.stringify(receipt, null, 2)}\n`);
   const check = (name, ok, evidence = null) => { receipt.checks[name] = { passed: !!ok, evidence }; if (!ok) throw new Error(`${name} failed: ${JSON.stringify(evidence)}`); };
   try {
@@ -124,7 +149,7 @@ async function run() {
     deadline = setTimeout(() => { receipt.timedOut = true; void browser?.close().catch(() => {}); void server?.close().catch(() => {}); }, DEADLINE_MS);
     browser = await puppeteer.launch({ executablePath: chrome, headless: true, userDataDir: PROFILE, timeout: 30000,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-first-run', '--no-default-browser-check', '--disable-background-networking'] });
-    const page = await browser.newPage();
+    page = await browser.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
@@ -139,13 +164,14 @@ async function run() {
     await page.setRequestInterception(true);
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
     const capture = async key => { if (existsSync(SHOTS[key])) return; await page.screenshot({ path: SHOTS[key], type: 'jpeg', quality: 88, fullPage: true }); receipt.screenshots[key] = SHOTS[key]; };
+    const captureAdditional = async (name, prefix) => { let filename=`${prefix}.jpg`,suffix=1,target=path.join(OUT,filename);while(existsSync(target)){filename=`${prefix}-${suffix++}.jpg`;target=path.join(OUT,filename);}await page.screenshot({path:target,type:'jpeg',quality:88,fullPage:true});receipt.screenshots[name]=target; };
     const inspectGeometry = async label => {
       const result = await page.evaluate(() => {
         const rect = element => { const r = element?.getBoundingClientRect(); return r && { left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height }; };
         const visible = element => { const r=element?.getBoundingClientRect(),s=element&&getComputedStyle(element);return !!r&&r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)>0; };
         const action=document.querySelector('.rs-start-battle'),remain=document.querySelector('.shopbar__remain');
         const controls=[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold),.shopbar__tools .toolbtn--amber,.shopbar__tools .toolbtn--ice,.shopbar .rs-level-card,.rs-start-battle')].filter(visible).map(element=>{const r=rect(element),hit=document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2);return{label:element.getAttribute('aria-label')||element.innerText.trim(),reachable:!!hit&&(hit===element||element.contains(hit)),rect:r};});
-        const cards=[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')].map(card=>{const tier=card.querySelector('.tier'),bg=card.querySelector('.scard__bg'),r=card.getBoundingClientRect(),br=bg?.getBoundingClientRect();return{className:card.className,background:getComputedStyle(card).background,bgImage:bg&&getComputedStyle(bg).backgroundImage,bgCoversCard:!!br&&Math.abs(br.width-r.width)<2&&Math.abs(br.height-r.height)<2,border:getComputedStyle(card).borderTopColor,tierClass:tier?.className||'',tierText:tier?.innerText||''};});
+        const cards=[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')].map(card=>{const tier=card.querySelector('.tier--color'),bg=card.querySelector('.scard__bg'),br=bg?.getBoundingClientRect();return{className:card.className,background:getComputedStyle(card).background,bgImage:bg&&getComputedStyle(bg).backgroundImage,bgWidth:br?.width||NaN,bgHeight:br?.height||NaN,clientWidth:card.clientWidth,clientHeight:card.clientHeight,border:getComputedStyle(card).borderTopColor,tierColorPresent:!!tier,tierColorVisible:!!tier&&visible(tier),tierClass:tier?.className||'',tierText:tier?.innerText||''};});
         return{viewport:{width:innerWidth,height:innerHeight},action:rect(action),remain:rect(remain),cards,controls,overlap:!!(visible(action)&&visible(remain)&&action.getBoundingClientRect().left<remain.getBoundingClientRect().right&&action.getBoundingClientRect().right>remain.getBoundingClientRect().left&&action.getBoundingClientRect().top<remain.getBoundingClientRect().bottom&&action.getBoundingClientRect().bottom>remain.getBoundingClientRect().top)};
       });
       check(`${label}-turn-action-does-not-overlap-remain`, !result.overlap && !!result.action && !!result.remain, result);
@@ -154,6 +180,7 @@ async function run() {
       return result;
     };
     const getState = async () => page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
+    const waitForGameReady = async () => { await page.waitForSelector('.shopbar__remain',{timeout:30000});await page.waitForFunction(()=>{const action=document.querySelector('.rs-start-battle'),canvas=document.querySelector('.gm__field canvas'),view=globalThis.__SP_VIEW__;if(!action||!canvas||!view)return false;const r=action.getBoundingClientRect(),s=getComputedStyle(action);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';},{timeout:30000}); };
     const afterRevision = async previous => page.waitForFunction(async ({ id, revision }) => {
       const state = (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state;
       return state?.revision > revision ? state : false;
@@ -178,7 +205,9 @@ async function run() {
     const entryUrl = new URL(`${server.url}/resonance.html`);
     if (options.resumeSession) entryUrl.searchParams.set('session', options.resumeSession);
     await page.goto(entryUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const resumePrep = !!options.resumeSession && receipt.checkpoint === 'prep' && receipt.steps?.created === true && Object.keys(receipt.steps).length === 1;
     if (options.resumeSession) {
+      check('resume-supported-checkpoint-no-prior-gameplay', resumePrep, { checkpoint: receipt.checkpoint, steps: receipt.steps });
       await page.waitForSelector('.gm', { timeout: 45000 });
       await page.waitForSelector('.shopbar__remain', { timeout: 30000 });
       check('resume-checkpoint-same-ephemeral-session', receipt.sessionId === options.resumeSession, { sessionId: receipt.sessionId, checkpoint: receipt.checkpoint });
@@ -208,6 +237,7 @@ async function run() {
     receipt.checkpoint = 'prep'; receipt.steps = { created: true }; await save();
     check('session-is-in-ephemeral-path', !!receipt.sessionId && path.resolve(SESSION_DIR).toLowerCase() !== path.resolve(path.join(ROOT, 'runtime/resonance/player-sessions')).toLowerCase(), { sessionId: receipt.sessionId, directory: SESSION_DIR });
     check('opening-event-automatic-and-no-brief-gate', await page.evaluate(() => !document.querySelector('.rs-flow--briefing') && !!document.querySelector('.rs-gmeta__opening')), await page.evaluate(() => document.querySelector('.rs-gmeta__opening')?.innerText || null));
+    }
     const catalogCounts = await page.evaluate(async id => {
       const state = await (await fetch(`./resonance/api/sessions/${id}`)).json();
       const response = await (await fetch(`./resonance/api/catalog?seed=${state.state?.seed}`)).json();
@@ -218,16 +248,15 @@ async function run() {
         legalInventoryRecipe:(catalog.recipes||[]).find(recipe=>recipe.parts?.length===2&&recipe.parts.every(part=>(state.state.inventory||[]).some(item=>item.itemId===part)))||null };
     }, receipt.sessionId);
     check('catalog-season-cardinality', catalogCounts.active === 65 && catalogCounts.operators === 154 && catalogCounts.strategies === 28 && catalogCounts.equipment === 69 && catalogCounts.openingEvents === 4, catalogCounts);
-    await inspectGeometry('desktop-1440x900');
-    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
-    await inspectGeometry('desktop-1280x720');
-    await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-    await inspectGeometry('mobile-844x390'); await capture('55-mobile');
-    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
     await capture('53-prep');
-    }
+    await waitForGameReady();await inspectGeometry('desktop-1440x900');
+    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+    await waitForGameReady();await inspectGeometry('desktop-1280x720');
+    await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    await waitForGameReady();await inspectGeometry('mobile-844x390'); await capture('55-mobile');
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
     let state=await getState();
-    if(!options.resumeSession){
+    if(!options.resumeSession || resumePrep){
       const rawInventory=state.inventory||[];check('native-initial-inventory-two-real-components',rawInventory.length===2&&rawInventory.every(item=>item.itemId),rawInventory);
       const shopOffer=state.shop?.offers?.find(offer=>!offer.sold&&offer.cost<=state.gold);
       check('one-affordable-real-shop-offer',!!shopOffer,shopOffer);
@@ -236,6 +265,7 @@ async function run() {
       const cardBox=await card.boundingBox();assert(cardBox,'shop card has no bounds');
       await page.mouse.click(cardBox.x+cardBox.width/2,cardBox.y+cardBox.height/2,{button:'right'});
       await page.waitForSelector('.dpanel .dskill__icon img',{timeout:8000});
+      await page.waitForFunction(()=>{const image=document.querySelector('.dpanel .dskill__icon img');return !!image?.complete&&image.naturalWidth>0;},{timeout:8000});
       const icon=await page.evaluate(async()=>{const image=document.querySelector('.dpanel .dskill__icon img'),name=document.querySelector('.dpanel .dhead__name')?.innerText.trim(),response=await(await fetch(`./resonance/api/catalog?seed=${new URL(location.href).searchParams.get('seed')||1}`)).json(),operator=Object.values(response.catalog?.operators||{}).find(value=>value.name===name),{resolveOperatorSkillIcon}=await import('./js/resonance/operatorSkillIcon.js'),expected=operator&&resolveOperatorSkillIcon(operator);return{name,src:image?.src,loaded:!!image?.complete&&image.naturalWidth>0,iconId:expected?.iconId||null,expectedUrl:expected?.url||null,matchesExpected:!!image&&!!expected?.url&&new URL(image.src).href===new URL(expected.url,location.href).href};});
       check('real-skill-image-and-concrete-icon-identity',icon.loaded&&iconMatchesExpected(icon.iconId,icon.src,icon.expectedUrl)&&icon.matchesExpected,icon);
       await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
@@ -256,8 +286,9 @@ async function run() {
       const equippedUnit=state.pieces.find(piece=>piece.uid===activePieces[0].uid),equippedItem=equippedUnit?.equipment?.find(value=>value.uid===item.uid);
       check('real-inventory-item-equipped-to-live-unit',!!equippedItem&&!state.inventory.some(value=>value.uid===item.uid),{itemUid:item.uid,equippedItem,equippedUnit});
       receipt.checkpoint='after-equip';receipt.steps={...(receipt.steps||{}),equipped:true};await save();
-      await page.waitForSelector(`.rs-unit-items__item[data-item-id="${item.itemId}"] img`,{timeout:8000});
-      const overlayImage=await page.$eval(`.rs-unit-items__item[data-item-id="${item.itemId}"] img`,img=>({src:img.src,loaded:img.complete&&img.naturalWidth>0}));
+      const ownedItemSelector=`.rs-unit-items__row[data-unit-key="prep:${activePieces[0].uid}"] .rs-unit-items__item[data-item-id="${item.itemId}"] img`;
+      await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},ownedItemSelector);
+      const overlayImage=await page.$eval(ownedItemSelector,img=>({src:img.src,loaded:img.complete&&img.naturalWidth>0}));
       check('equipped-item-overlay-icon-loaded',overlayImage.loaded,overlayImage);
       await capture('54-gear');await inspectGeometry('gear-overlay-1440x900');
       await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.rs-panel-drawer'),{timeout:5000});
@@ -267,12 +298,13 @@ async function run() {
       assert(canUnequip,'equipped item detail is missing its real unload action');await page.evaluate(()=>[...document.querySelectorAll('.rs-detail__member button')].find(button=>button.innerText.trim()==='卸下')?.click());
       state=await afterRevision(state.revision).then(handle=>handle.jsonValue());
       check('unequip-removes-item-from-unit',!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
-      check('unequip-removes-unit-overlay-icon',await page.$(`.rs-unit-items__item[data-item-id="${item.itemId}"] img`)===null,item.itemId);
+      await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:8000},ownedItemSelector);
+      check('unequip-removes-unit-overlay-icon',await page.$(ownedItemSelector)===null,item.itemId);
       await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       await page.mouse.click(unitPoint.x,unitPoint.y);await page.waitForSelector('.rs-detail__member select',{timeout:8000});
       await page.select('.rs-detail__member select',item.uid);state=await afterRevision(state.revision).then(handle=>handle.jsonValue());
       check('re-equip-real-inventory-item',!!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
-      await page.waitForSelector(`.rs-unit-items__item[data-item-id="${item.itemId}"] img`,{timeout:8000});
+      await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},ownedItemSelector);
       await inspectGeometry('member-detail-gear-1440x900');await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       check('real-two-component-recipe-discovered',!!catalogCounts.legalInventoryRecipe,{inventory:rawInventory.map(entry=>entry.itemId),recipe:catalogCounts.legalInventoryRecipe});
       await page.evaluate(()=>[...document.querySelectorAll('.rs-hud-actions button')].find(element=>/装备背包/.test(`${element.innerText} ${element.title} ${element.getAttribute('aria-label')||''}`))?.click());
@@ -283,20 +315,23 @@ async function run() {
       state=await getState();await combineButton.asElement().click();state=await afterRevision(state.revision).then(handle=>handle.jsonValue());
       const combineEvent=state.history?.find(event=>event.type==='equipment-combined'&&event.resultId===catalogCounts.legalInventoryRecipe.resultId);
       const combinedOwner=state.pieces.find(piece=>piece.equipment?.some(entry=>entry.uid===combineEvent?.uid));
-      check('real-ui-synthesis-consumes-two-and-creates-result',!!combineEvent&&combineEvent.itemIds.length===2&&(state.inventory.some(entry=>entry.uid===combineEvent.uid&&entry.itemId===combineEvent.resultId)||!!combinedOwner),{combineEvent,inventory:state.inventory,combinedOwner});
-      check('synthesis-removes-old-pawn-overlay',await page.$(`.rs-unit-items__item[data-item-id="${item.itemId}"] img`)===null,item.itemId);
+      check('real-ui-synthesis-consumes-two-and-creates-result',!!combineEvent&&combineEvent.itemIds.length===2&&(state.inventory.some(entry=>entry.uid===combineEvent.uid&&entry.itemId===combineEvent.resultId)||combinedOwner?.uid===activePieces[0].uid),{combineEvent,inventory:state.inventory,combinedOwner});
+      await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:8000},ownedItemSelector);
+      check('synthesis-removes-old-pawn-overlay',await page.$(ownedItemSelector)===null,item.itemId);
       if (!combinedOwner) { await page.select(`#inventory-${combineEvent.uid} select[aria-label="装备给谁"]`,activePieces[0].uid);state=await afterRevision(state.revision).then(handle=>handle.jsonValue()); }
       const finalGear=state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.find(entry=>entry.itemId===combineEvent.resultId);
       check('synthesized-result-equipped-and-synced',!!finalGear&&finalGear.uid===combineEvent.uid,{finalGear,resultId:combineEvent.resultId});
-      await page.waitForSelector(`.rs-unit-items__item[data-item-id="${combineEvent.resultId}"] img`,{timeout:8000});
-      const resultOverlay=await page.$eval(`.rs-unit-items__item[data-item-id="${combineEvent.resultId}"] img`,img=>({src:img.src,loaded:img.complete&&img.naturalWidth>0}));
+      const resultSelector=`.rs-unit-items__row[data-unit-key="prep:${activePieces[0].uid}"] .rs-unit-items__item[data-item-id="${combineEvent.resultId}"] img`;
+      await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},resultSelector);
+      const resultOverlay=await page.$eval(resultSelector,img=>({src:img.src,loaded:img.complete&&img.naturalWidth>0}));
       check('synthesized-result-icon-visible-on-pawn',resultOverlay.loaded,resultOverlay);
+      await captureAdditional('65-synthesis','65-synthesis');
       receipt.checkpoint='prep-gear';receipt.gearEvidence={itemUid:combineEvent.uid,itemId:combineEvent.resultId,overlayImage:resultOverlay,icon};await save();
       await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.rs-panel-drawer'),{timeout:5000});
     }
     const deployedForSurface=(await getState()).pieces.find(piece=>piece.row!=null);assert(deployedForSurface,'no live unit for overlay layout checks');
     for(const viewport of [{width:1440,height:900,isMobile:false,hasTouch:false},{width:1280,height:720,isMobile:false,hasTouch:false},{width:844,height:390,isMobile:true,hasTouch:true}]){
-      await page.setViewport({deviceScaleFactor:1,...viewport});await inspectGeometry(`expanded-shop-${viewport.width}x${viewport.height}`);
+      await page.setViewport({deviceScaleFactor:1,...viewport});await waitForGameReady();await inspectGeometry(`expanded-shop-${viewport.width}x${viewport.height}`);
       await page.click('.funds__collapse');await page.waitForSelector('.shopbar-tab__btn',{timeout:5000});
       const folded=await page.evaluate(()=>{const action=document.querySelector('.rs-start-battle'),tab=document.querySelector('.shopbar-tab'),button=tab?.querySelector('.shopbar-tab__btn');const a=action?.getBoundingClientRect(),t=tab?.getBoundingClientRect(),b=button?.getBoundingClientRect(),hit=b&&document.elementFromPoint(b.left+b.width/2,b.top+b.height/2);return{overlap:!!a&&!!t&&a.left<t.right&&a.right>t.left&&a.top<t.bottom&&a.bottom>t.top,buttonReachable:!!hit&&(hit===button||button.contains(hit)),tabText:tab?.innerText};});
       check(`folded-shop-layout-${viewport.width}x${viewport.height}`,!folded.overlap&&folded.buttonReachable,folded);
@@ -312,15 +347,27 @@ async function run() {
       await page.click('.rs-start-battle');await page.waitForFunction(async id=>{const state=(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state;return state?.history?.some(event=>event.type==='fight-settled');},{timeout:45000},receipt.sessionId);
     }
     state=await getState();const fight=(state.history||[]).find(event=>event.type==='fight-settled');
-    check('exactly-one-real-fight-with-native-units',!!fight&&fight.combatStats?.units?.length>0&&receipt.fights===1,{fightCount:(state.history||[]).filter(event=>event.type==='fight-settled').length,units:fight?.combatStats?.units?.length});
+    check('exactly-one-real-fight-with-native-units',!!fight&&Number(fight.combatStats?.units)>0&&receipt.fights===1,{fightCount:(state.history||[]).filter(event=>event.type==='fight-settled').length,units:fight?.combatStats?.units});
     await page.waitForSelector('.rs-replay-native[aria-label="战斗回放"]',{timeout:20000});
-    const replay=await page.evaluate(()=>{const stats=globalThis.__SP_VIEW__?.raw?.stats?.(),units=stats?.units||[];return{text:document.querySelector('.rs-replay-native')?.innerText||'',engineUnits:units.length,units:units.map(unit=>({uid:unit.uid,items:unit.items||[],skillIcon:unit.skillIcon||unit.icon||null})).filter(unit=>unit.items.length||unit.skillIcon)};});
-    const settled=fight.combatStats?.units||[];check('native-replay-shows-real-history',!!replay.text&&replay.engineUnits>0&&settled.some(unit=>(unit.items||[]).some(value=>value===receipt.gearEvidence?.itemUid||value===receipt.gearEvidence?.itemId)),{replay,settledGear:settled.map(unit=>({uid:unit.uid,items:unit.items||[]}))});await capture('56-replay');
+    await page.evaluate(()=>{const button=[...document.querySelectorAll('.rs-replay-native button')].find(item=>item.innerText.trim()==='暂停');button?.click();});
+    await page.waitForFunction(()=>[...document.querySelectorAll('.rs-replay-native button')].some(button=>button.innerText.trim()==='继续'),{timeout:5000});
+    await page.waitForFunction(itemId=>[...document.querySelectorAll('.rs-unit-items__row[data-unit-key^="battle:"]')].some(row=>!row.hidden&&row.querySelector(`.rs-unit-items__item[data-item-id="${itemId}"] img`)?.naturalWidth>0),{timeout:15000},receipt.gearEvidence?.itemId);
+    const replay=await page.evaluate(async({id,round})=>{const stats=globalThis.__SP_VIEW__?.raw?.stats?.(),response=await(await fetch(`./resonance/api/sessions/${id}/replays/${round}`)).json(),record=response.replay,units=(record?.field?.units||[]).filter(unit=>unit.side==='ally'&&unit.kind==='op'&&unit.items?.length);return{text:document.querySelector('.rs-replay-native')?.innerText||'',engineUnits:Number(stats?.units)||0,historicalUnits:units.map(unit=>({uid:unit.uid??unit.id,id:unit.id,items:unit.items})),overlays:[...document.querySelectorAll('.rs-unit-items__row[data-unit-key^="battle:"]')].map(row=>({key:row.dataset.unitKey,visible:!row.hidden,items:[...row.querySelectorAll('.rs-unit-items__item')].map(button=>({itemId:button.dataset.itemId,loaded:(button.querySelector('img')?.naturalWidth||0)>0}))}))};},{id:receipt.sessionId,round:fight.round});
+    const historicalItemIds=replay.historicalUnits.flatMap(unit=>unit.items),visibleItemIds=replay.overlays.filter(row=>row.visible).flatMap(row=>row.items.filter(item=>item.loaded).map(item=>item.itemId));
+    check('native-replay-shows-real-history-gear-overlay',!!replay.text&&replay.engineUnits>0&&historicalItemIds.includes(receipt.gearEvidence?.itemId)&&historicalItemIds.some(id=>visibleItemIds.includes(id)),{replay,historicalItemIds,visibleItemIds});await capture('56-replay');
     receipt.checkpoint='replay';receipt.replayEvidence=replay;check('no-client-js-errors',errors.length===0,errors);
+    const missingRequired = missingRequiredAcceptanceChecks(receipt.checks);
+    check('all-required-gear-and-capacity-checks-passed', missingRequired.length === 0, missingRequired);
     receipt.status='passed';
     log.push(`${stamp()} acceptance passed; creates=${receipt.creates}; fights=${receipt.fights}`);
   } catch (error) {
-    receipt.status = 'failed'; receipt.failure = error.stack || String(error); log.push(`${stamp()} failed: ${receipt.failure}`);
+    receipt.status = 'failed'; receipt.failure = error.stack || String(error);receipt.failures.push({attempt:receipt.attempts,toolingNative:receipt.toolingNative||receipt.sourceNative,status:'failed',error:receipt.failure,time:stamp()});log.push(`${stamp()} failed: ${receipt.failure}`);
+    if (page && browser) {
+      let failurePath = path.join(OUT, '67-failure.jpg'), suffix = 1;
+      while (existsSync(failurePath)) failurePath = path.join(OUT, `67-failure-${suffix++}.jpg`);
+      await page.screenshot({ path: failurePath, type: 'jpeg', quality: 88, fullPage: true }).catch(() => {});
+      if (existsSync(failurePath)) receipt.screenshots[`67-failure${suffix === 1 ? '' : `-${suffix - 1}`}`] = failurePath;
+    }
     throw error;
   } finally {
     clearTimeout(deadline);

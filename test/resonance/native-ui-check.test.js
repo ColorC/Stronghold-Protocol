@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { countsAsCreate, countsAsFight, costCardHasWholeSurfaceStyle, iconIsConcrete, iconMatchesExpected, intersects, isResumableInitialization, parseArgs } from '../../tools/resonance/native-ui-check.mjs';
+import { backgroundCoversCard, countsAsCreate, countsAsFight, costCardHasWholeSurfaceStyle, iconIsConcrete, iconMatchesExpected, intersects, isResumableInitialization, missingRequiredAcceptanceChecks, parseArgs } from '../../tools/resonance/native-ui-check.mjs';
 
 const script = fileURLToPath(new URL('../../tools/resonance/native-ui-check.mjs', import.meta.url));
 
@@ -33,11 +33,15 @@ test('layout overlap and concrete skill-icon guards detect real box collisions a
   assert.equal(iconIsConcrete('skill_silverash_s3', '/assets/skill_silverash_s3.png'), true);
   assert.equal(iconIsConcrete('bolt', '/assets/bolt.svg'), false);
   assert.equal(iconIsConcrete('S', '/assets/s.svg'), false);
-  assert.equal(iconMatchesExpected('skchr_texas_2', '/assets/skill/skchr_texas_2.png', '/assets/skill/skchr_texas_2.png'), true);
-  assert.equal(iconMatchesExpected('skchr_texas_2', '/assets/skill/bolt.png', '/assets/skill/skchr_texas_2.png'), false);
-  assert.equal(costCardHasWholeSurfaceStyle({ className:'scard scard--t2',background:'rgb(1, 2, 3)',bgImage:'radial-gradient(...)',bgCoversCard:true,border:'rgb(4, 5, 6)',tierClass:'tier tier--2',tierText:'' }),true);
-  assert.equal(costCardHasWholeSurfaceStyle({ className:'scard scard--t2',background:'rgb(1, 2, 3)',bgImage:'radial-gradient(...)',bgCoversCard:true,border:'rgb(4, 5, 6)',tierClass:'tier tier--2 tier--color',tierText:'' }),false);
-  assert.equal(costCardHasWholeSurfaceStyle({ className:'scard scard--t2',background:'rgb(1, 2, 3)',bgImage:'radial-gradient(...)',bgCoversCard:true,border:'rgb(4, 5, 6)',tierClass:'tier tier--2',tierText:'II' }),false);
+  assert.equal(iconMatchesExpected('skchr_texas_2', 'http://127.0.0.1:13001/assets/skill/skchr_texas_2.png', '/assets/skill/skchr_texas_2.png'), true);
+  assert.equal(iconMatchesExpected('skchr_texas_2', 'http://127.0.0.1:13001/assets/skill/bolt.png', '/assets/skill/skchr_texas_2.png'), false);
+  const card={className:'scard scard--t2',background:'rgb(1, 2, 3)',bgImage:'radial-gradient(...)',bgWidth:196,bgHeight:66,clientWidth:196,clientHeight:66,border:'rgb(4, 5, 6)',tierClass:'tier tier--2 tier--md tier--color',tierText:'',tierColorPresent:true,tierColorVisible:false};
+  assert.equal(backgroundCoversCard(card),true);
+  assert.equal(costCardHasWholeSurfaceStyle(card),true);
+  assert.equal(costCardHasWholeSurfaceStyle({...card,tierColorVisible:true}),false);
+  assert.equal(costCardHasWholeSurfaceStyle({...card,tierColorPresent:false}),false);
+  assert.equal(costCardHasWholeSurfaceStyle({...card,tierText:'II'}),false);
+  assert.equal(backgroundCoversCard({...card,bgWidth:card.clientWidth+4}),false);
 });
 
 test('unsafe flags and malformed session identifiers fail before launching a browser', () => {
@@ -55,4 +59,13 @@ test('initialization recovery accepts only owned failed receipts with zero gamep
     { ...valid, status: 'passed' }, { ...valid, checker: 'other' }, { ...valid, sessionId: 'session-123' },
     { ...valid, creates: 1 }, { ...valid, fights: 1 }, { ...valid, gameplayMutations: [{ path: '/actions' }] },
   ]) assert.equal(isResumableInitialization(changed), false);
+});
+
+test('the final passed status requires gear and deployed-capacity evidence', () => {
+  assert.ok(missingRequiredAcceptanceChecks({}).includes('population-three-deployed-zero-remaining'));
+  const names=['catalog-season-cardinality','population-three-deployed-zero-remaining','one-real-shop-purchase','real-inventory-item-equipped-to-live-unit','equipped-item-overlay-icon-loaded','unequip-removes-item-from-unit','unequip-removes-unit-overlay-icon','re-equip-real-inventory-item','real-two-component-recipe-discovered','inventory-ui-offers-real-recipe','real-ui-synthesis-consumes-two-and-creates-result','synthesized-result-equipped-and-synced','synthesized-result-icon-visible-on-pawn','exactly-one-real-fight-with-native-units','native-replay-shows-real-history-gear-overlay'];
+  const complete=Object.fromEntries(names.map(name=>[name,{passed:true}]));
+  assert.deepEqual(missingRequiredAcceptanceChecks(complete),[]);
+  delete complete['real-ui-synthesis-consumes-two-and-creates-result'];
+  assert.deepEqual(missingRequiredAcceptanceChecks(complete),['real-ui-synthesis-consumes-two-and-creates-result']);
 });
