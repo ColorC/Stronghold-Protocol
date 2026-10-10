@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { handleRecordingComments } from './recording-comments.js';
+import { handleRenderedRecording } from './recording-rendered.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // A rrweb full snapshot can carry a lossless canvas data URL as one indivisible event. Keep the request bounded while
@@ -152,9 +153,12 @@ async function remuxPlayback(dir, index=1, ffmpegPath=process.env.SP_FFMPEG_PATH
 }
 
 /** Server-side rrweb event store. Recording IDs are opaque UUIDs and never become session state. */
-export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPath = '', ffmpegPath = process.env.SP_FFMPEG_PATH || 'ffmpeg', remuxSegment = null }) {
+export function createRecordingHttp({ directory, sessionDirectory, renderDirectory = process.env.SP_RECORDING_RENDER_DIRECTORY || '', diagnosticsPath = '', ffmpegPath = process.env.SP_FFMPEG_PATH || 'ffmpeg', remuxSegment = null }) {
   if (!path.isAbsolute(directory) || !path.isAbsolute(sessionDirectory)) throw new Error('Recording and session directories must be absolute');
   const root = path.resolve(directory);
+  const configuredRenderDirectory = renderDirectory || path.join(root, '..', 'rendered');
+  if (!path.isAbsolute(configuredRenderDirectory)) throw new Error('Recording render directory must be absolute');
+  const renderedRoot = path.resolve(configuredRenderDirectory);
   const locks = new Map();
   const playbackFinalizers = new Map();
   const runRemux = remuxSegment || ((dir, index) => remuxPlayback(dir, index, ffmpegPath));
@@ -216,6 +220,12 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
     try {
       if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return json(res, 403, { ok: false, error: 'ORIGIN' }), true;
       const relative = pathname.slice('/independent/api/recordings'.length).replace(/^\//, '');
+      const renderedMatch = relative.match(/^([0-9a-f-]{36})\/rendered(?:\/([^/]+))?$/i);
+      if (renderedMatch) {
+        await handleRenderedRecording({ req, res, id: renderedMatch[1], roundText: renderedMatch[2] || null,
+          renderDirectory: renderedRoot, recordingDirectory: root, loadMeta, json, pipeFileReadStream });
+        return true;
+      }
       const commentsMatch = relative.match(/^([0-9a-f-]{36})\/comments(?:\/([^/]+))?$/i);
       if (commentsMatch && UUID.test(commentsMatch[1])) {
         return await handleRecordingComments({
