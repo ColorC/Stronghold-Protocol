@@ -76,8 +76,14 @@ async function main(argv) {
   const clips = args.roundList.map((round) => {
     const clip = timeline.rounds?.find((x) => Number(x.round) === round);
     if (!clip || !Number.isFinite(clip.startSecond) || !Number.isFinite(clip.endSecond)) throw new Error(`timeline has no validated round ${round}`);
-    return { round, startSecond: clip.startSecond, endSecond: clip.endSecond, observations: clip.observations || [] };
+    return { round, startSecond: clip.startSecond, endSecond: clip.endSecond, observations: clip.observations || [], uiActions: clip.uiActions || [] };
   });
+  if (args.sampleSeconds == null) {
+    const completeRounds = (timeline.rounds || []).map((x) => Number(x.round)).sort((a, b) => a - b);
+    if (completeRounds.length !== args.roundList.length || completeRounds.some((round, i) => round !== [...args.roundList].sort((a, b) => a - b)[i])) {
+      throw new Error('full render requires every round in the validated timeline; use --sample-seconds only for a bounded sample');
+    }
+  }
   const replays = {};
   for (const clip of clips) {
     const sourcePath = path.resolve(args['session-dir'], `${sessionId}.replay-r${clip.round}.json.gz`);
@@ -137,8 +143,9 @@ async function main(argv) {
     stage(`Chrome launched; pid=${browser.process()?.pid || 'unknown'}`);
     const page = await browser.newPage();
     await page.setViewport({ width: 2187, height: 1077, deviceScaleFactor: 1.25 });
+    const fatalPageErrors = [];
     page.on('console', (m) => { if (m.type() === 'error') console.error(`browser: ${m.text()}`); });
-    page.on('pageerror', (e) => console.error(`pageerror: ${e.stack || e}`));
+    page.on('pageerror', (e) => { fatalPageErrors.push(String(e?.stack || e)); console.error(`pageerror: ${e.stack || e}`); });
     page.exposeFunction('__encoderChunk', async (payload) => {
       if (!ffmpeg?.stdin.writable) throw new Error('FFmpeg input pipe is closed');
       await writeIvfFrame(ffmpeg.stdin, Buffer.from(payload.data, 'base64'), payload.pts);
@@ -221,6 +228,7 @@ async function main(argv) {
       const support = await VideoEncoder.isConfigSupported(config); c.close(); return { supported: support.supported, config: support.config };
     }, { width: layout.width, height: layout.height, fps, bitrate });
     if (!encoderConfig.supported) throw new Error(`WebCodecs VP8 unsupported: ${JSON.stringify(encoderConfig)}`);
+    const renderedClips = [];
     for (const clip of clips) {
     const replay = replays[clip.round];
     const sessionPath = replay.sourcePath;
@@ -240,7 +248,8 @@ async function main(argv) {
       helpers.feedNativeFrames(view, seeded.frames, replay.field.fieldId);
       view.renderRecordedFrame({ gameTime: clock.t0, delta: 1 / 30, rate: 2 });
     }, clip.round);
-    await page.screenshot({ path: path.join(outputRoot, `battle-${clip.round}-first.png`) });
+    const screenshots = args.sampleSeconds == null ? [] : [path.join(outputRoot, `battle-${clip.round}-first.png`), path.join(outputRoot, `battle-${clip.round}-last.png`)];
+    if (args.sampleSeconds != null) await page.screenshot({ path: screenshots[0] });
     const render = await page.evaluate(async ({ sampleSeconds, fps, bitrate, width, height, round, clip }) => {
       const { view, replays, helpers } = window.__renderer; const replay = replays[round];
       const { drawRecordingCanvasFrame } = await import('/js/independent/recordingCanvas.js');
@@ -253,11 +262,12 @@ async function main(argv) {
         encoder.serial = encoder.serial.then(() => window.__encoderChunk({ data: b64, pts: Math.round(chunk.timestamp * fps / 1e6) }));
       }, error: (e) => { encoder.error = String(e); } });
       encoder.serial = Promise.resolve(); encoder.configure({ codec: 'vp8', width, height, framerate: fps, bitrate, latencyMode: 'realtime' });
-      const frames = replay.frames; const clock = helpers.replayClock(replay); let idx = 0; const count = Math.ceil(sampleSeconds * fps); let prior = null;
+      const frames = replay.frames; const clock = helpers.replayClock(replay); const mapper = helpers.createReplayTimeMapper(clip, replay);
+      let idx = 0; const count = Math.ceil(sampleSeconds * fps); let prior = null;
       for (let i = 0; i < count; i++) {
         const wallSecond = clip.startSecond + i / fps;
-        const gameTime = clock.t0 + helpers.gameTimeFromCountdown(clip, wallSecond, clock.duration);
-        const rate = prior == null ? 2 : helpers.recordedAnimationRate(prior, gameTime, fps, 2); prior = gameTime;
+        const gameTime = mapper.at(wallSecond);
+        const rate = prior == null ? mapper.initialRate : helpers.recordedAnimationRate(prior, gameTime, fps, mapper.initialRate); prior = gameTime;
         const windowed = helpers.frameFeedWindow(frames, gameTime, idx); idx = windowed.nextIndex;
         helpers.feedNativeFrames(view, windowed.frames, replay.field.fieldId);
         if (!view.renderRecordedFrame({ gameTime, delta: 1 / fps, rate })) throw new Error('native recorded-frame renderer refused frame');
@@ -266,9 +276,13 @@ async function main(argv) {
         if (encoder.encodeQueueSize > 8) await new Promise((resolve) => { encoder.addEventListener('dequeue', resolve, { once: true }); });
       }
       await encoder.flush(); await encoder.serial; const config = encoder.state; encoder.close();
-      return { frames: count, gameTimeEnd: clock.t0 + helpers.gameTimeFromCountdown(clip, clip.startSecond + (count - 1) / fps, clock.duration), replayClock: clock, encoderState: config, warmReport: window.__warmReport, error: encoder.error || null };
+      const timeMap = { origin: mapper.origin, measuredRate: mapper.measuredRate, initialRate: mapper.initialRate,
+        speedChanges: mapper.speedChanges, skipAt: mapper.skipAt, finalZeroAt: mapper.finalZeroAt, calibration: mapper.calibration };
+      return { frames: count, gameTimeEnd: mapper.at(clip.startSecond + (count - 1) / fps), replayClock: clock, timeMap, encoderState: config, warmReport: window.__warmReport, error: encoder.error || null };
     }, { sampleSeconds: args.sampleSeconds ?? Math.max(0.001, clip.endSecond - clip.startSecond), fps, bitrate, width: layout.width, height: layout.height, round: clip.round, clip });
-    await page.screenshot({ path: path.join(outputRoot, `battle-${clip.round}-last.png`) });
+    if (render.error) throw new Error(`WebCodecs encoder failed: ${render.error}`);
+    if (fatalPageErrors.length) throw new Error(`native browser render errors: ${fatalPageErrors.join('\n')}`);
+    if (args.sampleSeconds != null) await page.screenshot({ path: screenshots[1] });
     ffmpeg.stdin.end();
     const [exitCode] = await once(ffmpeg, 'close');
     if (exitCode !== 0) throw new Error(`FFmpeg exit ${exitCode}: ${ffmpegError}`);
@@ -278,18 +292,19 @@ async function main(argv) {
     const [probeCode] = await once(probe,'close'); if (probeCode !== 0) throw new Error(`ffprobe exit ${probeCode}: ${probeErr}`);
     const probed = JSON.parse(probeOut); const stream = probed.streams?.[0];
     const expectedSeconds = args.sampleSeconds ?? clip.endSecond - clip.startSecond;
-    const receipt = { ok: true, recordingId, sessionId, round: clip.round, sourceReplay: sessionPath, sourceEvents: eventsPath,
+    const receipt = { ok: true, recordingId, sessionId, sourceRevision, round: clip.round, sourceReplay: sessionPath, sourceEvents: eventsPath,
       viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, encoder: encoderConfig,
-      visualDiagnostics, render, output: outputFile, ffprobe: probed, ffmpegExitCode: exitCode, ffprobeExitCode: probeCode, screenshots: [path.join(outputRoot, `battle-${clip.round}-first.png`), path.join(outputRoot, `battle-${clip.round}-last.png`)] };
+      visualDiagnostics, render, output: outputFile, ffprobe: probed, ffmpegExitCode: exitCode, ffprobeExitCode: probeCode, screenshots };
     if (!stream || stream.width !== layout.width || stream.height !== layout.height || Number(probed.format?.duration) < expectedSeconds * 0.95) throw new Error('encoded WebM failed dimension/duration checks');
     await fsp.writeFile(path.join(outputRoot, `renderer-round-${clip.round}.receipt.json`), JSON.stringify(receipt, null, 2));
     console.log(JSON.stringify(receipt, null, 2));
-    const manifestPath = path.join(outputRoot, 'manifest.json');
-    const manifest = await fsp.readFile(manifestPath, 'utf8').then(JSON.parse).catch(() => ({ schemaVersion: 1, recordingId, sessionId, sourceRevision, viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, clips: [] }));
-    manifest.clips = [...manifest.clips.filter((x) => x.round !== clip.round), { round: clip.round, startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: Number(probed.format.duration), file: `battle-${clip.round}.webm` }].sort((a, b) => a.round - b.round);
-    const manifestTemp = `${manifestPath}.partial`; await fsp.writeFile(manifestTemp, JSON.stringify(manifest, null, 2)); await fsp.rename(manifestTemp, manifestPath);
+    renderedClips.push({ round: clip.round, startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: Number(probed.format.duration), file: `battle-${clip.round}.webm` });
     ffmpeg = null;
     }
+    if (renderedClips.length !== clips.length || (args.sampleSeconds == null && renderedClips.length !== (timeline.rounds || []).length)) throw new Error('render set incomplete; refusing to publish manifest');
+    const manifestPath = path.join(outputRoot, 'manifest.json');
+    const manifest = { schemaVersion: 1, recordingId, sessionId, sourceRevision, viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, clips: renderedClips.sort((a, b) => a.round - b.round) };
+    const manifestTemp = `${manifestPath}.partial`; await fsp.writeFile(manifestTemp, JSON.stringify(manifest, null, 2)); await fsp.rename(manifestTemp, manifestPath);
     await browser.close();
   } finally {
     if (ffmpeg && ffmpeg.exitCode == null) { ffmpeg.stdin.destroy(); ffmpeg.kill(); }

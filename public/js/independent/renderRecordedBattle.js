@@ -27,6 +27,68 @@ export function replayClock(replay) {
   return { t0, duration: Math.max(0, end - t0), end };
 }
 
+function nativeRateFromUiText(text) {
+  const match = String(text || '').match(/×\s*([124])/);
+  return match ? Number(match[1]) * 2 : null;
+}
+
+/** Build the native sim clock from observed initial countdown slope and speed-button actions. */
+export function createReplayTimeMapper(round, replay) {
+  const clock = replayClock(replay);
+  const observations = (Array.isArray(round?.observations) ? round.observations : [])
+    .filter((o) => Number.isFinite(o.at) && Number.isFinite(o.remaining)).sort((a, b) => a.at - b.at);
+  const firstIndex = observations.findIndex((o) => o.remaining > 0);
+  if (firstIndex < 0) throw new TypeError('timeline has no positive countdown anchor');
+  const positive = observations.slice(firstIndex);
+  const origin = positive[0].at;
+  const actions = (Array.isArray(round?.uiActions) ? round.uiActions : []).filter((a) => Number.isFinite(a.at) && a.at >= origin)
+    .sort((a, b) => a.at - b.at);
+  const firstControlAt = actions.find((a) => a.kind === 'speed-select' || a.kind === 'skip-to-end')?.at ?? origin + 2;
+  const slopeSamples = positive.filter((o) => o.at < firstControlAt);
+  const firstSlope = slopeSamples[0] || positive[0];
+  const lastSlope = slopeSamples.at(-1) || positive[1];
+  const measuredRate = lastSlope && lastSlope.at > firstSlope.at
+    ? (firstSlope.remaining - lastSlope.remaining) / (lastSlope.at - firstSlope.at) : 4;
+  const nativeRates = [2, 4, 8];
+  const initialRate = nativeRates.reduce((best, rate) => Math.abs(rate - measuredRate) < Math.abs(best - measuredRate) ? rate : best, 4);
+  const speedChanges = [];
+  let skipAt = null;
+  for (const action of actions) {
+    if (action.kind === 'skip-to-end') { skipAt = action.at; break; }
+    if (action.kind === 'speed-select') {
+      const rate = nativeRateFromUiText(action.target?.text);
+      if (rate != null) speedChanges.push({ at: action.at, rate });
+    }
+  }
+  const finalZeroAt = positive.find((o) => o.remaining <= 0)?.at ?? round.endSecond;
+  const integrated = (wallSecond) => {
+    const endAt = Math.max(origin, wallSecond);
+    let elapsed = 0, last = origin, rate = initialRate;
+    for (const change of speedChanges) {
+      if (change.at >= endAt) break;
+      elapsed += Math.max(0, change.at - last) * rate;
+      last = change.at; rate = change.rate;
+    }
+    elapsed += Math.max(0, endAt - last) * rate;
+    return elapsed;
+  };
+  const calibrationAt = Math.max(origin, finalZeroAt);
+  const rawAtEnd = integrated(calibrationAt);
+  const calibration = !skipAt && rawAtEnd > 0 ? clock.duration / rawAtEnd : 1;
+  return {
+    t0: clock.t0, end: clock.end, duration: clock.duration, origin, initialRate,
+    measuredRate, speedChanges, skipAt, finalZeroAt, calibration,
+    at(wallSecond) {
+      if (!Number.isFinite(wallSecond)) throw new TypeError('wall clock time must be finite');
+      if (wallSecond <= origin) return clock.t0;
+      if (skipAt && wallSecond >= skipAt) return clock.end;
+      if (!skipAt && wallSecond >= finalZeroAt) return clock.end;
+      const elapsed = integrated(Math.min(wallSecond, finalZeroAt)) * calibration;
+      return clock.t0 + Math.max(0, Math.min(clock.duration, elapsed));
+    },
+  };
+}
+
 /** Map a wall timestamp to the native replay clock using observed countdown anchors, not a guessed speed. */
 export function gameTimeFromCountdown(round, wallSecond, duration) {
   const observations = Array.isArray(round?.observations) ? round.observations : [];
