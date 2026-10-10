@@ -221,6 +221,7 @@ async function main(argv) {
       const support = await VideoEncoder.isConfigSupported(config); c.close(); return { supported: support.supported, config: support.config };
     }, { width: layout.width, height: layout.height, fps, bitrate });
     if (!encoderConfig.supported) throw new Error(`WebCodecs VP8 unsupported: ${JSON.stringify(encoderConfig)}`);
+    const renderedClips = [];
     for (const clip of clips) {
     const replay = replays[clip.round];
     const sessionPath = replay.sourcePath;
@@ -279,18 +280,18 @@ async function main(argv) {
     const [probeCode] = await once(probe,'close'); if (probeCode !== 0) throw new Error(`ffprobe exit ${probeCode}: ${probeErr}`);
     const probed = JSON.parse(probeOut); const stream = probed.streams?.[0];
     const expectedSeconds = args.sampleSeconds ?? clip.endSecond - clip.startSecond;
-    const receipt = { ok: true, recordingId, sessionId, round: clip.round, sourceReplay: sessionPath, sourceEvents: eventsPath,
+    const receipt = { ok: true, recordingId, sessionId, sourceRevision, round: clip.round, sourceReplay: sessionPath, sourceEvents: eventsPath,
       viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, encoder: encoderConfig,
       visualDiagnostics, render, output: outputFile, ffprobe: probed, ffmpegExitCode: exitCode, ffprobeExitCode: probeCode, screenshots };
     if (!stream || stream.width !== layout.width || stream.height !== layout.height || Number(probed.format?.duration) < expectedSeconds * 0.95) throw new Error('encoded WebM failed dimension/duration checks');
     await fsp.writeFile(path.join(outputRoot, `renderer-round-${clip.round}.receipt.json`), JSON.stringify(receipt, null, 2));
     console.log(JSON.stringify(receipt, null, 2));
-    const manifestPath = path.join(outputRoot, 'manifest.json');
-    const manifest = await fsp.readFile(manifestPath, 'utf8').then(JSON.parse).catch(() => ({ schemaVersion: 1, recordingId, sessionId, sourceRevision, viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, clips: [] }));
-    manifest.clips = [...manifest.clips.filter((x) => x.round !== clip.round), { round: clip.round, startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: Number(probed.format.duration), file: `battle-${clip.round}.webm` }].sort((a, b) => a.round - b.round);
-    const manifestTemp = `${manifestPath}.partial`; await fsp.writeFile(manifestTemp, JSON.stringify(manifest, null, 2)); await fsp.rename(manifestTemp, manifestPath);
+    renderedClips.push({ round: clip.round, startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: Number(probed.format.duration), file: `battle-${clip.round}.webm` });
     ffmpeg = null;
     }
+    const manifestPath = path.join(outputRoot, 'manifest.json');
+    const manifest = { schemaVersion: 1, recordingId, sessionId, sourceRevision, viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, clips: renderedClips.sort((a, b) => a.round - b.round) };
+    const manifestTemp = `${manifestPath}.partial`; await fsp.writeFile(manifestTemp, JSON.stringify(manifest, null, 2)); await fsp.rename(manifestTemp, manifestPath);
     await browser.close();
   } finally {
     if (ffmpeg && ffmpeg.exitCode == null) { ffmpeg.stdin.destroy(); ffmpeg.kill(); }
