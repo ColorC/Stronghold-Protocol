@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { parseArgs, ivfHeader, writeIvfFrame } from '../../tools/render-independent-recording.mjs';
+import { parseArgs, ivfHeader, writeIvfFrame, battleFrameRetryUrls, nearestBattleFrameIndex } from '../../tools/render-independent-recording.mjs';
 
 const base = ['--recording-id','c3c3f89e-eae2-46ac-a118-a6deda3aa3b6','--session-id','8e9c96d2-576e-4f8d-8e9b-f7668e093d09',
   '--recordings-dir','C:/recordings','--session-dir','C:/sessions','--timeline-json','C:/timeline.json','--install-root','C:/install','--output-root','C:/out','--rounds','12','--sample-seconds','5'];
@@ -46,4 +46,26 @@ test('IVF header carries VP8 dimensions and 30fps timebase', () => {
   assert.equal(header.readUInt16LE(14), 1260);
   assert.equal(header.readUInt32LE(16), 30);
   assert.equal(header.readUInt32LE(20), 1);
+});
+
+test('battle frame retries are bounded and cache-bust only retries', () => {
+  assert.deepEqual(battleFrameRetryUrls(6, 621), [
+    '/__battle-frame/6/621',
+    '/__battle-frame/6/621?retry=1',
+    '/__battle-frame/6/621?retry=2',
+  ]);
+  assert.deepEqual(battleFrameRetryUrls(16, 945, 1), ['/__battle-frame/16/945']);
+  assert.throws(() => battleFrameRetryUrls(0, 1), /invalid battle frame retry parameters/);
+  assert.throws(() => battleFrameRetryUrls(1, -1), /invalid battle frame retry parameters/);
+  assert.throws(() => battleFrameRetryUrls(1, 0, 6), /invalid battle frame retry parameters/);
+});
+
+test('battle frame selection uses actual PTS, clamps to decoded cache, and never rounds past the last frame', () => {
+  const pts = [0, 0.04, 0.08, 0.121];
+  assert.equal(nearestBattleFrameIndex(pts, -0.01), 0);
+  assert.equal(nearestBattleFrameIndex(pts, 0.079), 1);
+  assert.equal(nearestBattleFrameIndex(pts, 0.08), 2);
+  assert.equal(nearestBattleFrameIndex(pts, 100), 3);
+  assert.throws(() => nearestBattleFrameIndex([], 0), /invalid battle frame timestamps/);
+  assert.throws(() => nearestBattleFrameIndex([0, 0.1, 0.09], 0.1), /invalid battle frame timestamps/);
 });

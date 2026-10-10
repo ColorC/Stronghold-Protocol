@@ -15,6 +15,30 @@ const gunzip = promisify(zlib.gunzip);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FFMPEG = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffmpeg.exe';
 
+export function battleFrameRetryUrls(round, frameIndex, maxAttempts = 3) {
+  if (!Number.isInteger(round) || round < 1 || !Number.isInteger(frameIndex) || frameIndex < 0
+    || !Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 5) {
+    throw new TypeError('invalid battle frame retry parameters');
+  }
+  const base = `/__battle-frame/${round}/${frameIndex}`;
+  return Array.from({ length: maxAttempts }, (_, index) => index === 0 ? base : `${base}?retry=${index}`);
+}
+
+export function nearestBattleFrameIndex(frameTimes, targetTime) {
+  if (!Array.isArray(frameTimes) || !frameTimes.length || !Number.isFinite(targetTime)
+    || frameTimes.some((time, index) => !Number.isFinite(time) || (index > 0 && time < frameTimes[index - 1]))) {
+    throw new TypeError('invalid battle frame timestamps');
+  }
+  if (targetTime <= frameTimes[0]) return 0;
+  let low = 0, high = frameTimes.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (frameTimes[middle] <= targetTime) low = middle + 1;
+    else high = middle;
+  }
+  return Math.min(frameTimes.length - 1, Math.max(0, low - 1));
+}
+
 export function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i++) {
@@ -160,6 +184,14 @@ async function main(argv) {
   const installRoot = path.resolve(args['install-root']);
   const compositeFfmpeg = args['composite-ffmpeg'] ? path.resolve(args['composite-ffmpeg']) : FFMPEG;
   const publicRoot = path.join(installRoot, 'public');
+  const dataRoot = path.resolve(args['data-root'] || path.join(wtRoot, 'data'));
+  const localAssetsManifest = path.resolve(args['local-assets-manifest'] || path.join(installRoot, 'data', 'local-assets.json'));
+  process.env.SP_DATA_DIR = dataRoot;
+  const { getData } = await import(pathToFileURL(path.join(wtRoot, 'server', 'data.js')).href);
+  const { getCatalog } = await import(pathToFileURL(path.join(wtRoot, 'server', 'modes', 'independent', 'catalog.js')).href);
+  const { independentDisplayCatalog } = await import(pathToFileURL(path.join(wtRoot, 'server', 'modes', 'independent', 'display.js')).href);
+  const offlineData = getData({ dir: dataRoot, log: { warn: (message) => stage(`data warning: ${message}`), error: (message) => stage(`data error: ${message}`) } });
+  const offlineCatalog = independentDisplayCatalog(offlineData, getCatalog(offlineData), offlineData['independent-game-text']);
   const fixture = { replays, clips, prepClips: prepAudit.clips, prepGapAudit: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps,
       ...(legacyVisualSource ? { sourceKind: legacyVisualSource.sourceKind, coverage: legacyVisualSource.coverage,
         unresolvedExamples: legacyVisualSource.unresolved.slice(0, 50) } : {}) }, sampleSeconds: args.sampleSeconds,
@@ -171,20 +203,43 @@ async function main(argv) {
   const battleManifest = battleManifestPath ? JSON.parse(await fsp.readFile(battleManifestPath, 'utf8')) : null;
   if (battleManifest && (battleManifest.recordingId !== recordingId || !Array.isArray(battleManifest.clips))) throw new Error('native battle manifest identity/schema mismatch');
   if (battleManifest && !battleFramesDir) throw new Error('native battle render requires sequentially decoded --battle-frames-dir');
+  if (battleManifest) {
+    const selectedRounds = new Set(clips.map((clip) => Number(clip.round)));
+    battleManifest.clips = battleManifest.clips.filter((clip) => selectedRounds.has(Number(clip.round)));
+    const ffprobePath = path.join(path.dirname(args['composite-ffmpeg'] ? path.resolve(args['composite-ffmpeg']) : FFMPEG), 'ffprobe.exe');
+    const decodeManifestPath = path.join(battleFramesDir, 'decode-manifest.json');
+    const decodeManifest = JSON.parse(await fsp.readFile(decodeManifestPath, 'utf8'));
+    if (decodeManifest.sourceRecordingId !== recordingId || !Array.isArray(decodeManifest.clips)) throw new Error('battle frame decode manifest identity/schema mismatch');
+    for (const clip of battleManifest.clips) {
+      const decoded = decodeManifest.clips.find((entry) => Number(entry.round) === Number(clip.round) && entry.file === clip.file);
+      if (!decoded || !Number.isInteger(decoded.decodedFrameCount) || decoded.decodedFrameCount < 1) throw new Error(`battle frame decode manifest lacks frame count for R${clip.round}`);
+      const first = path.join(battleFramesDir, `round-${clip.round}`, 'frame-000000.jpg');
+      const last = path.join(battleFramesDir, `round-${clip.round}`, `frame-${String(decoded.decodedFrameCount - 1).padStart(6, '0')}.jpg`);
+      for (const filename of [first, last]) {
+        const stat = await fsp.stat(filename);
+        if (!stat.isFile() || stat.size < 4) throw new Error(`battle frame cache endpoint is missing/incomplete: ${filename}`);
+      }
+      const mediaPath = path.resolve(battleDir, clip.file);
+      if (!inside(battleDir, mediaPath)) throw new Error(`battle media path escapes input root: ${clip.file}`);
+      const probeText = execFileSync(ffprobePath, ['-v','error','-select_streams','v:0','-show_frames','-show_entries','frame=best_effort_timestamp_time','-of','json',mediaPath], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+      const probeFrames = JSON.parse(probeText).frames || [];
+      const firstPts = probeFrames.map((frame) => Number(frame.best_effort_timestamp_time)).filter(Number.isFinite)[0];
+      if (!Number.isFinite(firstPts)) throw new Error(`battle source has no usable frame PTS R${clip.round}`);
+      const frameTimes = probeFrames.map((frame) => Number(frame.best_effort_timestamp_time) - firstPts);
+      if (frameTimes.length !== decoded.decodedFrameCount || frameTimes.some((time, index) => !Number.isFinite(time) || (index > 0 && time < frameTimes[index - 1]))) {
+        throw new Error(`battle source PTS/cache frame count mismatch R${clip.round}: probe=${frameTimes.length} cache=${decoded.decodedFrameCount}`);
+      }
+      clip.frameTimes = frameTimes;
+      clip.decodedFrameCount = decoded.decodedFrameCount;
+      stage(`battle PTS indexed R${clip.round}: ${frameTimes.length} frames first=${frameTimes[0]}s last=${frameTimes.at(-1)}s`);
+    }
+  }
   fixture.battleClips = battleManifest?.clips || [];
   let ffmpeg = null, ffmpegOutput = null, ffmpegError = '', browser = null;
   stage(`input validated; ${clips.length} round(s), intervals ${clips[0].startSecond}-${clips.at(-1).endSecond}s`);
-  const portProxy = (req, res) => {
-    const u = new URL(req.url, 'http://local');
-    if (u.pathname.startsWith('/data/') || u.pathname.startsWith('/assets/') || u.pathname.startsWith('/vendor/') || u.pathname.startsWith('/fonts/') || u.pathname === '/independent/api/catalog') {
-      const upstream = http.request({ hostname: '127.0.0.1', port: 13000, path: req.url, method: 'GET' }, (r) => { res.writeHead(r.statusCode || 502, r.headers); r.pipe(res); });
-      upstream.on('error', (e) => { res.writeHead(502); res.end(e.message); }); upstream.end(); return true;
-    }
-    return false;
-  };
   const server = http.createServer(async (req, res) => {
     if (req.method !== 'GET' && !(req.method === 'POST' && req.url === '/__ivf')) { res.writeHead(405); return res.end(); }
-    if (portProxy(req, res)) return;
+    if (req.url === '/independent/api/catalog') { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); return res.end(JSON.stringify({ ok: true, catalog: offlineCatalog })); }
     if (req.url === '/__fixture.json') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(fixture)); }
     if (req.url === '/__rrweb.json') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(rrwebRecords)); }
     if (battleDir && req.url.startsWith('/__battle/')) {
@@ -202,12 +257,16 @@ async function main(argv) {
       if (!match) { res.writeHead(400); return res.end('invalid battle frame route'); }
       const round = Number(match[1]), frameIndex = Number(match[2]);
       const clip = battleManifest.clips.find((candidate) => Number(candidate.round) === round);
-      if (!clip || !Number.isSafeInteger(frameIndex) || frameIndex < 0 || frameIndex > Math.ceil(clip.mediaDuration * 60)) { res.writeHead(404); return res.end('battle frame not registered'); }
+      if (!clip || !Number.isSafeInteger(frameIndex) || frameIndex < 0 || frameIndex >= Number(clip.decodedFrameCount)) { res.writeHead(404); return res.end('battle frame not registered'); }
       const target = path.resolve(battleFramesDir, `round-${round}`, `frame-${String(frameIndex).padStart(6, '0')}.jpg`);
       if (!inside(battleFramesDir, target)) { res.writeHead(400); return res.end(); }
+      let stat;
+      try { stat = await fsp.stat(target); }
+      catch (error) { stage(`battle frame HTTP 404 round=${round} frame=${frameIndex} path=${target} error=${error.code || error.message}`); res.writeHead(404); return res.end('battle frame unavailable'); }
+      if (!stat.isFile() || stat.size < 4) { stage(`battle frame HTTP 503 round=${round} frame=${frameIndex} path=${target} bytes=${stat.size}`); res.writeHead(503); return res.end('battle frame incomplete'); }
       const stream = fs.createReadStream(target);
-      stream.once('error', (error) => { if (!res.headersSent) res.writeHead(404); res.end(error.message); });
-      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable' }); stream.pipe(res); return;
+      stream.once('error', (error) => { stage(`battle frame stream error round=${round} frame=${frameIndex} path=${target} error=${error.code || error.message}`); if (!res.headersSent) res.writeHead(503); res.destroy(error); });
+      res.writeHead(200, { 'content-type': 'image/jpeg', 'content-length': String(stat.size), 'cache-control': 'no-store' }); stream.pipe(res); return;
     }
     if (req.url === '/__harness') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
@@ -220,7 +279,8 @@ async function main(argv) {
     if (req.url === '/__ivf' && req.method === 'POST') { res.writeHead(204); req.resume(); return res.end(); }
     const pathname = decodeURIComponent(new URL(req.url, 'http://local').pathname).replace(/^\/+/, '');
     let target = path.resolve(publicRoot, pathname), allowedRoot = publicRoot;
-    if (!inside(publicRoot, target)) { stage(`static 400 path escape ${pathname} => ${target}`); res.writeHead(400); return res.end(); }
+    if (pathname === 'data/local-assets.json') { target = localAssetsManifest; allowedRoot = path.dirname(localAssetsManifest); }
+    else if (pathname.startsWith('data/')) { target = path.resolve(dataRoot, pathname.slice('data/'.length)); allowedRoot = dataRoot; }
     if (pathname.startsWith('shared/')) { target = path.resolve(wtRoot, pathname); allowedRoot = wtRoot; }
     if (pathname.startsWith('sim/')) { target = path.resolve(wtRoot, 'server', pathname); allowedRoot = path.resolve(wtRoot, 'server'); }
     if (pathname.startsWith('js/')) { target = path.resolve(wtRoot, 'public', pathname); allowedRoot = path.resolve(wtRoot, 'public'); }
@@ -283,7 +343,7 @@ async function main(argv) {
       await window.__rendererProgress('initializing native renderer and loading Pixi/Spine runtime');
       const { createFieldView } = await import('/js/render/app.js');
       const view = await createFieldView(document.getElementById('host'), { data, assets, settings: { quality: 'high' }, padding: hudPadding, hud: hudBands, tierChips: 'pips' });
-      const battleImage = new Image(); battleImage.decoding = 'async';
+      let battleBitmap = null;
       const warmUnits = new Map();
       const collect = (u) => { if (!u) return; const model = u.spine || u.defId; if (model) {
         warmUnits.set(`${model}:front`, { model, back: false });
@@ -317,9 +377,18 @@ async function main(argv) {
       const warmFailures = warmResults.filter((x) => x.status !== 'loaded');
       await window.__rendererProgress(`warmed ${warmResults.filter((x) => x.status === 'loaded').length}/${warmResults.length} unique field/spawn skeleton views; unresolved=${JSON.stringify(warmFailures)}`);
       const firstReplay = r.replays[r.clips[0].round];
+      const battleFrameRetryUrls = (round, frameIndex, maxAttempts = 3) => {
+        const base = `/__battle-frame/${round}/${frameIndex}`;
+        return Array.from({ length: maxAttempts }, (_, index) => index === 0 ? base : `${base}?retry=${index}`);
+      };
+      const nearestBattleFrameIndex = (frameTimes, targetTime) => {
+        let low = 0, high = frameTimes.length;
+        while (low < high) { const middle = (low + high) >>> 1; if (frameTimes[middle] <= targetTime) low = middle + 1; else high = middle; }
+        return Math.max(0, Math.min(frameTimes.length - 1, low - 1));
+      };
       view.enterBattle(firstReplay.field);
       view.setCamera(firstReplay.field.kind || 'normal', { rect: firstReplay.field.rect, side: 'L', instant: true });
-      window.__renderer = { view, replays: r.replays, clips: r.clips, battleClips: r.battleClips || [], battleImage, prepClips: r.prepClips || [],
+      window.__renderer = { view, replays: r.replays, clips: r.clips, battleClips: r.battleClips || [], get battleBitmap() { return battleBitmap; }, set battleBitmap(value) { battleBitmap = value; }, battleFrameRetryUrls, nearestBattleFrameIndex, prepClips: r.prepClips || [],
         prepGapAudit: r.prepGapAudit, helpers: mod, prepView, prepCameraFor, GEO, data, catalog, activeRound: r.clips[0].round };
       const rrItems = await fetch('/__rrweb.json').then((response) => { if (!response.ok) throw new Error(`RRWeb HTTP ${response.status}`); return response.json(); });
       const { rebaseRecordedAssets } = await import('/js/independent/replayAssets.js'); rebaseRecordedAssets(rrItems);
@@ -648,22 +717,45 @@ async function main(argv) {
               }
               const mediaDuration = sourceClip.mediaDuration;
               const desiredMediaTime = Math.max(0, (second - battleClip.startSecond) / (battleClip.endSecond - battleClip.startSecond) * mediaDuration);
-              const mediaFrameIndex = Math.max(0, Math.round(desiredMediaTime * fps));
+              const mediaFrameIndex = renderer.nearestBattleFrameIndex(sourceClip.frameTimes || [], desiredMediaTime);
               const imageUrl = `/__battle-frame/${battleClip.round}/${mediaFrameIndex}`;
               if (renderer.activeBattleImageUrl !== imageUrl) {
-                renderer.battleImage.src = imageUrl;
-                await renderer.battleImage.decode();
+                const retryUrls = renderer.battleFrameRetryUrls(battleClip.round, mediaFrameIndex, 3);
+                let decoded = null, lastDecodeError = null;
+                for (let attempt = 0; attempt < retryUrls.length; attempt++) {
+                  const requestUrl = retryUrls[attempt];
+                  try {
+                    const response = await fetch(requestUrl, { cache: 'no-store' });
+                    if (!response.ok) {
+                      const body = (await response.text()).slice(0, 512);
+                      throw new Error(`HTTP ${response.status} ${requestUrl}: ${body}`);
+                    }
+                    const candidate = await createImageBitmap(await response.blob());
+                    if (candidate.width !== 2560 || candidate.height !== 1260) {
+                      const dimensions = `${candidate.width}x${candidate.height}`; candidate.close(); throw new Error(`decoded dimensions ${dimensions}`);
+                    }
+                    decoded = candidate;
+                    break;
+                  } catch (error) {
+                    lastDecodeError = error;
+                    await window.__rendererProgress(`battle frame decode retry ${attempt + 1}/${retryUrls.length} source=${second.toFixed(3)} round=${battleClip.round} index=${mediaFrameIndex} url=${requestUrl} error=${error?.message || error}`);
+                    if (attempt + 1 < retryUrls.length) await new Promise((resolve) => setTimeout(resolve, 40 * (attempt + 1)));
+                  }
+                }
+                if (!decoded) throw new Error(`battle frame image failed bounded decode retries: ${JSON.stringify({ sourceSecond: second, round: battleClip.round, frameIndex: mediaFrameIndex, imageUrl, error: lastDecodeError?.message || String(lastDecodeError) })}`);
+                renderer.battleBitmap?.close();
+                renderer.battleBitmap = decoded;
                 renderer.activeBattleImageUrl = imageUrl;
               }
-              if (!renderer.battleImage.complete || renderer.battleImage.naturalWidth !== 2560 || renderer.battleImage.naturalHeight !== 1260) throw new Error(`native battle decoded frame invalid: ${JSON.stringify({ round: battleClip.round, frameIndex: mediaFrameIndex, width: renderer.battleImage.naturalWidth, height: renderer.battleImage.naturalHeight })}`);
+              if (!renderer.battleBitmap || renderer.battleBitmap.width !== 2560 || renderer.battleBitmap.height !== 1260) throw new Error(`native battle decoded frame invalid: ${JSON.stringify({ round: battleClip.round, frameIndex: mediaFrameIndex, width: renderer.battleBitmap?.width, height: renderer.battleBitmap?.height })}`);
               renderer.compositeContext.clearRect(0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
-              renderer.compositeContext.drawImage(renderer.battleImage, 0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
+              renderer.compositeContext.drawImage(renderer.battleBitmap, 0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
               if (renderer.rrCanvas) {
                 renderer.rrContext.clearRect(0, 0, renderer.rrCanvas.width, renderer.rrCanvas.height);
                 renderer.rrContext.drawImage(renderer.compositeCanvas, 0, 0, renderer.rrCanvas.width, renderer.rrCanvas.height);
               }
               battleAudit = { round: battleClip.round, mediaFile: sourceClip.file, desiredMediaTime, mediaFrameIndex, frameUrl: imageUrl,
-                decodedWidth: renderer.battleImage.naturalWidth, decodedHeight: renderer.battleImage.naturalHeight, sourceSpan: battleClip.endSecond - battleClip.startSecond,
+                decodedWidth: renderer.battleBitmap.width, decodedHeight: renderer.battleBitmap.height, sourceSpan: battleClip.endSecond - battleClip.startSecond,
                 mediaDuration: sourceClip.mediaDuration };
             }
           }
