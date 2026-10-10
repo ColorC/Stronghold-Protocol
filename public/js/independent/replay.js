@@ -22,7 +22,7 @@ if (reviewMode) {
   for(const element of document.querySelectorAll('.ix-replay__controls,.ix-replay__head')){element.hidden=true;element.style.display='none';}
 }
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
-const mediaSurface = createReplayMediaSurface(stage);
+let mediaSurface = null;
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
 const textSelection = $('text-selection');
@@ -30,7 +30,7 @@ const API = new URL('independent/api/', location.href);
 let player; let items = []; let cues = []; let duration = 0; let baseTimestamp = 0; let baseWall = 0; let mediaVideo; let mediaStartSecond = Infinity; let mediaReady = Promise.resolve(); let mediaDuration = 0;
 let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let selecting = false; let drag = null;
 let zoomRect = null;
-let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
+let rrOffset = 0; let rrMinimumOffsetMs = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let renderedClips=[];let activeMediaKey='';let mediaLoadGeneration=0;let cancelMediaLoad=null;
 let selectionEvents=[];let paintedSelection=null;
 let initialized=false;let seeking=false;let seekGeneration=0;let playheadSecond=0;
@@ -51,30 +51,31 @@ function paintMediaLayer() {
   if (frame) frame.style.pointerEvents = selecting ? 'none' : 'auto';
   if (!mediaVideo) return;
   const doc = frame?.contentDocument; const field = recordingCanvasField(doc);
-  if (!field || !frame) { mediaVideo.hidden = true; mediaSurface.hide(); return; }
-  const fb = frame.getBoundingClientRect(), sb = stage.getBoundingClientRect(), cb = field.getBoundingClientRect();
-  const mapped = mapViewportRectToOverlay({ x: cb.left, y: cb.top, width: cb.width, height: cb.height }, fb, sb,
-    { width: frame.clientWidth, height: frame.clientHeight }, stage);
-  mediaSurface.setBounds({ left: mapped.x, top: mapped.y, width: mapped.width, height: mapped.height });
-  // Present only the current decoded pixels in one canvas beneath the recorded HUD.
-  // The hidden video is the decoder; inactive replay canvases never create another scene layer.
-  frame.style.position = 'relative'; frame.style.zIndex = '5';
-  for(let node=frame.parentElement;node&&node!==stage;node=node.parentElement){node.style.position='relative';node.style.zIndex='5';node.style.background='transparent';}
+  if (doc?.documentElement) doc.documentElement.dataset.spReplayScene = field ? 'game' : 'page';
+  if (!field || !frame) { mediaVideo.hidden = true; mediaSurface?.hide(); return; }
+  // Keep the scene and recorded UI in the same document and stacking context.
+  // Full-snapshot rebuilds replace the host; discard its presenter and attach a fresh one.
+  if (!mediaSurface?.canvas.isConnected || mediaSurface.canvas.parentElement !== field) {
+    mediaSurface?.destroy();
+    mediaSurface = createReplayMediaSurface(field);
+  }
+  mediaSurface.setBounds({ left: 0, top: 0, width: field.clientWidth, height: field.clientHeight });
   if (doc?.head && !doc.getElementById('sp-replay-canvas-video-layer')) {
     const style = doc.createElement('style'); style.id = 'sp-replay-canvas-video-layer';
-    style.textContent = '.gm__field canvas, canvas[aria-hidden="true"] { display: none !important; visibility: hidden !important; }';
+    style.textContent = '.gm__field canvas:not([data-sp-canvas-surface]), canvas[aria-hidden="true"] { display: none !important; visibility: hidden !important; } html[data-sp-replay-scene="game"] .ix-start { display: none !important; } html[data-sp-replay-scene="game"] .screen.gm { opacity: 1 !important; animation: none !important; }';
     doc.head.append(style);
   }
-  for (const canvas of recordingCanvasElements(doc)) { canvas.style.visibility = 'hidden'; canvas.style.display = 'none'; }
-  for(let node=field;node;node=node.parentElement){node.style.backgroundColor='transparent';node.style.backgroundImage='none';}
-  doc.documentElement.style.background='transparent';
+  for (const canvas of recordingCanvasElements(doc)) {
+    if (canvas === mediaSurface.canvas) continue;
+    canvas.style.visibility = 'hidden'; canvas.style.display = 'none';
+  }
   const second = playheadSecond;
   const desired = mediaSourceAt(second);
   const sourceMatches = !!desired && activeMediaKey === desired.key && mediaVideo.currentSrc === desired.url
     && !(desired.key.startsWith('original-') && second < desired.at);
   mediaVideo.hidden = !sourceMatches;
   if (sourceMatches && mediaVideo.readyState >= 2 && !mediaVideo.seeking) mediaSurface.paint(mediaVideo);
-  else if (!desired || (desired.key.startsWith('original-') && second < desired.at)) mediaSurface.hide();
+  else if (!desired || (desired.key.startsWith('original-') && second < desired.at)) mediaSurface?.hide();
 }
 function fitReplay() {
   const frame = stage.querySelector('iframe') || player?.iframe;
@@ -199,7 +200,7 @@ async function positionMediaAt(second, generation = seekGeneration) {
   if (!mediaVideo) return null;
   const segment = mediaSourceAt(second);
   if (!segment || (segment.key.startsWith('original-') && second < segment.at)) {
-    cancelMediaLoad?.(abortError()); activeMediaKey = ''; mediaVideo.pause(); mediaVideo.hidden = true; mediaSurface.hide(); return null;
+    cancelMediaLoad?.(abortError()); activeMediaKey = ''; mediaVideo.pause(); mediaVideo.hidden = true; mediaSurface?.hide(); return null;
   }
   if (activeMediaKey !== segment.key || mediaVideo.readyState < 1 || mediaVideo.currentSrc !== segment.url) await loadMediaSegment(segment);
   if (generation !== seekGeneration) throw abortError();
@@ -228,9 +229,10 @@ function attachCanvasMedia(id) {
     mediaReady=Promise.resolve();
   }
   if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
-  if (field) for (const canvas of recordingCanvasElements(doc)) { canvas.style.visibility = 'hidden'; canvas.style.display = 'none'; }
+  if (field) for (const canvas of recordingCanvasElements(doc)) { if (canvas === mediaSurface?.canvas) continue; canvas.style.visibility = 'hidden'; canvas.style.display = 'none'; }
   fitReplay();
 }
+function replayerTime(second) { return Math.max(rrMinimumOffsetMs, Math.max(0, second - rrOffset) * 1000); }
 function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : playheadSecond; }
 function tick() {
   if (!playing) return;
@@ -260,7 +262,7 @@ function play() {
   const second = playheadSecond;
   if (mediaNeedsLoad(second)) { void seek(second, { resumeAfter: true }).catch(error => { if (error?.name !== 'AbortError') status.textContent = error.message || '回放视频载入失败'; }); return; }
   playing = true; startedAt = performance.now(); startedSecond = playheadSecond;
-  player.play(Math.max(0,startedSecond-rrOffset) * 1000); syncMediaTime(startedSecond);if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
+  player.play(replayerTime(startedSecond)); syncMediaTime(startedSecond);if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
   playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
 function pause() {
@@ -279,7 +281,7 @@ async function seek(value, { resumeAfter } = {}) {
   const resume = resumeAfter ?? playing; playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible();
   clearTimeout(narrationTimer);narrating=false;resetZoom();
   try {
-    position(second); player?.pause(Math.max(0,second-rrOffset) * 1000); keepReplayAnimationsVisible();
+    position(second); player?.pause(replayerTime(second)); keepReplayAnimationsVisible();
     await waitForReplayPaint();
     await waitForRecordedFonts();
     if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
@@ -337,6 +339,9 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const captureEnd = Date.parse(packet.meta.mediaCaptureStoppedAt || packet.meta.endedAt || packet.meta.startedAt);
   baseWall = Date.parse(packet.meta.startedAt); duration = Math.max(1, (wallEnd - baseWall) / 1000, (last - baseTimestamp) / 1000,(captureEnd-baseWall)/1000);
   rrOffset=(baseTimestamp-baseWall)/1000;
+  // rrweb clears its node map when rewinding before its first snapshot. Always seed that snapshot.
+  const firstSnapshot = items.find(event => event.type === 2);
+  rrMinimumOffsetMs = firstSnapshot ? Math.max(0, firstSnapshot.timestamp - baseTimestamp) + 1 : 0;
   if (packet.meta.mediaStartedAt) mediaStartSecond = Math.max(0, (Date.parse(packet.meta.mediaStartedAt) - baseWall) / 1000);
   mediaDuration = (Number(packet.meta.mediaLastTimeMs) || 0) / 1000;
   const validSegments=(packet.meta.mediaSegments||[]).filter(x=>Number.isInteger(x.index)&&typeof x.startedAt==='string');
@@ -354,11 +359,11 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const width = packet.meta.viewport?.width || 1280; const height = packet.meta.viewport?.height || 720;
   replayViewport={width,height};
   stage.style.aspectRatio = `${width} / ${height}`; stage.style.setProperty('--ix-frame-width', `${width}px`); stage.style.setProperty('--ix-frame-height', `${height}px`);
-  player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: mediaSegments.length === 0 });
+  player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, useVirtualDom: false, UNSAFE_replayCanvas: true });
   // Replayer construction sets up its sandbox but does not paint the full snapshot until the timeline advances.
   // Render the first recorded frame before enabling controls so a replay link never opens on a blank stage.
   const firstVisibleSecond = 0;
-  player.play(Math.max(0,firstVisibleSecond-rrOffset) * 1000);
+  player.play(replayerTime(firstVisibleSecond));
   // Let CSS transitions present in the captured page finish while the replay clock advances.
   await new Promise((resolve) => setTimeout(resolve, 900));
   player.pause(); keepReplayAnimationsVisible();
