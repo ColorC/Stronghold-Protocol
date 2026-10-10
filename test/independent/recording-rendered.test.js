@@ -13,11 +13,15 @@ test('rendered recording HTTP serves only published round files with bounded ran
   await mkdir(path.join(recordings, id), { recursive: true }); await mkdir(idDir, { recursive: true });
   await writeFile(path.join(recordings, id, 'meta.json'), JSON.stringify({ id, sessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' }));
   await writeFile(path.join(idDir, 'battle-1.webm'), 'real-round-webm');
+  await writeFile(path.join(idDir, 'prep-1.webm'), 'clear-prep-webm');
+  await writeFile(path.join(idDir, 'showcase.mp4'), 'narrated-mp4');
   await writeFile(path.join(rendered, 'secret.webm'), 'must-not-be-served');
   const manifest = { schemaVersion: 1, recordingId: id, sessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     sourceRevision: '1a7dd1d', viewport: { width: 2560, height: 1440 }, fps: 30, videoBitsPerSecond: 16000000,
     clips: [{ round: 1, startSecond: 0, endSecond: 12.5, mediaDuration: 12.5, file: '../secret.webm' },
-      { round: 2, startSecond: 12.5, endSecond: 20, mediaDuration: 7.5, file: 'battle-2.webm' }] };
+      { round: 2, startSecond: 12.5, endSecond: 20, mediaDuration: 7.5, file: 'battle-2.webm' },
+      { kind: 'prep', index: 1, round: null, startSecond: 20, endSecond: 24, mediaDuration: 4, file: '../secret.webm' }],
+    movie: { file: '../secret.webm', mediaDuration: 30 } };
   await writeFile(path.join(idDir, 'manifest.json'), JSON.stringify(manifest));
   const previousRenderDirectory = process.env.SP_RECORDING_RENDER_DIRECTORY;
   process.env.SP_RECORDING_RENDER_DIRECTORY = rendered;
@@ -55,6 +59,18 @@ test('rendered recording HTTP serves only published round files with bounded ran
   assert.equal(unsatisfiable.status, 416);
   assert.equal(unsatisfiable.headers.get('content-range'), 'bytes */15');
   assert.equal((await fetch(`${url}/2`)).status, 404, 'published clip without its completed output is not served');
+  assert.equal(published.manifest.clips[2].file, 'prep-1.webm');
+  assert.equal(published.manifest.movie.file, 'showcase.mp4');
+  const prepVideo = await fetch(url + '/prep-1');
+  assert.equal(prepVideo.status, 200); assert.equal(await prepVideo.text(), 'clear-prep-webm');
+  const movieVideo = await fetch(url + '/showcase', { headers: { range: 'bytes=0-3' } });
+  assert.equal(movieVideo.status, 206); assert.equal(movieVideo.headers.get('content-type'), 'video/mp4');
+  assert.equal(await movieVideo.text(), 'narr');
+  const movieHead = await fetch(url + '/showcase', { method: 'HEAD' });
+  assert.equal(movieHead.status, 200); assert.equal(movieHead.headers.get('content-length'), '12');
+  assert.equal(await movieHead.text(), '');
+  assert.equal((await fetch(url + '/prep-01')).status, 400);
+  assert.equal((await fetch(url + '/prep-2')).status, 404);
   assert.equal((await fetch(`${url}/01`)).status, 400);
   assert.equal((await fetch(url, { method: 'POST' })).status, 405);
   assert.equal((await fetch(url, { headers: { origin: 'http://elsewhere.invalid' } })).status, 403);

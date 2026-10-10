@@ -16,19 +16,28 @@ function normalizeManifest(value, id) {
     || !Number.isSafeInteger(value.viewport.height) || value.viewport.height < 1
     || !positiveFinite(value.fps) || !Number.isSafeInteger(value.videoBitsPerSecond) || value.videoBitsPerSecond < 1
     || !Array.isArray(value.clips)) return null;
-  const rounds = new Set();
+  const keys = new Set();
   const clips = [];
   for (const clip of value.clips) {
-    if (!clip || !Number.isSafeInteger(clip.round) || clip.round < 1 || rounds.has(clip.round)
+    const prep = clip?.kind === 'prep';
+    const index = prep ? clip.index : clip?.round;
+    const key = prep ? 'prep-' + index : String(index);
+    if (!clip || !Number.isSafeInteger(index) || index < 1 || index > 999999999 || keys.has(key)
       || !nonnegativeFinite(clip.startSecond) || !nonnegativeFinite(clip.endSecond) || clip.endSecond < clip.startSecond
       || !nonnegativeFinite(clip.mediaDuration) || typeof clip.file !== 'string') return null;
-    rounds.add(clip.round);
-    clips.push({ round: clip.round, startSecond: clip.startSecond, endSecond: clip.endSecond,
-      mediaDuration: clip.mediaDuration, file: `battle-${clip.round}.webm` });
+    keys.add(key);
+    clips.push({ ...(prep ? { kind: 'prep', index, round: null } : { round: index }),
+      startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: clip.mediaDuration,
+      file: prep ? 'prep-' + index + '.webm' : 'battle-' + index + '.webm' });
+  }
+  let movie;
+  if (value.movie !== undefined) {
+    if (!value.movie || typeof value.movie !== 'object' || !positiveFinite(value.movie.mediaDuration)) return null;
+    movie = { file: 'showcase.mp4', mediaDuration: value.movie.mediaDuration };
   }
   return { schemaVersion: 1, recordingId: id, sessionId: value.sessionId, sourceRevision: value.sourceRevision,
     viewport: { width: value.viewport.width, height: value.viewport.height }, fps: value.fps,
-    videoBitsPerSecond: value.videoBitsPerSecond, clips };
+    videoBitsPerSecond: value.videoBitsPerSecond, clips, ...(movie ? { movie } : {}) };
 }
 
 async function readPublishedManifest({ id, recordingDirectory, renderDirectory, loadMeta }) {
@@ -57,9 +66,9 @@ async function readPublishedManifest({ id, recordingDirectory, renderDirectory, 
 
 export async function handleRenderedRecording({ req, res, id, roundText = null, renderDirectory, recordingDirectory, loadMeta, json, pipeFileReadStream }) {
   if (!UUID.test(id)) return missing(res, json);
-  if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return json(res, 405, { ok: false, error: 'METHOD' }); }
+  if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); return json(res, 405, { ok: false, error: 'METHOD' }); }
   if (!path.isAbsolute(renderDirectory) || !path.isAbsolute(recordingDirectory)) throw new Error('Recording render directories must be absolute');
-  if (roundText != null && !/^[1-9]\d{0,8}$/.test(roundText)) return json(res, 400, { ok: false, error: 'INVALID_ROUND' });
+  if (roundText != null && roundText !== 'showcase' && !/^(?:prep-)?[1-9]\d{0,8}$/.test(roundText)) return json(res, 400, { ok: false, error: 'INVALID_ROUND' });
 
   let published;
   try { published = await readPublishedManifest({ id, recordingDirectory, renderDirectory, loadMeta }); }
@@ -69,10 +78,13 @@ export async function handleRenderedRecording({ req, res, id, roundText = null, 
   }
   if (roundText == null) return json(res, 200, { ok: true, manifest: published.manifest });
 
-  const round = Number(roundText);
-  if (!Number.isSafeInteger(round) || !published.manifest.clips.some((clip) => clip.round === round)) return missing(res, json, 'RENDERED_CLIP_NOT_FOUND');
-  const file = path.resolve(published.base, `battle-${round}.webm`);
-  if (!file.startsWith(`${published.base}${path.sep}`)) return json(res, 400, { ok: false, error: 'INVALID_ROUND' });
+  const movie = roundText === 'showcase';
+  const prep = /^prep-/.test(roundText);
+  const index = Number(prep ? roundText.slice(5) : roundText);
+  const clip = movie ? published.manifest.movie : published.manifest.clips.find(c => prep ? c.kind === 'prep' && c.index === index : c.kind !== 'prep' && c.round === index);
+  if (!clip) return missing(res, json, 'RENDERED_CLIP_NOT_FOUND');
+  const file = path.resolve(published.base, clip.file);
+  if (!file.startsWith(published.base + path.sep)) return json(res, 400, { ok: false, error: 'INVALID_ROUND' });
   let info;
   try {
     info = await lstat(file);
@@ -96,8 +108,9 @@ export async function handleRenderedRecording({ req, res, id, roundText = null, 
     }
     end = Math.min(end, info.size - 1);
   }
-  res.writeHead(match ? 206 : 200, { 'Content-Type': 'video/webm', 'Content-Length': String(end - start + 1),
+  res.writeHead(match ? 206 : 200, { 'Content-Type': movie ? 'video/mp4' : 'video/webm', 'Content-Length': String(end - start + 1),
     'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store', ...(match ? { 'Content-Range': `bytes ${start}-${end}/${info.size}` } : {}) });
-  pipeFileReadStream(req, res, createReadStream(file, { start, end }));
+  if (req.method === 'HEAD') res.end();
+  else pipeFileReadStream(req, res, createReadStream(file, { start, end }));
   return true;
 }

@@ -64,3 +64,17 @@ test('native successful HTTP response wrapper is unwrapped while failed wrappers
   assert.deepEqual(renderedReplayClips({ ok: false, error: 'RENDERED_NOT_FOUND', manifest: manifest() }, api, recordingId), []);
   assert.deepEqual(renderedReplayClips({ ok: true, error: 'RENDERED_MANIFEST_INVALID' }, api, recordingId), []);
 });
+
+test('clear prep and battle clips have separate bounded URLs and switch at exact intervals', () => {
+  const prepared = renderedReplayClips(manifest([
+    { kind: 'prep', index: 1, round: null, startSecond: 0, endSecond: 21.102, mediaDuration: 21.102, file: '../../secret' },
+    { round: 1, startSecond: 21.102, endSecond: 34.887, mediaDuration: 13.8, file: 'battle-1.webm' },
+    { kind: 'prep', index: 2, round: null, startSecond: 34.887, endSecond: 41.76, mediaDuration: 6.9, file: 'prep-2.webm' },
+  ]), api, recordingId);
+  assert.equal(prepared.length, 3);
+  assert.equal(prepared[0].key, 'rendered-prep-1');
+  assert.equal(prepared[0].url, api + 'recordings/' + recordingId + '/rendered/prep-1');
+  assert.equal(replayMediaSourceAt(21.101, [], prepared).key, 'rendered-prep-1');
+  assert.equal(replayMediaSourceAt(21.102, [], prepared).key, 'rendered-1');
+  assert.equal(replayMediaSourceAt(34.887, [], prepared).key, 'rendered-prep-2');
+});

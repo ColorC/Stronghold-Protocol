@@ -243,6 +243,11 @@ function attachCanvasMedia(id) {
   fitReplay();
 }
 function replayerTime(second) { return Math.max(rrMinimumOffsetMs, Math.max(0, second - rrOffset) * 1000); }
+function continueReplayer(second) {
+  // Frame scheduling can put the recorded DOM a few milliseconds ahead of decoded media.
+  // Keep forward playback incremental rather than rebuilding a snapshot for that rounding.
+  player?.play(Math.max(replayerTime(second), Number(player?.getCurrentTime?.()) || 0));
+}
 function mediaClockSecond() {
   return replayMediaClockSecond({ second: playheadSecond, source: mediaSourceAt(playheadSecond), activeKey: activeMediaKey, video: mediaVideo, duration });
 }
@@ -255,8 +260,8 @@ function offset() {
 function setMediaBuffering(buffering) {
   if (!playing || seeking || mediaClockSecond() === null || buffering === mediaBuffering) return;
   const second = offset(); mediaBuffering = buffering;
-  if (buffering) { player?.pause(replayerTime(second)); keepReplayAnimationsVisible(); }
-  else { startedSecond = second; startedAt = performance.now(); player?.play(replayerTime(second)); }
+  if (buffering) { player?.pause(); keepReplayAnimationsVisible(); }
+  else { startedSecond = second; startedAt = performance.now(); continueReplayer(second); }
   position(second);
 }
 function tick() {
@@ -264,7 +269,7 @@ function tick() {
   const now = offset();
   const wanted = mediaNeedsLoad(now);
   if (wanted) {
-    void seek(now, { resumeAfter: true }).catch(error => { if (error?.name !== 'AbortError') status.textContent = error.message || '回放视频载入失败'; });
+    void switchPlaybackSource(now).catch(error => { if (error?.name !== 'AbortError') status.textContent = error.message || '回放视频载入失败'; });
     return;
   }
   position(now);
@@ -282,6 +287,16 @@ function tick() {
   if (now >= duration) { pause(); return; }
   raf = requestAnimationFrame(tick);
 }
+async function switchPlaybackSource(second) {
+  cancelPendingMediaSeek(); const generation = ++seekGeneration;
+  seeking = true; playing = false; mediaBuffering = false; cancelAnimationFrame(raf);
+  player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible(); position(second);
+  try {
+    await positionMediaAt(second, generation);
+    if (generation !== seekGeneration) throw abortError();
+    seeking = false; play();
+  } finally { if (generation === seekGeneration) seeking = false; }
+}
 function play() {
   if (playing || !player || seeking) return;
   const second = playheadSecond;
@@ -291,7 +306,7 @@ function play() {
   const source = mediaSourceAt(second);
   const hasMedia = !!mediaVideo && !!source && second >= source.at && activeMediaKey === source.key && mediaVideo.currentSrc === source.url;
   if (hasMedia && (mediaVideo.readyState < 3 || mediaVideo.seeking)) setMediaBuffering(true);
-  else player.play(replayerTime(second));
+  else continueReplayer(second);
   if (hasMedia) void mediaVideo.play().catch(error => { if (playing) { pause(); status.textContent = error.message || '回放视频播放失败'; } });
   playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
@@ -362,6 +377,10 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   if (!id) throw new Error('没有指定本局回放');
   const response = await fetch(new URL(`recordings/${encodeURIComponent(id)}`, API), { credentials: 'same-origin' });
   const packet = await response.json(); if (!response.ok || !packet.ok) throw new Error('无法载入本局回放');
+  if (packet.meta?.surface === 'workshop-video') {
+    const movieUrl = new URL('independent-video.html', location.href); movieUrl.search = location.search;
+    location.replace(movieUrl.href); return;
+  }
   const records = packet.events || []; items = records.filter((e) => e.kind === 'rrweb').map((e) => e.p); rebaseRecordedAssets(items);
   const recordedCues = records.filter((e) => e.kind === 'caption' && e.p?.text).map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), ...e.p }));
   selectionEvents = records.filter((e) => e.kind === 'selection').map((e) => ({ at: Math.max(0, (e.ts - Date.parse(packet.meta.startedAt)) / 1000), p: e.p })).sort((a, b) => a.at - b.at);
