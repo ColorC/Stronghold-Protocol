@@ -1,4 +1,5 @@
 import { getData } from '../../data.js';
+import { independentIncome, independentUpgradeBase, independentShopSlots, independentRoundPlan, independentPrizeStage, INDEPENDENT_ROUND_LIMITS } from '../../../shared/independentEconomy.js';
 import { GameData } from '../../match/gamedata.js';
 import { canPlace, inField, positionClass, ownerRangeKeys, tileKey } from '../../match/board.js';
 import { attackRangeGrid, loadoutRecord, resolveRecordLoadout } from '../../../shared/loadoutRecord.js';
@@ -35,8 +36,7 @@ function sessionData(options = {}) { return options.data || getData({ log: quiet
 function sessionCatalog(data, options = {}) { return options.catalog || getCatalog(data); }
 function gdFor(state, data) { return new GameData(data, modeIdFor('solo', state.difficulty.toLowerCase())); }
 function baseIncomeFor(round, gd, catalog) {
-  const balance = catalog.config?.balance || {};
-  return gd.income(round) + (round >= Number(balance.incomeBonusFromRound || Infinity) ? Number(balance.incomeBonus || 0) : 0);
+  return independentIncome(round);
 }
 function poolFor(state, id) { const key = baseId(id); return state.pool[key] || null; }
 /**
@@ -122,8 +122,8 @@ function drawChess(state, catalog, rng, maxTier) {
  * equipment place shows one more operator.
  */
 function slotsFor(state, gd, catalog, rng) {
-  const counts = gd.shopSlots(state.shop.level); const slots = [];
-  for (let i = 0; i < counts.chess + counts.item; i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
+  const slots = [];
+  for (let i = 0; i < independentShopSlots(state.shop.level); i++) slots.push({ kind: 'chess', id: drawChess(state, catalog, rng, state.shop.level), elite: false, price: 3, sold: false, equipment: [] });
   // 商店预增益 (native shopCarry): every new offer carries what the game has built up so far
   for (const fx of state.playerEffects || []) if (fx.type === 'shopCarry' && fx.quantity > 0) for (const slot of slots) if (shopCarryApplies(fx,slot,catalog)) slot.equipment.push({ id: fx.id, quantity: fx.quantity, origin: 'shopCarry' });
   return decorateDarkmoonShopSlots(state,catalog,slots);
@@ -499,16 +499,15 @@ function handleSaleEquipment(state, catalog) {
   }
 }
 function roundAward(state) {
-  if (state.roundLimit === 9) return state.round === 4 ? 'start' : state.round === 8 ? 'cashout' : null;
-  return [4, 8, 12].includes(state.round) ? (state.round === 4 ? 'start' : state.round === 8 ? 'build' : 'cashout') : null;
+  return independentPrizeStage(state.roundLimit, state.round);
 }
 
 export function createSession(options = {}) {
   const data = sessionData(options); const catalog = sessionCatalog(data, options);
   const difficulty = String(options.difficulty || 'NORMAL').toUpperCase();
   if (!['FUNNY', 'NORMAL', 'HARD', 'ABYSS'].includes(difficulty)) throw new Error('BAD_DIFFICULTY');
-  const roundLimit = Number(options.roundLimit || (difficulty === 'FUNNY' ? 9 : 14));
-  if (![9, 14, 15].includes(roundLimit)) throw new Error('BAD_ROUND_LIMIT');
+  const roundLimit = Number(options.roundLimit || (difficulty === 'FUNNY' ? 9 : 18));
+  if (!INDEPENDENT_ROUND_LIMITS.includes(roundLimit)) throw new Error('BAD_ROUND_LIMIT');
   const growthMode = options.growthMode ?? catalog.config?.defaultGrowthMode ?? 'badges';
   if (!GROWTH_MODES.includes(growthMode)) throw new Error('BAD_GROWTH_MODE');
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) >>> 0 : 1;
@@ -518,7 +517,7 @@ export function createSession(options = {}) {
   const openFactions = null;
   const state = { schemaVersion: 1, modeId: 'independent', seed, ...(openFactions ? { openFactions } : {}), rngState: rng.state(), nextUid: 1, revision: 0, round: 1, roundLimit,
     difficulty, growthMode, phase: 'prep', funds: income, pendingFunds: 0, lp: gd.startLp(null), deployCap: 8,
-    shop: { level: 1, upgradePrice: gd.upgradeBase(1) ?? 0, slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], summons: [], inventory: [], offers: [],
+    shop: { level: 1, upgradePrice: independentUpgradeBase(1), slots: [], frozen: false, freeRefreshes: 0 }, pieces: [], summons: [], inventory: [], offers: [],
     incomeThisRound: income, pendingRoundStart: false, playerEffects: [], counters: { gained: 0, bought: 0, refreshes: 0, paidRefreshes: 0, spent: 0, sold: 0, factionBought:{} }, pool: operatorPool({ pool: {} }, catalog, gd, openFactions), history: [], battleSummary: null, outcome: null };
   state.shop.slots = slotsFor(state, gd, catalog, rng); state.rngState = rng.state();
   const errs = validateSession(state);
@@ -532,7 +531,7 @@ export function validateSession(state) {
   if (!isRecord(state) || state.schemaVersion !== 1 || state.modeId !== 'independent') return ['BAD_SCHEMA'];
   for (const k of ['seed', 'rngState', 'nextUid', 'revision', 'round', 'roundLimit', 'funds', 'pendingFunds', 'lp', 'deployCap']) if (!Number.isFinite(state[k])) e.push(`BAD_${k.toUpperCase()}`);
   if (!['prep', 'prize', 'finished'].includes(state.phase)) e.push('BAD_PHASE');
-  if (![9, 14, 15].includes(state.roundLimit) || state.round < 1 || state.round > state.roundLimit + 1) e.push('BAD_ROUND');
+  if (!INDEPENDENT_ROUND_LIMITS.includes(state.roundLimit) || state.round < 1 || state.round > state.roundLimit + 1) e.push('BAD_ROUND');
   for (const key of ['pieces', 'inventory', 'offers', 'playerEffects', 'history']) if (!Array.isArray(state[key])) e.push(`BAD_${key.toUpperCase()}`);
   if (state.summons !== undefined && !Array.isArray(state.summons)) e.push('BAD_SUMMONS');
   if (!isRecord(state.shop) || !Array.isArray(state.shop.slots) || !Number.isInteger(state.shop.level)) e.push('BAD_SHOP');
@@ -630,7 +629,7 @@ export function viewSession(state, options = {}) {
   }
     return { ...clone(state), pieces, catalog: { badges: catalog.badges, equipment: catalog.equipment, attachments: catalog.attachments }, legalActions: state.phase === 'prep' ? ['buy', 'refresh', 'freeze', 'upgrade', 'sell', 'move', 'bench', 'loadout', 'configure', 'configure-equipment', 'equip', 'use-item', 'inherit-preview', 'inherit', 'ready'] : state.phase === 'prize' ? ['choose'] : [],
     board: field ? { stageId: field.stageId, field: field.field, map: [...(field.deployMap || new Map()).entries()], bossId: field.bossId, factions: field.factions,
-      bossRound: state.roundLimit === 9 ? 9 : 14 } : null, battleSummary: state.battleSummary, matchStats: matchStats(state),
+      bossRound: independentRoundPlan(state.roundLimit).bossRound } : null, battleSummary: state.battleSummary, matchStats: matchStats(state),
     forecast: state.phase === 'prep' ? forecastPrepEnd(state, data, catalog) : null,
     // the coming round's enemies for the renderer's preview pen (the original m.private.nextEnemies, waves.js previewOf)
     nextEnemies: field && state.phase !== 'finished' ? previewOf(field.wave?.spawns || []) : [] };
@@ -790,7 +789,7 @@ export function applyAction(state, action, options = {}) {
       ensurePrep(work); if (work.shop.level >= gd.maxShopLevel) throw new Error('MAX_LEVEL');
       const price = work.shop.upgradePrice; if (work.funds < price) throw new Error('NO_FUNDS');
       work.funds -= price; work.counters.spent += price; addTotal(work, 'spent', price); addTotal(work, 'upgrades'); invokeHook(work, 'spend', { amount: price, source: 'upgrade' }, services); work.shop.level++;
-      work.shop.upgradePrice = gd.upgradeBase(work.shop.level) ?? 0; events.push({ type: 'upgrade', level: work.shop.level });
+      work.shop.upgradePrice = independentUpgradeBase(work.shop.level); events.push({ type: 'upgrade', level: work.shop.level });
     } else if (act === 'sell') {
       ensurePrep(work); const p = work.pieces.find((x) => x.uid === action.uid); if (!p) throw new Error('BAD_TARGET');
       invokeHook(work, 'selling', { piece: p }, services); addTotal(work, 'sold');
@@ -938,9 +937,9 @@ export function applyAction(state, action, options = {}) {
         events.push({ type: 'finished', outcome: work.outcome, result: battle.result });
       }
       else {
-      if (work.roundLimit === 15 && work.round === 14 && (!bossCleared || work.lp <= 0)) { work.outcome = 'loss'; work.phase = 'finished'; events.push({ type: 'finished', outcome: work.outcome, result: battle.result }); }
+      if (independentRoundPlan(work.roundLimit).hiddenRound && work.round === independentRoundPlan(work.roundLimit).bossRound && (!bossCleared || work.lp <= 0)) { work.outcome = 'loss'; work.phase = 'finished'; events.push({ type: 'finished', outcome: work.outcome, result: battle.result }); }
       else {
-      if (work.roundLimit === 15 && work.round === 14) work.outcome = 'boss-cleared';
+      if (independentRoundPlan(work.roundLimit).hiddenRound && work.round === independentRoundPlan(work.roundLimit).bossRound) work.outcome = 'boss-cleared';
       work.round++;
       work.playerEffects = work.playerEffects.filter((x) => x.type !== 'repeatNativeForging' || x.expiresRound >= work.round);
       const baseIncome = baseIncomeFor(work.round, gd, catalog); const facility = work.playerEffects.filter((x) => x.type === 'facilityIncome').reduce((n, x) => n + Number(x.amount || 0), 0);

@@ -1,5 +1,6 @@
 // Pure workshop catalog and session view projection. Kept shared by the HTTP and client-compute paths.
 import { traitSummary, TRAIT_WHEN } from './summary.js';
+import { INDEPENDENT_NEW_MODES } from '../../../shared/independentEconomy.js';
 import { chessAvatarUrl } from '../../../public/js/ui/assetUrls.js';
 import { quantityEquippable } from '../../../shared/independentInventory.js';
 import { darkmoonCombatEligibilityRules, darkmoonCombatMetadata } from '../../sim/content/independent/darkmoonCombat.js';
@@ -77,7 +78,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
     rules: { purchasePrice: catalog.config.purchasePrice, sellPrice: catalog.config.sellPrice, refreshPrice: catalog.config.refreshPrice,
       equipmentCapacity: catalog.config.equipmentCapacity, inventoryCapacity: catalog.config.inventoryCapacity, factionIdentityEquipment:catalog.config.factionIdentityEquipment, bodyPenalty: { baseAttackRatio: catalog.config.bodyPenalty?.baseAttackRatio ?? 0.8, baseLifeRatio: catalog.config.bodyPenalty?.baseLifeRatio ?? 0.8 } },
     traitWhen: TRAIT_WHEN,
-    modes: [{ name: '短局', difficulty: 'FUNNY', roundLimit: 9 }, { name: '标准局', difficulty: 'NORMAL', roundLimit: 14 }, { name: '追加挑战', difficulty: 'NORMAL', roundLimit: 15 }] };
+    modes: INDEPENDENT_NEW_MODES };
 }
 
 /** Project a validated native session to the same renderer packet used by the HTTP transport. */

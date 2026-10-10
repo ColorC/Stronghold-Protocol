@@ -1,4 +1,5 @@
 import { getData } from '../../data.js';
+import { independentRoundPlan, independentRoundScale } from '../../../shared/independentEconomy.js';
 import { GameData } from '../../match/gamedata.js';
 import { modeIdFor } from '../../../shared/constants.js';
 import { Battle } from '../../sim/Battle.js';
@@ -41,18 +42,21 @@ function modeOf(state) {
 function prepare(state, data, catalog = null) {
   const round = roundOf(state);
   const modeId = modeOf(state);
-  const roundLimit = Number(state.roundLimit ?? 14);
-  if (![9, 14, 15].includes(roundLimit)) throw new RangeError(`unsupported independent roundLimit: ${roundLimit}`);
+  const roundLimit = Number(state.roundLimit ?? 18);
+  const plan = independentRoundPlan(roundLimit, round);
   const gd = new GameData(data, modeId);
-  const setup = setupMatchWaves(gd, createRng(deriveSeed(Number(state.seed) >>> 0, 'world')));
-  const isHiddenRound = roundLimit === 15 && round === 15;
-  const isBossRound = (roundLimit === 9 && round === 9) || ((roundLimit === 14 || roundLimit === 15) && round === 14) || isHiddenRound;
+  const waveBase = plan.long && modeId === 'mode_single_funny' ? new GameData(data, modeIdFor('solo', 'NORMAL')) : gd;
+  const waveGd = Object.create(waveBase);
+  waveGd.enemyScale = () => independentRoundScale(gd, round, roundLimit);
+  const setup = setupMatchWaves(waveBase, createRng(deriveSeed(Number(state.seed) >>> 0, 'world')));
+  const isHiddenRound = plan.kind === 'hidden';
+  const isBossRound = plan.kind !== 'normal';
   const field = isBossRound ? 'bossL' : 'normal';
   const rng = createRng(deriveSeed(Number(state.seed) >>> 0, `independent:wave:${round}:${modeId}`));
   const bossId = isHiddenRound ? setup.hiddenBossId : setup.bossId;
   const sourceWave = isBossRound
-    ? buildBossWave(gd, rng, setup, round, { bossId, solo: true })
-    : buildNormalWave(gd, rng, setup, round);
+    ? buildBossWave(waveGd, rng, setup, plan.waveRound, { bossId, solo: true })
+    : buildNormalWave(waveGd, rng, setup, plan.waveRound);
   const tuning = independentEnemyBalance(state, catalog);
   const wave = balanceIndependentWave(sourceWave, tuning);
   const stageId = setup.stageId ?? wave.templateId ?? null;
@@ -61,7 +65,7 @@ function prepare(state, data, catalog = null) {
   if (!wave.templateId) throw new Error(`independent wave ${round} has no upstream wave template`);
   if (isBossRound && (!bossId || !gd.boss(bossId))) throw new Error(`independent boss wave ${round} has no upstream boss`);
   const kind = isHiddenRound ? 'hidden' : isBossRound ? 'boss' : 'normal';
-  return { gd, round, modeId, setup, field, wave, stageId, stage, bossId, roundLimit, kind, tuning };
+  return { gd, round, waveRound: plan.waveRound, modeId, setup, field, wave, stageId, stage, bossId, roundLimit, kind, tuning };
 }
 
 /** Resolve the deterministic upstream field and legal placement map used by both prep and battle. */
@@ -255,6 +259,7 @@ export function runIndependentBattle(state, { data = null, catalog = null } = {}
   const diagnostics = {
     modeId: prepared.modeId,
     round: prepared.round,
+    waveRound: prepared.waveRound,
     kind: prepared.kind,
     stageId: prepared.stageId,
     templateId: prepared.wave.templateId,
