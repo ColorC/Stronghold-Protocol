@@ -28,8 +28,12 @@ export function parseArgs(argv) {
   if (!UUID.test(out['recording-id']) || !UUID.test(out['session-id'])) throw new Error('recording and session IDs must be UUIDs');
   const secs = out['sample-seconds'] == null ? null : Number(out['sample-seconds']);
   const sampleStart = out['sample-start-second'] == null ? null : Number(out['sample-start-second']);
+  const highDprSecond = out['high-dpr-second'] == null ? null : Number(out['high-dpr-second']);
+  const highDpr = out['high-dpr'] == null ? 3 : Number(out['high-dpr']);
   if (secs != null && (!Number.isFinite(secs) || secs <= 0 || secs > 60)) throw new Error('--sample-seconds must be in (0,60] when supplied');
   if (sampleStart != null && (!Number.isFinite(sampleStart) || sampleStart < 0)) throw new Error('--sample-start-second must be non-negative when supplied');
+  if (highDprSecond != null && (!Number.isFinite(highDprSecond) || highDprSecond < 0)) throw new Error('--high-dpr-second must be non-negative when supplied');
+  if (!Number.isFinite(highDpr) || highDpr < 2 || highDpr > 3) throw new Error('--high-dpr must be between 2 and 3');
   if (out['prep-only'] != null && !['true', 'false'].includes(String(out['prep-only']))) throw new Error('--prep-only must be true or false');
   if (out['clock-probe'] != null && !['true', 'false'].includes(String(out['clock-probe']))) throw new Error('--clock-probe must be true or false');
   if (out['composite-only'] != null && !['true', 'false'].includes(String(out['composite-only']))) throw new Error('--composite-only must be true or false');
@@ -43,6 +47,8 @@ export function parseArgs(argv) {
   if (!rounds.length || rounds.some((n) => !Number.isInteger(n) || n < 1 || n > 99)) throw new Error('--rounds must be comma-separated positive integers');
   out.sampleSeconds = secs;
   out.sampleStartSecond = sampleStart;
+  out.highDprSecond = highDprSecond;
+  out.highDpr = highDpr;
   out.roundList = [...new Set(rounds)];
   return out;
 }
@@ -428,6 +434,7 @@ async function main(argv) {
     if (!encoderConfig.supported) throw new Error(`WebCodecs VP8 unsupported: ${JSON.stringify(encoderConfig)}`);
     const renderedClips = [];
     const compositeClips = [];
+    const highDprStills = [];
     for (const [clipIndex, clip] of (args.compositeOnly ? [] : prepClipsForRender.entries())) {
       if (args.sampleSeconds != null && clip.endSecond - clip.startSecond > args.sampleSeconds) {
         clip.endSecond = clip.startSecond + args.sampleSeconds;
@@ -698,7 +705,24 @@ async function main(argv) {
         const screenshotStarted = performance.now();
         const png = await page.screenshot({ type: 'png', captureBeyondViewport: false, optimizeForSpeed: true });
         compositeTiming.screenshotMs += performance.now() - screenshotStarted;
-      if (i === 0 && compositeClips.length === 0) { await fsp.writeFile(path.join(outputRoot, 'composite-first-frame.png'), png); stage(`composite screenshot PNG ${png.length} bytes`); }
+        if (i === 0 && compositeClips.length === 0) { await fsp.writeFile(path.join(outputRoot, 'composite-first-frame.png'), png); stage(`composite screenshot PNG ${png.length} bytes`); }
+        if (args.highDprSecond != null && Math.abs(second - args.highDprSecond) < (0.5 / fps)) {
+          const originalViewport = page.viewport();
+          await page.setViewport({ ...originalViewport, deviceScaleFactor: args.highDpr });
+          const highPng = await page.screenshot({ type: 'png', captureBeyondViewport: false, optimizeForSpeed: true });
+          const highPath = path.join(outputRoot, `high-dpr-${args.highDprSecond.toFixed(3)}.png`);
+          const viewportAudit = await page.evaluate(() => ({ cssViewport: { width: innerWidth, height: innerHeight }, devicePixelRatio }));
+          if (highPng.readUInt32BE(16) !== Math.round(viewportAudit.cssViewport.width * args.highDpr)
+            || highPng.readUInt32BE(20) !== Math.round(viewportAudit.cssViewport.height * args.highDpr)) {
+            throw new Error(`high-DPR screenshot pixel dimensions mismatch: ${JSON.stringify({ viewportAudit, pngWidth: highPng.readUInt32BE(16), pngHeight: highPng.readUInt32BE(20) })}`);
+          }
+          await fsp.writeFile(highPath, highPng);
+          highDprStills.push({ recordingId, sourceSecond: args.highDprSecond, cssViewport: viewportAudit.cssViewport,
+            devicePixelRatio: viewportAudit.devicePixelRatio, pixelWidth: highPng.readUInt32BE(16), pixelHeight: highPng.readUInt32BE(20), file: highPath });
+          await page.setViewport(originalViewport);
+          await fsp.writeFile(path.join(outputRoot, 'high-dpr-stills.json'), JSON.stringify(highDprStills, null, 2));
+          stage(`high-DPR still ${highPath} at ${args.highDpr}x`);
+        }
         for (const anchor of [7.7, 9.65, 11.6, 15.2]) {
           const anchorFrame = Math.round((anchor - sourceStart) * fps);
           if (anchorFrame === i) await fsp.writeFile(path.join(outputRoot, `composite-anchor-${second.toFixed(3)}.png`), png);
