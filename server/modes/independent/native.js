@@ -1023,9 +1023,9 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
   if (hook === 'firstDeploy') {
     if (!piece || !isPresent(piece) || piece.nativeState?.firstDeployHooksFired) return state;
     const rules = (traitFor(piece, services)?.effect?.prep || []).filter((r) => r.trigger === hook);
+    piece.nativeState ||= {};
+    piece.nativeState.firstDeployHooksFired = true;
     if (rules.length) {
-      piece.nativeState ||= {};
-      piece.nativeState.firstDeployHooksFired = true;
       fire(state, hook, piece, event, services, false, null, rules);
     }
     for(const holder of roster(state)) {

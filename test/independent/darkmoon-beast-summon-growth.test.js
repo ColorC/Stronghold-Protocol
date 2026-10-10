@@ -51,6 +51,19 @@ test('BGS_021 first placement pays once when gain was deferred, then dedupes the
   assert.equal(itemQty(f.target,'damage'),4);
 });
 
+test('a target first deployed before Suzuran joins cannot receive a late repeat-deploy reward',()=>{
+  const f=fixture({trainers:0,targetOnField:true});
+  hook(f,'firstDeploy',f.target);
+  assert.equal(f.target.nativeState.firstDeployHooksFired,true);
+  f.target.row=null;f.target.col=null;
+  const lateTrainer={uid:'late-trainer',chessId:trainer.chessId,row:10,col:3,equipment:[],nativeState:{}};
+  f.state.pieces.push(lateTrainer);
+  f.target.row=11;f.target.col=3;
+  hook(f,'firstDeploy',f.target);
+  assert.equal(itemQty(f.target,'precision'),0);
+  assert.equal(itemQty(f.target,'damage'),0);
+});
+
 test('BGS_021 does not trigger from a trainer that is still in the bench',()=>{
   const f=fixture();f.pieces[0].row=null;f.pieces[0].col=null;
   hook(f,'gain',f.target);
