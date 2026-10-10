@@ -3,10 +3,63 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { blockGameMutation, isAdmissionBootstrap, isGameApi, isGameFrameUrl, isIndependentHostFavicon404, isWorkshopScope, parseArgs, rectanglesOverlap } from '../../tools/resonance/workshop-native-ui-check.mjs';
+import { getSeasonCampaignCatalog } from '../../tools/resonance/balance-campaign.mjs';
+import { resonanceDisplayCatalog } from '../../server/modes/resonance/display.js';
+import { resolveOperatorSkillIcon } from '../../public/js/resonance/operatorSkillIcon.js';
+import { blockGameMutation, isAdmissionBootstrap, isGameApi, isGameFrameUrl, isIndependentHostFavicon404, isWorkshopScope, parseArgs, rectanglesOverlap, mapLimit, skillIconVerdict, touchActionFits, cardBackingFits } from '../../tools/resonance/workshop-native-ui-check.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const source=readFileSync(path.join(ROOT,'tools/resonance/workshop-native-ui-check.mjs'),'utf8');
+
+test('all65 fixed skills match the chosen native option rather than the upstream default',()=>{
+  const catalog=getSeasonCampaignCatalog(1),display=resonanceDisplayCatalog(catalog);
+  const chess=JSON.parse(readFileSync('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json','utf8'));
+  let alternatives=0;
+  for(const id of catalog.config.activeOperatorIds){
+    const operator=display.operators[id],record=chess[id],name=operator.stars[1].skill?.name;
+    assert.ok(record,id);
+    const selected=name?[record.skill,...(record.skills||[])].filter(Boolean).find(skill=>skill.name===name):record.skill;
+    assert.ok(selected,id);
+    const resolved=resolveOperatorSkillIcon(operator);
+    assert.equal(resolved.skillId,selected.skillId,id);assert.equal(resolved.iconId,selected.iconId,id);
+    const actual=new URL(resolved.url,'https://workshop.colorc.cc/stronghold/resonance.html').href;
+    assert.equal(skillIconVerdict(operator,{skill:selected},resolved,actual,true).passed,true,id);
+    if(selected.skillId!==record.skill?.skillId)alternatives++;
+  }
+  assert.equal(catalog.config.activeOperatorIds.length,65);
+  assert.equal(alternatives,2,'奥斯塔和万顷采用原生另一个固定技能');
+});
+
+test('chosen skill audit rejects a loaded wrong image and only exempts the native skill-less robot',()=>{
+  const native={skill:{skillId:'skchr_angel_3',iconId:'skchr_angel_3'}};
+  const resolved={skillId:'skchr_angel_3',iconId:'skchr_angel_3',url:'/assets/skill/skchr_angel_3.png'};
+  const url='https://workshop.colorc.cc/assets/skill/skchr_angel_3.png';
+  assert.equal(skillIconVerdict({charId:'char_103_angel'},native,resolved,url,true).passed,true);
+  assert.equal(skillIconVerdict({charId:'char_103_angel'},native,resolved,url.replace('angel_3','angel_2'),true).passed,false);
+  assert.equal(skillIconVerdict({charId:'char_103_angel'},native,{...resolved,skillId:'wrong'},url,true).passed,false);
+  assert.equal(skillIconVerdict({charId:'char_103_angel'},native,resolved,url,false).passed,false);
+  assert.deepEqual(skillIconVerdict({charId:'char_4000_jnight'},{skill:null},{url:null},null,false),{passed:true,exempt:true});
+  assert.equal(skillIconVerdict({charId:'char_103_angel'},{skill:null},{url:null},null,false).passed,false);
+  assert.equal(skillIconVerdict({charId:'char_4000_jnight'},{},{url:null},null,false).passed,false);
+  assert.equal(blockGameMutation('HEAD','https://workshop.colorc.cc/stronghold/resonance/api/sessions/x'),false);
+});
+
+test('resource mapping keeps output order and bounds concurrent requests',async()=>{
+  let active=0,peak=0;
+  const result=await mapLimit([5,4,3,2,1],2,async value=>{active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,value));active--;return value*2;});
+  assert.deepEqual(result,[10,8,6,4,2]);assert.equal(peak,2);
+  await assert.rejects(mapLimit([1],0,()=>1),/invalid concurrency/);
+});
+
+test('touch target and backing geometry reject undersized or partial surfaces',()=>{
+  assert.equal(touchActionFits({width:88,height:44}),true);
+  assert.equal(touchActionFits({width:87,height:44}),false);
+  assert.equal(touchActionFits({width:88,height:43}),false);
+  const card={width:120,height:190,backingWidth:116,backingHeight:186,backing:'linear-gradient(rgb(40,182,106),rgb(40,182,106))'};
+  assert.equal(cardBackingFits(card),true);
+  assert.equal(cardBackingFits({...card,backingHeight:130}),false);
+  assert.equal(cardBackingFits({...card,backing:'none'}),false);
+});
 
 test('Workshop credentials stay on /bside and game API writes are denied except exact admission bootstrap',()=>{
   const api='https://workshop.colorc.cc/stronghold/resonance/resonance/api/';
