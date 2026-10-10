@@ -2,11 +2,17 @@ import { rebaseRecordedAssets, timestampRange } from './replayAssets.js';
 import { recordingCanvasElements, recordingCanvasField } from './recordingCanvas.js';
 import { createReplayCueState } from './replayCueState.js';
 import { clampReplayMediaTime } from './replayMediaTime.js';
+import { waitForVideoSeek } from './replayReviewSeek.js';
 import { applyReplayNarration } from './replayNarration.js';
 import { selectionAt } from '../recording/selectionTimeline.js';
 import { workshopShowcaseNarration } from './workshopShowcaseNarration.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
+const reviewMode = new URL(location.href).searchParams.get('review') === '1';
+if (reviewMode) {
+  const narrationLabel=$('narration')?.closest('label');if(narrationLabel){narrationLabel.hidden=true;narrationLabel.style.display='none';}
+  for(const element of document.querySelectorAll('.ix-replay__controls,.ix-replay__head')){element.hidden=true;element.style.display='none';}
+}
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
@@ -18,6 +24,10 @@ let zoomRect = null;
 let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let activeMediaIndex=0;
 let selectionEvents=[];let paintedSelection=null;
+let initialized=false;let seeking=false;let seekGeneration=0;
+const reviewApi={state:()=>({time:Number(timeline.value)||0,duration,ready:initialized&&!seeking,paused:!playing,seeking}),getTime:()=>Number(timeline.value)||0,setTime:seek,seek,play,pause};
+Object.defineProperty(reviewApi,'duration',{get:()=>duration});
+window.__SP_REPLAY_REVIEW__=reviewApi;
 const cueState = createReplayCueState(() => cues);
 function keepReplayAnimationsVisible() {
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument;
@@ -100,15 +110,30 @@ function paintTextSelection(second) {
   if (first) Object.assign(label.style, { left: `${Math.max(0, (bounds.left - screen.left + first.x * sx) / outerScale)}px`, top: `${Math.max(0, (bounds.top - screen.top + first.y * sy) / outerScale - 28)}px` });
   textSelection.append(label); textSelection.hidden = false;
 }
+function loadMediaSegment(segment) {
+  activeMediaIndex=segment.index;
+  mediaReady=new Promise((resolve,reject)=>{
+    let timer=setTimeout(()=>finish(new Error('等待回放视频载入超时')),10000);
+    const cleanup=()=>{clearTimeout(timer);mediaVideo.removeEventListener('loadedmetadata',onReady);mediaVideo.removeEventListener('error',onError);};
+    const finish=error=>{cleanup();if(error)reject(error);else{mediaDuration=Number.isFinite(mediaVideo.duration)?mediaVideo.duration:segment.duration;resolve();}};
+    const onReady=()=>finish();const onError=()=>finish(new Error('回放视频载入失败'));
+    mediaVideo.addEventListener('loadedmetadata',onReady,{once:true});mediaVideo.addEventListener('error',onError,{once:true});
+    mediaVideo.src=new URL(`recordings/${encodeURIComponent(mediaId)}/media/playback/${segment.index}`,API).href;
+    mediaVideo.load();
+  });
+  void mediaReady.catch(error=>{status.textContent=error.message||'回放视频载入失败';});
+  return mediaReady;
+}
+function waitForReplayPaint() {
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('等待回放画面更新超时')),8000);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{clearTimeout(timer);resolve();}));
+  });
+}
 function syncMediaTime(second) {
   if (!mediaVideo) return;
   const segment=[...mediaSegments].reverse().find(x=>second>=x.at)||mediaSegments[0];
-  if(segment&&activeMediaIndex!==segment.index){
-    activeMediaIndex=segment.index;
-    mediaReady=new Promise(resolve=>{const done=()=>{mediaDuration=Number.isFinite(mediaVideo.duration)?mediaVideo.duration:segment.duration;resolve();syncMediaTime(Number(timeline.value));if(playing)void mediaVideo.play().catch(()=>{});};mediaVideo.addEventListener('loadedmetadata',done,{once:true});mediaVideo.addEventListener('error',resolve,{once:true});});
-    mediaVideo.src=new URL(`recordings/${encodeURIComponent(mediaId)}/media/playback/${segment.index}`,API).href;
-    mediaVideo.load();
-  }
+  if(segment&&activeMediaIndex!==segment.index)void loadMediaSegment(segment).then(()=>{syncMediaTime(Number(timeline.value));if(playing)void mediaVideo.play().catch(()=>{});}).catch(error=>{status.textContent=error.message||'回放视频载入失败';});
   if(second<mediaStartSecond){mediaVideo.pause();return;}
   const time = Math.max(0, (second - (segment?.at??mediaStartSecond)));
   if (mediaDuration > 0) {
@@ -123,10 +148,7 @@ function attachCanvasMedia(id) {
     mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
     Object.assign(mediaVideo.style, { position: 'absolute', objectFit: 'fill', pointerEvents: 'none', zIndex: '4', background: '#08090c' });
-    mediaReady = new Promise((resolve) => {
-      const done = () => { mediaDuration = Number.isFinite(mediaVideo.duration) ? mediaVideo.duration : mediaDuration; resolve(); };
-      mediaVideo.addEventListener('loadedmetadata', done, { once: true }); mediaVideo.addEventListener('error', done, { once: true });
-    });
+    mediaReady=Promise.resolve();
   }
   if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
   if (field) for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
@@ -162,19 +184,33 @@ function pause() {
   const now = offset(); playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
 }
 async function seek(value) {
+  const generation=++seekGeneration;
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
+  seeking=true;
   const resume = playing; playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible();
   clearTimeout(narrationTimer);narrating=false;resetZoom();
-  timeline.value = String(second); position(second); player?.play(Math.max(0,second-rrOffset) * 1000);
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  player?.pause(); keepReplayAnimationsVisible(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
-  if (mediaVideo && second >= mediaStartSecond) {
-    await mediaReady; syncMediaTime(second);
+  try {
+    timeline.value = String(second); position(second); player?.play(Math.max(0,second-rrOffset) * 1000);
+    await waitForReplayPaint();
+    if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
+    player?.pause(); keepReplayAnimationsVisible(); attachCanvasMedia(new URL(location.href).searchParams.get('recording'));
+    if (mediaVideo && second >= mediaStartSecond) {
+      const segment=[...mediaSegments].reverse().find(x=>second>=x.at)||mediaSegments[0];
+      if(segment&&activeMediaIndex!==segment.index)await loadMediaSegment(segment);
+      else await mediaReady;
+      if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
+      const target=clampReplayMediaTime(Math.max(0,second-(segment?.at??mediaStartSecond)),mediaDuration);
+      if(Math.abs(mediaVideo.currentTime-target)>0.035||mediaVideo.readyState<2)await waitForVideoSeek(mediaVideo,target);
+    }
+    if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
+    if (resume) { playing = false; play(); }
+    return second;
+  } finally {
+    if(generation===seekGeneration)seeking=false;
   }
-  if (resume) { playing = false; play(); }
 }
 playButton.addEventListener('click', () => {if(narrating){resetZoom();play();}else playing ? pause() : play();});
-timeline.addEventListener('input', () => { const requestedSecond = timeline.value; if (playing) pause(); void seek(requestedSecond); });
+timeline.addEventListener('input', () => { const requestedSecond = timeline.value; if (playing) pause(); void seek(requestedSecond).catch(error=>{if(error?.name!=='AbortError')status.textContent=error.message||'回放定位失败';}); });
 $('zoom').addEventListener('click', () => { selecting = true; paintMediaLayer(); status.textContent = '在画面上拖动，框选要放大的区域。'; });
 function resetZoom(){clearTimeout(narrationTimer);narrationTimer=0;narrating=false;cueState.clear();zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();paintCue(Number(timeline.value));}
 function zoomArea(rect){
@@ -237,11 +273,14 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   if (mediaVideo) {
     await mediaReady; syncMediaTime(Number(timeline.value));
     if (Number(timeline.value) >= mediaStartSecond) {
-      void mediaVideo.play().then(() => new Promise((resolve) => { if (mediaVideo.requestVideoFrameCallback) mediaVideo.requestVideoFrameCallback(resolve); else setTimeout(resolve, 80); }))
-        .then(() => { mediaVideo.pause(); }).catch(() => {});
+      const segment=[...mediaSegments].reverse().find(x=>Number(timeline.value)>=x.at)||mediaSegments[0];
+      const target=clampReplayMediaTime(Math.max(0,Number(timeline.value)-(segment?.at??mediaStartSecond)),mediaDuration);
+      await waitForVideoSeek(mediaVideo,target);
+      mediaVideo.pause();
     }
   }
   status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
+  initialized=true;
   new ResizeObserver(fitReplay).observe(stage.parentElement);
 })().catch((error) => { status.textContent = error.message || '回放载入失败'; });
 
