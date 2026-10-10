@@ -1930,7 +1930,7 @@ export async function createFieldView(host, options = {}) {
     },
     /** Render one authoritative replay sample for an offline video, without advancing wall time. */
     renderRecordedFrame({ gameTime, delta = 1 / 30, rate = 2 } = {}) {
-      if (destroyed || mode !== 'battle' || !Number.isFinite(gameTime) || !Number.isFinite(delta) || delta < 0 || delta > 0.1 || !Number.isFinite(rate) || rate < 0 || rate > 20) return false;
+      if (destroyed || (mode !== 'battle' && mode !== 'prep') || !Number.isFinite(gameTime) || !Number.isFinite(delta) || delta < 0 || delta > 0.1 || !Number.isFinite(rate) || rate < 0 || rate > 20) return false;
       app.stop();
       replayPresentationPaused = false;
       interp.rate = rate;

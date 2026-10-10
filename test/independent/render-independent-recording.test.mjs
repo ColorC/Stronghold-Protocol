@@ -15,6 +15,8 @@ test('renderer CLI requires explicit UUID-bound recording and session inputs', (
   assert.deepEqual(full.roundList, [12]);
   assert.throws(() => parseArgs(base.slice(0, 2)), /missing --session-id/);
   assert.throws(() => parseArgs(base.map((v) => v === '12' ? '0' : v)), /positive integers/);
+  assert.equal(parseArgs([...base, '--prep-only', 'true']).prepOnly, true);
+  assert.throws(() => parseArgs([...base, '--prep-only', 'yes']), /prep-only must be true or false/);
 });
 
 test('IVF frame header and payload both survive writer backpressure in order', async () => {
