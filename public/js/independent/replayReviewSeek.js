@@ -1,10 +1,16 @@
-export function waitForVideoSeek(video, target, { timeoutMs = 10000 } = {}) {
+function makeAbortError() {
+  return new DOMException('回放视频定位已取消', 'AbortError');
+}
+
+export function waitForVideoSeek(video, target, { timeoutMs = 10000, signal } = {}) {
+  if (signal?.aborted) return Promise.reject(makeAbortError());
   const matchesTarget = () =>
     Math.abs(video.currentTime - target) <= 0.035 && video.readyState >= 2 && !video.seeking;
   if (matchesTarget()) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
-    let timer = setTimeout(() => finish(new Error('等待回放视频定位超时')), timeoutMs);
+    let settled = false;
+    let timer = 0;
     let seeked = false;
     let framePresented = false;
     let frameHandle = 0;
@@ -17,66 +23,74 @@ export function waitForVideoSeek(video, target, { timeoutMs = 10000 } = {}) {
     const cancelFrame = view?.cancelAnimationFrame?.bind(view)
       || globalThis.cancelAnimationFrame
       || clearTimeout;
+
     const cleanup = () => {
       clearTimeout(timer);
       video.removeEventListener('seeked', onSeeked);
       video.removeEventListener('loadeddata', onLoadedData);
       video.removeEventListener('error', onError);
+      signal?.removeEventListener('abort', onAbort);
       if (frameHandle && video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(frameHandle);
       if (rafHandle) cancelFrame(rafHandle);
     };
     const finish = error => {
+      if (settled) return;
+      settled = true;
       cleanup();
       if (error) reject(error); else resolve();
     };
     const onError = () => finish(new Error('回放视频定位失败'));
+    const onAbort = () => finish(makeAbortError());
     const maybeFinish = () => {
       if (seeked && matchesTarget() && framePresented) finish();
     };
     const watchPresentedFrame = () => {
-      if (!video.requestVideoFrameCallback || frameHandle || framePresented) return;
+      if (!video.requestVideoFrameCallback || frameHandle || framePresented || settled) return;
       frameHandle = video.requestVideoFrameCallback((_now, metadata) => {
         frameHandle = 0;
         const mediaTime = Number(metadata?.mediaTime);
         framePresented = Number.isFinite(mediaTime)
-          ? Math.abs(mediaTime - target) <= 0.05
+          ? Math.abs(mediaTime - target) <= 0.05 && matchesTarget()
           : matchesTarget();
         maybeFinish();
         if (!framePresented) watchPresentedFrame();
       });
     };
     const checkAfterPaint = () => {
-      if (rafFallbackPending) return;
+      if (rafFallbackPending || settled) return;
       rafFallbackPending = true;
       rafHandle = requestFrame(() => {
         rafHandle = requestFrame(() => {
           rafHandle = 0;
           rafFallbackPending = false;
-          if (seeked && matchesTarget()) {
-            framePresented = true;
-            finish();
-          } else if (seeked) {
-            checkAfterPaint();
-          }
+          if (seeked && matchesTarget()) finish();
+          else seeked = false;
         });
       });
     };
     const onSeeked = () => {
+      // A seeked event for a superseded target is stale. Keep listening for
+      // the event that corresponds to this waiter's requested time.
+      if (!matchesTarget()) return;
       seeked = true;
       checkAfterPaint();
       maybeFinish();
     };
     const onLoadedData = () => {
-      if (!video.seeking) onSeeked();
+      if (matchesTarget()) onSeeked();
     };
 
-    video.addEventListener('seeked', onSeeked, { once: true });
-    video.addEventListener('loadeddata', onLoadedData, { once: true });
-    video.addEventListener('error', onError, { once: true });
-    // Register before currentTime changes: paused videos may not produce a new
-    // callback if the observer is installed only after the seeked event.
+    timer = setTimeout(() => finish(new Error('等待回放视频定位超时')), timeoutMs);
+    video.addEventListener('seeked', onSeeked);
+    video.addEventListener('loadeddata', onLoadedData);
+    video.addEventListener('error', onError);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    // Observe before changing currentTime: a paused video can present the
+    // target frame before its seeked event is dispatched.
     watchPresentedFrame();
-    if (Math.abs(video.currentTime - target) > 0.035 && !video.seeking) {
+    // Assign even during an active seek. HTMLMediaElement retargets the seek;
+    // leaving the old currentTime in flight makes a new target impossible.
+    if (Math.abs(video.currentTime - target) > 0.035) {
       try { video.currentTime = target; }
       catch (error) { finish(new Error(`回放视频无法定位：${error?.message || error}`)); }
     }
