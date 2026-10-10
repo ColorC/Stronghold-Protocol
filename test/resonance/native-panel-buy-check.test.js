@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { actionType, classifyRequest, matchesBuyIntent, parseArgs, validatePurchaseDelta, validateSourceReceipt } from '../../tools/resonance/native-panel-buy-check.mjs';
+import { actionType, classifyRequest, matchesBuyIntent, parseArgs, validateExistingPurchaseEvidence, validatePurchaseDelta, validateSourceReceipt } from '../../tools/resonance/native-panel-buy-check.mjs';
 
 const sid='84eeb410-749d-4cc7-a25e-cd5d60c16ae9';
 
@@ -50,9 +50,9 @@ test('single-buy intent is bound to exact session, action, and offer UID',()=>{
  assert.equal(matchesBuyIntent({pathname,body:JSON.stringify({action:{type:'fight',offerUid:'o14'}}),sessionId:sid,offerUid:'o14'}),false);
 });
 
-test('authoritative purchase delta accounts for event, gold, pieces, offers, and pool without merges',()=>{
+test('authoritative purchase delta accounts for event, gold, pieces, consumed offer, and reserved pool',()=>{
  const intent={operatorId:'op-new',offerUid:'offer-old',price:2,goldBefore:9,piecesBefore:3,activeOffersBefore:5,offersTotalBefore:5,poolBefore:29,boughtEventsBefore:1};
- const state={revision:10,gold:7,pieces:[{operatorId:'op-a'},{operatorId:'op-b'},{operatorId:'op-c'},{operatorId:'op-new'}],poolRemaining:{'op-new':28},shop:{offers:[{uid:'offer-1',operatorId:'op-a'},{uid:'offer-2',operatorId:'op-b'},{uid:'offer-3',operatorId:'op-c'},{uid:'offer-4',operatorId:'op-d'},{uid:'replacement',operatorId:null,cost:null}]},history:[{type:'operator-bought',operatorId:'old',cost:1},{type:'operator-bought',operatorId:'op-new',cost:2}]};
+ const state={revision:10,gold:7,pieces:[{operatorId:'op-a'},{operatorId:'op-b'},{operatorId:'op-c'},{operatorId:'op-new'}],poolRemaining:{'op-new':29},shop:{offers:[{uid:'offer-1',operatorId:'op-a'},{uid:'offer-2',operatorId:'op-b'},{uid:'offer-3',operatorId:'op-c'},{uid:'offer-4',operatorId:'op-d'},{uid:'replacement',operatorId:null,cost:null}]},history:[{type:'operator-bought',operatorId:'old',cost:1},{type:'operator-bought',operatorId:'op-new',cost:2}]};
  const result=validatePurchaseDelta(intent,state);
  assert.equal(result.passed,true);
  assert.deepEqual(Object.values(result.checks),[true,true,true,true,true,true,true]);
@@ -60,4 +60,17 @@ test('authoritative purchase delta accounts for event, gold, pieces, offers, and
  assert.equal(validatePurchaseDelta(intent,merged).checks.onePieceAdded,false);
  const unconsumed={...state,shop:{...state.shop,offers:[...state.shop.offers.slice(0,4),{uid:'offer-old',operatorId:'op-new'}]}};
  assert.equal(validatePurchaseDelta(intent,unconsumed).checks.originalOfferConsumed,false);
+});
+
+test('resume validates old single-buy evidence without clearing it or authorizing another buy',()=>{
+ const intent={beforeRevision:9,offerUid:'o14',operatorId:'chess_char_1_12_a',price:1,goldBefore:9,piecesBefore:4,activeOffersBefore:5,offersTotalBefore:5,poolBefore:29,boughtEventsBefore:1};
+ const state={revision:10,gold:8,pieces:[{operatorId:'a'},{operatorId:'b'},{operatorId:'c'},{operatorId:'d'},{operatorId:intent.operatorId}],poolRemaining:{[intent.operatorId]:29},shop:{offers:[{uid:'x1',operatorId:'a'},{uid:'x2',operatorId:'b'},{uid:'x3',operatorId:'c'},{uid:'x4',operatorId:'d'},{uid:'o19',operatorId:null}]},history:[{type:'operator-bought',operatorId:'before',cost:1},{type:'operator-bought',operatorId:intent.operatorId,uid:'p20',cost:1}]};
+ const receipt={sessionId:sid,intent,gameplayMutations:[{type:'buy',url:`/resonance/api/sessions/${sid}/actions`,offerUid:'o14'}],screenshots:{detail:'E:\\WindowsWorkspace\\webworks\\apps\\stronghold-protocol\\runtime\\resonance\\ui-verification\\70-detail-buy.jpg'},panelEvidence:{controls:[{reachable:true},{reachable:true}]}};
+ const result=validateExistingPurchaseEvidence(receipt,state,{detailScreenshotExists:true});
+ assert.equal(result.passed,true);
+ assert.equal(result.checks.oneHistoricalBuyRequest,true);
+ assert.equal(result.checks.originalPanelControlsReachable,true);
+ assert.equal(validateExistingPurchaseEvidence({...receipt,gameplayMutations:[]},state,{detailScreenshotExists:true}).passed,false);
+ assert.equal(validateExistingPurchaseEvidence(receipt,state,{detailScreenshotExists:false}).passed,false);
+ assert.equal(validateExistingPurchaseEvidence({...receipt,panelEvidence:{controls:[{reachable:false}]}},state,{detailScreenshotExists:true}).passed,false);
 });

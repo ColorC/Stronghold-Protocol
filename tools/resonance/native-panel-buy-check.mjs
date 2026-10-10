@@ -27,8 +27,15 @@ export function validatePurchaseDelta(intent,state){
  const events=(state?.history||[]).filter(event=>event.type==='operator-bought').slice(intent?.boughtEventsBefore||0);
  const event=events.find(entry=>entry.operatorId===intent?.operatorId&&Number(entry.cost)===Number(intent?.price));
  const activeOffers=(state?.shop?.offers||[]).filter(offer=>offer.operatorId&&!offer.sold);
- const checks={oneNewBuyEvent:events.length===1&&!!event,exactGold:state?.gold===intent?.goldBefore-intent?.price,onePieceAdded:state?.pieces?.length===intent?.piecesBefore+1,offerSlotsPreserved:state?.shop?.offers?.length===intent?.offersTotalBefore,oneOfferConsumed:activeOffers.length===intent?.activeOffersBefore-1,originalOfferConsumed:!(state?.shop?.offers||[]).some(offer=>offer.uid===intent?.offerUid),poolDecremented:Number.isFinite(Number(intent?.poolBefore))&&Number(state?.poolRemaining?.[intent?.operatorId])===Number(intent.poolBefore)-1};
+ const checks={oneNewBuyEvent:events.length===1&&!!event,exactGold:state?.gold===intent?.goldBefore-intent?.price,onePieceAdded:state?.pieces?.length===intent?.piecesBefore+1,offerSlotsPreserved:state?.shop?.offers?.length===intent?.offersTotalBefore,oneOfferConsumed:activeOffers.length===intent?.activeOffersBefore-1,originalOfferConsumed:!(state?.shop?.offers||[]).some(offer=>offer.uid===intent?.offerUid),reservedPoolUnchanged:Number.isFinite(Number(intent?.poolBefore))&&Number(state?.poolRemaining?.[intent?.operatorId])===Number(intent.poolBefore)};
  return{passed:Object.values(checks).every(Boolean),checks,event,newBuyEvents:events,activeOfferCount:activeOffers.length};
+}
+export function validateExistingPurchaseEvidence(receipt,state,{detailScreenshotExists=false}={}){
+ const intent=receipt?.intent,delta=validatePurchaseDelta(intent,state);
+ const buys=(receipt?.gameplayMutations||[]).filter(entry=>entry.type==='buy');
+ const controls=receipt?.panelEvidence?.controls||[];
+ const checks={sameSession:receipt?.sessionId===SESSION_ID,expectedRevision:!!intent&&intent.beforeRevision===9&&state?.revision===10,purchaseDelta:delta.passed,oneHistoricalBuyRequest:buys.length===1&&buys[0].offerUid===intent?.offerUid&&buys[0].url===`/resonance/api/sessions/${SESSION_ID}/actions`,savedDetailScreenshot:detailScreenshotExists&&receipt?.screenshots?.detail===SCREENSHOTS.detail,originalPanelControlsReachable:controls.length>0&&controls.every(control=>control.reachable===true)};
+ return{passed:Object.values(checks).every(Boolean),checks,delta,buyRequests:buys,panelControls:controls};
 }
 export function validateSourceReceipt(receipt,id){return receipt?.status==='passed'&&receipt?.sessionId===id&&receipt?.creates===1&&receipt?.fights===1;}
 export function config(){return{source:SOURCE,data:DATA,sessionDirectory:SESSION_DIR,profile:PROFILE,sourceReceipt:SOURCE_RECEIPT,receipt:RECEIPT,log:LOG,screenshots:SCREENSHOTS,sessionId:SESSION_ID,browserStarted:false};}
@@ -44,8 +51,10 @@ async function run(){
  if(options.resumeEvidence){assert(existsSync(RECEIPT)&&existsSync(LOG),'resume requires this checker owned failure receipt and log');previous=JSON.parse(await readFile(RECEIPT,'utf8'));assert(previous.checker==='native-panel-buy-check'&&previous.status==='failed'&&previous.sessionId===options.session&&previous.intent&&previous.intent.beforeRevision!=null,'resume evidence requires an owned failure with saved buy intent');}
  else {assert(!existsSync(RECEIPT)&&!existsSync(LOG),'owned receipt or log already exists; refusing to overwrite');for(const f of Object.values(SCREENSHOTS))assert(!existsSync(f),`refusing to overwrite screenshot ${f}`);}
  const native=execFileSync('git',['-C',SOURCE,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
- const receipt=previous||{checker:'native-panel-buy-check',sessionId:options.session,startedAt:stamp(),productNative:native,toolingNative:native,status:'running',creates:0,fights:0,gameplayMutations:[],checks:{},screenshots:{}};
- receipt.attempts=(receipt.attempts||0)+1;receipt.status='running';receipt.failure=null;receipt.resumedEvidence=options.resumeEvidence;
+  const receipt=previous||{checker:'native-panel-buy-check',sessionId:options.session,startedAt:stamp(),productNative:native,toolingNative:native,status:'running',creates:0,fights:0,gameplayMutations:[],checks:{},screenshots:{}};
+  receipt.failures||=[];
+  if(previous){const oldError=receipt.failure;if(oldError){receipt.previousFailure||=oldError;if(!receipt.failures.some(entry=>entry.error===oldError&&entry.toolingNative===receipt.toolingNative))receipt.failures.push({attempt:receipt.attempts||1,toolingNative:receipt.toolingNative,status:'failed',error:oldError,time:receipt.finishedAt||stamp()});}receipt.previousToolingNative=receipt.toolingNative||null;receipt.toolingNative=native;receipt.sourceNative=native;}
+  receipt.attempts=(receipt.attempts||0)+1;receipt.status='running';delete receipt.failure;receipt.resumedEvidence=options.resumeEvidence;
  const log=[`${stamp()} ${options.resumeEvidence?'read-only resume evidence':'start single-buy detail-panel check'}`,`source=${SOURCE}`,`session=${options.session}`];
  let server,browser,page,deadline,buyRequests=0,gameplayMutations=0,blockedMutations=0,admissions=0;
  const save=async()=>writeFile(RECEIPT,`${JSON.stringify(receipt,null,2)}\n`);
@@ -58,7 +67,7 @@ async function run(){
   const require=createRequire(path.join(ROOT,'package.json'));const puppeteer=require('puppeteer-core');const chrome=process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe';assert(existsSync(chrome),`Chrome missing: ${chrome}`);
   deadline=setTimeout(()=>{void browser?.close().catch(()=>{});void server?.close().catch(()=>{});},120000);
   browser=await puppeteer.launch({executablePath:chrome,headless:true,userDataDir:PROFILE,timeout:30000,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--no-first-run','--disable-background-networking']});
-  page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+  page=await browser.newPage();await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});
   await page.setRequestInterception(true);
   page.on('request',async request=>{const url=new URL(request.url());const body=request.postData()||'';const decision=classifyRequest({method:request.method(),pathname:url.pathname,body,buyRequests,allowBuy:!options.resumeEvidence});if(decision.kind==='admission'){admissions++;await request.continue().catch(()=>{});return;}if(decision.kind==='single-buy'){if(!matchesBuyIntent({pathname:url.pathname,body,sessionId:options.session,offerUid:receipt.intent?.offerUid})){blockedMutations++;gameplayMutations++;receipt.requestViolations||=[];receipt.requestViolations.push({method:request.method(),url:url.pathname,reason:'buy did not match saved session/offer intent'});await request.abort('blockedbyclient').catch(()=>{});return;}buyRequests++;gameplayMutations++;receipt.gameplayMutations.push({type:'buy',url:url.pathname,offerUid:receipt.intent.offerUid,at:stamp()});receipt.buyRequest=body;void save();await request.continue().catch(()=>{});return;}if(decision.allowed){await request.continue().catch(()=>{});return;}if(!['GET','HEAD'].includes(request.method().toUpperCase())){blockedMutations++;gameplayMutations++;receipt.requestViolations||=[];receipt.requestViolations.push({method:request.method(),url:url.pathname,reason:'non-readonly request blocked'});}await request.abort('blockedbyclient').catch(()=>{});});
   const errors=[];page.on('pageerror',error=>errors.push(String(error)));page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
@@ -68,9 +77,12 @@ async function run(){
   check('same-session-prep-state',packet.id===options.session&&state.phase==='prep',{id:packet.id,phase:state.phase});
   if(options.resumeEvidence){
    const prior=receipt.intent;assert(prior?.beforeRevision!=null&&prior.offerUid,'saved buy intent missing');
-   const delta=validatePurchaseDelta(prior,state);
-   check('resume-purchase-already-applied-readonly',state.revision>prior.beforeRevision&&delta.passed,{revision:state.revision,delta,intent:prior});
+   const existing=validateExistingPurchaseEvidence(receipt,state,{detailScreenshotExists:existsSync(SCREENSHOTS.detail)});
+   check('resume-purchase-already-applied-readonly',existing.passed,{revision:state.revision,existing,intent:prior});
    check('resume-does-not-repeat-buy',buyRequests===0,{buyRequests});
+   if(!existsSync(SCREENSHOTS.purchased)){await page.screenshot({path:SCREENSHOTS.purchased,type:'jpeg',quality:90,fullPage:true});receipt.screenshots.purchased=SCREENSHOTS.purchased;}
+   else receipt.screenshots.purchased=SCREENSHOTS.purchased;
+   receipt.purchaseEvidence={...existing.delta,afterRevision:state.revision,goldAfter:state.gold,piecesAfter:state.pieces.length,readOnlyResume:true};receipt.checkpoint='purchased';
   }else{
    const offer=state.shop.offers.find(o=>o.operatorId&&!o.sold&&Number(o.cost)<=Number(state.gold)&&!state.pieces.some(piece=>piece.operatorId===o.operatorId));assert(offer,'no affordable unsold offer without an existing copy (needed to avoid merge ambiguity)');const operator=packet.catalog?.operators?.[offer.operatorId];const price=Number(offer.cost??operator?.cost);assert(Number.isFinite(price)&&price>0,'offer price unavailable');const selector=`#offer-${encodeURIComponent(offer.uid)}`;
    const deployed=state.pieces.find(piece=>piece.row!==null);assert(deployed,'no deployed unit to open native detail');
@@ -85,8 +97,8 @@ async function run(){
    check('single-purchase-authoritative-state',delta.passed,{delta,revision:state.revision,intent:receipt.intent});
    receipt.purchaseEvidence={...delta,afterRevision:state.revision,goldAfter:state.gold,piecesAfter:state.pieces.length,memberDetailOpenAtAction:panel.detailOpen};receipt.checkpoint='purchased';await save();await page.screenshot({path:SCREENSHOTS.purchased,type:'jpeg',quality:90,fullPage:true});receipt.screenshots.purchased=SCREENSHOTS.purchased;
   }
-   check('zero-fights-and-no-other-gameplay',gameplayMutations===(options.resumeEvidence?0:1)&&blockedMutations===0&&buyRequests===(options.resumeEvidence?0:1),{gameplayMutations,blockedMutations,buyRequests,admissions,violations:receipt.requestViolations||[]});check('no-client-errors',errors.length===0,errors);receipt.admissions=admissions;receipt.gameplayMutationsCount=gameplayMutations;receipt.blockedMutations=blockedMutations;receipt.status='passed';
- }catch(error){receipt.status='failed';receipt.failure=error.stack||String(error);log.push(`${stamp()} failed: ${receipt.failure}`);throw error;}
- finally{clearTimeout(deadline);await browser?.close().catch(()=>{});await server?.close().catch(()=>{});receipt.finishedAt=stamp();receipt.admissions=admissions;receipt.gameplayMutationsCount=gameplayMutations;receipt.blockedMutations=blockedMutations;await save();await writeFile(LOG,`${log.join('\n')}\n`,previous?'a':'wx').catch(()=>{});process.stdout.write(`${JSON.stringify({status:receipt.status,receipt:RECEIPT,log:LOG,screenshots:receipt.screenshots,session:SESSION_ID})}\n`);}
+   check('zero-fights-and-no-other-gameplay',gameplayMutations===(options.resumeEvidence?0:1)&&blockedMutations===0&&buyRequests===(options.resumeEvidence?0:1),{attemptGameplayMutations:gameplayMutations,blockedMutations,buyRequests,admissions,violations:receipt.requestViolations||[]});check('no-client-errors',errors.length===0,errors);receipt.admissions=admissions;receipt.attemptGameplayMutationsCount=gameplayMutations;receipt.gameplayMutationsCount=(receipt.gameplayMutations||[]).length;receipt.blockedMutations=blockedMutations;receipt.status='passed';
+ }catch(error){receipt.status='failed';receipt.failure=error.stack||String(error);receipt.failures||=[];receipt.failures.push({attempt:receipt.attempts,toolingNative:receipt.toolingNative,status:'failed',error:receipt.failure,time:stamp()});log.push(`${stamp()} failed: ${receipt.failure}`);throw error;}
+ finally{clearTimeout(deadline);await browser?.close().catch(()=>{});await server?.close().catch(()=>{});receipt.finishedAt=stamp();receipt.admissions=admissions;receipt.attemptGameplayMutationsCount=gameplayMutations;receipt.gameplayMutationsCount=(receipt.gameplayMutations||[]).length;receipt.blockedMutations=blockedMutations;await save();await writeFile(LOG,`${log.join('\n')}\n`,previous?'a':'wx').catch(()=>{});process.stdout.write(`${JSON.stringify({status:receipt.status,receipt:RECEIPT,log:LOG,screenshots:receipt.screenshots,session:SESSION_ID})}\n`);}
 }
 if(import.meta.url===pathToFileURL(process.argv[1]||'').href)run().catch(error=>{process.stderr.write(`${error.stack||error}\n`);process.exitCode=1;});
