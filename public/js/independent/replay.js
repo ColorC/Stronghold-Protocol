@@ -31,9 +31,9 @@ let zoomRect = null;
 let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let renderedClips=[];let activeMediaKey='';let mediaLoadGeneration=0;let cancelMediaLoad=null;
 let selectionEvents=[];let paintedSelection=null;
-let initialized=false;let seeking=false;let seekGeneration=0;
+let initialized=false;let seeking=false;let seekGeneration=0;let playheadSecond=0;
 let replayViewport=null;let initializationError='';
-const reviewApi={state:()=>({time:Number(timeline.value)||0,duration,ready:initialized&&!seeking,paused:!playing,seeking,viewport:replayViewport,error:initializationError}),getTime:()=>Number(timeline.value)||0,setTime:seek,seek,play,pause};
+const reviewApi={state:()=>({time:playheadSecond,duration,ready:initialized&&!seeking,paused:!playing,seeking,viewport:replayViewport,error:initializationError}),getTime:()=>playheadSecond,setTime:seek,seek,play,pause};
 Object.defineProperty(reviewApi,'duration',{get:()=>duration});
 window.__SP_REPLAY_REVIEW__=reviewApi;
 const cueState = createReplayCueState(() => cues);
@@ -61,7 +61,7 @@ function paintMediaLayer() {
   for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
   for(let node=field;node;node=node.parentElement){node.style.backgroundColor='transparent';node.style.backgroundImage='none';}
   doc.documentElement.style.background='transparent';
-  const second = Number(timeline.value);
+  const second = playheadSecond;
   const desired = mediaSourceAt(second);
   mediaVideo.hidden = !desired || activeMediaKey !== desired.key || (desired.key.startsWith('original-') && second < desired.at);
 }
@@ -75,7 +75,7 @@ function fitReplay() {
     stage.style.height=`${frame.clientHeight*scale}px`;
   }
   paintedSelection = null;
-  paintTextSelection(Number(timeline.value));
+  paintTextSelection(playheadSecond);
   paintMediaLayer();
 }
 const fmt = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -98,7 +98,7 @@ const paintCue = (second) => {
   }
 };
 function position(second) {
-  timeline.value = String(second); clock.textContent = `${fmt(second)} / ${fmt(duration)}`; paintCue(second); paintTextSelection(second);
+  playheadSecond = second; timeline.value = String(second); clock.textContent = `${fmt(second)} / ${fmt(duration)}`; paintCue(second); paintTextSelection(second);
   if (mediaVideo && !playing && !seeking) syncMediaTime(second);
   paintMediaLayer();
 }
@@ -219,7 +219,7 @@ function attachCanvasMedia(id) {
   if (field) for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
   fitReplay();
 }
-function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : Number(timeline.value); }
+function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : playheadSecond; }
 function tick() {
   if (!playing) return;
   const now = offset();
@@ -245,14 +245,14 @@ function tick() {
 }
 function play() {
   if (playing || !player || seeking) return;
-  const second = Number(timeline.value);
+  const second = playheadSecond;
   if (mediaNeedsLoad(second)) { void seek(second, { resumeAfter: true }).catch(error => { if (error?.name !== 'AbortError') status.textContent = error.message || '回放视频载入失败'; }); return; }
-  playing = true; startedAt = performance.now(); startedSecond = Number(timeline.value);
+  playing = true; startedAt = performance.now(); startedSecond = playheadSecond;
   player.play(Math.max(0,startedSecond-rrOffset) * 1000); syncMediaTime(startedSecond);if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
   playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
 function pause() {
-  const now = playing ? offset() : Number(timeline.value);
+  const now = playing ? offset() : playheadSecond;
   const generation = ++seekGeneration; seeking = false;
   playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
   if (mediaNeedsLoad(now)) void positionMediaAt(now, generation).catch(error => {
@@ -283,7 +283,7 @@ async function seek(value, { resumeAfter } = {}) {
 playButton.addEventListener('click', () => {if(narrating){resetZoom();play();}else playing ? pause() : play();});
 timeline.addEventListener('input', () => { const requestedSecond = timeline.value; if (playing) pause(); void seek(requestedSecond).catch(error=>{if(error?.name!=='AbortError')status.textContent=error.message||'回放定位失败';}); });
 $('zoom').addEventListener('click', () => { selecting = true; paintMediaLayer(); status.textContent = '在画面上拖动，框选要放大的区域。'; });
-function resetZoom(){clearTimeout(narrationTimer);narrationTimer=0;narrating=false;cueState.clear();zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();paintCue(Number(timeline.value));}
+function resetZoom(){clearTimeout(narrationTimer);narrationTimer=0;narrating=false;cueState.clear();zoomRect=null;stage.style.transform='';stage.style.transformOrigin='';selection.hidden=true;selecting=false;paintMediaLayer();paintCue(playheadSecond);}
 function zoomArea(rect){
   zoomRect=rect;const w=stage.clientWidth,h=stage.clientHeight;
   const scale=Math.min(2,Math.max(1.15,Math.min(w*.8/Math.max(1,rect.width),h*.8/Math.max(1,rect.height))));
@@ -350,9 +350,9 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   // Let CSS transitions present in the captured page finish while the replay clock advances.
   await new Promise((resolve) => setTimeout(resolve, 900));
   player.pause(); keepReplayAnimationsVisible();
-  timeline.value = String(Math.min(duration, firstVisibleSecond)); position(Number(timeline.value)); attachCanvasMedia(id);
+  position(Math.min(duration, firstVisibleSecond)); attachCanvasMedia(id);
   if (mediaVideo) {
-    await positionMediaAt(Number(timeline.value));
+    await positionMediaAt(playheadSecond);
     mediaVideo.pause();
   }
   status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';

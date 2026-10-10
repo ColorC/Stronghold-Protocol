@@ -29,6 +29,15 @@ test('rendered clips replace only their exact battle interval', () => {
   assert.equal(replayMediaSourceAt(1, [], []), null);
 });
 
+test('sub-step playhead precision selects the correct source at rendered clip boundaries', () => {
+  const original = [{ key: 'original-1', at: 0 }];
+  const rendered = [{ key: 'rendered-1', at: 21.102, endSecond: 21.2 }];
+  assert.equal(replayMediaSourceAt(21.1, original, rendered).key, 'original-1');
+  assert.equal(replayMediaSourceAt(21.103, original, rendered).key, 'rendered-1');
+  assert.equal(replayMediaSourceAt(21.199, original, rendered).key, 'rendered-1');
+  assert.equal(replayMediaSourceAt(21.2, original, rendered).key, 'original-1');
+});
+
 test('rendered media URLs preserve the public prefix and reject malformed interval metadata', () => {
   const clips = renderedReplayClips(manifest([
     { round: 12, startSecond: 100, endSecond: 150, mediaDuration: 50, file: '../../secret' },
