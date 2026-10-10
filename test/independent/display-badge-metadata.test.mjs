@@ -46,3 +46,14 @@ test('Texas retains her two roster factions and also qualifies for Siracusa effe
   assert.deepEqual(nativeFactions({ chessId: texasId }, catalog), ['炎-龙门', '企鹅物流', '叙拉古']);
   assert.equal(catalog.equipment['chess_item_6_11_e_a'].params.effects[0].params.requiresTag, '叙拉古');
 });
+
+test('Shu visible prep text matches the actual paired attack and damage badge growth', () => {
+  const data = getData({ log: { warn() {}, error() {}, info() {} } });
+  const catalog = getCatalog(data);
+  const display = independentDisplayCatalog(data, catalog);
+  const shu = display.operators.chess_native_char_2025_shu_a;
+  assert.match(shu.traitTexts.normal, /攻击徽章×1及伤害徽章×1/);
+  assert.match(shu.traitTexts.elite, /攻击徽章×2及伤害徽章×2/);
+  assert.match(shu.traitTexts.normalLevels, /基础攻击力训练等级×1及造成伤害训练等级×1/);
+  assert.match(shu.traitTexts.eliteLevels, /基础攻击力训练等级×2及造成伤害训练等级×2/);
+});
