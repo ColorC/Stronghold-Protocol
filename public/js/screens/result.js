@@ -72,6 +72,8 @@ export function ResultScreen() {
   const res = useStore((s) => s.match.result);
   const pub = useStore((s) => s.match.public);
   const myId = useStore((s) => s.me.playerId);
+  const resonanceState = useStore((s) => s.match.private?.resonance?.state);
+  const resonanceCatalog = useStore((s) => s.match.resonanceCatalog);
   const hasRoom = useStore((s) => !!s.room);
   const gd = useGameData();
   const r = normalizeResult(res, pub);
@@ -121,8 +123,36 @@ export function ResultScreen() {
         <h2 class="brief-h"><span>同盟成员</span><${MicroLabel}>ALLIANCE REPORT</${MicroLabel}></h2>
         ${r.players.length ? r.players.map((p) => html`<${PlayerCard} key=${p.playerId} p=${p} myId=${myId} titles=${titles} best=${best} solo=${r.players.length < 2} />`)
           : html`<p class="t-dim">暂无结算数据</p>`}
+        ${resonanceState && resonanceCatalog ? html`<${ResonanceFinalReport} state=${resonanceState} catalog=${resonanceCatalog} />` : null}
       </section>
     </main>
   </div>`;
 }
 
+function ResonanceFinalReport({ state, catalog }) {
+  const rows = (state.pieces || []).slice().sort((a, b) => Number(b.row != null) - Number(a.row != null) || String(a.uid).localeCompare(String(b.uid)));
+  const stats = new Map(rows.map(piece => [piece.uid, { damage: 0, healing: 0 }]));
+  for (const event of state.history || []) for (const unit of event.combatStats?.units || []) {
+    const direct = rows.find(piece => String(piece.uid) === String(unit.uid) || (piece.nativeUid != null && String(piece.nativeUid) === String(unit.uid)));
+    const variant = String(unit.defId || '').replace(/^resonance_/, '').replace(/_star[1-3]$/, '');
+    const owner = direct || rows.find(piece => piece.operatorId === variant);
+    if (!owner) continue;
+    const total = stats.get(owner.uid);
+    total.damage += Number(unit.dmg) || 0;
+    total.healing += Number(unit.heal) || 0;
+  }
+  const maximum = Math.max(1, ...[...stats.values()].flatMap(row => [row.damage, row.healing]));
+  return html`<section class="rs-native-result-details" aria-label="最终阵容与战斗统计">
+    <header><h2>最终阵容与战斗统计</h2><span>按本局记录汇总</span></header>
+    <div class="rs-native-result-details__rows">${rows.map(piece => {
+      const op = catalog.operators?.[piece.operatorId] || {};
+      const gear = (piece.equipment || []).map(item => catalog.equipment?.[item.itemId]?.name || item.itemId);
+      const total = stats.get(piece.uid) || { damage: 0, healing: 0 };
+      return html`<article key=${piece.uid}>
+        <div class="rs-native-result-details__name"><b>${op.name || piece.operatorId}</b><span>${piece.star}星 · ${op.cost ?? '—'}费 · ${piece.row == null ? '备战区' : '已部署'}</span><small>${gear.join('、') || '未装备'}</small></div>
+        <div class="rs-native-result-details__chart"><span>伤害 ${Math.round(total.damage)}</span><i><b style=${{ width: `${Math.max(0, Math.min(100, total.damage / maximum * 100))}%` }}></b></i>
+          <span>治疗 ${Math.round(total.healing)}</span><i class="is-healing"><b style=${{ width: `${Math.max(0, Math.min(100, total.healing / maximum * 100))}%` }}></b></i></div>
+      </article>`;
+    })}</div>
+  </section>`;
+}

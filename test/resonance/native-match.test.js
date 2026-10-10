@@ -1,0 +1,1174 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { randomUUID } from 'node:crypto';
+import { validateC2S } from '../../shared/protocol.js';
+import { existsSync, readFileSync } from 'node:fs';
+import { loadData } from '../../server/data.js';
+import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
+import { applyAction, createSession, validateSession } from '../../server/modes/resonance/session.js';
+import { buildResonanceBattle, getResonanceField, nativeResultForSession, runResonanceBattle } from '../../server/modes/resonance/battle.js';
+import { ResonanceMatch, resonanceCatalogPacket } from '../../server/modes/resonance/native-match.js';
+import { createResonanceLive } from '../../server/modes/resonance/live.js';
+import { VirtualScheduler } from '../../server/match/scheduler.js';
+import { syntheticResult } from '../../server/match/fields.js';
+import { createBattleFromSpec, compactResult, resonanceResultExtras, fitResult, battleProgress } from '../../server/sim/spec.js';
+import { PROTOCOL_VERSION } from '../../shared/constants.js';
+
+const NATIVE_DATA = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native';
+const NATURAL_CAMPAIGN_REPORT='E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/resonance/native-natural-campaign.json';
+
+test('V3 native chess projection hides unsupported acquisition equipment text and preserves skills and talents', () => {
+  const data = loadData(NATIVE_DATA);
+  const nativeChessId = (id, star) => star === 1 ? id : `resonance_${id}_star${star}`;
+  const characterId = 'char_4013_kjera';
+  const modeCatalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 917 });
+  const modeOperator = Object.values(modeCatalog.operators).find((operator) => operator.charId === characterId);
+  assert.ok(modeOperator, 'V3 catalog includes 耶拉');
+  const modePacket = resonanceCatalogPacket({ data, catalog: modeCatalog, displayCatalog: modeCatalog, nativeChessId });
+  const modeRecord = modePacket.data.chess[modeOperator.id];
+  const sourceEquipmentGarrison = modeOperator.stars[1].record.garrisonIds.find((id) => data.garrisons?.[id]?.effectType === 'SERVER_GAIN_EQUIP');
+  assert.equal(sourceEquipmentGarrison, 'garrison_92_a', 'fixture is tied to the canonical source record');
+  assert.ok(!modeRecord.garrisonIds.includes(sourceEquipmentGarrison), 'V3 projection omits the unsupported acquisition effect');
+  assert.equal(modeRecord.skill.skillId, modeOperator.fixedSkillId, 'selected fixed skill remains projected');
+  assert.deepEqual(modeRecord.talents, modeOperator.stars[1].record.talents, 'native talents remain projected');
+
+  const sharedModeOperator = Object.values(modeCatalog.operators).find((operator) => operator.name === '诗怀雅');
+  const sharedEquipmentGarrison = sharedModeOperator.stars[1].record.garrisonIds.find((id) => data.garrisons?.[id]?.effectType === 'SERVER_GAIN_EQUIP');
+  assert.ok(sharedEquipmentGarrison, 'shared-roster regression fixture uses an actual source equipment garrison');
+  const modeSharedRecord = modePacket.data.chess[sharedModeOperator.id];
+  assert.ok(!modeSharedRecord.garrisonIds.includes(sharedEquipmentGarrison), 'V3 omits the unsupported garrison for a shared-roster operator too');
+
+  const legacyCatalog = getResonanceCatalog(data, { rulesVersion: 2, seed: 917 });
+  const legacyOperator = Object.values(legacyCatalog.operators).find((operator) => operator.name === '诗怀雅');
+  assert.ok(legacyOperator && legacyCatalog.config.activeOperatorIds.includes(legacyOperator.id), 'legacy fixture includes 诗怀雅 in its active pool');
+  const legacyPacket = resonanceCatalogPacket({ data, catalog: legacyCatalog, displayCatalog: legacyCatalog, nativeChessId });
+  assert.ok(legacyPacket.data.chess[legacyOperator.id].garrisonIds.includes(sharedEquipmentGarrison), 'legacy projection is unchanged');
+});
+
+function buildCombatFixture(state, catalog) {
+  // These boss fixtures isolate the Native clock/result lifecycle, not natural campaign
+  // economy. The explicit fixture treasury is spent through real session buy/XP actions.
+  state.gold = 100;
+  while (state.level < 6) {
+    const level = applyAction(state, { type: 'buyXp' }, { catalog, recording: false });
+    assert.equal(level.ok, true, level.error);
+    state = level.state;
+  }
+  let refreshes = 0;
+  while (state.pieces.length < 6 && refreshes < 20) {
+    const owned = new Set(state.pieces.map((piece) => piece.operatorId));
+    const offer = state.shop.offers.find((entry) => entry.operatorId && !owned.has(entry.operatorId));
+    if (offer) {
+      const bought = applyAction(state, { type: 'buy', offerUid: offer.uid }, { catalog, recording: false });
+      assert.equal(bought.ok, true, bought.error);
+      state = bought.state;
+    } else {
+      const refreshed = applyAction(state, { type: 'refresh' }, { catalog, recording: false });
+      assert.equal(refreshed.ok, true, refreshed.error);
+      state = refreshed.state;
+      refreshes++;
+    }
+  }
+  assert.ok(state.pieces.length >= 6, `could only build ${state.pieces.length} distinct operators`);
+  return state;
+}
+
+class FakeSocket extends EventEmitter {
+  constructor() { super(); this.readyState = 1; this.bufferedAmount = 0; this.messages = []; }
+  send(data, callback) { this.messages.push(JSON.parse(data)); callback?.(); }
+  close() { if (this.readyState !== 1) return; this.readyState = 3; this.emit('close'); }
+  receive(message) { this.emit('message', Buffer.from(JSON.stringify(message)), false); }
+}
+
+async function waitFor(predicate, label, timeoutMs = 5_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error(`timed out waiting for ${label}`);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
+async function connectResonanceLive(live, sessionId) {
+  const socket = new FakeSocket();
+  await live.attach(socket, { url: `/resonance/ws?session=${sessionId}`,
+    headers: { host: 'workshop.test', origin: 'http://workshop.test' }, socket: {} });
+  socket.receive({ t: 'hello', token: sessionId, name: 'test', version: PROTOCOL_VERSION, rid: 1 });
+  await waitFor(() => socket.messages.some((message) => message.t === 'welcome'), 'resonance welcome');
+  return socket;
+}
+
+test('native ResonanceMatch runs a real NORMAL Battle before one session settlement', { timeout: 240_000 }, async () => {
+  const data = loadData(NATIVE_DATA);
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 47 });
+  catalog.specialEntities={TFT_TrainingDummy:{id:'TFT_TrainingDummy',kind:'training_dummy',nativeTokenId:'token_10011_beewax_oblisk',maxHp:550,def:30,res:30,attackDisabled:true,canMove:false,blockCount:1}};
+  const created = createSession({ seed: 47, difficulty: 'NORMAL', catalog });
+  assert.equal(created.ok, true, created.error);
+  let state = created.state;
+  assert.equal(state.rulesVersion, 3);
+  const legal = getResonanceField(state, { data, catalog });
+  const first = state.pieces[0];
+  const operator = catalog.operators[first.operatorId];
+  const position = [...legal.deployMap.entries()].find(([, cell]) => {
+    const kind = String(cell?.class ?? cell?.type ?? cell?.position ?? cell?.kind ?? cell).toUpperCase();
+    return operator.position === 'RANGED' || kind === 'MELEE' || (kind === 'RANGED' && operator.canDeployHighGround === true);
+  });
+  assert.ok(position, `no legal starting cell for ${first.operatorId}`);
+  const [row, col] = position[0].split(',').map(Number);
+  const deployed = applyAction(state, { type: 'deploy', pieceUid: first.uid, row, col, dir: 'RIGHT' }, {
+    catalog, fieldResolver: () => legal, recording: false,
+  });
+  assert.equal(deployed.ok, true, deployed.error);
+  state = deployed.state;
+  state.specialEntities.push({uid:'se-native-fixture',entityId:'TFT_TrainingDummy',source:'test',row:null,col:null});
+
+  let stored = structuredClone(state);
+  const store = {
+    async exclusive(_id, task) { return task(); },
+    async saveSession(_id, next) { stored = structuredClone(next); },
+    deactivate() {},
+  };
+  const scheduler = new VirtualScheduler({ instantCombat: false });
+  const messages = [], runtimeErrors = [];
+  const match = new ResonanceMatch({ sessionId: 'test-native-match', state, catalog, data, store, scheduler,
+    send: (_id, msg) => messages.push(msg), broadcast: (msg) => messages.push(msg), onEnd() {},
+    timerScale: 0, combatSpeed: 2, log: { info() {}, warn(...args) { runtimeErrors.push(args.map(String).join(' ')); }, error(...args) { runtimeErrors.push(args.map(String).join(' ')); }, debug() {} },
+  });
+  try {
+    match.start();
+    assert.equal(match.phase, 'INFO_CHECK');
+    const infoReady=await match.handle('resonance',{t:'g.infoReady',setupRevision:0});
+    assert.equal(infoReady.ok,true,'native briefing confirmation must reach Match INFO_CHECK');
+    assert.equal(match.players.get('resonance').infoReady,true);
+    match.enterBandDraft();
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 30_000 }), true);
+    assert.equal(match.state.round, 1);
+    const privateView=match.resonancePrivateView(match.players.get('resonance'));
+    assert.equal(privateView.hand.length,10);
+    assert.equal(privateView.handCapacity,9);
+    assert.equal(privateView.hand.filter(Boolean).length,state.pieces.filter((piece)=>piece.row==null).length);
+    assert.equal(privateView.hand[9],null,'the native tenth visual slot must not accept Resonance chess or equipment');
+    assert.equal(Object.values(privateView.items).length,match.state.inventory.length+match.state.pieces.reduce((n,piece)=>n+piece.equipment.length,0));
+    assert.equal(privateView.specialEntities.length,1);assert.equal(privateView.specialEntities[0].id,'token_10011_beewax_oblisk');
+    const occupiedCells=new Set(match.state.pieces.filter(piece=>piece.row!==null).map(piece=>`${piece.row},${piece.col}`));
+    const dummyCell=[...legal.deployMap.keys()].map(key=>key.split(',').map(Number)).find(([row,col])=>!occupiedCells.has(`${row},${col}`));
+    assert.ok(dummyCell);
+    const nativeDummyUid=privateView.specialEntities[0].uid;
+    assert.equal((await match.handle('resonance',{t:'g.move',uid:nativeDummyUid,to:{area:'board',row:dummyCell[0],col:dummyCell[1]}})).ok,true);
+    assert.deepEqual([match.state.specialEntities[0].row,match.state.specialEntities[0].col],dummyCell);
+    assert.equal(match.resonancePrivateView(match.players.get('resonance')).deployCount,1,'special entities do not count as deployed chess');
+    assert.equal((await match.handle('resonance',{t:'g.move',uid:nativeDummyUid,to:{area:'hand'}})).ok,true);
+    assert.equal(match.state.specialEntities[0].row,null,'special entity can be withdrawn and stays withdrawn');
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).ok, true);
+    assert.equal(scheduler.runUntil(() => match.phase === 'COMBAT', { maxTime: 1_000 }), true);
+    const field = match.fields.find((entry) => entry.players.includes('resonance'));
+    assert.ok(field?.cc);
+    assert.equal(field.spec.kind, field.kind);
+    assert.equal(field.spec.stageId, match.stageId);
+    assert.ok(field.spec.spawns.length > 0);
+    const before = { gold: match.state.gold, hp: match.state.hp, round: match.state.round, history: match.state.history.length, revision: match.state.revision };
+
+    const battle = createBattleFromSpec(field.spec, data, { recordEvents: false, quiet: true });
+    battle.start();
+    battle.step();
+    assert.ok(battle.time > 0, 'native Runner must advance the constructed spec');
+    assert.equal(match.state.gold, before.gold);
+    assert.equal(match.state.hp, before.hp);
+    assert.equal(match.state.round, before.round);
+    assert.equal(match.state.history.length, before.history);
+
+    const deadline = match.deadline;
+    assert.equal(match.handle('resonance', { t: 'g.pause', on: true }).ok, true);
+    scheduler.advance(5_000);
+    assert.equal(match.phase, 'COMBAT');
+    assert.equal(match.deadline, deadline);
+    assert.equal(match.handle('resonance', { t: 'g.pause', on: false }).ok, true);
+
+    let ticks = 1;
+    while (!battle.finished && ticks < 20_000) { battle.step(); ticks++; }
+    assert.equal(battle.finished, true, `NORMAL Battle did not finish after ${ticks} real steps`);
+    assert.equal(battle.errorCount, 0, JSON.stringify(battle.errors?.slice(0, 5) ?? []));
+    const total = field.progress.total;
+    match.handle('resonance', { t: 'b.progress', battleId: field.battleId,
+      gt: battle.time, killed: 0, total, done: false });
+    const rawResult = compactResult(battle.result());
+    const extras = resonanceResultExtras(battle);
+    if (extras) rawResult.resonance = extras;
+    const result = fitResult(rawResult, { battleId: field.battleId });
+    assert.equal(match.handle('resonance', { t: 'b.result', battleId: field.battleId, result }).ok, true);
+    assert.equal(match.state.gold, before.gold, 'client report must not settle synchronously');
+    assert.equal(field.done, true, 'native Match must accept the real completed Runner result');
+    match._afterCombat();
+    match._afterCombat();
+    // Native _finishCombat schedules _afterCombat; its override awaits the shared session store.
+    // Advance the native timer first, then yield to that real async store transaction.
+    scheduler.runUntil(() => scheduler.pending() === 0 || scheduler.nextAt() > scheduler.now(), { maxTime: 5_000, maxSteps: 100 });
+    await new Promise((resolve) => setImmediate(resolve));
+    await match._sessionWrite;
+    assert.equal(match.phase, 'SETTLE', JSON.stringify({ phase: match.phase, fieldDone: field.done, errors: runtimeErrors }));
+    assert.equal(match.state.history.length, before.history + 1);
+    assert.equal(match.state.revision, before.revision + 1);
+    assert.equal(match.phase, 'SETTLE');
+    const settled = { revision: match.state.revision, gold: match.state.gold, hp: match.state.hp, history: match.state.history.length };
+    match.handle('resonance', { t: 'b.result', battleId: field.battleId, result });
+    await new Promise((resolve) => setImmediate(resolve));
+    await match._sessionWrite;
+    assert.deepEqual({ revision: match.state.revision, gold: match.state.gold, hp: match.state.hp, history: match.state.history.length }, settled);
+    assert.deepEqual(stored, match.state);
+    assert.ok(messages.some((msg) => msg.t === 'b.start'));
+    assert.ok(match.state.prototypeMeta?.lastBattle, 'v3 result hook must persist real completed battle metadata');
+    assert.equal(match.state.prototypeMeta.lastBattle.battleId, field.battleId);
+    assert.equal(match.state.prototypeMeta.economy.processedBattleIds.filter((id) => id === field.battleId).length, 1,
+      'the shared result/economy hook must process a native battle once even after duplicate b.result');
+  } finally {
+    await match._sessionWrite;
+    match.dispose();
+    scheduler.dispose();
+  }
+});
+
+test('Native PREP permits shop, move, and equip actions while a reward choice is pending', { timeout: 30_000 }, async () => {
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:481});
+  const created=createSession({seed:481,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  let state=created.state;state.gold=20;
+  const field=getResonanceField(state,{data,catalog});
+  const piece=state.pieces[0],operator=catalog.operators[piece.operatorId];
+  const cell=[...field.deployMap.entries()].find(([key,tile])=>{
+    const kind=String(tile?.class??tile?.type??tile?.position??tile?.kind??tile).toUpperCase();
+    return operator.position==='RANGED'||kind==='MELEE'||kind==='RANGED'&&operator.canDeployHighGround===true;
+  });
+  assert.ok(cell,'starter has a legal field cell');
+  const [row,col]=cell[0].split(',').map(Number);
+  const deployed=applyAction(state,{type:'deploy',pieceUid:piece.uid,row,col,dir:'RIGHT'},{catalog,fieldResolver:()=>field,recording:false});
+  assert.equal(deployed.ok,true,deployed.error);state=deployed.state;
+  const item=Object.values(catalog.equipment).find((entry)=>entry.kind==='completed'&&entry.grantAllowed!==false);
+  assert.ok(item,'catalog provides a real equip target');
+  state.inventory.push({uid:'choice-window-item',itemId:item.id});
+  let stored=structuredClone(state);
+  const store={async exclusive(_id,task){return task();},async saveSession(_id,next){stored=structuredClone(next);},deactivate(){}};
+  const scheduler=new VirtualScheduler({instantCombat:false});
+  const match=new ResonanceMatch({sessionId:'test-choice-window',state,catalog,data,store,scheduler,send(){},broadcast(){},timerScale:0,
+    log:{info(){},warn(){},error(){},debug(){}}});
+  try{
+    match.start();
+    assert.equal((await match.handle('resonance',{t:'g.infoReady',setupRevision:0})).ok,true);
+    match.enterBandDraft();
+    assert.equal(scheduler.runUntil(()=>match.phase==='PREP',{maxTime:30_000}),true);
+    const emblemId=catalog.prototypeEmblemItems[0];
+    const choice={uid:'choice-window-reward',type:'transfer',source:'fixture',options:[emblemId],remaining:1};
+    match.state.pendingChoices.push(choice);match.state.phase='choice';match.syncPlayer();
+    await store.saveSession(match.sessionId,match.state);
+    const beforeGold=match.state.gold;
+
+    const offerSlot=match.state.shop.offers.findIndex((offer)=>offer.operatorId);
+    assert.ok(offerSlot>=0,'a real shop offer is available');
+    const bought=await match.handle('resonance',{t:'g.buy',slot:offerSlot});
+    assert.equal(bought.ok,true,bought.error);
+    assert.ok(match.state.gold<beforeGold,'the native shop action consumed its real cost');
+    assert.equal(match.state.phase,'choice');assert.equal(match.state.pendingChoices[0].uid,choice.uid);
+
+    const nativeUid=match.uidMap.native(piece.uid);
+    const benched=await match.handle('resonance',{t:'g.move',uid:nativeUid,to:{area:'hand',idx:0}});
+    assert.equal(benched.ok,true,benched.error);
+    assert.equal(match.state.pieces.find((entry)=>entry.uid===piece.uid).row,null);
+    assert.equal(match.state.phase,'choice');assert.equal(match.state.pendingChoices[0].uid,choice.uid);
+    const redeployed=await match.handle('resonance',{t:'g.move',uid:nativeUid,to:{area:'board',row,col,dir:'RIGHT'}});
+    assert.equal(redeployed.ok,true,redeployed.error);
+
+    const equip=await match.handle('resonance',{t:'g.equip',itemUid:match.uidMap.native('choice-window-item'),targetUid:nativeUid});
+    assert.equal(equip.ok,true,equip.error);
+    assert.equal(match.state.pieces.find((entry)=>entry.uid===piece.uid).equipment[0].itemId,item.id);
+    assert.equal(match.state.phase,'choice');assert.equal(match.state.pendingChoices[0].uid,choice.uid);
+    assert.equal(match.handle('resonance',{t:'g.ready',ready:true}).error,'WRONG_PHASE','ready cannot bypass a pending choice');
+
+    const claimed=await match.handle('resonance',{t:'g.resonance',action:{type:'claimReward',choiceUid:choice.uid,optionIds:[emblemId]}});
+    assert.equal(claimed.ok,true,JSON.stringify(claimed));
+    assert.equal(match.state.phase,'prep');assert.equal(match.state.pendingChoices.length,0);
+    assert.equal(match.handle('resonance',{t:'g.ready',ready:true}).ok,true,'native ready works after the choice is resolved');
+  }finally{
+    await match._sessionWrite;match.dispose();scheduler.dispose();
+  }
+});
+
+test('session bench slots preserve the native 9-slot hand, occupied swap, and invalid move atomicity',()=>{
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:123});
+  const created=createSession({seed:123,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  let state=created.state;
+  assert.deepEqual(state.pieces.map((piece)=>piece.benchSlot),[0,1,2]);
+  const field=getResonanceField(state,{data,catalog});
+  const piece=state.pieces[0],operator=catalog.operators[piece.operatorId];
+  const position=[...field.deployMap.entries()].find(([,entry])=>{
+    const kind=String(entry?.class??entry?.type??entry?.position??entry?.kind??entry).toUpperCase();
+    return operator.position==='RANGED'||kind==='MELEE'||kind==='RANGED'&&operator.canDeployHighGround===true;
+  });
+  assert.ok(position,'starter has a real legal deployment cell');
+  const [row,col]=position[0].split(',').map(Number);
+  let moved=applyAction(state,{type:'deploy',pieceUid:piece.uid,row,col,dir:'RIGHT'},
+    {catalog,fieldResolver:()=>field,recording:false});
+  assert.equal(moved.ok,true,moved.error);state=moved.state;
+  moved=applyAction(state,{type:'bench',pieceUid:piece.uid,slot:1},{catalog,fieldResolver:(s)=>getResonanceField(s,{data,catalog}),recording:false});
+  assert.equal(moved.ok,true,moved.error);state=moved.state;
+  assert.equal(state.pieces.find((entry)=>entry.uid===piece.uid).benchSlot,1);
+  assert.equal(state.pieces.find((entry)=>entry.uid===state.pieces[1].uid).row,row);
+  assert.equal(state.pieces.find((entry)=>entry.uid===state.pieces[1].uid).col,col);
+  const reordered=applyAction(state,{type:'bench',pieceUid:piece.uid,slot:2},{catalog,recording:false});
+  assert.equal(reordered.ok,true,reordered.error);
+  assert.equal(reordered.state.pieces.find((entry)=>entry.uid===piece.uid).benchSlot,2);
+  assert.equal(reordered.state.pieces.find((entry)=>entry.uid===state.pieces[2].uid).benchSlot,1);
+  const invalid=applyAction(state,{type:'bench',pieceUid:piece.uid,slot:9},{catalog,recording:false});
+  assert.equal(invalid.ok,false);assert.equal(invalid.error,'BAD_BENCH_SLOT');
+  assert.deepEqual(state,moved.state,'failed hand moves leave authoritative state untouched');
+});
+
+test('Family training dummy stays outside roster and only enters real specs from a saved legal tile',()=>{
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:124});
+  catalog.specialEntities={TFT_TrainingDummy:{id:'TFT_TrainingDummy',kind:'training_dummy',nativeTokenId:'token_10011_beewax_oblisk',
+    maxHp:550,def:30,res:30,attackDisabled:true,canMove:false,blockCount:1}};
+  const created=createSession({seed:124,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  const base=created.state,choice=structuredClone(base);choice.pendingChoices.push({uid:'dummy-choice',type:'prototype_economy',source:'family',economyKind:'family_heist',options:['dummy'],remaining:1,
+    metadata:{threshold:10,optionDetails:[{id:'dummy',grant:[{kind:'special_entity',id:'TFT_TrainingDummy',count:1}]}]}});choice.phase='choice';
+  const claimed=applyAction(choice,{type:'claimReward',choiceUid:'dummy-choice',optionIds:['dummy']},{catalog,recording:false});
+  assert.equal(claimed.ok,true,claimed.error);let state=claimed.state;
+  assert.equal(state.pieces.length,base.pieces.length);assert.equal(state.specialEntities.length,1);
+  assert.equal(state.specialEntities[0].row,null);assert.equal(state.specialEntities[0].col,null);
+  assert.equal(state.pieces.filter((piece)=>piece.row!==null).length,0,'a dummy does not consume chess population');
+  const field=getResonanceField(state,{data,catalog}),[cell]=[...field.deployMap.keys()].map(key=>key.split(',').map(Number));assert.ok(cell);
+  const placed=applyAction(state,{type:'placeSpecialEntity',entityUid:state.specialEntities[0].uid,row:cell[0],col:cell[1]},
+    {catalog,fieldResolver:()=>field,recording:false});assert.equal(placed.ok,true,placed.error);state=placed.state;
+  const invalid=applyAction(state,{type:'placeSpecialEntity',entityUid:state.specialEntities[0].uid,row:999,col:999},
+    {catalog,fieldResolver:()=>field,recording:false});assert.equal(invalid.ok,false);assert.deepEqual(invalid.state,state);
+  const built=buildResonanceBattle(state,{data,catalog});
+  const dummy=built.battle.opts.players[0].units.find((unit)=>unit.uid===state.specialEntities[0].uid);
+  assert.ok(dummy);assert.equal(dummy.kind,'token');assert.equal(dummy.row,cell[0]);assert.equal(dummy.col,cell[1]);
+  assert.equal(dummy.def.stats.maxHp,550);assert.equal(dummy.def.stats.atk,0);assert.equal(dummy.def.stats.blockCnt,1);
+  assert.equal(dummy.def.skill,null);assert.deepEqual(dummy.def.talents,[]);assert.equal(dummy.def.spine,'token_10011_beewax_oblisk');
+  built.battle.start();
+  const dummyRuntime=built.battle.allyUnits.find((unit)=>unit.uid===state.specialEntities[0].uid);
+  assert.ok(dummyRuntime);assert.equal(dummyRuntime.profile.noAttack,true);assert.equal(dummyRuntime.base.moveSpeed,0);
+  const stored=applyAction(state,{type:'storeSpecialEntity',entityUid:state.specialEntities[0].uid},{catalog,recording:false});
+  assert.equal(stored.ok,true,stored.error);assert.equal(stored.state.specialEntities[0].row,null);
+  assert.equal(buildResonanceBattle(stored.state,{data,catalog}).battle.opts.players[0].units.some((unit)=>unit.uid===state.specialEntities[0].uid),false);
+});
+
+test('session economy claims resolve source selectors and reject unaffordable purchases atomically',()=>{
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:254});
+  const created=createSession({seed:254,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  let state=created.state;
+  const component=Object.values(catalog.equipment).find((item)=>item.kind==='component'&&item.grantAllowed!==false);
+  assert.ok(component);
+  state.pendingChoices.push({uid:'choice-component',type:'prototype_economy',source:'family',economyKind:'family_heist',options:['parts'],remaining:1,
+    metadata:{threshold:17,optionDetails:[{id:'parts',grant:[{kind:'component',id:component.id},{kind:'component',id:component.id}]}]}});
+  state.phase='choice';
+  const claimed=applyAction(state,{type:'claimReward',choiceUid:'choice-component',optionIds:['parts']},{catalog,recording:false});
+  assert.equal(claimed.ok,true,claimed.error);assert.deepEqual(claimed.state.inventory.slice(state.inventory.length).map((item)=>item.itemId),[component.id,component.id]);
+
+  const unaffordable=structuredClone(created.state);unaffordable.gold=4;unaffordable.pendingChoices.push({uid:'choice-armory',type:'prototype_economy',source:'armory',economyKind:'junker_armory',options:['upgrade'],remaining:1,
+    metadata:{optionDetails:[{id:'upgrade',cost:{currency:'gold',amount:5},grant:[{kind:'rumble_upgrade',id:'TFT13_JunkerKing_Pass',targetUid:'missing'}]}]}});unaffordable.phase='choice';
+  const before=structuredClone(unaffordable),denied=applyAction(unaffordable,{type:'claimReward',choiceUid:'choice-armory',optionIds:['upgrade']},{catalog,recording:false});
+  assert.equal(denied.ok,false);assert.equal(denied.error,'NOT_ENOUGH_GOLD');assert.deepEqual(denied.state,before);
+
+  const operatorChoice=structuredClone(created.state);operatorChoice.pendingChoices.push({uid:'choice-operator',type:'prototype_economy',source:'conqueror',economyKind:'war_chest',options:['unit'],remaining:1,
+    metadata:{threshold:35,optionDetails:[{id:'unit',grant:[{kind:'operator',targetCost:2}]}]}});operatorChoice.phase='choice';
+  const operatorClaim=applyAction(operatorChoice,{type:'claimReward',choiceUid:'choice-operator',optionIds:['unit']},{catalog,recording:false});
+  assert.equal(operatorClaim.ok,true,operatorClaim.error);assert.equal(operatorClaim.state.pieces.length,created.state.pieces.length+1);
+  assert.equal(catalog.operators[operatorClaim.state.pieces.at(-1).operatorId].cost,2);
+
+  const skipState=structuredClone(created.state);skipState.pendingChoices.push({uid:'choice-skip',type:'prototype_economy',source:'risk',economyKind:'chem_market',options:['skip-market'],remaining:1,
+    metadata:{key:'chem:1',healthPerSkip:6,optionDetails:[{id:'skip-market',action:'skip',cost:{currency:'shimmer',amount:0}}]}});skipState.phase='choice';
+  const skipped=applyAction(skipState,{type:'claimReward',choiceUid:'choice-skip',optionIds:['skip-market']},{catalog,recording:false});
+  assert.equal(skipped.ok,true,skipped.error);assert.equal(skipped.state.prototypeMeta.economy.chemBaron.marketsSkipped,1);
+  assert.equal(skipped.state.prototypeMeta.economy.chemBaron.healthFromSkips,6);
+
+  const legacyCatalog=getResonanceCatalog(data,{rulesVersion:2,seed:254}),legacy=createSession({seed:254,difficulty:'NORMAL',catalog:legacyCatalog});
+  assert.equal(legacy.ok,true,legacy.error);assert.equal(legacy.state.rulesVersion,2);
+  assert.equal(Object.hasOwn(legacy.state,'prototypeMeta'),false);
+  assert.equal(legacyCatalog.campaign.economy.xpToLevel[7],56,'legacy V2 economy table remains unchanged');
+});
+
+test('V3 gear anvil consumes its source atomically and grants a catalog-backed quality item',()=>{
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:255});
+  const created=createSession({seed:255,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  const state=created.state,item=Object.values(catalog.equipment).find((entry)=>entry.kind==='completed'&&entry.grantAllowed!==false);
+  assert.ok(item,'real completed catalog item is available');
+  catalog.prototypeEconomy.gearConsumables.prototype_artifact_anvil={id:'prototype_artifact_anvil',kind:'artifact_anvil'};
+  catalog.prototypeEconomy.gearPools.artifact=[item.id];
+  catalog.prototypeEconomy.qualityEffects.artifact={[item.id]:{mods:{atkPct:0.5},qualityBonus:'test fixture'}};
+  state.pendingChoices.push({uid:'choice-anvil-source',type:'prototype_economy',source:'conqueror',economyKind:'war_chest',options:['anvil'],remaining:1,
+    metadata:{threshold:660,optionDetails:[{id:'anvil',grant:[{kind:'consumable',id:'prototype_artifact_anvil'}]}]}});
+  state.phase='choice';
+  const sourceClaim=applyAction(state,{type:'claimReward',choiceUid:'choice-anvil-source',optionIds:['anvil']},{catalog,recording:false});
+  assert.equal(sourceClaim.ok,true,sourceClaim.error);
+  const sourceUid=sourceClaim.state.consumables.at(-1).uid;
+  const opened=applyAction(sourceClaim.state,{type:'useConsumable',consumableUid:sourceUid},{catalog,recording:false});
+  assert.equal(opened.ok,true,opened.error);
+  const choice=opened.state.pendingChoices.find((entry)=>entry.economyKind==='gear_anvil');assert.ok(choice);
+  assert.equal(opened.state.consumables.some((entry)=>entry.uid===sourceUid),true,'opening the selection does not spend the source');
+  const option=choice.options[0];
+  const claimed=applyAction(opened.state,{type:'claimReward',choiceUid:choice.uid,optionIds:[option]},{catalog,recording:false});
+  assert.equal(claimed.ok,true,claimed.error);
+  assert.equal(claimed.state.consumables.some((entry)=>entry.uid===sourceUid),false);
+  assert.equal(claimed.state.pendingChoices.some((entry)=>entry.uid===choice.uid),false);
+  const granted=claimed.state.inventory.at(-1);
+  assert.equal(granted.itemId,item.id);assert.equal(granted.quality,'artifact');
+  assert.equal(validateSession(claimed.state,{catalog}).ok,true);
+
+  const wrongQuality=structuredClone(state);
+  const denied=applyAction(wrongQuality,{type:'useConsumable',consumableUid:'missing',itemUid:'missing'},{catalog,recording:false});
+  assert.equal(denied.ok,false);assert.deepEqual(denied.state,wrongQuality,'failed gear actions are atomic');
+});
+
+test('nine deployed chess plus three persisted training dummies leave native population full and ready',()=>{
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:256});
+  const created=createSession({seed:256,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  const state=created.state,field=getResonanceField(state,{data,catalog});
+  const candidates=catalog.config.activeOperatorIds.slice(0,9),used=new Set();
+  assert.equal(candidates.length,9);state.level=9;state.xp=0;
+  state.pieces=candidates.map((operatorId,index)=>{
+    const operator=catalog.operators[operatorId];
+    const cell=[...field.deployMap.entries()].find(([key,tile])=>{
+      const kind=String(tile?.class??tile?.type??tile?.position??tile?.kind??tile).toUpperCase();
+      return !used.has(key)&&(operator.position==='RANGED'||kind==='MELEE'||kind==='RANGED'&&operator.canDeployHighGround===true);
+    });
+    assert.ok(cell,`legal tile exists for ${operatorId}`);used.add(cell[0]);
+    const [row,col]=cell[0].split(',').map(Number),template=created.state.pieces[0];
+    return {...structuredClone(template),uid:`fixture-nine-${index}`,operatorId,star:1,equipment:[],growth:{},row,col,dir:'RIGHT',benchSlot:null};
+  });
+  const free=[...field.deployMap.keys()].filter((key)=>!used.has(key));assert.ok(free.length>=3,'field provides three distinct entity tiles');
+  state.specialEntities=free.slice(0,3).map((key,index)=>{const [row,col]=key.split(',').map(Number);return {uid:`fixture-dummy-${index}`,entityId:'TFT_TrainingDummy',source:'test',row,col};});
+  const caps={1:30,2:25,3:18,4:10,5:9};
+  for(const id of state.activeOperatorIds){
+    const copies=state.pieces.filter((piece)=>piece.operatorId===id).reduce((n,piece)=>n+(piece.star===3?9:piece.star===2?3:1),0);
+    const held=state.shop.offers.filter((offer)=>offer.operatorId===id).length;
+    state.poolRemaining[id]=caps[catalog.operators[id].cost]-copies-held;
+  }
+  assert.equal(validateSession(state,{catalog}).ok,true,JSON.stringify(validateSession(state,{catalog}).errors));
+  const scheduler=new VirtualScheduler(),store={async exclusive(_id,task){return task();},async saveSession(){},deactivate(){}};
+  const match=new ResonanceMatch({sessionId:'test-nine-plus-dummies',state,catalog,data,store,scheduler,send(){},broadcast(){},onEnd(){},
+    timerScale:0,log:{info(){},warn(){},error(){},debug(){}}});
+  try{
+    match.phase='PREP';match.syncPlayer();
+    const view=match.resonancePrivateView(match.players.get('resonance'));
+    assert.equal(match.players.get('resonance').deployCount,9);
+    assert.equal(match.players.get('resonance').deployCap,9);
+    assert.equal(view.deployCount,9);assert.equal(view.deployCap,9);assert.equal(view.canReady,true);
+    assert.equal(match.players.get('resonance').board.size,12,'all three entities render beside nine chess');
+    assert.equal(view.hand.filter(Boolean).length,0);assert.equal(view.handCapacity,9);assert.equal(view.hand[9],null);
+    assert.deepEqual(view.specialEntities.map((entity)=>entity.entityId),['TFT_TrainingDummy','TFT_TrainingDummy','TFT_TrainingDummy']);
+    assert.equal(view.specialEntities.every((entity)=>entity.definition?.maxHp===550&&entity.definition?.attack===0&&entity.definition?.canMove===false),true);
+  }finally{match.dispose();}
+});
+
+test('native battle reason cleared still settles as a loss when counted leaks consumed LP', () => {
+  const data = loadData(NATIVE_DATA);
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 48 });
+  const created = createSession({ seed: 48, difficulty: 'NORMAL', catalog });
+  assert.equal(created.ok, true, created.error);
+  const result = nativeResultForSession(created.state, {
+    reason: 'cleared', total: 10, killed: 10, errors: 0,
+    perPlayer: { resonance: { leaked: [{ enemyKey: 'enemy', counted: true, lpr: 6 }], unitStats: [], unitsEnd: [] } },
+  }, { data, catalog });
+  assert.equal(result.hpLoss, 6);
+  assert.equal(result.won, false);
+});
+
+test('native Match routes campaign NORMAL, FINAL_ASSAULT, HIDDEN_CORE, and FUNNY logistics through real Runner specs', { timeout: 240_000 }, async () => {
+  const data = loadData(NATIVE_DATA);
+  const cases = [
+    { difficulty: 'NORMAL', round: 14, nativePhase: 'COMBAT', kind: 'normal' },
+    { difficulty: 'NORMAL', round: 28, nativePhase: 'FINAL_ASSAULT', kind: 'boss' },
+    { difficulty: 'ABYSS', round: 30, nativePhase: 'HIDDEN_CORE', kind: 'hidden' },
+  ];
+  for (const [index, target] of cases.entries()) {
+    const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 109 + index });
+    const created = createSession({ seed: 109 + index, difficulty: target.difficulty, catalog });
+    assert.equal(created.ok, true, created.error);
+    const state = created.state;
+    state.round = target.round;
+    if (target.kind !== 'normal') Object.assign(state, buildCombatFixture(state, catalog));
+    const legal = getResonanceField(state, { data, catalog });
+    let preparedState = state;
+    const usedCells = new Set();
+    for (const piece of [...state.pieces]) {
+      const operator = catalog.operators[piece.operatorId];
+      const position = [...legal.deployMap.entries()].find(([key, cell]) => {
+        if (usedCells.has(key)) return false;
+        const kind = String(cell?.class ?? cell?.type ?? cell?.position ?? cell?.kind ?? cell).toUpperCase();
+        return operator.position === 'RANGED' || kind === 'MELEE' || (kind === 'RANGED' && operator.canDeployHighGround === true);
+      });
+      assert.ok(position, `${target.difficulty} R${target.round}: no legal cell for ${piece.operatorId}`);
+      const [row, col] = position[0].split(',').map(Number);
+      const deployed = applyAction(preparedState, { type: 'deploy', pieceUid: piece.uid, row, col, dir: 'RIGHT' }, {
+        catalog, fieldResolver: () => legal, recording: false,
+      });
+      assert.equal(deployed.ok, true, deployed.error);
+      preparedState = deployed.state;
+      usedCells.add(position[0]);
+    }
+    const store = { async exclusive(_id, task) { return task(); }, async saveSession() {}, deactivate() {} };
+    let scheduler = new VirtualScheduler({ instantCombat: false });
+    let match = new ResonanceMatch({ sessionId: `test-phase-${target.difficulty}-${target.round}`, state: preparedState,
+      catalog, data, store, scheduler, send() {}, broadcast() {}, timerScale: target.kind === 'normal' ? 0 : 1, combatSpeed: 2,
+      log: { info() {}, warn() {}, error() {}, debug() {} } });
+    const messages = [];
+    const attachMessages = () => {
+      match.sendFn = (_id, msg) => { messages.push(msg); return true; };
+      match.broadcastFn = (msg) => messages.push(msg);
+    };
+    attachMessages();
+    let nativeFinalOutcome = null;
+    try {
+      // This fixture enters the native per-round transition directly; the first-NORMAL
+      // test above separately covers INFO_CHECK through the live session entrance.
+      match.startRound(target.round);
+      assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 30_000 }), true,
+        `${target.difficulty} R${target.round} did not reach PREP (phase=${match.phase}, errors=${JSON.stringify(scheduler.errors)})`);
+      assert.equal(match.state.round, target.round);
+      assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).ok, true);
+      assert.equal(scheduler.runUntil(() => match.phase === target.nativePhase, { maxTime: 10_000 }), true,
+        `${target.difficulty} R${target.round} did not enter ${target.nativePhase}`);
+      assert.equal(match.phase, target.nativePhase, `${target.difficulty} R${target.round} native phase`);
+      let field = match.fields.find((entry) => entry.players.includes('resonance'));
+      assert.ok(field?.cc, `${target.difficulty} R${target.round} has no native client field`);
+      assert.equal(field.spec.kind, target.kind);
+      assert.equal(field.spec.stageId, legal.stageId);
+      assert.ok(field.spec.spawns.length > 0, `${target.difficulty} R${target.round} has no real wave spawns`);
+      if (target.kind === 'boss' || target.kind === 'hidden') {
+        if (target.kind === 'hidden') {
+          assert.ok(Number.isFinite(match.teamLp), 'fresh Hidden Core initializes a finite team LP pool');
+          assert.equal(match.teamLp, match.state.hp, 'fresh Hidden Core starts from settled campaign HP');
+        }
+        const savedBattleId = field.battleId, savedPoolHp = match.bossPool.hp, savedPoolMax = match.bossPool.maxHp;
+        const savedTeamLp = match.teamLp;
+        assert.equal(match.handle('resonance', { t: 'g.pause', on: true }).ok, true, 'pause the live Native boss field before process restart');
+        await match._sessionWrite;
+        const savedState = structuredClone(match.state);
+        assert.ok(savedState.nativeRuntime.bossRuntime, `${target.kind} runtime snapshot must include Native boss state`);
+        assert.equal(savedState.nativeRuntime.bossRuntime.pool.hp, savedPoolHp);
+        assert.equal(savedState.nativeRuntime.bossRuntime.pool.maxHp, savedPoolMax);
+        assert.equal(savedState.nativeRuntime.bossRuntime.teamLp, savedTeamLp);
+        assert.deepEqual(savedState.nativeRuntime.spec, field.spec, `${target.kind} saved Native spec is the complete live spec`);
+
+        // Older snapshots have no bossRuntime clock fields. Their remaining time must
+        // follow Native's real-time conversion at the saved combat speed.
+        const legacyState = structuredClone(savedState);
+        delete legacyState.nativeRuntime.bossRuntime;
+        const legacyScheduler = new VirtualScheduler({ instantCombat: false });
+        const legacyMatch = new ResonanceMatch({ sessionId: `legacy-clock-${target.difficulty}-${target.round}`, state: legacyState,
+          catalog, data, store, scheduler: legacyScheduler, send() {}, broadcast() {}, timerScale: 1, combatSpeed: 2,
+          log: { info() {}, warn() {}, error() {}, debug() {} } });
+        try {
+          legacyMatch.start();
+          const legacyElapsed = Math.max(0, Number(legacyState.nativeRuntime.elapsed) || 0);
+          const speed = Number(legacyMatch.gameSpeed) || 1;
+          const expectedDeadline = Math.max(0, (Number(legacyMatch.gd.bossLevelTime(legacyMatch.round))
+            * (Number(legacyMatch.gd.combatTimeScale) || 1) - legacyElapsed) / speed * 1000);
+          const expectedOvertime = Math.max(0, (Number(legacyMatch.gd.bossOvertimeAfterReal)
+            * (Number(legacyMatch.gd.combatTimeScale) || 1) - legacyElapsed) / speed * 1000);
+          assert.equal(legacyMatch.deadline - legacyScheduler.now(), expectedDeadline, `${target.kind} legacy deadline uses Native game-speed conversion`);
+          assert.equal(legacyMatch.overtimeAt - legacyScheduler.now(), expectedOvertime, `${target.kind} legacy overtime uses Native game-speed conversion`);
+        } finally {
+          legacyMatch.dispose();
+          legacyScheduler.dispose();
+        }
+        match.dispose();
+        scheduler.dispose();
+        scheduler = new VirtualScheduler({ instantCombat: false });
+        match = new ResonanceMatch({ sessionId: `test-phase-${target.difficulty}-${target.round}`, state: savedState,
+          catalog, data, store, scheduler, send() {}, broadcast() {}, timerScale: 1, combatSpeed: 2,
+          log: { info() {}, warn() {}, error() {}, debug() {} } });
+        attachMessages();
+        match.start();
+        assert.equal(match.phase, target.nativePhase, `${target.kind} restore phase`);
+        assert.equal(match.paused, true, `${target.kind} restore keeps the saved pause`);
+        assert.equal(match.bossPool?.hp, savedPoolHp, `${target.kind} pool HP resumes without reset`);
+        assert.equal(match.bossPool?.maxHp, savedPoolMax, `${target.kind} pool maximum resumes`);
+        assert.equal(match.teamLp, savedTeamLp, `${target.kind} team LP resumes`);
+        assert.equal(match.fields[0]?.battleId, savedBattleId, `${target.kind} battle identity resumes`);
+        assert.equal(match.fields[0]?.spec.kind, target.kind, `${target.kind} saved Native spec resumes`);
+        assert.deepEqual(match.fields[0]?.spec, savedState.nativeRuntime.spec, `${target.kind} restart preserves the complete Native spec unchanged`);
+        assert.ok(messages.some((msg) => msg.t === 'b.start' && msg.battleId === savedBattleId), `${target.kind} sends the same battle start`);
+        assert.ok(messages.some((msg) => msg.t === 'b.pool' && msg.hp === savedPoolHp), `${target.kind} broadcasts the restored pool`);
+        assert.equal(match.handle('resonance', { t: 'g.pause', on: false }).ok, true, `${target.kind} resumes its saved Native clock`);
+        assert.ok(match._bossClock, `${target.kind} boss ticker is re-armed after resume`);
+        field = match.fields.find((entry) => entry.players.includes('resonance'));
+      }
+      const finishFinal = match._finishFinal.bind(match);
+      match._finishFinal = (...args) => {
+        finishFinal(...args);
+        if (match.nativeFinalOutcome) nativeFinalOutcome = structuredClone(match.nativeFinalOutcome);
+      };
+      const battle = createBattleFromSpec(field.spec, data, { recordEvents: false, quiet: true });
+      battle.start();
+      if (target.kind === 'boss' || target.kind === 'hidden') {
+        const initial = { gold: match.state.gold, hp: match.state.hp, history: match.state.history.length };
+        const nativeTeamLpStart = match.teamLp;
+        let reportedResult = false, progressReports = 0, nativeClockTicks = 0, duplicateProgressChecked = false;
+        const leaksBy = () => {
+          const by = {};
+          for (const pp of Object.values(battle._perPlayer ?? {})) for (const leak of pp.leaked ?? []) {
+            if (leak?.counted === false) continue;
+            const pid = leak?.sourcePlayerId ?? 'resonance';
+            by[pid] = (by[pid] ?? 0) + (Number.isFinite(leak?.lpr) && leak.lpr >= 0 ? leak.lpr : 1);
+          }
+          return by;
+        };
+        const sendResult = () => {
+          const raw = compactResult(battle.result());
+          const extras = resonanceResultExtras(battle);
+          if (extras) raw.resonance = extras;
+          match.handle('resonance', { t: 'b.result', battleId: field.battleId, result: fitResult(raw, { battleId: field.battleId }) });
+          reportedResult = true;
+        };
+        // Advance the actual Runner at 2× and the Native clock by matching virtual wall time.
+        // Each quarter second is 15 Battle ticks (0.5 game seconds), then a real b.progress report
+        // feeds Native's plausibility budgets before its 250 ms boss-clock callback runs.
+        for (let wallQuarter = 0; wallQuarter < 1_200 && !field.done; wallQuarter++) {
+          for (let tick = 0; tick < 15 && !battle.finished; tick++) battle.step();
+          const progress = battleProgress(battle);
+          const leakedBy = leaksBy();
+          const leaks = Object.values(leakedBy).reduce((sum, value) => sum + value, 0);
+          match.handle('resonance', { t: 'b.progress', battleId: field.battleId, ...progress,
+            leaks, leaksBy: leakedBy, by: { resonance: progress.bossDmg } });
+          if (!duplicateProgressChecked && ((Number(progress.bossDmg) || 0) > 0 || leaks > 0)) {
+            const creditedHp = match.bossPool.hp, creditedLp = match.teamLp, creditedDamage = field.bossAcked;
+            match.handle('resonance', { t: 'b.progress', battleId: field.battleId, ...progress,
+              leaks, leaksBy: leakedBy, by: { resonance: progress.bossDmg } });
+            assert.equal(match.bossPool.hp, creditedHp, 'replayed cumulative boss progress is not credited twice');
+            assert.equal(match.teamLp, creditedLp, 'replayed cumulative leak progress does not charge LP twice');
+            assert.equal(field.bossAcked, creditedDamage, 'replayed cumulative boss ack remains unchanged');
+            duplicateProgressChecked = true;
+          }
+          progressReports++;
+          scheduler.advance(250);
+          nativeClockTicks++;
+          if (messages.some((msg) => msg.t === 'b.end' && msg.battleId === field.battleId) && !battle.finished) battle.forceEnd('forced');
+          if (battle.finished && !reportedResult) sendResult();
+          await new Promise((resolve) => setImmediate(resolve));
+          await match._sessionWrite;
+        }
+        if (!battle.finished && messages.some((msg) => msg.t === 'b.end' && msg.battleId === field.battleId)) battle.forceEnd('forced');
+        if (battle.finished && !reportedResult) sendResult();
+        await new Promise((resolve) => setImmediate(resolve));
+        await match._sessionWrite;
+        assert.ok(field.done, `${target.difficulty} R${target.round} Native boss clock did not accept a terminal result (phase=${match.phase}, pool=${match.bossPool?.hp}, lp=${match.teamLp})`);
+        assert.ok(battle.finished && battle.result()?.perPlayer?.resonance,
+          `${target.difficulty} R${target.round} lacks a real Runner result ${JSON.stringify({ battleFinished: battle.finished, result: battle.finished ? battle.result()?.reason : null, nativeResult: field.result?.reason, finalEnding: match._finalEnding, progressReports, lp: match.teamLp, pool: match.bossPool?.hp, messages: messages.filter((msg) => ['b.end','b.result'].includes(msg.t)).map((msg) => ({ t: msg.t, reason: msg.reason })) })}`);
+        assert.ok(progressReports > 0 && nativeClockTicks > 0, 'Native must consume real progress and clock ticks');
+        assert.equal(duplicateProgressChecked, true, 'the duplicate cumulative-frame check uses actual boss damage or leak values');
+        assert.ok(field.progress.gt > 0 && field.bossReported, 'Native must retain the Runner progress and boss-pool report');
+        assert.ok(nativeFinalOutcome && Number.isFinite(nativeFinalOutcome.teamLp), 'Native final hook must provide its accepted team-LP result');
+        assert.equal(match.state.history.length, initial.history + 1, 'Native terminal must settle exactly one Resonance round');
+        assert.equal(match.state.hp, Math.max(0, initial.hp - (nativeTeamLpStart - nativeFinalOutcome.teamLp)),
+          'Resonance settlement HP must reflect Native team LP loss exactly once');
+        assert.ok(match.state.gold !== initial.gold || match.state.hp !== initial.hp || match.state.history.length > initial.history,
+          'the accepted Native result must produce the authoritative session result');
+      } else battle.step();
+      assert.ok(battle.time > 0, `${target.difficulty} R${target.round} Runner did not advance`);
+      if (target.kind === 'normal') assert.equal(battle.finished, false, `${target.difficulty} R${target.round} unexpectedly used a DeadBattle terminal`);
+      assert.equal(battle.errorCount, 0, JSON.stringify(battle.errors?.slice(0, 3) ?? []));
+    } finally {
+      match.dispose();
+      scheduler.dispose();
+    }
+  }
+});
+
+test('natural R28 winning session closes through the Native Runner and boss clock like direct settlement', { timeout: 360_000 }, async () => {
+  assert.equal(existsSync(NATURAL_CAMPAIGN_REPORT), true, `missing natural campaign report: ${NATURAL_CAMPAIGN_REPORT}`);
+  const report = JSON.parse(readFileSync(NATURAL_CAMPAIGN_REPORT, 'utf8'));
+  const fixture = report.nativeFinalFixtures?.at(-1);
+  assert.equal(fixture?.status, 'captured');
+  assert.equal(fixture?.expected?.round, 28);
+  assert.equal(fixture?.expected?.terminalReason, 'victory');
+  assert.equal(fixture?.expected?.finalRow?.won, true);
+
+  const data = loadData(NATIVE_DATA);
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: fixture.seed });
+  const initial = structuredClone(fixture.preFightSession);
+  const validity = validateSession(initial, { catalog });
+  assert.equal(validity.ok, true, JSON.stringify(validity.errors));
+  assert.equal(initial.round, 28);
+  assert.equal(initial.phase, 'prep');
+  assert.equal(initial.pieces.filter((piece) => piece.row != null).length, 8);
+
+  const direct = runResonanceBattle(initial, { data, catalog, recording: false });
+  assert.equal(direct.won, true);
+  assert.equal(direct.diagnostics.nodeKind, 'boss');
+  assert.equal(direct.diagnostics.stageId, fixture.expected.finalRow.stageId);
+  assert.equal(direct.diagnostics.errorCount, 0);
+  assert.equal(direct.diagnostics.capped, false);
+  const directSettlement = applyAction(initial, { type: 'fight' }, { catalog, recording: false, completedResult: direct,
+    fieldResolver: (state) => getResonanceField(state, { data, catalog }) });
+  assert.equal(directSettlement.ok, true, directSettlement.error);
+
+  const saves = [];
+  const store = { async exclusive(_id, task) { return task(); }, async saveSession(_id, state) { saves.push(structuredClone(state)); }, deactivate() {} };
+  const scheduler = new VirtualScheduler({ instantCombat: false });
+  const match = new ResonanceMatch({ sessionId: 'natural-r28-native-final', state: initial, catalog, data, store, scheduler,
+    send() {}, broadcast() {}, timerScale: 1, combatSpeed: 2,
+    log: { info() {}, warn() {}, error() {}, debug() {} } });
+  const messages = [];
+  match.sendFn = (_id, message) => { messages.push(message); return true; };
+  match.broadcastFn = (message) => messages.push(message);
+  let nativeFinalOutcome = null;
+  const finishFinal = match._finishFinal.bind(match);
+  match._finishFinal = (...args) => {
+    finishFinal(...args);
+    if (match.nativeFinalOutcome) nativeFinalOutcome = structuredClone(match.nativeFinalOutcome);
+  };
+  try {
+    match.startRound();
+    assert.equal(scheduler.runUntil(() => match.phase === 'PREP', { maxTime: 30_000 }), true,
+      `natural R28 did not reach PREP: ${match.phase}; ${JSON.stringify(scheduler.errors)}`);
+    assert.equal(match.handle('resonance', { t: 'g.ready', ready: true }).ok, true);
+    assert.equal(scheduler.runUntil(() => match.phase === 'FINAL_ASSAULT', { maxTime: 10_000 }), true,
+      `natural R28 did not enter Native FINAL_ASSAULT: ${match.phase}`);
+    const field = match.fields.find((entry) => entry.players.includes('resonance'));
+    assert.ok(field?.cc);
+    assert.equal(field.spec.kind, 'boss');
+    assert.equal(field.spec.stageId, direct.diagnostics.stageId);
+    assert.equal(field.spec.waveId, direct.diagnostics.templateId);
+    assert.ok(field.spec.spawns.length > 0);
+    const nativeOptsSource = buildResonanceBattle(initial, { data, catalog }).battle.opts;
+    assert.equal(field.spec.seed, nativeOptsSource.seed, 'Native spec seed must match the authoritative prepared Battle');
+    assert.deepEqual(field.spec.spawns, nativeOptsSource.spawns, 'Native boss phase must not add/remove/reorder prepared wave spawns');
+    assert.deepEqual(field.spec.routes, nativeOptsSource.routes, 'Native boss phase must use the authoritative routes');
+    assert.deepEqual(field.spec.enemyOverrides, nativeOptsSource.enemyOverrides, 'Native boss phase must use prepared enemy tuning');
+    assert.deepEqual(field.spec.boss, { poolHp: nativeOptsSource.sharedBoss.maxHp, poolMax: nativeOptsSource.sharedBoss.maxHp },
+      'Native shared pool must match prepared Resonance boss pool');
+    const directUnits = structuredClone(nativeOptsSource.players[0].units);
+    for (const unit of directUnits) {
+      unit.uid = match.uidMap.native(unit.uid);
+      if (unit.ownerUid != null) unit.ownerUid = match.uidMap.native(unit.ownerUid);
+    }
+    assert.deepEqual(field.spec.players[0].units, directUnits, 'Native spec player formation may only normalize stable UIDs');
+    assert.deepEqual(field.spec.flags.resonance.dataPatch.chess,
+      Object.fromEntries(Object.entries(nativeOptsSource.data.chess).filter(([id]) => id.startsWith('resonance_'))),
+      'Native spec fixed-star data must match direct prepared records');
+    const nativeStarTwo = field.spec.players[0].units.find((unit) => /_star2$/.test(unit.chessId));
+    assert.ok(nativeStarTwo, 'the captured R28 Native lineup contains a real two-star operator record');
+    assert.equal(data.chess[nativeStarTwo.chessId], undefined, 'the base dataset does not carry generated V3 star variants');
+    assert.deepEqual(match.gd.chess(nativeStarTwo.chessId), field.spec.flags.resonance.dataPatch.chess[nativeStarTwo.chessId],
+      'only this Resonance Match validation lookup overlays the exact records from its real BattleSpec');
+    assert.equal(match.state.gold, initial.gold, 'Native COMBAT must not settle campaign gold before accepted result');
+    assert.equal(match.state.hp, initial.hp, 'Native COMBAT must not settle campaign HP before accepted result');
+    assert.equal(match.state.history.length, initial.history.length, 'Native COMBAT must not append history before accepted result');
+
+    const battle = createBattleFromSpec(field.spec, data, { recordEvents: false, quiet: true });
+    battle.start();
+    const directSpecBattle = createBattleFromSpec(field.spec, data, { recordEvents: false, quiet: true });
+    directSpecBattle.start();
+    for (let tick = 0; tick < 30_000 && !directSpecBattle.finished; tick++) directSpecBattle.step();
+    assert.equal(directSpecBattle.finished, true, 'direct headless replay of the exact Native spec must finish naturally');
+    assert.equal(directSpecBattle.errorCount, 0, JSON.stringify(directSpecBattle.errors?.slice(0, 4) ?? []));
+    const directSpecResult = compactResult(directSpecBattle.result());
+    const directSpecExtras = resonanceResultExtras(directSpecBattle);
+    if (directSpecExtras) directSpecResult.resonance = directSpecExtras;
+    const directSpecSessionResult = nativeResultForSession(initial,
+      fitResult(directSpecResult, { battleId: field.battleId }), { data, catalog,
+        prepared: match.currentPrepared?.prepared, uidMap: match.uidMap });
+    directSpecSessionResult.battleId = field.battleId;
+    directSpecSessionResult.won = directSpecBattle.result().bossHpLeft <= 0;
+    const directSpecSettlement = applyAction(initial, { type: 'fight' }, { catalog, recording: false,
+      completedResult: directSpecSessionResult, fieldResolver: (state) => getResonanceField(state, { data, catalog }) });
+    assert.equal(directSpecSettlement.ok, true, directSpecSettlement.error);
+    const leaksBy = () => {
+      const by = {};
+      for (const player of Object.values(battle._perPlayer ?? {})) for (const leak of player.leaked ?? []) {
+        if (leak?.counted === false) continue;
+        const playerId = leak?.sourcePlayerId ?? 'resonance';
+        by[playerId] = (by[playerId] ?? 0) + (Number.isFinite(leak?.lpr) && leak.lpr >= 0 ? leak.lpr : 1);
+      }
+      return by;
+    };
+    let resultSent = false, progressReports = 0, maxGameTime = 0;
+    let nativeClientExtras = null;
+    const sendResult = () => {
+      const raw = compactResult(battle.result());
+      const extras = resonanceResultExtras(battle);
+      if (extras) raw.resonance = extras;
+      const rawStats = raw.perPlayer?.resonance?.unitStats ?? [];
+      assert.ok(rawStats.length >= 8, `real R28 Runner should report all 8 deployed operators; got ${rawStats.length}`);
+      assert.ok(rawStats.some((unit) => /_star2$/.test(unit.defId)), 'real fixture includes a V3 two-star defId');
+      const fitted = fitResult(raw, { battleId: field.battleId });
+      assert.equal(fitted.perPlayer?.resonance?.unitStats?.length, rawStats.length,
+        'the actual frame budget path must retain these stats when the result fits');
+      nativeClientExtras = extras;
+      const response = match.handle('resonance', { t: 'b.result', battleId: field.battleId, result: fitted });
+      assert.equal(response?.error, undefined, `Native rejected actual R28 BattleResult: ${JSON.stringify(response)}`);
+      resultSent = true;
+    };
+    for (let wallQuarter = 0; wallQuarter < 1_200 && !field.done; wallQuarter++) {
+      for (let tick = 0; tick < 15 && !battle.finished; tick++) battle.step();
+      const progress = battleProgress(battle);
+      maxGameTime = Math.max(maxGameTime, progress.gt);
+      const by = leaksBy();
+      match.handle('resonance', { t: 'b.progress', battleId: field.battleId, ...progress,
+        leaks: Object.values(by).reduce((sum, value) => sum + value, 0), leaksBy: by, by: { resonance: progress.bossDmg } });
+      progressReports++;
+      scheduler.advance(250);
+      assert.equal(messages.some((message) => message.t === 'b.end' && message.battleId === field.battleId && !battle.finished), false,
+        'Native ended the boss clock before the actual Runner reached its terminal result');
+      if (battle.finished && !resultSent) sendResult();
+      await new Promise((resolve) => setImmediate(resolve));
+      await match._sessionWrite;
+    }
+    if (battle.finished && !resultSent) sendResult();
+    await new Promise((resolve) => setImmediate(resolve));
+    await match._sessionWrite;
+
+    assert.equal(battle.finished, true, 'R28 Runner must reach its own real terminal result');
+    assert.equal(battle.errorCount, 0, JSON.stringify(battle.errors?.slice(0, 4) ?? []));
+    assert.equal(battle.result().reason, direct.result.reason);
+    assert.equal(battle.result().reason, directSpecBattle.result().reason);
+    assert.equal(directSpecBattle.resonanceMetrics?.prototypeTraits?.rhodes?.shieldComponents,
+      direct.metrics?.prototypeTraits?.rhodes?.shieldComponents,
+      'Native mode catalog must retain source component definitions used by the active Scrap tier');
+    assert.equal(battle.result().killed, directSpecBattle.result().killed,
+      `same Native spec diverged: client=${battle.result().killed}/${battle.result().total}, headless=${directSpecBattle.result().killed}/${directSpecBattle.result().total}`);
+    assert.equal(battle.result().total, directSpecBattle.result().total);
+    assert.equal(battle.result().time, directSpecBattle.result().time);
+    assert.equal(directSpecBattle.result().killed, direct.result.killed,
+      `same-session direct build and Native spec replay diverged: direct killed=${direct.result.killed}/${direct.result.total} t=${direct.result.time} bossHp=${direct.result.bossHpLeft}; spec killed=${directSpecBattle.result().killed}/${directSpecBattle.result().total} t=${directSpecBattle.result().time} bossHp=${directSpecBattle.result().bossHpLeft}; directUnits=${JSON.stringify(direct.result.perPlayer?.resonance?.unitStats)}; specUnits=${JSON.stringify(directSpecBattle.result().perPlayer?.resonance?.unitStats)}; directScrap=${JSON.stringify(direct.battle?.allyUnits?.filter(u=>u.kind==='op').map(u=>({uid:u.uid,converted:u.mem?.prototypeTemporaryItems?.map(i=>i.itemId)??[],consumed:u.mem?.prototypeConsumedComponents?.length??0})))}; specScrap=${JSON.stringify(directSpecBattle.allyUnits?.filter(u=>u.kind==='op').map(u=>({uid:u.uid,converted:u.mem?.prototypeTemporaryItems?.map(i=>i.itemId)??[],consumed:u.mem?.prototypeConsumedComponents?.length??0})))}`);
+    assert.equal(directSpecBattle.result().total, direct.result.total);
+    assert.equal(directSpecBattle.result().time, direct.result.time);
+    assert.equal(progressReports > 0, true);
+    assert.ok(maxGameTime > 100, `Native received too little actual game time: ${maxGameTime}`);
+    assert.equal(resultSent, true);
+    assert.equal(field.done, true, `Native boss clock did not settle: phase=${match.phase}, hp=${match.bossPool?.hp}, lp=${match.teamLp}`);
+    assert.equal(field.resultSource, 'client', 'the accepted Native terminal result must remain client-authoritative');
+    assert.ok(field.result?.perPlayer?.resonance?.unitStats?.length >= 8,
+      `Native validation discarded deployed V3 star records: ${field.result?.perPlayer?.resonance?.unitStats?.length ?? 0}`);
+    assert.ok(field.result?.perPlayer?.resonance?.unitStats?.some((unit) => /_star2$/.test(unit.defId)));
+    for (const unit of field.spec.players[0].units.filter((row) => row.chessId?.startsWith('resonance_chess_'))) {
+      const nativeUid = unit.uid;
+      const sessionUid = match.uidMap.session(nativeUid);
+      assert.ok(initial.pieces.some((piece) => piece.uid === sessionUid),
+      `Native UID must reverse-map to the same session operator ${nativeUid}:${sessionUid}:${unit.chessId}`);
+      assert.ok(field.result.perPlayer.resonance.unitStats.some((stat) => stat.uid === nativeUid && stat.defId === unit.chessId),
+        `Native validation must retain uid/defId mapping ${nativeUid}:${unit.chessId}`);
+    }
+    assert.deepEqual(field.result?.resonance, nativeClientExtras,
+      'mode growth/coins/forge/contribution payload survives actual Native validation');
+    assert.ok(nativeClientExtras && (Object.keys(nativeClientExtras.metrics ?? {}).length
+      || (nativeClientExtras.contributions?.length ?? 0)), 'real battle mode metrics/contributions are present to preserve');
+    assert.equal(nativeFinalOutcome?.victory, true);
+    assert.equal(nativeFinalOutcome?.phase, 'FINAL_ASSAULT');
+    assert.equal(match.state.terminalReason, 'victory');
+    assert.equal(match.state.history.length, initial.history.length + 1);
+    assert.deepEqual({ gold: match.state.gold, hp: match.state.hp, xp: match.state.xp, level: match.state.level,
+      terminalReason: match.state.terminalReason }, { gold: directSpecSettlement.state.gold, hp: directSpecSettlement.state.hp,
+      xp: directSpecSettlement.state.xp, level: directSpecSettlement.state.level, terminalReason: directSpecSettlement.state.terminalReason });
+    assert.equal(match.state.history.at(-1).won, directSpecSettlement.state.history.at(-1).won);
+    assert.equal(match.state.history.at(-1).hpLoss, directSpecSettlement.state.history.at(-1).hpLoss);
+    assert.ok(saves.length > 0, 'Native settlement must persist the accepted natural R28 result');
+  } finally {
+    match.dispose();
+    scheduler.dispose();
+  }
+});
+
+test('native g.resonance advances a FUNNY odd logistics node without constructing a battle', { timeout: 120_000 }, async () => {
+  const data = loadData(NATIVE_DATA);
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 157 });
+  const created = createSession({ seed: 157, difficulty: 'FUNNY', catalog });
+  assert.equal(created.ok, true, created.error);
+  const state = created.state;
+  state.round = 3;
+  state.nodeStarted = true;
+  const store = { async exclusive(_id, task) { return task(); }, async saveSession() {}, deactivate() {} };
+  const scheduler = new VirtualScheduler({ instantCombat: false });
+  const match = new ResonanceMatch({ sessionId: 'test-funny-logistics', state, catalog, data, store, scheduler,
+    send() {}, broadcast() {}, timerScale: 0, log: { info() {}, warn() {}, error() {}, debug() {} } });
+  try {
+    match.phase = 'PREP';
+    const result = match.handle('resonance', { t: 'g.resonance', action: { type: 'advanceSupply' } });
+    assert.ok(result && typeof result.then === 'function');
+    await result;
+    await match._sessionWrite;
+    assert.equal(match.state.round, 4);
+    assert.ok(match.state.history.some((entry) => entry.round === 3 && entry.type === 'logistics-settled'));
+    assert.equal(match.fields.length, 0, 'logistics node must not start native or resonance combat');
+  } finally {
+    await match._sessionWrite;
+    match.dispose();
+    scheduler.dispose();
+  }
+});
+
+test('v3 transfer supply honors explicit grantAllowed and emblemAllowed metadata', () => {
+  const data = loadData(NATIVE_DATA);
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 211 });
+  const item = Object.values(catalog.equipment).find((entry) => entry.kind === 'emblem'
+    && entry.effects?.some((effect) => ['pact_transfer', 'transfer_pact'].includes(effect.kind)));
+  assert.ok(item, 'v3 catalog has an actual transfer emblem to restrict');
+  const transfer = item.effects.find((effect) => ['pact_transfer', 'transfer_pact'].includes(effect.kind));
+  const pactId = transfer.params?.pactId ?? transfer.params?.pact;
+  assert.ok(catalog.pacts[pactId], `transfer item ${item.id} references a catalog pact`);
+  item.grantAllowed = false;
+  catalog.pacts[pactId].emblemAllowed = false;
+  const state = createSession({ seed: 211, difficulty: 'NORMAL', catalog }).state;
+  state.round = 12;
+  state.nodeStarted = false;
+  const advanced = applyAction(state, { type: 'advanceSupply' }, { catalog, recording: false });
+  assert.equal(advanced.ok, true, advanced.error);
+  const choices = advanced.state.pendingChoices.filter((choice) => choice.type === 'transfer');
+  assert.ok(choices.length > 0, 'node 12 should exercise the configured transfer supply');
+  assert.ok(choices.every((choice) => !choice.options.includes(item.id)), `disabled ${item.id} entered v3 transfer options`);
+});
+
+test('V3 Native data patches resolve only own string keys and preserve real star records', () => {
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 550 });
+  const state = createSession({ seed: 550, difficulty: 'NORMAL', catalog }).state;
+  const scheduler = new VirtualScheduler();
+  const match = new ResonanceMatch({ sessionId: 'test-own-data-patch', state, catalog, data, scheduler,
+    store: { async saveSession() {}, async exclusive(_id, task) { return task(); } }, send() {}, broadcast() {}, onEnd() {} });
+  try {
+    const operator = Object.values(catalog.operators)[0];
+    const starId = `resonance_${operator.id}_star2`, starRecord = operator.stars[2].record;
+    const inherited = Object.defineProperty({ constructor: { id: 'forged-constructor' } }, '__proto__', { value: { id: 'forged-proto' } });
+    const chess = Object.create(inherited), tokens = Object.create(inherited);
+    chess[starId] = starRecord;
+    tokens['resonance_fixture_token'] = { id: 'resonance_fixture_token', name: 'fixture' };
+    match._resonanceValidationData = { chess, tokens };
+    assert.equal(match.gd.chess(starId), starRecord, 'the own, validated star patch remains available');
+    assert.equal(match.gd.chess('constructor'), null, 'an inherited constructor cannot shadow base GameData lookup');
+    assert.equal(match.gd.chess('__proto__'), null, 'an inherited prototype cannot shadow base GameData lookup');
+    assert.equal(match.gd.token('constructor'), null, 'token patch rejects inherited constructor values');
+    assert.equal(match.gd.token('__proto__'), null, 'token patch rejects inherited prototype values');
+    assert.equal(match.gd.token('resonance_fixture_token').name, 'fixture', 'the own token patch remains available');
+  } finally { match.dispose(); scheduler.dispose(); }
+});
+
+test('Native synthetic boss grace result reaches campaign settlement without mode rewards', async () => {
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 551 });
+  const state = createSession({ seed: 551, difficulty: 'NORMAL', catalog }).state;
+  state.round = 28;
+  const scheduler = new VirtualScheduler();
+  const match = new ResonanceMatch({ sessionId: 'test-native-grace-settlement', state, catalog, data, scheduler,
+    store: { async saveSession() {}, async exclusive(_id, task) { return task(); } }, send() {}, broadcast() {}, onEnd() {} });
+  const submissions = [];
+  match.phase = 'FINAL_ASSAULT';
+  match.currentPrepared = { prepared: buildResonanceBattle(state, { data, catalog }).prepared };
+  match.fields = [{ cc: true, players: ['resonance'], battleId: 'native-grace', done: true,
+    result: syntheticResult(['resonance']), resultSource: null }];
+  match.enqueueSessionAction = (action, result) => { submissions.push({ action, result }); return Promise.resolve({ ok: true }); };
+  try {
+    match._afterCombat();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(submissions.length, 1, 'Native grace synthetic results still settle the round');
+    assert.equal(submissions[0].action.type, 'fight');
+    assert.equal(submissions[0].result.won, false, 'the Native forced result remains a defeat');
+    assert.equal(submissions[0].result.result.synthetic, true);
+    assert.equal(Object.hasOwn(submissions[0].result.result, 'resonance'), false, 'synthetic fallback has no fabricated mode extras');
+  } finally { match.dispose(); scheduler.dispose(); }
+});
+
+test('native live WebSocket carries Runner results and reconstructs saved active Battles', { timeout: 120_000 }, async () => {
+  const data = loadData(NATIVE_DATA);
+  const catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 313 });
+  const created = createSession({ seed: 313, difficulty: 'NORMAL', catalog });
+  assert.equal(created.ok, true, created.error);
+  const legal = getResonanceField(created.state, { data, catalog });
+  const piece = created.state.pieces[0];
+  const cell = [...legal.deployMap.entries()].find(([, value]) => {
+    const kind = String(value?.class ?? value?.type ?? value?.position ?? value?.kind ?? value).toUpperCase();
+    const operator = catalog.operators[piece.operatorId];
+    return operator.position === 'RANGED' || kind === 'MELEE' || (kind === 'RANGED' && operator.canDeployHighGround === true);
+  });
+  assert.ok(cell, 'live websocket fixture needs a legal deployed unit');
+  const [row, col] = cell[0].split(',').map(Number);
+  const deployed = applyAction(created.state, { type: 'deploy', pieceUid: piece.uid, row, col, dir: 'RIGHT' }, {
+    catalog, fieldResolver: () => legal, recording: false,
+  });
+  assert.equal(deployed.ok, true, deployed.error);
+
+  async function storeFor(initial) {
+    let saved = structuredClone(initial);
+    return {
+      async loadOwnedSession() { return { state: structuredClone(saved), catalog }; },
+      async exclusive(_id, task) { return task(); },
+      async saveSession(_id, next) { saved = structuredClone(next); },
+      activate() {}, deactivate() {}, read() { return structuredClone(saved); },
+    };
+  }
+
+  const sid = randomUUID(), store = await storeFor(deployed.state);
+  const live = createResonanceLive({ store, data, log: { error() {}, debug() {} } });
+  const socket = await connectResonanceLive(live, sid), match = live.matches.get(sid);
+  assert.ok(socket.messages.some((message) => message.t === 'r.catalog'));
+  assert.ok(socket.messages.some((message) => message.t === 'room.state' && message.mode === 'solo'));
+  assert.equal(match.phase,'INFO_CHECK');
+  match.timerScale = 0;
+  socket.receive({t:'g.infoReady',setupRevision:0,rid:1});
+  await waitFor(()=>match.phase==='PREP','live INFO_CHECK confirmation → PREP');
+  assert.ok(socket.messages.some((message)=>message.t==='ok'&&message.rid===1),'native briefing confirmation receives an acknowledgment');
+  await waitFor(() => match.phase === 'PREP', 'live PREP');
+  socket.receive({ t: 'g.ready', ready: true, rid: 2 });
+  await waitFor(() => match.phase === 'COMBAT', 'live COMBAT');
+  await match._sessionWrite;
+  const field = match.fields.find((entry) => entry.players.includes('resonance'));
+  assert.ok(field?.spec && match.state.nativeRuntime?.battleId === field.battleId);
+  const battle = createBattleFromSpec(field.spec, data, { recordEvents: false, quiet: true });
+  battle.start();
+  while (!battle.finished && battle.tickCount < 10_000) battle.step();
+  assert.equal(battle.finished, true, 'live client fixture Runner must complete naturally');
+  const progress = battleProgress(battle);
+  socket.receive({ t: 'b.progress', battleId: field.battleId, ...progress, resolved: progress.killed });
+  const raw = compactResult(battle.result()), extras = resonanceResultExtras(battle);
+  if (extras) raw.resonance = extras;
+  const resultFrame={ t: 'b.result', battleId: field.battleId, result: fitResult(raw, { battleId: field.battleId }) };
+  assert.equal(validateC2S(resultFrame),null,`client result rejected by shared protocol: ${JSON.stringify(resultFrame.result.resonance)}`);
+  socket.receive(resultFrame);
+  await waitFor(() => match.phase === 'SETTLE', `WS result settlement (phase=${match.phase}, fieldDone=${field.done}, result=${field.result?.reason ?? 'none'}, lastError=${JSON.stringify(socket.messages.filter((message)=>message.t==='error').at(-1)??null)})`);
+  await match._sessionWrite;
+  assert.equal(match.state.history.filter((entry) => entry.type === 'fight-settled').length, 1);
+  assert.ok(socket.messages.some((message) => message.t === 'ok' && message.rid === 2));
+  assert.equal(match.state.prototypeMeta.lastBattle.outcome.round, 1, 'shared applyAction settlement owns V3 meta updates');
+  await live.close();
+
+  const restartId = randomUUID(), restartStore = await storeFor(deployed.state);
+  const firstLive = createResonanceLive({ store: restartStore, data, log: { error() {}, debug() {} } });
+  const firstSocket = await connectResonanceLive(firstLive, restartId);
+  const firstMatch = firstLive.matches.get(restartId);
+  firstMatch.timerScale = 0;
+  firstSocket.receive({t:'g.infoReady',setupRevision:0,rid:1});
+  await waitFor(() => firstMatch.phase === 'PREP', 'restart PREP');
+  firstSocket.receive({ t: 'g.ready', ready: true, rid: 3 });
+  await waitFor(() => firstMatch.phase === 'COMBAT', 'restart COMBAT');
+  await firstMatch._sessionWrite;
+  const savedBattleId = firstMatch.state.nativeRuntime.battleId;
+  await firstLive.close();
+
+  const resumedLive = createResonanceLive({ store: restartStore, data, log: { error() {}, debug() {} } });
+  const resumedSocket = await connectResonanceLive(resumedLive, restartId);
+  const resumed = resumedLive.matches.get(restartId);
+  assert.equal(resumed.phase, 'COMBAT');
+  assert.ok(resumedSocket.messages.some((message) => message.t === 'b.start' && message.battleId === savedBattleId),
+    'process restart must resume the saved native Battle spec and identity');
+  resumedSocket.close();
+  await waitFor(() => resumed.fields[0]?.mode === 'server' || resumed.fields[0]?.done, 'Native disconnect takeover');
+  assert.ok(resumed.fields[0]?.mode === 'server' || resumed.fields[0]?.done,
+    'disconnect must hand the active native field to the server runner');
+  await resumedLive.close();
+});
+
+test('native live close rejects failed session flush and still deactivates ownership',async()=>{
+  const data=loadData(NATIVE_DATA),catalog=getResonanceCatalog(data,{rulesVersion:3,seed:416});
+  const created=createSession({seed:416,difficulty:'NORMAL',catalog});assert.equal(created.ok,true,created.error);
+  let deactivated=false;
+  const store={async loadOwnedSession(){return {state:structuredClone(created.state),catalog};},
+    async exclusive(_id,task){return task();},async saveSession(){throw new Error('fixture flush failure');},
+    activate(){},deactivate(){deactivated=true;}};
+  const live=createResonanceLive({store,data,log:{error(){},debug(){}}});
+  const sid=randomUUID();await connectResonanceLive(live,sid);
+  await assert.rejects(live.close(),/fixture flush failure/);
+  assert.equal(deactivated,true,'failed flush must not leave the session owner locked');
+});
+
+test('completed live match persists before releasing owner and rebuilds its result from saved state', { timeout: 30_000 }, async () => {
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 927 });
+  const created = createSession({ seed: 927, difficulty: 'NORMAL', catalog });
+  assert.equal(created.ok, true, created.error);
+  let saved = structuredClone(created.state);
+  const active = new Set(), errors = [];
+  let releaseSave;
+  const saveGate = new Promise((resolve) => { releaseSave = resolve; });
+  let holdCompletionSave = true;
+  const store = {
+    async loadOwnedSession() { return { state: structuredClone(saved), catalog }; },
+    async exclusive(_id, task) { return task(); },
+    async saveSession(_id, state) {
+      if (state.phase === 'complete' && holdCompletionSave) await saveGate;
+      saved = structuredClone(state);
+    },
+    activate(id) { active.add(id); },
+    deactivate(id) { active.delete(id); },
+  };
+  const live = createResonanceLive({ store, data, log: { error: (...args) => errors.push(args), debug() {} } });
+  const sid = randomUUID();
+  try {
+    const socket = await connectResonanceLive(live, sid);
+    const match = live.matches.get(sid);
+    match.state.gold += 2;
+    match.state.history.push({ type: 'fight-settled', round: 1, won: true, goldDelta: 2 });
+    match.state.phase = 'complete';
+    match.state.terminalReason = 'victory';
+    const completedState = structuredClone(match.state);
+    match.finish({ victory: true, reason: 'victory' });
+    await waitFor(() => socket.messages.some((message) => message.t === 'm.result'), 'native completion result frame');
+    const firstResult = socket.messages.find((message) => message.t === 'm.result');
+    assert.ok(firstResult, 'Native Match sends its result before asynchronous persistence finishes');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(live.matches.get(sid), match, 'match remains addressable while completion save is pending');
+    assert.equal(match.disposed, false);
+    assert.equal(active.has(sid), true, 'owner remains active until durable completion');
+    assert.notEqual(saved.phase, 'complete');
+
+    holdCompletionSave = false;
+    releaseSave();
+    await waitFor(() => !live.matches.has(sid), 'completed match release after durable save');
+    assert.equal(saved.phase, 'complete');
+    assert.equal(match.disposed, true);
+    assert.equal(active.has(sid), false, 'dispose releases the session owner');
+
+    const resumedSocket = await connectResonanceLive(live, sid);
+    await waitFor(() => !live.matches.has(sid), 'reconnected completed session result delivery and release');
+    const resumedResult = resumedSocket.messages.find((message) => message.t === 'm.result');
+    assert.ok(resumedResult, 'persisted completed session replays its native final result on reconnect');
+    assert.deepEqual(
+      { victory: resumedResult.victory, reason: resumedResult.reason, roundsPassed: resumedResult.roundsPassed, players: resumedResult.players },
+      { victory: firstResult.victory, reason: firstResult.reason, roundsPassed: firstResult.roundsPassed, players: firstResult.players },
+      'reconnect reproduces the same saved outcome and roster without rerunning settlement',
+    );
+    assert.deepEqual(saved.history, completedState.history, 'reconnect does not append another campaign reward/history entry');
+    assert.equal(saved.gold, completedState.gold, 'reconnect does not grant the completed reward a second time');
+    assert.equal(errors.length, 0);
+  } finally {
+    holdCompletionSave = false;
+    releaseSave();
+    await live.close();
+  }
+});
+
+test('completed persistence failure keeps the Native instance and owner for retry', { timeout: 30_000 }, async () => {
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 928 });
+  const created = createSession({ seed: 928, difficulty: 'NORMAL', catalog });
+  assert.equal(created.ok, true, created.error);
+  let saved = structuredClone(created.state), failCompletionSave = true;
+  const active = new Set(), errors = [];
+  const store = {
+    async loadOwnedSession() { return { state: structuredClone(saved), catalog }; },
+    async exclusive(_id, task) { return task(); },
+    async saveSession(_id, state) {
+      if (state.phase === 'complete' && failCompletionSave) throw new Error('completion write fixture failure');
+      saved = structuredClone(state);
+    },
+    activate(id) { active.add(id); }, deactivate(id) { active.delete(id); },
+  };
+  const live = createResonanceLive({ store, data, log: { error: (...args) => errors.push(args), debug() {} } });
+  const sid = randomUUID();
+  try {
+    const socket = await connectResonanceLive(live, sid), match = live.matches.get(sid);
+    match.state.phase = 'complete';
+    match.state.terminalReason = 'defeat';
+    match.finish({ victory: false, reason: 'defeat' });
+    await waitFor(() => errors.some(([message]) => String(message).includes('persist completed session failed')),
+      'completion persistence failure report');
+    assert.ok(socket.messages.some((message) => message.t === 'm.result' && message.victory === false));
+    assert.equal(live.matches.get(sid), match, 'failed save must not remove or dispose the match');
+    assert.equal(match.disposed, false);
+    assert.equal(active.has(sid), true, 'failed save must retain the active session owner');
+    assert.notEqual(saved.phase, 'complete');
+
+    failCompletionSave = false;
+    await live.close();
+    assert.equal(saved.phase, 'complete', 'shutdown retries persistence of the retained complete state');
+    assert.equal(active.has(sid), false);
+  } finally {
+    if (live.matches.size) {
+      failCompletionSave = false;
+      await live.close();
+    }
+  }
+});

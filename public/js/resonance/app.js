@@ -9,11 +9,11 @@ import { DifficultyCard } from '../screens/lobby.js';
 import { StepHeader } from '../ui/matchChrome.js';
 import { uiUrl } from '../ui/assetUrls.js';
 import { GameScreen } from './game.js';
+import { NativeMatchConnection } from './native-connection.js';
 import { resonanceApi } from './api.js';
 import { parseDetailHash, actionErrorText } from './model.js';
 import { DetailPanel } from './detail.js';
 import { CodexScreen } from './codex.js';
-import { ResultPage } from './native/ResultPage.js';
 
 const LAST = 'rs:lastSession';
 const DIFFICULTIES = [
@@ -27,19 +27,26 @@ const difficultyName = (id) => DIFFICULTIES.find(([key]) => key === id)?.[1] || 
 const difficultyArtKey = Object.freeze({ FUNNY: 'funny', NORMAL: 'normal', HARD: 'hard', ABYSS: 'abyss' });
 function difficultyCampaignSummary(campaign, id) {
   const schedule = campaign?.nodeSchedule?.[id] || {};
-  const nodes = Number(schedule.nodes) || 0;
   const rhythm = id === 'FUNNY'
-    ? `共${nodes}个节点，${schedule.battleCount || Math.floor(nodes / 2)}场战斗；间隔节点补充${schedule.oddNodeGold ?? 0}金币与${schedule.oddNodeXp ?? 0}经验`
+    ? '间歇交战，途中可补充经营资源'
     : id === 'ABYSS'
-      ? `共${nodes}个节点；第${schedule.baseBossNode || 28}节点领袖战后，继续挑战精英与隐藏领袖`
-      : `共${nodes}个节点，第${schedule.bossNode || nodes}节点迎战最终领袖`;
+      ? '完成最终领袖战后，还可继续挑战更强敌人'
+      : id === 'HARD'
+        ? '敌人更强，经营空间更紧，末段迎战最终领袖'
+        : '标准经营节奏，末段迎战最终领袖';
   const profile = campaign?.enemyBalance?.byDifficulty?.[id]?.regular || campaign?.enemyBalance?.regular;
   const terminal = campaign?.enemyBalance?.byDifficulty?.[id]?.terminal || campaign?.enemyBalance?.terminal;
   const percent = (value) => Number.isFinite(Number(value)) ? `${Math.round(Number(value) * 100)}%` : null;
   const regularText = profile ? `常规敌人：生命${percent(profile.hpMultiplier)} · 攻击${percent(profile.atkMultiplier)} · 防御${percent(profile.defMultiplier)}` : '';
   const terminalText = terminal && (terminal.hpMultiplier !== profile?.hpMultiplier || terminal.atkMultiplier !== profile?.atkMultiplier || terminal.defMultiplier !== profile?.defMultiplier)
     ? `领袖：生命${percent(terminal.hpMultiplier)} · 攻击${percent(terminal.atkMultiplier)} · 防御${percent(terminal.defMultiplier)}` : '';
-  return { rhythm, regularText, terminalText };
+  const nodes = Number(schedule.nodes) || 0;
+  const scheduleText = id === 'FUNNY'
+    ? `${nodes}个节点，约${schedule.battleCount || Math.floor(nodes / 2)}场战斗；间隔节点补充${schedule.oddNodeGold ?? 0}金币与${schedule.oddNodeXp ?? 0}经验`
+    : id === 'ABYSS'
+      ? `${nodes}个节点；第${schedule.baseBossNode || 28}节点领袖战后继续挑战`
+      : `${nodes}个节点，第${schedule.bossNode || nodes}节点迎战最终领袖`;
+  return { rhythm, regularText, terminalText, scheduleText };
 }
 function sessionUrl(id) {
   const url = new URL(location.href);
@@ -189,16 +196,16 @@ export function App() {
     const url = new URL(location.href); url.hash = ''; history.replaceState(null, '', url);
     setDetail(null); setSession(null); setStep(0); setReplayMode(false);
   };
-  if (session?.catalog && session.state?.phase === 'complete' && !replayMode) return html`<${ResultPage} state=${session.state} catalog=${session.catalog} onLeave=${leaveSession} onReplay=${round=>{location.hash=`replay-${round}`;setReplayMode(true)}}/>`;
-  if (session?.catalog) return html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${session.catalog} onState=${onSessionState} onLeave=${leaveSession}/> `;
+  if (session?.catalog && replayMode) return html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${session.catalog} onState=${onSessionState} onLeave=${leaveSession}/> `;
+  if (session?.catalog) return html`<${NativeMatchConnection} key=${session.id} id=${session.id}/> `;
   if (!catalog || (query.has('session') && !session && !failure && openedSession.current !== query.get('session'))) return html`<main class="rs-start"><${Spinner} label="载入共鸣"/></main>`;
   if (codex) return html`<${CodexScreen} catalog=${catalog} activeIds=${activeIds}
     initialTab=${codexTab}
     overlayDetail=${html`<${DetailPanel} detail=${detail} catalog=${catalog} onDetail=${setDetail} onClose=${() => setDetail(null)}/>`}
     onBack=${() => { setCodex(false); setCodexTab('operators'); setDetail(null); const url = new URL(location.href); url.searchParams.delete('view'); url.hash = ''; history.replaceState(null, '', url); }} onDetail=${setDetail}/>`;
 
-  const openingEvent = catalog.openingEvent;
-  const catalogReady = seedValid && catalogKey === String(numericSeed) && !!openingEvent;
+  const catalogReady = seedValid && catalogKey === String(numericSeed) && activeIds.length === 60
+    && !!catalog.campaign && !!catalog.campaign.nodeSchedule;
   const difficultyArt = uiUrl(data.get('assets'), `modeChoice/${difficultyArtKey[difficulty] || 'normal'}_rhodes_island`);
   const difficultySummary = difficultyCampaignSummary(catalog.campaign, difficulty);
   const showCodex = (tab) => { setCodexTab(tab); setCodex(true); const url = new URL(location.href); url.searchParams.set('view', 'codex'); history.replaceState(null, '', url); };
@@ -224,8 +231,6 @@ export function App() {
               <div class="rs-difficulty-feature__content"><${MicroLabel} tone="mint">已选难度</${MicroLabel}><h2>${difficultyName(difficulty)}</h2>
                 <p>${DIFFICULTIES.find(([id]) => id === difficulty)?.[2]}</p>
                 <div class="rs-difficulty-feature__schedule"><b>本局节奏</b><span>${difficultySummary.rhythm}</span></div>
-                ${difficultySummary.regularText ? html`<p class="rs-difficulty-feature__pressure">${difficultySummary.regularText}</p>` : null}
-                ${difficultySummary.terminalText ? html`<p class="rs-difficulty-feature__pressure">${difficultySummary.terminalText}</p>` : null}
                 <${Button} class="rs-difficulty-feature__next" variant="primary" size="lg" block=${true} icon="play" disabled=${busy || !catalogReady} loading=${busy} onClick=${start}>开始备战</${Button}>
               </div>
             </article>
@@ -238,6 +243,10 @@ export function App() {
         </div>
         <${Modal} open=${advancedOpen} title="高级设置" micro="本局选项" onClose=${() => setAdvancedOpen(false)}
           actions=${html`<${Button} variant="primary" onClick=${() => setAdvancedOpen(false)}>完成<//>`}>
+          <section class="rs-difficulty-rules"><h3>本局节奏</h3><p>${difficultySummary.scheduleText}</p>
+            ${difficultySummary.regularText ? html`<p>${difficultySummary.regularText}</p>` : null}
+            ${difficultySummary.terminalText ? html`<p>${difficultySummary.terminalText}</p>` : null}
+          </section>
           <label class="rs-seed-field">对局种子<input inputMode="numeric" value=${seed} onInput=${(event) => setSeed(event.currentTarget.value.replace(/\D/g, '').slice(0, 10))}/></label>
           ${!seedValid ? html`<p>请输入 0 至 4294967295 之间的整数种子。</p>` : !catalogReady ? html`<p>正在更新当前种子数据；更新完成后即可开始。</p>` : null}
         </${Modal}>

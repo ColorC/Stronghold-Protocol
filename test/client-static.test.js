@@ -908,6 +908,30 @@ describe('data.js', () => {
     assert.deepEqual(seen, ['config', 'config', 'config']);
   });
 
+  test('inject installs native Resonance record snapshots without changing the fetch cache contract', async () => {
+    const { createDataStore } = await mod('data.js');
+    const fetch = fakeFetch({ 'chess.json': { fetched: { name: 'fetched' } } });
+    const d = createDataStore({ fetch, base: '/data/' });
+    const seen = [];
+    d.subscribe((name) => seen.push(name));
+    const snapshot = {
+      chess: { resonance_unit: { chessId: 'resonance_unit', name: 'Injected' } },
+      bonds: [{ bondId: 'resonance_bond', name: 'Bond' }],
+      items: { resonance_item: { itemId: 'resonance_item', name: 'Item' } },
+      config: { modes: { resonance: { name: 'Resonance' } } },
+    };
+    assert.deepEqual(d.inject(snapshot), ['chess', 'bonds', 'items', 'config']);
+    assert.equal(d.status('chess'), 'ready');
+    assert.equal(d.lookup('chess', 'resonance_unit').name, 'Injected');
+    assert.equal(d.lookup('bonds', 'resonance_bond').name, 'Bond');
+    assert.equal(d.lookup('items', 'resonance_item').name, 'Item');
+    assert.equal(d.get('config').modes.resonance.name, 'Resonance');
+    assert.equal(await d.load('chess'), snapshot.chess, 'injected values satisfy later load callers');
+    assert.deepEqual(fetch.calls, [], 'no fetch replaces the server-provided session snapshot');
+    assert.deepEqual(seen, ['chess', 'bonds', 'items', 'config']);
+    assert.throws(() => d.inject({ tokens: {} }), /only accepts chess, bonds, items, and config/);
+  });
+
   test('invalidate during an in-flight load: the stale load stays silent, the refetch wins', async () => {
     const { createDataStore } = await mod('data.js');
     let n = 0;

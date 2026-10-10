@@ -22,8 +22,9 @@
 // ownerLoadout)); an explicit loadout argument always wins over the view's per-chess lookup.
 
 import { Battle } from './Battle.js';
-import { toDataSource, withUnitLoadouts } from './simdata.js';
+import { DataSource, toDataSource, withUnitLoadouts } from './simdata.js';
 import { BOSS_POOL_MIN_HP } from './constants.js';
+import { resonanceSpecExtras } from './content/resonance/spec.js';
 
 export const SPEC_VERSION = 1;
 
@@ -103,6 +104,15 @@ export function createBattleFromSpec(spec, dataSource, opts = {}) {
   let sharedBoss = opts.sharedBoss ?? null;
   if (!sharedBoss && bossLike && s.boss) sharedBoss = new LocalBossPool(s.boss.poolMax, s.boss.poolHp);
   const BattleClass = typeof opts.BattleClass === 'function' ? opts.BattleClass : Battle;
+  const baseData = toDataSource(dataSource);
+  const patch = s.flags?.resonance?.dataPatch;
+  const rawData = patch && typeof patch === 'object' ? {
+    ...baseData.raw,
+    chess: { ...baseData.raw.chess, ...(patch.chess || {}) },
+    tokens: { ...baseData.raw.tokens, ...(patch.tokens || {}) },
+  } : baseData.raw;
+  const dataView = patch && typeof patch === 'object' ? new DataSource(rawData, baseData.fallback) : baseData;
+  const resonance = resonanceSpecExtras(s.flags, rawData);
   const battleOpts = {
     seed: s.seed,
     kind: s.kind,
@@ -119,9 +129,13 @@ export function createBattleFromSpec(spec, dataSource, opts = {}) {
     fieldId: s.fieldId,
     enemyOverrides: s.enemyOverrides ?? {},
     waveId: s.waveId ?? null,
-    data: BattleClass === Battle ? withUnitLoadouts(toDataSource(dataSource), s.players) : dataSource,
+    data: BattleClass === Battle ? withUnitLoadouts(dataView, s.players) : dataSource,
     content: opts.content ?? s.content ?? 'full',
   };
+  if (resonance) {
+    battleOpts.kits = resonance.kits;
+    battleOpts.extraContent = [resonance.install];
+  }
   if (s.bossId != null) battleOpts.bossId = s.bossId;
   if (opts.logger) battleOpts.logger = opts.logger;
   if (opts.recordEvents === false) battleOpts.recordEvents = false;
@@ -361,7 +375,48 @@ export function compactResult(res) {
       time: Math.max(0, Math.min(1e6, fnum(u.time))),
     }));
   }
+  const mode = compactResonanceResult(r.resonance);
+  if (mode) out.resonance = mode;
   return out;
+}
+
+/** Bounded mode-owned result fields; copied by the browser runner from the already-finished Battle instance. */
+export function compactResonanceResult(value) {
+  if (!value || typeof value !== 'object') return null;
+  const metrics = {};
+  const flatten = (object, prefix = '') => {
+    for (const [key, amount] of Object.entries(object ?? {})) {
+      const name = prefix ? `${prefix}.${key}` : key;
+      if (!/^[A-Za-z][A-Za-z0-9_.]{0,63}$/.test(name)) continue;
+      if (typeof amount === 'number' && Number.isFinite(amount)) metrics[name] = Math.max(0, Math.min(1e9, amount));
+      else if (amount && typeof amount === 'object' && !Array.isArray(amount)) flatten(amount, name);
+      if (Object.keys(metrics).length >= 96) return;
+    }
+  };
+  flatten(value.metrics);
+  const rows = (list, max, fields) => (Array.isArray(list) ? list.slice(0, max) : []).map((entry) => {
+    if (!entry || typeof entry !== 'object') return null;
+    const out = {};
+    for (const key of fields) {
+      const v = entry[key];
+      if (typeof v === 'number' && Number.isFinite(v)) out[key] = Math.max(0, Math.min(1e9, v));
+      else if (typeof v === 'string' && v.length <= 64) out[key] = v;
+    }
+    return Object.keys(out).length ? out : null;
+  }).filter(Boolean);
+  const growth = rows(value.growth, 160, ['pieceUid', 'key', 'amount', 'cap', 'source']);
+  const coins = rows(value.coins, 80, ['amount', 'source', 'reason']);
+  const forge = rows(value.forge, 80, ['progress', 'threshold', 'source', 'nodeCap']);
+  const contributions = rows(value.contributions, 128, ['charId', 'damage', 'healing', 'summonDamage', 'blocked', 'controlMs', 'kills', 'deaths', 'skills', 'survived']);
+  if (!Object.keys(metrics).length && !growth.length && !coins.length && !forge.length && !contributions.length) return null;
+  return { metrics, growth, coins, forge, contributions };
+}
+
+/** Serialize the finished resonance Battle's mode-owned queues without re-running its simulation. */
+export function resonanceResultExtras(battle) {
+  if (!battle || !battle.resonanceMetrics && !battle.resonanceResults) return null;
+  return compactResonanceResult({ metrics: battle.resonanceMetrics ?? {}, ...(battle.resonanceResults ?? {}),
+    ...(Array.isArray(battle.resonanceContributions) ? { contributions: battle.resonanceContributions } : {}) });
 }
 
 /** Bytes a b.result frame may use (the socket's inbound limit is 64 KB; headroom for the envelope). */
@@ -382,7 +437,14 @@ export function fitResult(result, { bossLike = false, budget = RESULT_FRAME_BUDG
   for (const [pid, p] of Object.entries(result.perPlayer || {})) r.perPlayer[pid] = { ...p, unitStats: [] };
   if (size(r) <= budget) return r;
   for (const p of Object.values(r.perPlayer)) p.leaked = (p.leaked || []).map((l) => ({ ...l, mods: null }));
-  if (size(r) <= budget || !bossLike) return r;
+  if (size(r) <= budget || !bossLike) {
+    if (size(r) <= budget) return r;
+    const mode = r.resonance;
+    if (mode) r.resonance = { ...mode, growth: mode.growth.slice(0, 48), coins: mode.coins.slice(0, 24), forge: mode.forge.slice(0, 24), contributions: mode.contributions.slice(0, 64) };
+    if (size(r) <= budget) return r;
+    if (r.resonance) r.resonance = { ...r.resonance, growth: r.resonance.growth.slice(0, 16), metrics: Object.fromEntries(Object.entries(r.resonance.metrics).slice(0, 48)) };
+    if (size(r) <= budget || !bossLike) return r;
+  }
   for (const p of Object.values(r.perPlayer)) p.leaked = [];
   if (Array.isArray(r.unspawned)) r.unspawned = [];
   return r;

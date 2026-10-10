@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { loadData } from '../../server/data.js';
 import { toDataSource } from '../../server/sim/simdata.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
+import { tftArmorToNativeDefense, tftMrToNativeResistance } from '../../shared/resonance/prototype-resistance.js';
 import { resonanceContent, resonanceSourceSkillGaps, buildRecruitmentPool } from '../../shared/resonance/catalog.js';
+import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = loadData(path.resolve(ROOT, '../../../data'), { log: { warn() {}, error() {} } });
@@ -145,19 +147,44 @@ test('fixed skill index resolves to the configured raw skill and blackboard in B
   }
 });
 
-test('current documentation builds repeat exactly while preserving the frozen legacy catalogue', () => {
+test('prototype catalog compiler projects all canonical Chem-Baron rows without leaking its source table', () => {
+  const prototypeData = loadData(path.resolve(ROOT, '../../../data/resonance-native'), { log: { warn() {}, error() {} } });
+  const catalog = getResonanceCatalog(prototypeData, { rulesVersion: 3, seasonId: 'resonance-set13-14.23', seed: 1 });
+  assert.equal(Object.hasOwn(catalog, 'prototypeSeason'), false);
+  assert.equal(Object.values(catalog.equipment).filter((item) => item.source?.apiName?.startsWith('TFT13_Crime_')).length, 28);
+  for (const hero of prototypeSeason.heroes) {
+    const stats = catalog.operators[hero.sourceChessId].stars[1].stats;
+    const nativeStats=resonanceContent.operators[hero.sourceChessId].stars[1].stats;
+    assert.equal(stats.def, typeof hero.powerReference.armor==='number'?tftArmorToNativeDefense(hero.powerReference.armor,hero.powerReference.attackDamage):nativeStats.def, `${hero.name} adapted armor source/fallback`);
+    assert.equal(stats.res, typeof hero.powerReference.magicResist==='number'?tftMrToNativeResistance(hero.powerReference.magicResist):nativeStats.res, `${hero.name} adapted magic-resist source/fallback`);
+    if(hero.powerReference.magicResist===null)assert.equal(hero.powerReference.magicResist,null,`${hero.name} source unknown remains explicit`);
+    assert.ok(Math.abs(stats.bat - 1 / hero.powerReference.attackSpeed) < 1e-9, `${hero.name} source attack cadence`);
+  }
+  assert.deepEqual(Object.fromEntries(Object.entries(catalog.prototypeEconomy.gearPools).filter(([key]) => key.startsWith('chemBaron')).map(([key, ids]) => [key, ids.length])), {
+    chemBaron: 3,
+    chemBaronBronze: 3,
+    chemBaronSilver: 8,
+    chemBaronGold: 8,
+    chemBaronPrismatic: 8,
+    chemBaronOmegaPrismatic: 1,
+  });
+  assert.equal(Object.keys(catalog.prototypeEconomy.chemBaron.marketOptionsByThreshold).length, 8);
+});
+
+test('current documentation is regenerated deterministically from the v3 catalog while preserving source catalog code', () => {
   const outputPath = path.join(ROOT, 'shared/resonance/catalog.js');
   const reviewPath = path.join(ROOT, 'docs/resonance/catalog.md');
-  const compilerPath = path.join(ROOT, 'tools/resonance/build-content.mjs');
+  const compilerPath = path.join(ROOT, 'tools/resonance/export-prototype-catalog.mjs');
   const originalConfig = fs.readFileSync(outputPath);
   const env = { ...process.env, SP_DATA_DIR: path.resolve(ROOT, '../../../data/resonance-native') };
   const options = { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 4*1024*1024, timeout: 30000 };
   const defaultResult=JSON.parse(execFileSync(process.execPath, [compilerPath], options).trim());
-  assert.equal(defaultResult.rulesVersion,2);assert.equal(defaultResult.active,65);assert.equal(defaultResult.strategies,28);
+  assert.equal(defaultResult.rulesVersion,3);assert.equal(defaultResult.active,60);assert.equal(defaultResult.pacts,26);
   assert.ok(fs.readFileSync(outputPath).equals(originalConfig));
   const firstReview = fs.readFileSync(reviewPath, 'utf8');
-  execFileSync(process.execPath, [compilerPath, '--catalog-doc-only'], options);
+  execFileSync(process.execPath, [compilerPath], options);
   assert.ok(fs.readFileSync(outputPath).equals(originalConfig));
   assert.equal(fs.readFileSync(reviewPath, 'utf8'), firstReview);
-  assert.match(firstReview,/固定招募名单 65 人/);assert.match(firstReview,/装备 69 项/);assert.match(firstReview,/独立图鉴保留 154 人/);assert.match(firstReview,/当前策略 28 项/);assert.match(firstReview,/36 条旧策略和 19 条旧区域规则/);
+  assert.match(firstReview,/rulesVersion 3/);assert.match(firstReview,/当前招募名单/);assert.match(firstReview,/当前自然盟约/);assert.match(firstReview,/独立图鉴记录 154 名/);assert.match(firstReview,/旧存档兼容/);
+  assert.doesNotMatch(firstReview,/固定招募名单 65 人/);
 });

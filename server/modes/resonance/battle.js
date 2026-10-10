@@ -13,8 +13,9 @@ import { KITS, MODULES } from '../../sim/content/index.js';
 import { localOrder } from '../../sim/dir.js';
 import { SKILL_SUMMON_START_DEPLOY } from '../../../shared/constants.js';
 import { getResonanceCatalog } from './catalog.js';
-import { installResonanceBattle } from '../../sim/content/resonance/battle.js';
+import { finishResonanceTerminalIfEscaped as finishNativeTerminalIfEscaped, installResonanceBattle } from '../../sim/content/resonance/battle.js';
 import { createResonanceKits } from '../../sim/content/resonance/kits.js';
+import { installPrototypeBattleContent } from '../../sim/content/resonance/prototype-installer.js';
 
 const PLAYER_ID = 'resonance';
 const REPLAY_SNAP_EVERY = 3;
@@ -104,11 +105,7 @@ function effectiveTimeLimit(prepared, catalog) {
 }
 
 export function finishResonanceTerminalIfEscaped(battle, nodeKind) {
-  if (!['boss', 'hidden'].includes(nodeKind) || battle.finished || !battle.started || battle._spawnSeq <= 0) return false;
-  if (!(battle.sharedBoss?.hp > 0) || (battle._pending?.length ?? 0) > 0 || battle.enemies.some(enemy => enemy.alive && enemy.deployed)) return false;
-  if (battle._hasPendingEnemySchedules()) return false;
-  battle.forceEnd('leader-escaped');
-  return battle.finished;
+  return finishNativeTerminalIfEscaped(battle, nodeKind);
 }
 
 function battleNode(state) {
@@ -216,6 +213,23 @@ function battleInputUnits(state, data, catalog, prepared, starData) {
   });
   const deployMap = buildDeployMap(prepared.stage, { field: prepared.field });
   const occupied = new Set(deployed.map((piece) => `${Number(piece.row)},${Number(piece.col)}`));
+  for (const placement of placeSpecialEntities(state, deployMap, occupied, catalog)) {
+    const descriptor = catalog.specialEntities?.[placement.entity.entityId];
+    const tokenId = specialEntityBattleTokenId(placement.entity);
+    const sourceToken = data.tokens?.[descriptor?.nativeTokenId] ?? {};
+    const def = {
+      ...sourceToken, id: tokenId, name: descriptor?.name ?? '训练假人',
+      spine: descriptor?.nativeTokenId ?? sourceToken.spine ?? tokenId,
+      avatar: descriptor?.nativeTokenId ?? sourceToken.avatar ?? tokenId,
+      position: 'MELEE', rangeGrid: [[0, 0]],
+      skill: null, skills: [], talents: [], tokens: [],
+      stats: { maxHp: Number(descriptor?.maxHp ?? 550), atk: 0, def: Number(descriptor?.def ?? 30),
+        res: Number(descriptor?.res ?? 30), aspd: 0, bat: 0, blockCnt: Number(descriptor?.blockCount ?? 1),
+        cost: 0, spRecovery: 0 },
+      description: '固定目标；不能移动或攻击。',
+    };
+    units.push({ uid: placement.entity.uid, kind: 'token', tokenId, def, row: placement.row, col: placement.col, dir: 'RIGHT', abs: false });
+  }
   const reservedExplicit = new Map();
   for (const piece of deployed) for (const order of (piece.summonOrders ?? [])) {
     if (!order || !Number.isInteger(order.row) || !Number.isInteger(order.col) || typeof order.tokenId !== 'string') continue;
@@ -281,6 +295,23 @@ function battleInputUnits(state, data, catalog, prepared, starData) {
     }
   }
   return { units, summonAnchors, summonAnchorGaps };
+}
+
+export function specialEntityBattleTokenId(entity) { return `resonance_special_${String(entity?.uid ?? 'entity')}`; }
+
+/** Project only explicitly saved, legal special-entity tiles; never auto-place or change persisted positions. */
+export function placeSpecialEntities(state, deployMap, occupied = new Set(), catalog = null) {
+  const placed = [];
+  for (const entity of state?.specialEntities ?? []) {
+    const descriptor = catalog?.specialEntities?.[entity.entityId];
+    if (!descriptor || descriptor.kind !== 'training_dummy') continue;
+    if (!Number.isInteger(entity.row) || !Number.isInteger(entity.col)) continue;
+    const key=`${entity.row},${entity.col}`;
+    if (!(deployMap instanceof Map) || !deployMap.has(key) || occupied.has(key)) continue;
+    occupied.add(key);
+    placed.push({ entity, row: entity.row, col: entity.col });
+  }
+  return placed;
 }
 
 function withStarRecords(state, data, catalog) {
@@ -366,6 +397,8 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
     kind: preview ? 'normal' : prepared.nodeKind === 'hidden' ? 'hidden' : prepared.nodeKind === 'boss' ? 'boss' : 'normal',
     modeId: prepared.modeId,
     round: prepared.battleRound,
+    waveId: prepared.wave.templateId,
+    bossId: prepared.bossId,
     stage: prepared.stage,
     timeLimit: preview ? 60 : effectiveTimeLimit(prepared, catalog),
     players: [{ playerId: PLAYER_ID, seat: 0, side: 'L', colOffset: 0, units, bonds: {} }],
@@ -378,7 +411,8 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
       dpInit: 20,
       dpPerSec: 1,
       dpMax: 99,
-      resonance: { catalog, state: input, round: input.round, battleRound: prepared.battleRound, environmentId: input.rulesVersion===2?null:input.environmentId ?? null },
+      resonance: { catalog, state: input, round: input.round, battleRound: prepared.battleRound,
+        nodeKind: prepared.nodeKind, environmentId: input.rulesVersion===2?null:input.environmentId ?? null },
     },
     fieldId: `resonance-r${input.round}`,
     data: battleData,
@@ -396,6 +430,7 @@ export function buildResonanceBattle(state, { data = null, catalog = null, recor
       b.resonanceOutcome={won:false};
       b.on('battleEnd',({result})=>{b.resonanceOutcome.won=resonanceBattleWon(result,prepared.nodeKind);},{owner:b,priority:1000});
       installResonanceBattle(b, { catalog, state: input });
+      installPrototypeBattleContent(b,input,catalog);
     }],
   });
   battle.resonanceSummonAnchors = inputUnitData.summonAnchors;
@@ -420,6 +455,63 @@ function leakLoss(playerResult, cap) {
   const points = leaked.filter((entry) => entry && entry.counted !== false)
     .reduce((sum, entry) => sum + Math.max(0, Number.isFinite(Number(entry.lpr)) ? Number(entry.lpr) : 1), 0);
   return Math.min(cap, Math.max(0, points));
+}
+
+/** Convert an already completed native BattleResult into the session settlement contract without running a Battle. */
+export function nativeResultForSession(state, result, { data = null, catalog = null, prepared: preparedInput = null, uidMap = null } = {}) {
+  if (!result || typeof result !== 'object') throw new TypeError('native BattleResult required');
+  const source = sourceData(data);
+  catalog = catalogFor(state, source, catalog);
+  const prepared = preparedInput ?? buildResonanceBattle(state, { data: source, catalog }).prepared;
+  const playerResult = result.perPlayer?.[PLAYER_ID] ?? Object.values(result.perPlayer || {})[0] ?? {};
+  const units = Array.isArray(playerResult.unitStats) ? playerResult.unitStats : [];
+  const survivors = Array.isArray(playerResult.unitsEnd) ? playerResult.unitsEnd.map((unit) => {
+    const pieceUid = uidMap?.session(unit.uid) ?? unit.uid;
+    const piece = state.pieces?.find((entry) => String(entry.uid) === String(pieceUid));
+    const sourceId=String(unit.defId??'').replace(/^resonance_/,'').replace(/_star[23]$/,'');
+    const operator=catalog.operators?.[piece?.operatorId]??Object.values(catalog.operators??{}).find((entry)=>entry.sourceChessId===sourceId||entry.id===sourceId);
+    return { uid: pieceUid, pieceUid, operatorId:piece?.operatorId??operator?.id??null, charId: operator?.charId ?? null,
+      defId: unit.defId, star:piece?.star??unit.resonanceStar, alive: unit.alive === true,
+      ...(Number.isFinite(unit.hpPct) ? { hpPct: unit.hpPct } : {}) };
+  }).filter((unit) => unit.charId) : [];
+  const mode = result.resonance && typeof result.resonance === 'object' ? result.resonance : {};
+  const growth = Array.isArray(mode.growth) ? mode.growth.map((entry) => ({ ...entry,
+    pieceUid: uidMap?.session(entry.pieceUid) ?? entry.pieceUid })) : [];
+  const combatStats = combatStatsOf(playerResult);
+  if(combatStats&&uidMap){
+    for(const unit of combatStats.units){
+      const pieceUid=uidMap.session(unit.uid);
+      unit.uid=pieceUid;
+      const piece=state.pieces?.find((entry)=>entry.uid===pieceUid);
+      const operator=piece&&catalog.operators?.[piece.operatorId];
+      if(operator){unit.charId=operator.charId;unit.star=piece.star;unit.defId=operator.sourceChessId??unit.defId;}
+    }
+  }
+  return {
+    won: resonanceBattleWon(result, prepared.nodeKind),
+    hpLoss: leakLoss(playerResult, prepared.gd.lpCapPerRound),
+    result,
+    growth, coins: Array.isArray(mode.coins) ? structuredClone(mode.coins) : [],
+    contributions: Array.isArray(mode.contributions) ? structuredClone(mode.contributions) : [],
+    survivors,
+    battleRound: state.round,
+    uidMap: uidMap?.snapshot() ?? null,
+    forge: Array.isArray(mode.forge) ? structuredClone(mode.forge) : [], replay: null,
+    combatStats,
+    diagnostics: { errorCount: Number(result.errors) || 0, nodeKind: prepared.nodeKind },
+    metrics: {
+      damage: units.reduce((sum, unit) => sum + (Number(unit.dmg) || 0), 0),
+      healing: units.reduce((sum, unit) => sum + (Number(unit.heal) || 0), 0),
+      attacks: units.reduce((sum, unit) => sum + (Number(unit.attacks) || 0), 0),
+      kills: units.reduce((sum, unit) => sum + (Number(unit.kills) || 0), 0),
+      deaths: Number(playerResult.deaths) || 0,
+      leaked: (playerResult.leaked || []).filter((entry) => entry && entry.counted !== false).length,
+      totalEnemies: Number(result.total) || 0,
+      defeatedEnemies: Number(result.killed) || 0,
+      ...(mode.metrics && typeof mode.metrics === 'object' ? structuredClone(mode.metrics) : {}),
+    },
+    summonAnchors: [], summonAnchorGaps: [],
+  };
 }
 
 function aggregateMetrics(battle, result, playerResult) {
@@ -492,6 +584,12 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
   const combatStats = combatStatsOf(playerResult);
   const hpLoss = leakLoss(playerResult, prepared.gd.lpCapPerRound);
   const won = resonanceBattleWon(result,prepared.nodeKind,{capped});
+  const survivors = battle.allyUnits.filter((unit) => unit?.kind === 'op' && unit.alive && !unit.removed).map((unit) => {
+    const piece = input.pieces.find((entry) => String(entry.uid) === String(unit.uid));
+    const operator=catalog.operators?.[piece?.operatorId];
+    return { uid: unit.uid, pieceUid:unit.uid, operatorId:piece?.operatorId??null, charId: operator?.charId ?? null,
+      defId: unit.defId, star:piece?.star, alive: true, hpPct: Number.isFinite(unit.hpRatio) ? unit.hpRatio : undefined };
+  }).filter((unit) => unit.charId);
   const diagnostics = {
     modeId: prepared.modeId,
     waveModeId: prepared.waveModeId,
@@ -540,6 +638,9 @@ export function runResonanceBattle(state, { data = null, catalog = null, recordi
     forge: structuredClone(battle.resonanceResults?.forge ?? []),
     replay,
     combatStats,
+    contributions: structuredClone(battle.resonanceContributions ?? []),
+    survivors,
+    battleRound: input.round,
     diagnostics,
     metrics: aggregateMetrics(battle, result, playerResult),
     summonAnchors: structuredClone(battle.resonanceSummonAnchors ?? []),

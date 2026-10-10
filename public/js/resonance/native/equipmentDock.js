@@ -6,7 +6,7 @@ const recipeFor = (recipes, first, second) => (recipes || []).find(recipe => rec
   ((recipe.parts[0] === first && recipe.parts[1] === second) || (recipe.parts[1] === first && recipe.parts[0] === second))) || null;
 
 /** Permanent, narrow inventory rail. Equipped items stay on their operator; this rail owns only loose inventory. */
-export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fieldTargetUid = null, busy = false }) {
+export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fieldTargetUid = null, busy = false, className = '' }) {
   const [draggedUid, setDraggedUid] = useState(null);
   const [hoverUid, setHoverUid] = useState(null);
   const previewRef = useRef(null);
@@ -43,7 +43,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     if (!recipe) return;
     await onCombine({ type: 'combine', itemUids: [source.uid, target.uid] });
   };
-  return html`<aside class="rs-equipment-dock" aria-label=${`装备库存 ${inventory.length}`}>
+  return html`<aside class=${`rs-equipment-dock ${className}`.trim()} aria-label=${`装备库存 ${inventory.length}`}>
     <div class="rs-equipment-dock__items">${inventory.map(item => {
       const record = catalog.equipment?.[item.itemId] || {};
       const recipe = source && item.uid !== source.uid ? recipeFor(catalog.recipes, source.itemId, item.itemId) : null;

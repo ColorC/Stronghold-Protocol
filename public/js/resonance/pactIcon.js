@@ -39,6 +39,17 @@ const SEMANTIC_ASSETS = Object.freeze([
   [/mira|奇迹/,['bond','miraShip']], [/indom|不屈/,['bond','indomShip']],
   [/mani|调和/,['bond','maniShip']], [/empty|协防/,['bond','emptyShip']], [/solo|独行/,['bond','soloShip']],
 ]);
+// New season pact IDs resolve to existing native art explicitly; these are icon reuses by mechanic/theme,
+// not generated glyphs. Keeping this table keyed by the full catalog ID prevents fallback role art for new bonds.
+const CURRENT_PACT_ASSETS = Object.freeze({
+  creation:['sub','craftsman'], arts:['bond','arcaneShip'], rhodes:['faction','rhodes'], artillery:['bond','preciShip'],
+  formSwap:['bond','swiftShip'], emissary:['bond','deputShip'], sentinel:['bond','steadShip'], family:['bond','maniShip'],
+  redeploy:['sub','executor'], logistics:['bond','investShip'], ammo:['bond','preciShip'], conqueror:['bond','indomShip'],
+  holyGun:['faction','laterano'], academy:['bond','skillfulShip'], risk:['bond','miraShip'], resistance:['bond','steadShip'],
+  dominator:['bond','arcaneShip'], breaker:['bond','raidShip'], enforcer:['bond','emptyShip'], flight:['sub','skywalker'],
+  experiment:['sub','ritualist'], bruiser:['bond','indomShip'], armory:['sub','craftsman'], sui:['faction','sui'],
+  combo:['bond','swiftShip'], watcher:['bond','visiShip'],
+});
 function assetFor(manifest, [group, key]) {
   if (group === 'bond') return bondIconUrl(manifest, key);
   if (group === 'sub') return manifest?.prof?.sub?.[key] || null;
@@ -56,6 +67,11 @@ export function pactIconUrl(catalog, id) {
   const native = pactName && data.list('bonds').find((bond) => bond && normalize(bond.name) === pactName);
   if (native) {
     const url = bondIconUrl(manifest, native.bondId || native.id);
+    if (url) return url;
+  }
+  const explicit = CURRENT_PACT_ASSETS[id];
+  if (explicit) {
+    const url = assetFor(manifest, explicit);
     if (url) return url;
   }
   const semantic = normalize(`${id} ${pact?.name || ''}`);

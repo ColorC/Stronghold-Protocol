@@ -144,6 +144,17 @@ describe('drag controller', () => {
     assert.deepEqual(drop.from, { area: 'board', row: 10, col: 4 });
   });
 
+  test('hand piece released over DOM covering the canvas also carries its outside coordinates', () => {
+    const h = harness({ domCover: true });
+    h.c.setEditable(true);
+    h.ev('pointerDown', 50, 550);
+    h.ev('pointerMove', 470, 950);
+    h.ev('pointerUp', 470, 950);
+    const drop = h.events.find((e) => e[0] === 'pieceDrop')[1];
+    assert.deepEqual(drop.target, { area: 'outside', clientX: 470, clientY: 950 });
+    assert.deepEqual(drop.from, { area: 'hand', idx: 0 });
+  });
+
   test('not editable: press+move does not drag; release gives no click; hover still works', () => {
     const h = harness();
     h.ev('pointerDown', 50, 550);

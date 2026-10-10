@@ -13,6 +13,30 @@ const approx = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} ≈
 const guard = (o = {}) => chessRec({ id: 't_guard', profession: 'WARRIOR', stats: { atk: 300, blockCnt: 2 }, skill: null, ...o });
 const walker = (o = {}) => enemyRec({ key: 'enemy_walker', hp: 1e6, speed: 1, ...o });
 
+test('shieldAbsorbed observer reports numeric shield and layer prevention only when subscribed',()=>{
+  const h=makeBattle({defs:{chess:{a:guard({id:'a',stats:{maxHp:1000,atk:0,def:0,res:0,bat:1,blockCnt:1},skill:null})}},units:[{chessId:'a',row:9,col:5}],content:'none'});
+  h.step();
+  const unit=h.unit('a'),enemy=h.spawn('shield-observer',{pos:[unit.y,unit.x+1],def:enemyRec({key:'shield-observer',hp:1e6,atk:0,def:0,res:0,speed:0})});
+  const observed=[];h.b.on('shieldAbsorbed',event=>observed.push({amount:event.amount,kind:event.kind,layers:event.layers,buff:event.buff.key}));
+  const hp=unit.hp;
+  h.b.addBuff(unit,{key:'observer-hp-shield',shield:50});
+  h.b.dealDamage(enemy,unit,{amount:30,type:'phys',canDodge:false});
+  assert.equal(unit.hp,hp);
+  assert.equal(unit.buffs.find(row=>row.key==='observer-hp-shield').shield,20);
+  assert.deepEqual(observed.map(({amount,kind})=>({amount,kind})),[{amount:30,kind:'shield'}]);
+  h.b.addBuff(unit,{key:'observer-hit-layer',shieldHits:1});
+  h.b.dealDamage(enemy,unit,{amount:40,type:'phys',canDodge:false});
+  assert.equal(unit.hp,hp,'a one-hit layer prevents the entire hit');
+  assert.deepEqual(observed.map(({amount,kind})=>({amount,kind})),[{amount:30,kind:'shield'},{amount:40,kind:'layer'}]);
+  h.b.dealDamage(enemy,unit,{amount:40,type:'phys',canDodge:false});
+  assert.equal(unit.buffs.find(row=>row.key==='observer-hp-shield')?.shield??0,0);
+  assert.equal(unit.hp,hp-20,'only the amount left after the remaining shield reaches HP');
+  assert.equal(observed.at(-1).amount,20);
+  const count=observed.length;
+  h.b.dealDamage(enemy,unit,{amount:10,type:'phys',canDodge:false});
+  assert.equal(observed.length,count,'hits without a shield emit no observer event');
+});
+
 test('initial deployment order: by column from the left, top to bottom within a column (PRTS 从上到下>从左到右 as a scan); the right boss side from its own left', () => {
   // PRTS 卫戍协议/帮助 §作战阶段 "按从上到下>从左到右的顺序部署" (since 2026-03-14; act 1: "从左到右>从下到上") — down each column,
   // the columns from the left: the order PRTS gives the 阿戈尔 devour ("更靠左和靠上"). Until 0.1.3: the top row first

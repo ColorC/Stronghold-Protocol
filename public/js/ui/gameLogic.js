@@ -734,7 +734,8 @@ export function mergeTarget(priv, chessId, getChess = () => null) {
 /** Whether every hand slot is taken (the server refuses a purchase / reward that needs a slot: HAND_FULL). */
 export function handFull(priv) {
   const hand = Array.isArray(priv?.hand) ? priv.hand : [];
-  return hand.length >= GEO.HAND_SIZE && hand.every((p) => p != null);
+  const capacity=Number.isInteger(priv?.handCapacity)?Math.max(0,priv.handCapacity):GEO.HAND_SIZE;
+  return hand.filter((p)=>p!=null).length>=capacity;
 }
 
 /**
@@ -1911,3 +1912,10 @@ export function bondPopupPlace(uf, vp, rem, card = null) {
   const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   return order.find((p) => !hit(uf, rectOf(p))) || order[0];
 }
+
+export { battleOverSfx, uniteResultBox, battleResultBox } from "./gameLogic/phases.js";
+export { readyShopFold } from "./gameLogic/shop.js";
+export { deviceInfo, deviceTipAt, noteDeviceUnits } from "./gameLogic/terrain.js";
+export { normalizePersonalChoice } from "./gameLogic/draft.js";
+export { ownStandIn, deployedRecord, standInLoadout, standInLabel, standInTip } from "./gameLogic/standIn.js";
+export { ownDiyRecord } from "./gameLogic/diy.js";

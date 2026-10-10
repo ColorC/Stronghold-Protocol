@@ -10,15 +10,16 @@ const WORKSHOP_URL = 'https://workshop.colorc.cc/bside/canvas/notes-web.html?the
 const CARD_ID = 'resonance-play-20261009';
 const GAME_URL = 'https://workshop.colorc.cc/stronghold/resonance.html';
 const LOCAL_GAME_PATH = '/stronghold/resonance/resonance.html';
+const RESONANCE_WS_PATH = '/stronghold/resonance/resonance/ws';
 const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const CONFIG = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 const WSH_CLI = process.env.WSH_CLI_PATH
   || 'E:/WindowsWorkspace/spark.workshop/releases/remote-play-card-20261004/wt/remote-play-card-20261004-5ba073215a31/workshop/cli/dist/wsh.mjs';
 const VERIFY_DIR = path.join(ROOT, 'runtime/resonance/ui-verification');
-const RECEIPT = path.join(ROOT, 'runtime/resonance/ui-workshop-ui-receipt.json');
-const LOG = path.join(ROOT, 'runtime/resonance/ui-workshop-ui.log');
-const EMBED_SCREENSHOT = path.join(VERIFY_DIR, '15-workshop-native-ui.jpg');
-const FULLSCREEN_SCREENSHOT = path.join(VERIFY_DIR, '16-workshop-fullscreen.jpg');
+const RECEIPT = path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-ui-receipt.json');
+const LOG = path.join(ROOT, '.omni/tmp/resonance/native-live-workshop-ui-check.log');
+const EMBED_SCREENSHOT = path.join(VERIFY_DIR, 'native-live-workshop-embed.jpg');
+const FULLSCREEN_SCREENSHOT = path.join(VERIFY_DIR, 'native-live-workshop-fullscreen.jpg');
 const DEADLINE_MS = 180_000;
 
 function parseArgs(args) {
@@ -55,6 +56,16 @@ export function isScopedWorkshopBearerUrl(requestUrl, workshopUrl) {
   } catch { return false; }
 }
 
+export function isExpectedResonanceSocketUrl(socketUrl, sessionId) {
+  try {
+    const socket = new URL(socketUrl), game = new URL(GAME_URL);
+    const securePair = game.protocol === 'https:' && socket.protocol === 'wss:';
+    const localPair = game.protocol === 'http:' && socket.protocol === 'ws:';
+    return (securePair || localPair) && socket.host === game.host && socket.pathname === RESONANCE_WS_PATH
+      && socket.searchParams.get('session') === sessionId;
+  } catch { return false; }
+}
+
 function workshopCredentials() {
   const config = JSON.parse(readFileSync(CONFIG, 'utf8'));
   const configured = new URL(String(config.server || ''));
@@ -82,23 +93,29 @@ function selfTest() {
   for (const url of [target, 'https://workshop.colorc.cc/bside/api/canvases/id', 'https://workshop.colorc.cc/bside/lofa/invoke']) {
     if (!isScopedWorkshopBearerUrl(url, target)) throw new Error(`Workshop route was not scoped: ${new URL(url).pathname}`);
   }
-  for (const url of ['https://workshop.colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/resonance/api/sessions/id', 'https://cdn.example/js/game.js']) {
+  for (const url of ['https://workshop.colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/resonance/api/sessions/id',
+    'https://workshop.colorc.cc/stronghold/resonance/api/sessions/id', 'wss://workshop.colorc.cc/stronghold/resonance/ws?session=01234567-89ab-4def-8123-456789abcdef',
+    'https://cdn.example/js/game.js']) {
     if (isScopedWorkshopBearerUrl(url, target)) throw new Error(`non-Workshop route received bearer scope: ${new URL(url).origin}${new URL(url).pathname}`);
   }
+  const sid = '01234567-89ab-4def-8123-456789abcdef';
+  if (!isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc${RESONANCE_WS_PATH}?session=${sid}`, sid)) throw new Error('native live WebSocket route was not recognized');
+  if (isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc${RESONANCE_WS_PATH}?session=${sid}`, `${sid.slice(0, -1)}0`)
+    || isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc/stronghold/resonance/ws?session=${sid}`, sid)) throw new Error('native live WebSocket scope accepted a wrong session or route');
   for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/stronghold/resonance/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
     if (!isGameApiPath(pathname) || !isForbiddenMutation('POST', pathname)) throw new Error(`mutation audit missed ${pathname}`);
   }
   if (isForbiddenMutation('GET', '/stronghold/resonance/api/sessions/id')) throw new Error('read-only session GET was misclassified as a mutation');
+  if (!isForbiddenMutation('PATCH', '/stronghold/resonance/api/sessions/id')) throw new Error('non-POST gameplay mutation was not blocked');
   const valid = parseArgs(['--session', '01234567-89ab-4def-8123-456789abcdef', '--product-native', 'a'.repeat(40)]);
   if (valid.session !== '01234567-89ab-4def-8123-456789abcdef') throw new Error('CLI self-test failed');
   process.stdout.write(JSON.stringify({ ok: true, workshopOnlyBearerScope: true, sessionReadonly: true }) + '\n');
 }
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
-function isGameApiPath(pathname) { return /(?:^|\/)resonance\/api\//.test(pathname); }
+function isGameApiPath(pathname) { return /(?:^|\/)resonance\/api(?:\/|$)/.test(pathname); }
 function isForbiddenMutation(method, pathname) {
-  return method !== 'GET' && method !== 'HEAD'
-    && /\/(?:sessions(?:\/|$)|actions?(?:\/|$)|fight(?:\/|$)|create(?:\/|$))/.test(pathname);
+  return isGameApiPath(pathname) && method !== 'GET' && method !== 'HEAD';
 }
 function frameIsGame(frame, hostFrame) {
   if (frame === hostFrame) return false;
@@ -147,7 +164,9 @@ async function run() {
   const requestRows = [];
   const requiredResourceFailures = [];
   const browserErrors = [];
+  const networkFailures = [];
   const scopedPages = new WeakMap();
+  const websocketPages = new WeakMap();
   const pages = new Set();
   const target = new URL(WORKSHOP_URL);
   const creds = workshopCredentials();
@@ -158,15 +177,66 @@ async function run() {
   const installScope = async page => {
     if (scopedPages.has(page)) return scopedPages.get(page);
     const ready = (async () => {
+      const cdp = await page.target().createCDPSession();
+      await cdp.send('Network.enable');
+      const websocketObservation = { sockets: [], messages: [], sentTypes: [], failures: [] };
+      const websocketRequestIds = new Set();
+      cdp.on('Network.webSocketCreated', event => {
+        let url;
+        try { url = new URL(event.url); } catch { return; }
+        const sessionMatches = url.searchParams.get('session') === options.session;
+        const native = isExpectedResonanceSocketUrl(event.url, options.session);
+        websocketObservation.sockets.push({ origin: url.origin, path: url.pathname, sessionMatches, native });
+        if (native) websocketRequestIds.add(event.requestId);
+      });
+      cdp.on('Network.webSocketFrameReceived', event => {
+        if (!websocketRequestIds.has(event.requestId) || event.response?.opcode !== 1) return;
+        let message;
+        try { message = JSON.parse(event.response.payloadData); } catch { return; }
+        const row = { type: message.t };
+        if (message.t === 'welcome') {
+          row.playerId = message.playerId ?? null;
+          row.tokenMatchesSession = message.token === options.session;
+        } else if (message.t === 'r.catalog') {
+          row.activeOperatorCount = Array.isArray(message.catalog?.activeOperatorIds) ? message.catalog.activeOperatorIds.length : null;
+          row.schemaVersion = message.catalog?.schemaVersion ?? null;
+        } else if (message.t === 'm.public') {
+          row.phase = message.phase ?? null;
+          row.round = message.round ?? null;
+          row.combatMode = message.combatMode ?? null;
+        } else if (message.t === 'm.private') {
+          const state = message.resonance?.state;
+          row.phase = message.phase ?? null;
+          row.statePhase = state?.phase ?? null;
+          row.rulesVersion = state?.rulesVersion ?? null;
+          row.activeOperatorCount = Array.isArray(state?.activeOperatorIds) ? state.activeOperatorIds.length : null;
+        }
+        websocketObservation.messages.push(row);
+      });
+      cdp.on('Network.webSocketFrameSent', event => {
+        if (!websocketRequestIds.has(event.requestId) || event.request?.opcode !== 1) return;
+        try {
+          const message = JSON.parse(event.request.payloadData);
+          websocketObservation.sentTypes.push(typeof message.t === 'string' ? message.t : 'unknown');
+        } catch { websocketObservation.sentTypes.push('unparseable'); }
+      });
+      cdp.on('Network.webSocketFrameError', event => {
+        websocketObservation.failures.push({ error: String(event.errorMessage || 'WebSocket frame error').slice(0, 240) });
+      });
+      websocketPages.set(page, { cdp, observation: websocketObservation });
       await page.setRequestInterception(true);
       const handler = request => {
         let parsed;
         try { parsed = new URL(request.url()); } catch { parsed = null; }
         const pathName = parsed?.pathname || '';
         const method = request.method();
-        if (parsed?.origin === 'https://workshop.colorc.cc' && isGameApiPath(pathName)) {
-          requestRows.push({ method, path: pathName });
-          if (isForbiddenMutation(method, pathName)) mutatingRequests.push({ method, path: pathName });
+        if (parsed && isGameApiPath(pathName)) {
+          requestRows.push({ method, origin: parsed.origin, path: pathName });
+          if (isForbiddenMutation(method, pathName)) {
+            mutatingRequests.push({ method, origin: parsed.origin, path: pathName });
+            void request.abort('blockedbyclient').catch(() => {});
+            return;
+          }
         }
         const headers = { ...request.headers() };
         if (isScopedWorkshopBearerUrl(request.url(), WORKSHOP_URL)) {
@@ -181,19 +251,88 @@ async function run() {
       page.on('request', handler);
       page.on('response', response => {
         const url = new URL(response.url());
+        if (response.status() >= 400) networkFailures.push({ status: response.status(), origin: url.origin, path: url.pathname });
         if (['/css/screens/draft.css', '/css/screens/title.css', '/css/screens/briefing.css', '/css/screens/lobby.css', '/js/net.js'].includes(url.pathname)
           && response.status() >= 400) requiredResourceFailures.push({ status: response.status(), path: url.pathname });
+      });
+      page.on('requestfailed', request => {
+        let url;
+        try { url = new URL(request.url()); } catch { return; }
+        networkFailures.push({ error: request.failure()?.errorText || 'request failed', origin: url.origin, path: url.pathname });
       });
       page.on('pageerror', error => { browserErrors.push(`pageerror: ${error.message}`); log(`pageerror: ${error.message}`); });
       page.on('console', message => { if (message.type() === 'error') browserErrors.push(`console: ${message.text().slice(0, 400)}`); });
       pages.add(page);
-      return { dispose: async () => { page.off('request', handler); await page.setRequestInterception(false).catch(() => {}); } };
+      return { dispose: async () => {
+        page.off('request', handler);
+        await page.setRequestInterception(false).catch(() => {});
+        await cdp.detach().catch(() => {});
+      } };
     })();
     scopedPages.set(page, ready);
     return ready;
   };
+  const nativePrepProof = page => {
+    // This checker ends at Native PREP. The authoritative b.start / COMBAT proof belongs to the full-flow checker.
+    const observation = websocketPages.get(page)?.observation;
+    if (!observation) return { ok: false, reason: 'CDP WebSocket observation is unavailable' };
+    const socket = observation.sockets.find(row => row.native);
+    const welcome = observation.messages.find(row => row.type === 'welcome' && row.playerId === 'resonance' && row.tokenMatchesSession);
+    const catalog = observation.messages.find(row => row.type === 'r.catalog' && row.activeOperatorCount === 60);
+    const publicPrep = observation.messages.find(row => row.type === 'm.public' && row.phase === 'PREP');
+    const privatePrep = observation.messages.find(row => row.type === 'm.private' && row.phase === 'PREP'
+      && row.statePhase === 'prep' && row.rulesVersion === 3 && row.activeOperatorCount === 60);
+    return { ok: !!(socket && welcome && catalog && publicPrep && privatePrep && observation.failures.length === 0),
+      socket, welcome, catalog, publicPrep, privatePrep, failures: observation.failures };
+  };
+  const nativeConnectionProof = page => {
+    const observation = websocketPages.get(page)?.observation;
+    if (!observation) return { ok: false, reason: 'CDP WebSocket observation is unavailable' };
+    const socket = observation.sockets.find(row => row.native);
+    const welcome = observation.messages.find(row => row.type === 'welcome' && row.playerId === 'resonance' && row.tokenMatchesSession);
+    const catalog = observation.messages.find(row => row.type === 'r.catalog' && row.activeOperatorCount === 60);
+    const publicState = [...observation.messages].reverse().find(row => row.type === 'm.public');
+    const privateState = [...observation.messages].reverse().find(row => row.type === 'm.private');
+    const privateCatalog = privateState?.rulesVersion === 3 && privateState?.activeOperatorCount === 60;
+    return { ok: !!(socket && welcome && catalog && publicState && privateState && privateCatalog && observation.failures.length === 0),
+      socket, welcome, catalog, publicState, privateState, sentTypes: [...observation.sentTypes], failures: observation.failures };
+  };
+  const waitForNativePrep = async page => {
+    const until = Date.now() + 30_000;
+    let proof = nativePrepProof(page);
+    while (!proof.ok && Date.now() < until) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      proof = nativePrepProof(page);
+    }
+    assert(proof.ok, `native PREP WebSocket proof is incomplete: ${JSON.stringify(proof)}`);
+    return proof;
+  };
+  const enterReadonlyPrep = async (page, { allowBriefingAck = false } = {}) => {
+    const connectedUntil = Date.now() + 30_000;
+    let connection = nativeConnectionProof(page);
+    while (!connection.ok && Date.now() < connectedUntil) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      connection = nativeConnectionProof(page);
+    }
+    assert(connection.ok, `native WebSocket welcome/catalog/state proof is incomplete: ${JSON.stringify(connection)}`);
+    if (connection.publicState.phase === 'INFO_CHECK') {
+      assert(allowBriefingAck, 'fullscreen reconnect unexpectedly returned to INFO_CHECK');
+      const ready = await page.waitForSelector('.brief__foot button.btn', { visible: true, timeout: 15_000 });
+      assert(ready, 'Native INFO_CHECK briefing button was not visible');
+      await ready.click();
+      const sentUntil = Date.now() + 5_000;
+      while (!(websocketPages.get(page)?.observation.sentTypes.includes('g.infoReady')) && Date.now() < sentUntil) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      assert(websocketPages.get(page)?.observation.sentTypes.includes('g.infoReady'), 'briefing acknowledgment did not use native g.infoReady');
+    } else {
+      assert(connection.publicState.phase === 'PREP', `session is not in Native PREP: ${connection.publicState.phase}`);
+    }
+    return waitForNativePrep(page);
+  };
   const evidence = { status: 'running', sessionId: options.session, productNative: options['product-native'], workshopUrl: WORKSHOP_URL,
-    cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests, requiredResourceFailures, browserErrors };
+    cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests,
+    requiredResourceFailures, browserErrors, networkFailures };
   const work = (async () => {
     browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
@@ -243,12 +382,11 @@ async function run() {
       const url = new URL(location.href);
       return url.searchParams.get('session') === session && url.hash === hash && document.readyState !== 'loading';
     }, { timeout: 45_000 }, { session: options.session, hash: '#section-shop' });
-    await embeddedFrame.waitForFunction(() => document.querySelector('.rs-shopbar, .shopbar, #rs-section-shop') !== null, { timeout: 30_000 });
-    if (await embeddedFrame.$('.rs-choice-full')) {
-      const collapse = await embeddedFrame.$('.rs-choice-collapse');
-      assert(collapse, 'choice overlay is open but has no local collapse control');
+    if (await embeddedFrame.$('.rs-native-choice')) {
+      const collapse = await embeddedFrame.$('.rs-native-choice__later');
+      assert(collapse, 'native choice overlay is open but has no local defer control');
       await collapse.click();
-      await embeddedFrame.waitForFunction(() => !document.querySelector('.rs-choice-full'), { timeout: 5_000 });
+      await embeddedFrame.waitForFunction(() => !document.querySelector('.rs-native-choice') && !!document.querySelector('.rs-native-choice-tab'), { timeout: 5_000 });
     }
     await embeddedFrame.waitForFunction(() => {
       const view = globalThis.__SP_VIEW__;
@@ -258,12 +396,15 @@ async function run() {
       const view = globalThis.__SP_VIEW__;
       return view?.kind !== 'engine' || Number(view.raw?.stats?.()?.units) > 0;
     }, { timeout: 15_000 });
+    const embeddedWsProof = await enterReadonlyPrep(embeddedFrame, { allowBriefingAck: true });
+    await embeddedFrame.waitForFunction(() => document.querySelector('.rs-native-match .shopbar, .rs-native-match .shopbar-tab, #rs-section-shop') !== null, { timeout: 30_000 });
     const gameProof = await embeddedFrame.evaluate(() => {
       const view = globalThis.__SP_VIEW__;
       const stats = view?.raw?.stats?.() || null;
       const title = document.querySelector('.rs-gmeta b')?.textContent?.trim() || document.title?.trim() || '';
       return { url: location.href, title, documentTitle: document.title, viewKind: view?.kind || null, engineUnits: stats?.units ?? null,
-        shopVisible: !!document.querySelector('.rs-shopbar, .shopbar, #rs-section-shop'), choiceOpen: !!document.querySelector('.rs-choice-full') };
+        shopVisible: !!document.querySelector('.rs-native-match .shopbar, .rs-native-match .shopbar-tab, #rs-section-shop'),
+        choiceOpen: !!document.querySelector('.rs-native-choice'), choiceCollapsed: !!document.querySelector('.rs-native-choice-tab') };
     });
     assert(new URL(gameProof.url).searchParams.get('session') === options.session && new URL(gameProof.url).hash === '#section-shop', 'embedded page lost exact session/hash');
     assert(gameProof.viewKind === 'engine' && Number(gameProof.engineUnits) > 0, `native engine units are not visible: ${JSON.stringify(gameProof)}`);
@@ -303,6 +444,7 @@ async function run() {
       }).catch(error => ({ error: error.message }));
       throw new Error(`fullscreen native engine did not expose units after 15 seconds: ${JSON.stringify(diagnostic)}`);
     }
+    const popupWsProof = await enterReadonlyPrep(popup);
     const popupProof = await popup.evaluate(() => {
       const view = globalThis.__SP_VIEW__, stats = view?.raw?.stats?.() || null;
       return { url: location.href, title: document.querySelector('.rs-gmeta b')?.textContent?.trim() || document.title?.trim() || '',
@@ -313,13 +455,23 @@ async function run() {
     assert(popupProof.title && popupProof.viewKind === 'engine' && Number(popupProof.engineUnits) > 0, `fullscreen game is not a titled native engine scene: ${JSON.stringify(popupProof)}`);
     assert(requiredResourceFailures.length === 0, `required native resources returned errors: ${JSON.stringify(requiredResourceFailures)}`);
     assert(mutatingRequests.length === 0, `unexpected create/act/fight network requests: ${JSON.stringify(mutatingRequests)}`);
+    assert(browserErrors.length === 0, `pageerror/console errors were observed: ${JSON.stringify(browserErrors)}`);
+    assert(networkFailures.length === 0, `network failures or HTTP errors were observed: ${JSON.stringify(networkFailures)}`);
+    const sentTypes = [...(websocketPages.get(embeddedFrame)?.observation.sentTypes ?? []), ...(websocketPages.get(popup)?.observation.sentTypes ?? [])];
+    const allowedReadonlyTypes = new Set(['hello', 'ping', 'g.infoReady', 'g.unitStats']);
+    const unexpectedWsActions = sentTypes.filter(type => !allowedReadonlyTypes.has(type));
+    assert(unexpectedWsActions.length === 0, `unexpected native WebSocket gameplay actions: ${JSON.stringify(unexpectedWsActions)}`);
+    assert(sentTypes.filter(type => type === 'g.infoReady').length <= 1, 'briefing was acknowledged more than once');
     await popup.screenshot({ path: FULLSCREEN_SCREENSHOT, type: 'jpeg', quality: 90, fullPage: true });
     evidence.status = 'passed';
     evidence.card = cardProof;
     evidence.iframeTitle = actualFrameTitle;
     evidence.embedded = gameProof;
+    evidence.embeddedNativeWebSocket = embeddedWsProof;
     evidence.fullscreen = popupProof;
-    log(`passed card=${CARD_ID} iframeTitle=${actualFrameTitle} session=${options.session} hash=#section-shop nativeUnits=${gameProof.engineUnits}/${popupProof.engineUnits}`);
+    evidence.fullscreenNativeWebSocket = popupWsProof;
+    evidence.nativeWebSocketClientMessageTypes = sentTypes;
+    log(`passed card=${CARD_ID} iframeTitle=${actualFrameTitle} session=${options.session} hash=#section-shop nativeUnits=${gameProof.engineUnits}/${popupProof.engineUnits} ws=welcome,catalog,public-PREP,private-PREP`);
     return evidence;
   })();
   const deadline = new Promise((_, reject) => {

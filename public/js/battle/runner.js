@@ -128,13 +128,16 @@ function deepFreeze(root) {
  * Browser sim loader: the /sim/ modules + the data files (own frozen copies — the server's data is frozen too, so a
  * content bug that writes into a record fails identically on both sides).
  */
-export async function loadBrowserSim({ base = '/sim/', dataBase = '/data/', fetchFn = (...a) => globalThis.fetch(...a) } = {}) {
+export async function loadBrowserSim({ base, dataBase, fetchFn = (...a) => globalThis.fetch(...a) } = {}) {
+  const appRoot = globalThis.location?.href ? new URL('./', globalThis.location.href) : null;
+  const simBase = base || (appRoot ? new URL('sim/', appRoot).href : '/sim/');
+  const recordsBase = dataBase || (appRoot ? new URL('data/', appRoot).href : '/data/');
   const [spec, simdata, support] = await Promise.all([
-    import(`${base}spec.js`), import(`${base}simdata.js`), import(`${base}content/support/index.js`),
+    import(`${simBase}spec.js`), import(`${simBase}simdata.js`), import(`${simBase}content/support/index.js`),
   ]);
   const fetchOnce = async (n) => {
     try {
-      const res = await fetchFn(`${dataBase}${n}.json`, { cache: 'no-cache' });
+      const res = await fetchFn(`${recordsBase}${n}.json`, { cache: 'no-cache' });
       return res && res.ok ? await res.json() : null;
     } catch { return null; }
   };
@@ -147,7 +150,7 @@ export async function loadBrowserSim({ base = '/sim/', dataBase = '/data/', fetc
   SIM_DATA_FILES.forEach((n, i) => { raw[n] = deepFreeze(files[i]); });
   simdata.setSimData(raw);
   if (typeof support.setGameData === 'function') support.setGameData(null); // re-read through the injected data
-  return { spec, ds: new simdata.DataSource(raw, null) };
+  return { spec, ds: new simdata.DataSource(raw, null), raw };
 }
 
 /** Battle logger: content errors are isolated by the sim; report them as warnings (the server logs its own). */
@@ -447,6 +450,10 @@ export function createBattleRunner(deps) {
       let result = null;
       try {
         result = e.sim.spec.compactResult(e.battle.result());
+        if (typeof e.sim.spec.resonanceResultExtras === 'function') {
+          const resonance = e.sim.spec.resonanceResultExtras(e.battle);
+          if (resonance) result.resonance = resonance;
+        }
         // an oversized frame would close the socket at the very end of the battle (64 KB inbound limit)
         if (typeof e.sim.spec.fitResult === 'function') result = e.sim.spec.fitResult(result, { bossLike: bossLike(e), battleId: e.battleId });
       } catch (err) { console.warn('[runner] result failed', err); }
@@ -797,6 +804,22 @@ export function createBattleRunner(deps) {
       const list = Array.isArray(e.battle.allyUnits) ? e.battle.allyUnits : [];
       return list.filter((u) => u && u.kind === 'op' && u.ownerId === ownerId && typeof u.defId === 'string')
         .map((u) => (Array.isArray(u.items) && u.items.length ? { kind: 'op', ownerId, defId: u.defId, items: [...u.items] } : { kind: 'op', ownerId, defId: u.defId }));
+    },
+    /** Live equipment and stable board UID for equipped-item HUD overlays. */
+    ownerEquipment(ownerId, fieldId = null) {
+      const e = cur;
+      if (!e || typeof ownerId !== 'string' || !ownerId || (fieldId != null && e.fieldId !== fieldId)) return [];
+      const list = Array.isArray(e.battle.allyUnits) ? e.battle.allyUnits : [];
+      return list.filter((u) => u && u.kind === 'op' && u.ownerId === ownerId && Number.isInteger(u.uid))
+        .map((u) => {
+          const consumed = new Set((u.mem?.prototypeConsumedComponents ?? []).map(String));
+          const items = (u.items ?? []).filter((item) => !consumed.has(String(item?.uid ?? item?.itemUid ?? '')));
+          for (const temporary of u.mem?.prototypeTemporaryItems ?? []) items.push({
+            itemId: temporary.itemId, quality: temporary.quality ?? 'normal', isTemporary: true,
+            sourceTraitId: temporary.sourceTraitId ?? null,
+          });
+          return { uid: u.uid, unitId: Number.isInteger(u.id) ? u.id : null, items };
+        }).filter((u) => u.items.length > 0);
     },
     /** Re-show the current battle (the game screen remounted). */
     reshow() { if (cur) show(cur); },

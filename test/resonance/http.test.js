@@ -24,8 +24,10 @@ test('resonance HTTP is authoritative, same-origin, and returns a source-free pl
  const blocked=await invoke(handler,'GET','/resonance/api/catalog',undefined,'http://evil.test');assert.equal(blocked.status,403);
  const wrongScheme=await invoke(handler,'GET','/resonance/api/catalog',undefined,'https://local.test');assert.equal(wrongScheme.status,403);
  const bad=await invoke(handler,'POST','/resonance/api/sessions',{rawState:{phase:'prep'}});assert.equal(bad.status,422);assert.equal(bad.body.error.code,'UNSUPPORTED_SESSION_INPUT');
+ const defaultCatalog=await invoke(handler,'GET','/resonance/api/catalog');assert.equal(defaultCatalog.status,200);assert.equal(defaultCatalog.body.catalog.activeOperatorIds.length,60);
  const created=await invoke(handler,'POST','/resonance/api/sessions',{seed:812,difficulty:'NORMAL'});
- assert.equal(created.status,201,JSON.stringify(created.body.error));assert.equal(created.body.state.pieces.length,3);assert.equal(created.body.catalog.activeOperatorIds.length,65);
+ assert.equal(created.status,201,JSON.stringify(created.body.error));assert.equal(created.body.state.rulesVersion,3);assert.equal(created.body.state.pieces.length,3);assert.equal(created.body.catalog.activeOperatorIds.length,60);
+ assert.ok(Array.isArray(created.body.state.prototypeMeta?.labCells),'live prep DTO carries the deterministic laboratory cell projection');
  assert.deepEqual(created.body.state.history,[],'active preparation DTO starts with empty compact history');
  assert.equal(Object.hasOwn(created.body.catalog.operators[Object.keys(created.body.catalog.operators)[0]],'source'),false);
  assert.equal(Object.hasOwn(created.body.state.pieces[0].operator.starDetails,'record'),false);

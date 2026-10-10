@@ -22,6 +22,13 @@ const DESIGN_SECTIONS = new Set([
 ]);
 
 function playerFacingDesign(markdown) {
+  const current = markdown.match(/^## 玩法说明\r?\n([\s\S]*?)(?=^## |$(?![\s\S]))/m)?.[1]?.trim();
+  if (current) {
+    if (/(?:[A-Z]:[\\/]|rulesVersion|battleId|sourceRevision|T-\d+|未实现|取证|(?<!经)验收)/.test(current)) {
+      throw new Error('玩法说明包含非玩家内容');
+    }
+    return `## 玩法说明\n\n${current}`;
+  }
   const blocks = markdown.split(/(?=^#{2,3} )/m).slice(1);
   const included = [];
   for (const block of blocks) {
@@ -198,15 +205,15 @@ function repairedPlayCard(card, embedUrl) {
 
 const UI_OPERATION_SECTION = [
   '## 界面与操作', '',
-  '进入玩法后选择难度，在本局简报中查看开局事件并开始对局。所有开局事件共用本赛季招募名单；独立图鉴可查看完整资料与本赛季招募资格。对局中，金币、等级和商店常驻显示。',
+  '进入玩法后选择难度，在关卡介绍后进入原生备战。新局共用固定赛季招募名单；完整卡池放在独立图鉴。对局中金币、等级和商店常驻显示。',
   '招募卡单击购买，右键查看详情。D 刷新、F 购买经验、E 出售所指干员、W 部署或移回备战区；装备可拖给干员，组件右键查看配方。',
-  '详情和盟约停靠在商店上方；盟约点击档位切换效果。招募费用用灰、绿、蓝、紫、金底色区分，星标表示星级。独立图鉴汇集完整资料，可全屏打开。',
-  '谢拉格通过普攻标记目标，由友方干员随后响应集火；最高档位可触发团队援射。各档位的具体效果在盟约详情中查看。',
+  '详情与盟约面板避让商店；全部盟约档位同时展示。招募卡的整张底板用灰、绿、蓝、紫、金区分费用，场上使用贴地轮廓和星标。装备图标显示在穿戴者身上，独立库存支持组件合成。',
+  '准备完成后开始实时战斗，可以暂停和恢复。战斗结束后查看收入及单位统计，最终结果展示本局阵容和装备。',
 ].join('\n');
 
 function refreshedDesignBody(existingBody, entryUrl, referenceUrl, designRules) {
   if (typeof existingBody !== 'string' || !/^# 共鸣玩法与参考\r?\n/m.test(existingBody)
-    || !/^## 体验与内容范围\r?$/m.test(existingBody)) throw new Error('现有设计正文身份或玩法内容无法确认；拒绝覆盖');
+    || !/^## (?:体验与内容范围|玩法说明)\r?$/m.test(existingBody)) throw new Error('现有设计正文身份或玩法内容无法确认；拒绝覆盖');
   if (typeof designRules !== 'string' || !designRules.trim()) throw new Error('缺少当前正式设计规则');
   return `${DESIGN_BODY(entryUrl, referenceUrl, designRules).trim()}\n\n${UI_OPERATION_SECTION}\n`;
 }
@@ -325,9 +332,10 @@ function selfTest() {
   const oldDesignBody = '# 共鸣玩法与参考\n\n打开[共鸣玩法](https://old.invalid/resonance.html)。完整资料可从[参考资料包](https://old.invalid/reference.zip)下载。\n\n## 体验与内容范围\n\n玩家按局内节点构建阵容。\n\n谢拉格寒冷/冻结/地板。\n\n## 界面与操作\n\n旧操作说明。';
   const nextDesignBody = refreshedDesignBody(oldDesignBody, entryUrl, 'https://example.invalid/reference.zip', designRules);
   if (nextDesignBody.includes('旧操作说明。') || nextDesignBody.includes('谢拉格寒冷/冻结/地板')
-    || !nextDesignBody.includes('队伍同时只保留一个有效标记')
-    || !nextDesignBody.includes('本赛季招募名单') || nextDesignBody.includes('选择难度、战场')
+    || !nextDesignBody.includes('固定赛季') || !nextDesignBody.includes('全部人数档位')
+    || !nextDesignBody.includes('实时战斗') || nextDesignBody.includes('选择难度、战场')
     || !nextDesignBody.includes(UI_OPERATION_SECTION) || !nextDesignBody.includes(entryUrl)) throw new Error('refresh正式规则/固定赛季/操作说明纯测试失败');
+  if(refreshedDesignBody(nextDesignBody,entryUrl,'https://example.invalid/reference.zip',designRules)!==nextDesignBody)throw new Error('refresh重复执行不能累加旧说明');
   const refreshSources = refreshedCards(testDesign, testPlay, { path: '/new/design.md', open_token: 'new-token', editableId: DESIGN_CARD_ID }, embedUrl);
   const refreshBeforeCards = [testDesign, testPlay, { id: 'user-card', kind: 'text', source: { path: '/user.md' }, x: 10, y: 12, width: 200, height: 100 }];
   const refreshAfterCards = [...refreshBeforeCards.filter(card => ![DESIGN_CARD_ID, PLAY_CARD_ID].includes(card.id)), ...refreshSources];
@@ -367,7 +375,7 @@ function selfTest() {
   if (cards[0].kind !== 'text' || cards[0].source.kind !== 'file' || cards[1].kind !== 'material'
     || cards[1].adapter !== 'web' || cards[1].source.url !== embedUrl || cards[1].source.url === entryUrl
     || !DESIGN_BODY(entryUrl, 'https://example.invalid/reference.zip', designRules).includes(entryUrl)) throw new Error('独立入口与嵌入入口分离纯测试失败');
-  for (const phrase of ['经验', '固定技能', '阿戈尔', '装备普通栏位', '深渊']) if (!designRules.includes(phrase)) throw new Error(`设计卡正文缺少规则段：${phrase}`);
+  for (const phrase of ['经验', '全部人数档位', '独立装备库存', '实时战斗', '最终结果']) if (!designRules.includes(phrase)) throw new Error(`设计卡正文缺少玩法说明：${phrase}`);
   if (/完整招募目录采用|recording:false|reference\/|T-\d+|E:\\WindowsWorkspace/i.test(designRules)) throw new Error('设计卡正文包含内部说明或绝对路径');
   if (validateEmbedUrl(embedUrl, 'https://workshop.colorc.cc') !== embedUrl) throw new Error('Workshop同源嵌入页验证失败');
   for (const invalid of ['https://colorc.cc/stronghold/resonance.html', 'https://workshop.colorc.cc/stronghold/independent.html']) {

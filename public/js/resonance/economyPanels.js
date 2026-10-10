@@ -34,13 +34,13 @@ function IncomeColumn({label,value,icon}) {
  return html`<div class="rs-settlement__income-cell"><small>${label}</small><b>${icon?html`<${CoinGlyph}/>`:null}${value==null?'—':`${value>=0?'+':''}${value}`}</b></div>`;
 }
 
-export function RoundSettlementPanel({summary,state,catalog,onReplay=()=>{},onDetail=()=>{}}) {
+export function RoundSettlementPanel({summary,state,catalog,onReplay=()=>{},onDetail=()=>{},showReplay=true}) {
  const history=battleHistory(state),won=summary?.won===true,values=settlementBreakdown(summary),loss=values?.hpLoss,goldAfter=values?.goldAfter,xpDelta=values?.xpDelta;
  return html`<${Panel} id="rs-round-settlement" title="本场结算" micro="ROUND SETTLEMENT" class=${`rs-panel rs-settlement${summary?(won?' is-win':' is-loss'):''}`}>
   ${summary?html`<div class="rs-settlement__banner"><b>${won?'本场守住':'本场失守'}</b><span>第 ${shown(summary.round)} 场</span></div><div class="rs-settlement__body"><div class="rs-settlement__loss"><span class="rs-settlement__life-mark" aria-hidden="true">♥</span><span>目标生命损失</span><b>${shown(loss)}</b></div>
    <div class="rs-settlement__income"><${IncomeColumn} label="基础" value=${values.income}/><${IncomeColumn} label="胜利" value=${values.winBonus}/><${IncomeColumn} label="连胜奖励" value=${values.streakBonus}/><${IncomeColumn} label="利息" value=${values.interest}/><${IncomeColumn} label="其他收入 / 修正" value=${values.other}/></div>
    <div class="rs-settlement__totals"><span><${CoinGlyph}/>金币变化 <b>${values.goldDelta==null?'—':`${values.goldDelta>=0?'+':''}${values.goldDelta}`}</b><small>${goldAfter==null?'':`结算后 ${goldAfter}`}</small></span><span><b>XP</b>经验变化 <b>${xpDelta==null?'—':`${xpDelta>=0?'+':''}${xpDelta}`}</b><small>${values.xpAfter==null?'':`结算后 ${values.xpAfter}`}</small></span></div>
-   <div class="rs-settlement__actions"><${Button} size="sm" onClick=${()=>onReplay(summary.round)}>回放本场<//><${Button} size="sm" variant="ghost" onClick=${()=>onDetail({kind:'battleReport',id:String(summary.round)})}>查看战斗图表<//></div>
+   <div class="rs-settlement__actions">${showReplay?html`<${Button} size="sm" onClick=${()=>onReplay(summary.round)}>回放本场<//>`:null}<${Button} size="sm" variant="ghost" onClick=${()=>onDetail({kind:'battleReport',id:String(summary.round)})}>查看战斗图表<//></div>
    <details class="rs-settlement__report"><summary>伤害、治疗与承伤榜</summary><${BattleReport} state=${state} catalog=${catalog} onReplay=${onReplay} onDetail=${onDetail}/></details></div>`:html`<div class="rs-settlement__empty"><p>本场结算尚未记录。</p><p>完成一场战斗后，这里会显示收入、金币与经验变化，并可查看战斗图表。</p></div>`}
  </${Panel}>`;
 }

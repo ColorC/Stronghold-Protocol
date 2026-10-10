@@ -95,9 +95,14 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     avatar: operator.assets?.avatar ?? operator.assets?.portrait ?? null,
     stars: { 1: starView(operator, 1, data, catalog.playerText), 2: starView(operator, 2, data, catalog.playerText), 3: starView(operator, 3, data, catalog.playerText) },
   }]));
+  const publicPactVariables = new Set(['ConversionDamagePct','MagicDamage','Resists','TriggerNumCrystals','BaseAP','TeamAP','DamageDecrease','DamageDecreaseDuration','HPShieldAmount','NumComponents','ShieldDuration','AD','NumOfAttacks','PercentDamage','DA','DR','AmbessaArmor','BonusHealth','SelfishDamageAmp','GarenHealthPercent','NamiMana','StarAS','BonusArmor','AttackSpeed','DamageReduction','ManaReduction','CritChance','CritDamage','DamageReductionPct','EnlightenedBonusMana','AllyHealing','PercentDamageIncrease','PercentDamageTakenHeal','BonusHexRangeIncrease','ADAPBase','PercentIncreasePerChest','StacksPerKill','Bonus1NumRockets','Bonus1RocketDamage','Bonus2ShieldAmount','Bonus2ShieldDuration','Bonus4Gold','Durability','Duration','BaseValues','NumOfItems','PercentIncreaseSponsored','HealthPerSkip','MinStreakLength','ShimmerBreakpoint','ShimmerPerCombat','ShimmerPerCombatStreaking','ADAP','BurstAS','BurstDuration','ForceDuration','MaxHealthIncrease','PercentHealthTrigger','PercentMaxHealthBonus','StunDuration','APPercent','ShieldAmount','OmnivampPercent','HealthThreshold','TrueDamagePercent','HealPercent','NumOfWantedEnemies','PercentMaxHealthShield','AttackSpeedPerWantedKill','BaseDA','ExperimentBonusIncrease','MaxHealth','NumLaboratory','BonusPercentHealth','TeamFlatHealth','NumRounds1Star','NumCastsToUnlock','PercentHealthUnlock','PercentHealthPerStarLevel','MinBonusAS','MaxBonusAS','BaseDR','HealthBreakpoint','IncreasedDR']);
   const pacts = Object.fromEntries(Object.entries(catalog.pacts).map(([id, pact]) => [id, {
-    name: pact.name, description: pact.description, thresholds: [...pact.thresholds],
-    levels: pact.levels.map((level, index) => ({ threshold: level.threshold, description: catalog.playerText?.pacts?.[pact.id]?.levels?.[index]?.description ?? level.description })),
+    name: pact.name, description: pact.description, exactCounts:[...(pact.exactCounts??[])], thresholds: [...(pact.thresholds ?? pact.levels.map((level) => level.minUnits??level.threshold))],
+    levels: pact.levels.map((level, index) => ({ threshold: level.threshold, minUnits:level.minUnits??level.threshold,
+      maxUnits:Number.isFinite(level.maxUnits)?level.maxUnits:25000,
+      exactCounts:Array.isArray(level.exactCounts)?[...level.exactCounts]:(level.maxUnits===level.minUnits?[level.minUnits]:[]),
+      description: catalog.playerText?.pacts?.[pact.id]?.levels?.[index]?.description ?? level.description,
+      ...(level.sourceVariables && typeof level.sourceVariables === 'object' ? { sourceVariables: Object.fromEntries(Object.entries(level.sourceVariables).filter(([key, value]) => /^[A-Za-z][A-Za-z0-9_]*$/.test(key) && Number.isFinite(value))) } : {}) })),
   }]));
   const equipment = Object.fromEntries(Object.entries(catalog.equipment).map(([id, item]) => [id, {
     name: item.name, description: catalog.playerText?.equipment?.[item.id]?.description ?? item.description, kind: item.kind, unique: !!item.unique,
@@ -111,13 +116,17 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     name: env.name, identityPactId: env.identityPactId, description: env.description,
     minThreshold: env.minThreshold,
   }]));
+  const specialEntities=Object.fromEntries(Object.entries(catalog.specialEntities??{}).map(([id,entity])=>[id,{
+    kind:entity.kind,name:entity.name??'训练假人',description:'固定目标；不能移动或攻击。',nativeTokenId:entity.nativeTokenId,
+    maxHp:entity.maxHp,def:entity.def,res:entity.res,attack:0,range:entity.range,canMove:false,canAttack:false,blockCount:entity.blockCount,
+  }]));
   return {
     schemaVersion: catalog.schemaVersion,
-    operators, pacts, equipment, activeOperatorIds: [...(catalog.config?.activeOperatorIds ?? [])],
+    operators, pacts, equipment, specialEntities, activeOperatorIds: [...(catalog.config?.activeOperatorIds ?? [])],
     recipes: catalog.recipes.map((recipe) => ({ parts: [...recipe.parts], resultId: recipe.resultId,
       names: recipe.parts.map((id) => catalog.equipment[id]?.name ?? '装备'), resultName: catalog.equipment[recipe.resultId]?.name ?? '装备' })),
-    strategies, environments: catalog.config?.rulesVersion===2?{}:environments, campaign: structuredClone(catalog.campaign),
-    ...(catalog.config?.rulesVersion===2?{season:{name:catalog.season.displayName},openingEvent:openingEventView(catalog.config.openingId),openingEvents:Object.fromEntries(Object.keys(resonanceOpenings).map(id=>[id,openingEventView(id)]))}:{}),
+    strategies, environments: (catalog.config?.rulesVersion??1)>=2?{}:environments, campaign: structuredClone(catalog.campaign),
+    ...((catalog.config?.rulesVersion??1)>=2?{season:{name:catalog.season?.displayName??'共鸣'},...(catalog.config.rulesVersion===2?{openingEvent:openingEventView(catalog.config.openingId),openingEvents:Object.fromEntries(Object.keys(resonanceOpenings).map(id=>[id,openingEventView(id)]))}:{})}:{}),
   };
 }
 
@@ -161,8 +170,22 @@ function pactCounts(pieces, catalog) {
   return Object.fromEntries(Object.entries(catalog.pacts).map(([id, pact]) => {
     const distinct = [...(members.get(id)?.values() ?? [])];
     const count = distinct.length;
-    const activeThreshold = [...pact.thresholds].filter((threshold) => count >= threshold).at(-1) ?? 0;
-    return [id, { count, activeThreshold, nextThreshold: pact.thresholds.find((threshold) => count < threshold) ?? null,
+    const levels = Array.isArray(pact.levels) ? pact.levels : [];
+    const levelMatches = (level) => {
+      const exact = Array.isArray(level.exactCounts) ? level.exactCounts : null;
+      if (exact) return exact.includes(count);
+      const min = Number(level.minUnits ?? level.threshold ?? 0);
+      const max = Number(level.maxUnits ?? Number.MAX_SAFE_INTEGER);
+      return count >= min && count <= max;
+    };
+    const activeLevel = levels.filter(levelMatches).sort((a, b) => Number(a.threshold ?? a.minUnits ?? 0) - Number(b.threshold ?? b.minUnits ?? 0)).at(-1);
+    const activeThreshold = activeLevel ? Number(activeLevel.threshold ?? activeLevel.minUnits ?? 0) : 0;
+    const nextCandidates = levels.flatMap((level) => {
+      const exact = Array.isArray(level.exactCounts) ? level.exactCounts : null;
+      return exact ? exact.filter((candidate) => candidate > count) : [Number(level.minUnits ?? level.threshold)].filter((candidate) => Number.isFinite(candidate) && candidate > count);
+    }).sort((a, b) => a - b);
+    const nextThreshold = nextCandidates[0] ?? pact.thresholds?.find((threshold) => count < threshold) ?? null;
+    return [id, { count, activeThreshold, nextThreshold,
       members: distinct.map(({ name, star }) => ({ name, star })) }];
   }));
 }
@@ -203,11 +226,17 @@ export function resonanceSessionDisplay(state, { data, catalog, viewSession, fie
   const standUnitedPacts=standUnited?Object.entries(pacts).filter(([id,pact])=>!['holyGun','yela','crown'].includes(id)&&catalog.pacts[id]?.singleUnique!==true&&pact.activeThreshold>0).map(([id])=>id):[];
   const strategyState={...base.strategyState};
   for(const selected of state.strategies??[]){const id=typeof selected==='string'?selected:selected.id;const entry=state.strategyState?.[id]??{};strategyState[id]={...entry,progressText:strategyProgressText(entry,catalog.strategies?.[id],state.round)};}
+  const specialEntities=(base.specialEntities??[]).map((entity)=>({...entity,definition:catalog.specialEntities?.[entity.entityId]?{
+    name:catalog.specialEntities[entity.entityId].name??'训练假人',maxHp:catalog.specialEntities[entity.entityId].maxHp,
+    def:catalog.specialEntities[entity.entityId].def,res:catalog.specialEntities[entity.entityId].res,attack:0,canMove:false,canAttack:false,
+    description:'固定目标；不能移动或攻击。',nativeTokenId:catalog.specialEntities[entity.entityId].nativeTokenId,
+  }:null}));
   return {
     ...base,
     ...(state.rulesVersion===2?{season:{name:catalog.season.displayName},openingEvent:openingEventView(state.openingId)}:{}),
     activeOperatorIds: [...(state.activeOperatorIds ?? [])],
     pieces,
+    specialEntities,
     pacts,
     ...(standUnited?{strategyPreview:{standUnited:{activePacts:standUnitedPacts,attackPercentPerOperator:standUnitedPacts.length*1.5}}}:{}),
     strategyState,

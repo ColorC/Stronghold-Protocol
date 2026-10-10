@@ -1,11 +1,13 @@
 {
   "schema": "stronghold.resonance-roster-worktable/v1",
-  "status": "derived-worktable-awaiting-deep-design-and-simulation",
+  "status": "historical-source-inventory-not-current-season",
+  "currentSeasonMapping": "docs/resonance/prototype-season.json",
   "sourceCommit": "4ed1ad32ec10da15c23f9d7939dade603950759b",
   "sources": {
     "frozenExistingGame": "docs/resonance/reference/existing-game.json",
     "frozenExistingGameCommit": "4ed1ad32ec10da15c23f9d7939dade603950759b",
     "designRules": "docs/resonance/design.md",
+    "designRulesRevision": "001e5819f7db396f570a4afe09d0a8742fc0ac80",
     "sourceRosterPath": "data/independent-design.json",
     "nativeChessPath": "data/chess.json"
   },

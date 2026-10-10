@@ -21,6 +21,12 @@ export function selectResonanceOpening(seed) {
   return 'cheaper_levels';
 }
 
+/** Set 13 prototype opens on the shared standard node; legacy seasons keep their weighted opening. */
+export function selectPrototypeOpening(seed) {
+  if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error('BAD_OPENING_SEED');
+  return 'none';
+}
+
 export function openingEventView(openingId) {
   if (!Object.hasOwn(resonanceOpenings, openingId)) throw new Error('UNKNOWN_OPENING');
   const opening = resonanceOpenings[openingId];
@@ -30,6 +36,6 @@ export function openingEventView(openingId) {
 
 export function resonanceRulesVersion(state) {
   const version = state?.rulesVersion === undefined ? 1 : state.rulesVersion;
-  if (![1, 2].includes(version)) throw new Error('UNKNOWN_RULES_VERSION');
+  if (![1, 2, 3].includes(version)) throw new Error('UNKNOWN_RULES_VERSION');
   return version;
 }

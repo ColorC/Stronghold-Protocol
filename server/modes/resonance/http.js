@@ -53,10 +53,11 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
   const catalogCache = new Map();
   const displayCache = new WeakMap();
   const locks = new Map();
+  const liveMatches = new Set();
   const file = (id) => path.join(directory, `${id}.json`);
   const replayFile = (id, round) => path.join(directory, `${id}.replay-r${round}.json.gz`);
 
-  function catalogFor(rulesVersion = 2, seed = 1, environmentId = null) {
+  function catalogFor(rulesVersion = 3, seed = 1, environmentId = null) {
     resonanceRulesVersion({rulesVersion});
     const key = `${rulesVersion}|${environmentId}|${seed}`;
     if (catalogCache.has(key)) {
@@ -110,6 +111,19 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
     return state;
   }
 
+  async function loadOwnedSession(id) {
+    const identityText = await readFile(file(id), 'utf8').catch((error) => {
+      if (error.code === 'ENOENT') throw Object.assign(new Error('这一局不存在或已过期'), { status: 404, code: 'NOT_FOUND' });
+      throw error;
+    });
+    let identity;
+    try { identity = JSON.parse(identityText); }
+    catch { throw Object.assign(new Error('这一局的存档无法读取'), { status: 500, code: 'CORRUPT_SESSION' }); }
+    const catalog = catalogForIdentity(identity);
+    const state = await loadSession(id, catalog);
+    return { state, catalog };
+  }
+
   function statePacket(id, state, catalog, includeCatalog = false, events = []) {
     const unitStats=state.pieces.some(piece=>piece.row!==null)?statsPreview(state,{data,catalog}):{};
     const view = resonanceSessionDisplay(state, { data, catalog, viewSession,
@@ -138,7 +152,7 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
     reply(res, 200, { ok: true, replay });
   }
 
-  return async function handle(req, res, pathname) {
+  async function handle(req, res, pathname) {
     if (!pathname.startsWith(PREFIX)) return false;
     try {
       if (!sameOrigin(req)) { reply(res, 403, { ok: false, error: { code: 'ORIGIN', message: '请在共鸣页面进行操作' } }); return true; }
@@ -150,7 +164,7 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
         if (url.searchParams.has('environmentId') || url.searchParams.has('openingId')) {
           reply(res, 422, { ok:false, error:{code:'UNSUPPORTED_SESSION_INPUT',message:'开局效果由本局自动决定'} }); return true;
         }
-        const catalog = catalogFor(2, seed);
+        const catalog = catalogFor(3, seed);
         reply(res, 200, { ok: true, catalog: displayFor(catalog), activeOperatorIds: [...catalog.config.activeOperatorIds], seed });
         return true;
       }
@@ -163,8 +177,8 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
         if (!validSeed(seed)) { reply(res, 422, { ok: false, error: { code: 'BAD_SEED', message: '种子必须是有效的非负整数' } }); return true; }
         const difficulty = String(body.difficulty || 'NORMAL').toUpperCase();
         if (!['FUNNY','NORMAL','HARD','ABYSS'].includes(difficulty)) { reply(res, 422, { ok: false, error: { code: 'BAD_DIFFICULTY', message: '请选择有效难度' } }); return true; }
-        const catalog = catalogFor(2, seed);
-        const created = createSession({ seed, difficulty, catalog });
+        const catalog = catalogFor(3, seed);
+        const created = createSession({ seed, difficulty, catalog, fieldResolver: (state) => fieldResolver(state, { data, catalog }) });
         if (!created.ok) { reply(res, 422, { ok: false, error: { code: created.error, message: '无法开始新的一局' } }); return true; }
         const id = randomUUID();
         await saveSession(id, created.state);
@@ -208,6 +222,9 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
           reply(res, 400, { ok: false, error: { code: 'BAD_ACTION_REQUEST', message: '操作请求无效' } }); return true;
         }
         await exclusive(id, async () => {
+          if (liveMatches.has(id)) {
+            reply(res, 409, { ok: false, error: { code: 'NATIVE_MATCH_ACTIVE', message: '请在当前对局中继续操作' } }); return;
+          }
           const first = await readFile(file(id), 'utf8').catch((error) => {
             if (error.code === 'ENOENT') throw Object.assign(new Error('这一局不存在或已过期'), { status: 404, code: 'NOT_FOUND' }); throw error;
           });
@@ -236,5 +253,15 @@ export function createResonanceHttp({ data, directory, battleRunner = runResonan
       reply(res, status, { ok: false, error: { code: error.code || 'RESONANCE_HTTP_ERROR', message: error.status ? error.message : '共鸣服务暂时无法完成请求', ...(error.details ? { details: error.details } : {}) } });
     }
     return true;
-  };
+  }
+  // WS and REST share this exact lock, validator, and persistence path. A live native
+  // match owns writes while active; callers use this store rather than opening files.
+  handle.store = Object.freeze({
+    loadSession, saveSession, exclusive, catalogForIdentity, catalogFor,
+    displayFor, statePacket, loadOwnedSession,
+    activate(id) { liveMatches.add(id); },
+    deactivate(id) { liveMatches.delete(id); },
+    file,
+  });
+  return handle;
 }

@@ -10,6 +10,15 @@ const effectsOf = (row) => Array.isArray(row?.effects) ? row.effects : [];
 const rounds = (n) => Math.round(n * 100) / 100;
 const profileParams = (effect, star) => effect?.params?.byStar?.[star] ?? effect?.params ?? {};
 
+/** Finish boss/hidden specs as a real loss after every scheduled enemy has escaped the field. */
+export function finishResonanceTerminalIfEscaped(battle, nodeKind) {
+  if (!['boss', 'hidden'].includes(nodeKind) || battle.finished || !battle.started || battle._spawnSeq <= 0) return false;
+  if (!(battle.sharedBoss?.hp > 0) || (battle._pending?.length ?? 0) > 0 || battle.enemies.some((enemy) => enemy.alive && enemy.deployed)) return false;
+  if (battle._hasPendingEnemySchedules()) return false;
+  battle.forceEnd('leader-escaped');
+  return battle.finished;
+}
+
 function contentOf(catalog) { return catalog?.resonanceContent ?? catalog ?? {}; }
 function operatorIndex(content) {
   const src = content?.operators ?? {};
@@ -249,6 +258,10 @@ function applyStar3Attack(b,ctx,u,target){
 
 /** Install all resonance combat pacts, environment triggers, equipment passives and terminal signatures. */
 export function installResonanceBattle(battle, { catalog, state } = {}) {
+  if (catalog?.config?.rulesVersion === 3) {
+    catalog = { ...catalog, pacts: Object.fromEntries(Object.entries(catalog.pacts ?? {}).filter(([, pact]) =>
+      (pact.levels ?? []).some((level) => (level.effects ?? []).some((effect) => effect.kind !== 'prototype_trait')))) };
+  }
   const content = contentOf(catalog);
   const ctx = { content, state, bySource: operatorIndex(content), floorCooldown: new Map(), frozenSeen: new Map(), skillCount: new Map(), attackCount: new Map(), pactCache: null };
   ctx.strategies=(state?.strategies??[]).filter(s=>!state?.strategyState?.[s?.id]?.fallbackApplied).map(s=>{const row=content.strategies?.[s?.id];return row?{...row,targets:s.targets??row.targets}:s;}).filter(Boolean);

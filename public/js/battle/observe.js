@@ -160,3 +160,13 @@ export function spectateEffects(spec, members) {
   }
   return out;
 }
+
+
+export function followedScout({ field = null, watching = null, alive = true, spectator = false, myId = '' } = {}) {
+  if (watching || (alive && !spectator) || !isObj(field) || !field.prep) return null;
+  const fid = field.fieldId;
+  if (typeof fid !== 'string' || !fid.startsWith('n:') || fid === `n:${myId}`) return null;
+  return fid;
+}
+
+/** Teammates' progress for the waiting pill: [{ playerId, name, killed, resolved, total, done, isBot }]. */

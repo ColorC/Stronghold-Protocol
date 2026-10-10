@@ -191,6 +191,7 @@ export function absorbShields(battle, target, amount) {
     if (b.shieldHits > 0) {
       b.shieldHits--;
       if (battle._hooks.shieldLayersBroken) battle.emit('shieldLayersBroken', { unit: target, layers: 1, buff: b });
+      if (battle._hooks.shieldAbsorbed) battle.emit('shieldAbsorbed', { unit: target, amount: rest, buff: b, kind: 'layer', layers: 1 });
       rest = 0;
       if (b.shieldHits <= 0 && !(b.shield > 0) && !b.mods && !b.flags) { battle._removeBuffAt(target, i); i--; }
       changed = true;
@@ -203,6 +204,7 @@ export function absorbShields(battle, target, amount) {
       const take = Math.min(b.shield, rest);
       b.shield -= take;
       rest -= take;
+      if (take > 0 && battle._hooks.shieldAbsorbed) battle.emit('shieldAbsorbed', { unit: target, amount: take, buff: b, kind: 'shield', layers: 0 });
       changed = true;
       if (b.shield <= 1e-9) {
         b.shield = 0;

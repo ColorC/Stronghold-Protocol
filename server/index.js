@@ -47,6 +47,7 @@ import { MEDIA_PREFIX, AUDIO_EXTS } from '../shared/media.js';
 import { createIndependentHttp } from './modes/independent/http.js';
 import { createRecordingHttp } from './modes/independent/recordings.js';
 import { createResonanceHttp } from './modes/resonance/http.js';
+import { createResonanceLive } from './modes/resonance/live.js';
 import { createAdmission } from './hosting/admission.js';
 import { createStaticDelivery, loadAssetSourceMap } from './hosting/staticDelivery.js';
 
@@ -661,6 +662,7 @@ export async function startServer(opts = {}) {
   const resonanceDirectory = opts.resonanceDirectory ?? process.env.SP_RESONANCE_DIRECTORY ?? path.join(canonicalProjectRoot, 'runtime', 'resonance');
   if (!path.isAbsolute(resonanceDirectory)) throw new Error('SP_RESONANCE_DIRECTORY must be an absolute canonical runtime path');
   const resonanceHttp = createResonanceHttp({ data, directory: resonanceDirectory });
+  const resonanceLive = createResonanceLive({ store: resonanceHttp.store, data, log });
   const recordingDirectory = opts.recordingDirectory ?? process.env.SP_RECORDING_DIRECTORY ?? path.join(independentDirectory, 'recordings');
   if (!path.isAbsolute(recordingDirectory)) throw new Error('SP_RECORDING_DIRECTORY must be an absolute canonical runtime path');
   const recordingHttp = createRecordingHttp({ directory: recordingDirectory, sessionDirectory: independentDirectory, diagnosticsPath: opts.recordingDiagnosticsPath || '' });
@@ -750,7 +752,9 @@ export async function startServer(opts = {}) {
 
   const wss = new WebSocketServer({ noServer: true, maxPayload: WS_MAX_PAYLOAD, perMessageDeflate: false, clientTracking: false });
   wss.on('connection', (ws, req) => {
-    network.handleConnection(ws, req);
+    const pathname = splitUrl(req.url || '/')?.rawPath;
+    if (pathname === '/resonance/ws') resonanceLive.attach(ws, req);
+    else network.handleConnection(ws, req);
     // A released multiplayer socket can free a shared visitor slot for the FIFO workshop queue.
     ws.once('close', () => admission.canEnter());
   });
@@ -762,7 +766,7 @@ export async function startServer(opts = {}) {
     const reject = (status, text) => {
       try { socket.end(`HTTP/1.1 ${status} ${text}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`); } catch { socket.destroy(); }
     };
-    if (!parts || parts.rawPath !== '/ws') { reject(404, 'Not Found'); return; }
+    if (!parts || !['/ws', '/resonance/ws'].includes(parts.rawPath)) { reject(404, 'Not Found'); return; }
     if (!admission.canEnter()) { reject(503, 'Service Unavailable'); return; }
     const refused = network.admission(req);
     if (refused === 'per-address') { reject(429, 'Too Many Requests'); return; }
@@ -797,20 +801,25 @@ export async function startServer(opts = {}) {
   async function close() {
     if (closing) return closing;
     closing = (async () => {
+      let closeError = null;
       try { lobby.shutdown('shutdown'); } catch (e) { log.error('[shutdown] lobby', e); }
-      admission.close();
-      network.close();
-      await new Promise((resolve) => {
-        server.close(() => resolve());
-        server.closeIdleConnections?.();
-        setTimeout(() => { server.closeAllConnections?.(); }, 500).unref();
-      });
-      try { wss.close(); } catch { /* ignore */ }
+      try { await resonanceLive.close(); } catch (e) { closeError = e; log.error('[resonance/ws] shutdown', e); }
+      try { admission.close(); } catch (e) { closeError ??= e; log.error('[shutdown] admission', e); }
+      try { network.close(); } catch (e) { closeError ??= e; log.error('[shutdown] network', e); }
+      try {
+        await new Promise((resolve, reject) => {
+          server.close((error) => error ? reject(error) : resolve());
+          server.closeIdleConnections?.();
+          setTimeout(() => { server.closeAllConnections?.(); }, 500).unref();
+        });
+      } catch (e) { closeError ??= e; log.error('[shutdown] http server', e); }
+      try { wss.close(); } catch (e) { closeError ??= e; log.error('[shutdown] websocket server', e); }
+      if (closeError) throw closeError;
     })();
     return closing;
   }
 
-  return { port: actualPort, host, url, server, wss, lobby, network, registry, admission, close };
+  return { port: actualPort, host, url, server, wss, lobby, network, resonanceLive, registry, admission, close };
 }
 
 // ---------------------------------------------------------------------------------------------------

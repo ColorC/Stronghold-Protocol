@@ -258,6 +258,12 @@ describe('full hand: shop and promotion cards', () => {
     const notFull = { ...privFull, hand: privFull.hand.map((p, i) => (i === 5 ? null : p)) };
     assert.equal(shopBlockReason('buy', { ...o, priv: notFull, slot: { kind: 'chess', id: other, price: 1 } }), null);
   });
+  test('a mode-provided hand capacity counts occupied piece slots and leaves the native trailing slot disabled',()=>{
+    const resonance={...privFull,hand:Array.from({length:10},(_,i)=>i<9?{uid:i+1,kind:'chess',id:i<2?MELEE:other,items:[]}:null),handCapacity:9};
+    assert.equal(handFull(resonance),true);
+    resonance.hand[8]=null;assert.equal(handFull(resonance),false);
+    resonance.hand[8]={uid:10,kind:'chess',id:other,items:[]};assert.equal(handFull(resonance),true);
+  });
 });
 
 describe('solo exit text and htm vnodes', () => {

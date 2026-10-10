@@ -1,6 +1,10 @@
 import { legalSummonCells,selectedSummonIds } from './summons.js';
 import { resonanceOpenings, selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
 import { getResonanceSeason } from '../../../shared/resonance/season-roster.js';
+import { prototypeSeason } from '../../../shared/resonance/prototype-season.js';
+import { chooseAcademySponsorSet } from '../../../shared/resonance/prototype-economy.js';
+import { onPrototypeBattleResult, onPrototypePrep } from '../../sim/content/resonance/prototype-meta.js';
+import { applyPrototypeGearAction } from './prototype-consumables.js';
 const SCHEMA_VERSION = 1;
 const BENCH_CAPACITY = 9;
 const INVENTORY_CAPACITY = 20;
@@ -32,6 +36,10 @@ function validEnvironmentId(catalog,environmentId) {
 }
 const fail = (state, error, events = []) => ({ ok: false, state: clone(state), events, error });
 const isInt = (value) => Number.isInteger(value);
+export function effectiveDeployCapacity(state) {
+  const extra=state?.rulesVersion===3?Math.max(0,Math.min(2,Number(state.prototypeMeta?.economy?.rosterExtraCapacity)||0)):0;
+  return Math.min(12,Math.max(1,Number(state?.level)||1)+extra);
+}
 
 function seedNumber(seed) {
   if (typeof seed === 'number' && Number.isFinite(seed)) return seed >>> 0;
@@ -122,7 +130,26 @@ function selectedStarterItems(state, catalog) {
   return configured ? [...configured] : Array.from({ length: 2 }, () => candidates[Math.floor(random(state) * candidates.length)]);
 }
 function makePiece(state, operatorId) {
-  return { uid: uid(state, 'p'), operatorId, star: 1, equipment: [], growth: {}, row: null, col: null, dir: 'RIGHT' };
+  return { uid: uid(state, 'p'), operatorId, star: 1, equipment: [], growth: {}, row: null, col: null, dir: 'RIGHT', benchSlot: nextBenchSlot(state) };
+}
+function nextBenchSlot(state) {
+  const used=new Set(state.pieces.filter((piece)=>piece.row===null&&Number.isInteger(piece.benchSlot)).map((piece)=>piece.benchSlot));
+  for(let slot=0;slot<BENCH_CAPACITY;slot++)if(!used.has(slot))return slot;
+  return null;
+}
+function assignLegacyBenchSlots(state) {
+  const used=new Set();
+  for(const piece of state.pieces)if(piece.row===null&&Number.isInteger(piece.benchSlot)&&piece.benchSlot>=0&&piece.benchSlot<BENCH_CAPACITY&&!used.has(piece.benchSlot))used.add(piece.benchSlot);
+  let slot=0;
+  for(const piece of state.pieces)if(piece.row===null&&!Number.isInteger(piece.benchSlot)){
+    while(used.has(slot)&&slot<BENCH_CAPACITY)slot++;
+    piece.benchSlot=slot<BENCH_CAPACITY?slot:null;
+    if(piece.benchSlot!==null)used.add(piece.benchSlot);
+  }
+}
+function benchSlotMap(state) {
+  assignLegacyBenchSlots(state);
+  return new Map(state.pieces.filter((piece)=>piece.row===null&&Number.isInteger(piece.benchSlot)).map((piece)=>[piece.benchSlot,piece]));
 }
 function createStarterState({ seed, difficulty, catalog, environmentId }) {
   if (!catalog || !opTable(catalog) || !itemTable(catalog) || !Array.isArray(catalog.recipes)) throw new Error('BAD_CATALOG');
@@ -139,7 +166,7 @@ function createStarterState({ seed, difficulty, catalog, environmentId }) {
     strategies: [], environmentId: environmentId==null?(catalog.config?.environmentId??null)
       :own(catalog.environments??{},environmentId)?environmentId
         :own(catalog.environments??{},`origin_${environmentId}`)?`origin_${environmentId}`:environmentId,
-    activeOperatorIds: activeOperatorIds(catalog), pendingChoices: [], consumables: [], strategyState: {},
+    activeOperatorIds: activeOperatorIds(catalog), pendingChoices: [], consumables: [], specialEntities: [], strategyState: {},
     claimedNodes: [1], nodeStarted: true, forgeProgress: {},
     poolRemaining: Object.fromEntries(activeOperatorIds(catalog).map((id) => {
       const operator = opTable(catalog)[id];
@@ -158,6 +185,10 @@ function createStarterState({ seed, difficulty, catalog, environmentId }) {
     if (catalog.config?.openingId !== state.openingId) throw new Error('OPENING_MISMATCH');
     state.freeRefreshes = 0;
     if (state.openingId === 'double_duplicators') addConsumable(state, 'smallCopy', 'opening');
+  } else if (rulesVersion === 3) {
+    state.rulesVersion = 3;
+    state.seasonId = catalog.config?.seasonId;
+    if (state.seasonId !== prototypeSeason.id) throw new Error('UNKNOWN_SEASON');
   }
   for (const id of selectInitialStarterIds(state, catalog)) {
     state.poolRemaining[id]--;
@@ -168,12 +199,19 @@ function createStarterState({ seed, difficulty, catalog, environmentId }) {
   return state;
 }
 
-export function createSession({ seed, difficulty = 'NORMAL', catalog, environmentId } = {}) {
+export function createSession({ seed, difficulty = 'NORMAL', catalog, environmentId, fieldResolver } = {}) {
   try {
     const state = createStarterState({ seed, difficulty, catalog, environmentId });
+    let initialEvents=[];
+    if (catalog.prototypeMeta?.rulesVersion === 3) {
+      const prepared=onPrototypePrep(state, catalog, prototypePrepContext(fieldResolver,state,catalog));
+      Object.assign(state, prepared.state);
+      initialEvents=[...(prepared.events??[]),...appendPrototypeChoiceDrafts(state,prepared.choiceDrafts)];
+      reconcilePhase(state);
+    }
     const validation = validateSession(state, { catalog });
     if (!validation.ok) return { ok: false, state: null, events: [], error: validation.errors[0]?.code ?? 'INVALID_CREATED_SESSION' };
-    return { ok: true, state, events: [{ type: 'session-created', difficulty: state.difficulty, roundLimit: state.roundLimit }] };
+    return { ok: true, state, events: [{ type: 'session-created', difficulty: state.difficulty, roundLimit: state.roundLimit },...initialEvents] };
   } catch (error) {
     return { ok: false, state: null, events: [], error: error.message || 'CREATE_SESSION_FAILED' };
   }
@@ -202,9 +240,11 @@ export function validateSession(state, { catalog } = {}) {
     if (!own(resonanceOpenings, state.openingId)) add('UNKNOWN_OPENING');
     else if (Number.isSafeInteger(state.seed)&&state.seed>=0&&state.seed<=0xffffffff&&state.openingId !== selectResonanceOpening(state.seed)) add('OPENING_MISMATCH');
     if (state.environmentId !== null) add('ENVIRONMENT_NOT_ALLOWED');
-    if (!isInt(state.freeRefreshes) || state.freeRefreshes < 0 || state.freeRefreshes > 8) add('BAD_FREE_REFRESHES');
+    if (!isInt(state.freeRefreshes) || state.freeRefreshes < 0 || state.freeRefreshes > (state.rulesVersion>=3?64:8)) add('BAD_FREE_REFRESHES');
     const tradeSectorState=state.strategyState?.strategy_21;
     if(tradeSectorState&&Object.hasOwn(tradeSectorState,'freeAvailable')&&typeof tradeSectorState.freeAvailable!=='boolean')add('BAD_TRADE_SECTOR_FREE_REFRESH');
+  } else if (rulesVersion === 3 && (state.seasonId !== prototypeSeason.id || catalog.config?.seasonId !== state.seasonId)) {
+    add('UNKNOWN_SEASON');
   }
   if(!validEnvironmentId(catalog,state.environmentId))add('UNKNOWN_ENVIRONMENT');
   if (state.schemaVersion !== SCHEMA_VERSION) add('BAD_SCHEMA_VERSION');
@@ -221,7 +261,7 @@ export function validateSession(state, { catalog } = {}) {
   else if (state.phase === 'prep' && state.hp === 0) add('BAD_PHASE_TERMINAL');
   if (!isInt(state.nextUid) || state.nextUid < 1) add('BAD_NEXT_UID');
   if (!isInt(state.level) || state.level < 3 || state.level > 10 || !isInt(state.xp) || state.xp < 0) add('BAD_LEVEL_XP');
-  else if ((state.level === 10 && state.xp !== 0) || (state.level < 10 && state.xp >= xpToLevel(state))) add('XP_NOT_NORMALIZED');
+  else if ((state.level === 10 && state.xp !== 0) || (state.level < 10 && state.xp >= xpToLevel(state,catalog))) add('XP_NOT_NORMALIZED');
   for (const field of ['gold','hp','winStreak','lossStreak']) if (!isInt(state[field]) || state[field] < 0) add('BAD_ECONOMY_FIELD', field);
   if (!state.shop || !Array.isArray(state.shop.offers) || state.shop.offers.length !== SHOP_SIZE || typeof state.shop.locked !== 'boolean') add('BAD_SHOP');
   const collectionsValid = Array.isArray(state.pieces) && Array.isArray(state.inventory) && Array.isArray(state.history) && Array.isArray(state.strategies)
@@ -239,6 +279,13 @@ export function validateSession(state, { catalog } = {}) {
     else if (uidSet.has(id)) add('DUPLICATE_UID', id);
     else uidSet.add(id);
   };
+  const occupiedBenchSlots=new Set();
+  for (const entity of Array.isArray(state.specialEntities) ? state.specialEntities : []) {
+    if (!entity || typeof entity !== 'object' || Array.isArray(entity)) { add('BAD_SPECIAL_ENTITY'); continue; }
+    trackUid(entity.uid, 'special entity');
+    if (typeof entity.entityId !== 'string' || !own(catalog.specialEntities ?? {}, entity.entityId)) add('UNKNOWN_SPECIAL_ENTITY', entity.entityId);
+    if ((entity.row == null) !== (entity.col == null) || (entity.row != null && (!isInt(entity.row) || !isInt(entity.col)))) add('BAD_SPECIAL_ENTITY_POSITION', entity.uid);
+  }
   for (const piece of Array.isArray(state.pieces) ? state.pieces : []) {
     if (!piece || typeof piece !== 'object' || Array.isArray(piece)) { add('BAD_PIECE'); continue; }
     trackUid(piece.uid, 'piece');
@@ -257,6 +304,10 @@ export function validateSession(state, { catalog } = {}) {
     if(piece.extraPacts!==undefined&&(!Array.isArray(piece.extraPacts)||piece.extraPacts.some((id)=>typeof id!=='string')))add('BAD_EXTRA_PACTS',piece.uid);
     if ((piece.row === null) !== (piece.col === null)) add('BAD_POSITION', piece.uid);
     if (piece.row !== null && (!isInt(piece.row) || !isInt(piece.col))) add('BAD_POSITION', piece.uid);
+    if(piece.benchSlot!==undefined&&piece.benchSlot!==null){
+      if(piece.row!==null||!isInt(piece.benchSlot)||piece.benchSlot<0||piece.benchSlot>=BENCH_CAPACITY||occupiedBenchSlots.has(piece.benchSlot))add('BAD_BENCH_SLOT',piece.uid);
+      else occupiedBenchSlots.add(piece.benchSlot);
+    }
     if (!['UP','RIGHT','DOWN','LEFT'].includes(piece.dir)) add('BAD_DIRECTION', piece.uid);
   }
   for (const item of Array.isArray(state.inventory) ? state.inventory : []) {
@@ -271,7 +322,8 @@ export function validateSession(state, { catalog } = {}) {
       &&choice.options.some(id=>!activeSet.has(id))) add('INACTIVE_REWARD_OPERATOR');
   }
   for (const item of Array.isArray(state.consumables) ? state.consumables : []) {
-    if (!item || typeof item !== 'object' || typeof item.uid !== 'string' || !['smallCopy','universalCopy'].includes(item.kind)) add('BAD_CONSUMABLE');
+    const prototypeGear=rulesVersion===3&&own(catalog.prototypeEconomy?.gearConsumables??{},item?.kind);
+    if (!item || typeof item !== 'object' || typeof item.uid !== 'string' || (!['smallCopy','universalCopy'].includes(item.kind)&&!prototypeGear)) add('BAD_CONSUMABLE');
     else trackUid(item.uid,'consumable');
   }
   const offers = Array.isArray(state.shop?.offers) ? state.shop.offers : [];
@@ -286,11 +338,16 @@ export function validateSession(state, { catalog } = {}) {
   const restrictedBench=state.strategyState&&typeof state.strategyState==='object'&&activeStrategyEntries(state).some(([id])=>strategyDefs(catalog)[id]?.effects?.some((effect)=>effect.kind==='bench_capacity_and_gold'));
   if (pieces.filter((piece) => piece.row === null && piece.col === null).length > (restrictedBench?7:BENCH_CAPACITY)) add('BENCH_OVER_CAPACITY');
   const deployed = pieces.filter((piece) => piece.row !== null);
-  if (deployed.length > state.level) add('POPULATION_OVER_CAPACITY');
+  if (deployed.length > effectiveDeployCapacity(state)) add('POPULATION_OVER_CAPACITY');
   const cells = new Set();
   for (const piece of deployed) {
     const key = `${piece.row},${piece.col}`;
     if (cells.has(key)) add('DUPLICATE_DEPLOYMENT_CELL', key);
+    cells.add(key);
+  }
+  for(const entity of Array.isArray(state.specialEntities)?state.specialEntities:[])if(Number.isInteger(entity?.row)&&Number.isInteger(entity?.col)){
+    const key=`${entity.row},${entity.col}`;
+    if(cells.has(key))add('DUPLICATE_DEPLOYMENT_CELL',key);
     cells.add(key);
   }
   for (const id of activeIds) {
@@ -314,6 +371,21 @@ function getFieldCells(fieldResolver, state, catalog) {
   if (result?.deployMap instanceof Map) return { known: true, cells: result.deployMap };
   if (Array.isArray(result?.legalCells)) return { known: true, cells: result.legalCells };
   return { known: true, cells: [] };
+}
+function prototypePrepContext(fieldResolver,state,catalog) {
+  const stableStageId=String(state.stageId??state.seasonId??catalog.config?.seasonId??'resonance-set13-14.23');
+  if(typeof fieldResolver!=='function')return {deployCells:[],stageId:stableStageId};
+  const resolved=fieldResolver(clone(state),{catalog});
+  const deployMap=resolved instanceof Map?resolved:resolved?.deployMap;
+  let deployCells=[];
+  if(deployMap instanceof Map)deployCells=[...deployMap].filter(([,value])=>value!==false&&value!=null).map(([key])=>{
+    const match=/^(\d+)[,:](\d+)$/.exec(String(key));
+    if(match)return {row:Number(match[1]),col:Number(match[2])};
+    try{const parsed=JSON.parse(String(key));if(Array.isArray(parsed)&&parsed.length>=2)return {row:Number(parsed[0]),col:Number(parsed[1])};}catch{}
+    return null;
+  }).filter(Boolean);
+  else if(Array.isArray(resolved?.legalCells))deployCells=resolved.legalCells.filter((cell)=>cell!==false&&cell!=null);
+  return {deployCells,stageId:String(resolved?.stageId??stableStageId)};
 }
 function cellClass(value) {
   const raw = typeof value === 'string' ? value : value?.class ?? value?.type ?? value?.position ?? value?.kind;
@@ -365,11 +437,12 @@ export function viewSession(state, { catalog, fieldResolver } = {}) {
     revision: state.revision, round: state.round, roundLimit: state.roundLimit, difficulty: state.difficulty,
     phase: state.phase, terminalReason: state.terminalReason ?? null, history: clone(state.history ?? []), level: state.level, xp: state.xp, gold: state.gold, hp: state.hp,
     winStreak: state.winStreak, lossStreak: state.lossStreak, shop: clone(state.shop),
-    pieces: clone(state.pieces), inventory: clone(state.inventory), poolRemaining: clone(state.poolRemaining),
+    pieces: clone(state.pieces), inventory: clone(state.inventory), specialEntities: clone(state.specialEntities ?? []), poolRemaining: clone(state.poolRemaining),
     pendingChoices: clone(state.pendingChoices), consumables: clone(state.consumables), strategies: clone(state.strategies),
     strategyState: clone(state.strategyState), environmentId: state.environmentId, nodeStarted: state.nodeStarted,
-    ...(state.rulesVersion===2?{rulesVersion:2,seasonId:state.seasonId,openingId:state.openingId,freeRefreshes:state.freeRefreshes}:{}),
-    forgeProgress: clone(state.forgeProgress??{}), actionCosts: economyActionCosts(state,catalog),
+    ...(state.rulesVersion>=2?{rulesVersion:state.rulesVersion,seasonId:state.seasonId,...(state.rulesVersion===2?{openingId:state.openingId}:{}),freeRefreshes:state.freeRefreshes}:{}),
+    ...(state.rulesVersion===3?{prototypeMeta:{labCells:clone(state.prototypeMeta?.labCells??[])}}:{}),
+    forgeProgress: clone(state.forgeProgress??{}), actionCosts: economyActionCosts(state,catalog),deployCap:effectiveDeployCapacity(state),
     benchCount: state.pieces.filter((piece) => piece.row === null).length,
     deployedCount: state.pieces.filter((piece) => piece.row !== null).length,
     legalFieldStatus: fieldStatus, legalCells,
@@ -387,16 +460,22 @@ export function calculateRoundIncome({ gold, round, won, winStreak, lossStreak, 
   const income = round === 1 ? 4 : 5;
   return { income, winBonus, streakBonus: streak, interest, goldAfter: gold + income + winBonus + streak + interest };
 }
-function xpToLevel(state) {
-  return XP_TO_LEVEL[state.level] - (state.rulesVersion===2&&state.openingId==='cheaper_levels'?2:0);
+function xpToLevel(state,catalog) {
+  const configured=Number(campaignOf(catalog).economy?.xpToLevel?.[state.level]);
+  const required=Number.isFinite(configured)?configured:Number(XP_TO_LEVEL[state.level]);
+  return required - (state.rulesVersion===2&&state.openingId==='cheaper_levels'?2:0);
 }
-function applyXp(state, amount) {
+function applyXp(state, amount,catalog) {
   state.xp += amount;
   while (state.level < 10) {
-    const cost = xpToLevel(state);
+    const cost = xpToLevel(state,catalog);
     if (state.xp < cost) break;
     state.xp -= cost;
     state.level++;
+    if(state.rulesVersion>=3)for(const [id] of activeStrategyEntries(state)){
+      const effect=strategyDefs(catalog)[id]?.effects?.find((candidate)=>candidate.kind==='prototype_high_end_sector');
+      if(effect)state.freeRefreshes=(Number(state.freeRefreshes)||0)+state.level;
+    }
   }
   if (state.level === 10) state.xp = 0;
 }
@@ -452,7 +531,7 @@ function mergeOperatorCopies(state, catalog, preferredUid = null) {
   return events;
 }
 function drawOffer(state, catalog) {
-  const odds = ODDS_BY_LEVEL[state.level] ?? ODDS_BY_LEVEL[10];
+  const odds = campaignOf(catalog).shopOdds?.[state.level] ?? ODDS_BY_LEVEL[state.level] ?? ODDS_BY_LEVEL[10];
   const tier = weightedPick(state, odds.map((chance,index)=>({tier:index+1,chance})), (entry)=>entry.chance)?.tier ?? null;
   const chosen = tier ? poolWeightedPick(state,catalog,tier) : null;
   const offer = { uid: uid(state,'o'), operatorId: chosen?.[0] ?? null, cost: chosen ? costOf(catalog,chosen[0]) : null };
@@ -478,14 +557,16 @@ function economyActionCosts(state,catalog) {
   const availableFree=Number(state.freeRefreshes??0)+(nodeFree?1:0);
   const refreshGold=availableFree>0||refresh&&Number(refresh.paidCount??0)+1>=Math.max(1,Number(refresh.paidRefreshEvery??3))?0:baseRefresh;
   const interestCap=5+active.reduce((sum,[id,entry])=>sum+(strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='interest_cap')?Number(entry.amount??0):0),0);
-  return {refreshGold,xpGold:4-(xp?Math.min(4,Number(xp.amount??0)):0),...(state.rulesVersion===2?{xpToLevel:state.level<10?xpToLevel(state):0,freeRefreshes:availableFree}:{}),canLockShop:!shopRule?.lockDisabled,interestCap};
+  const noInterest=active.some(([id])=>strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='prototype_going_long'));
+  return {refreshGold,xpGold:4-(xp?Math.min(4,Number(xp.amount??0)):0),...(state.rulesVersion>=2?{xpToLevel:state.level<10?xpToLevel(state,catalog):0,freeRefreshes:availableFree}:{}),canLockShop:!shopRule?.lockDisabled,interestCap:noInterest?0:interestCap};
 }
 function settleNodeIncome(state, catalog, { won = null, baseIncome = null } = {}) {
   const previousGold = state.gold;
+  const goingLong=activeStrategyEntries(state).some(([id])=>strategyDefs(catalog)[id]?.effects?.some(effect=>effect.kind==='prototype_going_long'));
   const interestBonus = activeStrategyEntries(state).reduce((sum,[id,entry]) => sum
     + (strategyDefs(catalog)[id]?.effects?.some(effect => effect.kind === 'interest_cap') ? Math.max(0,Number(entry.amount)||0) : 0), 0);
   const details = calculateRoundIncome({ gold:previousGold, round:state.round, won:won === true,
-    winStreak:won === null ? 0 : state.winStreak, lossStreak:won === null ? 0 : state.lossStreak, interestCap:5+interestBonus });
+    winStreak:won === null ? 0 : state.winStreak, lossStreak:won === null ? 0 : state.lossStreak, interestCap:goingLong?0:5+interestBonus });
   let income = baseIncome ?? details.income, delayedBonus = 0, strategyGold = 0;
   for (const [id, entry] of activeStrategyEntries(state)) {
     const effects = strategyDefs(catalog)[id]?.effects ?? [];
@@ -498,6 +579,8 @@ function settleNodeIncome(state, catalog, { won = null, baseIncome = null } = {}
     }
     const bench = effects.find(effect => effect.kind === 'bench_capacity_and_gold');
     if (bench) strategyGold += Number(bench.params?.postBattleGold ?? 0);
+    const perRound = effects.find(effect => effect.kind === 'prototype_round_gold');
+    if(perRound)strategyGold+=Number(perRound.params?.roundGold??0);
   }
   state.gold = previousGold + income + details.winBonus + details.streakBonus + details.interest + delayedBonus + strategyGold;
   return { ...details, income, delayedBonus, strategyGold, goldBefore:previousGold, goldAfter:state.gold };
@@ -589,7 +672,7 @@ function strategyEligible(strategy,state,catalog,targets={}) {
     return true;
   });
 }
-function drawStrategies(state,catalog) {
+export function drawStrategies(state,catalog) {
   const defs = strategyDefs(catalog);
   const chosen = new Set(state.strategies.map((entry)=>typeof entry==='string'?entry:entry.id));
   for(const choice of state.pendingChoices)if(choice.type==='strategy')for(const id of choice.options)chosen.add(id);
@@ -598,19 +681,28 @@ function drawStrategies(state,catalog) {
     && strategyEligible(strategy,state,catalog));
   const picked=[];
   while (candidates.length && picked.length<3) {
-    const index=Math.floor(random(state)*candidates.length);
+    const weights=candidates.map((strategy)=>Number(strategy.weight));
+    const total=weights.reduce((sum,weight)=>sum+(Number.isFinite(weight)&&weight>0?weight:0),0);
+    if(!(total>0))break;
+    let cursor=random(state)*total,index=candidates.length-1;
+    for(let i=0;i<candidates.length;i++){
+      const weight=Number.isFinite(weights[i])&&weights[i]>0?weights[i]:0;
+      if(cursor<weight){index=i;break;}
+      cursor-=weight;
+    }
     picked.push(candidates.splice(index,1)[0].id);
   }
   return picked;
 }
 function addConsumable(state,kind,source) { state.consumables.push({uid:uid(state,'u'),kind,source}); }
-function pactGrantAllowed(catalog,pactId) { return catalog.config?.rulesVersion!==2||catalog.pacts?.[pactId]?.emblemAllowed!==false; }
+function pactGrantAllowed(catalog,pactId) { return Number(catalog.config?.rulesVersion ?? 1)<2||catalog.pacts?.[pactId]?.emblemAllowed!==false; }
 function itemGrantAllowed(catalog,itemId) {
   const item=itemTable(catalog)[itemId];if(!item)return false;
-  return catalog.config?.rulesVersion!==2||(item.grantAllowed!==false&&(item.effects??[]).every(effect=>!['pact_transfer','transfer_pact'].includes(effect.kind)||pactGrantAllowed(catalog,effect.params?.pactId??effect.params?.pact)));
+  return Number(catalog.config?.rulesVersion ?? 1)<2||(item.grantAllowed!==false&&(item.effects??[]).every(effect=>!['pact_transfer','transfer_pact'].includes(effect.kind)||pactGrantAllowed(catalog,effect.params?.pactId??effect.params?.pact)));
 }
-function availableItemOptions(catalog,kind) {
-  return Object.values(itemTable(catalog)).filter((item)=>(!kind||item.kind===kind)&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id);
+function availableItemOptions(catalog,kind,allowedIds=null) {
+  const allowed=Array.isArray(allowedIds)?new Set(allowedIds):null;
+  return Object.values(itemTable(catalog)).filter((item)=>(!kind||item.kind===kind)&&(!allowed||allowed.has(item.id))&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id);
 }
 function viableTransferOptions(catalog) {
   const active=new Set(activeOperatorIds(catalog));
@@ -648,6 +740,46 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
       state.gold+=Number(p.gold??2);
       state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,freeAvailable:true};
       break;
+    case 'prototype_high_end_sector':
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      state.gold+=Number(p.gold??0);
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round};
+      break;
+    case 'prototype_going_long':
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      state.gold+=Number(p.gold??0);
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round};
+      break;
+    case 'prototype_clear_mind':
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round};
+      break;
+    case 'prototype_level_up':
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round};
+      applyXp(state,Number(p.initialXp??0),catalog);
+      break;
+    case 'prototype_epoch': {
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      const stageNodes=Math.max(1,Math.trunc(Number(p.stageNodes??4)));
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,lastStage:Math.floor((state.round-1)/stageNodes)};
+      applyXp(state,Number(p.xp??0),catalog);
+      state.freeRefreshes=(Number(state.freeRefreshes)||0)+Number(p.rerolls??0);
+      break;
+    }
+    case 'prototype_round_gold':
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      state.gold+=Number(p.instantGold??0);
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round};
+      break;
+    case 'prototype_win_loss_growth':
+      if(state.rulesVersion<3)throw new Error('STRATEGY_RULES_VERSION');
+      state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,lastBattleNode:null};
+      if(Array.isArray(p.bonusOperatorIds)&&p.bonusOperatorIds.length){
+        const options=[...new Set(p.bonusOperatorIds)].filter((operatorId)=>activeOperatorIds(catalog).includes(operatorId)&&(state.poolRemaining[operatorId]??0)>0);
+        if(options.length)addPendingChoice(state,'operators',strategy.id,options,1,{sourceApiName:p.sourceApiName});
+      }
+      break;
     case 'team_building':
       addConsumable(state,'smallCopy',strategy.id);
       state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,battlesCompleted:0,copyDelivered:false,lastBattleNode:null};
@@ -657,7 +789,7 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
       state.strategyState[strategy.id]={...clone(p),selectedRound:state.round,ammoSpent:0,rewarded:false,lastBattleNode:null};
       break;
     case 'gold': state.gold+=Number(p.amount??0); break;
-    case 'xp': applyXp(state,Number(p.amount??0)); break;
+    case 'xp': applyXp(state,Number(p.amount??0),catalog); break;
     case 'choose_components': addPendingChoice(state,'components',strategy.id,componentOptions(state,catalog,Number(p.optionCount??8)),Number(p.count??1)); break;
     case 'choose_viable_transfer': addPendingChoice(state,'transfer',strategy.id,unbiasedTransferChoices(state,catalog,Number(p.candidateCount??4)),1,{sourceTemplate:'TFT11.15:Tome of Traits'}); break;
     case 'choose_pool_operators': {
@@ -679,12 +811,44 @@ function executeStrategyEffect(state,catalog,strategy,effect,targets={}) {
     case 'metric_reward': case 'bench_capacity_and_gold': case 'shop_rule': case 'unique_nation_core': case 'delayed_income':
     case 'risk_exchange': case 'victory_tradeoff': case 'choose_transfer': case 'dual_pact': case 'low_cost_specialist': case 'late_game':
     case 'flexible_core': case 'free_disassemble_and_recipe': case 'crossfire': case 'pair_guard': case 'lastAmmo':
-    case 'firstFreezeSplash': case 'firstConstructRebuild': case 'executeBonus':
+    case 'firstFreezeSplash': case 'firstConstructRebuild': case 'executeBonus': case 'prototype_battle_augment':
       state.strategyState[strategy.id]={...clone(p), selectedRound:state.round, progress:0, ...(Object.keys(targets).length?{targets:clone(targets)}:{})};
       if(effect.kind==='risk_exchange'){if(state.hp<=Number(p.minHpExclusive??20))throw new Error('STRATEGY_INELIGIBLE');state.hp-=Number(p.hpCost??0);state.gold+=Number(p.gold??0);}
       if(effect.kind==='late_game'){if(state.gold<Math.abs(Number(p.startGold??-8)))throw new Error('STRATEGY_INELIGIBLE');state.gold+=Number(p.startGold??-8);}
       if(effect.kind==='shop_rule'&&p.lockDisabled)state.shop.locked=false;
-      if(effect.kind==='choose_transfer') addPendingChoice(state,'transfer',strategy.id,availableItemOptions(catalog,'emblem'),1);
+      if(effect.kind==='choose_transfer') {
+        const extra={bonusOperatorIds:[...new Set((p.bonusOperatorIds??[]).filter((operatorId)=>activeOperatorIds(catalog).includes(operatorId)))]};
+        const bonusRewardItems=[];
+        for(const reward of p.bonusRewards??[]){
+          if(reward?.kind==='item'&&itemGrantAllowed(catalog,reward.itemId))bonusRewardItems.push({itemId:reward.itemId,kind:'item',sourceApiName:reward.sourceApiName??null});
+          else if(reward?.kind==='random-components'){
+            const count=Number(reward.count),pool=Object.values(itemTable(catalog)).filter((item)=>item.kind==='component'&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id);
+            if(!Number.isInteger(count)||count<1||count>pool.length)throw new Error('SOURCE_COMPONENT_REWARD_UNAVAILABLE');
+            for(let index=0;index<count;index++){
+              const selected=Math.floor(random(state)*pool.length);
+              bonusRewardItems.push({itemId:pool.splice(selected,1)[0],kind:'component'});
+            }
+          } else throw new Error('SOURCE_REWARD_UNAVAILABLE');
+        }
+        if(bonusRewardItems.length)extra.bonusRewardItems=bonusRewardItems;
+        if(p.bonusSponsorItem&&state.rulesVersion===3){
+          const economy=state.prototypeMeta??=( {} );
+          economy.economy??={};
+          economy.economy.academy??={sponsoredItemIds:[],claimedItemIds:[]};
+          const academy=economy.economy.academy;
+          let sponsors=Array.isArray(academy.sponsoredItemIds)&&academy.sponsoredItemIds.length===3?[...academy.sponsoredItemIds]:[];
+          if(!sponsors.length){
+            const table=catalog.prototypeEconomy?.academy??{};
+            sponsors=chooseAcademySponsorSet(state.seed??state.id??'run',table.sponsorSets?.length?table.sponsorSets:(table.eligibleItemIds??[]));
+            if(sponsors.length===3)academy.sponsoredItemIds=[...sponsors];
+          }
+          if(sponsors.length!==3||new Set(sponsors).size!==3||sponsors.some((id)=>!itemGrantAllowed(catalog,id)))throw new Error('ACADEMY_SPONSOR_SET_UNAVAILABLE');
+          const bonusSponsorItemId=sponsors[Math.floor(random(state)*sponsors.length)];
+          extra.bonusSponsorItemId=bonusSponsorItemId;
+          extra.bonusSponsorSet=[...sponsors];
+        }
+        addPendingChoice(state,'transfer',strategy.id,availableItemOptions(catalog,'emblem',p.itemIds),1,extra);
+      }
       if(effect.kind==='target_copy') {
         state.strategyState[strategy.id].targetWins=Number(p.wins??3);state.strategyState[strategy.id].observedWins=0;delete state.strategyState[strategy.id].wins;
         addPendingChoice(state,'target_piece',strategy.id,state.pieces.filter(piece=>piece.row!==null).map((piece)=>piece.uid).filter((id)=>{const piece=pieceByUid(state,id);return piece&&costOf(catalog,piece.operatorId)>=Number(p.costMin??1)&&costOf(catalog,piece.operatorId)<=Number(p.costMax??3)}),1);
@@ -756,10 +920,12 @@ function prepareSupply(state,catalog) {
     if(options.length)addPendingChoice(state,'transfer',`node-${node}`,options,state.rulesVersion===2?1:Number(transfer.count??1),state.rulesVersion===2?{sourceTemplate:'TFT11.15:Tome of Traits'}:{});
   }
   const xp=(supply.xp??[]).find((entry)=>entry.node===node);
-  if(xp) applyXp(state,Number(xp.amount??0));
+  if(xp) applyXp(state,Number(xp.amount??0),catalog);
   for(const [id,entry] of activeStrategyEntries(state)){
     const strategy=strategyDefs(catalog)[id];if(!strategy)continue;
     if(strategy.effects?.some(effect=>effect.kind==='trade_sector'))entry.freeAvailable=true;
+    const epoch=strategy.effects?.find(effect=>effect.kind==='prototype_epoch');
+    if(epoch){const stageNodes=Math.max(1,Math.trunc(Number(epoch.params?.stageNodes??4))),stage=Math.floor((node-1)/stageNodes);if(stage>Number(entry.lastStage??-1)){applyXp(state,Number(epoch.params?.xp??0),catalog);state.freeRefreshes=(Number(state.freeRefreshes)||0)+Number(epoch.params?.rerolls??0);entry.lastStage=stage;}}
     if(strategy.effects?.some((effect)=>effect.kind==='delayed_operator')&&node>=Number(entry.dueRound??Infinity)&&!entry.delivered){
       const target=entry.targetOperatorId;
       if(target&&(state.poolRemaining[target]??0)>0)addPendingChoice(state,'operators',id,[target],1,{cost:Number(entry.cost??4)});else state.gold+=6;
@@ -777,17 +943,199 @@ function prepareSupply(state,catalog) {
   state.nodeStarted=true;
 }
 function reconcilePhase(state) { state.phase=state.pendingChoices.length?'choice':state.terminalReason?'complete':'prep'; }
+function appendPrototypeChoiceDrafts(state,drafts=[]) {
+  const events=[];
+  for(const draft of drafts??[]) {
+    if(draft?.type!=='prototype_economy'||typeof draft.source!=='string'||typeof draft.economyKind!=='string'
+      ||!Array.isArray(draft.options)||draft.options.length===0||draft.options.some((option)=>!option||typeof option.id!=='string'))
+      throw new Error('BAD_PROTOTYPE_ECONOMY_CHOICE');
+    const key=String(draft.metadata?.key??'');
+    if(!key)throw new Error('BAD_PROTOTYPE_ECONOMY_CHOICE_KEY');
+    if(state.pendingChoices.some((choice)=>choice.type==='prototype_economy'&&choice.metadata?.key===key))continue;
+    const details=clone(draft.options),options=details.map((option)=>option.id);
+    const choice={uid:uid(state,'c'),type:'prototype_economy',source:draft.source,economyKind:draft.economyKind,
+      options,remaining:Math.max(1,Math.min(options.length,Number(draft.remaining)||1)),metadata:{...clone(draft.metadata),optionDetails:details}};
+    state.pendingChoices.push(choice);
+    events.push({type:'prototype-economy-choice',choiceUid:choice.uid,economyKind:choice.economyKind,options:[...choice.options]});
+  }
+  return events;
+}
+function applyPrototypeGearTransition(state,catalog,action) {
+  const gearAction={...action};
+  let gearState=state;
+  if(action.choiceUid!=null) {
+    gearState=clone(state);
+    const choice=gearState.pendingChoices.find((entry)=>String(entry.uid)===String(action.choiceUid));
+    if(choice?.economyKind==='gear_anvil')choice.options=clone(choice.metadata?.optionDetails??[]);
+  }
+  const result=applyPrototypeGearAction(gearState,catalog,gearAction);
+  Object.assign(state,result.state);
+  const events=[...(result.events??[])];
+  for(const event of result.events??[]) {
+    const grants=event.type==='prototype_gear_grant'?[event.grant]:event.type==='prototype_gear_grants'?event.grants:null;
+    if(!grants)continue;
+    for(const grant of grants) {
+      const itemId=grant?.id,quality=grant?.quality;
+      if(grant?.kind!=='item'||!itemGrantAllowed(catalog,itemId)||!own(itemTable(catalog),itemId))throw new Error('INVALID_PROTOTYPE_GEAR_GRANT');
+      if(quality!==undefined&&(!['artifact','support','radiant','radiant_conversion'].includes(quality)||!own(catalog.prototypeEconomy?.qualityEffects?.[quality]??{},itemId)))throw new Error('INVALID_PROTOTYPE_GEAR_QUALITY');
+      if(state.inventory.length>=INVENTORY_CAPACITY)throw new Error('INVENTORY_CAPACITY');
+      state.inventory.push({uid:uid(state,'i'),itemId,...(quality?{quality}:{})});
+    }
+  }
+  events.push(...appendPrototypeChoiceDrafts(state,result.choiceDrafts));
+  if(action.choiceUid!=null)state.pendingChoices=state.pendingChoices.filter((choice)=>String(choice.uid)!==String(action.choiceUid));
+  return events;
+}
 function findChoice(state,id) { return state.pendingChoices.find((choice)=>choice.uid===id)??null; }
+function claimPrototypeEconomyChoice(state,catalog,choice,optionIds) {
+  if(optionIds.length!==1)throw new Error('BAD_PROTOTYPE_ECONOMY_SELECTION');
+  const option=(choice.metadata?.optionDetails??[]).find((row)=>row?.id===optionIds[0]);
+  if(!option)throw new Error('PROTOTYPE_ECONOMY_OPTION_MISSING');
+  const economy=state.prototypeMeta?.economy;
+  if(!economy)throw new Error('PROTOTYPE_ECONOMY_STATE_MISSING');
+  const cost=option.cost;
+  if(cost!==undefined){
+    if(!cost||!['gold','shimmer'].includes(cost.currency)||!isInt(cost.amount)||cost.amount<0)throw new Error('BAD_PROTOTYPE_ECONOMY_COST');
+    if(cost.currency==='gold'){if(state.gold<cost.amount)throw new Error('NOT_ENOUGH_GOLD');state.gold-=cost.amount;}
+    else {if(economy.chemBaron.shimmer<cost.amount)throw new Error('NOT_ENOUGH_SHIMMER');economy.chemBaron.shimmer-=cost.amount;}
+  }
+  if(option.action==='skip'){
+    if(choice.economyKind==='chem_market'){
+      economy.chemBaron.marketsSkipped++;
+      const health=Math.max(0,Number(choice.metadata?.healthPerSkip)||0);
+      economy.chemBaron.healthFromSkips+=health;
+    } else if(choice.economyKind==='junker_armory') {
+      if(economy.junkerKing.pendingArmories<1)throw new Error('NO_PENDING_ARMORY');
+      economy.junkerKing.pendingArmories--;
+    } else throw new Error('INVALID_PROTOTYPE_ECONOMY_SKIP');
+  } else {
+    if(!Array.isArray(option.grant)||!option.grant.length)throw new Error('PROTOTYPE_ECONOMY_GRANT_MISSING');
+    for(const grant of option.grant){
+      if(grant?.kind==='gold'){
+        if(!isInt(grant.amount)||grant.amount<0)throw new Error('BAD_PROTOTYPE_ECONOMY_GOLD');state.gold+=grant.amount;
+      } else if(grant?.kind==='xp'){
+        if(!isInt(grant.amount)||grant.amount<0)throw new Error('BAD_PROTOTYPE_ECONOMY_XP');applyXp(state,grant.amount,catalog);
+      } else if(grant?.kind==='item'||grant?.kind==='component'){
+        let itemId=grant.id;
+        if(grant.pool!==undefined){
+          if(grant.kind==='component'&&grant.pool==='components'){
+            const eligible=Object.values(itemTable(catalog)).filter((item)=>item?.kind==='component'&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id).sort();
+            if(!eligible.length)throw new Error('PROTOTYPE_ECONOMY_COMPONENT_POOL_EMPTY');
+            itemId=eligible[Math.floor(random(state)*eligible.length)];
+          } else if(grant.kind==='item'&&grant.pool==='artifact') {
+            const eligible=Object.values(itemTable(catalog)).filter((item)=>item?.prototypeEconomyArtifact===true&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id).sort();
+            if(!eligible.length)throw new Error('PROTOTYPE_ECONOMY_ARTIFACT_POOL_UNAVAILABLE');
+            itemId=eligible[Math.floor(random(state)*eligible.length)];
+          } else throw new Error('UNSUPPORTED_PROTOTYPE_ECONOMY_POOL');
+        }
+        const item=itemTable(catalog)[itemId];
+        if(!item||grant.kind==='component'&&item.kind!=='component'||!itemGrantAllowed(catalog,itemId))throw new Error('INVALID_PROTOTYPE_ECONOMY_ITEM');
+        if(state.inventory.length>=INVENTORY_CAPACITY)throw new Error('INVENTORY_CAPACITY');
+        state.inventory.push({uid:uid(state,'i'),itemId});
+      } else if(grant?.kind==='operator'){
+        const operatorPool=activeOperatorIds(catalog).filter((id)=>opTable(catalog)[id]?.cost===grant.targetCost&&(state.poolRemaining[id]??0)>0).sort();
+        const operatorId=own(opTable(catalog),grant.id)?grant.id
+          :grant.targetCost!==undefined?(operatorPool.length?operatorPool[Math.floor(random(state)*operatorPool.length)]:null)
+            :activeOperatorIds(catalog).find((id)=>opTable(catalog)[id]?.charId===grant.targetCharId);
+        if(!operatorId||!activeOperatorIds(catalog).includes(operatorId))throw new Error('INVALID_PROTOTYPE_ECONOMY_OPERATOR');
+        if(!mergeAvailable(state,operatorId,1,true)&&benchCount(state)>=benchCapacity(state,catalog))throw new Error('BENCH_FULL');
+        if((state.poolRemaining[operatorId]??0)<1)throw new Error('POOL_EMPTY');
+        state.poolRemaining[operatorId]--;state.pieces.push(makePiece(state,operatorId));mergeOperatorCopies(state,catalog);
+      } else if(grant?.kind==='consumable'){
+        const custom=state.rulesVersion===3&&own(catalog.prototypeEconomy?.gearConsumables??{},grant.id);
+        if(!custom&&!['smallCopy','universalCopy'].includes(grant.id))throw new Error('INVALID_PROTOTYPE_ECONOMY_CONSUMABLE');
+        if(custom){state.consumables.push({uid:uid(state,'u'),kind:grant.id,source:choice.source});continue;}
+        addConsumable(state,grant.id,choice.economyKind);
+      } else if(grant?.kind==='special_entity'){
+        const descriptor=catalog.specialEntities?.[grant.id];
+        const count=grant.count===undefined?1:grant.count;
+        if(!descriptor||descriptor.kind!=='training_dummy'||!Number.isInteger(count)||count<1||count>3)throw new Error('INVALID_PROTOTYPE_SPECIAL_ENTITY');
+        state.specialEntities??=[];
+        for(let index=0;index<count;index++)state.specialEntities.push({uid:uid(state,'se'),entityId:grant.id,source:choice.source,row:null,col:null});
+      } else if(grant?.kind==='rumble_upgrade'){
+        if(choice.economyKind!=='junker_armory'||typeof grant.id!=='string')throw new Error('INVALID_PROTOTYPE_ECONOMY_UPGRADE');
+        const target=pieceByUid(state,grant.targetUid);
+        const rumbleIds=new Set((catalog.prototypeSeason?.traits??prototypeSeason.traits).find((trait)=>trait.sourceName==='Junker King')?.members??[]);
+        const targetChar=target&&opTable(catalog)[target.operatorId]?.charId;
+        if(!target||target.row===null||!rumbleIds.has(targetChar)||target.star<1)throw new Error('INVALID_JUNKER_TARGET');
+        if(grant.id==='TFT13_JunkerKing_3Star'&&target.star!==3)throw new Error('JUNKER_THREE_STAR_REQUIRED');
+        economy.junkerKing.upgrades.push({...structuredClone(grant),targetUid:target.uid});
+      } else throw new Error(`UNSUPPORTED_PROTOTYPE_ECONOMY_GRANT:${grant?.kind??'missing'}`);
+    }
+  }
+  const key=choice.metadata?.key;
+  if(choice.economyKind==='academy_sponsor'){
+    const ids=choice.metadata?.itemIds??option.grant?.filter((grant)=>grant.kind==='item'||grant.kind==='component').map((grant)=>grant.id)??[];
+    economy.academy.claimedItemIds=[...new Set([...economy.academy.claimedItemIds,...ids])];
+  } else if(choice.economyKind==='chem_market'){
+    if(option.action!=='skip')economy.chemBaron.marketsOpened++;
+  } else if(choice.economyKind==='war_chest'){
+    const threshold=Number(choice.metadata?.threshold);if(!isInt(threshold))throw new Error('BAD_CONQUEROR_CHEST_THRESHOLD');
+    if(!economy.conqueror.openedChests.includes(threshold))economy.conqueror.openedChests.push(threshold);
+    economy.conqueror.pendingChests=economy.conqueror.pendingChests.filter((value)=>value!==threshold);
+  } else if(choice.economyKind==='family_heist'){
+    const threshold=Number(choice.metadata?.threshold);if(!isInt(threshold))throw new Error('BAD_FAMILY_HEIST_THRESHOLD');
+    if(!economy.family.completedHeists.includes(threshold))economy.family.completedHeists.push(threshold);
+    economy.family.pendingHeists=economy.family.pendingHeists.filter((value)=>value!==threshold);
+  } else if(choice.economyKind==='junker_armory'){
+    if(economy.junkerKing.pendingArmories<1)throw new Error('JUNKER_ARMORY_NOT_PENDING');
+    economy.junkerKing.pendingArmories--;
+  } else throw new Error(`UNKNOWN_PROTOTYPE_ECONOMY_KIND:${choice.economyKind}`);
+  economy.draftedKeys=Array.isArray(economy.draftedKeys)?economy.draftedKeys:[key].filter(Boolean);
+}
+function prototypeResultUnits(state,catalog,result,field) {
+  const rows=Array.isArray(result?.[field])?result[field]:field==='contributions'?(result?.combatStats?.units??[]):[];
+  const uidMap=new Map((Array.isArray(result?.uidMap)?result.uidMap:[]).map(([native,session])=>[String(native),session]));
+  return rows.map((row)=>{
+    const pieceUid=uidMap.get(String(row?.pieceUid??row?.uid))??row?.pieceUid??row?.uid??null;
+    const piece=state.pieces.find((entry)=>pieceUid!=null&&String(entry.uid)===String(pieceUid));
+    const direct=Object.values(opTable(catalog)).find((operator)=>operator.sourceChessId===row?.defId||operator.id===row?.defId);
+    const charId=row?.charId??opTable(catalog)[piece?.operatorId]?.charId??direct?.charId;
+    if(!charId)return null;
+    const normalized={...row,charId,pieceUid};
+    for(const [target,candidates] of Object.entries({damage:['damage','dmg'],healing:['healing','heal'],blocked:['blocked','taken']})){
+      const found=candidates.find((key)=>row?.[key]!==null&&row?.[key]!==undefined&&row?.[key]!==''&&Number.isFinite(Number(row[key])));
+      if(found)normalized[target]=Number(row[found]);
+    }
+    return normalized;
+  }).filter(Boolean);
+}
 function claimChoice(state,catalog,choice,optionIds) {
   if(!Array.isArray(optionIds)||!optionIds.length||optionIds.length>choice.remaining) throw new Error('BAD_REWARD_SELECTION');
   if(new Set(optionIds).size!==optionIds.length||optionIds.some((id)=>!choice.options.includes(id))) throw new Error('INVALID_REWARD_OPTION');
   if(choice.type==='components'||choice.type==='transfer') {
-    if(state.inventory.length+optionIds.length>INVENTORY_CAPACITY) throw new Error('INVENTORY_CAPACITY');
+    const bonusSponsorItemId=choice.type==='transfer'?choice.bonusSponsorItemId:null;
+    const bonusRewardItems=choice.type==='transfer'?[...(choice.bonusRewardItems??[]),...(bonusSponsorItemId?[{itemId:bonusSponsorItemId,kind:'item'}]:[])]:[];
+    if(state.inventory.length+optionIds.length+bonusRewardItems.length>INVENTORY_CAPACITY) throw new Error('INVENTORY_CAPACITY');
+    if(bonusSponsorItemId){
+      const sponsors=choice.bonusSponsorSet;
+      const item=itemTable(catalog)[bonusSponsorItemId];
+      if(!Array.isArray(sponsors)||sponsors.length!==3||!sponsors.includes(bonusSponsorItemId)||!item||!itemGrantAllowed(catalog,bonusSponsorItemId))throw new Error('INVALID_ACADEMY_SPONSOR_REWARD');
+    }
+    for(const reward of bonusRewardItems){
+      const item=itemTable(catalog)[reward.itemId];
+      if(!item||!itemGrantAllowed(catalog,reward.itemId)||(reward.kind==='component'&&item.kind!=='component')||(reward.kind==='item'&&item.kind!=='completed'))throw new Error('INVALID_SOURCE_BONUS_REWARD');
+    }
     for(const itemId of optionIds) {
       const item=itemTable(catalog)[itemId];
       if(!item||choice.type==='components'&&item.kind!=='component'||choice.type==='transfer'&&item.kind!=='emblem') throw new Error('INVALID_REWARD_ITEM');
       if(!itemGrantAllowed(catalog,itemId))throw new Error('EQUIPMENT_GRANT_NOT_ALLOWED');
       state.inventory.push({uid:uid(state,'i'),itemId});
+    }
+    if(bonusRewardItems.length){
+      for(const reward of bonusRewardItems)state.inventory.push({uid:uid(state,'i'),itemId:reward.itemId});
+    }
+    if(bonusSponsorItemId){
+      const academy=state.prototypeMeta?.economy?.academy;
+      if(academy)academy.crownGrantedItemIds=[...new Set([...(academy.crownGrantedItemIds??[]),bonusSponsorItemId])];
+    }
+    if(choice.type==='transfer')for(const operatorId of choice.bonusOperatorIds??[]){
+      if(!activeOperatorIds(catalog).includes(operatorId))throw new Error('INVALID_BONUS_OPERATOR');
+      if(!mergeAvailable(state,operatorId,1,true)&&benchCount(state)>=benchCapacity(state,catalog))throw new Error('BENCH_FULL');
+      if((state.poolRemaining[operatorId]??0)<1)throw new Error('POOL_EMPTY');
+      state.poolRemaining[operatorId]--;
+      state.pieces.push(makePiece(state,operatorId));
+      mergeOperatorCopies(state,catalog);
     }
   } else if(choice.type==='operators') {
     for(const operatorId of optionIds) {
@@ -843,6 +1191,8 @@ function claimChoice(state,catalog,choice,optionIds) {
     const piece=pieceByUid(state,choice.pieceUid);if(!piece||!own(catalog.pacts,optionIds[0]))throw new Error('BAD_PACT_OPTION');
     if(!pactGrantAllowed(catalog,optionIds[0]))throw new Error('PACT_GRANT_NOT_ALLOWED');
     piece.extraPacts??=[];if(!piece.extraPacts.includes(optionIds[0]))piece.extraPacts.push(optionIds[0]);
+  } else if(choice.type==='prototype_economy') {
+    claimPrototypeEconomyChoice(state,catalog,choice,optionIds);
   } else throw new Error(`UNKNOWN_REWARD_TYPE:${choice.type}`);
   choice.remaining-=optionIds.length;choice.options=choice.options.filter((id)=>!optionIds.includes(id));
   if(choice.remaining<=0)state.pendingChoices=state.pendingChoices.filter((entry)=>entry!==choice);
@@ -864,7 +1214,7 @@ function advanceSupply(state,catalog) {
   if(state.nodeStarted) {
     if(state.difficulty!=='FUNNY'||state.round%2!==1)throw new Error('NODE_ALREADY_STARTED');
     const settlement=settleNodeIncome(state,catalog,{baseIncome:Number(campaignOf(catalog).nodeSchedule?.FUNNY?.oddNodeGold??5)});
-    applyXp(state,Number(campaignOf(catalog).nodeSchedule?.FUNNY?.oddNodeXp??2));
+    applyXp(state,Number(campaignOf(catalog).nodeSchedule?.FUNNY?.oddNodeXp??2),catalog);
     state.history.push({round:state.round,type:'logistics-settled',...settlement,xp:Number(campaignOf(catalog).nodeSchedule?.FUNNY?.oddNodeXp??2),streakPreserved:true});
     state.round++;
     if(state.round>state.roundLimit)throw new Error('NO_NEXT_NODE');
@@ -950,17 +1300,18 @@ function resolveDeployedField(state, catalog, fieldResolver) {
   if (!resolved.known) throw new Error('FIELD_RESOLVER_INVALID');
   return resolved.cells;
 }
-function settleFight(state, catalog, action, { battleRunner, fieldResolver, recording }) {
+function settleFight(state, catalog, action, { battleRunner, fieldResolver, recording, completedResult = null }) {
   requirePrep(state);
   if(state.difficulty==='FUNNY'&&state.round%2===1)throw new Error('FUNNY_LOGISTICS_NODE');
   if(state.terminalReason)throw new Error('SESSION_COMPLETE');
+  const battleRound = state.round;
+  const lossStreakBefore = state.lossStreak;
   if (state.pendingChoices.length) throw new Error('CHOICES_PENDING');
   if (!state.nodeStarted) throw new Error('SUPPLY_NOT_ADVANCED');
   const deployed = state.pieces.filter((piece) => piece.row !== null);
-  if (deployed.length > state.level) throw new Error('POPULATION_OVER_CAPACITY');
+  if (deployed.length > effectiveDeployCapacity(state)) throw new Error('POPULATION_OVER_CAPACITY');
   const cells = resolveDeployedField(state,catalog,fieldResolver);
   for (const piece of deployed) if (!canDeployAt(cells,piece.row,piece.col,opTable(catalog)[piece.operatorId])) throw new Error('ILLEGAL_DEPLOYMENT');
-  if (typeof battleRunner !== 'function') throw new Error('BATTLE_RUNNER_REQUIRED');
   const battleInput = clone(state);
   for(const selected of state.strategies){const id=typeof selected==='string'?selected:selected.id;const strategy=strategyDefs(catalog)[id];const entry=state.strategyState[id];
     if(!strategy||!entry||entry.fallbackApplied||!['formation_count','choose_adjacent_pair'].includes(strategy.condition?.kind))continue;
@@ -970,9 +1321,12 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
       entry.fallbackApplied=true;battleInput.strategies=battleInput.strategies.filter((candidate)=>(typeof candidate==='string'?candidate:candidate.id)!==id);
     }
   }
-  let result;
-  try { result = battleRunner(battleInput,{catalog,recording}); }
-  catch (error) { throw new Error(`BATTLE_RUNNER_FAILED:${error?.message ?? 'unknown'}`); }
+  let result = completedResult;
+  if (result == null) {
+    if (typeof battleRunner !== 'function') throw new Error('BATTLE_RUNNER_REQUIRED');
+    try { result = battleRunner(battleInput,{catalog,recording}); }
+    catch (error) { throw new Error(`BATTLE_RUNNER_FAILED:${error?.message ?? 'unknown'}`); }
+  }
   if (!result || typeof result.won !== 'boolean' || !Number.isFinite(result.hpLoss) || result.hpLoss < 0) throw new Error('BAD_BATTLE_RESULT');
   if (Number(result.diagnostics?.errorCount ?? 0) !== 0) throw new Error('BATTLE_DIAGNOSTICS');
   const events = [];
@@ -984,10 +1338,34 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   const {winBonus,streakBonus:streak,interest}=incomeDetails;
   const income=incomeDetails.income;
   const {battleGold}=settleBattleRewards(state,catalog,result);
-  applyXp(state,2);
+  applyXp(state,2,catalog);
+  if(state.rulesVersion>=3&&state.pieces.every((piece)=>piece.row!==null)){
+    for(const [id] of activeStrategyEntries(state)){
+      const clearMind=strategyDefs(catalog)[id]?.effects?.find((effect)=>effect.kind==='prototype_clear_mind');
+      if(clearMind)applyXp(state,Number(clearMind.params?.xp??0),catalog);
+    }
+  }
+  for(const [id,entry] of activeStrategyEntries(state)){
+    const goingLong=strategyDefs(catalog)[id]?.effects?.find((candidate)=>candidate.kind==='prototype_going_long');
+    if(goingLong)applyXp(state,Number(goingLong.params?.roundXp??0),catalog);
+  }
+  for(const [id,entry] of activeStrategyEntries(state)){
+    const effect=strategyDefs(catalog)[id]?.effects?.find((candidate)=>candidate.kind==='prototype_win_loss_growth');
+    if(!effect||Number(entry.lastBattleNode)===battleRound)continue;
+    const p=effect.params??{},naturalPieces=state.pieces.filter((piece)=>piece.row!==null&&(
+      (opTable(catalog)[piece.operatorId]?.pacts??[]).includes(p.traitId)
+      ||(piece.extraPacts??[]).includes(p.traitId)
+      ||(piece.equipment??[]).some((item)=>itemTable(catalog)[item.itemId]?.effects?.some((row)=>['pact_transfer','transfer_pact'].includes(row.kind)&&row.params?.pactId===p.traitId))
+    ));
+    for(const piece of naturalPieces){
+      const key=result.won?`${p.traitId}:hp`:`${p.traitId}:atkPct`,amount=result.won?Number(p.hpPerWin??0):Number(p.attackPctPerLoss??0);
+      piece.growth[key]=Math.max(0,Number(piece.growth?.[key]??0))+amount;
+    }
+    entry.lastBattleNode=battleRound;
+  }
   for(const [id,entry] of activeStrategyEntries(state)) {
     const study=strategyDefs(catalog)[id]?.effects?.find(effect=>effect.kind==='patient_study');
-    if(study&&Number(entry.lastBattleNode)!==Number(state.round)){applyXp(state,Number(result.won?study.params?.winXp??2:study.params?.lossXp??3));entry.lastBattleNode=state.round;}
+    if(study&&Number(entry.lastBattleNode)!==Number(state.round)){applyXp(state,Number(result.won?study.params?.winXp??2:study.params?.lossXp??3),catalog);entry.lastBattleNode=state.round;}
   }
   for(const [id,entry] of activeStrategyEntries(state)) {
     const strategy=strategyDefs(catalog)[id]; if(!strategy) continue;
@@ -1018,7 +1396,7 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
         else if(reward==='choose_component')addPendingChoice(state,'components',id,componentOptions(state,catalog,Number(metric.params?.optionCount??2)),1);
         else if(reward==='transfer_symbiosis')addPendingChoice(state,'transfer',id,availableItemOptions(catalog,'emblem').filter((itemId)=>itemId.includes('symbiosis')),1);
         else if(reward==='gold')state.gold+=Number(metric.params.amount??0);
-        else if(reward==='xp')applyXp(state,Number(metric.params.amount??0));
+        else if(reward==='xp')applyXp(state,Number(metric.params.amount??0),catalog);
         else throw new Error(`UNKNOWN_METRIC_REWARD:${reward}`);
       }
     }
@@ -1029,11 +1407,25 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
       else state.gold+=Math.max(1,costOf(catalog,target?.operatorId??entry.targetOperatorId??'')||1);
     }
     if(result.won&&strategy.effects?.some((effect)=>effect.kind==='victory_tradeoff'))state.hp=Math.max(0,state.hp-Number(strategy.effects.find((effect)=>effect.kind==='victory_tradeoff').params?.hpCost??0));
-    if(strategy.effects?.some((effect)=>effect.kind==='flexible_core')){
+  if(strategy.effects?.some((effect)=>effect.kind==='flexible_core')){
       const core=[...deployed].sort((a,b)=>b.star-a.star||costOf(catalog,b.operatorId)-costOf(catalog,a.operatorId)||String(a.uid).localeCompare(String(b.uid)))[0];
       if(core){if(!entry.coreUid){entry.coreUid=core.uid;entry.lockBattles=1;}else if(entry.coreUid===core.uid)entry.lockBattles=Number(entry.lockBattles??0)+1;
         else if(Number(entry.lockBattles??0)>=3&&entry.rewardedNode!==state.round){state.gold+=Number(strategy.effects.find((effect)=>effect.kind==='flexible_core').params?.gold??2);entry.coreUid=core.uid;entry.lockBattles=1;entry.rewardedNode=state.round;}}
     }
+  }
+  if (catalog.prototypeMeta?.rulesVersion === 3) {
+    const prototypeResult=onPrototypeBattleResult(state, catalog, {
+      battleId: result.battleId ?? `${state.seed}:${battleRound}:${state.revision}`,
+      battleRound,
+      outcome: { won: result.won, reason: result.result?.reason ?? null, round: battleRound },
+      lossStreakBefore,
+      metrics: result.metrics ?? {},
+      contributions: prototypeResultUnits(state,catalog,result,'contributions'),
+      survivors: prototypeResultUnits(state,catalog,result,'survivors').map((unit)=>({...unit,alive:unit.alive===true})),
+      uidMap: result.uidMap ?? null,
+    });
+    Object.assign(state,prototypeResult.state);
+    events.push(...(prototypeResult.events??[]),...appendPrototypeChoiceDrafts(state,prototypeResult.choiceDrafts));
   }
   const terminalReason = state.hp <= 0 ? 'hp-depleted'
     : state.round >= state.roundLimit ? (result.won ? 'victory' : 'round-limit-loss') : null;
@@ -1057,12 +1449,13 @@ function settleFight(state, catalog, action, { battleRunner, fieldResolver, reco
   return { events, replay: result.replay ?? null };
 }
 
-export function applyAction(state, action, { catalog, battleRunner, fieldResolver, recording = true } = {}) {
+export function applyAction(state, action, { catalog, battleRunner, fieldResolver, recording = true, completedResult = null } = {}) {
   if (!state || !action || typeof action !== 'object') return fail(state ?? {},'BAD_ACTION');
   const valid = validateSession(state,{catalog});
   if (!valid.ok) return fail(state,'INVALID_STATE',valid.errors);
   if (action.expectedRevision !== undefined && action.expectedRevision !== state.revision) return fail(state,'STALE_REVISION');
   const draft = clone(state);
+  assignLegacyBenchSlots(draft);
   const events = [];
   let replay;
   try {
@@ -1091,7 +1484,8 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         requirePrep(draft); if (draft.level>=10) throw new Error('MAX_LEVEL');
         const discount=activeStrategyEntries(draft).find(([id,entry])=>Number(entry.uses)>0&&strategyDefs(catalog)[id]?.effects?.some((effect)=>effect.kind==='xp_discount'))?.[1];
         const cost=4-(discount?Math.min(4,Number(discount.amount??0)):0);if (draft.gold<cost) throw new Error('NOT_ENOUGH_GOLD'); draft.gold-=cost;if(discount)discount.uses--;
-        applyXp(draft,4); events.push({type:'xp-purchased',gold:cost,xp:4,level:draft.level,remainingXp:draft.xp}); break;
+        const bonusXp=draft.rulesVersion>=3?activeStrategyEntries(draft).reduce((sum,[id])=>sum+Number(strategyDefs(catalog)[id]?.effects?.find((effect)=>effect.kind==='prototype_level_up')?.params?.bonusXpPerPurchase??0),0):0;
+        applyXp(draft,4+bonusXp,catalog); events.push({type:'xp-purchased',gold:cost,xp:4+bonusXp,purchasedXp:4,bonusXp,level:draft.level,remainingXp:draft.xp}); break;
       }
       case 'buy': {
         requirePrep(draft); const offerIndex=draft.shop.offers.findIndex((offer)=>offer.uid===action.offerUid);
@@ -1124,23 +1518,73 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
       }
       case 'deploy': {
         requirePrep(draft); const piece=pieceByUid(draft,action.pieceUid); if(!piece) throw new Error('PIECE_NOT_FOUND');
-        if (piece.row!==null) throw new Error('PIECE_ALREADY_DEPLOYED'); if (draft.pieces.filter((entry)=>entry.row!==null).length>=draft.level) throw new Error('POPULATION_OVER_CAPACITY');
+        if (piece.row!==null) throw new Error('PIECE_ALREADY_DEPLOYED'); if (draft.pieces.filter((entry)=>entry.row!==null).length>=effectiveDeployCapacity(draft)) throw new Error('POPULATION_OVER_CAPACITY');
         if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[piece.operatorId]?.charId;if(draft.pieces.some((entry)=>entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
         if (!isInt(action.row)||!isInt(action.col)||!['UP','RIGHT','DOWN','LEFT'].includes(action.dir)) throw new Error('BAD_POSITION');
         const check=cellIsLegal(fieldResolver,draft,catalog,action.row,action.col); if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');if(!check.legal||!canDeployAt(check.cells,action.row,action.col,opTable(catalog)[piece.operatorId]))throw new Error('ILLEGAL_DEPLOYMENT');
-        if(draft.pieces.some((entry)=>entry.row===action.row&&entry.col===action.col))throw new Error('CELL_OCCUPIED');
+        const occupant=draft.pieces.find((entry)=>entry!==piece&&entry.row===action.row&&entry.col===action.col);
+        if(occupant&&!canDeployAt(check.cells,action.row,action.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
+        if(occupant){
+          const slot=piece.benchSlot;
+          if(!Number.isInteger(slot)||slot<0||slot>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');
+          occupant.row=null;occupant.col=null;occupant.benchSlot=slot;
+        }
+        piece.benchSlot=null;
         piece.row=action.row;piece.col=action.col;piece.dir=action.dir;events.push({type:'piece-deployed',uid:piece.uid,row:piece.row,col:piece.col,dir:piece.dir});break;
       }
       case 'move': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');
         if(piece.row===null)throw new Error('PIECE_NOT_DEPLOYED');if(!isInt(action.row)||!isInt(action.col)||!['UP','RIGHT','DOWN','LEFT'].includes(action.dir))throw new Error('BAD_POSITION');
         if(uniqueCoreEnabled(draft,catalog)){const charId=opTable(catalog)[piece.operatorId]?.charId;if(draft.pieces.some((entry)=>entry!==piece&&entry.row!==null&&opTable(catalog)[entry.operatorId]?.charId===charId))throw new Error('DUPLICATE_CORE_IDENTITY');}
-        if(draft.pieces.some((entry)=>entry!==piece&&entry.row===action.row&&entry.col===action.col))throw new Error('CELL_OCCUPIED');
+        const occupant=draft.pieces.find((entry)=>entry!==piece&&entry.row===action.row&&entry.col===action.col);
         const check=cellIsLegal(fieldResolver,draft,catalog,action.row,action.col);if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');if(!check.legal||!canDeployAt(check.cells,action.row,action.col,opTable(catalog)[piece.operatorId]))throw new Error('ILLEGAL_DEPLOYMENT');
+        if(occupant){
+          const sourceCheck=cellIsLegal(fieldResolver,draft,catalog,piece.row,piece.col);
+          if(!sourceCheck.known)throw new Error('FIELD_RESOLVER_REQUIRED');
+          if(!sourceCheck.legal||!canDeployAt(sourceCheck.cells,piece.row,piece.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
+          occupant.row=piece.row;occupant.col=piece.col;
+        }
         piece.row=action.row;piece.col=action.col;piece.dir=action.dir;events.push({type:'piece-moved',uid:piece.uid,row:piece.row,col:piece.col,dir:piece.dir});break;
       }
       case 'bench': {
-        requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');if(piece.row===null)throw new Error('PIECE_ALREADY_BENCHED');piece.row=null;piece.col=null;events.push({type:'piece-benched',uid:piece.uid});break;
+        requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');
+        const slot=Number.isInteger(action.slot)?action.slot:nextBenchSlot(draft);
+        if(slot<0||slot>=benchCapacity(draft,catalog))throw new Error('BAD_BENCH_SLOT');
+        const slots=benchSlotMap(draft),occupant=slots.get(slot);
+        if(piece.row===null){
+          if(occupant&&occupant!==piece){const old=piece.benchSlot;occupant.benchSlot=old;}
+          piece.benchSlot=slot;
+        } else {
+          if(occupant){
+            const check=cellIsLegal(fieldResolver,draft,catalog,piece.row,piece.col);
+            if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');
+            if(!check.legal||!canDeployAt(check.cells,piece.row,piece.col,opTable(catalog)[occupant.operatorId]))throw new Error('ILLEGAL_SWAP');
+            occupant.row=piece.row;occupant.col=piece.col;occupant.benchSlot=null;
+          } else if(benchCount(draft)>=benchCapacity(draft,catalog))throw new Error('BENCH_FULL');
+          piece.row=null;piece.col=null;piece.benchSlot=slot;
+        }
+        events.push({type:'piece-benched',uid:piece.uid,slot});break;
+      }
+      case 'placeSpecialEntity': {
+        requirePrep(draft);
+        const entity=(draft.specialEntities??[]).find((entry)=>entry.uid===action.entityUid);
+        if(!entity)throw new Error('SPECIAL_ENTITY_NOT_FOUND');
+        if(!isInt(action.row)||!isInt(action.col))throw new Error('BAD_POSITION');
+        const check=cellIsLegal(fieldResolver,draft,catalog,action.row,action.col);
+        if(!check.known)throw new Error('FIELD_RESOLVER_REQUIRED');
+        if(!check.legal)throw new Error('ILLEGAL_DEPLOYMENT');
+        const occupied=draft.pieces.some((piece)=>piece.row===action.row&&piece.col===action.col)
+          ||(draft.specialEntities??[]).some((other)=>other!==entity&&other.row===action.row&&other.col===action.col);
+        if(occupied)throw new Error('CELL_OCCUPIED');
+        entity.row=action.row;entity.col=action.col;
+        events.push({type:'special-entity-deployed',uid:entity.uid,row:entity.row,col:entity.col});break;
+      }
+      case 'storeSpecialEntity': {
+        requirePrep(draft);
+        const entity=(draft.specialEntities??[]).find((entry)=>entry.uid===action.entityUid);
+        if(!entity)throw new Error('SPECIAL_ENTITY_NOT_FOUND');
+        entity.row=null;entity.col=null;
+        events.push({type:'special-entity-stored',uid:entity.uid});break;
       }
       case 'turn': {
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');if(!['UP','RIGHT','DOWN','LEFT'].includes(action.dir))throw new Error('BAD_DIRECTION');piece.dir=action.dir;events.push({type:'piece-turned',uid:piece.uid,dir:piece.dir});break;
@@ -1179,7 +1623,18 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
       }
       case 'claimReward': {
         const choice=findChoice(draft,action.choiceUid);if(!choice)throw new Error('REWARD_CHOICE_NOT_FOUND');
-        claimChoice(draft,catalog,choice,action.optionIds);reconcilePhase(draft);events.push({type:'reward-claimed',choiceUid:choice.uid,optionIds:[...action.optionIds]});break;
+        if(choice.type==='prototype_economy'&&choice.economyKind==='gear_anvil') {
+          events.push(...applyPrototypeGearTransition(draft,catalog,{type:'useConsumable',consumableUid:choice.metadata?.consumableUid,choiceUid:choice.uid,optionIds:action.optionIds}));
+        } else claimChoice(draft,catalog,choice,action.optionIds);
+        reconcilePhase(draft);events.push({type:'reward-claimed',choiceUid:choice.uid,optionIds:[...action.optionIds]});break;
+      }
+      case 'useConsumable': {
+        if(draft.rulesVersion!==3)throw new Error('PROTOTYPE_GEAR_NOT_AVAILABLE');
+        if(draft.phase==='choice') {
+          const choice=findChoice(draft,action.choiceUid);
+          if(!choice||choice.economyKind!=='gear_anvil')throw new Error('PROTOTYPE_GEAR_ACTION_WRONG_PHASE');
+        } else requirePrep(draft);
+        events.push(...applyPrototypeGearTransition(draft,catalog,action));reconcilePhase(draft);break;
       }
       case 'useCopy': {
         requirePrep(draft);const index=draft.consumables.findIndex((entry)=>entry.uid===action.consumableUid);if(index<0)throw new Error('CONSUMABLE_NOT_FOUND');
@@ -1214,7 +1669,7 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         piece.summonOrders??=[];piece.summonOrders=piece.summonOrders.filter((entry)=>entry.tokenId!==action.tokenId);piece.summonOrders.push({tokenId:action.tokenId,row:action.row,col:action.col});events.push({type:'summon-order-set',pieceUid:piece.uid,tokenId:action.tokenId,row:action.row,col:action.col});break;
       }
       case 'fight': {
-        const result=settleFight(draft,catalog,action,{battleRunner,fieldResolver,recording});events.push(...result.events);replay=result.replay;break;
+        const result=settleFight(draft,catalog,action,{battleRunner,fieldResolver,recording,completedResult});events.push(...result.events);replay=result.replay;break;
       }
       default: throw new Error('UNKNOWN_ACTION');
     }
@@ -1222,6 +1677,12 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
     reconcilePhase(draft);
     const pactAwards=updatePactSetRewards(draft,catalog);
     if(pactAwards.length){events.push({type:'strategy-reward',awards:pactAwards});reconcilePhase(draft);}
+    if (action.type !== 'fight' && catalog.prototypeMeta?.rulesVersion === 3) {
+      const prototypePrep=onPrototypePrep(draft, catalog, prototypePrepContext(fieldResolver,draft,catalog));
+      Object.assign(draft,prototypePrep.state);
+      events.push(...(prototypePrep.events??[]),...appendPrototypeChoiceDrafts(draft,prototypePrep.choiceDrafts));
+      reconcilePhase(draft);
+    }
     draft.revision++;
     draft.history.push(...events.filter((event)=>event.type!=='fight-settled').map((event)=>({round:draft.round,...event})));
     const after=validateSession(draft,{catalog});if(!after.ok)throw new Error(`INVALID_RESULT:${after.errors[0]?.code}`);

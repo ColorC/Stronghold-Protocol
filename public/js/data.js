@@ -90,6 +90,7 @@ export const ART_MANIFEST_TIMEOUT_MS = 8000;
 
 /** Manifests the emote button waits on. A hang here used to leave every cell blank (GitHub #99). */
 const ART_MANIFESTS = new Set(['local', 'assets']);
+const INJECTABLE_FILES = new Set(['chess', 'bonds', 'items', 'config']);
 
 /**
  * A failed load worth retrying: the request itself failed (network error) or the server answered 5xx / 408 / 429 — not a
@@ -226,11 +227,30 @@ export function createDataStore(opts = {}) {
     return e.index;
   }
 
+  function inject(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) throw new TypeError('data.inject expects a record map');
+    const names = Object.keys(snapshot);
+    if (!names.length || names.some((name) => !INJECTABLE_FILES.has(name))) throw new TypeError('data.inject only accepts chess, bonds, items, and config');
+    for (const name of names) {
+      const value = snapshot[name];
+      if (!value || typeof value !== 'object' || (name === 'config' && Array.isArray(value))) throw new TypeError(`data.inject invalid ${name} data`);
+    }
+    for (const name of names) {
+      const value = snapshot[name];
+      entries.set(name, { status: 'ready', promise: Promise.resolve(value), value, index: null });
+      warned.delete(name);
+      notify(name);
+    }
+    return names;
+  }
+
   return {
     /** Fetch (once) and return a file's JSON, or null when missing. */
     load,
     /** Load several files; resolves when all settled. */
     loadAll: (...names) => Promise.all(names.flat().map(load)),
+    /** Install the native-match data snapshot without changing the fetch-backed cache contract. */
+    inject,
     /** Raw JSON of a loaded file (null when missing / not loaded yet). */
     get: (name) => entries.get(name)?.value ?? null,
     /** 'idle' | 'loading' | 'ready' | 'missing' */
