@@ -161,7 +161,6 @@
 .ix-dpanel__head .dhead__name { font-size: .28rem; }
 .ix-dchips { margin-top: .02rem; }
 .ix-dchips .dbond { cursor: default; }
-.ix-dchips__origin { border-style: dashed; color: var(--text-lo); }
 .ix-dchips__lv { display: inline-flex; align-items: baseline; gap: .04rem; font-size: max(.14rem, 12px); color: var(--text-lo); }
 .ix-dchips__lv b { font-size: max(.2rem, 15px); color: var(--gold); }
 .ix-dtabs { flex: none; display: flex; flex-wrap: wrap; gap: .04rem; border-bottom: 1px solid var(--line-2); }

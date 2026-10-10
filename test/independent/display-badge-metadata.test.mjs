@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { getData } from '../../server/data.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
+import { nativeFactions } from '../../shared/independentRules.js';
 
 test('all sixteen badge projection records expose a Chinese stat name and ratio metadata', () => {
   const data = getData({ log: { warn() {}, error() {}, info() {} } });
@@ -35,11 +36,13 @@ test('projection retains existing badge text and body-penalty metadata', () => {
   assert.deepEqual(display.gear.assault.sourceRefs, catalog.badges.assault.sourceRefs, 'real reference card metadata remains available');
 });
 
-test('Texas keeps her roster factions and exposes Siracusa separately as an origin label', () => {
+test('Texas retains her two roster factions and also qualifies for Siracusa effects', () => {
   const data = getData({ log: { warn() {}, error() {}, info() {} } });
   const catalog = getCatalog(data);
   const display = independentDisplayCatalog(data, catalog);
-  const texas = Object.values(display.operators).find(x => x.name === '缄默德克萨斯');
-  assert.deepEqual(texas.nativeFactions, ['炎-龙门', '企鹅物流']);
-  assert.deepEqual(texas.originFactions, ['叙拉古']);
+  const [texasId, texas] = Object.entries(display.operators).find(([, x]) => x.name === '缄默德克萨斯');
+  assert.deepEqual(texas.nativeFactions, ['炎-龙门', '企鹅物流', '叙拉古']);
+  assert.equal(Object.hasOwn(texas, 'originFactions'), false);
+  assert.deepEqual(nativeFactions({ chessId: texasId }, catalog), ['炎-龙门', '企鹅物流', '叙拉古']);
+  assert.equal(catalog.equipment['chess_item_6_11_e_a'].params.effects[0].params.requiresTag, '叙拉古');
 });

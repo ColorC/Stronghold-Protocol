@@ -244,6 +244,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
     })) return false;
     return true;
   }) : [];
+  const validTarget = !!target && equipChoices.some((p) => p.uid === target.uid);
   return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(10.4rem, 96vw)" class="ix-inv">
     <div class="ix-inv__target">
       ${target ? html`<span class=${room <= 0 ? 'ix-warn' : 'ix-muted'}>已选${formEntry(catalog, target)?.name || '干员'} · ${room <= 0 ? '装备已满' : '穿上后无法卸下'}</span>` : html`<span class="ix-muted">点选「穿戴」后，直接点击场上或整备区干员</span>`}
@@ -298,13 +299,13 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
               ${tagFactions ? html`<select value=${tags[s.key] || ''} onChange=${(e) => setTags({ ...tags, [s.key]: e.currentTarget.value })} aria-label="身份标签阵营">
                 <option value="">选择阵营</option>${tagFactions.map((f) => html`<option key=${f} value=${f}>${f}</option>`)}</select>` : null}
               ${!equipChoices.length ? html`<span role="status" class="ix-warn">当前没有符合条件的装备目标</span>` : null}
-              <${Button} size="sm" variant="primary" disabled=${busy || !equipChoices.length || (target && !equipChoices.some((p) => p.uid === target.uid)) || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
+              <${Button} size="sm" variant="primary" disabled=${busy || !equipChoices.length || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
                 onClick=${() => {
                   const action = (uid) => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) });
-                  if (target) action(target.uid);
+                  if (validTarget) action(target.uid);
                   else onBeginTarget?.({ label: '点击标记的场上或整备区友方干员穿戴装备', closePanel: true, onCancel: onCancelTarget, choices: equipChoices.map((p) => ({ kind: 'friendly', uid: p.uid })), emptyText: '没有可以穿戴这件装备的干员', submit: ({ uid }) => action(uid) });
                 }}>
-                ${target ? (many && n > 1 ? `穿戴 ${n} 件` : '穿戴') : (many && n > 1 ? `穿戴 ${n} 件 · 点选干员` : '穿戴 · 点选干员')}<//>
+                ${validTarget ? (many && n > 1 ? `穿戴 ${n} 件` : '穿戴') : (many && n > 1 ? `穿戴 ${n} 件 · 点选干员` : '穿戴 · 点选干员')}<//>
           </div>` : html`<p class="ix-muted">库存为空</p>`}
       </div>
     </div>
