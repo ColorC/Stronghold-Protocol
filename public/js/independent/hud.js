@@ -13,7 +13,7 @@ import { FactionIcon } from './factions.js';
 import { chessPortraitUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
-import { formEntry, isDeployed, deployedSlots, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum } from './model.js';
+import { formEntry, isDeployed, deployedSlots, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum, temporaryBadgeTotal, displayEquipmentLevel } from './model.js';
 import { GearIcon, GameText } from './text.js';
 import { copyComponentLink } from './componentLinks.js';
 
@@ -494,7 +494,7 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
  * The equipment stack chip under every own unit, plus markers for attachments and a worn
  * 交接凭证. Positions follow the renderer every frame (camera moves, drags, resizes).
  */
-export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null, targetUids = [] }) {
+export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null, battleStats = null, growthMode = 'badges', targetUids = [] }) {
   const boxRef = useRef(null);
   useEffect(() => {
     if (!view || hidden) return undefined;
@@ -522,12 +522,17 @@ export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null, 
       .filter((entry) => entry.piece && entry.piece.kind !== 'token' && isDeployed(entry.piece))
     : (pieces || []).map((piece) => ({ piece, screenId: Number(String(piece.uid).replace(/^\D+/, '')), key: String(piece.uid) }));
   return html`<div class="ix-badges" ref=${boxRef} aria-hidden="true">
-    ${badges.map(({ piece, screenId, key }) => html`<span key=${key} class="ix-badge" data-n=${String(screenId)}>
-        <b class="num">×${piece.equipmentLevel ?? 0}</b>
+    ${badges.map(({ piece, screenId, key }) => {
+      const live = battleUnits && typeof battleStats === 'function' ? battleStats(screenId) : null;
+      const temporaryTotal = live && growthMode === 'badges' ? temporaryBadgeTotal(live.temporaryGrowth, catalog) : 0;
+      const temporary = temporaryTotal ? { mode: 'badges', total: temporaryTotal } : null;
+      return html`<span key=${key} class="ix-badge" data-n=${String(screenId)}>
+        <b class="num">×${displayEquipmentLevel(piece, catalog, temporary) ?? 0}</b>
         ${piece.attachments?.length ? html`<i class="ix-badge__att" title="外来附加效果"></i>` : null}
         ${permitsOf(piece, catalog).length ? html`<i class="ix-badge__perm" title="携带交接凭证"></i>` : null}
         ${targetUids.includes(piece.uid) ? html`<span class="ix-badge__target">点选</span>` : null}
-      </span>`)}
+      </span>`;
+    })}
   </div>`;
 }
 

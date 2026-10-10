@@ -15,7 +15,7 @@ import { data } from '../data.js';
 import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
 import { TraitGlyphs, mergeHintOf } from './hud.js';
 import { GameText, TermNotes, GearIcon } from './text.js';
-import { groupEquipment, permitsOf, isDeployed, temporaryGrowthDisplay, itemLevel } from './model.js';
+import { groupEquipment, permitsOf, isDeployed, temporaryGrowthDisplay, displayEquipmentLevel } from './model.js';
 import { TraitTexts, FieldConditionCounts, HammerPicker, PRODUCTION_BADGES, gearMeta, badgeTotal } from './panels.js';
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from './targetSelection.js';
 
@@ -174,7 +174,9 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
   const growthMode = state?.growthMode || piece?.growthMode || 'badges';
   const temporaryGrowth = piece && inBattle && live ? temporaryGrowthDisplay(live.temporaryGrowth, catalog, growthMode) : null;
   const temporaryItems = temporaryGrowth?.mode === 'badges' ? temporaryGrowth.items : [];
-  const permanentEquipmentLevel = piece ? piece.equipmentLevel ?? (piece.equipment || []).reduce((n, item) => n + itemLevel(item, catalog), 0) : null;
+  const visibleEquipmentCount = piece ? (piece.equipment || []).reduce((n, item) => n + Number(item.quantity || 1), 0)
+    + (inBattle && growthMode === 'badges' ? Number(temporaryGrowth?.total || 0) : 0) : 0;
+  const equipmentLevel = displayEquipmentLevel(piece, catalog, inBattle ? temporaryGrowth : null);
   const gear = piece
     ? html`<div key="equip"><${GearSection} items=${piece.equipment} attachments=${piece.attachments || []} catalog=${catalog} busy=${busy} title="装备" state=${conditionState} sourcePiece=${piece} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor}
         onConfigure=${prep ? (itemUid, ids) => onAct({ type: 'configure-equipment', targetUid: piece.uid, itemUid, hammerSourceIds: ids }) : null} />
@@ -184,7 +186,7 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,
     chips: html`<${FactionChips} factions=${piece ? piece.factions : catalog.operators?.[slot.id]?.nativeFactions || (data.lookup('chess', slot.id)?.bonds || []).map((b) => TAVERN_FACTIONS[b]).filter(Boolean)}
-      level=${piece ? permanentEquipmentLevel : null} catalog=${catalog} temporaryBadgeCount=${inBattle && growthMode === 'badges' ? temporaryGrowth?.total || 0 : 0} />`,
+      level=${equipmentLevel} catalog=${catalog} temporaryBadgeCount=${inBattle && growthMode === 'badges' ? temporaryGrowth?.total || 0 : 0} />`,
     overrides: { garrison: html`<${TraitSection} key="garrison" op=${opBase} elite=${!!piece?.elite} catalog=${catalog} piece=${piece} state=${state} conditionState=${conditionState} busy=${busy} prep=${prep} onAct=${onAct} linkAnchor=${linkAnchor} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, equip: gear, actions: null } });
   const head = blocks.find((b) => b?.key === 'head');
   const panes = { traits: [], stats: [], skill: [], talent: [], gear: [], reference: [] };
@@ -205,7 +207,7 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
     </div><div class="ix-dop__side">
     <div class="ix-dtabs" role="tablist">${shown.map(([k, label]) => html`<button type="button" key=${k} role="tab" aria-selected=${cur === k ? 'true' : 'false'}
       class=${cx('ix-dtabs__tab', cur === k && 'is-on')} onClick=${() => { onFieldHighlight?.([]); setTab(k); }}
-      onContextMenu=${(e) => linkAnchor && copyComponentLink(e, `${linkAnchor}:tab=${k}`)}>${label}${k === 'gear' && piece ? html`<span class="num">${piece.equipment.reduce((n, x) => n + (x.quantity || 1), 0)}</span>` : null}</button>`)}</div>
+      onContextMenu=${(e) => linkAnchor && copyComponentLink(e, `${linkAnchor}:tab=${k}`)}>${label}${k === 'gear' && piece ? html`<span class="num">${visibleEquipmentCount}</span>` : null}</button>`)}</div>
     <div class="ix-dpanel__pane" role="tabpanel" onContextMenu=${(e) => linkAnchor && copyComponentLink(e, `${linkAnchor}:tab=${cur}`)}>${panes[cur]}</div>
     ${footer}</div></div>`;
 }
