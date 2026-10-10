@@ -104,6 +104,12 @@ function selfTest() {
     || isExpectedResonanceSocketUrl(`wss://workshop.colorc.cc/stronghold/resonance/ws?session=${sid}`, sid)) throw new Error('native live WebSocket scope accepted a wrong session or route');
   const pageToken = {};
   if (observerPage({ page: () => pageToken }) !== pageToken || observerPage(pageToken) !== pageToken) throw new Error('Puppeteer Frame/Page observer mapping failed');
+  const cdpWire = JSON.stringify({ t: 'g.infoReady' });
+  if (cdpTextFramePayload({ response: { opcode: 1, payloadData: cdpWire } }) !== cdpWire
+    || cdpTextFramePayload({ response: { opcode: 2, payloadData: cdpWire } }) !== null
+    || cdpTextFramePayload({ request: { opcode: 1, payloadData: cdpWire } }) !== null) {
+    throw new Error('CDP WebSocket sent/received frame payload contract failed');
+  }
   for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/stronghold/resonance/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
     if (!isGameApiPath(pathname) || !isForbiddenMutation('POST', pathname)) throw new Error(`mutation audit missed ${pathname}`);
   }
@@ -147,6 +153,13 @@ function frameIsGame(frame, hostFrame) {
 }
 function observerPage(pageOrFrame) {
   return typeof pageOrFrame?.page === 'function' ? pageOrFrame.page() : pageOrFrame;
+}
+
+// CDP Network.WebSocketFrame events use `response` for both sent and received frames.
+// This is a WebSocket frame payload wrapper, not an HTTP request/response object.
+export function cdpTextFramePayload(event) {
+  const frame = event?.response;
+  return frame?.opcode === 1 && typeof frame.payloadData === 'string' ? frame.payloadData : null;
 }
 
 async function run() {
@@ -222,9 +235,11 @@ async function run() {
         if (native) websocketRequestIds.add(event.requestId);
       });
       cdp.on('Network.webSocketFrameReceived', event => {
-        if (!websocketRequestIds.has(event.requestId) || event.response?.opcode !== 1) return;
+        if (!websocketRequestIds.has(event.requestId)) return;
+        const payload = cdpTextFramePayload(event);
+        if (payload === null) return;
         let message;
-        try { message = JSON.parse(event.response.payloadData); } catch { return; }
+        try { message = JSON.parse(payload); } catch { return; }
         const row = { type: message.t };
         if (message.t === 'welcome') {
           row.playerId = message.playerId ?? null;
@@ -246,9 +261,11 @@ async function run() {
         websocketObservation.messages.push(row);
       });
       cdp.on('Network.webSocketFrameSent', event => {
-        if (!websocketRequestIds.has(event.requestId) || event.request?.opcode !== 1) return;
+        if (!websocketRequestIds.has(event.requestId)) return;
+        const payload = cdpTextFramePayload(event);
+        if (payload === null) return;
         try {
-          const message = JSON.parse(event.request.payloadData);
+          const message = JSON.parse(payload);
           websocketObservation.sentTypes.push(typeof message.t === 'string' ? message.t : 'unknown');
         } catch { websocketObservation.sentTypes.push('unparseable'); }
       });
