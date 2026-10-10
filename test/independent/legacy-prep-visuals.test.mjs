@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { recoverPrepVisualEvents } from '../../tools/legacy-prep-visuals.mjs';
 import { buildLegacyPrepVisualState } from '../../tools/legacy-prep-visual-state.mjs';
 import { buildLegacyPrepClips } from '../../tools/recorded-prep.mjs';
+import { prepView } from '../../public/js/independent/model.js';
 
 const recordingId = 'c3c3f89e-eae2-46ac-a118-a6deda3aa3b6';
 const origin = Date.parse('2026-10-10T10:00:00.000Z');
@@ -72,6 +73,11 @@ test('legacy badge IDs explicitly mapped to summons become token pieces with own
     recordingId, sessionId: 'fixture-session', recordingStartedAt: new Date(origin).toISOString() });
   assert.deepEqual(result.states[0].state.pieces, [{ uid: 't18', kind: 'token', tokenId: 'token_10013_robin_mine', ownerUid: 'p17', count: 1, row: 10, col: 6 }]);
   assert.deepEqual(result.states[0].visualPoses, [{ uid: 't18', x: 1145.1, bottom: 465.2 }]);
+  const renderView = prepView(result.states[0].state, { operators: {} });
+  assert.equal(renderView.board[0].kind, 'token');
+  assert.equal(renderView.board[0].id, 'token_10013_robin_mine');
+  assert.equal(renderView.board[0].ownerUid, 17);
+  assert.equal(renderView.board[0].uid, 18);
   assert.equal(result.coverage.resolvedTokenBadgeIdentities, 1);
   assert.equal(result.unresolved.length, 0);
 });
