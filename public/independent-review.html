@@ -484,7 +484,6 @@
       ensurePickStyle(doc);
       doc.querySelectorAll('[data-omni-pick-flash]').forEach(el=>el.removeAttribute('data-omni-pick-flash'));
       target.setAttribute('data-omni-pick-flash','true');
-      target.scrollIntoView?.({block:'center',behavior:'instant'});
       await new Promise(resolve=>requestAnimationFrame(resolve));
       const box=screenRectOf(target,frames);
       lockbox.style.left=`${Math.round(box.x)}px`;lockbox.style.top=`${Math.round(box.y)}px`;
