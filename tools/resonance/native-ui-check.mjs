@@ -210,8 +210,9 @@ async function run() {
     await page.goto(entryUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
     const resumePrep = !!options.resumeSession && receipt.checkpoint === 'prep' && receipt.steps?.created === true && Object.keys(receipt.steps).length === 1;
     const resumeAfterEquip = !!options.resumeSession && receipt.checkpoint === 'after-equip' && receipt.steps?.created === true && receipt.steps?.bought === true && receipt.steps?.deployed === true && receipt.steps?.equipped === true && Object.keys(receipt.steps).every(key=>['created','bought','deployed','equipped','unequipped','reEquipped','combined'].includes(key));
+    const resumeCompletedGear = !!options.resumeSession && ['prep-gear','replay'].includes(receipt.checkpoint) && ['created','bought','deployed','equipped','unequipped','reEquipped','combined'].every(key=>receipt.steps?.[key]===true) && !!receipt.gearEvidence?.itemId && REQUIRED_ACCEPTANCE_CHECKS.filter(name=>!['exactly-one-real-fight-with-native-units','native-replay-shows-real-history-gear-overlay'].includes(name)).every(name=>receipt.checks?.[name]?.passed===true);
     if (options.resumeSession) {
-      check('resume-supported-checkpoint-no-prior-gameplay', resumePrep||resumeAfterEquip, { checkpoint: receipt.checkpoint, steps: receipt.steps });
+      check('resume-supported-checkpoint-no-prior-gameplay', resumePrep||resumeAfterEquip||resumeCompletedGear, { checkpoint: receipt.checkpoint, steps: receipt.steps });
       await page.waitForSelector('.gm', { timeout: 45000 });
       await page.waitForSelector('.shopbar__remain', { timeout: 30000 });
       check('resume-checkpoint-same-ephemeral-session', receipt.sessionId === options.resumeSession, { sessionId: receipt.sessionId, checkpoint: receipt.checkpoint });
@@ -263,6 +264,7 @@ async function run() {
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
     await waitForGameReady();
     let state=await getState();
+    if(resumeCompletedGear) check('resume-completed-gear-still-on-owned-unit',state.pieces.some(piece=>piece.equipment?.some(item=>item.uid===receipt.gearEvidence.itemUid&&item.itemId===receipt.gearEvidence.itemId)),receipt.gearEvidence);
     if(!options.resumeSession || resumePrep || resumeAfterEquip){
       const rawInventory=initialInventory;
       const activePieces=state.pieces.slice(0,3);
