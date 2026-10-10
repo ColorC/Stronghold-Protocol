@@ -125,6 +125,10 @@ function paintTextSelection(second) {
   textSelection.hidden = !current.p.rects?.length;
 }
 function mediaSourceAt(second) { return replayMediaSourceAt(second, mediaSegments, renderedClips); }
+function mediaDurationForClamp() {
+  const currentDuration = Number(mediaVideo?.duration);
+  return Number.isFinite(currentDuration) && currentDuration > 0 ? currentDuration : mediaDuration;
+}
 function abortError() { return new DOMException('回放媒体载入已被更新的操作取代', 'AbortError'); }
 function loadMediaSegment(segment) {
   if (activeMediaKey === segment.key && mediaVideo?.readyState >= 1 && mediaVideo.currentSrc === segment.url) return mediaReady;
@@ -188,7 +192,7 @@ async function positionMediaAt(second, generation = seekGeneration) {
   }
   if (activeMediaKey !== segment.key || mediaVideo.readyState < 1 || mediaVideo.currentSrc !== segment.url) await loadMediaSegment(segment);
   if (generation !== seekGeneration) throw abortError();
-  const target = clampReplayMediaTime(Math.max(0, second - segment.at), mediaDuration);
+  const target = clampReplayMediaTime(Math.max(0, second - segment.at), mediaDurationForClamp());
   await waitForVideoSeek(mediaVideo, target);
   if (generation !== seekGeneration) throw abortError();
   paintMediaLayer();
@@ -199,7 +203,7 @@ function syncMediaTime(second) {
   const segment = mediaSourceAt(second);
   if (!segment || activeMediaKey !== segment.key || mediaVideo.readyState < 1 || mediaVideo.currentSrc !== segment.url) { mediaVideo.pause(); mediaVideo.hidden = true; return; }
   if (segment.key.startsWith('original-') && second < segment.at) { mediaVideo.pause(); mediaVideo.hidden = true; return; }
-  const time = clampReplayMediaTime(Math.max(0, second - segment.at), mediaDuration);
+  const time = clampReplayMediaTime(Math.max(0, second - segment.at), mediaDurationForClamp());
   try { if (Math.abs(mediaVideo.currentTime - time) > 0.4 && !mediaVideo.seeking) mediaVideo.currentTime = time; } catch { /* metadata may still be loading */ }
 }
 function attachCanvasMedia(id) {
