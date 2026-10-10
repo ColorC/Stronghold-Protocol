@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -592,7 +593,7 @@ async function run() {
   await mkdir(OUT, { recursive: true }); await mkdir(SESSION_DIR, { recursive: true }); await mkdir(path.dirname(LOG), { recursive: true });
   // Use the one fixed canonical profile; create this exact path once if absent, never a retry profile.
   await mkdir(PROFILE, { recursive: true });
-  const attempt = { startedAt: now(), source: sourceRoot, installDir: ROOT, sessionDirectory: SESSION_DIR, port: PORT,
+  const attempt = { startedAt: now(), source: sourceRoot, sourceRevision: execFileSync('git',['-C',sourceRoot,'rev-parse','HEAD'],{encoding:'utf8',windowsHide:true,timeout:10_000}).trim(), installDir: ROOT, sessionDirectory: SESSION_DIR, port: PORT,
     status: 'running', checks: {}, screenshots: {}, ws: { sent: [], received: [] }, failures: [], fixtures: { fifthChoice: 'not-run', bossHidden: 'not-run' } };
   const receipt = existsSync(RECEIPT) ? JSON.parse(await readFile(RECEIPT, 'utf8')) : { checker: 'native-live-ui-check', attempts: [] };
   assert(receipt.checker === 'native-live-ui-check' && Array.isArray(receipt.attempts), `existing receipt has incompatible shape: ${RECEIPT}`);
@@ -931,6 +932,10 @@ async function run() {
     if (overlappingDetailClose && await overlappingDetailClose.boundingBox()) {
       combineAttempt.detailDismissClick = await clickHandleByMeasuredCenter(combinePage, overlappingDetailClose, 'overlapping item detail close');
       await combinePage.waitForFunction(() => !document.querySelector('.rs-detail-panel'), { timeout: 4_000 });
+    }
+    if (!(await combinePage.$('.rs-native-resonance-panel--equipment'))) {
+      await combinePage.click('.rs-native-equipment-rail button[aria-label="打开装备与配方"]');
+      await combinePage.waitForSelector('.rs-native-resonance-panel--equipment .rs-equipment-dock__item', {visible:true,timeout:4_000});
     }
     await dragInventoryItemsToCombine(combinePage, inventoryRecipe.chosen[0].nativeUid, inventoryRecipe.chosen[1].nativeUid);
     const inventoryResult = await combinePage.waitForFunction(async ({ id, resultId }) => {

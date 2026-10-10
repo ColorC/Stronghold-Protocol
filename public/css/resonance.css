@@ -240,6 +240,11 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-funds .funds__hex { font-size: max(.18rem,16px); }
 .rs-native-match .shopbar :is(.scard__bond,.shopbar__remain,.funds__label,.funds__collapse,.rs-interest,.rs-interest small,.lvcard__label,.lvcard__cost) { font-size: max(.14rem,14px); }
 .rs-native-match .shopbar .scard__bond .bglyph { width: 18px; height: 18px; }
+.rs-native-match .shopbar .scard__bond .rs-pact-icon { width: 18px; height: 18px; color: #c3d9cd; }
+.rs-native-match .modal__box :is(p,label,.set-label,.set-slider__label,.set-toggle__label) { font-size: max(.16rem,16px); line-height: 1.45; }
+.rs-native-match .modal__box :is(button,small,.set-slider__value) { font-size: max(.14rem,14px); }
+.rs-native-match .modal__box .modal__title { font-size: max(.24rem,20px); }
+.rs-native-result :is(p,.rs-native-result-details__name,.rs-result-unit__portrait b,.rs-result-unit__portrait small,.rs-result-unit__gear button,.rs-native-result-details__chart) { font-size: max(.14rem,14px); }
 .rs-native-match .gm__bonds .bonds-toggle { color: #d7e5dc; background: #101814; border-color: var(--line-2); }
 .rs-native-match .gm__bond-list .bslot, .rs-native-match .gm__bond-list .bond { color: #d7e5dc; }
 .rs-native-match .gm__bond-list .bslot .bond__name, .rs-native-match .gm__bond-list .bond__name { color: #d7e5dc; font-size: max(.14rem,14px); }
@@ -247,7 +252,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .gm__bond-list .bslot .bond { --disc: 36px; }
 .rs-native-match .gm__bond-list .bslot .bond__disc { width: 36px; height: 36px; }
 .rs-native-match .gm__bond-list .bond__core { color: #d7e5dc; background-color: #18251f; }
-.rs-native-match .gm__bond-list .bond.is-active .bond__core { color: #d7e5dc; background: #18251f; filter: none; }
+.rs-native-match .gm__bond-list .bond.is-active .bond__core, .rs-native-match .rs-native-pact-matrix .bond.is-active .bond__core { color: #d7e5dc; background: #18251f; filter: none; box-shadow: inset 0 0 0 1px #56665d; }
 .rs-native-match .gm__bond-list .bond:not(.is-active) .bond__core, .rs-native-match .gm__bond-list .bslot.is-off .bond__core { opacity: .72; filter: none; }
 .rs-native-match .gm__bond-list .bond__ring circle.on { stroke: #9aa5a0; }
 .rs-native-match .gm__bond-list .bond:has(.bond__ring circle.on:nth-of-type(1)):not(:has(.bond__ring circle.on:nth-of-type(2))) .bond__ring circle.on { stroke: #9aa5a0; }

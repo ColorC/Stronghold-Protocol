@@ -310,7 +310,7 @@ export function PauseButton({ paused, busy = false, onToggle }) {
  */
 export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, onReady, readyBusy, readyCount, playerCount, pen = false, penAvail = false, onPen = () => {},
   config = null, frozenAt = null, pause = null, live = null, spectator = false,
-  leftMeta = null, phaseContent = null, rightContent = null }) {
+  leftMeta = null, phaseContent = null, rightContent = null, infoTip = null }) {
   const phase = pub?.phase;
   const boss = isBossPhase(phase);
   const lp = boss && Number.isFinite(pub?.teamLp) ? pub.teamLp : Number.isFinite(priv?.lp) ? priv.lp : null;
@@ -345,7 +345,7 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
     </div>
 
     <div class="gtop__center brackets">
-      <${Tooltip} text=${btn.left.tip} placement="bottom">
+      <${Tooltip} text=${!btn.left.back && infoTip ? infoTip : btn.left.tip} placement="bottom">
         <${CheckBtn} sprite=${btn.left.sprite} cls=${cx('gtop__iconbtn', btn.left.back && 'is-back')} label=${btn.left.label}
           chev=${btn.left.back ? '◀◀' : null} on=${!!drawer && !pen} onClick=${onLeft} testid="check-player" />
       <//>

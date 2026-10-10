@@ -15,25 +15,43 @@ const PROFILE = path.join(ROOT, '.omni/tmp/resonance/browser-profile');
 const CONFIG = 'C:/Users/lilithgames/AppData/Roaming/wsh/config.json';
 const WSH_CLI = process.env.WSH_CLI_PATH
   || 'E:/WindowsWorkspace/spark.workshop/releases/remote-play-card-20261004/wt/remote-play-card-20261004-5ba073215a31/workshop/cli/dist/wsh.mjs';
-const VERIFY_DIR = path.join(ROOT, 'runtime/resonance/ui-verification');
-const RECEIPT = path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-ui-receipt.json');
-const LOG = path.join(ROOT, '.omni/tmp/resonance/native-live-workshop-ui-check.log');
-const EMBED_SCREENSHOT = path.join(VERIFY_DIR, 'native-live-workshop-embed.jpg');
-const FULLSCREEN_SCREENSHOT = path.join(VERIFY_DIR, 'native-live-workshop-fullscreen.jpg');
+const DEFAULT_OUTPUTS = Object.freeze({
+  verifyDir: path.join(ROOT, 'runtime/resonance/ui-verification'),
+  receipt: path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-ui-receipt.json'),
+  log: path.join(ROOT, '.omni/tmp/resonance/native-live-workshop-ui-check.log'),
+  embedScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-embed.jpg'),
+  fullscreenScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-fullscreen.jpg'),
+});
+let OUTPUTS = DEFAULT_OUTPUTS;
 const DEADLINE_MS = 180_000;
 
+function outputPaths(receiptTag) {
+  if (receiptTag === undefined) return DEFAULT_OUTPUTS;
+  if (receiptTag !== 'ui-refinement') throw new Error('--receipt-tag only accepts ui-refinement');
+  const verifyDir = path.join(ROOT, 'runtime/resonance/ui-verification');
+  return Object.freeze({
+    verifyDir,
+    receipt: path.join(verifyDir, 'ui-refinement-workshop-ui-receipt.json'),
+    log: path.join(ROOT, '.omni/tmp/resonance/ui-refinement-workshop-ui-check.log'),
+    embedScreenshot: path.join(verifyDir, 'ui-refinement-workshop-embed.jpg'),
+    fullscreenScreenshot: path.join(verifyDir, 'ui-refinement-workshop-fullscreen.jpg'),
+  });
+}
+
 function parseArgs(args) {
-  const out = { selfTest: false, help: false };
+  const out = { selfTest: false, help: false, receiptTag: undefined };
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === '--self-test') out.selfTest = true;
     else if (args[i] === '--help' || args[i] === '-h') out.help = true;
-    else if (['--session', '--product-native'].includes(args[i])) {
+    else if (['--session', '--product-native', '--receipt-tag'].includes(args[i])) {
       const key = args[i].slice(2);
+      const optionKey = key === 'receipt-tag' ? 'receiptTag' : key;
       const value = args[++i];
-      if (!value || value.startsWith('--') || out[key]) throw new Error(`missing or duplicate ${args[i - 1]}`);
-      out[key] = value;
+      if (!value || value.startsWith('--') || out[optionKey]) throw new Error(`missing or duplicate ${args[i - 1]}`);
+      out[optionKey] = value;
     } else throw new Error(`unknown argument: ${args[i]}`);
   }
+  outputPaths(out.receiptTag);
   if (!out.selfTest && !out.help) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(out.session || '')) throw new Error('--session must be the supplied persisted UUID');
     if (!/^[0-9a-f]{40}$/i.test(out['product-native'] || '')) throw new Error('--product-native must be a full native Git commit');
@@ -89,6 +107,19 @@ function workshopCredentials() {
 }
 
 function selfTest() {
+  const defaultOutputs = outputPaths();
+  if (defaultOutputs.receipt !== path.join(ROOT, 'runtime/resonance/ui-verification/native-live-workshop-ui-receipt.json')) throw new Error('default receipt path changed');
+  const refinementOutputs = outputPaths('ui-refinement');
+  const expectedRefinement = {
+    receipt: path.join(ROOT, 'runtime/resonance/ui-verification/ui-refinement-workshop-ui-receipt.json'),
+    log: path.join(ROOT, '.omni/tmp/resonance/ui-refinement-workshop-ui-check.log'),
+    embedScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/ui-refinement-workshop-embed.jpg'),
+    fullscreenScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/ui-refinement-workshop-fullscreen.jpg'),
+  };
+  for (const [key, value] of Object.entries(expectedRefinement)) if (refinementOutputs[key] !== value) throw new Error(`tagged output path mismatch: ${key}`);
+  let rejectedTag = false;
+  try { outputPaths('other'); } catch { rejectedTag = true; }
+  if (!rejectedTag) throw new Error('unknown receipt tag was accepted');
   const target = 'https://workshop.colorc.cc/bside/canvas/notes-web.html';
   for (const url of [target, 'https://workshop.colorc.cc/bside/api/canvases/id', 'https://workshop.colorc.cc/bside/lofa/invoke']) {
     if (!isScopedWorkshopBearerUrl(url, target)) throw new Error(`Workshop route was not scoped: ${new URL(url).pathname}`);
@@ -127,6 +158,10 @@ function selfTest() {
   if (!isForbiddenMutation('PATCH', '/stronghold/resonance/api/sessions/id')) throw new Error('non-POST gameplay mutation was not blocked');
   const valid = parseArgs(['--session', '01234567-89ab-4def-8123-456789abcdef', '--product-native', 'a'.repeat(40)]);
   if (valid.session !== '01234567-89ab-4def-8123-456789abcdef') throw new Error('CLI self-test failed');
+  if (parseArgs(['--receipt-tag', 'ui-refinement', '--help']).receiptTag !== 'ui-refinement') throw new Error('receipt tag parsing failed');
+  let rejectedCliTag = false;
+  try { parseArgs(['--receipt-tag', 'other', '--help']); } catch { rejectedCliTag = true; }
+  if (!rejectedCliTag) throw new Error('unknown CLI receipt tag was accepted');
   process.stdout.write(JSON.stringify({ ok: true, workshopOnlyBearerScope: true, sessionReadonly: true }) + '\n');
 }
 
@@ -164,24 +199,25 @@ export function cdpTextFramePayload(event) {
 
 async function run() {
   const options = parseArgs(process.argv.slice(2));
+  OUTPUTS = outputPaths(options.receiptTag);
   if (options.help) {
-    process.stdout.write('用法：node tools/resonance/workshop-ui-check.mjs --session <persisted-uuid> --product-native <full-git-commit>\n       node tools/resonance/workshop-ui-check.mjs --self-test\n');
+    process.stdout.write('用法：node tools/resonance/workshop-ui-check.mjs --session <persisted-uuid> --product-native <full-git-commit> [--receipt-tag ui-refinement]\n       node tools/resonance/workshop-ui-check.mjs --self-test\n仅允许的receipt tag：ui-refinement（不带tag时沿用既有输出路径）。\n');
     return;
   }
   if (options.selfTest) return selfTest();
   let priorReceipt = null;
-  if (existsSync(RECEIPT)) {
-    priorReceipt = JSON.parse(readFileSync(RECEIPT, 'utf8'));
+  if (existsSync(OUTPUTS.receipt)) {
+    priorReceipt = JSON.parse(readFileSync(OUTPUTS.receipt, 'utf8'));
     if (priorReceipt.status !== 'failed' || priorReceipt.sessionId !== options.session
       || priorReceipt.productNative !== options['product-native'] || typeof priorReceipt.error !== 'string' || !priorReceipt.error.trim()) {
-      throw new Error(`refusing to overwrite unrelated receipt: ${RECEIPT}`);
+      throw new Error(`refusing to overwrite unrelated receipt: ${OUTPUTS.receipt}`);
     }
   }
-  if (existsSync(LOG) && (!priorReceipt || !readFileSync(LOG, 'utf8').includes(priorReceipt.error))) {
-    throw new Error(`refusing to append to unrelated log: ${LOG}`);
+  if (existsSync(OUTPUTS.log) && (!priorReceipt || !readFileSync(OUTPUTS.log, 'utf8').includes(priorReceipt.error))) {
+    throw new Error(`refusing to append to unrelated log: ${OUTPUTS.log}`);
   }
-  for (const output of [RECEIPT, LOG, EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT]) {
-    if (output === RECEIPT || output === LOG) continue;
+  for (const output of [OUTPUTS.receipt, OUTPUTS.log, OUTPUTS.embedScreenshot, OUTPUTS.fullscreenScreenshot]) {
+    if (output === OUTPUTS.receipt || output === OUTPUTS.log) continue;
     if (existsSync(output) && (!priorReceipt || !priorReceipt.screenshots?.includes(output))) throw new Error(`refusing to overwrite existing output: ${output}`);
   }
   const logLines = [];
@@ -195,11 +231,11 @@ async function run() {
   };
   const writeLog = () => {
     const content = `${logLines.join('\n')}\n`;
-    if (existsSync(LOG)) appendFileSync(LOG, content);
-    else writeFileSync(LOG, content, { flag: 'wx' });
+    if (existsSync(OUTPUTS.log)) appendFileSync(OUTPUTS.log, content);
+    else writeFileSync(OUTPUTS.log, content, { flag: 'wx' });
   };
   const priorAttempts = [...(priorReceipt?.priorAttempts || []), ...(priorReceipt ? [{ status: priorReceipt.status, error: priorReceipt.error }] : [])];
-  const writeReceipt = receipt => writeFileSync(RECEIPT, `${JSON.stringify({ ...receipt, ...(priorAttempts.length ? { priorAttempts } : {}) }, null, 2)}\n`, { flag: priorReceipt ? 'w' : 'wx' });
+  const writeReceipt = receipt => writeFileSync(OUTPUTS.receipt, `${JSON.stringify({ ...receipt, ...(priorAttempts.length ? { priorAttempts } : {}) }, null, 2)}\n`, { flag: priorReceipt ? 'w' : 'wx' });
   let browser;
   let deadlineTimer;
   let timedOut = false;
@@ -412,7 +448,7 @@ async function run() {
     return waitForNativePrep(page);
   };
   const evidence = { status: 'running', sessionId: options.session, productNative: options['product-native'], workshopUrl: WORKSHOP_URL,
-    cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests,
+    cardId: CARD_ID, screenshots: [OUTPUTS.embedScreenshot, OUTPUTS.fullscreenScreenshot], requestRows, mutatingRequests,
     requiredResourceFailures, unexpectedHtmlResponses, browserErrors, networkFailures, stageHistory, briefingClicks };
   const work = (async () => {
     setStage('browser-launch');
@@ -505,7 +541,7 @@ async function run() {
     assert(gameProof.title, 'real game UI title is empty');
     assert(gameProof.shopVisible && !gameProof.choiceOpen, 'shop section is not visible after local choice collapse');
     assert(requiredResourceFailures.length === 0, `required native resources returned errors: ${JSON.stringify(requiredResourceFailures)}`);
-    await page.screenshot({ path: EMBED_SCREENSHOT, type: 'jpeg', quality: 90, fullPage: true });
+    await page.screenshot({ path: OUTPUTS.embedScreenshot, type: 'jpeg', quality: 90, fullPage: true });
     const fullscreen = await embeddedFrame.$('a.rs-fullscreen-small');
     assert(fullscreen, 'embedded game UI has no small fullscreen link');
     const expectedPopupUrl = await fullscreen.evaluate(el => el.href);
@@ -535,7 +571,7 @@ async function run() {
         return view?.kind === 'engine' && Number(view.raw?.stats?.()?.units) > 0;
       }, { timeout: 15_000 });
     } catch {
-      await popup.screenshot({ path: FULLSCREEN_SCREENSHOT, type: 'jpeg', quality: 90, fullPage: true }).catch(() => {});
+      await popup.screenshot({ path: OUTPUTS.fullscreenScreenshot, type: 'jpeg', quality: 90, fullPage: true }).catch(() => {});
       const diagnostic = await popup.evaluate(() => {
         const view = globalThis.__SP_VIEW__, stats = view?.raw?.stats?.() || null;
         return { url: location.href, title: document.title, viewKind: view?.kind || null, engineUnits: stats?.units ?? null,
@@ -561,7 +597,7 @@ async function run() {
     const unexpectedWsActions = sentTypes.filter(type => !allowedReadonlyTypes.has(type));
     assert(unexpectedWsActions.length === 0, `unexpected native WebSocket gameplay actions: ${JSON.stringify(unexpectedWsActions)}`);
     assert(sentTypes.filter(type => type === 'g.infoReady').length <= 1, 'briefing was acknowledged more than once');
-    await popup.screenshot({ path: FULLSCREEN_SCREENSHOT, type: 'jpeg', quality: 90, fullPage: true });
+    await popup.screenshot({ path: OUTPUTS.fullscreenScreenshot, type: 'jpeg', quality: 90, fullPage: true });
     evidence.status = 'passed';
     evidence.card = cardProof;
     evidence.iframeTitle = actualFrameTitle;
@@ -588,7 +624,7 @@ async function run() {
     writeReceipt(result);
     log('receipt written; no session creation or gameplay mutation requests observed');
     writeLog();
-    process.stdout.write(JSON.stringify({ status: result.status, receipt: RECEIPT, log: LOG, screenshots: result.screenshots }) + '\n');
+    process.stdout.write(JSON.stringify({ status: result.status, receipt: OUTPUTS.receipt, log: OUTPUTS.log, screenshots: result.screenshots }) + '\n');
   } catch (error) {
     evidence.status = timedOut ? 'timeout' : 'failed';
     evidence.error = error instanceof Error ? error.message : String(error);
@@ -596,7 +632,7 @@ async function run() {
     log(`${evidence.status} stage=${currentStage}: ${evidence.error}`);
     writeReceipt(evidence);
     writeLog();
-    process.stderr.write(`${JSON.stringify({ status: evidence.status, receipt: RECEIPT, log: LOG, error: evidence.error })}\n`);
+    process.stderr.write(`${JSON.stringify({ status: evidence.status, receipt: OUTPUTS.receipt, log: OUTPUTS.log, error: evidence.error })}\n`);
     process.exitCode = 1;
   } finally {
     clearTimeout(deadlineTimer);

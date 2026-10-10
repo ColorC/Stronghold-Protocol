@@ -121,7 +121,7 @@ import { DetailPanel as ResonanceDetailPanel } from './detail.js';
 import { mountUnitItemOverlay } from './unitItems.js';
 import { resonanceItemIconUrl } from './itemIcon.js';
 import { firstAvailableLegalTile, isResonanceSaleDrop, resonanceShortcutFor, RESONANCE_SHORTCUT_LABEL } from './nativeControls.js';
-import { pactIconUrl } from './pactIcon.js';
+import { pactIconUrl, PactIcon } from './pactIcon.js';
 import { pactTierSummary } from './pactTierSummary.js';
 import { pactReadableCopy } from './pactPresentation.js';
 import { CoinGlyph } from '../ui/gameComponents.js';
@@ -175,9 +175,10 @@ function NativePactMatrix({ state, catalog, onDetail }) {
     <div class="rs-native-pact-matrix__list">${rows.map(([id, pact]) => {
       const current = state?.pacts?.[id] || {}, count = Number(current.count) || 0, reached = Number(current.activeThreshold) || 0;
       const levels = pact.levels || [];
+      const { tier } = nativeStripTier(current, levels);
       return html`<article class="rs-native-pact-matrix__row" data-pact-id=${id} key=${id}>
         <button type="button" class="rs-native-pact-matrix__name" onClick=${() => onDetail({ kind: 'pact', id })}>
-          <${BondDisc} name=${pact.name || '盟约'} icon=${pactIconUrl(catalog, id) || undefined} iconMask=${true} active=${reached > 0} size="sm" />
+          <${BondDisc} name=${pact.name || '盟约'} showName=${false} tier=${tier} maxTier=${levels.length} icon=${pactIconUrl(catalog, id) || undefined} iconMask=${true} active=${reached > 0} size="sm" />
           <span><b>${pact.name || '盟约'}</b><small>${count} 名成员</small></span>
         </button>
         <div class="rs-native-pact-matrix__tiers">${levels.map(level => {
@@ -1823,6 +1824,7 @@ function MatchScreen({ onLeave }) {
 
     <div class=${cx('gm__hud', (resolved || resonanceDetail || resonancePanel) && 'has-resonance-overlay')} ref=${hudElRef}>
       <${TopBar} pub=${pub} priv=${priv} conn=${conn} hud=${hud} total=${total} drawer=${resonancePanel === 'match-info' ? 'info' : drawer}
+        infoTip="本局策略、操作说明与战斗结果"
         onExit=${() => setExitOpen(true)} onDrawer=${(t) => { if (t === 'info') { setDrawer(null); toggleResonancePanel('match-info'); } else setDrawer((d) => (d ? null : t)); }} onReady=${toggleReady}
         readyBusy=${readyBusy} readyCount=${readyCount} playerCount=${solo ? 1 : aliveCount}
         pen=${pen} penAvail=${penAvail} onPen=${togglePen} config=${gd.config} frozenAt=${frozenAt}
@@ -1866,6 +1868,7 @@ function MatchScreen({ onLeave }) {
 
       ${showShop ? html`<${ShopBar} priv=${shopDisplayPriv} editable=${editable} collapsed=${collapsed} interaction=${myId === 'resonance' ? 'direct' : 'two-tap'} onCollapse=${setCollapsed}
         renderFunds=${resonanceState && resonanceCatalog ? html`<${NativeFunds} state=${resonanceState} catalog=${resonanceCatalog} onOpen=${() => toggleResonancePanel('income')} onCollapse=${() => setCollapsed(true)} />` : null}
+        bondRenderer=${resonanceCatalog ? bond => { const id = typeof bond === 'string' ? bond : bond.id; return html`<${PactIcon} catalog=${resonanceCatalog} id=${id} size="sm" /><span>${resonanceCatalog.pacts?.[id]?.name || '盟约'}</span>`; } : null}
         refreshKey="D" freezeKey=${null} levelKey="F" hideItem=${myId === 'resonance'}
         barRef=${barRef} offBonds=${offBonds}
         onBuy=${buy} onLevel=${() => actions.levelUp()} onRefresh=${() => actions.refresh()} onFreeze=${() => actions.freeze()}
