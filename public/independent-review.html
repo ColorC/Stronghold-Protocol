@@ -128,7 +128,9 @@
   </section>
   <script type="module">
     import { createReplayReviewConfig, createReplayCommentAnchor, reviewCommentHref } from './js/independent/replayReviewConfig.js';
-    const config=createReplayReviewConfig(location.href);
+    let config;
+    let invalidLink=false;
+    try{config=createReplayReviewConfig(location.href);}catch{invalidLink=true;config={recordingId:'',title:'游玩回放与批注',sourceUrl:'',commentsApi:'',apiName:'__SP_REPLAY_REVIEW__',duration:0};}
     const recordingId=config.recordingId;
     const film=document.getElementById('film');
     const stage=document.getElementById('stage');
@@ -154,7 +156,8 @@
     const showResolved=document.getElementById('showResolved');
     document.title=`${config.title} · 卫戍协议`;
     document.getElementById('title').textContent=config.title;
-    film.src=config.sourceUrl;
+    if(invalidLink){status.className='status err';status.textContent='回放链接无效，请检查链接后重试。';toggle.disabled=true;seek.disabled=true;pickBtn.disabled=true;film.hidden=true;}
+    else film.src=config.sourceUrl;
     const reviewUrl=new URL('independent-review.html',location.href);reviewUrl.searchParams.set('recording',recordingId);sourceLink.href=reviewUrl.href;
     seek.max=String(config.duration||1);
     let requestedPlaying=false;
@@ -187,6 +190,8 @@
         duration:Number(state.duration??current.duration??config.duration??0),
         ready:state.ready!==false&&state.seeking!==true,
         paused:typeof state.paused==='boolean'?state.paused:!requestedPlaying,
+        viewport:state.viewport||null,
+        error:typeof state.error==='string'?state.error:'',
       };
     };
     const pause=()=>{
@@ -604,6 +609,7 @@
     setInterval(()=>{
       const state=readState();
       if(!state)return;
+      if(state.error){setStatusText(state.error,'err');toggle.disabled=true;pickBtn.disabled=true;return;}
       if(state.duration>0&&String(seek.max)!==String(state.duration)){
         seek.max=String(state.duration);
         renderMarks();
@@ -620,6 +626,7 @@
         }else if(requestedTime)void setTime(requestedTime).catch(error=>setStatusText(`定位失败：${error?.message||error}`,'err'));
       }
       if(document.activeElement!==seek)seek.value=String(state.time);
+      if(state.viewport?.width>0&&state.viewport?.height>0){stage.style.aspectRatio=`${state.viewport.width} / ${state.viewport.height}`;}
       if(state.duration>0&&state.time>=state.duration-.03)requestedPlaying=false;
       clock.textContent=`${fmt(state.time)} / ${fmt(state.duration)}`;
       toggle.disabled=!state.ready;

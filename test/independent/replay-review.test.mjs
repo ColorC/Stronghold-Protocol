@@ -23,6 +23,7 @@ test('review shell builds same-origin replay and comments URLs with or without g
   const local = createReplayReviewConfig(`http://127.0.0.1:5460/independent-review.html?recording=${id}`);
   assert.equal(new URL(local.commentsApi).pathname, `/independent/api/recordings/${id}/comments`);
   assert.throws(() => createReplayReviewConfig('http://localhost/independent-review.html'), /无效/);
+  assert.throws(() => createReplayReviewConfig(`http://localhost/independent-review.html?recording=${id.replace('-4', '-1')}`), /无效/);
 });
 
 test('comment anchors retain precise time and nested-frame rectangle without exposing selectors in links', () => {
@@ -110,6 +111,12 @@ test('review DOM uses player controls, precise async seek and player-facing copy
   assert.match(html, /method:'DELETE'/);
   assert.match(replay, /window\.__SP_REPLAY_REVIEW__=reviewApi/);
   assert.match(replay, /ready:initialized&&!seeking/);
+  assert.match(replay, /viewport:replayViewport,error:initializationError/);
+  assert.match(replay, /ix-replay-review-mode \.ix-replay__screen/);
+  assert.match(html, /stage\.style\.aspectRatio=`\$\{state\.viewport\.width\} \/ \$\{state\.viewport\.height\}`/);
+  assert.match(html, /if\(state\.error\)\{setStatusText\(state\.error,'err'\)/);
+  assert.match(replay, /回放载入失败，请检查链接或稍后重试/);
+  assert.match(html, /回放链接无效，请检查链接后重试/);
   assert.match(replay, /await waitForVideoSeek\(mediaVideo,target\)/);
   assert.match(replay, /mediaVideo\.seeking\)await waitForVideoSeek/);
   assert.doesNotMatch(html, /bilibili|WEB SOURCE|真源|原工程|config\.beats|beat_id/i);
