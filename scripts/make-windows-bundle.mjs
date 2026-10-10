@@ -49,8 +49,8 @@ const NODE_PIN = Object.freeze({
 /** 这几份不进版本库（npm / tools/setup.mjs 生成），但必须进包，否则游戏缺素材或缺前端库。 */
 const ASSET_DIRS = ['public/assets', 'public/fonts', 'public/vendor'];
 
-/** 版本库里有、但便携包不要的（测试代码，省体积）。 */
-const SKIP_TRACKED = ['test/'];
+/** 开发页面、测试夹具和 CI 配置留在源码仓库，不放进玩家运行包。 */
+const SKIP_TRACKED = ['test/', 'public/dev/', '.github/'];
 
 /** 包根要带的许可证 / 声明。 */
 const LEGAL_FILES = ['LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md'];
@@ -504,7 +504,7 @@ async function main() {
   // 1) 游戏代码：只收 git 跟踪的文件
   const all = trackedFiles();
   const wanted = all.filter((rel) => !SKIP_TRACKED.some((p) => rel === p || rel.startsWith(p)));
-  console.log(`  · 复制游戏本体（git 跟踪的 ${wanted.length} 个文件，略过 ${all.length - wanted.length} 个 test/ 文件）…`);
+  console.log(`  · 复制游戏本体（git 跟踪的 ${wanted.length} 个文件，略过 ${all.length - wanted.length} 个开发与测试文件）…`);
   const copied = await copyFiles(wanted, appDir);
   console.log(`    完成：${copied.files} 个文件 / ${MB(copied.bytes)}`);
 
