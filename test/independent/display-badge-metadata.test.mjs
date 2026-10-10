@@ -30,6 +30,7 @@ test('projection retains existing badge text and body-penalty metadata', () => {
   assert.equal(display.gear.assault.normal, data['independent-game-text'].gear.assault.normal);
   assert.deepEqual(display.rules.bodyPenalty, { baseAttackRatio: 0.8, baseLifeRatio: 0.8 });
   assert.deepEqual(Object.keys(display.gear.assault).sort(), [
-    'available', 'iconItemId', 'identityFactions', 'inheritable', 'kind', 'level', 'mechanism', 'name', 'normal', 'normalLevels', 'quantityEquippable', 'ratio', 'sourceId', 'stat', 'statName', 'steamLimit', 'steamOptions', 'unique', 'value',
+    'available', 'iconItemId', 'identityFactions', 'inheritable', 'kind', 'level', 'mechanism', 'name', 'normal', 'normalLevels', 'quantityEquippable', 'ratio', 'sourceId', 'sourceRefs', 'stat', 'statName', 'steamLimit', 'steamOptions', 'unique', 'value',
   ].sort());
+  assert.deepEqual(display.gear.assault.sourceRefs, catalog.badges.assault.sourceRefs, 'real reference card metadata remains available');
 });
