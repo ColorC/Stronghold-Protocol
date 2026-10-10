@@ -280,7 +280,7 @@ export function collectEnemyIds({ assets07, enemies05, maps05, ops03 }) {
  */
 export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsData, charword = null, voiceLang = 'cn',
   voiceSlots = VOICE_BATTLE_SLOTS,
-  extraEnemyIds = [], extraTokenIds = [], extraHandbook = {}, localEnemySpines = {} }) {
+  extraEnemyIds = [], extraTokenIds = [], extraHandbook = {}, localEnemySpines = {}, nativeCandidates = [] }) {
   const notes = [];
   /** @type {Map<string, any>} */
   const models = new Map();
@@ -348,6 +348,34 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     if (Object.keys(skillSfx).length > 1) u.skills = skillSfx;
     if (mix) u.mix = mix;
     if (Object.keys(u).length) unitsSfx[id] = u;
+  }
+
+  // Independently playable native-import candidates live in tracked chess data rather than research 07.
+  // Keep their pinned public art sources in the generated manifest so a clean install can render them too.
+  for (const row of nativeCandidates) {
+    const id = row?.charId;
+    const ni = row?.nativeImport;
+    const src = ni?.assetSources;
+    if (!id || row.chessType !== 'NATIVE_IMPORT_CANDIDATE' || !ni?.playable || !src || chars[id]) continue;
+    const c = {};
+    if (src.avatar) c.avatar = leaf(alt(`char/avatar/${id}.png`, src.avatar));
+    if (src.avatarE2) c.avatarE2 = leaf(alt(`char/avatar/${id}_2.png`, src.avatarE2));
+    if (src.portrait) c.portrait = leaf(alt(`char/portrait/${id}_1.png`, src.portrait));
+    if (src.portraitE2) c.portraitE2 = leaf(alt(`char/portrait/${id}_2.png`, src.portraitE2));
+    c.spine = {};
+    const selectable = new Set(ni.selectableSkillIds || []);
+    const indices = (row.skills || []).filter((s) => selectable.has(s.skillId)).map((s) => s.index).filter(Number.isInteger);
+    const front = fexliModel(`op:${id}:front`, 'op', `spine/op/${id}/front/`, src.spine?.front, indices);
+    const back = fexliModel(`op:${id}:back`, 'op', `spine/op/${id}/back/`, src.spine?.back, indices);
+    if (front) c.spine.front = front;
+    if (back) c.spine.back = back;
+    chars[id] = c;
+    for (const icon of src.skillIcons || []) {
+      if (!selectable.has(icon.skillId) || !icon.url) continue;
+      const key = icon.iconId || icon.skillId;
+      if (!skills[key]) skills[key] = leaf(alt(`skill/${safeName(key)}.png`, icon.url));
+      skillsById[icon.skillId] = key;
+    }
   }
 
   // --- tokens --------------------------------------------------------------

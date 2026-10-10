@@ -553,6 +553,40 @@ describe('generated manifest data/assets.json', () => {
     }
   });
 
+  test('tracked manifest matches the current planner pool and every active fallback is renderable', { skip: !haveManifest && 'data/assets.json not generated' }, () => {
+    const ops = readJson('docs/research/03-operators.json');
+    const poolIds = [...skillIndicesByChar(ops).keys()];
+    const chess = readJson('data/chess.json');
+    const nativeIds = Object.values(chess)
+      .filter((row) => row.chessType === 'NATIVE_IMPORT_CANDIDATE' && row.nativeImport?.playable && row.charId)
+      .map((row) => row.charId);
+    const charIds = [...new Set([...poolIds, ...nativeIds])].sort();
+    assert.deepEqual(Object.keys(manifest.chars).sort(), charIds,
+      'the checked-in generated manifest must track the active pool and playable native imports');
+    assert.equal(manifest.stats.chars, charIds.length);
+
+    const enemyIds = collectEnemyIds({
+      assets07: readJson('docs/research/07-assets.json'),
+      enemies05: readJson('docs/research/05-enemies.json'),
+      maps05: readJson('docs/research/05-maps.json'),
+      ops03: ops,
+    });
+    for (const id of enemyIds) {
+      // This S3-only summoned enemy has no public art record; the unit renderer's
+      // existing generic diamond/glyph is its deliberate fallback.
+      if (id === 'enemy_5601_entlec') continue;
+      assert.ok(manifest.enemies[id]?.icon, `${id} has an icon fallback`);
+    }
+
+    assert.equal(Object.keys(manifest.items).length, 59, 'all current custom equipment icons are registered');
+    for (const [id, icon] of Object.entries(manifest.items)) assert.ok(icon, `${id} has an icon URL`);
+    const genericToken = manifest.prof?.battlecard?.token;
+    for (const [id, token] of Object.entries(manifest.tokens)) {
+      const ownerAvatar = token.owner && manifest.chars[token.owner]?.avatar;
+      assert.ok(token.avatar || ownerAvatar || genericToken, `${id} has a visible avatar/glyph fallback`);
+    }
+  });
+
   test('every manifest path exists on disk', { skip }, () => {
     const all = [...new Set(urls(manifest))];
     assert.ok(all.length > 3000, `manifest lists ${all.length} files`);
