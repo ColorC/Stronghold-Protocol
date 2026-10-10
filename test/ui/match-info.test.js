@@ -12,12 +12,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const CANONICAL_ROOT = ROOT.includes(`${path.sep}.worktrees${path.sep}`)
+  ? path.resolve(ROOT, '..', '..', '..')
+  : ROOT;
+const DATA_ROOT = process.env.SP_MATCH_INFO_DATA_DIR || process.env.SP_DATA_DIR
+  ? path.resolve(process.env.SP_MATCH_INFO_DATA_DIR || process.env.SP_DATA_DIR)
+  : path.join(CANONICAL_ROOT, 'data');
+process.env.SP_DATA_DIR = DATA_ROOT;
 const read = (p) => readFileSync(path.join(ROOT, p), 'utf8');
 
 globalThis.fetch = async (url) => {
   const name = String(url).split('/').pop();
   try {
-    const body = readFileSync(path.join(ROOT, 'data', name), 'utf8');
+    const body = readFileSync(path.join(DATA_ROOT, name), 'utf8');
     return { ok: true, status: 200, json: async () => JSON.parse(body) };
   } catch {
     return { ok: false, status: 404, json: async () => ({}) };

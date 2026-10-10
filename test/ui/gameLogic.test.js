@@ -18,7 +18,13 @@ import { pairPlayers } from '../../server/match/finalAssault.js';
 import { PHASE, GEO } from '../../shared/constants.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const load = (f) => JSON.parse(readFileSync(path.join(ROOT, 'data', f), 'utf8'));
+const CANONICAL_ROOT = ROOT.includes(`${path.sep}.worktrees${path.sep}`)
+  ? path.resolve(ROOT, '..', '..', '..')
+  : ROOT;
+const DATA_ROOT = process.env.SP_DATA_DIR
+  ? path.resolve(process.env.SP_DATA_DIR)
+  : path.join(CANONICAL_ROOT, 'data');
+const load = (f) => JSON.parse(readFileSync(path.join(DATA_ROOT, f), 'utf8'));
 const chess = load('chess.json');
 const stages = load('stages.json');
 const items = load('items.json');

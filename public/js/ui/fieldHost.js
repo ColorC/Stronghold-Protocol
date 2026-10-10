@@ -304,12 +304,13 @@ export function useFieldView(hostRef, extra = null) {
     setState({ view: null, kind: 'loading', error: null, retry });
     const onRecover = () => {
       if (dead || viewRef.current?.kind !== 'fallback' || renderPref() === 'fallback'
-        || document.visibilityState !== 'visible' || globalThis.navigator?.onLine === false || onlineRetries.current >= 2) return;
+        || (globalThis.document && globalThis.document.visibilityState !== 'visible')
+        || globalThis.navigator?.onLine === false || onlineRetries.current >= 2) return;
       onlineRetries.current++;
       setGeneration((value) => value + 1);
     };
     window.addEventListener('online', onRecover);
-    document.addEventListener('visibilitychange', onRecover);
+    globalThis.document?.addEventListener?.('visibilitychange', onRecover);
     mountFieldView(host, { ...modeOptions, signal: controller.signal }).then((view) => {
       if (dead) { view.destroy(); return; }
       mountedView = view;
@@ -337,7 +338,7 @@ export function useFieldView(hostRef, extra = null) {
       if (retryTimer != null) clearTimeout(retryTimer);
       controller.abort();
       window.removeEventListener('online', onRecover);
-      document.removeEventListener('visibilitychange', onRecover);
+      globalThis.document?.removeEventListener?.('visibilitychange', onRecover);
       unsubscribe();
       if (onResize) window.removeEventListener('resize', onResize);
       // the dev hook must not keep the destroyed view — and through its host the whole detached match screen — alive

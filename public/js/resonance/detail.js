@@ -11,7 +11,7 @@ import {pactTierSummary} from './pactTierSummary.js';
 import {pactCurrentTier,pactTierStatus,pactTierStatusLabel} from './pactTierState.js';
 import {pactReadableCopy,pactRewardSchedule,pactRewardProgress} from './pactPresentation.js';
 
-const fmt=v=>v==null||v===''?'—':Number.isFinite(Number(v))?Number(v):'—';
+const fmt=v=>v==null||v===''?'—':Number.isFinite(Number(v))?Number(Number(v).toFixed(2)):'—';
 const TURN=[['UP','上'],['RIGHT','右'],['DOWN','下'],['LEFT','左']];
 const KIND={component:'基础组件',emblem:'盟约徽记',equipment:'装备',consumable:'消耗品'};
 function OperatorPortrait({operator,star}) {

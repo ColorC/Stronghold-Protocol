@@ -27,14 +27,15 @@ const DEADLINE_MS = 180_000;
 
 function outputPaths(receiptTag) {
   if (receiptTag === undefined) return DEFAULT_OUTPUTS;
-  if (receiptTag !== 'ui-refinement') throw new Error('--receipt-tag only accepts ui-refinement');
+  if (!['ui-refinement', 'ui-alignment'].includes(receiptTag)) throw new Error('--receipt-tag only accepts ui-refinement or ui-alignment');
   const verifyDir = path.join(ROOT, 'runtime/resonance/ui-verification');
+  const tag = receiptTag;
   return Object.freeze({
     verifyDir,
-    receipt: path.join(verifyDir, 'ui-refinement-workshop-ui-receipt.json'),
-    log: path.join(ROOT, '.omni/tmp/resonance/ui-refinement-workshop-ui-check.log'),
-    embedScreenshot: path.join(verifyDir, 'ui-refinement-workshop-embed.jpg'),
-    fullscreenScreenshot: path.join(verifyDir, 'ui-refinement-workshop-fullscreen.jpg'),
+    receipt: path.join(verifyDir, `${tag}-workshop-ui-receipt.json`),
+    log: path.join(ROOT, `.omni/tmp/resonance/${tag}-workshop-ui-check.log`),
+    embedScreenshot: path.join(verifyDir, `${tag}-workshop-embed.jpg`),
+    fullscreenScreenshot: path.join(verifyDir, `${tag}-workshop-fullscreen.jpg`),
   });
 }
 
@@ -117,6 +118,14 @@ function selfTest() {
     fullscreenScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/ui-refinement-workshop-fullscreen.jpg'),
   };
   for (const [key, value] of Object.entries(expectedRefinement)) if (refinementOutputs[key] !== value) throw new Error(`tagged output path mismatch: ${key}`);
+  const alignmentOutputs = outputPaths('ui-alignment');
+  const expectedAlignment = {
+    receipt: path.join(ROOT, 'runtime/resonance/ui-verification/ui-alignment-workshop-ui-receipt.json'),
+    log: path.join(ROOT, '.omni/tmp/resonance/ui-alignment-workshop-ui-check.log'),
+    embedScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/ui-alignment-workshop-embed.jpg'),
+    fullscreenScreenshot: path.join(ROOT, 'runtime/resonance/ui-verification/ui-alignment-workshop-fullscreen.jpg'),
+  };
+  for (const [key, value] of Object.entries(expectedAlignment)) if (alignmentOutputs[key] !== value) throw new Error(`alignment output path mismatch: ${key}`);
   let rejectedTag = false;
   try { outputPaths('other'); } catch { rejectedTag = true; }
   if (!rejectedTag) throw new Error('unknown receipt tag was accepted');
@@ -159,6 +168,7 @@ function selfTest() {
   const valid = parseArgs(['--session', '01234567-89ab-4def-8123-456789abcdef', '--product-native', 'a'.repeat(40)]);
   if (valid.session !== '01234567-89ab-4def-8123-456789abcdef') throw new Error('CLI self-test failed');
   if (parseArgs(['--receipt-tag', 'ui-refinement', '--help']).receiptTag !== 'ui-refinement') throw new Error('receipt tag parsing failed');
+  if (parseArgs(['--receipt-tag', 'ui-alignment', '--help']).receiptTag !== 'ui-alignment') throw new Error('alignment receipt tag parsing failed');
   let rejectedCliTag = false;
   try { parseArgs(['--receipt-tag', 'other', '--help']); } catch { rejectedCliTag = true; }
   if (!rejectedCliTag) throw new Error('unknown CLI receipt tag was accepted');
@@ -201,7 +211,7 @@ async function run() {
   const options = parseArgs(process.argv.slice(2));
   OUTPUTS = outputPaths(options.receiptTag);
   if (options.help) {
-    process.stdout.write('用法：node tools/resonance/workshop-ui-check.mjs --session <persisted-uuid> --product-native <full-git-commit> [--receipt-tag ui-refinement]\n       node tools/resonance/workshop-ui-check.mjs --self-test\n仅允许的receipt tag：ui-refinement（不带tag时沿用既有输出路径）。\n');
+    process.stdout.write('用法：node tools/resonance/workshop-ui-check.mjs --session <persisted-uuid> --product-native <full-git-commit> [--receipt-tag ui-refinement|ui-alignment]\n       node tools/resonance/workshop-ui-check.mjs --self-test\n仅允许的receipt tag：ui-refinement、ui-alignment（不带tag时沿用既有输出路径）。\n');
     return;
   }
   if (options.selfTest) return selfTest();

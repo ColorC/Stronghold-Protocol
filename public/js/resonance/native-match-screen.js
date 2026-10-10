@@ -67,7 +67,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
 import { PHASE, GEO } from '../../../shared/constants.js';
-import { html, Spinner, PhaseBanner, ResultDialog, Icon, Button, BondDisc, confirmDialog, closeAllDialogs, useTicker } from '../ui/components.js';
+import { html, Spinner, PhaseBanner, ResultDialog, Icon, Button, BondDisc, HexBadge, confirmDialog, closeAllDialogs, useTicker } from '../ui/components.js';
 import { useGameData, GIcon } from '../ui/gameComponents.js';
 import { useFieldView } from '../ui/fieldHost.js';
 import { TopBar, liveLp, ownLeaks, uniteRemaining, tempInfo, tempReadyReason } from '../ui/hud.js';
@@ -210,6 +210,64 @@ function NativeFunds({ state, catalog, onOpen, onCollapse }) {
     <button type="button" class="rs-interest" aria-label=${`当前利息 ${interest}`} onClick=${onOpen}>${Array.from({ length: cap }, (_, i) => html`<i class=${i < interest ? 'is-on' : ''} key=${i}></i>`)}<small>+${interest}</small></button>
     <button type="button" class="funds__collapse" onClick=${onCollapse}><${Icon} name="close" />收起</button>
   </div>`;
+}
+
+function NativeLevelCard({ state, catalog, reason, onTap, onOdds }) {
+  const level = Number(state?.level) || 1;
+  const economy = catalog?.campaign?.economy || {};
+  const oddsByLevel = catalog?.campaign?.shopOdds || {};
+  const levels = Object.keys(oddsByLevel).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+  const maxLevel = Number(economy.maxLevel) || levels.at(-1) || 10;
+  const xp = Math.max(0, Number(state?.xp) || 0);
+  const xpNeed = Math.max(0, Number(state?.actionCosts?.xpToLevel ?? economy.xpToLevel?.[level]) || 0);
+  const price = Math.max(0, Number(state?.actionCosts?.xpGold ?? economy.xpPurchase?.gold) || 0);
+  const max = level >= maxLevel;
+  const canBuy = !max && !reason;
+  const progress = max ? 100 : xpNeed > 0 ? Math.min(100, xp / xpNeed * 100) : 0;
+  const hold = useRef(null), openedByHold = useRef(false), releaseLongPress = useRef(null);
+  useEffect(() => () => { if (hold.current) clearTimeout(hold.current); if (releaseLongPress.current) clearTimeout(releaseLongPress.current); }, []);
+  const stopHold = () => { if (hold.current) clearTimeout(hold.current); hold.current = null; };
+  const markOpened = () => {
+    openedByHold.current = true;
+    if (releaseLongPress.current) clearTimeout(releaseLongPress.current);
+    releaseLongPress.current = setTimeout(() => { openedByHold.current = false; releaseLongPress.current = null; }, 900);
+    onOdds?.();
+  };
+  return html`<button type="button" class=${`lvcard rs-level-card rs-native-level-card${max ? ' is-max' : ''}${!canBuy && !max ? ' is-disabled' : ''}`}
+      aria-label=${max ? `等级 ${level}，已满级；查看招募概率` : `等级 ${level}，购买经验 ${price} 金；按 F 购买，右键查看招募概率`}
+      aria-disabled=${String(!canBuy)} title=${max ? '已满级 · 右键查看招募概率' : reason || `购买经验（${price} 金）· F · 右键查看招募概率`}
+      onClick=${() => { if (openedByHold.current) { openedByHold.current = false; return; } if (canBuy) onTap?.(); }}
+      onContextMenu=${event => { event.preventDefault(); stopHold(); if (!openedByHold.current) markOpened(); }}
+      onPointerDown=${event => { if (event.pointerType === 'touch') { stopHold(); hold.current = setTimeout(markOpened, 550); } }}
+      onPointerUp=${stopHold} onPointerLeave=${stopHold} onPointerCancel=${stopHold}>
+    ${!max ? html`<${HexBadge} value=${price} tone=${canBuy ? 'gold' : 'dark'} size="md" class="lvcard__price" />` : null}
+    <span class="lvcard__frame"><span class="lvcard__micro">LEVEL</span><b class="lvcard__num num">${level}</b></span>
+    <span class="lvcard__xp" aria-label=${max ? '经验已满' : `经验 ${xp}/${xpNeed}`}>
+      <i role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${Math.round(progress)}><em style=${{ width: `${progress}%` }}></em></i>
+      <small>${max ? '经验已满' : `${xp}/${xpNeed} 经验`}</small>
+    </span>
+    <span class="lvcard__label">${max ? '已满级' : '购买经验'}</span><kbd class="lvcard__key">F</kbd>
+  </button>`;
+}
+
+function NativeShopOdds({ state, catalog }) {
+  const odds = catalog?.campaign?.shopOdds || {};
+  const entries = Object.entries(odds).map(([level, values]) => [Number(level), Array.from({ length: 5 }, (_, i) => Number(values?.[i]) || 0)])
+    .filter(([level]) => Number.isFinite(level)).sort((a, b) => a[0] - b[0]);
+  const level = Number(state?.level) || 1;
+  const currentIndex = entries.findIndex(([value]) => value === level);
+  const current = entries[currentIndex]?.[1] || [0, 0, 0, 0, 0];
+  const next = entries[currentIndex + 1] || null;
+  const cap = Number(state?.deployCap ?? state?.effectiveDeployCapacity ?? level) || level;
+  const row = (values, cls = '') => html`<div class=${`rs-shop-odds__bars ${cls}`} role="img" aria-label=${values.map((value, i) => `${i + 1}费 ${value}%`).join('，')}>
+    ${values.map((value, i) => html`<span class=${`rs-shop-odds__cell is-cost-${i + 1}`} key=${i}><b>${value}%</b><small>${i + 1}费</small><i><em style=${{ height: `${Math.min(100, value)}%` }}></em></i></span>`)}</div>`;
+  return html`<section class="rs-shop-odds" aria-label="招募概率">
+    <p class="rs-shop-odds__current"><b>当前等级 ${level}</b><span>上场人数上限 ${cap}</span></p>
+    <div class="rs-shop-odds__block"><h3>当前招募概率</h3>${row(current, 'is-current')}</div>
+    ${next ? html`<div class="rs-shop-odds__next"><h3>升至 ${next[0]} 级</h3>${row(next[1])}</div>` : html`<p class="rs-shop-odds__max">已达到最高等级。</p>`}
+    <details class="rs-shop-odds__all"><summary>查看完整招募概率</summary><div class="rs-shop-odds__table">${entries.map(([rowLevel, values]) => html`<div class=${`rs-shop-odds__table-row${rowLevel === level ? ' is-current' : ''}`} key=${rowLevel}><b>${rowLevel}级</b>${values.map((value, i) => html`<span class=${`is-cost-${i + 1}`} key=${i}>${value}%</span>`)}</div>`)}</div></details>
+    <p class="rs-shop-odds__legend"><b>费用颜色</b>${[1,2,3,4,5].map(cost => html`<span class=${`is-cost-${cost}`} key=${cost}><i></i>${cost}费</span>`)}</p>
+  </section>`;
 }
 
 function NativeMatchInfo({ state, catalog, onDetail, onSettlement, showHelp = false }) {
@@ -1918,6 +1976,7 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         renderFunds=${resonanceState && resonanceCatalog ? html`<${NativeFunds} state=${resonanceState} catalog=${resonanceCatalog} onOpen=${() => toggleResonancePanel('income')} onCollapse=${() => setCollapsed(true)} />` : null}
         bondRenderer=${resonanceCatalog ? bond => { const id = typeof bond === 'string' ? bond : bond.id; return html`<${PactIcon} catalog=${resonanceCatalog} id=${id} size="sm" /><span>${resonanceCatalog.pacts?.[id]?.name || '盟约'}</span>`; } : null}
         refreshKey="D" freezeKey=${null} levelKey="F" hideItem=${myId === 'resonance'}
+        renderLevel=${resonanceState && resonanceCatalog ? ({ reason, onTap }) => html`<${NativeLevelCard} state=${resonanceState} catalog=${resonanceCatalog} reason=${reason} onTap=${onTap} onOdds=${() => toggleResonancePanel('shopOdds')} />` : null}
         barRef=${barRef} offBonds=${offBonds}
         onBuy=${buy} onLevel=${() => actions.levelUp()} onRefresh=${() => actions.refresh()} onFreeze=${() => actions.freeze()}
         onDetail=${(id, kind, hint) => setDetail({ kind: kind === 'item' ? 'item' : 'chess', id, hint: hint || null, tap: ++cardTap.current })}
@@ -1949,9 +2008,10 @@ function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
         bandId=${scoutBandId} bandOwner=${scoutBandOwner}
         onEnemy=${(k, n) => setDetail({ kind: 'enemy', id: k, count: n })} onChess=${(id) => setDetail({ kind: 'chess', id, foreign: true })} />` : null}
 
-      ${resonanceState && resonanceCatalog && resonancePanel ? html`<aside class=${`dpanel dpanel--right rs-native-resonance-panel rs-native-resonance-panel--${resonancePanel}`} style=${resonancePanelBottom == null ? undefined : { bottom: `${resonancePanelBottom}px` }} role="dialog" aria-label=${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存','match-info':'本局信息'})[resonancePanel]}>
-        <header class="rs-native-resonance-panel__head"><b>${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存','match-info':'本局信息'})[resonancePanel]}</b><button type="button" aria-label="关闭面板" onClick=${() => setResonancePanel(null)}><${Icon} name="close" /></button></header>
+      ${resonanceState && resonanceCatalog && resonancePanel ? html`<aside class=${`dpanel dpanel--right rs-native-resonance-panel rs-native-resonance-panel--${resonancePanel}`} style=${resonancePanelBottom == null ? undefined : { bottom: `${resonancePanelBottom}px` }} role="dialog" aria-label=${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存','match-info':'本局信息',shopOdds:'等级与招募概率'})[resonancePanel]}>
+        <header class="rs-native-resonance-panel__head"><b>${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存','match-info':'本局信息',shopOdds:'等级与招募概率'})[resonancePanel]}</b><button type="button" aria-label="关闭面板" onClick=${() => setResonancePanel(null)}><${Icon} name="close" /></button></header>
         <div class="rs-native-resonance-panel__body">
+          ${resonancePanel === 'shopOdds' ? html`<${NativeShopOdds} state=${resonanceState} catalog=${resonanceCatalog} />` : null}
           ${resonancePanel === 'pacts' ? html`<${NativePactMatrix} state=${resonanceState} catalog=${resonanceCatalog} onDetail=${openNativeResonanceDetail} />` : null}
           ${resonancePanel === 'income' ? html`<${IncomePanel} state=${resonanceState} catalog=${resonanceCatalog} />` : null}
           ${resonancePanel === 'match-info' ? html`<${NativeMatchInfo} state=${resonanceState} catalog=${resonanceCatalog} onDetail=${openNativeResonanceDetail} onSettlement=${() => toggleResonancePanel('settlement')} showHelp=${resonanceHelp} />` : null}

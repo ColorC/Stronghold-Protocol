@@ -55,8 +55,8 @@ test('prep or already-paused exit does not send an unsupported leave/autoplay ac
 test('native app route callback clears session URL and state while preserving the saved-session resume entry', () => {
   assert.match(appSource, /const leaveSession = \(\) => \{[\s\S]*sessionUrl\(null\)[\s\S]*url\.hash = ''[\s\S]*setSession\(null\)[\s\S]*setStep\(0\)[\s\S]*setReplayMode\(false\)/);
   assert.match(appSource, /NativeMatchConnection\} key=\$\{session\.id\} id=\$\{session\.id\} onLeave=\$\{leaveSession\}/);
-  assert.match(connectionSource, /function NativeMatchConnection\(\{ id, onLeave \}\)/);
-  assert.match(connectionSource, /\$\{GameScreen\} onLeave=\$\{onLeave\} \/>/);
+  assert.match(connectionSource, /export function NativeMatchConnection\(\{\s*id,\s*onLeave,/);
+  assert.match(connectionSource, /\$\{GameScreen\} onLeave=\$\{onLeave\} libraryCatalog=\$\{libraryCatalog\} activeIds=\$\{activeIds\} \/>/);
   assert.match(connectionSource, /return \(\) => \{[\s\S]*net\.close\(\)[\s\S]*store\.set\(\{ match: emptyMatch\(\), room: null \}\)/);
   assert.doesNotMatch(appSource, /localStorage\.removeItem\(LAST\)/);
 });

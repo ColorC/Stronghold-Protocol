@@ -23,11 +23,13 @@ const SUPPLEMENTAL_SHOTS = {
   '11-reward-progress': path.join(OUT, 'native-live-11-reward-progress.jpg'),
   '12-reward-tiers': path.join(OUT, 'native-live-12-reward-tiers.jpg'),
   '13-codex': path.join(OUT, 'native-live-13-codex.jpg'),
+  '13-codex-detail': path.join(OUT, 'native-live-13-codex-detail.jpg'),
   '14-combat-controls': path.join(OUT, 'native-live-14-combat-controls.jpg'),
 };
 export const REQUIRED_CHECKS = [
   'title-to-difficulty', 'native-info-prep', 'three-real-deployments', 'shop-real-purchase', 'details-open-while-shop-usable',
-  'native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure',
+  'native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-codex-content-and-detail-visible', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure',
+  'native-level-xp-and-shop-odds',
   'native-remaining-controls-live', 'native-visible-text-audit-14px',
   'mobile-shop-panel-safe',
   'equipment-holder-combine', 'inventory-combine', 'whole-card-cost-colors', 'fixed-skill-icons-loaded', 'ground-tier-ring',
@@ -521,19 +523,35 @@ export async function waitReceivedWhere(attempt, predicate, timeoutMs = 8_000, f
   return null;
 }
 
+export function isRunnerResultWarning(text) {
+  return /\[runner\].*(?:result failed|b\.result refused|b\.result not delivered)/i.test(String(text));
+}
+
 export async function attachWsCapture(page, attempt, onSent = null) {
   const cdp = await page.createCDPSession();
   await cdp.send('Network.enable');
+  attempt.ws.parseErrors ??= [];
+  const recordParseError = (direction, wireText, error) => {
+    const payloadBytes = typeof wireText === 'string' ? Buffer.byteLength(wireText, 'utf8')
+      : Number.isFinite(wireText?.byteLength) ? wireText.byteLength : 0;
+    attempt.ws.parseErrorCount = (attempt.ws.parseErrorCount || 0) + 1;
+    attempt.ws.parseErrorPayloadBytes = (attempt.ws.parseErrorPayloadBytes || 0) + payloadBytes;
+    if (attempt.ws.parseErrors.length < 50) attempt.ws.parseErrors.push({ direction, payloadBytes,
+      errorName: error?.name || 'ParseError' });
+  };
   const append = (direction, event) => {
+    const wireText = event.response?.payloadData ?? event.response?.payload ?? '';
+    let message;
+    try { message = JSON.parse(wireText); }
+    catch (error) { recordParseError(direction, wireText, error); return; }
     try {
-      const wireText = event.response?.payloadData ?? event.response?.payload ?? '';
-      const message = JSON.parse(wireText);
       const row = { t: message.t, action: message.action?.type || null, at: now(), direction,
         phase: message.phase || message.nativePhase || null, round: message.round ?? null,
         battleId: message.battleId || null, progress: message.progress || null,
         kind: message.kind ?? null, specKind: message.spec?.kind ?? null,
         specStageId: message.spec?.stageId ?? null, specRound: message.spec?.round ?? null,
-        error: message.error || message.code || null, detail: message.detail || null, rid: message.rid ?? null,
+        error: message.error || message.code || null, detail: message.detail || null,
+        reason: message.t === 'b.end' && typeof message.reason === 'string' ? message.reason : null, rid: message.rid ?? null,
         ready: message.ready ?? null, paused: typeof message.on === 'boolean' ? message.on : (typeof message.paused === 'boolean' ? message.paused : null),
         speed: [1,2,4,32].includes(Number(message.speed)) ? Number(message.speed) : null, finish: message.finish === true,
         gt: Number.isFinite(message.gt) ? message.gt : null, elapsed: Number.isFinite(message.elapsed) ? message.elapsed : null,
@@ -550,6 +568,7 @@ export async function attachWsCapture(page, attempt, onSent = null) {
           .map((key) => [key, Array.isArray(mode[key]) ? mode[key].length : 0]));
         row.resultMetricsKeyCount = Object.keys(mode.metrics ?? {}).length;
       }
+      if (message.t === 'b.end') row.endReason = typeof message.reason === 'string' ? message.reason : null;
       if (direction === 'received' && message.t === 'm.result') row.resultSummary = projectNativeResultSummary(message);
       if (direction === 'sent') { attempt.ws.sent.push(row); onSent?.(message); }
       else attempt.ws.received.push(row);
@@ -627,7 +646,8 @@ async function run() {
   // Use the one fixed canonical profile; create this exact path once if absent, never a retry profile.
   await mkdir(PROFILE, { recursive: true });
   const attempt = { startedAt: now(), receiptTag: options.receiptTag || null, source: sourceRoot, sourceRevision: execFileSync('git',['-C',sourceRoot,'rev-parse','HEAD'],{encoding:'utf8',windowsHide:true,timeout:10_000}).trim(), installDir: ROOT, sessionDirectory: SESSION_DIR, port: PORT,
-    status: 'running', checks: {}, screenshots: {}, ws: { sent: [], received: [] }, failures: [], fixtures: { fifthChoice: 'not-run', bossHidden: 'not-run' } };
+    status: 'running', checks: {}, screenshots: {}, ws: { sent: [], received: [], parseErrors: [], parseErrorCount: 0, parseErrorPayloadBytes: 0 },
+    runnerResultWarnings: [], failures: [], fixtures: { fifthChoice: 'not-run', bossHidden: 'not-run' } };
   const receipt = existsSync(receiptPath) ? JSON.parse(await readFile(receiptPath, 'utf8')) : { checker: 'native-live-ui-check', receiptTag: options.receiptTag || null, attempts: [] };
   assert(receipt.checker === 'native-live-ui-check' && Array.isArray(receipt.attempts), `existing receipt has incompatible shape: ${receiptPath}`);
   for (const file of [...Object.values(screenshots), ...Object.values(supplementalScreenshots)]) if (existsSync(file)) {
@@ -707,6 +727,11 @@ async function run() {
     page = await browser.newPage(); await page.setCacheEnabled(false); await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
     page.on('pageerror', (error) => errors.push(String(error)));
     page.on('console', (message) => {
+      if (message.type() === 'warning' && isRunnerResultWarning(message.text())) {
+        const location = message.location?.() || {};
+        attempt.runnerResultWarnings.push({ type: message.type(), text: message.text().slice(0, 240),
+          url: location.url || null, lineNumber: location.lineNumber ?? null });
+      }
       if (message.type() !== 'error') return;
       const location = message.location?.() || {};
       if (/favicon\.ico/.test(message.text()) || /favicon\.ico/.test(location.url || '')) return;
@@ -1091,16 +1116,76 @@ async function run() {
     await page.waitForSelector('.rs-native-codex-overlay[role="dialog"] .lo-card.rs-codex__operator-card',{visible:true,timeout:8_000});
     const codexCards=await page.$$('.rs-native-codex-overlay .lo-card.rs-codex__operator-card');
     assert(codexCards.length>0,'Native codex opened without operator entries');
-    await clickHandleByMeasuredCenter(page,codexCards[0],'codex operator detail');
+    await page.waitForFunction(() => {
+      const content=document.querySelector('.rs-native-codex-overlay .rs-codex__content');
+      const grid=document.querySelector('.rs-native-codex-overlay .rs-codex__roster-grid');
+      if(!content||!grid)return false;
+      const cards=[...grid.querySelectorAll('.rs-codex__operator-card')],firstTop=Math.min(...cards.map(node=>node.getBoundingClientRect().top));
+      const firstRow=cards.filter(node=>Math.abs(node.getBoundingClientRect().top-firstTop)<3);
+      const images=firstRow.flatMap(node=>[...node.querySelectorAll('img')]);
+      return images.every(image=>image.complete&&image.naturalWidth>0);
+    },{timeout:2_000}).catch(()=>{});
+    const measureCodex = () => page.evaluate(() => {
+      const content=document.querySelector('.rs-native-codex-overlay .rs-codex__content');
+      const grid=document.querySelector('.rs-native-codex-overlay .rs-codex__roster-grid');
+      if(!content||!grid)return{present:false,viewport:{width:innerWidth,height:innerHeight}};
+      const cr=content.getBoundingClientRect(), cards=[...grid.querySelectorAll('.rs-codex__operator-card')]
+        .map(node=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};});
+      const firstTop=Math.min(...cards.map(r=>r.top)), firstRow=cards.filter(r=>Math.abs(r.top-firstTop)<3);
+      const fullyVisible=firstRow.filter(r=>r.width>0&&r.height>0&&r.left>=Math.max(0,cr.left)-1&&r.right<=Math.min(innerWidth,cr.right)+1
+        &&r.top>=Math.max(0,cr.top)-1&&r.bottom<=Math.min(innerHeight,cr.bottom)+1);
+      return{present:true,viewport:{width:innerWidth,height:innerHeight},scrollbox:{clientHeight:content.clientHeight,scrollHeight:content.scrollHeight,
+        scrollTop:content.scrollTop,rect:{left:cr.left,right:cr.right,top:cr.top,bottom:cr.bottom}},cardCount:cards.length,
+        firstRowCount:firstRow.length,firstRowVisibleCount:fullyVisible.length,firstRow:fullyVisible.slice(0,8)};
+    });
+    const codexLayoutDesktop=await measureCodex();
+    assert(codexLayoutDesktop.present&&codexLayoutDesktop.scrollbox.clientHeight>0&&codexLayoutDesktop.firstRowVisibleCount>=4,
+      `Codex first row is clipped on desktop: ${JSON.stringify(codexLayoutDesktop)}`);
+    await capture('13-codex');
+    await page.setViewport({width:1000,height:700,deviceScaleFactor:1}); await sleep(120);
+    const codexLayoutCompact=await measureCodex();
+    await page.setViewport({width:1440,height:900,deviceScaleFactor:1}); await sleep(120);
+    assert(codexLayoutCompact.present&&codexLayoutCompact.scrollbox.clientHeight>0&&codexLayoutCompact.firstRowVisibleCount>=3,
+      `Codex first row is clipped at 1000px: ${JSON.stringify(codexLayoutCompact)}`);
+    const codexCardsAfterResize=await page.$$('.rs-native-codex-overlay .lo-card.rs-codex__operator-card');
+    assert(codexCardsAfterResize.length>0,'Codex cards disappeared after viewport restore');
+    await clickHandleByMeasuredCenter(page,codexCardsAfterResize[0],'codex operator detail');
     await page.waitForSelector('.rs-native-codex-overlay .rs-detail-panel',{visible:true,timeout:5_000});
-    const codexDetailEvidence=await page.$eval('.rs-native-codex-overlay .rs-detail-panel',node=>({open:true,title:node.querySelector('.dtitle')?.innerText||node.innerText.slice(0,80)}));
+    await page.waitForFunction(()=>{
+      const panel=document.querySelector('.rs-native-codex-overlay .rs-detail-panel');if(!panel)return false;
+      const r=panel.getBoundingClientRect(),active=panel.getAnimations().some(animation=>animation.playState==='running');
+      return r.width>0&&r.height>0&&!active&&r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;
+    },{timeout:1_000}).catch(()=>{});
+    const codexDetailEvidence=await page.evaluate(()=>{
+      const panel=document.querySelector('.rs-native-codex-overlay .rs-detail-panel'),scroll=panel?.querySelector('.dpanel__scroll');
+      const rect=panel?.getBoundingClientRect(),copy=panel?.querySelector('.rs-detail-panel__copy'),close=panel?.querySelector('.dpanel__close');
+      const hit=el=>{if(!el)return false;const r=el.getBoundingClientRect();const x=r.left+r.width/2,y=r.top+r.height/2;return x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&document.elementFromPoint(x,y)?.closest('button')===el;};
+      return{open:!!panel,title:panel?.querySelector('.dhead__name')?.innerText||panel?.innerText.slice(0,80)||'',
+        textLength:scroll?.innerText.trim().length||0,scrollHeight:scroll?.scrollHeight||0,clientHeight:scroll?.clientHeight||0,
+        rect:rect?{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height}:null,
+        copy:{visible:!!copy&&getComputedStyle(copy).display!=='none',hit:hit(copy)},close:{visible:!!close&&getComputedStyle(close).display!=='none',hit:hit(close)}};
+    });
+    const detailRect=codexDetailEvidence.rect;
+    check('native-codex-content-and-detail-visible',codexLayoutDesktop.firstRowVisibleCount>=4&&codexLayoutCompact.firstRowVisibleCount>=3
+      &&codexDetailEvidence.open&&codexDetailEvidence.textLength>40&&codexDetailEvidence.scrollHeight>0
+      &&!!detailRect&&detailRect.left>=0&&detailRect.top>=0&&detailRect.right<=1440&&detailRect.bottom<=900
+      &&codexDetailEvidence.copy.visible&&codexDetailEvidence.copy.hit&&codexDetailEvidence.close.visible&&codexDetailEvidence.close.hit,
+      {desktop:codexLayoutDesktop,compact:codexLayoutCompact,detail:codexDetailEvidence});
+    await capture('13-codex-detail');
     const shortcutOffset=attempt.ws.sent.length;
     for(const key of ['d','f','Space']) await page.keyboard.press(key);
     await sleep(250);
     const penetratedFrames=attempt.ws.sent.slice(shortcutOffset).filter(row=>['g.refresh','g.levelUp','g.ready','g.move','g.sell'].includes(row.t));
     const codexStateAfterKeys=await page.evaluate(async()=>{const {store}=await import('./js/store.js'),snapshot=store.get(),state=snapshot.match.private?.resonance?.state;return{phase:snapshot.match.public?.phase,revision:state?.revision};});
     assert(penetratedFrames.length===0,'D/F/Space penetrated the tactical codex detail overlay');
-    await capture('13-codex');
+    const detailClose=await page.$('.rs-native-codex-overlay .rs-detail-panel .dpanel__close');
+    assert(detailClose,'Codex detail return control is missing');
+    await clickHandleByMeasuredCenter(page,detailClose,'Codex detail return');
+    await page.waitForFunction(()=>!document.querySelector('.rs-native-codex-overlay .rs-detail-panel'),{timeout:4_000});
+    const codexCardForEscape=await page.$('.rs-native-codex-overlay .lo-card.rs-codex__operator-card');
+    assert(codexCardForEscape,'Codex cards missing after detail return');
+    await clickHandleByMeasuredCenter(page,codexCardForEscape,'Codex detail Escape check');
+    await page.waitForSelector('.rs-native-codex-overlay .rs-detail-panel',{visible:true,timeout:4_000});
     await page.keyboard.press('Escape');
     await page.waitForFunction(()=>!document.querySelector('.rs-native-codex-overlay .rs-detail-panel')&&!!document.querySelector('.rs-native-codex-overlay'),{timeout:4_000});
     await page.keyboard.press('Escape');
@@ -1481,7 +1566,42 @@ async function run() {
     check('refresh-lock', !!froze && !!unfroze && !!refreshed && attempt.ws.sent.length > sentBeforeEconomy, { froze, unfroze, refreshed,goldBeforeRefresh:beforeRefresh.gold });
     const beforeXp = await readState();
     const levelCard = await page.$('.shopbar__row .lvcard'); assert(levelCard, 'native XP level card is missing');
-    const xpPrice = await levelCard.$eval('.lvcard__price', node => Number((node.innerText || '').match(/\d+/)?.[0]));
+    const xpDisplay=await page.evaluate(()=>{
+      const card=document.querySelector('.shopbar__row .lvcard'),xp=card?.querySelector('.lvcard__xp');
+      return{present:!!xp,text:xp?.innerText?.trim()||'',font:xp?parseFloat(getComputedStyle(xp).fontSize):null,
+        levelText:card?.querySelector('.lvcard__level,.lvcard__lv,.lvcard__name')?.innerText?.trim()||card?.innerText?.trim()||''};
+    });
+    assert(xpDisplay.present&&xpDisplay.text,'Native prep level card must show current XP before purchase');
+    await levelCard.click({button:'right'});
+    await page.waitForSelector('.rs-native-resonance-panel--shopOdds[role="dialog"]',{visible:true,timeout:5_000});
+    const oddsEvidence=await page.evaluate(()=>{
+      const panel=document.querySelector('.rs-native-resonance-panel--shopOdds[role="dialog"]');
+      const visible=node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+      const candidates=[...panel.querySelectorAll('[data-tier],[data-level],[class*="tier"],[class*="odds"],[class*="probability"]')]
+        .filter(node=>visible(node)&&((node.innerText||'').trim()||node.getAttribute('aria-label')));
+      const levels=[...new Map(candidates.map(node=>{
+        const label=(node.innerText||node.getAttribute('aria-label')||'').trim(),key=node.dataset.tier||node.dataset.level||label;
+        const r=node.getBoundingClientRect(),style=getComputedStyle(node);
+        return[key,{label,background:style.backgroundColor,color:style.color,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}}];
+      })).values()];
+      const text=(panel.innerText||'').trim(),close=panel.querySelector('button[aria-label="关闭面板"]');
+      const closeRect=close?.getBoundingClientRect(),closeHit=!!closeRect&&document.elementFromPoint(closeRect.left+closeRect.width/2,closeRect.top+closeRect.height/2)?.closest('button')===close;
+      return{text,levels,close:{present:!!close,hit:closeHit},viewport:{width:innerWidth,height:innerHeight}};
+    });
+    const oddsState=await readState();
+    const oddsPanelValid=/等级与招募概率/.test(oddsEvidence.text)&&oddsEvidence.levels.length>=5
+      &&oddsEvidence.levels.every(row=>row.label&&row.rect.left>=0&&row.rect.top>=0&&row.rect.right<=oddsEvidence.viewport.width&&row.rect.bottom<=oddsEvidence.viewport.height)
+      &&oddsEvidence.text.includes(String(oddsState.level))&&oddsEvidence.close.hit;
+    const oddsClose=await page.$('.rs-native-resonance-panel--shopOdds button[aria-label="关闭面板"]');
+    assert(oddsClose,'Native shop odds panel has no close control');
+    await clickHandleByMeasuredCenter(page,oddsClose,'close native shop odds panel');
+    await page.waitForFunction(()=>!document.querySelector('.rs-native-resonance-panel--shopOdds'),{timeout:4_000});
+    const shopAfterOdds=await page.evaluate(()=>[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')].filter(node=>{
+      const r=node.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&hit&&(hit===node||node.contains(hit));}).length);
+    check('native-level-xp-and-shop-odds',xpDisplay.present&&xpDisplay.text.length>0&&xpDisplay.font>=14&&oddsPanelValid&&shopAfterOdds>0,
+      {xpDisplay,oddsEvidence,level:oddsState.level,xp:oddsState.xp,shopCardsHitAfterClose:shopAfterOdds});
+    const levelCardAfterOdds=await page.$('.shopbar__row .lvcard'); assert(levelCardAfterOdds,'Native level card disappeared after closing odds');
+    const xpPrice = await levelCardAfterOdds.$eval('.lvcard__price', node => Number((node.innerText || '').match(/\d+/)?.[0]));
     assert(Number.isFinite(xpPrice) && beforeXp.gold >= xpPrice, `mainline XP upgrade is not affordable: ${JSON.stringify({gold:beforeXp.gold,xpPrice})}`);
     const xpOffset = attempt.ws.sent.length; await page.keyboard.press('f');
     const xpSent = await waitSent(attempt, 'g.levelUp', 6_000, xpOffset);
@@ -1540,14 +1660,6 @@ async function run() {
       { pause, pausedPublic, fastFinishPausedDisabled, beforePauseFrame, pausedFrames, pausedGt, resume, resumedPublic, resumedFrame });
     const fastFinishButton=await page.$('[data-testid="battle-fast-finish"]');
     assert(fastFinishButton&&await fastFinishButton.evaluate(node=>!node.disabled),'fast-finish must be available after combat resumes');
-    const fastFinishOffset=attempt.ws.sent.length, fastStartOffset=attempt.ws.received.length;
-    await clickHandleByMeasuredCenter(page,fastFinishButton,'native fast finish');
-    const fastRequest=await waitSentWhere(attempt,row=>row.t==='g.resonanceCombat'&&row.finish===true,5_000,fastFinishOffset);
-    const finishingStart=await waitReceivedWhere(attempt,row=>row.t==='b.start'&&row.battleId===attempt.battleId&&row.speed===32,5_000,fastStartOffset);
-    assert(fastRequest&&finishingStart,'fast-finish did not accelerate the current native battle');
-    const during = await readState();
-    check('combat-ledger-immutable', during.history?.length === attempt.ledgerBeforeCombat.history && during.gold === attempt.ledgerBeforeCombat.gold && during.hp === attempt.ledgerBeforeCombat.hp && during.round === attempt.ledgerBeforeCombat.round,
-      { before: attempt.ledgerBeforeCombat, during: { history: during.history?.length, gold: during.gold, hp: during.hp, round: during.round } });
     const priorBattleIds = new Set(attempt.ws.received.filter((message) => message.t === 'b.start').map((message) => message.battleId));
     const progressBeforeReload = attempt.ws.sent.filter(message=>message.t==='b.progress'&&message.battleId===attempt.battleId).at(-1);
     const reloadOffset = attempt.ws.received.length, reloadProgressOffset = attempt.ws.sent.length;
@@ -1556,20 +1668,61 @@ async function run() {
     const restoredStart = await waitReceived(attempt,'b.start',20_000,reloadOffset);
     const restoredPublic = await waitReceivedWhere(attempt,message=>message.t==='m.public'&&message.phase==='COMBAT',5_000,reloadOffset);
     const restoredElapsedDelta = Number(restoredStart?.elapsed)-Number(progressBeforeReload?.gt);
+    const progressAfterReload = await waitSentWhere(attempt,message=>message.t==='b.progress'&&message.battleId===attempt.battleId
+      &&Number.isFinite(message.gt)&&message.gt>Number(progressBeforeReload?.gt),8_000,reloadProgressOffset);
     check('reload-restores-same-battle', !!restoredStart && restoredStart.battleId===attempt.battleId
       && page.url()===combatUrl && priorBattleIds.size===1 && attempt.ws.connections?.length>=2
-      && Number.isFinite(restoredStart.elapsed) && restoredElapsedDelta>0 && !!restoredPublic,
+      && Number.isFinite(restoredStart.elapsed) && restoredElapsedDelta>0 && !!restoredPublic && !!progressAfterReload
+      && speedChanges.at(-1)?.start?.speed===2,
       { url:page.url(),battleIds:[...priorBattleIds],restoredStart,restoredPublic,progressBeforeReload,restoredElapsedDelta,
-        progressAfterReload:attempt.ws.sent.slice(reloadProgressOffset).filter(message=>message.t==='b.progress'&&message.battleId===attempt.battleId),connections:attempt.ws.connections });
+        progressAfterReload,connections:attempt.ws.connections,normalSpeed:speedChanges.at(-1)?.start?.speed });
+    assert(progressAfterReload,'same battle did not emit newer runner progress after the normal-speed reload');
+    const matchAtReload=server?.resonanceLive?.matches?.get(attempt.sessionId)||null;
+    const trackedNativeField=matchAtReload?.fields?.find(field=>field.battleId===attempt.battleId)||null;
+    assert(trackedNativeField,'native match has no in-memory field for the live restored battle');
+    const nativeMatchWasRegistered=server?.resonanceLive?.matches?.get(attempt.sessionId)===matchAtReload;
+    const fastFinishAfterReload=await page.$('[data-testid="battle-fast-finish"]');
+    assert(fastFinishAfterReload&&await fastFinishAfterReload.evaluate(node=>!node.disabled),'fast-finish is not available after normal-speed reload');
+    const fastFinishOffset=attempt.ws.sent.length, fastStartOffset=attempt.ws.received.length;
+    await clickHandleByMeasuredCenter(page,fastFinishAfterReload,'native fast finish');
+    const fastRequest=await waitSentWhere(attempt,row=>row.t==='g.resonanceCombat'&&row.finish===true,5_000,fastFinishOffset);
+    const finishingStart=await waitReceivedWhere(attempt,row=>row.t==='b.start'&&row.battleId===attempt.battleId&&row.speed===32,5_000,fastStartOffset);
+    assert(fastRequest&&finishingStart,'fast-finish did not accelerate the current native battle');
+    const during = await readState();
+    check('combat-ledger-immutable', during.history?.length === attempt.ledgerBeforeCombat.history && during.gold === attempt.ledgerBeforeCombat.gold && during.hp === attempt.ledgerBeforeCombat.hp && during.round === attempt.ledgerBeforeCombat.round,
+      { before: attempt.ledgerBeforeCombat, during: { history: during.history?.length, gold: during.gold, hp: during.hp, round: during.round } });
     const settleAt = Date.now() + Math.max(10_000, DEADLINE_MS - (Date.now() - Date.parse(attempt.startedAt)) - 5_000);
+    const resultFrameSent=await waitSentWhere(attempt,row=>row.t==='b.result'&&row.battleId===attempt.battleId,20_000);
+    let resultDiagnostics=null;
+    const fieldDeadline=Date.now()+5_000;
+    while(Date.now()<fieldDeadline){
+      const liveField=trackedNativeField;
+      if(liveField?.resultSource||liveField?.result||liveField?.done){
+        resultDiagnostics={matchRegisteredAtCapture:nativeMatchWasRegistered,phase:matchAtReload?.phase??null,ended:matchAtReload?.ended===true,
+          fieldPresent:!!liveField,fieldBattleId:liveField?.battleId??null,fieldKind:liveField?.kind??null,fieldDone:liveField?.done===true,
+          resultSource:liveField?.resultSource??null,hasResult:liveField?.result!=null,resultReason:liveField?.result?.reason??null,
+          hasHeldResult:liveField?.heldResult!=null,hasVerifyJob:!!liveField?.verifyJob,
+          resultUnitStatsCount:Object.values(liveField?.result?.perPlayer??{}).reduce((sum,row)=>sum+(Array.isArray(row?.unitStats)?row.unitStats.length:0),0)};
+        if(liveField.resultSource==='client'&&liveField.done&&liveField.result)break;
+      }
+      await sleep(50);
+    }
+    attempt.nativeResultDiagnostics=resultDiagnostics;
     await page.waitForFunction(async () => {
       const sid = new URL(location.href).searchParams.get('session'), packet = await (await fetch(`/resonance/api/sessions/${sid}`)).json();
       return (packet.state?.history || []).filter((row) => row.type === 'fight-settled').length >= 1;
     }, { timeout: Math.max(1_000, settleAt - Date.now()) });
     const settled = await readState(), fights = settled.history?.filter((row) => row.type === 'fight-settled') || [];
     const results=attempt.ws.sent.filter(message=>message.t==='b.result'&&message.battleId===attempt.battleId);
-    check('one-real-settlement', fights.length === 1 && results.length===1 && attempt.ws.sent.filter((message) => message.t === 'g.ready').length === 1,
-      { fights: fights.length, results:results.length, fastRequest, finishingStart, history: fights.at(-1) });
+    const endReasons=[...attempt.ws.sent,...attempt.ws.received].filter(row=>row.t==='b.end'&&row.battleId===attempt.battleId).map(row=>({direction:row.direction,reason:row.reason??row.endReason??null}));
+    const resultFrames=results.map(row=>({direction:row.direction,frameBytes:row.resultFrameBytes??null,resultStatsCount:row.resultStatsCount??null,
+      modeQueueCounts:row.resultModeQueueCounts??null,metricsKeyCount:row.resultMetricsKeyCount??null}));
+    const sentReady=attempt.ws.sent.filter(row=>row.t==='g.ready');
+    check('one-real-settlement', fights.length===1&&results.length===1&&results[0].direction==='sent'&&sentReady.length===1
+      &&!!resultFrameSent&&resultDiagnostics?.resultSource==='client'&&resultDiagnostics?.fieldDone&&resultDiagnostics?.hasResult,
+      {fights:fights.length,resultFrames,readyFrames:sentReady.length,fastRequest,finishingStart,history:fights.at(-1),resultFrameSent:!!resultFrameSent,
+        resultDiagnostics,endReasons,runnerResultWarnings:attempt.runnerResultWarnings,wsParseDiagnostics:{count:attempt.ws.parseErrorCount||0,
+          payloadBytes:attempt.ws.parseErrorPayloadBytes||0,errors:attempt.ws.parseErrors||[]}});
     await clickHandleByMeasuredCenter(page,await page.$('[data-testid="check-player"]'),'settled player information');
     await page.waitForSelector('.rs-native-resonance-panel--match-info button[aria-label="本场结算"]:not(:disabled)',{visible:true,timeout:5_000});
     await clickHandleByMeasuredCenter(page,await page.$('.rs-native-resonance-panel--match-info button[aria-label="本场结算"]'),'settlement entry');

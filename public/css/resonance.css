@@ -250,6 +250,45 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-native-resonance-panel--income { top: auto; right: max(12px,env(safe-area-inset-right,0px)); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(380px,calc(100vw - 24px)); height: auto; max-height: calc(100dvh - 3.1rem - env(safe-area-inset-bottom,0px)); overflow: auto; color: #d7e5dc; background: #101814; }
 .rs-native-match .rs-native-resonance-panel--income .rs-native-resonance-panel__head { justify-content: flex-end; padding: .04rem .08rem; border-bottom: 0; }
 .rs-native-match .rs-native-resonance-panel--income .rs-native-resonance-panel__head > b { display: none; }
+.rs-native-match .rs-native-resonance-panel--shopOdds { width: min(560px, calc(100vw - 24px)); }
+.rs-native-match .rs-native-shop-odds { display: grid; gap: .16rem; color: #d7e5dc; font-size: max(.16rem,16px); line-height: 1.4; }
+.rs-native-match .rs-native-shop-odds :is(p,h3) { margin: 0; }
+.rs-native-match .rs-native-shop-odds h3 { color: #edf3ef; font-size: max(.17rem,16px); }
+.rs-native-match .rs-shop-odds__current { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .08rem; padding: .08rem; color: #d7e5dc; background: #18251f; border-left: 3px solid var(--mint-400); }
+.rs-native-match .rs-shop-odds__current b { color: #edf3ef; }
+.rs-native-match .rs-shop-odds__bars { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: .06rem; }
+.rs-native-match .rs-shop-odds__cell { display: grid; grid-template-rows: auto auto minmax(.5rem,1fr); min-height: 1.16rem; justify-items: center; align-items: end; gap: .025rem; padding: .06rem .025rem; background: #17211c; border-top: 2px solid var(--cost-color); }
+.rs-native-match .rs-shop-odds__cell b { color: var(--cost-color); font-size: max(.15rem,14px); font-variant-numeric: tabular-nums; }
+.rs-native-match .rs-shop-odds__cell small { color: #b9c9c0; font-size: max(.14rem,14px); }
+.rs-native-match .rs-shop-odds__cell > i { align-self: stretch; display: flex; align-items: end; width: 100%; background: rgba(255,255,255,.06); }
+.rs-native-match .rs-shop-odds__cell > i em { display: block; width: 100%; background: var(--cost-color); opacity: .85; }
+.rs-native-match :is(.rs-shop-odds__cell,.rs-shop-odds__table-row span,.rs-shop-odds__legend span).is-cost-1 { --cost-color: var(--tier-1); }
+.rs-native-match :is(.rs-shop-odds__cell,.rs-shop-odds__table-row span,.rs-shop-odds__legend span).is-cost-2 { --cost-color: var(--tier-2); }
+.rs-native-match :is(.rs-shop-odds__cell,.rs-shop-odds__table-row span,.rs-shop-odds__legend span).is-cost-3 { --cost-color: var(--tier-3); }
+.rs-native-match :is(.rs-shop-odds__cell,.rs-shop-odds__table-row span,.rs-shop-odds__legend span).is-cost-4 { --cost-color: var(--tier-4); }
+.rs-native-match :is(.rs-shop-odds__cell,.rs-shop-odds__table-row span,.rs-shop-odds__legend span).is-cost-5 { --cost-color: var(--tier-5); }
+.rs-native-match .rs-shop-odds__all { padding-top: .08rem; border-top: 1px solid var(--line-2); }
+.rs-native-match .rs-shop-odds__all > summary { color: #c5d8ce; font-size: max(.14rem,14px); cursor: pointer; }
+.rs-native-match .rs-shop-odds__table { display: grid; gap: .025rem; margin-top: .08rem; }
+.rs-native-match .rs-shop-odds__table-row { display: grid; grid-template-columns: .55fr repeat(5,1fr); gap: .04rem; align-items: center; padding: .045rem .06rem; color: #c5d8ce; background: rgba(255,255,255,.025); font-size: max(.14rem,14px); }
+.rs-native-match .rs-shop-odds__table-row.is-current { background: rgba(46,107,83,.2); outline: 1px solid rgba(102,206,161,.45); }
+.rs-native-match .rs-shop-odds__table-row > b { color: #edf3ef; }
+.rs-native-match .rs-shop-odds__table-row > span { color: var(--cost-color); text-align: center; font-variant-numeric: tabular-nums; }
+.rs-native-match .rs-shop-odds__legend { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem; color: #b9c9c0; font-size: max(.14rem,14px); }
+.rs-native-match .rs-shop-odds__legend > b { color: #edf3ef; }
+.rs-native-match .rs-shop-odds__legend span { display: inline-flex; align-items: center; gap: .025rem; color: var(--cost-color); }
+.rs-native-match .rs-shop-odds__legend i { width: .12rem; height: .12rem; background: var(--cost-color); }
+.rs-native-match .rs-shop-odds__max { color: #c5d8ce; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card { width: max(1.42rem,84px); min-width: max(1.42rem,84px); height: max(2.24rem,112px); gap: .055rem; padding: .25rem .06rem .12rem; cursor: pointer; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card[aria-disabled="true"] { cursor: help; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__frame { padding-inline: .13rem; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__num { font-size: max(.48rem,14px); }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__xp { display: flex; width: 100%; flex-direction: column; align-items: center; gap: .025rem; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__xp > i { display: block; width: 100%; height: .08rem; overflow: hidden; background: rgba(5,20,15,.42); border: 1px solid rgba(6,17,13,.55); }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__xp > i > em { display: block; height: 100%; background: var(--gold); }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__xp small { color: currentColor; font-size: max(.14rem,14px); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__label { font-size: max(.16rem,14px); letter-spacing: 0; padding: 0; white-space: nowrap; }
+.rs-native-match .shopbar .lvcard.rs-native-level-card .lvcard__key { top: 6px; bottom: auto; font-size: max(.14rem,14px); }
 .rs-native-match .rs-native-pact-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 36px; padding: 2px 4px; color: #d7e5dc; }
 .rs-native-match .rs-native-pact-heading > b { color: #edf3ef; font-size: max(.2rem,20px); line-height: 1.2; }
 .rs-native-match .rs-native-pact-open { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 32px; padding: 4px 8px; color: #d7e5dc; background: #101814; border: 1px solid var(--line-2); font-size: max(.14rem,14px); line-height: 1.2; pointer-events: auto; cursor: pointer; }

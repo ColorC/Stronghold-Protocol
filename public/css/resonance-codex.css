@@ -1,6 +1,8 @@
-@import url("./screens/loadout.css");
+@import url("./resonance-native/screens/loadout.css");
 
-.rs-codex .rs-codex__content { min-width: 0; }
+.rs-codex .rs-codex__content { display: block; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
+.rs-codex .rs-codex__content > .panel, .rs-codex .rs-codex__content > .panel > .panel__body { max-height: none; overflow: visible; }
+.rs-codex > .rs-detail-panel { position: fixed; left: auto; right: 12px; top: max(72px,1rem); bottom: 12px; width: min(480px,42vw); max-height: none; }
 .rs-codex .rs-codex__roster,
 .rs-codex .rs-codex__catalog-panel,
 .rs-codex .rs-codex__rules {
@@ -22,6 +24,7 @@
 .rs-codex .rs-codex__filter-row { gap: .08rem; }
 .rs-codex .rs-codex__filter-row .field { min-width: 2.4rem; }
 .rs-codex .rs-codex__filter-row .lo-select { flex: 0 1 auto; }
+.rs-codex .rs-codex__filter-row .lo-select__k { font-size: max(.14rem, 14px); }
 .rs-codex .rs-codex__filter-row .lo-select select { min-width: 1.35rem; }
 .rs-codex .rs-codex__filter-row .lo-toggle { position: relative; }
 .rs-codex .rs-codex__filter-row .lo-toggle input {
@@ -31,6 +34,7 @@
 .rs-codex .rs-codex__roster-grid,
 .rs-codex .rs-codex__catalog-grid,
 .rs-codex .rs-codex__recipe-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(max(2.2rem, 150px), 1fr));
   gap: .1rem;
   overflow: visible;
@@ -48,7 +52,15 @@
   font: inherit;
   font-size: max(max(.16rem, 12px), 14px);
 }
-.rs-codex .rs-codex__operator-card .lo-card__art { aspect-ratio: 1 / 1.08; }
+.rs-codex .rs-codex__operator-card { display: flex; flex-direction: column; align-items: stretch; padding: 0; text-align: left; }
+.rs-codex .rs-codex__operator-card .lo-card__art { width: 100%; height: auto; aspect-ratio: 1 / 1.08; }
+.rs-codex .rs-codex__operator-card .lo-card__name { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 4px; background: rgba(8,10,9,.84); }
+.rs-codex .rs-codex__operator-card .lo-card__kit { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; padding: 6px; }
+.rs-codex .lo-card--t1 { --tc: var(--tier-1); }
+.rs-codex .lo-card--t2 { --tc: var(--tier-2); }
+.rs-codex .lo-card--t3 { --tc: var(--tier-3); }
+.rs-codex .lo-card--t4 { --tc: var(--tier-4); }
+.rs-codex .lo-card--t5 { --tc: var(--tier-5); }
 .rs-codex .rs-codex__operator-card .rs-avatar--card,
 .rs-codex .rs-codex__operator-card .rs-avatar--card img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rs-codex .rs-codex__operator-card .rs-avatar--card > span { display: grid; width: 100%; height: 100%; place-items: center; font-size: max(.48rem, 14px); color: var(--mint-400); }

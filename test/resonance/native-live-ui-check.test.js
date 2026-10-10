@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
+import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -17,7 +17,7 @@ test('prepare mode validates paths without launching a browser or service', () =
   assert.equal(payload.serverMount.publicDir.replaceAll('\\', '/'), `${config().source.replaceAll('\\', '/')}/public`);
   assert.equal(payload.serverMount.installDirReadOnlyFallback, payload.canonicalInstallDir);
   assert.equal(Object.keys(payload.screenshots).length, 10);
-  assert.equal(Object.keys(payload.supplementalScreenshots).length, 4);
+  assert.equal(Object.keys(payload.supplementalScreenshots).length, 5);
   const tagged = spawnSync(process.execPath, [tool, '--validate-args', '--receipt-tag', 'ui-alignment'], { encoding: 'utf8', timeout: 10_000 });
   assert.equal(tagged.status, 0, tagged.stderr);
   const taggedPayload=JSON.parse(tagged.stdout);
@@ -55,11 +55,12 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
   const passed = Object.fromEntries(REQUIRED_CHECKS.map((key) => [key, { status: 'passed' }]));
   assert.deepEqual(missingChecks(passed), []);
   assert.equal(screenshotCount(config().screenshots), 10);
-  assert.equal(screenshotCount({...config().screenshots,...config().supplementalScreenshots}),14);
+  assert.equal(screenshotCount({...config().screenshots,...config().supplementalScreenshots}),15);
   for (const check of ['equipment-holder-combine', 'inventory-combine', 'equipment-detail-unequip', 'equipment-detail-recycle', 'native-detail-deep-link', 'mobile-shop-panel-safe']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must include ${check}`);
   }
   assert.ok(REQUIRED_CHECKS.includes('native-fullscreen-open-link'), 'live acceptance must verify the independent current-session full-screen link');
+  assert.ok(REQUIRED_CHECKS.includes('native-codex-content-and-detail-visible'), 'live acceptance must verify Codex card/detail geometry and controls');
   for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
   }
@@ -88,7 +89,7 @@ test('full-screen popup wait resolves only from the source page popup event', as
   assert.equal(await pending, expectedPopup);
 });
 
-test('CDP websocket capture records actual frames and operation waits honor their starting offset', async () => {
+test('CDP websocket capture records bounded parse failures, b.end reasons and actual frames', async () => {
   const handlers = new Map(), calls = [];
   const cdp = { send: async (name) => calls.push(name), on: (name, fn) => handlers.set(name, fn) };
   const page = { createCDPSession: async () => cdp }, attempt = { ws: { sent: [], received: [] } }, actions = [];
@@ -102,6 +103,8 @@ test('CDP websocket capture records actual frames and operation waits honor thei
     players: [{ playerId: 'other', stats: { dmgDealt: 900 } }, { playerId: 'resonance', roundsPassed: 29,
       stats: { dmgDealt: 130, kills: 4, gold: 7, privateData: 'omit' } }] });
   handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: nativeResultWire } });
+  handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({t:'b.end',battleId:'b28',reason:'cleared'}) } });
+  handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: '{bad]' } });
   const resultWire = JSON.stringify({ t: 'b.result', battleId: 'b28', result: {
     perPlayer: { one: { unitStats: [{ dmg: 100 }, { dmg: 25 }] }, two: { unitStats: [{ dmg: 5 }] } },
     resonance: { growth: [{ amount: 1 }], coins: [{ amount: 2 }, { amount: 3 }], forge: [],
@@ -110,7 +113,7 @@ test('CDP websocket capture records actual frames and operation waits honor thei
   handlers.get('Network.webSocketFrameSent')({ response: { payloadData: resultWire } });
   assert.deepEqual(calls, ['Network.enable']);
   assert.deepEqual(attempt.ws.sent.map((row) => row.t), ['g.resonance', 'b.result']);
-  assert.deepEqual(attempt.ws.received.map((row) => row.t), ['m.private', 'b.start', 'm.result']);
+  assert.deepEqual(attempt.ws.received.map((row) => row.t), ['m.private', 'b.start', 'm.result', 'b.end']);
   assert.deepEqual({ kind: attempt.ws.received[1].kind, specKind: attempt.ws.received[1].specKind,
     specStageId: attempt.ws.received[1].specStageId, specRound: attempt.ws.received[1].specRound },
   { kind: 'boss', specKind: 'boss', specStageId: 'stage-final', specRound: 14 });
@@ -126,12 +129,25 @@ test('CDP websocket capture records actual frames and operation waits honor thei
   assert.equal('result' in resultRow, false, 'capture must not retain a full battle result payload');
   assert.equal('spec' in resultRow, false, 'capture must not retain a battle spec');
   assert.equal('resultFrameBytes' in attempt.ws.received[1], false, 'result metadata applies only to sent b.result frames');
+  assert.equal(attempt.ws.received[3].endReason,'cleared');
+  assert.equal(attempt.ws.parseErrorCount,1);
+  assert.equal(attempt.ws.parseErrorPayloadBytes,5);
+  assert.deepEqual(attempt.ws.parseErrors,[{direction:'received',payloadBytes:5,errorName:'SyntaxError'}]);
+  assert.equal('payload' in attempt.ws.parseErrors[0],false,'parse diagnostic must not retain raw wire payload');
   assert.deepEqual(actions, ['unequip', null]);
   assert.match(attempt.ws.connections[0], /\/resonance\/ws/);
   const offset = attempt.ws.sent.length;
   assert.equal(await waitSent(attempt, 'g.resonance', 1, offset), null, 'a previous frame cannot satisfy a later action wait');
   attempt.ws.sent.push({ t: 'g.resonance', action: 'combine' });
   assert.equal((await waitSent(attempt, 'g.resonance', 10, offset)).action, 'combine');
+});
+
+test('runner result warnings are narrowly recognized for diagnostics',()=>{
+  assert.equal(isRunnerResultWarning('[runner] result failed: invalid'),true);
+  assert.equal(isRunnerResultWarning('[runner] b.result refused by client'),true);
+  assert.equal(isRunnerResultWarning('[runner] b.result not delivered'),true);
+  assert.equal(isRunnerResultWarning('[runner] simulation started'),false);
+  assert.equal(isRunnerResultWarning('ordinary console warning'),false);
 });
 
 test('native result projection captures only the resonance player result metrics', async () => {
