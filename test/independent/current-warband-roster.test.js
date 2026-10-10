@@ -16,7 +16,7 @@ import {makeBattle,enemyRec} from '../helpers/battleHarness.js';
 
 const data=getData(),catalog=getCatalog(data);
 const groups=[
- ['贾维','伺夜','普罗旺斯','拉普兰德','缄默德克萨斯','巫恋','荒芜拉普兰德'],
+ ['歌蕾蒂娅','伺夜','普罗旺斯','拉普兰德','缄默德克萨斯','巫恋','荒芜拉普兰德'],
  ['耶拉','崖心','银灰','初雪','锏','凛御银灰','圣聆初雪'],
  ['松果','赫默','雷蛇','白面鸮','蛇屠箱','迷迭香','缪尔赛思'],
  ['流星','焰尾','瑕光','锏','玛恩纳','灰毫','耀骑士临光'],
@@ -45,10 +45,10 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 function battle(pieces,{captureNoisy=false,beforeStart=null,enemyPos=null}={}){const source=new DataSource({enemies:{probe:enemyRec({key:'probe',hp:1e9,atk:0,speed:0,def:0,res:0})}},new DataSource(data));const h=makeBattle({data:source,content:'none',units:pieces.map(p=>({...p,kind:'chess'})),enemies:enemyPos?[{key:'probe',pos:enemyPos}]:[],autoFinish:false,timeLimit:120,flags:{independent:{catalog,pieces}},extraContent:[b=>installIndependentBattle(b,{catalog,state:{pieces}})],captureNoisy});beforeStart?.(h);h.step(1);for(const u of h.b.allyUnits)u.atkCd=1e9;assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));return {...h,by:name=>h.unit(pieces.find(p=>p.name===name).uid)};}
 for(const elite of [false,true]){
  const form=elite?'elite':'normal';
- test(`current Siracusa seven ${form}: opening deployments, amplified payloads and Javi attack echo`,()=>{
-   const pieces=roster(groups[0],elite),echoPiece=pieces.find(p=>p.name==='贾维');
+ test(`current Siracusa seven ${form}: opening deployments, amplified payloads and Gladiia attack echo`,()=>{
+   const pieces=roster(groups[0],elite),echoPiece=pieces.find(p=>p.name==='歌蕾蒂娅');
    const blocker=pieces.find(p=>p.row===echoPiece.row&&p.col===echoPiece.col+1);if(blocker){blocker.row=9;blocker.col=echoPiece.col+1;}
-   const h=battle(pieces,{captureNoisy:true}),maker=h.by('伺夜'),wuxian=h.by('巫恋'),echo=h.by('贾维');
+   const h=battle(pieces,{captureNoisy:true}),maker=h.by('伺夜'),wuxian=h.by('巫恋'),echo=h.by('歌蕾蒂娅');
    const echoEvents=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId==='BGS_078'&&e.kind==='deployEcho').length;
    const copiedPayloads=()=>h.b.independentDarkmoonTrace.filter(e=>e.sourceId!=='BGS_078'&&e.kind==='deployEcho').length;
    const attackEvents=()=>h.hooksOf('attack').filter(e=>e.attacker===echo&&!e.isSkill&&!e.attacker.mem.independentExtraAttack&&!(e.profile?.tags||[]).includes('independentEquipment')).length;
@@ -59,15 +59,15 @@ for(const elite of [false,true]){
    assert.equal(amplified?.attackUnits,5*(elite?2:1)*(elite?3:2),'FP1_031 amplifies the opening deployment payload regardless of roster order');
    assert.ok(h.b.allyUnits.filter(u=>u.kind==='token'&&u.mem.darkmoonSummon).length<=7,'opening summon effects respect the seven-token safety cap');
    const enemy=h.spawn('probe',{pos:[echoPiece.row,echoPiece.col+1]});
-   const tile=h.b.grid.tile(echoPiece.row,echoPiece.col+1);assert.ok(tile&&tile.pass!=='NONE','Javi attacks a real enemy on a legal adjacent tile');
+   const tile=h.b.grid.tile(echoPiece.row,echoPiece.col+1);assert.ok(tile&&tile.pass!=='NONE','Gladiia attacks a real enemy on a legal adjacent tile');
    const beforeEcho=echoEvents(),beforeCopied= copiedPayloads();
    h.b.emit('attack',{attacker:echo,targets:[enemy],isSkill:true,profile:{tags:['skill']}});
-   assert.equal(echoEvents(),beforeEcho,'a skill attack does not trigger Javi');
+   assert.equal(echoEvents(),beforeEcho,'a skill attack does not trigger Gladiia');
    echo.atkCd=0;
    const procEchoes=elite?2:1,procPayloads=elite?6:2;
    for(let i=1;i<=7;i++)h.b.forceAttack(echo,[enemy]);
    assert.equal(attackEvents(),7,'seven eligible ordinary attacks are below the new cadence threshold');
-   assert.equal(echoEvents(),beforeEcho,'Javi does not echo during the first seven eligible attacks');
+   assert.equal(echoEvents(),beforeEcho,'Gladiia does not echo during the first seven eligible attacks');
    assert.equal(copiedPayloads(),beforeCopied,'no payload is copied before the eighth eligible attack');
    h.b.forceAttack(echo,[enemy]);
    assert.equal(attackEvents(),8,'the eighth eligible ordinary attack is counted');
@@ -77,15 +77,15 @@ for(const elite of [false,true]){
    assert.equal(echoEvents()-beforeEcho,procEchoes,'attacks nine through fifteen do not trigger another echo');
    h.b.forceAttack(echo,[enemy]);
    assert.equal(attackEvents(),16,'the second cadence boundary is the sixteenth eligible attack');
-   assert.equal(echoEvents()-beforeEcho,procEchoes*2,'Javi continues to echo at the sixteenth eligible attack');
+   assert.equal(echoEvents()-beforeEcho,procEchoes*2,'Gladiia continues to echo at the sixteenth eligible attack');
    assert.equal(copiedPayloads()-beforeCopied,procPayloads*2,'both cadence procs preserve the amplified payload count');
    assert.ok(maker.alive,'echoing a deployment payload never kills its source');
    assert.ok(wuxian.alive,'the opening deployment amplifier stays alive during the echo');
   assert.ok(h.runUntil(()=>h.b.allyUnits.some(t=>t.kind==='token'&&t.alive&&t.mem.darkmoonSummon),2),'queued echo summons deploy once their real target and legal tile are available');
-    assert.ok(h.runUntil(()=>attackEvents()>=96,110),'the seven-body battle sustains 96 real Javi ordinary attacks');
-    assert.equal(attackEvents(),96);
+    assert.ok(h.runUntil(()=>attackEvents()>=64,110),'the seven-body battle sustains 64 real Gladiia ordinary attacks');
+    assert.equal(attackEvents(),64);
     assert.equal(echoEvents()-beforeEcho,Math.floor(attackEvents()/8)*procEchoes,'every eighth eligible ordinary attack triggers the normal/elite deployment echoes');
-    assert.equal(copiedPayloads()-beforeCopied,Math.floor(attackEvents()/8)*procPayloads,'every eighth Javi proc copies the amplified deployment payload count');
+    assert.equal(copiedPayloads()-beforeCopied,Math.floor(attackEvents()/8)*procPayloads,'every eighth Gladiia proc copies the amplified deployment payload count');
   assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
  });
  test(`current Kjerag seven ${form}: cross-faction gain trait, same-tier bodies and five shield breaks`,()=>{

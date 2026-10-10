@@ -7,7 +7,7 @@
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, Button, useTicker } from '../ui/components.js';
 import { copyComponentLink } from './componentLinks.js';
-import { BondGlyph } from '../ui/gameComponents.js';
+import { FactionIcon } from './factions.js';
 import { ChessDetail, EnemyDetail, TokenDetail, TerrainDetail } from '../ui/detailPanel.js';
 import { SkillIcon, ModuleGlyph, ModuleInfo } from '../screens/loadout.js';
 import { chessOptions, MODULE_NONE } from '../ui/loadoutModel.js';
@@ -20,7 +20,6 @@ import { TraitTexts, FieldConditionCounts, HammerPicker, PRODUCTION_BADGES, gear
 import { buyTargetSpec, buyTargetChoices, buyTargetCount, buyRequiresTarget } from './targetSelection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
-const FACTION_BOND = Object.fromEntries(Object.entries(TAVERN_FACTIONS).map(([bond, name]) => [name, bond]));
 // the stats (and the range) stay on screen (user 10-07: 「属性常驻显示，其余的可以切换」); the rest switches
 const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], ['gear', '装备'], ['reference', '参考原卡']];
 /** Which tab each block of the original card goes to (ui/detailPanel.js CHESS_SECTIONS); the header stays on top. */
@@ -34,13 +33,6 @@ function FactionChips({ factions, level, catalog, temporaryBadgeCount = 0 }) {
     ${level != null ? html`<span class="ix-dchips__lv">装备叠加 <b class="num">×${level}</b></span>` : null}
     ${temporaryBadgeCount > 0 ? html`<span class="ix-dchips__lv ix-dchips__temporary">临时装备 <b class="num">×${temporaryBadgeCount}</b></span>` : null}
   </div>`;
-}
-
-function FactionIcon({ faction, catalog }) {
-  const detail = catalog?.factionDetails?.[faction];
-  const iconUrl = detail?.iconUrl || detail?.url;
-  if (iconUrl) return html`<img class="dbond__icon ix-faction-icon" src=${iconUrl} alt="" loading="lazy" />`;
-  return FACTION_BOND[faction] ? html`<${BondGlyph} bondId=${FACTION_BOND[faction]} class="dbond__icon" />` : null;
 }
 
 function sourceCardRefs(op) {

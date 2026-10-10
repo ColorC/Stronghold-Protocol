@@ -484,6 +484,7 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-field-count { border: 0; padding: 0 .025rem; background: transparent; color: #79d8c9; font: inherit; line-height: inherit; cursor: pointer; user-select: text; }
 .ix-field-count:hover, .ix-field-count:focus-visible { color: #b8fff1; text-decoration: underline; outline: none; }
 .ix-faction-icon { object-fit: contain; }
+.ix-shop .scard__water .ix-faction-icon { width: 100%; height: 100%; }
 .ix-growth-info { display: flex; flex-wrap: wrap; gap: .05rem .14rem; padding: .08rem .1rem; border: 1px solid rgba(231, 201, 135, .3); border-radius: 4px; color: #e7d8ad; }
 .ix-growth-mode { display: flex; flex-wrap: wrap; gap: .08rem; margin: .12rem 0; padding: .1rem; border: 1px solid rgba(180, 203, 189, .24); }
 .ix-growth-mode legend { padding: 0 .06rem; color: #e7c987; }

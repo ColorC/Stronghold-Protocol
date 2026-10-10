@@ -7,7 +7,8 @@ import { Img, BondGlyph, CoinGlyph, GIcon, LpTower, ItemIcon, UnitThumb } from '
 import { PhaseCapsule, CheckBtn, checkButtons } from '../ui/hud.js';
 import { SkillBadge } from '../ui/shopBar.js';
 import { chessLoadout } from '../ui/gameLogic.js';
-import { TAVERN_FACTIONS } from '../../../shared/independentRules.js';
+import { operatorDisplayFactions } from '../../../shared/independentFactionDisplay.js';
+import { FactionIcon } from './factions.js';
 import { chessPortraitUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
@@ -360,12 +361,12 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail, t
   const hint = mergeHintOf(state, catalog, slot.id);
   // the skill it fights with when bought (the default one: the choice is made per operator afterwards) and its factions
   const lo = c ? chessLoadout(c, null, (id) => data.lookup('chess', id)) : null;
-  const factions = (c?.bonds || []).filter((b) => TAVERN_FACTIONS[b]);
+  const factions = operatorDisplayFactions(op, c);
   const card = html`<button type="button" class=${cx('scard', `scard--t${op.tier || 1}`, state.shop.frozen && 'is-frozen', reason && 'is-disabled', hint && 'is-merge', armed && 'is-armed', targetable && 'is-targetable')}
       onClick=${() => onTap(idx)} onContextMenu=${(e) => { e.preventDefault(); onDetail?.(idx); }}
       data-testid=${`ix-shop-${idx}`} aria-label=${`${op.name || '干员'}${armed ? (reason ? '，无法购买' : '，再次点击确认') : ''}`} aria-pressed=${String(!!armed)}>
     <span class="scard__bg" aria-hidden="true"></span>
-    <span class="scard__water" aria-hidden="true">${factions[0] ? html`<${BondGlyph} bondId=${factions[0]} />` : null}</span>
+    <span class="scard__water" aria-hidden="true">${factions[0] ? html`<${FactionIcon} faction=${factions[0]} catalog=${catalog} />` : null}</span>
     <${Img} src=${chessPortraitUrl(m, c)} class="scard__art" />
     <span class="scard__top">
       <${TierChip} tier=${op.tier || 1} size="md" />
@@ -373,7 +374,7 @@ function ShopCard({ slot, idx, state, catalog, armed, reason, onTap, onDetail, t
     </span>
     <span class="scard__body">
       <span class="scard__name">${op.name || slot.id}</span>
-      ${factions.length ? html`<span class="scard__bonds">${factions.slice(0, 3).map((b) => html`<span key=${b} class="scard__bond"><${BondGlyph} bondId=${b} /><span>${TAVERN_FACTIONS[b]}</span></span>`)}</span>` : null}
+      ${factions.length ? html`<span class="scard__bonds">${factions.map((f) => html`<span key=${f} class="scard__bond"><${FactionIcon} faction=${f} catalog=${catalog} /><span>${f}</span></span>`)}</span>` : null}
     </span>
     ${carried.length ? html`<span class="ix-carry" title="随商品附带，刷新会丢失">${carried.slice(0, 3).map((it, i) => html`<span key=${i}><${GearIcon} id=${it.id} catalog=${catalog} /><b class="num">${it.quantity || 1}</b></span>`)}</span>` : null}
     ${hint ? html`<span class="scard__mergetag" title=${hint.text}>可晋升</span>` : null}

@@ -10776,8 +10776,8 @@
       "modeEffects": null
     },
     {
-      "name": "歌蕾蒂娅",
-      "chessId": "chess_char_4_12_a",
+      "name": "贾维",
+      "chessId": "chess_native_char_349_chiave_a",
       "sourceId": "DS1_070",
       "sourceRefs": {
         "darkmoon19_2": {
@@ -14188,7 +14188,7 @@
       "sourceId": "BGS_072"
     },
     {
-      "name": "贾维",
+      "name": "歌蕾蒂娅",
       "sourceId": "BGS_078"
     },
     {
