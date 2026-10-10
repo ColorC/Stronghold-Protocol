@@ -14,7 +14,7 @@ const source=readFileSync(path.join(ROOT,'tools/resonance/workshop-native-ui-che
 test('all65 fixed skills match the chosen native option rather than the upstream default',()=>{
   const catalog=getSeasonCampaignCatalog(1),display=resonanceDisplayCatalog(catalog);
   const chess=JSON.parse(readFileSync('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json','utf8'));
-  let alternatives=0;
+  const alternatives=[];
   for(const id of catalog.config.activeOperatorIds){
     const operator=display.operators[id],record=chess[id],name=operator.stars[1].skill?.name;
     assert.ok(record,id);
@@ -24,10 +24,14 @@ test('all65 fixed skills match the chosen native option rather than the upstream
     assert.equal(resolved.skillId,selected.skillId,id);assert.equal(resolved.iconId,selected.iconId,id);
     const actual=new URL(resolved.url,'https://workshop.colorc.cc/stronghold/resonance.html').href;
     assert.equal(skillIconVerdict(operator,{skill:selected},resolved,actual,true).passed,true,id);
-    if(selected.skillId!==record.skill?.skillId)alternatives++;
+    if(selected.skillId!==record.skill?.skillId)alternatives.push({id,skillId:selected.skillId});
   }
   assert.equal(catalog.config.activeOperatorIds.length,65);
-  assert.equal(alternatives,2,'奥斯塔和万顷采用原生另一个固定技能');
+  assert.deepEqual(alternatives,[
+    {id:'chess_native_char_4119_wanqin_a',skillId:'skchr_wanqin_2'},
+    {id:'chess_native_char_2023_ling_a',skillId:'skchr_ling_3'},
+    {id:'chess_native_char_2025_shu_a',skillId:'skchr_shu_3'},
+  ],'万顷、令、黍分别使用其已选的原生技能');
 });
 
 test('chosen skill audit rejects a loaded wrong image and only exempts the native skill-less robot',()=>{
