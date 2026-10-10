@@ -8,8 +8,8 @@ export function selectionAt(events, seconds) {
 }
 
 export function mapViewportRectToOverlay(rect, frameRect, containerRect, viewport, container) {
-  const scaleX = containerRect.width / Math.max(1, container.clientWidth);
-  const scaleY = containerRect.height / Math.max(1, container.clientHeight);
+  const scaleX = containerRect.width / Math.max(1, container.offsetWidth || container.clientWidth);
+  const scaleY = containerRect.height / Math.max(1, container.offsetHeight || container.clientHeight);
   const originX = containerRect.left + (container.clientLeft || 0) * scaleX;
   const originY = containerRect.top + (container.clientTop || 0) * scaleY;
   const frameScaleX = frameRect.width / Math.max(1, viewport.width);
