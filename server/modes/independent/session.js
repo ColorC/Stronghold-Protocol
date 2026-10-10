@@ -1,4 +1,4 @@
-import { getData } from '../../data.js';
+import { getData, deepFreeze } from '../../data.js';
 import { independentIncome, independentUpgradeBase, independentShopSlots, independentRoundPlan, independentPrizeStage, INDEPENDENT_ROUND_LIMITS } from '../../../shared/independentEconomy.js';
 import { GameData } from '../../match/gamedata.js';
 import { canPlace, inField, positionClass, ownerRangeKeys, tileKey } from '../../match/board.js';
@@ -34,7 +34,18 @@ const ensurePrep = (state) => { if (state.phase !== 'prep') throw new Error('WRO
 const pushEvent = (state, event) => state.history.push({ round: state.round, ...event });
 
 function sessionData(options = {}) { return options.data || getData({ log: quiet }); }
-function sessionCatalog(data, options = {}) { return options.catalog || getCatalog(data); }
+const defaultCatalogs = new WeakMap();
+function sessionCatalog(data, options = {}) {
+  if (options.catalog) return options.catalog;
+  // Explicit data remains mutable caller input. Only the default immutable data shares a catalog.
+  if (options.data || Object.hasOwn(options, 'data') || Object.hasOwn(options, 'catalog')) return getCatalog(data);
+  let catalog = defaultCatalogs.get(data);
+  if (!catalog) {
+    catalog = deepFreeze(getCatalog(data));
+    defaultCatalogs.set(data, catalog);
+  }
+  return catalog;
+}
 function gdFor(state, data) { return new GameData(data, modeIdFor('solo', state.difficulty.toLowerCase())); }
 function baseIncomeFor(round, gd, catalog) {
   return independentIncome(round);
