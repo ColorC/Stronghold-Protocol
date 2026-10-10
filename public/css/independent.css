@@ -143,6 +143,7 @@
 .ix-badge i { display: inline-block; width: .07rem; height: .07rem; margin-left: .03rem; align-self: center; transform: rotate(45deg); }
 .ix-badge__att { background: var(--ice); }
 .ix-badge__perm { background: var(--gold); }
+.ix-badge__target { padding: 0 .07rem; color: #10130e; background: var(--mint); border: 1px solid rgba(236, 255, 237, .85); font-size: max(.12rem, 11px); font-weight: 800; line-height: 1.2; box-shadow: 0 0 .12rem rgba(132, 244, 188, .65); }
 
 /* ---- bench overflow ------------------------------------------------------------------------------------------------ */
 .ix-overflow { position: absolute; right: .3rem; top: 1.36rem; display: flex; align-items: center; gap: .06rem; flex-wrap: wrap; max-width: 6rem;
@@ -525,4 +526,5 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-target-prompt>span{font-size:inherit;line-height:1.2}
 .ix-target-prompt button{font-size:12px;line-height:1.1;padding:5px 8px;white-space:nowrap}
 .ix-target-prompt kbd{font-size:10px;line-height:1}
+.ix-game.is-targeting .gm__field canvas{cursor:crosshair}
 .ix-game:has(.ix-target-prompt) .ix-dpanel{display:none!important}

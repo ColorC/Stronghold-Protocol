@@ -486,7 +486,7 @@ export function ShopBar({ state, catalog, busy, armed, onArm, onBuy, onUpgrade, 
  * The equipment stack chip under every own unit, plus markers for attachments and a worn
  * 交接凭证. Positions follow the renderer every frame (camera moves, drags, resizes).
  */
-export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null }) {
+export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null, targetUids = [] }) {
   const boxRef = useRef(null);
   useEffect(() => {
     if (!view || hidden) return undefined;
@@ -518,6 +518,7 @@ export function UnitBadges({ view, pieces, catalog, hidden, battleUnits = null }
         <b class="num">×${piece.equipmentLevel ?? 0}</b>
         ${piece.attachments?.length ? html`<i class="ix-badge__att" title="外来附加效果"></i>` : null}
         ${permitsOf(piece, catalog).length ? html`<i class="ix-badge__perm" title="携带交接凭证"></i>` : null}
+        ${targetUids.includes(piece.uid) ? html`<span class="ix-badge__target">点选</span>` : null}
       </span>`)}
   </div>`;
 }
