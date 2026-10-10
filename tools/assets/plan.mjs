@@ -21,7 +21,7 @@
 import { RAW, joinUrl, safeName, urlBase, urlDir } from './sources.mjs';
 import { kindOf } from './formats.mjs';
 import { pickUnitSfx, UI_SFX, BATTLE_SFX, resolveSpec, indexVoice, VOICE_DIRS, VOICE_BATTLE_SLOTS } from './audio.mjs';
-import { literal } from './manifest.mjs';
+import { literal, registeredAssetPaths } from './manifest.mjs';
 import { EMOTE_CATALOG } from '../../shared/constants.js';
 
 /**
@@ -131,6 +131,50 @@ function alt(rel, urls, bytes) {
 function leaf(...alts) {
   const list = alts.flat().filter((a) => a && a.urls && a.urls.length);
   return list.length ? { alts: list } : null;
+}
+
+/** Public download queue for catalog extensions already registered in data/assets.json. */
+export function registeredDownloadLeaves(manifest, { sourceOf = () => undefined } = {}) {
+  const leaves = [];
+  const unmapped = [];
+  const modelStems = new Map();
+  const models = node => {
+    if (!node || typeof node !== 'object') return;
+    if (typeof node.skel === 'string' && node.skel.startsWith('/assets/')) {
+      const stem = node.skel.split('/').at(-1).replace(/\.skel$/, '');
+      for (const url of [node.skel, node.atlas, ...(node.textures || [])]) if (typeof url === 'string') modelStems.set(url.slice('/assets/'.length), stem);
+    }
+    Object.values(node).forEach(models);
+  };
+  models(manifest);
+  for (const rel of registeredAssetPaths(manifest)) {
+    if (rel.startsWith('local/')) continue; // Optional extraction metadata stays registered; extraction is never copied.
+    let urls = sourceOf(rel) ? [sourceOf(rel)] : [];
+    const file = rel.split('/').at(-1);
+    let match;
+    if (/^(?:char|token)\/avatar\//.test(rel)) urls.push(joinUrl(RAW.yuanyan, `avatar/${file}`));
+    else if (rel.startsWith('char/portrait/')) urls.push(joinUrl(RAW.fexli, `charpor/${file}`), joinUrl(RAW.yuanyan, `portrait/${file}`));
+    else if (rel.startsWith('skill/')) urls.push(joinUrl(RAW.fexli, `skills/skill_icon_${file}`), joinUrl(RAW.yuanyan, `skill/skill_icon_${file}`));
+    else if (rel.startsWith('module/')) urls.push(joinUrl(RAW.fexli, `equipt/${file.replace(/\.png$/, '').toUpperCase()}.png`), joinUrl(RAW.fexli, `equipt/${file}`));
+    else if (rel.startsWith('roguelike/')) urls.push(joinUrl(RAW.fexli, `rogueitem/${file}`));
+    else if (rel.startsWith('ui/campLogo/')) urls.push(joinUrl(RAW.fexli, `camplogo/${file}`));
+    else if ((match = rel.match(/^audio\/voice\/(cn|jp|en|kr)\/(.+)$/))) urls.push(joinUrl(RAW.aa2voice, `${VOICE_DIRS[match[1]]}/${match[2]}`));
+    else if (rel.startsWith('audio/sfx/')) urls.push(joinUrl(RAW.aa2voice, rel.slice('audio/sfx/'.length)));
+    else if ((match = rel.match(/^spine\/op\/([^/]+)\/(front|back)\/([^/]+)$/))) {
+      const stem = modelStems.get(rel) || match[3].replace(/\.(?:skel|atlas|png)$/, '');
+      urls.push(joinUrl(RAW.fexli, `spine/${match[1]}/${stem}/${match[2] === 'front' ? 'Front' : 'Back'}/${match[3]}`));
+      urls.push(joinUrl(RAW.hella, `spine/deploy/battle/${match[1]}/${match[2]}/${match[3]}`));
+    } else if ((match = rel.match(/^spine\/token\/([^/]+)\/([^/]+)$/))) {
+      const stem = match[2].replace(/\.(?:skel|atlas|png)$/, '');
+      const family = match[1].replace(/eagle[123]$/, 'eagle');
+      urls.push(joinUrl(RAW.fexli, `spine/${match[1]}/${stem}/Spine/${match[2]}`));
+      urls.push(joinUrl(RAW.hella, `spine/deploy/battle/${family}/front/${match[2]}`));
+    }
+    urls = [...new Set(urls)];
+    if (urls.length) leaves.push({ path: `registered.${rel}`, leaf: leaf(alt(rel, urls)) });
+    else unmapped.push(rel);
+  }
+  return { leaves, unmapped };
 }
 
 /** One operator voice line: charword voiceAsset ('char_263_skadi/CN_023') → `audio/voice/<lang>/<charId>/cn_023.mp3`. */
@@ -280,7 +324,7 @@ export function collectEnemyIds({ assets07, enemies05, maps05, ops03 }) {
  */
 export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsData, charword = null, voiceLang = 'cn',
   voiceSlots = VOICE_BATTLE_SLOTS,
-  extraEnemyIds = [], extraTokenIds = [], extraHandbook = {}, localEnemySpines = {}, nativeCandidates = [] }) {
+  extraEnemyIds = [], extraTokenIds = [], extraHandbook = {}, localEnemySpines = {}, nativeCandidates = [], registeredManifest = null }) {
   const notes = [];
   /** @type {Map<string, any>} */
   const models = new Map();
@@ -378,10 +422,28 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     }
   }
 
+  // Previously registered operator models outside research 07 also need atlas normalization and fresh parsing.
+  // Existing current-plan models win, including the native-import selectable-skill restrictions above.
+  for (const [id, registered] of Object.entries(registeredManifest?.chars || {})) {
+    for (const view of ['front', 'back']) {
+      if (chars[id]?.spine?.[view] || !registered.spine?.[view]) continue;
+      const prior = registered.spine[view];
+      const stem = prior.skel?.split('/').at(-1)?.replace(/\.skel$/, '');
+      if (!stem) continue;
+      const folder = view === 'front' ? 'Front' : 'Back';
+      const url = file => [joinUrl(RAW.fexli, `spine/${id}/${stem}/${folder}/${file}`), joinUrl(RAW.hella, `spine/deploy/battle/${id}/${view}/${file}`)];
+      const indices = Object.keys(prior.anims?.skills || {}).map(Number).filter(Number.isInteger);
+      const model = fexliModel(`op:${id}:${view}`, 'op', `spine/op/${id}/${view}/`, {
+        skel: url(`${stem}.skel`), atlas: url(`${stem}.atlas`), png: url(prior.textures?.[0]?.split('/').at(-1) || `${stem}.png`),
+      }, indices.length ? indices : [prior.anims?.skill?.index ?? 0]);
+      if (model) { chars[id] ??= { spine: {} }; chars[id].spine ??= {}; chars[id].spine[view] = model; }
+    }
+  }
   // --- tokens --------------------------------------------------------------
   const chessById = new Map((ops03?.chess || []).map((c) => [c.chessId, c]));
   const tokens = {};
   const tokenIds = new Set(Object.keys(assets07?.tokens || {}));
+  for (const id of Object.keys(registeredManifest?.tokens || {})) tokenIds.add(id);
   for (const id of extraTokenIds) if (typeof id === 'string' && /^token_\d+_[a-z0-9_]+$/i.test(id)) tokenIds.add(id);
   for (const id of [...tokenIds].sort()) {
     // Tokens unknown to research 07: default avatar/Spine locations (misses are tolerated).
@@ -392,10 +454,20 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     };
     const usedBy = ops03?.tokensUsedByPool?.[id]?.usedByChess || [];
     const ownerChess = usedBy.map((cid) => chessById.get(cid)).find(Boolean);
-    const entry = { owner: ownerChess?.charId || ownerChess?.backup?.charId || null };
+    const entry = { owner: ownerChess?.charId || ownerChess?.backup?.charId || registeredManifest?.tokens?.[id]?.owner || null };
     entry.avatar = t.avatar?.url ? leaf(alt(`token/avatar/${id}.png`, t.avatar.url, t.avatar.bytes)) : null;
     let model = null;
-    if (t.battleSpineDefault) {
+    if (registeredManifest?.tokens?.[id]?.spine) {
+      // Supplemental native summons were registered after research 07. The public dump has their default bodies,
+      // including models that the older Fexli mirror carries only as skins or does not carry at all.
+      const registered = registeredManifest.tokens[id].spine;
+      const family = id.replace(/eagle[123]$/, 'eagle');
+      const base = joinUrl(RAW.hella, `spine/deploy/battle/${family}/front/${family}`);
+      model = fexliModel(`token:${id}`, 'token', `spine/token/${id}/`, {
+        skel: `${base}.skel`, atlas: `${base}.atlas`, png: `${base}.png`,
+      }, [0]);
+      if (registered.anims?.skill?.index !== undefined) models.get(`token:${id}`).skillIndices = [registered.anims.skill.index];
+    } else if (t.battleSpineDefault) {
       model = fexliModel(`token:${id}`, 'token', `spine/token/${id}/`, t.battleSpineDefault, [0]);
     } else if (Array.isArray(t.battleSpineSkinVariantsOnly) && t.battleSpineSkinVariantsOnly.length) {
       // Skin-variant models live in a `Spine/` folder, or `Front/` for directional ones.

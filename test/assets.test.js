@@ -18,8 +18,8 @@ import { pngSize, isCompletePng, isMp3, validate } from '../tools/assets/formats
 import { encodeWoff2, decodeWoff2Tables, readSfnt, uintBase128 } from '../tools/assets/woff2.mjs';
 import { assetToPath, pickUnitSfx, indexAudio } from '../tools/assets/audio.mjs';
 import { mirrorUrl, safeName, encodePath } from '../tools/assets/sources.mjs';
-import { collectEnemyIds, skillIndicesByChar, buildPlan, GUIDE_PAGES, UI_EXTRAS } from '../tools/assets/plan.mjs';
-import { resolveTemplate, collectLeaves } from '../tools/assets/manifest.mjs';
+import { collectEnemyIds, skillIndicesByChar, buildPlan, GUIDE_PAGES, UI_EXTRAS, registeredDownloadLeaves } from '../tools/assets/plan.mjs';
+import { resolveTemplate, collectLeaves, mergeRegisteredManifest, registeredAssetPaths } from '../tools/assets/manifest.mjs';
 import { spineEntry, hasBackSpine } from '../public/js/assets.js';
 import { EMOTE_CATALOG, emoteArtGroup } from '../shared/constants.js';
 
@@ -28,6 +28,80 @@ const PUBLIC = process.env.STRONGHOLD_PUBLIC_ASSETS_ROOT || join(ROOT, 'public')
 const ASSETS = join(PUBLIC, 'assets');
 const MANIFEST = join(ROOT, 'data', 'assets.json');
 const readJson = (rel) => JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
+
+test('a partial research rebuild retains registered native models, module icons, prize art and Japanese voices', () => {
+  const registered = {
+    tokens: { token_10041_cathy_catsld: { owner: 'char_4162_cathy', spine: { skel: '/assets/spine/token/cathy.skel', anims: { idle: 'Idle', deploy: 'Start' } }, spineLocal: { group: 'spine/token/cathy' } } },
+    chars: { old: { avatar: '/assets/char/avatar/old.png', spine: { back: { skel: '/assets/spine/op/old/back/old.skel' } } } },
+    ui: { rogue_2_relic_grace_5: '/assets/roguelike/rogue_2_relic_grace_5.png' },
+    modules: { 'WAH-Y': '/assets/module/wah-y.png' },
+    audio: { voiceJp: { old: { start: '/assets/audio/voice/jp/old/cn_019.mp3' } } },
+  };
+  const next = { tokens: { token_10041_cathy_catsld: { avatar: '/assets/token/avatar/token_10041_cathy_catsld.png' } }, chars: { imported: { avatar: '/assets/char/avatar/imported.png' } } };
+  const merged = mergeRegisteredManifest(registered, next);
+  assert.deepEqual(merged.tokens.token_10041_cathy_catsld.spine, registered.tokens.token_10041_cathy_catsld.spine);
+  assert.deepEqual(merged.tokens.token_10041_cathy_catsld.spineLocal, registered.tokens.token_10041_cathy_catsld.spineLocal);
+  assert.deepEqual(merged.modules, registered.modules);
+  assert.deepEqual(merged.audio, registered.audio);
+  assert.deepEqual(merged.ui, registered.ui);
+  assert.ok(merged.chars.old && merged.chars.imported);
+  merged.tokens.token_10041_cathy_catsld.spine.anims.idle = 'changed';
+  assert.equal(registered.tokens.token_10041_cathy_catsld.spine.anims.idle, 'Idle', 'the prior catalog is not mutated');
+  const replaced = mergeRegisteredManifest(registered, { tokens: { token_10041_cathy_catsld: { spine: { anims: { deploy: null } } } } });
+  assert.equal(replaced.tokens.token_10041_cathy_catsld.spine.anims.deploy, null, 'validated new animation metadata wins');
+  const oldModel = { skel: '/assets/body.skel', atlas: '/assets/body.atlas', textures: ['/assets/body.png'],
+    anims: { idle: 'Idle', skills: { 0: { loop: 'OldSkill' } } }, animations: { Idle: 1, OldSkill: 2 }, sourceNote: 'registered' };
+  const parsedModel = { skel: '/assets/body.skel', atlas: '/assets/body.atlas', textures: ['/assets/body.png'],
+    anims: { idle: 'Idle' }, animations: { Idle: 1 } };
+  const capabilities = mergeRegisteredManifest(oldModel, parsedModel);
+  assert.equal(capabilities.anims.skills, undefined, 'an old selectable clip cannot survive a fresh complete model parse');
+  assert.equal(capabilities.animations.OldSkill, undefined);
+  assert.equal(capabilities.sourceNote, 'registered', 'registration annotations survive');
+});
+
+test('registered extensions enter the public queue while optional local extraction stays separate', () => {
+  const manifest = { modules: { 'WAH-Y': '/assets/module/wah-y.png' }, ui: { prize: '/assets/roguelike/rogue_2_relic_grace_5.png' },
+    audio: { voiceJp: { old: { start: '/assets/audio/voice/jp/old/cn_019.mp3' } } },
+    tokens: { old: { spine: { skel: '/assets/local/spine/token/old/old.skel' } } } };
+  const queue = registeredDownloadLeaves(manifest);
+  assert.equal(queue.leaves.length, 3);
+  assert.deepEqual(queue.unmapped, []);
+  assert.ok(queue.leaves.every(row => row.leaf.alts[0].urls.every(url => url.startsWith('https://'))));
+  assert.ok(queue.leaves.some(row => row.leaf.alts[0].urls.some(url => url.includes('/rogueitem/rogue_2_relic_grace_5.png'))));
+  assert.ok(queue.leaves.every(row => !row.leaf.alts[0].rel.startsWith('local/')));
+  assert.equal(registeredAssetPaths(manifest).size, 4, 'optional local references remain in the catalog');
+});
+
+test('registered default summons use the pinned public native bodies instead of disappearing or changing skins', () => {
+  const ids = ['token_10041_cathy_catsld', 'token_10004_otter_motter', 'token_10020_ling_soul1', 'token_10057_svash2_eagle3'];
+  const registeredManifest = { tokens: Object.fromEntries(ids.map(id => [id, { owner: 'native-owner', spine: { anims: { skill: { index: 0 } } } }])) };
+  const assets07 = { tokens: { [ids[0]]: { battleSpineDefault: { skel: 'https://example.com/stale.skel', atlas: 'https://example.com/stale.atlas', png: 'https://example.com/stale.png' } } } };
+  const plan = buildPlan({ assets07, ops03: {}, enemies05: {}, maps05: {}, audio: indexAudio({}), modelsData: {}, registeredManifest });
+  for (const id of ids) {
+    const model = plan.models.get(`token:${id}`);
+    assert.ok(model, `${id}: default model is in the ordinary fetch plan`);
+    const family = id.replace(/eagle[123]$/, 'eagle');
+    assert.match(model.skel.urls[0], /HellaOrg\/HellaAssets\/2f080e7cd292341ec46d631186ec534aaee6b68d\//);
+    assert.ok(model.skel.urls[0].endsWith(`/${family}/front/${family}.skel`));
+    assert.equal(plan.template.tokens[id].owner, 'native-owner');
+  }
+  const nativeQueue = registeredDownloadLeaves({ tokens: { eagle: { spine: { skel: '/assets/spine/token/token_10057_svash2_eagle3/token_10057_svash2_eagle.skel' } } } });
+  assert.ok(nativeQueue.leaves[0].leaf.alts[0].urls.some(url => url.endsWith('/token_10057_svash2_eagle/front/token_10057_svash2_eagle.skel')), 'a clean portable fetch uses the eagle family folder');
+});
+
+test('registered multi-page textures keep the skeleton folder and explicit public icon provenance enters the queue', () => {
+  const manifest = { chars: { char_1052_kalts2: { spine: { front: {
+    skel: '/assets/spine/op/char_1052_kalts2/front/char_1052_kalts2.skel',
+    atlas: '/assets/spine/op/char_1052_kalts2/front/char_1052_kalts2.atlas',
+    textures: ['/assets/spine/op/char_1052_kalts2/front/char_1052_kalts22.png'],
+  } } } }, prof: { sub: { aoesniper: '/assets/prof/sub/aoesniper.png' } } };
+  const icon = 'https://media.prts.wiki/7/72/native-profession-icon.png';
+  const queue = registeredDownloadLeaves(manifest, { sourceOf: rel => rel === 'prof/sub/aoesniper.png' ? icon : undefined });
+  const page = queue.leaves.find(row => row.leaf.alts[0].rel.endsWith('char_1052_kalts22.png'));
+  assert.ok(page.leaf.alts[0].urls.some(url => url.endsWith('/char_1052_kalts2/char_1052_kalts2/Front/char_1052_kalts22.png')));
+  assert.deepEqual(queue.leaves.find(row => row.leaf.alts[0].rel === 'prof/sub/aoesniper.png').leaf.alts[0].urls, [icon]);
+  assert.deepEqual(queue.unmapped, []);
+});
 
 // ---------------------------------------------------------------------------
 describe('animation-role resolver (research 07 §5.4)', () => {
@@ -561,9 +635,8 @@ describe('generated manifest data/assets.json', () => {
       .filter((row) => row.chessType === 'NATIVE_IMPORT_CANDIDATE' && row.nativeImport?.playable && row.charId)
       .map((row) => row.charId);
     const charIds = [...new Set([...poolIds, ...nativeIds])].sort();
-    assert.deepEqual(Object.keys(manifest.chars).sort(), charIds,
-      'the checked-in generated manifest must track the active pool and playable native imports');
-    assert.equal(manifest.stats.chars, charIds.length);
+    for (const id of charIds) assert.ok(manifest.chars[id], `${id}: active pool and playable native imports remain registered`);
+    assert.equal(manifest.stats.chars, Object.keys(manifest.chars).length, 'stats include the preserved registered extensions');
 
     const enemyIds = collectEnemyIds({
       assets07: readJson('docs/research/07-assets.json'),
@@ -578,7 +651,9 @@ describe('generated manifest data/assets.json', () => {
       assert.ok(manifest.enemies[id]?.icon, `${id} has an icon fallback`);
     }
 
-    assert.equal(Object.keys(manifest.items).length, 59, 'all current custom equipment icons are registered');
+    const activeItems = Object.keys(readJson('docs/research/07-assets.json').items);
+    assert.equal(activeItems.length, 59);
+    for (const id of activeItems) assert.ok(manifest.items[id], `${id}: current custom equipment icon is registered`);
     for (const [id, icon] of Object.entries(manifest.items)) assert.ok(icon, `${id} has an icon URL`);
     const genericToken = manifest.prof?.battlecard?.token;
     for (const [id, token] of Object.entries(manifest.tokens)) {

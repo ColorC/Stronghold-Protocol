@@ -26,16 +26,20 @@ npm run assets       # = node tools/vendor.mjs && node tools/fetch-assets.mjs
 | `--allow-shrink` | Write `data/assets.json` even when it loses entries the current one has (see "The manifest never shrinks by accident" below). |
 | `--local-spines` | Rewrite `tools/assets/local-enemy-spines.json` (the metadata of the enemy models only the local client has, see "Enemy aliases") from the models `tools/local-extract/extract.py` extracted to `public/assets/local/spine/enemy/`. Run it after a game update changed them; without it the committed file is used and a differing extraction only gets a warning. |
 
-**The manifest never shrinks by accident.** An entry whose files are missing on this machine is left out of a rebuilt
-manifest, so a run where some downloads failed (or whose upstream audio / model index lost them) would drop entries that
-every other install still has from the committed `data/assets.json` (a pull request once carried such a manifest, 42
-audio entries short — all 42 still resolve upstream; PR #7). When the rebuilt manifest lacks an entry of the current
-one, the run keeps the current file, prints the entries it would drop (also in the report: `droppedEntries`,
-`manifestWritten: false`) and exits 1. Re-run to retry the downloads, or pass `--allow-shrink` (or `--prune`) when the
-smaller manifest is intended, for example after a mapping change. Build fields (`version`, `hash`, `generator`,
-`stats`), new entries and a changed value are never a drop (`tools/assets/manifest.mjs droppedEntries`). A run whose
-plan legitimately narrows — like the 干员战斗语音 default, which no longer plans the three prep-only slots (360 entries,
-DESIGN §21.30) — reports exactly those entries and needs `--allow-shrink` once; the list it prints is the check.
+**The manifest never shrinks by accident.** The research plan augments the registered catalog in `data/assets.json`;
+it preserves extensions added after the research snapshot, including native summons, module icons, prize art and
+Japanese voices. Registered public URLs enter the download queue too. A missing public file is reported in
+`registeredMissingAssets` and makes the command exit 1; its identity stays registered for a later retry. Optional
+local-client extraction is reported separately in `optionalLocalAssets` and is never copied or downloaded.
+Validated fresh model metadata replaces animation capabilities as one record, so obsolete clips do not survive a
+reparse or a change of selectable skills. The shrink guard still protects model identities and public file URLs.
+To retire an extension intentionally,
+remove its registration from the authoritative manifest. The existing shrink guard still reports unexpected losses
+in `droppedEntries`; `--allow-shrink` and `--prune` permit those losses without discarding registered extensions.
+
+`publicSources` records explicit public URLs and native source versions for extensions outside the research sources.
+Build validation can reuse an existing public cache through absolute `SP_ASSET_DIRECTORY`, `SP_FONT_DIRECTORY` and
+`SP_ASSET_CACHE_DIRECTORY` paths; the manifest remains in the checkout's `data/` and no writable link is created.
 
 The script is **idempotent**. A file on disk is kept, not re-downloaded, when any one of these holds:
 - its size matches the ledger entry from a previous download (`.cache/assets-ledger.json`);
@@ -85,7 +89,7 @@ The research JSONs in `docs/research/` (03, 05, 07) define **which** ids are nee
 | UI sprites (see below) | AA2 `ui/autochess/**`, `arts/**`, `activity/[uc]act2autochess/**`, `battle/[pack]common/sprites` | `ui/{group}/{key}.png` |
 | The 36 battle emotes and the 19 玩法说明 (tutorial) pages, which `tools/local-extract` also extracts (GitHub issue #42: without the local client a server showed default emote icons) | AA2 `cn` `ui/emoticon/theme/[uc]{themeId}/icon/{picId}.png` (`shared/constants.js EMOTE_CATALOG`) and `arts/guidebookpages/[pack]autochess/{key}.png` (1024², shown at 16:9 like the local copies) | `ui/emoticon/{dir}/{picId}.png`, `ui/guide/{key}.png` |
 | Operator battle Spine (Front, Back) | fexli/ArknightsResource `spine/{id}/{id}/{Front,Back}/` | `spine/op/{charId}/{front,back}/{stem}.{skel,atlas,png}` |
-| Token Spine | fexli: the default model, or else the first skin variant (`spine/{tokenId}/{variant}/Spine/`) | `spine/token/{tokenId}/{stem}.*` |
+| Token Spine | fexli defaults; registered supplemental default summons use HellaOrg/HellaAssets commit `2f080e7cd292341ec46d631186ec534aaee6b68d`, `spine/deploy/battle/{tokenId}/front/` | `spine/token/{tokenId}/{stem}.*` |
 | Enemy Spine (PC build, premultiplied alpha) | isHarryh/Ark-Models `models_enemies/{key}/`, file names from `models_data.json` | `spine/enemy/{enemyId}/{stem}.*` |
 | Enemy Spine that no dump carries (灼热源石虫 / 炽焰源石虫) | the local client only (`tools/local-extract/extract.py ENEMY_SPINES`, optional); never downloaded and never required: an overlay of the web alias (`enemies[id].spineLocal`) | `local/spine/enemy/{enemyId}/{stem}.*` (listed in `data/local-assets.json`) |
 | BGM | AA2 `voice` branch `audio/sound_beta_2/music/**` (大厅/休整期 `act1autochess`, 开战 `act13side/m_bat_kazimierz2_{1,2}` — 骑士之日 / 无畏者; the 开战 track follows the round: `_2` 无畏者 rounds 1–7, `_1` 骑士之日 from round 8) | `audio/bgm/{file}.mp3` |
@@ -367,6 +371,8 @@ The project's code is GPL-3.0-or-later (`LICENSE`); none of the items below is c
   - [fexli/ArknightsResource](https://github.com/fexli/ArknightsResource) (ArkResourceAutoUpdateBot)
   - [isHarryh/Ark-Models](https://github.com/isHarryh/Ark-Models) (ArkUnpacker). Not for commercial use.
   - [ArknightsAssets/ArknightsAssets2](https://github.com/ArknightsAssets/ArknightsAssets2) (ArknightsStudio)
+  - [HellaOrg/HellaAssets](https://github.com/HellaOrg/HellaAssets) (supplemental default summon Spine models)
+  - [PRTS](https://prts.wiki/) (original profession-branch icon PNGs; the file URL and native upload timestamp are recorded in `data/assets.json.publicSources`)
   - [Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)
 - **Spine runtime.** pixi-spine is MIT-licensed. It embeds Spine Runtime code under the [Spine Runtimes License](http://esotericsoftware.com/spine-runtimes-license), which formally expects a Spine Editor licence. This is commonly tolerated for non-commercial fan tools, and the Spine Runtimes License must be credited (`THIRD-PARTY-NOTICES.md`). The project's GPL carries an additional permission (section 7) to combine it with the Spine Runtimes (`NOTICE.md`).
 - **Fonts.**

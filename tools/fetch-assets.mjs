@@ -18,12 +18,11 @@
 // Spine atlases get `size:` (and `pma: true` for enemies); every skeleton is
 // parsed to resolve animation roles.
 //
-// The committed data/assets.json never shrinks by accident: an entry whose files
-// are missing here is left out of a rebuilt manifest, so a run on a machine where
-// some downloads failed (or whose upstream index lost them) would drop entries
-// every other install still has. The run then keeps the current manifest, lists
-// the entries it would drop and exits 1; --allow-shrink (or --prune) writes the
-// smaller manifest.
+// The research plan augments registrations already in data/assets.json. Missing
+// public files keep their identities for retries and make the command fail;
+// optional local extraction stays separate. Fresh model capabilities replace
+// their old parse atomically. Unexpected registration losses are guarded unless
+// --allow-shrink (or --prune) is explicit.
 //
 // Usage: node tools/fetch-assets.mjs [--concurrency=16] [--force] [--offline]
 //                                    [--dry-run] [--refresh-index] [--prune]
@@ -31,23 +30,29 @@
 
 import { readFile, writeFile, mkdir, rename, readdir, unlink } from 'node:fs/promises';
 import { existsSync, realpathSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { dirname, join, relative, sep, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Downloader } from './assets/downloader.mjs';
 import { MirrorPolicy, selectDownloadSource, validateSource } from './assets/network.mjs';
 import { normalizeProxyPrefix } from './assets/sources.mjs';
 import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
-import { buildPlan } from './assets/plan.mjs';
+import { buildPlan, registeredDownloadLeaves } from './assets/plan.mjs';
 import { processModels, findLocalEnemyModels, localEnemySpineMeta, loadLocalEnemySpines, LOCAL_ENEMY_SPINES_FILE } from './assets/spine.mjs';
-import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION } from './assets/manifest.mjs';
+import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION, mergeRegisteredManifest, registeredAssetPaths } from './assets/manifest.mjs';
 import { fontJobs, buildFonts } from './assets/fonts.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const ASSETS = join(ROOT, 'public', 'assets');
-const FONTS = join(ROOT, 'public', 'fonts');
-const CACHE = join(ROOT, '.cache');
+// An explicit existing build cache can be reused without copying a deployment or linking formal data into a worktree.
+const configuredDirectory = (key, fallback) => {
+  const directory = process.env[key] || fallback;
+  if (!isAbsolute(directory)) throw new Error(`${key} must be an absolute directory: ${directory}`);
+  return directory;
+};
+const ASSETS = configuredDirectory('SP_ASSET_DIRECTORY', join(ROOT, 'public', 'assets'));
+const FONTS = configuredDirectory('SP_FONT_DIRECTORY', join(ROOT, 'public', 'fonts'));
+const CACHE = configuredDirectory('SP_ASSET_CACHE_DIRECTORY', join(ROOT, '.cache'));
 const MANIFEST = join(ROOT, 'data', 'assets.json');
 const REPORT = join(CACHE, 'assets-report.json');
 const LOCAL_SPINES = join(ROOT, LOCAL_ENEMY_SPINES_FILE);
@@ -178,6 +183,8 @@ function countStats(m, bytes, files) {
     ui: Object.keys(m.ui || {}).length,
     sfxUnits: Object.keys(m.audio?.sfx?.units || {}).length,
     voiceChars: Object.keys(m.audio?.voice || {}).length,
+    voiceJpChars: Object.keys(m.audio?.voiceJp || {}).length,
+    modules: Object.keys(m.modules || {}).length,
   };
 }
 
@@ -251,6 +258,10 @@ async function main() {
   const extraHandbook = {};
   for (const b of Object.values(dataBosses || {})) if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] = b.handbookId;
   const localEnemySpines = await syncLocalEnemySpines(opts);
+  let current = null;
+  if (existsSync(MANIFEST)) {
+    try { current = JSON.parse(await readFile(MANIFEST, 'utf8')); } catch (e) { log(`[manifest] the current ${relative(ROOT, MANIFEST)} is unreadable (${e.message}): replaced`); }
+  }
   const plan = buildPlan({
     assets07, ops03, enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
@@ -260,6 +271,7 @@ async function main() {
     extraHandbook,
     localEnemySpines,
     nativeCandidates: Object.values(dataChess || {}),
+    registeredManifest: current,
   });
   const leaves = collectLeaves(plan.template);
   log(`[plan] ${leaves.length} files + ${plan.models.size} Spine models ` +
@@ -277,7 +289,10 @@ async function main() {
     concurrency: opts.concurrency, force: opts.force, log, ...network,
   });
   await dl.loadLedger();
-  const downloadErrors = opts.offline ? [] : await downloadLeaves(leaves, dl, ASSETS, 'files');
+  const registered = registeredDownloadLeaves(current, { sourceOf: rel => dl.ledger.files[rel]?.url || current?.publicSources?.[rel]?.url });
+  const plannedPaths = new Set(leaves.flatMap(({leaf}) => leaf.alts.map(a => a.rel)));
+  const extensions = registered.leaves.filter(({leaf}) => !plannedPaths.has(leaf.alts[0].rel));
+  const downloadErrors = opts.offline ? [] : await downloadLeaves([...leaves, ...extensions], dl, ASSETS, 'files');
 
   // Fonts
   let fontErrors = [];
@@ -298,11 +313,22 @@ async function main() {
 
   // Manifest
   const resolved = resolveTemplate(plan.template, { root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url });
-  const body = resolved.value;
-  tidyManifest(body);
+  const previousBody = { ...current };
+  for (const key of ['version', 'hash', 'generator', 'stats']) delete previousBody[key];
+  tidyManifest(resolved.value);
+  const body = mergeRegisteredManifest(previousBody, resolved.value);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;
-  body.fonts = existsSync(join(FONTS, 'fonts.css')) ? { css: '/fonts/fonts.css', faces: fontFaces } : { faces: fontFaces };
+  body.fonts = mergeRegisteredManifest(body.fonts, existsSync(join(FONTS, 'fonts.css')) ? { css: '/fonts/fonts.css', faces: fontFaces } : { faces: fontFaces });
+  // Registered resources remain visible even on an install that has not downloaded them yet.
+  // Report their actual availability separately; the research snapshot must not erase their identities.
+  const registeredMissingAssets = [];
+  const optionalLocalAssets = [];
+  for (const rel of registeredAssetPaths(body)) {
+    if (rel.startsWith('local/')) { if (!existsSync(join(ASSETS, rel))) optionalLocalAssets.push(rel); continue; }
+    if (existsSync(join(ASSETS, rel))) resolved.files.add(rel);
+    else registeredMissingAssets.push(rel);
+  }
   const bytes = totalBytes(ASSETS, resolved.files);
   const manifest = {
     version: MANIFEST_VERSION,
@@ -311,12 +337,8 @@ async function main() {
     stats: countStats(body, bytes, resolved.files.size),
     ...body,
   };
-  let current = null;
-  if (existsSync(MANIFEST)) {
-    try { current = JSON.parse(await readFile(MANIFEST, 'utf8')); } catch (e) { log(`[manifest] the current ${relative(ROOT, MANIFEST)} is unreadable (${e.message}): replaced`); }
-  }
   const guard = shrinkGuard(current, manifest, opts);
-  if (guard.write) await writeJsonAtomic(MANIFEST, manifest);
+  if (guard.write) await writeJsonAtomic(MANIFEST, manifest, 2);
 
   // Orphans: files on disk that the manifest does not reference (e.g. after a mapping change). public/assets/local/**
   // belongs to tools/local-extract (data/local-assets.json) and is never an orphan: --prune used to delete all of it.
@@ -339,6 +361,9 @@ async function main() {
     pruned: opts.prune ? orphans : [],
     manifestWritten: guard.write,
     droppedEntries: guard.dropped, // entries of the previous data/assets.json the rebuilt one lacks
+    registeredMissingAssets,
+    optionalLocalAssets,
+    unmappedRegisteredAssets: registered.unmapped,
     notes: plan.notes,
   };
   await writeJsonAtomic(REPORT, report, 1);
@@ -374,6 +399,10 @@ async function main() {
   log(`manifest: ${MANIFEST}${guard.write ? '' : ' (kept)'} · report: ${REPORT} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   if (required.length) {
     log(`ERROR: ${required.length} required assets missing: ${required.slice(0, 10).join(', ')}`);
+    return 1;
+  }
+  if (registeredMissingAssets.length) {
+    log(`ERROR: ${registeredMissingAssets.length} registered public resources are not on disk; see ${REPORT}`);
     return 1;
   }
   return guard.write ? 0 : 1;

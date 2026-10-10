@@ -24,6 +24,31 @@ const isLiteral = (n) => !!n && typeof n === 'object' && Object.hasOwn(n, LITERA
  */
 export function literal(value) { return { [LITERAL]: JSON.parse(JSON.stringify(value)) }; }
 
+/** Keep registered extensions when a research plan covers only part of the installed catalog. */
+export function mergeRegisteredManifest(registered, generated) {
+  if (generated === undefined) return structuredClone(registered);
+  if (!generated || typeof generated !== 'object' || Array.isArray(generated)) return structuredClone(generated);
+  const out = registered && typeof registered === 'object' && !Array.isArray(registered)
+    ? structuredClone(registered) : {};
+  // Parsed model capabilities are one validated record: retaining an absent old clip would describe another skeleton.
+  if (typeof generated.skel === 'string' && typeof generated.atlas === 'string' && Array.isArray(generated.textures)) {
+    return { ...out, ...structuredClone(generated) };
+  }
+  for (const [key, value] of Object.entries(generated)) out[key] = mergeRegisteredManifest(out[key], value);
+  return out;
+}
+
+/** Referenced asset paths, including extensions that were registered after the research snapshot. */
+export function registeredAssetPaths(manifest) {
+  const found = new Set();
+  const walk = value => {
+    if (typeof value === 'string' && value.startsWith('/assets/')) found.add(value.slice('/assets/'.length));
+    else if (value && typeof value === 'object') Object.values(value).forEach(walk);
+  };
+  walk(manifest);
+  return found;
+}
+
 /**
  * Collect every leaf of the template with its dotted path.
  * @param {any} node
@@ -151,6 +176,9 @@ export function contentHash(value) {
 
 /** Top-level manifest fields that describe the build, not assets: never counted as dropped entries. */
 const BUILD_FIELDS = new Set(['version', 'hash', 'generator', 'stats']);
+const PARSED_MODEL_FIELDS = new Set(['anims', 'animations', 'events', 'hits', 'bounds', 'pma']);
+const isParsedModel = (v) => v && typeof v.skel === 'string' && typeof v.atlas === 'string'
+  && Array.isArray(v.textures) && v.anims && v.animations;
 
 /**
  * Entries of the manifest `prev` that `next` no longer has, as sorted dotted paths. An entry is a leaf value (a URL
@@ -171,7 +199,13 @@ export function droppedEntries(prev, next) {
   const walk = (p, n, path) => {
     if (n === undefined) { leaves(p, path); return; }
     if (!isObj(p) || !isObj(n)) return;
-    for (const [k, v] of Object.entries(p)) walk(v, Object.hasOwn(n, k) ? n[k] : undefined, `${path}.${k}`);
+    // A complete fresh parse may remove capabilities the current skeleton does not have. Guard catalog identity
+    // and public file registrations, while accepting the parser's atomic capability record.
+    const reparsed = isParsedModel(p) && isParsedModel(n);
+    for (const [k, v] of Object.entries(p)) {
+      if (reparsed && PARSED_MODEL_FIELDS.has(k)) continue;
+      walk(v, Object.hasOwn(n, k) ? n[k] : undefined, `${path}.${k}`);
+    }
   };
   if (!isObj(prev)) return out;
   const nx = isObj(next) ? next : {};

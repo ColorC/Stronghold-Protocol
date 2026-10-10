@@ -59,6 +59,7 @@ export function downloadUrls(url, { source = 'direct', proxyPrefix = DEFAULT_GIT
 export const RAW = Object.freeze({
   yuanyan: 'https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/',
   fexli: 'https://raw.githubusercontent.com/fexli/ArknightsResource/main/',
+  hella: 'https://raw.githubusercontent.com/HellaOrg/HellaAssets/2f080e7cd292341ec46d631186ec534aaee6b68d/',
   arkModels: 'https://raw.githubusercontent.com/isHarryh/Ark-Models/main/',
   aa2: 'https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/',
   aa2voice: 'https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/voice/assets/dyn/audio/sound_beta_2/',

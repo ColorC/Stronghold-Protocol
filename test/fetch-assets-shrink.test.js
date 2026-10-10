@@ -75,6 +75,17 @@ test('fetch-assets shrink guard: the committed manifest minus some audio entries
   assert.equal(statSync(MANIFEST).mtimeMs, before, 'importing the tool runs nothing');
 });
 
+test('a fresh model parse replaces stale capabilities while lost model registrations remain guarded', () => {
+  const old = { skel: '/assets/body.skel', atlas: '/assets/body.atlas', textures: ['/assets/body.png'],
+    anims: { idle: 'Idle', skills: { 0: { loop: 'OldSkill' } } }, animations: { Idle: 1, OldSkill: 2 } };
+  const fresh = { ...old, anims: { idle: 'Idle' }, animations: { Idle: 1 } };
+  assert.deepEqual(droppedEntries({ tokens: { native: { spine: old } } }, { tokens: { native: { spine: fresh } } }), []);
+  const drops = droppedEntries({ tokens: { native: { spine: old } } }, { tokens: {} });
+  assert.ok(drops.includes('tokens.native.spine.skel'), 'a missing native identity is still refused');
+  const incomplete = { ...fresh }; delete incomplete.atlas;
+  assert.ok(droppedEntries({ spine: old }, { spine: incomplete }).includes('spine.atlas'), 'an incomplete model is still guarded');
+});
+
 test('a server where the mirror emotes / 玩法说明 pages failed to download keeps the committed manifest, so the next setup retries them (#42)', async () => {
   // setup re-runs fetch-assets only while data/assets.json lists a file that is not on disk: a manifest rewritten without
   // these entries would stop the retries, and the emotes would stay default icons on that server
