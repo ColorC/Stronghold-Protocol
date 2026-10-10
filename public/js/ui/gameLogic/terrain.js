@@ -296,3 +296,9 @@ export function noteDeviceUnits(map, { units = null, events = null } = {}) {
   for (const e of Array.isArray(events) ? events : []) if (Array.isArray(e) && e[0] === 'spawn' && isObj(e[1]) && e[1].kind === 'device' && e[1].id != null) map.set(e[1].id, e[1]);
   return map;
 }
+
+/** Keep same-field device units when a refresh omits them from the new field metadata. */
+export function deviceUnitsForEntry(previous, noted, sameField) {
+  if (!(noted instanceof Map) || noted.size > 0 || !sameField) return noted instanceof Map ? noted : new Map();
+  return previous instanceof Map && previous.size > 0 ? previous : noted;
+}

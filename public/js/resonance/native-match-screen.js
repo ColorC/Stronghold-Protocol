@@ -83,6 +83,8 @@ import { EmoteWheel } from '../ui/emotes.js';
 import { EffectsList } from '../ui/effectsList.js';
 import { CombatHud } from '../ui/combatHud.js';
 import { SettingsModal } from '../ui/settings.js';
+import { CodexScreen } from './codex.js';
+import { ResonanceCombatControls } from './native/combatControls.js';
 import { AwayOverlay, awayStore } from '../ui/matchChrome.js';
 import { ResonanceExitModal } from './native/exitModal.js';
 import { openGuide } from '../ui/guide.js';
@@ -98,7 +100,7 @@ import {
   phaseMode, phaseBanner, isCombatPhase, showDeadPill, isBossPhase, placementContext, canPlace, boardTargets, dropIntent,
   battleOverSfx, uniteResultBox, battleResultBox,
   snapHud, activeBubbles, shortcutBlocked, closesOnFieldPress, phaseTotalSeconds, homeFieldId, ownFieldId, normalizeSp, normalizePersonalChoice, sortedPlayers,
-  terrainInfo, deviceInfo, deviceTipAt, noteDeviceUnits,
+  terrainInfo, deviceInfo, deviceTipAt, noteDeviceUnits, deviceUnitsForEntry,
   countdownState, shopBlockReason, stageOverrides, effectiveStage, watchTarget, dropFailureReason,
   previewEnemyKey, prepCamera, prepCameraFor, foldCamera, deployFieldOf, fieldTile, panelSide, panelSlots, bondPopupPlace, unitLoadout, deployedRecord,
   mergeTarget, modeOffBonds, readyFundsPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn,
@@ -139,7 +141,7 @@ import { inspectRange } from '../screens/game/range.js';
 import { t, tParts } from '../../../shared/i18n.js';
 
 /** Router for the in-match screens. */
-export function GameScreen({ onLeave }) {
+export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   const pub = useStore((s) => s.match.public);
   const hasResult = useStore((s) => !!s.match.result);
   const ended = useStore((s) => !!s.room && !s.room.inMatch && !!s.match.public);
@@ -157,7 +159,7 @@ export function GameScreen({ onLeave }) {
   if (hasResult || mode === 'result') body = html`<${ResultScreen} />`;
   else if (mode === 'briefing') body = html`<${BriefingScreen} />`;
   else if (mode === 'draft') body = html`<${BandDraftScreen} />`;
-  else body = html`<${MatchScreen} onLeave=${onLeave} />`;
+  else body = html`<${MatchScreen} onLeave=${onLeave} libraryCatalog=${libraryCatalog} activeIds=${activeIds} />`;
   return html`${body}
     ${(away || autoplay) && !hasResult && mode !== 'result' && !ended ? html`<${AwayOverlay} />` : null}
     ${ended && !hasResult && mode !== 'result' ? html`<${MatchEnded} />` : null}`;
@@ -354,7 +356,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
   </div>`;
 }
 
-function MatchScreen({ onLeave }) {
+function MatchScreen({ onLeave, libraryCatalog, activeIds }) {
   useDocClass('sp-in-match');
   const pub = useStore((s) => s.match.public);
   const priv = useStore((s) => s.match.private);
@@ -376,7 +378,7 @@ function MatchScreen({ onLeave }) {
   const hostRef = useRef(null);
   const barRef = useRef(null);
   const hudElRef = useRef(null);                         // .gm__hud (inside the safe-area insets: the panels' frame)
-  const { view, kind: viewKind } = useFieldView(hostRef, { tierChips: 'base', requireEngine: true });
+  const { view, kind: viewKind } = useFieldView(hostRef, { tierChips: 'base', itemPips: false, requireEngine: true });
 
   const [watching, setWatching] = useState(null);        // fieldId the player chose to watch (null = home)
   const [watchWho, setWatchWho] = useState(null);        // { fieldId, playerId }: the teammate picked with 前往查看
@@ -416,6 +418,25 @@ function MatchScreen({ onLeave }) {
   const [camKind, setCamKind] = useState('prep');        // kind of the last camera request (data-camera)
   const [replace, setReplace] = useState(null);          // equip-replace dialog: { request, resolve }
   const [pauseBusy, setPauseBusy] = useState(false);
+  const [codexOpen, setCodexOpen] = useState(() => new URL(location.href).searchParams.get('view') === 'codex');
+  const [codexTab, setCodexTab] = useState('operators');
+  const [codexDetail, setCodexDetail] = useState(() => new URL(location.href).searchParams.get('view') === 'codex' ? parseDetailHash(location.hash) : null);
+  const codexReturnRef = useRef(null);
+  const codexStateRef = useRef({ open: codexOpen, detail: codexDetail });
+  codexStateRef.current = { open: codexOpen, detail: codexDetail };
+  const openCodex = (tab = 'operators') => {
+    const url = new URL(location.href);
+    codexReturnRef.current = `${url.pathname}${url.search}${url.hash}`;
+    url.searchParams.set('view', 'codex'); url.hash = '';
+    history.replaceState(history.state, '', url);
+    setDetail(null); setResonanceDetail(null); setResonancePanel(null); setDrawer(null);
+    setCodexDetail(null); setCodexTab(tab); setCodexOpen(true);
+  };
+  const closeCodex = () => {
+    const url = new URL(location.href); url.searchParams.delete('view'); url.hash = '';
+    history.replaceState(history.state, '', codexReturnRef.current || url);
+    codexReturnRef.current = null; setCodexDetail(null); setCodexOpen(false);
+  };
   const [armedCard, setArmedCard] = useState(null);     // the shop bar's armed card { kind, id } (merge tile cue)
   const cc = isClientCombat(pub);
   const battleState = useStore((s) => s.match.battle, shallowEqual); // local battle runner (client-side combat)
@@ -695,8 +716,16 @@ function MatchScreen({ onLeave }) {
   live.current.deviceBattle = !!shownField && !shownField.prep;
   const staleFieldRef = useRef(null);
   const enteredFieldRef = useRef(null);
+  const enteredViewRef = useRef(null);
   const pressSel = useRef(null);                         // the selected piece when the current field press began
   useEffect(() => {
+    const previousFieldId = lastFieldRef.current;
+    const previousDevices = deviceUnitsRef.current;
+    if (enteredViewRef.current !== view) {
+      enteredViewRef.current = view;
+      enteredFieldRef.current = null; lastFieldRef.current = null;
+      viewModeRef.current = null; reentryRef.current = null;
+    }
     if (!view) return;
     if (showPrep) {
       if (field?.prep) staleFieldRef.current = field; // a prep scouting board is never a battle to enter
@@ -729,10 +758,14 @@ function MatchScreen({ onLeave }) {
     reentryRef.current = null;
     viewModeRef.current = 'battle';
     snapUnitsRef.current = new Map();
-    view.enterBattle(field);
     const early = evBufRef.current.get(field.fieldId);
     evBufRef.current.delete(field.fieldId);
-    deviceUnitsRef.current = noteDeviceUnits(new Map(), { units: field.units, events: early });
+    const noted = noteDeviceUnits(new Map(), { units: field.units, events: early });
+    deviceUnitsRef.current = deviceUnitsForEntry(previousDevices, noted, previousFieldId != null && previousFieldId === field.fieldId);
+    const units = Array.isArray(field.units) ? [...field.units] : [];
+    const ids = new Set(units.map(unit => unit?.id));
+    for (const [id, info] of deviceUnitsRef.current) if (!ids.has(id)) units.push(info);
+    view.enterBattle({ ...field, units });
     const earlySnap = snapBufRef.current.get(field.fieldId);
     snapBufRef.current.delete(field.fieldId);
     // a scouted prep board frames like the own prep with the shop folded (the bench row included, app.js camRect);
@@ -852,6 +885,13 @@ function MatchScreen({ onLeave }) {
     };
     const offs = [net.on('m.field', onFieldMeta), net.on('b.snap', onSnap), net.on('b.ev', onEv)];
     if (battleRunner) offs.push(battleRunner.on('field', onFieldMeta), battleRunner.on('snap', onSnap), battleRunner.on('ev', onEv), battleRunner.on('result', onResult));
+    if (view && !showPrep && field?.fieldId) {
+      if (field.local) battleRunner?.reshow();
+      else if (combat || watchingOther) {
+        const who = watchWho?.fieldId === field.fieldId ? watchWho.playerId : null;
+        net.request('g.watch', { fieldId: field.fieldId, ...(who ? { playerId: who } : {}) }).catch(() => {});
+      }
+    }
     return () => { for (const off of offs) { try { off(); } catch { /* ignore */ } } clearTimeout(pending); };
   }, [view]);
 
@@ -1605,6 +1645,13 @@ function MatchScreen({ onLeave }) {
         && (e.target.isContentEditable || e.target.closest('input,textarea,select,[contenteditable="true"]'))) return;
       const L = live.current;
       // dialogs / the guide own the keyboard; behind the 本局信息 / 敌方情报 drawer only Esc (closing it) acts
+      if (codexStateRef.current.open) {
+        if (act === 'escape') {
+          e.preventDefault();
+          if (codexStateRef.current.detail) setCodexDetail(null); else closeCodex();
+        }
+        return;
+      }
       if (shortcutBlocked(act, { modal: !!document.querySelector('.modal, .guide'), drawer: !!L.drawer })) return;
       if (L.hasPersonalChoice) {
         if (act !== 'escape') e.preventDefault();
@@ -1829,6 +1876,7 @@ function MatchScreen({ onLeave }) {
         readyBusy=${readyBusy} readyCount=${readyCount} playerCount=${solo ? 1 : aliveCount}
         pen=${pen} penAvail=${penAvail} onPen=${togglePen} config=${gd.config} frozenAt=${frozenAt}
         pause=${canPause || paused ? { show: canPause, paused, busy: pauseBusy, onToggle: () => togglePause(!paused) } : null}
+        battleControls=${combat && solo && resonanceState ? html`<${ResonanceCombatControls} facts=${pub?.resonanceCombat} done=${!!myDone} paused=${paused} />` : null}
         live=${liveLpNow} spectator=${spectator}
         spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} />
 
@@ -1892,6 +1940,7 @@ function MatchScreen({ onLeave }) {
       <${Ticker} />
 
       <div class="gm__corner">
+        <button type="button" class="gm__gear gm__guide rs-native-codex-button" aria-label="战术图鉴" title="战术图鉴" onClick=${() => openCodex()}><${GIcon} name="book" /></button>
         <button type="button" class="gm__gear" aria-label=${t('设置')} title=${t('设置')} onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
         <a class="gm__gear rs-fullscreen rs-fullscreen-small" aria-label="全屏打开" title="全屏打开" href=${location.href} target="_blank" rel="noopener"><${Icon} name="expand" /></a>
       </div>
@@ -1908,6 +1957,7 @@ function MatchScreen({ onLeave }) {
           ${resonancePanel === 'match-info' ? html`<${NativeMatchInfo} state=${resonanceState} catalog=${resonanceCatalog} onDetail=${openNativeResonanceDetail} onSettlement=${() => toggleResonancePanel('settlement')} showHelp=${resonanceHelp} />` : null}
           ${resonancePanel === 'settlement' ? html`<${RoundSettlementPanel} summary=${lastSettlement} state=${resonanceState} catalog=${resonanceCatalog} showReplay=${false} onDetail=${target => setResonanceDetail(target)} />` : null}
           ${resonancePanel === 'equipment' && resonanceDockState ? html`<${NativeSpecialEntityList} state=${resonanceState} catalog=${resonanceCatalog} editable=${editable} busy=${resonanceActionBusy} onRecall=${uid => actions.move(uid, { area: 'hand' })} />
+            <div class="rs-native-equipment-help"><p>拖动组件可在库存中合成，或装备到干员身上。</p><${Button} size="sm" variant="ghost" icon="book" onClick=${() => openCodex('recipes')}>合成配方<//></div>
             <${NativeResonanceInventoryActions} state=${resonanceState} catalog=${resonanceCatalog} editable=${editable} busy=${resonanceActionBusy} onAction=${submitResonanceAction} />
             <${InventoryDock} state=${resonanceDockState} catalog=${resonanceCatalog} busy=${!editable} fieldTargetUid=${equipmentDropTarget ?? sel?.uid ?? null}
             className="rs-equipment-dock--panel" onOpen=${() => {}} onDetail=${openNativeResonanceDetail} onCombine=${combineResonanceItems} />` : null}
@@ -1964,5 +2014,12 @@ function MatchScreen({ onLeave }) {
       guideLabel="操作说明" onGuide=${() => { setSettingsOpen(false); toggleResonancePanel('match-info'); setResonanceHelp(true); }}
       helpText=${RESONANCE_SHORTCUT_LABEL} />
     <${ResonanceExitModal} open=${exitOpen} onClose=${() => setExitOpen(false)} onLeave=${onLeave} />
+    ${codexOpen && resonanceCatalog ? html`<section class="rs-native-codex-overlay" role="dialog" aria-modal="true" aria-label="战术图鉴">
+      <${CodexScreen} catalog=${libraryCatalog || resonanceCatalog} activeIds=${activeIds || libraryCatalog?.activeOperatorIds || resonanceCatalog.config?.activeOperatorIds || []}
+        initialTab=${codexTab}
+        onBack=${closeCodex} onDetail=${setCodexDetail}
+        overlayDetail=${codexDetail ? html`<${ResonanceDetailPanel} detail=${codexDetail} catalog=${libraryCatalog || resonanceCatalog} state=${resonanceState}
+          readOnly=${true} busy=${true} onDetail=${setCodexDetail} onClose=${() => setCodexDetail(null)} />` : null} />
+    </section>` : null}
   </div>`;
 }

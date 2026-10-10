@@ -26,7 +26,7 @@ export function mountUnitItemOverlay({view,getState,getReplay,getCatalog,getIcon
    const rect=view.pieceScreenRect?.(entry.screenUid)??view.pieceScreenRect?.(entry.alternateUid),width=doc.documentElement.clientWidth,height=doc.documentElement.clientHeight;
    const visible=rect&&Number.isFinite(rect.left)&&Number.isFinite(rect.top)&&rect.width>0&&rect.right>0&&rect.left<width&&rect.bottom>0&&rect.top<height;
    row.element.hidden=!visible;if(!visible)continue;
-   const size=Math.min(22,Math.max(12,rect.width*.24));row.element.style.setProperty('--unit-item-size',`${size}px`);row.element.style.transform=`translate(${rect.left+rect.width/2}px,${Math.max(0,rect.top-size-4)}px) translateX(-50%)`;
+   const size=Math.min(24,Math.max(20,rect.width*.24));row.element.style.setProperty('--unit-item-size',`${size}px`);row.element.style.transform=`translate(${rect.left+rect.width/2}px,${Math.min(height-size,rect.bottom-size*.3)}px) translateX(-50%)`;
   }
  };
  frame=requestFrame(tick);

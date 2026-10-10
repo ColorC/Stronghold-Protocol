@@ -104,7 +104,7 @@
   padding: .02rem .08rem;
   border: 1px solid rgba(246, 163, 41, .35);
   font-family: var(--font-display);
-  font-size: .1rem;
+  font-size: max(.1rem, 14px);
   letter-spacing: .2em;
   color: rgba(246, 163, 41, .7);
   white-space: nowrap;
@@ -172,9 +172,9 @@
   line-height: 1;
   animation: rise-in 600ms 80ms var(--ease-out) backwards;
 }
-.title-en__a { font-size: .34rem; font-weight: 500; letter-spacing: .3em; padding-left: .3em; color: #cdd6d1; }
+.title-en__a { font-size: max(.34rem, 14px); font-weight: 500; letter-spacing: .3em; padding-left: .3em; color: #cdd6d1; }
 .title-en__b {
-  font-size: .38rem;
+  font-size: max(.38rem, 14px);
   font-weight: 700;
   letter-spacing: .34em;
   padding-left: .34em;
@@ -183,7 +183,7 @@
 }
 .title-cn {
   margin-top: .14rem;
-  font-size: 1.02rem;
+  font-size: max(1.02rem, 14px);
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: .06em;
@@ -193,11 +193,11 @@
 }
 .title-cn__colon { color: #f4f6f5; }
 /* a title in an alphabetic script (English …; screens/title.js): the display face, smaller so "Stronghold Protocol: Alliance" fits one line */
-.title-cn--latin { font-family: var(--font-display); font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.title-cn--latin { font-family: var(--font-display); font-size: max(.6rem, 14px); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 .title-cn em { font-style: normal; color: var(--mint-500); text-shadow: 0 0 .26rem rgba(23, 249, 183, .45); }
 .title-tag {
   margin-top: .12rem;
-  font-size: calc(.19 * var(--t));
+  font-size: max(calc(.19 * var(--t)), 14px);
   color: var(--text-lo);
   letter-spacing: .1em;
   animation: rise-in 600ms 200ms var(--ease-out) backwards;
@@ -238,11 +238,11 @@
   background: rgba(246, 163, 41, .08);
   border: 1px solid rgba(246, 163, 41, .35);
   color: var(--amber);
-  font-size: calc(.16 * var(--t));
+  font-size: max(calc(.16 * var(--t)), 14px);
 }
 .title-invite .icon { width: .2rem; height: .2rem; }
-.title-invite b { font-size: calc(.2 * var(--t)); letter-spacing: .2em; color: #ffd08a; }
-.title-conn { display: flex; align-items: center; justify-content: center; gap: .1rem; min-height: .32rem; font-size: calc(.14 * var(--t)); color: var(--text-lo); }
+.title-invite b { font-size: max(calc(.2 * var(--t)), 14px); letter-spacing: .2em; color: #ffd08a; }
+.title-conn { display: flex; align-items: center; justify-content: center; gap: .1rem; min-height: .32rem; font-size: max(calc(.14 * var(--t)), 14px); color: var(--text-lo); }
 /* 统计 (the local stats page) beside the language menu in the top-right corner */
 .title-corner__tools { display: flex; align-items: center; justify-content: flex-end; gap: .1rem; margin-bottom: .1rem; }
 .title-corner__tools .title-lang { margin-bottom: 0; }
@@ -250,11 +250,11 @@
    The height is max(design, 1.4em) so the buttons still hold their text at 设置 →「文字大小」 大 / 特大 (on a phone
    1rem is clamped at 40 px and .3rem is only 12 px, less than the enlarged label). */
 .title-lang { display: inline-flex; margin-bottom: .1rem; }
-.title-lang button { min-width: .74rem; height: max(.3rem, 1.4em); font-size: calc(.14 * var(--t)); cursor: pointer; }
-.lang-select select { height: max(.38rem, 1.4em); min-width: 1.6rem; padding: 0 .12rem; background: #0a0d0c; border: 0; color: var(--text-hi); font-size: calc(.16 * var(--t)); cursor: pointer; }
-.title-lang.lang-select select { height: max(.3rem, 1.4em); font-size: calc(.14 * var(--t)); }
+.title-lang button { min-width: .74rem; height: max(.3rem, 1.4em); font-size: max(calc(.14 * var(--t)), 14px); cursor: pointer; }
+.lang-select select { height: max(.38rem, 1.4em); min-width: 1.6rem; padding: 0 .12rem; background: #0a0d0c; border: 0; color: var(--text-hi); font-size: max(calc(.16 * var(--t)), 14px); cursor: pointer; }
+.title-lang.lang-select select { height: max(.3rem, 1.4em); font-size: max(calc(.14 * var(--t)), 14px); }
 html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
-.title-conn .ping { height: max(.26rem, 1.6em); font-size: calc(.15 * var(--t)); }
+.title-conn .ping { height: max(.26rem, 1.6em); font-size: max(calc(.15 * var(--t)), 14px); }
 
 .title-foot {
   position: absolute;
@@ -265,7 +265,7 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  font-size: calc(.13 * var(--t));
+  font-size: max(calc(.13 * var(--t)), 14px);
   color: var(--text-dim);
 }
 /* a development build (shared/constants.js DEV_BUILD): an unmissable tag in the footer */

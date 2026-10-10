@@ -7,17 +7,17 @@
   width: min(100%, 18rem);
   margin: 0 auto .18rem;
   color: var(--text-hi);
-  font-size: .16rem;
+  font-size: max(.16rem, 14px);
   line-height: 1.5;
 }
 .rs-codex .rs-codex__roster > .panel__head,
 .rs-codex .rs-codex__catalog-panel > .panel__head { min-height: .58rem; }
 .rs-codex .rs-codex__roster .panel__title,
 .rs-codex .rs-codex__catalog-panel .panel__title,
-.rs-codex .rs-codex__rules h2 { margin: 0; font-size: .28rem; line-height: 1.2; }
+.rs-codex .rs-codex__rules h2 { margin: 0; font-size: max(.28rem, 14px); line-height: 1.2; }
 .rs-codex .rs-codex__count,
-.rs-codex .rs-codex__result-count { color: var(--text-lo); font-size: .16rem; }
-.rs-codex .rs-codex__count b { color: var(--mint-400); font-size: .2rem; }
+.rs-codex .rs-codex__result-count { color: var(--text-lo); font-size: max(.16rem, 14px); }
+.rs-codex .rs-codex__count b { color: var(--mint-400); font-size: max(.2rem, 14px); }
 .rs-codex .rs-codex__filters { gap: .08rem; }
 .rs-codex .rs-codex__filter-row { gap: .08rem; }
 .rs-codex .rs-codex__filter-row .field { min-width: 2.4rem; }
@@ -46,17 +46,17 @@
   min-height: 2.1rem;
   overflow: hidden;
   font: inherit;
-  font-size: max(.16rem, 12px);
+  font-size: max(max(.16rem, 12px), 14px);
 }
 .rs-codex .rs-codex__operator-card .lo-card__art { aspect-ratio: 1 / 1.08; }
 .rs-codex .rs-codex__operator-card .rs-avatar--card,
 .rs-codex .rs-codex__operator-card .rs-avatar--card img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.rs-codex .rs-codex__operator-card .rs-avatar--card > span { display: grid; width: 100%; height: 100%; place-items: center; font-size: .48rem; color: var(--mint-400); }
+.rs-codex .rs-codex__operator-card .rs-avatar--card > span { display: grid; width: 100%; height: 100%; place-items: center; font-size: max(.48rem, 14px); color: var(--mint-400); }
 .rs-codex .rs-codex__operator-card .lo-card__name,
 .rs-codex .rs-codex__catalog-card .lo-card__name {
   top: auto;
   bottom: .06rem;
-  font-size: .25rem;
+  font-size: max(.25rem, 14px);
   line-height: 1.2;
 }
 .rs-codex .rs-codex__operator-card .lo-card__tier { left: .04rem; top: .04rem; }
@@ -66,7 +66,7 @@
   padding: .01rem .05rem;
   border: .01rem solid var(--line-2);
   color: var(--mint-400);
-  font-size: .14rem;
+  font-size: max(.14rem, 14px);
   font-style: normal;
   line-height: 1.35;
 }
@@ -75,7 +75,7 @@
   margin: 0;
   padding: .04rem .06rem .06rem;
   color: var(--text-lo);
-  font-size: .16rem;
+  font-size: max(.16rem, 14px);
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -95,7 +95,7 @@
   background: rgba(8, 10, 9, .94);
   border-color: var(--line-2);
 }
-.rs-codex .rs-codex__copy { gap: .04rem; font-size: .16rem; }
+.rs-codex .rs-codex__copy { gap: .04rem; font-size: max(.16rem, 16px); }
 .rs-codex .rs-codex__copy .icon { width: .15rem; height: .15rem; }
 .rs-codex .rs-codex__catalog-card {
   display: flex;
@@ -111,7 +111,7 @@
 }
 .rs-codex .rs-codex__catalog-card .rs-codex__art > img { width: 100%; height: 100%; object-fit: contain; padding: .12rem; }
 .rs-codex .rs-codex__catalog-card .rs-codex__art::after { inset: 72% 0 0; }
-.rs-codex .rs-codex__catalog-card .lo-card__glyph { font-size: .46rem; color: var(--mint-400); }
+.rs-codex .rs-codex__catalog-card .lo-card__glyph { font-size: max(.46rem, 14px); color: var(--mint-400); }
 .rs-codex .rs-codex__bond-disc { display: grid; width: 100%; height: 100%; place-items: center; }
 .rs-codex .rs-codex__bond-disc .bond { width: .78rem; }
 .rs-codex .rs-codex__bond-disc .bond__disc { width: .66rem; height: .66rem; }
@@ -122,7 +122,7 @@
   margin: .05rem .06rem .08rem;
   overflow: hidden;
   color: var(--text-lo);
-  font-size: .16rem;
+  font-size: max(.16rem, 14px);
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -134,11 +134,11 @@
 .rs-codex .rs-codex__recipe-part .rs-codex__art,
 .rs-codex .rs-codex__recipe-result .rs-codex__art { width: .58rem; height: .58rem; aspect-ratio: 1; }
 .rs-codex .rs-codex__recipe-part b,
-.rs-codex .rs-codex__recipe-result b { max-width: 100%; overflow: hidden; color: var(--text-hi); font-size: .16rem; text-overflow: ellipsis; white-space: nowrap; }
+.rs-codex .rs-codex__recipe-result b { max-width: 100%; overflow: hidden; color: var(--text-hi); font-size: max(.16rem, 14px); text-overflow: ellipsis; white-space: nowrap; }
 .rs-codex .rs-codex__recipe-flow > .icon { flex: none; color: var(--mint-400); }
 .rs-codex .rs-codex__rules > p,
-.rs-codex .rs-codex__rules .rs-node { margin: .06rem 0; color: var(--text-md); font-size: .16rem; line-height: 1.5; }
-.rs-codex .rs-codex__rules h3 { margin: .12rem 0 .04rem; color: var(--mint-400); font-size: .2rem; }
+.rs-codex .rs-codex__rules .rs-node { margin: .06rem 0; color: var(--text-md); font-size: max(.16rem, 14px); line-height: 1.5; }
+.rs-codex .rs-codex__rules h3 { margin: .12rem 0 .04rem; color: var(--mint-400); font-size: max(.2rem, 14px); }
 
 @media (max-width: 8rem) {
   .rs-codex .rs-codex__roster,
@@ -150,11 +150,11 @@
   .rs-codex .rs-codex__recipe-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
 
-.rs-codex :is(.rs-codex__catalog-preview,.rs-codex__skill,.rs-codex__pact-tags i,.rs-codex__copy,.lo-card__sk,.lo-card__mod) { font-size: max(.16rem, 12px); }
+.rs-codex :is(.rs-codex__catalog-preview,.rs-codex__skill,.rs-codex__pact-tags i,.rs-codex__copy,.lo-card__sk,.lo-card__mod) { font-size: max(max(.16rem, 12px), 16px); }
 .rs-codex :is(.rs-codex__catalog-card,.rs-codex__operator-card) .lo-card__name { font-size: max(.25rem, 17px); }
 .rs-codex .rs-codex__catalog-card { min-height: max(2.6rem, 235px); }
 .rs-codex .rs-codex__catalog-preview { color: var(--text-md); }
 .rs-codex .rs-codex__catalog-card .lo-card__name { position: static; padding: .04rem .08rem; }
 .rs-codex .rs-codex__tabs { justify-content: center; }
-.rs-codex .rs-codex__tabs button { font-size: max(.17rem, 12px); padding: .1rem .18rem; color: var(--text-md); background: transparent; border: 1px solid var(--line-2); cursor: pointer; }
+.rs-codex .rs-codex__tabs button { font-size: max(max(.17rem, 12px), 14px); padding: .1rem .18rem; color: var(--text-md); background: transparent; border: 1px solid var(--line-2); cursor: pointer; }
 .rs-codex .rs-codex__tabs button[aria-selected="true"] { color: var(--text-on-mint); background: var(--mint-400); border-color: var(--mint-400); }

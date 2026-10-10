@@ -125,6 +125,93 @@ export class ResonanceMatch extends Match {
     return view;
   }
 
+  publicView() {
+    const view = super.publicView();
+    const runtime = this.state.nativeRuntime;
+    const field = this.fields.find((entry) => entry.players.includes(PLAYER));
+    const available = !!(field?.cc && field.live && !field.done && !field.verifyJob && !field.heldResult
+      && !field.result && field.mode === 'client' && field.authority === PLAYER
+      && [PHASE.COMBAT, PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(this.phase));
+    view.resonanceCombat = {
+      speed: runtime?.finishing ? 32 : ([1, 2, 4].includes(Number(runtime?.speed)) ? Number(runtime.speed) : 2),
+      finishing: runtime?.finishing === true,
+      available,
+    };
+    return view;
+  }
+
+  setResonanceCombatControl(message) {
+    const field = this.fields.find((entry) => entry.players.includes(PLAYER));
+    const runtime = this.state.nativeRuntime;
+    if (!field?.cc || !field.live || field.done || field.verifyJob || field.heldResult || field.result
+      || field.mode !== 'client' || field.authority !== PLAYER
+      || ![PHASE.COMBAT, PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(this.phase)) {
+      return FAIL(ERR.WRONG_PHASE, 'no live authoritative Resonance client field');
+    }
+    if (message.finish !== undefined) {
+      if (runtime?.finishing) return OK;
+      const changed = this.reanchorResonanceCombat(field, 32, true);
+      if (!changed) return FAIL(ERR.WRONG_PHASE, 'fast finish requires the live authoritative client field');
+      this.persistNativeRuntime({ elapsed: this._fieldElapsed(field), force: true });
+      this.markPublic(); this.flush(true);
+      this.sendTo(PLAYER, this._startMsg(field, PLAYER));
+      return OK;
+    }
+    if (runtime?.finishing) return FAIL(ERR.WRONG_PHASE, 'fast finish is already running');
+    const speed = message.speed;
+    if (![1, 2, 4].includes(speed)) return FAIL(ERR.BAD_MSG, 'speed must be 1, 2, or 4');
+    if (speed === this.gameSpeed) return OK;
+    this.reanchorResonanceCombat(field, speed, false);
+    this.persistNativeRuntime({ elapsed: this._fieldElapsed(field), force: true });
+    this.markPublic(); this.flush(true);
+    this.sendTo(PLAYER, this._startMsg(field, PLAYER));
+    return OK;
+  }
+
+  /** Change the rate of the existing simulation while preserving each native clock in game-seconds. */
+  reanchorResonanceCombat(field, nextSpeed, finishing) {
+    if (!field?.cc || field.mode !== 'client' || field.authority !== PLAYER || field.done || field.verifyJob || field.heldResult) return false;
+    const oldSpeed = Number(this.gameSpeed) || 2;
+    const now = this._clockNow();
+    const elapsedByField = new Map(this.fields.filter((current) => current.cc && !current.done)
+      .map((current) => [current, this._fieldElapsed(current)]));
+    const deadlineRemainingGame = this.deadline ? Math.max(0, (this.deadline - now) / 1000 * oldSpeed) : null;
+    const overtimeRemainingGame = this.overtimeAt ? Math.max(0, (this.overtimeAt - now) / 1000 * oldSpeed) : null;
+    const bossElapsedGame = this._bossStartAt == null ? null : Math.max(0, (now - this._bossStartAt) / 1000 * oldSpeed);
+
+    this.gameSpeed = nextSpeed;
+    for (const [current, elapsed] of elapsedByField) {
+      current.startAt = now - Math.round(elapsed / nextSpeed * 1000);
+      current.lastProgressAt = now;
+    }
+    if (deadlineRemainingGame != null) this.deadline = now + Math.round(deadlineRemainingGame / nextSpeed * 1000);
+    if (overtimeRemainingGame != null) this.overtimeAt = now + Math.round(overtimeRemainingGame / nextSpeed * 1000);
+    if (bossElapsedGame != null) this._bossStartAt = now - Math.round(bossElapsedGame / nextSpeed * 1000);
+
+    const runtime = this.state.nativeRuntime ?? (this.state.nativeRuntime = {});
+    runtime.speed = nextSpeed === 32 ? 2 : nextSpeed;
+    runtime.finishing = finishing === true;
+    if (nextSpeed === 32) runtime.speed = 32;
+
+    for (const current of this.fields) {
+      if (!current.cc || current.done) continue;
+      if (current.deadlineTimer) { this.cancel(current.deadlineTimer); current.deadlineTimer = null; }
+      if (current.doneTimer) { this.cancel(current.doneTimer); current.doneTimer = null; }
+      if (current.mode === 'client') {
+        if (this.paused) current.rearmDeadline = true;
+        else if (current.kind !== 'boss' && current.kind !== 'hidden') this._armDeadline(current);
+      } else if (current.result != null) {
+        if (this.paused) current.rearmRelease = true;
+        else this._armRelease(current);
+      }
+    }
+    if (this._bossClock) { this.cancel(this._bossClock); this._bossClock = null; }
+    if (!this.paused && this._bossClockOn && [PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(this.phase)) {
+      this._bossClock = this.later(BOSS_CLOCK_MS, () => this._bossClockTick());
+    }
+    return true;
+  }
+
   nativeChessId(operatorId, star = 1) { return star === 1 ? operatorId : `resonance_${operatorId}_star${star}`; }
 
   resonancePrivateView(ps) {
@@ -242,6 +329,7 @@ export class ResonanceMatch extends Match {
   handle(playerId, msg) {
     if (playerId !== PLAYER) return FAIL(ERR.NOT_IN_ROOM);
     if (msg?.t === 'g.infoReady') return super.handle(playerId, msg);
+    if (msg?.t === 'g.resonanceCombat') return this.setResonanceCombatControl(msg);
     const prepOnly = new Set(['g.buy', 'g.refresh', 'g.freeze', 'g.levelUp', 'g.sell', 'g.move', 'g.equip']);
     if (prepOnly.has(msg?.t) && (this.phase !== PHASE.PREP || !['prep', 'choice'].includes(this.state.phase))) return FAIL(ERR.WRONG_PHASE);
     if (msg?.t === 'g.resonance') {
@@ -384,6 +472,8 @@ export class ResonanceMatch extends Match {
     }
     const saved = this.state.nativeRuntime;
     if ([PHASE.COMBAT, PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(saved?.phase) && saved.spec && saved.battleId) {
+      this.gameSpeed = saved.finishing === true ? 32
+        : ([1, 2, 4].includes(Number(saved.speed)) ? Number(saved.speed) : 2);
       const dataPatch = saved.spec.flags?.resonance?.dataPatch;
       this._resonanceValidationData = { chess: dataPatch?.chess ?? Object.create(null), tokens: dataPatch?.tokens ?? Object.create(null) };
       const now = this.sched.now();
@@ -492,10 +582,12 @@ export class ResonanceMatch extends Match {
       ? Math.max(0, (afterReal * timeScale - Math.max(0, Number(elapsedGameSeconds) || 0)) / (Number(this.gameSpeed) || 1) * 1000) : 0;
   }
 
-  persistNativeRuntime({ elapsed = undefined, paused = undefined, completed = false } = {}) {
+  persistNativeRuntime({ elapsed = undefined, paused = undefined, completed = false, force = false } = {}) {
     const field = this.fields.find((entry) => entry.players.includes(PLAYER));
     if (!field || !field.cc || !this.state.nativeRuntime) return;
     const runtime = this.state.nativeRuntime;
+    runtime.speed = [1, 2, 4, 32].includes(Number(this.gameSpeed)) ? Number(this.gameSpeed) : 2;
+    runtime.finishing = runtime.speed === 32 || runtime.finishing === true;
     if (Number.isFinite(elapsed)) runtime.elapsed = Math.max(runtime.elapsed || 0, elapsed);
     if (paused !== undefined) runtime.paused = paused;
     runtime.uidMap = this.uidMap.snapshot();
@@ -534,7 +626,7 @@ export class ResonanceMatch extends Match {
     }
     if (completed) runtime.completed = true;
     const now = this.sched.now();
-    if (!completed && paused === undefined && now - this._lastRuntimePersistAt < 1000) return;
+    if (!force && !completed && paused === undefined && now - this._lastRuntimePersistAt < 1000) return;
     this._lastRuntimePersistAt = now;
     this._sessionWrite = this._sessionWrite.then(() => this.store.exclusive(this.sessionId, () => this.store.saveSession(this.sessionId, this.state)))
       .catch((error) => this.reportError('resonance runtime persistence', error));
@@ -620,8 +712,9 @@ export class ResonanceMatch extends Match {
     const field = super._ccField(input);
     if (this.currentPrepared?.round === this.state.round) field.kind = this.currentPrepared.prepared.nodeKind === 'hidden' ? 'hidden'
       : this.currentPrepared.prepared.nodeKind === 'boss' ? 'boss' : 'normal';
-    this.state.nativeRuntime = { phase: this.phase, kind: field.kind, fieldId: field.fieldId, battleId: field.battleId,
-      spec: field.spec, elapsed: 0, paused: false, progress: field.progress, uidMap: this.uidMap.snapshot() };
+      this.state.nativeRuntime = { phase: this.phase, kind: field.kind, fieldId: field.fieldId, battleId: field.battleId,
+      spec: field.spec, elapsed: 0, paused: false, speed: [1, 2, 4].includes(this.gameSpeed) ? this.gameSpeed : 2,
+      finishing: false, progress: field.progress, uidMap: this.uidMap.snapshot() };
     this.persistNativeRuntime();
     return field;
   }

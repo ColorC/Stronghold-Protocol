@@ -115,10 +115,10 @@
 
 /* ---- root scale ----------------------------------------------------------------------------- */
 html {
-  font-size: clamp(40px, min(calc(100vw / 19.2), calc(100vh / 10.8)), 240px);
+  font-size: max(clamp(40px, min(calc(100vw / 19.2), calc(100vh / 10.8)), 240px), 14px);
   /* mobile browsers: 100vh is the height with the toolbars hidden — the small viewport (svh; Safari 15.4+, Chrome 108+,
      Firefox 101+) is what is really visible while they show; older browsers keep the line above */
-  font-size: clamp(40px, min(calc(100vw / 19.2), calc(100svh / 10.8)), 240px);
+  font-size: max(clamp(40px, min(calc(100vw / 19.2), calc(100svh / 10.8)), 240px), 14px);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   height: 100%;
@@ -150,14 +150,14 @@ body {
   background: var(--bg-0);
   color: var(--text-hi);
   font-family: var(--font-cjk);
-  font-size: calc(.18 * var(--t));
+  font-size: max(calc(.18 * var(--t)), 14px);
   line-height: 1.5;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  -webkit-user-select: none;
-  user-select: none;
+  -webkit-user-select: text;
+  user-select: text;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -186,7 +186,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .display { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .12em; }
 .micro {
   font-family: var(--font-display);
-  font-size: calc(.11 * var(--t));
+  font-size: max(calc(.11 * var(--t)), 14px);
   line-height: 1.2;
   letter-spacing: .18em;
   text-transform: uppercase;
@@ -332,8 +332,8 @@ h1, h2, h3, h4, p { margin: 0; }
   animation: boot-spin 1.4s linear infinite;
   background: linear-gradient(135deg, transparent 45%, rgba(78, 216, 175, .35) 50%, transparent 55%);
 }
-.boot__text { font-family: var(--font-display); font-size: .13rem; letter-spacing: .4em; color: var(--mint-700); }
-.boot__err { max-width: 6rem; text-align: center; color: var(--text-lo); font-size: .16rem; }
+.boot__text { font-family: var(--font-display); font-size: max(.13rem, 14px); letter-spacing: .4em; color: var(--mint-700); }
+.boot__err { max-width: 6rem; text-align: center; color: var(--text-lo); font-size: max(.16rem, 14px); }
 @keyframes boot-spin { to { transform: rotate(360deg); } }
 
 /* ---- rotate-device hint (portrait phones/tablets) ------------------------------------------- */
@@ -349,7 +349,7 @@ h1, h2, h3, h4, p { margin: 0; }
   text-align: center;
   background: var(--bg-0);
   color: var(--text-md);
-  font-size: 16px;
+  font-size: max(16px, 14px);
 }
 .rotate-hint__phone {
   width: 54px;
@@ -371,8 +371,8 @@ h1, h2, h3, h4, p { margin: 0; }
   background: var(--mint-500);
   border-radius: 2px;
 }
-.rotate-hint__title { font-size: 20px; font-weight: 700; color: var(--text-hi); }
-.rotate-hint__micro { font-family: var(--font-display); font-size: 11px; letter-spacing: .3em; color: var(--mint-700); }
+.rotate-hint__title { font-size: max(20px, 14px); font-weight: 700; color: var(--text-hi); }
+.rotate-hint__micro { font-family: var(--font-display); font-size: max(11px, 14px); letter-spacing: .3em; color: var(--mint-700); }
 @keyframes rotate-phone {
   0%, 20% { transform: rotate(0deg); }
   50%, 75% { transform: rotate(-90deg); }

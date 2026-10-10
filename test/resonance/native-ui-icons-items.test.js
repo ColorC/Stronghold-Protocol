@@ -12,7 +12,8 @@ import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {resonanceCatalogPacket} from '../../server/modes/resonance/native-match.js';
 import {skillIconUrl} from '../../public/js/ui/assetUrls.js';
-import {resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
+import {NATIVE_ICON_BY_EQUIPMENT_ID,RESONANCE_ITEM_ICON_IDS,SOURCE_GEAR_ICON_IDS,resonanceItemPactId,resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
+import {resonanceContent} from '../../shared/resonance/catalog.js';
 import {specialBoardTile} from '../../public/js/resonance/specialEntityPlacement.js';
 
 test('every projected fixed skill uses its native identity and an existing icon',()=>{
@@ -29,6 +30,7 @@ test('every projected fixed skill uses its native identity and an existing icon'
 
 test('native resonance shop packet resolves the selected fixed skill icon from its actual chess record',()=>{
  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
+ assert.equal(Object.keys(data.assets.items).length,59,'all frozen manifest item icons are available for lookup');
  const catalog=getResonanceCatalog(data,{rulesVersion:3,seed:13});
  const packet=resonanceCatalogPacket({data,catalog,displayCatalog:catalog,nativeChessId:(id,star)=>star===1?id:`resonance_${id}_star${star}`});
  const expected=[['灰毫','skchr_ashlok_2'],['白金','skchr_platnm_2'],['令','skchr_ling_3']];
@@ -40,18 +42,40 @@ test('native resonance shop packet resolves the selected fixed skill icon from i
  }
 });
 
-test('resonance component icons resolve the eight frozen native item icons when the mode packet omits native rows',()=>{
+test('all eight Resonance components and 28 completed recipes use distinct frozen Native item art',()=>{
  const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
- const parts={blade:'chess_item_1_01_e_a',staff:'chess_item_3_08_e_a',bow:'chess_item_3_02_e_a',plate:'chess_item_1_02_e_a',cloak:'chess_item_4_04_e_a',belt:'chess_item_3_06_e_a',tear:'chess_item_3_05_e_a',crest:'chess_item_1_04_e_a'};
- const catalog={equipment:Object.fromEntries(Object.keys(parts).map(part=>[part,{name:part}]))};
- for(const [part,id] of Object.entries(parts)){
-  const source=data.items[id];assert.ok(source,`frozen native item row ${id}`);
-  const url=data.assets.items[source.iconId];assert.ok(url,`manifest icon ${source.iconId}`);
-  const resolved=resonanceNativeItem(catalog,part,[]);
-  assert.equal(resolved.iconId,source.iconId,`${part} uses its exact source icon identity`);
-  assert.equal(resolveResonanceItemIconUrl(catalog,part,[],data.assets),url,`${part} resolves the manifest URL`);
-  assert.ok(fs.existsSync(path.join('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/public',url)),`${part} asset exists`);
+ const entries=Object.entries(resonanceContent.equipment);
+ const components=entries.filter(([,record])=>record.kind==='component').map(([id])=>id);
+ const finished=entries.filter(([,record])=>record.kind==='completed').map(([id])=>id);
+ assert.equal(components.length,8);assert.equal(finished.length,28);
+ assert.deepEqual(new Set(components),new Set(['blade','staff','bow','plate','cloak','belt','tear','crest']));
+ assert.equal(Object.keys(RESONANCE_ITEM_ICON_IDS).length,36);
+ const componentIcons=new Set(components.map(id=>RESONANCE_ITEM_ICON_IDS[id]));
+ const finishedIcons=finished.map(id=>RESONANCE_ITEM_ICON_IDS[id]);
+ assert.equal(new Set(finishedIcons).size,28,'every completed recipe has its own artwork');
+ for(const id of [...components,...finished]){
+  const iconId=RESONANCE_ITEM_ICON_IDS[id];assert.ok(iconId,`explicit Native artwork mapping for ${id}`);
+  assert.equal(NATIVE_ICON_BY_EQUIPMENT_ID[id],iconId,`${id} is present in the exported mode map`);
+  const url=data.assets.items[iconId];assert.ok(url,`manifest icon ${iconId}`);
+  const catalog={equipment:{[id]:resonanceContent.equipment[id]}};
+  const resolved=resonanceNativeItem(catalog,id,[]);
+  assert.equal(resolved.iconId,iconId,`${id} uses its exact Native artwork identity`);
+  assert.equal(resolveResonanceItemIconUrl(catalog,id,[],data.assets),url,`${id} resolves the manifest URL`);
+  assert.ok(fs.existsSync(path.join('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/public',url)),`${id} asset exists`);
  }
+ for(const id of finished)assert.ok(!componentIcons.has(RESONANCE_ITEM_ICON_IDS[id]),`${id} does not borrow component artwork`);
+});
+
+test('source gear uses explicit existing completed-item art and transfers resolve to pact art',()=>{
+ const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
+ assert.equal(Object.keys(SOURCE_GEAR_ICON_IDS).length,7);
+ for(const [id,iconId] of Object.entries(SOURCE_GEAR_ICON_IDS)){
+  assert.ok(data.assets.items[iconId],`${id} icon is present in the frozen manifest`);
+  assert.ok(resolveResonanceItemIconUrl({equipment:{[id]:{name:id}}},id,[],data.assets),`${id} has a nonempty artwork URL`);
+ }
+ const catalog={equipment:{transfer_arts:{kind:'emblem',effects:[{kind:'transfer_pact',params:{pactId:'arts'}}]}}};
+ assert.equal(resonanceItemPactId(catalog,'transfer_arts'),'arts');
+ assert.equal(resonanceNativeItem(catalog,'transfer_arts',[]),null,'emblems use their pact icon, not generic equipment art');
 });
 
 test('V3 native pact projection preserves per-tier activation intervals and exact counts',()=>{

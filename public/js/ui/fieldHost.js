@@ -281,6 +281,7 @@ export function useFieldView(hostRef, extra = null) {
   const viewRef = useRef(null);
   const [generation, setGeneration] = useState(0);
   const autoAttempt = useRef(0);
+  const onlineRetries = useRef(0);
   const retry = useCallback(() => {
     autoAttempt.current = 0;
     setState({ view: null, kind: 'loading', error: null, retry });
@@ -301,10 +302,19 @@ export function useFieldView(hostRef, extra = null) {
     const { retryDelays: configuredRetryDelays = [], ...modeOptions } = options;
     const retryDelays = Array.isArray(configuredRetryDelays) ? configuredRetryDelays.slice(0, 2) : [];
     setState({ view: null, kind: 'loading', error: null, retry });
+    const onRecover = () => {
+      if (dead || viewRef.current?.kind !== 'fallback' || renderPref() === 'fallback'
+        || document.visibilityState !== 'visible' || globalThis.navigator?.onLine === false || onlineRetries.current >= 2) return;
+      onlineRetries.current++;
+      setGeneration((value) => value + 1);
+    };
+    window.addEventListener('online', onRecover);
+    document.addEventListener('visibilitychange', onRecover);
     mountFieldView(host, { ...modeOptions, signal: controller.signal }).then((view) => {
       if (dead) { view.destroy(); return; }
       mountedView = view;
       viewRef.current = view;
+      if (view.kind === 'engine') onlineRetries.current = 0;
       globalThis.__SP_VIEW__ = view; // dev / E2E introspection (view.raw.stats?.())
       unsubscribe = settingsStore.subscribe((s) => { if (viewRef.current === view) view.setSettings?.(s); });
       onResize = () => { if (viewRef.current === view) view.resize(); };
@@ -326,6 +336,8 @@ export function useFieldView(hostRef, extra = null) {
       dead = true;
       if (retryTimer != null) clearTimeout(retryTimer);
       controller.abort();
+      window.removeEventListener('online', onRecover);
+      document.removeEventListener('visibilitychange', onRecover);
       unsubscribe();
       if (onResize) window.removeEventListener('resize', onResize);
       // the dev hook must not keep the destroyed view — and through its host the whole detached match screen — alive

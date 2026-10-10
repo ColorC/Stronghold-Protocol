@@ -6,103 +6,103 @@
 .rs-income__coin-step svg,
 .rs-settlement__totals svg,
 .rs-settlement__income-cell svg { width: .22rem; height: .22rem; fill: var(--gold-2); }
-.rs-income__balance strong { color: var(--gold-2); font-size: .28rem; line-height: 1; }
-.rs-income__balance small { color: var(--text-lo); font-size: .13rem; }
+.rs-income__balance strong { color: var(--gold-2); font-size: max(.28rem, 14px); line-height: 1; }
+.rs-income__balance small { color: var(--text-lo); font-size: max(.13rem, 14px); }
 .rs-income__interest { display: grid; gap: .045rem; padding: .08rem; border: 1px solid var(--line); background: rgba(8,13,11,.5); }
 .rs-income__coin-steps { display: grid; grid-template-columns: repeat(auto-fit,minmax(.34rem,1fr)); gap: .035rem; }
 .rs-income__coin-step { display: grid; justify-items: center; gap: .015rem; min-width: 0; padding: .025rem .01rem; color: var(--text-lo); border: 1px solid var(--line-2); background: rgba(5,9,8,.7); }
 .rs-income__coin-step svg { width: .18rem; height: .18rem; opacity: .32; }
-.rs-income__coin-step small { font-size: .1rem; }
+.rs-income__coin-step small { font-size: max(.1rem, 14px); }
 .rs-income__coin-step.is-lit { color: var(--gold-2); border-color: var(--gold); background: rgba(120,83,28,.22); }
 .rs-income__coin-step.is-lit svg { opacity: 1; filter: drop-shadow(0 0 .06rem rgba(236,186,91,.5)); }
-.rs-income__interest-meta { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .04rem .1rem; font-size: .13rem; }
+.rs-income__interest-meta { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .04rem .1rem; font-size: max(.13rem, 14px); }
 .rs-income__interest-meta b { color: var(--gold-2); }
 .rs-income__interest-meta span { color: var(--text-lo); }
-.rs-income__unknown { grid-column: 1 / -1; color: var(--text-lo); font-size: .12rem; }
+.rs-income__unknown { grid-column: 1 / -1; color: var(--text-lo); font-size: max(.12rem, 14px); }
 .rs-income__forecasts { display: grid; gap: .07rem; }
 .rs-income__forecast { border: 1px solid var(--line-2); border-left: 2px solid var(--mint-700); background: rgba(8,13,11,.72); }
-.rs-income__forecast > summary { display: flex; align-items: center; justify-content: space-between; gap: .08rem; padding: .08rem; color: var(--text-hi); font-size: .14rem; cursor: pointer; list-style: none; }
+.rs-income__forecast > summary { display: flex; align-items: center; justify-content: space-between; gap: .08rem; padding: .08rem; color: var(--text-hi); font-size: max(.14rem, 14px); cursor: pointer; list-style: none; }
 .rs-income__forecast > summary::-webkit-details-marker { display: none; }
 .rs-income__forecast > summary::after { content: '+'; color: var(--mint-400); }
 .rs-income__forecast[open] > summary::after { content: '−'; }
-.rs-income__forecast > summary b { color: var(--gold-2); font-size: .16rem; }
+.rs-income__forecast > summary b { color: var(--gold-2); font-size: max(.16rem, 14px); }
 .rs-income__forecast-body { display: grid; gap: .09rem; padding: .08rem; border-top: 1px solid var(--line); }
 .rs-income__columns { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .04rem; }
 .rs-income__columns span { display: grid; gap: .025rem; min-width: 0; padding: .045rem; border-left: 1px solid var(--line-2); }
-.rs-income__columns small { color: var(--text-lo); font-size: .11rem; }
-.rs-income__columns b { color: var(--gold-2); font-size: .16rem; }
+.rs-income__columns small { color: var(--text-lo); font-size: max(.11rem, 14px); }
+.rs-income__columns b { color: var(--gold-2); font-size: max(.16rem, 14px); }
 .rs-income__streak { display: grid; grid-template-columns: .32rem minmax(0,1fr) auto; align-items: center; gap: .07rem; padding: .055rem; border: 1px solid var(--line-2); background: rgba(5,9,8,.54); }
 .rs-income__streak-mark { display: grid; place-items: center; width: .28rem; height: .32rem; color: var(--amber); border: 1px solid currentColor; clip-path: polygon(0 0,100% 0,100% 82%,82% 100%,0 100%); }
 .rs-income__streak-mark svg { width: .17rem; height: .17rem; fill: currentColor; }
 .rs-income__streak.is-loss .rs-income__streak-mark { color: var(--ice); }
 .rs-income__streak > div { min-width: 0; }
-.rs-income__streak strong { color: var(--text-md); font-size: .12rem; }
-.rs-income__streak > span { color: var(--gold-2); font-size: .13rem; }
+.rs-income__streak strong { color: var(--text-md); font-size: max(.12rem, 14px); }
+.rs-income__streak > span { color: var(--gold-2); font-size: max(.13rem, 14px); }
 .rs-income__streak-track { display: flex; flex-wrap: wrap; gap: .025rem; margin-top: .035rem; }
 .rs-income__streak-cell { width: .13rem; height: .1rem; border: 1px solid var(--line-2); background: rgba(5,9,8,.8); }
 .rs-income__streak-cell.is-history-win { border-color: var(--amber); }
 .rs-income__streak-cell.is-history-loss { border-color: var(--ice); }
 .rs-income__streak.is-win .rs-income__streak-cell.is-filled { border-color: var(--amber); background: rgba(246,163,41,.35); }
 .rs-income__streak.is-loss .rs-income__streak-cell.is-filled { border-color: var(--ice); background: rgba(159,212,255,.3); }
-.rs-income__estimate { color: var(--text-lo); font-size: .11rem; line-height: 1.4; }
+.rs-income__estimate { color: var(--text-lo); font-size: max(.11rem, 14px); line-height: 1.4; }
 
 .rs-settlement { border-top: 2px solid var(--line-2); }
 .rs-settlement.is-win { --rs-settle: var(--mint-400); }
 .rs-settlement.is-loss { --rs-settle: var(--red); }
 .rs-settlement__banner { display: flex; align-items: center; justify-content: space-between; gap: .08rem; padding: .09rem .11rem; color: var(--rs-settle); border: 1px solid var(--rs-settle); border-left-width: 3px; background: rgba(8,13,11,.82); }
-.rs-settlement__banner b { font-size: .2rem; letter-spacing: .04em; }
-.rs-settlement__banner span { color: var(--text-lo); font-size: .12rem; }
+.rs-settlement__banner b { font-size: max(.2rem, 14px); letter-spacing: .04em; }
+.rs-settlement__banner span { color: var(--text-lo); font-size: max(.12rem, 14px); }
 .rs-settlement__body { display: grid; gap: .09rem; padding-top: .1rem; }
-.rs-settlement__loss { display: grid; grid-template-columns: .28rem 1fr auto; align-items: center; gap: .06rem; color: var(--text-lo); font-size: .13rem; }
-.rs-settlement__life-mark { color: var(--red); font-size: .2rem; line-height: 1; }
-.rs-settlement__loss b { color: var(--red); font-size: .18rem; }
+.rs-settlement__loss { display: grid; grid-template-columns: .28rem 1fr auto; align-items: center; gap: .06rem; color: var(--text-lo); font-size: max(.13rem, 14px); }
+.rs-settlement__life-mark { color: var(--red); font-size: max(.2rem, 14px); line-height: 1; }
+.rs-settlement__loss b { color: var(--red); font-size: max(.18rem, 14px); }
 .rs-settlement__income { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: .04rem; }
 .rs-settlement__income-cell { display: grid; gap: .025rem; min-width: 0; padding: .065rem .045rem; border: 1px solid var(--line); border-top: 2px solid var(--gold-2); background: rgba(8,13,11,.62); }
-.rs-settlement__income-cell small { color: var(--text-lo); font-size: .11rem; }
-.rs-settlement__income-cell b { display: flex; align-items: center; gap: .035rem; color: var(--gold-2); font-size: .16rem; }
+.rs-settlement__income-cell small { color: var(--text-lo); font-size: max(.11rem, 14px); }
+.rs-settlement__income-cell b { display: flex; align-items: center; gap: .035rem; color: var(--gold-2); font-size: max(.16rem, 14px); }
 .rs-settlement__totals { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .06rem; }
-.rs-settlement__totals > span { display: grid; grid-template-columns: .22rem auto 1fr; align-items: center; gap: .04rem; padding: .06rem; color: var(--text-lo); border: 1px solid var(--line-2); font-size: .12rem; }
-.rs-settlement__totals > span > b:last-of-type { justify-self: end; color: var(--text-hi); font-size: .15rem; }
-.rs-settlement__totals small { grid-column: 2 / -1; justify-self: end; color: var(--text-lo); font-size: .1rem; }
+.rs-settlement__totals > span { display: grid; grid-template-columns: .22rem auto 1fr; align-items: center; gap: .04rem; padding: .06rem; color: var(--text-lo); border: 1px solid var(--line-2); font-size: max(.12rem, 14px); }
+.rs-settlement__totals > span > b:last-of-type { justify-self: end; color: var(--text-hi); font-size: max(.15rem, 14px); }
+.rs-settlement__totals small { grid-column: 2 / -1; justify-self: end; color: var(--text-lo); font-size: max(.1rem, 14px); }
 .rs-settlement__actions { display: flex; flex-wrap: wrap; gap: .05rem; }
 .rs-settlement__report { border-top: 1px solid var(--line); padding-top: .06rem; }
-.rs-settlement__report > summary { color: var(--mint-400); font-size: .13rem; cursor: pointer; }
-.rs-settlement__empty { display: grid; gap: .03rem; padding: .1rem; color: var(--text-lo); font-size: .13rem; }
+.rs-settlement__report > summary { color: var(--mint-400); font-size: max(.13rem, 14px); cursor: pointer; }
+.rs-settlement__empty { display: grid; gap: .03rem; padding: .1rem; color: var(--text-lo); font-size: max(.13rem, 14px); }
 .rs-settlement__empty p { margin: 0; }
 
 .rs-inventory__select,
 .rs-inventory__combine,
 .rs-inventory__actions .lo-select { display: none !important; }
 .rs-inventory__card.is-drop-target { border-color: var(--gold-2); border-left-color: var(--gold); background: rgba(68,49,20,.5); }
-.rs-inventory__hint { margin-right: auto; color: var(--text-lo); font-size: .1rem; }
+.rs-inventory__hint { margin-right: auto; color: var(--text-lo); font-size: max(.1rem, 14px); }
 .rs-inventory__preview { display: grid; gap: .035rem; padding: .055rem; border: 1px solid var(--mint-600); background: rgba(7,29,24,.8); }
 .rs-inventory__preview > span,
 .rs-inventory__recipe > span { display: flex; align-items: center; flex-wrap: wrap; gap: .04rem; }
-.rs-inventory__preview small { color: var(--mint-400); font-size: .11rem; }
+.rs-inventory__preview small { color: var(--mint-400); font-size: max(.11rem, 14px); }
 .rs-inventory__preview.is-rejected { border-color: var(--red); background: rgba(47,14,13,.7); }
 .rs-inventory__preview.is-rejected small { color: var(--red); }
-.rs-inventory__recipes { border-top: 1px solid var(--line); padding-top: .08rem; color: var(--text-md); font-size: .14rem; }
+.rs-inventory__recipes { border-top: 1px solid var(--line); padding-top: .08rem; color: var(--text-md); font-size: max(.14rem, 14px); }
 .rs-inventory__recipes summary { color: var(--mint-400); cursor: pointer; }
 .rs-inventory__recipe-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,2.3rem),1fr)); gap: .05rem; padding-top: .07rem; }
 .rs-inventory__recipe { display: grid; gap: .035rem; min-width: 0; padding: .055rem; color: var(--text-hi); text-align: left; border: 1px solid var(--line-2); border-left: 2px solid var(--mint-700); background: rgba(7,12,10,.76); cursor: pointer; }
 .rs-inventory__recipe:disabled { opacity: .55; cursor: default; }
 .rs-inventory__recipe > span > span { display: grid; justify-items: center; gap: .015rem; min-width: .43rem; }
-.rs-inventory__recipe b { font-size: .1rem; }
-.rs-inventory__recipe small { color: var(--text-lo); font-size: .1rem; }
+.rs-inventory__recipe b { font-size: max(.1rem, 14px); }
+.rs-inventory__recipe small { color: var(--text-lo); font-size: max(.1rem, 14px); }
 .rs-detail__levels { display: flex; flex-direction: column; align-items: stretch; gap: .06rem; overflow: visible; }
 .rs-detail__level { width: 100%; flex: none; align-items: flex-start; gap: .08rem; padding: .07rem; cursor: default; }
 .rs-detail__level.is-current { outline: 1px solid var(--gold-2); outline-offset: 1px; }
-.rs-detail__threshold { align-self: start; padding: .025rem .06rem; color: var(--gold-2); border: 1px solid var(--gold); background: rgba(102,72,26,.42); font-size: .16rem; }
+.rs-detail__threshold { align-self: start; padding: .025rem .06rem; color: var(--gold-2); border: 1px solid var(--gold); background: rgba(102,72,26,.42); font-size: max(.16rem, 14px); }
 .rs-detail__tier-copy { display: grid; gap: .025rem; }
-.rs-detail__tier-copy small { color: var(--text-lo); font-size: .11rem; }
-.rs-detail__tier-copy strong { color: var(--text-md); font-size: .13rem; font-weight: 500; line-height: 1.4; }
+.rs-detail__tier-copy small { color: var(--text-lo); font-size: max(.11rem, 14px); }
+.rs-detail__tier-copy strong { color: var(--text-md); font-size: max(.13rem, 14px); font-weight: 500; line-height: 1.4; }
 .rs-detail__recipe-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,2.2rem),1fr)); gap: .05rem; }
 .rs-detail__recipe-grid .lo-card { display: grid; gap: .04rem; width: 100%; min-width: 0; padding: .07rem; color: var(--text-hi); text-align: left; border: 1px solid var(--line-2); background: rgba(7,12,10,.76); }
 .rs-detail__recipe-grid .lo-card:disabled { opacity: .62; }
 .rs-detail__recipe-flow { display: flex; align-items: center; flex-wrap: wrap; gap: .045rem; }
 .rs-detail__recipe-flow > span { display: grid; justify-items: center; gap: .02rem; min-width: .45rem; }
-.rs-detail__recipe-flow b { font-size: .1rem; }
-.rs-detail__recipe-grid .lo-card > small { color: var(--mint-400); font-size: .11rem; }
+.rs-detail__recipe-flow b { font-size: max(.1rem, 14px); }
+.rs-detail__recipe-grid .lo-card > small { color: var(--mint-400); font-size: max(.11rem, 14px); }
 
 @media (max-width: 440px) {
  .rs-income__columns,

@@ -13,8 +13,10 @@ import { createResonanceLive } from '../../server/modes/resonance/live.js';
 import { VirtualScheduler } from '../../server/match/scheduler.js';
 import { syntheticResult } from '../../server/match/fields.js';
 import { createBattleFromSpec, compactResult, resonanceResultExtras, fitResult, battleProgress } from '../../server/sim/spec.js';
-import { PROTOCOL_VERSION } from '../../shared/constants.js';
+import { ERR, PROTOCOL_VERSION } from '../../shared/constants.js';
 import { summarizeResonanceResult } from '../../shared/resonance/result-summary.js';
+import { createBattleRunner } from '../../public/js/battle/runner.js';
+import * as simSpec from '../../server/sim/spec.js';
 
 const NATIVE_DATA = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native';
 const NATURAL_CAMPAIGN_REPORT='E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/resonance/native-natural-campaign.json';
@@ -167,36 +169,147 @@ test('native ResonanceMatch runs a real NORMAL Battle before one session settlem
     assert.equal(field.spec.kind, field.kind);
     assert.equal(field.spec.stageId, match.stageId);
     assert.ok(field.spec.spawns.length > 0);
-    const before = { gold: match.state.gold, hp: match.state.hp, round: match.state.round, history: match.state.history.length, revision: match.state.revision };
-
-    const battle = createBattleFromSpec(field.spec, data, { recordEvents: false, quiet: true });
-    battle.start();
-    battle.step();
-    assert.ok(battle.time > 0, 'native Runner must advance the constructed spec');
-    assert.equal(match.state.gold, before.gold);
-    assert.equal(match.state.hp, before.hp);
-    assert.equal(match.state.round, before.round);
-    assert.equal(match.state.history.length, before.history);
-
-    const deadline = match.deadline;
+    assert.deepEqual(match.publicView().resonanceCombat, { speed: 2, finishing: false, available: true });
+    const battleId = field.battleId;
+    scheduler.advance(2_000);
+    const elapsedAt2x = match._fieldElapsed(field);
+    assert.equal(elapsedAt2x, 4);
+    assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', speed: 4 }).ok, true);
+    assert.equal(field.battleId, battleId, 'speed control must keep the live Native battle ID');
+    assert.equal(match._fieldElapsed(field), elapsedAt2x, 'rate change preserves elapsed game time');
+    assert.ok(messages.some((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 4),
+      'server resends the same battle with its new absolute speed');
+    scheduler.advance(1_000);
+    assert.equal(match._fieldElapsed(field), elapsedAt2x + 4, 'four game seconds pass per wall second at 4x');
     assert.equal(match.handle('resonance', { t: 'g.pause', on: true }).ok, true);
+    const pausedElapsed = match._fieldElapsed(field);
     scheduler.advance(5_000);
-    assert.equal(match.phase, 'COMBAT');
-    assert.equal(match.deadline, deadline);
+    assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', speed: 1 }).ok, true,
+      'owner can change rate while paused without moving the simulation clock');
+    assert.equal(match._fieldElapsed(field), pausedElapsed);
     assert.equal(match.handle('resonance', { t: 'g.pause', on: false }).ok, true);
-
-    let ticks = 1;
-    while (!battle.finished && ticks < 20_000) { battle.step(); ticks++; }
-    assert.equal(battle.finished, true, `NORMAL Battle did not finish after ${ticks} real steps`);
-    assert.equal(battle.errorCount, 0, JSON.stringify(battle.errors?.slice(0, 5) ?? []));
-    const total = field.progress.total;
-    match.handle('resonance', { t: 'b.progress', battleId: field.battleId,
-      gt: battle.time, killed: 0, total, done: false });
-    const rawResult = compactResult(battle.result());
-    const extras = resonanceResultExtras(battle);
-    if (extras) rawResult.resonance = extras;
-    const result = fitResult(rawResult, { battleId: field.battleId });
-    assert.equal(match.handle('resonance', { t: 'b.result', battleId: field.battleId, result }).ok, true);
+    scheduler.advance(1_000);
+    assert.equal(match._fieldElapsed(field), pausedElapsed + 1, 'resume uses the selected 1x rate');
+    field.mode = 'server';
+    assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', speed: 2 }).error, ERR.WRONG_PHASE,
+      'client speed controls reject server-taken-over fields');
+    field.mode = 'client';
+    assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', finish: true }).ok, true);
+    assert.equal(match.gameSpeed, 32);
+    assert.deepEqual(match.publicView().resonanceCombat, { speed: 32, finishing: true, available: true });
+    assert.ok(messages.some((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 32),
+      'natural fast finish remains on the same b.start battle');
+    assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', speed: 2 }).error, ERR.WRONG_PHASE,
+      'speed cannot be switched back after continuous finish begins');
+    assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', finish: true }).ok, true, 'finish is idempotent');
+    await match._sessionWrite;
+    assert.equal(stored.nativeRuntime.speed, 32, 'selected rate persists');
+    assert.equal(stored.nativeRuntime.finishing, true, 'fast-finish state persists');
+    const resumedScheduler = new VirtualScheduler({ instantCombat: false });
+    const resumed = new ResonanceMatch({ sessionId: 'test-native-match-resume', state: stored, catalog, data, store,
+      scheduler: resumedScheduler, send: (_id, msg) => messages.push(msg), broadcast: (msg) => messages.push(msg),
+      timerScale: 0, combatSpeed: 2, log: { info() {}, warn() {}, error() {}, debug() {} } });
+    resumed.start();
+    assert.equal(resumed.gameSpeed, 32, 'restart restores fast-finish rate before rebuilding clocks');
+    assert.ok(messages.some((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 32),
+      'restart resumes the same battle at its persisted rate');
+    resumed.dispose();
+    const before = { gold: match.state.gold, hp: match.state.hp, round: match.state.round, history: match.state.history.length, revision: match.state.revision };
+    const handlers = new Map(), frames = [], sentResults = [];
+    const storeListeners = new Set();
+    let runnerStoreState = { match: { public: { phase: 'COMBAT', paused: false } } };
+    const runnerStore = {
+      get: () => runnerStoreState,
+      patch(key, value) {
+        runnerStoreState = { ...runnerStoreState, [key]: { ...(runnerStoreState[key] ?? {}), ...value } };
+        for (const listener of storeListeners) listener(runnerStoreState);
+      },
+      subscribe(listener) { storeListeners.add(listener); return () => storeListeners.delete(listener); },
+    };
+    let runnerNow = 1_000, battleConstructions = 0;
+    const instrumentedSpec = { ...simSpec, createBattleFromSpec(...args) {
+      battleConstructions++;
+      return simSpec.createBattleFromSpec(...args);
+    } };
+    const runnerNet = {
+      on(type, fn) { if (!handlers.has(type)) handlers.set(type, new Set()); handlers.get(type).add(fn); return () => handlers.get(type)?.delete(fn); },
+      emit(type, message) { for (const fn of handlers.get(type) ?? []) fn({ t: type, ...message }); },
+      send(type, fields) { return match.handle('resonance', { t: type, ...fields }); },
+      request(type, fields) {
+        if (type === 'b.result') sentResults.push({ ...fields });
+        // WebSocket request handling crosses an asynchronous transport boundary.
+        // Keep the native session action real while preventing the fixture from
+        // settling inside Runner's synchronous request() call stack.
+        return Promise.resolve().then(() => match.handle('resonance', { t: type, ...fields })).then((response) => {
+          if (response?.error) throw Object.assign(new Error(response.detail || response.error), { code: response.error });
+          return { t: 'ok' };
+        });
+      },
+    };
+    const runner = createBattleRunner({ net: runnerNet, store: runnerStore, doc: { hidden: false, addEventListener() {} },
+      now: () => runnerNow, raf: (fn) => { frames.push(fn); return frames.length; }, caf() {},
+      setInterval() { return 1; }, clearInterval() {}, loadSim: async () => ({ spec: instrumentedSpec, ds: data }),
+      logger: { info() {}, warn() {}, error() {}, debug() {} } });
+    const flushRunnerMicrotasks = async () => { for (let i = 0; i < 12; i++) await new Promise((resolve) => setImmediate(resolve)); };
+    const advanceRunner = (ms, stepMs = 1000 / 60) => {
+      const end = runnerNow + ms;
+      while (runnerNow < end) {
+        const next = Math.min(end, runnerNow + stepMs), delta = next - runnerNow;
+        runnerNow = next;
+        scheduler.advance(delta);
+        for (const frame of frames.splice(0)) frame(runnerNow);
+      }
+    };
+    const initialStart = messages.find((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 2);
+    assert.ok(initialStart, 'the original Native b.start begins at the default 2x rate');
+    try {
+      runnerNet.emit('b.start', initialStart);
+      await flushRunnerMicrotasks();
+      const runnerEntry = runner._entries.get(battleId);
+      assert.ok(runnerEntry, 'the actual browser Runner constructs the Native spec');
+      const actualBattle = runnerEntry.battle;
+      advanceRunner(500);
+      const at2x = actualBattle.time;
+      assert.ok(at2x >= 0.9 && at2x <= 1.1, `Runner advances one simulated second at 2x: ${at2x}`);
+      const speed4Start = messages.find((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 4);
+      runnerNet.emit('b.start', speed4Start);
+      await flushRunnerMicrotasks();
+      assert.equal(runner._entries.get(battleId).battle, actualBattle, 'same-ID rate update does not reconstruct the Battle');
+      assert.equal(actualBattle.time, at2x, 'same-ID rate reanchor is continuous');
+      advanceRunner(250);
+      assert.ok(Math.abs(actualBattle.time - (at2x + 1)) < 0.1, 'Runner advances at absolute 4x after the same-ID update');
+      assert.equal(match.handle('resonance', { t: 'g.pause', on: true }).ok, true);
+      runnerStore.patch('match', { public: { phase: 'COMBAT', paused: true } });
+      const atPause = actualBattle.time;
+      advanceRunner(5_000);
+      assert.equal(actualBattle.time, atPause, 'Runner freezes its existing simulation while Native pause is active');
+      const speed1Start = messages.find((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 1);
+      runnerNet.emit('b.start', speed1Start);
+      await flushRunnerMicrotasks();
+      assert.equal(actualBattle.time, atPause, 'rate change during pause retains the same frozen simulation tick');
+      assert.equal(match.handle('resonance', { t: 'g.pause', on: false }).ok, true);
+      runnerStore.patch('match', { public: { phase: 'COMBAT', paused: false } });
+      advanceRunner(500);
+      assert.ok(Math.abs(actualBattle.time - (atPause + 0.5)) < 0.1, 'Runner resumes continuously at 1x');
+      const fastStart = messages.find((msg) => msg.t === 'b.start' && msg.battleId === battleId && msg.speed === 32);
+      runnerNet.emit('b.start', fastStart);
+      await flushRunnerMicrotasks();
+      assert.equal(runner._entries.get(battleId).battle, actualBattle, 'fast finish keeps the same Battle object');
+      const preFinishTick = actualBattle.tickCount;
+      assert.ok(!actualBattle.finished, 'fast finish begins before the natural Battle end');
+      for (let i = 0; i < 12 && !runnerEntry.done; i++) { advanceRunner(500, 1000 / 60); await flushRunnerMicrotasks(); }
+      assert.equal(runnerEntry.done, true, '32x advances the live simulation to its natural result');
+      assert.equal(actualBattle.finished, true);
+      assert.equal(actualBattle.errorCount, 0, JSON.stringify(actualBattle.errors?.slice(0, 5) ?? []));
+      assert.ok(actualBattle.tickCount > preFinishTick, 'fast finish advances ticks instead of forcing or replacing the Battle');
+      assert.equal(battleConstructions, 1, 'all rate changes reuse the single constructed Native Battle');
+      assert.equal(sentResults.length, 1, 'natural finish sends exactly one b.result');
+      assert.notEqual(sentResults[0].result.reason, 'forced', 'fast finish does not force an outcome');
+    } finally {
+      runner.dispose();
+    }
+    const result = sentResults[0]?.result;
+    assert.ok(result, 'the actual Runner delivered a Native result');
     assert.equal(match.state.gold, before.gold, 'client report must not settle synchronously');
     assert.equal(field.done, true, 'native Match must accept the real completed Runner result');
     match._afterCombat();
@@ -506,7 +619,7 @@ test('native Match routes campaign NORMAL, FINAL_ASSAULT, HIDDEN_CORE, and FUNNY
       usedCells.add(position[0]);
     }
     const store = { async exclusive(_id, task) { return task(); }, async saveSession() {}, deactivate() {} };
-    let scheduler = new VirtualScheduler({ instantCombat: false });
+    let scheduler = new VirtualScheduler({ instantCombat: target.kind === 'normal' });
     let match = new ResonanceMatch({ sessionId: `test-phase-${target.difficulty}-${target.round}`, state: preparedState,
       catalog, data, store, scheduler, send() {}, broadcast() {}, timerScale: target.kind === 'normal' ? 0 : 1, combatSpeed: 2,
       log: { info() {}, warn() {}, error() {}, debug() {} } });
@@ -538,6 +651,21 @@ test('native Match routes campaign NORMAL, FINAL_ASSAULT, HIDDEN_CORE, and FUNNY
           assert.ok(Number.isFinite(match.teamLp), 'fresh Hidden Core initializes a finite team LP pool');
           assert.equal(match.teamLp, match.state.hp, 'fresh Hidden Core starts from settled campaign HP');
         }
+        scheduler.advance(3_000);
+        const bossElapsedBeforeRateChange = (match._clockNow() - match._bossStartAt) / 1000 * match.gameSpeed;
+        const deadlineGameRemaining = match.deadline ? (match.deadline - match._clockNow()) / 1000 * match.gameSpeed : null;
+        const overtimeGameRemaining = match.overtimeAt ? (match.overtimeAt - match._clockNow()) / 1000 * match.gameSpeed : null;
+        const bossDamageBudget = match._bossDmgBudget(field), lpBudget = match._bossLpBudget(field);
+        assert.equal(match.handle('resonance', { t: 'g.resonanceCombat', speed: 4 }).ok, true,
+          `${target.kind} permits the live owner to change Native clock rate`);
+        assert.ok(Math.abs((match._clockNow() - match._bossStartAt) / 1000 * match.gameSpeed - bossElapsedBeforeRateChange) < 0.01,
+          `${target.kind} preserves boss elapsed game-time`);
+        if (deadlineGameRemaining != null) assert.ok(Math.abs((match.deadline - match._clockNow()) / 1000 * match.gameSpeed - deadlineGameRemaining) < 0.01,
+          `${target.kind} rescales the Native deadline without changing its remaining game-time`);
+        if (overtimeGameRemaining != null) assert.ok(Math.abs((match.overtimeAt - match._clockNow()) / 1000 * match.gameSpeed - overtimeGameRemaining) < 0.01,
+          `${target.kind} rescales the overtime clock without changing its remaining game-time`);
+        assert.equal(match._bossDmgBudget(field), bossDamageBudget, `${target.kind} damage budget stays continuous across rate changes`);
+        assert.equal(match._bossLpBudget(field), lpBudget, `${target.kind} team-LP budget stays continuous across rate changes`);
         const savedBattleId = field.battleId, savedPoolHp = match.bossPool.hp, savedPoolMax = match.bossPool.maxHp;
         const savedTeamLp = match.teamLp;
         assert.equal(match.handle('resonance', { t: 'g.pause', on: true }).ok, true, 'pause the live Native boss field before process restart');

@@ -472,6 +472,9 @@ export const C2S = {
   'g.choice': { idx: (v) => isInt(v, 0, 5), choiceId: isId, $optional: ['choiceId'] },
   'g.ready': { ready: isBool },
   'g.resonance': { action: isResonanceAction },
+  // Resonance Native combat controls are an isolated single-player extension. A speed selection and a natural
+  // fast-finish request are mutually exclusive; ordinary Native modes never send this message.
+  'g.resonanceCombat': { speed: (v) => [1, 2, 4].includes(v), finish: (v) => v === true, $optional: ['speed', 'finish'] },
   'g.emote': { id: (v) => EMOTES.includes(v) },
   // playerId: the player tapped in the team panel (a 联防 / boss pair field shows two) — what an eliminated viewer or a
   // spectator seat follows from then on (Match.watchPref; community report of 2026-10-06, item 56)
@@ -527,6 +530,10 @@ export function validateC2S(msg) {
   if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return 'not an object';
   const spec = typeof msg.t === 'string' && Object.hasOwn(C2S, msg.t) ? C2S[msg.t] : null;
   if (!spec) return `unknown type ${String(msg.t).slice(0, 32)}`;
+  if (msg.t === 'g.resonanceCombat'
+    && !((msg.speed !== undefined && msg.finish === undefined) || (msg.finish === true && msg.speed === undefined))) {
+    return 'bad resonance combat control';
+  }
   if (msg.rid != null && !isInt(msg.rid, 0, 2 ** 31)) return 'bad rid';
   const optional = spec.$optional || [];
   for (const [k, check] of Object.entries(spec)) {

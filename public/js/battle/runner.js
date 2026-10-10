@@ -604,6 +604,14 @@ export function createBattleRunner(deps) {
       const was = existing.authoritative;
       existing.authoritative = !!msg.authoritative && !existing.resultSent;
       existing.watch = !!msg.watch;
+      if (!existing.resultSent && Number.isFinite(speed) && speed > 0 && existing.speed !== speed) {
+        // Resonance speed updates are resent as b.start for the same battleId. Keep the existing Battle instance and
+        // anchor its current game-time at the new absolute rate; rebuilding here would duplicate a live simulation.
+        const currentGameTime = Number(existing.battle.time) || ((existing.battle.tickCount || 0) * TICK);
+        existing.speed = speed;
+        existing.t0 = clock() - (currentGameTime / speed) * 1000;
+        existing.lastProgressAt = -Infinity;
+      }
       // the server still waits for this finished battle's result (lost with the socket, or its answer was): again
       if (msg.authoritative && existing.resultSent) deliver(existing);
       if (existing.authoritative && !was) {

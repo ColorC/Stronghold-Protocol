@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
+import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -17,6 +17,16 @@ test('prepare mode validates paths without launching a browser or service', () =
   assert.equal(payload.serverMount.publicDir.replaceAll('\\', '/'), `${config().source.replaceAll('\\', '/')}/public`);
   assert.equal(payload.serverMount.installDirReadOnlyFallback, payload.canonicalInstallDir);
   assert.equal(Object.keys(payload.screenshots).length, 10);
+  assert.equal(Object.keys(payload.supplementalScreenshots).length, 4);
+  const tagged = spawnSync(process.execPath, [tool, '--validate-args', '--receipt-tag', 'ui-alignment'], { encoding: 'utf8', timeout: 10_000 });
+  assert.equal(tagged.status, 0, tagged.stderr);
+  const taggedPayload=JSON.parse(tagged.stdout);
+  assert.match(taggedPayload.receipt.replaceAll('\\','/'),/native-live-ui-receipt-ui-alignment\.json$/);
+  assert.ok(Object.values(taggedPayload.screenshots).every(file=>file.includes('native-live-ui-alignment-')));
+  assert.equal(artifactPaths().receipt,config().receipt);
+  assert.notEqual(artifactPaths('ui-alignment').receipt,artifactPaths().receipt,'alignment proof must not overwrite the previous receipt');
+  assert.ok(Object.values(artifactPaths('ui-alignment').screenshots).every((file,index)=>!Object.values(artifactPaths().screenshots).includes(file)),
+    'alignment screenshots must have paths distinct from previous proof');
   const canonical = spawnSync(process.execPath, [tool, '--validate-args', '--source-root', config().canonicalInstallDir], { encoding: 'utf8', timeout: 10_000 });
   assert.equal(canonical.status, 0, canonical.stderr);
   const canonicalPayload = JSON.parse(canonical.stdout);
@@ -33,9 +43,11 @@ test('only creating an isolated session may use POST; REST gameplay mutations st
 });
 
 test('execution requires an explicit one-shot flag and acceptance gaps remain visible', () => {
-  assert.deepEqual(parseArgs([]), { execute: false, sourceRoot: config().source });
-  assert.deepEqual(parseArgs(['--validate']), { execute: false, sourceRoot: config().source });
-  assert.deepEqual(parseArgs(['--execute']), { execute: true, sourceRoot: config().source });
+  assert.deepEqual(parseArgs([]), { execute: false, sourceRoot: config().source, receiptTag: '' });
+  assert.deepEqual(parseArgs(['--validate']), { execute: false, sourceRoot: config().source, receiptTag: '' });
+  assert.deepEqual(parseArgs(['--execute']), { execute: true, sourceRoot: config().source, receiptTag: '' });
+  assert.equal(parseArgs(['--receipt-tag','ui-alignment']).receiptTag,'ui-alignment');
+  assert.throws(()=>parseArgs(['--receipt-tag','UI Alignment']),/short lowercase tag/);
   assert.equal(parseArgs(['--execute', '--source-root', config().canonicalInstallDir]).sourceRoot.replaceAll('\\', '/'), config().canonicalInstallDir.replaceAll('\\', '/'));
   assert.throws(() => parseArgs(['--execute', '--source-root', 'E:/WindowsWorkspace']), /canonical root or registered Resonance worktree/);
   assert.throws(() => parseArgs(['--resume-session', 'abc']), /no browser or server started/);
@@ -43,11 +55,12 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
   const passed = Object.fromEntries(REQUIRED_CHECKS.map((key) => [key, { status: 'passed' }]));
   assert.deepEqual(missingChecks(passed), []);
   assert.equal(screenshotCount(config().screenshots), 10);
+  assert.equal(screenshotCount({...config().screenshots,...config().supplementalScreenshots}),14);
   for (const check of ['equipment-holder-combine', 'inventory-combine', 'equipment-detail-unequip', 'equipment-detail-recycle', 'native-detail-deep-link', 'mobile-shop-panel-safe']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must include ${check}`);
   }
   assert.ok(REQUIRED_CHECKS.includes('native-fullscreen-open-link'), 'live acceptance must verify the independent current-session full-screen link');
-  for (const check of ['native-entrypoints-unique', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live']) {
+  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
   }
 });

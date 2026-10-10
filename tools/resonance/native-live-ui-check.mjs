@@ -22,36 +22,49 @@ const SHOTS = Object.fromEntries(SHOT_NAMES.map((name) => [name, path.join(OUT, 
 const SUPPLEMENTAL_SHOTS = {
   '11-reward-progress': path.join(OUT, 'native-live-11-reward-progress.jpg'),
   '12-reward-tiers': path.join(OUT, 'native-live-12-reward-tiers.jpg'),
+  '13-codex': path.join(OUT, 'native-live-13-codex.jpg'),
+  '14-combat-controls': path.join(OUT, 'native-live-14-combat-controls.jpg'),
 };
 export const REQUIRED_CHECKS = [
   'title-to-difficulty', 'native-info-prep', 'three-real-deployments', 'shop-real-purchase', 'details-open-while-shop-usable',
-  'native-entrypoints-unique', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure',
-  'native-remaining-controls-live',
+  'native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure',
+  'native-remaining-controls-live', 'native-visible-text-audit-14px',
   'mobile-shop-panel-safe',
   'equipment-holder-combine', 'inventory-combine', 'whole-card-cost-colors', 'fixed-skill-icons-loaded', 'ground-tier-ring',
   'all-pact-tier-icons-loaded-and-active', 'emissary-exact-count-2-3', 'chem-market-28-effects-readable', 'native-w-deploy-withdraw', 'native-e-sell',
   'xp-interest-graphics', 'refresh-lock', 'combat-ledger-immutable', 'combat-progress-two-seconds',
-  'pause-freezes-and-resume-progresses', 'reload-restores-same-battle', 'one-real-settlement', 'choice-g-resonance-roundtrip',
+  'pause-freezes-and-resume-progresses', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'choice-g-resonance-roundtrip',
   'boss-hidden-fixture-result-lineup-gear-chart', 'scrap-temporary-gear-in-combat', 'equipment-detail-unequip',
   'equipment-detail-recycle', 'native-detail-deep-link', 'difficulty-default-copy', 'default-copy-is-product-language',
   'native-fullscreen-open-link',
 ];
 
 export function parseArgs(args) {
-  let execute = false, sourceRoot = SOURCE;
+  let execute = false, sourceRoot = SOURCE, receiptTag = '';
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
     if (arg === '--execute') { execute = true; continue; }
     if (arg === '--validate-args' || arg === '--validate') continue;
+    if (arg === '--receipt-tag' && args[index + 1]) {
+      receiptTag = String(args[++index]);
+      if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(receiptTag)) throw new Error('--receipt-tag must be a short lowercase tag');
+      continue;
+    }
     if (arg === '--source-root' && args[index + 1]) {
       sourceRoot = path.resolve(args[++index]);
       const allowed = [SOURCE, ROOT].map(value => path.resolve(value).toLowerCase());
       if (!allowed.includes(sourceRoot.toLowerCase())) throw new Error('--source-root must be the canonical root or registered Resonance worktree');
       continue;
     }
-    throw new Error('usage: native-live-ui-check.mjs [--validate-args|--execute] [--source-root <canonical-root|registered-worktree>]; no browser or server started');
+    throw new Error('usage: native-live-ui-check.mjs [--validate-args|--execute] [--source-root <canonical-root|registered-worktree>] [--receipt-tag <lowercase-tag>]; no browser or server started');
   }
-  return { execute, sourceRoot };
+  return { execute, sourceRoot, receiptTag };
+}
+export function artifactPaths(receiptTag = '') {
+  const suffix = receiptTag ? `-${receiptTag}` : '';
+  const shots = Object.fromEntries(SHOT_NAMES.map(name => [name, path.join(OUT, `native-live${suffix}-${name}.jpg`)]));
+  const supplementalScreenshots = Object.fromEntries(Object.keys(SUPPLEMENTAL_SHOTS).map(name => [name, path.join(OUT, `native-live${suffix}-${name}.jpg`)]));
+  return { receipt: receiptTag ? path.join(OUT, `native-live-ui-receipt-${receiptTag}.json`) : RECEIPT, screenshots: shots, supplementalScreenshots };
 }
 export function isAllowedHttpRequest(method, pathname) {
   const m = String(method).toUpperCase();
@@ -321,9 +334,10 @@ export async function createIsolatedNativeFixtures({ directory = SESSION_DIR, se
     finalExpected: finalFixture.expected, chemItems: chemRows.map(({ id, name, description }) => ({ id, name, description })),
     chemItemCount: chemRows.length, hiddenRound: hiddenState.round };
 }
-export function config(sourceRoot = SOURCE) {
+export function config(sourceRoot = SOURCE, receiptTag = '') {
+  const artifacts = artifactPaths(receiptTag);
   return { source: sourceRoot, canonicalInstallDir: ROOT, dataDir: DATA, sessionDirectory: SESSION_DIR, browserProfile: PROFILE,
-    port: PORT, deadlineMs: DEADLINE_MS, receipt: RECEIPT, log: LOG, screenshots: SHOTS, supplementalScreenshots: SUPPLEMENTAL_SHOTS,
+    port: PORT, deadlineMs: DEADLINE_MS, receipt: artifacts.receipt, receiptTag, log: LOG, screenshots: artifacts.screenshots, supplementalScreenshots: artifacts.supplementalScreenshots,
     serverMount: { publicDir: path.join(sourceRoot, 'public'), installDirReadOnlyFallback: ROOT }, browserStarted: false };
 }
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -521,6 +535,7 @@ export async function attachWsCapture(page, attempt, onSent = null) {
         specStageId: message.spec?.stageId ?? null, specRound: message.spec?.round ?? null,
         error: message.error || message.code || null, detail: message.detail || null, rid: message.rid ?? null,
         ready: message.ready ?? null, paused: typeof message.on === 'boolean' ? message.on : (typeof message.paused === 'boolean' ? message.paused : null),
+        speed: [1,2,4,32].includes(Number(message.speed)) ? Number(message.speed) : null, finish: message.finish === true,
         gt: Number.isFinite(message.gt) ? message.gt : null, elapsed: Number.isFinite(message.elapsed) ? message.elapsed : null,
         setupRevision: message.setupRevision ?? null };
       if (direction === 'sent' && message.t === 'b.result') {
@@ -602,18 +617,20 @@ function recipePair(state, catalog) {
 async function run() {
   const options = parseArgs(process.argv.slice(2));
   const sourceRoot = options.sourceRoot;
-  if (!options.execute) { process.stdout.write(`${JSON.stringify({ valid: true, ...config(sourceRoot), mode: 'prepare-only' })}\n`); return; }
+  const artifacts = artifactPaths(options.receiptTag);
+  const receiptPath = artifacts.receipt, screenshots = artifacts.screenshots, supplementalScreenshots = artifacts.supplementalScreenshots;
+  if (!options.execute) { process.stdout.write(`${JSON.stringify({ valid: true, ...config(sourceRoot, options.receiptTag), mode: 'prepare-only' })}\n`); return; }
   assert(existsSync(path.join(sourceRoot, 'public/resonance.html')), `${sourceRoot} public/resonance.html is missing`);
   assert(existsSync(path.join(ROOT, 'public')), 'canonical shared public fallback is missing');
   assert(existsSync(DATA), 'canonical Resonance data directory is missing');
   await mkdir(OUT, { recursive: true }); await mkdir(SESSION_DIR, { recursive: true }); await mkdir(path.dirname(LOG), { recursive: true });
   // Use the one fixed canonical profile; create this exact path once if absent, never a retry profile.
   await mkdir(PROFILE, { recursive: true });
-  const attempt = { startedAt: now(), source: sourceRoot, sourceRevision: execFileSync('git',['-C',sourceRoot,'rev-parse','HEAD'],{encoding:'utf8',windowsHide:true,timeout:10_000}).trim(), installDir: ROOT, sessionDirectory: SESSION_DIR, port: PORT,
+  const attempt = { startedAt: now(), receiptTag: options.receiptTag || null, source: sourceRoot, sourceRevision: execFileSync('git',['-C',sourceRoot,'rev-parse','HEAD'],{encoding:'utf8',windowsHide:true,timeout:10_000}).trim(), installDir: ROOT, sessionDirectory: SESSION_DIR, port: PORT,
     status: 'running', checks: {}, screenshots: {}, ws: { sent: [], received: [] }, failures: [], fixtures: { fifthChoice: 'not-run', bossHidden: 'not-run' } };
-  const receipt = existsSync(RECEIPT) ? JSON.parse(await readFile(RECEIPT, 'utf8')) : { checker: 'native-live-ui-check', attempts: [] };
-  assert(receipt.checker === 'native-live-ui-check' && Array.isArray(receipt.attempts), `existing receipt has incompatible shape: ${RECEIPT}`);
-  for (const file of [...Object.values(SHOTS), ...Object.values(SUPPLEMENTAL_SHOTS)]) if (existsSync(file)) {
+  const receipt = existsSync(receiptPath) ? JSON.parse(await readFile(receiptPath, 'utf8')) : { checker: 'native-live-ui-check', receiptTag: options.receiptTag || null, attempts: [] };
+  assert(receipt.checker === 'native-live-ui-check' && Array.isArray(receipt.attempts), `existing receipt has incompatible shape: ${receiptPath}`);
+  for (const file of [...Object.values(screenshots), ...Object.values(supplementalScreenshots)]) if (existsSync(file)) {
     assert(screenshotOverwriteOwner(receipt, file), `refusing to overwrite screenshot not owned by this checker's receipt: ${file}`);
     const info = await lstat(file);
     assert(info.isFile() && !info.isSymbolicLink() && info.nlink === 1, `refusing to overwrite non-regular, linked, or reparse screenshot: ${file}`);
@@ -622,15 +639,31 @@ async function run() {
   const log = [`${attempt.startedAt} start native live UI E2E`, `source=${sourceRoot}`, `installDir=${ROOT}`, `publicDir=${path.join(sourceRoot, 'public')}`, `data=${DATA}`, `sessions=${SESSION_DIR}`, `port=${PORT}`];
   let browser, server, deadline, timedOut = false, page;
   const errors = [], badResponses = [], forbiddenRequests = [];
-  const save = async () => writeFile(RECEIPT, `${JSON.stringify(receipt, null, 2)}\n`);
+  const save = async () => writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
   const check = (name, passed, evidence = null) => { attempt.checks[name] = { status: passed ? 'passed' : 'failed', evidence }; if (!passed) throw new Error(`${name}: ${JSON.stringify(evidence)}`); };
   const capture = async (name) => {
-    const file = SHOTS[name] || SUPPLEMENTAL_SHOTS[name]; assert(file, `capture slot is unknown: ${name}`);
+    const file = screenshots[name] || supplementalScreenshots[name]; assert(file, `capture slot is unknown: ${name}`);
     if (existsSync(file)) {
       assert(screenshotOverwriteOwner(receipt, file), `screenshot is not recorded by an earlier check attempt: ${file}`);
       const info = await lstat(file);
       assert(info.isFile() && !info.isSymbolicLink() && info.nlink === 1, `refusing linked screenshot replacement: ${file}`);
     }
+    const typography = await page.evaluate(() => {
+      const textRows=[];
+      const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+      const hidden=node=>{for(let el=node.parentElement;el&&el!==document.body;el=el.parentElement){const s=getComputedStyle(el);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0||el.getAttribute('aria-hidden')==='true'||el.closest('svg,script,style,noscript'))return true;}return false;};
+      for(let node; (node=walker.nextNode());){const text=(node.nodeValue||'').replace(/\s+/g,' ').trim();if(!text||/^[\p{P}\p{S}\p{Z}]+$/u.test(text)||hidden(node))continue;
+        const range=document.createRange();range.selectNodeContents(node);const rect=[...range.getClientRects()].find(r=>r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight);if(!rect)continue;
+        const el=node.parentElement,style=getComputedStyle(el),size=parseFloat(style.fontSize);if(!Number.isFinite(size))continue;
+        const cls=typeof el.className==='string'?el.className:'';
+        textRows.push({text:text.slice(0,90),font:size,className:cls.slice(0,100),path:[el.tagName.toLowerCase(),...Array.from(el.classList||[]).slice(0,3)].join('.'),rect:{x:Math.round(rect.x),y:Math.round(rect.y),w:Math.round(rect.width),h:Math.round(rect.height)},body:/dtext|detail__body|income__explanation|income__summary/i.test(cls)});
+      }
+      const pseudo=[];
+      for(const el of document.querySelectorAll('kbd,[data-badge],.rs-unit-items [data-badge]'))for(const pseudoType of ['::before','::after']){const s=getComputedStyle(el,pseudoType),content=s.content;if(content&&content!=='none'&&content!=='normal'&&s.display!=='none'&&parseFloat(s.fontSize)<14)pseudo.push({text:content,font:parseFloat(s.fontSize),className:String(el.className||''),pseudo:pseudoType});}
+      const sheets=[...new Set([...document.styleSheets].map(sheet=>sheet.href).filter(Boolean))];
+      return {viewport:{width:innerWidth,height:innerHeight},texts:textRows.slice(0,1000),small:textRows.filter(row=>row.font<14).slice(0,100),smallBody:textRows.filter(row=>row.body&&row.font<16).slice(0,100),smallPseudo:pseudo,sheets};
+    });
+    attempt.typographySnapshots??={};attempt.typographySnapshots[name]=typography;
     await page.screenshot({ path: file, type: 'jpeg', quality: 88, fullPage: true }); attempt.screenshots[name] = file; await save();
     for (const previous of receipt.attempts) {
       if (previous === attempt) continue;
@@ -1028,6 +1061,7 @@ async function run() {
         corner: [...document.querySelectorAll('.gm__corner > *')].filter(visible).map(node=>({tag:node.tagName,cls:node.className,label:node.getAttribute('aria-label')})),
         legacyActions: count('.rs-native-actions'), legacyGuide: count('.gm__corner .gm__help,.gm__corner [aria-label="玩法说明"]'),
         settings: count('.gm__corner button[aria-label="设置"]'), fullscreen: count('.gm__corner a.rs-fullscreen-small[aria-label="全屏打开"]'),
+        codex: count('.rs-native-match button.rs-native-codex-button[aria-label="战术图鉴"]'),
         pact: count('.gm__bonds .rs-native-pact-open[aria-label="盟约与效果"]'),
         income: count('.rs-funds .funds__hex[aria-label="金币与收入"]'),
         info: count('[data-testid="check-player"]'),
@@ -1037,10 +1071,47 @@ async function run() {
     });
     const expectedCorner = entrypointEvidence.corner.map(row=>row.label).sort();
     check('native-entrypoints-unique', entrypointEvidence.legacyActions===0 && entrypointEvidence.legacyGuide===0
-      && entrypointEvidence.settings===1 && entrypointEvidence.fullscreen===1 && entrypointEvidence.pact===1
+      && entrypointEvidence.settings===1 && entrypointEvidence.fullscreen===1 && entrypointEvidence.codex===1 && entrypointEvidence.pact===1
       && entrypointEvidence.income===1 && entrypointEvidence.info===1 && entrypointEvidence.equipment===1
       && entrypointEvidence.equipmentDuplicates===1
       && JSON.stringify(expectedCorner)===JSON.stringify(['全屏打开','设置'].sort()), entrypointEvidence);
+    const codexButton = await page.$('.rs-native-match button.rs-native-codex-button[aria-label="战术图鉴"]');
+    assert(codexButton, 'the single in-match tactical codex entry is missing');
+    const codexBase = await page.evaluate(async () => {
+      const {store}=await import('./js/store.js'), snapshot=store.get(), state=snapshot.match.private?.resonance?.state;
+      return { url:location.href, session:new URL(location.href).searchParams.get('session'), round:state?.round, gold:state?.gold,
+        pieces:(state?.pieces||[]).map(({uid,row,col,star})=>({uid,row,col,star})), offers:(state?.shop?.offers||[]).map(row=>row.uid),
+        revision:state?.revision, phase:snapshot.match.public?.phase };
+    });
+    codexBase.wsConnections=attempt.ws.connections?.length||0;
+    await clickHandleByMeasuredCenter(page,codexButton,'in-match tactical codex');
+    await page.waitForSelector('.rs-native-codex-overlay[role="dialog"] .lo-card.rs-codex__operator-card',{visible:true,timeout:8_000});
+    const codexCards=await page.$$('.rs-native-codex-overlay .lo-card.rs-codex__operator-card');
+    assert(codexCards.length>0,'Native codex opened without operator entries');
+    await clickHandleByMeasuredCenter(page,codexCards[0],'codex operator detail');
+    await page.waitForSelector('.rs-native-codex-overlay .rs-detail-panel',{visible:true,timeout:5_000});
+    const codexDetailEvidence=await page.$eval('.rs-native-codex-overlay .rs-detail-panel',node=>({open:true,title:node.querySelector('.dtitle')?.innerText||node.innerText.slice(0,80)}));
+    const shortcutOffset=attempt.ws.sent.length;
+    for(const key of ['d','f','Space']) await page.keyboard.press(key);
+    await sleep(250);
+    const penetratedFrames=attempt.ws.sent.slice(shortcutOffset).filter(row=>['g.refresh','g.levelUp','g.ready','g.move','g.sell'].includes(row.t));
+    const codexStateAfterKeys=await page.evaluate(async()=>{const {store}=await import('./js/store.js'),snapshot=store.get(),state=snapshot.match.private?.resonance?.state;return{phase:snapshot.match.public?.phase,revision:state?.revision};});
+    assert(penetratedFrames.length===0,'D/F/Space penetrated the tactical codex detail overlay');
+    await capture('13-codex');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>!document.querySelector('.rs-native-codex-overlay .rs-detail-panel')&&!!document.querySelector('.rs-native-codex-overlay'),{timeout:4_000});
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>!document.querySelector('.rs-native-codex-overlay'),{timeout:4_000});
+    const codexAfter=await page.evaluate(async()=>{const {store}=await import('./js/store.js'),snapshot=store.get(),state=snapshot.match.private?.resonance?.state;return{url:location.href,
+      session:new URL(location.href).searchParams.get('session'),round:state?.round,gold:state?.gold,pieces:(state?.pieces||[]).map(({uid,row,col,star})=>({uid,row,col,star})),
+      offers:(state?.shop?.offers||[]).map(row=>row.uid),revision:state?.revision,phase:snapshot.match.public?.phase,ws:!!snapshot.match.private?.resonance};});
+    codexAfter.wsConnections=attempt.ws.connections?.length||0;
+    const codexSameState=codexBase.session===codexAfter.session&&codexBase.round===codexAfter.round&&codexBase.gold===codexAfter.gold
+      &&JSON.stringify(codexBase.pieces)===JSON.stringify(codexAfter.pieces)&&JSON.stringify(codexBase.offers)===JSON.stringify(codexAfter.offers)
+      &&codexBase.revision===codexAfter.revision&&codexAfter.ws&&codexBase.wsConnections===codexAfter.wsConnections&&codexBase.url===codexAfter.url;
+    check('native-codex-session-and-shortcuts',entrypointEvidence.codex===1&&codexDetailEvidence.open&&codexSameState
+      &&codexStateAfterKeys.revision===codexBase.revision&&penetratedFrames.length===0,
+      {entrypoints:entrypointEvidence.codex,codexDetailEvidence,codexSameState,codexBase,codexStateAfterKeys,codexAfter,penetratedFrames});
     const openedPanels = [];
     const remainingControls = {};
     const openAndClose = async (button, panel, label) => {
@@ -1269,18 +1340,22 @@ async function run() {
     });
     check('pact-panel-shop-usable', layout.shopVisible && layout.panelVisible && !layout.overlap && layout.cards === 5 && layout.usable === layout.cards, layout);
     const viewportSamples = [];
-    for (const viewport of [{width:1440,height:900},{width:1366,height:768},{width:844,height:390}]) {
+    for (const viewport of [{width:1440,height:1000},{width:1000,height:700},{width:1366,height:768},{width:844,height:390}]) {
       await page.setViewport({ ...viewport, deviceScaleFactor: 1 }); await sleep(180);
       viewportSamples.push(await page.evaluate(() => {
         const cards=[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')];
         const usable=cards.filter(node=>{const r=node.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&hit&&(hit===node||node.contains(hit))}).length;
         const controls=['.shopbar__tools .toolbtn--ice','.shopbar__tools .toolbtn--amber','.lvcard','.readybtn'];
         const hits=controls.map(selector=>{const node=document.querySelector(selector),r=node?.getBoundingClientRect(),hit=r&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{selector,visible:!!r&&r.width>0&&r.height>0,hit:!!hit&&(hit===node||node.contains(hit))}});
-        return{viewport:{width:innerWidth,height:innerHeight},cardCount:cards.length,usable,hits};
+        const remaining=document.querySelector('.gtop__remain,.gtop__deploy-count,[data-testid="deployment-remaining"]'),ready=document.querySelector('.readybtn');
+        const rect=node=>{const r=node?.getBoundingClientRect();return r&&{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+        const a=rect(remaining),b=rect(ready),remainingReadyOverlap=!!a&&!!b&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+        return{viewport:{width:innerWidth,height:innerHeight},cardCount:cards.length,usable,hits,remaining:remaining?.innerText?.trim()||null,remainingRect:a,readyRect:b,remainingReadyOverlap};
       }));
     }
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1});
-    check('mobile-shop-panel-safe', viewportSamples.every(sample=>sample.cardCount===5&&sample.usable===5&&sample.hits.every(hit=>hit.visible&&hit.hit)),viewportSamples);
+    check('mobile-shop-panel-safe', viewportSamples.every(sample=>sample.cardCount===5&&sample.usable===5&&sample.hits.every(hit=>hit.visible&&hit.hit)
+      &&(!sample.remainingRect||!sample.readyRect||!sample.remainingReadyOverlap)),viewportSamples);
     const costSurface = await page.$$eval('.shopbar__cards .scard:not(.scard--sold)', (nodes) => nodes.map((node) => {
       const r=node.getBoundingClientRect(), bg=node.querySelector('.scard__bg'), b=bg?.getBoundingClientRect(), tier=node.querySelector('.tier--color');
       return { cls: node.className, color: getComputedStyle(node).backgroundColor, bg: getComputedStyle(bg || node).backgroundImage,
@@ -1427,11 +1502,25 @@ async function run() {
       ? (Date.parse(progressThree.at) - Date.parse(progressOne.at)) / 1000 : 0;
     check('combat-progress-two-seconds', !!attempt.battleId && !!progressOne && !!progressThree && progressSeconds >= 2,
       { battleId: attempt.battleId, progressOne, progressThree, progressSeconds });
+    const speedChanges=[];
+    for(const expectedSpeed of [4,1,2]) {
+      const control=await page.$('[data-testid="battle-speed"]'); assert(control,'native combat speed control is missing');
+      const receivedOffset=attempt.ws.received.length, sentOffset=attempt.ws.sent.length;
+      await clickHandleByMeasuredCenter(page,control,`set native combat speed ${expectedSpeed}`);
+      const start=await waitReceivedWhere(attempt,row=>row.t==='b.start'&&row.battleId===attempt.battleId&&row.speed===expectedSpeed,5_000,receivedOffset);
+      const request=attempt.ws.sent.slice(sentOffset).find(row=>row.t==='g.resonanceCombat'&&row.speed===expectedSpeed);
+      speedChanges.push({expectedSpeed,start,request});
+      assert(start&&request,`native speed ${expectedSpeed} did not update the same live battle: ${JSON.stringify(speedChanges.at(-1))}`);
+    }
+    check('combat-speed-1-2-4-same-battle',speedChanges.length===3&&speedChanges.every(row=>row.start.battleId===attempt.battleId)
+      &&new Set(speedChanges.map(row=>row.start.speed)).size===3,{battleId:attempt.battleId,speeds:[...speedChanges.map(row=>row.start.speed)],speedChanges});
+    await capture('14-combat-controls');
     await capture('07-combat');
     const beforePauseFrame = attempt.ws.sent.filter(message=>message.t==='b.progress'&&message.battleId===attempt.battleId).at(-1);
     let pauseOffset = attempt.ws.sent.length, publicOffset = attempt.ws.received.length;
     await page.keyboard.press('Space'); const pause = await waitSent(attempt, 'g.pause', 8_000, pauseOffset);
     const pausedPublic = await waitReceivedWhere(attempt,message=>message.t==='m.public'&&message.paused===true,5_000,publicOffset);
+    const fastFinishPausedDisabled=await page.$eval('[data-testid="battle-fast-finish"]',node=>node.disabled);
     await sleep(2_100);
     const pausedFrames = attempt.ws.sent.filter(message=>message.t==='b.progress'&&message.battleId===attempt.battleId&&message.at>pausedPublic?.at);
     const pausedGt = attempt.ws.sent.filter(message=>message.t==='b.progress'&&message.battleId===attempt.battleId&&message.at<=pausedPublic?.at).at(-1)?.gt ?? beforePauseFrame?.gt ?? null;
@@ -1441,8 +1530,15 @@ async function run() {
     const resumedFrame = await waitSentWhere(attempt,message=>message.t==='b.progress'&&message.battleId===attempt.battleId
       && Number.isFinite(message.gt)&&message.gt>Number(pausedGt),6_000,attempt.ws.sent.length);
     check('pause-freezes-and-resume-progresses', !!pause && pause.paused === true && !!pausedPublic
-      && pausedFrames.length===0 && !!resume && resume.paused === false && !!resumedPublic && !!resumedFrame,
-      { pause, pausedPublic, beforePauseFrame, pausedFrames, pausedGt, resume, resumedPublic, resumedFrame });
+      && fastFinishPausedDisabled && pausedFrames.length===0 && !!resume && resume.paused === false && !!resumedPublic && !!resumedFrame,
+      { pause, pausedPublic, fastFinishPausedDisabled, beforePauseFrame, pausedFrames, pausedGt, resume, resumedPublic, resumedFrame });
+    const fastFinishButton=await page.$('[data-testid="battle-fast-finish"]');
+    assert(fastFinishButton&&await fastFinishButton.evaluate(node=>!node.disabled),'fast-finish must be available after combat resumes');
+    const fastFinishOffset=attempt.ws.sent.length, fastStartOffset=attempt.ws.received.length;
+    await clickHandleByMeasuredCenter(page,fastFinishButton,'native fast finish');
+    const fastRequest=await waitSentWhere(attempt,row=>row.t==='g.resonanceCombat'&&row.finish===true,5_000,fastFinishOffset);
+    const finishingStart=await waitReceivedWhere(attempt,row=>row.t==='b.start'&&row.battleId===attempt.battleId&&row.speed===32,5_000,fastStartOffset);
+    assert(fastRequest&&finishingStart,'fast-finish did not accelerate the current native battle');
     const during = await readState();
     check('combat-ledger-immutable', during.history?.length === attempt.ledgerBeforeCombat.history && during.gold === attempt.ledgerBeforeCombat.gold && during.hp === attempt.ledgerBeforeCombat.hp && during.round === attempt.ledgerBeforeCombat.round,
       { before: attempt.ledgerBeforeCombat, during: { history: during.history?.length, gold: during.gold, hp: during.hp, round: during.round } });
@@ -1465,7 +1561,9 @@ async function run() {
       return (packet.state?.history || []).filter((row) => row.type === 'fight-settled').length >= 1;
     }, { timeout: Math.max(1_000, settleAt - Date.now()) });
     const settled = await readState(), fights = settled.history?.filter((row) => row.type === 'fight-settled') || [];
-    check('one-real-settlement', fights.length === 1 && attempt.ws.sent.filter((message) => message.t === 'g.ready').length === 1, { fights: fights.length, history: fights.at(-1) });
+    const results=attempt.ws.sent.filter(message=>message.t==='b.result'&&message.battleId===attempt.battleId);
+    check('one-real-settlement', fights.length === 1 && results.length===1 && attempt.ws.sent.filter((message) => message.t === 'g.ready').length === 1,
+      { fights: fights.length, results:results.length, fastRequest, finishingStart, history: fights.at(-1) });
     await clickHandleByMeasuredCenter(page,await page.$('[data-testid="check-player"]'),'settled player information');
     await page.waitForSelector('.rs-native-resonance-panel--match-info button[aria-label="本场结算"]:not(:disabled)',{visible:true,timeout:5_000});
     await clickHandleByMeasuredCenter(page,await page.$('.rs-native-resonance-panel--match-info button[aria-label="本场结算"]'),'settlement entry');
@@ -1556,6 +1654,11 @@ async function run() {
       && exitAfter.savedSessionExists && exitAfter.round === exitBefore.round && exitAfter.gold === exitBefore.gold
       && exitAfter.hp === exitBefore.hp && exitAfter.historyCount === exitBefore.historyCount && forbiddenExitMessages.length === 0,
       { controls: remainingControls, exitBefore, cancelTitle, reopenedTitle, exitAfter, exitMessages, forbiddenExitMessages });
+    const allTypography=Object.values(attempt.typographySnapshots||{});
+    const visibleTextRows=allTypography.flatMap(row=>row.texts||[]), smallText=allTypography.flatMap(row=>row.small||[]), smallBody=allTypography.flatMap(row=>row.smallBody||[]), smallPseudo=allTypography.flatMap(row=>row.smallPseudo||[]);
+    const textAudit={captures:Object.keys(attempt.typographySnapshots||{}),viewports:[...new Map(allTypography.map(row=>[`${row.viewport.width}x${row.viewport.height}`,row.viewport])).values()],
+      stylesheetHrefs:[...new Set(allTypography.flatMap(row=>row.sheets||[]))],visibleTextCount:visibleTextRows.length,smallText:smallText.slice(0,80),smallBody:smallBody.slice(0,80),smallPseudo:smallPseudo.slice(0,80)};
+    check('native-visible-text-audit-14px',allTypography.length>=10&&visibleTextRows.length>0&&smallText.length===0&&smallBody.length===0&&smallPseudo.length===0,textAudit);
   } catch (error) {
     attempt.status = 'failed'; attempt.failures.push({ at: now(), error: error.stack || String(error) }); log.push(`FAILED ${error.stack || error}`);
     if (page && !page.isClosed()) attempt.failurePage = await page.evaluate(() => ({ url:location.href, body:document.body.innerText.slice(-1200) })).catch(() => null);
@@ -1575,11 +1678,11 @@ async function run() {
       attempt.failures.push({ at: now(), error: 'browser or network faults present', runtimeFaults: faults });
     }
     if (attempt.status === 'running') attempt.status = attempt.missingChecks.length ? 'incomplete' : 'passed';
-    if (screenshotCount(attempt.screenshots) > 12) { attempt.status = 'failed'; attempt.failures.push({ at: now(), error: 'screenshot limit exceeded' }); }
+    if (screenshotCount(attempt.screenshots) > 14) { attempt.status = 'failed'; attempt.failures.push({ at: now(), error: 'screenshot limit exceeded' }); }
     receipt.finishedAt = attempt.finishedAt;
     log.push(`status=${attempt.status}`, `session=${attempt.sessionId || 'none'}`, `missingChecks=${attempt.missingChecks.join(',')}`);
     await save(); await writeFile(LOG, `${log.join('\n')}\n`, { flag: 'a' });
-    process.stdout.write(`${JSON.stringify({ status: attempt.status, receipt: RECEIPT, log: LOG, sessionId: attempt.sessionId || null, screenshots: attempt.screenshots })}\n`);
+    process.stdout.write(`${JSON.stringify({ status: attempt.status, receipt: receiptPath, log: LOG, sessionId: attempt.sessionId || null, screenshots: attempt.screenshots })}\n`);
   }
   if (attempt.status !== 'passed') process.exitCode = 1;
 }

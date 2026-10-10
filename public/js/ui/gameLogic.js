@@ -1196,13 +1196,16 @@ export function tileAllows(ctx, piece, row, col) {
  * @returns {Set<string> | null}
  */
 export function summonRange(ctx, piece, owner = null) {
-  if (!isObj(piece) || piece.kind !== 'token' || ctx?.getToken?.(piece.id)?.ownerRange !== true) return null;
+  if (!isObj(piece) || piece.kind !== 'token') return null;
+  const fixedGrid = piece.id === 'token_10032_jesca2_jckshd'
+    ? [[0, 1], [1, 0], [0, -1], [-1, 0]] : null;
+  if (!fixedGrid && ctx?.getToken?.(piece.id)?.ownerRange !== true) return null;
   let at = owner;
   if (!at) for (const e of ctx.boardAt.values()) if (e.piece.uid === piece.ownerUid && e.piece.kind === 'chess') { at = e; break; }
   const rec = at && ctx.getChess(at.piece.id);
   if (!rec) return null;
   let grid = null;
-  try { grid = attackRangeGrid(chessLoadout(rec, ctx.priv?.loadout ?? null, ctx.getChess)?.record || rec); } catch { /* the data grid */ }
+  try { grid = fixedGrid || attackRangeGrid(chessLoadout(rec, ctx.priv?.loadout ?? null, ctx.getChess)?.record || rec); } catch { /* the data grid */ }
   return new Set(rangeTiles(grid || rec.rangeGrid, at.row, at.col, pieceDir(at.piece)).map(([r, c]) => tileKey(r, c)));
 }
 
@@ -1916,7 +1919,7 @@ export function bondPopupPlace(uf, vp, rem, card = null) {
 
 export { battleOverSfx, uniteResultBox, battleResultBox } from "./gameLogic/phases.js";
 export { readyShopFold } from "./gameLogic/shop.js";
-export { deviceInfo, deviceTipAt, noteDeviceUnits } from "./gameLogic/terrain.js";
+export { deviceInfo, deviceTipAt, noteDeviceUnits, deviceUnitsForEntry } from "./gameLogic/terrain.js";
 export { normalizePersonalChoice } from "./gameLogic/draft.js";
 export { ownStandIn, deployedRecord, standInLoadout, standInLabel, standInTip } from "./gameLogic/standIn.js";
 export { ownDiyRecord } from "./gameLogic/diy.js";

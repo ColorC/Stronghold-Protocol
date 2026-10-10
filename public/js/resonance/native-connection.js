@@ -16,7 +16,7 @@ const wsUrlFor = (id) => {
 };
 
 /** Connect the native match screen to the authoritative Resonance session over the game protocol. */
-export function NativeMatchConnection({ id, onLeave }) {
+export function NativeMatchConnection({ id, onLeave, libraryCatalog, activeIds }) {
   const [failure, setFailure] = useState('');
   const pub = useStore((s) => s.match.public);
   const catalog = useStore((s) => s.match.resonanceCatalog);
@@ -80,5 +80,5 @@ export function NativeMatchConnection({ id, onLeave }) {
 
   if (failure) return html`<main class="screen"><${Panel} title="无法连接本局"><p>${failure}</p></${Panel}></main>`;
   if (!catalog || !pub) return html`<div class="screen gload"><${Spinner} size="lg" label="ENTERING SIMULATION" /><p>正在连接共鸣战场…</p></div>`;
-  return html`<div class="rs-native-match"><${GameScreen} onLeave=${onLeave} /></div>`;
+  return html`<div class="rs-native-match"><${GameScreen} onLeave=${onLeave} libraryCatalog=${libraryCatalog} activeIds=${activeIds} /></div>`;
 }
