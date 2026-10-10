@@ -56,7 +56,7 @@ test('battle temporary badges update visible equipment totals without mutating p
     const page = await browser.newPage({ viewport: { width: 1400, height: 800 } }), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.goto(`http://127.0.0.1:${server.address().port}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForFunction(() => window.ready, { timeout: 10000 });
+    try { await page.waitForFunction(() => window.ready, { timeout: 10000 }); } catch (error) { fs.writeFileSync(process.env.SP_DETAIL_PANEL_REPORT,JSON.stringify({ok:false,error:error.message,errors,html:await page.content()},null,2)); throw error; }
     await page.evaluate(() => window.mount('three'));
     await page.evaluate(() => [...document.querySelectorAll('[role=tab]')].find(x => x.textContent.startsWith('装备'))?.click());
     const three = await page.evaluate(() => ({

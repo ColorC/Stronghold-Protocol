@@ -305,7 +305,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
                   if (validTarget) action(target.uid);
                   else onBeginTarget?.({ label: '点击标记的场上或整备区友方干员穿戴装备', closePanel: true, onCancel: onCancelTarget, choices: equipChoices.map((p) => ({ kind: 'friendly', uid: p.uid })), emptyText: '没有可以穿戴这件装备的干员', submit: ({ uid }) => action(uid) });
                 }}>
-                ${validTarget ? (many && n > 1 ? `穿戴 ${n} 件` : '穿戴') : (many && n > 1 ? `穿戴 ${n} 件 · 点选干员` : '穿戴 · 点选干员')}<//>
+                ${validTarget ? (many && n > 1 ? `穿戴 ${n} 件` : '穿戴') : (many && n > 1 ? `穿戴 ${n} 件 · 点选干员` : '穿戴 · 点选干员')}<//>`}
           </div>` : html`<p class="ix-muted">库存为空</p>`}
       </div>
     </div>
