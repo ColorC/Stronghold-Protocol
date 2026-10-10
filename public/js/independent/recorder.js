@@ -138,11 +138,9 @@ export function RecordingControls({ sessionId }) {
             if (!state.mediaRecorder || state.stopped || state.mediaStartCancelled
               || (state.mediaRecorderStarted && state.mediaRecorder.state === 'inactive')) return;
             const now = performance.now();
-            if (now - state.lastCompositeAt < 1000 / 24) return;
+            if (now - state.lastCompositeAt < 1000 / mediaOptions.fps) return;
             try {
               if (!drawRecordingCanvasFrame(state.captureField, state.frameCacheContext, state.frameCache.width, state.frameCache.height)) return;
-              const snapshot = state.frameCacheContext.getImageData(0, 0, state.frameCache.width, state.frameCache.height);
-              state.frameCacheContext.putImageData(snapshot, 0, 0);
               state.lastCompositeAt = now; state.lastNativeFrameAt = Date.now(); state.nativeFrameCopies += 1; state.hasPaintedFrame = true;
               if (!state.firstNativeFrameAt) state.firstNativeFrameAt = state.lastNativeFrameAt;
               if (!state.mediaRecorderStarted) state.startMediaCapture?.();
@@ -170,7 +168,7 @@ export function RecordingControls({ sessionId }) {
             document.body.appendChild(captureSurface);
             state.captureSurface = captureSurface;
             const captureContext = captureSurface.getContext('2d', { alpha: false });
-            const frameCacheContext = frameCache.getContext('2d', { willReadFrequently: true, alpha: false });
+            const frameCacheContext = frameCache.getContext('2d', { alpha: false });
             if (!captureContext || !frameCacheContext) { captureSurface.remove(); return; }
             state.captureField = field; state.captureSurface = captureSurface; state.captureContext = captureContext;
             state.frameCache = frameCache; state.frameCacheContext = frameCacheContext;

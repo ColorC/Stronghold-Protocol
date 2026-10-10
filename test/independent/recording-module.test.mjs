@@ -51,6 +51,15 @@ test('media defaults cap the composed field at 1280px and permit bounded URL ove
   assert.equal(resolveMediaOptions('?recordMax=99999').maxDimension, 2560);
 });
 
+test('ordinary recording links retain media defaults when options are absent or blank', () => {
+  for (const query of ['', '?record=1', '?recording=an-existing-recording',
+    '?recordMax=&recordFps=%20&recordBitrate=&recordChunkMs=']) {
+    assert.deepEqual(resolveMediaOptions(query), DEFAULT_MEDIA_OPTIONS, query);
+  }
+  assert.deepEqual(resolveMediaOptions('?recordFps=30'), { ...DEFAULT_MEDIA_OPTIONS, fps: 30 });
+  assert.deepEqual(resolveMediaOptions('?recordMax=invalid&recordFps=invalid'), DEFAULT_MEDIA_OPTIONS);
+});
+
 test('canvas media adapter forwards WebM chunks and stops its tracks cleanly', async () => {
   const listeners = new Map(); const track = { stopped: false, stop() { this.stopped = true; } };
   const stream = { getTracks: () => [track] };

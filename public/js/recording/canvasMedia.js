@@ -1,6 +1,7 @@
 export const DEFAULT_MEDIA_OPTIONS = Object.freeze({ maxDimension: 1280, fps: 24, videoBitsPerSecond: 900_000, timesliceMs: 5000 });
 
 const bounded = (value, fallback, min, max) => {
+  if (value == null || String(value).trim() === '') return fallback;
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : fallback;
 };
