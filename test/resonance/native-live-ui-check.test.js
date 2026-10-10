@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
+import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, shopPurchaseEvidence, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -149,6 +149,24 @@ test('runner result warnings are narrowly recognized for diagnostics',()=>{
   assert.equal(isRunnerResultWarning('[runner] b.result not delivered'),true);
   assert.equal(isRunnerResultWarning('[runner] simulation started'),false);
   assert.equal(isRunnerResultWarning('ordinary console warning'),false);
+});
+
+test('shop purchase evidence accepts trailing ping but rejects missing or duplicate buy frames', () => {
+  const before = { revision: 7, gold: 5, history: [], pieces: [] };
+  const after = { revision: 8, gold: 4, history: [{ type: 'operator-bought', operatorId: 'op13', uid: 'p13', cost: 1 }],
+    pieces: [{ uid: 'p13', operatorId: 'op13', star: 1 }] };
+  const buy = { t: 'g.buy', slot: 2 };
+  const valid = shopPurchaseEvidence({ frames: [buy], buy, expectedSlot: 2, expectedOperatorId: 'op13', expectedCost: 1, before, after });
+  assert.equal(valid.valid, true);
+  // The receive loop can capture a protocol ping after the click's buy frame; it is not a second purchase.
+  const sentAfterClick = [buy, { t: 'ping' }];
+  const capturedBuys = sentAfterClick.filter((frame) => frame.t === 'g.buy');
+  assert.equal(shopPurchaseEvidence({ frames: capturedBuys, buy: capturedBuys[0], expectedSlot: 2,
+    expectedOperatorId: 'op13', expectedCost: 1, before, after }).valid, true);
+  assert.equal(shopPurchaseEvidence({ frames: [], buy: null, expectedSlot: 2,
+    expectedOperatorId: 'op13', expectedCost: 1, before, after }).valid, false, 'revision alone cannot pass without a buy frame');
+  assert.equal(shopPurchaseEvidence({ frames: [buy, buy], buy, expectedSlot: 2,
+    expectedOperatorId: 'op13', expectedCost: 1, before, after }).valid, false, 'duplicate buy frames must fail');
 });
 
 test('native result projection captures only the resonance player result metrics', async () => {

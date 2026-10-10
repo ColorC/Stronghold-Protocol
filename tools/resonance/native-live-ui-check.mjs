@@ -409,8 +409,17 @@ async function deployThree(page, state, attempt) {
   return occupied.size;
 }
 
-async function clickRealShopCard(page, beforeRevision, attempt, waitSent) {
+async function clickRealShopCard(page, beforePacket, attempt, waitSent) {
   const card = await page.$('.shopbar__cards .scard:not(.scard--sold)'); assert(card, 'no visible unsold shop card');
+  const offer = await card.evaluate((node) => ({
+    id: node.id || null,
+    slot: [...document.querySelectorAll('.shopbar__cards .scard')].indexOf(node),
+    label: node.getAttribute('aria-label') || node.querySelector('.scard__name')?.textContent?.trim() || null,
+  }));
+  const expected = beforePacket?.state?.shop?.offers?.[offer.slot];
+  assert(expected?.operatorId, `selected native shop card has no matching private offer: ${JSON.stringify({ offer, offers: beforePacket?.state?.shop?.offers?.length })}`);
+  const expectedOperatorId = expected.operatorId;
+  const expectedCost = Number(expected.cost ?? beforePacket?.catalog?.operators?.[expectedOperatorId]?.cost ?? 0);
   const offset = attempt.ws.sent.length;
   await card.click();
   const buy = await waitSent(attempt, 'g.buy', 8_000, offset);
@@ -418,8 +427,8 @@ async function clickRealShopCard(page, beforeRevision, attempt, waitSent) {
   await page.waitForFunction(async (revision) => {
     const id = new URL(location.href).searchParams.get('session'), packet = await (await fetch(`/resonance/api/sessions/${id}`)).json();
     return Number(packet.state?.revision) > revision;
-  }, { timeout: 8_000 }, beforeRevision);
-  return { buy, clickCount: 1 };
+  }, { timeout: 8_000 }, beforePacket.state.revision);
+  return { buy, clickCount: 1, offset, expectedSlot: offer.slot, expectedOperatorId, expectedCost, offer };
 }
 async function openPieceDetailAndMeasureShop(page, pieces) {
   const target=pieces.find(piece=>piece.row!=null&&Number.isSafeInteger(Number(piece.nativeUid)));
@@ -527,6 +536,34 @@ export function isRunnerResultWarning(text) {
   return /\[runner\].*(?:result failed|b\.result refused|b\.result not delivered)/i.test(String(text));
 }
 
+export function shopPurchaseEvidence({ frames = [], buy = null, expectedSlot, expectedOperatorId, expectedCost, before, after }) {
+  const lastEvent = after?.history?.at(-1);
+  // A purchased copy may be consumed by an immediate star merge; verify the operator remains represented,
+  // while the matching operator-bought history row proves which purchase produced it.
+  const boughtPiece = lastEvent?.type === 'operator-bought'
+    ? after?.pieces?.find((piece) => piece.operatorId === expectedOperatorId)
+    : null;
+  const goldSpent = Number.isFinite(before?.gold) && Number.isFinite(after?.gold) ? before.gold - after.gold : null;
+  const evidence = {
+    frameCount: frames.length,
+    oneBuyFrame: frames.length === 1 && frames[0]?.t === 'g.buy',
+    matchedOffer: !!buy && Number(buy.slot) === Number(expectedSlot),
+    matchedHistory: !!lastEvent && lastEvent.type === 'operator-bought'
+      && lastEvent.operatorId === expectedOperatorId && lastEvent.cost === expectedCost,
+    matchedPiece: !!boughtPiece,
+    matchedCost: goldSpent === expectedCost,
+    revisionAdvanced: Number(after?.revision) > Number(before?.revision),
+    historyAdvanced: (after?.history?.length ?? 0) > (before?.history?.length ?? 0),
+    operatorId: expectedOperatorId ?? null,
+    cost: expectedCost ?? null,
+    goldSpent,
+    pieceUid: boughtPiece?.uid ?? null,
+  };
+  evidence.valid = evidence.oneBuyFrame && evidence.matchedOffer && evidence.matchedHistory
+    && evidence.matchedPiece && evidence.matchedCost && evidence.revisionAdvanced && evidence.historyAdvanced;
+  return evidence;
+}
+
 export async function attachWsCapture(page, attempt, onSent = null) {
   const cdp = await page.createCDPSession();
   await cdp.send('Network.enable');
@@ -547,6 +584,7 @@ export async function attachWsCapture(page, attempt, onSent = null) {
     try {
       const row = { t: message.t, action: message.action?.type || null, at: now(), direction,
         phase: message.phase || message.nativePhase || null, round: message.round ?? null,
+        slot: Number.isSafeInteger(message.slot) ? message.slot : null,
         battleId: message.battleId || null, progress: message.progress || null,
         kind: message.kind ?? null, specKind: message.spec?.kind ?? null,
         specStageId: message.spec?.stageId ?? null, specRound: message.spec?.round ?? null,
@@ -1475,10 +1513,17 @@ async function run() {
     });
     check('fixed-skill-icons-loaded', skillIcons.expected > 0 && skillIcons.expected === skillIcons.loaded, skillIcons);
     await capture('05-shop-detail');
-    const beforeBuy = await readState(); await page.click('button[aria-label="关闭面板"]');
-    const detailEvidence = await clickRealShopCard(page, beforeBuy.revision, attempt, waitSent); const afterBuy = await readState();
-    check('shop-real-purchase', detailEvidence.clickCount === 1 && attempt.ws.sent.slice(-1)[0]?.t === 'g.buy' && afterBuy.revision > beforeBuy.revision && afterBuy.history?.length >= beforeBuy.history?.length,
-      { sent: attempt.ws.sent.filter((message) => message.t === 'g.buy'), before: beforeBuy.revision, after: afterBuy.revision, clickCount: detailEvidence.clickCount });
+    const beforeBuyPacket = await readPacket(); await page.click('button[aria-label="关闭面板"]');
+    const detailEvidence = await clickRealShopCard(page, beforeBuyPacket, attempt, waitSent); const afterBuyPacket = await readPacket();
+    const purchaseFrames = attempt.ws.sent.slice(detailEvidence.offset).filter((message) => message.t === 'g.buy');
+    const purchaseEvidence = shopPurchaseEvidence({ frames: purchaseFrames, buy: detailEvidence.buy,
+      expectedSlot: detailEvidence.expectedSlot, expectedOperatorId: detailEvidence.expectedOperatorId,
+      expectedCost: detailEvidence.expectedCost, before: beforeBuyPacket.state, after: afterBuyPacket.state });
+    check('shop-real-purchase', detailEvidence.clickCount === 1 && purchaseEvidence.valid,
+      { ...purchaseEvidence, offer: detailEvidence.offer, buySlot: detailEvidence.buy?.slot,
+        beforeRevision: beforeBuyPacket.state.revision, afterRevision: afterBuyPacket.state.revision,
+        beforeHistory: beforeBuyPacket.state.history?.length, afterHistory: afterBuyPacket.state.history?.length,
+        trailingSentTypes: attempt.ws.sent.slice(detailEvidence.offset).map((message) => message.t) });
     let liveUi = await readUiState();
     const movable = liveUi.pieces.find(piece => piece.row != null && Number.isSafeInteger(Number(piece.nativeUid)));
     assert(movable, 'no deployed member available for W retreat/deploy keyboard check');
