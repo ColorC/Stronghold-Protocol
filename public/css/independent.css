@@ -215,7 +215,7 @@
 .ix-inv__cell.is-elite { border-color: var(--gold-a20); }
 .ix-inv__cell .ix-gear, .ix-inv__cell .ix-gear--item .uthumb { width: .46rem; height: .46rem; }
 .ix-inv__cell b { position: absolute; right: .04rem; top: .02rem; font-size: max(.13rem, 11px); color: var(--text-hi); }
-.ix-inv__cell small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(.12rem, 10px); color: var(--text-lo); }
+.ix-inv__cell small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: max(.12rem, 12px); color: var(--text-lo); }
 .ix-inv__sel { display: flex; flex-direction: column; gap: .08rem; min-width: 0; }
 .ix-inv__head { display: flex; align-items: center; gap: .1rem; }
 .ix-inv__head > .ix-gear { width: .5rem; height: .5rem; }
@@ -425,7 +425,7 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
   .ix-dop__side { display: flex; flex-direction: column; gap: .1rem; flex: 1; min-width: 0; min-height: 0; }
 }
 .ix-dpanel .dsec__title { font-size: max(.15rem, 13px); }
-.ix-dpanel .micro { font-size: max(.1rem, 10px); }
+.ix-dpanel .micro { font-size: max(.12rem, 12px); }
 .ix-dpanel .dtext, .ix-dpanel .rt { font-size: max(.14rem, 13px); }
 .ix-dpanel .ix-dgear b, .ix-dpanel .ix-dgear__tile b { font-size: max(.13rem, 12px); }
 @media (max-height: 460px) { .ix-dpanel .dhead__art { height: 60px; } }
@@ -532,3 +532,43 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-target-prompt kbd{font-size:10px;line-height:1}
 .ix-game.is-targeting .gm__field canvas{cursor:crosshair}
 .ix-game:has(.ix-target-prompt) .ix-dpanel{display:none!important}
+
+/* Mobile typography follows the fixed-size detail and reward cards instead of shrinking with rem. */
+@media (max-width: 600px), (max-height: 460px) {
+  .ix-shop .scard__name { font-size: 16px; }
+  .ix-shop .scard__name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .ix-shop .scard__body { min-height: 0; max-height: 100%; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
+  .ix-shop .scard__body > * { min-width: 0; max-width: 100%; }
+  .ix-shop .scard__class, .ix-shop .scard__skill { font-size: 13px; }
+  .ix-shop .scard__mergetag { font-size: 12px; }
+  .ix-shop .scard__bond { font-size: 14px; white-space: normal; overflow-wrap: anywhere; }
+  .ix-shop .scard .ix-trait { flex-wrap: wrap; overflow: visible; font-size: 14px; line-height: 1.35; }
+  .ix-shop .scard :is(.ix-trait__when, .ix-trait__arrow, .ix-trait__cond, .ix-trait__word) { display: initial; }
+  .ix-shop .scard .ix-trait__rule { white-space: normal; flex-wrap: wrap; }
+  .ix-shop .scard .ix-trait__rule, .ix-shop .scard .ix-trait__out { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+  .ix-shop .scard .ix-trait__when, .ix-shop .scard .ix-trait__cond, .ix-shop .scard .ix-trait__word { overflow-wrap: anywhere; }
+  .ix-shop .scard .ix-trait__out b { font-size: 14px; }
+  .ix-shop .scard .ix-trait__out .ix-gear { width: 16px; height: 16px; }
+  .ix-dtabs__tab { min-height: 40px; padding: 4px 8px; font-size: 14px; }
+  .ix-dtabs__tab .num, .ix-dchips__lv, .ix-dchips__lv b { font-size: 13px; }
+  .ix-dgear__text, .ix-dgear__att { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+  .ix-inv__cell b { font-size: 12px; }
+  .ix-inv__cell small { display: block; overflow: visible; text-overflow: clip; white-space: normal; font-size: 12px; }
+  .ix-choice, .ix-choice .ix-notes li { font-size: 14px; line-height: 1.5; }
+  .ix-dpanel .dhead__name { font-size: 24px; }
+  .ix-dpanel .dhead__en { display: initial; }
+  .ix-dpanel .dtext, .ix-dpanel .rt, .ix-dpanel__pane p, .ix-dpanel .ix-traittext p,
+  .ix-dpanel .ix-notes li, .ix-dpanel .ix-note, .ix-dpanel__pane li { font-size: 15px; line-height: 1.55; }
+  .ix-dpanel .dstat__k, .ix-dpanel .dstat small, .ix-dpanel .dsp,
+  .ix-dpanel .dsp__num, .ix-dpanel .dskill__slot, .ix-dpanel .dgarrison__type { font-size: 13px; }
+  .ix-dpanel__actions .btn { min-height: 40px; font-size: 14px; }
+  .ix-dpanel .dpanel__close { width: 40px; height: 40px; }
+  .ix-strip__slot, .ix-strip__head { min-height: 40px; }
+  .ix-strip__slot b, .ix-strip__head b { font-size: 14px; }
+  .ix-prod__toggle { min-height: 40px; font-size: 14px; }
+  .ix-prod__pager button { width: 40px; height: 40px; }
+  .ix-prod__row, .ix-prod__h, .ix-prod__fold { font-size: 14px; }
+  .ix-prod__tag, .ix-prod__when, .ix-prod__none, .ix-prod__note { font-size: 13px; }
+  .ix-prod__src { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .ix-prod__body { overflow: auto; }
+}

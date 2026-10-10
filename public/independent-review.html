@@ -76,6 +76,26 @@
       .controls{grid-template-columns:auto 1fr}.controls .seekwrap{grid-column:1/-1}.status{text-align:right}
       .links{align-items:flex-start;flex-direction:column}
     }
+    /* Mobile review controls keep readable labels and thumb-sized targets without changing the player layout. */
+    @media(max-width:760px),(max-height:460px){
+      button,.source-link{min-height:40px;font-size:14px}
+      .comments{font-size:14px}
+      .comments .chead,.cempty{font-size:13px}
+      .citem .at{min-height:40px;display:inline-flex;align-items:center;font-size:12px}
+      .citem .meta,.composer .anchorline{font-size:12px}
+      .clock,.status{font-size:14px}
+      .composer textarea{font-size:16px;min-height:88px}
+      .composer .row,.citem .ops{flex-wrap:wrap}
+      .citem .ops button{min-height:40px;font-size:13px}
+    }
+    @media(max-width:600px){
+      body{padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+      .controls{grid-template-columns:auto minmax(0,1fr);gap:8px;padding:8px}
+      .controls .seekwrap,.controls .status{grid-column:1/-1}
+      .clock,.status{font-size:14px}
+      .seekwrap input[type=range]{min-height:40px}
+      .clist{max-height:min(40dvh,320px)}
+    }
   </style>
 </head>
 <body>

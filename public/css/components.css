@@ -941,3 +941,15 @@
   --bk-c: var(--red-premium);
 }
 .crash__box h2 { font-size: .3rem; }
+
+/* Small values stay readable when viewport-scaled rem reaches the mobile floor. */
+.pbar__meta { font-size: max(.14rem, 14px); }
+.pbar__value { font-size: max(.16rem, 16px); }
+.pbar__value small { font-size: max(.12rem, 12px); }
+.tabs__badge { font-size: max(.13rem, 12px); }
+.spinner__label, .field__hint { font-size: max(.12rem, 12px); }
+@media (max-width: 600px), (max-height: 460px) {
+  .pbar__meta { font-size: 14px; }
+  .pbar__value { font-size: 16px; }
+  .pbar__value small, .tabs__badge, .spinner__label, .field__hint { font-size: 12px; }
+}
