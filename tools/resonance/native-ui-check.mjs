@@ -391,7 +391,7 @@ async function run() {
       const target=await piecePoint(deployedForSurface.uid);await page.mouse.click(target.x,target.y);await page.waitForSelector('.rs-detail__member',{timeout:8000});await inspectGeometry(`member-detail-${viewport.width}x${viewport.height}`);await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       if(viewport.width===844){
         await capture('55-mobile');
-        await captureAdditional('66-mobile-ready');
+        await captureAdditional('66-mobile-ready','66-mobile-ready');
         const actionSize=await page.$eval('.rs-start-battle',button=>{const r=button.getBoundingClientRect();return{width:r.width,height:r.height}});
         check('mobile-start-action-touch-size',actionSize.width>=88&&actionSize.height>=44,actionSize);
       }
@@ -403,7 +403,8 @@ async function run() {
       await page.click('.rs-start-battle');await page.waitForFunction(async id=>{const state=(await(await fetch(`./resonance/api/sessions/${id}`)).json()).state;return state?.history?.some(event=>event.type==='fight-settled');},{timeout:45000},receipt.sessionId);
     }
     state=await getState();const fight=(state.history||[]).find(event=>event.type==='fight-settled');
-    check('exactly-one-real-fight-with-native-units',!!fight&&Number(fight.combatStats?.units)>0&&receipt.fights===1,{fightCount:(state.history||[]).filter(event=>event.type==='fight-settled').length,units:fight?.combatStats?.units});
+    check('exactly-one-real-fight-with-native-units',!!fight&&Array.isArray(fight.combatStats?.units)&&fight.combatStats.units.length>0&&receipt.fights===1&&(state.history||[]).filter(event=>event.type==='fight-settled').length===1,{fightCount:(state.history||[]).filter(event=>event.type==='fight-settled').length,units:fight?.combatStats?.units});
+    if(!await page.$('.rs-replay-native[aria-label="战斗回放"]')) await page.evaluate(round=>{location.hash=`replay-${round}`;},fight.round);
     await page.waitForSelector('.rs-replay-native[aria-label="战斗回放"]',{timeout:20000});
     await page.evaluate(()=>{const button=[...document.querySelectorAll('.rs-replay-native button')].find(item=>item.innerText.trim()==='暂停');button?.click();});
     await page.waitForFunction(()=>[...document.querySelectorAll('.rs-replay-native button')].some(button=>button.innerText.trim()==='继续'),{timeout:5000});
