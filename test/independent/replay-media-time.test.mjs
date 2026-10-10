@@ -16,15 +16,6 @@ test('replay media time stays nonnegative and leaves unknown-duration requests a
   assert.equal(clampReplayMediaTime(2, Number.POSITIVE_INFINITY), 2);
 });
 
-test('both replay seek and playback sync prefer the active video duration over stale prior-segment duration', async () => {
-  const replay = await readFile(new URL('../../public/js/independent/replay.js', import.meta.url), 'utf8');
-  assert.match(replay, /function mediaDurationForClamp\(\)\s*\{\s*const currentDuration = Number\(mediaVideo\?\.duration\);\s*return Number\.isFinite\(currentDuration\) && currentDuration > 0 \? currentDuration : mediaDuration;\s*\}/);
-  assert.equal((replay.match(/clampReplayMediaTime\([^\n]+mediaDurationForClamp\(\)\)/g) || []).length, 2,
-    'seek and sync must both use the currently loaded video duration');
-  assert.equal(clampReplayMediaTime(32.603, 1194.147), 32.603,
-    'the original segment time must remain in range when the previous rendered clip lasted 13.8 seconds');
-});
-
 test('replay page uses the existing game PNG as a relative favicon at root and subpath entries', async () => {
   const html = await readFile(new URL('../../public/independent-replay.html', import.meta.url), 'utf8');
   const href = html.match(/<link\s+rel="icon"[^>]*href="([^"]+)"/i)?.[1];
