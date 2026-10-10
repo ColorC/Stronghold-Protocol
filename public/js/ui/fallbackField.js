@@ -399,6 +399,7 @@ export function createFallbackView(host, opts = {}) {
 
   const view = {
     kind: 'fallback',
+    setReplayPaused(paused) { host.classList.toggle('sp-replay-paused', !!paused); return true; },
     setStage(stage) { st.stage = stage || null; schedule(); },
     setCamera(kind, o = {}) {
       st.camera = kind || 'prep';
