@@ -419,8 +419,25 @@ async function run() {
     if (connection.publicState.phase === 'INFO_CHECK') {
       assert(allowBriefingAck, 'fullscreen reconnect unexpectedly returned to INFO_CHECK');
       setStage('native-info-check-ack');
-      const ready = await page.waitForSelector('.brief__foot > button.btn--xl', { visible: true, timeout: 15_000 });
-      assert(ready, 'Native INFO_CHECK ready button was not visible');
+      await page.waitForFunction(() => [...document.querySelectorAll('footer.brief__foot button')].some(button => {
+        const text = String(button.innerText || button.textContent || '').replace(/\s+/g, ' ').trim();
+        const rect = button.getBoundingClientRect();
+        return ['准备就绪', '进入战场'].includes(text) && !button.disabled && rect.width > 0 && rect.height > 0;
+      }), { timeout: 15_000 });
+      const readyButtons = await page.$$('footer.brief__foot button');
+      let ready = null;
+      for (const button of readyButtons) {
+        const candidate = await button.evaluate(element => {
+          const text = String(element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim();
+          const rect = element.getBoundingClientRect();
+          return { text, disabled: !!element.disabled, visible: rect.width > 0 && rect.height > 0 };
+        });
+        if (['准备就绪', '进入战场'].includes(candidate.text) && !candidate.disabled && candidate.visible) {
+          ready = button;
+          break;
+        }
+      }
+      assert(ready, 'Native INFO_CHECK ready button was not visible and enabled');
       const clickProof = await ready.evaluate(button => {
         const text = String(button.innerText || button.textContent || '').replace(/\s+/g, ' ').trim();
         const rect = button.getBoundingClientRect();
