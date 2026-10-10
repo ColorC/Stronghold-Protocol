@@ -89,9 +89,16 @@ async function main(argv) {
     if (!clip || !Number.isFinite(clip.startSecond) || !Number.isFinite(clip.endSecond)) throw new Error(`timeline has no validated round ${round}`);
     return { round, startSecond: clip.startSecond, endSecond: clip.endSecond, observations: clip.observations || [], uiActions: clip.uiActions || [] };
   });
-  const mediaDurationMs = Number(meta.mediaLastTimeMs ?? meta.mediaCaptureLastTimeMs);
-  const prepAudit = buildPrepClips({ events: traceEvents, recordingId, sessionId, mediaStartedAt: meta.mediaStartedAt,
-    duration: mediaDurationMs / 1000, battleClips: clips, fps: 30 });
+  const recordingOrigin = Date.parse(meta.startedAt);
+  const recordingEnd = Date.parse(meta.endedAt || meta.mediaCaptureStoppedAt);
+  const recordingDuration = (recordingEnd - recordingOrigin) / 1000;
+  if (!Number.isFinite(recordingOrigin) || !Number.isFinite(recordingEnd) || !Number.isFinite(recordingDuration) || recordingDuration <= 0) {
+    throw new Error('recording metadata lacks a valid startedAt/end time for recording-clock prep alignment');
+  }
+  const mediaStartedAt = Date.parse(meta.mediaStartedAt);
+  const mediaOffsetSeconds = Number.isFinite(mediaStartedAt) ? (mediaStartedAt - recordingOrigin) / 1000 : null;
+  const prepAudit = buildPrepClips({ events: traceEvents, recordingId, sessionId, recordingStartedAt: meta.startedAt,
+    duration: recordingDuration, battleClips: clips, fps: 30 });
   if (args.sampleSeconds == null) {
     const completeRounds = (timeline.rounds || []).map((x) => Number(x.round)).sort((a, b) => a - b);
     if (completeRounds.length !== args.roundList.length || completeRounds.some((round, i) => round !== [...args.roundList].sort((a, b) => a - b)[i])) {
@@ -111,7 +118,9 @@ async function main(argv) {
   const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: wtRoot, encoding: 'utf8' }).trim();
   const installRoot = path.resolve(args['install-root']);
   const publicRoot = path.join(installRoot, 'public');
-  const fixture = { replays, clips, prepClips: prepAudit.clips, prepGapAudit: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps }, sampleSeconds: args.sampleSeconds, source: { recordingId, sessionId } };
+  const fixture = { replays, clips, prepClips: prepAudit.clips, prepGapAudit: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps }, sampleSeconds: args.sampleSeconds,
+    source: { recordingId, sessionId, recordingStartedAt: meta.startedAt, recordingEndedAt: meta.endedAt || meta.mediaCaptureStoppedAt, recordingDuration,
+      mediaStartedAt: meta.mediaStartedAt || null, mediaOffsetSeconds } };
   let ffmpeg = null, ffmpegOutput = null, ffmpegError = '', browser = null;
   stage(`input validated; ${clips.length} round(s), intervals ${clips[0].startSecond}-${clips.at(-1).endSecond}s`);
   const portProxy = (req, res) => {
@@ -437,7 +446,9 @@ async function main(argv) {
     if (!prepAudit.clips.length && args.prepOnly) throw new Error('prep-only verification found no timestamped prep state snapshots');
     if (!args.prepOnly && (renderedClips.filter((clip) => clip.kind !== 'prep').length !== clips.length || (args.sampleSeconds == null && renderedClips.filter((clip) => clip.kind !== 'prep').length !== (timeline.rounds || []).length))) throw new Error('render set incomplete; refusing to publish manifest');
     const manifestPath = path.join(outputRoot, 'manifest.json');
-    const manifest = { schemaVersion: 1, recordingId, sessionId, sourceRevision, renderMode: args.prepOnly ? 'prep-only-verification' : 'full-recording', viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate,
+    const manifest = { schemaVersion: 1, recordingId, sessionId, sourceRevision, renderMode: args.prepOnly ? 'prep-only-verification' : 'full-recording',
+      timebase: { clock: 'recording-start', recordingStartedAt: meta.startedAt, recordingEndedAt: meta.endedAt || meta.mediaCaptureStoppedAt,
+        recordingDuration, mediaStartedAt: meta.mediaStartedAt || null, mediaOffsetSeconds }, viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate,
       prepCoverage: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps,
         clips: prepAudit.clips.map((clip) => ({ kind: 'prep', startSecond: clip.startSecond, endSecond: clip.endSecond,
           sourceSnapshots: clip.states.map(({ sourceSeq, sourceKind, revision, at, frameIndex }) => ({ sourceSeq, sourceKind, revision, at, frameIndex })) })) },

@@ -1,8 +1,8 @@
-/** Build prep-only wall-clock spans from public state traces. Battle intervals always take priority. */
-export function buildPrepClips({ events, recordingId, sessionId, mediaStartedAt, duration, battleClips, fps = 30 }) {
-  const mediaOrigin = Date.parse(mediaStartedAt);
-  if (!Number.isFinite(mediaOrigin) || !Number.isFinite(duration) || duration <= 0 || !Number.isInteger(fps) || fps <= 0) {
-    throw new TypeError('prep trace mapping requires media start, duration, and frame rate');
+/** Build prep-only recording-clock spans from public state traces. Battle intervals always take priority. */
+export function buildPrepClips({ events, recordingId, sessionId, recordingStartedAt, duration, battleClips, fps = 30 }) {
+  const recordingOrigin = Date.parse(recordingStartedAt);
+  if (!Number.isFinite(recordingOrigin) || !Number.isFinite(duration) || duration <= 0 || !Number.isInteger(fps) || fps <= 0) {
+    throw new TypeError('prep trace mapping requires recording start, duration, and frame rate');
   }
   const snapshots = [];
   for (const event of events || []) {
@@ -13,7 +13,7 @@ export function buildPrepClips({ events, recordingId, sessionId, mediaStartedAt,
     if (!state || state.phase !== 'prep' || !Number.isFinite(occurredAt)) continue;
     if (event.kind === 'initial-state' && payload.sessionId !== sessionId) continue;
     snapshots.push({
-      at: (occurredAt - mediaOrigin) / 1000,
+      at: (occurredAt - recordingOrigin) / 1000,
       seq: Number(event.seq) || 0,
       revision: payload.revision ?? state.revision ?? null,
       kind: event.kind,
@@ -23,16 +23,22 @@ export function buildPrepClips({ events, recordingId, sessionId, mediaStartedAt,
   snapshots.sort((a, b) => a.at - b.at || a.seq - b.seq);
   const battles = [...(battleClips || [])].sort((a, b) => a.startSecond - b.startSecond);
   const gaps = [];
-  let cursor = 0;
+  let cursor = 0, priorBattle = null;
   for (const battle of battles) {
-    if (battle.startSecond > cursor) gaps.push({ startSecond: cursor, endSecond: battle.startSecond, afterBattleEnd: cursor > 0 });
+    if (battle.startSecond > cursor) gaps.push({ startSecond: cursor, endSecond: battle.startSecond, afterBattleEnd: cursor > 0, priorBattle });
     cursor = Math.max(cursor, battle.endSecond);
+    priorBattle = battle;
   }
-  if (duration > cursor) gaps.push({ startSecond: cursor, endSecond: duration, afterBattleEnd: cursor > 0 });
+  if (duration > cursor) gaps.push({ startSecond: cursor, endSecond: duration, afterBattleEnd: cursor > 0,
+    priorBattle });
   const clips = []; const uncoveredGaps = [];
   for (const gap of gaps) {
+    const { priorBattle, ...gapInfo } = gap;
     const eligible = snapshots.filter((snapshot) => snapshot.at < gap.endSecond
-      && (gap.afterBattleEnd ? snapshot.at >= gap.startSecond : snapshot.at <= gap.startSecond || snapshot.at >= 0));
+      && (gap.afterBattleEnd
+        ? snapshot.at >= gap.startSecond || (snapshot.kind === 'server-action' && priorBattle
+          && snapshot.at >= priorBattle.startSecond && snapshot.at < gap.startSecond)
+        : snapshot.at <= gap.startSecond || snapshot.at >= 0));
     let active = null;
     for (const snapshot of eligible) if (snapshot.at <= gap.startSecond) active = snapshot;
     const changes = [];
@@ -41,7 +47,7 @@ export function buildPrepClips({ events, recordingId, sessionId, mediaStartedAt,
       if (snapshot.at > gap.startSecond && (!changes.length || snapshot.at > changes.at(-1).at)) changes.push(snapshot);
       else if (snapshot.at === gap.startSecond && changes.length) changes[changes.length - 1] = snapshot;
     }
-    if (!changes.length) { uncoveredGaps.push({ ...gap, reason: 'legacy-no-prep-state-snapshot' }); continue; }
+    if (!changes.length) { uncoveredGaps.push({ ...gapInfo, reason: 'legacy-no-prep-state-snapshot' }); continue; }
     const startSecond = Math.max(gap.startSecond, changes[0]?.at ?? gap.startSecond);
     const states = changes.map((snapshot, index) => ({
       at: snapshot.at,

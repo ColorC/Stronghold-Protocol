@@ -9,7 +9,7 @@ const state = (phase, pieces) => ({ phase, revision: pieces.length, pieces, summ
 const event = (seq, kind, at, value) => ({ sid: recordingId, seq, kind, p: { occurredAt: origin + at * 1000, ...(kind === 'initial-state' ? { sessionId } : {}), state: value } });
 
 test('prep clips follow each timestamped public state and never import battle state into a prep gap', () => {
-  const result = buildPrepClips({ recordingId, sessionId, mediaStartedAt: new Date(origin).toISOString(), duration: 40, fps: 30,
+  const result = buildPrepClips({ recordingId, sessionId, recordingStartedAt: new Date(origin).toISOString(), duration: 40, fps: 30,
     battleClips: [{ round: 1, startSecond: 12, endSecond: 20 }, { round: 2, startSecond: 30, endSecond: 35 }], events: [
       event(1, 'initial-state', -1, state('prep', [])),
       event(2, 'server-action', 2, state('prep', [{ uid: 'p1', chessId: 'op', row: null, col: null }])),
@@ -31,11 +31,44 @@ test('prep clips follow each timestamped public state and never import battle st
 });
 
 test('legacy event streams expose prep gaps as uncovered instead of synthesizing final layouts', () => {
-  const result = buildPrepClips({ recordingId, sessionId, mediaStartedAt: new Date(origin).toISOString(), duration: 30, fps: 30,
+  const result = buildPrepClips({ recordingId, sessionId, recordingStartedAt: new Date(origin).toISOString(), duration: 30, fps: 30,
     battleClips: [{ startSecond: 10, endSecond: 20 }], events: [] });
   assert.deepEqual(result.clips, []);
   assert.deepEqual(result.uncoveredGaps, [
     { startSecond: 0, endSecond: 10, afterBattleEnd: false, reason: 'legacy-no-prep-state-snapshot' },
     { startSecond: 20, endSecond: 30, afterBattleEnd: true, reason: 'legacy-no-prep-state-snapshot' },
   ]);
+});
+
+test('nonzero media start offset does not shift recording-clock prep events', () => {
+  const recordingStart = Date.parse('2026-10-10T10:27:41.608Z');
+  const mediaStart = Date.parse('2026-10-10T10:27:44.205Z');
+  const eventAt = (seq, kind, at, value) => ({ sid: recordingId, seq, kind,
+    p: { occurredAt: recordingStart + at * 1000, ...(kind === 'initial-state' ? { sessionId } : {}), state: value } });
+  const result = buildPrepClips({ recordingId, sessionId, recordingStartedAt: new Date(recordingStart).toISOString(), duration: 40, fps: 30,
+    battleClips: [{ startSecond: 22, endSecond: 30 }], events: [
+      eventAt(1, 'initial-state', 0, state('prep', [])),
+      eventAt(2, 'server-action', 21.102, state('prep', [{ uid: 'p1', chessId: 'op', row: 10, col: 6 }])),
+    ] });
+  assert.equal(mediaStart - recordingStart, 2597, 'fixture matches the source recording media offset');
+  assert.equal(result.clips[0].states[0].at, 0);
+  assert.equal(result.clips[0].states[1].at, 21.102, 'action remains at recording second 21.102 instead of 18.505');
+  assert.equal(result.clips[0].states[1].frameIndex, 634, 'recording-clock action maps to frame 634 at 30fps');
+});
+
+test('next prep server state recorded at ready can seed the post-battle interval without backdating it', () => {
+  const result = buildPrepClips({ recordingId, sessionId, recordingStartedAt: new Date(origin).toISOString(), duration: 30, fps: 30,
+    battleClips: [{ startSecond: 10, endSecond: 20 }], events: [
+      event(0, 'initial-state', 0, state('prep', [])),
+      event(1, 'server-action', 10, state('prep', [{ uid: 'next', chessId: 'op', row: null, col: null }])),
+    ] });
+  assert.deepEqual(result.clips.map((clip) => [clip.startSecond, clip.endSecond]), [[0, 10], [20, 30]]);
+  assert.deepEqual(result.clips[1].states.map(({ at, sourceSeq }) => [at, sourceSeq]), [[20, 1]],
+    'the ready response seeds only the actual post-battle presentation interval');
+  const legacy = buildPrepClips({ recordingId, sessionId, recordingStartedAt: new Date(origin).toISOString(), duration: 30, fps: 30,
+    battleClips: [{ startSecond: 10, endSecond: 20 }], events: [
+      { ...event(2, 'server-action', 10, state('prep', [{ uid: 'old', chessId: 'op', row: 10, col: 6 }])), kind: 'visual-state' },
+    ] });
+  assert.equal(legacy.clips.some((clip) => clip.startSecond === 20), false,
+    'legacy observed poses before combat are not reused as future prep state');
 });
