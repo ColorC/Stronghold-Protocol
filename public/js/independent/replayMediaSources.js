@@ -1,7 +1,9 @@
-/** Select a rendered battle only inside its recorded interval; keep the original recording elsewhere. */
+/** Use clear native clips inside their recorded intervals, preferring battle checkpoints at shared boundaries. */
 export function replayMediaSourceAt(second, originalSegments, renderedClips = []) {
   const time = Number(second);
-  const rendered = renderedClips.find(clip => time >= clip.at && time < clip.endSecond);
+  const covers = clip => time >= clip.at && time < clip.endSecond;
+  const rendered = renderedClips.find(clip => !clip.key.startsWith('rendered-prep-') && covers(clip))
+    || renderedClips.find(covers);
   return rendered || [...originalSegments].reverse().find(segment => time >= segment.at) || originalSegments[0] || null;
 }
 

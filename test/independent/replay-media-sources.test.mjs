@@ -78,3 +78,10 @@ test('clear prep and battle clips have separate bounded URLs and switch at exact
   assert.equal(replayMediaSourceAt(21.102, [], prepared).key, 'rendered-1');
   assert.equal(replayMediaSourceAt(34.887, [], prepared).key, 'rendered-prep-2');
 });
+
+test('battle checkpoints take priority over an overlapping reconstructed prep frame', () => {
+  const prep = { key: 'rendered-prep-1', at: 0, endSecond: 21.14 };
+  const battle = { key: 'rendered-1', at: 21.102, endSecond: 34.887 };
+  assert.equal(replayMediaSourceAt(21.12, [], [prep, battle]).key, 'rendered-1');
+  assert.equal(replayMediaSourceAt(21.09, [], [prep, battle]).key, 'rendered-prep-1');
+});
