@@ -1580,24 +1580,31 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     const rampKey = `independent:stealthAttackRamp:${unit.uid}:${itemIdValue}`;
     const procCap = Number(p.pairedProcMaxPerBattle ?? Infinity);
     const awardGrowth = () => battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: itemIdValue, attackUnits: totalCopies });
-    const exitStealth = () => {
-      hadStealth = false;
-      armed = true;
-      awardGrowth();
+    const isStealthed = () => !!(unit.s.flags.stealth || unit.findBuff('stealth'));
+    const syncStealthTransition = () => {
+      const hasStealth = isStealthed();
+      if (hasStealth && !hadStealth) {
+        hadStealth = true;
+        awardGrowth();
+      } else if (!hasStealth && hadStealth) {
+        hadStealth = false;
+        armed = true;
+        awardGrowth();
+      }
     };
-    battle.on('independentStealthEntered', ({ unit: who }) => { if (who === unit) awardGrowth(); }, { owner: unit });
+    battle.on('independentStealthEntered', ({ unit: who }) => { if (who === unit) syncStealthTransition(); }, { owner: unit });
     battle.on('independentStealthExited', ({ unit: who }) => {
       if (who !== unit) return;
-      exitStealth();
+      syncStealthTransition();
     }, { owner: unit });
     battle.on('tick', ({ dt }) => {
       if (!unit.alive || !unit.deployed) { hadStealth = false; return; }
-      const hasStealth = !!(unit.s.flags.stealth || unit.findBuff('stealth'));
+      syncStealthTransition();
+      const hasStealth = isStealthed();
       if (hasStealth) {
-        hadStealth = true;
         stealthAttackBonus = Math.min(Number(p.maxAttackBonus ?? 1) * totalCopies, stealthAttackBonus + Number(p.attackBonusPerSecond ?? 0.02) * totalCopies * Number(dt || 0));
         if (stealthAttackBonus > 0) battle.addBuff(unit, { key: rampKey, mods: { atkPct: stealthAttackBonus }, persist: true, allowDead: true, refresh: 'replace' });
-      } else if (hadStealth) exitStealth();
+      }
     }, { owner: unit });
     battle.on('hit', ({ source, target, dmg }) => {
       if (source !== unit || !unit.alive || !unit.deployed || !armed || !dmg || dmg.isSkill || isGearDamage(dmg)) return;

@@ -354,6 +354,29 @@ test('family emblem has no gameplay effect on a non-Siracusa wearer', () => {
   assert.equal(Object.keys(w.mem.darkmoonTemporaryEquipment || {}).length, 0);
 });
 
+test('family emblem tracks native stealth transitions and does not exit while another stealth source remains', () => {
+  const count = (unit) => Object.values(unit.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
+  const nativeOnly = setup([{ uid: 'native', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古家族印记')] }]);
+  const a = nativeOnly.unit('native');
+  nativeOnly.b.addBuff(a, { key: 'native:stealth', status: 'stealth', flags: { stealth: true }, duration: 20, source: a });
+  nativeOnly.step(1);
+  assert.equal(count(a), 1, 'tick observes actual native stealth even without the outfit event');
+  nativeOnly.b.removeBuff(a, 'native:stealth');
+  nativeOnly.step(1);
+  assert.equal(count(a), 2, 'native stealth ending awards one exit badge');
+
+  const overlap = setup([{ uid: 'overlap', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
+  const b = overlap.unit('overlap'), e = overlap.spawn('dummy', { pos: [10, 4] });
+  overlap.b.addBuff(b, { key: 'native:stealth', status: 'stealth', flags: { stealth: true }, duration: 20, source: b });
+  const before = count(b);
+  attacks(overlap, b, e);
+  assert.ok(b.s.flags.stealth || b.findBuff('stealth'), 'removing the outfit stealth leaves native stealth active');
+  assert.equal(count(b), before, 'the outfit end event cannot falsely award exit while native stealth remains');
+  overlap.b.removeBuff(b, 'native:stealth');
+  overlap.step(1);
+  assert.equal(count(b), before + 1, 'only the final native stealth removal awards exit');
+});
+
 test('叙拉古家族印记 is available and stackable in the workshop gear catalog', () => {
   const emblem = Object.values(catalog.equipment).find((x) => x.newName === '叙拉古家族印记');
   assert.ok(emblem?.available);
