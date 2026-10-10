@@ -66,8 +66,20 @@ test('whole UI publication has distinct evidence paths and verifies its result a
  for(const old of [outputPaths('baseline'),outputPaths('candidate'),outputPaths('candidate','strict')])for(const key of Object.keys(output))assert.notEqual(output[key],old[key]);
  assert.ok(WHOLE_UI_MODULES.includes('public/js/resonance/native/ResultView.js'));
  assert.ok(WHOLE_UI_MODULES.includes('public/js/resonance/economyPanels.js'));
+ assert.ok(WHOLE_UI_MODULES.includes('shared/resonance/economy-view.js'));
  const exact=Object.fromEntries(WHOLE_UI_MODULES.map(file=>[file,`published:${file}`]));
  assert.ok(compareModuleSources(exact,exact,WHOLE_UI_MODULES).every(row=>row.match));
  const incomplete={...exact};delete incomplete['public/js/resonance/native/ResultView.js'];
  assert.equal(compareModuleSources(exact,incomplete,WHOLE_UI_MODULES).find(row=>row.file.endsWith('/ResultView.js')).match,false);
+});
+
+test('whole-ui-gateway uses isolated evidence paths and fetches shared economy code through the gateway route',()=>{
+ const native='b'.repeat(40),args=['--phase','candidate','--published-native',native,'--capture-suffix','whole-ui-gateway','--url','https://workshop.colorc.cc/stronghold/resonance/resonance.html?session=x'];
+ const options=parseArgs(args);assert.equal(options.captureSuffix,'whole-ui-gateway');
+ const gateway=outputPaths('candidate','whole-ui-gateway'),original=outputPaths('candidate','whole-ui');
+ assert.notEqual(gateway.receipt,original.receipt);assert.notEqual(gateway.log,original.log);assert.notEqual(gateway.screenshot,original.screenshot);
+ assert.ok(gateway.screenshot.endsWith('86-whole-ui-gateway-published-readonly.jpg'));
+ assert.equal(moduleUrlFor(options.url,'shared/resonance/economy-view.js'),'https://workshop.colorc.cc/stronghold/shared/resonance/economy-view.js');
+ assert.equal(moduleUrlFor(options.url,'public/js/resonance/economyPanels.js'),'https://workshop.colorc.cc/stronghold/resonance/js/resonance/economyPanels.js');
+ assert.ok(compareModuleSources(Object.fromEntries(WHOLE_UI_MODULES.map(file=>[file,`native:${file}`])),Object.fromEntries(WHOLE_UI_MODULES.map(file=>[file,`native:${file}`])),WHOLE_UI_MODULES).every(row=>row.match));
 });
