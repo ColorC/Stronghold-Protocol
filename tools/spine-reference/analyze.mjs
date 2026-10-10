@@ -1,8 +1,0 @@
-import fs from 'node:fs/promises';import path from 'node:path';import {analyzeMotion} from '../../public/dev/spine-reference/motion-analysis.js';import {profiles} from '../../public/dev/spine-reference/profiles.js';
-const args=Object.fromEntries(process.argv.slice(2).reduce((a,v,i,list)=>i%2?a:[...a,[v.replace(/^--/,''),list[i+1]]],[]));
-if(!args.input||!args.out)throw Error('Required --input and --out absolute directories');
-const input=path.resolve(args.input),out=path.resolve(args.out);await fs.mkdir(out,{recursive:true});const analyses=[];
-for(const id of (args.sources?.split(',')||Object.keys(profiles).filter(id=>profiles[id].view==='front'))){const name=profiles[id].defaultAttack||'Attack',file=path.join(input,`${id}-${name}-semantic.json`);const clip=JSON.parse(await fs.readFile(file,'utf8'));const a=analyzeMotion(clip,profiles[id]);a.inputPath=file;analyses.push(a);}
-const file=path.join(out,'motion-comparison.json');await fs.writeFile(file,JSON.stringify(analyses,null,2));
-for(const a of analyses){const weapon=a.arms[a.weaponSide],other=a.arms[a.weaponSide==='L'?'R':'L'];console.log(JSON.stringify({source:a.source,animation:a.animation,duration:a.duration,samples:a.samples,pelvisSpanY:a.pelvis.ySpan,bodyAngleSpan:a.bodyAngleSpan,armedUpperArmSpan:weapon.upperArmAngleSpan,armedElbowSpan:weapon.elbowAngleSpan,armedElbowRange:weapon.elbowAngleRange,armedElbowAtHandPeak:weapon.elbowAtHandPeak,armedHandTravel:weapon.wrist.travel,armedHandPeak:weapon.wrist.peakProgress,otherHandTravel:other.wrist.travel,ankleY:[a.feet.L.ankle.ySpan,a.feet.R.ankle.ySpan],weaponAngleSpan:a.weaponAngleSpan}));}
-console.log(JSON.stringify({comparison:file}));
