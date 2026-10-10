@@ -124,7 +124,7 @@ test('non-conflict mutation failures are preserved and are not reported as succe
     response(200, doc([], 2)),
     response(400, { error: 'canvas_mutation_rejected', detail: 'invalid source' }),
   ], calls);
-  await assert.rejects(mountReplayInCanvas({ recordingId, reviewUrl, fetchImpl }), /invalid source/);
+  await assert.rejects(mountReplayInCanvas({ recordingId, reviewUrl, fetchImpl }), error => error.status === 400 && error.detail === 'invalid source');
   assert.equal(calls.length, 3);
 });
 

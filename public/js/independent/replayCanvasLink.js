@@ -9,8 +9,7 @@ function responseError(status, body) {
   const detail = typeof body?.detail === 'string' ? body.detail : '';
   if (status === 401) return Object.assign(new Error('Workshop 会话已失效，请先在当前浏览器登录后重试。'), { status });
   if (status === 403) return Object.assign(new Error('当前 Workshop 账号无权编辑这张项目画布。'), { status });
-  const suffix = detail || code;
-  return Object.assign(new Error(`Workshop 画布请求失败（HTTP ${status}）${suffix ? `：${suffix}` : ''}`), { status });
+  return Object.assign(new Error('画布操作未完成，请稍后重试。'), { status, code, detail });
 }
 
 async function readJson(response) {
@@ -114,7 +113,7 @@ export async function mountReplayInCanvas({ recordingId, reviewUrl, fetchImpl = 
     }
     const workspaceRef = response.workspace_ref ?? document._workspaceRef;
     if (!workspaceRef || typeof workspaceRef.kind !== 'string' || typeof workspaceRef.ref !== 'string') {
-      throw new Error('画布缺少原生 workspace_ref，未写入画布。');
+      throw new Error('无法识别画布，请重新打开工坊后重试。');
     }
     return { document, workspaceRef };
   };

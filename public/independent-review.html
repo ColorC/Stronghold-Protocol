@@ -109,6 +109,9 @@
       <div class="cempty" id="cempty">还没有评论。暂停后圈选画面即可添加。</div>
     </section>
     <section class="links">
+      <span id="canvasStatus" class="status" role="status"></span>
+      <button id="mountCanvas" type="button" disabled>加入画布</button>
+      <a id="canvasLink" class="source-link" href="#" target="_blank" rel="noopener" hidden>打开画布</a>
       <a id="sourceLink" class="source-link" href="#" target="_blank" rel="noopener">全屏打开</a>
     </section>
   </main>
@@ -128,6 +131,7 @@
   </section>
   <script type="module">
     import { createReplayReviewConfig, createReplayCommentAnchor, reviewCommentHref } from './js/independent/replayReviewConfig.js';
+    import { mountReplayInCanvas } from './js/independent/replayCanvasLink.js';
     let config;
     let invalidLink=false;
     try{config=createReplayReviewConfig(location.href);}catch{invalidLink=true;config={recordingId:'',title:'游玩回放与批注',sourceUrl:'',commentsApi:'',apiName:'__SP_REPLAY_REVIEW__',duration:0};}
@@ -594,6 +598,21 @@
     /* status 只在有话可说时说话：圈选态 / 定位结果 / 错误。
        连接成功不再刷一行"已连接"——那是在把没有信息的字占着位置。 */
     let statusHold=0;let highlightTimer=0;
+    const mountCanvas=document.getElementById('mountCanvas');
+    const canvasStatus=document.getElementById('canvasStatus');
+    const canvasLink=document.getElementById('canvasLink');
+    let canvasBusy=false,canvasMounted=false;
+    mountCanvas.onclick=async()=>{
+      if(canvasBusy||canvasMounted)return;
+      if(!readState()?.ready){canvasStatus.textContent='回放尚未就绪，请稍后再试。';return;}
+      canvasBusy=true;mountCanvas.disabled=true;canvasStatus.textContent='正在加入画布…';
+      const reviewUrl=new URL('independent-review.html',location.href);reviewUrl.searchParams.set('recording',recordingId);
+      try{
+        const result=await mountReplayInCanvas({recordingId,reviewUrl:reviewUrl.href});
+        canvasMounted=true;canvasStatus.textContent='已加入画布';canvasLink.href=result.url;canvasLink.hidden=false;mountCanvas.hidden=true;
+      }catch(error){canvasStatus.textContent=error.message||'暂时无法加入画布，请稍后重试。';}
+      finally{canvasBusy=false;mountCanvas.disabled=canvasMounted||!readState()?.ready;}
+    };
     const setStatusText=(text,cls)=>{
       status.className=`status${cls?` ${cls}`:''}`;
       status.textContent=text;
@@ -629,6 +648,7 @@
       if(state.viewport?.width>0&&state.viewport?.height>0){stage.style.aspectRatio=`${state.viewport.width} / ${state.viewport.height}`;}
       if(state.duration>0&&state.time>=state.duration-.03)requestedPlaying=false;
       clock.textContent=`${fmt(state.time)} / ${fmt(state.duration)}`;
+      mountCanvas.disabled=canvasBusy||canvasMounted||!state.ready;
       toggle.disabled=!state.ready;
       pickBtn.disabled=!state.ready;
       toggle.textContent=state.paused?'播放':'暂停';
