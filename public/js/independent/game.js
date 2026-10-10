@@ -155,7 +155,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
   const toggleReplayPause = useCallback(() => {
     const next = !replayPausedRef.current;
     replayPausedRef.current = next;
-    view.setReplayPaused(next);
+    view?.setReplayPaused(next);
     if (next) setReplayRemaining(Math.max(0, replayEndTimeRef.current - replayTimeRef.current));
     setReplayPaused(next);
   }, [view]);
