@@ -165,10 +165,10 @@ async function main(argv) {
     });
     page.exposeFunction('__rendererProgress', (value) => stage(`browser: ${value}`));
     const prepStateScreenshots = [];
-    page.exposeFunction('__capturePrepStateFrame', async ({ clipIndex, seq, revision, frameIndex, nativePositions }) => {
+    page.exposeFunction('__capturePrepStateFrame', async ({ clipIndex, seq, revision, frameIndex, nativePositions, renderStats, canvases }) => {
       const file = path.join(outputRoot, `prep-${clipIndex}-state-${seq}.png`);
       await page.screenshot({ path: file });
-      prepStateScreenshots.push({ clipIndex, seq, revision, frameIndex, nativePositions, file });
+      prepStateScreenshots.push({ clipIndex, seq, revision, frameIndex, nativePositions, renderStats, canvases, file });
       return file;
     });
     page.setDefaultNavigationTimeout(30000);
@@ -322,9 +322,13 @@ async function main(argv) {
               const hit = rect ? view.pieceAtClient(rect.x + rect.width / 2, rect.y + rect.height / 2) : null;
               const tile = Number.isInteger(piece.row) && Number.isInteger(piece.col) ? view.tileScreen(piece.row, piece.col) : null;
               return { uid, expectedRow: piece.row ?? null, expectedCol: piece.col ?? null, renderedArea: hit?.area || null,
-                bodyVisible: !!rect, tileVisible: Number.isInteger(piece.row) ? !!tile : null };
+                bodyVisible: !!rect, bodyRect: rect, tileVisible: Number.isInteger(piece.row) ? !!tile : null, tile };
             });
-            await window.__capturePrepStateFrame({ clipIndex: clipIndex + 1, seq: settled.sourceSeq, revision: settled.revision, frameIndex: i, nativePositions });
+            const canvases = [...document.querySelectorAll('#host canvas')].map((canvas) => ({ width: canvas.width, height: canvas.height,
+              context: canvas.__context || canvas.getAttribute('data-render-surface'), ...(() => { const style = getComputedStyle(canvas); const rect = canvas.getBoundingClientRect();
+                return { display: style.display, visibility: style.visibility, opacity: style.opacity, zIndex: style.zIndex, rect: rect.toJSON() }; })() }));
+            await window.__capturePrepStateFrame({ clipIndex: clipIndex + 1, seq: settled.sourceSeq, revision: settled.revision, frameIndex: i,
+              nativePositions, renderStats: view.stats(), canvases });
           }
         }
         await encoder.flush(); await encoder.serial; const encoderState = encoder.state; encoder.close();
