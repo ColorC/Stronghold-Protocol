@@ -169,7 +169,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .gm__corner .rs-native-actions { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: 4px; pointer-events: auto; }
 .rs-native-match .gm__corner .rs-native-actions > button { display: grid; place-items: center; box-sizing: border-box; width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; color: #d7e5dc; background: #101814; border: 1px solid var(--line-2); pointer-events: auto; }
 .rs-native-match .gm__corner .rs-native-actions > button .icon { width: 18px; height: 18px; }
-.rs-native-match .gm__corner > .gm__gear { display: grid; place-items: center; box-sizing: border-box; width: 36px; height: 36px; padding: 0; color: #d7e5dc; background: #101814; border: 1px solid var(--line-2); }
+.rs-native-match .gm__corner > .gm__gear { font-size: 14px; display: grid; place-items: center; box-sizing: border-box; width: 36px; height: 36px; padding: 0; color: #d7e5dc; background: #101814; border: 1px solid var(--line-2); }
 .rs-native-match .gm__corner > .gm__gear .icon { width: 18px; height: 18px; }
 .rs-native-match .gm__corner > a.rs-fullscreen-small { width: 36px; height: 36px; color: #d7e5dc; background: #101814; border: 1px solid var(--line-2); font-size: 18px; }
 .rs-native-match .rs-native-resonance-panel { z-index: 35; top: calc(.8rem + env(safe-area-inset-top,0px)); bottom: calc(2.82rem + env(safe-area-inset-bottom,0px)); width: min(5.8rem, 56vw); display: flex; flex-direction: column; overflow: hidden; color: #d7e5dc; background: #101814; }
