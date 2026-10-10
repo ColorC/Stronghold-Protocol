@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "hash": "cdd6b272faed",
+  "hash": "3af97afb9c75",
   "generator": "tools/fetch-assets.mjs",
   "stats": {
     "files": 11360,
@@ -44457,26 +44457,26 @@
         ],
         "pma": true,
         "anims": {
-          "idle": "Idle",
-          "deploy": "Idle",
+          "idle": "Idle3",
+          "deploy": "Idle3",
           "attack": {
             "begin": null,
-            "loop": "Attack",
+            "loop": "Attack3",
             "end": null
           },
           "attackDown": null,
           "skill": {
             "begin": null,
-            "loop": "Attack",
+            "loop": "Attack3",
             "end": null,
             "via": "attack",
             "index": 0,
             "idle": null
           },
-          "die": "Die",
+          "die": "Die3",
           "move": {
             "begin": null,
-            "loop": "Move",
+            "loop": "Move3",
             "end": null
           },
           "stun": null
@@ -44530,26 +44530,26 @@
         ],
         "pma": true,
         "anims": {
-          "idle": "Idle",
-          "deploy": "Idle",
+          "idle": "Idle3",
+          "deploy": "Idle3",
           "attack": {
             "begin": null,
-            "loop": "Attack",
+            "loop": "Attack3",
             "end": null
           },
           "attackDown": null,
           "skill": {
             "begin": null,
-            "loop": "Attack",
+            "loop": "Attack3",
             "end": null,
             "via": "attack",
             "index": 0,
             "idle": null
           },
-          "die": "Die",
+          "die": "Die3",
           "move": {
             "begin": null,
-            "loop": "Move",
+            "loop": "Move3",
             "end": null
           },
           "stun": null

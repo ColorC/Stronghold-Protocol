@@ -57,6 +57,18 @@ test('a partial research rebuild retains registered native models, module icons,
   assert.equal(capabilities.anims.skills, undefined, 'an old selectable clip cannot survive a fresh complete model parse');
   assert.equal(capabilities.animations.OldSkill, undefined);
   assert.equal(capabilities.sourceNote, 'registered', 'registration annotations survive');
+  const semantic = mergeRegisteredManifest({ ...oldModel, anims: { idle: 'Idle',
+    attack: { begin: null, loop: 'Attack3', end: null }, skill: { index: 2, loop: 'Attack3' },
+    skills: { 0: { index: 0, loop: 'OldSkill' }, 2: { index: 2, loop: 'Attack3' } } } },
+  { ...parsedModel, anims: { idle: 'Idle', attack: { begin: null, loop: 'Attack', end: null },
+    skill: { index: 0, loop: 'Attack' }, skills: { 0: { index: 0, loop: 'Attack' } } }, animations: { Idle: 1, Attack: 1, Attack3: 2 } });
+  assert.equal(semantic.anims.attack.loop, 'Attack3', 'registered attack semantics survive when the real clip still exists');
+  assert.equal(semantic.anims.skill.index, 0, 'primary selectable index remains current');
+  assert.equal(semantic.anims.skills[2], undefined, 'a real clip cannot revive an unselectable skill index');
+  assert.equal(semantic.anims.skills[0].loop, 'Attack', 'an absent old clip stays removed');
+  const noFallback = mergeRegisteredManifest({ ...oldModel, anims: { skill: { index: 0, loop: 'Attack', via: 'attack' } } },
+    { ...parsedModel, anims: { skill: { index: 0, loop: 'Skill_Loop' } }, animations: { Attack: 1, Skill_Loop: 2 } });
+  assert.equal(noFallback.anims.skill.loop, 'Skill_Loop', 'a generic old skill fallback cannot replace a real freshly parsed skill clip');
 });
 
 test('registered extensions enter the public queue while optional local extraction stays separate', () => {

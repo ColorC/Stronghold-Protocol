@@ -9,6 +9,26 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { assetUrl, githubSourceUrl, mirrorUrl } from './sources.mjs';
 
+/** Keep a registered semantic role only when all its clips still exist in the freshly parsed body. */
+export function retainRegisteredAnimationRoles(previous, parsed, animations) {
+  const out = structuredClone(parsed);
+  if (!previous || !out || !animations) return out;
+  const exists = (name) => typeof name === 'string' && Object.hasOwn(animations, name);
+  const compatibleClip = (old, fresh) => old && fresh && typeof old === 'object' && typeof fresh === 'object'
+    && old.index === fresh.index && exists(old.loop)
+    && ['begin', 'end', 'idle'].every(key => old[key] == null || exists(old[key]));
+  const compatibleSkill = (old, fresh) => compatibleClip(old, fresh) && (!old.via || old.via === fresh.via);
+  for (const key of ['idle', 'deploy', 'die']) if (exists(previous[key])) out[key] = previous[key];
+  for (const key of ['attack', 'attackDown', 'skill', 'move', 'stun']) {
+    if ((key === 'skill' ? compatibleSkill : compatibleClip)(previous[key], out[key])) out[key] = structuredClone(previous[key]);
+  }
+  // Only current selectable indices can survive; a valid clip alone cannot reactivate a retired skill slot.
+  for (const [index, fresh] of Object.entries(out.skills || {})) {
+    if (compatibleSkill(previous.skills?.[index], fresh)) out.skills[index] = structuredClone(previous.skills[index]);
+  }
+  return out;
+}
+
 /** Manifest schema version (bump on breaking shape changes). */
 export const MANIFEST_VERSION = 1;
 
@@ -32,7 +52,8 @@ export function mergeRegisteredManifest(registered, generated) {
     ? structuredClone(registered) : {};
   // Parsed model capabilities are one validated record: retaining an absent old clip would describe another skeleton.
   if (typeof generated.skel === 'string' && typeof generated.atlas === 'string' && Array.isArray(generated.textures)) {
-    return { ...out, ...structuredClone(generated) };
+    return { ...out, ...structuredClone(generated),
+      anims: retainRegisteredAnimationRoles(out.anims, generated.anims, generated.animations) };
   }
   for (const [key, value] of Object.entries(generated)) out[key] = mergeRegisteredManifest(out[key], value);
   return out;
