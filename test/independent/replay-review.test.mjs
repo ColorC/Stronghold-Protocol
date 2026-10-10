@@ -117,8 +117,11 @@ test('review DOM uses player controls, precise async seek and player-facing copy
   assert.match(html, /if\(state\.error\)\{setStatusText\(state\.error,'err'\)/);
   assert.match(replay, /回放载入失败，请检查链接或稍后重试/);
   assert.match(html, /回放链接无效，请检查链接后重试/);
-  assert.match(replay, /await waitForVideoSeek\(mediaVideo,target\)/);
-  assert.match(replay, /mediaVideo\.seeking\)await waitForVideoSeek/);
+  assert.match(replay, /async function positionMediaAt\(second, generation = seekGeneration\)/);
+  assert.match(replay, /await waitForVideoSeek\(mediaVideo, target\)/);
+  assert.match(replay, /replayMediaSourceAt\(second, mediaSegments, renderedClips\)/);
+  assert.match(replay, /renderedReplayClips\(await manifestResponse\.json\(\),API,id\)/);
+  assert.match(replay, /manifestResponse\.ok\)renderedClips/);
   assert.doesNotMatch(html, /bilibili|WEB SOURCE|真源|原工程|config\.beats|beat_id/i);
   assert.doesNotMatch(html, /meta\.textContent=.*selector|composerEl\.textContent=.*selector/);
 });

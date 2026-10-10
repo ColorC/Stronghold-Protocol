@@ -36,7 +36,7 @@ export function selectionSnapshot(doc = globalThis.document, win = globalThis.wi
 
 /** Attach lossless rrweb DOM events plus compact, replayable interaction and text-selection records. */
 export function startPageCapture({ rrweb = globalThis.rrweb, emit, doc = globalThis.document, win = globalThis.window,
-  sampling = { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' }, selectionDelayMs = 60 } = {}) {
+  sampling = { mousemove: 80, mouseInteraction: true, scroll: 150, input: 'last' }, selectionDelayMs = 0 } = {}) {
   if (typeof emit !== 'function') throw new TypeError('page capture requires emit(event)');
   const stops = [];
   const listen = (target, type, handler, options) => {
@@ -75,19 +75,34 @@ export function startPageCapture({ rrweb = globalThis.rrweb, emit, doc = globalT
   listen(doc, 'focusout', (event) => interaction('focusout', event), true);
 
   let selectionTimer = 0;
+  let pendingSelection;
   let previousSelection = '';
   let stopped = false;
-  const publishSelection = () => {
+  const publishSelection = (snapshot = selectionSnapshot(doc, win)) => {
     if (stopped) return;
-    const snapshot = selectionSnapshot(doc, win);
     const signature = snapshot ? JSON.stringify(snapshot) : '';
     if (signature === previousSelection) return;
     previousSelection = signature;
     emit('selection', snapshot ? { operation: 'set', ...snapshot } : { operation: 'clear', text: '', rects: [], viewport: { width: win?.innerWidth || 0, height: win?.innerHeight || 0 } });
   };
   const scheduleSelection = () => {
+    const snapshot = selectionSnapshot(doc, win);
+    if (selectionDelayMs <= 0) { publishSelection(snapshot); return; }
     clearTimeout(selectionTimer);
-    selectionTimer = setTimeout(publishSelection, Math.max(0, selectionDelayMs));
+    selectionTimer = 0;
+    if (!snapshot) {
+      if (pendingSelection) publishSelection(pendingSelection);
+      pendingSelection = undefined;
+      publishSelection(null);
+      return;
+    }
+    pendingSelection = snapshot;
+    selectionTimer = setTimeout(() => {
+      selectionTimer = 0;
+      const current = pendingSelection;
+      pendingSelection = undefined;
+      publishSelection(current);
+    }, selectionDelayMs);
   };
   listen(doc, 'selectionchange', scheduleSelection);
 
