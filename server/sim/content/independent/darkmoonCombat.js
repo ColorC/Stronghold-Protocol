@@ -21,7 +21,7 @@ const nextCadence = (entry, kind) => {
 const attackIdOf = dmg => Number.isSafeInteger(dmg?.attackId) && dmg.attackId > 0 ? dmg.attackId : null;
 const darkmoonDamage = dmg => Array.isArray(dmg?.tags) && dmg.tags.includes('darkmoon');
 const enemyLifeKey = target => `${target.id}:${target.deploySeq ?? 0}`;
-const cadenceState = () => ({cadence:Object.create(null),attackedAttackIds:new Set(),damagedAttackIds:new Set(),overkillAttackTargets:new Set(),overkillLives:new Set(),overkillMarks:new WeakMap(),pendingOverkills:new Map()});
+const cadenceState = () => ({cadence:Object.create(null),attackedAttackIds:new Set(),damagedAttackIds:new Set(),overkillAttackTargets:new Set(),overkillLives:new Set(),overkillMarks:new WeakMap(),pendingOverkills:new Map(),overkillMarkSeq:0});
 const attackEventId = event => {
   const id = Number(event?.attackId ?? event?.dmg?.attackId);
   return Number.isSafeInteger(id) && id > 0 ? id : null;
@@ -140,7 +140,7 @@ export function darkmoonCombatMetadata(sourceId, elite=false) {
   else if(r.echo)text=`本场每累计${INDEPENDENT_COMBAT_CADENCE.attack}次普通攻击后，随机复制另一名在场友方的战斗部署效果${elite?'，复制两次':''}。`;
   else if(r.startStrike)text=`首批敌人入场时，随机造成${elite?'两次':'一次'}法术伤害，每次为自身基础攻击的40%乘以己方卡西米尔干员数量。`;
   else if(r.attackRamp)text=`本场每累计${INDEPENDENT_COMBAT_CADENCE.attack}次自身攻击后，临时提高攻击倍率${elite?30:20}%，增益持续至本场战斗结束。`;
-  else if(r.overkill)text=`本场每累计${INDEPENDENT_COMBAT_CADENCE.overkill}次攻击超杀后，${r.overkill==='spill'?`把超过敌人生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}`:r.overkill==='strike'?`对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害`:r.overkill==='summon'?`召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}`:`使其他维多利亚友方获得${buffText(r.buff)}`}。`;
+  else if(r.overkill)text=`本场每累计${INDEPENDENT_COMBAT_CADENCE.overkill}次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），${r.overkill==='spill'?`把超过敌人生命的伤害传递给${elite?'目标附近所有敌人':'目标附近一个随机敌人'}`:r.overkill==='strike'?`对最左侧敌人追加${elite?300:150}%基础攻击的法术伤害`:r.overkill==='summon'?`召唤一个强力作战支援单位${elite?'，支援单位的攻击和生命翻倍':''}`:`使其他维多利亚友方获得${buffText(r.buff)}`}。`;
   else if(r.recruitOnKill){duration='整备区';text=`普通攻击击倒敌人后，随机将${elite?2:1}名原始干员加入整备区。`;}
   else if(r.counterattack)text=`本场自身每累计${INDEPENDENT_COMBAT_CADENCE.attacked}次受到敌人攻击并存活后，立即反击一次；反击不再次触发自身反击。`;
   else if(r.intercept)text=`本场每累计${INDEPENDENT_COMBAT_CADENCE.attacked}次敌人准备攻击携带坚守盟约的其他友方后，替其承受一次攻击；需要自身可被该敌人攻击。`;
@@ -519,25 +519,27 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
     if(r.recruitOnKill){battle.on('kill',({killer,victim})=>{if(killer!==unit||victim.side!=='enemy'||!unit.mem.darkmoonAttackIds?.has(victim.id))return;for(let i=0;i<scale(e);i++){const x=pick(normalOps().filter(op=>op.tier<=catalog.config?.maxShopLevel||op.tier<=6));if(x)results.recruits.push({sourceUid:unit.uid,chessId:x.chessId,pristine:true});}note(e,'recruit');},{owner:unit});}
     if(r.recruitOnKill)battle.on('hit',({source,target,dmg})=>{if(source!==unit||target.side!=='enemy'||!dmg.isAttack||darkmoonDamage(dmg))return;(unit.mem.darkmoonAttackIds||=new Map()).set(target.id,{hp:target.hp,dmg});},{owner:unit,priority:-99});
     if(r.overkill){
-      battle.on('hit',({source,target,dmg})=>{
+      battle.on('hit',({source,target,dmg,credit})=>{
         const attackId=attackIdOf(dmg);
-        if(source!==unit||target.side!=='enemy'||!dmg.isAttack||darkmoonDamage(dmg)||attackId==null)return;
+        // Any damage instance actually credited to the owner counts: native skills,
+        // thorns/counters, sourceless credited damage, and equipment attachments.
+        if((source!==unit&&credit!==unit)||target.side!=='enemy'||dmg.tags?.includes('overkill'))return;
         const life=enemyLifeKey(target);
         e.pendingOverkills.delete(life);
-        e.overkillMarks.set(dmg,{attackId,life,hp:target.hp,type:dmg.type});
+        e.overkillMarks.set(dmg,{attackId,markId:++e.overkillMarkSeq,life,hp:target.hp,type:dmg.type});
       },{owner:unit,priority:-99});
-      battle.on('damaged',({source,target,amount,dmg})=>{
+      battle.on('damaged',({source,target,credit,overkill,type,dmg})=>{
         const mark=e.overkillMarks.get(dmg);
-        if(source!==unit||target.side!=='enemy'||!mark||!(amount>mark.hp)||target.hp>0)return;
+        if((source!==unit&&credit!==unit)||target.side!=='enemy'||!mark||!(overkill>0)||target.hp>0||(target.bossPool&&target.bossPool.hp>0))return;
         e.overkillMarks.delete(dmg);
-        e.pendingOverkills.set(mark.life,{...mark,amount});
+        e.pendingOverkills.set(mark.life,{...mark,amount:mark.hp+overkill,type:type??dmg?.type??mark.type});
       },{owner:unit});
       battle.on('death',({unit:victim,reason,killer})=>{
         const life=enemyLifeKey(victim),mark=e.pendingOverkills.get(life);
         if(!mark)return;
         e.pendingOverkills.delete(life);
         if(reason!=='killed'||killer!==unit||victim.side!=='enemy')return;
-        const attackTarget=`${mark.attackId}:${life}`;
+        const attackTarget=`${mark.attackId??mark.markId}:${life}`;
         if(e.overkillAttackTargets.has(attackTarget)||e.overkillLives.has(life))return;
         e.overkillAttackTargets.add(attackTarget);e.overkillLives.add(life);
         if(!nextCadence(e,'overkill')||!ready(e))return;
@@ -608,3 +610,4 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   battle.every(.25,()=>{for(const e of auras){const key=`darkmoon:aura:${e.unit.uid}`;for(const t of battle.allyUnits){if(alive(e.unit)&&alive(t)&&t!==e.unit&&eligible(t,e.unit,e.rule.aura.faction)){const v=e.rule.aura.buff,m=scale(e);applyGrowth(t,key,v[0]*m,v[1]*m,.5);}else{battle.removeBuff(t,key);if(t.mem.darkmoonLevelContributions?.[key]){delete t.mem.darkmoonLevelContributions[key];refreshTraining(t);}}}}});
   return {entries,fallen,results,trace,retireAction};
 }
+

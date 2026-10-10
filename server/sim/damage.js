@@ -321,6 +321,7 @@ export function dealDamage(battle, source, target, dmgIn) {
 export function applyHpLoss(battle, source, target, amount, dmg) {
   if (!target.alive) return 0;
   let dealt = 0;
+  let overkill = 0;
   const hs = dmg && dmg.sourceless ? null : source; // the source hooks see (无来源: none; `credit` keeps it)
   if (target.bossPool) {
     const pool = target.bossPool;
@@ -337,11 +338,12 @@ export function applyHpLoss(battle, source, target, amount, dmg) {
     const before = target.hp;
     target.hp -= amount;
     if (target.hp <= 0) {
+      overkill = Math.max(0, amount - before);
       target.hp = 0;
       if (battle._hooks.fatal) {
         const fctx = { unit: target, source: hs, credit: source, dmg, amount, prevented: false };
         battle.emit('fatal', fctx);
-        if (fctx.prevented && target.alive) { if (target.hp < 1) target.hp = Math.min(1, target.s.maxHp); }
+        if (fctx.prevented && target.alive) { if (target.hp < 1) target.hp = Math.min(1, target.s.maxHp); overkill = 0; }
       }
     }
     dealt = Math.max(0, before - Math.max(0, target.hp));
@@ -359,7 +361,7 @@ export function applyHpLoss(battle, source, target, amount, dmg) {
     // ['dmg', target, amount, type, sourceId | null, attackId] (shared/protocol.js EV): the unit credited with it, the attack
     battle._ev(['dmg', target.id, Math.round(amount), shown, source && source.id != null ? source.id : null, dmg.attackId || 0]);
   }
-  if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, type: dmg ? dmg.type : 'true', dmg, credit: source });
+  if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, overkill, type: dmg ? dmg.type : 'true', dmg, credit: source });
   if (target.side === 'ally' && target.skill && dmg && !dmg.noSp && dmg.type !== 'element') battle._skills.onDamaged(target);
   const dead = target.bossPool ? target.bossPool.hp <= 0 : target.hp <= 0;
   if (dead && target.alive) battle.kill(target, source);
