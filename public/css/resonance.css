@@ -148,7 +148,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-pact-icon--sm { width: .24rem; height: .24rem; }
 .rs-pact-icon--lg { width: .46rem; height: .46rem; }
 .rs-pact-icon.is-inactive { opacity: .4; }
-.rs-game .tier--color, .rs-codex .tier--color { clip-path: none; background: var(--tc); color: #101412; border: 1px solid color-mix(in srgb,var(--tc),white 34%); box-shadow: inset 0 1px rgba(255,255,255,.32); font-weight: 900; text-shadow: none; }
+.rs-game .tier--color, .rs-codex .tier--color { clip-path: none; background: var(--tc); color: #101412; border: 1px solid rgba(255,255,255,.34); border: 1px solid color-mix(in srgb,var(--tc),white 34%); box-shadow: inset 0 1px rgba(255,255,255,.32); font-weight: 900; text-shadow: none; }
 .rs-game .tier--color::before { content: none; }
 .rs-game .tier--color.tier--1, .rs-codex .tier--color.tier--1 { --tc: #9aa5a0; }
 .rs-game .tier--color.tier--2, .rs-codex .tier--color.tier--2 { --tc: #7fd37a; }

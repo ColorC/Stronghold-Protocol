@@ -14,6 +14,7 @@ import { VirtualScheduler } from '../../server/match/scheduler.js';
 import { syntheticResult } from '../../server/match/fields.js';
 import { createBattleFromSpec, compactResult, resonanceResultExtras, fitResult, battleProgress } from '../../server/sim/spec.js';
 import { PROTOCOL_VERSION } from '../../shared/constants.js';
+import { summarizeResonanceResult } from '../../shared/resonance/result-summary.js';
 
 const NATIVE_DATA = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native';
 const NATURAL_CAMPAIGN_REPORT='E:/WindowsWorkspace/webworks/apps/stronghold-protocol/.omni/tmp/resonance/native-natural-campaign.json';
@@ -1129,6 +1130,84 @@ test('completed live match persists before releasing owner and rebuilds its resu
     releaseSave();
     await live.close();
   }
+});
+
+test('completed Resonance result projects persisted history to Native result and cold reconnect once', () => {
+  const data = loadData(NATIVE_DATA), catalog = getResonanceCatalog(data, { rulesVersion: 3, seed: 930 });
+  const created = createSession({ seed: 930, difficulty: 'ABYSS', catalog });
+  assert.equal(created.ok, true, created.error);
+  const state = created.state;
+  state.round = 30;
+  state.roundLimit = 30;
+  state.phase = 'complete';
+  state.terminalReason = 'round-limit-loss';
+  state.history.push(
+    { type: 'fight-settled', round: 30, won: false, hpLoss: 30, combatStats: { bossDamage: 0, units: [{ uid: 'u1', dmg: 1348, heal: 17, kills: 2 }] } },
+    { round: 4, type: 'operator-bought', cost: 2 }, { round: 5, type: 'shop-refreshed', cost: 3 },
+    { round: 6, type: 'xp-purchased', gold: 4 }, { round: 8, type: 'operator-merged' }, { round: 9, type: 'item-equipped' },
+  );
+  const store = { async exclusive(_id, task) { return task(); }, async saveSession() {}, deactivate() {} };
+  const messages = [], endedSummaries = [];
+  const scheduler = new VirtualScheduler({ instantCombat: false });
+  const match = new ResonanceMatch({ sessionId: 'result-summary-native', state, catalog, data, store, scheduler,
+    send(_id, message) { messages.push(message); return true; }, broadcast() {}, onEnd(summary) { endedSummaries.push(summary); },
+    log: { info() {}, warn() {}, error() {}, debug() {} } });
+  try {
+    match.players.get('resonance').stats.bossDamage = 83;
+    for (const [id, pact] of Object.entries(match._resonancePactViews())) assert.equal(pact.name, catalog.pacts[id].name);
+    match.start();
+    const result = messages.find((message) => message.t === 'm.result');
+    assert.ok(result);
+    const player = result.players.find((row) => row.playerId === 'resonance');
+    assert.equal(result.victory, false);
+    assert.equal(result.roundsPassed, 29);
+    assert.equal(result.lastRound, 30);
+    assert.equal(player.roundsPassed, 29);
+    assert.deepEqual(player.stats, {
+      ...player.stats, dmgDealt: 1348, healing: 17, kills: 2, gold: 9, refreshes: 1, merges: 1,
+      itemsEquipped: 1, lpLost: 30, activatedLayers: player.resonance.pacts.length, bossDamage: 83,
+    });
+    assert.ok(player.resonance && Array.isArray(player.resonance.pacts));
+    assert.equal(player.stats.activatedLayers, player.resonance.pacts.length);
+    assert.equal(Object.hasOwn(match.lastResultMsg, 'playerId'), false, 'stored result is viewer-neutral for reconnect');
+    assert.equal(endedSummaries.length, 1);
+    assert.equal(endedSummaries[0].roundsPassed, result.roundsPassed, 'onEnd receives the same projected campaign round count');
+    assert.deepEqual(endedSummaries[0].players, result.players, 'onEnd receives the same projected result rows as clients');
+    assert.deepEqual(endedSummaries[0].players[0].stats, player.stats);
+    assert.equal(Object.hasOwn(endedSummaries[0], 't'), false, 'onEnd summary does not expose the wire message type');
+    assert.equal(Object.hasOwn(endedSummaries[0], 'playerId'), false, 'onEnd summary does not expose viewer-specific identity');
+    const firstResultCount = messages.filter((message) => message.t === 'm.result').length;
+    match.finish({ victory: true, reason: 'victory' });
+    assert.equal(messages.filter((message) => message.t === 'm.result').length, firstResultCount, 'duplicate finish emits no second result');
+
+    const coldMessages = [], coldEndedSummaries = [], coldScheduler = new VirtualScheduler({ instantCombat: false });
+    const coldState = structuredClone(state);
+    coldState.history.find((event) => event.type === 'fight-settled').combatStats.bossDamage = 23;
+    const cold = new ResonanceMatch({ sessionId: 'result-summary-native-cold', state: coldState, catalog, data, store,
+      scheduler: coldScheduler, send(_id, message) { coldMessages.push(message); return true; }, broadcast() {}, onEnd(summary) { coldEndedSummaries.push(summary); },
+      log: { info() {}, warn() {}, error() {}, debug() {} } });
+    try {
+      cold.start();
+      const resumed = coldMessages.find((message) => message.t === 'm.result');
+      const resumedPlayer = resumed.players.find((row) => row.playerId === 'resonance');
+      assert.equal(resumedPlayer.stats.bossDamage, 23, 'cold restore retains finite boss damage saved in history');
+      assert.equal(resumedPlayer.stats.dmgDealt, 1348);
+      assert.equal(resumed.roundsPassed, 29);
+      assert.equal(coldEndedSummaries.length, 1);
+      assert.equal(coldEndedSummaries[0].roundsPassed, resumed.roundsPassed);
+      assert.deepEqual(coldEndedSummaries[0].players, resumed.players);
+      assert.equal(Object.hasOwn(coldEndedSummaries[0], 't'), false);
+      assert.equal(Object.hasOwn(coldEndedSummaries[0], 'playerId'), false);
+    } finally { cold.dispose(); coldScheduler.dispose(); }
+  } finally { match.dispose(); scheduler.dispose(); }
+});
+
+test('Resonance result summary counts passed rounds only before and during campaign completion', () => {
+  const rounds = (phase, terminalReason, round) => summarizeResonanceResult({ phase, terminalReason, round, roundLimit: 30 }).roundsPassed;
+  assert.equal(rounds('PREP', null, 1), 0, 'first-round prep has not passed a round');
+  assert.equal(rounds('PREP', null, 3), 2, 'third-round prep has passed two rounds');
+  assert.equal(rounds('complete', 'round-limit-loss', 30), 29, 'round-30 loss counts only completed prior rounds');
+  assert.equal(rounds('complete', 'victory', 30), 30, 'completed victory counts the victory round');
 });
 
 test('completed persistence failure keeps the Native instance and owner for retry', { timeout: 30_000 }, async () => {

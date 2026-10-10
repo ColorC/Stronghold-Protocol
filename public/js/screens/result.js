@@ -18,6 +18,7 @@ import { normalizeResult, fmtNum } from '../ui/gameLogic.js';
 import { enemyIconUrl, titleIconUrl, uiUrl } from '../ui/assetUrls.js';
 import { store, useStore, emptyMatch } from '../store.js';
 import { audio } from '../audio.js';
+import { PactIcon } from '../resonance/pactIcon.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -29,14 +30,16 @@ const STAT_ROWS = [
   ['refreshes', '刷新次数'], ['leaks', '未击倒'], ['lpLost', '损失生命'],
 ];
 
-function PlayerCard({ p, myId, titles, best, solo = false }) {
+function PlayerCard({ p, myId, titles, best, solo = false, resonanceCatalog = null }) {
   const gd = useGameData();
   const titleRec = p.title ? titles.find((t) => t.id === p.title.id) || null : null;
   const titleName = p.title?.name || titleRec?.name || null;
-  const stats = STAT_ROWS.filter(([k]) => Number.isFinite(p.stats[k])).slice(0, 7);
+  const stats = STAT_ROWS.map(([key, label]) => [key, key === 'activatedLayers' && p.resonance ? '激活盟约' : label])
+    .filter(([k]) => Number.isFinite(p.stats[k])).slice(0, 7);
   const band = p.bandId ? gd.band(p.bandId) : null;
   const lineup = p.lineup.slice(0, 10);
   const bonds = p.bonds.filter((b) => b.active || b.layers > 0).sort((a, b) => (b.layers || 0) - (a.layers || 0)).slice(0, 6);
+  const pacts = Array.isArray(p.resonance?.pacts) ? p.resonance.pacts.slice(0, 6) : [];
   return html`<article class=${cx('rcard', p.playerId === myId && 'is-self', p.alive === false && 'is-dead')}>
     <header class="rcard__head">
       <${PlayerAvatar} player=${p} self=${p.playerId === myId} />
@@ -49,7 +52,9 @@ function PlayerCard({ p, myId, titles, best, solo = false }) {
           ${lineup.length ? lineup.map((u, i) => html`<${UnitThumb} key=${i} kind=${u.kind === 'token' ? 'token' : 'chess'} id=${u.id} golden=${!!u.golden} tier=${u.tier} size="sm" />`)
             : html`<span class="rcard__noinfo">${p.alive === false ? '阵容已撤离' : 'NO INFO'}</span>`}
         </div>
-        ${bonds.length ? html`<div class="rcard__bonds">${bonds.map((b) => html`<span key=${b.bondId} class=${cx('rbond', b.active && 'is-on')} title=${gd.bond(b.bondId)?.name || b.bondId}>
+        ${pacts.length ? html`<div class="rcard__bonds">${pacts.map((pact) => html`<span key=${pact.id} class="rbond is-on" title=${pact.name || pact.id}>
+          <${PactIcon} catalog=${resonanceCatalog} id=${pact.id} size="sm" /><b class="num">${pact.count}</b></span>`)}</div>`
+          : bonds.length ? html`<div class="rcard__bonds">${bonds.map((b) => html`<span key=${b.bondId} class=${cx('rbond', b.active && 'is-on')} title=${gd.bond(b.bondId)?.name || b.bondId}>
           <${BondGlyph} bondId=${b.bondId} /><b class="num">${b.layers ?? 0}</b></span>`)}</div>` : null}
       </div>
       <div class="rcard__round"><${MicroLabel}>ROUNDS</${MicroLabel}><b class="num">${p.roundsPassed}</b>
@@ -121,7 +126,7 @@ export function ResultScreen() {
       </section>
       <section class="result__players">
         <h2 class="brief-h"><span>同盟成员</span><${MicroLabel}>ALLIANCE REPORT</${MicroLabel}></h2>
-        ${r.players.length ? r.players.map((p) => html`<${PlayerCard} key=${p.playerId} p=${p} myId=${myId} titles=${titles} best=${best} solo=${r.players.length < 2} />`)
+        ${r.players.length ? r.players.map((p) => html`<${PlayerCard} key=${p.playerId} p=${p} myId=${myId} titles=${titles} best=${best} solo=${r.players.length < 2} resonanceCatalog=${resonanceCatalog} />`)
           : html`<p class="t-dim">暂无结算数据</p>`}
         ${resonanceState && resonanceCatalog ? html`<${ResonanceFinalReport} state=${resonanceState} catalog=${resonanceCatalog} />` : null}
       </section>

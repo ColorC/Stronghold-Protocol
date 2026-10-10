@@ -16,6 +16,21 @@ async function readSession(page, id) {
   return packet.state;
 }
 
+function summarizeSessionResultHistory(state) {
+  const totals = { dmgDealt: 0, kills: 0, spent: 0 };
+  for (const event of Array.isArray(state?.history) ? state.history : []) {
+    if (event?.type === 'fight-settled') {
+      for (const unit of Array.isArray(event.combatStats?.units) ? event.combatStats.units : []) {
+        totals.dmgDealt += Number(unit?.dmg) || 0;
+        totals.kills += Number(unit?.kills) || 0;
+      }
+    } else if (event?.type === 'operator-bought') totals.spent += Number(event.cost) || 0;
+    else if (event?.type === 'shop-refreshed') totals.spent += Number(event.cost) || 0;
+    else if (event?.type === 'xp-purchased') totals.spent += Number(event.gold) || 0;
+  }
+  return totals;
+}
+
 async function readCatalog(page, seed) {
   const packet = await page.evaluate(async (catalogSeed) => {
     const response = await fetch(`/resonance/api/catalog?seed=${encodeURIComponent(catalogSeed)}`, { cache: 'no-store' });
@@ -694,6 +709,22 @@ async function runTerminalFixture({ page, baseUrl, file, difficulty, attempt, wa
   assert(terminal, `real terminal fixture did not settle within 180 seconds: ${file.id}`);
   await page.waitForSelector('.screen.result .rs-native-result-details__rows', { timeout: 25_000 });
   const state = terminal.state;
+  const resultFrame = await waitReceived(attempt, 'm.result', 20_000, startsBefore);
+  assert(resultFrame?.resultSummary, `Native m.result for ${battleStart.battleId} lacks the compact Resonance result projection`);
+  const historyTotals = summarizeSessionResultHistory(state);
+  const expectedVictory = state.terminalReason === 'victory';
+  const lastRound = Math.max(0, Math.trunc(Number(state.roundLimit) || Number(state.round) || 0));
+  const expectedRoundsPassed = Math.min(lastRound, Math.max(0, Math.trunc(Number(state.round) || 0) - (expectedVictory ? 0 : 1)));
+  assert(resultFrame.resultSummary.victory === expectedVictory
+      && resultFrame.resultSummary.roundsPassed === expectedRoundsPassed
+      && resultFrame.resultSummary.lastRound === lastRound,
+    `Native m.result outcome/round total disagrees with settled session: ${JSON.stringify({ result: resultFrame.resultSummary, terminalReason: state.terminalReason, round: state.round, roundLimit: state.roundLimit, expectedRoundsPassed })}`);
+  for (const key of ['dmgDealt', 'kills', 'spent']) assert(resultFrame.resultSummary.stats[key] === historyTotals[key],
+    `Native m.result ${key} differs from persisted session history: ${JSON.stringify({ key, result: resultFrame.resultSummary.stats[key], history: historyTotals[key], round: state.round, terminalReason: state.terminalReason })}`);
+  if (expectedPhase === 'HIDDEN_CORE' && !expectedVictory) assert(expectedRoundsPassed === Number(state.round) - 1,
+    `Hidden Core loss at round ${state.round} must report ${Number(state.round) - 1} rounds passed`);
+  if (expectedPhase === 'FINAL_ASSAULT' && expectedVictory) assert(expectedRoundsPassed === Number(state.round),
+    `Final Assault victory must report the settled victory round ${state.round}`);
   const catalog = await readCatalog(page, file.seed);
   const roster = (state.pieces || []).map((piece) => ({ uid: piece.uid, operatorId: piece.operatorId,
     name: catalog.operators?.[piece.operatorId]?.name || piece.operatorId, star: piece.star,
@@ -719,7 +750,8 @@ async function runTerminalFixture({ page, baseUrl, file, difficulty, attempt, wa
   return { sessionId: file.id, difficulty, expectedStageId: expectedStageId || before.field.stageId, expectedRound: expectedRound ?? null,
     expectedPhase, infoReady: opened.infoReady, readySent, battleStart, phaseFrame: publicCombat, terminalReason: state.terminalReason || terminal.settlement.outcome || null,
     round: state.round, liveMatch, settlement: { round: terminal.settlement.round, won: terminal.settlement.won, reason: terminal.settlement.reason },
-    roster, resultView, damageUnits: stats.filter((unit) => Number(unit.dmg) > 0).length };
+    roster, resultView, resultSummary: resultFrame.resultSummary, historyTotals,
+    damageUnits: stats.filter((unit) => Number(unit.dmg) > 0).length };
 }
 
 /** Run the post-entry live fixtures against a page and checker-owned browser/server. */

@@ -259,10 +259,15 @@ export function battleProgress(battle) {
   for (const k of Object.keys(pp)) for (const l of pp[k].leaked || []) if (l && l.counted !== false) leaks++;
   const pool = battle && battle.sharedBoss;
   const gt = Number(battle && battle.time) || 0;
+  const total = Math.max(0, Math.trunc(Number(battle && battle.total) || 0));
+  const resolvedValue = battle && battle.resolved;
   const out = {
     gt: Math.round(gt * 1000) / 1000,
     killed: Math.max(0, Math.trunc(Number(battle && battle.killed) || 0)),
-    total: Math.max(0, Math.trunc(Number(battle && battle.total) || 0)),
+    total,
+    // null means the battle cannot report a distinct resolved count; keep it distinct from an actual zero.
+    resolved: resolvedValue == null || !Number.isFinite(Number(resolvedValue))
+      ? null : Math.max(0, Math.min(total, Math.trunc(Number(resolvedValue)))),
     leaks,
     bossDmg: pool && Number.isFinite(pool.cum) ? pool.cum : 0,
     done: !!(battle && battle.finished),
@@ -270,6 +275,14 @@ export function battleProgress(battle) {
   if (battle && battle.kind === 'unite') {
     const left = uniteLeft(battle);
     if (left) out.left = left;
+  }
+  if (battle && (battle.kind === 'boss' || battle.kind === 'hidden')) {
+    const leaksBy = {};
+    for (const pid of Object.keys(pp).slice(0, 4)) {
+      const entries = cap(pp[pid] && pp[pid].leaked, 400).filter((l) => l && isKey(l.enemyKey));
+      leaksBy[pid] = Math.min(1e6, entries.reduce((sum, l) => sum + Math.max(0, Math.min(1000, fnum(l.lpr, 1))), 0));
+    }
+    out.leaksBy = leaksBy;
   }
   return out;
 }

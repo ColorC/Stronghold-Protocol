@@ -8,6 +8,7 @@ import { resonanceDisplayCatalog } from './display.js';
 import { BOSS_CLOCK_MS, DELAYS } from '../../match/match/common.js';
 import { BOSS_HIT_STEPS, SharedBossPool } from '../../match/finalAssault.js';
 import { compactResonanceResult, resonanceResultExtras } from '../../sim/spec.js';
+import { summarizeResonanceResult } from '../../../shared/resonance/result-summary.js';
 
 const PLAYER = 'resonance';
 const OK = Object.freeze({ ok: true });
@@ -61,7 +62,11 @@ export class ResonanceMatch extends Match {
       onEnd: (summary) => {
         opts.send?.(PLAYER, { t: 'room.state', code: 'RSN', hostId: PLAYER, mode: 'solo', difficulty: opts.state.difficulty,
           inMatch: false, seats: [{ seat: 0, playerId: PLAYER, name: '共鸣', isBot: false, ready: true, connected: true }], spectators: [] });
-        opts.onEnd?.(summary);
+        if (opts.catalog?.config?.rulesVersion === 3 && summary && typeof summary === 'object') {
+          const projected = this._resonanceResultProjection({ t: 'm.result', ...summary });
+          const { t: _type, playerId: _viewer, ...callbackSummary } = projected;
+          opts.onEnd?.(callbackSummary);
+        } else opts.onEnd?.(summary);
       }, send: opts.send, broadcast: opts.broadcast,
     });
     this.sessionId = opts.sessionId;
@@ -322,6 +327,54 @@ export class ResonanceMatch extends Match {
     const units = Object.values(preview).map((entry) => ({ ...entry, uid: this.uidMap.native(entry.uid) }));
     this.sendTo(PLAYER, { t: 'm.unitStats', seq: null, round: this.round, units });
     return OK;
+  }
+
+  _resonancePactViews() {
+    const pacts = this.displayState()?.pacts ?? {};
+    return Object.fromEntries(Object.entries(pacts).map(([id, pact]) => [id, {
+      ...pact, name: this.catalog.pacts?.[id]?.name ?? pact?.name ?? '',
+    }]));
+  }
+
+  _resonanceResultProjection(message) {
+    if (this.catalog.config?.rulesVersion !== 3 || message?.t !== 'm.result') return message;
+    const summary = this._resonanceFinalSummary ?? summarizeResonanceResult(this.state, this._resonancePactViews());
+    const players = (Array.isArray(message.players) ? message.players : []).map((player) => player.playerId === PLAYER ? {
+      ...player, roundsPassed: summary.roundsPassed,
+      stats: { ...player.stats, ...summary.stats, ...(() => {
+        const values = [player.stats?.bossDamage, summary.stats.bossDamage].filter((value) => Number.isFinite(value) && value >= 0);
+        return values.length ? { bossDamage: Math.max(...values) } : {};
+      })() },
+      resonance: { ...(player.resonance && typeof player.resonance === 'object' ? player.resonance : {}), pacts: summary.pacts },
+    } : player);
+    return { ...message, roundsPassed: summary.roundsPassed, lastRound: summary.lastRound, players };
+  }
+
+  sendTo(playerId, message) {
+    if (this.catalog.config?.rulesVersion !== 3 || message?.t !== 'm.result') return super.sendTo(playerId, message);
+    const projected = this._resonanceResultProjection(message);
+    const { playerId: _viewer, ...canonical } = projected;
+    this.lastResultMsg = canonical;
+    return super.sendTo(playerId, { ...projected, playerId });
+  }
+
+  finish(outcome) {
+    if (this.catalog.config?.rulesVersion === 3) {
+      this._resonanceFinalSummary = summarizeResonanceResult(this.state, this._resonancePactViews());
+      const ps = this.players.get(PLAYER);
+      if (ps) {
+        const values = [ps.stats.bossDamage, this._resonanceFinalSummary.stats.bossDamage]
+          .filter((value) => Number.isFinite(value) && value >= 0);
+        if (values.length) this._resonanceFinalSummary.stats.bossDamage = Math.max(...values);
+        Object.assign(ps.stats, this._resonanceFinalSummary.stats);
+      }
+    }
+    super.finish(outcome);
+    if (this.catalog.config?.rulesVersion === 3 && this.lastResultMsg?.t === 'm.result') {
+      const projected = this._resonanceResultProjection(this.lastResultMsg);
+      const { playerId: _viewer, ...canonical } = projected;
+      this.lastResultMsg = canonical;
+    }
   }
 
   start() {

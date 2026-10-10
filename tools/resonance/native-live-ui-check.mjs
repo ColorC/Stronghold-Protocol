@@ -55,6 +55,16 @@ export function isAllowedHttpRequest(method, pathname) {
 }
 export function screenshotCount(paths) { return Object.values(paths || {}).filter((value) => typeof value === 'string' && /\.jpe?g$/i.test(value)).length; }
 export function missingChecks(checks) { return REQUIRED_CHECKS.filter((key) => checks?.[key]?.status !== 'passed'); }
+export function projectNativeResultSummary(message) {
+  if (message?.t !== 'm.result' || !Array.isArray(message.players)) return null;
+  const player = message.players.find((entry) => entry?.playerId === 'resonance');
+  if (!player) return null;
+  const numeric = (value) => value != null && Number.isFinite(Number(value)) ? Number(value) : null;
+  const stats = player.stats && typeof player.stats === 'object' ? player.stats : {};
+  return { victory: typeof message.victory === 'boolean' ? message.victory : null,
+    roundsPassed: numeric(player.roundsPassed ?? message.roundsPassed), lastRound: numeric(message.lastRound),
+    stats: { dmgDealt: numeric(stats.dmgDealt), kills: numeric(stats.kills), spent: numeric(stats.gold) } };
+}
 export function screenshotOverwriteOwner(receipt, file) {
   const absolute = path.resolve(file);
   return (receipt?.attempts ?? []).find((attempt) => Object.values(attempt?.screenshots ?? {})
@@ -483,6 +493,7 @@ export async function attachWsCapture(page, attempt, onSent = null) {
           .map((key) => [key, Array.isArray(mode[key]) ? mode[key].length : 0]));
         row.resultMetricsKeyCount = Object.keys(mode.metrics ?? {}).length;
       }
+      if (direction === 'received' && message.t === 'm.result') row.resultSummary = projectNativeResultSummary(message);
       if (direction === 'sent') { attempt.ws.sent.push(row); onSent?.(message); }
       else attempt.ws.received.push(row);
     } catch {}

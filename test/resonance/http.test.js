@@ -9,7 +9,7 @@ import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {createResonanceHttp} from '../../server/modes/resonance/http.js';
 
 // The sparse worktree has no copied input; tests read the one canonical data tree explicitly.
-const data=loadData(process.env.SP_DATA_DIR||path.resolve(ROOT,'..','..','..','data'),{log:{warn(){},error(){}}});
+const data=loadData(process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT,'data'),{log:{warn(){},error(){}}});
 function request(method,url,body,origin='http://local.test'){
  const req=Readable.from(body===undefined?[]:[Buffer.from(JSON.stringify(body))]);req.method=method;req.url=url;req.headers={host:'local.test',...(origin?{origin}:{})};
  const res={headersSent:false,writableEnded:false,destroyed:false,status:0,headers:{},writeHead(status,headers){this.status=status;this.headers=headers;this.headersSent=true},end(text){this.body=text;this.writableEnded=true}};
@@ -43,7 +43,9 @@ test('resonance HTTP is authoritative, same-origin, and returns a source-free pl
 });
 
 test('HTTP session DTO returns each persisted terminal reason without running a battle',async()=>{
- const directory=path.resolve(ROOT,'..','..','..','runtime/resonance/verification/fixture-sessions');
+ const directory=process.env.SP_RESONANCE_TEST_FIXTURE_DIR
+  ? path.resolve(process.env.SP_RESONANCE_TEST_FIXTURE_DIR)
+  : path.join(ROOT,'runtime/resonance/verification/fixture-sessions');
  const catalogProvider=(native,options)=>getResonanceCatalog(native,options);
  const handler=createResonanceHttp({data,directory,catalogProvider,fieldResolver:()=>null,statsPreview:()=>({}),battleRunner:()=>{throw new Error('battle must not run for saved terminal sessions')}});
  const fixtures=[

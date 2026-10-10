@@ -533,7 +533,8 @@ function aggregateMetrics(battle, result, playerResult) {
 export function combatStatsOf(playerResult) {
   if (!Array.isArray(playerResult?.unitStats)) return null;
   const metric = (value) => Number.isFinite(value) ? value : null;
-  return { units: playerResult.unitStats.map((unit) => ({
+  const bossDamage = metric(playerResult.bossDamage);
+  return { ...(bossDamage === null ? {} : { bossDamage }), units: playerResult.unitStats.map((unit) => ({
     uid: unit?.uid ?? null,
     defId: unit?.defId ?? null,
     kind: unit?.kind ?? null,

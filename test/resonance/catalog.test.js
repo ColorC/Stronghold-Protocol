@@ -12,7 +12,8 @@ import { resonanceContent, resonanceSourceSkillGaps, buildRecruitmentPool } from
 import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const DATA = loadData(path.resolve(ROOT, '../../../data'), { log: { warn() {}, error() {} } });
+const DATA_DIR = process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data');
+const DATA = loadData(DATA_DIR, { log: { warn() {}, error() {} } });
 
 test('published operator catalog preserves all 154 source identities and explicit star records', () => {
   const ops = Object.values(resonanceContent.operators);
@@ -148,7 +149,7 @@ test('fixed skill index resolves to the configured raw skill and blackboard in B
 });
 
 test('prototype catalog compiler projects all canonical Chem-Baron rows without leaking its source table', () => {
-  const prototypeData = loadData(path.resolve(ROOT, '../../../data/resonance-native'), { log: { warn() {}, error() {} } });
+  const prototypeData = loadData(process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data/resonance-native'), { log: { warn() {}, error() {} } });
   const catalog = getResonanceCatalog(prototypeData, { rulesVersion: 3, seasonId: 'resonance-set13-14.23', seed: 1 });
   assert.equal(Object.hasOwn(catalog, 'prototypeSeason'), false);
   assert.equal(Object.values(catalog.equipment).filter((item) => item.source?.apiName?.startsWith('TFT13_Crime_')).length, 28);
@@ -176,7 +177,7 @@ test('current documentation is regenerated deterministically from the v3 catalog
   const reviewPath = path.join(ROOT, 'docs/resonance/catalog.md');
   const compilerPath = path.join(ROOT, 'tools/resonance/export-prototype-catalog.mjs');
   const originalConfig = fs.readFileSync(outputPath);
-  const env = { ...process.env, SP_DATA_DIR: path.resolve(ROOT, '../../../data/resonance-native') };
+  const env = { ...process.env, SP_DATA_DIR: process.env.SP_DATA_DIR ? path.resolve(process.env.SP_DATA_DIR) : path.join(ROOT, 'data/resonance-native') };
   const options = { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 4*1024*1024, timeout: 30000 };
   const defaultResult=JSON.parse(execFileSync(process.execPath, [compilerPath], options).trim());
   assert.equal(defaultResult.rulesVersion,3);assert.equal(defaultResult.active,60);assert.equal(defaultResult.pacts,26);

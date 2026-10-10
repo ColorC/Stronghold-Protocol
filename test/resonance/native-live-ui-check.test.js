@@ -14,9 +14,14 @@ test('prepare mode validates paths without launching a browser or service', () =
   assert.equal(payload.port, 19003);
   assert.equal(payload.deadlineMs, 8 * 60_000);
   assert.match(payload.sessionDirectory.replaceAll('\\', '/'), /runtime\/resonance\/ui-verification\/native-live-test-sessions$/);
-  assert.match(payload.serverMount.publicDir.replaceAll('\\', '/'), /\.worktrees\/resonance\/stronghold-protocol\/public$/);
+  assert.equal(payload.serverMount.publicDir.replaceAll('\\', '/'), `${config().source.replaceAll('\\', '/')}/public`);
   assert.equal(payload.serverMount.installDirReadOnlyFallback, payload.canonicalInstallDir);
   assert.equal(Object.keys(payload.screenshots).length, 10);
+  const canonical = spawnSync(process.execPath, [tool, '--validate-args', '--source-root', config().canonicalInstallDir], { encoding: 'utf8', timeout: 10_000 });
+  assert.equal(canonical.status, 0, canonical.stderr);
+  const canonicalPayload = JSON.parse(canonical.stdout);
+  assert.equal(canonicalPayload.serverMount.publicDir.replaceAll('\\', '/'), `${config().canonicalInstallDir.replaceAll('\\', '/')}/public`);
+  assert.equal(canonicalPayload.browserStarted, false);
 });
 
 test('only creating an isolated session may use POST; REST gameplay mutations stay closed', () => {
@@ -69,6 +74,10 @@ test('CDP websocket capture records actual frames and operation waits honor thei
   handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'm.private', phase: 'prep' }) } });
   handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'b.start', battleId: 'b28', kind: 'boss',
     spec: { kind: 'boss', stageId: 'stage-final', round: 14, spawns: Array.from({ length: 50 }, () => ({ id: 'not-captured' })) } }) } });
+  const nativeResultWire = JSON.stringify({ t: 'm.result', victory: false, roundsPassed: 29, lastRound: 30,
+    players: [{ playerId: 'other', stats: { dmgDealt: 900 } }, { playerId: 'resonance', roundsPassed: 29,
+      stats: { dmgDealt: 130, kills: 4, gold: 7, privateData: 'omit' } }] });
+  handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: nativeResultWire } });
   const resultWire = JSON.stringify({ t: 'b.result', battleId: 'b28', result: {
     perPlayer: { one: { unitStats: [{ dmg: 100 }, { dmg: 25 }] }, two: { unitStats: [{ dmg: 5 }] } },
     resonance: { growth: [{ amount: 1 }], coins: [{ amount: 2 }, { amount: 3 }], forge: [],
@@ -77,11 +86,14 @@ test('CDP websocket capture records actual frames and operation waits honor thei
   handlers.get('Network.webSocketFrameSent')({ response: { payloadData: resultWire } });
   assert.deepEqual(calls, ['Network.enable']);
   assert.deepEqual(attempt.ws.sent.map((row) => row.t), ['g.resonance', 'b.result']);
-  assert.deepEqual(attempt.ws.received.map((row) => row.t), ['m.private', 'b.start']);
+  assert.deepEqual(attempt.ws.received.map((row) => row.t), ['m.private', 'b.start', 'm.result']);
   assert.deepEqual({ kind: attempt.ws.received[1].kind, specKind: attempt.ws.received[1].specKind,
     specStageId: attempt.ws.received[1].specStageId, specRound: attempt.ws.received[1].specRound },
   { kind: 'boss', specKind: 'boss', specStageId: 'stage-final', specRound: 14 });
   assert.equal('spawns' in attempt.ws.received[1], false, 'capture stores only bounded battle identity fields, not the full spec');
+  assert.deepEqual(attempt.ws.received[2].resultSummary,
+    { victory: false, roundsPassed: 29, lastRound: 30, stats: { dmgDealt: 130, kills: 4, spent: 7 } });
+  assert.equal('players' in attempt.ws.received[2], false, 'capture must not retain full player result data');
   const resultRow = attempt.ws.sent[1];
   assert.deepEqual({ frameBytes: resultRow.resultFrameBytes, statsCount: resultRow.resultStatsCount,
     damageSum: resultRow.resultDamageSum, queues: resultRow.resultModeQueueCounts, metricsKeys: resultRow.resultMetricsKeyCount },
@@ -96,4 +108,15 @@ test('CDP websocket capture records actual frames and operation waits honor thei
   assert.equal(await waitSent(attempt, 'g.resonance', 1, offset), null, 'a previous frame cannot satisfy a later action wait');
   attempt.ws.sent.push({ t: 'g.resonance', action: 'combine' });
   assert.equal((await waitSent(attempt, 'g.resonance', 10, offset)).action, 'combine');
+});
+
+test('native result projection captures only the resonance player result metrics', async () => {
+  const { projectNativeResultSummary } = await import('../../tools/resonance/native-live-ui-check.mjs');
+  const summary = projectNativeResultSummary({ t: 'm.result', victory: false, roundsPassed: 29, lastRound: 30, players: [
+    { playerId: 'other', roundsPassed: 30, stats: { dmgDealt: 999, kills: 99, gold: 88 } },
+    { playerId: 'resonance', roundsPassed: 29, stats: { dmgDealt: 1348, kills: 27, gold: 14, secret: 'omit' } },
+  ] });
+  assert.deepEqual(summary, { victory: false, roundsPassed: 29, lastRound: 30, stats: { dmgDealt: 1348, kills: 27, spent: 14 } });
+  assert.equal(JSON.stringify(summary).includes('secret'), false);
+  assert.equal(projectNativeResultSummary({ t: 'm.result', players: [] }), null);
 });

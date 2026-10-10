@@ -1746,6 +1746,7 @@ export function normalizeResult(res, pub) {
       title,
       lineup: (Array.isArray(p.lineup) ? p.lineup : Array.isArray(p.board) ? p.board : []).filter(isObj).slice(0, 12),
       bonds: (Array.isArray(p.bonds) ? p.bonds : Array.isArray(pp.bonds) ? pp.bonds : []).filter(isObj),
+      ...(isObj(p.resonance) ? { resonance: p.resonance } : {}),
       stats: isObj(p.stats) ? p.stats : {},
       trophies: Number.isFinite(p.trophies) ? p.trophies : 0,
       reward: Number.isFinite(p.reward) ? p.reward : 0,
