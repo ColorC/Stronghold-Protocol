@@ -3,9 +3,9 @@ import { independentPrizeRounds } from '../../../shared/independentEconomy.js';
 // shopbar, scard, lvcard, funds) with the independent mode's own data. Default layer only (docs/independent-mode/
 // frontend-design.md 信息分层): numbers that decide the current step; full texts open in the detail card.
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { html, Fragment, Icon, Button, HexBadge, TierChip, Tooltip, MicroLabel, DifficultyTag } from '../ui/components.js';
+import { html, Fragment, Icon, Button, HexBadge, TierChip, Tooltip, MicroLabel, DifficultyTag, Countdown } from '../ui/components.js';
 import { Img, BondGlyph, CoinGlyph, GIcon, LpTower, ItemIcon, UnitThumb } from '../ui/gameComponents.js';
-import { PhaseCapsule, CheckBtn, checkButtons } from '../ui/hud.js';
+import { PhaseCapsule, CheckBtn, PauseButton, checkButtons } from '../ui/hud.js';
 import { SkillBadge } from '../ui/shopBar.js';
 import { chessLoadout } from '../ui/gameLogic.js';
 import { operatorDisplayFactions } from '../../../shared/independentFactionDisplay.js';
@@ -76,7 +76,7 @@ export function TraitGlyphs({ summary, elite = false, catalog, growthMode = 'bad
 // ---- top bar ------------------------------------------------------------------------------------------------------
 
 /** Round / phase / LP / ready, on the original top bar's frame. `battle` = the replay on screen (or null). */
-export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null, drawer = null, onDrawer = null, production = null }) {
+export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen = false, onPen = null, drawer = null, onDrawer = null, production = null, replayControls = null }) {
   const enemies = (state.nextEnemies || []).reduce((n, e) => n + Number(e.count || 0), 0);
   // a boss field reads 最终攻势 with the leader's HP bar in the capsule (ui/hud.js PhaseCapsule, gameLogic snapHud)
   const boss = !!battle && battle.replay?.kind && battle.replay.kind !== 'normal';
@@ -110,6 +110,14 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
     </div>
     <div class="gtop__right">
       ${production}
+      ${replayControls ? html`<div class="gtop__clock ix-replay-controls">
+        <${Countdown} seconds=${replayControls.remaining} total=${replayControls.duration} label=${replayControls.paused ? 'PAUSED' : 'REPLAY'} size="md" />
+        <${PauseButton} paused=${replayControls.paused} onToggle=${replayControls.onToggle} />
+        <div class="ix-replay-speed" role="group" aria-label="回放速度">
+          ${replayControls.speeds.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', replayControls.speed === s && 'is-on')} onClick=${() => replayControls.onSpeed(s)}>${s / 2}×</button>`)}
+        </div>
+        <${Button} size="sm" variant="secondary" onClick=${replayControls.onEnd} data-testid="ix-skip">${replayControls.endLabel}<//>
+      </div>` : null}
       ${!battle && state.phase === 'prep' ? html`<div class="readywrap">
         <${Tooltip} text=${readyReason || '开始本轮战斗 · Space'} placement="bottom">
           <button type="button" class=${cx('readybtn', 'tapx', busy && 'is-busy')} disabled=${!!readyReason || busy} onClick=${onReady} data-testid="ix-ready">

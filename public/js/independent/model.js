@@ -312,6 +312,10 @@ export function replayClock(replay) {
   const duration = frames.length ? frames[frames.length - 1].snap.t - t0 : 0;
   return { t0, duration };
 }
+export function stepReplayClock(gameTime, previousNow, now, speed, paused) {
+  const delta = Math.min(0.1, Math.max(0, (now - previousNow) / 1000));
+  return { gameTime: paused ? gameTime : gameTime + delta * speed, previousNow: now };
+}
 export function frameAt(frames, t) {
   let lo = 0, hi = frames.length - 1, k = -1;
   while (lo <= hi) { const mid = (lo + hi) >> 1; if (frames[mid].snap.t <= t) { k = mid; lo = mid + 1; } else hi = mid - 1; }

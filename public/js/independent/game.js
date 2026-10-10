@@ -21,10 +21,10 @@ import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortc
 import { data } from '../data.js';
 import { api } from './api.js';
 import { prepView, canDrop, dropRefusal, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
-  replayClock, frameAt, pendingOffer, renderChessId, withCatalogTiers } from './model.js';
+  replayClock, stepReplayClock, frameAt, pendingOffer, renderChessId, withCatalogTiers } from './model.js';
 import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount, MatchInfo, mergeHintOf, EffectsColumn } from './hud.js';
 import { EnemyDrawer } from '../ui/enemyDrawer.js';
-import { DpCounter } from '../ui/hud.js';
+import { DpCounter, PauseButton } from '../ui/hud.js';
 import { InventoryPanel, OfferOverlay, InheritPanel, ResultPanel, FinalScreen, USE_NEEDS } from './panels.js';
 import { DetailCard } from './detail.js';
 import { parseComponentLinkHash } from './componentLinkHash.js';
@@ -145,6 +145,18 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
   const [speed, setSpeed] = useState(SPEEDS[0]);
   const [pen, setPen] = useState(false);
   const speedRef = useRef(speed); speedRef.current = speed;
+  const [replayPaused, setReplayPaused] = useState(false);
+  const replayPausedRef = useRef(false);
+  const [replayRemaining, setReplayRemaining] = useState(0);
+  const replayTimeRef = useRef(0);
+  const replayEndTimeRef = useRef(0);
+  const toggleReplayPause = useCallback(() => {
+    const next = !replayPausedRef.current;
+    replayPausedRef.current = next;
+    view?.setReplayPaused?.(next);
+    if (next) setReplayRemaining(Math.max(0, replayEndTimeRef.current - replayTimeRef.current));
+    setReplayPaused(next);
+  }, [view]);
   // the replay frame on show (index into battle.replay.frames): the detail card reads a battle unit's HP and stats there
   const replayPosRef = useRef(-1);
   const [banner, setBanner] = useState(null);
@@ -469,8 +481,11 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     view.enterBattle(rec.field);
     view.setCamera(kind, { rect: rec.field.rect, side: 'L' });
     audio.setFieldUnits([]);
-    const { t0 } = replayClock(rec);
+    const { t0, duration } = replayClock(rec);
+    replayPausedRef.current = false; view.setReplayPaused?.(false); replayTimeRef.current = t0; replayEndTimeRef.current = t0 + duration;
+    setReplayPaused(false); setReplayRemaining(duration);
     let idx = 0; let gameT = t0 - 0.001; let last = performance.now(); let raf = 0; let shown = -1; let ended = false; let leaked = 0;
+    let lastClockUpdate = last;
     const feed = () => {
       while (idx < frames.length && frames[idx].snap.t <= gameT) {
         const f = frames[idx++];
@@ -494,10 +509,18 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
       if (k !== shown) { shown = k; const s = frames[k]?.snap; if (s) setBattle((b) => (b ? { ...b, killed: s.killed, total: s.total, hud: snapHud(s), leaked } : b)); }
     };
     const loop = (now) => {
-      const dt = Math.min(0.1, (now - last) / 1000); last = now;
-      gameT += dt * speedRef.current;
-      feed(); report();
+      const step = stepReplayClock(gameT, last, now, speedRef.current, replayPausedRef.current);
+      gameT = step.gameTime; last = step.previousNow;
+      replayTimeRef.current = gameT;
+      if (!replayPausedRef.current) {
+        feed(); report();
+        if (now - lastClockUpdate >= 200) {
+          lastClockUpdate = now;
+          setReplayRemaining(Math.max(0, t0 + duration - gameT));
+        }
+      }
       if (idx >= frames.length) {
+        replayTimeRef.current = t0 + duration; setReplayRemaining(0);
         if (!ended) { ended = true; speak(); setTimeout(() => setBattle((b) => (b ? { ...b, done: true } : b)), 900); }
         return;
       }
@@ -518,10 +541,11 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
       view.raw?.debug?.interp?.snapToNewest?.();
       for (let i = 0; i <= k; i++) for (const e of frames[i].ev) if (e[0] === 'leak') leaked++;
       idx = frames.length; replayPosRef.current = k; report();
+      replayPausedRef.current = false; view.setReplayPaused?.(false); replayTimeRef.current = t0 + duration; setReplayPaused(false); setReplayRemaining(0);
       if (!ended) { ended = true; setBattle((b) => (b ? { ...b, done: true } : b)); }
     };
     raf = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(raf); seekRef.current = null; };
+    return () => { cancelAnimationFrame(raf); seekRef.current = null; replayPausedRef.current = false; view.setReplayPaused?.(false); replayTimeRef.current = 0; replayEndTimeRef.current = 0; setReplayPaused(false); };
   }, [view, battle?.replay, gd.ready]);
 
   // ---- the phase as the original game screen sees it: banner, cue and BGM (gameLogic phaseBanner, audio.js bgmKeyFor) --
@@ -598,7 +622,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
         e.preventDefault();
         return;
       }
-      if (battleRef.current) { if (a === 'ready') { e.preventDefault(); seekRef.current?.(); } return; }
+      if (battleRef.current) { if (a === 'ready') { e.preventDefault(); if (e.target instanceof HTMLElement && e.target.closest('button, [role="button"]')) e.target.blur(); toggleReplayPause(); } return; }
       if (stateRef.current.phase !== 'prep' || L.facing) return;
       e.preventDefault(); // a focused HUD button must not also activate (Space)
       if (a === 'ready' && e.target instanceof HTMLElement && e.target.closest('button, [role="button"]')) e.target.blur();
@@ -616,7 +640,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [act, ready, retreatPiece, sellPiece]);
+  }, [act, ready, retreatPiece, sellPiece, toggleReplayPause]);
 
   // ---- derived -----------------------------------------------------------------------------------------------------
   const stacks = useMemo(() => inventoryStacks(state.inventory, catalog), [state.inventory, catalog]);
@@ -714,7 +738,14 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
     <div class="gm__hud">
       ${fieldTarget ? html`<div class="ix-target-prompt" role="status"><span>${fieldTarget.label || (fieldTarget.spec?.kind === 'shopSlot' ? '点击高亮的商店卡牌进行分配' : '点击高亮友方干员作为目标')}</span><button type="button" onClick=${() => { cancelFieldTarget(); }}>取消 <kbd>Esc</kbd></button></div>` : null}
       <${TopBar} state=${state} battle=${battle} busy=${busy} readyReason=${readyReason} onReady=${ready} onExit=${leave} drawer=${drawer} onDrawer=${setDrawer}
-        pen=${pen} onPen=${() => setPen((x) => !x)} production=${!battle ? html`<${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />` : null} />
+        pen=${pen} onPen=${() => setPen((x) => !x)} production=${!battle ? html`<${ProductionPanel} state=${state} catalog=${catalog} onReport=${() => setReportOpen(true)} />` : null}
+        replayControls=${battle ? { paused: replayPaused, remaining: Math.ceil(replayRemaining), duration: Math.ceil(replayClock(battle.replay).duration),
+          speed, speeds: SPEEDS, onSpeed: setSpeed, onToggle: toggleReplayPause,
+          endLabel: battleEndControl(battle.done, !!battle.finished).label,
+          onEnd: battleEndControl(battle.done, !!battle.finished).action === 'close' ? closeBattle : () => seekRef.current?.() } : null} />
+      ${battle && replayPaused ? html`<div class="ix-replay-pause" role="status" data-testid="ix-replay-paused">
+        <span>回放已暂停</span><${PauseButton} paused=${true} onToggle=${toggleReplayPause} />
+      </div>` : null}
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}
           onTap=${(s) => openInventory(null, s.key)} onDrop=${dropFromStock} />
@@ -730,10 +761,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
           onFreeze=${() => act({ type: 'freeze' })} collapsed=${shopCollapsed} onCollapse=${(v) => { setShopCollapsed(v); if (v) setArmed(null); }}
           onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id }); }} />` : null}
       ` : html`<${DpCounter} dp=${battle.hud?.dp} />
-      <div class="ix-battlebar" data-testid="ix-battlebar">
-        ${SPEEDS.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', speed === s && 'is-on')} onClick=${() => setSpeed(s)}>${s / 2}×</button>`)}
-        ${(() => { const endControl = battleEndControl(battle.done, !!battle.finished); return html`<${Button} size="sm" variant="secondary" onClick=${endControl.action === 'close' ? closeBattle : () => seekRef.current?.()} data-testid="ix-skip">${endControl.label}<//>`; })()}
-      </div>`}
+      `}
       <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} battleUnits=${battle ? battle.replay?.field?.units || [] : null}
         targetUids=${fieldTarget?.choices?.filter((x) => x.kind === 'friendly').map((x) => x.uid) || []} />
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen}

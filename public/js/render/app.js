@@ -508,6 +508,7 @@ export async function createFieldView(host, options = {}) {
   let promoBase = [];
   const promotions = [];      // the last merges cued by setPrep (fx.promote): { uid, id, area, row, col, idx, copies } — dev / tests
   let battleMeta = null;
+  let replayPresentationPaused = false;
   let sceneHold = null;       // release function of the Spine cache hold of battle mode (holdScene)
   const infos = new Map();    // battle unit id → UnitInfo
   // battle ids whose view finished its death / leak fade: a snapshot may still list them for a moment (the sim keeps
@@ -1779,6 +1780,7 @@ export async function createFieldView(host, options = {}) {
     try { frameBody(now); } finally { cpuMs = cpuMs * 0.9 + (performance.now() - now) * 0.1; }
   }
   function frameBody(now) {
+    if (mode === 'battle' && replayPresentationPaused) { lastNow = now; return; }
     frameNo++;
     if (frameNo % 30 === 1) {
       impInterval = pickImpostorInterval(); clipAllowed = pickClipping();
@@ -1920,6 +1922,11 @@ export async function createFieldView(host, options = {}) {
       interp.delay = on ? 0.034 : 0.1;
       interp.defaultRate = on ? Math.min(20, speed) : 2;
       interp.maxRate = on ? Math.max(8, speed * 1.5) : 8;
+      return true;
+    },
+    setReplayPaused(paused) {
+      replayPresentationPaused = !!paused;
+      lastNow = performance.now();
       return true;
     },
     highlightTiles(tilesList, style) {
