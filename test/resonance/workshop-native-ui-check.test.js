@@ -79,7 +79,8 @@ test('Workshop credentials stay on /bside and game API writes are denied except 
 });
 
 test('checker defaults to safe inspection, fixed outputs, viewport geometry, and never starts a new session',()=>{
-  assert.deepEqual(parseArgs(['--product-native','a'.repeat(40)]),{help:false,selfTest:false,productNative:'a'.repeat(40)});
+  assert.deepEqual(parseArgs(['--product-native','a'.repeat(40)]),{help:false,selfTest:false,productNative:'a'.repeat(40),resumeFailed:false});
+  assert.equal(parseArgs(['--product-native','a'.repeat(40),'--resume-failed']).resumeFailed,true);
   assert.throws(()=>parseArgs(['--product-native','bad']),/full Git commit/);
   for(const file of ['57-new-title.jpg','58-new-difficulty.jpg','59-live-prep.jpg','60-legacy-replay.jpg'])assert.ok(source.includes(file));
   assert.ok(source.includes("SESSION='53ffde79-85b3-4302-89f7-e0d792f78723'"));
