@@ -10,6 +10,8 @@ const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const reviewMode = new URL(location.href).searchParams.get('review') === '1';
 if (reviewMode) {
+  // Review playback stays under the viewer's controls while a comment is composed.
+  if ($('narration')) $('narration').checked = false;
   document.documentElement.classList.add('ix-replay-review-mode');
   const reviewLayout=document.createElement('style');
   reviewLayout.textContent='.ix-replay-review-mode .ix-replay{width:100%;min-height:100vh;padding:0}.ix-replay-review-mode .ix-replay__shell{width:100%;max-width:none;margin:0}.ix-replay-review-mode .ix-replay__screen{width:100%;max-width:none;margin:0;border:0;border-radius:0}.ix-replay-review-mode .ix-replay__stage{width:100%;height:auto}';
