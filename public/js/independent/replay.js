@@ -8,6 +8,7 @@ import { mapViewportRectToOverlay, selectionAt } from '../recording/selectionTim
 import { replayMediaSourceAt, renderedReplayClips } from './replayMediaSources.js';
 import { workshopShowcaseNarration } from './workshopShowcaseNarration.js';
 import { createReplayMediaSurface } from './replayMediaSurface.js';
+import { replayMediaClockSecond } from './replayPlaybackClock.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const reviewMode = new URL(location.href).searchParams.get('review') === '1';
@@ -33,11 +34,12 @@ let zoomRect = null;
 let rrOffset = 0; let rrMinimumOffsetMs = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let renderedClips=[];let activeMediaKey='';let mediaLoadGeneration=0;let cancelMediaLoad=null;
 let mediaSeekController = null;
+let mediaBuffering = false;
 function cancelPendingMediaSeek() { mediaSeekController?.abort(); mediaSeekController = null; }
 let selectionEvents=[];let paintedSelection=null;
 let initialized=false;let seeking=false;let seekGeneration=0;let playheadSecond=0;
 let replayViewport=null;let initializationError='';
-const reviewApi={state:()=>({time:playheadSecond,duration,ready:initialized&&!seeking,paused:!playing,seeking,viewport:replayViewport,error:initializationError}),getTime:()=>playheadSecond,setTime:seek,seek,play,pause};
+const reviewApi={state:()=>({time:playheadSecond,duration,ready:initialized&&!seeking,paused:!playing,seeking,buffering:mediaBuffering,viewport:replayViewport,error:initializationError}),getTime:()=>playheadSecond,setTime:seek,seek,play,pause};
 Object.defineProperty(reviewApi,'duration',{get:()=>duration});
 window.__SP_REPLAY_REVIEW__=reviewApi;
 const cueState = createReplayCueState(() => cues);
@@ -217,7 +219,7 @@ async function positionMediaAt(second, generation = seekGeneration) {
   return segment;
 }
 function syncMediaTime(second) {
-  if (!mediaVideo) return;
+  if (!mediaVideo || playing) return;
   const segment = mediaSourceAt(second);
   if (!segment || activeMediaKey !== segment.key || mediaVideo.readyState < 1 || mediaVideo.currentSrc !== segment.url) { mediaVideo.pause(); mediaVideo.hidden = true; return; }
   if (segment.key.startsWith('original-') && second < segment.at) { mediaVideo.pause(); mediaVideo.hidden = true; return; }
@@ -231,6 +233,8 @@ function attachCanvasMedia(id) {
   if (!mediaVideo || mediaVideo.ownerDocument !== document) {
     mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
+    for (const event of ['waiting', 'stalled', 'seeking']) mediaVideo.addEventListener(event, () => setMediaBuffering(true));
+    mediaVideo.addEventListener('playing', () => setMediaBuffering(false));
     Object.assign(mediaVideo.style, { display: 'none', pointerEvents: 'none' });
     mediaReady=Promise.resolve();
   }
@@ -239,7 +243,22 @@ function attachCanvasMedia(id) {
   fitReplay();
 }
 function replayerTime(second) { return Math.max(rrMinimumOffsetMs, Math.max(0, second - rrOffset) * 1000); }
-function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : playheadSecond; }
+function mediaClockSecond() {
+  return replayMediaClockSecond({ second: playheadSecond, source: mediaSourceAt(playheadSecond), activeKey: activeMediaKey, video: mediaVideo, duration });
+}
+function offset() {
+  if (!playing) return playheadSecond;
+  const second = mediaClockSecond();
+  if (second !== null) { startedSecond = second; startedAt = performance.now(); return second; }
+  return Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000);
+}
+function setMediaBuffering(buffering) {
+  if (!playing || seeking || mediaClockSecond() === null || buffering === mediaBuffering) return;
+  const second = offset(); mediaBuffering = buffering;
+  if (buffering) { player?.pause(replayerTime(second)); keepReplayAnimationsVisible(); }
+  else { startedSecond = second; startedAt = performance.now(); player?.play(replayerTime(second)); }
+  position(second);
+}
 function tick() {
   if (!playing) return;
   const now = offset();
@@ -248,7 +267,7 @@ function tick() {
     void seek(now, { resumeAfter: true }).catch(error => { if (error?.name !== 'AbortError') status.textContent = error.message || '回放视频载入失败'; });
     return;
   }
-  position(now); syncMediaTime(now);
+  position(now);
   const cue = cueState.narration(now, explained);
   if(cue&&$('narration')?.checked){
     explained.add(cue.key||cue.text);cueState.activate(cue);narrating=true;pause();
@@ -267,15 +286,20 @@ function play() {
   if (playing || !player || seeking) return;
   const second = playheadSecond;
   if (mediaNeedsLoad(second)) { void seek(second, { resumeAfter: true }).catch(error => { if (error?.name !== 'AbortError') status.textContent = error.message || '回放视频载入失败'; }); return; }
-  playing = true; startedAt = performance.now(); startedSecond = playheadSecond;
-  player.play(replayerTime(startedSecond)); syncMediaTime(startedSecond);if (mediaVideo && startedSecond >= mediaStartSecond) { void mediaVideo.play().catch(() => {}); }
+  syncMediaTime(second);
+  playing = true; mediaBuffering = false; startedAt = performance.now(); startedSecond = second;
+  const source = mediaSourceAt(second);
+  const hasMedia = !!mediaVideo && !!source && second >= source.at && activeMediaKey === source.key && mediaVideo.currentSrc === source.url;
+  if (hasMedia && (mediaVideo.readyState < 3 || mediaVideo.seeking)) setMediaBuffering(true);
+  else player.play(replayerTime(second));
+  if (hasMedia) void mediaVideo.play().catch(error => { if (playing) { pause(); status.textContent = error.message || '回放视频播放失败'; } });
   playButton.textContent = '暂停'; raf = requestAnimationFrame(tick);
 }
 function pause() {
   const now = playing ? offset() : playheadSecond;
   cancelPendingMediaSeek();
   const generation = ++seekGeneration; seeking = false;
-  playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
+  playing = false; mediaBuffering = false; cancelAnimationFrame(raf); player?.pause(replayerTime(now)); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
   if (mediaVideo) void positionMediaAt(now, generation).catch(error => {
     if (generation !== seekGeneration || error?.name === 'AbortError') return;
     status.textContent = error.message || '回放视频定位失败';
@@ -286,7 +310,7 @@ async function seek(value, { resumeAfter } = {}) {
   const generation=++seekGeneration;
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
   seeking=true;
-  const resume = resumeAfter ?? playing; playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible();
+  const resume = resumeAfter ?? playing; playing = false; mediaBuffering = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible();
   clearTimeout(narrationTimer);narrating=false;resetZoom();
   try {
     position(second); player?.pause(replayerTime(second)); keepReplayAnimationsVisible();
