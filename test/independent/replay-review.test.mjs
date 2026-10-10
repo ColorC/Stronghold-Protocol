@@ -56,20 +56,40 @@ test('video seek resolves only after seeked and the target frame, and times out 
   const callbacks = [];
   const video = new EventTarget();
   let currentTime = 0;
+  let seeking = false;
+  let callbacksAtSeek = 0;
   video.readyState = 1;
-  Object.defineProperty(video, 'currentTime', { get: () => currentTime, set: (value) => { currentTime = value; } });
+  Object.defineProperty(video, 'seeking', { get: () => seeking });
+  Object.defineProperty(video, 'currentTime', { get: () => currentTime, set: (value) => { callbacksAtSeek = callbacks.length; currentTime = value; seeking = true; } });
   video.requestVideoFrameCallback = (callback) => { callbacks.push(callback); return callbacks.length; };
   video.cancelVideoFrameCallback = () => {};
   let resolved = false;
   const pending = waitForVideoSeek(video, 12.5, { timeoutMs: 100 });
   pending.then(() => { resolved = true; });
+  assert.equal(callbacksAtSeek, 1, 'frame observation is registered before currentTime changes');
   assert.equal(currentTime, 12.5);
+  video.readyState = 2;
+  seeking = false;
   video.dispatchEvent(new Event('seeked'));
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(resolved, false, 'seeked alone is not enough before the decoded frame');
-  callbacks.shift()();
+  callbacks.shift()(0, { mediaTime: 12.5 });
   await pending;
   assert.equal(resolved, true);
+
+  const alreadySeeking = new EventTarget();
+  let inFlightTime = 8;
+  let inFlightSeeking = true;
+  alreadySeeking.readyState = 2;
+  Object.defineProperty(alreadySeeking, 'seeking', { get: () => inFlightSeeking });
+  Object.defineProperty(alreadySeeking, 'currentTime', { get: () => inFlightTime, set: value => { inFlightTime = value; } });
+  alreadySeeking.requestVideoFrameCallback = callback => { callbacks.push(callback); return callbacks.length; };
+  alreadySeeking.cancelVideoFrameCallback = () => {};
+  const inFlight = waitForVideoSeek(alreadySeeking, 8, { timeoutMs: 100 });
+  inFlightSeeking = false;
+  alreadySeeking.dispatchEvent(new Event('seeked'));
+  callbacks.pop()(0, { mediaTime: 8 });
+  await inFlight;
 
   const stuck = new EventTarget();
   Object.defineProperty(stuck, 'currentTime', { value: 0, writable: true });
@@ -83,6 +103,7 @@ test('review DOM uses player controls, precise async seek and player-facing copy
   assert.match(html, /film\.src=config\.sourceUrl/);
   assert.doesNotMatch(html, /config\.source[,)]/);
   assert.match(html, /await setTime\(anchor\.time_sec\|\|0\)/);
+  assert.match(html, /const state=readState\(\);\s*if\(state&&!state\.paused\)/);
   assert.match(html, /stage\.scrollIntoView\(\{block:stage\.getBoundingClientRect\(\)\.height>innerHeight\?'start':'center'/);
   assert.match(html, /reviewCommentHref\(location\.href/);
   assert.match(html, /method:'PATCH'/);
@@ -90,6 +111,7 @@ test('review DOM uses player controls, precise async seek and player-facing copy
   assert.match(replay, /window\.__SP_REPLAY_REVIEW__=reviewApi/);
   assert.match(replay, /ready:initialized&&!seeking/);
   assert.match(replay, /await waitForVideoSeek\(mediaVideo,target\)/);
+  assert.match(replay, /mediaVideo\.seeking\)await waitForVideoSeek/);
   assert.doesNotMatch(html, /bilibili|WEB SOURCE|真源|原工程|config\.beats|beat_id/i);
   assert.doesNotMatch(html, /meta\.textContent=.*selector|composerEl\.textContent=.*selector/);
 });

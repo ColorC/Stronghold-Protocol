@@ -200,7 +200,7 @@ async function seek(value) {
       else await mediaReady;
       if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
       const target=clampReplayMediaTime(Math.max(0,second-(segment?.at??mediaStartSecond)),mediaDuration);
-      if(Math.abs(mediaVideo.currentTime-target)>0.035||mediaVideo.readyState<2)await waitForVideoSeek(mediaVideo,target);
+      if(Math.abs(mediaVideo.currentTime-target)>0.035||mediaVideo.readyState<2||mediaVideo.seeking)await waitForVideoSeek(mediaVideo,target);
     }
     if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
     if (resume) { playing = false; play(); }

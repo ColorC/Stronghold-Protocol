@@ -197,7 +197,8 @@
     toggle.onclick=async()=>{
       const current=api();
       if(!current)return;
-      if(requestedPlaying){
+      const state=readState();
+      if(state&&!state.paused){
         current.pause?.();
         requestedPlaying=false;
       }else{
