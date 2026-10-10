@@ -54,6 +54,7 @@ test('Shu visible prep text matches the actual paired attack and damage badge gr
   const shu = display.operators.chess_native_char_2025_shu_a;
   assert.match(shu.traitTexts.normal, /攻击徽章×1及伤害徽章×1/);
   assert.match(shu.traitTexts.elite, /攻击徽章×2及伤害徽章×2/);
-  assert.match(shu.traitTexts.normalLevels, /基础攻击力训练等级×1及造成伤害训练等级×1/);
-  assert.match(shu.traitTexts.eliteLevels, /基础攻击力训练等级×2及造成伤害训练等级×2/);
+  assert.match(shu.traitTexts.normalLevels, /训练等级×2/);
+  assert.match(shu.traitTexts.eliteLevels, /训练等级×4/);
+  assert.doesNotMatch(shu.traitTexts.normalLevels + shu.traitTexts.eliteLevels, /徽章|基础攻击力训练等级|造成伤害训练等级/);
 });
