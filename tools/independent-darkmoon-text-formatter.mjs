@@ -16,6 +16,7 @@ const designPath = path.join(root, 'data/independent-design.json');
 const gears = new Map([
   ['坚守盟约', '坚守盟约'], ['护盾发生器', '护盾发生器'], ['不屈盟约', '不屈盟约'],
   ['精准盟约', '精准盟约'], ['巨锤盟约', '巨锤盟约'], ['突袭盟约', '突袭盟约'], ['oath-cover', '坚守盟约'],
+  ['chess_item_6_11_e_a', '叙拉古家族印记'],
 ]);
 const badgeNames = Object.freeze({ precision: '攻击徽章', agility: '攻速徽章', damage: '伤害徽章', vitality: '生命徽章', defense: '防御徽章', assault: '攻击加成徽章', recovery: '技力徽章', arcane: '法抗徽章', foresight: '初始技力徽章', miracle: '闪避徽章', investor: '回复徽章', unyielding: '生命加成徽章', harmony: '治疗徽章', coordination: '减伤徽章', solitary: '再部署徽章', mastery: '普通攻击徽章' });
 const legacyPlusPlusGrowthSources = new Set(['BGS_041', 'BGS_048', 'BGS_100', 'BGS_128']);

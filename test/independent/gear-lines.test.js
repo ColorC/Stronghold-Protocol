@@ -8,6 +8,7 @@ import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getData } from '../../server/data.js';
 import { darkmoonGrowthBadges, applyDarkmoonAHGrowth } from '../../server/modes/independent/darkmoonShop.js';
 import { grantEquipment, equipItem, totalEquipmentLevel } from '../../server/modes/independent/equipment.js';
+import { getIndependentField } from '../../server/modes/independent/battle.js';
 
 const data = getData({ log: { info() {}, warn() {}, error() {} } });
 const catalog = getCatalog(data);
@@ -29,6 +30,39 @@ function producedBy(op) {
   }
   return { fixed, random };
 }
+
+test('fresh purchases of 荒芜拉普兰德 wear her original family mark once before and after deployment', () => {
+  const op=Object.values(catalog.operators).find(x=>!x.elite&&x.name==='荒芜拉普兰德');
+  const family='chess_item_6_11_e_a';
+  assert.ok(producedBy(op).fixed.has(family), 'the actual named trait is the producer');
+  assert.ok(!catalog.config.trainingGearIds.includes(family), 'the retired offer is not used as a paper source');
+  for(const elite of [false,true]) {
+    let state=createSession({seed:73,difficulty:'FUNNY'});state.funds=999;
+    while(state.shop.level<6){const r=applyAction(state,{type:'upgrade'});assert.equal(r.ok,true,r.error?.message);state=r.state;}
+    let slot=-1;
+    for(let n=0;n<256;n++){slot=state.shop.slots.findIndex(x=>x.id===op.chessId&&!x.sold);if(slot>=0)break;const r=applyAction(state,{type:'refresh'});assert.equal(r.ok,true,r.error?.message);state=r.state;}
+    assert.notEqual(slot,-1,'the real active pool can draw the named operator');
+    if(elite)state.shop.slots[slot].elite=true; // existing golden shop-offer purchase branch
+    const bought=applyAction(state,{type:'buy',slot});assert.equal(bought.ok,true,bought.error?.message);state=bought.state;
+    const piece=state.pieces.find(x=>catalog.operators[x.chessId]?.name===op.name),n=elite?2:1;
+    const quantity=p=>p.equipment.filter(x=>x.id===family).reduce((sum,x)=>sum+x.quantity,0);
+    assert.equal(quantity(piece),n);assert.ok(!state.inventory.some(x=>x.id===family));
+    const rows=state.production.filter(x=>x.id===family);
+    assert.equal(rows.length,1);assert.equal(rows[0].sourceUid,piece.uid);assert.equal(rows[0].targetUid,piece.uid);assert.equal(rows[0].worn,true);assert.equal(rows[0].quantity,n);
+    const tiles=[...getIndependentField(state,{data,catalog}).deployMap].map(([key])=>key.split(',').map(Number));
+    let deployed;
+    for(const [row,col]of tiles){const r=applyAction(state,{type:'move',uid:piece.uid,row,col});if(r.ok){deployed=r;break;}}
+    assert.ok(deployed,'a legal deployment exists');state=deployed.state;
+    const fielded=state.pieces.find(x=>x.uid===piece.uid);assert.equal(quantity(fielded),n);
+    const row=fielded.row,col=fielded.col;
+    const benched=applyAction(state,{type:'bench',uid:piece.uid});assert.equal(benched.ok,true);
+    const again=applyAction(benched.state,{type:'move',uid:piece.uid,row,col});assert.equal(again.ok,true,again.error?.message);
+    assert.equal(quantity(again.state.pieces.find(x=>x.uid===piece.uid)),n);
+    assert.equal(again.state.production.filter(x=>x.id===family).length,1,'first deployment and redeployment do not repeat the gain grant');
+    assert.match(text.operators[op.chessId][elite?'elite':'normal'],new RegExp(`自身装备叙拉古家族印记×${n}`));
+    assert.equal(op.sourceRefs.cards[0].id,'BGS_018');assert.doesNotMatch(op.sourceRefs.cards[0].text,/隐匿|家族印记/);
+  }
+});
 
 test('the shop shows only the current 3/4/4/5/5/6 operator counts at each level', () => {
   let state = createSession({ seed: 3 });

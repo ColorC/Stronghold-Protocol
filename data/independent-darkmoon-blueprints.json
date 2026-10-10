@@ -9020,14 +9020,14 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×0及伤害徽章×1；按在场炎阵营干员数累加。",
+                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×1及伤害徽章×1；按在场炎阵营干员数累加。",
                 "textEn": "",
                 "tags": [],
                 "params": {
                   "faction": "炎",
                   "attackUnits": {
-                    "normal": 0,
-                    "elite": 0
+                    "normal": 1,
+                    "elite": 2
                   },
                   "secondaryUnitsPerTarget": {
                     "normal": 1,
@@ -9072,14 +9072,14 @@
                 "recipient": "self",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowth",
-                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×0及伤害徽章×2；按在场炎阵营干员数累加。",
+                "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×2及伤害徽章×2；按在场炎阵营干员数累加。",
                 "textEn": "",
                 "tags": [],
                 "params": {
                   "faction": "炎",
                   "attackUnits": {
-                    "normal": 0,
-                    "elite": 0
+                    "normal": 1,
+                    "elite": 2
                   },
                   "secondaryUnitsPerTarget": {
                     "normal": 1,
@@ -9131,8 +9131,8 @@
           "params": {
             "faction": "炎",
             "attackUnits": {
-              "normal": 0,
-              "elite": 0
+              "normal": 1,
+              "elite": 2
             },
             "secondaryUnitsPerTarget": {
               "normal": 1,
@@ -9148,8 +9148,8 @@
           "params": {
             "faction": "炎",
             "attackUnits": {
-              "normal": 0,
-              "elite": 0
+              "normal": 1,
+              "elite": 2
             },
             "secondaryUnitsPerTarget": {
               "normal": 1,
@@ -9171,8 +9171,8 @@
             "params": {
               "faction": "炎",
               "attackUnits": {
-                "normal": 0,
-                "elite": 0
+                "normal": 1,
+                "elite": 2
               },
               "secondaryUnitsPerTarget": {
                 "normal": 1,
@@ -9185,7 +9185,7 @@
             "sourceTrigger": "staticCombat",
             "recipient": "self",
             "duration": "permanentWornGear",
-            "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×0及伤害徽章×1；按在场炎阵营干员数累加。",
+            "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×1及伤害徽章×1；按在场炎阵营干员数累加。",
             "params": {}
           }
         ],
@@ -9199,8 +9199,8 @@
             "params": {
               "faction": "炎",
               "attackUnits": {
-                "normal": 0,
-                "elite": 0
+                "normal": 1,
+                "elite": 2
               },
               "secondaryUnitsPerTarget": {
                 "normal": 1,
@@ -9213,7 +9213,7 @@
             "sourceTrigger": "staticCombat",
             "recipient": "self",
             "duration": "permanentWornGear",
-            "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×0及伤害徽章×2；按在场炎阵营干员数累加。",
+            "text": "每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章×2及伤害徽章×2；按在场炎阵营干员数累加。",
             "params": {}
           }
         ]

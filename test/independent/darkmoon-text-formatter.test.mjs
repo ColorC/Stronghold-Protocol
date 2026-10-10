@@ -19,6 +19,19 @@ test('zero attack badges compact cleanly while preserving nonzero damage badge q
   assert.equal(toLevels('获得攻击徽章×3及伤害徽章×1。'), '获得训练等级×4。');
 });
 
+test('Molten Rock keeps both field-counted growth outputs in executable rules and visible variants', () => {
+  const rule = darkmoonPrepRulesFor({darkmoonSourceId:'BGS_124'}).find(x=>x.behavior==='darkmoonPlayedFactionCountSelfGrowth');
+  assert.equal(rule.params.faction, '炎');
+  assert.deepEqual(rule.params.attackUnits, {normal:1,elite:2});
+  assert.deepEqual(rule.params.secondaryUnitsPerTarget, {normal:1,elite:2});
+  for (const [variant,n] of [['normal',1],['elite',2]]) {
+    const row = byAddonId.get('BGS_124');
+    assert.match(row[variant], new RegExp(`攻击徽章×${n}及伤害徽章×${n}`));
+    assert.match(row[variant], /按在场炎阵营干员数累加/);
+    assert.match(row[variant+'Levels'], new RegExp(`训练等级×${n*2}`));
+  }
+});
+
 test('all 101 source entries regenerate both visible variants from executable preparation/combat rules', () => {
   assert.equal(blueprints.entries.length, 101);
   assert.equal(byAddonId.size, 101);

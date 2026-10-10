@@ -31,6 +31,9 @@ const RULES = Object.freeze({
   // newly recruited or first-played Siracusa unit; this is not an aura on old units.
   BGS_017: [{trigger:'gain',behavior:'darkmoonBeastSummonGrowth',params:{faction:'叙拉古',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:0,elite:0}}}],
   BGS_021: [{trigger:'gain',behavior:'darkmoonBeastSummonGrowth',params:{faction:'叙拉古',attackUnits:{normal:4,elite:8},secondaryUnits:{normal:4,elite:8}}}],
+  // Keep 荒芜拉普兰德's original Workshop family-mark grant alongside the
+  // Goldrinn adaptation. This is an operator feature, not printed source-card text.
+  BGS_018: [grantSelf({id:'chess_item_6_11_e_a',normal:1,elite:2})],
   BGS_120: [{trigger:'gain',behavior:'darkmoonPlayedTribeGrowth',params:{faction:'炎',attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2}}}],
   GVG_048: [{trigger:'gain',behavior:'darkmoonBattlecryFactionGrowth',params:{faction:'哥伦比亚',count:{normal:2,elite:4},excludeSelf:true,outputs:['precision']}}],
   CFM_315: [{trigger:'gain',behavior:'darkmoonSummonSupport',params:{normalId:'darkmoon:support-cat-1-1',eliteId:'darkmoon:support-cat-2-2'}}],
