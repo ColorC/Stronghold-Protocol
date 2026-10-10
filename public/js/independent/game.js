@@ -787,7 +787,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
           onDetail=${(i) => { const s = state.shop.slots[i]; setArmed(null); if (s) setDetail({ kind: s.kind === 'chess' ? 'shop' : 'gear', slot: i, id: s.id }); }} />` : null}
       ` : html`<${DpCounter} dp=${battle.hud?.dp} />
       `}
-      <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} battleUnits=${battle ? battle.replay?.field?.units || [] : null}
+      <${UnitBadges} view=${view} pieces=${state.pieces} catalog=${catalog} hidden=${loading || pen} growthMode=${state.growthMode || 'badges'} battleStats=${battle ? battleCard.stats : null} battleUnits=${battle ? battle.replay?.field?.units || [] : null}
         targetUids=${fieldTarget?.choices?.filter((x) => x.kind === 'friendly').map((x) => x.uid) || []} />
       <${DetailCard} target=${detail} state=${state} catalog=${catalog} busy=${busy} battle=${battleCard} shopOpen=${!battle && state.phase === 'prep' && !pen && !shopCollapsed}
         onClose=${() => { cancelFieldTarget(); setDetail(null); setArmed(null); }} onAct=${simple} onBuy=${buy} onBeginTarget=${beginFieldTarget} onCancelTarget=${cancelFieldTarget} onInherit=${openInherit} onEquipHere=${(uid) => openInventory(uid)}

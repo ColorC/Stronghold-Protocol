@@ -204,6 +204,27 @@ export function temporaryGrowthDisplay(entries, catalog, growthMode = 'badges') 
   return { mode: 'badges', levels: 0, items, total: items.reduce((n, item) => n + item.quantity, 0), sources: [...sources] };
 }
 
+/** Fast count for live HUD labels; avoids building badge rows or resolving source names for each field unit. */
+export function temporaryBadgeTotal(entries, catalog) {
+  let total = 0;
+  for (const entry of entries || []) {
+    const ids = Array.isArray(entry?.badgeIds) ? entry.badgeIds : [];
+    const counts = [Number(entry?.attackUnits || 0), Number(entry?.secondaryUnits || 0)];
+    for (let i = 0; i < ids.length && i < counts.length; i++) {
+      const id = ids[i], count = counts[i], gear = catalog?.gear?.[id];
+      if (id && gear && isBadge(catalog, id) && Number.isFinite(count) && count > 0) total += count;
+    }
+  }
+  return total;
+}
+
+/** Current visible equipment stack total: permanent gear plus battle-only badges, once. Training levels stay separate. */
+export function displayEquipmentLevel(piece, catalog, temporaryGrowth = null) {
+  if (!piece) return null;
+  const permanent = piece.equipmentLevel ?? (piece.equipment || []).reduce((n, item) => n + itemLevel(item, catalog), 0);
+  return permanent + (temporaryGrowth?.mode === 'badges' ? Number(temporaryGrowth.total || 0) : 0);
+}
+
 /** Kinds of inventory items that are used (补给, 玩家设施) rather than worn; a prize kept in the inventory too. */
 export const USED_KINDS = new Set(['补给', '玩家设施', '奖品']);
 
