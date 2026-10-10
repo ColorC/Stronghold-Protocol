@@ -16,7 +16,7 @@ if (reviewMode) {
   if ($('narration')) $('narration').checked = false;
   document.documentElement.classList.add('ix-replay-review-mode');
   const reviewLayout=document.createElement('style');
-  reviewLayout.textContent='.ix-replay-review-mode .ix-replay{width:100%;min-height:100vh;padding:0}.ix-replay-review-mode .ix-replay__shell{width:100%;max-width:none;margin:0}.ix-replay-review-mode .ix-replay__screen{width:100%;max-width:none;margin:0;border:0;border-radius:0}.ix-replay-review-mode .ix-replay__stage{width:100%;height:auto}';
+  reviewLayout.textContent='html.ix-replay-review-mode{overflow:hidden}.ix-replay-review-mode .ix-replay{width:100%;height:100%;min-height:0;padding:0;overflow:hidden}.ix-replay-review-mode .ix-replay__shell{width:100%;max-width:none;margin:0}.ix-replay-review-mode .ix-replay__screen{width:100%;max-width:none;margin:0;border:0;border-radius:0}.ix-replay-review-mode .ix-replay__stage{width:100%;height:auto}';
   document.head.append(reviewLayout);
   const narrationLabel=$('narration')?.closest('label');if(narrationLabel){narrationLabel.hidden=true;narrationLabel.style.display='none';}
   for(const element of document.querySelectorAll('.ix-replay__controls,.ix-replay__head')){element.hidden=true;element.style.display='none';}
@@ -83,7 +83,7 @@ function fitReplay() {
     const wrapper=stage.querySelector('.replayer-wrapper')||frame.parentElement;
     const scale=stage.clientWidth/Math.max(1,frame.clientWidth);
     frame.style.transform='none';
-    if(wrapper){wrapper.style.transformOrigin='0 0';wrapper.style.transform=`scale(${scale})`;}
+    if(wrapper){wrapper.style.width=`${frame.clientWidth}px`;wrapper.style.height=`${frame.clientHeight}px`;wrapper.style.transformOrigin='0 0';wrapper.style.transform=`scale(${scale})`;}
     stage.style.height=`${frame.clientHeight*scale}px`;
   }
   paintedSelection = null;
