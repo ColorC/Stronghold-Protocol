@@ -37,7 +37,7 @@ export const REQUIRED_CHECKS = [
   'xp-interest-graphics', 'refresh-lock', 'combat-ledger-immutable', 'combat-progress-two-seconds',
   'pause-freezes-and-resume-progresses', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'choice-g-resonance-roundtrip',
   'boss-hidden-fixture-result-lineup-gear-chart', 'scrap-temporary-gear-in-combat', 'equipment-detail-unequip',
-  'equipment-detail-recycle', 'native-detail-deep-link', 'difficulty-default-copy', 'default-copy-is-product-language',
+  'equipment-detail-recycle', 'native-detail-deep-link', 'native-result-back-to-title', 'difficulty-default-copy', 'default-copy-is-product-language',
   'native-fullscreen-open-link',
 ];
 
@@ -567,7 +567,9 @@ export function shopPurchaseEvidence({ frames = [], buy = null, expectedSlot, ex
 export async function attachWsCapture(page, attempt, onSent = null) {
   const cdp = await page.createCDPSession();
   await cdp.send('Network.enable');
+  const socketUrls = new Map();
   attempt.ws.parseErrors ??= [];
+  attempt.ws.closedConnections ??= [];
   const recordParseError = (direction, wireText, error) => {
     const payloadBytes = typeof wireText === 'string' ? Buffer.byteLength(wireText, 'utf8')
       : Number.isFinite(wireText?.byteLength) ? wireText.byteLength : 0;
@@ -617,8 +619,29 @@ export async function attachWsCapture(page, attempt, onSent = null) {
   };
   cdp.on('Network.webSocketFrameReceived', (event) => append('received', event));
   cdp.on('Network.webSocketFrameSent', (event) => append('sent', event));
-  cdp.on('Network.webSocketCreated', (event) => { attempt.ws.connections ??= []; attempt.ws.connections.push(event.url); });
+  cdp.on('Network.webSocketCreated', (event) => {
+    attempt.ws.connections ??= [];
+    if (event.requestId) socketUrls.set(event.requestId, event.url);
+    attempt.ws.connections.push(event.url);
+  });
+  cdp.on('Network.webSocketClosed', (event) => {
+    const url = socketUrls.get(event.requestId);
+    if (url) attempt.ws.closedConnections.push({ url, at: now() });
+    socketUrls.delete(event.requestId);
+  });
   return cdp;
+}
+
+export async function waitSocketClosed(attempt, sessionId, timeoutMs = 8_000) {
+  const match = (row) => typeof row?.url === 'string'
+    && row.url.includes(`/resonance/ws?session=${encodeURIComponent(sessionId)}`);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const closed = attempt.ws.closedConnections?.find(match);
+    if (closed) return closed;
+    await sleep(50);
+  }
+  return null;
 }
 
 async function dragInventoryItemToPiece(page, itemUid, pieceUid) {
@@ -1785,6 +1808,27 @@ async function run() {
       attempt, check, capture, waitSent, waitReceived, clickVisibleButtonText, nativePiecePoint });
     attempt.fixtureResults = fixtureResults;
     attempt.fixtures = { fifthChoice: 'passed', emissaryExactCounts: 'passed', boss: fixtureResults.final?.terminalReason || 'passed', hiddenCore: fixtureResults.hidden?.terminalReason || 'passed' };
+    const resultBack = await page.$('.rs-native-result .result__foot button');
+    assert(resultBack, 'Native terminal result has no return-to-title button');
+    const resultBackLabel = await resultBack.evaluate((node) => node.innerText.trim());
+    assert(resultBackLabel === '返回首页', `Native result return button label changed: ${resultBackLabel}`);
+    const resultUrl = page.url();
+    const resultSessionId = new URL(resultUrl).searchParams.get('session');
+    assert(resultSessionId, `Native result route lacks its fixture session: ${resultUrl}`);
+    await clickHandleByMeasuredCenter(page, resultBack, 'return from Native result to title');
+    await page.waitForSelector('.rs-title-fullscreen', { visible: true, timeout: 12_000 });
+    const closedResultSocket = await waitSocketClosed(attempt, resultSessionId, 8_000);
+    const resultBackState = await page.evaluate(async () => {
+      const { store } = await import('./js/store.js');
+      return { url: location.href, title: !!document.querySelector('.title-screen--presentation'),
+        result: !!document.querySelector('.rs-native-result'), nativeMatch: !!document.querySelector('.rs-native-match'),
+        titleLink: !!document.querySelector('.rs-title-fullscreen'), session: new URL(location.href).searchParams.get('session'),
+        phase: store.get().match.public?.phase ?? null };
+    });
+    check('native-result-back-to-title', resultUrl.includes('session=') && resultBackState.title && resultBackState.titleLink
+      && !resultBackState.result && !resultBackState.nativeMatch && !resultBackState.session
+      && String(resultBackState.phase || '').toUpperCase() !== 'COMBAT' && !!closedResultSocket,
+      { from: resultUrl, button: resultBackLabel, closedSocket: closedResultSocket, ...resultBackState });
     const savedSessionUrl = `http://${HOST}:${PORT}/resonance.html?session=${encodeURIComponent(attempt.sessionId)}`;
     await page.goto(savedSessionUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 });
     await page.waitForSelector('.rs-native-match .gtop__exit', { visible: true, timeout: 30_000 });
@@ -1834,7 +1878,7 @@ async function run() {
       &&!!secondRestoredPublic&&secondMirrorAdvanced&&secondRunnerAfter.state?.battleId===attempt.secondBattleId
       &&secondRunnerAfter.ticks>secondRunnerBase.ticks,
       {url:page.url(),battleId:attempt.secondBattleId,initialStart:secondStart,progressBeforeReload:secondProgress,
-        restoredStart:secondRestoredStart,restoredPublic,runnerBefore:secondRunnerBase,runnerAfter:secondRunnerAfter,
+        restoredStart:secondRestoredStart,restoredPublic:secondRestoredPublic,runnerBefore:secondRunnerBase,runnerAfter:secondRunnerAfter,
         sameField:secondField.battleId,connections:attempt.ws.connections});
     const serverResultDeadline=Date.now()+60_000;
     while(Date.now()<serverResultDeadline&&!(secondField.mode==='server'&&secondField.resultSource==='server'&&secondField.done&&secondField.result))await sleep(100);

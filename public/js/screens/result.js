@@ -73,7 +73,7 @@ function PlayerCard({ p, myId, titles, best, solo = false, resonanceCatalog = nu
 }
 
 /** RESULT screen. */
-export function ResultScreen() {
+export function ResultScreen({ onBack, backLabel } = {}) {
   const res = useStore((s) => s.match.result);
   const pub = useStore((s) => s.match.public);
   const myId = useStore((s) => s.me.playerId);
@@ -90,7 +90,7 @@ export function ResultScreen() {
     if (top && r.players.length > 1) best[k] = top.id;
   }
   useEffect(() => { audio.sfx(r.victory ? 'settlementSucceed' : 'settlementFail'); }, []);
-  const back = () => store.set({ match: emptyMatch() });
+  const back = () => (typeof onBack === 'function' ? onBack() : store.set({ match: emptyMatch() }));
   const boss = r.bossId ? gd.boss(r.bossId) : null;
   // the Hidden Core medal (and its corrupted leader) only once R15 was actually fought
   const hidden = r.hiddenBossId && r.hiddenReached ? gd.boss(r.hiddenBossId) : null;
@@ -121,7 +121,7 @@ export function ResultScreen() {
         </div>
         ${mins ? html`<p class="result__time t-lo">本局耗时 <b class="num">${mins}</b> 分钟</p>` : null}
         <footer class="result__foot">
-          <${Button} variant="primary" size="xl" icon="chevronLeft" onClick=${back}>${hasRoom ? '返回同盟' : '返回大厅'}<//>
+          <${Button} variant="primary" size="xl" icon="chevronLeft" onClick=${back}>${backLabel || (hasRoom ? '返回同盟' : '返回大厅')}<//>
         </footer>
       </section>
       <section class="result__players">

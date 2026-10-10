@@ -156,7 +156,7 @@ export function GameScreen({ onLeave, libraryCatalog, activeIds }) {
   }
   const mode = phaseMode(pub.phase);
   let body;
-  if (hasResult || mode === 'result') body = html`<${ResultScreen} />`;
+  if (hasResult || mode === 'result') body = html`<${ResultScreen} onBack=${onLeave} backLabel="返回首页" />`;
   else if (mode === 'briefing') body = html`<${BriefingScreen} />`;
   else if (mode === 'draft') body = html`<${BandDraftScreen} />`;
   else body = html`<${MatchScreen} onLeave=${onLeave} libraryCatalog=${libraryCatalog} activeIds=${activeIds} />`;

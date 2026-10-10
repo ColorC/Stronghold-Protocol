@@ -233,6 +233,7 @@ async function verifyChoiceRoundTrip({ page, baseUrl, file, attempt, check, capt
   assert(option, 'no affordable native reward option is selectable');
   await clickMeasured(page, option, '选择黑市奖励');
   await page.waitForFunction(() => document.querySelector('.rs-native-choice .spov__confirm:not(:disabled)'), { timeout: 8_000 });
+  await capture('09-choice-fixture');
   const claimOffset = attempt.ws.sent.length;
   await clickVisibleButtonText(page, /确认选择/);
   const resonance = await waitSent(attempt, 'g.resonance', 10_000, claimOffset);
@@ -249,7 +250,6 @@ async function verifyChoiceRoundTrip({ page, baseUrl, file, attempt, check, capt
     revision: state.revision, gold: state.gold, shimmer: state.prototypeMeta?.economy?.chemBaron?.shimmer };
   check('choice-g-resonance-roundtrip', state.phase !== 'choice' && !state.pendingChoices?.some((row) => row.uid === choiceUid)
     && purchase.after.pieces > purchase.before.pieces && resonance.action === 'claimReward', evidence);
-  await capture('09-choice-fixture');
   return evidence;
 }
 

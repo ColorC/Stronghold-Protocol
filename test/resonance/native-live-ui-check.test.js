@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, shopPurchaseEvidence, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
+import { artifactPaths, attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, isRunnerResultWarning, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, shopPurchaseEvidence, waitForPopup, waitSent, waitSocketClosed } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -61,7 +61,7 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
   }
   assert.ok(REQUIRED_CHECKS.includes('native-fullscreen-open-link'), 'live acceptance must verify the independent current-session full-screen link');
   assert.ok(REQUIRED_CHECKS.includes('native-codex-content-and-detail-visible'), 'live acceptance must verify Codex card/detail geometry and controls');
-  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once']) {
+  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'native-result-back-to-title']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
   }
 });
@@ -94,7 +94,7 @@ test('CDP websocket capture records bounded parse failures, b.end reasons and ac
   const cdp = { send: async (name) => calls.push(name), on: (name, fn) => handlers.set(name, fn) };
   const page = { createCDPSession: async () => cdp }, attempt = { ws: { sent: [], received: [] } }, actions = [];
   await attachWsCapture(page, attempt, (message) => actions.push(message.action?.type ?? null));
-  handlers.get('Network.webSocketCreated')({ url: 'ws://127.0.0.1:19003/resonance/ws?session=test' });
+  handlers.get('Network.webSocketCreated')({ requestId: 'socket-1', url: 'ws://127.0.0.1:19003/resonance/ws?session=test' });
   handlers.get('Network.webSocketFrameSent')({ response: { payloadData: JSON.stringify({ t: 'g.resonance', action: { type: 'unequip' } }) } });
   handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'm.private', phase: 'prep' }) } });
   handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'b.start', battleId: 'b28', kind: 'boss', authoritative: true, watch: false, done: false,
@@ -137,6 +137,8 @@ test('CDP websocket capture records bounded parse failures, b.end reasons and ac
   assert.equal('payload' in attempt.ws.parseErrors[0],false,'parse diagnostic must not retain raw wire payload');
   assert.deepEqual(actions, ['unequip', null]);
   assert.match(attempt.ws.connections[0], /\/resonance\/ws/);
+  handlers.get('Network.webSocketClosed')({ requestId: 'socket-1' });
+  assert.match((await waitSocketClosed(attempt, 'test'))?.url || '', /session=test/);
   const offset = attempt.ws.sent.length;
   assert.equal(await waitSent(attempt, 'g.resonance', 1, offset), null, 'a previous frame cannot satisfy a later action wait');
   attempt.ws.sent.push({ t: 'g.resonance', action: 'combine' });
