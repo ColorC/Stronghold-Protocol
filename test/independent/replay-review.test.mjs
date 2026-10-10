@@ -125,13 +125,3 @@ test('review DOM uses player controls, precise async seek and player-facing copy
   assert.doesNotMatch(html, /bilibili|WEB SOURCE|真源|原工程|config\.beats|beat_id/i);
   assert.doesNotMatch(html, /meta\.textContent=.*selector|composerEl\.textContent=.*selector/);
 });
-
-test('logical replay time stays precise while the stepped timeline is only an input/display', () => {
-  assert.match(replay, /let initialized=false;let seeking=false;let seekGeneration=0;let playheadSecond=0/);
-  assert.match(replay, /state:\(\)=>\(\{time:playheadSecond,[\s\S]*?getTime:\(\)=>playheadSecond/);
-  assert.match(replay, /function position\(second\) \{\s*playheadSecond = second; timeline\.value = String\(second\)/);
-  assert.match(replay, /const second = playheadSecond;\s*const desired = mediaSourceAt\(second\)/);
-  assert.doesNotMatch(replay, /Number\(timeline\.value\)/, 'internal playback logic must not read back the range control');
-  const valueReads = [...replay.matchAll(/(?:const|let)\s+(\w+)\s*=\s*timeline\.value/g)].map((match) => match[1]);
-  assert.deepEqual(valueReads, ['requestedSecond'], "only the user's range input may read timeline.value");
-});

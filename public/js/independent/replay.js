@@ -7,6 +7,7 @@ import { applyReplayNarration } from './replayNarration.js';
 import { mapViewportRectToOverlay, selectionAt } from '../recording/selectionTimeline.js';
 import { replayMediaSourceAt, renderedReplayClips } from './replayMediaSources.js';
 import { workshopShowcaseNarration } from './workshopShowcaseNarration.js';
+import { createReplayMediaSurface } from './replayMediaSurface.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const reviewMode = new URL(location.href).searchParams.get('review') === '1';
@@ -21,6 +22,7 @@ if (reviewMode) {
   for(const element of document.querySelectorAll('.ix-replay__controls,.ix-replay__head')){element.hidden=true;element.style.display='none';}
 }
 const stage = $('stage'); const status = $('status'); const caption = $('caption'); const anchor = $('anchor');
+const mediaSurface = createReplayMediaSurface(stage);
 const timeline = $('timeline'); const playButton = $('play'); const clock = $('clock');
 const selection = $('selection');
 const textSelection = $('text-selection');
@@ -49,21 +51,30 @@ function paintMediaLayer() {
   if (frame) frame.style.pointerEvents = selecting ? 'none' : 'auto';
   if (!mediaVideo) return;
   const doc = frame?.contentDocument; const field = recordingCanvasField(doc);
-  if (!field || !frame) { mediaVideo.hidden = true; return; }
+  if (!field || !frame) { mediaVideo.hidden = true; mediaSurface.hide(); return; }
   const fb = frame.getBoundingClientRect(), sb = stage.getBoundingClientRect(), cb = field.getBoundingClientRect();
   const mapped = mapViewportRectToOverlay({ x: cb.left, y: cb.top, width: cb.width, height: cb.height }, fb, sb,
     { width: frame.clientWidth, height: frame.clientHeight }, stage);
-  Object.assign(mediaVideo.style, { left: `${mapped.x}px`, top: `${mapped.y}px`, width: `${mapped.width}px`, height: `${mapped.height}px` });
-  // Keep the recorded HUD above the native video. A WebM inside the replay iframe
-  // does not composite reliably on software WebGL, so only the canvas pixels live outside it.
+  mediaSurface.setBounds({ left: mapped.x, top: mapped.y, width: mapped.width, height: mapped.height });
+  // Present only the current decoded pixels in one canvas beneath the recorded HUD.
+  // The hidden video is the decoder; inactive replay canvases never create another scene layer.
   frame.style.position = 'relative'; frame.style.zIndex = '5';
   for(let node=frame.parentElement;node&&node!==stage;node=node.parentElement){node.style.position='relative';node.style.zIndex='5';node.style.background='transparent';}
-  for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
+  if (doc?.head && !doc.getElementById('sp-replay-canvas-video-layer')) {
+    const style = doc.createElement('style'); style.id = 'sp-replay-canvas-video-layer';
+    style.textContent = '.gm__field canvas { display: none !important; visibility: hidden !important; }';
+    doc.head.append(style);
+  }
+  for (const canvas of recordingCanvasElements(doc)) { canvas.style.visibility = 'hidden'; canvas.style.display = 'none'; }
   for(let node=field;node;node=node.parentElement){node.style.backgroundColor='transparent';node.style.backgroundImage='none';}
   doc.documentElement.style.background='transparent';
   const second = playheadSecond;
   const desired = mediaSourceAt(second);
-  mediaVideo.hidden = !desired || activeMediaKey !== desired.key || (desired.key.startsWith('original-') && second < desired.at);
+  const sourceMatches = !!desired && activeMediaKey === desired.key && mediaVideo.currentSrc === desired.url
+    && !(desired.key.startsWith('original-') && second < desired.at);
+  mediaVideo.hidden = !sourceMatches;
+  if (sourceMatches && mediaVideo.readyState >= 2 && !mediaVideo.seeking) mediaSurface.paint(mediaVideo);
+  else if (!desired || (desired.key.startsWith('original-') && second < desired.at)) mediaSurface.hide();
 }
 function fitReplay() {
   const frame = stage.querySelector('iframe') || player?.iframe;
@@ -188,7 +199,7 @@ async function positionMediaAt(second, generation = seekGeneration) {
   if (!mediaVideo) return null;
   const segment = mediaSourceAt(second);
   if (!segment || (segment.key.startsWith('original-') && second < segment.at)) {
-    cancelMediaLoad?.(abortError()); activeMediaKey = ''; mediaVideo.pause(); mediaVideo.hidden = true; return null;
+    cancelMediaLoad?.(abortError()); activeMediaKey = ''; mediaVideo.pause(); mediaVideo.hidden = true; mediaSurface.hide(); return null;
   }
   if (activeMediaKey !== segment.key || mediaVideo.readyState < 1 || mediaVideo.currentSrc !== segment.url) await loadMediaSegment(segment);
   if (generation !== seekGeneration) throw abortError();
@@ -208,15 +219,16 @@ function syncMediaTime(second) {
 }
 function attachCanvasMedia(id) {
   mediaId=id;
+  if (!mediaSegments.length && !renderedClips.length) { fitReplay(); return; }
   const frame = stage.querySelector('iframe') || player?.iframe; const doc = frame?.contentDocument; const field = recordingCanvasField(doc);
   if (!mediaVideo || mediaVideo.ownerDocument !== document) {
     mediaVideo = document.createElement('video'); mediaVideo.muted = true; mediaVideo.playsInline = true; mediaVideo.preload = 'auto';
     mediaVideo.dataset.spCanvasMedia = '1';
-    Object.assign(mediaVideo.style, { position: 'absolute', objectFit: 'fill', pointerEvents: 'none', zIndex: '4', background: '#08090c' });
+    Object.assign(mediaVideo.style, { display: 'none', pointerEvents: 'none' });
     mediaReady=Promise.resolve();
   }
   if (!mediaVideo.isConnected) stage.appendChild(mediaVideo);
-  if (field) for (const canvas of recordingCanvasElements(doc)) canvas.style.visibility = 'hidden';
+  if (field) for (const canvas of recordingCanvasElements(doc)) { canvas.style.visibility = 'hidden'; canvas.style.display = 'none'; }
   fitReplay();
 }
 function offset() { return playing ? Math.min(duration, startedSecond + (performance.now() - startedAt) / 1000) : playheadSecond; }
@@ -267,7 +279,7 @@ async function seek(value, { resumeAfter } = {}) {
   const resume = resumeAfter ?? playing; playing = false; cancelAnimationFrame(raf); player?.pause(); mediaVideo?.pause(); keepReplayAnimationsVisible();
   clearTimeout(narrationTimer);narrating=false;resetZoom();
   try {
-    timeline.value = String(second); position(second); player?.play(Math.max(0,second-rrOffset) * 1000);
+    position(second); player?.pause(Math.max(0,second-rrOffset) * 1000); keepReplayAnimationsVisible();
     await waitForReplayPaint();
     await waitForRecordedFonts();
     if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
@@ -342,7 +354,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   const width = packet.meta.viewport?.width || 1280; const height = packet.meta.viewport?.height || 720;
   replayViewport={width,height};
   stage.style.aspectRatio = `${width} / ${height}`; stage.style.setProperty('--ix-frame-width', `${width}px`); stage.style.setProperty('--ix-frame-height', `${height}px`);
-  player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: true });
+  player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: mediaSegments.length === 0 });
   // Replayer construction sets up its sandbox but does not paint the full snapshot until the timeline advances.
   // Render the first recorded frame before enabling controls so a replay link never opens on a blank stage.
   const firstVisibleSecond = 0;
