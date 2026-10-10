@@ -10,8 +10,8 @@
     "enemies": 252,
     "enemiesWithSpine": 251,
     "tokens": 61,
-    "tokensWithSpine": 13,
-    "spineModels": 759,
+    "tokensWithSpine": 28,
+    "spineModels": 733,
     "bonds": 23,
     "items": 59,
     "bands": 40,
@@ -56215,6 +56215,51 @@
           "width": 201.714,
           "height": 335.376
         }
+      },
+      "spine": {
+        "skel": "/assets/spine/token/token_10041_cathy_catsld/token_10041_cathy_catsld.skel",
+        "atlas": "/assets/spine/token/token_10041_cathy_catsld/token_10041_cathy_catsld.atlas",
+        "textures": [
+          "/assets/spine/token/token_10041_cathy_catsld/token_10041_cathy_catsld.png"
+        ],
+        "pma": false,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0,
+          "Idle": 0.7,
+          "Start": 0.667
+        },
+        "events": [
+          "OnStart"
+        ],
+        "hits": {},
+        "bounds": {
+          "x": -67.486,
+          "y": -2.244,
+          "width": 199.812,
+          "height": 338.29
+        }
       }
     },
     "token_10056_angel2_target": {
@@ -56313,6 +56358,47 @@
           "width": 150,
           "height": 174
         }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.skel",
+        "atlas": "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Default",
+          "deploy": "Default",
+          "attack": {
+            "begin": null,
+            "loop": "Default",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Default",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0
+        },
+        "events": [],
+        "hits": {},
+        "bounds": {
+          "x": -75,
+          "y": -0.51,
+          "width": 150,
+          "height": 174
+        }
       }
     },
     "token_10057_svash2_eagle2": {
@@ -56324,6 +56410,47 @@
         "atlas": "token_10057_svash2_eagle.atlas",
         "textures": [
           "token_10057_svash2_eagle.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Default",
+          "deploy": "Default",
+          "attack": {
+            "begin": null,
+            "loop": "Default",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Default",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0
+        },
+        "events": [],
+        "hits": {},
+        "bounds": {
+          "x": -75,
+          "y": -0.51,
+          "width": 150,
+          "height": 174
+        }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.skel",
+        "atlas": "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.png"
         ],
         "pma": true,
         "anims": {
@@ -56405,6 +56532,47 @@
           "width": 150,
           "height": 174
         }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.skel",
+        "atlas": "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10057_svash2_eagle2/token_10057_svash2_eagle.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Default",
+          "deploy": "Default",
+          "attack": {
+            "begin": null,
+            "loop": "Default",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Default",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0
+        },
+        "events": [],
+        "hits": {},
+        "bounds": {
+          "x": -75,
+          "y": -0.51,
+          "width": 150,
+          "height": 174
+        }
       }
     },
     "token_10058_sbell2_icetgt": {
@@ -56412,15 +56580,180 @@
     },
     "token_10018_robrta_mach": {
       "owner": "char_484_robrta",
-      "avatar": "/assets/token/avatar/token_10018_robrta_mach.png"
+      "avatar": "/assets/token/avatar/token_10018_robrta_mach.png",
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10018_robrta_mach/token_10018_robrta_mach.skel",
+        "atlas": "/assets/local/spine/token/token_10018_robrta_mach/token_10018_robrta_mach.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10018_robrta_mach/token_10018_robrta_mach.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0,
+          "End": 0.667,
+          "Idle": 0.267,
+          "Start": 0.333
+        },
+        "events": [
+          "OnAttack",
+          "OnStart"
+        ],
+        "hits": {
+          "Idle": [
+            0
+          ]
+        },
+        "bounds": {
+          "x": -61.564,
+          "y": -1.294,
+          "width": 125.303,
+          "height": 164.523
+        }
+      }
     },
     "token_10004_otter_motter": {
       "owner": "char_242_otter",
-      "avatar": "/assets/token/avatar/token_10004_otter_motter.png"
+      "avatar": "/assets/token/avatar/token_10004_otter_motter.png",
+      "spine": {
+        "skel": "/assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.skel",
+        "atlas": "/assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.atlas",
+        "textures": [
+          "/assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.png"
+        ],
+        "pma": false,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Idle",
+          "attack": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Attack": 1,
+          "Blast": 1.333,
+          "Default": 0,
+          "Die": 1,
+          "Idle": 4
+        },
+        "events": [
+          "OnAttack"
+        ],
+        "hits": {
+          "Attack": [
+            0.433
+          ],
+          "Blast": [
+            0.567
+          ]
+        },
+        "bounds": {
+          "x": -211.843,
+          "y": -2.695,
+          "width": 346.503,
+          "height": 236.681
+        }
+      }
     },
     "token_10013_robin_mine": {
       "owner": "char_451_robin",
-      "avatar": "/assets/token/avatar/token_10013_robin_mine.png"
+      "avatar": "/assets/token/avatar/token_10013_robin_mine.png",
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10013_robin_mine/token_10013_robin_mine.skel",
+        "atlas": "/assets/local/spine/token/token_10013_robin_mine/token_10013_robin_mine.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10013_robin_mine/token_10013_robin_mine.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle_01",
+          "deploy": "Start_01",
+          "attack": {
+            "begin": null,
+            "loop": "Idle_01",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Skill_01",
+            "end": null,
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die_01",
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default_01": 0,
+          "Default_02": 0,
+          "Die_01": 0.167,
+          "Die_02": 0.167,
+          "Idle_01": 1,
+          "Idle_02": 1,
+          "Retreat_01": 0.167,
+          "Retreat_02": 0.167,
+          "Skill_01": 0.167,
+          "Skill_02": 0.167,
+          "Start_01": 0.5,
+          "Start_02": 0.5
+        },
+        "events": [
+          "OnAttack",
+          "OnStart"
+        ],
+        "hits": {
+          "Skill_01": [
+            0.167
+          ],
+          "Skill_02": [
+            0.167
+          ]
+        },
+        "bounds": {
+          "x": -75.008,
+          "y": -59.761,
+          "width": 145.008,
+          "height": 161.48
+        }
+      }
     },
     "token_10025_doroth_recttp": {
       "owner": "char_4048_doroth",
@@ -56431,6 +56764,57 @@
         "atlas": "token_10025_doroth_recttp.atlas",
         "textures": [
           "token_10025_doroth_recttp.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Attack": 0.333,
+          "Default": 0,
+          "Die": 0.833,
+          "Idle": 1.667,
+          "Start": 0.433
+        },
+        "events": [
+          "OnAttack"
+        ],
+        "hits": {
+          "Attack": [
+            0.267,
+            0.333
+          ]
+        },
+        "bounds": {
+          "x": -97.195,
+          "y": -9.425,
+          "width": 186.806,
+          "height": 147.302
+        }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10025_doroth_recttp/token_10025_doroth_recttp.skel",
+        "atlas": "/assets/local/spine/token/token_10025_doroth_recttp/token_10025_doroth_recttp.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10025_doroth_recttp/token_10025_doroth_recttp.png"
         ],
         "pma": true,
         "anims": {
@@ -56525,6 +56909,50 @@
           "width": 372.723,
           "height": 308.75
         }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10032_jesca2_jckshd/token_10032_jesca2_jckshd.skel",
+        "atlas": "/assets/local/spine/token/token_10032_jesca2_jckshd/token_10032_jesca2_jckshd.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10032_jesca2_jckshd/token_10032_jesca2_jckshd.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0,
+          "Die": 1,
+          "Idle": 1,
+          "Start": 1
+        },
+        "events": [],
+        "hits": {},
+        "bounds": {
+          "x": -95.509,
+          "y": -1.252,
+          "width": 372.723,
+          "height": 308.75
+        }
       }
     },
     "token_10027_ironmn_pile1": {
@@ -56576,11 +57004,56 @@
           "width": 215.5,
           "height": 287
         }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10027_ironmn_pile1/token_10027_ironmn_pile1.skel",
+        "atlas": "/assets/local/spine/token/token_10027_ironmn_pile1/token_10027_ironmn_pile1.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10027_ironmn_pile1/token_10027_ironmn_pile1.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0,
+          "End": 1,
+          "Idle": 2.8,
+          "Start": 1
+        },
+        "events": [
+          "OnStart"
+        ],
+        "hits": {},
+        "bounds": {
+          "x": -125.131,
+          "y": -1.127,
+          "width": 215.5,
+          "height": 287
+        }
       }
     },
     "token_10027_ironmn_pile2": {
       "owner": "char_4072_ironmn",
-      "avatar": "/assets/token/avatar/token_10027_ironmn_pile2.png",
       "spineLocal": {
         "group": "spine/token/token_10027_ironmn_pile2",
         "skel": "token_10027_ironmn_pile2.skel",
@@ -56627,17 +57100,113 @@
           "width": 215.5,
           "height": 287
         }
+      },
+      "spine": {
+        "skel": "/assets/spine/token/token_10027_ironmn_pile2/token_10027_ironmn_pile2_summer_11.skel",
+        "atlas": "/assets/spine/token/token_10027_ironmn_pile2/token_10027_ironmn_pile2_summer_11.atlas",
+        "textures": [
+          "/assets/spine/token/token_10027_ironmn_pile2/token_10027_ironmn_pile2_summer_11.png"
+        ],
+        "pma": false,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "idle"
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Idle",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": null,
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Default": 0,
+          "End": 1,
+          "Idle": 4,
+          "Start": 1
+        },
+        "events": [
+          "OnStart"
+        ],
+        "hits": {},
+        "bounds": {
+          "x": -161.419,
+          "y": -3.369,
+          "width": 263.5,
+          "height": 275.5
+        }
       }
     },
     "token_10027_ironmn_pile3": {
       "owner": "char_4072_ironmn",
-      "avatar": "/assets/token/avatar/token_10027_ironmn_pile3.png",
       "spineLocal": {
         "group": "spine/token/token_10027_ironmn_pile3",
         "skel": "token_10027_ironmn_pile3.skel",
         "atlas": "token_10027_ironmn_pile3.atlas",
         "textures": [
           "token_10027_ironmn_pile3.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": null
+        },
+        "animations": {
+          "Attack": 0.333,
+          "Default": 0,
+          "Die": 1,
+          "Idle": 1,
+          "Start": 1
+        },
+        "events": [
+          "OnAttack",
+          "OnStart"
+        ],
+        "hits": {
+          "Attack": [
+            0.067
+          ]
+        },
+        "bounds": {
+          "x": -144.444,
+          "y": -6.815,
+          "width": 307.5,
+          "height": 358.952
+        }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10027_ironmn_pile3/token_10027_ironmn_pile3.skel",
+        "atlas": "/assets/local/spine/token/token_10027_ironmn_pile3/token_10027_ironmn_pile3.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10027_ironmn_pile3/token_10027_ironmn_pile3.png"
         ],
         "pma": true,
         "anims": {
@@ -56744,6 +57313,62 @@
           "width": 342.015,
           "height": 328.516
         }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10020_ling_soul1/token_10020_ling_soul1.skel",
+        "atlas": "/assets/local/spine/token/token_10020_ling_soul1/token_10020_ling_soul1.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10020_ling_soul1/token_10020_ling_soul1.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": {
+            "begin": null,
+            "loop": "Stun",
+            "end": null
+          }
+        },
+        "animations": {
+          "Attack": 1,
+          "Default": 0,
+          "Die": 1,
+          "Idle": 1.333,
+          "Start": 1,
+          "Stun": 1
+        },
+        "events": [
+          "OnAttack",
+          "OnStart"
+        ],
+        "hits": {
+          "Attack": [
+            0.367
+          ]
+        },
+        "bounds": {
+          "x": 527.795,
+          "y": -3.156,
+          "width": 342.015,
+          "height": 328.516
+        }
       }
     },
     "token_10020_ling_soul2": {
@@ -56755,6 +57380,65 @@
         "atlas": "token_10020_ling_soul2.atlas",
         "textures": [
           "token_10020_ling_soul2.png"
+        ],
+        "pma": true,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Skill",
+            "end": null,
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": {
+            "begin": null,
+            "loop": "Stun",
+            "end": null
+          }
+        },
+        "animations": {
+          "Attack": 1,
+          "Default": 0,
+          "Die": 1,
+          "Idle": 1.333,
+          "Skill": 1.167,
+          "Start": 1,
+          "Stun": 1
+        },
+        "events": [
+          "OnAttack",
+          "OnStart"
+        ],
+        "hits": {
+          "Attack": [
+            0.367
+          ],
+          "Skill": [
+            0.5
+          ]
+        },
+        "bounds": {
+          "x": 527.795,
+          "y": -3.156,
+          "width": 342.015,
+          "height": 328.516
+        }
+      },
+      "spine": {
+        "skel": "/assets/local/spine/token/token_10020_ling_soul2/token_10020_ling_soul2.skel",
+        "atlas": "/assets/local/spine/token/token_10020_ling_soul2/token_10020_ling_soul2.atlas",
+        "textures": [
+          "/assets/local/spine/token/token_10020_ling_soul2/token_10020_ling_soul2.png"
         ],
         "pma": true,
         "anims": {
@@ -56877,6 +57561,71 @@
           "y": -4.122,
           "width": 2035.691,
           "height": 537.811
+        }
+      },
+      "spine": {
+        "skel": "/assets/spine/token/token_10020_ling_soul3/token_10020_ling_soul3_nian_9.skel",
+        "atlas": "/assets/spine/token/token_10020_ling_soul3/token_10020_ling_soul3_nian_9.atlas",
+        "textures": [
+          "/assets/spine/token/token_10020_ling_soul3/token_10020_ling_soul3_nian_9.png"
+        ],
+        "pma": false,
+        "anims": {
+          "idle": "Idle",
+          "deploy": "Start",
+          "attack": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null
+          },
+          "attackDown": null,
+          "skill": {
+            "begin": null,
+            "loop": "Attack",
+            "end": null,
+            "via": "attack",
+            "index": 0,
+            "idle": null
+          },
+          "die": "Die",
+          "move": null,
+          "stun": {
+            "begin": null,
+            "loop": "Stun",
+            "end": null
+          }
+        },
+        "animations": {
+          "Attack": 1,
+          "Attack_02": 1.667,
+          "Default": 0,
+          "Die": 1,
+          "Die_02": 1,
+          "Die_Skill": 0.333,
+          "Idle": 2,
+          "Idle_02": 6,
+          "Start": 1,
+          "Start_02": 0.667,
+          "Stun": 1,
+          "Stun_02": 1
+        },
+        "events": [
+          "OnAttack",
+          "OnStart"
+        ],
+        "hits": {
+          "Attack": [
+            0.367
+          ],
+          "Attack_02": [
+            0.5
+          ]
+        },
+        "bounds": {
+          "x": -1158.162,
+          "y": -0.643,
+          "width": 2018.897,
+          "height": 1290.359
         }
       }
     },
