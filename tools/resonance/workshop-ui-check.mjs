@@ -198,6 +198,7 @@ async function run() {
   const networkFailures = [];
   const scopedPages = new WeakMap();
   const websocketPages = new WeakMap();
+  const briefingClicks = [];
   const pages = new Set();
   const target = new URL(WORKSHOP_URL);
   const creds = workshopCredentials();
@@ -365,14 +366,28 @@ async function run() {
     if (connection.publicState.phase === 'INFO_CHECK') {
       assert(allowBriefingAck, 'fullscreen reconnect unexpectedly returned to INFO_CHECK');
       setStage('native-info-check-ack');
-      const ready = await page.waitForSelector('.brief__foot button.btn', { visible: true, timeout: 15_000 });
-      assert(ready, 'Native INFO_CHECK briefing button was not visible');
+      const ready = await page.waitForSelector('.brief__foot > button.btn--xl', { visible: true, timeout: 15_000 });
+      assert(ready, 'Native INFO_CHECK ready button was not visible');
+      const clickProof = await ready.evaluate(button => {
+        const text = String(button.innerText || button.textContent || '').replace(/\s+/g, ' ').trim();
+        const rect = button.getBoundingClientRect();
+        const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return { text, x: Math.round(x), y: Math.round(y), centerHit: !!hit && (hit === button || button.contains(hit)),
+          hitTag: hit?.tagName?.toLowerCase() || null, hitClass: typeof hit?.className === 'string' ? hit.className.slice(0, 120) : null,
+          disabled: !!button.disabled };
+      });
+      assert(['准备就绪', '进入战场'].includes(clickProof.text), `Native INFO_CHECK ready button text is unexpected: ${JSON.stringify(clickProof)}`);
+      assert(clickProof.centerHit && !clickProof.disabled, `Native INFO_CHECK ready button center is not a usable hit target: ${JSON.stringify(clickProof)}`);
+      briefingClicks.push(clickProof);
       await ready.click();
       const sentUntil = Date.now() + 5_000;
-      while (!(websocketPages.get(observerPage(page))?.observation.sentTypes.includes('g.infoReady')) && Date.now() < sentUntil) {
+      const observation = websocketPages.get(observerPage(page))?.observation;
+      while (!(observation?.sentTypes.includes('g.infoReady')) && Date.now() < sentUntil) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
-      assert(websocketPages.get(observerPage(page))?.observation.sentTypes.includes('g.infoReady'), 'briefing acknowledgment did not use native g.infoReady');
+      const infoReadyCount = observation?.sentTypes.filter(type => type === 'g.infoReady').length ?? 0;
+      assert(infoReadyCount === 1, `Native ready click must send exactly one g.infoReady, got ${infoReadyCount}`);
     } else {
       assert(connection.publicState.phase === 'PREP', `session is not in Native PREP: ${connection.publicState.phase}`);
     }
@@ -381,7 +396,7 @@ async function run() {
   };
   const evidence = { status: 'running', sessionId: options.session, productNative: options['product-native'], workshopUrl: WORKSHOP_URL,
     cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests,
-    requiredResourceFailures, unexpectedHtmlResponses, browserErrors, networkFailures, stageHistory };
+    requiredResourceFailures, unexpectedHtmlResponses, browserErrors, networkFailures, stageHistory, briefingClicks };
   const work = (async () => {
     setStage('browser-launch');
     browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE,
