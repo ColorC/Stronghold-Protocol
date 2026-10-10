@@ -12,6 +12,7 @@ import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {resonanceCatalogPacket} from '../../server/modes/resonance/native-match.js';
 import {skillIconUrl} from '../../public/js/ui/assetUrls.js';
+import {resonanceNativeItem,resolveResonanceItemIconUrl} from '../../public/js/resonance/itemIconMap.js';
 import {specialBoardTile} from '../../public/js/resonance/specialEntityPlacement.js';
 
 test('every projected fixed skill uses its native identity and an existing icon',()=>{
@@ -36,6 +37,20 @@ test('native resonance shop packet resolves the selected fixed skill icon from i
   const record=packet.data.chess[operator.id];
   assert.equal(record.assets.skillIcon,skillId,name);
   assert.equal(skillIconUrl(data.assets,record),data.assets.skills[skillId],name);
+ }
+});
+
+test('resonance component icons resolve the eight frozen native item icons when the mode packet omits native rows',()=>{
+ const data=loadData('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native');
+ const parts={blade:'chess_item_1_01_e_a',staff:'chess_item_3_08_e_a',bow:'chess_item_3_02_e_a',plate:'chess_item_1_02_e_a',cloak:'chess_item_4_04_e_a',belt:'chess_item_3_06_e_a',tear:'chess_item_3_05_e_a',crest:'chess_item_1_04_e_a'};
+ const catalog={equipment:Object.fromEntries(Object.keys(parts).map(part=>[part,{name:part}]))};
+ for(const [part,id] of Object.entries(parts)){
+  const source=data.items[id];assert.ok(source,`frozen native item row ${id}`);
+  const url=data.assets.items[source.iconId];assert.ok(url,`manifest icon ${source.iconId}`);
+  const resolved=resonanceNativeItem(catalog,part,[]);
+  assert.equal(resolved.iconId,source.iconId,`${part} uses its exact source icon identity`);
+  assert.equal(resolveResonanceItemIconUrl(catalog,part,[],data.assets),url,`${part} resolves the manifest URL`);
+  assert.ok(fs.existsSync(path.join('E:/WindowsWorkspace/webworks/apps/stronghold-protocol/public',url)),`${part} asset exists`);
  }
 });
 

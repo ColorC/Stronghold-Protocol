@@ -5,6 +5,22 @@ const NATIVE_BY_PART = Object.freeze({
   plate: 'chess_item_1_02_e_a', cloak: 'chess_item_4_04_e_a', belt: 'chess_item_3_06_e_a',
   tear: 'chess_item_3_05_e_a', crest: 'chess_item_1_04_e_a',
 });
+// Exact iconId values read from the frozen resonance-native/items.json rows for the
+// component IDs above plus the two semantic-only IDs below. NativeConnection may
+// inject a reduced item list for this mode, so keep only this small identity bridge;
+// the image URLs still come exclusively from the caller's asset manifest.
+const FROZEN_NATIVE_ICON = Object.freeze({
+  chess_item_1_01_e_a: 'trap_1041_acarm041',
+  chess_item_3_08_e_a: 'trap_1048_acarm048',
+  chess_item_3_02_e_a: 'trap_1063_acarm063',
+  chess_item_1_02_e_a: 'trap_1047_acarm047',
+  chess_item_4_04_e_a: 'trap_1055_acarm055',
+  chess_item_3_06_e_a: 'trap_1049_acarm049',
+  chess_item_3_05_e_a: 'trap_1051_acarm051',
+  chess_item_1_04_e_a: 'trap_1124_acarm124',
+  chess_item_1_03_e_a: 'trap_1066_acarm066',
+  chess_item_3_10_e_a: 'trap_1044_acarm044',
+});
 const SEMANTIC_NATIVE = [
   [/coin|gold|econom|income|fund|利息|金币|经济|资金/, 'chess_item_1_03_e_a'],
   [/shield|armor|armour|health|surviv|defen|生命|护盾|防御|生存/, 'chess_item_1_02_e_a'],
@@ -17,12 +33,19 @@ const SEMANTIC_NATIVE = [
 ];
 const FALLBACK_PROF = Object.freeze({ staff: 'CASTER', tear: 'MEDIC', crest: 'SUPPORT', plate: 'TANK', cloak: 'SPECIAL', bow: 'SNIPER', belt: 'PIONEER', blade: 'WARRIOR' });
 
+function nativeRecord(nativeId, itemRecords) {
+  const found = itemRecords.find(item => item.id === nativeId) || itemRecords.find(item => item.trapId === nativeId || item.iconId === nativeId);
+  if (found) return found;
+  const iconId = FROZEN_NATIVE_ICON[nativeId];
+  return iconId ? { id: nativeId, trapId: iconId, iconId } : null;
+}
+
 export function resonanceNativeItem(catalog, id, itemRecords = []) {
   const record = catalog?.equipment?.[id];
   if (!record || !Array.isArray(itemRecords)) return null;
   const direct = record.nativeId || record.nativeItemId || record.itemId || record.trapId || record.iconId;
   if (direct) {
-    const found = itemRecords.find(item => item.id === direct) || itemRecords.find(item => item.trapId === direct || item.iconId === direct);
+    const found = nativeRecord(direct, itemRecords);
     if (found) return found;
   }
   const byName = itemRecords.find(item => item.name && item.name === record.name);
@@ -31,12 +54,12 @@ export function resonanceNativeItem(catalog, id, itemRecords = []) {
   // visible across the whole catalog instead of collapsing every damage or health effect to one glyph.
   const parts = Array.isArray(record.parts) ? record.parts : [];
   const part = parts.find(value => NATIVE_BY_PART[value]) || (NATIVE_BY_PART[id] ? id : null);
-  if (part) return itemRecords.find(item => item.id === NATIVE_BY_PART[part]) || null;
+  if (part) return nativeRecord(NATIVE_BY_PART[part], itemRecords);
   const meaning = `${id} ${record.name || ''} ${record.description || ''} ${JSON.stringify(record.effects || {})}`.toLowerCase();
   const nativeId = SEMANTIC_NATIVE.find(([pattern]) => pattern.test(meaning))?.[1];
-  if (nativeId) return itemRecords.find(item => item.id === nativeId) || null;
+  if (nativeId) return nativeRecord(nativeId, itemRecords);
   const fallbackPart = Object.keys(NATIVE_BY_PART).find(key => meaning.includes(key));
-  return fallbackPart ? itemRecords.find(item => item.id === NATIVE_BY_PART[fallbackPart]) || null : null;
+  return fallbackPart ? nativeRecord(NATIVE_BY_PART[fallbackPart], itemRecords) : null;
 }
 
 export function resolveResonanceItemIconUrl(catalog, id, itemRecords, manifest) {

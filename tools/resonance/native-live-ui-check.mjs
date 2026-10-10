@@ -19,6 +19,10 @@ const LOG = path.join(ROOT, '.omni/tmp/resonance/native-live-ui-check.log');
 const HOST = '127.0.0.1', PORT = 19003, DEADLINE_MS = 8 * 60_000;
 const SHOT_NAMES = ['01-title', '02-difficulty', '03-prep', '04-pacts', '05-shop-detail', '06-equipment', '07-combat', '08-settle', '09-choice-fixture', '10-result-fixture'];
 const SHOTS = Object.fromEntries(SHOT_NAMES.map((name) => [name, path.join(OUT, `native-live-${name}.jpg`)]));
+const SUPPLEMENTAL_SHOTS = {
+  '11-reward-progress': path.join(OUT, 'native-live-11-reward-progress.jpg'),
+  '12-reward-tiers': path.join(OUT, 'native-live-12-reward-tiers.jpg'),
+};
 export const REQUIRED_CHECKS = [
   'title-to-difficulty', 'native-info-prep', 'three-real-deployments', 'shop-real-purchase', 'details-open-while-shop-usable',
   'native-entrypoints-unique', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure',
@@ -319,7 +323,7 @@ export async function createIsolatedNativeFixtures({ directory = SESSION_DIR, se
 }
 export function config(sourceRoot = SOURCE) {
   return { source: sourceRoot, canonicalInstallDir: ROOT, dataDir: DATA, sessionDirectory: SESSION_DIR, browserProfile: PROFILE,
-    port: PORT, deadlineMs: DEADLINE_MS, receipt: RECEIPT, log: LOG, screenshots: SHOTS,
+    port: PORT, deadlineMs: DEADLINE_MS, receipt: RECEIPT, log: LOG, screenshots: SHOTS, supplementalScreenshots: SUPPLEMENTAL_SHOTS,
     serverMount: { publicDir: path.join(sourceRoot, 'public'), installDirReadOnlyFallback: ROOT }, browserStarted: false };
 }
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -609,7 +613,7 @@ async function run() {
     status: 'running', checks: {}, screenshots: {}, ws: { sent: [], received: [] }, failures: [], fixtures: { fifthChoice: 'not-run', bossHidden: 'not-run' } };
   const receipt = existsSync(RECEIPT) ? JSON.parse(await readFile(RECEIPT, 'utf8')) : { checker: 'native-live-ui-check', attempts: [] };
   assert(receipt.checker === 'native-live-ui-check' && Array.isArray(receipt.attempts), `existing receipt has incompatible shape: ${RECEIPT}`);
-  for (const file of Object.values(SHOTS)) if (existsSync(file)) {
+  for (const file of [...Object.values(SHOTS), ...Object.values(SUPPLEMENTAL_SHOTS)]) if (existsSync(file)) {
     assert(screenshotOverwriteOwner(receipt, file), `refusing to overwrite screenshot not owned by this checker's receipt: ${file}`);
     const info = await lstat(file);
     assert(info.isFile() && !info.isSymbolicLink() && info.nlink === 1, `refusing to overwrite non-regular, linked, or reparse screenshot: ${file}`);
@@ -621,7 +625,7 @@ async function run() {
   const save = async () => writeFile(RECEIPT, `${JSON.stringify(receipt, null, 2)}\n`);
   const check = (name, passed, evidence = null) => { attempt.checks[name] = { status: passed ? 'passed' : 'failed', evidence }; if (!passed) throw new Error(`${name}: ${JSON.stringify(evidence)}`); };
   const capture = async (name) => {
-    const file = SHOTS[name]; assert(file, `capture slot is unknown: ${name}`);
+    const file = SHOTS[name] || SUPPLEMENTAL_SHOTS[name]; assert(file, `capture slot is unknown: ${name}`);
     if (existsSync(file)) {
       assert(screenshotOverwriteOwner(receipt, file), `screenshot is not recorded by an earlier check attempt: ${file}`);
       const info = await lstat(file);
@@ -926,6 +930,28 @@ async function run() {
     assert(recipeItem, 'seeded recipe source item is not visible in the equipment drawer');
     await clickHandleByMeasuredCenter(combinePage,recipeItem,'recipe item detail');
     await combinePage.waitForSelector('.rs-detail-panel .rs-detail__recipe-grid .rs-detail__recipe button',{visible:true,timeout:4_000});
+    const recipeCards=await combinePage.$$('.rs-detail__recipe-grid .rs-detail__recipe');
+    assert(recipeCards.length>0,'recipe cards are required before measuring icon geometry');
+    const lazyImageLoads=[];
+    for(let index=0;index<recipeCards.length;index++){
+      const card=recipeCards[index];
+      await card.evaluate(node=>new Promise(resolve=>{
+        node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+        requestAnimationFrame(()=>requestAnimationFrame(resolve));
+      }));
+      const loaded=await combinePage.waitForFunction(node=>{
+        const images=[...node.querySelectorAll('.rs-item-icon img')];
+        return images.length>0&&images.every(image=>image.complete&&image.naturalWidth>0&&image.naturalHeight>0);
+      },{timeout:4_000},card).then(handle=>handle.jsonValue()).catch(()=>false);
+      const evidence=await card.evaluate(node=>({name:node.querySelector('.rs-detail__recipe-name')?.innerText?.trim()||node.querySelector('button')?.innerText?.trim()||'',
+        images:[...node.querySelectorAll('.rs-item-icon img')].map(image=>({src:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight}))}));
+      lazyImageLoads.push({index,loaded,evidence});
+      assert(loaded,`recipe card ${index+1} lazy images did not finish loading within 4s: ${JSON.stringify(evidence)}`);
+    }
+    await recipeCards[0].evaluate(node=>new Promise(resolve=>{
+      node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+      requestAnimationFrame(()=>requestAnimationFrame(resolve));
+    }));
     const recipeContrast=await combinePage.evaluate(()=>{
       const parse=value=>{const m=String(value||'').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);return m?{r:+m[1],g:+m[2],b:+m[3],a:m[4]==null?1:+m[4]}:null;};
       const lum=c=>{const x=[c.r,c.g,c.b].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return x[0]*.2126+x[1]*.7152+x[2]*.0722;};
@@ -954,7 +980,7 @@ async function run() {
     check('native-recipe-contrast',recipeContrast.length>0&&recipeContrast.every(row=>row.text&&row.ratio>=4.5)
       &&recipeGeometry.icons.length>0&&recipeGeometry.icons.every(icon=>icon.width>=31&&icon.width<=34&&icon.height>=31&&icon.height<=34)
       &&recipeGeometry.images.length>0&&recipeGeometry.images.every(image=>image.complete&&image.naturalWidth>0&&image.naturalHeight>0&&image.width>=31&&image.width<=34&&image.height>=31&&image.height<=34)
-      &&recipeGeometry.maxFlowHeight<=160&&recipeGeometry.maxCardHeight<=190,{contrast:recipeContrast,geometry:recipeGeometry});
+      &&recipeGeometry.maxFlowHeight<=160&&recipeGeometry.maxCardHeight<=190,{contrast:recipeContrast,geometry:recipeGeometry,lazyImageLoads});
     const recipeDetailClose=await combinePage.$('.rs-detail-panel button[aria-label="关闭详情"]');
     if(recipeDetailClose)await clickHandleByMeasuredCenter(combinePage,recipeDetailClose,'recipe detail close');
     const overlappingDetailClose = await combinePage.$('.rs-detail-panel .dpanel__close');
@@ -1187,6 +1213,21 @@ async function run() {
     assert(rewardSchedule.present && !rewardSchedule.open && /查看奖励档位/.test(rewardSchedule.summary)
       && JSON.stringify(rewardSchedule.rows.map(row=>Number(row.tier)))===JSON.stringify(conquerorThresholds)
       && rewardSchedule.rows.every(row=>!row.visible), `Conqueror's 15 source-backed thresholds must be collapsed by default: ${JSON.stringify(rewardSchedule)}`);
+    const progressNode=await page.$('.rs-detail__reward-progress');
+    assert(progressNode,'Conqueror reward progress indicator is required while reward tiers are collapsed');
+    await progressNode.evaluate(node=>new Promise(resolve=>{
+      node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+      requestAnimationFrame(()=>requestAnimationFrame(resolve));
+    }));
+    const collapsedProgress=await page.evaluate(()=>{
+      const progress=document.querySelector('.rs-detail__reward-progress'),schedule=document.querySelector('details.rs-detail__reward-schedule');
+      const rect=progress?.getBoundingClientRect();
+      return{scheduleClosed:!!schedule&&!schedule.open,progressText:progress?.innerText?.trim()||'',progressVisible:!!rect&&rect.width>0&&rect.height>0&&rect.top>=0&&rect.bottom<=innerHeight,
+        panelVisible:!!progress?.closest('.rs-detail-panel')?.getClientRects().length};
+    });
+    assert(collapsedProgress.scheduleClosed&&collapsedProgress.progressVisible&&collapsedProgress.progressText,
+      `reward progress must be visible while tiers remain collapsed: ${JSON.stringify(collapsedProgress)}`);
+    await capture('11-reward-progress');
     const rewardSummary=await page.$('.rs-detail__reward-schedule > summary');
     attempt.conquerorRewardDisclosureClick = await clickHandleByMeasuredCenter(page,rewardSummary,'expand Conqueror reward schedule');
     await page.waitForFunction(()=>document.querySelector('details.rs-detail__reward-schedule')?.open===true,{timeout:3_000});
@@ -1200,6 +1241,7 @@ async function run() {
     check('native-pact-rewards-disclosure',expandedSchedule.open&&JSON.stringify(rewardIds.map(Number))===JSON.stringify(conquerorThresholds)
       &&expandedSchedule.rows.every(row=>row.text&&row.text.includes(row.tier))
       &&new Set(rewardIds).size===rewardIds.length&&expandedSchedule.progressVisible,{collapsed:rewardSchedule,expanded:expandedSchedule});
+    await capture('12-reward-tiers');
     const detailTypography=await page.evaluate(()=>{
       const visible=node=>{const r=node?.getBoundingClientRect();return!!r&&r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden'};
       const body=[...document.querySelectorAll('.rs-detail-panel .dtext,.rs-detail-panel .rs-detail__reward-progress,.rs-detail-panel .rs-detail__reward-schedule [data-reward-tier]')].filter(visible).map(node=>({text:(node.innerText||'').trim().slice(0,100),font:parseFloat(getComputedStyle(node).fontSize)})).filter(row=>row.text&&/[\u3400-\u9fff]/.test(row.text));
@@ -1533,7 +1575,7 @@ async function run() {
       attempt.failures.push({ at: now(), error: 'browser or network faults present', runtimeFaults: faults });
     }
     if (attempt.status === 'running') attempt.status = attempt.missingChecks.length ? 'incomplete' : 'passed';
-    if (screenshotCount(attempt.screenshots) > 10) { attempt.status = 'failed'; attempt.failures.push({ at: now(), error: 'screenshot limit exceeded' }); }
+    if (screenshotCount(attempt.screenshots) > 12) { attempt.status = 'failed'; attempt.failures.push({ at: now(), error: 'screenshot limit exceeded' }); }
     receipt.finishedAt = attempt.finishedAt;
     log.push(`status=${attempt.status}`, `session=${attempt.sessionId || 'none'}`, `missingChecks=${attempt.missingChecks.join(',')}`);
     await save(); await writeFile(LOG, `${log.join('\n')}\n`, { flag: 'a' });
