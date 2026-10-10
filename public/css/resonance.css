@@ -290,6 +290,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-detail-panel .dtext, .rs-native-match .rs-detail-panel .rs-detail__tier-copy strong, .rs-native-match .rs-detail-panel .rs-detail__note, .rs-codex .dtext, .rs-detail .dtext { color: #d7e5dc; font-size: max(.16rem,16px); line-height: 1.45; }
 .rs-native-match .rs-detail-panel :is(.rs-detail__recipe,.rs-detail__member-row,.rs-detail__item) button, .rs-native-match .rs-detail-panel .rs-detail__select select, .rs-native-match .rs-detail-panel .rs-detail__stars button, .rs-native-match .rs-detail-panel .rs-detail__related { min-height: 32px; color: #d7e5dc; background: #101814; font-size: max(.14rem,14px); }
 .rs-native-match .rs-detail-panel .rs-detail__text { display: flex; flex-direction: column; gap: 3px; color: #d7e5dc; text-align: left; }
+.rs-native-match .rs-detail-panel .dpanel__scroll > .dhead__info { flex: none; }
 .rs-native-match .rs-detail-panel .rs-detail__text span { color: #b9c9c0; font-size: max(.14rem,14px); line-height: 1.4; }
 .rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card { display: grid; grid-template-columns: minmax(0,1fr); gap: 6px; width: 100%; min-width: 0; padding: 8px; color: #d7e5dc; background: #101814; background-image: none; text-align: left; }
 .rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card::before, .rs-native-match .rs-detail-panel .rs-detail__recipe-grid .lo-card::after { content: none; background-image: none; }

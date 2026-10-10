@@ -444,13 +444,25 @@ async function clickVisibleButtonText(page, pattern) {
   throw new Error(`no visible enabled button matched ${pattern}`);
 }
 async function clickHandleByMeasuredCenter(page, handle, label) {
+  assert(handle, `${label} has no target element`);
+  await handle.evaluate(node => new Promise(resolve => {
+    node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
   const box = await handle?.boundingBox();
   assert(box && box.width > 0 && box.height > 0, `${label} has no visible hitbox`);
   const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  const hit = await page.evaluate(({ x, y }) => {
+  const hit = await handle.evaluate((target, { x, y }) => {
     const node = document.elementFromPoint(x, y);
-    return { tag: node?.tagName || null, text: (node?.innerText || node?.textContent || '').trim().slice(0, 120), className: node?.className || '' };
+    const scrollAncestors = [];
+    for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent), canScroll = /(auto|scroll)/.test(`${style.overflowY} ${style.overflowX}`);
+      if (canScroll) scrollAncestors.push({ className: typeof parent.className === 'string' ? parent.className : '', scrollTop: parent.scrollTop, clientHeight: parent.clientHeight, scrollHeight: parent.scrollHeight });
+    }
+    return { inside: !!node && (node === target || target.contains(node)), tag: node?.tagName || null,
+      text: (node?.innerText || node?.textContent || '').trim().slice(0, 120), className: node?.className || '', scrollAncestors };
   }, point);
+  assert(hit.inside, `${label} center is occluded or targets a different control: ${JSON.stringify({ point, hit })}`);
   await page.mouse.click(point.x, point.y);
   return { point, hit };
 }
@@ -925,7 +937,24 @@ async function run() {
         return{text:(node.innerText||'').trim(),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),foreground:getComputedStyle(node).color,background:bg};
       });
     });
-    check('native-recipe-contrast',recipeContrast.length>0&&recipeContrast.every(row=>row.text&&row.ratio>=4.5),recipeContrast);
+    const recipeGeometry=await combinePage.evaluate(()=>{
+      const rect=node=>{const r=node.getBoundingClientRect();return{width:r.width,height:r.height}};
+      const icons=[...document.querySelectorAll('.rs-detail__recipe-flow .rs-item-icon')].map(rect);
+      const images=[...document.querySelectorAll('.rs-detail__recipe-flow .rs-item-icon img')].map(img=>{
+        const r=img.getBoundingClientRect();
+        return{width:r.width,height:r.height,naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,complete:img.complete,src:img.currentSrc||img.src};
+      });
+      const flows=[...document.querySelectorAll('.rs-detail__recipe-grid .rs-detail__recipe-flow')].map(rect);
+      const cards=[...document.querySelectorAll('.rs-detail__recipe-grid .rs-detail__recipe')].map(rect);
+      return{icons,images,flows,cards,maxIconWidth:Math.max(0,...icons.map(row=>row.width)),maxIconHeight:Math.max(0,...icons.map(row=>row.height)),
+        minImageWidth:images.length?Math.min(...images.map(row=>row.width)):0,minImageHeight:images.length?Math.min(...images.map(row=>row.height)):0,
+        maxImageWidth:Math.max(0,...images.map(row=>row.width)),maxImageHeight:Math.max(0,...images.map(row=>row.height)),
+        maxFlowHeight:Math.max(0,...flows.map(row=>row.height)),maxCardHeight:Math.max(0,...cards.map(row=>row.height))};
+    });
+    check('native-recipe-contrast',recipeContrast.length>0&&recipeContrast.every(row=>row.text&&row.ratio>=4.5)
+      &&recipeGeometry.icons.length>0&&recipeGeometry.icons.every(icon=>icon.width>=31&&icon.width<=34&&icon.height>=31&&icon.height<=34)
+      &&recipeGeometry.images.length>0&&recipeGeometry.images.every(image=>image.complete&&image.naturalWidth>0&&image.naturalHeight>0&&image.width>=31&&image.width<=34&&image.height>=31&&image.height<=34)
+      &&recipeGeometry.maxFlowHeight<=160&&recipeGeometry.maxCardHeight<=190,{contrast:recipeContrast,geometry:recipeGeometry});
     const recipeDetailClose=await combinePage.$('.rs-detail-panel button[aria-label="关闭详情"]');
     if(recipeDetailClose)await clickHandleByMeasuredCenter(combinePage,recipeDetailClose,'recipe detail close');
     const overlappingDetailClose = await combinePage.$('.rs-detail-panel .dpanel__close');
@@ -1147,7 +1176,7 @@ async function run() {
     check('all-pact-tier-icons-loaded-and-active', tiers.length === tierCheck.expected && tierCheck.actualPacts === tierCheck.expectedPacts && tiers.every((tier) => tier.label && !/@placeholder|undefined/.test(tier.label)) && tierCheck.icons.length === tierCheck.expectedPacts && tierCheck.icons.every((icon) => icon.loaded) && tierCheck.mismatches.length === 0, { tierCount: tiers.length, ...tierCheck });
     const pactDetailEntry = await page.$('.rs-native-pact-matrix__row[data-pact-id="conqueror"] .rs-native-pact-matrix__name');
     assert(pactDetailEntry, 'Conqueror row is required for the source-backed reward schedule inspection');
-    await clickHandleByMeasuredCenter(page,pactDetailEntry,'multi-tier pact detail');
+    attempt.conquerorDetailClick = await clickHandleByMeasuredCenter(page,pactDetailEntry,'Conqueror pact detail');
     await page.waitForSelector('.rs-detail-panel[role="dialog"]',{visible:true,timeout:4_000});
     const rewardSchedule = await page.evaluate(() => {
       const schedule=document.querySelector('details.rs-detail__reward-schedule'), summary=schedule?.querySelector(':scope > summary');
@@ -1158,7 +1187,8 @@ async function run() {
     assert(rewardSchedule.present && !rewardSchedule.open && /查看奖励档位/.test(rewardSchedule.summary)
       && JSON.stringify(rewardSchedule.rows.map(row=>Number(row.tier)))===JSON.stringify(conquerorThresholds)
       && rewardSchedule.rows.every(row=>!row.visible), `Conqueror's 15 source-backed thresholds must be collapsed by default: ${JSON.stringify(rewardSchedule)}`);
-    await page.click('.rs-detail__reward-schedule > summary');
+    const rewardSummary=await page.$('.rs-detail__reward-schedule > summary');
+    attempt.conquerorRewardDisclosureClick = await clickHandleByMeasuredCenter(page,rewardSummary,'expand Conqueror reward schedule');
     await page.waitForFunction(()=>document.querySelector('details.rs-detail__reward-schedule')?.open===true,{timeout:3_000});
     const expandedSchedule = await page.evaluate(() => {
       const schedule=document.querySelector('details.rs-detail__reward-schedule');
