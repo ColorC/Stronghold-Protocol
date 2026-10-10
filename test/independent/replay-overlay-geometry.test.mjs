@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import { mapViewportRectToOverlay } from '../../public/js/recording/selectionTimeline.js';
+test('CSS transforms use the border box while overlays start inside the border',()=>{const actual=mapViewportRectToOverlay({x:25,y:10,width:20,height:5},{left:12,top:22,width:200,height:100},{left:10,top:20,width:204,height:104},{width:100,height:50},{clientWidth:100,clientHeight:50,offsetWidth:102,offsetHeight:52,clientLeft:1,clientTop:1});assert.deepEqual(actual,{x:25,y:10,width:20,height:5});});
