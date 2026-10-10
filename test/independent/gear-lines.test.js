@@ -6,8 +6,6 @@ import { readFileSync } from 'node:fs';
 import { createSession, applyAction } from '../../server/modes/independent/session.js';
 import { getCatalog } from '../../server/modes/independent/catalog.js';
 import { getData } from '../../server/data.js';
-import { GameData } from '../../server/match/gamedata.js';
-import { modeIdFor } from '../../shared/constants.js';
 import { darkmoonGrowthBadges, applyDarkmoonAHGrowth } from '../../server/modes/independent/darkmoonShop.js';
 import { grantEquipment, equipItem, totalEquipmentLevel } from '../../server/modes/independent/equipment.js';
 
@@ -32,12 +30,11 @@ function producedBy(op) {
   return { fixed, random };
 }
 
-test('the shop shows operators only, one more than the original at every level', () => {
-  const gd = new GameData(data, modeIdFor('solo', 'normal'));
+test('the shop shows only the current 3/4/4/5/5/6 operator counts at each level', () => {
   let state = createSession({ seed: 3 });
+  const expectedSlots = [3, 4, 4, 5, 5, 6];
   for (let level = 1; level <= 6; level++) {
-    const counts = gd.shopSlots(level);
-    assert.equal(state.shop.slots.length, counts.chess + counts.item, `level ${level}`);
+    assert.equal(state.shop.slots.length, expectedSlots[level - 1], `session level ${level}`);
     assert.ok(state.shop.slots.every((s) => s.kind === 'chess'), `level ${level}`);
     if (level < 6) {
       state.funds = 99;
@@ -54,7 +51,7 @@ test('every assigned badge and wearable gear has a named operator source or the 
   for (const [id, d] of Object.entries(items)) {
     // retired (干员表 v3): nobody brings it any more; it stays for saves that hold it. unassigned (gear v4, 10-07): new
     // gear nobody brings yet — the sources are assigned after the operator traits are rewritten
-    if (d.available === false || d.retired || d.unassigned || d.mechanism === 'disabled' || d.kind === '停用' || d.kind === 'prizeGear' || d.kind === 'permit') continue;
+    if (d.available === false || d.retired || d.unassigned || d.prizeOnly || d.sourcePrizeId || d.mechanism === 'disabled' || d.kind === '停用' || d.kind === 'prizeGear' || d.kind === 'permit') continue;
     const c = canonical(id);
     if (fixed.has(c)) continue;
     if ((catalog.config.trainingGearIds || []).includes(id)) continue; // 专项战备授训 is an explicit permanent direct-equip source
@@ -65,6 +62,19 @@ test('every assigned badge and wearable gear has a named operator source or the 
   }
   assert.deepEqual(missing, []);
   assert.ok(randomOnly.length <= 8, randomOnly.join('、'));
+});
+
+test('prize-only wearable gear names its actual prize source and retains its 19.2 source card', () => {
+  const prizeGear = Object.values(catalog.equipment).filter((d) => d.kind === 'prizeGear' || d.prizeOnly || d.sourcePrizeId);
+  assert.ok(prizeGear.length > 0, 'historical prizes add wearable gear');
+  for (const item of prizeGear) {
+    assert.ok(item.kind === 'prizeGear' || item.prizeOnly || item.sourcePrizeId, `${item.id} is explicitly prize-only`);
+    if (item.shopEligible != null) assert.equal(item.shopEligible, false, `${item.id} is never sold in the shop`);
+    const cards = item.sourceRefs?.cards || [];
+    assert.ok(cards.length > 0, `${item.id} retains the original prize source card`);
+    assert.ok(cards.every((card) => card.version === '19.2.0.68600'), `${item.id} source cards retain the 19.2 version`);
+    if (item.sourcePrizeId) assert.ok(catalog.prizes[item.sourcePrizeId], `${item.id} resolves to a real prize`);
+  }
 });
 
 test('a trait that hands out a named piece of gear names it in its text', () => {

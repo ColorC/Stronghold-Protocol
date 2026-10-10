@@ -72,6 +72,21 @@ export function gearSourcesBlock(catalog = getCatalog()) {
   }
   if (pending.length) lines.push(`- **来源待定**（第四版新装备与改回的装备，还没有干员带来，也不进凯瑟琳的随机池）：${pending.join('、')}`);
   if (retired.length) lines.push(`- **停产**（没有干员带来；旧存档里已有的照常生效）：${retired.join('、')}`);
+  const prizeGear = Object.values(catalog.equipment).filter((d) => d.available !== false
+    && (d.prizeOnly || d.sourcePrizeId || d.kind === 'prizeGear'));
+  if (prizeGear.length) {
+    lines.push('', '工程部特供提供的装备（按奖品规则发放，不进入普通装备来源或商店）：', '');
+    for (const d of prizeGear) {
+      const prize = catalog.prizes?.[d.sourcePrizeId];
+      const sourceCard = d.sourceRefs?.cards?.[0];
+      const source = prize
+        ? `工程部特供「${prize.name}」${sourceCard?.name ? `（19.2来源卡：${sourceCard.name}）` : ''}`
+        : sourceCard
+          ? `工程部特供装备（19.2参考卡：${sourceCard.name}）`
+          : `奖品来源待核实（${d.sourcePrizeId || d.id}）`;
+      lines.push(`- **${d.newName || d.name}**：${source}`);
+    }
+  }
   const used = Object.values(catalog.equipment).filter((d) => d.available !== false && USED.has(d.kind)).map((d) => {
     const s = src.get(d.id) || none;
     const named = [...s.fixed, ...[...s.random].filter((n) => !s.fixed.has(n)).map((n) => `${n}随机`)].join('、');
