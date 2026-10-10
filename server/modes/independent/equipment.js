@@ -61,11 +61,11 @@ const fewestWorn = (list) => [...list].sort((a, b) => pieceEquipmentCount(a) - p
  * the one wearing the least; of a named faction on the field (`faction:<阵营>`), the one wearing the least.
  * Nobody there → the maker.
  */
-export function landingPiece(state, catalog, source, how = 'self') {
+export function landingPiece(state, catalog, source, how = 'self', { allowBenchTarget = false } = {}) {
   if (typeof how === 'string' && how.startsWith('uid:')) {
     const uid = how.slice(4);
     const target = (state.pieces || []).find((p) => String(p.uid) === uid);
-    if ((source && (source.removed || source.deleted)) || !target || !onField(target) || target.removed || target.deleted || (target.kind && target.kind !== 'op')
+    if ((source && (source.removed || source.deleted)) || !target || (!onField(target) && !(allowBenchTarget && source && onField(source))) || target.removed || target.deleted || (target.kind && target.kind !== 'op')
         || (source && (target.playerId ?? target.ownerId) !== (source.playerId ?? source.ownerId))
         || !catalog?.operators?.[target.chessId]) throw new Error('BAD_LANDING_TARGET');
     return target;
@@ -104,7 +104,8 @@ export function grantEquipment(state, catalog, id, quantity = 1, extra = {}) {
   const explicit = typeof landing === 'string' && landing.startsWith('uid:');
   const wearable = isBadge || ['功能装备', '战斗装备', '生产装备', 'equipment', 'prizeGear'].includes(def.kind);
   if (explicit && (!wearable || !['native', 'prize', 'equipment', 'attachment'].includes(extra.origin) || String(extra.targetUid) !== landing.slice(4))) throw new Error('BAD_LANDING_TARGET');
-  const explicitTarget = explicit ? landingPiece(state, catalog, source, landing) : null;
+  const allowBenchTarget = extra.allowBenchTarget === true && extra.origin === 'native' && isBadge;
+  const explicitTarget = explicit ? landingPiece(state, catalog, source, landing, { allowBenchTarget }) : null;
   const fixedIntent = explicit || !!(source && LANDING_ORIGINS.has(extra.origin)
     && (isBadge || extra.landOn) && landing !== 'stock');
   const fixedWearer = explicitTarget || (fixedIntent ? landingPiece(state, catalog, source, landing) : null);

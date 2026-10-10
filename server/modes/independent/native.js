@@ -287,14 +287,24 @@ function output(services, state, id, quantity, piece, extra = {}) {
   services.__nativeOutputCapture?.push({ id, quantity: n });
   services.grantEquipment(state, id, n, { origin: 'native', sourceUid: piece?.uid, ...(services.__nativeCopied ? { copied: true } : {}), ...(services.__landOn ? { landOn: services.__landOn } : {}), ...extra });
 }
-function darkmoonGrowth(state,source,target,attackUnits,secondaryUnits,services,outputs=['precision','damage']) {
+function darkmoonGrowth(state,source,target,attackUnits,secondaryUnits,services,outputs=['precision','damage'],extra={}) {
   if(!target)return;
   const [attackId,secondaryId]=outputs;
   const landing=target.uid===source.uid?'self':`uid:${target.uid}`;
   for(const [id,quantity] of [[attackId,attackUnits],[secondaryId,secondaryUnits]]) {
     const n=Math.max(0,Math.floor(Number(quantity)||0));
-    if(n)services.grantEquipment(state,id,n,{origin:'native',sourceUid:source.uid,targetUid:target.uid,landOn:landing});
+    if(n)services.grantEquipment(state,id,n,{origin:'native',sourceUid:source.uid,targetUid:target.uid,landOn:landing,...extra});
   }
+}
+function applyBeastSummonGrowth(state,source,gained,params,services) {
+  if(!gained || gained.uid===source.uid || !gained.uid
+      || (gained.playerId??gained.ownerId)!==(source.playerId??source.ownerId)
+      || !nativeFactions(gained,services.catalog).includes(params.faction)) return;
+  const memo=(source.nativeState ||= {});
+  const recipients=(memo.darkmoonBeastSummonGrowthRecipients ||= {});
+  if(recipients[gained.uid]) return;
+  darkmoonGrowth(state,source,gained,pick(params.attackUnits,isEliteForm(source)),pick(params.secondaryUnits,isEliteForm(source)),services,undefined,{allowBenchTarget:true});
+  recipients[gained.uid]=true;
 }
 function value(p, isElite) { return Number(p[isElite ? 'elite' : 'normal'] ?? 0); }
 // a number that may differ between the normal and the elite form: { normal, elite } or a plain number
@@ -435,9 +445,7 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
         break;
       }
       case 'darkmoonBeastSummonGrowth': {
-        const gained=event.piece,owner=piece.playerId??piece.ownerId;
-        if(!gained || gained.uid===piece.uid || (gained.playerId??gained.ownerId)!==owner || !isPresent(gained) || !nativeFactions(gained,services.catalog).includes(p.faction))break;
-        darkmoonGrowth(state,piece,gained,pick(p.attackUnits,elite),pick(p.secondaryUnits,elite),services);
+        applyBeastSummonGrowth(state,piece,event.piece,p,services);
         break;
       }
       case 'darkmoonMagneticMerge': {
@@ -1015,10 +1023,16 @@ export function runNativeHook(state, hook, event = {}, services = {}) {
   if (hook === 'firstDeploy') {
     if (!piece || !isPresent(piece) || piece.nativeState?.firstDeployHooksFired) return state;
     const rules = (traitFor(piece, services)?.effect?.prep || []).filter((r) => r.trigger === hook);
-    if (!rules.length) return state;
-    piece.nativeState ||= {};
-    piece.nativeState.firstDeployHooksFired = true;
-    fire(state, hook, piece, event, services, false, null, rules);
+    if (rules.length) {
+      piece.nativeState ||= {};
+      piece.nativeState.firstDeployHooksFired = true;
+      fire(state, hook, piece, event, services, false, null, rules);
+    }
+    for(const holder of roster(state)) {
+      if(holder.uid===piece.uid || !isPresent(holder)) continue;
+      const observers=(traitFor(holder,services)?.effect?.prep||[]).filter(r=>r.trigger==='gain'&&r.behavior==='darkmoonBeastSummonGrowth');
+      for(const observer of observers) applyBeastSummonGrowth(state,holder,piece,observer.params||{},services);
+    }
     return state;
   }
   if (['gain', 'selling', 'sold', 'merge'].includes(hook)) {
