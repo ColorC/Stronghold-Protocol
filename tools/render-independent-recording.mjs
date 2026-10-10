@@ -183,6 +183,7 @@ async function main(argv) {
       const { hudPadding, hudBands } = await import('/js/ui/fieldHost.js');
       const { withCatalogTiers } = await import('/js/independent/model.js');
       const { prepView } = await import('/js/independent/model.js');
+      const { prepCameraFor } = await import('/js/ui/gameLogic.js');
       const { GEO } = await import('/shared/constants.js');
       const catalogResponse = await fetch('/independent/api/catalog');
       if (!catalogResponse.ok) throw new Error(`catalog HTTP ${catalogResponse.status}`);
@@ -228,7 +229,7 @@ async function main(argv) {
       view.enterBattle(firstReplay.field);
       view.setCamera(firstReplay.field.kind || 'normal', { rect: firstReplay.field.rect, side: 'L', instant: true });
       window.__renderer = { view, replays: r.replays, clips: r.clips, prepClips: r.prepClips || [],
-        prepGapAudit: r.prepGapAudit, helpers: mod, prepView, GEO, data, catalog, activeRound: r.clips[0].round };
+        prepGapAudit: r.prepGapAudit, helpers: mod, prepView, prepCameraFor, GEO, data, catalog, activeRound: r.clips[0].round };
       return { mode: 'battle', units: firstReplay.field.units?.length || 0, frameCount: firstReplay.frames.length, rounds: Object.keys(r.replays).length };
     });
     if (!initialized.units) throw new Error('renderer initialized with no field units');
@@ -278,7 +279,7 @@ async function main(argv) {
       stage(`encoding prep ${clipIndex + 1}: ${clip.startSecond}-${clip.endSecond}s with ${clip.states.length} state snapshot(s)`);
       ffmpeg.stdin.write(ivfHeader(layout.width, layout.height, fps));
       const render = await page.evaluate(async ({ clip, clipIndex, fps, bitrate, width, height }) => {
-        const { view, prepView, catalog, data, GEO } = window.__renderer;
+        const { view, prepView, prepCameraFor, catalog, data } = window.__renderer;
         const { drawRecordingCanvasFrame } = await import('/js/independent/recordingCanvas.js');
         const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d', { alpha: false });
@@ -290,7 +291,7 @@ async function main(argv) {
         }, error: (e) => { encoder.error = String(e); } });
         encoder.serial = Promise.resolve(); encoder.configure({ codec: 'vp8', width, height, framerate: fps, bitrate, latencyMode: 'realtime' });
         const count = Math.ceil((clip.endSecond - clip.startSecond) * fps); let stateIndex = -1;
-        const stateFrames = []; let cameraReady = false;
+        const stateFrames = [];
         const positions = (state) => [...(state.pieces || []), ...(state.summons || [])].map((piece) => ({ uid: piece.uid, row: piece.row ?? null, col: piece.col ?? null }));
         for (let i = 0; i < count; i++) {
           const wallSecond = clip.startSecond + i / fps;
@@ -302,7 +303,15 @@ async function main(argv) {
               if (stage) view.setStage(stage);
             }
             view.setPrep(prepView(snapshot.state, catalog), { editable: false });
-            if (!cameraReady) { view.setCamera('normal', { rect: GEO.FIELD, side: 'L', instant: true }); cameraReady = true; }
+            // Mirror independent/game.js: choose prep vs bossPrep and the shop framing from each recorded state.
+            // Session recordings are single-player; the stable synthetic identity selects the same left-side camera.
+            const state = snapshot.state;
+            const boss = state.board?.field === 'bossL';
+            const round = boss ? (state.board?.bossRound ?? state.round) : state.round;
+            const pub = { round, bossRound: boss ? round : null, hiddenRound: null,
+              players: [{ playerId: 'recorded-player', seat: 0 }] };
+            const camera = prepCameraFor(pub, 'recorded-player', false);
+            view.setCamera(camera.kind, { ...camera.opts, instant: true });
             stateFrames.push({ seq: snapshot.sourceSeq, kind: snapshot.sourceKind, revision: snapshot.revision, at: snapshot.at, frameIndex: i,
               positions: positions(snapshot.state) });
           }
