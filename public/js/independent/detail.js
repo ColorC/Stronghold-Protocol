@@ -64,7 +64,7 @@ function originalCardStats(ref, golden = false) {
   return '卡牌类型未收录，未显示攻血';
 }
 
-function OriginalCardRefs({ op, piece, linkAnchor = null }) {
+export function OriginalCardRefs({ op, piece, linkAnchor = null }) {
   const refs = sourceCardRefs(op);
   if (!refs.length) return null;
   const anchor = linkAnchor || (piece ? `piece-${piece.uid}` : null);

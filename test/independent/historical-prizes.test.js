@@ -9,6 +9,7 @@ import { independentPermanentStats } from '../../server/sim/content/independent/
 import { PRIZE_JESSICA_ID } from '../../server/modes/independent/historicalPrizes.js';
 import { independentDisplayCatalog } from '../../server/modes/independent/display.js';
 import { inventoryTiles } from '../../server/modes/independent/equipment.js';
+import { independentGrowthCatalog } from '../../shared/independentPrizeText.js';
 const data=getData(),catalog=getCatalog(data),records=Object.values(catalog.prizes).filter(x=>x.historical);
 const id = s=>'darkmoon-prize:'+s;
 const cleared=()=>({result:{reason:'cleared',bossHpLeft:0,perPlayer:{independent:{leaked:[]}}},diagnostics:{capped:false},pieceStates:{},rewards:[]});
@@ -75,6 +76,14 @@ test('SCH149 body/skills/factions come from Jessica, permanent panels match indi
 test('new gear and all prizes expose loadable native item identities and displayed source references',()=>{
  const display=independentDisplayCatalog(data,catalog);
  for(const p of records){assert.ok(display.prizes[p.id].sourceRefs.cards[0].text);const icon=display.prizes[p.id].iconItemId;assert.ok(icon);assert.ok(data.items[icon],icon);}
- for(const gear of ['darkmoon-gruul-training','darkmoon-windfury-trigger']){assert.ok(display.gear[gear].iconItemId);assert.ok(data.items[display.gear[gear].iconItemId]);}
+ for(const gear of ['darkmoon-gruul-training','darkmoon-windfury-trigger']){assert.ok(display.gear[gear].iconItemId);assert.ok(data.items[display.gear[gear].iconItemId]);assert.ok(catalog.equipment[gear].prizeOnly);assert.ok(catalog.equipment[gear].sourcePrizeId);assert.ok(catalog.equipment[gear].sourceRefs.cards[0].text);assert.equal(catalog.equipment[gear].sourceRefs.cards[0].id,gear==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028');}
  assert.equal(display.operators[PRIZE_JESSICA_ID].name,'涤火杰西卡');assert.ok(display.operators[PRIZE_JESSICA_ID].nativeFactions.length);
+});
+
+test('growth-mode text remains separate for prizes, logistics and their persistent equipment',()=>{
+ const display=independentDisplayCatalog(data,catalog),levels=independentGrowthCatalog(display,'levels'),badges=independentGrowthCatalog(display,'badges');
+ for(const source of ['BGS_Treasures_000','BGS_Treasures_007','BGS_Treasures_009','BGS_Treasures_011','BGS_Treasures_013','BGS_Treasures_018','BGS_Treasures_019','BGS_Treasures_026','BGS_Treasures_028','BGS_Treasures_034','SCH_149']){assert.ok(!levels.prizes[id(source)].effect.includes('徽章'),source);assert.ok(!badges.prizes[id(source)].effect.includes('训练模式'),source);}
+ assert.equal(levels.prizes['prize-logistics-production'].effect,'本局干员产出的训练等级数量加倍。');
+ assert.ok(levels.gear['darkmoon-gruul-training'].normal.includes('4级训练'));
+ assert.ok(catalog.operators[PRIZE_JESSICA_ID].sourceRefs.cards[0].textElite.includes('两倍'));
 });
