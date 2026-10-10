@@ -78,6 +78,12 @@ async function main(argv) {
     if (!clip || !Number.isFinite(clip.startSecond) || !Number.isFinite(clip.endSecond)) throw new Error(`timeline has no validated round ${round}`);
     return { round, startSecond: clip.startSecond, endSecond: clip.endSecond, observations: clip.observations || [] };
   });
+  if (args.sampleSeconds == null) {
+    const completeRounds = (timeline.rounds || []).map((x) => Number(x.round)).sort((a, b) => a - b);
+    if (completeRounds.length !== args.roundList.length || completeRounds.some((round, i) => round !== [...args.roundList].sort((a, b) => a - b)[i])) {
+      throw new Error('full render requires every round in the validated timeline; use --sample-seconds only for a bounded sample');
+    }
+  }
   const replays = {};
   for (const clip of clips) {
     const sourcePath = path.resolve(args['session-dir'], `${sessionId}.replay-r${clip.round}.json.gz`);
@@ -137,8 +143,9 @@ async function main(argv) {
     stage(`Chrome launched; pid=${browser.process()?.pid || 'unknown'}`);
     const page = await browser.newPage();
     await page.setViewport({ width: 2187, height: 1077, deviceScaleFactor: 1.25 });
+    const fatalPageErrors = [];
     page.on('console', (m) => { if (m.type() === 'error') console.error(`browser: ${m.text()}`); });
-    page.on('pageerror', (e) => console.error(`pageerror: ${e.stack || e}`));
+    page.on('pageerror', (e) => { fatalPageErrors.push(String(e?.stack || e)); console.error(`pageerror: ${e.stack || e}`); });
     page.exposeFunction('__encoderChunk', async (payload) => {
       if (!ffmpeg?.stdin.writable) throw new Error('FFmpeg input pipe is closed');
       await writeIvfFrame(ffmpeg.stdin, Buffer.from(payload.data, 'base64'), payload.pts);
@@ -270,6 +277,8 @@ async function main(argv) {
       await encoder.flush(); await encoder.serial; const config = encoder.state; encoder.close();
       return { frames: count, gameTimeEnd: clock.t0 + helpers.gameTimeFromCountdown(clip, clip.startSecond + (count - 1) / fps, clock.duration), replayClock: clock, encoderState: config, warmReport: window.__warmReport, error: encoder.error || null };
     }, { sampleSeconds: args.sampleSeconds ?? Math.max(0.001, clip.endSecond - clip.startSecond), fps, bitrate, width: layout.width, height: layout.height, round: clip.round, clip });
+    if (render.error) throw new Error(`WebCodecs encoder failed: ${render.error}`);
+    if (fatalPageErrors.length) throw new Error(`native browser render errors: ${fatalPageErrors.join('\n')}`);
     if (args.sampleSeconds != null) await page.screenshot({ path: screenshots[1] });
     ffmpeg.stdin.end();
     const [exitCode] = await once(ffmpeg, 'close');
@@ -289,6 +298,7 @@ async function main(argv) {
     renderedClips.push({ round: clip.round, startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: Number(probed.format.duration), file: `battle-${clip.round}.webm` });
     ffmpeg = null;
     }
+    if (renderedClips.length !== clips.length || (args.sampleSeconds == null && renderedClips.length !== (timeline.rounds || []).length)) throw new Error('render set incomplete; refusing to publish manifest');
     const manifestPath = path.join(outputRoot, 'manifest.json');
     const manifest = { schemaVersion: 1, recordingId, sessionId, sourceRevision, viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, clips: renderedClips.sort((a, b) => a.round - b.round) };
     const manifestTemp = `${manifestPath}.partial`; await fsp.writeFile(manifestTemp, JSON.stringify(manifest, null, 2)); await fsp.rename(manifestTemp, manifestPath);
