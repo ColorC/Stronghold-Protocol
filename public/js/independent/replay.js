@@ -4,7 +4,7 @@ import { createReplayCueState } from './replayCueState.js';
 import { clampReplayMediaTime } from './replayMediaTime.js';
 import { waitForVideoSeek } from './replayReviewSeek.js';
 import { applyReplayNarration } from './replayNarration.js';
-import { selectionAt } from '../recording/selectionTimeline.js';
+import { mapViewportRectToOverlay, selectionAt } from '../recording/selectionTimeline.js';
 import { workshopShowcaseNarration } from './workshopShowcaseNarration.js';
 const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
@@ -97,25 +97,20 @@ function paintTextSelection(second) {
   textSelection.replaceChildren();
   if (!current) { textSelection.hidden = true; return; }
   const frame = stage.querySelector('iframe') || player?.iframe;
-  const screen = stage.parentElement.getBoundingClientRect(); const bounds = frame?.getBoundingClientRect();
+  const container = stage.parentElement;
+  const containerRect = container.getBoundingClientRect(); const bounds = frame?.getBoundingClientRect();
   if (!bounds) { textSelection.hidden = true; return; }
   const viewport = current.p.viewport || { width: 1280, height: 720 };
-  const sx = bounds.width / Math.max(1, viewport.width); const sy = bounds.height / Math.max(1, viewport.height);
-  const outerScale = screen.width / Math.max(1, stage.clientWidth);
   for (const rect of current.p.rects || []) {
     const mark = document.createElement('span'); mark.className = 'ix-replay__text-selection-rect';
+    const mapped = mapViewportRectToOverlay(rect, bounds, containerRect, viewport, container);
     Object.assign(mark.style, {
-      left: `${(bounds.left - screen.left + rect.x * sx) / outerScale}px`,
-      top: `${(bounds.top - screen.top + rect.y * sy) / outerScale}px`,
-      width: `${rect.width * sx / outerScale}px`, height: `${rect.height * sy / outerScale}px`,
+      left: `${mapped.x}px`, top: `${mapped.y}px`,
+      width: `${mapped.width}px`, height: `${mapped.height}px`,
     });
     textSelection.append(mark);
   }
-  const label = document.createElement('span'); label.className = 'ix-replay__text-selection-label';
-  label.textContent = current.p.text || '';
-  const first = current.p.rects?.[0];
-  if (first) Object.assign(label.style, { left: `${Math.max(0, (bounds.left - screen.left + first.x * sx) / outerScale)}px`, top: `${Math.max(0, (bounds.top - screen.top + first.y * sy) / outerScale - 28)}px` });
-  textSelection.append(label); textSelection.hidden = false;
+  textSelection.hidden = !current.p.rects?.length;
 }
 function loadMediaSegment(segment) {
   activeMediaIndex=segment.index;
