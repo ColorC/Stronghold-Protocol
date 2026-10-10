@@ -305,7 +305,8 @@ async function run() {
       } else {
         const equippedUnit=activePieces.find(piece=>piece.equipment?.some(value=>value.uid===item.uid));
         const itemInInventory=state.inventory?.some(value=>value.uid===item.uid);
-        check('resume-existing-equipped-component',receipt.steps?.unequipped?itemInInventory:!!equippedUnit,{itemUid:item.uid,equippedUnit:equippedUnit?.uid,itemInInventory,steps:receipt.steps});
+        const componentMatchesCheckpoint=receipt.steps?.reEquipped?!!equippedUnit:receipt.steps?.unequipped?itemInInventory:!!equippedUnit;
+        check('resume-existing-equipped-component',componentMatchesCheckpoint,{itemUid:item.uid,equippedUnit:equippedUnit?.uid,itemInInventory,steps:receipt.steps});
       }
       const ownedItemSelector=`.rs-unit-items__row[data-unit-key="prep:${activePieces[0].uid}"] .rs-unit-items__item[data-item-id="${item.itemId}"] img`;
       if(!receipt.steps?.unequipped){
@@ -346,6 +347,7 @@ async function run() {
       }
       await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},ownedItemSelector);
       check('re-equip-real-inventory-item',!!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
+      if(!await page.$('.rs-detail__member')){await page.mouse.click(unitPoint.x,unitPoint.y);await page.waitForSelector('.rs-detail__member',{timeout:8000});}
       await inspectGeometry('member-detail-gear-1440x900');await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       check('real-two-component-recipe-discovered',!!catalogCounts.legalInventoryRecipe,{inventory:rawInventory.map(entry=>entry.itemId),recipe:catalogCounts.legalInventoryRecipe});
       let combineEvent=state.history?.find(event=>event.type==='equipment-combined'&&event.resultId===catalogCounts.legalInventoryRecipe.resultId);
