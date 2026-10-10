@@ -60,3 +60,18 @@ test('legacy state conversion maps only observed identities/slots and uses wheel
   assert.equal(result.states[1].screenMode, 'combat');
   assert.equal(result.coverage.unresolvedCount, 0);
 });
+
+test('legacy badge IDs explicitly mapped to summons become token pieces with owner and observed position', () => {
+  const recovered = { coverage: { snapshotCount: 1 }, states: [
+    { at: 1, sourceSeq: 10, screenMode: 'prep', badges: [{ uid: 18, x: 1145.1, bottom: 465.2 }] },
+    { at: 2, sourceSeq: 11, screenMode: 'combat', badges: [] },
+  ] };
+  const result = buildLegacyPrepVisualState({ recovered, identities: [],
+    tokenIdentities: [{ uid: 't18', tokenId: 'token_10013_robin_mine', ownerUid: 'p17' }],
+    geometry: { coords: [{ area: 'board', row: 10, col: 6, rect: { x: 1145.1, bottom: 465.2 } }] },
+    recordingId, sessionId: 'fixture-session', recordingStartedAt: new Date(origin).toISOString() });
+  assert.deepEqual(result.states[0].state.pieces, [{ uid: 't18', kind: 'token', tokenId: 'token_10013_robin_mine', ownerUid: 'p17', count: 1, row: 10, col: 6 }]);
+  assert.deepEqual(result.states[0].visualPoses, [{ uid: 't18', x: 1145.1, bottom: 465.2 }]);
+  assert.equal(result.coverage.resolvedTokenBadgeIdentities, 1);
+  assert.equal(result.unresolved.length, 0);
+});

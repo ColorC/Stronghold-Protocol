@@ -1,7 +1,8 @@
 /** Convert RRWeb game badge poses plus the separate facing-wheel DOM trace into a bounded visual-only prep state. */
-export function buildLegacyPrepVisualState({ recovered, identities, geometry, facingSamples = [], recordingId, sessionId,
+export function buildLegacyPrepVisualState({ recovered, identities, tokenIdentities = [], geometry, facingSamples = [], recordingId, sessionId,
   recordingStartedAt, viewport = { width: 2187, height: 1077 } }) {
   const identityByNum = new Map((identities || []).map((entry) => [Number(String(entry.uid).replace(/^\D+/, '')), entry]));
+  const tokenByNum = new Map((tokenIdentities || []).map((entry) => [Number(String(entry.uid).replace(/^\D+/, '')), entry]));
   const slots = geometry?.coords || [];
   const latestSlots = new Map(), directions = new Map(), unresolved = [];
   const samples = [...facingSamples].filter((s) => Number.isFinite(s.sourceOffset) && s.dir)
@@ -48,11 +49,13 @@ export function buildLegacyPrepVisualState({ recovered, identities, geometry, fa
     const pieces = [], visualPoses = [];
     for (const badge of source.badges) {
       const identity = identityByNum.get(badge.uid);
-      if (!identity) {
+      const token = tokenByNum.get(badge.uid);
+      if (!identity && !token) {
         unresolved.push({ at: source.at, sourceSeq: source.sourceSeq, reason: 'badge-has-no-identity', uid: badge.uid, x: badge.x, bottom: badge.bottom });
         continue;
       }
-      visualPoses.push({ uid: identity.uid, x: badge.x, bottom: badge.bottom });
+      const uid = identity?.uid || token.uid;
+      visualPoses.push({ uid, x: badge.x, bottom: badge.bottom });
       const snapped = stableSlot(badge);
       if (snapped) latestSlots.set(badge.uid, badge);
       const slot = snapped?.slot || null;
@@ -62,9 +65,12 @@ export function buildLegacyPrepVisualState({ recovered, identities, geometry, fa
       const location = slot || previousSlot;
       if (!location) unresolved.push({ at: source.at, sourceSeq: source.sourceSeq, reason: 'badge-position-not-near-native-slot',
         uid: badge.uid, x: badge.x, bottom: badge.bottom });
-      const piece = { uid: identity.uid, kind: 'op', chessId: identity.chessId, elite: !!identity.golden,
-        row: location?.area === 'board' ? location.row : null, col: location?.area === 'board' ? location.col : null };
-      if (piece.row != null) {
+      const piece = token
+        ? { uid: token.uid, kind: 'token', tokenId: token.tokenId, ownerUid: token.ownerUid, count: token.count ?? 1,
+          row: location?.area === 'board' ? location.row : null, col: location?.area === 'board' ? location.col : null }
+        : { uid: identity.uid, kind: 'op', chessId: identity.chessId, elite: !!identity.golden,
+          row: location?.area === 'board' ? location.row : null, col: location?.area === 'board' ? location.col : null };
+      if (!token && piece.row != null) {
         const direction = directions.get(badge.uid);
         if (direction) piece.dir = direction;
         else unresolved.push({ at: source.at, sourceSeq: source.sourceSeq, reason: 'board-piece-facing-unobserved', uid: badge.uid,
@@ -112,5 +118,6 @@ export function buildLegacyPrepVisualState({ recovered, identities, geometry, fa
     recordingStartedAt, viewport, states, unresolved,
     coverage: { ...recovered.coverage, facingSamples: samples.length, visualPrepStateCount: states.filter((s) => s.screenMode === 'prep').length,
       resolvedBadgeIdentities: [...identityByNum.keys()].length, unresolvedCount: unresolved.length,
+      resolvedTokenBadgeIdentities: [...tokenByNum.keys()].length,
       unresolvedReasons: Object.fromEntries([...new Set(unresolved.map((u) => u.reason))].map((reason) => [reason, unresolved.filter((u) => u.reason === reason).length])) } };
 }

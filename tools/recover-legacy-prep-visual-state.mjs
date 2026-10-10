@@ -25,18 +25,21 @@ async function main(argv) {
     try { const event = JSON.parse(line); if (event.sid === args['recording-id']) events.push(event); } catch { /* malformed unrelated line */ }
   }
   const identitiesDoc = JSON.parse(await fsp.readFile(path.resolve(args.identities), 'utf8'));
+  const tokenIdentitiesDoc = args['token-identities']
+    ? JSON.parse(await fsp.readFile(path.resolve(args['token-identities']), 'utf8')) : { recordingId: args['recording-id'], tokens: [] };
   const geometryDoc = JSON.parse(await fsp.readFile(path.resolve(args.geometry), 'utf8'));
   const facingDoc = JSON.parse(await fsp.readFile(path.resolve(args.facing), 'utf8'));
   if (identitiesDoc.recordingId !== args['recording-id'] || identitiesDoc.sessionId !== args['session-id']) throw new Error('identity source is for another recording/session');
+  if (tokenIdentitiesDoc.recordingId !== args['recording-id'] || !Array.isArray(tokenIdentitiesDoc.tokens)) throw new Error('token identity source is for another recording or lacks tokens');
   if (geometryDoc.ok !== true || !Array.isArray(geometryDoc.geometry?.coords)) throw new Error('geometry source lacks a validated native geometry table');
   const facingOrigin = Number.isFinite(Number(facingDoc.startedAt)) ? Number(facingDoc.startedAt) : Date.parse(facingDoc.startedAt);
   if (facingDoc.recordingId !== args['recording-id'] || facingOrigin !== Date.parse(args['started-at'])) throw new Error('facing trace does not share the recording clock');
   const recovered = recoverPrepVisualEvents(events, { recordingId: args['recording-id'], recordingStartedAt: args['started-at'] });
-  const result = buildLegacyPrepVisualState({ recovered, identities: identitiesDoc.identities, geometry: geometryDoc.geometry,
+  const result = buildLegacyPrepVisualState({ recovered, identities: identitiesDoc.identities, tokenIdentities: tokenIdentitiesDoc.tokens, geometry: geometryDoc.geometry,
     facingSamples: facingDoc.samples, recordingId: args['recording-id'], sessionId: args['session-id'], recordingStartedAt: args['started-at'],
     viewport: geometryDoc.geometry.canvas || { width: 2187, height: 1077 } });
   result.sources = { events: path.resolve(args.events), identities: path.resolve(args.identities), geometry: path.resolve(args.geometry),
-    facing: path.resolve(args.facing) };
+    facing: path.resolve(args.facing), tokenIdentities: args['token-identities'] ? path.resolve(args['token-identities']) : null };
   const output = path.resolve(args.output);
   await fsp.mkdir(path.dirname(output), { recursive: true });
   await fsp.writeFile(output, JSON.stringify(result));
