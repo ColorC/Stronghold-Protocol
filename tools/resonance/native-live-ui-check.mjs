@@ -1515,6 +1515,7 @@ async function run() {
     await capture('05-shop-detail');
     const beforeBuyPacket = await readPacket(); await page.click('button[aria-label="关闭面板"]');
     const detailEvidence = await clickRealShopCard(page, beforeBuyPacket, attempt, waitSent); const afterBuyPacket = await readPacket();
+    const beforeBuy=beforeBuyPacket.state, afterBuy=afterBuyPacket.state;
     const purchaseFrames = attempt.ws.sent.slice(detailEvidence.offset).filter((message) => message.t === 'g.buy');
     const purchaseEvidence = shopPurchaseEvidence({ frames: purchaseFrames, buy: detailEvidence.buy,
       expectedSlot: detailEvidence.expectedSlot, expectedOperatorId: detailEvidence.expectedOperatorId,
