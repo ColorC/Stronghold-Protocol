@@ -7,6 +7,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
+import { handleRecordingComments } from './recording-comments.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // A rrweb full snapshot can carry a lossless canvas data URL as one indivisible event. Keep the request bounded while
@@ -215,6 +216,13 @@ export function createRecordingHttp({ directory, sessionDirectory, diagnosticsPa
     try {
       if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return json(res, 403, { ok: false, error: 'ORIGIN' }), true;
       const relative = pathname.slice('/independent/api/recordings'.length).replace(/^\//, '');
+      const commentsMatch = relative.match(/^([0-9a-f-]{36})\/comments(?:\/([^/]+))?$/i);
+      if (commentsMatch && UUID.test(commentsMatch[1])) {
+        return await handleRecordingComments({
+          req, res, id: commentsMatch[1], commentId: commentsMatch[2] || null, directory: root,
+          exclusive, loadMeta, json,
+        });
+      }
       if (relative === 'start' && req.method === 'POST') {
         const body = await readBody(req);
         const sessionId = UUID.test(body.sessionId || '') ? body.sessionId : null;
