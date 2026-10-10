@@ -1,4 +1,5 @@
 // 卫戍协议：工坊 HUD on the original game screen's frame (css/screens/game*.css classes: gtop, roundbox, capsule,
+import { independentPrizeRounds } from '../../../shared/independentEconomy.js';
 // shopbar, scard, lvcard, funds) with the independent mode's own data. Default layer only (docs/independent-mode/
 // frontend-design.md 信息分层): numbers that decide the current step; full texts open in the detail card.
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
@@ -542,7 +543,7 @@ export function MatchInfo({ state, catalog }) {
   const stage = state.board?.stageId ? data.lookup('stages', state.board.stageId) : null;
   const mode = (catalog.modes || []).find((m) => m.roundLimit === state.roundLimit) || null;
   const boss = state.board?.bossId ? data.lookup('bosses', state.board.bossId) : null;
-  const prizeRounds = state.roundLimit === 9 ? [4, 8] : [4, 8, 12];
+  const prizeRounds = independentPrizeRounds(state.roundLimit);
   return html`<div class="edrawer__body ix-minfo">
     ${stage ? html`<p class="istage"><${Icon} name="rook" />战场：<b>${stage.name || stage.id}</b></p>` : null}
     <p class="istage"><${Icon} name="info" />模式：<b>${mode?.name || ''}</b>${state.difficulty ? html`<${DifficultyTag} difficulty=${state.difficulty} size="sm" />` : null}

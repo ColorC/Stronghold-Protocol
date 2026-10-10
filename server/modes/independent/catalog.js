@@ -378,7 +378,7 @@ export function getCatalog(data = getData(), design = DESIGN) {
     id: 'independent', name: '卫戍协议：工坊',
     config: {
       ...clone(design.rules || {}), purchasePrice: 3, sellPrice: 1, refreshPrice: 1,
-      balance: { incomeBonusFromRound: 8, incomeBonus: 1 },
+      balance: { naturalIncomeStart: 3, naturalIncomeCap: 12 },
       equipmentCapacity: EQUIPMENT_CAPACITY, inventoryCapacity: INVENTORY_CAPACITY, basicBadgeCount: Object.values(badges).filter(b => b.available !== false && !b.retired && !b.unassigned).length, regularProductionBadgeCount: Object.values(badges).filter(b => b.regularProduction && b.available !== false && !b.retired && !b.unassigned).length,
       rareInheritanceOperators: Object.values(operators).filter(op => !op.elite && op.recruitable && op.permitGearId).length, bodyPenalty: clone(design.rules?.bodyPenalty),
       badgeRecipes: clone(design.badgeRecipes || design.recipes || {}),
