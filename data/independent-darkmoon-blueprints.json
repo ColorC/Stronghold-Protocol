@@ -1697,12 +1697,12 @@
                 "params": {
                   "sourceId": "BGS_032"
                 },
-                "text": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+                "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加150%基础攻击的法术伤害。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+                "adaptation": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加150%基础攻击的法术伤害。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -1721,12 +1721,12 @@
                 "params": {
                   "sourceId": "BGS_032"
                 },
-                "text": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+                "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加300%基础攻击的法术伤害。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+                "adaptation": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加300%基础攻击的法术伤害。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -1745,7 +1745,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+          "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加150%基础攻击的法术伤害。",
           "sourceId": "BGS_032",
           "implementation": "supported",
           "adapter": [
@@ -1756,7 +1756,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+          "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加300%基础攻击的法术伤害。",
           "sourceId": "BGS_032",
           "implementation": "supported",
           "adapter": [
@@ -1773,7 +1773,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计3次攻击超杀后，对最左侧敌人追加150%基础攻击的法术伤害。",
+            "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加150%基础攻击的法术伤害。",
             "params": {
               "sourceId": "BGS_032"
             }
@@ -1785,7 +1785,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计3次攻击超杀后，对最左侧敌人追加300%基础攻击的法术伤害。",
+            "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），对最左侧敌人追加300%基础攻击的法术伤害。",
             "params": {
               "sourceId": "BGS_032"
             }
@@ -6045,14 +6045,14 @@
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+                "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+                "adaptation": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -6071,14 +6071,14 @@
                 "params": {
                   "sourceId": "BGS_080"
                 },
-                "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+                "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
                 "textEn": "",
                 "tags": [
                   "windfury"
                 ],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+                "adaptation": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -6097,7 +6097,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+          "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
           "sourceId": "BGS_080",
           "implementation": "supported",
           "adapter": [
@@ -6108,7 +6108,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+          "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
           "sourceId": "BGS_080",
           "implementation": "supported",
           "adapter": [
@@ -6125,7 +6125,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
+            "text": "本场每累计8次普通攻击后，追加1次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×2与伤害徽章×2。",
             "params": {
               "sourceId": "BGS_080"
             }
@@ -6137,7 +6137,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次攻击超杀后，使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
+            "text": "本场每累计8次普通攻击后，追加3次普通攻击。本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），使其他维多利亚友方获得攻击徽章×4与伤害徽章×4。",
             "params": {
               "sourceId": "BGS_080"
             }
@@ -9257,12 +9257,12 @@
                 "params": {
                   "sourceId": "BGS_126"
                 },
-                "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+                "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近一个随机敌人。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+                "adaptation": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近一个随机敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9281,12 +9281,12 @@
                 "params": {
                   "sourceId": "BGS_126"
                 },
-                "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+                "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近所有敌人。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+                "adaptation": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近所有敌人。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -9305,7 +9305,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+          "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近一个随机敌人。",
           "sourceId": "BGS_126",
           "implementation": "supported",
           "adapter": [
@@ -9316,7 +9316,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+          "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近所有敌人。",
           "sourceId": "BGS_126",
           "implementation": "supported",
           "adapter": [
@@ -9333,7 +9333,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近一个随机敌人。",
+            "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近一个随机敌人。",
             "params": {
               "sourceId": "BGS_126"
             }
@@ -9345,7 +9345,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计3次攻击超杀后，把超过敌人生命的伤害传递给目标附近所有敌人。",
+            "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），把超过敌人生命的伤害传递给目标附近所有敌人。",
             "params": {
               "sourceId": "BGS_126"
             }
@@ -12425,12 +12425,12 @@
           "effectDelivery": {
             "normal": [
               {
-                "trigger": "gain",
-                "sourceTrigger": "gain",
+                "trigger": "firstDeploy",
+                "sourceTrigger": "firstDeploy",
                 "recipient": "adjacentFriendlyOperators",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，相邻友方干员各获得攻击徽章×1与伤害徽章×1，并装备坚守盟约。",
+                "text": "整备期首次部署时，使当前相邻友方干员各获得攻击徽章×1与伤害徽章×1，并装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12444,7 +12444,8 @@
                   },
                   "extraGear": [
                     "independent:坚守盟约"
-                  ]
+                  ],
+                  "repeatOnGain": true
                 },
                 "adapter": [
                   "darkmoonAdjacentGrowth"
@@ -12452,18 +12453,18 @@
                 "implementation": "supported",
                 "unsupportedReason": null,
                 "recipientLabel": "相邻友方干员",
-                "triggerLabel": "招募获得或首次上阵时",
+                "triggerLabel": "整备期首次部署时",
                 "durationLabel": "成长"
               }
             ],
             "elite": [
               {
-                "trigger": "gain",
-                "sourceTrigger": "gain",
+                "trigger": "firstDeploy",
+                "sourceTrigger": "firstDeploy",
                 "recipient": "adjacentFriendlyOperators",
                 "duration": "permanentWornGrowth",
                 "kind": "badgeGrowthAndGear",
-                "text": "招募获得或首次上阵时，相邻友方干员各获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
+                "text": "整备期首次部署时，使当前相邻友方干员各获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
                 "textEn": "",
                 "tags": [],
                 "params": {
@@ -12477,7 +12478,8 @@
                   },
                   "extraGear": [
                     "independent:坚守盟约"
-                  ]
+                  ],
+                  "repeatOnGain": true
                 },
                 "adapter": [
                   "darkmoonAdjacentGrowth"
@@ -12485,7 +12487,7 @@
                 "implementation": "supported",
                 "unsupportedReason": null,
                 "recipientLabel": "相邻友方干员",
-                "triggerLabel": "招募获得或首次上阵时",
+                "triggerLabel": "整备期首次部署时",
                 "durationLabel": "成长"
               }
             ]
@@ -12496,7 +12498,7 @@
         "sourceId": "EX1_093",
         "mechanic": "badgeGrowthAndGear",
         "normal": {
-          "trigger": "gain",
+          "trigger": "firstDeploy",
           "recipient": "adjacentFriendlyOperators",
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonAdjacentGrowth",
@@ -12515,7 +12517,7 @@
           }
         },
         "elite": {
-          "trigger": "gain",
+          "trigger": "firstDeploy",
           "recipient": "adjacentFriendlyOperators",
           "duration": "permanentWornGrowth",
           "adapter": "darkmoonAdjacentGrowth",
@@ -12539,11 +12541,11 @@
       "sourceEffect": {
         "normal": [
           {
-            "trigger": "gain",
-            "sourceTrigger": "gain",
+            "trigger": "firstDeploy",
+            "sourceTrigger": "firstDeploy",
             "recipient": "adjacentFriendlyOperators",
             "duration": "permanentWornGrowth",
-            "text": "招募获得或首次上阵时，相邻友方干员各获得攻击徽章×1与伤害徽章×1，并装备坚守盟约。",
+            "text": "整备期首次部署时，使当前相邻友方干员各获得攻击徽章×1与伤害徽章×1，并装备坚守盟约。",
             "params": {
               "attackUnits": {
                 "normal": 1,
@@ -12561,11 +12563,11 @@
         ],
         "elite": [
           {
-            "trigger": "gain",
-            "sourceTrigger": "gain",
+            "trigger": "firstDeploy",
+            "sourceTrigger": "firstDeploy",
             "recipient": "adjacentFriendlyOperators",
             "duration": "permanentWornGrowth",
-            "text": "招募获得或首次上阵时，相邻友方干员各获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
+            "text": "整备期首次部署时，使当前相邻友方干员各获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
             "params": {
               "attackUnits": {
                 "normal": 1,
@@ -15793,12 +15795,12 @@
                 "params": {
                   "sourceId": "TRL_232"
                 },
-                "text": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位。",
+                "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位。",
+                "adaptation": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -15817,12 +15819,12 @@
                 "params": {
                   "sourceId": "TRL_232"
                 },
-                "text": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
+                "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
                 "textEn": "",
                 "tags": [],
                 "implementation": "supported",
                 "unsupportedReason": null,
-                "adaptation": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
+                "adaptation": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
                 "adapter": [
                   "darkmoonCombat"
                 ],
@@ -15841,7 +15843,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位。",
+          "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位。",
           "sourceId": "TRL_232",
           "implementation": "supported",
           "adapter": [
@@ -15852,7 +15854,7 @@
           "trigger": "战斗中",
           "recipient": "自身",
           "duration": "本场战斗",
-          "text": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
+          "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
           "sourceId": "TRL_232",
           "implementation": "supported",
           "adapter": [
@@ -15869,7 +15871,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位。",
+            "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位。",
             "params": {
               "sourceId": "TRL_232"
             }
@@ -15881,7 +15883,7 @@
             "sourceTrigger": "darkmoonCombat",
             "recipient": "自身",
             "duration": "本场战斗",
-            "text": "本场每累计3次攻击超杀后，召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
+            "text": "本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒），召唤一个强力作战支援单位，支援单位的攻击和生命翻倍。",
             "params": {
               "sourceId": "TRL_232"
             }
