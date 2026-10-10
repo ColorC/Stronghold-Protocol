@@ -180,12 +180,13 @@ async function run() {
       return result;
     };
     const getState = async () => page.evaluate(async id => (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state, receipt.sessionId);
-    const waitForGameReady = async () => { await page.waitForSelector('.shopbar__remain',{timeout:30000});await page.waitForFunction(()=>{const action=document.querySelector('.rs-start-battle'),canvas=document.querySelector('.gm__field canvas'),view=globalThis.__SP_VIEW__;if(!action||!canvas||!view)return false;const r=action.getBoundingClientRect(),s=getComputedStyle(action);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';},{timeout:30000}); };
+    const waitForGameReady = async () => { await page.waitForSelector('.shopbar__remain',{timeout:30000});await page.waitForSelector('.shopbar__cards .scard:not(.scard--sold)',{timeout:30000});await page.waitForFunction(()=>{const action=document.querySelector('.rs-start-battle'),canvas=document.querySelector('.gm__field canvas'),view=globalThis.__SP_VIEW__,stats=view?.raw?.stats?.();if(!action||!canvas||!view||!stats||!Number.isFinite(Number(stats.units)))return false;const r=action.getBoundingClientRect(),s=getComputedStyle(action);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';},{timeout:30000}); };
     const afterRevision = async previous => page.waitForFunction(async ({ id, revision }) => {
       const state = (await (await fetch(`./resonance/api/sessions/${id}`)).json()).state;
       return state?.revision > revision ? state : false;
     }, { timeout: 15000 }, { id: receipt.sessionId, revision: previous });
     const piecePoint = async uid => {
+      await waitForGameReady();
       const handle = await page.waitForFunction(value => {
         const numeric=Number(String(value).replace(/^\D+/,'')),view=globalThis.__SP_VIEW__,rect=view?.pieceScreenRect?.(numeric);
         if(!rect||rect.width<3||rect.height<3)return false;
@@ -255,6 +256,7 @@ async function run() {
     await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
     await waitForGameReady();await inspectGeometry('mobile-844x390'); await capture('55-mobile');
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
+    await waitForGameReady();
     let state=await getState();
     if(!options.resumeSession || resumePrep){
       const rawInventory=state.inventory||[];check('native-initial-inventory-two-real-components',rawInventory.length===2&&rawInventory.every(item=>item.itemId),rawInventory);
@@ -277,6 +279,8 @@ async function run() {
       const occupied=new Set();const activePieces=state.pieces.slice(0,3);
       for(const piece of activePieces){const ok=await deployPiece(piece,occupied);check(`piece-${piece.uid}-deployed-by-real-drag`,ok,{uid:piece.uid,legalTiles:piece.legalTiles});}
       state=await getState();check('population-three-deployed-zero-remaining',state.pieces.filter(piece=>piece.row!=null).length===3&&state.deployedCount===3&&/剩余可放置角色：\s*0/.test(await page.$eval('.shopbar__remain',node=>node.innerText)),{deployedCount:state.deployedCount,remain:await page.$eval('.shopbar__remain',node=>node.innerText),pieces:state.pieces.map(piece=>({uid:piece.uid,row:piece.row,col:piece.col}))});
+      await page.waitForFunction(()=>{const stats=globalThis.__SP_VIEW__?.raw?.stats?.();return Number(stats?.units)>=3&&(!!stats?.boardArt||stats?.board3d?.on===true);},{timeout:20000});
+      await captureAdditional('69-ready-prep','69-ready-prep');
       receipt.checkpoint='after-deploy';receipt.steps={...(receipt.steps||{}),deployed:true};await save();
       await page.evaluate(()=>{const button=[...document.querySelectorAll('.rs-hud-actions button')].find(element=>/装备背包/.test(`${element.innerText} ${element.title} ${element.getAttribute('aria-label')||''}`));button?.click();});await page.waitForSelector('.rs-panel-drawer[aria-label="装备"]',{timeout:8000});
       const item=rawInventory[0],source=await page.$(`#inventory-${item.uid} .rs-inventory__main[draggable="true"]`),target=await piecePoint(activePieces[0].uid);assert(source,'native draggable inventory item missing');
@@ -339,8 +343,14 @@ async function run() {
       await page.evaluate(()=>[...document.querySelectorAll('.rs-hud-actions button')].find(element=>/装备背包/.test(`${element.innerText} ${element.title} ${element.getAttribute('aria-label')||''}`))?.click());
       await page.waitForSelector('.rs-panel-drawer[aria-label="装备"]',{timeout:8000});await inspectGeometry(`equipment-drawer-${viewport.width}x${viewport.height}`);await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.rs-panel-drawer'),{timeout:5000});
       const target=await piecePoint(deployedForSurface.uid);await page.mouse.click(target.x,target.y);await page.waitForSelector('.rs-detail__member',{timeout:8000});await inspectGeometry(`member-detail-${viewport.width}x${viewport.height}`);await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
-      if(viewport.width===844)await capture('55-mobile');
+      if(viewport.width===844){
+        await capture('55-mobile');
+        await captureAdditional('66-mobile-ready');
+        const actionSize=await page.$eval('.rs-start-battle',button=>{const r=button.getBoundingClientRect();return{width:r.width,height:r.height}});
+        check('mobile-start-action-touch-size',actionSize.width>=88&&actionSize.height>=44,actionSize);
+      }
     }
+    await page.setViewport({width:1440,height:900,deviceScaleFactor:1,isMobile:false,hasTouch:false});await waitForGameReady();
     state=await getState();
     if(!state.history?.some(event=>event.type==='fight-settled')){
       const action=await page.$eval('.rs-start-battle',button=>button.innerText.trim());check('fight-button-visible',!!action,action);

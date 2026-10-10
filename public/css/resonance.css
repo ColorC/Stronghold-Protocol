@@ -37,6 +37,7 @@ body { background: #101512; color: var(--rs-text); }
   .sp-coarse .rs-game .rs-hud-actions { width: max-content; max-width: 32vw; flex-wrap: wrap; gap: 4px; }
   .sp-coarse .rs-game .rs-hud-actions > .btn, .sp-coarse .rs-game .rs-hud-actions > a { box-sizing: border-box; min-width: 44px; min-height: 44px; height: 44px; flex: none; font-size: max(.14rem,11px); }
   .sp-coarse .rs-game .rs-hud-actions .icon, .sp-coarse .rs-game .rs-hud-actions .rs-item-icon { min-width: 20px; min-height: 20px; }
+  .sp-coarse .rs-game .rs-start-battle { box-sizing: border-box; min-width: 88px; min-height: 44px; font-size: max(.16rem,12px); }
 }
 .rs-xp { display: flex; flex-direction: column; gap: .02rem; min-width: 1.25rem; padding: .03rem .08rem; background: rgba(8,13,11,.84); }
 .rs-xp b { color: var(--gold); font-size: .15rem; }
