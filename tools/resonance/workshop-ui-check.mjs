@@ -105,6 +105,16 @@ function selfTest() {
   for (const pathname of ['/stronghold/resonance/api/sessions', '/stronghold/resonance/api/sessions/id/actions', '/stronghold/resonance/resonance/api/sessions/id/actions', '/resonance/api/fight']) {
     if (!isGameApiPath(pathname) || !isForbiddenMutation('POST', pathname)) throw new Error(`mutation audit missed ${pathname}`);
   }
+  for (const pathname of ['/resonance/api/admission', '/stronghold/resonance/api/admission', '/stronghold/resonance/resonance/api/admission']) {
+    for (const method of ['POST', 'DELETE']) {
+      if (!isGameApiPath(pathname) || isForbiddenMutation(method, pathname)) throw new Error(`native admission permission request was blocked: ${method} ${pathname}`);
+    }
+    if (!isForbiddenMutation('PATCH', pathname) || !isForbiddenMutation('PUT', pathname)) throw new Error(`non-permission admission mutation was allowed: ${pathname}`);
+  }
+  for (const [method, pathname] of [['POST', '/stronghold/resonance/resonance/api/admission/extra'], ['POST', '/resonance/api/admissions'],
+    ['DELETE', '/resonance/api/sessions/id'], ['POST', '/resonance/api/sessions']]) {
+    if (!isForbiddenMutation(method, pathname)) throw new Error(`non-admission gameplay mutation was allowed: ${method} ${pathname}`);
+  }
   if (isForbiddenMutation('GET', '/stronghold/resonance/api/sessions/id')) throw new Error('read-only session GET was misclassified as a mutation');
   if (!isForbiddenMutation('PATCH', '/stronghold/resonance/api/sessions/id')) throw new Error('non-POST gameplay mutation was not blocked');
   const valid = parseArgs(['--session', '01234567-89ab-4def-8123-456789abcdef', '--product-native', 'a'.repeat(40)]);
@@ -114,8 +124,16 @@ function selfTest() {
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function isGameApiPath(pathname) { return /(?:^|\/)resonance\/api(?:\/|$)/.test(pathname); }
+const ADMISSION_PATHS = new Set([
+  '/resonance/api/admission',
+  '/stronghold/resonance/api/admission',
+  '/stronghold/resonance/resonance/api/admission',
+]);
 function isForbiddenMutation(method, pathname) {
-  return isGameApiPath(pathname) && method !== 'GET' && method !== 'HEAD';
+  const verb = String(method).toUpperCase();
+  if (!isGameApiPath(pathname) || verb === 'GET' || verb === 'HEAD') return false;
+  if ((verb === 'POST' || verb === 'DELETE') && ADMISSION_PATHS.has(pathname)) return false;
+  return true;
 }
 function frameIsGame(frame, hostFrame) {
   if (frame === hostFrame) return false;
@@ -163,6 +181,7 @@ async function run() {
   const mutatingRequests = [];
   const requestRows = [];
   const requiredResourceFailures = [];
+  const unexpectedHtmlResponses = [];
   const browserErrors = [];
   const networkFailures = [];
   const scopedPages = new WeakMap();
@@ -254,13 +273,29 @@ async function run() {
         if (response.status() >= 400) networkFailures.push({ status: response.status(), origin: url.origin, path: url.pathname });
         if (['/css/screens/draft.css', '/css/screens/title.css', '/css/screens/briefing.css', '/css/screens/lobby.css', '/js/net.js'].includes(url.pathname)
           && response.status() >= 400) requiredResourceFailures.push({ status: response.status(), path: url.pathname });
+        const headers = response.headers();
+        const contentType = String(headers['content-type'] || '').slice(0, 120);
+        const resourceType = response.request().resourceType();
+        const expectsCodeOrJson = resourceType === 'script' || /\.(?:m?js|json)$/i.test(url.pathname)
+          || (isGameApiPath(url.pathname) && ['xhr', 'fetch'].includes(resourceType));
+        if (response.status() === 200 && expectsCodeOrJson && /(?:text\/html|application\/xhtml\+xml)/i.test(contentType)) {
+          const row = { status: 200, origin: url.origin, path: url.pathname, contentType, resourceType };
+          if (unexpectedHtmlResponses.length < 20) unexpectedHtmlResponses.push(row);
+          if (networkFailures.length < 100) networkFailures.push({ ...row, error: 'expected JavaScript/JSON response but received HTML' });
+        }
       });
       page.on('requestfailed', request => {
         let url;
         try { url = new URL(request.url()); } catch { return; }
         networkFailures.push({ error: request.failure()?.errorText || 'request failed', origin: url.origin, path: url.pathname });
       });
-      page.on('pageerror', error => { browserErrors.push(`pageerror: ${error.message}`); log(`pageerror: ${error.message}`); });
+      page.on('pageerror', error => {
+        const message = String(error?.message || error).slice(0, 400);
+        const stack = String(error?.stack || '').slice(0, 1600);
+        const detail = `pageerror: ${message}${stack ? `\n${stack}` : ''}`;
+        browserErrors.push(detail);
+        log(detail.replace(/\r?\n/g, ' | '));
+      });
       page.on('console', message => { if (message.type() === 'error') browserErrors.push(`console: ${message.text().slice(0, 400)}`); });
       pages.add(page);
       return { dispose: async () => {
@@ -332,7 +367,7 @@ async function run() {
   };
   const evidence = { status: 'running', sessionId: options.session, productNative: options['product-native'], workshopUrl: WORKSHOP_URL,
     cardId: CARD_ID, screenshots: [EMBED_SCREENSHOT, FULLSCREEN_SCREENSHOT], requestRows, mutatingRequests,
-    requiredResourceFailures, browserErrors, networkFailures };
+    requiredResourceFailures, unexpectedHtmlResponses, browserErrors, networkFailures };
   const work = (async () => {
     browser = await puppeteer.launch({ executablePath: chromePath, headless: true, userDataDir: PROFILE,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
