@@ -61,14 +61,21 @@ test('every gear a player can see has text; numbers match its effect', () => {
     assert.ok(projected, `${d.newName || d.name} (${id}) is present in the player-facing projection`);
     assert.equal(typeof projected.normal, 'string', `${d.newName || d.name} (${id}) has projected text`);
     assert.ok(projected.normal.length > 0, `${d.newName || d.name} (${id}) has non-empty projected text`);
-    const written = entry?.normal ?? projected.normal;
+    const compiledPrizeGear = d.prizeOnly === true && typeof d.sourcePrizeId === 'string'
+      && !!catalog.prizes[d.sourcePrizeId] && Array.isArray(d.sourceRefs?.cards) && d.sourceRefs.cards.length > 0
+      && d.sourceRefs.cards.every((card) => card.version === '19.2.0.68600' && typeof card.id === 'string');
+    assert.ok(entry || compiledPrizeGear, `${d.newName || d.name} (${id}) has hand-written text or a complete compiled prize source`);
+    const written = entry?.normal ?? (compiledPrizeGear ? projected.normal : undefined);
     if (d.kind !== 'badge') {
       sameNumbers(`${id}:normal`, d.normal || d.effect, written);
-      if (d.eliteLevel != null && d.elite) sameNumbers(`${id}:elite`, d.elite, entry?.elite ?? projected.normalLevels);
+      if (d.eliteLevel != null && d.elite) {
+        assert.equal(typeof entry?.elite, 'string', `${d.newName || d.name} (${id}) has hand-written elite text`);
+        sameNumbers(`${id}:elite`, d.elite, entry.elite);
+      }
     } else {
       assert.ok(numbers(written).has(/Percent|Dodge|Reduction|DamagePercent/.test(d.stat) ? Number((d.value * 100).toFixed(4)) : d.value), `${id} value`);
     }
-    for (const t of [entry?.normal ?? projected.normal, entry?.elite ?? projected.normalLevels].filter(Boolean)) for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `${id}: 「${w}」`);
+    for (const t of [entry?.normal ?? projected.normal, entry?.elite].filter(Boolean)) for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `${id}: 「${w}」`);
   }
   for (const id of Object.keys(text.gear)) assert.ok(all[id], `${id} exists in the catalog`);
 });
@@ -78,7 +85,10 @@ test('prizes and attachments: texts with the design numbers; the page shows them
     const projected = display.prizes[id];
     assert.ok(projected, `${p.name} is present in the player-facing prize projection`);
     assert.equal(typeof projected.effect, 'string', `${p.name} has projected text`);
-    sameNumbers(id, p.effect, text.prizes[id]?.text ?? projected.effect);
+    const compiledPrize = p.historical === true || p.historicalSupply === true || p.logisticsChoice === true;
+    const entry = text.prizes[id];
+    assert.ok(entry || compiledPrize, `${p.name} has hand-written text or is a compiled historical/logistics entry`);
+    sameNumbers(id, p.effect, entry?.text ?? (compiledPrize ? projected.effect : undefined));
     if (p.prizeTier != null || p.stage != null) {
       assert.ok(['起步', '成型', '决胜', '终极'].includes(projected.stage), `${p.name} stage`);
     } else {
