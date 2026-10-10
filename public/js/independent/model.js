@@ -175,7 +175,7 @@ export function groupEquipment(items, catalog) {
 /** Project battle-frame temporary growth into display-only equipment rows; never mutates piece equipment. */
 export function temporaryGrowthDisplay(entries, catalog, growthMode = 'badges') {
   const sourceName = (sourceId) => Object.values(catalog?.operators || {})
-    .find((op) => op.sourceRefs?.darkmoon19_2?.id === sourceId)?.name || null;
+    .find((op) => op.sourceRefs?.darkmoon19_2?.id === sourceId)?.name || catalog?.gear?.[sourceId]?.name || null;
   const sources = new Set();
   if (growthMode === 'levels') {
     let levels = 0;

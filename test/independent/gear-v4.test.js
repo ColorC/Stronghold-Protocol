@@ -81,6 +81,26 @@ test('elementOnHit with damageType (灼燃维式重锤): 15% of each arts hit as
   assert.ok(near(e.elem.burn, 30), `${e.elem.burn}`);
 });
 
+test('炎国点睛笔 adds stack-scaled ATK-based burn through the native element gauge', () => {
+  const run = (count) => {
+    const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: Array.from({ length: count }, () => G('炎国点睛笔')) }]);
+    const e = h.spawn('dummy', { pos: [10, 4] });
+    attacks(h, h.unit('w'), e);
+    return e.elem.burn;
+  };
+  assert.ok(near(run(1), 15), 'one piece applies 15% of ATK as burn');
+  assert.ok(near(run(2), 20), 'a second piece adds five percentage points');
+});
+
+test('莱塔尼亚共鸣音叉 grants temporary attack growth on a real element burst', () => {
+  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('莱塔尼亚共鸣音叉')] }]);
+  const w = h.unit('w'), e = h.spawn('dummy', { pos: [10, 4] }), atk = w.s.atk;
+  h.b.dealDamage(w, e, { type: 'element', element: 'burn', amount: e.gaugeMax });
+  const growth = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
+  assert.equal(growth, 1);
+  assert.ok(w.s.atk > atk, `element burst raises ATK ${atk} -> ${w.s.atk}`);
+});
+
 test('knockbackOnHit (冲击维式重锤): each real normal hit pushes the main target', () => {
   const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('冲击维式重锤')] }]);
   const e = h.spawn('heavy', { pos: [10, 4] });
@@ -286,18 +306,32 @@ test('skillStartStrike (炎国制式短刀) and deployStrike (卡西米尔竞技
   assert.ok(near(lost(a), 230) && near(lost(b), 230) && lost(out) === 0, `${lost(a)} ${lost(b)}`);
 });
 
-test('stealthOnDeploy (叙拉古仪仗正装) ends with the first normal attack; 家族印记 then stuns, paired adds true damage', () => {
+test('叙拉古正装 awards temporary attack growth and 家族印记 strengthens the first hit after stealth clears', () => {
   const h = setup([{ uid: 'w', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
   const w = h.unit('w');
   assert.ok(w.s.flags.stealth, 'hidden on deployment');
+  const beforeAtk = w.s.atk;
+  const beforeTemporary = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
+  assert.ok(beforeTemporary >= 2, 'both equipped pieces reward stealth entry');
+  h.step(20);
+  assert.ok(w.s.atk > beforeAtk, 'the native 2%/second stealth attack ramp raises ATK while hidden');
   const e = h.spawn('dummy', { pos: [10, 4] });
   attacks(h, w, e);
   assert.ok(!w.s.flags.stealth, 'the first attack ends it');
-  assert.ok(!e.s.flags.stun, 'not yet');
-  h.step(1); // the wearer notices it left 隐匿
-  attacks(h, w, e);
-  assert.ok(e.s.flags.stun, '家族印记: 晕眩');
-  assert.ok(near(lost(e), 100 + 100 + 100), `paired true damage: ${lost(e)}`);
+  assert.ok(!e.s.flags.stun, 'the attack that clears stealth lands before the effect starts');
+  const growth = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
+  assert.ok(growth >= beforeTemporary + 2, 'both equipped pieces reward stealth exit');
+  assert.ok(w.s.atk > beforeAtk, `temporary badges increase attack ${beforeAtk} -> ${w.s.atk}`);
+  attacks(h, w, e); // no intervening simulation tick: the event transition must already be armed
+  assert.ok(e.s.flags.stun, 'the first hit after exiting stealth receives the effect without waiting for a tick');
+  assert.ok(lost(e) >= 900, `paired native 800% true damage applies on the clearing hit: ${lost(e)}`);
+});
+
+test('叙拉古家族印记 is available and stackable in the workshop gear catalog', () => {
+  const emblem = Object.values(catalog.equipment).find((x) => x.newName === '叙拉古家族印记');
+  assert.ok(emblem?.available);
+  assert.equal(emblem.retired, false);
+  assert.equal(emblem.unique, false);
 });
 
 test('attractOnDeploy (诱敌蜂鸣器): enemies in range are drawn to the wearer; it is easier to hit', () => {

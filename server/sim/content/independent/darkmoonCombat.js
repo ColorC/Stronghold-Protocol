@@ -269,6 +269,16 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
       refreshTraining(u);
     }else battle.addBuff(u,{key,mods:growthMods(u,a,h),duration,persist:duration===Infinity,allowDead:true,refresh:'replace'});
   };
+  battle.grantTemporaryBadgeGrowth=(u,{sourceId,sourceKey=null,attackUnits=0,secondaryUnits=0}={})=>{
+    if(!u||!(attackUnits>0||secondaryUnits>0))return;
+    const key=`independent:temporaryGear:${u.uid}:${sourceKey||sourceId}`;
+    const entries=u.mem.darkmoonTemporaryEquipment||={};
+    const previous=entries[key]||{sourceId,attackUnits:0,secondaryUnits:0,badgeIds:['precision','damage'],expires:'battleEnd'};
+    previous.attackUnits+=Number(attackUnits)||0;
+    previous.secondaryUnits+=Number(secondaryUnits)||0;
+    entries[key]=previous;
+    applyGrowth(u,key,previous.attackUnits,previous.secondaryUnits);
+  };
   const equipment=(e,u,a,h,persistent=false)=>{
     if(!u)return;
     const m=scale(e),key=`darkmoon:${e.unit.uid}:${e.id}${e.instanceKey||''}:${u.id}`;
@@ -610,4 +620,3 @@ export function installDarkmoonCombat(battle,{catalog,pieces=[],state=null}={}) 
   battle.every(.25,()=>{for(const e of auras){const key=`darkmoon:aura:${e.unit.uid}`;for(const t of battle.allyUnits){if(alive(e.unit)&&alive(t)&&t!==e.unit&&eligible(t,e.unit,e.rule.aura.faction)){const v=e.rule.aura.buff,m=scale(e);applyGrowth(t,key,v[0]*m,v[1]*m,.5);}else{battle.removeBuff(t,key);if(t.mem.darkmoonLevelContributions?.[key]){delete t.mem.darkmoonLevelContributions[key];refreshTraining(t);}}}}});
   return {entries,fallen,results,trace,retireAction};
 }
-

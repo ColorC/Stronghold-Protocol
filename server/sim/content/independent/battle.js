@@ -1115,9 +1115,16 @@ function installNativeCombat(battle, catalog, pieces, emit) {
   }
 }
 
-function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries, emit, itemIdValue) {
+function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries, emit, itemIdValue, instanceKey = null, instanceIndex = null) {
   const behavior = rule?.behavior;
   const p = rule?.params ?? {};
+  const ownEntry = Number.isInteger(instanceIndex) ? entries[instanceIndex]
+    : entries.find((entry) => instanceKey != null && entry.item?.uid === instanceKey)
+    || entries.find((entry) => entry.sourceId === itemIdValue || entry.id === itemIdValue);
+  const stackCount = Math.max(1, Number(ownEntry?.item?.quantity) || 1);
+  const matchingEntries = entries.filter((entry) => entry.sourceId === itemIdValue || entry.id === itemIdValue);
+  const totalCopies = matchingEntries.reduce((sum, entry) => sum + Math.max(1, Number(entry.item?.quantity) || 1), 0);
+  const isFirstInstance = !Number.isInteger(instanceIndex) || matchingEntries.indexOf(ownEntry) === 0;
   if (!behavior || !rule.trigger) throw new Error(`combatEquipment ${itemIdValue} has an invalid effect descriptor`);
   if (behavior === 'eventProduction') {
     installProductionRule(battle, unit, rule, 'equipment', itemIdValue, emit);
@@ -1568,12 +1575,28 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     let hadStealth = false;
     let armed = false;
     let procs = 0;
+    let stealthAttackBonus = 0;
+    const rampKey = `independent:stealthAttackRamp:${unit.uid}:${itemIdValue}:${instanceKey ?? ''}`;
     const procCap = Number(p.pairedProcMaxPerBattle ?? Infinity);
-    battle.on('tick', () => {
+    const awardGrowth = () => battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: `${itemIdValue}:${instanceKey ?? ''}`, attackUnits: stackCount });
+    const exitStealth = () => {
+      hadStealth = false;
+      armed = true;
+      awardGrowth();
+    };
+    battle.on('independentStealthEntered', ({ unit: who }) => { if (who === unit) awardGrowth(); }, { owner: unit });
+    battle.on('independentStealthExited', ({ unit: who }) => {
+      if (who !== unit) return;
+      exitStealth();
+    }, { owner: unit });
+    battle.on('tick', ({ dt }) => {
       if (!unit.alive || !unit.deployed) { hadStealth = false; return; }
       const hasStealth = !!(unit.s.flags.stealth || unit.findBuff('stealth'));
-      if (hasStealth) hadStealth = true;
-      else if (hadStealth) { armed = true; hadStealth = false; }
+      if (hasStealth) {
+        hadStealth = true;
+        stealthAttackBonus = Math.min(Number(p.maxAttackBonus ?? 1), stealthAttackBonus + Number(p.attackBonusPerSecond ?? 0.02) * stackCount * Number(dt || 0));
+        if (stealthAttackBonus > 0) battle.addBuff(unit, { key: rampKey, mods: { atkPct: stealthAttackBonus }, persist: true, allowDead: true, refresh: 'replace' });
+      } else if (hadStealth) exitStealth();
     }, { owner: unit });
     battle.on('hit', ({ source, target, dmg }) => {
       if (source !== unit || !unit.alive || !unit.deployed || !armed || !dmg || dmg.isSkill || isGearDamage(dmg)) return;
@@ -1585,6 +1608,8 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
         procs++;
       }
       armed = false;
+      battle.removeBuff(unit, rampKey);
+      stealthAttackBonus = 0;
     }, { owner: unit });
     return;
   }
@@ -1716,7 +1741,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
     factionGear(battle).guards.push({ unit, pct, keys: wearerKeys(battle, unit) });
     return;
   }
-  if (installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag })) return;
+  if (installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, stackCount, totalCopies, isFirstInstance, instanceKey })) return;
   throw new Error(`unimplemented independent combatEquipment behavior ${behavior} (${itemIdValue})`);
 }
 
@@ -1724,7 +1749,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
  * 特殊战斗装备 第四版 (2026-10-07; user: 「做就做呗」): the new behaviors. Returns false for a behavior it does not know.
  * Damage they deal is tagged independentEquipment, so no other piece starts again from it.
  */
-function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag }) {
+function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, itemIdValue, { ownPair, hasTag, stackCount = 1, totalCopies = 1, isFirstInstance = true, instanceKey = null }) {
   const gearHit = (target, amount, type) => battle.dealDamage(unit, target, { amount, type, tags: GEAR_TAGS });
   const sameType = (dmg) => (dmg?.type === 'arts' ? 'arts' : dmg?.type === 'true' ? 'true' : 'phys');
   // the damage a normal attack's hit carried before the target's own defences: what 穿透 / 处置预案 deal again
@@ -1745,7 +1770,17 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       }
       const ratio = Number(p.atkPercent);
       if (!(ratio > 0)) throw new Error(`combatEquipment ${itemIdValue}: elementOnHit needs atkPercent`);
-      normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: unit.s.atk * ratio, tags: GEAR_TAGS }); });
+      if (!isFirstInstance) return true;
+      const scaledRatio = ratio + Math.max(0, totalCopies - 1) * Number(p.perAdditionalAtkPercent ?? 0);
+      normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: unit.s.atk * scaledRatio, tags: GEAR_TAGS }); });
+      return true;
+    }
+    case 'temporaryGrowthOnElementBurst': {
+      if (!isFirstInstance) return true;
+      battle.on('elementBurst', ({ source, target }) => {
+        if (source !== unit || target?.side !== 'enemy') return;
+        battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: itemIdValue, attackUnits: totalCopies });
+      }, { owner: unit });
       return true;
     }
     case 'knockbackOnHit': {
@@ -1849,11 +1884,20 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       // 每次部署时获得隐匿，首次普通攻击后解除 (its own buff: a talent's 隐匿 stays)
       const key = `independent:gearStealth:${itemIdValue}`;
       battle.on('deploy', ({ unit: who }) => {
-        if (who === unit) battle.addBuff(unit, { key, status: 'stealth', flags: { stealth: true }, duration: Infinity, refresh: 'replace', source: unit });
+        if (who !== unit) return;
+        const entering = !unit.findBuff(key);
+        battle.addBuff(unit, { key, status: 'stealth', flags: { stealth: true }, duration: Infinity, refresh: 'replace', source: unit });
+        if (entering) battle.emit('independentStealthEntered', { unit, sourceId: itemIdValue });
+        battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: `${itemIdValue}:${instanceKey ?? ''}`, attackUnits: stackCount });
       }, { owner: unit });
       battle.on('attack', ({ attacker, isSkill }) => {
-        if (attacker === unit && !isSkill && unit.findBuff(key)) battle.removeBuff(unit, key);
+        if (attacker !== unit || isSkill || !unit.findBuff(key)) return;
+        battle.removeBuff(unit, key);
+        battle.emit('independentStealthExited', { unit, sourceId: itemIdValue });
       }, { owner: unit, priority: -10 });
+      battle.on('independentStealthExited', ({ unit: who }) => {
+        if (who === unit) battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: `${itemIdValue}:${instanceKey ?? ''}`, attackUnits: stackCount });
+      }, { owner: unit });
       return true;
     }
     case 'attractOnDeploy': {
@@ -2152,7 +2196,7 @@ function installEquipmentMechanisms(battle, catalog, pieces, emit) {
               const { steam, ...own } = effect.params;
               effect = { ...effect, params: e.steamBoost ? { ...own, ...steam } : own };
             }
-            installEquipmentCombatRule(battle, catalog, unit, piece, effect, ownedEntries, emit, e.sourceId ?? e.id);
+            installEquipmentCombatRule(battle, catalog, unit, piece, effect, ownedEntries, emit, e.sourceId ?? e.id, e.item?.uid ?? `${e.id}:${ownedEntries.indexOf(e)}`, ownedEntries.indexOf(e));
           }
           break;
         }
