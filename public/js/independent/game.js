@@ -20,6 +20,7 @@ import { independentGrowthCatalog } from '../../../shared/independentPrizeText.j
 import { previewEnemyKey, terrainInfo, phaseBanner, snapHud, shortcutFor, shortcutBlocked, closesOnFieldPress, chessLoadout, prepCameraFor, foldCamera } from '../ui/gameLogic.js';
 import { data } from '../data.js';
 import { api } from './api.js';
+import { notifyRecordingServerAction } from './recordingTrace.js';
 import { prepView, canDrop, dropRefusal, legalTilesOf, pieceByNum, isDeployed, benchLayout, inventoryStacks,
   replayClock, stepReplayClock, frameAt, pendingOffer, renderChessId, withCatalogTiers } from './model.js';
 import { TopBar, InventoryStrip, ProductionPanel, ShopBar, UnitBadges, BenchOverflow, deployedCount, MatchInfo, mergeHintOf, EffectsColumn } from './hud.js';
@@ -190,7 +191,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
         return null;
       }
       if (!opts.keep) setState(res.state);
-      try { globalThis.__SP_RECORD_ACTION__?.(action, res); } catch { /* recording never blocks gameplay */ }
+      notifyRecordingServerAction(globalThis.__SP_RECORD_ACTION__, action, res);
       // the bench and the 临时整备区 were both full: the operator went back to the pool (session.js roomFor)
       if ((res.events || []).some((e) => e.type === 'no-room')) toast('整备区已满，获得的干员已返还', 'warn');
       return res;

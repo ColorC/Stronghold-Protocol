@@ -8,6 +8,7 @@ import { captureRecordingMediaFrame, enqueueRecordingMediaBlob, startRecordingMe
 import { startPageCapture } from '../recording/pageCapture.js';
 import { createCanvasMediaRecorder, resolveMediaOptions } from '../recording/canvasMedia.js';
 import { initialPlaybackId, LAST_COMPLETED_RECORDING_KEY, prepareNewRecordingUrl } from './recordingLifecycle.js';
+import { createInitialStateTrace, createServerActionTrace } from './recordingTrace.js';
 
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
@@ -51,6 +52,17 @@ export function RecordingControls({ sessionId }) {
       if (state.queue.length > 50) void flush();
     };
     state.emit = event;
+    state.initialStateSessions = new Set();
+    state.captureInitialState = async (sessionId) => {
+      if (!sessionId || !state.id || state.initialStateSessions.has(sessionId)) return;
+      state.initialStateSessions.add(sessionId);
+      try {
+        const result = await api.load(sessionId);
+        const trace = createInitialStateTrace(sessionId, result);
+        if (trace) event('initial-state', trace);
+        else state.initialStateSessions.delete(sessionId);
+      } catch { state.initialStateSessions.delete(sessionId); }
+    };
     const flush = async (keepalive = false) => {
       if (!state.id || state.pushing || !state.queue.length) return;
       state.pushing = true;
@@ -93,7 +105,8 @@ export function RecordingControls({ sessionId }) {
     };
     globalThis.__SP_RECORD_NOTE__=(text,selector,key)=>caption(text,typeof selector==='string'?document.querySelector(selector):selector,key);
     globalThis.__SP_RECORD_ACTION__ = (action, result) => {
-      event('server-action', { action: action?.type || 'unknown', revision: result?.state?.revision, eventTypes: (result?.events || []).map((item) => item.type).filter(Boolean), occurredAt: Date.now() });
+      const trace = createServerActionTrace(action, result);
+      if (trace) event('server-action', trace);
       const label = MECHANIC_TEXT[action?.type];
       if (label) caption(label, state.lastAnchor, `action:${action.type}`);
     };
@@ -123,6 +136,7 @@ export function RecordingControls({ sessionId }) {
           state.queue = Array.isArray(buffered) ? buffered.filter((item) => item.seq >= started.nextSeq) : [];
           if (state.queue.length) state.seq = Math.max(state.seq, ...state.queue.map((item) => item.seq));
         } catch { state.queue = []; }
+        void state.captureInitialState(attachedSessionId);
         setRecordId(state.id); setRecording(true);
         url.searchParams.set('recording', state.id); history.replaceState(null, '', url);
         if (started.endedAt) { setRecording(false); setMessage('录制已结束'); return; }
@@ -233,6 +247,7 @@ export function RecordingControls({ sessionId }) {
       ctx.current = null;
     };
   }, []);
+  useEffect(() => { if (sessionId) void ctx.current?.captureInitialState?.(sessionId); }, [sessionId]);
 
   const stop = async () => {
     const state = ctx.current;

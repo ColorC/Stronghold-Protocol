@@ -63,9 +63,9 @@ test('single-canvas 2D field keeps its intrinsic output size and still draws one
 });
 
 test('large native canvases are scaled down to the configured max edge without changing aspect ratio', () => {
-  const large = canvas(2560, 1440, { left: 10, top: 20, width: 320, height: 180, right: 330, bottom: 200 });
+  const large = canvas(5120, 2880, { left: 10, top: 20, width: 320, height: 180, right: 330, bottom: 200 });
   withField([{ canvas: large }], (field) => {
-    assert.deepEqual(recordingCanvasLayout(field), { width: 2560, height: 1440 }, 'default capture canvas preserves the 2560px native edge');
+    assert.deepEqual(recordingCanvasLayout(field), { width: 3840, height: 2160 }, 'default capture canvas preserves the source native edge up to 3840px');
     assert.deepEqual(recordingCanvasLayout(field, 1280), { width: 1280, height: 720 });
     assert.deepEqual(recordingCanvasLayout(field, 1920), { width: 1920, height: 1080 });
   });
