@@ -257,6 +257,8 @@ export function TitleScreen() {
           onInput=${setName} onEnter=${start} />
         <${Button} variant="primary" size="xl" block=${true} iconRight="chevrons" disabled=${!valid} onClick=${start}>开始<//>
         <a class="btn btn--secondary btn--block" href="./independent.html">卫戍协议：工坊</a>
+        <a class="btn btn--secondary btn--block" href="./resonance.html">卫戍协议：共鸣</a>
+        <a class="btn btn--secondary btn--block" href="./assault.html">卫戍协议：进击</a>
         <div class="title-conn">
           <span class=${`status-dot ${dotClass}`}></span>
           <span>${STATUS_TEXT[conn.status] || conn.status}</span>
