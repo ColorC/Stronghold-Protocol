@@ -769,7 +769,7 @@ export function GameScreen({ id, initial, catalog:sourceCatalog, onLeave }) {
           endLabel: battleEndControl(battle.done, !!battle.finished).label,
           onEnd: battleEndControl(battle.done, !!battle.finished).action === 'close' ? closeBattle : () => seekRef.current?.() } : null} />
       ${battle && replayPaused ? html`<div class="ix-replay-pause" role="status" data-testid="ix-replay-paused">
-        <span>回放已暂停</span><${PauseButton} paused=${true} onToggle=${toggleReplayPause} />
+        <span>作战已暂停</span><${PauseButton} paused=${true} onToggle=${toggleReplayPause} />
       </div>` : null}
       ${!battle ? html`
         <${InventoryStrip} stacks=${stacks} state=${state} view=${view} catalog=${catalog} onOpen=${() => openInventory()}

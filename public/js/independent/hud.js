@@ -111,9 +111,9 @@ export function TopBar({ state, battle, busy, onExit, onReady, readyReason, pen 
     <div class="gtop__right">
       ${production}
       ${replayControls ? html`<div class="gtop__clock ix-replay-controls">
-        <${Countdown} seconds=${replayControls.remaining} total=${replayControls.duration} label=${replayControls.paused ? 'PAUSED' : 'REPLAY'} size="md" />
+        <${Countdown} seconds=${replayControls.remaining} total=${replayControls.duration} label=${replayControls.paused ? 'PAUSED' : 'TIME'} size="md" />
         <${PauseButton} paused=${replayControls.paused} onToggle=${replayControls.onToggle} />
-        <div class="ix-replay-speed" role="group" aria-label="回放速度">
+        <div class="ix-replay-speed" role="group" aria-label="作战速度">
           ${replayControls.speeds.map((s) => html`<button type="button" key=${s} class=${cx('ix-chip', replayControls.speed === s && 'is-on')} onClick=${() => replayControls.onSpeed(s)}>${s / 2}×</button>`)}
         </div>
         <${Button} size="sm" variant="secondary" onClick=${replayControls.onEnd} data-testid="ix-skip">${replayControls.endLabel}<//>
