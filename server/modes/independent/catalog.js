@@ -12,6 +12,7 @@ const DESIGN_PATH = process.env.SP_INDEPENDENT_DESIGN_PATH
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../data/independent-design.json');
 const DESIGN = JSON.parse(readFileSync(DESIGN_PATH, 'utf8'));
 const HISTORICAL_PRIZES = JSON.parse(readFileSync(new URL('../../../data/independent-darkmoon-prizes-19.2.json',import.meta.url),'utf8'));
+const ROGUELIKE_PRIZE_ART = JSON.parse(readFileSync(new URL('../../../data/independent-darkmoon-roguelike-art.json',import.meta.url),'utf8').replace(/^\uFEFF/,''));
 const DARKMOON_ADDON_PATH=process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH
   ? path.resolve(process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../data/independent-darkmoon-design-addon.json');
@@ -377,8 +378,8 @@ export function getCatalog(data = getData(), design = DESIGN) {
   }));
 
   if(operators.chess_native_char_1034_jesca2_a) {
-    Object.assign(prizes,compileHistoricalPrizes(HISTORICAL_PRIZES));
-    installHistoricalPrizeSupport(operators,equipment,prizes);
+    Object.assign(prizes,compileHistoricalPrizes(HISTORICAL_PRIZES,ROGUELIKE_PRIZE_ART));
+    installHistoricalPrizeSupport(operators,equipment,prizes,ROGUELIKE_PRIZE_ART);
   }
 
   return {

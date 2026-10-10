@@ -63,7 +63,7 @@ export function independentDisplayCatalog(data, catalog, gameText = data['indepe
     return [id, { name: d.newName || d.name, level: d.level,
       normal: text ? text.normal : gearDescription(d), normalLevels:d.normalLevels, kind: d.kind, unique: !!d.unique, inheritable: d.inheritable !== false, mechanism: d.mechanism,
       ...(d.mechanism !== 'badge' && d.params ? { params: d.params } : {}), ...(d.condition ? { condition: d.condition } : {}), ...(d.effectDelivery ? { effectDelivery: d.effectDelivery } : {}), quantityEquippable: quantityEquippable(d),
-      sourceId: d.sourceId, iconItemId:d.iconItemId, available: d.available !== false, steamOptions: steam?.params.sourceIds,
+      sourceId: d.sourceId, iconItemId:d.iconItemId, sourceRefs:d.sourceRefs||null, available: d.available !== false, steamOptions: steam?.params.sourceIds,
       steamLimit: steamLimit && typeof steamLimit === 'object' ? steamLimit.normal : (steamLimit ?? (steam ? steam.params.choose ?? 1 : undefined)),
       identityFactions: d.mechanism === 'identityTag' ? catalog.config.tavernFactions : undefined,
       ...(d.kind === 'badge' ? { stat: d.stat, value: d.value, statName: BADGE_STATS[d.stat] || null, ratio: BADGE_RATIOS.has(d.stat) } : {}),

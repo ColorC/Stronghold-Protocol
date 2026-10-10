@@ -40,37 +40,24 @@ const WORDING = {
   BGS_Treasures_032:['超级赢家','分别发现一份第一、第二和第三档暗月奖品。'],
   SCH_149:['涤火杰西卡','获得奖品支援干员涤火杰西卡。获得时，以攻击徽章和生命徽章补足至场上友方最高的永久攻击和生命面板；训练模式沿其原生成长曲线训练至队伍的最高战备水平。'],
 };
-const HISTORICAL_PRIZE_ICONS = {
-  "BGS_Treasures_000": "chess_item_1_01_e_a",
-  "BGS_Treasures_001": "chess_item_1_03_e_a",
-  "BGS_Treasures_004": "chess_item_2_02_e_a",
-  "BGS_Treasures_007": "chess_item_1_01_e_a",
-  "BGS_Treasures_013": "chess_item_4_10_e_a",
-  "BGS_Treasures_029": "chess_item_2_06_e_a",
-  "BGS_Treasures_033": "chess_item_4_01_e_a",
-  "BGS_Treasures_006": "chess_item_5_05_e_a",
-  "BGS_Treasures_009": "chess_item_3_09_e_a",
-  "BGS_Treasures_010": "chess_item_2_02_e_a",
-  "BGS_Treasures_012": "chess_item_2_02_e_a",
-  "BGS_Treasures_014": "chess_item_3_12_e_a",
-  "BGS_Treasures_026": "chess_item_1_02_e_a",
-  "BGS_Treasures_030": "chess_item_5_06_e_a",
-  "BGS_Treasures_036": "chess_item_2_05_e_a",
-  "BGS_Treasures_011": "chess_item_4_01_e_a",
-  "BGS_Treasures_015": "chess_item_4_11_e_a",
-  "BGS_Treasures_018": "chess_item_3_09_e_a",
-  "BGS_Treasures_019": "chess_item_3_05_e_a",
-  "BGS_Treasures_020": "chess_item_5_07_e_a",
-  "BGS_Treasures_034": "chess_item_2_01_e_a",
-  "BGS_Treasures_037": "chess_item_5_08_e_a",
-  "TB_Bacon_Secrets_12": "chess_item_5_02_e_a",
-  "BGS_Treasures_016": "chess_item_5_08_e_a",
-  "BGS_Treasures_022": "chess_item_2_07_e_a",
-  "BGS_Treasures_023": "chess_item_2_06_e_a",
-  "BGS_Treasures_025": "chess_item_1_03_e_a",
-  "BGS_Treasures_028": "chess_item_6_02_e_a",
-  "BGS_Treasures_032": "chess_item_5_07_e_a",
-  "SCH_149": "chess_item_5_03_e_a"
+// Real Integrated Strategies collectibles used as art references for workshop rewards.
+// Keep the workshop effect/title authoritative; the original item is provenance only.
+const ROGUELIKE_PRIZE_ART = {
+  BGS_Treasures_000:'rogue_2_relic_grace_5', BGS_Treasures_001:'rogue_1_gold',
+  BGS_Treasures_004:'rogue_1_recruit_ticket_pioneer', BGS_Treasures_007:'rogue_2_relic_grace_6',
+  BGS_Treasures_013:'rogue_2_relic_grace_3', BGS_Treasures_029:'rogue_1_recruit_ticket_all_discount',
+  BGS_Treasures_033:'rogue_1_recruit_ticket_all', BGS_Treasures_006:'rogue_5_relic_legacy_9',
+  BGS_Treasures_009:'rogue_5_relic_legacy_13', BGS_Treasures_010:'rogue_1_recruit_ticket_all_discount',
+  BGS_Treasures_012:'rogue_1_recruit_ticket_all', BGS_Treasures_014:'rogue_1_gold',
+  BGS_Treasures_026:'rogue_5_relic_legacy_20', BGS_Treasures_030:'rogue_5_relic_legacy_10',
+  BGS_Treasures_036:'rogue_1_gold', BGS_Treasures_011:'rogue_2_relic_grace_12',
+  BGS_Treasures_015:'rogue_2_relic_grace_19', BGS_Treasures_018:'rogue_2_relic_grace_5',
+  BGS_Treasures_019:'rogue_2_relic_grace_1', BGS_Treasures_020:'rogue_1_recruit_ticket_all_premium',
+  BGS_Treasures_034:'rogue_5_relic_legacy_9', BGS_Treasures_037:'rogue_5_relic_legacy_1',
+  TB_Bacon_Secrets_12:'rogue_2_relic_grace_11', BGS_Treasures_016:'rogue_5_relic_legacy_10',
+  BGS_Treasures_022:'rogue_2_relic_grace_18', BGS_Treasures_023:'rogue_2_relic_grace_12',
+  BGS_Treasures_025:'rogue_1_gold', BGS_Treasures_028:'rogue_2_relic_grace_11',
+  BGS_Treasures_032:'rogue_5_relic_legacy_11', SCH_149:'rogue_1_recruit_ticket_all_premium',
 };
 const LEVEL_WORDING = {
   BGS_Treasures_011:'发现一项本局后勤效果：增加训练产出、每回合免费刷新，或招募后返还金币。',
@@ -84,21 +71,25 @@ const LEVEL_WORDING = {
   BGS_Treasures_028:'为一名干员提供20级训练，并装备护盾发生器和速射扳机。速射扳机使每第8次普通攻击连射两次。',
   SCH_149:'获得奖品支援干员涤火杰西卡。获得时，沿其原生成长曲线训练至队伍的最高战备水平；达到原生等级上限后不额外添加属性。',
 };
-export function compileHistoricalPrizes(atlas) {
+export function compileHistoricalPrizes(atlas,roguelikeArt={}) {
   return Object.fromEntries(atlas.cards.map(card => {
     const [name,effect] = WORDING[card.id] || [];
     if (!name || !effect) throw new Error('UNMAPPED_DARKMOON_PRIZE:' + card.id);
     const id = HISTORICAL_PRIZE_PREFIX + card.id;
-    return [id,{id,name,effect,normalEffect:card.id==='BGS_Treasures_018'?'为一名干员装备足够的攻击徽章，使其永久攻击面板至少翻倍。':card.id==='SCH_149'?'获得奖品支援干员涤火杰西卡。获得时，以攻击徽章和生命徽章补足至场上友方最高的永久攻击和生命面板。':effect,levelsEffect:LEVEL_WORDING[card.id] || effect,stage:['起步','成型','兑现','终极'][card.prizeTier-1],prizeTier:card.prizeTier,
-      iconItemId:HISTORICAL_PRIZE_ICONS[card.id],historical:true,sourceVersion:atlas.version,mechanism:targets.has(card.id)?'darkmoonTargetPrize':'darkmoonPrize',params:{sourceId:card.id},
+    const rogueItemId=roguelikeArt.assignments?.[card.id] || ROGUELIKE_PRIZE_ART[card.id];
+    const rogueItem=roguelikeArt.items?.[rogueItemId];
+    return [id,{id,name:rogueItem?`${rogueItem.name} · ${name}`:name,workshopName:name,effect,normalEffect:card.id==='BGS_Treasures_018'?'为一名干员装备足够的攻击徽章，使其永久攻击面板至少翻倍。':card.id==='SCH_149'?'获得奖品支援干员涤火杰西卡。获得时，以攻击徽章和生命徽章补足至场上友方最高的永久攻击和生命面板。':effect,levelsEffect:LEVEL_WORDING[card.id] || effect,stage:['起步','成型','兑现','终极'][card.prizeTier-1],prizeTier:card.prizeTier,
+      iconItemId:rogueItemId,historical:true,sourceVersion:atlas.version,mechanism:targets.has(card.id)?'darkmoonTargetPrize':'darkmoonPrize',params:{sourceId:card.id},
       sourceRefs:{cards:[{id:card.id,name:card.nameCN,nameEn:card.nameEN,text:card.textCN,textEn:card.textEN,
         attack:card.baseStats?.attack ?? null,health:card.baseStats?.health ?? null,tier:card.tavernTier ?? null,
         cardType:card.cardType,version:atlas.version,sourceUrl:atlas.sourceUrls.chineseUrl,
         ...(card.id==='SCH_149'?{goldenId:'TB_BaconUps_308',goldenAttack:2,goldenHealth:2,
-          textElite:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。',goldenText:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。'}:{})}]}}];
+          textElite:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。',goldenText:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。'}:{})}],
+        roguelikeCollectible:rogueItem||null}}];
   }));
 }
-export function installHistoricalPrizeSupport(operators,equipment,prizes) {
+export function installHistoricalPrizeSupport(operators,equipment,prizes,roguelikeArt={}) {
+  const rogueSource=(id)=>roguelikeArt.items?.[id]||null;
   const original = operators.chess_native_char_1034_jesca2_a;
   if (!original) throw new Error('MISSING_PRIZE_JESSICA_NATIVE_BODY');
   for (const [id,elite] of [[PRIZE_JESSICA_ID,false],[PRIZE_JESSICA_ELITE_ID,true]]) {
@@ -119,16 +110,16 @@ export function installHistoricalPrizeSupport(operators,equipment,prizes) {
     ['darkmoon-gruul-training','持续训练装置','每回合整备结束时，为装备者装备2枚攻击徽章和2枚伤害徽章。',{effects:[]}],
     ['darkmoon-windfury-trigger','速射扳机','每第8次普通攻击连射两次。',{effects:[{trigger:'attack',behavior:'doubleStrike',params:{counterEvery:8}}]}],
   ]) equipment[id]={id,sourceId:id,canonicalId:id,uniqueKey:id,name,kind:'equipment',mechanism:'combatEquipment',params:{...params,equipmentLifetime:'unit',combatEffectScope:'wearer'},effect,normal:effect,normalLevels:id==='darkmoon-gruul-training'?'每回合整备结束时，为装备者提供4级训练。':effect,
-    iconItemId:id==='darkmoon-gruul-training'?'chess_item_3_09_e_a':'chess_item_4_03_e_a',level:null,unique:id==='darkmoon-windfury-trigger',available:true,shopEligible:false,prizeOnly:true,sourcePrizeId:HISTORICAL_PRIZE_PREFIX+(id==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028'),sourceRefs:structuredClone(prizes[HISTORICAL_PRIZE_PREFIX+(id==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028')].sourceRefs),inheritable:true};
+    iconItemId:id==='darkmoon-gruul-training'?'rogue_2_relic_grace_5':'rogue_1_relic_a19',level:null,unique:id==='darkmoon-windfury-trigger',available:true,shopEligible:false,prizeOnly:true,sourcePrizeId:HISTORICAL_PRIZE_PREFIX+(id==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028'),sourceRefs:{...structuredClone(prizes[HISTORICAL_PRIZE_PREFIX+(id==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028')].sourceRefs),roguelikeCollectible:rogueSource(id==='darkmoon-gruul-training'?'rogue_2_relic_grace_5':'rogue_1_relic_a19')},inheritable:true};
   for (const [id,name,effect,iconItemId] of [
-    ['prize-logistics-production','生产协作','本局干员产出的基础徽章数量加倍。','chess_item_1_01_e_a'],
-    ['prize-logistics-refresh','调度协作','本局每回合增加一次免费刷新。','chess_item_4_03_e_a'],
-    ['prize-logistics-refund','采购协作','本局每购买一名商店干员，获得1枚金币。','chess_item_1_03_e_a'],
-  ]) prizes[id]={id,name,effect,levelsEffect:id==='prize-logistics-production'?'本局干员产出的训练等级数量加倍。':effect,iconItemId,logisticsChoice:true,mechanism:'passive'};
+    ['prize-logistics-production','生产协作','本局干员产出的基础徽章数量加倍。','rogue_2_relic_grace_5'],
+    ['prize-logistics-refresh','调度协作','本局每回合增加一次免费刷新。','rogue_1_recruit_ticket_all_discount'],
+    ['prize-logistics-refund','采购协作','本局每购买一名商店干员，获得1枚金币。','rogue_1_gold'],
+  ]) prizes[id]={id,name,effect,levelsEffect:id==='prize-logistics-production'?'本局干员产出的训练等级数量加倍。':effect,iconItemId,logisticsChoice:true,mechanism:'passive',sourceRefs:{roguelikeCollectible:rogueSource(iconItemId)}};
   const coin=HISTORICAL_PRIZE_PREFIX+'gold-coin';
-  prizes[coin]={id:coin,name:'储备金币',iconItemId:'chess_item_1_03_e_a',effect:'获得1枚金币。',historicalSupply:true,mechanism:'darkmoonPrize',params:{sourceId:'gold-coin'}};
+  prizes[coin]={id:coin,name:'储备金币',iconItemId:'rogue_1_gold',effect:'获得1枚金币。',historicalSupply:true,mechanism:'darkmoonPrize',params:{sourceId:'gold-coin'},sourceRefs:{roguelikeCollectible:rogueSource('rogue_1_gold')}};
   const banana=HISTORICAL_PRIZE_PREFIX+'small-banana';
-  prizes[banana]={id:banana,name:'基础营养包',levelsEffect:'为一名干员提供2级训练。',iconItemId:'chess_item_1_01_e_a',effect:'为一名干员装备1枚攻击徽章和1枚伤害徽章。',historicalSupply:true,mechanism:'darkmoonTargetPrize',params:{sourceId:'small-banana'}};
+  prizes[banana]={id:banana,name:'基础营养包',levelsEffect:'为一名干员提供2级训练。',iconItemId:'rogue_2_relic_grace_1',effect:'为一名干员装备1枚攻击徽章和1枚伤害徽章。',historicalSupply:true,mechanism:'darkmoonTargetPrize',params:{sourceId:'small-banana'},sourceRefs:{roguelikeCollectible:rogueSource('rogue_2_relic_grace_1')}};
 }
 function random(state,rng=null) { if(rng)return rng(); let x=state.rngState>>>0||1;x^=x<<13;x^=x>>>17;x^=x<<5;state.rngState=x>>>0;return (x>>>0)/0x100000000; }
 function shuffled(state,values,rng=null) { const out=[...values];for(let i=out.length-1;i>0;i--){const j=Math.floor(random(state,rng)*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out; }

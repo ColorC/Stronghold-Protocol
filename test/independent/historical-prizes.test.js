@@ -75,8 +75,8 @@ test('SCH149 body/skills/factions come from Jessica, permanent panels match indi
 });
 test('new gear and all prizes expose loadable native item identities and displayed source references',()=>{
  const display=independentDisplayCatalog(data,catalog);
- for(const p of records){assert.ok(display.prizes[p.id].sourceRefs.cards[0].text);const icon=display.prizes[p.id].iconItemId;assert.ok(icon);assert.ok(data.items[icon],icon);}
- for(const gear of ['darkmoon-gruul-training','darkmoon-windfury-trigger']){assert.ok(display.gear[gear].iconItemId);assert.ok(data.items[display.gear[gear].iconItemId]);assert.ok(catalog.equipment[gear].prizeOnly);assert.ok(catalog.equipment[gear].sourcePrizeId);assert.ok(catalog.equipment[gear].sourceRefs.cards[0].text);assert.equal(catalog.equipment[gear].sourceRefs.cards[0].id,gear==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028');}
+ for(const p of records){const shown=display.prizes[p.id],icon=shown.iconItemId,source=shown.sourceRefs.roguelikeCollectible;assert.ok(shown.sourceRefs.cards[0].text);assert.ok(icon);assert.equal(data.assets.items[icon],`/assets/roguelike/${icon}.png`,icon);assert.ok(source?.name,icon);assert.ok(shown.name.startsWith(source.name),icon);assert.ok(source.sourceUrl&&source.assetUrl,icon);}
+ for(const gear of ['darkmoon-gruul-training','darkmoon-windfury-trigger']){assert.ok(display.gear[gear].iconItemId);assert.ok(data.assets.items[display.gear[gear].iconItemId]);assert.ok(catalog.equipment[gear].sourceRefs.roguelikeCollectible?.name);assert.ok(catalog.equipment[gear].prizeOnly);assert.ok(catalog.equipment[gear].sourcePrizeId);assert.ok(catalog.equipment[gear].sourceRefs.cards[0].text);assert.equal(catalog.equipment[gear].sourceRefs.cards[0].id,gear==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028');}
  assert.equal(display.operators[PRIZE_JESSICA_ID].name,'涤火杰西卡');assert.ok(display.operators[PRIZE_JESSICA_ID].nativeFactions.length);
 });
 

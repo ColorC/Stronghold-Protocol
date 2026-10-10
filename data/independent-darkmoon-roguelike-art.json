@@ -1,0 +1,238 @@
+{
+  "source": "ArknightsGameData CN roguelike_topic_table.json",
+  "assetSource": "ArknightsResource rogueitem/",
+  "assignments": {
+    "BGS_Treasures_000": "rogue_2_relic_grace_5",
+    "BGS_Treasures_011": "rogue_2_relic_grace_12",
+    "BGS_Treasures_010": "rogue_1_recruit_ticket_all_discount",
+    "BGS_Treasures_018": "rogue_2_relic_grace_5",
+    "BGS_Treasures_009": "rogue_5_relic_legacy_13",
+    "BGS_Treasures_029": "rogue_1_relic_a24",
+    "BGS_Treasures_023": "rogue_2_relic_grace_12",
+    "SCH_149": "rogue_1_recruit_ticket_all_premium",
+    "BGS_Treasures_001": "rogue_1_gold",
+    "BGS_Treasures_033": "rogue_1_recruit_ticket_all",
+    "BGS_Treasures_037": "rogue_5_relic_legacy_1",
+    "BGS_Treasures_022": "rogue_2_relic_grace_18",
+    "BGS_Treasures_030": "rogue_5_relic_legacy_10",
+    "BGS_Treasures_012": "rogue_1_recruit_ticket_all",
+    "BGS_Treasures_025": "rogue_1_gold",
+    "BGS_Treasures_028": "rogue_2_relic_grace_11",
+    "BGS_Treasures_007": "rogue_2_relic_grace_6",
+    "BGS_Treasures_016": "rogue_5_relic_legacy_10",
+    "TB_Bacon_Secrets_12": "rogue_2_relic_grace_11",
+    "BGS_Treasures_034": "rogue_5_relic_legacy_9",
+    "BGS_Treasures_019": "rogue_2_relic_grace_1",
+    "BGS_Treasures_036": "rogue_1_gold",
+    "BGS_Treasures_013": "rogue_2_relic_grace_3",
+    "BGS_Treasures_006": "rogue_5_relic_legacy_9",
+    "BGS_Treasures_015": "rogue_2_relic_grace_19",
+    "BGS_Treasures_026": "rogue_5_relic_legacy_20",
+    "BGS_Treasures_032": "rogue_5_relic_legacy_11",
+    "BGS_Treasures_014": "rogue_1_gold",
+    "BGS_Treasures_020": "rogue_1_recruit_ticket_all_premium",
+    "BGS_Treasures_004": "rogue_1_recruit_ticket_pioneer"
+  },
+  "items": {
+    "rogue_1_gold": {
+      "id": "rogue_1_gold",
+      "name": "源石锭",
+      "effect": "源石锭",
+      "description": null,
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_gold.png"
+    },
+    "rogue_1_recruit_ticket_pioneer": {
+      "id": "rogue_1_recruit_ticket_pioneer",
+      "name": "先锋招募券",
+      "effect": "招募一个先锋干员",
+      "description": null,
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_recruit_ticket_pioneer.png"
+    },
+    "rogue_1_recruit_ticket_all": {
+      "id": "rogue_1_recruit_ticket_all",
+      "name": "高级人事调度函",
+      "effect": "招募一个任意干员",
+      "description": null,
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_recruit_ticket_all.png"
+    },
+    "rogue_1_recruit_ticket_all_premium": {
+      "id": "rogue_1_recruit_ticket_all_premium",
+      "name": "特别人事调度函",
+      "effect": "招募一个任意干员（必定出现精英干员临时招募）",
+      "description": null,
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_recruit_ticket_all_premium.png"
+    },
+    "rogue_1_recruit_ticket_all_discount": {
+      "id": "rogue_1_recruit_ticket_all_discount",
+      "name": "高级人事资深招募券",
+      "effect": "招募一个任意干员，部分干员招募时直接就是已进阶的状态",
+      "description": null,
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_recruit_ticket_all_discount.png"
+    },
+    "rogue_1_relic_a01": {
+      "id": "rogue_1_relic_a01",
+      "name": "“静音小队”",
+      "effect": "所有我方单位的攻击力和防御力+35%，生命+45%",
+      "description": "由罗德岛工程部统一操控的探索用无人机，更高效，更安全，为外勤干员们提供全方位的支援与保障。",
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_relic_a01.png"
+    },
+    "rogue_1_relic_a24": {
+      "id": "rogue_1_relic_a24",
+      "name": "赶车夫的长鞭",
+      "effect": "所有敌方单位受到的物理伤害+25%",
+      "description": "作为剧团的赶车人，他没有名字，没有过往。唯有挥鞭驱赶驮兽，他的生命才有意义。",
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_relic_a24.png"
+    },
+    "rogue_2_relic_grace_1": {
+      "id": "rogue_2_relic_grace_1",
+      "name": "精选兽肉罐头",
+      "effect": "可携带干员+1，所有我方单位每秒回复3点生命",
+      "description": "对奔行于长路的旅人而言，“开罐即食”的便利，往往比味道更重要。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_1.png"
+    },
+    "rogue_2_relic_grace_3": {
+      "id": "rogue_2_relic_grace_3",
+      "name": "橙味风暴",
+      "effect": "可携带干员+1，所有我方单位的攻击力+1%",
+      "description": "约翰老妈糖果产品，畅销橙子味，以廉价美味为卖点，在孩子中很有人气。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_3.png"
+    },
+    "rogue_2_relic_grace_5": {
+      "id": "rogue_2_relic_grace_5",
+      "name": "尖叫樱桃",
+      "effect": "可携带干员+2，所有我方单位的攻击力+2%",
+      "description": "约翰老妈糖果产品，小众醋腌樱桃味，销量无法比肩畅销款，但一直有一小群忠实而稳定的消费者。听说某位约翰老妈董事就钟爱此口味。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_5.png"
+    },
+    "rogue_2_relic_grace_6": {
+      "id": "rogue_2_relic_grace_6",
+      "name": "皮特水果什锦",
+      "effect": "可携带干员+3，所有我方单位的攻击力、防御力和生命值+3%",
+      "description": "皮特牌什锦水果糖，以丰富的口味和超高性价比在糖果市场上与约翰老妈糖果系列相抗衡。缪尔赛思的最爱。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_6.png"
+    },
+    "rogue_2_relic_grace_11": {
+      "id": "rogue_2_relic_grace_11",
+      "name": "特级馥郁咖啡豆",
+      "effect": "可携带干员+1，可同时部署人数+1，护盾值+1",
+      "description": "咖啡农们喂某类体带异香的珍稀羽兽吃下咖啡豆，再从其排泄物中提取加工，经过胃酸发酵过程产生的异香，让咖啡豆的价格翻了三倍。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_11.png"
+    },
+    "rogue_2_relic_grace_12": {
+      "id": "rogue_2_relic_grace_12",
+      "name": "蓝色丝巾",
+      "effect": "希望+2，可携带干员+1",
+      "description": "女士优雅的丝巾，她的出现代表安全。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_12.png"
+    },
+    "rogue_2_relic_grace_18": {
+      "id": "rogue_2_relic_grace_18",
+      "name": "赤金的远征",
+      "effect": "希望+4，可携带干员+1，可同时部署人数+1",
+      "description": "君王自荒地出发，集市在她的裙下如春芽萌发，财富之路连通高山密林，直到她消失在西方浪涛的边崖。——萨尔贡古老童话",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_18.png"
+    },
+    "rogue_2_relic_grace_19": {
+      "id": "rogue_2_relic_grace_19",
+      "name": "《杜林地上环游记》",
+      "effect": "护盾值+4",
+      "description": "从这本游记中，我们可以一窥地底人对于地表人的奇异见解。",
+      "theme": 2,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_2_relic_grace_19.png"
+    },
+    "rogue_5_relic_legacy_1": {
+      "id": "rogue_5_relic_legacy_1",
+      "name": "钝爪-典训",
+      "effect": "立即进阶一个【先锋】干员（不消耗希望）",
+      "description": "一套强有力的装备，一颗勇往直前的心。",
+      "theme": 5,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_5_relic_legacy_1.png"
+    },
+    "rogue_5_relic_legacy_9": {
+      "id": "rogue_5_relic_legacy_9",
+      "name": "游戏室管理员权限卡",
+      "effect": "立即进阶一个干员（不消耗希望）",
+      "description": "持有它，您就掌握了罗德岛的娱乐管理大权，请谨慎处理干员们种种奇怪的申请......以及每天关门。   ",
+      "theme": 5,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_5_relic_legacy_9.png"
+    },
+    "rogue_5_relic_legacy_10": {
+      "id": "rogue_5_relic_legacy_10",
+      "name": "Miss.Christine摸摸券",
+      "effect": "立即进阶两个干员（不消耗希望）",
+      "description": "你已经获得了女士的准许！",
+      "theme": 5,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_5_relic_legacy_10.png"
+    },
+    "rogue_5_relic_legacy_11": {
+      "id": "rogue_5_relic_legacy_11",
+      "name": "古旧铸物",
+      "effect": "立即进阶三个干员（不消耗希望）",
+      "description": "“天有洪炉，地生五金”......虽然可以用来成就各种事业，却没人知道具体原理。",
+      "theme": 5,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_5_relic_legacy_11.png"
+    },
+    "rogue_5_relic_legacy_13": {
+      "id": "rogue_5_relic_legacy_13",
+      "name": "香草沙士汽水",
+      "effect": "所有自然回复技能的技力恢复+0.2/秒",
+      "description": "玻利瓦尔本地的廉价饮料，拥有上百年历史，混合多种香料，特点是不好喝。",
+      "theme": 5,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_5_relic_legacy_13.png"
+    },
+    "rogue_5_relic_legacy_20": {
+      "id": "rogue_5_relic_legacy_20",
+      "name": "军团护心镜",
+      "effect": "所有我方单位的防御力+25%",
+      "description": "这种甲片曾经能够防护住针对心脏的致命伤害，但随着高卢没落，护心镜这种过时的护甲样式也退出了历史舞台。",
+      "theme": 5,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_5_relic_legacy_20.png"
+    },
+    "rogue_1_relic_a19": {
+      "id": "rogue_1_relic_a19",
+      "name": "损坏的左轮弹巢",
+      "effect": "所有我方远程单位的攻击力+35%",
+      "description": "她行过刀山火海也不曾有一刻向奸邪低头，她枪口火舌焦灼好似怒阳，她头顶光芒炽烈几胜白昼。此处安葬着Outcast，我们的朋友。",
+      "theme": 1,
+      "sourceUrl": "https://github.com/Kengxxiao/ArknightsGameData/blob/17759cc8cdf37388414145d16262a3a06f3ab25e/zh_CN/gamedata/excel/roguelike_topic_table.json",
+      "assetUrl": "https://raw.githubusercontent.com/fexli/ArknightsResource/02b29938b43611fec5bb1e8372ee2ca3ef8fdc48/rogueitem/rogue_1_relic_a19.png"
+    }
+  },
+  "sourceCommit": "17759cc8cdf37388414145d16262a3a06f3ab25e",
+  "assetSourceCommit": "02b29938b43611fec5bb1e8372ee2ca3ef8fdc48"
+}

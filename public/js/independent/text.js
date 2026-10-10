@@ -61,7 +61,7 @@ export function GearIcon({ id, catalog, class: cls, plain = false }) {
   const name = g?.name || '徽章';
   const source = gearIconSource(id, catalog);
   const assetManifest = data.get('assets');
-  const sourceItem = source?.sourceItemId && data.lookup('items', source.sourceItemId);
+  const sourceItem = source?.sourceItemId && (source.sourceItemId.startsWith('rogue_') ? source.sourceItemId : data.lookup('items', source.sourceItemId));
   const iconUrl = source?.type === 'skill'
     ? skillRecordIconUrl(assetManifest, { skillId: source.skillId, iconId: source.skillId }, { empty: false })
     : sourceItem && itemIconUrl(assetManifest, sourceItem);
@@ -70,9 +70,10 @@ export function GearIcon({ id, catalog, class: cls, plain = false }) {
     <svg viewBox="0 0 34 34" role="img" aria-label=${name}><path d=${GEAR_GLYPHS[glyph]} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
   </span>`;
   const icon = iconUrl ? html`<${Img} src=${iconUrl} class=${cx('ix-gear', 'ix-gear--item', cls)} alt=${name} fallback=${drawn} />` : drawn;
-  if (plain || !g) return icon;
+  const roguelikeSource = g?.sourceRefs?.roguelikeCollectible;
+  if ((plain && !roguelikeSource) || !g) return icon;
   const badge = !!BADGE_BOND[id] || g.kind === 'badge' || g.kind === '徽章';
-  const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.mechanism!=='growthTraining' && g.level ? html`<em>装备叠加×${g.level}</em>` : null}<span>${badgeEffectText(id) || g.normal || g.effect || ''}</span></span>`;
+  const tip = html`<span class="ix-tip"><b>${name}</b>${!badge && !USED.has(g.kind) && g.mechanism!=='growthTraining' && g.level ? html`<em>装备叠加×${g.level}</em>` : null}<span>${badgeEffectText(id) || g.normal || g.effect || ''}</span>${roguelikeSource ? html`<small>收藏品：${roguelikeSource.name}</small>` : null}</span>`;
   return html`<${Tooltip} text=${tip} placement="top">${icon}<//>`;
 }
 
