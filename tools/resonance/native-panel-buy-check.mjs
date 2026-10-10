@@ -80,7 +80,7 @@ async function run(){
    const existing=validateExistingPurchaseEvidence(receipt,state,{detailScreenshotExists:existsSync(SCREENSHOTS.detail)});
    check('resume-purchase-already-applied-readonly',existing.passed,{revision:state.revision,existing,intent:prior});
    check('resume-does-not-repeat-buy',buyRequests===0,{buyRequests});
-   if(!existsSync(SCREENSHOTS.purchased)){await page.screenshot({path:SCREENSHOTS.purchased,type:'jpeg',quality:90,fullPage:true});receipt.screenshots.purchased=SCREENSHOTS.purchased;}
+   if(!existsSync(SCREENSHOTS.purchased)){await page.waitForFunction(()=>{const s=globalThis.__SP_VIEW__?.raw?.stats?.();return Number(s?.units)>0&&(s?.boardArt===true||s?.board3d?.on===true);},{timeout:45000});await page.screenshot({path:SCREENSHOTS.purchased,type:'jpeg',quality:90,fullPage:true});receipt.screenshots.purchased=SCREENSHOTS.purchased;}
    else receipt.screenshots.purchased=SCREENSHOTS.purchased;
    receipt.purchaseEvidence={...existing.delta,afterRevision:state.revision,goldAfter:state.gold,piecesAfter:state.pieces.length,readOnlyResume:true};receipt.checkpoint='purchased';
   }else{
