@@ -251,7 +251,7 @@ async function run() {
       return { active: response.activeOperatorIds?.length, operators: Object.keys(catalog.operators || {}).length,
         strategies: Object.keys(catalog.strategies || {}).length, equipment: Object.keys(catalog.equipment || {}).length,
         openingEvents: Object.keys(catalog.openingEvents || {}).length, openingEvent: catalog.openingEvent?.id || catalog.openingEvent?.name,
-        legalInventoryRecipe:(catalog.recipes||[]).find(recipe=>recipe.parts?.length===2&&recipe.parts.every(part=>originalItemIds.includes(part)))||null };
+        legalInventoryRecipe:(catalog.recipes||[]).find(recipe=>recipe.parts?.length===2&&[...recipe.parts].sort().every((part,index)=>part===[...originalItemIds].sort()[index]))||null };
     }, receipt.sessionId,originalItemIds);
     check('catalog-season-cardinality', catalogCounts.active === 65 && catalogCounts.operators === 154 && catalogCounts.strategies === 28 && catalogCounts.equipment === 69 && catalogCounts.openingEvents === 4, catalogCounts);
     await capture('53-prep');
