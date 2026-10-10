@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html } from '../ui/components.js';
 import { api } from './api.js';
 import { drawRecordingCanvasFrame, recordingCanvasLayout } from './recordingCanvas.js';
-import { captureRecordingMediaFrame, startRecordingMediaAtFirstCapture } from './recordingMediaClock.js';
+import { captureRecordingMediaFrame, enqueueRecordingMediaBlob, startRecordingMediaAtFirstCapture } from './recordingMediaClock.js';
 import { startPageCapture } from '../recording/pageCapture.js';
 import { createCanvasMediaRecorder, resolveMediaOptions } from '../recording/canvasMedia.js';
 import { initialPlaybackId, LAST_COMPLETED_RECORDING_KEY, prepareNewRecordingUrl } from './recordingLifecycle.js';
@@ -181,10 +181,10 @@ export function RecordingControls({ sessionId }) {
             }
             const media = state.mediaPipeline = createCanvasMediaRecorder({ stream, options: mediaOptions, onChunk: ({ blob, timecode }) => {
               if (!blob?.size || !state.id) return;
-              const seq = ++state.mediaSeq; const elapsedMs = Date.now() - state.mediaStartedAt;
+              const elapsedMs = Date.now() - state.mediaStartedAt;
               const timeMs = Math.max(Number.isFinite(timecode) ? timecode : 0, elapsedMs);
               state.mediaLastTimeMs = timeMs;
-              state.mediaPending.push({seq,blob,startedAt:state.mediaStartedAt,timeMs});
+              enqueueRecordingMediaBlob(state, { blob, startedAt: state.mediaStartedAt, timeMs });
               state.mediaPush = state.mediaPush.then(flushMedia).catch(() => { state.mediaError = true; });
             }, onError: () => { state.mediaError = true; } });
             const recorder = state.mediaRecorder = media.recorder;
@@ -201,7 +201,8 @@ export function RecordingControls({ sessionId }) {
               const started = startRecordingMediaAtFirstCapture(state, { paintCaptureFrame, requestFrame }, mediaOptions.timesliceMs);
               if (!started) return false;
               state.mediaCaptureTimer = setInterval(captureFrame, 1000 / mediaOptions.fps);
-              event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height, mimeType });
+              event('custom', { tag: 'canvas-media-start', width: captureSurface.width, height: captureSurface.height,
+                fps: mediaOptions.fps, videoBitsPerSecond: recorder.videoBitsPerSecond || mediaOptions.videoBitsPerSecond, mimeType });
               return true;
             };
           } catch { state.captureSurface?.remove(); state.mediaError = true; }

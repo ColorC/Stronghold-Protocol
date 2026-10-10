@@ -1,4 +1,4 @@
-export const DEFAULT_MEDIA_OPTIONS = Object.freeze({ maxDimension: 1280, fps: 24, videoBitsPerSecond: 900_000, timesliceMs: 5000 });
+export const DEFAULT_MEDIA_OPTIONS = Object.freeze({ maxDimension: 2560, fps: 30, videoBitsPerSecond: 16_000_000, timesliceMs: 1000 });
 
 const bounded = (value, fallback, min, max) => {
   if (value == null || String(value).trim() === '') return fallback;
@@ -11,7 +11,7 @@ export function resolveMediaOptions(searchParams, defaults = DEFAULT_MEDIA_OPTIO
   return {
     maxDimension: bounded(params.get('recordMax'), defaults.maxDimension, 320, 2560),
     fps: bounded(params.get('recordFps'), defaults.fps, 5, 60),
-    videoBitsPerSecond: bounded(params.get('recordBitrate'), defaults.videoBitsPerSecond, 200_000, 8_000_000),
+    videoBitsPerSecond: bounded(params.get('recordBitrate'), defaults.videoBitsPerSecond, 16_000_000, 48_000_000),
     timesliceMs: bounded(params.get('recordChunkMs'), defaults.timesliceMs, 1000, 15_000),
   };
 }
