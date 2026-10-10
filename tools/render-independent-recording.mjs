@@ -76,7 +76,7 @@ async function main(argv) {
   const clips = args.roundList.map((round) => {
     const clip = timeline.rounds?.find((x) => Number(x.round) === round);
     if (!clip || !Number.isFinite(clip.startSecond) || !Number.isFinite(clip.endSecond)) throw new Error(`timeline has no validated round ${round}`);
-    return { round, startSecond: clip.startSecond, endSecond: clip.endSecond, observations: clip.observations || [] };
+    return { round, startSecond: clip.startSecond, endSecond: clip.endSecond, observations: clip.observations || [], uiActions: clip.uiActions || [] };
   });
   if (args.sampleSeconds == null) {
     const completeRounds = (timeline.rounds || []).map((x) => Number(x.round)).sort((a, b) => a - b);
@@ -262,11 +262,12 @@ async function main(argv) {
         encoder.serial = encoder.serial.then(() => window.__encoderChunk({ data: b64, pts: Math.round(chunk.timestamp * fps / 1e6) }));
       }, error: (e) => { encoder.error = String(e); } });
       encoder.serial = Promise.resolve(); encoder.configure({ codec: 'vp8', width, height, framerate: fps, bitrate, latencyMode: 'realtime' });
-      const frames = replay.frames; const clock = helpers.replayClock(replay); let idx = 0; const count = Math.ceil(sampleSeconds * fps); let prior = null;
+      const frames = replay.frames; const clock = helpers.replayClock(replay); const mapper = helpers.createReplayTimeMapper(clip, replay);
+      let idx = 0; const count = Math.ceil(sampleSeconds * fps); let prior = null;
       for (let i = 0; i < count; i++) {
         const wallSecond = clip.startSecond + i / fps;
-        const gameTime = clock.t0 + helpers.gameTimeFromCountdown(clip, wallSecond, clock.duration);
-        const rate = prior == null ? 2 : helpers.recordedAnimationRate(prior, gameTime, fps, 2); prior = gameTime;
+        const gameTime = mapper.at(wallSecond);
+        const rate = prior == null ? mapper.initialRate : helpers.recordedAnimationRate(prior, gameTime, fps, mapper.initialRate); prior = gameTime;
         const windowed = helpers.frameFeedWindow(frames, gameTime, idx); idx = windowed.nextIndex;
         helpers.feedNativeFrames(view, windowed.frames, replay.field.fieldId);
         if (!view.renderRecordedFrame({ gameTime, delta: 1 / fps, rate })) throw new Error('native recorded-frame renderer refused frame');
@@ -275,7 +276,9 @@ async function main(argv) {
         if (encoder.encodeQueueSize > 8) await new Promise((resolve) => { encoder.addEventListener('dequeue', resolve, { once: true }); });
       }
       await encoder.flush(); await encoder.serial; const config = encoder.state; encoder.close();
-      return { frames: count, gameTimeEnd: clock.t0 + helpers.gameTimeFromCountdown(clip, clip.startSecond + (count - 1) / fps, clock.duration), replayClock: clock, encoderState: config, warmReport: window.__warmReport, error: encoder.error || null };
+      const timeMap = { origin: mapper.origin, measuredRate: mapper.measuredRate, initialRate: mapper.initialRate,
+        speedChanges: mapper.speedChanges, skipAt: mapper.skipAt, finalZeroAt: mapper.finalZeroAt, calibration: mapper.calibration };
+      return { frames: count, gameTimeEnd: mapper.at(clip.startSecond + (count - 1) / fps), replayClock: clock, timeMap, encoderState: config, warmReport: window.__warmReport, error: encoder.error || null };
     }, { sampleSeconds: args.sampleSeconds ?? Math.max(0.001, clip.endSecond - clip.startSecond), fps, bitrate, width: layout.width, height: layout.height, round: clip.round, clip });
     if (render.error) throw new Error(`WebCodecs encoder failed: ${render.error}`);
     if (fatalPageErrors.length) throw new Error(`native browser render errors: ${fatalPageErrors.join('\n')}`);

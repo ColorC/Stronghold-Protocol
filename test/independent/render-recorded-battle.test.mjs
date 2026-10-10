@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { frameFeedWindow, gameTimeAtWallSeconds, gameTimeFromCountdown, recordedAnimationRate, feedNativeFrames, replayClock } from '../../public/js/independent/renderRecordedBattle.js';
+import { frameFeedWindow, gameTimeAtWallSeconds, gameTimeFromCountdown, recordedAnimationRate, feedNativeFrames, replayClock, createReplayTimeMapper } from '../../public/js/independent/renderRecordedBattle.js';
 
 test('feed window includes ordered snapshots through target and one interpolation lookahead', () => {
   const frames = [0.1, 0.2, 0.3, 0.4].map((t) => ({ snap: { t }, ev: [] }));
@@ -41,6 +41,62 @@ test('wall clock mapping honors explicit rate and rejects invalid values', () =>
 test('native replay clock uses first and last snapshot timestamps, not summary duration', () => {
   assert.deepEqual(replayClock({ duration: 108.1, frames: [{ snap: { t: 0.1 } }, { snap: { t: 108.1 } }] }),
     { t0: 0.1, duration: 108, end: 108.1 });
+});
+
+test('R1 preserves initial 2x clock then applies its observed ×2 speed selection as native 4x', () => {
+  const round = { startSecond: 10, endSecond: 23.3, observations: [
+    { at: 10, remaining: 0 }, { at: 10.1, remaining: 33 }, { at: 11.1, remaining: 31 },
+    { at: 20, remaining: 13 }, { at: 23.3, remaining: 0 },
+  ], uiActions: [{ at: 20, kind: 'speed-select', target: { text: '×2' } }] };
+  const replay = { frames: [{ snap: { t: 0.1 } }, { snap: { t: 33.1 } }] };
+  const map = createReplayTimeMapper(round, replay);
+  assert.equal(map.initialRate, 2);
+  assert.equal(map.at(10.1), 0.1);
+  assert.ok(Math.abs(map.at(11.1) - 2.1) < 1e-9);
+  assert.deepEqual(map.speedChanges, [{ at: 20, rate: 4 }]);
+  assert.ok(Math.abs(map.at(21) - 23.9) < 1e-8);
+  assert.equal(map.at(23.3), 33.1);
+  assert.ok(Math.abs(map.calibration - 1) < 1e-9);
+});
+
+test('piecewise mapper applies repeated native 2x/4x/8x selections despite countdown plateaus', () => {
+  const round = { startSecond: 0, endSecond: 50, observations: [
+    { at: 0, remaining: 0 }, { at: 0.1, remaining: 100 }, { at: 0.5, remaining: 100 },
+    { at: 1.1, remaining: 96 }, { at: 2.1, remaining: 92 }, { at: 50, remaining: 0 },
+  ], uiActions: [10, 20, 30, 40].map((at, i) => ({ at, kind: 'speed-select', target: { text: ['×4', '×1', '×2', '×4'][i] } })) };
+  const replay = { frames: [{ snap: { t: 0.1 } }, { snap: { t: 259.7 } }] };
+  const map = createReplayTimeMapper(round, replay);
+  assert.equal(map.initialRate, 4);
+  assert.deepEqual(map.speedChanges.map((x) => x.rate), [8, 2, 4, 8]);
+  assert.ok(Math.abs(map.at(15) - 79.7) < 1e-8);
+  assert.ok(Math.abs(map.at(25) - 129.7) < 1e-8);
+  assert.ok(Math.abs(map.at(35) - 159.7) < 1e-8);
+  assert.equal(map.at(50), replay.frames.at(-1).snap.t);
+});
+
+test('skip-to-end clamps exactly at last native snapshot and does not scale prior time', () => {
+  const round = { startSecond: 0, endSecond: 10, observations: [
+    { at: 0, remaining: 0 }, { at: 0.1, remaining: 40 }, { at: 1.1, remaining: 36 }, { at: 9.9, remaining: 4 },
+  ], uiActions: [{ at: 10, kind: 'skip-to-end', target: { testid: 'ix-skip' } }] };
+  const replay = { frames: [{ snap: { t: 0.1 } }, { snap: { t: 40.1 } }] };
+  const map = createReplayTimeMapper(round, replay);
+  assert.equal(map.initialRate, 4);
+  assert.equal(map.calibration, 1);
+  assert.ok(Math.abs(map.at(9.9) - 39.3) < 1e-8);
+  assert.equal(map.at(10), 40.1);
+  assert.equal(map.at(11), 40.1);
+});
+
+test('same countdown values do not pause the integrated native replay clock', () => {
+  const round = { startSecond: 0, endSecond: 5.1, observations: [
+    { at: 0.1, remaining: 20 }, { at: 0.5, remaining: 20 }, { at: 1.1, remaining: 16 },
+    { at: 2.1, remaining: 12 }, { at: 5.1, remaining: 0 },
+  ], uiActions: [] };
+  const replay = { frames: [{ snap: { t: 0.1 } }, { snap: { t: 20.1 } }] };
+  const map = createReplayTimeMapper(round, replay);
+  assert.equal(map.initialRate, 4);
+  assert.ok(Math.abs((map.at(1.5) - map.at(0.5)) - 4) < 1e-8);
+  assert.equal(map.at(5.1), 20.1);
 });
 
 test('timeline mapping uses observed countdown anchors and ignores initial zero transition', () => {
