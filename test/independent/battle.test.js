@@ -72,6 +72,20 @@ test('independent field helper deterministically reuses official normal, boss, a
   assert.match(hidden.wave.templateId, /_s$/);
 });
 
+test('early pressure trims only configured ordinary spawns and leaves round five unchanged', () => {
+  const catalog = getCatalog(DATA);
+  const baseline = { ...catalog, config: { ...catalog.config, earlyWaveEnemyCountTrim: {} } };
+  const make = (round, difficulty = 'NORMAL') => state({ seed: 73031, difficulty, roundLimit: 19, round, pieces: [] });
+  const count = (wave) => wave.spawns.reduce((sum, spawn) => sum + Number(spawn.count || 1), 0);
+  const normal3 = getIndependentField(make(3), { data: DATA, catalog });
+  const normal4 = getIndependentField(make(4), { data: DATA, catalog });
+  assert.equal(count(normal3.wave), 5);
+  assert.equal(count(normal4.wave), 10);
+  assert.ok(normal4.wave.spawns.some((spawn) => ['EF', 'E', 'S'].includes(spawn.mods?.slot)), 'elite and special slots remain present');
+  assert.equal(count(getIndependentField(make(5), { data: DATA, catalog }).wave), count(getIndependentField(make(5), { data: DATA, catalog: baseline }).wave));
+  assert.equal(count(getIndependentField(make(1, 'HARD'), { data: DATA, catalog } ).wave), 4);
+});
+
 test('independent runner resolves KITS and returns actual Battle events and native rewards without mutating state', () => {
   const input = state();
   const before = structuredClone(input);

@@ -16,7 +16,7 @@ const RULES = Object.freeze({
   BGS_060: [grantSelf(gear('坚守盟约'))],
   BGS_071: [grantSelf(gear('护盾发生器'))],
   BGS_119: [grantSelf(gear('护盾发生器'))], BGS_121: [grantSelf(gear('坚守盟约'))],
-  BGS_124: [grantSelf(gear('坚守盟约')),{trigger:'gain',behavior:'darkmoonPlayedFactionCountSelfGrowth',params:{faction:'炎',attackUnits:{normal:0,elite:0},secondaryUnitsPerTarget:{normal:1,elite:2}}}], BGS_127: [grantSelf(gear('坚守盟约')),
+  BGS_124: [grantSelf(gear('坚守盟约')),{trigger:'gain',behavior:'darkmoonPlayedFactionCountSelfGrowth',params:{faction:'炎',attackUnits:{normal:1,elite:2},secondaryUnitsPerTarget:{normal:1,elite:2}}}], BGS_127: [grantSelf(gear('坚守盟约')),
     {trigger:'bought',behavior:'darkmoonBoughtSelfGrowth',params:{faction:'炎',attackUnits:{normal:0,elite:0},secondaryUnits:{normal:1,elite:2}}}],
   BGS_201: [grantSelf(gear('坚守盟约'))],
   BGS_205: [grantSelf(gear('护盾发生器'),gear('不屈盟约'))],

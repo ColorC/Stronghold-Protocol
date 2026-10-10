@@ -247,12 +247,6 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
   return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(10.4rem, 96vw)" class="ix-inv">
     <div class="ix-inv__target">
       ${target ? html`<span class=${room <= 0 ? 'ix-warn' : 'ix-muted'}>已选${formEntry(catalog, target)?.name || '干员'} · ${room <= 0 ? '装备已满' : '穿上后无法卸下'}</span>` : html`<span class="ix-muted">点选「穿戴」后，直接点击场上或整备区干员</span>`}
-      <details class="ix-inv__manual-target"><summary>手动选目标（备用）</summary>
-        <select value=${targetUid || ''} onChange=${(e) => onTarget(e.currentTarget.value || null)} data-testid="ix-inv-target">
-          <option value="">选择干员</option>
-          ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备叠加×${p.equipmentLevel}</option>`)}
-        </select>
-      </details>
       ${stacks.filter((x) => x.kind !== '奖品').length >= (catalog.rules?.inventoryCapacity ?? 20) ? html`<span class="ix-warn" role="status">库存已满</span>` : null}
     </div>
     <div class="ix-inv__body">
@@ -304,14 +298,13 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
               ${tagFactions ? html`<select value=${tags[s.key] || ''} onChange=${(e) => setTags({ ...tags, [s.key]: e.currentTarget.value })} aria-label="身份标签阵营">
                 <option value="">选择阵营</option>${tagFactions.map((f) => html`<option key=${f} value=${f}>${f}</option>`)}</select>` : null}
               ${!equipChoices.length ? html`<span role="status" class="ix-warn">当前没有符合条件的装备目标</span>` : null}
-              <${Button} size="sm" variant="primary" disabled=${busy || !equipChoices.length || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
+              <${Button} size="sm" variant="primary" disabled=${busy || !equipChoices.length || (target && !equipChoices.some((p) => p.uid === target.uid)) || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
                 onClick=${() => {
                   const action = (uid) => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) });
-                    onBeginTarget?.({ label: '点击标记的场上或整备区友方干员穿戴装备', closePanel: true, onCancel: onCancelTarget, choices: equipChoices.map((p) => ({ kind: 'friendly', uid: p.uid })), emptyText: '没有可以穿戴这件装备的干员', submit: ({ uid }) => action(uid) });
+                  if (target) action(target.uid);
+                  else onBeginTarget?.({ label: '点击标记的场上或整备区友方干员穿戴装备', closePanel: true, onCancel: onCancelTarget, choices: equipChoices.map((p) => ({ kind: 'friendly', uid: p.uid })), emptyText: '没有可以穿戴这件装备的干员', submit: ({ uid }) => action(uid) });
                 }}>
-                ${many && n > 1 ? `穿戴 ${n} 件` : '穿戴 · 点选干员'}<//>
-              ${target ? html`<${Button} size="sm" variant="secondary" disabled=${busy || room < n || (tagFactions && !tags[s.key])}
-                onClick=${() => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: target.uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) })}>穿给${formEntry(catalog, target)?.name || '已选干员'}<//>` : null}`}
+                ${target ? (many && n > 1 ? `穿戴 ${n} 件` : '穿戴') : (many && n > 1 ? `穿戴 ${n} 件 · 点选干员` : '穿戴 · 点选干员')}<//>
           </div>` : html`<p class="ix-muted">库存为空</p>`}
       </div>
     </div>

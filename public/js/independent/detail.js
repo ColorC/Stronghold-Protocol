@@ -26,10 +26,12 @@ const TABS = [['traits', '特质'], ['skill', '技能'], ['talent', '天赋'], [
 const TAB_OF = { garrison: 'traits', trait: 'skill', stats: 'stats', skill: 'skill', module: 'talent', talents: 'talent', equip: 'gear' };
 
 /** The header's chips: the operator's tavern factions with their original bond glyphs, and its equipment stack total. */
-function FactionChips({ factions, level, catalog, temporaryBadgeCount = 0 }) {
+function FactionChips({ factions, originFactions = [], level, catalog, temporaryBadgeCount = 0 }) {
   return html`<div class="dbonds dbonds--top ix-dchips" role="list" aria-label="所属阵营">
     ${(factions || []).map((f) => html`<span key=${f} role="listitem" class="dbond is-active">
       <${FactionIcon} faction=${f} catalog=${catalog} /><span class="dbond__name">${f}</span></span>`)}
+    ${originFactions.map((f) => html`<span key=${`origin-${f}`} role="listitem" class="dbond is-active ix-dchips__origin" aria-label=${`籍贯：${f}`}>
+      <${FactionIcon} faction=${f} catalog=${catalog} /><span class="dbond__name">${f}籍贯</span></span>`)}
     ${level != null ? html`<span class="ix-dchips__lv">装备叠加 <b class="num">×${level}</b></span>` : null}
     ${temporaryBadgeCount > 0 ? html`<span class="ix-dchips__lv ix-dchips__temporary">临时装备 <b class="num">×${temporaryBadgeCount}</b></span>` : null}
   </div>`;
@@ -185,7 +187,7 @@ function OperatorCard({ piece, slot, state, conditionState = state, catalog, bus
     : html`<${GearSection} key="equip" items=${[...(opBase?.permitGear ? [{ id: opBase.permitGear, uid: 'permit', quantity: 1 }] : []), ...(slot.equipment || []).map((x, i) => ({ ...x, uid: `c${i}` }))]}
         catalog=${catalog} title="随干员获得" note="获得时带来的装备写在特质里；这张卡没有附带别的装备" />`;
   const blocks = ChessDetail({ chess, piece: null, snapHp, editable: false, loadout, live,
-    chips: html`<${FactionChips} factions=${piece ? piece.factions : catalog.operators?.[slot.id]?.nativeFactions || (data.lookup('chess', slot.id)?.bonds || []).map((b) => TAVERN_FACTIONS[b]).filter(Boolean)}
+    chips: html`<${FactionChips} factions=${piece ? piece.factions : catalog.operators?.[slot.id]?.nativeFactions || (data.lookup('chess', slot.id)?.bonds || []).map((b) => TAVERN_FACTIONS[b]).filter(Boolean)} originFactions=${catalog.operators?.[slot.id]?.originFactions}
       level=${equipmentLevel} catalog=${catalog} temporaryBadgeCount=${inBattle && growthMode === 'badges' ? temporaryGrowth?.total || 0 : 0} />`,
     overrides: { garrison: html`<${TraitSection} key="garrison" op=${opBase} elite=${!!piece?.elite} catalog=${catalog} piece=${piece} state=${state} conditionState=${conditionState} busy=${busy} prep=${prep} onAct=${onAct} linkAnchor=${linkAnchor} onFieldHighlight=${onFieldHighlight} rangeTilesFor=${rangeTilesFor} />`, equip: gear, actions: null } });
   const head = blocks.find((b) => b?.key === 'head');

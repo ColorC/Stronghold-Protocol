@@ -339,7 +339,7 @@ test('19.2 trigger mappings keep turn-win, played-Elemental, and random-target g
   assert.deepEqual(holders[2].equipment.map(x=>[x.id,x.quantity]),darkmoonGrowthBadges(holders[2],catalog).map(id=>[id,2]),'a prior cleared combat grants normal +2/+2 only at the next prep start');
   runNativeHook(state,'gain',{piece:played,source:'buy'},services);
   const recipient=holders[1],ids=darkmoonGrowthBadges(recipient,catalog);
-  assert.deepEqual(recipient.equipment.map(x=>[x.id,x.quantity]),[[ids[0],1],[ids[1],5]],'BGS120 randomly buffs another eligible Elemental; BGS124 separately adds one secondary unit per owned Elemental');
+  assert.deepEqual(recipient.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[ids[0],5],[ids[1],5]].sort((a,b)=>a[0].localeCompare(b[0])),'BGS120 randomly buffs another eligible Elemental; BGS124 adds both badges per owned Elemental');
   const [,healthId]=darkmoonGrowthBadges(holders[1],catalog);
   const before=state.pieces.reduce((n,x)=>n+x.equipment.length,0);
   runNativeHook(state,'prepEnd',{round:2},services);
@@ -933,15 +933,20 @@ test('golden source triggers preserve authored counts for sold tokens, played El
       const [atk,health]=darkmoonGrowthBadges(friend,catalog);assert.deepEqual(friend.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[[atk,mult],[health,mult]].sort((a,b)=>a[0].localeCompare(b[0])));
       assert.deepEqual(holder.equipment,[]);assert.deepEqual(play.equipment,[],'played Elemental is not eligible as the other friendly recipient');
     }
-    // BGS 124 receives the fixed damage badge output, while ULD 217 gives attack to another friend.
+    // BGS 124 grows both white ATK and outgoing damage; a first deployment after purchase is not a second grant.
     {
       const source={...make('BGS_124',elite),nativeFactionTags:['炎']},uld=make('ULD_217',elite,ops[3]),elemental={...targetOp,nativeFactionTags:['炎']},
         catalog={...base,operators:{...base.operators,[source.chessId]:source,[uld.chessId]:uld,[elemental.chessId]:elemental}},holder=piece('holder',source,'p1',0,elite),endHolder=piece('uld',uld,'p1',1,elite),friend=piece('friend',elemental,'p1',2),played=piece('played',elemental,'p1',3),state={round:1,pieces:[holder,endHolder,friend,played],inventory:[]};
       runNativeHook(state,'gain',{piece:played,source:'buy'},servicesFor(catalog));
-      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),[['damage',3*mult]],`BGS_124 ${elite?'golden':'normal'} counts all three owned Elementals including the one played`);
+      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]).sort((a,b)=>a[0].localeCompare(b[0])),[['damage',3*mult],['precision',3*mult]].sort((a,b)=>a[0].localeCompare(b[0])),`BGS_124 ${elite?'golden':'normal'} counts all three owned Elementals including the one played`);
+      const beforeDeploy=holder.equipment.map(x=>[x.id,x.quantity]);
+      runNativeHook(state,'firstDeploy',{piece:played},servicesFor(catalog));
+      assert.deepEqual(holder.equipment.map(x=>[x.id,x.quantity]),beforeDeploy,'deploying the same purchased Elemental does not retrigger the source gain observer');
+      const [attack]=darkmoonGrowthBadges(friend,catalog),beforeAttack=new Map(state.pieces.map(x=>[x.uid,x.equipment.filter(item=>item.id===attack).reduce((n,item)=>n+item.quantity,0)]));
       runNativeHook(state,'prepEnd',{round:1},servicesFor(catalog));
-      const [attack]=darkmoonGrowthBadges(friend,catalog),grown=state.pieces.filter(x=>x.uid!==endHolder.uid&&x.equipment.some(item=>item.id===attack));
-      assert.equal(grown.length,1,`ULD_217 ${elite?'golden':'normal'} affects exactly one random other friend`);assert.equal(grown[0].equipment.find(x=>x.id===attack).quantity,mult);
+      const gained=state.pieces.filter(x=>x.equipment.filter(item=>item.id===attack).reduce((n,item)=>n+item.quantity,0)>(beforeAttack.get(x.uid)||0));
+      assert.equal(gained.length,1,`ULD_217 ${elite?'golden':'normal'} affects exactly one random other friend`);assert.notEqual(gained[0].uid,endHolder.uid);
+      assert.equal(gained[0].equipment.filter(item=>item.id===attack).reduce((n,item)=>n+item.quantity,0)-(beforeAttack.get(gained[0].uid)||0),mult);
       assert.deepEqual(endHolder.equipment,[],'ULD 217 cannot redirect its random other-friendly effect to itself');
     }
   }

@@ -59,6 +59,21 @@ function prepare(state, data, catalog = null) {
     : buildNormalWave(waveGd, rng, setup, plan.waveRound);
   const tuning = independentEnemyBalance(state, catalog);
   const wave = balanceIndependentWave(sourceWave, tuning);
+  const earlyTrim = Number(catalog?.config?.earlyWaveEnemyCountTrim?.[modeId]?.[String(round)] ?? 0);
+  if (earlyTrim > 0) {
+    // Keep elite/special spawns intact and remove only members from the largest ordinary groups.
+    let remaining = Math.floor(earlyTrim);
+    const spawns = wave.spawns.map((spawn, index) => ({ ...spawn, _trimIndex: index }));
+    const candidates = spawns.filter((spawn) => Number(spawn.count ?? 1) > 1 && !['E', 'EF', 'S', 'B'].includes(String(spawn.mods?.slot || '').toUpperCase()))
+      .sort((a, b) => Number(b.count ?? 1) - Number(a.count ?? 1) || a._trimIndex - b._trimIndex);
+    for (const spawn of candidates) {
+      if (!remaining) break;
+      const removable = Math.min(remaining, Number(spawn.count ?? 1) - 1);
+      spawn.count = Number(spawn.count ?? 1) - removable;
+      remaining -= removable;
+    }
+    wave.spawns = spawns.filter((spawn) => { delete spawn._trimIndex; return Number(spawn.count ?? 1) > 0; });
+  }
   const stageId = setup.stageId ?? wave.templateId ?? null;
   const stage = gd.stage(stageId);
   if (!stage) throw new Error(`independent wave ${round} has no resolvable stage (stageId=${stageId ?? 'null'})`);

@@ -34,3 +34,12 @@ test('projection retains existing badge text and body-penalty metadata', () => {
   ].sort());
   assert.deepEqual(display.gear.assault.sourceRefs, catalog.badges.assault.sourceRefs, 'real reference card metadata remains available');
 });
+
+test('Texas keeps her roster factions and exposes Siracusa separately as an origin label', () => {
+  const data = getData({ log: { warn() {}, error() {}, info() {} } });
+  const catalog = getCatalog(data);
+  const display = independentDisplayCatalog(data, catalog);
+  const texas = Object.values(display.operators).find(x => x.name === '缄默德克萨斯');
+  assert.deepEqual(texas.nativeFactions, ['炎-龙门', '企鹅物流']);
+  assert.deepEqual(texas.originFactions, ['叙拉古']);
+});
