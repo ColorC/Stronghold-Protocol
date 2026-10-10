@@ -18,7 +18,7 @@ const catalog = getCatalog();
 const table = buildTable({ design, gameText, chessData, catalog, sourceReference, nativePower });
 const bySection = (name) => table.rows.filter((row) => row.section === name);
 const currentWarbandChains = new Map([
-  ['叙拉古退场与召唤', '伺夜战斗部署时召唤狼群投影，波登可和铃兰强化实际部署的叙拉古支援单位；贾维在普通攻击后随机复制另一名在场友方的战斗部署效果，巫恋放大部署效果，拉普兰德负责溅射输出。'],
+  ['叙拉古退场与召唤', '伺夜战斗部署时召唤狼群投影，波登可和铃兰强化实际部署的叙拉古支援单位；歌蕾蒂娅在普通攻击后随机复制另一名在场友方的战斗部署效果，巫恋放大部署效果，拉普兰德负责溅射输出。'],
   ['卡西米尔护盾与成长', '白金带护盾与复生，灰毫在整备结束时增强攻击，瑕光利用护盾破裂获得临时成长；玛恩纳按在场卡西米尔数量持续成长，流星提供定向成长，耀骑士临光把每次招募联动转为阵营永久成长，圣聆初雪部署时为卡西米尔单位补盾。'],
   ['哥伦比亚召唤回收', '雷蛇在哥伦比亚支援单位实际部署时提升攻击并增加五层护盾；罗宾、多萝西、松果与赫默补充支援单位，缪尔赛思部署时复制当前攻击力最高的哥伦比亚干员原始幻影（包含自身），白面鸮在整备结束时强化其他哥伦比亚干员。'],
   ['维多利亚采购与攻击', '格拉尼售出提供采购资金，白铁在购买维多利亚时返金，洛洛按维多利亚购买获得永久成长；号角强化其他维多利亚攻击者，维娜·维多利亚的攻击联动强化全队，风笛提供连击与超杀增益，刺玫战斗部署时召唤立即攻击的支援。'],
@@ -129,7 +129,8 @@ test('current combat trigger roles and warband chains describe deployment payloa
   assert.equal(roles.get('刺玫'),'部署召唤');
   assert.equal(roles.get('华法琳'),'部署团队增益');
   assert.equal(roles.get('巫恋'),'部署效果放大');
-  assert.equal(roles.get('贾维'),'部署效果复制');
+  assert.equal(roles.get('歌蕾蒂娅'),'部署效果复制');
+  assert.match(roles.get('贾维'),/你选择的一名友方叙拉古干员/);
   const gear=bySection('装备').find(row=>row.name==='不屈盟约');
   assert.match(gear?.basis||gear?.normal||'',/被击倒时判定.*撤回不会触发.*替身/);
   for(const archetype of sourceReference.archetypes){

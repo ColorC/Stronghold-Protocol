@@ -13817,15 +13817,15 @@
           ]
         }
       ],
-      "role": "定位依据：该特质按其召唤、制造或供给动作产生单位/装备/资源。具体特质：获得时，获得1件阿戈尔深潜锚钩；进入休整期时，若同一行有3名干员，获得1个斯卡蒂、幽灵鲨或海霓。规则动作：普通整备gain触发授予装备；普通整备roundStart触发conditionalRecruit；进阶整备gain触发授予装备；进阶整备roundStart触发conditionalRecruit。本体依据：SPECIAL/钩索师，MELEE，范围3-2；原生攻击640、攻速100、攻击间隔1.8秒、生命1754；选用「缺水的碎漩狂舞」Lv4，SP消耗42/初始22（INCREASE_WITH_TIME）：“对一个远处目标束缚并制造一个龙卷风使周围敌人移动速度-50%，每1.5秒造成85%攻击力的法术伤害并小力地拖拽至中心。技能结束时把目标地点周围的敌人小力地拖拽至面前”。探针依据：单体0防/0抗最佳总DPS 526.9（本体526.9+召唤物0.0；缺水的大洋裂断）；单体800防/40抗最佳总DPS 59.4（本体59.4+召唤物0.0；缺水的碎漩狂舞）；四目标0防/0抗最佳总DPS 708.1（本体708.1+召唤物0.0；缺水的掌握怒海）；各case实跑90秒静止木桩、无装备、无工坊特质；总DPS=本体DPS+召唤物伤害/实际秒数。治疗/控制价值结合技能原文与木桩治疗统计判断，0DPS不代表弱。",
+      "role": "连续普通攻击后重放友方战斗部署效果；保留阿戈尔与深海猎人原生支援。",
       "inheritance": null,
       "nativeTrait": {
-        "normal": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
-        "elite": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。",
+        "normal": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
+        "elite": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
         "inheritable": false,
         "origin": "operator body"
       },
-      "roster": "成长",
+      "roster": "战斗",
       "active": true,
       "nativeFactionTags": [
         "阿戈尔",
@@ -13833,15 +13833,17 @@
       ],
       "sourceRefs": {
         "darkmoon19_2": {
-          "id": "DS1_070",
-          "name": "驯兽师",
-          "nameEn": "Houndmaster",
+          "id": "BGS_078",
+          "name": "巨大的金刚鹦鹉",
+          "nameEn": "Monstrous Macaw",
           "tier": 3,
-          "rosterTribe": "NEUTRAL",
-          "faction": null,
-          "nationId": null,
-          "originalRaces": [],
-          "battlecry": true,
+          "rosterTribe": "BEAST",
+          "faction": "叙拉古",
+          "nationId": "siracusa",
+          "originalRaces": [
+            "BEAST"
+          ],
+          "battlecry": false,
           "deathrattle": false,
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
@@ -13849,13 +13851,13 @@
         },
         "cards": [
           {
-            "id": "DS1_070",
-            "name": "驯兽师",
-            "dbfId": 1003,
+            "id": "BGS_078",
+            "name": "巨大的金刚鹦鹉",
+            "dbfId": 62230,
             "tier": 3,
-            "text": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
-            "textElite": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。",
-            "goldenText": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。",
+            "text": "在该随从攻击后，随机触发一个友方随从的<b>亡语</b>。",
+            "textElite": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。",
+            "goldenText": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。",
             "version": "19.2.0.68600",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
             "type": "Battlegrounds",
@@ -13864,93 +13866,65 @@
             "health": 3,
             "goldenAttack": 8,
             "goldenHealth": 6,
-            "goldenDbfId": 59499
+            "goldenDbfId": 62231
           }
         ]
       },
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "gain",
-            "sourceTrigger": "gain",
-            "recipient": "selectedFriendlyBeast",
-            "duration": "permanentWornGrowth",
-            "kind": "badgeGrowthAndGear",
-            "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
-            "textEn": "",
-            "tags": [],
+            "trigger": "战斗中",
+            "sourceTrigger": "darkmoonCombat",
+            "recipient": "自身",
+            "duration": "本场战斗",
+            "kind": "sourceSpecificCombat",
             "params": {
-              "faction": "叙拉古",
-              "fixedCount": 0,
-              "attackUnits": {
-                "normal": 2,
-                "elite": 4
-              },
-              "secondaryUnits": {
-                "normal": 2,
-                "elite": 4
-              },
-              "extraGear": [
-                "independent:坚守盟约"
-              ]
+              "sourceId": "BGS_078"
             },
-            "adapter": [
-              "darkmoonBattlecryTargetGrowth"
+            "text": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
+            "textEn": "",
+            "tags": [
+              "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "targetSelection": {
-              "kind": "friendly",
-              "faction": "叙拉古",
-              "count": 1
-            },
-            "recipientLabel": "你选择的一名友方叙拉古干员",
-            "triggerLabel": "招募获得或首次上阵时",
-            "durationLabel": "成长"
+            "adaptation": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
+            "adapter": [
+              "darkmoonCombat"
+            ],
+            "recipientLabel": "自身",
+            "triggerLabel": "战斗中",
+            "durationLabel": "本场战斗"
           }
         ],
         "elite": [
           {
-            "trigger": "gain",
-            "sourceTrigger": "gain",
-            "recipient": "selectedFriendlyBeast",
-            "duration": "permanentWornGrowth",
-            "kind": "badgeGrowthAndGear",
-            "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。",
-            "textEn": "",
-            "tags": [],
+            "trigger": "战斗中",
+            "sourceTrigger": "darkmoonCombat",
+            "recipient": "自身",
+            "duration": "本场战斗",
+            "kind": "sourceSpecificCombat",
             "params": {
-              "faction": "叙拉古",
-              "fixedCount": 0,
-              "attackUnits": {
-                "normal": 2,
-                "elite": 4
-              },
-              "secondaryUnits": {
-                "normal": 2,
-                "elite": 4
-              },
-              "extraGear": [
-                "independent:坚守盟约"
-              ]
+              "sourceId": "BGS_078"
             },
-            "adapter": [
-              "darkmoonBattlecryTargetGrowth"
+            "text": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
+            "textEn": "",
+            "tags": [
+              "deathrattle"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "targetSelection": {
-              "kind": "friendly",
-              "faction": "叙拉古",
-              "count": 1
-            },
-            "recipientLabel": "你选择的一名友方叙拉古干员",
-            "triggerLabel": "招募获得或首次上阵时",
-            "durationLabel": "成长"
+            "adaptation": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
+            "adapter": [
+              "darkmoonCombat"
+            ],
+            "recipientLabel": "自身",
+            "triggerLabel": "战斗中",
+            "durationLabel": "本场战斗"
           }
         ]
       },
-      "tierReason": "沿用《驯兽师》原科技3：源卡功能为“战吼：使一个友方野兽获得+2/+2和嘲讽。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。",
+      "tierReason": "沿用《巨大的金刚鹦鹉》原科技3：源卡功能为“在该随从攻击后，随机触发一个友方随从的亡语。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。",
       "defaultSkillIndex": 2,
       "growthLandOn": "self",
       "sourceIdentity": {
@@ -13960,26 +13934,26 @@
       },
       "allocationEvidence": {
         "source": {
-          "name": "驯兽师",
+          "name": "巨大的金刚鹦鹉",
           "tier": 3,
-          "normal": "战吼：使一个友方野兽获得+2/+2和嘲讽。",
-          "elite": "战吼：使一个友方野兽获得+4/+4和嘲讽。"
+          "normal": "在该随从攻击后，随机触发一个友方随从的亡语。",
+          "elite": "在该随从攻击后，触发一个友方随从的亡语，随机两次。"
         },
         "workshop": {
           "normal": [
             {
-              "trigger": "招募获得或首次上阵时",
-              "recipient": "你选择的一名友方叙拉古干员",
-              "duration": "成长",
-              "rule": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。"
+              "trigger": "战斗中",
+              "recipient": "自身",
+              "duration": "本场战斗",
+              "rule": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。"
             }
           ],
           "elite": [
             {
-              "trigger": "招募获得或首次上阵时",
-              "recipient": "你选择的一名友方叙拉古干员",
-              "duration": "成长",
-              "rule": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。"
+              "trigger": "战斗中",
+              "recipient": "自身",
+              "duration": "本场战斗",
+              "rule": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。"
             }
           ]
         },
@@ -14022,7 +13996,7 @@
           ],
           "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
-        "tierReason": "沿用《驯兽师》原科技3：源卡功能为“战吼：使一个友方野兽获得+2/+2和嘲讽。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
+        "tierReason": "沿用《巨大的金刚鹦鹉》原科技3：源卡功能为“在该随从攻击后，随机触发一个友方随从的亡语。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
     },
     {
@@ -34509,17 +34483,15 @@
       ],
       "sourceRefs": {
         "darkmoon19_2": {
-          "id": "BGS_078",
-          "name": "巨大的金刚鹦鹉",
-          "nameEn": "Monstrous Macaw",
+          "id": "DS1_070",
+          "name": "驯兽师",
+          "nameEn": "Houndmaster",
           "tier": 3,
-          "rosterTribe": "BEAST",
-          "faction": "叙拉古",
-          "nationId": "siracusa",
-          "originalRaces": [
-            "BEAST"
-          ],
-          "battlecry": false,
+          "rosterTribe": "NEUTRAL",
+          "faction": null,
+          "nationId": null,
+          "originalRaces": [],
+          "battlecry": true,
           "deathrattle": false,
           "version": "19.2.0.68600",
           "type": "Battlegrounds",
@@ -34527,13 +34499,13 @@
         },
         "cards": [
           {
-            "id": "BGS_078",
-            "name": "巨大的金刚鹦鹉",
-            "dbfId": 62230,
+            "id": "DS1_070",
+            "name": "驯兽师",
+            "dbfId": 1003,
             "tier": 3,
-            "text": "在该随从攻击后，随机触发一个友方随从的<b>亡语</b>。",
-            "textElite": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。",
-            "goldenText": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。",
+            "text": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
+            "textElite": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。",
+            "goldenText": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。",
             "version": "19.2.0.68600",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
             "type": "Battlegrounds",
@@ -34542,72 +34514,100 @@
             "health": 3,
             "goldenAttack": 8,
             "goldenHealth": 6,
-            "goldenDbfId": 62231
+            "goldenDbfId": 59499
           }
         ]
       },
       "effectDelivery": {
         "normal": [
           {
-            "trigger": "战斗中",
-            "sourceTrigger": "darkmoonCombat",
-            "recipient": "自身",
-            "duration": "本场战斗",
-            "kind": "sourceSpecificCombat",
-            "params": {
-              "sourceId": "BGS_078"
-            },
-            "text": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
+            "trigger": "gain",
+            "sourceTrigger": "gain",
+            "recipient": "selectedFriendlyBeast",
+            "duration": "permanentWornGrowth",
+            "kind": "badgeGrowthAndGear",
+            "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
             "textEn": "",
-            "tags": [
-              "deathrattle"
+            "tags": [],
+            "params": {
+              "faction": "叙拉古",
+              "fixedCount": 0,
+              "attackUnits": {
+                "normal": 2,
+                "elite": 4
+              },
+              "secondaryUnits": {
+                "normal": 2,
+                "elite": 4
+              },
+              "extraGear": [
+                "independent:坚守盟约"
+              ]
+            },
+            "adapter": [
+              "darkmoonBattlecryTargetGrowth"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
-            "adapter": [
-              "darkmoonCombat"
-            ],
-            "recipientLabel": "自身",
-            "triggerLabel": "战斗中",
-            "durationLabel": "本场战斗"
+            "targetSelection": {
+              "kind": "friendly",
+              "faction": "叙拉古",
+              "count": 1
+            },
+            "recipientLabel": "你选择的一名友方叙拉古干员",
+            "triggerLabel": "招募获得或首次上阵时",
+            "durationLabel": "成长"
           }
         ],
         "elite": [
           {
-            "trigger": "战斗中",
-            "sourceTrigger": "darkmoonCombat",
-            "recipient": "自身",
-            "duration": "本场战斗",
-            "kind": "sourceSpecificCombat",
-            "params": {
-              "sourceId": "BGS_078"
-            },
-            "text": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
+            "trigger": "gain",
+            "sourceTrigger": "gain",
+            "recipient": "selectedFriendlyBeast",
+            "duration": "permanentWornGrowth",
+            "kind": "badgeGrowthAndGear",
+            "text": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。",
             "textEn": "",
-            "tags": [
-              "deathrattle"
+            "tags": [],
+            "params": {
+              "faction": "叙拉古",
+              "fixedCount": 0,
+              "attackUnits": {
+                "normal": 2,
+                "elite": 4
+              },
+              "secondaryUnits": {
+                "normal": 2,
+                "elite": 4
+              },
+              "extraGear": [
+                "independent:坚守盟约"
+              ]
+            },
+            "adapter": [
+              "darkmoonBattlecryTargetGrowth"
             ],
             "implementation": "supported",
             "unsupportedReason": null,
-            "adaptation": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
-            "adapter": [
-              "darkmoonCombat"
-            ],
-            "recipientLabel": "自身",
-            "triggerLabel": "战斗中",
-            "durationLabel": "本场战斗"
+            "targetSelection": {
+              "kind": "friendly",
+              "faction": "叙拉古",
+              "count": 1
+            },
+            "recipientLabel": "你选择的一名友方叙拉古干员",
+            "triggerLabel": "招募获得或首次上阵时",
+            "durationLabel": "成长"
           }
         ]
       },
       "nativeTrait": {
-        "normal": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
-        "elite": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
+        "normal": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
+        "elite": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。",
         "inheritable": false,
         "origin": "operator body"
       },
       "inheritance": null,
-      "tierReason": "沿用《巨大的金刚鹦鹉》原科技3：源卡功能为“在该随从攻击后，随机触发一个友方随从的亡语。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。",
+      "tierReason": "沿用《驯兽师》原科技3：源卡功能为“战吼：使一个友方野兽获得+2/+2和嘲讽。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。",
       "defaultSkillIndex": 0,
       "skills": [
         "skcom_charge_cost[3]",
@@ -34638,31 +34638,31 @@
         "teamId": "chiave"
       },
       "active": true,
-      "roster": "战斗",
+      "roster": "成长",
       "skill": "冲锋号令·γ型",
-      "role": "战斗",
+      "role": "招募获得或首次上阵时为一名叙拉古友方提供攻击、伤害成长与坚守盟约；保留先锋费用供给和支援机械天赋。",
       "allocationEvidence": {
         "source": {
-          "name": "巨大的金刚鹦鹉",
+          "name": "驯兽师",
           "tier": 3,
-          "normal": "在该随从攻击后，随机触发一个友方随从的亡语。",
-          "elite": "在该随从攻击后，触发一个友方随从的亡语，随机两次。"
+          "normal": "战吼：使一个友方野兽获得+2/+2和嘲讽。",
+          "elite": "战吼：使一个友方野兽获得+4/+4和嘲讽。"
         },
         "workshop": {
           "normal": [
             {
-              "trigger": "战斗中",
-              "recipient": "自身",
-              "duration": "本场战斗",
-              "rule": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。"
+              "trigger": "招募获得或首次上阵时",
+              "recipient": "你选择的一名友方叙拉古干员",
+              "duration": "成长",
+              "rule": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。"
             }
           ],
           "elite": [
             {
-              "trigger": "战斗中",
-              "recipient": "自身",
-              "duration": "本场战斗",
-              "rule": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。"
+              "trigger": "招募获得或首次上阵时",
+              "recipient": "你选择的一名友方叙拉古干员",
+              "duration": "成长",
+              "rule": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。"
             }
           ]
         },
@@ -34705,7 +34705,7 @@
           ],
           "gitCommit": "4ddabcafd2f7a23f5d3f60752eea91d6a3b9ec0c"
         },
-        "tierReason": "沿用《巨大的金刚鹦鹉》原科技3：源卡功能为“在该随从攻击后，随机触发一个友方随从的亡语。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
+        "tierReason": "沿用《驯兽师》原科技3：源卡功能为“战吼：使一个友方野兽获得+2/+2和嘲讽。”；工坊将其落实为普通/进阶各自列出的触发、收益对象与持续范围。该科技档位按功能收益和触发条件保留，90秒本体探针用于核对输出与治疗，不单独决定档位。"
       }
     },
     {

@@ -966,30 +966,30 @@
       "eliteLevels": "每有一名具有战斗部署效果的友方干员新获得或首次上阵时，自身获得训练等级×4。"
     },
     "贾维": {
-      "sourceId": "BGS_078",
-      "name": "巨大的金刚鹦鹉",
-      "nameEn": "Monstrous Macaw",
-      "normal": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
-      "elite": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
+      "sourceId": "DS1_070",
+      "name": "驯兽师",
+      "nameEn": "Houndmaster",
+      "normal": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
+      "elite": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。",
       "normalEn": "",
       "eliteEn": "",
       "sourceRefs": {
         "cards": [
           {
-            "id": "BGS_078",
-            "name": "巨大的金刚鹦鹉",
-            "nameEn": "Monstrous Macaw",
+            "id": "DS1_070",
+            "name": "驯兽师",
+            "nameEn": "Houndmaster",
             "tier": 3,
             "version": "19.2.0.68600",
             "type": "Battlegrounds",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
-            "text": "在该随从攻击后，随机触发一个友方随从的<b>亡语</b>。",
-            "textElite": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。"
+            "text": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
+            "textElite": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。"
           }
         ]
       },
-      "normalLevels": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
-      "eliteLevels": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。"
+      "normalLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×4，并装备坚守盟约。",
+      "eliteLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×8，并装备坚守盟约。"
     },
     "佩佩": {
       "sourceId": "BGS_079",
@@ -1980,30 +1980,30 @@
       "eliteLevels": "卡牌效果召唤的支援单位数量变为3倍；不复制装备或成长。"
     },
     "歌蕾蒂娅": {
-      "sourceId": "DS1_070",
-      "name": "驯兽师",
-      "nameEn": "Houndmaster",
-      "normal": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×2与伤害徽章×2，并装备坚守盟约。",
-      "elite": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得攻击徽章×4与伤害徽章×4，并装备坚守盟约。",
+      "sourceId": "BGS_078",
+      "name": "巨大的金刚鹦鹉",
+      "nameEn": "Monstrous Macaw",
+      "normal": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
+      "elite": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。",
       "normalEn": "",
       "eliteEn": "",
       "sourceRefs": {
         "cards": [
           {
-            "id": "DS1_070",
-            "name": "驯兽师",
-            "nameEn": "Houndmaster",
+            "id": "BGS_078",
+            "name": "巨大的金刚鹦鹉",
+            "nameEn": "Monstrous Macaw",
             "tier": 3,
             "version": "19.2.0.68600",
             "type": "Battlegrounds",
             "sourceUrl": "https://api.hearthstonejson.com/v1/68600/zhCN/cards.json",
-            "text": "<b>战吼：</b>使一个友方野兽获得+2/+2和<b>嘲讽</b>。",
-            "textElite": "<b>战吼：</b>使一个友方野兽获得+4/+4和<b>嘲讽</b>。"
+            "text": "在该随从攻击后，随机触发一个友方随从的<b>亡语</b>。",
+            "textElite": "在该随从攻击后，触发一个友方随从的<b>亡语</b>，随机两次。"
           }
         ]
       },
-      "normalLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×4，并装备坚守盟约。",
-      "eliteLevels": "招募获得或首次上阵时，你选择的一名友方叙拉古阵营干员获得训练等级×8，并装备坚守盟约。"
+      "normalLevels": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果。",
+      "eliteLevels": "本场每累计8次普通攻击后，随机复制另一名在场友方的战斗部署效果两次。"
     },
     "泥岩": {
       "sourceId": "EX1_093",
