@@ -13,7 +13,7 @@ import { FactionIcon } from './factions.js';
 import { chessPortraitUrl, uiUrl } from '../ui/assetUrls.js';
 import { PHASE } from '../../../shared/constants.js';
 import { data } from '../data.js';
-import { formEntry, isDeployed, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum } from './model.js';
+import { formEntry, isDeployed, deployedSlots, summaryCount, forecastRows, groupProduction, renderChessId, permitsOf, pieceByNum } from './model.js';
 import { GearIcon, GameText } from './text.js';
 import { copyComponentLink } from './componentLinks.js';
 
@@ -535,7 +535,7 @@ export function BenchOverflow({ pieces, catalog, onPick }) {
   </div>`;
 }
 
-export const deployedCount = (state) => (state.pieces || []).filter(isDeployed).length;
+export const deployedCount = (state) => deployedSlots(state);
 
 /**
  * The 本局信息 tab of the original's drawer (ui/enemyDrawer.js `info`) for this mode: where and what is played — the

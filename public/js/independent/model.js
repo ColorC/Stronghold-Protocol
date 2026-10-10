@@ -19,10 +19,12 @@ export const pieceNum = (uid) => Number(String(uid).replace(/^\D+/, ''));
 
 export const isDeployed = (p) => p.row !== null && p.row !== undefined && p.col !== null && p.col !== undefined;
 
-const overDeploymentCapForDrop = (state, piece) => piece?.kind !== 'token'
+export const deploymentSlotsOf = (piece) => piece?.kind === 'token' ? 0 : Number.isFinite(piece?.deploymentSlots) ? piece.deploymentSlots : 1;
+export const deployedSlots = (state) => (state?.pieces || []).filter(isDeployed).reduce((count, piece) => count + deploymentSlotsOf(piece), 0);
+const overDeploymentCapForDrop = (state, piece) => deploymentSlotsOf(piece) > 0
   && (state?.pieces || []).some((p) => p.uid === piece?.uid)
   && !isDeployed(piece)
-  && (state?.pieces || []).filter((p) => p.kind !== 'token' && isDeployed(p)).length >= Number(state?.deployCap);
+  && deployedSlots(state) >= Number(state?.deployCap);
 
 /** The catalog entry of a piece's current form: an elite reads its own entry (summary counts live there). */
 export function formEntry(catalog, piece) {
