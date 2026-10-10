@@ -47,7 +47,7 @@ const RULES = Object.freeze({
   BGS_202: [{trigger:'prepEnd',behavior:'darkmoonEndTurnGrowth',params:{mode:'selfPerDistinctFaction',attackPer:{normal:1,elite:2},secondaryPer:{normal:2,elite:4}}}],
   CFM_816: [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'叙拉古',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}}],
   DS1_070: [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'叙拉古',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4},extraGear:['independent:坚守盟约']}}],
-  EX1_093: [{trigger:'gain',behavior:'darkmoonAdjacentGrowth',params:{attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2},extraGear:['independent:坚守盟约']}}],
+  EX1_093: [{trigger:'firstDeploy',behavior:'darkmoonAdjacentGrowth',params:{repeatOnGain:true,attackUnits:{normal:1,elite:2},secondaryUnits:{normal:1,elite:2},extraGear:['independent:坚守盟约']}}],
   GVG_027: [{trigger:'prepEnd',behavior:'darkmoonEndTurnGrowth',params:{mode:'randomOtherFaction',faction:'哥伦比亚',attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}}],
   GVG_055: [{trigger:'gain',behavior:'darkmoonBattlecryTargetGrowth',params:{faction:'哥伦比亚',fixedCount:0,attackUnits:{normal:2,elite:4},secondaryUnits:{normal:2,elite:4}}}],
   ICC_029: [{trigger:'prepEnd',behavior:'darkmoonEndTurnGrowth',params:{mode:'randomOtherFriendly',attackUnits:{normal:3,elite:6},secondaryUnits:{normal:0,elite:0}}}],

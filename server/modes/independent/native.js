@@ -10,7 +10,7 @@ const ALL_BADGES = Object.freeze(['precision','agility','damage','vitality','def
 const BASE_BADGE_IDS = new Set(ALL_BADGES);
 const REPEATABLE_BADGE_FORGES = new Set(['grantEquipment','grantEquipmentByTier','conditionalGrant','forgePerGainedChess','forgePerFundsSpent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeFactionTierCount','forgeDominantFactionTierCount','forgeFactionTierPair','forgeAdjacent','forgeRowCount']);
 const rule = (trigger, behavior, params) => ({ trigger, behavior, params });
-const PREP_TRIGGERS = new Set(['aura','gain','bought','played','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
+const PREP_TRIGGERS = new Set(['aura','gain','bought','played','firstDeploy','selling','sold','roundStart','prepEnd','refresh','spend','merge']);
 const COMBAT_TRIGGERS = new Set(['ammoUsed','attack','battleEnd','battleStart','damaged','death','deploy','dodge','dollSwap','elementBurst','heal','hit','kill','nativeProduction','passive','prepEnd','roundStart','skillStart','statusApplied','shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const COUNTER_EVENTS = new Set([...COMBAT_TRIGGERS, 'shieldLayersGained','shieldLayersBroken','shieldLayersThreshold']);
 const PREP_BEHAVIORS = new Set(['attachShopBadgeFirstRefresh','attachShopByRefreshCount','badgeBoost','buyGear','conditionalGrant','conditionalRecruit','copyFrontNative','deferredFunds','deferredFundsIf','devourShop','darkmoonAddTribeShopOffer','darkmoonAdjacentGrowth','darkmoonBattlecryFactionGrowth','darkmoonBattlecryTargetGrowth','darkmoonBeastSummonGrowth','darkmoonBoughtTribeTargetGrowth','darkmoonBoughtRandomTribeGrowth','darkmoonPlayedRandomTribeGrowth','darkmoonBoughtSelfGrowth','darkmoonElementalTokenOffer','darkmoonEndTurnGrowth','darkmoonLastWarbandRecruit','darkmoonMagneticMerge','darkmoonPlayedFactionCountSelfGrowth','darkmoonPlayedTagSelfGrowth','darkmoonPlayedTribeGrowth','darkmoonPreviousWinSelfGrowth','darkmoonRecruitTribeToHand','darkmoonRosterTribePurchaseFunds','darkmoonShopGrowth','darkmoonSummonSupport','darkmoonTaggedGrowth','darkmoonTransformFromShop','diversityGrant','dominantFactionRecruit','doubleWorn','escalatingGrant','forgeAdjacent','forgeBenchCount','forgeBenchPairs','forgeDominantFaction','forgeDominantFactionTierCount','forgeFactionTierCount','forgeFactionTierPair','forgePerFundsSpent','forgePerGainedChess','forgePerRefresh','forgeRowCount','freeRefresh','freeRefreshOnce','grantByTotal','grantEquipment','grantEquipmentByTier','perEliteGrant','randomChessOffer','randomEquipment','randomSupply','randomUnlockedEquipment','recruitOffer','replayAdjacentNative','sellTransfer','shopCarry','triggerMultiplier','twoCopyElite']);
@@ -355,7 +355,9 @@ function fire(state, hook, piece, event, services, replay = false, selectedRule 
     ruleServices.__nativeCopied = Boolean(replay || event.replay);
     // where this rule's badges land (equipment.js landingPiece); the field's largest faction is the one this rule's recipe reads
     ruleServices.__landOn = p.landOn === 'dominantFactionLowest' ? `faction:${dominantFaction(state, services, piece) || ''}` : (p.landOn || null);
-    const runs = 1 + (!replay && !event.replay && r.trigger === hook && DOUBLED_HOOKS.has(hook) ? extraRuns(state, hook, services, event) : 0);
+    const repeatHook = hook === 'firstDeploy' && p.repeatOnGain === true ? 'gain' : hook;
+    const canRepeat = DOUBLED_HOOKS.has(hook) || (hook === 'firstDeploy' && repeatHook === 'gain');
+    const runs = 1 + (!replay && !event.replay && r.trigger === hook && canRepeat ? extraRuns(state, repeatHook, services, event) : 0);
     for (let run = 0; run < runs; run++) {
     switch (r.behavior) {
       case 'factionReaction': runFactionReaction(state,piece,event,r,ruleServices); break;
@@ -1008,8 +1010,17 @@ export function runEquipmentPrepEnd(state, services = {}) {
 export function runNativeHook(state, hook, event = {}, services = {}) {
   if (!state || !services.catalog) throw new TypeError('runNativeHook requires state and services.catalog');
   if (suppressed(event)) return state;
-  if (!['gain', 'bought', 'played', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
+  if (!['gain', 'bought', 'played', 'firstDeploy', 'selling', 'sold', 'roundStart', 'prepEnd', 'refresh', 'spend', 'merge'].includes(hook)) throw new TypeError(`Unknown native hook: ${hook}`);
   const piece = event.piece || (event.uid && roster(state).find((x) => x.uid === event.uid));
+  if (hook === 'firstDeploy') {
+    if (!piece || !isPresent(piece) || piece.nativeState?.firstDeployHooksFired) return state;
+    const rules = (traitFor(piece, services)?.effect?.prep || []).filter((r) => r.trigger === hook);
+    if (!rules.length) return state;
+    piece.nativeState ||= {};
+    piece.nativeState.firstDeployHooksFired = true;
+    fire(state, hook, piece, event, services, false, null, rules);
+    return state;
+  }
   if (['gain', 'selling', 'sold', 'merge'].includes(hook)) {
     if (piece) fire(state, hook, piece, event, services, Boolean(event.replay));
     if (hook === 'gain' && piece && !event.replay) for (const holder of roster(state)) {

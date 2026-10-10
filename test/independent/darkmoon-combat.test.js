@@ -10,6 +10,7 @@ import { darkmoonPrepRulesFor } from '../../server/modes/independent/darkmoonPre
 import { darkmoonCombatEligibilityRules } from '../../server/sim/content/independent/darkmoonCombat.js';
 import { levelBodyStats,nativeLevelAttributes,operatorGrowthInfo } from '../../shared/independentGrowth.js';
 import { KEYWORD_GEAR } from '../../server/modes/independent/keywordGear.js';
+import { installKeywordGear } from '../../server/sim/content/independent/keywordGear.js';
 import { unitInfo } from '../../server/sim/snapshot.js';
 import { tokenCanEngageAt,findSummonTile } from '../../server/sim/content/tokens.js';
 
@@ -122,6 +123,55 @@ test('overkill cadence counts three unique killed enemies, including three targe
   assert.equal(multihit.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,0,'two damage instances with one attackId and one target count as one overkill');
   for(let i=0;i<2;i++){const victim=multihit.h.spawn('probe',{pos:[12+i,8.3]});victim.hp=1;multihit.b.forceAttack(multihit.unit,[victim]);}
   assert.equal(multihit.installed.trace.filter(t=>t.sourceId==='BGS_032'&&t.kind==='overkill').length,1,'the next two unique enemy lives reach three total');
+});
+
+test('overkill requires excess HP loss and pays the real third-kill reward across native damage kinds',()=>{
+  const f=fixture('TRL_232',false,[],null,[],[],true,true);
+  const victims=[...f.b.enemies.filter(x=>x.alive),f.h.spawn('probe',{pos:[12,8.3]})];
+  const beforeTokens=f.b.allyUnits.filter(u=>u.kind==='token').length;
+  const prevented=f.h.spawn('probe',{pos:[13,8.3]});prevented.hp=1;
+  f.b.on('fatal',ctx=>{if(ctx.unit===prevented)ctx.prevented=true;});
+  f.b.dealDamage(f.unit,prevented,{amount:100,type:'phys',isAttack:true});
+  assert.equal(prevented.alive,true,'a fatal-prevented hit cannot count as a kill');
+  const foreign=f.h.spawn('probe',{pos:[14,8.3]});foreign.hp=1;
+  f.b.dealDamage(f.ally,foreign,{amount:100,type:'true',isSkill:true});
+  assert.equal(foreign.alive,false);
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='TRL_232'&&t.kind==='overkill').length,0,'another allied unit cannot credit this source');
+  for(let i=0;i<2;i++){
+    victims[i].hp=f.unit.base.atk;
+    f.b.forceAttack(f.unit,[victims[i]]);
+  }
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='TRL_232'&&t.kind==='overkill').length,0,'exact-lethal hits are not overkills');
+  assert.equal(f.b.allyUnits.filter(u=>u.kind==='token').length,beforeTokens,'no support appears before the third excess kill');
+  const types=['phys','arts','true'];
+  for(let i=0;i<3;i++){
+    const victim=f.h.spawn('probe',{pos:[13+i,8.3]});victim.hp=1;
+    f.unit.profile.dmgType=types[i];
+    f.unit.profile.isSkill=i===1;
+    f.b.forceAttack(f.unit,[victim]);
+  }
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='TRL_232'&&t.kind==='overkill').length,1,'physical, skill-arts, and true attack damage each have source attribution');
+  const tokens=f.b.allyUnits.filter(u=>u.kind==='token');
+  assert.equal(tokens.length,beforeTokens+1,'third overkill summons the actual support token');
+  assert.ok(tokens.at(-1).base.atk>0&&tokens.at(-1).base.maxHp>0,'the reward is a live combat token with real attack and health stats');
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
+});
+
+test('overkill includes independently attached gear damage credited to its wearer',()=>{
+  const f=fixture('TRL_232',false,[],null,[],[],true,true);
+  const gearId='test-blast-platform';
+  f.catalog.equipment[gearId]={id:gearId,mechanism:'keywordGear',params:{gearId:'blast-deploy-platform'}};
+  f.pieces[0].equipment=[{id:gearId}];
+  const before=f.b.allyUnits.filter(u=>u.kind==='token').length;
+  installKeywordGear(f.b,{catalog:f.catalog,pieces:f.pieces});
+  for(const [i,pos] of [[9,7.3],[10,7.3],[11,7.3]].entries()){
+    const target=f.h.spawn('probe',{pos});target.hp=1;
+  }
+  f.b.emit('deploy',{unit:f.unit});
+  f.h.run(0.4);
+  assert.equal(f.installed.trace.filter(t=>t.sourceId==='TRL_232'&&t.kind==='overkill').length,1,'the wearer-deployed platform contributes three attributed excess kills');
+  assert.equal(f.b.allyUnits.filter(u=>u.kind==='token').length,before+1,'the third attached-gear overkill delivers the real token reward');
+  assert.equal(f.b.errorCount,0,JSON.stringify(f.b.errors));
 });
 
 test('BGS080 keeps its attack-action and unique-overkill counters independent',()=>{
@@ -672,3 +722,4 @@ test('summoned cover metadata is visible before its deploy actor event for BGS11
   assert.deepEqual(condition.actorKinds,['op','token']);
   assert.deepEqual(condition.match,{keywordGear:'坚守盟约'});
 });
+

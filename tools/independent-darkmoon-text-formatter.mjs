@@ -127,7 +127,7 @@ function prepText(sourceId, rule, variant) {
     case 'darkmoonPlayedTribeGrowth': return `每有一名炎阵营干员新获得或首次上阵，选择一名其他友方炎阵营干员，使其获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonPlayedFactionCountSelfGrowth': return `每有一名炎阵营干员新获得或首次上阵，自身获得攻击徽章${qty(pick(p.attackUnits, variant))}及伤害徽章${qty(pick(p.secondaryUnitsPerTarget, variant))}；按在场炎阵营干员数累加。`;
     case 'darkmoonPlayedTagSelfGrowth': return `每有一名具有战斗部署效果的友方干员新获得或首次上阵时，自身获得${growth(attack, secondary, variant)}。`;
-    case 'darkmoonAdjacentGrowth': return `招募获得或首次上阵时，相邻友方干员各获得${growth(attack, secondary, variant)}${p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : ''}。`;
+    case 'darkmoonAdjacentGrowth': return `${rule.trigger === 'firstDeploy' ? '整备期首次部署时，使当前相邻友方干员各获得' : '招募获得时，相邻友方干员各获得'}${growth(attack, secondary, variant)}${p.extraGear?.length ? `，并装备${p.extraGear.map(x => gears.get(String(x).replace(/^independent:/, '')) || '装备').join('、')}` : ''}。`;
     case 'darkmoonTaggedGrowth': return `招募获得或首次上阵时，所有已装备坚守盟约的友方干员各获得${growth(attack, secondary, variant)}。`;
     case 'darkmoonMagneticMerge': return sourceId === 'BOT_911'
       ? `招募获得或首次上阵时，可直接招募；也可消耗此干员，为你选择的一名友方哥伦比亚干员装备坚守盟约和护盾发生器，并使其获得攻击徽章${qty(attack)}及伤害徽章${qty(secondary)}；本体不进入阵容。`

@@ -148,7 +148,7 @@ function servicesFor(state, data, catalog, rng) {
     // the running hook names the production ledger's phase (equipment.js recordProduction)
     grantEquipment: (draft, id, quantity, extra = {}) => grantEquipment(draft, catalog, id, quantity * (extra.origin==='native' && catalog.badges[id] ? 1 + draft.playerEffects.filter(x=>x.type==='darkmoonPrizeProductionBoost').reduce((n,x)=>n+x.amount,0) : 1), { phase: services.phase, ...extra }),
     transformPiece: (draft, piece, slot, makeGolden = false) => transformPieceIntoShopCopy(draft, catalog, piece, slot, makeGolden),
-    grantChess: (draft, chessId, extra = {}) => { const room = roomFor(draft, catalog, chessId, { allowTemp: true }); if (!room) { pushEvent(draft, { type: 'no-room', chessId }); return null; } const piece = gainChess(draft, catalog, chessId, extra); if (room === 'temp') piece.temp = true; if(extra.deferNativeGain)piece.darkmoonPendingPlay=true;else invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); if(!extra.noMerge)maybeMergeOperator(draft, catalog, chessId); return piece; },
+    grantChess: (draft, chessId, extra = {}) => { const room = roomFor(draft, catalog, chessId, { allowTemp: true }); if (!room) { pushEvent(draft, { type: 'no-room', chessId }); return null; } const piece = gainChess(draft, catalog, chessId, extra); if (room === 'temp') piece.temp = true; if(extra.deferNativeGain)piece.darkmoonPendingPlay=true;else invokeHook(draft, 'gain', { piece, source: extra.source || 'nativeRecruit', paid: false }, servicesFor(draft, data, catalog, rng)); if(!extra.noMerge)maybeMergeOperator(draft, catalog, chessId, data, servicesFor(draft, data, catalog, rng)); return piece; },
     addOffer: (draft, offer) => draft.offers.push(offer),
     recordProduction: (draft, entry) => recordProduction(draft, { phase: services.phase, ...entry }),
     record: (draft, event) => pushEvent(draft, event),
@@ -389,7 +389,7 @@ function mergeKey(item, catalog) {
   // the copies' own 交接凭证 are the same item: they fold into one without asking (mergeOperator)
   return d?.unique && !isPermit(item, catalog) ? (d.uniqueKey || d.canonicalId || item.id) : null;
 }
-function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}, data = null) {
+function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}, data = null, services = null) {
   if (!Array.isArray(pieceUids) || new Set(pieceUids).size !== pieceUids.length) throw new Error('BAD_MERGE_GROUP');
   const group = pieceUids.map((uid) => state.pieces.find((p) => p.uid === uid));
   if (group.some((p) => !p || p.elite) || group.some((p) => p.chessId !== group[0].chessId)) throw new Error('BAD_MERGE_GROUP');
@@ -444,6 +444,9 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}, data = 
   for (const p of group) if (p !== survivor) mergeMarkers(survivor.nativeState ||= {}, p.nativeState);
   const combinedGrowth = 1 + group.reduce((sum, p) => sum + Math.max(0, Number(p.growthLevel || 1) - 1), 0);
   survivor.chessId = op.eliteChessId; survivor.elite = true; addTotal(state, 'elites'); survivor.equipment = worn; survivor.attachments = keptAttachments;
+  // The golden body is a newly gained unit. Its space-dependent first-deployment
+  // effect gets a fresh chance, even when the surviving base copy already fired.
+  if (survivor.nativeState) delete survivor.nativeState.firstDeployHooksFired;
   if (state.growthMode === 'levels') {
     survivor.growthMode = 'levels'; survivor.growthLevel = combinedGrowth;
     survivor.growthLevel = operatorGrowthInfo(survivor, catalog).level;
@@ -452,6 +455,7 @@ function mergeOperator(state, catalog, pieceUids, uniqueSelections = {}, data = 
   survivor.poolCopies = copies;
   for (const p of group) if (p !== survivor) state.pieces.splice(state.pieces.indexOf(p), 1);
   if (data) syncSummonsForOwner(state, data, catalog, survivor);
+  if (fielded.length && services) invokeHook(state, 'firstDeploy', { piece: survivor, source: 'elite-merge-fielded', paid: false }, services);
   return { piece: survivor, consumed: group.map((p) => p.uid), required, destroyedGear: destroyedGear.map((x) => ({ id: x.id, uid: x.uid, ownerUid: x.ownerUid, state: clone(x.state || {}) })), destroyedAttachments };
 }
 function mergeConflictPreview(group, catalog) {
@@ -462,14 +466,14 @@ function mergeConflictPreview(group, catalog) {
   }
   return { equipment: [...gear].filter(([, xs]) => xs.length > 1).map(([key, items]) => ({ key, choices: items })), attachments: [...attachments].filter(([, xs]) => xs.length > 1).map(([id, items]) => ({ id, choices: items })) };
 }
-function maybeMergeOperator(state, catalog, chessId, data = null) {
+function maybeMergeOperator(state, catalog, chessId, data = null, services = null) {
   const op = opFor(catalog, chessId); const required = mergeCopiesRequired(op);
   if (state.offers.some((x) => x.type === 'operatorMerge' && x.chessId === chessId)) return [];
   const merged = [];
   while (op?.eliteChessId) {
     const group = state.pieces.filter((p) => p.chessId === chessId && !p.elite).slice(0, required);
     if (group.length < required) break;
-    try { merged.push(mergeOperator(state, catalog, group.map((p) => p.uid), {}, data)); }
+    try { merged.push(mergeOperator(state, catalog, group.map((p) => p.uid), {}, data, services)); }
     catch (error) {
       if (error.message !== 'NEED_UNIQUE_SELECTION' && error.message !== 'CAPACITY') throw error;
       if (!state.offers.some((x) => x.type === 'operatorMerge' && x.chessId === chessId)) state.offers.push({ id: `o${state.nextUid++}`, type: 'operatorMerge', chessId, pieceUids: group.map((p) => p.uid), required, conflicts: mergeConflictPreview(group, catalog) });
@@ -693,9 +697,9 @@ export function applyAction(state, action, options = {}) {
       }
       else if (offer.type === 'operatorMerge') {
         const sourceChessId = offer.chessId;
-        const merged = mergeOperator(work, catalog, offer.pieceUids, action.uniqueSelections || {}, data);
+        const merged = mergeOperator(work, catalog, offer.pieceUids, action.uniqueSelections || {}, data, services);
         work.offers.splice(work.offers.indexOf(offer), 1); events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId, destroyedEquipment: merged.destroyedGear, destroyedAttachments: merged.destroyedAttachments });
-        for (const further of maybeMergeOperator(work, catalog, sourceChessId)) events.push({ type: 'operator-merge', uid: further.piece.uid, chessId: further.piece.chessId });
+        for (const further of maybeMergeOperator(work, catalog, sourceChessId, data, services)) events.push({ type: 'operator-merge', uid: further.piece.uid, chessId: further.piece.chessId });
       }
       else {
         if (!Number.isInteger(action.index) || !safeId(offer.choices[action.index])) throw new Error('BAD_CHOICE');
@@ -709,7 +713,7 @@ export function applyAction(state, action, options = {}) {
           for (const carried of offer.carriedEquipment || []) { const item = makeItem(work, carried.id, carried.quantity || 1, { sourceId: carried.sourceId }); work.inventory.push(item); equipItem(work, catalog, item.uid, piece.uid, carried.quantity || 1); }
           if(!offer.deferNativeGain) handleGainEquipment(work, catalog, piece);
           work.offers.splice(work.offers.indexOf(offer), 1);
-          if(!offer.noMerge)for (const merged of maybeMergeOperator(work, catalog, op.chessId, data)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
+          if(!offer.noMerge)for (const merged of maybeMergeOperator(work, catalog, op.chessId, data, services)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
           }
         } else if (offer.type === 'attachment') {
           const targetUid = offer.trainingChoice ? offer.targetUid : (action.targetUid || offer.targetUid);
@@ -774,7 +778,7 @@ export function applyAction(state, action, options = {}) {
         }
         // 购买干员后 (native buyGear): operators on the field react to the one just bought, before it merges
         invokeHook(work, 'bought', { piece, source: 'buy', targetUid:action.targetUid }, services);
-          if(!magneticTarget)for (const merged of maybeMergeOperator(work, catalog, piece.chessId, data)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
+          if(!magneticTarget)for (const merged of maybeMergeOperator(work, catalog, piece.chessId, data, services)) events.push({ type: 'operator-merge', uid: merged.piece.uid, chessId: merged.piece.chessId });
       } else {
         // an equipment place left in a shop saved before the shop stopped selling gear (gone at the next refresh)
         work.funds -= slot.price; work.counters.spent += slot.price; invokeHook(work, 'spend', { amount: slot.price, source: 'buy-equipment' }, services);
@@ -833,7 +837,10 @@ export function applyAction(state, action, options = {}) {
       if (onBoard(p) && (p.row !== action.row || p.col !== action.col || (action.dir && action.dir !== p.dir))) liftSummonsForOwner(work, p.uid);
       p.row = action.row; p.col = action.col; p.dir = action.dir || p.dir || 'RIGHT'; delete p.temp; events.push({ type: 'move', uid: p.uid, row: p.row, col: p.col });
       syncSummonsForOwner(work, data, catalog, p);
-      if(!wasOnBoard) invokeHook(work,'played',{piece:p,source:'hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);
+      if(!wasOnBoard) {
+        invokeHook(work,'played',{piece:p,source:'hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);
+        invokeHook(work,'firstDeploy',{piece:p,source:'first-field-deploy',paid:false},services);
+      }
       if(p.darkmoonPendingPlay) {
         delete p.darkmoonPendingPlay;
         invokeHook(work,'gain',{piece:p,source:'darkmoon-hand-play',paid:false,targetUid:action.targetUid,shopSlot:action.shopSlot,shopSlots:action.shopSlots},services);

@@ -116,8 +116,8 @@ test('combat cadence copy is explicit in ordinary, elite, and both growth-mode v
     const row = byAddonId.get(id);
     assert.ok(row, `${id} game text exists`);
     for (const variant of ['normal','elite']) {
-      assert.match(row[variant], /本场每累计3次攻击超杀后/);
-      assert.match(row[`${variant}Levels`], /本场每累计3次攻击超杀后/);
+      assert.match(row[variant], /本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒）/);
+      assert.match(row[`${variant}Levels`], /本场每累计3次超杀后（超杀指自身造成的实际伤害超过敌人当时剩余生命并将其击倒）/);
     }
   }
   assert.match(byAddonId.get('BGS_080').normal, /累计8次普通攻击后，追加1次普通攻击/);

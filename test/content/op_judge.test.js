@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import { makeBattle, enemyRec, chessRec, checkInvariants } from '../helpers/battleHarness.js';
 import { KITTED_CHARS, OPERATOR_KITS, KITS } from '../../server/sim/content/kits/index.js';
 import { diyPool, validateDiyPicks } from '../../shared/diy.js';
+import { installDarkmoonCombat } from '../../server/sim/content/independent/darkmoonCombat.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../../data/${f}.json`, import.meta.url), 'utf8'));
 const CHESS = load('chess');
@@ -131,6 +132,31 @@ test('T1 律法卫士: barrier 55 % max HP at every deployment (75 % UNY-X stage
     approx(barrier(u), u.s.maxHp * t0.born_hp_ratio, `${label(f)}: again at the redeployment`);
     done(h);
   }
+});
+
+test('斥罪 native thorns skill damage counts as attributed overkill and grants the third-kill token', () => {
+  const { h, u } = field({ tier: 5, elite: false, skill: 2 });
+  const chessId = 'judge-overkill-source';
+  const piece = { uid: u.uid, chessId, elite: false, row: 10, col: 5 };
+  const catalog = { config: { maxShopLevel: 6 }, equipment: {}, operators: {
+    [chessId]: { chessId, name: '斥罪', tier: 5, elite: false, sourceRefs: { darkmoon19_2: { id: 'TRL_232' } } },
+  } };
+  const installed = installDarkmoonCombat(h.b, { catalog, pieces: [piece] });
+  h.b.addBuff(u, { key: BARRIER, shield: 1e6, source: u, tags: ['talent'] });
+  const before = h.b.allyUnits.filter(x => x.kind === 'token').length;
+  for (let i = 0; i < 3; i++) {
+    const enemy = h.spawn('enemy_dummy', { pos: [10, 8.3] });
+    enemy.hp = 1;
+    h.b.dealDamage(enemy, u, { amount: 1, type: 'true' });
+    assert.equal(enemy.alive, false, `native talent reflect ${i + 1} excess-kills its enemy`);
+  }
+  h.spawn('enemy_dummy', { pos: [10, 8.3] });
+  h.run(0.7);
+  assert.equal(installed.trace.filter(x => x.sourceId === 'TRL_232' && x.kind === 'overkill').length, 1);
+  const tokens = h.b.allyUnits.filter(x => x.kind === 'token');
+  assert.equal(tokens.length, before + 1, JSON.stringify({ message: 'the third reflect actually creates a combat token', trace: installed.trace, tokens: tokens.map(x => ({ name: x.name, pos: [x.tileR, x.tileC], alive: x.alive })), scheduled: h.b._sched?.filter(x => !x.cancelled).map(x => ({ due: x.due, owner: x.owner?.uid })), errors: h.b.errors }));
+  assert.ok(tokens.at(-1).base.atk > 0 && tokens.at(-1).base.maxHp > 0);
+  done(h);
 });
 
 test('T2 荆棘环身: while she holds barrier, every damage from an enemy deals 53 % ATK arts back (61 % UNY-Y stage 3) — the hit that breaks it too; none without barrier, for a 流失, a 无来源 hit or an ally', () => {

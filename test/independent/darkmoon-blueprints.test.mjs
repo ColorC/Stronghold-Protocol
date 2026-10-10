@@ -68,6 +68,15 @@ test('delivery descriptors preserve fixed target distinctions and expose unimple
   }
   assert.equal(byId.get('DS1_070').authoredRule.normal.recipient,'selectedFriendlyBeast');
   assert.equal(byId.get('EX1_093').authoredRule.normal.recipient,'adjacentFriendlyOperators');
+  for (const form of ['normal','elite']) {
+    const effect=byId.get('EX1_093').metadata.op.effectDelivery[form][0];
+    assert.equal(byId.get('EX1_093').authoredRule[form].trigger,'firstDeploy');
+    assert.equal(effect.trigger,'firstDeploy');
+    assert.equal(effect.sourceTrigger,'firstDeploy');
+    assert.equal(effect.triggerLabel,'整备期首次部署时');
+    assert.match(effect.text,/整备期首次部署时/);
+    assert.doesNotMatch(effect.text,/招募获得/);
+  }
   assert.equal(byId.get('ICC_807').authoredRule.normal.recipient,'allFriendlyWithTaunt');
 });
 
@@ -563,6 +572,53 @@ test('a generated hand card defers its native Battlecry until its first field mo
   assert.equal(redeployed.state.shop.freeRefreshes,1,'redeploy never repeats the hand copy Battlecry');
 });
 
+test('Mudrock waits for a real first deployment, pays once per new body, and keeps the live adjacent count positional',()=>{
+  const catalog=getCatalog(),data=getData();
+  const mudrock=Object.values(catalog.operators).find(x=>x.sourceRefs?.darkmoon19_2?.id==='EX1_093'&&!x.elite);
+  const neighbor=Object.values(catalog.operators).find(x=>!x.elite&&x.recruitable!==false&&x.chessId!==mudrock?.chessId);
+  assert.ok(mudrock&&neighbor);
+  for(const elite of [false,true]){
+    const effects=Object.values(catalog.operators).find(x=>x.chessId===(elite?mudrock.eliteChessId:mudrock.chessId)).nativeTrait.effect.prep;
+    const effect=effects.find(x=>x.behavior==='darkmoonAdjacentGrowth');
+    assert.equal(effect.trigger,'firstDeploy',`${elite?'elite':'normal'} has a first-deployment native rule`);
+  }
+  const state=createSession({seed:9801,catalog,data});state.funds=30;
+  state.shop.slots[0]={kind:'chess',id:mudrock.chessId,price:3,sold:false,equipment:[]};
+  state.shop.slots[1]={kind:'chess',id:neighbor.chessId,price:3,sold:false,equipment:[]};
+  state.pool[mudrock.chessId].left=Math.max(3,state.pool[mudrock.chessId].left||0);
+  state.pool[neighbor.chessId].left=Math.max(3,state.pool[neighbor.chessId].left||0);
+  let result=applyAction(state,{type:'buy',slot:1},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  let target=result.state.pieces.find(x=>x.chessId===neighbor.chessId);
+  result=applyAction(result.state,{type:'buy',slot:0},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  let source=result.state.pieces.find(x=>x.chessId===mudrock.chessId);
+  assert.equal(target.equipment.some(x=>x.id==='independent:坚守盟约'),false,'recruiting on the bench does not consume a spatial effect');
+  const view=viewSession(result.state,{catalog,data});
+  const targetTiles=view.pieces.find(x=>x.uid===target.uid).legalTiles.map(x=>x.split(',').map(Number));
+  const sourceTiles=view.pieces.find(x=>x.uid===source.uid).legalTiles.map(x=>x.split(',').map(Number));
+  const pair=targetTiles.flatMap(([tr,tc])=>sourceTiles.filter(([sr,sc])=>Math.abs(tr-sr)+Math.abs(tc-sc)===1).map(tile=>({target:[tr,tc],source:tile})))[0];
+  assert.ok(pair,'the real field exposes a legal neighbor pair');
+  result=applyAction(result.state,{type:'move',uid:target.uid,row:pair.target[0],col:pair.target[1]},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  result=applyAction(result.state,{type:'move',uid:source.uid,row:pair.source[0],col:pair.source[1]},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  target=result.state.pieces.find(x=>x.uid===target.uid);source=result.state.pieces.find(x=>x.uid===source.uid);
+  assert.ok(target.equipment.some(x=>x.id==='precision'&&(x.quantity||1)>=1),'the positioned recipient receives real attack growth');
+  assert.ok(target.equipment.some(x=>x.id==='damage'&&(x.quantity||1)>=1),'the positioned recipient receives real damage growth');
+  assert.ok(target.equipment.some(x=>x.id==='independent:坚守盟约'),'the positioned recipient receives the actual gear reward');
+  const firstQuantities=Object.fromEntries(target.equipment.map(x=>[x.id,Number(x.quantity||1)]));
+  result=applyAction(result.state,{type:'bench',uid:source.uid},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  result=applyAction(result.state,{type:'move',uid:source.uid,row:pair.source[0],col:pair.source[1]},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  target=result.state.pieces.find(x=>x.uid===target.uid);
+  assert.deepEqual(Object.fromEntries(target.equipment.map(x=>[x.id,Number(x.quantity||1)])),firstQuantities,'bench and redeploy cannot replay the same body’s one-time gain');
+  result=applyAction(result.state,{type:'sell',uid:source.uid},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  result.state.shop.slots[2]={kind:'chess',id:mudrock.chessId,price:3,sold:false,equipment:[]};
+  result=applyAction(result.state,{type:'buy',slot:2},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  source=result.state.pieces.find(x=>x.chessId===mudrock.chessId);assert.ok(source.uid!==undefined);
+  result=applyAction(result.state,{type:'move',uid:source.uid,row:pair.source[0],col:pair.source[1]},{catalog,data});assert.equal(result.ok,true,JSON.stringify(result.error));
+  target=result.state.pieces.find(x=>x.uid===target.uid);
+  assert.equal(target.equipment.find(x=>x.id==='precision').quantity,firstQuantities.precision+1,'a fresh same-name body has a fresh deployment qualification');
+  assert.equal(target.equipment.find(x=>x.id==='damage').quantity,firstQuantities.damage+1);
+  assert.equal(target.equipment.find(x=>x.id==='independent:坚守盟约').quantity,firstQuantities['independent:坚守盟约']+1);
+});
+
 test('Murozond recruits a pristine copy from the saved previous friendly warband and defers its hooks until first play',()=>{
   const base=getCatalog(),normal=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),sourceOp=normal[0],copyOp=normal.find(x=>x.chessId!==sourceOp.chessId);
   const source={...sourceOp,sourceRefs:{darkmoon19_2:{id:'BGS_043',battlecry:true}}},effect=nativeEffectFor(sourceOp.chessId,source,false);
@@ -805,8 +861,12 @@ test('source-specific normal and golden delivery preserves timing, target class,
       const source=make('EX1_093',sourceOp,elite),left=piece('left',aOp,'p1',0,1),right=piece('right',bOp,'p1',0,3),distant=piece('distant',normal[4],'p1',0,4),rival=piece('rival',normal[5],'p2',0,-1);
       const holder=piece('holder',source,'p1',0,2,elite),catalog={...base,operators:{...base.operators,[source.chessId]:source}},state={pieces:[holder,left,right,distant,rival],inventory:[]};
       runNativeHook(state,'gain',{piece:holder,source:'buy'},servicesFor(catalog));
+      for(const target of [left,right])assert.deepEqual(grants(target),[],`EX1_093 ${elite?'elite':'normal'} is still benched at gain time`);
+      runNativeHook(state,'firstDeploy',{piece:holder,source:'first-field-deploy'},servicesFor(catalog));
       for(const target of [left,right]){const [atk,health]=darkmoonGrowthBadges(target,catalog);assert.deepEqual(grants(target).filter(([id])=>id!=='independent:坚守盟约'),[[atk,mult],[health,mult]].sort((x,y)=>x[0].localeCompare(y[0])));assert.ok(target.equipment.some(x=>x.id==='independent:坚守盟约'));}
       assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(distant),[]);assert.deepEqual(grants(rival),[]);
+      runNativeHook(state,'firstDeploy',{piece:holder,source:'redeploy'},servicesFor(catalog));
+      for(const target of [left,right])assert.equal(grants(target).find(([id])=>id==='precision')?.[1],mult,`EX1_093 ${elite?'elite':'normal'} does not replay its one-time effect`);
     }
 
     // ICC 807 requires an existing Taunt wearer; it doesn't create the keyword by matching its own text.
@@ -818,6 +878,20 @@ test('source-specific normal and golden delivery preserves timing, target class,
       const [atk,health]=darkmoonGrowthBadges(taunter,catalog);assert.deepEqual(grants(taunter).filter(([id])=>id!=='independent:坚守盟约'),[[atk,2*mult],[health,2*mult]].sort((x,y)=>x[0].localeCompare(y[0])));
       assert.deepEqual(grants(holder),[]);assert.deepEqual(grants(plain),[],`ICC_807 ${elite?'golden':'normal'} cannot grant Taunt to an untagged unit`);
     }
+  }
+});
+
+test('Mudrock first deployment preserves current Brann gain repeat count for normal and golden forms',()=>{
+  const base=getCatalog(),ops=Object.values(base.operators).filter(x=>!x.elite&&x.recruitable!==false),mudOp=ops.find(x=>x.source?.normalChess?.profession==='TANK'),brannOp=ops.find(x=>x.chessId!==mudOp.chessId);
+  for(const elite of [false,true]) for(const brannElite of [false,true]) {
+    const mud= {...mudOp,sourceRefs:{darkmoon19_2:{id:'EX1_093',battlecry:true}},nativeTrait:{...mudOp.nativeTrait,effect:nativeEffectFor(mudOp.chessId,{...mudOp,sourceRefs:{darkmoon19_2:{id:'EX1_093',battlecry:true}}},elite)}};
+    const brann={...brannOp,sourceRefs:{darkmoon19_2:{id:'LOE_077'}},nativeTrait:{...brannOp.nativeTrait,effect:nativeEffectFor(brannOp.chessId,{...brannOp,sourceRefs:{darkmoon19_2:{id:'LOE_077'}}},brannElite)}};
+    const a={...ops.find(x=>x.chessId!==mudOp.chessId&&x.chessId!==brannOp.chessId)},b={...ops.find(x=>x.chessId!==mudOp.chessId&&x.chessId!==brannOp.chessId&&x.chessId!==ops[0].chessId)};
+    const catalog={...base,operators:{...base.operators,[mud.chessId]:mud,[brann.chessId]:brann}},holder={uid:'mud',chessId:mud.chessId,ownerId:'p1',elite,row:0,col:2,nativeState:{},equipment:[]},amp={uid:'brann',chessId:brann.chessId,ownerId:'p1',elite:brannElite,row:0,col:4,nativeState:{},equipment:[]},left={uid:'left',chessId:a.chessId,ownerId:'p1',row:0,col:1,equipment:[]},right={uid:'right',chessId:b.chessId,ownerId:'p1',row:0,col:3,equipment:[]},state={round:1,pieces:[holder,amp,left,right],inventory:[]};
+    const services={catalog,data:{},rng:()=>0,grantEquipment:(s,id,n,e)=>grantEquipment(s,catalog,id,n,e),grantChess(){},addOffer(){},record(){}};
+    runNativeHook(state,'firstDeploy',{piece:holder},services);
+    const total=(elite?2:1)*(brannElite?3:2);
+    for(const target of [left,right]) { const [atk,hp]=darkmoonGrowthBadges(target,catalog); assert.equal(target.equipment.find(x=>x.id===atk)?.quantity,total,`Mudrock ${elite?'golden':'normal'} + Brann ${brannElite?'golden':'normal'} keeps gain repeat count`); assert.equal(target.equipment.find(x=>x.id===hp)?.quantity,total); }
   }
 });
 
