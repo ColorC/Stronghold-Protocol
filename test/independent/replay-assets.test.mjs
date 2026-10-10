@@ -40,6 +40,21 @@ test('rebase recorded same-origin URLs under a Workshop subpath without changing
   assert.match(events[1].data.node.cssText, /url\(https:\/\/workshop\.colorc\.cc\/stronghold\/assets\/panel\.webp\)/);
 });
 
+test('rebase recorded assets already prefixed by the deployed app mount', () => {
+  const events = [{ type: 4, data: { href: 'https://workshop.colorc.cc/stronghold/independent.html?recording=r3' } }, {
+    type: 2, data: { node: { attributes: {
+      src: 'https://workshop.colorc.cc/stronghold/assets/local/ui/battle/icon_sell.png',
+      background: 'url(/stronghold/assets/ui/campLogo/logo_victoria.png)',
+      portrait: 'https://workshop.colorc.cc/stronghold/assets/char/portrait/char_4017_puzzle_1.png',
+    } } } },
+  ];
+  rebaseRecordedAssets(events, 'http://127.0.0.1:12604/__harness');
+  const attrs = events[1].data.node.attributes;
+  assert.equal(attrs.src, 'http://127.0.0.1:12604/assets/local/ui/battle/icon_sell.png');
+  assert.equal(attrs.portrait, 'http://127.0.0.1:12604/assets/char/portrait/char_4017_puzzle_1.png');
+  assert.equal(attrs.background, 'url(http://127.0.0.1:12604/assets/ui/campLogo/logo_victoria.png)');
+});
+
 test('timestamp range handles long replay event arrays without argument spreading', () => {
   const events = Array.from({ length: 150_001 }, (_, index) => ({ timestamp: 45_000 + index }));
   events[0].timestamp = -125;

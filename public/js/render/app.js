@@ -1910,6 +1910,33 @@ export async function createFieldView(host, options = {}) {
     setStage,
     setCamera,
     setPrep,
+    /** Apply recorded RRWeb badge poses to the prep renderer as a bounded visual-only projection. */
+    setRecordedPrepVisualPoses(poses) {
+      if (destroyed || mode !== 'prep' || !Array.isArray(poses) || poses.length > 64) return false;
+      const rect = canvas.getBoundingClientRect();
+      for (const pose of poses) {
+        const uid = Number(String(pose?.uid ?? '').replace(/^\D+/, ''));
+        if (!Number.isInteger(uid) || !Number.isFinite(pose.x) || !Number.isFinite(pose.bottom)) continue;
+        const v = views.get('p:' + uid);
+        if (!v || v.destroyed) continue;
+        const bounds = v.bounds(), scale = bounds.width / 0.7;
+        const sx = pose.x - rect.left + bounds.width / 2;
+        const sy = pose.bottom - rect.top - scale * 0.1;
+        // A bench operator has no board row/col. The general ground picker also reports the bench's
+        // render plane, but that height differs from field terrain; retain the native bench elevation
+        // unless the recorded badge is over a legal field tile (e.g. during a drag onto the board).
+        const tile = pickBoardTile(sx, sy);
+        const onField = tile && tile.row >= GEO.FIELD.r0 && tile.row <= GEO.FIELD.r1
+          && tile.col >= GEO.FIELD.c0 && tile.col <= GEO.FIELD.c1;
+        const benchPiece = prepPieces.find((piece) => piece.uid === uid && (piece.area === 'hand' || piece.area === 'temp'));
+        const z = onField ? heightAt(tile.row, tile.col) : benchPiece ? TILE_H.bench : 0;
+        const world = cam.unproject(sx, sy, z);
+        if (!world || !Number.isFinite(world.x) || !Number.isFinite(world.y)) continue;
+        v.x = world.x; v.y = world.y; v.z = z; v.hover = 0; v.lift = 0; v._tween = null;
+        pending.delete('p:' + uid);
+      }
+      return true;
+    },
     /** Enemy preview pen: a list in m.private.nextEnemies shape, or null to empty it (setPrep does this itself). */
     setPen(list) { if (destroyed) return false; setPenList(Array.isArray(list) ? list : null); return true; },
     enterBattle,

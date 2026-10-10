@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 import { spawn, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { buildPrepClips } from './recorded-prep.mjs';
+import { buildPrepClips, buildLegacyPrepClips } from './recorded-prep.mjs';
 
 const gunzip = promisify(zlib.gunzip);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -27,12 +27,22 @@ export function parseArgs(argv) {
   }
   if (!UUID.test(out['recording-id']) || !UUID.test(out['session-id'])) throw new Error('recording and session IDs must be UUIDs');
   const secs = out['sample-seconds'] == null ? null : Number(out['sample-seconds']);
-  if (secs != null && (!Number.isFinite(secs) || secs <= 0 || secs > 30)) throw new Error('--sample-seconds must be in (0,30] when supplied');
+  const sampleStart = out['sample-start-second'] == null ? null : Number(out['sample-start-second']);
+  if (secs != null && (!Number.isFinite(secs) || secs <= 0 || secs > 60)) throw new Error('--sample-seconds must be in (0,60] when supplied');
+  if (sampleStart != null && (!Number.isFinite(sampleStart) || sampleStart < 0)) throw new Error('--sample-start-second must be non-negative when supplied');
   if (out['prep-only'] != null && !['true', 'false'].includes(String(out['prep-only']))) throw new Error('--prep-only must be true or false');
+  if (out['clock-probe'] != null && !['true', 'false'].includes(String(out['clock-probe']))) throw new Error('--clock-probe must be true or false');
+  if (out['composite-only'] != null && !['true', 'false'].includes(String(out['composite-only']))) throw new Error('--composite-only must be true or false');
+  if (out['prep-visual-state-json'] != null && !out['prep-visual-state-json'].trim()) throw new Error('--prep-visual-state-json must be a non-empty path');
+  if (out['source-segments-json'] != null && !out['source-segments-json'].trim()) throw new Error('--source-segments-json must be a non-empty path');
+  if (Boolean(out['battle-dir']) !== Boolean(out['battle-manifest'])) throw new Error('--battle-dir and --battle-manifest must be supplied together');
   out.prepOnly = out['prep-only'] === 'true';
+  out.clockProbe = out['clock-probe'] === 'true';
+  out.compositeOnly = out['composite-only'] === 'true';
   const rounds = out.rounds.split(',').map(Number);
   if (!rounds.length || rounds.some((n) => !Number.isInteger(n) || n < 1 || n > 99)) throw new Error('--rounds must be comma-separated positive integers');
   out.sampleSeconds = secs;
+  out.sampleStartSecond = sampleStart;
   out.roundList = [...new Set(rounds)];
   return out;
 }
@@ -66,7 +76,7 @@ async function main(argv) {
   const eventsPath = path.join(recDir, 'events.jsonl');
   const meta = JSON.parse(await fsp.readFile(sourceMetaPath, 'utf8'));
   if (meta.id !== recordingId) throw new Error('recording metadata ID mismatch');
-  let hrefBound = false; const traceEvents = [];
+  let hrefBound = false; const traceEvents = [], rrwebRecords = [];
   const eventLines = readline.createInterface({ input: fs.createReadStream(eventsPath, { encoding: 'utf8' }), crlfDelay: Infinity });
   for await (const line of eventLines) {
     try {
@@ -74,6 +84,7 @@ async function main(argv) {
       if (e.sid !== recordingId) continue;
       const href = e?.p?.data?.href;
       if (e.kind === 'rrweb' && e.p?.type === 4 && new URL(href).searchParams.get('session') === sessionId) hrefBound = true;
+      if (e.kind === 'rrweb') rrwebRecords.push(e.p);
       if (e.kind === 'initial-state' || e.kind === 'server-action') traceEvents.push(e);
     } catch { /* unrelated event shape */ }
   }
@@ -97,9 +108,32 @@ async function main(argv) {
   }
   const mediaStartedAt = Date.parse(meta.mediaStartedAt);
   const mediaOffsetSeconds = Number.isFinite(mediaStartedAt) ? (mediaStartedAt - recordingOrigin) / 1000 : null;
-  const prepAudit = buildPrepClips({ events: traceEvents, recordingId, sessionId, recordingStartedAt: meta.startedAt,
-    duration: recordingDuration, battleClips: clips, fps: 30 });
-  if (args.sampleSeconds == null) {
+  let prepAudit;
+  let legacyVisualSource = null;
+  if (args['prep-visual-state-json']) {
+    legacyVisualSource = JSON.parse(await fsp.readFile(path.resolve(args['prep-visual-state-json']), 'utf8'));
+    if (legacyVisualSource.recordingId !== recordingId || legacyVisualSource.sessionId !== sessionId
+      || Date.parse(legacyVisualSource.recordingStartedAt) !== recordingOrigin || legacyVisualSource.schemaVersion !== 1) {
+      throw new Error('legacy prep visual state identity/clock/schema mismatch');
+    }
+    prepAudit = buildLegacyPrepClips({ visualStates: legacyVisualSource.states, duration: recordingDuration, battleClips: clips, fps: 30 });
+  } else {
+    prepAudit = buildPrepClips({ events: traceEvents, recordingId, sessionId, recordingStartedAt: meta.startedAt,
+      duration: recordingDuration, battleClips: clips, fps: 30 });
+  }
+  let prepClipsForRender = prepAudit.clips.map((clip) => ({ ...clip, states: [...clip.states] }));
+  if (args.sampleSeconds != null) {
+    const windowStart = args.sampleStartSecond ?? 0, windowEnd = Math.min(recordingDuration, windowStart + args.sampleSeconds);
+    prepClipsForRender = prepClipsForRender.flatMap((clip) => {
+      const startSecond = Math.max(clip.startSecond, windowStart), endSecond = Math.min(clip.endSecond, windowEnd);
+      if (!(endSecond > startSecond)) return [];
+      const active = [...clip.states].reverse().find((state) => state.at <= startSecond);
+      const states = [...(active ? [{ ...active, at: startSecond }] : []), ...clip.states.filter((state) => state.at > startSecond && state.at < endSecond)];
+      if (!states.length) return [];
+      return [{ ...clip, startSecond, endSecond, states }];
+    });
+  }
+  if (args.sampleSeconds == null && !args['source-segments-json']) {
     const completeRounds = (timeline.rounds || []).map((x) => Number(x.round)).sort((a, b) => a - b);
     if (completeRounds.length !== args.roundList.length || completeRounds.some((round, i) => round !== [...args.roundList].sort((a, b) => a - b)[i])) {
       throw new Error('full render requires every round in the validated timeline; use --sample-seconds only for a bounded sample');
@@ -117,10 +151,20 @@ async function main(argv) {
   const wtRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: wtRoot, encoding: 'utf8' }).trim();
   const installRoot = path.resolve(args['install-root']);
+  const compositeFfmpeg = args['composite-ffmpeg'] ? path.resolve(args['composite-ffmpeg']) : FFMPEG;
   const publicRoot = path.join(installRoot, 'public');
-  const fixture = { replays, clips, prepClips: prepAudit.clips, prepGapAudit: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps }, sampleSeconds: args.sampleSeconds,
+  const fixture = { replays, clips, prepClips: prepAudit.clips, prepGapAudit: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps,
+      ...(legacyVisualSource ? { sourceKind: legacyVisualSource.sourceKind, coverage: legacyVisualSource.coverage,
+        unresolvedExamples: legacyVisualSource.unresolved.slice(0, 50) } : {}) }, sampleSeconds: args.sampleSeconds,
     source: { recordingId, sessionId, recordingStartedAt: meta.startedAt, recordingEndedAt: meta.endedAt || meta.mediaCaptureStoppedAt, recordingDuration,
       mediaStartedAt: meta.mediaStartedAt || null, mediaOffsetSeconds } };
+  const battleDir = args['battle-dir'] ? path.resolve(args['battle-dir']) : null;
+  const battleManifestPath = args['battle-manifest'] ? path.resolve(args['battle-manifest']) : null;
+  const battleFramesDir = args['battle-frames-dir'] ? path.resolve(args['battle-frames-dir']) : null;
+  const battleManifest = battleManifestPath ? JSON.parse(await fsp.readFile(battleManifestPath, 'utf8')) : null;
+  if (battleManifest && (battleManifest.recordingId !== recordingId || !Array.isArray(battleManifest.clips))) throw new Error('native battle manifest identity/schema mismatch');
+  if (battleManifest && !battleFramesDir) throw new Error('native battle render requires sequentially decoded --battle-frames-dir');
+  fixture.battleClips = battleManifest?.clips || [];
   let ffmpeg = null, ffmpegOutput = null, ffmpegError = '', browser = null;
   stage(`input validated; ${clips.length} round(s), intervals ${clips[0].startSecond}-${clips.at(-1).endSecond}s`);
   const portProxy = (req, res) => {
@@ -135,9 +179,32 @@ async function main(argv) {
     if (req.method !== 'GET' && !(req.method === 'POST' && req.url === '/__ivf')) { res.writeHead(405); return res.end(); }
     if (portProxy(req, res)) return;
     if (req.url === '/__fixture.json') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(fixture)); }
+    if (req.url === '/__rrweb.json') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(rrwebRecords)); }
+    if (battleDir && req.url.startsWith('/__battle/')) {
+      const file = decodeURIComponent(req.url.slice('/__battle/'.length));
+      const clip = battleManifest.clips.find((candidate) => candidate.file === file);
+      if (!clip || path.basename(file) !== file) { res.writeHead(404); return res.end('battle clip not registered'); }
+      const target = path.resolve(battleDir, file);
+      if (!inside(battleDir, target)) { res.writeHead(400); return res.end(); }
+      const stream = fs.createReadStream(target);
+      stream.once('error', (error) => { if (!res.headersSent) res.writeHead(404); res.end(error.message); });
+      res.writeHead(200, { 'content-type': 'video/webm', 'cache-control': 'no-store' }); stream.pipe(res); return;
+    }
+    if (battleFramesDir && req.url.startsWith('/__battle-frame/')) {
+      const match = /^\/__battle-frame\/(\d+)\/(\d+)$/.exec(new URL(req.url, 'http://local').pathname);
+      if (!match) { res.writeHead(400); return res.end('invalid battle frame route'); }
+      const round = Number(match[1]), frameIndex = Number(match[2]);
+      const clip = battleManifest.clips.find((candidate) => Number(candidate.round) === round);
+      if (!clip || !Number.isSafeInteger(frameIndex) || frameIndex < 0 || frameIndex > Math.ceil(clip.mediaDuration * 60)) { res.writeHead(404); return res.end('battle frame not registered'); }
+      const target = path.resolve(battleFramesDir, `round-${round}`, `frame-${String(frameIndex).padStart(6, '0')}.jpg`);
+      if (!inside(battleFramesDir, target)) { res.writeHead(400); return res.end(); }
+      const stream = fs.createReadStream(target);
+      stream.once('error', (error) => { if (!res.headersSent) res.writeHead(404); res.end(error.message); });
+      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable' }); stream.pipe(res); return;
+    }
     if (req.url === '/__harness') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      return res.end('<!doctype html><html lang="zh-CN" class="ix-ws"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/css/screens/game.css"><link rel="stylesheet" href="/css/devices.css"><link rel="stylesheet" href="/css/workshop.css"><style>html,body,#screen{margin:0;width:2187px;height:1077px;overflow:hidden;background:#0a0e0d}#screen{position:relative}.gm__field{position:absolute;inset:0}</style></head><body><div id="screen" class="gm"><div id="host" class="gm__field"></div></div><script type="module" src="/__entry.js"></script></body></html>');
+      return res.end('<!doctype html><html lang="zh-CN" class="ix-ws"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/css/screens/game.css"><link rel="stylesheet" href="/css/devices.css"><link rel="stylesheet" href="/css/workshop.css"><link rel="stylesheet" href="/css/independent-recording.css"><script src="/vendor/rrweb.umd.js"></script><style>html,body,#screen,#rr-stage{margin:0;width:2187px;height:1077px;overflow:hidden;background:#0a0e0d}body.ix-replay{padding:0!important}#screen{position:relative;padding:0!important;border:0!important;border-radius:0!important}#host{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:-10}.ix-composite-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.ix-replay__text-selection-rect{border:0!important;background:#1683ff33!important;box-shadow:none!important}</style></head><body class="ix-replay"><div id="screen" class="gm ix-replay"><div id="rr-stage"></div><div id="host" class="gm__field"></div></div><script type="module" src="/__entry.js"></script></body></html>');
     }
     if (req.url === '/__entry.js') {
       res.writeHead(200, { 'content-type': 'text/javascript' });
@@ -145,11 +212,16 @@ async function main(argv) {
     }
     if (req.url === '/__ivf' && req.method === 'POST') { res.writeHead(204); req.resume(); return res.end(); }
     const pathname = decodeURIComponent(new URL(req.url, 'http://local').pathname).replace(/^\/+/, '');
-    let target = path.resolve(publicRoot, pathname);
-    if (!inside(publicRoot, target)) { res.writeHead(400); return res.end(); }
-    if (pathname.startsWith('shared/')) target = path.resolve(wtRoot, pathname);
-    if (pathname.startsWith('sim/')) target = path.resolve(wtRoot, 'server', pathname);
-    if (pathname.startsWith('js/')) target = path.resolve(wtRoot, 'public', pathname);
+    let target = path.resolve(publicRoot, pathname), allowedRoot = publicRoot;
+    if (!inside(publicRoot, target)) { stage(`static 400 path escape ${pathname} => ${target}`); res.writeHead(400); return res.end(); }
+    if (pathname.startsWith('shared/')) { target = path.resolve(wtRoot, pathname); allowedRoot = wtRoot; }
+    if (pathname.startsWith('sim/')) { target = path.resolve(wtRoot, 'server', pathname); allowedRoot = path.resolve(wtRoot, 'server'); }
+    if (pathname.startsWith('js/')) { target = path.resolve(wtRoot, 'public', pathname); allowedRoot = path.resolve(wtRoot, 'public'); }
+    if (pathname.startsWith('css/')) {
+      const sourceCss = path.resolve(wtRoot, 'public', pathname), sourceCssRoot = path.resolve(wtRoot, 'public');
+      if (inside(sourceCssRoot, sourceCss) && fs.existsSync(sourceCss)) { target = sourceCss; allowedRoot = sourceCssRoot; }
+    }
+    if (!inside(allowedRoot, target)) { stage(`static 400 source escape ${pathname} => ${target}`); res.writeHead(400); return res.end(); }
     try { const body = await fsp.readFile(target); res.writeHead(200, { 'content-type': mime(target), 'cache-control': 'no-store' }); res.end(body); }
     catch (err) { stage(`static 404 ${pathname} => ${target} (${err.code || err.message})`); res.writeHead(404); res.end('not found'); }
   });
@@ -161,12 +233,13 @@ async function main(argv) {
   try {
     const { createRequire } = await import('node:module');
     puppeteer = createRequire(path.join(installRoot, 'package.json'))('puppeteer-core');
-    browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--enable-webcodecs', '--use-gl=angle', '--use-angle=d3d11'] });
+    browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, protocolTimeout: 180000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--enable-webcodecs', '--use-gl=angle', '--use-angle=d3d11'] });
     stage(`Chrome launched; pid=${browser.process()?.pid || 'unknown'}`);
     const page = await browser.newPage();
-    await page.setViewport({ width: 2187, height: 1077, deviceScaleFactor: 1.25 });
+    await page.setViewport({ width: 2187, height: 1077, deviceScaleFactor: 2560 / 2187 });
     const fatalPageErrors = [];
     page.on('console', (m) => { if (m.type() === 'error') console.error(`browser: ${m.text()}`); });
+    page.on('response', (response) => { if (response.status() >= 400) stage(`browser HTTP ${response.status()} ${response.url()}`); });
     page.on('pageerror', (e) => { fatalPageErrors.push(String(e?.stack || e)); console.error(`pageerror: ${e.stack || e}`); });
     page.exposeFunction('__encoderChunk', async (payload) => {
       if (!ffmpeg?.stdin.writable) throw new Error('FFmpeg input pipe is closed');
@@ -203,6 +276,7 @@ async function main(argv) {
       await window.__rendererProgress('initializing native renderer and loading Pixi/Spine runtime');
       const { createFieldView } = await import('/js/render/app.js');
       const view = await createFieldView(document.getElementById('host'), { data, assets, settings: { quality: 'high' }, padding: hudPadding, hud: hudBands, tierChips: 'pips' });
+      const battleImage = new Image(); battleImage.decoding = 'async';
       const warmUnits = new Map();
       const collect = (u) => { if (!u) return; const model = u.spine || u.defId; if (model) {
         warmUnits.set(`${model}:front`, { model, back: false });
@@ -233,16 +307,96 @@ async function main(argv) {
         } catch (error) { return { model, back, status: 'fallback-load-failed', error: String(error?.message || error) }; }
       }));
       window.__warmReport = warmResults;
-      await window.__rendererProgress(`warmed ${warmResults.filter((x) => x.status === 'loaded').length}/${warmResults.length} unique field/spawn skeleton views`);
+      const warmFailures = warmResults.filter((x) => x.status !== 'loaded');
+      await window.__rendererProgress(`warmed ${warmResults.filter((x) => x.status === 'loaded').length}/${warmResults.length} unique field/spawn skeleton views; unresolved=${JSON.stringify(warmFailures)}`);
       const firstReplay = r.replays[r.clips[0].round];
       view.enterBattle(firstReplay.field);
       view.setCamera(firstReplay.field.kind || 'normal', { rect: firstReplay.field.rect, side: 'L', instant: true });
-      window.__renderer = { view, replays: r.replays, clips: r.clips, prepClips: r.prepClips || [],
+      window.__renderer = { view, replays: r.replays, clips: r.clips, battleClips: r.battleClips || [], battleImage, prepClips: r.prepClips || [],
         prepGapAudit: r.prepGapAudit, helpers: mod, prepView, prepCameraFor, GEO, data, catalog, activeRound: r.clips[0].round };
+      const rrItems = await fetch('/__rrweb.json').then((response) => { if (!response.ok) throw new Error(`RRWeb HTTP ${response.status}`); return response.json(); });
+      const { rebaseRecordedAssets } = await import('/js/independent/replayAssets.js'); rebaseRecordedAssets(rrItems);
+      const rrPlayer = new rrweb.Replayer(rrItems, { root: document.getElementById('rr-stage'), width: 2187, height: 1077,
+        skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, useVirtualDom: false, UNSAFE_replayCanvas: true });
+      const firstTs = rrItems[0]?.timestamp || 0;
+      const targetOffset = Math.max(0, Date.parse(r.source.recordingStartedAt) - firstTs);
+      rrPlayer.play(targetOffset);
+      const rrTimer = rrPlayer.timer;
+      if (rrTimer?.raf && rrTimer.raf !== true) cancelAnimationFrame(rrTimer.raf);
+      if (rrTimer) { rrTimer.raf = null; rrTimer.lastTimestamp = performance.now(); }
+      const iframe = rrPlayer.iframe || document.querySelector('#rr-stage iframe');
+      const rrDoc = iframe?.contentDocument;
+      if (!rrDoc) throw new Error('RRWeb replay did not produce a same-origin iframe');
+      window.__renderer.rrPlayer = rrPlayer;
+      window.__renderer.rrTargetOffset = targetOffset;
+      window.__renderer.seekRrwebSource = (second) => {
+        const timer = window.__renderer.rrPlayer.timer;
+        if (timer.raf && timer.raf !== true) cancelAnimationFrame(timer.raf);
+        timer.raf = null;
+        timer.timeOffset = second * 1000;
+        while (timer.actions.length && timer.actions[0].delay <= timer.timeOffset) {
+          const action = timer.actions.shift();
+          action.doAction();
+        }
+        const actual = window.__renderer.rrPlayer.getCurrentTime();
+        const expected = window.__renderer.rrTargetOffset + second * 1000;
+        if (Math.abs(actual - expected) > 1) throw new Error(`RRWeb source clock drift at ${second}s: expected=${expected}, actual=${actual}`);
+        timer.raf = null;
+        return { sourceSecond: second, expectedCurrentTimeMs: expected, actualCurrentTimeMs: actual,
+          clockErrorMs: actual - expected, queuedActions: timer.actions.length };
+      };
+      window.__renderer.ensureCompositeCanvas = () => {
+        const doc = window.__renderer.rrPlayer.iframe?.contentDocument, field = doc?.querySelector('.gm__field');
+        if (!doc || !field) return false;
+        doc.body.classList.add('ix-replay');
+        if (!doc.getElementById('ix-recording-controls-hidden')) {
+          const controls = doc.createElement('style'); controls.id = 'ix-recording-controls-hidden';
+          controls.textContent = '.ix-recording{display:none!important}'; doc.head.append(controls);
+        }
+        let style = doc.getElementById('ix-composite-style');
+        if (!style) { style = doc.createElement('style'); style.id = 'ix-composite-style';
+          style.textContent = '.gm__field canvas:not([data-sp-canvas-surface]){display:none!important;visibility:hidden!important}.ix-composite-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}.ix-replay .replayer-mouse{width:24px;height:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2732%27 viewBox=%270 0 24 32%27%3E%3Cpath d=%27M2 1v27l6.5-6.5L14 31l4-2-5.5-9H22z%27 fill=%27%23000%27 stroke=%27%23fff%27 stroke-width=%272%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E");filter:drop-shadow(0 0 1px #111)}.ix-replay .replayer-mouse::after{display:none}.ix-replay__text-selection-rect{border:0!important;background:#1683ff33!important;box-shadow:none!important}html[data-sp-replay-scene="game"] .ix-start{display:none!important}html[data-sp-replay-scene="game"] .screen.gm{opacity:1!important;animation:none!important}'; doc.head.append(style); }
+        let overlay = field.querySelector('canvas[data-sp-canvas-surface="1"]');
+        if (!overlay) { overlay = doc.createElement('canvas'); overlay.width = 2560; overlay.height = 1260; overlay.className = 'ix-composite-canvas'; overlay.dataset.spCanvasSurface = '1'; field.append(overlay); }
+        window.__renderer.rrCanvas = overlay; window.__renderer.rrContext = overlay.getContext('2d', { alpha: true });
+        return true;
+      };
+      window.__renderer.canvasComposer = await import('/js/independent/recordingCanvas.js');
+      window.__renderer.compositeCanvas = document.createElement('canvas'); window.__renderer.compositeCanvas.width = 2560; window.__renderer.compositeCanvas.height = 1260;
+      window.__renderer.compositeContext = window.__renderer.compositeCanvas.getContext('2d', { alpha: false });
+      window.__renderer.rrTimerReady = !!rrPlayer.timer && Array.isArray(rrPlayer.timer.actions);
       return { mode: 'battle', units: firstReplay.field.units?.length || 0, frameCount: firstReplay.frames.length, rounds: Object.keys(r.replays).length };
     });
     if (!initialized.units) throw new Error('renderer initialized with no field units');
     stage(`field initialized: units=${initialized.units}, snapshots=${initialized.frameCount}`);
+    if (args.clockProbe) {
+      await page.evaluate(() => window.__renderer.seekRrwebSource(0));
+      await page.screenshot({ path: path.join(outputRoot, 'rrweb-clock-probe-source-0.png'), captureBeyondViewport: false, optimizeForSpeed: true });
+      const points = await page.evaluate(() => [0, 7.7, 9.65, 15.2].map((second) => {
+        const clock = window.__renderer.seekRrwebSource(second);
+        const doc = window.__renderer.rrPlayer.iframe.contentDocument;
+        const bodyText = (doc?.body?.innerText || '').replace(/\s+/g, ' ').slice(0, 900);
+        return { ...clock, battlebarText: doc?.querySelector('.ix-battlebar')?.innerText?.slice(0, 300) || null,
+          resultText: doc?.querySelector('.ix-result')?.innerText?.slice(0, 300) || null, bodyText,
+          htmlClass: doc?.documentElement?.className || null, replayScene: doc?.documentElement?.getAttribute('data-sp-replay-scene') || null,
+          outerHost: (() => { const element = document.querySelector('#host'); if (!element) return null; const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+            return { className: element.className, display: style.display, opacity: style.opacity, visibility: style.visibility, zIndex: style.zIndex, rect: rect.toJSON(),
+              canvases: [...element.querySelectorAll('canvas')].map((canvas) => ({ width: canvas.width, height: canvas.height,
+                opacity: getComputedStyle(canvas).opacity, display: getComputedStyle(canvas).display, rect: canvas.getBoundingClientRect().toJSON() })) }; })(),
+          outerScreenText: (document.querySelector('#screen')?.innerText || '').replace(/\s+/g, ' ').slice(0, 300),
+          layers: [...(doc?.querySelectorAll('.screen.gm,.ix-start,.gm__field,.gm__shop,.gm__header') || [])].map((element) => {
+            const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+            return { selector: element.matches('.screen.gm') ? '.screen.gm' : element.matches('.ix-start') ? '.ix-start' : element.matches('.gm__field') ? '.gm__field' : element.matches('.gm__shop') ? '.gm__shop' : '.gm__header',
+              className: element.className, display: style.display, opacity: style.opacity, visibility: style.visibility, zIndex: style.zIndex,
+              rect: rect.toJSON(), text: (element.innerText || '').replace(/\s+/g, ' ').slice(0, 220) };
+          }) };
+      }));
+      if (points.some((point) => Math.abs(point.clockErrorMs) > 1)) throw new Error('RRWeb source clock probe found an out-of-tolerance frame');
+      await fsp.writeFile(path.join(outputRoot, 'rrweb-clock-probe.json'), JSON.stringify({ schemaVersion: 1, sourceStartSecond: 0,
+        recordingStartedAt: meta.startedAt, targetOffsetMs: Date.parse(meta.startedAt) - (rrwebRecords[0]?.timestamp || 0), points }, null, 2));
+      stage('RRWeb clock probe passed at 0, 7.7, 9.65, 15.2 seconds');
+      return;
+    }
     await new Promise((r) => setTimeout(r, 1200));
     const layout = await page.evaluate(async () => {
       const { recordingCanvasLayout } = await import('/js/independent/recordingCanvas.js');
@@ -273,7 +427,8 @@ async function main(argv) {
     }, { width: layout.width, height: layout.height, fps, bitrate });
     if (!encoderConfig.supported) throw new Error(`WebCodecs VP8 unsupported: ${JSON.stringify(encoderConfig)}`);
     const renderedClips = [];
-    for (const [clipIndex, clip] of prepAudit.clips.entries()) {
+    const compositeClips = [];
+    for (const [clipIndex, clip] of (args.compositeOnly ? [] : prepClipsForRender.entries())) {
       if (args.sampleSeconds != null && clip.endSecond - clip.startSecond > args.sampleSeconds) {
         clip.endSecond = clip.startSecond + args.sampleSeconds;
         clip.states = clip.states.filter((snapshot) => snapshot.at < clip.endSecond);
@@ -288,7 +443,7 @@ async function main(argv) {
       stage(`encoding prep ${clipIndex + 1}: ${clip.startSecond}-${clip.endSecond}s with ${clip.states.length} state snapshot(s)`);
       ffmpeg.stdin.write(ivfHeader(layout.width, layout.height, fps));
       const render = await page.evaluate(async ({ clip, clipIndex, fps, bitrate, width, height }) => {
-        const { view, prepView, prepCameraFor, catalog, data } = window.__renderer;
+        const { view, prepView, prepCameraFor, catalog, data, clips, replays } = window.__renderer;
         const { drawRecordingCanvasFrame } = await import('/js/independent/recordingCanvas.js');
         const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d', { alpha: false });
@@ -307,22 +462,32 @@ async function main(argv) {
           while (stateIndex + 1 < clip.states.length && clip.states[stateIndex + 1].at <= wallSecond + 1e-8) {
             stateIndex++;
             const snapshot = clip.states[stateIndex];
-            if (snapshot.state.stageId) {
-              const stage = data.lookup('stages', snapshot.state.stageId);
-              if (stage) view.setStage(stage);
-            }
-            view.setPrep(prepView(snapshot.state, catalog), { editable: false });
             // Mirror independent/game.js: choose prep vs bossPrep and the shop framing from each recorded state.
             // Session recordings are single-player; the stable synthetic identity selects the same left-side camera.
             const state = snapshot.state;
+            if (snapshot.sourceKind === 'legacy-rrweb-visual') {
+              const nextBattle = clips.find((candidate) => candidate.startSecond >= snapshot.at) || clips.at(-1);
+              const nextReplay = replays[nextBattle?.round];
+              state.round = nextBattle?.round ?? state.round;
+              if (nextReplay?.field?.stageId) state.stageId = nextReplay.field.stageId;
+              if (nextReplay?.field?.kind === 'boss') state.board = { ...(state.board || {}), field: 'bossL', bossRound: state.round };
+            }
+            if (state.stageId) {
+              const stage = data.lookup('stages', state.stageId);
+              if (stage) view.setStage(stage);
+            }
+            view.setPrep(prepView(state, catalog), { editable: false });
             const boss = state.board?.field === 'bossL';
             const round = boss ? (state.board?.bossRound ?? state.round) : state.round;
             const pub = { round, bossRound: boss ? round : null, hiddenRound: null,
               players: [{ playerId: 'recorded-player', seat: 0 }] };
             const camera = prepCameraFor(pub, 'recorded-player', false);
             view.setCamera(camera.kind, { ...camera.opts, instant: true });
+            if (snapshot.sourceKind === 'legacy-rrweb-visual') {
+              if (!view.setRecordedPrepVisualPoses(snapshot.visualPoses || [])) throw new Error('native legacy pose projection refused the prep state');
+            }
             stateFrames.push({ seq: snapshot.sourceSeq, kind: snapshot.sourceKind, revision: snapshot.revision, at: snapshot.at, frameIndex: i,
-              positions: positions(snapshot.state) });
+              positions: positions(snapshot.state), ...(snapshot.visualPoses ? { visualPoses: snapshot.visualPoses } : {}) });
           }
           if (stateIndex < 0) throw new Error(`prep clip ${clipIndex + 1} has no state at ${wallSecond}s`);
           if (!view.renderRecordedFrame({ gameTime: i / fps, delta: 1 / fps, rate: 1 })) throw new Error('native prep recorded-frame renderer refused frame');
@@ -371,6 +536,195 @@ async function main(argv) {
       renderedClips.push({ kind: 'prep', startSecond: clip.startSecond, endSecond: clip.endSecond, mediaDuration: Number(probed.format.duration), file: path.basename(outputFile), sourceSnapshots: receipt.sourceSnapshots });
       ffmpeg = null;
     }
+    if ((args.sampleSeconds != null || args['source-segments-json']) && args.prepOnly) {
+      let compositeIntervals;
+      if (args['source-segments-json']) {
+        const intervalInput = JSON.parse(await fsp.readFile(path.resolve(args['source-segments-json']), 'utf8'));
+        compositeIntervals = Array.isArray(intervalInput) ? intervalInput : intervalInput.segments;
+        if (!Array.isArray(compositeIntervals) || !compositeIntervals.length) throw new Error('source-segments JSON must contain a non-empty segments array');
+        let priorEnd = -Infinity;
+        for (const [index, interval] of compositeIntervals.entries()) {
+          if (!interval.segmentId || !Number.isFinite(interval.sourceStartSecond) || !Number.isFinite(interval.sourceEndSecond)
+            || interval.sourceStartSecond < priorEnd || interval.sourceEndSecond <= interval.sourceStartSecond || interval.sourceEndSecond > recordingDuration) {
+            throw new Error(`invalid/overlapping source segment ${index}: ${JSON.stringify(interval)}`);
+          }
+          priorEnd = interval.sourceEndSecond;
+        }
+      } else {
+        const sourceStartSecond = args.sampleStartSecond ?? 0;
+        compositeIntervals = [{ segmentId: `sample-${sourceStartSecond}`, sourceStartSecond, sourceEndSecond: Math.min(recordingDuration, sourceStartSecond + args.sampleSeconds) }];
+      }
+      for (const interval of compositeIntervals) {
+      const sourceStart = interval.sourceStartSecond, sourceEnd = interval.sourceEndSecond;
+      const frameCount = Math.ceil((sourceEnd - sourceStart) * fps - 1e-9), compositeFile = path.join(outputRoot, `${interval.segmentId}.mp4`);
+      ffmpegError = '';
+      ffmpeg = spawn(compositeFfmpeg, ['-hide_banner','-loglevel','warning','-f','image2pipe','-framerate',String(fps),'-vcodec','png','-i','pipe:0','-vf','crop=2560:1260:0:0','-an','-c:v','h264_nvenc','-preset','p7','-tune','hq','-rc','vbr','-cq','16','-b:v','0','-maxrate','48M','-bufsize','96M','-spatial-aq','1','-temporal-aq','1','-rc-lookahead','32','-multipass','fullres','-g','60','-pix_fmt','yuv420p','-r',String(fps),'-movflags','+faststart','-y',compositeFile], { stdio: ['pipe','ignore','pipe'] });
+      ffmpeg.stderr.setEncoding('utf8'); ffmpeg.stderr.on('data', (s) => { ffmpegError += s; });
+      ffmpeg.on('close', (code) => stage(`composite FFmpeg exited ${code}: ${ffmpegError.trim().slice(0, 600)}`));
+      ffmpeg.stdin.on('error', (error) => stage(`composite FFmpeg stdin: ${error.code || error.message}`));
+      const rrState = await page.evaluate(() => ({ timerReady: window.__renderer.rrTimerReady,
+        frame: !!window.__renderer.rrPlayer?.iframe,
+        timerActions: window.__renderer.rrPlayer?.timer?.actions?.length }));
+      if (!rrState.timerReady || !rrState.frame) throw new Error(`RRWeb deterministic composite is unavailable: ${JSON.stringify(rrState)}`);
+      stage(`capturing RRWeb/native composite ${interval.segmentId} ${sourceStart}-${sourceEnd}s (${frameCount} frames)`);
+      const compositeTiming = { rrAndNativeMs: 0, screenshotMs: 0, pipeMs: 0, drainWaitMs: 0, frames: 0 };
+      const sceneAudit = [];
+      for (let i = 0; i < frameCount; i++) {
+        const second = sourceStart + i / fps;
+        const renderStarted = performance.now();
+        const frameAudit = await page.evaluate(async ({ second, i, fps, sourceStart }) => {
+          const renderer = window.__renderer, player = renderer.rrPlayer, timer = player.timer;
+          const clock = renderer.seekRrwebSource(second);
+          if (Math.abs(clock.clockErrorMs) > 1) throw new Error(`RRWeb source time mismatch at output frame ${i}: ${JSON.stringify(clock)}`);
+          const replayDoc = player.iframe?.contentDocument;
+          const start = replayDoc?.querySelector('.ix-start'), startStyle = start ? getComputedStyle(start) : null;
+          const startVisible = !!start && startStyle.display !== 'none' && startStyle.visibility !== 'hidden' && Number(startStyle.opacity) > 0;
+          const hasRecordedGameField = !!replayDoc?.querySelector('.gm__field') && !startVisible;
+          if (hasRecordedGameField) renderer.ensureCompositeCanvas();
+          let active = null, activeSnapshot = null;
+          for (const clip of renderer.prepClips) if (second >= clip.startSecond && second < clip.endSecond) { active = clip; break; }
+          if (active && hasRecordedGameField) {
+            let snapIndex = -1;
+            for (let n = 0; n < active.states.length; n++) if (active.states[n].at <= second + 1e-8) snapIndex = n; else break;
+            if (snapIndex >= 0) {
+              const snapshot = active.states[snapIndex];
+              activeSnapshot = snapshot;
+              const key = `${active.startSecond}:${snapshot.sourceSeq}`;
+              if (renderer.compositeStateKey !== key) {
+                const state = snapshot.state;
+                const nextBattle = renderer.clips.find((candidate) => candidate.startSecond >= snapshot.at) || renderer.clips.at(-1);
+                const nextReplay = renderer.replays[nextBattle?.round];
+                state.round = nextBattle?.round ?? state.round;
+                if (nextReplay?.field?.stageId) state.stageId = nextReplay.field.stageId;
+                if (nextReplay?.field?.kind === 'boss') state.board = { ...(state.board || {}), field: 'bossL', bossRound: state.round };
+                if (state.stageId) { const stage = renderer.data.lookup('stages', state.stageId); if (stage) renderer.view.setStage(stage); }
+                renderer.view.setPrep(renderer.prepView(state, renderer.catalog), { editable: false });
+                const boss = state.board?.field === 'bossL', round = boss ? (state.board?.bossRound ?? state.round) : state.round;
+                const camera = renderer.prepCameraFor({ round, bossRound: boss ? round : null, hiddenRound: null,
+                  players: [{ playerId: 'recorded-player', seat: 0 }] }, 'recorded-player', false);
+                renderer.view.setCamera(camera.kind, { ...camera.opts, instant: true });
+                if (!renderer.view.setRecordedPrepVisualPoses(snapshot.visualPoses || [])) throw new Error('native legacy pose projection refused composite state');
+                // UnitView creates its Spine actor asynchronously after the first prep state is applied.
+                // Keep RRWeb pinned to this exact source second while that one-time model load settles;
+                // otherwise the badge is visible but the native body is captured as blank on the first frame.
+                const unitIds = (state.pieces || []).map((piece) => Number(String(piece.uid ?? '').replace(/^\D+/, ''))).filter(Number.isInteger);
+                const deadline = performance.now() + 10000;
+                let loading = [];
+                do {
+                  loading = unitIds.map((uid) => ({ uid, view: renderer.view.debug.views.get(`p:${uid}`) }))
+                    .filter(({ view }) => view && view._spineBusy);
+                  if (!loading.length) break;
+                  if (performance.now() >= deadline) throw new Error(`native prep model load timed out at source ${second}s: ${JSON.stringify(loading.map(({ uid, view }) => ({ uid, entry: view.entry?.name || null, actor: !!view.actor, retryAt: view._retryAt || 0 })))}`);
+                  await new Promise((resolve) => setTimeout(resolve, 25));
+                } while (loading.length);
+                // Settle the actor's initial display/swap state with two native ticks;
+                // the RRWeb source clock is unchanged and subsequent frames need no wait.
+                for (let tick = 0; tick < 2; tick++) renderer.view.renderRecordedFrame({ gameTime: second - sourceStart, delta: 1 / fps, rate: 1 });
+                renderer.compositeStateKey = key;
+              }
+              if (!renderer.view.renderRecordedFrame({ gameTime: second - sourceStart, delta: 1 / fps, rate: 1 })) throw new Error('native prep composite frame refused');
+              if (renderer.rrCanvas && renderer.canvasComposer.drawRecordingCanvasFrame(document.getElementById('host'), renderer.compositeContext,
+                renderer.rrCanvas.width, renderer.rrCanvas.height)) {
+                renderer.rrContext.clearRect(0, 0, renderer.rrCanvas.width, renderer.rrCanvas.height);
+                renderer.rrContext.drawImage(renderer.compositeCanvas, 0, 0, renderer.rrCanvas.width, renderer.rrCanvas.height);
+              }
+            }
+          }
+          let battleAudit = null;
+          if (!active && hasRecordedGameField) {
+            const battleClip = renderer.clips.find((clip) => second >= clip.startSecond && second < clip.endSecond);
+            if (battleClip) {
+              const sourceClip = renderer.battleClips.find((candidate) => Number(candidate.round) === Number(battleClip.round));
+              if (!sourceClip || !Number.isFinite(sourceClip.mediaDuration) || sourceClip.mediaDuration <= 0) {
+                throw new Error(`high-quality native battle media missing for round ${battleClip.round}`);
+              }
+              const mediaDuration = sourceClip.mediaDuration;
+              const desiredMediaTime = Math.max(0, (second - battleClip.startSecond) / (battleClip.endSecond - battleClip.startSecond) * mediaDuration);
+              const mediaFrameIndex = Math.max(0, Math.round(desiredMediaTime * fps));
+              const imageUrl = `/__battle-frame/${battleClip.round}/${mediaFrameIndex}`;
+              if (renderer.activeBattleImageUrl !== imageUrl) {
+                renderer.battleImage.src = imageUrl;
+                await renderer.battleImage.decode();
+                renderer.activeBattleImageUrl = imageUrl;
+              }
+              if (!renderer.battleImage.complete || renderer.battleImage.naturalWidth !== 2560 || renderer.battleImage.naturalHeight !== 1260) throw new Error(`native battle decoded frame invalid: ${JSON.stringify({ round: battleClip.round, frameIndex: mediaFrameIndex, width: renderer.battleImage.naturalWidth, height: renderer.battleImage.naturalHeight })}`);
+              renderer.compositeContext.clearRect(0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
+              renderer.compositeContext.drawImage(renderer.battleImage, 0, 0, renderer.compositeCanvas.width, renderer.compositeCanvas.height);
+              if (renderer.rrCanvas) {
+                renderer.rrContext.clearRect(0, 0, renderer.rrCanvas.width, renderer.rrCanvas.height);
+                renderer.rrContext.drawImage(renderer.compositeCanvas, 0, 0, renderer.rrCanvas.width, renderer.rrCanvas.height);
+              }
+              battleAudit = { round: battleClip.round, mediaFile: sourceClip.file, desiredMediaTime, mediaFrameIndex, frameUrl: imageUrl,
+                decodedWidth: renderer.battleImage.naturalWidth, decodedHeight: renderer.battleImage.naturalHeight, sourceSpan: battleClip.endSecond - battleClip.startSecond,
+                mediaDuration: sourceClip.mediaDuration };
+            }
+          }
+          const cursors = [...document.querySelectorAll('.replayer-mouse')].map((element) => {
+            const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+            return { className: element.className, left: style.left, top: style.top, display: style.display,
+              opacity: style.opacity, visibility: style.visibility, rect: rect.toJSON(), backgroundImage: style.backgroundImage };
+          });
+          const recordingControls = [...(replayDoc?.querySelectorAll('.ix-recording') || [])].map((element) => {
+            const style = getComputedStyle(element);
+            return { display: style.display, visibility: style.visibility, opacity: style.opacity };
+          });
+          const nativeUnit = renderer.view.debug.views.get('p:1');
+          const nativeCanvases = [...document.querySelectorAll('#host canvas')].map((element) => {
+            const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+            return { width: element.width, height: element.height, clientWidth: element.clientWidth, clientHeight: element.clientHeight,
+              rect: rect.toJSON(), cssTransform: style.transform, cssWidth: style.width, cssHeight: style.height };
+          });
+          const rrLayers = replayDoc ? [...replayDoc.querySelectorAll('.gm__field,.gm__field canvas[data-sp-canvas-surface="1"]')].map((element) => {
+            const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+            return { selector: element.matches('canvas') ? '.gm__field canvas[data-sp-canvas-surface="1"]' : '.gm__field',
+              rect: rect.toJSON(), cssTransform: style.transform, cssWidth: style.width, cssHeight: style.height,
+              offsetWidth: element.offsetWidth, offsetHeight: element.offsetHeight };
+          }) : [];
+          return { sourceSecond: second, clockErrorMs: clock.clockErrorMs, hasRecordedGameField, startVisible, cursors, recordingControls,
+            dimensions: { outerViewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+              outerHost: (() => { const element = document.querySelector('#host'), rect = element?.getBoundingClientRect(); return rect ? { rect: rect.toJSON(), clientWidth: element.clientWidth, clientHeight: element.clientHeight } : null; })(),
+              rrIframe: (() => { const frame = window.__renderer.rrPlayer.iframe, rect = frame?.getBoundingClientRect(); return rect ? { rect: rect.toJSON(), width: frame.clientWidth, height: frame.clientHeight,
+                document: { width: frame.contentDocument.documentElement.clientWidth, height: frame.contentDocument.documentElement.clientHeight,
+                  dpr: frame.contentWindow.devicePixelRatio } } : null; })(), nativeCanvases, rrLayers },
+            nativeUnit: nativeUnit ? { actor: !!nativeUnit.actor, spineReady: nativeUnit.spineReady, swapT: nativeUnit.swapT,
+              alpha: nativeUnit.root?.alpha, visible: nativeUnit.root?.visible, fallbackVisible: nativeUnit.fallback?.visible,
+              fallbackAlpha: nativeUnit.fallback?.alpha, retryAt: nativeUnit._retryAt || 0, entry: nativeUnit.entry?.name || null,
+              loading: !!nativeUnit._spineBusy, impostor: !!nativeUnit.imp?.sprite } : null,
+            prep: activeSnapshot ? { at: activeSnapshot.at, sourceSeq: activeSnapshot.sourceSeq, pieces: activeSnapshot.state.pieces,
+              visualPoses: activeSnapshot.visualPoses, nativeUnitRect1: renderer.view.pieceScreenRect(1) } : null, battle: battleAudit };
+        }, { second, i, fps, sourceStart });
+        if (i < 3 || i % fps === 0) sceneAudit.push(frameAudit);
+        compositeTiming.rrAndNativeMs += performance.now() - renderStarted;
+        const screenshotStarted = performance.now();
+        const png = await page.screenshot({ type: 'png', captureBeyondViewport: false, optimizeForSpeed: true });
+        compositeTiming.screenshotMs += performance.now() - screenshotStarted;
+      if (i === 0 && compositeClips.length === 0) { await fsp.writeFile(path.join(outputRoot, 'composite-first-frame.png'), png); stage(`composite screenshot PNG ${png.length} bytes`); }
+        for (const anchor of [7.7, 9.65, 11.6, 15.2]) {
+          const anchorFrame = Math.round((anchor - sourceStart) * fps);
+          if (anchorFrame === i) await fsp.writeFile(path.join(outputRoot, `composite-anchor-${second.toFixed(3)}.png`), png);
+        }
+        const pipeStarted = performance.now();
+        try { if (!ffmpeg.stdin.write(png)) { const drainStarted = performance.now(); await once(ffmpeg.stdin, 'drain'); compositeTiming.drainWaitMs += performance.now() - drainStarted; } }
+        catch (error) { throw new Error(`composite image pipe failed at frame ${i}: ${error.message}; ffmpeg=${ffmpegError.trim()}`); }
+        compositeTiming.pipeMs += performance.now() - pipeStarted; compositeTiming.frames++;
+        if (i % 60 === 0) stage(`composite frame ${i + 1}/${frameCount} at ${second.toFixed(3)}s; rr/native=${compositeTiming.rrAndNativeMs.toFixed(1)}ms screenshot=${compositeTiming.screenshotMs.toFixed(1)}ms pipe=${compositeTiming.pipeMs.toFixed(1)}ms`);
+      }
+      ffmpeg.stdin.end();
+      const [compositeExit] = await once(ffmpeg, 'close');
+      if (compositeExit !== 0) throw new Error(`composite FFmpeg exit ${compositeExit}: ${ffmpegError}`);
+      const probe = spawn(ffprobe, ['-v','error','-select_streams','v:0','-show_entries','stream=codec_name,width,height,r_frame_rate,bit_rate','-show_entries','format=duration,size','-of','json',compositeFile], { stdio: ['ignore','pipe','pipe'] });
+      let probeOut = '', probeErr = ''; probe.stdout.setEncoding('utf8'); probe.stderr.setEncoding('utf8'); probe.stdout.on('data', (s) => { probeOut += s; }); probe.stderr.on('data', (s) => { probeErr += s; });
+      const [probeCode] = await once(probe, 'close'); if (probeCode !== 0) throw new Error(`composite ffprobe exit ${probeCode}: ${probeErr}`);
+      const probed = JSON.parse(probeOut), stream = probed.streams?.[0];
+      if (!stream || stream.width !== 2560 || stream.height !== 1260 || Number(probed.format?.duration) < (sourceEnd - sourceStart) * 0.95) throw new Error(`composite dimensions/duration invalid: ${JSON.stringify(probed)}`);
+      compositeClips.push({ kind: 'composite', segmentId: interval.segmentId, sourceStartSecond: sourceStart, sourceEndSecond: sourceEnd, file: compositeFile,
+        width: stream.width, height: stream.height, fps, frames: frameCount, timing: compositeTiming, sceneAudit,
+        ffmpegExitCode: compositeExit, ffprobeExitCode: probeCode, ffprobe: probed });
+      await fsp.writeFile(path.join(outputRoot, `${interval.segmentId}.receipt.json`), JSON.stringify(compositeClips.at(-1), null, 2));
+      ffmpeg = null;
+      stage(`composite verified: ${interval.segmentId} ${stream.width}x${stream.height} ${fps}fps, ${probed.format.duration}s`);
+      }
+    }
     if (!args.prepOnly) for (const clip of clips) {
     const replay = replays[clip.round];
     const sessionPath = replay.sourcePath;
@@ -405,7 +759,7 @@ async function main(argv) {
       }, error: (e) => { encoder.error = String(e); } });
       encoder.serial = Promise.resolve(); encoder.configure({ codec: 'vp8', width, height, framerate: fps, bitrate, latencyMode: 'realtime' });
       const frames = replay.frames; const clock = helpers.replayClock(replay); const mapper = helpers.createReplayTimeMapper(clip, replay);
-      let idx = 0; const count = Math.ceil(sampleSeconds * fps); let prior = null;
+      let idx = 0; const count = Math.ceil(sampleSeconds * fps - 1e-9); let prior = null;
       for (let i = 0; i < count; i++) {
         const wallSecond = clip.startSecond + i / fps;
         const gameTime = mapper.at(wallSecond);
@@ -452,7 +806,7 @@ async function main(argv) {
       prepCoverage: { sourceSnapshotCount: prepAudit.sourceSnapshotCount, uncoveredGaps: prepAudit.uncoveredGaps,
         clips: prepAudit.clips.map((clip) => ({ kind: 'prep', startSecond: clip.startSecond, endSecond: clip.endSecond,
           sourceSnapshots: clip.states.map(({ sourceSeq, sourceKind, revision, at, frameIndex }) => ({ sourceSeq, sourceKind, revision, at, frameIndex })) })) },
-      stateScreenshots: prepStateScreenshots, prepClips: renderedClips.filter((clip) => clip.kind === 'prep'),
+      stateScreenshots: prepStateScreenshots, prepClips: renderedClips.filter((clip) => clip.kind === 'prep'), compositeClips,
       clips: renderedClips.filter((clip) => clip.kind !== 'prep').sort((a, b) => a.round - b.round) };
     const manifestTemp = `${manifestPath}.partial`; await fsp.writeFile(manifestTemp, JSON.stringify(manifest, null, 2)); await fsp.rename(manifestTemp, manifestPath);
     await browser.close();

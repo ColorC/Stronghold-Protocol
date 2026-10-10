@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+
+const FFPROBE = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffprobe.exe';
+const FFMPEG = 'C:/Users/lilithgames/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin/ffmpeg.exe';
+
+function run(exe, args) {
+  const child = spawn(exe, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+  let stdout = '', stderr = '';
+  child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
+  return once(child, 'close').then(([code]) => {
+    if (code !== 0) throw new Error(`${path.basename(exe)} exit ${code}: ${stderr.slice(-3000)}`);
+    return { stdout, stderr };
+  });
+}
+
+const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, index, all) => {
+  if (index % 2 === 0) pairs.push([value.replace(/^--/, ''), all[index + 1]]);
+  return pairs;
+}, []));
+for (const key of ['manifest', 'media-dir', 'output-dir', 'rounds']) if (!args[key]) throw new Error(`missing --${key}`);
+const manifest = JSON.parse(await fs.readFile(path.resolve(args.manifest), 'utf8'));
+const mediaDir = path.resolve(args['media-dir']), outputDir = path.resolve(args['output-dir']);
+const rounds = args.rounds.split(',').map(Number);
+const report = { schemaVersion: 1, sourceRecordingId: manifest.recordingId, decoder: 'ffmpeg sequential decode to MJPEG q:v=1', encoding: 'JPEG quality scale 1', clips: [] };
+await fs.mkdir(outputDir, { recursive: true });
+for (const round of rounds) {
+  const clip = manifest.clips.find((item) => Number(item.round) === round);
+  if (!clip) throw new Error(`manifest has no round ${round}`);
+  const input = path.resolve(mediaDir, clip.file), targetDir = path.join(outputDir, `round-${round}`);
+  await fs.mkdir(targetDir, { recursive: true });
+  const probe = await run(FFPROBE, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate,avg_frame_rate,nb_frames,duration', '-of', 'json', input]);
+  const stream = JSON.parse(probe.stdout).streams?.[0];
+  if (!stream || Number(stream.width) !== 2560 || Number(stream.height) !== 1260) throw new Error(`unexpected source dimensions R${round}: ${JSON.stringify(stream)}`);
+  const firstProbe = await run(FFPROBE, ['-v', 'error', '-select_streams', 'v:0', '-read_intervals', '%+#1', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time,pts_time,pkt_duration_time', '-of', 'json', input]);
+  const firstFrame = JSON.parse(firstProbe.stdout).frames?.[0];
+  process.stdout.write(`decode R${round} start source=${clip.startSecond}-${clip.endSecond} fps=${stream.r_frame_rate} frames=${stream.nb_frames}\n`);
+  const outputPattern = path.join(targetDir, 'frame-%06d.jpg');
+  const decoded = await run(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-i', input, '-map', '0:v:0', '-fps_mode', 'passthrough', '-start_number', '0', '-q:v', '1', '-y', outputPattern]);
+  const files = (await fs.readdir(targetDir)).filter((name) => /^frame-\d{6}\.jpg$/.test(name)).sort();
+  const entry = { round, file: clip.file, input, sourceStartSecond: clip.startSecond, sourceEndSecond: clip.endSecond,
+    sourceMediaDuration: clip.mediaDuration, reported: { width: Number(stream.width), height: Number(stream.height), rFrameRate: stream.r_frame_rate,
+      avgFrameRate: stream.avg_frame_rate, nbFrames: stream.nb_frames, duration: stream.duration }, decodedFrameCount: files.length,
+    actualFirstFrame: firstFrame ? { bestEffortTimestampTime: firstFrame.best_effort_timestamp_time, ptsTime: firstFrame.pts_time, packetDurationTime: firstFrame.pkt_duration_time } : null,
+    firstDecodedFile: files[0] ? path.join(targetDir, files[0]) : null, lastDecodedFile: files.at(-1) ? path.join(targetDir, files.at(-1)) : null,
+    firstFrameIndex: 0, indexTimeRule: 'round((sourceSecond-sourceStart)/(sourceEnd-sourceStart)*sourceMediaDuration*30); frame index is sequential decode order' };
+  if (!files.length || (stream.nb_frames && Number(stream.nb_frames) !== files.length)) throw new Error(`decoded frame count mismatch R${round}: expected=${stream.nb_frames} actual=${files.length}; ${decoded.stderr}`);
+  report.clips.push(entry);
+  process.stdout.write(`decode R${round} done count=${files.length} last=${entry.lastDecodedFile}\n`);
+}
+const reportPath = path.join(outputDir, 'decode-manifest.json');
+await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+process.stdout.write(`report ${reportPath}\n`);
