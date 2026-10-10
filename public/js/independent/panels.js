@@ -14,6 +14,7 @@ import { badgeEffectText } from './badgeText.js';
 import { fieldConditionPiecesForEffect } from '../../../shared/independentEligibility.js';
 import { trainingChoiceOptions } from '../../../shared/independentTrainingChoice.js';
 import { PROF_NAME } from '../ui/loadoutModel.js';
+import { OriginalCardRefs } from './detail.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -200,6 +201,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
   const stacks = inventoryStacks(state.inventory, catalog);
   const [qty, setQty] = useState({});
   const [using, setUsing] = useState(null);
+  const [prizeReference,setPrizeReference] = useState(false);
   const [tags, setTags] = useState({});
   const [pick, setPick] = useState(null);
   useEffect(() => { if (!open) setUsing(null); else if (focus) setPick(focus); }, [open, focus]);
@@ -229,7 +231,7 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
           const x = stacks[i];
           if (!x) return html`<span key=${`e${i}`} class="ix-inv__cell is-empty" aria-hidden="true"></span>`;
           return html`<button type="button" key=${x.key} role="option" aria-selected=${String(x === s)} class=${cx('ix-inv__cell', x === s && 'is-on')}
-              data-testid=${`ix-inv-${x.id}`} title=${x.name} onContextMenu=${(e) => copyComponentLink(e, `stock-${x.key}`)} onClick=${() => { setPick(x.key); setUsing(null); }}>
+              data-testid=${`ix-inv-${x.id}`} title=${x.name} onContextMenu=${(e) => copyComponentLink(e, `stock-${x.key}`)} onClick=${() => { setPick(x.key); setUsing(null); setPrizeReference(false); }}>
             <${GearIcon} id=${x.id} catalog=${catalog} plain=${true} />
             <b class="num">×${x.count}</b>
             <small>${x.name}</small>
@@ -239,8 +241,9 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
       <div class="ix-inv__sel">
         ${s ? html`<header class="ix-inv__head"><${GearIcon} id=${s.id} catalog=${catalog} plain=${true} />
             <div class="ix-inv__text"><b>${s.name}</b><span class="num">${!s.badge && !s.used && s.level != null ? `装备叠加×${s.level} · ` : ''}库存×${s.count}</span></div></header>
-          <p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>
-          <${GearRecipients} gear=${g} state=${state} catalog=${catalog} source=${target} />
+          ${catalog.prizes[s.id]?.sourceRefs?.cards?.length ? html`<div class="ix-usepick" role="tablist" aria-label="奖品说明"><button type="button" role="tab" aria-selected=${String(!prizeReference)} onClick=${()=>setPrizeReference(false)}>工坊效果</button><button type="button" role="tab" aria-selected=${String(prizeReference)} onClick=${()=>setPrizeReference(true)}>参考原卡</button></div>` : null}
+          ${prizeReference ? html`<${OriginalCardRefs} op=${catalog.prizes[s.id]} linkAnchor=${'stock-'+s.key} />` : html`<p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>`}
+          <${FieldConditionCounts} effects=${g?.params?.effects || []} source=${target} state=${state} catalog=${catalog} active=${true} />
           <${TermNotes} texts=${[s.text]} catalog=${catalog} exclude=${s.name} />
           ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} />` : null}
           <div class="ix-inv__act">

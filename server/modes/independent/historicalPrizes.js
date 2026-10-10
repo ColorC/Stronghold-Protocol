@@ -73,6 +73,7 @@ const HISTORICAL_PRIZE_ICONS = {
   "SCH_149": "chess_item_5_03_e_a"
 };
 const LEVEL_WORDING = {
+  BGS_Treasures_011:'发现一项本局后勤效果：增加训练产出、每回合免费刷新，或招募后返还金币。',
   BGS_Treasures_000:'为一名干员提供4级训练。',BGS_Treasures_007:'为场上所有干员各提供2级训练。',
   BGS_Treasures_013:'本局商店干员额外携带1级训练。',
   BGS_Treasures_009:'为一名干员装备持续训练装置；每回合整备结束时，为其提供4级训练。',
@@ -88,13 +89,13 @@ export function compileHistoricalPrizes(atlas) {
     const [name,effect] = WORDING[card.id] || [];
     if (!name || !effect) throw new Error('UNMAPPED_DARKMOON_PRIZE:' + card.id);
     const id = HISTORICAL_PRIZE_PREFIX + card.id;
-    return [id,{id,name,effect,normalEffect:effect,levelsEffect:LEVEL_WORDING[card.id] || effect,stage:['起步','成型','兑现','终极'][card.prizeTier-1],prizeTier:card.prizeTier,
+    return [id,{id,name,effect,normalEffect:card.id==='BGS_Treasures_018'?'为一名干员装备足够的攻击徽章，使其永久攻击面板至少翻倍。':card.id==='SCH_149'?'获得奖品支援干员涤火杰西卡。获得时，以攻击徽章和生命徽章补足至场上友方最高的永久攻击和生命面板。':effect,levelsEffect:LEVEL_WORDING[card.id] || effect,stage:['起步','成型','兑现','终极'][card.prizeTier-1],prizeTier:card.prizeTier,
       iconItemId:HISTORICAL_PRIZE_ICONS[card.id],historical:true,sourceVersion:atlas.version,mechanism:targets.has(card.id)?'darkmoonTargetPrize':'darkmoonPrize',params:{sourceId:card.id},
       sourceRefs:{cards:[{id:card.id,name:card.nameCN,nameEn:card.nameEN,text:card.textCN,textEn:card.textEN,
         attack:card.baseStats?.attack ?? null,health:card.baseStats?.health ?? null,tier:card.tavernTier ?? null,
         cardType:card.cardType,version:atlas.version,sourceUrl:atlas.sourceUrls.chineseUrl,
         ...(card.id==='SCH_149'?{goldenId:'TB_BaconUps_308',goldenAttack:2,goldenHealth:2,
-          goldenText:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。'}:{})}]}}];
+          textElite:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。',goldenText:'战吼：获得攻击力和生命值，使其变为战场上最高数值的两倍。'}:{})}]}}];
   }));
 }
 export function installHistoricalPrizeSupport(operators,equipment,prizes) {
@@ -109,7 +110,7 @@ export function installHistoricalPrizeSupport(operators,equipment,prizes) {
     op.recruitable=false; op.mergable=false; op.prizeSupport=true; op.darkmoonSupport=true;
     op.source={...op.source,normalChess:raw,eliteChess:raw};
     op.sourceRefs={...structuredClone(prizes[HISTORICAL_PRIZE_PREFIX+'SCH_149'].sourceRefs),darkmoon19_2:{id:'SCH_149',name:'银色自大狂',nameEn:'Argent Braggart',version:'19.2.0.68600',battlecry:true}};
-    const text='奖品支援。获得时，按场上友方最高永久攻击和生命面板补足攻击徽章、生命徽章；训练模式沿原生成长曲线训练至队伍的最高战备水平。';
+    const text='奖品支援。获得时，以攻击徽章和生命徽章补足至场上友方最高的永久攻击和生命面板。';
     op.nativeTrait={text,normalText:text,eliteText:text,sources:{normal:[],elite:[]},sourceRecords:[],effect:{prep:[],combat:[],unsupported:[]}};
     delete op.effectDelivery; delete op.permitGearId;
     operators[id]=op;
@@ -118,12 +119,12 @@ export function installHistoricalPrizeSupport(operators,equipment,prizes) {
     ['darkmoon-gruul-training','持续训练装置','每回合整备结束时，为装备者装备2枚攻击徽章和2枚伤害徽章。',{effects:[]}],
     ['darkmoon-windfury-trigger','速射扳机','每第8次普通攻击连射两次。',{effects:[{trigger:'attack',behavior:'doubleStrike',params:{counterEvery:8}}]}],
   ]) equipment[id]={id,sourceId:id,canonicalId:id,uniqueKey:id,name,kind:'equipment',mechanism:'combatEquipment',params:{...params,equipmentLifetime:'unit',combatEffectScope:'wearer'},effect,normal:effect,normalLevels:id==='darkmoon-gruul-training'?'每回合整备结束时，为装备者提供4级训练。':effect,
-    iconItemId:id==='darkmoon-gruul-training'?'chess_item_3_09_e_a':'chess_item_4_03_e_a',level:null,unique:id==='darkmoon-windfury-trigger',available:true,shopEligible:false,prizeOnly:true,inheritable:true};
+    iconItemId:id==='darkmoon-gruul-training'?'chess_item_3_09_e_a':'chess_item_4_03_e_a',level:null,unique:id==='darkmoon-windfury-trigger',available:true,shopEligible:false,prizeOnly:true,sourcePrizeId:HISTORICAL_PRIZE_PREFIX+(id==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028'),sourceRefs:structuredClone(prizes[HISTORICAL_PRIZE_PREFIX+(id==='darkmoon-gruul-training'?'BGS_Treasures_009':'BGS_Treasures_028')].sourceRefs),inheritable:true};
   for (const [id,name,effect,iconItemId] of [
     ['prize-logistics-production','生产协作','本局干员产出的基础徽章数量加倍。','chess_item_1_01_e_a'],
     ['prize-logistics-refresh','调度协作','本局每回合增加一次免费刷新。','chess_item_4_03_e_a'],
     ['prize-logistics-refund','采购协作','本局每购买一名商店干员，获得1枚金币。','chess_item_1_03_e_a'],
-  ]) prizes[id]={id,name,effect,iconItemId,logisticsChoice:true,mechanism:'passive'};
+  ]) prizes[id]={id,name,effect,levelsEffect:id==='prize-logistics-production'?'本局干员产出的训练等级数量加倍。':effect,iconItemId,logisticsChoice:true,mechanism:'passive'};
   const coin=HISTORICAL_PRIZE_PREFIX+'gold-coin';
   prizes[coin]={id:coin,name:'储备金币',iconItemId:'chess_item_1_03_e_a',effect:'获得1枚金币。',historicalSupply:true,mechanism:'darkmoonPrize',params:{sourceId:'gold-coin'}};
   const banana=HISTORICAL_PRIZE_PREFIX+'small-banana';
