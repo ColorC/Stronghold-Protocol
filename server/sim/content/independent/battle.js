@@ -1571,14 +1571,15 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
   }
   if (behavior === 'stealthBreakDamage') {
     if (!hasTag(p.requiresTag)) return;
+    if (!isFirstInstance) return;
     const paired = ownPair(p.pairedSourceId);
     let hadStealth = false;
     let armed = false;
     let procs = 0;
     let stealthAttackBonus = 0;
-    const rampKey = `independent:stealthAttackRamp:${unit.uid}:${itemIdValue}:${instanceKey ?? ''}`;
+    const rampKey = `independent:stealthAttackRamp:${unit.uid}:${itemIdValue}`;
     const procCap = Number(p.pairedProcMaxPerBattle ?? Infinity);
-    const awardGrowth = () => battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: `${itemIdValue}:${instanceKey ?? ''}`, attackUnits: stackCount });
+    const awardGrowth = () => battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: itemIdValue, attackUnits: totalCopies });
     const exitStealth = () => {
       hadStealth = false;
       armed = true;
@@ -1594,7 +1595,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       const hasStealth = !!(unit.s.flags.stealth || unit.findBuff('stealth'));
       if (hasStealth) {
         hadStealth = true;
-        stealthAttackBonus = Math.min(Number(p.maxAttackBonus ?? 1), stealthAttackBonus + Number(p.attackBonusPerSecond ?? 0.02) * stackCount * Number(dt || 0));
+        stealthAttackBonus = Math.min(Number(p.maxAttackBonus ?? 1) * totalCopies, stealthAttackBonus + Number(p.attackBonusPerSecond ?? 0.02) * totalCopies * Number(dt || 0));
         if (stealthAttackBonus > 0) battle.addBuff(unit, { key: rampKey, mods: { atkPct: stealthAttackBonus }, persist: true, allowDead: true, refresh: 'replace' });
       } else if (hadStealth) exitStealth();
     }, { owner: unit });
@@ -1604,7 +1605,7 @@ function installEquipmentCombatRule(battle, catalog, unit, piece, rule, entries,
       // gear v4: the attack stuns its target instead of hitting harder
       if (Number(p.stunSeconds) > 0 && target?.side === 'enemy') applyEquipmentStatus(battle, unit, target, 'stun', { duration: Number(p.stunSeconds) });
       if (paired && procs < procCap) {
-        battle.dealDamage(unit, target, { amount: unit.s.atk * Number(p.trueDamageAttackRatio ?? 0), type: 'true', tags: ['independentEquipment'] });
+        battle.dealDamage(unit, target, { amount: unit.s.atk * Number(p.trueDamageAttackRatio ?? 0) * totalCopies, type: 'true', tags: ['independentEquipment'] });
         procs++;
       }
       armed = false;
@@ -1770,8 +1771,10 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
       }
       const ratio = Number(p.atkPercent);
       if (!(ratio > 0)) throw new Error(`combatEquipment ${itemIdValue}: elementOnHit needs atkPercent`);
-      if (!isFirstInstance) return true;
-      const scaledRatio = ratio + Math.max(0, totalCopies - 1) * Number(p.perAdditionalAtkPercent ?? 0);
+      const scaledRatio = Number(p.perAdditionalAtkPercent) > 0
+        ? ratio + Math.max(0, totalCopies - 1) * Number(p.perAdditionalAtkPercent)
+        : ratio * stackCount;
+      if (Number(p.perAdditionalAtkPercent) > 0 && !isFirstInstance) return true;
       normalHits(battle, unit, (target) => { if (target.alive) battle.dealDamage(unit, target, { type: 'element', element: p.element, amount: unit.s.atk * scaledRatio, tags: GEAR_TAGS }); });
       return true;
     }
@@ -1888,16 +1891,13 @@ function installGearV4Rule(battle, catalog, unit, piece, behavior, p, entries, i
         const entering = !unit.findBuff(key);
         battle.addBuff(unit, { key, status: 'stealth', flags: { stealth: true }, duration: Infinity, refresh: 'replace', source: unit });
         if (entering) battle.emit('independentStealthEntered', { unit, sourceId: itemIdValue });
-        battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: `${itemIdValue}:${instanceKey ?? ''}`, attackUnits: stackCount });
+      // Stealth growth belongs to the family emblem; the outfit only grants stealth.
       }, { owner: unit });
       battle.on('attack', ({ attacker, isSkill }) => {
         if (attacker !== unit || isSkill || !unit.findBuff(key)) return;
         battle.removeBuff(unit, key);
         battle.emit('independentStealthExited', { unit, sourceId: itemIdValue });
       }, { owner: unit, priority: -10 });
-      battle.on('independentStealthExited', ({ unit: who }) => {
-        if (who === unit) battle.grantTemporaryBadgeGrowth?.(unit, { sourceId: itemIdValue, sourceKey: `${itemIdValue}:${instanceKey ?? ''}`, attackUnits: stackCount });
-      }, { owner: unit });
       return true;
     }
     case 'attractOnDeploy': {

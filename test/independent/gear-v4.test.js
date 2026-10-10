@@ -306,13 +306,13 @@ test('skillStartStrike (炎国制式短刀) and deployStrike (卡西米尔竞技
   assert.ok(near(lost(a), 230) && near(lost(b), 230) && lost(out) === 0, `${lost(a)} ${lost(b)}`);
 });
 
-test('叙拉古正装 awards temporary attack growth and 家族印记 strengthens the first hit after stealth clears', () => {
+test('only the Siracusa family emblem awards stealth-entry/exit growth; its first post-stealth hit gets the native paired damage', () => {
   const h = setup([{ uid: 'w', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
   const w = h.unit('w');
   assert.ok(w.s.flags.stealth, 'hidden on deployment');
   const beforeAtk = w.s.atk;
   const beforeTemporary = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
-  assert.ok(beforeTemporary >= 2, 'both equipped pieces reward stealth entry');
+  assert.equal(beforeTemporary, 1, 'only the family emblem rewards stealth entry; outfit grants stealth only');
   h.step(20);
   assert.ok(w.s.atk > beforeAtk, 'the native 2%/second stealth attack ramp raises ATK while hidden');
   const e = h.spawn('dummy', { pos: [10, 4] });
@@ -320,11 +320,38 @@ test('叙拉古正装 awards temporary attack growth and 家族印记 strengthen
   assert.ok(!w.s.flags.stealth, 'the first attack ends it');
   assert.ok(!e.s.flags.stun, 'the attack that clears stealth lands before the effect starts');
   const growth = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, item) => n + Number(item.attackUnits || 0), 0);
-  assert.ok(growth >= beforeTemporary + 2, 'both equipped pieces reward stealth exit');
+  assert.equal(growth, beforeTemporary + 1, 'the family emblem rewards stealth exit once');
   assert.ok(w.s.atk > beforeAtk, `temporary badges increase attack ${beforeAtk} -> ${w.s.atk}`);
   attacks(h, w, e); // no intervening simulation tick: the event transition must already be armed
   assert.ok(e.s.flags.stun, 'the first hit after exiting stealth receives the effect without waiting for a tick');
   assert.ok(lost(e) >= 900, `paired native 800% true damage applies on the clearing hit: ${lost(e)}`);
+});
+
+test('two independent family emblems and one quantity-2 emblem have identical ramp, badge, and paired damage', () => {
+  const run = (equipment) => {
+    const h = setup([{ uid: 'w', chessId: OPS.syracusa, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), ...equipment] }]);
+    const w = h.unit('w');
+    const initial = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, x) => n + Number(x.attackUnits || 0), 0);
+    h.step(20);
+    const rampedAtk = w.s.atk;
+    const e = h.spawn('dummy', { pos: [10, 4] });
+    attacks(h, w, e);
+    const afterExit = Object.values(w.mem.darkmoonTemporaryEquipment || {}).reduce((n, x) => n + Number(x.attackUnits || 0), 0);
+    attacks(h, w, e);
+    return { initial, rampedAtk, afterExit, attack: w.s.atk, damage: lost(e) };
+  };
+  const separate = run([G('叙拉古家族印记'), G('叙拉古家族印记')]);
+  const quantity = run([{ id: G('叙拉古家族印记'), quantity: 2 }]);
+  assert.deepEqual(quantity, separate);
+  assert.equal(separate.initial, 2);
+  assert.equal(separate.afterExit, 4);
+});
+
+test('family emblem has no gameplay effect on a non-Siracusa wearer', () => {
+  const h = setup([{ uid: 'w', chessId: OPS.a, row: 10, col: 3, equipment: [G('叙拉古仪仗正装'), G('叙拉古家族印记')] }]);
+  const w = h.unit('w');
+  assert.ok(w.s.flags.stealth);
+  assert.equal(Object.keys(w.mem.darkmoonTemporaryEquipment || {}).length, 0);
 });
 
 test('叙拉古家族印记 is available and stackable in the workshop gear catalog', () => {
