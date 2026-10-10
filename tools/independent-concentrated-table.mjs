@@ -185,7 +185,12 @@ export function buildTable({ design, gameText, chessData, catalog, sourceReferen
       normal: '双方任一人的凭证资格满足条件即可交接；持有人可作为交出方或接收方。',
       upgrade: permission.limit, basis: '新局自动来源；其余旧凭证仅为存档兼容，不作为新局来源。' });
   }
-  for (const [id, prize] of Object.entries(catalog.prizes)) rows.push({ section: '工程部特供', level: prize.stage || '', name: prize.name,
+  const prizeEntries = Object.entries(catalog.prizes);
+  const hasHistoricalPrizes = prizeEntries.some(([, prize]) => prize.historical === true);
+  const mainPrizeEntries = prizeEntries.filter(([, prize]) => hasHistoricalPrizes
+    ? prize.historical === true
+    : !prize.historicalSupply && !prize.logisticsChoice);
+  for (const [id, prize] of mainPrizeEntries) rows.push({ section: '工程部特供', level: prize.stage || '', name: prize.name,
     role: '阶段奖品', faction: '', reference: sourceCardSummary(prize.sourceRefs, prize.historicalTier), native: '沿用已有工坊奖品规则', nativePower: '',
     normal: clean(prize.effect || gameText.prizes?.[id]?.text), upgrade: '', basis: '完整暗月奖品译稿与当前已实装奖品目录分开标明' });
   const operatorByName = new Map(ops.map((op) => [op.name, op]));
