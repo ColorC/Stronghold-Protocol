@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { countsAsCreate, countsAsFight, costCardHasWholeSurfaceStyle, iconIsConcrete, iconMatchesExpected, intersects, parseArgs } from '../../tools/resonance/native-ui-check.mjs';
+import { countsAsCreate, countsAsFight, costCardHasWholeSurfaceStyle, iconIsConcrete, iconMatchesExpected, intersects, isResumableInitialization, parseArgs } from '../../tools/resonance/native-ui-check.mjs';
 
 const script = fileURLToPath(new URL('../../tools/resonance/native-ui-check.mjs', import.meta.url));
 
@@ -44,4 +44,15 @@ test('unsafe flags and malformed session identifiers fail before launching a bro
   assert.throws(() => parseArgs(['--resume-session', '../outside']), /existing session id; no work started/);
   assert.throws(() => parseArgs(['--unknown']), /no work started/);
   assert.throws(() => parseArgs(['--resume-session', 'aaaaaaaa-1111', '--validate-args']), /cannot resume/);
+  assert.deepEqual(parseArgs(['--resume-initialization']), { validateArgs: false, selfTest: false, resumeSession: '', resumeInitialization: true });
+  assert.throws(() => parseArgs(['--resume-initialization', '--resume-session', 'aaaaaaaa-1111']), /choose one resume mode/);
+});
+
+test('initialization recovery accepts only owned failed receipts with zero gameplay mutations', () => {
+  const valid = { checker: 'native-ui-check', status: 'failed', sessionId: null, creates: 0, fights: 0, gameplayMutations: [] };
+  assert.equal(isResumableInitialization(valid), true);
+  for (const changed of [
+    { ...valid, status: 'passed' }, { ...valid, checker: 'other' }, { ...valid, sessionId: 'session-123' },
+    { ...valid, creates: 1 }, { ...valid, fights: 1 }, { ...valid, gameplayMutations: [{ path: '/actions' }] },
+  ]) assert.equal(isResumableInitialization(changed), false);
 });

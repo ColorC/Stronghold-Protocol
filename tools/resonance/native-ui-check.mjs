@@ -21,16 +21,18 @@ const createsPath = /\/resonance\/api\/sessions\/?$/;
 const actionPath = /\/resonance\/api\/sessions\/[^/]+\/actions\/?$/;
 
 export function parseArgs(args) {
-  let validateArgs = false, selfTest = false, resumeSession = '';
+  let validateArgs = false, selfTest = false, resumeSession = '', resumeInitialization = false;
   for (let i = 0; i < args.length;) {
     if (args[i] === '--validate-args' && !validateArgs) { validateArgs = true; i++; }
     else if (args[i] === '--self-test' && !selfTest) { selfTest = true; i++; }
     else if (args[i] === '--resume-session' && !resumeSession && args[i + 1]) { resumeSession = args[i + 1]; i += 2; }
+    else if (args[i] === '--resume-initialization' && !resumeInitialization) { resumeInitialization = true; i++; }
     else throw new Error('usage: [--resume-session <owned-ephemeral-session-id>] [--validate-args|--self-test]; no work started');
   }
   if (resumeSession && !/^[a-zA-Z0-9-]{8,80}$/.test(resumeSession)) throw new Error('--resume-session requires an existing session id; no work started');
-  if ((validateArgs || selfTest) && resumeSession) throw new Error('validation cannot resume a session; no work started');
-  return { validateArgs, selfTest, resumeSession };
+  if ((validateArgs || selfTest) && (resumeSession || resumeInitialization)) throw new Error('validation cannot resume; no work started');
+  if (resumeSession && resumeInitialization) throw new Error('choose one resume mode; no work started');
+  return { validateArgs, selfTest, resumeSession, resumeInitialization };
 }
 
 export function countsAsCreate(method, pathname) { return method.toUpperCase() === 'POST' && createsPath.test(pathname); }
@@ -45,6 +47,10 @@ export function iconIsConcrete(iconId, src) {
 export function iconMatchesExpected(iconId, actualUrl, expectedUrl) {
   if (!iconIsConcrete(iconId, actualUrl) || typeof expectedUrl !== 'string' || !expectedUrl) return false;
   try { return new URL(actualUrl, ROOT).href === new URL(expectedUrl, ROOT).href; } catch { return false; }
+}
+export function isResumableInitialization(receipt) {
+  return receipt?.checker === 'native-ui-check' && receipt.status === 'failed' && receipt.sessionId === null &&
+    receipt.creates === 0 && receipt.fights === 0 && Array.isArray(receipt.gameplayMutations) && receipt.gameplayMutations.length === 0;
 }
 export function costCardHasWholeSurfaceStyle(card) {
   return !!card && /scard--t\d/.test(card.className || '') && !!card.background && card.background !== 'transparent' && card.background !== 'rgba(0, 0, 0, 0)' &&
@@ -63,21 +69,37 @@ async function run() {
     return;
   }
   let previous = null;
+  if (options.resumeInitialization) {
+    assert(existsSync(RECEIPT) && existsSync(LOG), '--resume-initialization requires the owned failed receipt and log');
+    previous = JSON.parse(await readFile(RECEIPT, 'utf8'));
+    assert(isResumableInitialization(previous), '--resume-initialization only accepts this checker’s failed zero-action initialization receipt');
+    for (const screenshot of Object.values(SHOTS)) assert(!existsSync(screenshot), `initialization recovery refuses existing screenshot: ${screenshot}`);
+  }
   if (options.resumeSession) {
     assert(existsSync(RECEIPT) && existsSync(LOG), '--resume-session requires the owned receipt and log');
     previous = JSON.parse(await readFile(RECEIPT, 'utf8'));
     assert(previous.checker === 'native-ui-check' && previous.sessionId === options.resumeSession && ['prep', 'after-buy', 'after-deploy', 'after-equip', 'prep-gear', 'replay'].includes(previous.checkpoint) && ['prepared-incomplete', 'failed'].includes(previous.status), 'resume requires this checker’s owned checkpoint and the exact same SID');
-  } else {
+  } else if (!options.resumeInitialization) {
     assert(!existsSync(RECEIPT) && !existsSync(LOG), 'fixed receipt or log already exists; refusing to overwrite prior evidence');
     for (const screenshot of Object.values(SHOTS)) assert(!existsSync(screenshot), `screenshot already exists; refusing to overwrite: ${screenshot}`);
   }
   const sourceNative = execFileSync('git', ['-C', SOURCE, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  const receipt = previous || { checker: 'native-ui-check', sourceNative, startedAt: stamp(), deadlineMs: DEADLINE_MS,
+  const productNative = previous?.productNative || previous?.sourceNative || sourceNative;
+  const receipt = previous || { checker: 'native-ui-check', sourceNative, toolingNative: sourceNative, productNative, startedAt: stamp(), deadlineMs: DEADLINE_MS,
     status: 'running', sessionId: null, creates: 0, fights: 0, gameplayMutations: [], checks: {}, screenshots: {}, paths: config() };
+  if (options.resumeInitialization) {
+    receipt.previousFailure = receipt.failure;
+    delete receipt.failure;
+    receipt.previousSourceNative = receipt.sourceNative;
+    receipt.productNative = productNative;
+    receipt.sourceNative = sourceNative;
+    receipt.toolingNative = sourceNative;
+    receipt.initializationRecovery = { mode: 'resume-initialization', resumedAt: stamp(), priorStatus: 'failed', priorCreates: 0, priorFights: 0 };
+  }
   receipt.attempts = (receipt.attempts || 0) + 1;
   receipt.previousStatus = previous?.status || null;
   receipt.status = 'running';
-  const log = [`${stamp()} ${previous ? `resume same SID ${options.resumeSession}` : 'start native UI acceptance'}`, `source=${SOURCE}`, `data=${DATA}`, `ephemeralSessions=${SESSION_DIR}`];
+  const log = [`${stamp()} ${options.resumeInitialization ? 'resume owned zero-action initialization failure' : options.resumeSession ? `resume same SID ${options.resumeSession}` : 'start native UI acceptance'}`, `source=${SOURCE}`, `data=${DATA}`, `ephemeralSessions=${SESSION_DIR}`];
   let browser, server, deadline;
   const save = async () => writeFile(RECEIPT, `${JSON.stringify(receipt, null, 2)}\n`);
   const check = (name, ok, evidence = null) => { receipt.checks[name] = { passed: !!ok, evidence }; if (!ok) throw new Error(`${name} failed: ${JSON.stringify(evidence)}`); };
@@ -85,6 +107,9 @@ async function run() {
     await mkdir(OUT, { recursive: true });
     await mkdir(SESSION_DIR, { recursive: true });
     process.env.SP_DATA_DIR = DATA;
+    process.env.SP_INDEPENDENT_DESIGN_PATH = path.join(DATA, 'independent-design.json');
+    process.env.SP_INDEPENDENT_GAME_TEXT_PATH = path.join(DATA, 'independent-game-text.json');
+    process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH = path.join(DATA, 'independent-darkmoon-design-addon.json');
     process.env.SP_RESONANCE_DIRECTORY = SESSION_DIR;
     process.env.SP_INDEPENDENT_DIRECTORY = path.join(OUT, 'independent-sessions');
     process.env.SP_RECORDING_DIRECTORY = path.join(OUT, 'recordings');
