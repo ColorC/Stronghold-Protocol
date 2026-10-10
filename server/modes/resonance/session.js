@@ -441,7 +441,11 @@ export function viewSession(state, { catalog, fieldResolver } = {}) {
     pendingChoices: clone(state.pendingChoices), consumables: clone(state.consumables), strategies: clone(state.strategies),
     strategyState: clone(state.strategyState), environmentId: state.environmentId, nodeStarted: state.nodeStarted,
     ...(state.rulesVersion>=2?{rulesVersion:state.rulesVersion,seasonId:state.seasonId,...(state.rulesVersion===2?{openingId:state.openingId}:{}),freeRefreshes:state.freeRefreshes}:{}),
-    ...(state.rulesVersion===3?{prototypeMeta:{labCells:clone(state.prototypeMeta?.labCells??[])}}:{}),
+    ...(state.rulesVersion===3?{prototypeMeta:{labCells:clone(state.prototypeMeta?.labCells??[]),economy:{conqueror:{
+      conquest:Number(state.prototypeMeta?.economy?.conqueror?.conquest??0),
+      openedChests:clone(state.prototypeMeta?.economy?.conqueror?.openedChests??[]),
+      pendingChests:clone(state.prototypeMeta?.economy?.conqueror?.pendingChests??[]),
+    }}}}:{}),
     forgeProgress: clone(state.forgeProgress??{}), actionCosts: economyActionCosts(state,catalog),deployCap:effectiveDeployCapacity(state),
     benchCount: state.pieces.filter((piece) => piece.row === null).length,
     deployedCount: state.pieces.filter((piece) => piece.row !== null).length,

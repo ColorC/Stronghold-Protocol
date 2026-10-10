@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { attachWsCapture, config, isAllowedHttpRequest, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
+import { attachWsCapture, colorContrastRatio, config, isAllowedHttpRequest, missingChecks, parseArgs, REQUIRED_CHECKS, runtimeFaults, screenshotCount, waitForPopup, waitSent } from '../../tools/resonance/native-live-ui-check.mjs';
 
 const tool = fileURLToPath(new URL('../../tools/resonance/native-live-ui-check.mjs', import.meta.url));
 
@@ -47,6 +47,17 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must include ${check}`);
   }
   assert.ok(REQUIRED_CHECKS.includes('native-fullscreen-open-link'), 'live acceptance must verify the independent current-session full-screen link');
+  for (const check of ['native-entrypoints-unique', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live']) {
+    assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
+  }
+});
+
+test('contrast helper computes WCAG ratios and composites transparent colors over the supplied surface', () => {
+  assert.equal(colorContrastRatio('rgb(0, 0, 0)', 'rgb(255, 255, 255)'), 21);
+  assert.ok(colorContrastRatio('rgb(118, 118, 118)', 'rgb(255, 255, 255)') >= 4.5);
+  assert.ok(colorContrastRatio('rgb(150, 150, 150)', 'rgb(255, 255, 255)') < 4.5);
+  assert.ok(colorContrastRatio('rgba(0, 0, 0, 0.5)', 'rgb(255, 255, 255)') > 3);
+  assert.equal(colorContrastRatio('transparent', 'rgb(255, 255, 255)'), 0);
 });
 
 test('live acceptance rejects console/network errors and forbidden requests',()=>{

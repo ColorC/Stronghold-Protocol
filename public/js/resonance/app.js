@@ -194,10 +194,11 @@ export function App() {
   const leaveSession = () => {
     sessionUrl(null);
     const url = new URL(location.href); url.hash = ''; history.replaceState(null, '', url);
-    setDetail(null); setSession(null); setStep(0); setReplayMode(false);
+    openedSession.current = '';
+    setDetail(null); setSession(null); setStep(0); setReplayMode(false); setCodex(false); setFailure('');
   };
   if (session?.catalog && replayMode) return html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${session.catalog} onState=${onSessionState} onLeave=${leaveSession}/> `;
-  if (session?.catalog) return html`<${NativeMatchConnection} key=${session.id} id=${session.id}/> `;
+  if (session?.catalog) return html`<${NativeMatchConnection} key=${session.id} id=${session.id} onLeave=${leaveSession}/> `;
   if (!catalog || (query.has('session') && !session && !failure && openedSession.current !== query.get('session'))) return html`<main class="rs-start"><${Spinner} label="载入共鸣"/></main>`;
   if (codex) return html`<${CodexScreen} catalog=${catalog} activeIds=${activeIds}
     initialTab=${codexTab}

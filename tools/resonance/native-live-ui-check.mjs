@@ -20,6 +20,8 @@ const SHOT_NAMES = ['01-title', '02-difficulty', '03-prep', '04-pacts', '05-shop
 const SHOTS = Object.fromEntries(SHOT_NAMES.map((name) => [name, path.join(OUT, `native-live-${name}.jpg`)]));
 export const REQUIRED_CHECKS = [
   'title-to-difficulty', 'native-info-prep', 'three-real-deployments', 'shop-real-purchase', 'details-open-while-shop-usable',
+  'native-entrypoints-unique', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure',
+  'native-remaining-controls-live',
   'mobile-shop-panel-safe',
   'equipment-holder-combine', 'inventory-combine', 'whole-card-cost-colors', 'fixed-skill-icons-loaded', 'ground-tier-ring',
   'all-pact-tier-icons-loaded-and-active', 'emissary-exact-count-2-3', 'chem-market-28-effects-readable', 'native-w-deploy-withdraw', 'native-e-sell',
@@ -72,6 +74,29 @@ export function screenshotOverwriteOwner(receipt, file) {
 }
 export function runtimeFaults({ browserErrors = [], badResponses = [], forbiddenRequests = [] } = {}) {
   return { browserErrors: [...browserErrors], badResponses: [...badResponses], forbiddenRequests: [...forbiddenRequests] };
+}
+function parseCssColor(value) {
+  const match = String(value || '').match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/i);
+  if (!match) return null;
+  const alpha = match[4] == null ? 1 : match[4].endsWith('%') ? Number(match[4].slice(0, -1)) / 100 : Number(match[4]);
+  return { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]), a: alpha };
+}
+export function colorContrastRatio(foreground, background) {
+  const fg = parseCssColor(foreground), bg = parseCssColor(background);
+  if (!fg || !bg) return 0;
+  const under = { r: 255, g: 255, b: 255 };
+  const composite = (top, bottom) => ({
+    r: top.r * top.a + bottom.r * (1 - top.a),
+    g: top.g * top.a + bottom.g * (1 - top.a),
+    b: top.b * top.a + bottom.b * (1 - top.a),
+  });
+  const opaqueBg = composite(bg, under), opaqueFg = composite(fg, opaqueBg);
+  const luminance = ({ r, g, b }) => [r, g, b].map(value => {
+    const c = value / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+  const first = luminance(opaqueFg), second = luminance(opaqueBg);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 export function waitForPopup(page, timeoutMs = 15_000) {
   return new Promise((resolve, reject) => {
@@ -603,8 +628,9 @@ async function run() {
     process.env.SP_DATA_DIR = DATA; process.env.SP_RESONANCE_DIRECTORY = SESSION_DIR;
     process.env.SP_INDEPENDENT_DIRECTORY = path.join(OUT, 'independent-sessions');
     process.env.SP_RECORDING_DIRECTORY = path.join(OUT, 'recordings');
-    process.env.SP_INDEPENDENT_DESIGN_PATH = path.join(ROOT, 'data/independent-design.json');
-    process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH = path.join(ROOT, 'data/independent-darkmoon-design-addon.json');
+    process.env.SP_INDEPENDENT_DESIGN_PATH = path.join(DATA, 'independent-design.json');
+    process.env.SP_INDEPENDENT_DARKMOON_ADDON_PATH = path.join(DATA, 'independent-darkmoon-design-addon.json');
+    process.env.SP_INDEPENDENT_GAME_TEXT_PATH = path.join(DATA, 'independent-game-text.json');
     assert(path.resolve(SESSION_DIR) !== path.resolve(ROOT, 'runtime/resonance'), 'test session storage must remain isolated from canonical player sessions');
     const fixtureSetup = await createIsolatedNativeFixtures({ directory: SESSION_DIR, sourceRoot });
     attempt.fixtureSessions = fixtureSetup.files;
@@ -724,7 +750,7 @@ async function run() {
           types:[...(event.dataTransfer?.types||[])],x:event.clientX,y:event.clientY,defaultPrevented:event.defaultPrevented});
       }, true);
     });
-    await page.click('button[aria-label="装备库存"]'); await page.waitForSelector('.rs-equipment-dock__item');
+    await page.click('.rs-native-equipment-rail button[aria-label="打开装备与配方"]'); await page.waitForSelector('.rs-equipment-dock__item');
     for (const [index, material] of holderRecipe.chosen.entries()) {
       const currentDisplay = await readUiState();
       const nativeItem = currentDisplay?.inventory?.find((item) => item.uid === material.uid)?.nativeUid;
@@ -876,13 +902,31 @@ async function run() {
           draggable:node?.closest?.('button[data-item-uid]')?.draggable??null,types:[...(event.dataTransfer?.types||[])],x:event.clientX,y:event.clientY,defaultPrevented:event.defaultPrevented});
       }, true);
     });
-    const equipmentPanelButton = await combinePage.$('button[aria-label="装备库存"]');
+    const equipmentPanelButton = await combinePage.$('.rs-native-equipment-rail button[aria-label="打开装备与配方"]');
     assert(equipmentPanelButton, 'native equipment panel button is missing');
     combineAttempt.equipmentPanelClick = await clickHandleByMeasuredCenter(combinePage, equipmentPanelButton, 'equipment panel button');
     await combinePage.waitForSelector('.rs-native-resonance-panel .rs-equipment-dock__item');
     await combinePage.waitForFunction(() => !document.querySelector('.dpanel:not(.rs-native-resonance-panel)'), { timeout: 4_000 }).catch(async () => {
       combineAttempt.panelStack = await combinePage.evaluate(() => [...document.querySelectorAll('.dpanel')].map((node) => ({className:node.className,ariaLabel:node.getAttribute('aria-label'),rect:node.getBoundingClientRect().toJSON(),head:node.querySelector('.dhead__name')?.innerText||null,z:getComputedStyle(node).zIndex})));
     });
+    const recipeItem = await combinePage.$(`.rs-native-resonance-panel .rs-equipment-dock__item[data-item-uid="${inventoryRecipe.chosen[0].nativeUid}"]`);
+    assert(recipeItem, 'seeded recipe source item is not visible in the equipment drawer');
+    await clickHandleByMeasuredCenter(combinePage,recipeItem,'recipe item detail');
+    await combinePage.waitForSelector('.rs-detail-panel .rs-detail__recipe-grid .rs-detail__recipe button',{visible:true,timeout:4_000});
+    const recipeContrast=await combinePage.evaluate(()=>{
+      const parse=value=>{const m=String(value||'').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);return m?{r:+m[1],g:+m[2],b:+m[3],a:m[4]==null?1:+m[4]}:null;};
+      const lum=c=>{const x=[c.r,c.g,c.b].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return x[0]*.2126+x[1]*.7152+x[2]*.0722;};
+      return [...document.querySelectorAll('.rs-detail-panel .rs-detail__recipe button')].map(node=>{
+        const fg=parse(getComputedStyle(node).color);let bg=null,parent=node;
+        while(parent&&!bg){const c=parse(getComputedStyle(parent).backgroundColor);if(c&&c.a>.98)bg=c;parent=parent.parentElement;}
+        if(!fg||!bg)return{text:(node.innerText||'').trim(),ratio:0,foreground:getComputedStyle(node).color,background:bg};
+        const a=lum({r:fg.r*fg.a+bg.r*(1-fg.a),g:fg.g*fg.a+bg.g*(1-fg.a),b:fg.b*fg.a+bg.b*(1-fg.a)}),b=lum(bg);
+        return{text:(node.innerText||'').trim(),ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),foreground:getComputedStyle(node).color,background:bg};
+      });
+    });
+    check('native-recipe-contrast',recipeContrast.length>0&&recipeContrast.every(row=>row.text&&row.ratio>=4.5),recipeContrast);
+    const recipeDetailClose=await combinePage.$('.rs-detail-panel button[aria-label="关闭详情"]');
+    if(recipeDetailClose)await clickHandleByMeasuredCenter(combinePage,recipeDetailClose,'recipe detail close');
     const overlappingDetailClose = await combinePage.$('.rs-detail-panel .dpanel__close');
     if (overlappingDetailClose && await overlappingDetailClose.boundingBox()) {
       combineAttempt.detailDismissClick = await clickHandleByMeasuredCenter(combinePage, overlappingDetailClose, 'overlapping item detail close');
@@ -917,7 +961,118 @@ async function run() {
     const defaultCopy = await page.evaluate(() => document.body.innerText);
     check('default-copy-is-product-language', !/制作过程|按标准|真实素材|(?<!经)验收|fixture/i.test(defaultCopy), { title: await page.title() });
     await capture('03-prep');
-    await page.click('button[aria-label="盟约与效果"]'); await page.waitForSelector('.rs-native-pact-matrix');
+    const entrypointEvidence = await page.evaluate(() => {
+      const visible = node => { const r=node?.getBoundingClientRect(); return !!r&&r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden'; };
+      const count = selector => [...document.querySelectorAll(selector)].filter(visible).length;
+      return {
+        corner: [...document.querySelectorAll('.gm__corner > *')].filter(visible).map(node=>({tag:node.tagName,cls:node.className,label:node.getAttribute('aria-label')})),
+        legacyActions: count('.rs-native-actions'), legacyGuide: count('.gm__corner .gm__help,.gm__corner [aria-label="玩法说明"]'),
+        settings: count('.gm__corner button[aria-label="设置"]'), fullscreen: count('.gm__corner a.rs-fullscreen-small[aria-label="全屏打开"]'),
+        pact: count('.gm__bonds .rs-native-pact-open[aria-label="盟约与效果"]'),
+        income: count('.rs-funds .funds__hex[aria-label="金币与收入"]'),
+        info: count('[data-testid="check-player"]'),
+        equipment: count('.rs-native-equipment-rail button[aria-label="打开装备与配方"]'),
+        equipmentDuplicates: count('button[aria-label="装备库存"],button[aria-label="打开装备与配方"]'),
+      };
+    });
+    const expectedCorner = entrypointEvidence.corner.map(row=>row.label).sort();
+    check('native-entrypoints-unique', entrypointEvidence.legacyActions===0 && entrypointEvidence.legacyGuide===0
+      && entrypointEvidence.settings===1 && entrypointEvidence.fullscreen===1 && entrypointEvidence.pact===1
+      && entrypointEvidence.income===1 && entrypointEvidence.info===1 && entrypointEvidence.equipment===1
+      && entrypointEvidence.equipmentDuplicates===1
+      && JSON.stringify(expectedCorner)===JSON.stringify(['全屏打开','设置'].sort()), entrypointEvidence);
+    const openedPanels = [];
+    const remainingControls = {};
+    const openAndClose = async (button, panel, label) => {
+      const handle = await page.$(button); assert(handle, `missing ${label} entry`);
+      await clickHandleByMeasuredCenter(page, handle, `${label} entry`);
+      await page.waitForSelector(panel, { visible: true, timeout: 5_000 });
+      const aria = await page.$eval(panel, node=>node.getAttribute('aria-label'));
+      assert(aria === label, `${label} entry opened a different window: ${aria}`);
+      if (label === '本局信息') {
+        const help = await page.$eval('.rs-native-controls-help', node=>({open:node.open,summary:node.querySelector('summary')?.innerText||''}));
+        if (help.summary) {
+          await page.click('.rs-native-controls-help > summary');
+          await page.waitForFunction(()=>document.querySelector('.rs-native-controls-help')?.open===true,{timeout:3_000});
+          await page.click('.rs-native-controls-help > summary');
+          await page.waitForFunction(()=>document.querySelector('.rs-native-controls-help')?.open===false,{timeout:3_000});
+          openedPanels.push({label:'操作说明',opened:true,closed:true});
+        }
+        const unavailableSettlement = await page.$eval('button[aria-label="本场结算"]',node=>({disabled:node.disabled,title:node.title}));
+        assert(unavailableSettlement.disabled && /完成首场战斗后可查看/.test(unavailableSettlement.title), 'settlement should explain that it unlocks after the first real fight');
+        remainingControls.settlementBeforeFirstFight = unavailableSettlement;
+      }
+      await page.click(`${panel} button[aria-label="关闭面板"]`);
+      await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:4_000},panel);
+      openedPanels.push({label,opened:true,closed:true});
+    };
+    await openAndClose('.rs-native-pact-open','.rs-native-resonance-panel--pacts','本局盟约');
+    await openAndClose('.rs-funds .funds__hex','.rs-native-resonance-panel--income','金币与收入');
+    await openAndClose('[data-testid="check-player"]','.rs-native-resonance-panel--match-info','本局信息');
+    await openAndClose('.rs-native-equipment-rail .rs-equipment-dock__open','.rs-native-resonance-panel--equipment','装备库存');
+    const settingsButton = await page.$('.gm__corner button[aria-label="设置"]'); assert(settingsButton, 'Native settings entry is missing');
+    await clickHandleByMeasuredCenter(page, settingsButton, 'settings entry');
+    await page.waitForSelector('.modal__box[role="dialog"]',{visible:true,timeout:4_000});
+    const settingsTitle = await page.$eval('.modal__box[role="dialog"] .modal__title',node=>node.innerText);
+    assert(settingsTitle==='设置',`settings entry opened the wrong window: ${settingsTitle}`);
+    const settingsDone=await page.$('.modal__actions button:not(.set-guide)');
+    assert(settingsDone&&await settingsDone.evaluate(node=>node.innerText.trim())==='完成','settings modal has no explicit 完成 close action');
+    await clickHandleByMeasuredCenter(page,settingsDone,'settings modal 完成');
+    await page.waitForFunction(()=>!document.querySelector('.modal__box[role="dialog"]'),{timeout:3_000});
+    openedPanels.push({label:'设置',opened:true,closed:true});
+    const collapseShop = await page.$('.rs-funds .funds__collapse');
+    assert(collapseShop, 'native shop has no collapse control');
+    await clickHandleByMeasuredCenter(page, collapseShop, 'collapse native shop');
+    await page.waitForSelector('.shopbar-tab__btn', { visible: true, timeout: 3_000 });
+    const collapsedShop = await page.evaluate(() => ({ collapsed: document.querySelector('.gm')?.classList.contains('is-collapsed'), tab: document.querySelector('.shopbar-tab__btn')?.innerText.trim() || '' }));
+    assert(collapsedShop.collapsed && /展开商店/.test(collapsedShop.tab), `shop did not collapse to its reopen tab: ${JSON.stringify(collapsedShop)}`);
+    const expandShop = await page.$('.shopbar-tab__btn');
+    await clickHandleByMeasuredCenter(page, expandShop, 'expand native shop');
+    await page.waitForSelector('.rs-funds .funds__collapse', { visible: true, timeout: 3_000 });
+    remainingControls.shop = { collapsed: collapsedShop, expanded: true };
+    const enemyButton = await page.$('[data-testid="check-enemy"]');
+    assert(enemyButton && await enemyButton.evaluate(node => !node.disabled), 'native enemy scouting control is unavailable in the seeded prep');
+    const cameraBeforeScout = await page.$eval('.gm', node => node.dataset.camera);
+    await clickHandleByMeasuredCenter(page, enemyButton, 'open native enemy scouting');
+    await page.waitForFunction(() => document.querySelector('.gm')?.classList.contains('is-pen') && document.querySelector('.gm')?.dataset.camera === 'pen', { timeout: 4_000 });
+    const returnScout = await page.$('[data-testid="check-player"]');
+    assert(returnScout && /返回/.test(await returnScout.evaluate(node => node.getAttribute('aria-label') || node.innerText)), 'native scouting view has no return control');
+    await clickHandleByMeasuredCenter(page, returnScout, 'return from native enemy scouting');
+    await page.waitForFunction((camera) => !document.querySelector('.gm')?.classList.contains('is-pen') && document.querySelector('.gm')?.dataset.camera === camera, { timeout: 4_000 }, cameraBeforeScout);
+    remainingControls.scouting = { initialCamera: cameraBeforeScout, entered: 'pen', returnedTo: cameraBeforeScout };
+    const settingsForGuide = await page.$('.gm__corner button[aria-label="设置"]');
+    await clickHandleByMeasuredCenter(page, settingsForGuide, 'settings guide entry');
+    await page.waitForSelector('.modal__box[role="dialog"] .set-guide', { visible: true, timeout: 3_000 });
+    const guideButton = await page.$('.modal__box[role="dialog"] .set-guide');
+    assert(guideButton && /操作说明/.test(await guideButton.evaluate(node => node.innerText)), 'settings guide action is not labelled 操作说明');
+    await clickHandleByMeasuredCenter(page, guideButton, 'open Native 操作说明');
+    await page.waitForFunction(() => !document.querySelector('.modal__box[role="dialog"]') && !!document.querySelector('.rs-native-resonance-panel--match-info'), { timeout: 4_000 });
+    const guideDetails = await page.$eval('.rs-native-controls-help', node => ({ open: node.open, summary: node.querySelector(':scope > summary')?.innerText.trim() || '' }));
+    assert(guideDetails.open && /操作说明/.test(guideDetails.summary), `settings guide did not open the Native instructions: ${JSON.stringify(guideDetails)}`);
+    await page.click('.rs-native-controls-help > summary');
+    await page.waitForFunction(() => document.querySelector('.rs-native-controls-help')?.open === false, { timeout: 3_000 });
+    const guideClose = await page.$('.rs-native-resonance-panel--match-info button[aria-label="关闭面板"]');
+    assert(guideClose, 'Native instructions have no close action');
+    await clickHandleByMeasuredCenter(page, guideClose, 'close Native 操作说明 panel');
+    await page.waitForFunction(() => !document.querySelector('.rs-native-resonance-panel--match-info'), { timeout: 3_000 });
+    remainingControls.settingsGuide = { button: '操作说明', opened: guideDetails, closed: true };
+    check('native-panels-open-close', openedPanels.filter(row=>row.opened&&row.closed).length>=6, openedPanels);
+    await page.click('.rs-native-pact-open[aria-label="盟约与效果"]'); await page.waitForSelector('.rs-native-resonance-panel--pacts .rs-native-pact-matrix');
+    const presentation = await page.evaluate(() => {
+      const visible = node => {const r=node?.getBoundingClientRect();return !!r&&r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden'};
+      const icons=[...document.querySelectorAll('.gm__corner button,.gm__corner a,.rs-native-pact-open,.rs-funds .funds__hex,.rs-native-pact-matrix__name')].filter(visible).map(node=>({label:node.getAttribute('aria-label')||node.innerText?.trim().slice(0,35),svg:!!node.querySelector('svg path,svg circle,svg polygon,svg rect,svg use'),img:[...node.querySelectorAll('img')].some(img=>img.complete&&img.naturalWidth>0),mask:[...node.querySelectorAll('[style*="mask"]')].some(mask=>(getComputedStyle(mask).maskImage||getComputedStyle(mask).webkitMaskImage||'').startsWith('url('))}));
+      const liveLabels=[...document.querySelectorAll('.gm__corner button,.gm__corner a,.rs-native-pact-open,.rs-funds .funds__hex,.rs-native-pact-matrix__name')].filter(visible).map(node=>({text:(node.innerText||node.getAttribute('aria-label')||'').trim().slice(0,60),font:parseFloat(getComputedStyle(node).fontSize)})).filter(row=>row.text);
+      const parse = value => {const m=String(value||'').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);return m?{r:+m[1],g:+m[2],b:+m[3],a:m[4]==null?1:+m[4]}:null;};
+      const lum = c => {const v=[c.r,c.g,c.b].map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return v[0]*.2126+v[1]*.7152+v[2]*.0722;};
+      const contrasts=[...document.querySelectorAll('.rs-native-pact-matrix__name .bond__icon-mask')].map(node=>{
+        const core=node.closest('.bond__core'),fg=parse(getComputedStyle(node).backgroundColor)||parse(getComputedStyle(node).color);let bg=null;
+        for(let surface=core;surface&&!bg;surface=surface.parentElement){const candidate=parse(getComputedStyle(surface).backgroundColor);if(candidate&&candidate.a>.95)bg=candidate;}
+        if(!fg||!bg)return{contrast:0,bgLuminance:null};
+        const a=lum({r:fg.r*fg.a+bg.r*(1-fg.a),g:fg.g*fg.a+bg.g*(1-fg.a),b:fg.b*fg.a+bg.b*(1-fg.a)}),b=lum(bg);
+        return{contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),bgLuminance:b};
+      });
+      return {icons,liveLabels,contrasts};
+    });
     const tiers = await page.$$eval('.rs-native-pact-matrix__tier', (nodes) => nodes.map((node) => ({ text: node.innerText, label: node.getAttribute('aria-label'), reached: node.classList.contains('is-reached') })));
     const tierCheck = await page.evaluate(async () => {
       const sid = new URL(location.href).searchParams.get('session'), packet = await (await fetch(`/resonance/api/sessions/${sid}`)).json();
@@ -945,6 +1100,46 @@ async function run() {
         icons, reached: active, mismatches: mismatches.slice(0, 12) };
     });
     check('all-pact-tier-icons-loaded-and-active', tiers.length === tierCheck.expected && tierCheck.actualPacts === tierCheck.expectedPacts && tiers.every((tier) => tier.label && !/@placeholder|undefined/.test(tier.label)) && tierCheck.icons.length === tierCheck.expectedPacts && tierCheck.icons.every((icon) => icon.loaded) && tierCheck.mismatches.length === 0, { tierCount: tiers.length, ...tierCheck });
+    const pactDetailEntry = await page.$('.rs-native-pact-matrix__row[data-pact-id="conqueror"] .rs-native-pact-matrix__name');
+    assert(pactDetailEntry, 'Conqueror row is required for the source-backed reward schedule inspection');
+    await clickHandleByMeasuredCenter(page,pactDetailEntry,'multi-tier pact detail');
+    await page.waitForSelector('.rs-detail-panel[role="dialog"]',{visible:true,timeout:4_000});
+    const rewardSchedule = await page.evaluate(() => {
+      const schedule=document.querySelector('details.rs-detail__reward-schedule'), summary=schedule?.querySelector(':scope > summary');
+      const rows=schedule?[...schedule.querySelectorAll('[data-reward-tier]')].map(node=>({tier:node.getAttribute('data-reward-tier'),visible:node.getClientRects().length>0&&getComputedStyle(node).display!=='none',text:(node.innerText||'').trim().slice(0,100)})):[];
+      return {present:!!schedule,open:!!schedule?.open,summary:summary?.innerText?.trim()||'',rows};
+    });
+    const conquerorThresholds = [10,35,65,100,150,200,330,440,550,660,750,850,1000,1200,1500];
+    assert(rewardSchedule.present && !rewardSchedule.open && /查看奖励档位/.test(rewardSchedule.summary)
+      && JSON.stringify(rewardSchedule.rows.map(row=>Number(row.tier)))===JSON.stringify(conquerorThresholds)
+      && rewardSchedule.rows.every(row=>!row.visible), `Conqueror's 15 source-backed thresholds must be collapsed by default: ${JSON.stringify(rewardSchedule)}`);
+    await page.click('.rs-detail__reward-schedule > summary');
+    await page.waitForFunction(()=>document.querySelector('details.rs-detail__reward-schedule')?.open===true,{timeout:3_000});
+    const expandedSchedule = await page.evaluate(() => {
+      const schedule=document.querySelector('details.rs-detail__reward-schedule');
+      const rows=[...schedule.querySelectorAll('[data-reward-tier]')].map(node=>({tier:node.getAttribute('data-reward-tier'),text:(node.innerText||'').trim()}));
+      const progress=document.querySelector('.rs-detail__reward-progress');
+      return {open:!!schedule.open,rows,progress:progress?.innerText?.trim()||'',progressVisible:!!progress&&progress.getClientRects().length>0};
+    });
+    const rewardIds=expandedSchedule.rows.map(row=>row.tier);
+    check('native-pact-rewards-disclosure',expandedSchedule.open&&JSON.stringify(rewardIds.map(Number))===JSON.stringify(conquerorThresholds)
+      &&expandedSchedule.rows.every(row=>row.text&&row.text.includes(row.tier))
+      &&new Set(rewardIds).size===rewardIds.length&&expandedSchedule.progressVisible,{collapsed:rewardSchedule,expanded:expandedSchedule});
+    const detailTypography=await page.evaluate(()=>{
+      const visible=node=>{const r=node?.getBoundingClientRect();return!!r&&r.width>0&&r.height>0&&getComputedStyle(node).visibility!=='hidden'};
+      const body=[...document.querySelectorAll('.rs-detail-panel .dtext,.rs-detail-panel .rs-detail__reward-progress,.rs-detail-panel .rs-detail__reward-schedule [data-reward-tier]')].filter(visible).map(node=>({text:(node.innerText||'').trim().slice(0,100),font:parseFloat(getComputedStyle(node).fontSize)})).filter(row=>row.text&&/[\u3400-\u9fff]/.test(row.text));
+      const labels=[...document.querySelectorAll('.rs-detail-panel .dsec__title,.rs-detail-panel .rs-detail__reward-schedule summary,.rs-detail-panel button')].filter(visible).map(node=>({text:(node.innerText||'').trim().slice(0,50),font:parseFloat(getComputedStyle(node).fontSize)})).filter(row=>row.text);
+      return{body,labels};
+    });
+    check('native-icons-and-type-readable',presentation.icons.length>=5&&presentation.icons.every(icon=>icon.svg||icon.img||icon.mask)
+      &&presentation.liveLabels.length>0&&presentation.liveLabels.every(row=>row.font>=14)
+      &&presentation.contrasts.length===tierCheck.expectedPacts&&presentation.contrasts.every(row=>row.contrast>=3&&row.bgLuminance<.55)
+      &&detailTypography.body.length>0&&detailTypography.body.every(row=>row.font>=16)
+      &&detailTypography.labels.length>0&&detailTypography.labels.every(row=>row.font>=14),{presentation,detailTypography});
+    const rewardClose=await page.$('.rs-detail-panel button[aria-label="关闭详情"]');
+    if(rewardClose)await clickHandleByMeasuredCenter(page,rewardClose,'reward detail close');
+    await page.click('.rs-native-pact-open[aria-label="盟约与效果"]');
+    await page.waitForSelector('.rs-native-resonance-panel--pacts .rs-native-pact-matrix',{visible:true,timeout:4_000});
     await capture('04-pacts');
     const layout = await page.evaluate(() => {
       const visible = (e) => !!e && e.getBoundingClientRect().width > 0 && getComputedStyle(e).display !== 'none';
@@ -1057,8 +1252,8 @@ async function run() {
     });
     check('ground-tier-ring', groundRing.look === 'base' && groundRing.expectedPieces >= 3 && groundRing.renderedPieces >= 3, groundRing);
     await page.click('button[aria-label="金币与收入"]'); await page.waitForSelector('.rs-native-resonance-panel .rs-income__interest');
-    const income = await page.$eval('.rs-native-resonance-panel .rs-income__interest', (node) => ({ text: node.innerText, steps: node.querySelectorAll('.rs-income__coin-step').length }));
-    check('xp-interest-graphics', income.steps > 0 && /利息/.test(income.text), income);
+    const income = await page.$eval('.rs-native-resonance-panel--income .rs-income__interest', (node) => ({ text: node.innerText, steps: node.querySelectorAll('.rs-income__coin-step').length, font:parseFloat(getComputedStyle(node).fontSize) }));
+    check('xp-interest-graphics', income.steps > 0 && /利息/.test(income.text) && income.font>=16, income);
     await page.click('button[aria-label="关闭面板"]');
     // Sell one additional deployed member through the E shortcut so the ordinary shop refresh and real XP price
     // remain affordable without fixture-only gold. Two deployed members remain for combat.
@@ -1154,6 +1349,17 @@ async function run() {
     }, { timeout: Math.max(1_000, settleAt - Date.now()) });
     const settled = await readState(), fights = settled.history?.filter((row) => row.type === 'fight-settled') || [];
     check('one-real-settlement', fights.length === 1 && attempt.ws.sent.filter((message) => message.t === 'g.ready').length === 1, { fights: fights.length, history: fights.at(-1) });
+    await clickHandleByMeasuredCenter(page,await page.$('[data-testid="check-player"]'),'settled player information');
+    await page.waitForSelector('.rs-native-resonance-panel--match-info button[aria-label="本场结算"]:not(:disabled)',{visible:true,timeout:5_000});
+    await clickHandleByMeasuredCenter(page,await page.$('.rs-native-resonance-panel--match-info button[aria-label="本场结算"]'),'settlement entry');
+    await page.waitForSelector('.rs-native-resonance-panel--settlement[role="dialog"]',{visible:true,timeout:4_000});
+    const settlementText=await page.$eval('.rs-native-resonance-panel--settlement .rs-native-resonance-panel__body',node=>node.innerText);
+    const settlementClose=await page.$('.rs-native-resonance-panel--settlement button[aria-label="关闭面板"]');
+    assert(settlementClose&&settlementText.trim(),'settlement entry opened an empty or unclosable window');
+    await clickHandleByMeasuredCenter(page,settlementClose,'settlement panel close');
+    await page.waitForFunction(()=>!document.querySelector('.rs-native-resonance-panel--settlement'),{timeout:4_000});
+    openedPanels.push({label:'本场结算',opened:true,closed:true});
+    check('native-panels-open-close',openedPanels.filter(row=>row.opened&&row.closed).length>=7,openedPanels);
     const fullLink = await page.$('a.rs-fullscreen-small'); assert(fullLink, 'Native screen is missing its independent full-screen link');
     const fullHref = await fullLink.evaluate((node) => ({ href: node.href, target: node.target, rel: node.rel }));
     assert(fullHref.href === page.url() && fullHref.target === '_blank' && fullHref.rel.split(/\s+/).includes('noopener'),
@@ -1175,6 +1381,64 @@ async function run() {
       attempt, check, capture, waitSent, waitReceived, clickVisibleButtonText, nativePiecePoint });
     attempt.fixtureResults = fixtureResults;
     attempt.fixtures = { fifthChoice: 'passed', emissaryExactCounts: 'passed', boss: fixtureResults.final?.terminalReason || 'passed', hiddenCore: fixtureResults.hidden?.terminalReason || 'passed' };
+    const savedSessionUrl = `http://${HOST}:${PORT}/resonance.html?session=${encodeURIComponent(attempt.sessionId)}`;
+    await page.goto(savedSessionUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+    await page.waitForSelector('.rs-native-match .gtop__exit', { visible: true, timeout: 30_000 });
+    await page.waitForFunction(async () => {
+      const { store } = await import('./js/store.js');
+      const publicPhase = store.get().match.public?.phase;
+      const privatePhase = store.get().match.private?.resonance?.state?.phase;
+      return !!privatePhase && publicPhase !== 'COMBAT' && !/combat/i.test(String(privatePhase));
+    }, { timeout: 20_000 });
+    const exitBefore = await page.evaluate(async id => {
+      const { store } = await import('./js/store.js');
+      const packet = await (await fetch(`/resonance/api/sessions/${id}`)).json();
+      return { sessionId: id, url: location.href, entry: !!document.querySelector('.rs-native-match'),
+        publicPhase: store.get().match.public?.phase, privatePhase: store.get().match.private?.resonance?.state?.phase,
+        round: packet.state?.round, gold: packet.state?.gold, hp: packet.state?.hp, historyCount: packet.state?.history?.length,
+        revision: packet.state?.revision };
+    }, attempt.sessionId);
+    assert(exitBefore.entry && exitBefore.publicPhase !== 'COMBAT' && !/combat/i.test(String(exitBefore.privatePhase)),
+      `exit check must begin from the original saved session outside combat: ${JSON.stringify(exitBefore)}`);
+    const exitOffset = attempt.ws.sent.length;
+    const openExit = async () => {
+      const button = await page.$('.rs-native-match .gtop__exit');
+      assert(button, 'Native exit control is missing');
+      await clickHandleByMeasuredCenter(page, button, 'Native exit control');
+      await page.waitForSelector('.modal__box[role="dialog"]', { visible: true, timeout: 4_000 });
+      const title = await page.$eval('.modal__box[role="dialog"] .modal__title', node => node.innerText.trim());
+      assert(title === '返回首页', `Native exit opened the wrong modal: ${title}`);
+      return title;
+    };
+    const cancelTitle = await openExit();
+    const cancelExit = await page.$('.modal__box[role="dialog"] .modal__actions button');
+    assert(cancelExit && await cancelExit.evaluate(node => node.innerText.trim()) === '取消', 'Native exit modal has no cancel action');
+    await clickHandleByMeasuredCenter(page, cancelExit, 'cancel Native exit');
+    await page.waitForFunction(() => !document.querySelector('.modal__box[role="dialog"]') && !!document.querySelector('.rs-native-match'), { timeout: 4_000 });
+    const reopenedTitle = await openExit();
+    const actionButtons = await page.$$('.modal__box[role="dialog"] .modal__actions button');
+    let saveButton = null;
+    for (const button of actionButtons) if ((await button.evaluate(node => node.innerText.trim())) === '保存并返回') { saveButton = button; break; }
+    assert(saveButton && await saveButton.evaluate(node => node.innerText.trim()) === '保存并返回', 'Native exit modal has no save-and-return action');
+    await clickHandleByMeasuredCenter(page, saveButton, 'save session and return to title');
+    await page.waitForSelector('.rs-entry', { visible: true, timeout: 12_000 });
+    const exitAfter = await page.evaluate(async id => {
+      const packet = await (await fetch(`/resonance/api/sessions/${id}`)).json();
+      return { url: location.href, entry: !!document.querySelector('.rs-entry'), nativeMatch: !!document.querySelector('.rs-native-match'),
+        hasSessionQuery: new URL(location.href).searchParams.has('session'), savedSessionExists: !!packet.state,
+        round: packet.state?.round, gold: packet.state?.gold, hp: packet.state?.hp, historyCount: packet.state?.history?.length,
+        revision: packet.state?.revision };
+    }, attempt.sessionId);
+    const exitMessages = attempt.ws.sent.slice(exitOffset).map(message => message.t);
+    const forbiddenExitMessages = exitMessages.filter(type => ['g.leave', 'room.leave', 'g.autoplay'].includes(type));
+    check('native-remaining-controls-live', !!remainingControls.shop?.collapsed?.collapsed && remainingControls.shop.expanded
+      && remainingControls.scouting?.entered === 'pen' && remainingControls.scouting.returnedTo === remainingControls.scouting.initialCamera
+      && remainingControls.settingsGuide?.opened?.open && remainingControls.settingsGuide.closed
+      && remainingControls.settlementBeforeFirstFight?.disabled && /完成首场战斗后可查看/.test(remainingControls.settlementBeforeFirstFight.title)
+      && cancelTitle === '返回首页' && reopenedTitle === '返回首页' && exitAfter.entry && !exitAfter.nativeMatch && !exitAfter.hasSessionQuery
+      && exitAfter.savedSessionExists && exitAfter.round === exitBefore.round && exitAfter.gold === exitBefore.gold
+      && exitAfter.hp === exitBefore.hp && exitAfter.historyCount === exitBefore.historyCount && forbiddenExitMessages.length === 0,
+      { controls: remainingControls, exitBefore, cancelTitle, reopenedTitle, exitAfter, exitMessages, forbiddenExitMessages });
   } catch (error) {
     attempt.status = 'failed'; attempt.failures.push({ at: now(), error: error.stack || String(error) }); log.push(`FAILED ${error.stack || error}`);
     if (page && !page.isClosed()) attempt.failurePage = await page.evaluate(() => ({ url:location.href, body:document.body.innerText.slice(-1200) })).catch(() => null);

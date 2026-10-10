@@ -83,7 +83,8 @@ import { EmoteWheel } from '../ui/emotes.js';
 import { EffectsList } from '../ui/effectsList.js';
 import { CombatHud } from '../ui/combatHud.js';
 import { SettingsModal } from '../ui/settings.js';
-import { ExitModal, AwayOverlay, awayStore } from '../ui/matchChrome.js';
+import { AwayOverlay, awayStore } from '../ui/matchChrome.js';
+import { ResonanceExitModal } from './native/exitModal.js';
 import { openGuide } from '../ui/guide.js';
 import { actions } from '../ui/gameActions.js';
 import { FacingWheel, holdPiece, setPieceDir, syncPieceDirs, showRange, useTileScreen } from '../ui/facingWheel.js';
@@ -113,7 +114,7 @@ import { isClientCombat, observeTarget, teammateProgress, cameraLayers, layerCam
 import { screenStrip, playerBonds, playerLayer, detailBondOwner, toggleBond, popupView } from '../ui/watchBonds.js';
 import { data, getMode } from '../data.js';
 import { audio, resultSpeaker, resultVoiceSlot } from '../audio.js';
-import { useDocClass, FullscreenButton } from '../ui/device.js';
+import { useDocClass } from '../ui/device.js';
 import { IncomePanel, RoundSettlementPanel } from './economyPanels.js';
 import { InventoryDock } from './native/equipmentDock.js';
 import { DetailPanel as ResonanceDetailPanel } from './detail.js';
@@ -122,6 +123,9 @@ import { resonanceItemIconUrl } from './itemIcon.js';
 import { firstAvailableLegalTile, isResonanceSaleDrop, resonanceShortcutFor, RESONANCE_SHORTCUT_LABEL } from './nativeControls.js';
 import { pactIconUrl } from './pactIcon.js';
 import { pactTierSummary } from './pactTierSummary.js';
+import { pactReadableCopy } from './pactPresentation.js';
+import { CoinGlyph } from '../ui/gameComponents.js';
+import { interestFor } from '../../../shared/resonance/economy-view.js';
 import { pactCurrentTier, pactTierStatus, pactTierStatusLabel, levelExactCounts, nativeStripTier } from './pactTierState.js';
 import { specialBoardTile } from './specialEntityPlacement.js';
 import { prototypeLabCells } from './nativeLabCells.js';
@@ -135,7 +139,7 @@ import { inspectRange } from '../screens/game/range.js';
 import { t, tParts } from '../../../shared/i18n.js';
 
 /** Router for the in-match screens. */
-export function GameScreen() {
+export function GameScreen({ onLeave }) {
   const pub = useStore((s) => s.match.public);
   const hasResult = useStore((s) => !!s.match.result);
   const ended = useStore((s) => !!s.room && !s.room.inMatch && !!s.match.public);
@@ -153,7 +157,7 @@ export function GameScreen() {
   if (hasResult || mode === 'result') body = html`<${ResultScreen} />`;
   else if (mode === 'briefing') body = html`<${BriefingScreen} />`;
   else if (mode === 'draft') body = html`<${BandDraftScreen} />`;
-  else body = html`<${MatchScreen} />`;
+  else body = html`<${MatchScreen} onLeave=${onLeave} />`;
   return html`${body}
     ${(away || autoplay) && !hasResult && mode !== 'result' && !ended ? html`<${AwayOverlay} />` : null}
     ${ended && !hasResult && mode !== 'result' ? html`<${MatchEnded} />` : null}`;
@@ -167,7 +171,7 @@ const inBattleCard = (d) => d?.kind === 'unit' || (d?.kind === 'device' && d.dev
 function NativePactMatrix({ state, catalog, onDetail }) {
   const rows = Object.entries(catalog?.pacts || {}).sort((a, b) => (a[1]?.name || a[0]).localeCompare(b[1]?.name || b[0], 'zh-Hans'));
   return html`<section class="rs-panel rs-native-pact-matrix" aria-label="盟约与档位">
-    <header><h2>本局盟约</h2><small>部署成员后点亮对应档位</small></header>
+    <header><small>所有档位同时展示；点击盟约可查看成员与完整效果。</small></header>
     <div class="rs-native-pact-matrix__list">${rows.map(([id, pact]) => {
       const current = state?.pacts?.[id] || {}, count = Number(current.count) || 0, reached = Number(current.activeThreshold) || 0;
       const levels = pact.levels || [];
@@ -177,7 +181,7 @@ function NativePactMatrix({ state, catalog, onDetail }) {
           <span><b>${pact.name || '盟约'}</b><small>${count} 名成员</small></span>
         </button>
         <div class="rs-native-pact-matrix__tiers">${levels.map(level => {
-          const tierText = level.description || pactTierSummary(id, level.sourceVariables) || '盟约效果';
+          const tierText = pactReadableCopy(level.description || pactTierSummary(id, level.sourceVariables) || '盟约效果');
           const tierStatus = pactTierStatus(level, count);
           const currentTier = pactCurrentTier(levels, count, reached);
           return html`<button type="button" key=${level.threshold}
@@ -190,6 +194,31 @@ function NativePactMatrix({ state, catalog, onDetail }) {
         })}</div>
       </article>`;
     })}</div>
+  </section>`;
+}
+
+function NativeFunds({ state, catalog, onOpen, onCollapse }) {
+  const rule = catalog?.campaign?.economy?.interest || {};
+  const cap = Number(state?.actionCosts?.interestCap ?? rule.cap) || 0;
+  const interest = interestFor(Number(state?.gold) || 0, 0, Number(rule.perGold), cap) ?? 0;
+  return html`<div class="funds rs-funds">
+    <button type="button" class="funds__hex" aria-label="金币与收入" title="查看收入与利息" onClick=${onOpen}><${CoinGlyph} class="funds__coin" /><b class="funds__num num">${state.gold}</b></button>
+    <span class="funds__label">金币</span>
+    <button type="button" class="rs-interest" aria-label=${`当前利息 ${interest}`} onClick=${onOpen}>${Array.from({ length: cap }, (_, i) => html`<i class=${i < interest ? 'is-on' : ''} key=${i}></i>`)}<small>+${interest}</small></button>
+    <button type="button" class="funds__collapse" onClick=${onCollapse}><${Icon} name="close" />收起</button>
+  </div>`;
+}
+
+function NativeMatchInfo({ state, catalog, onDetail, onSettlement, showHelp = false }) {
+  const settled = (state.history || []).some(entry => entry.type === 'fight-settled');
+  return html`<section class="rs-native-match-info">
+    <div class="rs-native-match-info__round"><${GIcon} name="flag" /><b>第 ${state.round} 回合</b><span>${settled ? '可查看最近一场结果' : '准备阵容，迎接下一场战斗'}</span></div>
+    <section><h3>本局策略</h3><div class="rs-native-list">${state.strategies?.length ? state.strategies.map(entry => {
+      const id = typeof entry === 'string' ? entry : entry.id, strategy = catalog.strategies?.[id];
+      return html`<article key=${id}><${Icon} name="key" /><button type="button" onClick=${() => onDetail({ kind: 'strategy', id })}><b>${strategy?.name || '策略'}</b><span>${strategy?.description || ''}</span></button></article>`;
+    }) : html`<p>尚未选择策略</p>`}</div></section>
+    <button type="button" class="btn btn--ghost" aria-label="本场结算" disabled=${!settled} title=${settled ? '查看最近一场收入与战斗图表' : '完成首场战斗后可查看'} onClick=${onSettlement}><${Icon} name="signal" />本场结算</button>
+    <details class="rs-native-controls-help" open=${showHelp}><summary><${Icon} name="book" />操作说明</summary><p>拖动干员部署或调换位置；右键查看详情。</p><p>拖动组件到干员或另一组件上，预览装备或合成结果。</p><dl><dt>D</dt><dd>刷新商店</dd><dt>F</dt><dd>购买经验</dd><dt>W</dt><dd>部署／撤回选中的干员</dd><dt>E</dt><dd>出售选中的干员</dd><dt>空格</dt><dd>开始战斗／暂停</dd></dl></details>
   </section>`;
 }
 
@@ -278,7 +307,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
   const choiceTitle = strategy ? '选择策略' : economy ? (economyTitles[choice.economyKind] || '盟约奖励') : ['operators', 'target_operator'].includes(choice.type) ? '干员补给'
     : ['identity_transfer', 'pact_tag', 'dual_pact'].includes(choice.type) ? '盟约选择' : '领取补给';
   if (collapsed) return html`<button type="button" class="rs-native-choice-tab" aria-label="重新打开待领取选择" onClick=${() => setCollapsed(false)}>
-    <${GIcon} name="item" /><span>待领取 · ${choiceTitle}</span><small>点此继续</small>
+    <${Icon} name="key" /><span>待领取 · ${choiceTitle}</span><small>点此继续</small>
   </button>`;
   const toggle = (option) => {
     if (strategy) { setSelected([option]); return; }
@@ -324,7 +353,7 @@ function ResonanceChoiceOverlay({ state, catalog, onAction, busy }) {
   </div>`;
 }
 
-function MatchScreen() {
+function MatchScreen({ onLeave }) {
   useDocClass('sp-in-match');
   const pub = useStore((s) => s.match.public);
   const priv = useStore((s) => s.match.private);
@@ -356,6 +385,7 @@ function MatchScreen() {
   const [detail, setDetail] = useState(null);            // detail target
   const [resonanceDetail, setResonanceDetail] = useState(null);
   const [resonancePanel, setResonancePanel] = useState(null);
+  const [resonanceHelp, setResonanceHelp] = useState(false);
   const [resonancePanelBottom, setResonancePanelBottom] = useState(null);
   const [resonanceDetailBottom, setResonanceDetailBottom] = useState(null);
   const [equipmentDropTarget, setEquipmentDropTarget] = useState(null);
@@ -433,6 +463,7 @@ function MatchScreen() {
     finally { setResonanceActionBusy(false); }
   };
   const toggleResonancePanel = (panel) => {
+    setResonanceHelp(false);
     const closing = resonancePanel === panel;
     if (!closing) {
       setDetail(null); setSel(null); setResonanceDetail(null);
@@ -1449,6 +1480,8 @@ function MatchScreen() {
     await net.request('g.resonance', { action: { type: 'combine', itemUids: sessionUids } });
   };
   const openNativeResonanceDetail = (target) => {
+    setResonancePanel(null);
+    setDetail(null);
     if (target?.kind === 'item' && target.itemUid != null) {
       const inventoryItem = resonanceState?.inventory?.find(item => Number(item.nativeUid) === Number(target.itemUid));
       if (inventoryItem) { setResonanceDetail({ ...target, itemUid: inventoryItem.uid }); return; }
@@ -1789,8 +1822,8 @@ function MatchScreen() {
     ${showPrep && view && viewKind !== 'loading' && priv && !pen ? html`<${StandInTags} view=${view} priv=${priv} getChess=${gd.chess} backups=${gd.backups} diyData=${{ chess: data.get('chess'), backups: data.get('backups') }} />` : null}
 
     <div class=${cx('gm__hud', (resolved || resonanceDetail || resonancePanel) && 'has-resonance-overlay')} ref=${hudElRef}>
-      <${TopBar} pub=${pub} priv=${priv} conn=${conn} hud=${hud} total=${total} drawer=${drawer}
-        onExit=${() => setExitOpen(true)} onDrawer=${(t) => setDrawer((d) => (d ? null : t))} onReady=${toggleReady}
+      <${TopBar} pub=${pub} priv=${priv} conn=${conn} hud=${hud} total=${total} drawer=${resonancePanel === 'match-info' ? 'info' : drawer}
+        onExit=${() => setExitOpen(true)} onDrawer=${(t) => { if (t === 'info') { setDrawer(null); toggleResonancePanel('match-info'); } else setDrawer((d) => (d ? null : t)); }} onReady=${toggleReady}
         readyBusy=${readyBusy} readyCount=${readyCount} playerCount=${solo ? 1 : aliveCount}
         pen=${pen} penAvail=${penAvail} onPen=${togglePen} config=${gd.config} frozenAt=${frozenAt}
         pause=${canPause || paused ? { show: canPause, paused, busy: pauseBusy, onToggle: () => togglePause(!paused) } : null}
@@ -1798,6 +1831,7 @@ function MatchScreen() {
         spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} />
 
       <div class="gm__bonds">
+        <header class="rs-native-pact-heading"><b>盟约</b><button type="button" class="rs-native-pact-open" aria-label="盟约与效果" onClick=${() => toggleResonancePanel('pacts')}><${Icon} name="book" /><span>查看全部</span></button></header>
         <button type="button" class="bonds-toggle" aria-expanded=${!bondsCollapsed} aria-controls="match-bond-strip"
           aria-label=${bondsCollapsed ? t('展开盟约') : t('收起盟约')} title=${bondsCollapsed ? t('展开盟约') : t('收起盟约')}
           onKeyDown=${(e) => {
@@ -1815,13 +1849,13 @@ function MatchScreen() {
             return { bondId, count: pact.count, active, tier, layers: undefined, thresholds: levels.map(level => Number(level.minUnits ?? level.threshold)).filter(Number.isFinite) };
           }) : stripBonds} layersDisabled=${layersDisabled} openId=${bondPop && bondPop.ownerId === strip.ownerId ? bondPop.bondId : null}
             owner=${strip.name} records=${resonanceCatalog ? Object.fromEntries(Object.entries(resonanceCatalog.pacts || {}).map(([id, pact]) => [id, { ...pact, noStack: true, thresholds: (pact.levels || []).map(level => Number(level.minUnits ?? level.threshold)).filter(Number.isFinite) }])) : null}
-            iconFor=${id => pactIconUrl(resonanceCatalog, id)} iconMask=${true} onOpen=${id => { setBondOpen(null); setResonanceDetail({ kind: 'pact', id }); }} />
+            iconFor=${id => pactIconUrl(resonanceCatalog, id)} iconMask=${true} onOpen=${id => { setBondOpen(null); openNativeResonanceDetail({ kind: 'pact', id }); }} />
         </div>
       </div>
 
-      <${TeamPanel} pub=${pub} myId=${myId} watching=${watchingNow} bubbles=${bubbles} onWatch=${watchPlayer} cap=${gd.config?.lpCapPerRound ?? 10} uniteLocal=${uniteLocal}
+      ${!solo ? html`<${TeamPanel} pub=${pub} myId=${myId} watching=${watchingNow} bubbles=${bubbles} onWatch=${watchPlayer} cap=${gd.config?.lpCapPerRound ?? 10} uniteLocal=${uniteLocal}
         self=${Number.isFinite(priv?.lp) ? { lp: priv.lp, pending: liveLpNow.pending, unite: liveLpNow.unite, left: liveLpNow.left } : null}
-        observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />
+        observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />` : null}
 
       <div class="gm__effects"><${EffectsList} effects=${watchingOther && field ? (field.effects ?? null) : priv?.effects} /></div>
 
@@ -1831,6 +1865,7 @@ function MatchScreen() {
       </div>` : null}
 
       ${showShop ? html`<${ShopBar} priv=${shopDisplayPriv} editable=${editable} collapsed=${collapsed} interaction=${myId === 'resonance' ? 'direct' : 'two-tap'} onCollapse=${setCollapsed}
+        renderFunds=${resonanceState && resonanceCatalog ? html`<${NativeFunds} state=${resonanceState} catalog=${resonanceCatalog} onOpen=${() => toggleResonancePanel('income')} onCollapse=${() => setCollapsed(true)} />` : null}
         refreshKey="D" freezeKey=${null} levelKey="F" hideItem=${myId === 'resonance'}
         barRef=${barRef} offBonds=${offBonds}
         onBuy=${buy} onLevel=${() => actions.levelUp()} onRefresh=${() => actions.refresh()} onFreeze=${() => actions.freeze()}
@@ -1854,28 +1889,20 @@ function MatchScreen() {
       <${Ticker} />
 
       <div class="gm__corner">
-        ${resonanceState && resonanceCatalog ? html`<nav class="rs-native-actions" aria-label="共鸣面板">
-          <button type="button" class="gm__gear" aria-label="盟约与效果" title="盟约与效果" onClick=${() => toggleResonancePanel('pacts')}><${GIcon} name="bond" /></button>
-          <button type="button" class="gm__gear" aria-label="金币与收入" title="金币与收入" onClick=${() => toggleResonancePanel('income')}><${GIcon} name="dp" /></button>
-          <button type="button" class="gm__gear" aria-label="本场结算" title="本场结算" onClick=${() => toggleResonancePanel('settlement')}><${GIcon} name="report" /></button>
-          <button type="button" class="gm__gear" aria-label="装备库存" title="装备库存" onClick=${() => toggleResonancePanel('equipment')}><${GIcon} name="item" /></button>
-        </nav>` : null}
-        ${spectator ? null : html`<${EmoteWheel} open=${emoteOpen} onToggle=${setEmoteOpen} onSend=${(id) => actions.emote(id)} disabled=${conn.status !== 'online'} />`}
-        <a class="gm__gear rs-fullscreen rs-fullscreen-small" aria-label="全屏打开" title="全屏打开" href=${location.href} target="_blank" rel="noopener">↗</a>
         <button type="button" class="gm__gear" aria-label=${t('设置')} title=${t('设置')} onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
-        <button type="button" class="gm__gear gm__guide" aria-label=${t('玩法说明')} title=${t('玩法说明')} onClick=${() => openGuide(0)}><${Icon} name="book" /></button>
-        <${FullscreenButton} class="gm__gear gm__fs" />
+        <a class="gm__gear rs-fullscreen rs-fullscreen-small" aria-label="全屏打开" title="全屏打开" href=${location.href} target="_blank" rel="noopener"><${Icon} name="expand" /></a>
       </div>
 
       ${drawer ? html`<${EnemyDrawer} tab=${drawer} onTab=${setDrawer} pub=${pub} priv=${priv} onClose=${() => setDrawer(null)}
         bandId=${scoutBandId} bandOwner=${scoutBandOwner}
         onEnemy=${(k, n) => setDetail({ kind: 'enemy', id: k, count: n })} onChess=${(id) => setDetail({ kind: 'chess', id, foreign: true })} />` : null}
 
-      ${resonanceState && resonanceCatalog && resonancePanel ? html`<aside class="dpanel dpanel--right rs-native-resonance-panel" style=${resonancePanelBottom == null ? undefined : { bottom: `${resonancePanelBottom}px` }} role="dialog" aria-label=${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存'})[resonancePanel]}>
-        <header class="rs-native-resonance-panel__head"><b>${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存'})[resonancePanel]}</b><button type="button" aria-label="关闭面板" onClick=${() => setResonancePanel(null)}><${Icon} name="close" /></button></header>
+      ${resonanceState && resonanceCatalog && resonancePanel ? html`<aside class=${`dpanel dpanel--right rs-native-resonance-panel rs-native-resonance-panel--${resonancePanel}`} style=${resonancePanelBottom == null ? undefined : { bottom: `${resonancePanelBottom}px` }} role="dialog" aria-label=${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存','match-info':'本局信息'})[resonancePanel]}>
+        <header class="rs-native-resonance-panel__head"><b>${({pacts:'本局盟约',income:'金币与收入',settlement:'本场结算',equipment:'装备库存','match-info':'本局信息'})[resonancePanel]}</b><button type="button" aria-label="关闭面板" onClick=${() => setResonancePanel(null)}><${Icon} name="close" /></button></header>
         <div class="rs-native-resonance-panel__body">
-          ${resonancePanel === 'pacts' ? html`<${NativePactMatrix} state=${resonanceState} catalog=${resonanceCatalog} onDetail=${target => setResonanceDetail(target)} />` : null}
+          ${resonancePanel === 'pacts' ? html`<${NativePactMatrix} state=${resonanceState} catalog=${resonanceCatalog} onDetail=${openNativeResonanceDetail} />` : null}
           ${resonancePanel === 'income' ? html`<${IncomePanel} state=${resonanceState} catalog=${resonanceCatalog} />` : null}
+          ${resonancePanel === 'match-info' ? html`<${NativeMatchInfo} state=${resonanceState} catalog=${resonanceCatalog} onDetail=${openNativeResonanceDetail} onSettlement=${() => toggleResonancePanel('settlement')} showHelp=${resonanceHelp} />` : null}
           ${resonancePanel === 'settlement' ? html`<${RoundSettlementPanel} summary=${lastSettlement} state=${resonanceState} catalog=${resonanceCatalog} showReplay=${false} onDetail=${target => setResonanceDetail(target)} />` : null}
           ${resonancePanel === 'equipment' && resonanceDockState ? html`<${NativeSpecialEntityList} state=${resonanceState} catalog=${resonanceCatalog} editable=${editable} busy=${resonanceActionBusy} onRecall=${uid => actions.move(uid, { area: 'hand' })} />
             <${NativeResonanceInventoryActions} state=${resonanceState} catalog=${resonanceCatalog} editable=${editable} busy=${resonanceActionBusy} onAction=${submitResonanceAction} />
@@ -1931,7 +1958,8 @@ function MatchScreen() {
       onConfirm=${(uid) => closeReplace(uid)} onCancel=${() => closeReplace(null)} />` : null}
 
     <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)}
+      guideLabel="操作说明" onGuide=${() => { setSettingsOpen(false); toggleResonancePanel('match-info'); setResonanceHelp(true); }}
       helpText=${RESONANCE_SHORTCUT_LABEL} />
-    <${ExitModal} open=${exitOpen} onClose=${() => setExitOpen(false)} solo=${solo} />
+    <${ResonanceExitModal} open=${exitOpen} onClose=${() => setExitOpen(false)} onLeave=${onLeave} />
   </div>`;
 }

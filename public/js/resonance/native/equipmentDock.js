@@ -72,6 +72,6 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
       ${fieldRecipe && !fieldUniqueConflict ? html`<${ResonanceItemIcon} catalog=${catalog} itemId=${fieldRecipe.recipe.resultId} size="md" showTier=${false}/>` : null}
       <small>${fieldRecipe ? fieldUniqueConflict ? '该干员已携带此唯一装备' : `装备合成为${fieldRecipe.recipe.resultName}` : '松开即可装备'}</small>
     </div>` : null}
-    <button type="button" class="rs-equipment-dock__open" aria-label="打开装备与配方" title="装备与配方" onClick=${onOpen}><${Icon} name="item"/><small>${inventory.length}</small></button>
+    <button type="button" class="rs-equipment-dock__open" aria-label="打开装备与配方" title="装备与配方" onClick=${onOpen}><${Icon} name="sword"/><small>${inventory.length}</small></button>
   </aside>`;
 }
