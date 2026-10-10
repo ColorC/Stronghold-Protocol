@@ -240,7 +240,8 @@ async function main(argv) {
       helpers.feedNativeFrames(view, seeded.frames, replay.field.fieldId);
       view.renderRecordedFrame({ gameTime: clock.t0, delta: 1 / 30, rate: 2 });
     }, clip.round);
-    await page.screenshot({ path: path.join(outputRoot, `battle-${clip.round}-first.png`) });
+    const screenshots = args.sampleSeconds == null ? [] : [path.join(outputRoot, `battle-${clip.round}-first.png`), path.join(outputRoot, `battle-${clip.round}-last.png`)];
+    if (args.sampleSeconds != null) await page.screenshot({ path: screenshots[0] });
     const render = await page.evaluate(async ({ sampleSeconds, fps, bitrate, width, height, round, clip }) => {
       const { view, replays, helpers } = window.__renderer; const replay = replays[round];
       const { drawRecordingCanvasFrame } = await import('/js/independent/recordingCanvas.js');
@@ -268,7 +269,7 @@ async function main(argv) {
       await encoder.flush(); await encoder.serial; const config = encoder.state; encoder.close();
       return { frames: count, gameTimeEnd: clock.t0 + helpers.gameTimeFromCountdown(clip, clip.startSecond + (count - 1) / fps, clock.duration), replayClock: clock, encoderState: config, warmReport: window.__warmReport, error: encoder.error || null };
     }, { sampleSeconds: args.sampleSeconds ?? Math.max(0.001, clip.endSecond - clip.startSecond), fps, bitrate, width: layout.width, height: layout.height, round: clip.round, clip });
-    await page.screenshot({ path: path.join(outputRoot, `battle-${clip.round}-last.png`) });
+    if (args.sampleSeconds != null) await page.screenshot({ path: screenshots[1] });
     ffmpeg.stdin.end();
     const [exitCode] = await once(ffmpeg, 'close');
     if (exitCode !== 0) throw new Error(`FFmpeg exit ${exitCode}: ${ffmpegError}`);
@@ -280,7 +281,7 @@ async function main(argv) {
     const expectedSeconds = args.sampleSeconds ?? clip.endSecond - clip.startSecond;
     const receipt = { ok: true, recordingId, sessionId, round: clip.round, sourceReplay: sessionPath, sourceEvents: eventsPath,
       viewport: { width: layout.width, height: layout.height }, fps, videoBitsPerSecond: bitrate, encoder: encoderConfig,
-      visualDiagnostics, render, output: outputFile, ffprobe: probed, ffmpegExitCode: exitCode, ffprobeExitCode: probeCode, screenshots: [path.join(outputRoot, `battle-${clip.round}-first.png`), path.join(outputRoot, `battle-${clip.round}-last.png`)] };
+      visualDiagnostics, render, output: outputFile, ffprobe: probed, ffmpegExitCode: exitCode, ffprobeExitCode: probeCode, screenshots };
     if (!stream || stream.width !== layout.width || stream.height !== layout.height || Number(probed.format?.duration) < expectedSeconds * 0.95) throw new Error('encoded WebM failed dimension/duration checks');
     await fsp.writeFile(path.join(outputRoot, `renderer-round-${clip.round}.receipt.json`), JSON.stringify(receipt, null, 2));
     console.log(JSON.stringify(receipt, null, 2));
