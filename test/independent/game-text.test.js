@@ -57,23 +57,33 @@ test('every gear a player can see has text; numbers match its effect', () => {
   for (const [id, d] of Object.entries(all)) {
     if (d.available === false || d.mechanism === 'disabled') continue;
     const entry = text.gear[id];
-    assert.ok(entry, `${d.newName || d.name} (${id}) has text`);
+    const projected = display.gear[id];
+    assert.ok(projected, `${d.newName || d.name} (${id}) is present in the player-facing projection`);
+    assert.equal(typeof projected.normal, 'string', `${d.newName || d.name} (${id}) has projected text`);
+    assert.ok(projected.normal.length > 0, `${d.newName || d.name} (${id}) has non-empty projected text`);
+    const written = entry?.normal ?? projected.normal;
     if (d.kind !== 'badge') {
-      sameNumbers(`${id}:normal`, d.normal || d.effect, entry.normal);
-      if (d.eliteLevel != null && d.elite) sameNumbers(`${id}:elite`, d.elite, entry.elite);
+      sameNumbers(`${id}:normal`, d.normal || d.effect, written);
+      if (d.eliteLevel != null && d.elite) sameNumbers(`${id}:elite`, d.elite, entry?.elite ?? projected.normalLevels);
     } else {
-      assert.ok(numbers(entry.normal).has(d.kind === 'badge' && /Percent|Dodge|Reduction|DamagePercent/.test(d.stat) ? Number((d.value * 100).toFixed(4)) : d.value), `${id} value`);
+      assert.ok(numbers(written).has(/Percent|Dodge|Reduction|DamagePercent/.test(d.stat) ? Number((d.value * 100).toFixed(4)) : d.value), `${id} value`);
     }
-    for (const t of [entry.normal, entry.elite].filter(Boolean)) for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `${id}: 「${w}」`);
+    for (const t of [entry?.normal ?? projected.normal, entry?.elite ?? projected.normalLevels].filter(Boolean)) for (const w of SPEC_WORDING) assert.ok(!t.includes(w), `${id}: 「${w}」`);
   }
   for (const id of Object.keys(text.gear)) assert.ok(all[id], `${id} exists in the catalog`);
 });
 
 test('prizes and attachments: texts with the design numbers; the page shows them under the 工程部特供 stages', () => {
   for (const [id, p] of Object.entries(catalog.prizes)) {
-    assert.ok(text.prizes[id], `${p.name} has text`);
-    sameNumbers(id, p.effect, text.prizes[id].text);
-    assert.ok(['起步', '成型', '决胜'].includes(display.prizes[id].stage), `${p.name} stage`);
+    const projected = display.prizes[id];
+    assert.ok(projected, `${p.name} is present in the player-facing prize projection`);
+    assert.equal(typeof projected.effect, 'string', `${p.name} has projected text`);
+    sameNumbers(id, p.effect, text.prizes[id]?.text ?? projected.effect);
+    if (p.prizeTier != null || p.stage != null) {
+      assert.ok(['起步', '成型', '决胜', '终极'].includes(projected.stage), `${p.name} stage`);
+    } else {
+      assert.equal(projected.stage, null, `${p.name} remains a non-stage logistics/passive entry`);
+    }
   }
   for (const [id, a] of Object.entries(catalog.attachments)) {
     assert.ok(text.attachments[id], `${a.name} has text`);

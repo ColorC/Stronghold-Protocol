@@ -38,13 +38,8 @@ function seedRevealing(id, options) {
 }
 
 function openTraining(state, piece, id) {
-  let prizeOffer;
-  for (let seed = 1; seed < 10000; seed++) {
-    const candidate = structuredClone(state); candidate.rngState = seed; candidate.offers = [];
-    const generated = makePrizeOffer(candidate, catalog, 'build', 'causal-test');
-    if (generated.choices.includes('special-readiness-training')) { state = candidate; prizeOffer = generated; break; }
-  }
-  assert.ok(prizeOffer, 'the real build-stage prize generator offers training for this deployed target');
+  const prizeOffer = { id: `legacy-training-${state.nextUid++}`, type: 'prize', choices: ['special-readiness-training'], tier: 'build' };
+  state.offers = [prizeOffer];
   const index = prizeOffer.choices.indexOf('special-readiness-training');
   assert.notEqual(index, -1);
   state.rngState = seedRevealing(id, trainingChoiceOptions(state, catalog, piece));
@@ -55,6 +50,19 @@ function openTraining(state, piece, id) {
   assert.equal(offer.targetUid, piece.uid);
   return { state: result.state, offer, prizeOffer };
 }
+
+test('current build-stage draws exclude the retired training card while existing prize offers remain resolvable', () => {
+  for (let seed = 1; seed <= 32; seed++) {
+    const { state } = fixture(3);
+    state.rngState = seed;
+    const generated = makePrizeOffer(state, catalog, 'build', 'current-draw-regression');
+    assert.ok(!generated.choices.includes('special-readiness-training'), `seed ${seed}`);
+  }
+  const legacy = fixture(3);
+  const opened = openTraining(legacy.state, legacy.piece, whistleId);
+  assert.equal(opened.prizeOffer.choices[0], 'special-readiness-training');
+  assert.ok(opened.offer.trainingChoice, 'the compatible existing offer still opens direct training choices');
+});
 
 test('专项战备授训 directly equips a selected item, records its prize source and recipient, then its gear works in battle', () => {
   const { state, piece } = fixture(2);

@@ -7,11 +7,14 @@ import { cardTable } from '../../tools/independent-card-table.mjs';
 
 const quiet = { warn() {}, error() {}, info() {} };
 
-test('all 311 current operator forms have one classified summary per authored rule and actual event labels', () => {
+test('all 311 current forms plus two Jessica prize aliases have classified summaries and actual event labels', () => {
   const catalog = getCatalog(getData({ log: quiet }));
-  assert.equal(Object.keys(catalog.operators).length, 311);
+  const operators = Object.values(catalog.operators);
+  const prizeAliases = operators.filter((op) => op.chessId?.startsWith('chess_prize_'));
+  assert.equal(operators.length - prizeAliases.length, 311, 'ordinary current forms keep their established count');
+  assert.deepEqual(prizeAliases.map((op) => op.chessId).sort(), ['chess_prize_jesca2_a', 'chess_prize_jesca2_b']);
   const gearIds = new Set([...Object.keys(catalog.badges), ...Object.keys(catalog.equipment)]);
-  for (const op of Object.values(catalog.operators)) {
+  for (const op of operators) {
     const rules = [...op.nativeTrait.effect.prep, ...op.nativeTrait.effect.combat];
     const entries = traitSummary(op.nativeTrait.effect);
     assert.equal(entries.length, rules.length, op.name);
