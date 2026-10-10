@@ -1,7 +1,7 @@
 export function createReplayReviewConfig(href) {
   const page = new URL(href);
   const recordingId = page.searchParams.get('recording') || '';
-  if (!/^[0-9a-f-]{36}$/i.test(recordingId)) throw new Error('回放链接无效');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recordingId)) throw new Error('回放链接无效');
   const source = new URL('independent-replay.html', page);
   source.searchParams.set('recording', recordingId);
   source.searchParams.set('review', '1');

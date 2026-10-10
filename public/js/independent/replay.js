@@ -10,6 +10,10 @@ const $ = (id) => document.getElementById(id);
 $('open-full').href = location.href;
 const reviewMode = new URL(location.href).searchParams.get('review') === '1';
 if (reviewMode) {
+  document.documentElement.classList.add('ix-replay-review-mode');
+  const reviewLayout=document.createElement('style');
+  reviewLayout.textContent='.ix-replay-review-mode .ix-replay{width:100%;min-height:100vh;padding:0}.ix-replay-review-mode .ix-replay__shell{width:100%;max-width:none;margin:0}.ix-replay-review-mode .ix-replay__screen{width:100%;max-width:none;margin:0;border:0;border-radius:0}.ix-replay-review-mode .ix-replay__stage{width:100%;height:auto}';
+  document.head.append(reviewLayout);
   const narrationLabel=$('narration')?.closest('label');if(narrationLabel){narrationLabel.hidden=true;narrationLabel.style.display='none';}
   for(const element of document.querySelectorAll('.ix-replay__controls,.ix-replay__head')){element.hidden=true;element.style.display='none';}
 }
@@ -25,7 +29,8 @@ let rrOffset = 0; let mediaId = ''; let narrationTimer = 0; let narrating = fals
 let mediaSegments=[];let activeMediaIndex=0;
 let selectionEvents=[];let paintedSelection=null;
 let initialized=false;let seeking=false;let seekGeneration=0;
-const reviewApi={state:()=>({time:Number(timeline.value)||0,duration,ready:initialized&&!seeking,paused:!playing,seeking}),getTime:()=>Number(timeline.value)||0,setTime:seek,seek,play,pause};
+let replayViewport=null;let initializationError='';
+const reviewApi={state:()=>({time:Number(timeline.value)||0,duration,ready:initialized&&!seeking,paused:!playing,seeking,viewport:replayViewport,error:initializationError}),getTime:()=>Number(timeline.value)||0,setTime:seek,seek,play,pause};
 Object.defineProperty(reviewApi,'duration',{get:()=>duration});
 window.__SP_REPLAY_REVIEW__=reviewApi;
 const cueState = createReplayCueState(() => cues);
@@ -260,6 +265,7 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   mediaSegments=(validSegments.length?validSegments:packet.meta.mediaStartedAt?[{index:1,startedAt:packet.meta.mediaStartedAt,lastTimeMs:packet.meta.mediaLastTimeMs}]:[]).map(x=>({...x,at:Math.max(0,(Date.parse(x.startedAt)-baseWall)/1000),duration:(x.lastTimeMs||0)/1000}));
   timeline.max = String(duration); timeline.step = '0.05';
   const width = packet.meta.viewport?.width || 1280; const height = packet.meta.viewport?.height || 720;
+  replayViewport={width,height};
   stage.style.aspectRatio = `${width} / ${height}`; stage.style.setProperty('--ix-frame-width', `${width}px`); stage.style.setProperty('--ix-frame-height', `${height}px`);
   player = new rrweb.Replayer(items, { root: stage, width, height, skipInactive: false, showWarning: false, showDebug: false, mouseTail: false, UNSAFE_replayCanvas: true });
   // Replayer construction sets up its sandbox but does not paint the full snapshot until the timeline advances.
@@ -282,6 +288,9 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   status.textContent = packet.meta.endedAt ? '记录已结束' : '正在记录的本局';
   initialized=true;
   new ResizeObserver(fitReplay).observe(stage.parentElement);
-})().catch((error) => { status.textContent = error.message || '回放载入失败'; });
+})().catch((error) => {
+  status.textContent = error.message || '回放载入失败';
+  if(reviewMode)initializationError='回放载入失败，请检查链接或稍后重试。';
+});
 
 window.addEventListener('pagehide', () => {cancelAnimationFrame(raf);clearTimeout(narrationTimer);player?.pause();mediaVideo?.pause();});
