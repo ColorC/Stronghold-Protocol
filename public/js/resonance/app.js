@@ -81,15 +81,6 @@ export function App() {
     installDeviceSupport();
     installAudio({ getManifest: () => data.get('assets') });
     audio.playBgm('lobby');
-    const styles = ['./css/resonance-entry.css', './css/resonance-detail.css', './css/resonance-native/screens/game.css', './css/resonance-native/screens/game-shop.css', './css/resonance-native/screens/game-panels.css', './css/resonance-native/screens/title.css', './css/resonance-native/screens/lobby.css', './css/resonance-native/screens/draft.css', './css/resonance-native/screens/result.css', './css/resonance-native/screens/loadout.css'];
-    const links = styles.map((href) => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = href;
-      document.head.append(link);
-      return link;
-    });
-    return () => links.forEach((link) => link.remove());
   }, []);
 
   useEffect(() => {

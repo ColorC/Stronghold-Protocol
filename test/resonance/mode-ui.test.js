@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const read=(file)=>fs.readFileSync(path.join(ROOT,file),'utf8');
 const app=read('public/js/resonance/app.js');
+const html=read('public/resonance.html');
+const gameCss=read('public/css/resonance.css');
+const detailCss=read('public/css/resonance-detail.css');
 const entryCss=read('public/css/resonance-entry.css');
 const api=read('public/js/resonance/api.js');
 const codex=read('public/js/resonance/codex.js');
@@ -27,16 +30,17 @@ test('entry is title then native difficulty then direct preparation; legacy extr
  assert.doesNotMatch(app,/选择战场|本局推荐战场|主盟约/);
 });
 
-test('dynamic screen styles use the native theme and never restore the removed briefing gate',()=>{
- const dynamicStyles=app.match(/const styles = \[(.*?)\];/)?.[1];
- assert.ok(dynamicStyles,'dynamic stylesheet list exists');
+test('HTML stylesheet imports keep native screens before local overrides without late duplicate links',()=>{
+ assert.match(html,/<link rel="stylesheet" href="\.\/css\/resonance\.css"\s*\/>/);
+ assert.doesNotMatch(app,/document\.createElement\('link'\)|const styles = \[/,'app does not append a second screen stylesheet stack');
  for(const screen of ['game','game-shop','game-panels','title','lobby','draft','result','loadout']){
-  assert.ok(dynamicStyles.includes(`./css/resonance-native/screens/${screen}.css`),`${screen} uses its native stylesheet`);
+  assert.ok(gameCss.includes(`@import url("./resonance-native/screens/${screen}.css")`),`${screen} uses its native stylesheet`);
  }
- assert.ok(dynamicStyles.includes('./css/resonance-entry.css'));
- assert.ok(dynamicStyles.includes('./css/resonance-detail.css'));
- assert.doesNotMatch(dynamicStyles,/\.\/css\/screens\//);
- assert.doesNotMatch(dynamicStyles,/briefing\.css/);
+ assert.ok(gameCss.includes('@import url("./resonance-entry.css")'));
+ assert.ok(gameCss.includes('@import url("./resonance-detail.css")'));
+ assert.ok(detailCss.includes("@import url('./resonance-native/screens/game-panels.css')"));
+ assert.doesNotMatch(detailCss,/\/css\/screens\/game-panels\.css/);
+ assert.match(detailCss,/\.rs-game \.rs-detail-panel\{[^}]*top:[^}]*bottom:[^}]*max-height:none/);
 });
 
 test('seed refresh disables creation until matching catalog data resolves and resume/codex stay independent',()=>{

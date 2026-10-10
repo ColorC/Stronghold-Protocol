@@ -99,12 +99,14 @@ async function run() {
     for (const screenshot of Object.values(SHOTS)) assert(!existsSync(screenshot), `screenshot already exists; refusing to overwrite: ${screenshot}`);
   }
   const sourceNative = execFileSync('git', ['-C', SOURCE, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  const productNative = previous?.productNative || previous?.sourceNative || sourceNative;
+  const productNative = sourceNative;
+  const previousProductNative = previous?.productNative || previous?.sourceNative || null;
   const receipt = previous || { checker: 'native-ui-check', sourceNative, toolingNative: sourceNative, productNative, startedAt: stamp(), deadlineMs: DEADLINE_MS,
     status: 'running', sessionId: null, creates: 0, fights: 0, gameplayMutations: [], checks: {}, screenshots: {}, paths: config() };
   receipt.failures ||= [];
   if (previous) {
     receipt.previousSourceNative = receipt.sourceNative;
+    receipt.previousProductNative = previousProductNative;
     if (receipt.status === 'failed' && receipt.failure) {
       if (!receipt.failures.some(entry=>entry.attempt===receipt.attempts&&entry.error===receipt.failure)) receipt.failures.push({ attempt:receipt.attempts,toolingNative: receipt.toolingNative || receipt.sourceNative, status: 'failed', error: receipt.failure, time: receipt.finishedAt || stamp() });
       receipt.previousFailure ||= receipt.failure;
@@ -207,8 +209,9 @@ async function run() {
     if (options.resumeSession) entryUrl.searchParams.set('session', options.resumeSession);
     await page.goto(entryUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
     const resumePrep = !!options.resumeSession && receipt.checkpoint === 'prep' && receipt.steps?.created === true && Object.keys(receipt.steps).length === 1;
+    const resumeAfterEquip = !!options.resumeSession && receipt.checkpoint === 'after-equip' && receipt.steps?.created === true && receipt.steps?.bought === true && receipt.steps?.deployed === true && receipt.steps?.equipped === true && Object.keys(receipt.steps).every(key=>['created','bought','deployed','equipped','unequipped','reEquipped','combined'].includes(key));
     if (options.resumeSession) {
-      check('resume-supported-checkpoint-no-prior-gameplay', resumePrep, { checkpoint: receipt.checkpoint, steps: receipt.steps });
+      check('resume-supported-checkpoint-no-prior-gameplay', resumePrep||resumeAfterEquip, { checkpoint: receipt.checkpoint, steps: receipt.steps });
       await page.waitForSelector('.gm', { timeout: 45000 });
       await page.waitForSelector('.shopbar__remain', { timeout: 30000 });
       check('resume-checkpoint-same-ephemeral-session', receipt.sessionId === options.resumeSession, { sessionId: receipt.sessionId, checkpoint: receipt.checkpoint });
@@ -239,15 +242,17 @@ async function run() {
     check('session-is-in-ephemeral-path', !!receipt.sessionId && path.resolve(SESSION_DIR).toLowerCase() !== path.resolve(path.join(ROOT, 'runtime/resonance/player-sessions')).toLowerCase(), { sessionId: receipt.sessionId, directory: SESSION_DIR });
     check('opening-event-automatic-and-no-brief-gate', await page.evaluate(() => !document.querySelector('.rs-flow--briefing') && !!document.querySelector('.rs-gmeta__opening')), await page.evaluate(() => document.querySelector('.rs-gmeta__opening')?.innerText || null));
     }
-    const catalogCounts = await page.evaluate(async id => {
+    const initialInventory = resumeAfterEquip ? (receipt.checks?.['native-initial-inventory-two-real-components']?.evidence||[]) : ((await getState()).inventory||[]);
+    const originalItemIds=initialInventory.map(item=>item.itemId);
+    const catalogCounts = await page.evaluate(async(id,originalItemIds) => {
       const state = await (await fetch(`./resonance/api/sessions/${id}`)).json();
       const response = await (await fetch(`./resonance/api/catalog?seed=${state.state?.seed}`)).json();
       const catalog = response.catalog || {};
       return { active: response.activeOperatorIds?.length, operators: Object.keys(catalog.operators || {}).length,
         strategies: Object.keys(catalog.strategies || {}).length, equipment: Object.keys(catalog.equipment || {}).length,
         openingEvents: Object.keys(catalog.openingEvents || {}).length, openingEvent: catalog.openingEvent?.id || catalog.openingEvent?.name,
-        legalInventoryRecipe:(catalog.recipes||[]).find(recipe=>recipe.parts?.length===2&&recipe.parts.every(part=>(state.state.inventory||[]).some(item=>item.itemId===part)))||null };
-    }, receipt.sessionId);
+        legalInventoryRecipe:(catalog.recipes||[]).find(recipe=>recipe.parts?.length===2&&recipe.parts.every(part=>originalItemIds.includes(part)))||null };
+    }, receipt.sessionId,originalItemIds);
     check('catalog-season-cardinality', catalogCounts.active === 65 && catalogCounts.operators === 154 && catalogCounts.strategies === 28 && catalogCounts.equipment === 69 && catalogCounts.openingEvents === 4, catalogCounts);
     await capture('53-prep');
     await waitForGameReady();await inspectGeometry('desktop-1440x900');
@@ -258,8 +263,12 @@ async function run() {
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false });
     await waitForGameReady();
     let state=await getState();
-    if(!options.resumeSession || resumePrep){
-      const rawInventory=state.inventory||[];check('native-initial-inventory-two-real-components',rawInventory.length===2&&rawInventory.every(item=>item.itemId),rawInventory);
+    if(!options.resumeSession || resumePrep || resumeAfterEquip){
+      const rawInventory=initialInventory;
+      const activePieces=state.pieces.slice(0,3);
+      let item=rawInventory[0],icon=receipt.checks?.['real-skill-image-and-concrete-icon-identity']?.evidence||null;
+      check('native-initial-inventory-two-real-components',rawInventory.length===2&&rawInventory.every(value=>value.itemId),rawInventory);
+      if(!resumeAfterEquip){
       const shopOffer=state.shop?.offers?.find(offer=>!offer.sold&&offer.cost<=state.gold);
       check('one-affordable-real-shop-offer',!!shopOffer,shopOffer);
       const card=await page.$(`.shopbar__cards .scard[id="${shopOffer?.uid}"]`)|| (await page.$$('.shopbar__cards .scard:not(.scard--sold)'))[state.shop.offers.indexOf(shopOffer)];
@@ -268,7 +277,7 @@ async function run() {
       await page.mouse.click(cardBox.x+cardBox.width/2,cardBox.y+cardBox.height/2,{button:'right'});
       await page.waitForSelector('.dpanel .dskill__icon img',{timeout:8000});
       await page.waitForFunction(()=>{const image=document.querySelector('.dpanel .dskill__icon img');return !!image?.complete&&image.naturalWidth>0;},{timeout:8000});
-      const icon=await page.evaluate(async()=>{const image=document.querySelector('.dpanel .dskill__icon img'),name=document.querySelector('.dpanel .dhead__name')?.innerText.trim(),response=await(await fetch(`./resonance/api/catalog?seed=${new URL(location.href).searchParams.get('seed')||1}`)).json(),operator=Object.values(response.catalog?.operators||{}).find(value=>value.name===name),{resolveOperatorSkillIcon}=await import('./js/resonance/operatorSkillIcon.js'),expected=operator&&resolveOperatorSkillIcon(operator);return{name,src:image?.src,loaded:!!image?.complete&&image.naturalWidth>0,iconId:expected?.iconId||null,expectedUrl:expected?.url||null,matchesExpected:!!image&&!!expected?.url&&new URL(image.src).href===new URL(expected.url,location.href).href};});
+      icon=await page.evaluate(async()=>{const image=document.querySelector('.dpanel .dskill__icon img'),name=document.querySelector('.dpanel .dhead__name')?.innerText.trim(),response=await(await fetch(`./resonance/api/catalog?seed=${new URL(location.href).searchParams.get('seed')||1}`)).json(),operator=Object.values(response.catalog?.operators||{}).find(value=>value.name===name),{resolveOperatorSkillIcon}=await import('./js/resonance/operatorSkillIcon.js'),expected=operator&&resolveOperatorSkillIcon(operator);return{name,src:image?.src,loaded:!!image?.complete&&image.naturalWidth>0,iconId:expected?.iconId||null,expectedUrl:expected?.url||null,matchesExpected:!!image&&!!expected?.url&&new URL(image.src).href===new URL(expected.url,location.href).href};});
       check('real-skill-image-and-concrete-icon-identity',icon.loaded&&iconMatchesExpected(icon.iconId,icon.src,icon.expectedUrl)&&icon.matchesExpected,icon);
       await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       const beforeBuy=state;await card.click();
@@ -276,48 +285,83 @@ async function run() {
       const boughtHandle=await afterRevision(beforeBuy.revision),bought=await boughtHandle.jsonValue();
       check('one-real-shop-purchase',bought.history?.some(event=>event.type==='operator-bought'),bought.history?.at(-1));state=bought;
       receipt.checkpoint='after-buy';receipt.steps={...(receipt.steps||{}),bought:true};await save();
-      const occupied=new Set();const activePieces=state.pieces.slice(0,3);
+      const occupied=new Set();
       for(const piece of activePieces){const ok=await deployPiece(piece,occupied);check(`piece-${piece.uid}-deployed-by-real-drag`,ok,{uid:piece.uid,legalTiles:piece.legalTiles});}
       state=await getState();check('population-three-deployed-zero-remaining',state.pieces.filter(piece=>piece.row!=null).length===3&&state.deployedCount===3&&/剩余可放置角色：\s*0/.test(await page.$eval('.shopbar__remain',node=>node.innerText)),{deployedCount:state.deployedCount,remain:await page.$eval('.shopbar__remain',node=>node.innerText),pieces:state.pieces.map(piece=>({uid:piece.uid,row:piece.row,col:piece.col}))});
       await page.waitForFunction(()=>{const stats=globalThis.__SP_VIEW__?.raw?.stats?.();return Number(stats?.units)>=3&&(!!stats?.boardArt||stats?.board3d?.on===true);},{timeout:20000});
       await captureAdditional('69-ready-prep','69-ready-prep');
       receipt.checkpoint='after-deploy';receipt.steps={...(receipt.steps||{}),deployed:true};await save();
+      }
+      item=rawInventory[0];
+      if(!resumeAfterEquip){
       await page.evaluate(()=>{const button=[...document.querySelectorAll('.rs-hud-actions button')].find(element=>/装备背包/.test(`${element.innerText} ${element.title} ${element.getAttribute('aria-label')||''}`));button?.click();});await page.waitForSelector('.rs-panel-drawer[aria-label="装备"]',{timeout:8000});
-      const item=rawInventory[0],source=await page.$(`#inventory-${item.uid} .rs-inventory__main[draggable="true"]`),target=await piecePoint(activePieces[0].uid);assert(source,'native draggable inventory item missing');
+      const source=await page.$(`#inventory-${item.uid} .rs-inventory__main[draggable="true"]`),target=await piecePoint(activePieces[0].uid);assert(source,'native draggable inventory item missing');
       const sourceBounds=await source.boundingBox();assert(sourceBounds,'inventory component has no bounds');
       await page.mouse.move(sourceBounds.x+sourceBounds.width/2,sourceBounds.y+sourceBounds.height/2);await page.mouse.down();await page.mouse.move(target.x,target.y,{steps:12});await page.mouse.up();
       let equipped=await afterRevision(state.revision);state=await equipped.jsonValue();
       const equippedUnit=state.pieces.find(piece=>piece.uid===activePieces[0].uid),equippedItem=equippedUnit?.equipment?.find(value=>value.uid===item.uid);
       check('real-inventory-item-equipped-to-live-unit',!!equippedItem&&!state.inventory.some(value=>value.uid===item.uid),{itemUid:item.uid,equippedItem,equippedUnit});
       receipt.checkpoint='after-equip';receipt.steps={...(receipt.steps||{}),equipped:true};await save();
+      } else {
+        const equippedUnit=activePieces.find(piece=>piece.equipment?.some(value=>value.uid===item.uid));
+        const itemInInventory=state.inventory?.some(value=>value.uid===item.uid);
+        check('resume-existing-equipped-component',receipt.steps?.unequipped?itemInInventory:!!equippedUnit,{itemUid:item.uid,equippedUnit:equippedUnit?.uid,itemInInventory,steps:receipt.steps});
+      }
       const ownedItemSelector=`.rs-unit-items__row[data-unit-key="prep:${activePieces[0].uid}"] .rs-unit-items__item[data-item-id="${item.itemId}"] img`;
-      await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},ownedItemSelector);
-      const overlayImage=await page.$eval(ownedItemSelector,img=>({src:img.src,loaded:img.complete&&img.naturalWidth>0}));
-      check('equipped-item-overlay-icon-loaded',overlayImage.loaded,overlayImage);
-      await capture('54-gear');await inspectGeometry('gear-overlay-1440x900');
+      if(!receipt.steps?.unequipped){
+        await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},ownedItemSelector);
+        const overlayImage=await page.$eval(ownedItemSelector,img=>({src:img.src,loaded:img.complete&&img.naturalWidth>0}));
+        check('equipped-item-overlay-icon-loaded',overlayImage.loaded,overlayImage);
+        await capture('54-gear');
+      }
+      await inspectGeometry('gear-overlay-1440x900');
       await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.rs-panel-drawer'),{timeout:5000});
       const unitPoint=await piecePoint(activePieces[0].uid);await page.mouse.click(unitPoint.x,unitPoint.y);await page.waitForSelector('.rs-detail__member',{timeout:8000});
       await inspectGeometry('member-detail-1440x900');
-      const canUnequip=await page.$eval('.rs-detail__member',root=>[...root.querySelectorAll('button')].some(button=>button.innerText.trim()==='卸下'));
-      assert(canUnequip,'equipped item detail is missing its real unload action');await page.evaluate(()=>[...document.querySelectorAll('.rs-detail__member button')].find(button=>button.innerText.trim()==='卸下')?.click());
-      state=await afterRevision(state.revision).then(handle=>handle.jsonValue());
-      check('unequip-removes-item-from-unit',!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
-      await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:8000},ownedItemSelector);
-      check('unequip-removes-unit-overlay-icon',await page.$(ownedItemSelector)===null,item.itemId);
+      const itemCurrentlyEquipped=!!activePieces.find(piece=>piece.equipment?.some(value=>value.uid===item.uid));
+      if(!itemCurrentlyEquipped&&!receipt.steps?.unequipped){
+        check('unequip-removes-item-from-unit',true,state.inventory);
+        await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:8000},ownedItemSelector);
+        check('unequip-removes-unit-overlay-icon',await page.$(ownedItemSelector)===null,item.itemId);
+        receipt.steps={...(receipt.steps||{}),unequipped:true};receipt.checkpoint='after-equip';await save();
+      } else if(!receipt.steps?.unequipped){
+        const canUnequip=await page.$eval('.rs-detail__member',root=>[...root.querySelectorAll('button')].some(button=>button.innerText.trim()==='卸下'));
+        assert(canUnequip,'equipped item detail is missing its real unload action');const beforeUnequip=state.revision;
+        const unequipHandle=await page.evaluateHandle(()=>[...document.querySelectorAll('.rs-detail__member button')].find(button=>button.innerText.trim()==='卸下'));
+        await unequipHandle.asElement().click();await unequipHandle.dispose();
+        state=await afterRevision(beforeUnequip).then(handle=>handle.jsonValue());
+        check('unequip-removes-item-from-unit',!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
+        await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:8000},ownedItemSelector);
+        check('unequip-removes-unit-overlay-icon',await page.$(ownedItemSelector)===null,item.itemId);
+        receipt.steps={...(receipt.steps||{}),unequipped:true};receipt.checkpoint='after-equip';await save();
+      }
       await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
-      await page.mouse.click(unitPoint.x,unitPoint.y);await page.waitForSelector('.rs-detail__member select',{timeout:8000});
-      await page.select('.rs-detail__member select',item.uid);state=await afterRevision(state.revision).then(handle=>handle.jsonValue());
-      check('re-equip-real-inventory-item',!!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
+      if(!receipt.steps?.reEquipped&&state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid)){
+        receipt.steps={...(receipt.steps||{}),reEquipped:true};receipt.checkpoint='after-equip';await save();
+      } else if(!receipt.steps?.reEquipped){
+        await page.mouse.click(unitPoint.x,unitPoint.y);await page.waitForSelector('.rs-detail__member select',{timeout:8000});
+        const beforeReequip=state.revision;await page.select('.rs-detail__member select',item.uid);state=await afterRevision(beforeReequip).then(handle=>handle.jsonValue());
+        check('re-equip-real-inventory-item',!!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
+        receipt.steps={...(receipt.steps||{}),reEquipped:true};receipt.checkpoint='after-equip';await save();
+      }
       await page.waitForFunction(selector=>{const img=document.querySelector(selector);return !!img?.complete&&img.naturalWidth>0;},{timeout:8000},ownedItemSelector);
+      check('re-equip-real-inventory-item',!!state.pieces.find(piece=>piece.uid===activePieces[0].uid)?.equipment?.some(value=>value.uid===item.uid),state.inventory);
       await inspectGeometry('member-detail-gear-1440x900');await page.click('.dpanel__close');await page.waitForFunction(()=>!document.querySelector('.dpanel'),{timeout:5000});
       check('real-two-component-recipe-discovered',!!catalogCounts.legalInventoryRecipe,{inventory:rawInventory.map(entry=>entry.itemId),recipe:catalogCounts.legalInventoryRecipe});
-      await page.evaluate(()=>[...document.querySelectorAll('.rs-hud-actions button')].find(element=>/装备背包/.test(`${element.innerText} ${element.title} ${element.getAttribute('aria-label')||''}`))?.click());
-      await page.waitForSelector('.rs-panel-drawer[aria-label="装备"]',{timeout:8000});
-      for(const ingredient of rawInventory){const input=await page.$(`#equipped-${ingredient.uid} input[type="checkbox"]`)||await page.$(`#inventory-${ingredient.uid} input[type="checkbox"]`);assert(input,`synthesis ingredient checkbox missing: ${ingredient.uid}`);await input.click();}
-      const combineButton=await page.waitForFunction(()=>[...document.querySelectorAll('.rs-inventory__combine button')].find(button=>button.innerText.trim()==='确认合成'&&!button.disabled)||false,{timeout:8000});
-      const combineLabel=await page.$eval('.rs-inventory__combine',node=>node.innerText.trim());check('inventory-ui-offers-real-recipe',combineLabel.includes(catalogCounts.legalInventoryRecipe.resultName||catalogCounts.legalInventoryRecipe.resultId),combineLabel);
-      state=await getState();await combineButton.asElement().click();state=await afterRevision(state.revision).then(handle=>handle.jsonValue());
-      const combineEvent=state.history?.find(event=>event.type==='equipment-combined'&&event.resultId===catalogCounts.legalInventoryRecipe.resultId);
+      let combineEvent=state.history?.find(event=>event.type==='equipment-combined'&&event.resultId===catalogCounts.legalInventoryRecipe.resultId);
+      if(!receipt.steps?.combined&&!combineEvent){
+        await page.evaluate(()=>[...document.querySelectorAll('.rs-hud-actions button')].find(element=>/装备背包/.test(`${element.innerText} ${element.title} ${element.getAttribute('aria-label')||''}`))?.click());
+        await page.waitForSelector('.rs-panel-drawer[aria-label="装备"]',{timeout:8000});
+        for(const ingredient of rawInventory){const input=await page.$(`#equipped-${ingredient.uid} input[type="checkbox"]`)||await page.$(`#inventory-${ingredient.uid} input[type="checkbox"]`);assert(input,`synthesis ingredient checkbox missing: ${ingredient.uid}`);await input.click();}
+        const combineButton=await page.waitForFunction(()=>[...document.querySelectorAll('.rs-inventory__combine button')].find(button=>button.innerText.trim()==='确认合成'&&!button.disabled)||false,{timeout:8000});
+        const combineLabel=await page.$eval('.rs-inventory__combine',node=>node.innerText.trim());check('inventory-ui-offers-real-recipe',combineLabel.includes(catalogCounts.legalInventoryRecipe.resultName||catalogCounts.legalInventoryRecipe.resultId),combineLabel);
+        state=await getState();const beforeCombine=state.revision;await combineButton.asElement().click();state=await afterRevision(beforeCombine).then(handle=>handle.jsonValue());
+        combineEvent=state.history?.find(event=>event.type==='equipment-combined'&&event.resultId===catalogCounts.legalInventoryRecipe.resultId);
+        assert(combineEvent,'native equipment-combined history event missing');receipt.steps={...(receipt.steps||{}),combined:true};receipt.checkpoint='after-equip';receipt.combinedEvidence={uid:combineEvent.uid,resultId:combineEvent.resultId};await save();
+      }
+      if(!combineEvent) combineEvent=state.history?.find(event=>event.type==='equipment-combined'&&event.resultId===catalogCounts.legalInventoryRecipe.resultId);
+      assert(combineEvent,'recorded combined step has no matching history event');
+      if(!receipt.steps?.combined){receipt.steps={...(receipt.steps||{}),combined:true};receipt.checkpoint='after-equip';receipt.combinedEvidence={uid:combineEvent.uid,resultId:combineEvent.resultId};await save();}
       const combinedOwner=state.pieces.find(piece=>piece.equipment?.some(entry=>entry.uid===combineEvent?.uid));
       check('real-ui-synthesis-consumes-two-and-creates-result',!!combineEvent&&combineEvent.itemIds.length===2&&(state.inventory.some(entry=>entry.uid===combineEvent.uid&&entry.itemId===combineEvent.resultId)||combinedOwner?.uid===activePieces[0].uid),{combineEvent,inventory:state.inventory,combinedOwner});
       await page.waitForFunction(selector=>!document.querySelector(selector),{timeout:8000},ownedItemSelector);
