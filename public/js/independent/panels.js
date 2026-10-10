@@ -159,8 +159,24 @@ export function gearMeta(g) {
 export const USE_NEEDS = { upgradeChess: 'target', promoteOnUse: 'targets', recruitOnUse: 'source', copyOperatorOnUse: 'source', shopRecruitOnUse: 'slots',
   factionRecruitOnUse: 'faction', saleThresholdRecruit: 'faction', darkmoonTargetPrize:'friendly' };
 
+function usePieceChoices(need, stack, state, catalog) {
+  const needsElite = need === 'target' || need === 'targets';
+  const normalPrize = ['BGS_Treasures_016', 'BGS_Treasures_034'].includes(stack.params?.sourceId);
+  return state.pieces.filter((piece) => (need === 'friendly' ? !normalPrize || !piece.elite : !piece.elite)
+    && (!needsElite || !!catalog.operators[piece.chessId]?.eliteChessId));
+}
+
+function beginUseTarget({ need, count, stack, eligible, onBeginTarget, onCancelTarget, submit }) {
+  const fieldKey = need === 'source' ? 'sourceUid' : need === 'targets' ? 'targets' : 'targetUid';
+  const label = need === 'source' ? '点击标记的普通干员作为来源' : need === 'target'
+    ? '点击标记的未精锐干员领取成长补给' : '点击标记的普通干员领取补给';
+  onBeginTarget?.({ label, closePanel: true, onCancel: onCancelTarget,
+    choices: eligible.map((piece) => ({ kind: 'friendly', uid: piece.uid })), emptyText: '当前没有符合条件的干员',
+    submit: ({ uid }) => submit(fieldKey === 'targets' ? { targets: [uid] } : { [fieldKey]: uid }) });
+}
+
 /** The second step of a supply that needs a choice; nothing is sent until the choice is complete. */
-function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
+function UsePicker({ stack, state, catalog, busy, onAct, onCancel, onBeginTarget, onCancelTarget }) {
   const need = USE_NEEDS[stack.mechanism];
   const g = catalog.gear[stack.id] || {};
   const count = Number(g.useCount) || 1;
@@ -178,12 +194,15 @@ function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
     body = html`${slots.map(({ s, i }) => html`<button type="button" key=${i} class=${cx('ix-chip', picked.includes(i) && 'is-on')} onClick=${() => toggle(i)}>${catalog.operators[s.id]?.name || ''}</button>`)}
       <${Button} size="sm" variant="primary" disabled=${busy || picked.length !== count} onClick=${() => confirm({ slots: picked })}>确认（${picked.length}/${count}）<//>`;
   } else {
-    const needsElite = need === 'target' || need === 'targets';
-    const normalPrize=['BGS_Treasures_016','BGS_Treasures_034'].includes(stack.params?.sourceId);
-    const eligible = state.pieces.filter((p) => (need==='friendly' ? !normalPrize || !p.elite : !p.elite) && (!needsElite || catalog.operators[p.chessId]?.eliteChessId));
-    const many = need === 'targets';
+    const eligible = usePieceChoices(need, stack, state, catalog);
+    const many = need === 'targets' && count > 1;
+    const singleTarget = need === 'target' || need === 'source' || (need === 'targets' && count === 1);
     body = html`${eligible.map((p) => html`<button type="button" key=${p.uid} class=${cx('ix-chip', picked.includes(p.uid) && 'is-on')} disabled=${busy}
-        onClick=${() => (many ? toggle(p.uid) : confirm(need === 'source' ? { sourceUid: p.uid } : { targetUid: p.uid }))}>${formEntry(catalog, p)?.name || ''}</button>`)}
+        onClick=${() => {
+          if (many) toggle(p.uid);
+          else if (singleTarget) beginUseTarget({ need, count, stack, eligible, onBeginTarget, onCancelTarget, submit: (extra) => confirm(extra) });
+          else confirm(need === 'source' ? { sourceUid: p.uid } : { targetUid: p.uid });
+        }}>${formEntry(catalog, p)?.name || ''}</button>`)}
       ${many ? html`<${Button} size="sm" variant="primary" disabled=${busy || picked.length !== count} onClick=${() => confirm({ targets: picked })}>确认（${picked.length}/${count}）<//>` : null}
       ${!eligible.length ? html`<span class="ix-muted">没有可以选择的干员</span>` : null}`;
   }
@@ -197,7 +216,7 @@ function UsePicker({ stack, state, catalog, busy, onAct, onCancel }) {
  * operator (n badges at once); supplies, facilities and kept prizes are used, asking first for what they need. Gear has
  * one form only (no 合成精锐, owner 2026-10-07). Wearing is final (design: 不能主动拆卸或替换), so the panel says so.
  */
-export function InventoryPanel({ open, focus = null, state, catalog, busy, targetUid, onTarget, onClose, onAct }) {
+export function InventoryPanel({ open, focus = null, state, catalog, busy, targetUid, onTarget, onClose, onAct, onBeginTarget, onCancelTarget }) {
   const stacks = inventoryStacks(state.inventory, catalog);
   const [qty, setQty] = useState({});
   const [using, setUsing] = useState(null);
@@ -215,14 +234,25 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
   const many = s?.badge || g?.quantityEquippable === true;
   const n = s ? Math.max(1, Math.min(qty[s.key] || 1, s.count, Number(s.items[0]?.quantity || 1), Math.max(1, room))) : 1;
   const tagFactions = g?.identityFactions || null;
+  const equipChoices = s && !s.used ? state.pieces.filter((p) => {
+    const levelGrowth = state.growthMode === 'levels' && (catalog.badges?.[s.id] || g?.mechanism === 'badge' || g?.mechanism === 'growthTraining');
+    if (levelGrowth) return Number(p.growthLevel ?? 1) < Number(p.growthMaximum ?? catalog.config?.maxGrowthLevel ?? Number.MAX_SAFE_INTEGER);
+    if (p.equipment.reduce((sum, item) => sum + Number(item.quantity || 1), 0) >= (catalog.rules?.equipmentCapacity ?? 999)) return false;
+    if (g?.unique && p.equipment.some((item) => {
+      const other = catalog.gear[item.id] || {};
+      return (other.uniqueKey || other.canonicalId || item.id) === (g.uniqueKey || g.canonicalId || s.id);
+    })) return false;
+    return true;
+  }) : [];
   return html`<${Modal} open=${open} title="装备库存" micro="INVENTORY" onClose=${onClose} width="min(10.4rem, 96vw)" class="ix-inv">
     <div class="ix-inv__target">
-      <span>穿戴到</span>
-      <select value=${targetUid || ''} onChange=${(e) => onTarget(e.currentTarget.value || null)} data-testid="ix-inv-target">
-        <option value="">选择干员</option>
-        ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备叠加×${p.equipmentLevel}</option>`)}
-      </select>
-      ${target ? html`<span class=${room <= 0 ? 'ix-warn' : 'ix-muted'}>${room <= 0 ? '装备已满' : '穿上后无法卸下'}</span>` : html`<span class="ix-muted">先选干员，再点「穿戴」</span>`}
+      ${target ? html`<span class=${room <= 0 ? 'ix-warn' : 'ix-muted'}>已选${formEntry(catalog, target)?.name || '干员'} · ${room <= 0 ? '装备已满' : '穿上后无法卸下'}</span>` : html`<span class="ix-muted">点选「穿戴」后，直接点击场上或整备区干员</span>`}
+      <details class="ix-inv__manual-target"><summary>手动选目标（备用）</summary>
+        <select value=${targetUid || ''} onChange=${(e) => onTarget(e.currentTarget.value || null)} data-testid="ix-inv-target">
+          <option value="">选择干员</option>
+          ${state.pieces.map((p) => html`<option key=${p.uid} value=${p.uid}>${formEntry(catalog, p)?.name || ''}${p.elite ? '（精锐）' : ''} · ${isDeployed(p) ? '在场' : '整备区'} · 装备叠加×${p.equipmentLevel}</option>`)}
+        </select>
+      </details>
       ${stacks.filter((x) => x.kind !== '奖品').length >= (catalog.rules?.inventoryCapacity ?? 20) ? html`<span class="ix-warn" role="status">库存已满</span>` : null}
     </div>
     <div class="ix-inv__body">
@@ -245,10 +275,27 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
           ${prizeReference ? html`<${OriginalCardRefs} op=${catalog.prizes[s.id]} linkAnchor=${'stock-'+s.key} />` : html`<p class="ix-inv__desc"><${GameText} text=${s.text} catalog=${catalog} /></p>`}
           <${FieldConditionCounts} effects=${g?.params?.effects || []} source=${target} state=${state} catalog=${catalog} active=${true} />
           <${TermNotes} texts=${[s.text]} catalog=${catalog} exclude=${s.name} />
-          ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} />` : null}
-          <div class="ix-inv__act">
-            ${s.used ? html`<${Button} size="sm" variant="secondary" disabled=${busy || using === s.key}
-                onClick=${() => (USE_NEEDS[s.mechanism] ? setUsing(s.key) : run({ type: 'use-item', itemUid: s.items[0].uid }))}>使用<//>`
+            ${using === s.key ? html`<${UsePicker} stack=${s} state=${state} catalog=${catalog} busy=${busy} onAct=${run} onCancel=${() => setUsing(null)} onBeginTarget=${onBeginTarget} onCancelTarget=${onCancelTarget} />` : null}
+            <div class="ix-inv__act">
+              ${s.used ? html`<${Button} size="sm" variant="secondary" disabled=${busy || using === s.key}
+                  onClick=${() => {
+                    const need = USE_NEEDS[s.mechanism];
+                  if (s.mechanism === 'darkmoonTargetPrize') {
+                    const normalOnly = ['BGS_Treasures_016', 'BGS_Treasures_034'].includes(s.params?.sourceId);
+                    const choices = state.pieces.filter((p) => !normalOnly || !p.elite).map((p) => ({ kind: 'friendly', uid: p.uid }));
+                      onBeginTarget?.({ label: '点击标记的场上或整备区友方干员领取奖品效果', closePanel: true, onCancel: onCancelTarget, choices, emptyText: '当前没有符合条件的友方干员',
+                      submit: ({ uid }) => onAct({ type: 'use-item', itemUid: s.items[0].uid, targetUid: uid }) });
+                    } else if (need === 'target') {
+                      const choices = state.pieces.filter((p) => !p.elite && catalog.operators[p.chessId]?.eliteChessId).map((p) => ({ kind: 'friendly', uid: p.uid }));
+                      onBeginTarget?.({ label: '点击标记的场上或整备区干员领取成长补给', closePanel: true, onCancel: onCancelTarget, choices, emptyText: '当前没有符合条件的干员',
+                        submit: ({ uid }) => onAct({ type: 'use-item', itemUid: s.items[0].uid, targetUid: uid }) });
+                    } else if (need === 'source' || (need === 'targets' && (Number(g?.useCount) || 1) === 1)) {
+                      const eligible = usePieceChoices(need, s, state, catalog);
+                      beginUseTarget({ need, count: Number(g?.useCount) || 1, stack: s, eligible, onBeginTarget, onCancelTarget,
+                        submit: (extra) => onAct({ type: 'use-item', itemUid: s.items[0].uid, ...extra }) });
+                    } else if (need) setUsing(s.key);
+                  else run({ type: 'use-item', itemUid: s.items[0].uid });
+                }}>使用<//>`
               : html`
               ${many && s.count > 1 ? html`<span class="ix-qty">
                 <button type="button" onClick=${() => setQty({ ...qty, [s.key]: Math.max(1, n - 1) })} aria-label="减少">−</button><b class="num">${n}</b>
@@ -256,9 +303,15 @@ export function InventoryPanel({ open, focus = null, state, catalog, busy, targe
                 <button type="button" onClick=${() => setQty({ ...qty, [s.key]: Math.min(s.count, Math.max(1, room)) })}>全部</button></span>` : null}
               ${tagFactions ? html`<select value=${tags[s.key] || ''} onChange=${(e) => setTags({ ...tags, [s.key]: e.currentTarget.value })} aria-label="身份标签阵营">
                 <option value="">选择阵营</option>${tagFactions.map((f) => html`<option key=${f} value=${f}>${f}</option>`)}</select>` : null}
-              <${Button} size="sm" variant="primary" disabled=${busy || !target || room < n || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
-                onClick=${() => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: target.uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) })}>
-                穿戴${many && n > 1 ? ` ${n} 件` : ''}<//>`}
+              ${!equipChoices.length ? html`<span role="status" class="ix-warn">当前没有符合条件的装备目标</span>` : null}
+              <${Button} size="sm" variant="primary" disabled=${busy || !equipChoices.length || (tagFactions && !tags[s.key])} title="穿上后无法卸下"
+                onClick=${() => {
+                  const action = (uid) => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) });
+                    onBeginTarget?.({ label: '点击标记的场上或整备区友方干员穿戴装备', closePanel: true, onCancel: onCancelTarget, choices: equipChoices.map((p) => ({ kind: 'friendly', uid: p.uid })), emptyText: '没有可以穿戴这件装备的干员', submit: ({ uid }) => action(uid) });
+                }}>
+                ${many && n > 1 ? `穿戴 ${n} 件` : '穿戴 · 点选干员'}<//>
+              ${target ? html`<${Button} size="sm" variant="secondary" disabled=${busy || room < n || (tagFactions && !tags[s.key])}
+                onClick=${() => run({ type: 'equip', itemUid: s.items[0].uid, targetUid: target.uid, quantity: many ? n : 1, ...(tagFactions ? { faction: tags[s.key] } : {}) })}>穿给${formEntry(catalog, target)?.name || '已选干员'}<//>` : null}`}
           </div>` : html`<p class="ix-muted">库存为空</p>`}
       </div>
     </div>
@@ -286,7 +339,7 @@ function OperatorChoice({ chessId, catalog, onPick, busy, growthMode = 'badges' 
  * The first open offer as an overlay: 工程部特供 (three cards, full text and the notes of what they give; one that
  * needs an operator asks for it next), free recruits, attachment picks and the 三连 unique-conflict choice.
  */
-export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
+export function OfferOverlay({ offer, state, catalog, busy, onChoose, onBeginTarget }) {
   const [prizeIndex, setPrizeIndex] = useState(null);
   const [picks, setPicks] = useState({});
   useEffect(() => { setPrizeIndex(null); setPicks({}); }, [offer?.id]);
@@ -300,11 +353,13 @@ export function OfferOverlay({ offer, state, catalog, busy, onChoose }) {
     if (need) {
       const eligible = state.pieces.filter((p) => (need === 'deployed'
         ? (chosen.mechanism === 'attachmentOffer' ? trainingChoiceOptions(state, catalog, p).length > 0 : isDeployed(p))
-        : !p.elite));
+        : !p.elite && !!catalog.operators[p.chessId]?.eliteChessId));
       body = html`<p class="ix-note">${chosen.name}：选择一名${need === 'deployed' ? '场上' : '普通'}干员</p>
-        <div class="ix-choices ix-choices--pieces">${eligible.map((p) => html`<button type="button" key=${p.uid} class="ix-choice ix-choice--piece" disabled=${busy}
-          onClick=${() => onChoose({ type: 'choose', offerId: offer.id, index: prizeIndex, targetUid: p.uid })}>
-          <${UnitThumb} kind="chess" id=${renderChessId(catalog, p)} golden=${!!p.elite} size="md" /><b>${formEntry(catalog, p)?.name}</b></button>`)}</div>
+        <div class="ix-choices ix-choices--pieces"><button type="button" class="ix-choice ix-choice--piece" disabled=${busy || !eligible.length}
+          onClick=${() => onBeginTarget?.({ label: need === 'deployed' ? '点击标记的场上干员' : '点击标记的场上或整备区普通干员', closeOffer: true,
+            choices: eligible.map((p) => ({ kind: 'friendly', uid: p.uid })), emptyText: '当前没有符合条件的目标',
+            submit: ({ uid }) => onChoose({ type: 'choose', offerId: offer.id, index: prizeIndex, targetUid: uid }) })}>
+          ${eligible.length ? '在场上选择干员' : '当前没有符合条件的目标'}</button></div>
         <${Button} variant="ghost" onClick=${() => setPrizeIndex(null)}>返回<//>`;
     } else {
       body = html`<div class="ix-choices">${offer.choices.map((id, i) => {
