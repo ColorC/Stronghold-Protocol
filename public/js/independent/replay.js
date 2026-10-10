@@ -131,7 +131,7 @@ function mediaDurationForClamp() {
 }
 function abortError() { return new DOMException('回放媒体载入已被更新的操作取代', 'AbortError'); }
 function loadMediaSegment(segment) {
-  if (activeMediaKey === segment.key && mediaVideo?.readyState >= 1 && mediaVideo.currentSrc === segment.url) return mediaReady;
+  if (activeMediaKey === segment.key && mediaVideo?.currentSrc === segment.url && (mediaVideo.readyState >= 1 || cancelMediaLoad)) return mediaReady;
   cancelMediaLoad?.(abortError());
   const generation = ++mediaLoadGeneration;
   activeMediaKey = segment.key;
@@ -253,8 +253,12 @@ function play() {
 }
 function pause() {
   const now = playing ? offset() : Number(timeline.value);
-  ++seekGeneration; seeking = false; cancelMediaLoad?.(abortError());
+  const generation = ++seekGeneration; seeking = false;
   playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
+  if (mediaNeedsLoad(now)) void positionMediaAt(now, generation).catch(error => {
+    if (generation !== seekGeneration || error?.name === 'AbortError') return;
+    status.textContent = error.message || '回放视频定位失败';
+  });
 }
 async function seek(value, { resumeAfter } = {}) {
   const generation=++seekGeneration;
