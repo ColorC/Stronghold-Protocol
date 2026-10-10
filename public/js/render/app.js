@@ -1779,7 +1779,7 @@ export async function createFieldView(host, options = {}) {
     const now = performance.now();
     try { frameBody(now); } finally { cpuMs = cpuMs * 0.9 + (performance.now() - now) * 0.1; }
   }
-  function frameBody(now) {
+  function frameBody(now, recordedTime = null) {
     if (mode === 'battle' && replayPresentationPaused) { lastNow = now; return; }
     frameNo++;
     if (frameNo % 30 === 1) {
@@ -1806,7 +1806,7 @@ export async function createFieldView(host, options = {}) {
       tiles.project(cam);
       updateBackdrop(clock);
       if (mode === 'battle') {
-        const renderT = interp.update(now / 1000);
+        const renderT = Number.isFinite(recordedTime) ? (interp.renderT = recordedTime) : interp.update(now / 1000);
         if (Number.isFinite(renderT)) {
           processEvents(renderT);
           syncBattle(renderT);
@@ -1924,6 +1924,17 @@ export async function createFieldView(host, options = {}) {
       interp.delay = on ? 0.034 : 0.1;
       interp.defaultRate = on ? Math.min(20, speed) : 2;
       interp.maxRate = on ? Math.max(8, speed * 1.5) : 8;
+      return true;
+    },
+    /** Render one authoritative replay sample for an offline video, without advancing wall time. */
+    renderRecordedFrame({ gameTime, delta = 1 / 30, rate = 2 } = {}) {
+      if (destroyed || mode !== 'battle' || !Number.isFinite(gameTime) || !Number.isFinite(delta) || delta < 0 || delta > 0.1 || !Number.isFinite(rate) || rate < 0 || rate > 20) return false;
+      app.stop();
+      replayPresentationPaused = false;
+      interp.rate = rate;
+      frameBody(lastNow + delta * 1000, gameTime);
+      app.renderer.render(app.stage);
+      emit('framePainted');
       return true;
     },
     setReplayPaused(paused) {

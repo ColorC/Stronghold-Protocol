@@ -78,13 +78,15 @@ test('custom delayed selection capture flushes a short-lived set before its clea
   stop();
 });
 
-test('media defaults cap the composed field at 1280px and permit bounded URL overrides', () => {
-  assert.deepEqual(DEFAULT_MEDIA_OPTIONS, { maxDimension: 1280, fps: 24, videoBitsPerSecond: 900000, timesliceMs: 5000 });
-  assert.deepEqual(fitRecordingDimensions(2560, 1440), { width: 1280, height: 720 });
+test('media defaults capture up to 2560px at 30fps and at least 16 Mbps with bounded URL overrides', () => {
+  assert.deepEqual(DEFAULT_MEDIA_OPTIONS, { maxDimension: 2560, fps: 30, videoBitsPerSecond: 16000000, timesliceMs: 1000 });
+  assert.deepEqual(fitRecordingDimensions(3840, 2160), { width: 2560, height: 1440 });
+  assert.deepEqual(fitRecordingDimensions(2560, 1440), { width: 2560, height: 1440 });
   assert.deepEqual(fitRecordingDimensions(800, 1200), { width: 800, height: 1200 });
   assert.deepEqual(resolveMediaOptions('?recordMax=1920&recordFps=30&recordBitrate=1500000&recordChunkMs=3000'), {
-    maxDimension: 1920, fps: 30, videoBitsPerSecond: 1500000, timesliceMs: 3000,
+    maxDimension: 1920, fps: 30, videoBitsPerSecond: 16000000, timesliceMs: 3000,
   });
+  assert.equal(resolveMediaOptions('?recordBitrate=64000000').videoBitsPerSecond, 48000000);
   assert.equal(resolveMediaOptions('?recordMax=99999').maxDimension, 2560);
 });
 
@@ -114,6 +116,17 @@ test('canvas media adapter forwards WebM chunks and stops its tracks cleanly', a
   assert.equal(media.mimeType, 'video/webm;codecs=vp8'); assert.equal(media.recorder.slice, 2000);
   assert.equal(media.recorder.options.videoBitsPerSecond, 750000); assert.equal(chunks[0].timecode, 3);
   await media.stop(); media.dispose(); assert.equal(track.stopped, true);
+});
+
+test('native MediaRecorder receives the default minimum video bitrate', () => {
+  const stream = { getTracks: () => [] };
+  class FakeRecorder {
+    static isTypeSupported(type) { return type === 'video/webm;codecs=vp8'; }
+    constructor(_stream, options) { this.options = options; this.state = 'inactive'; }
+    addEventListener() {}
+  }
+  const media = createCanvasMediaRecorder({ stream, MediaRecorderCtor: FakeRecorder });
+  assert.equal(media.recorder.options.videoBitsPerSecond, 16_000_000);
 });
 
 test('selection replay follows seek direction and explicit clear records', () => {
