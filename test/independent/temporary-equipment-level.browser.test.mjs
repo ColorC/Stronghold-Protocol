@@ -51,7 +51,7 @@ test('battle temporary badges update visible equipment totals without mutating p
   try {
     const profileRoot = path.resolve(process.env.SP_DETAIL_PANEL_PROFILE_ROOT || path.join(ROOT, '.omni', 'tmp', 'temp-level-browser'));
     fs.mkdirSync(profileRoot, { recursive: true });
-    browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/msedge.exe', headless: true,
+    browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
       userDataDir: fs.mkdtempSync(path.join(profileRoot, 'edge-profile-')), timeout: 30000, args: ['--disable-gpu', '--disable-software-rasterizer', '--no-first-run', '--no-default-browser-check', '--no-sandbox'] });
     const page = await browser.newPage({ viewport: { width: 1400, height: 800 } }), errors = [];
     page.on('pageerror', e => errors.push(e.message));
