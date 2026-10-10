@@ -8,7 +8,7 @@
 // `?render=engine` never falls back silently (errors are logged and the fallback still mounts).
 
 // relative, like every other client module (the import map only resolves to this same URL; no bare specifier here)
-import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
+import { useCallback, useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { createFallbackView } from './fallbackField.js';
 import { data } from '../data.js';
 import { audio } from '../audio.js';
@@ -135,8 +135,32 @@ function renderPref() {
   return globalThis.__SP_RENDER__ === 'fallback' ? 'fallback' : 'auto';
 }
 
-function withTimeout(p, ms, what) {
-  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what} timed out`)), ms))]);
+function abortError(signal) {
+  return signal?.reason ?? new DOMException('Field view initialization cancelled', 'AbortError');
+}
+
+function checkActive(signal) {
+  if (signal?.aborted) throw abortError(signal);
+}
+
+function withTimeout(p, ms, what, signal) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timer;
+    const finish = (done, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      done(value);
+    };
+    const onAbort = () => finish(reject, abortError(signal));
+    signal?.addEventListener('abort', onAbort, { once: true });
+    timer = setTimeout(() => finish(reject, new Error(`${what} timed out`)), ms);
+    // Keep a rejection handler attached even when cancellation wins before this promise settles.
+    Promise.resolve(p).then((value) => finish(resolve, value), (err) => finish(reject, err));
+    if (signal?.aborted) onAbort();
+  });
 }
 
 /**
@@ -189,69 +213,126 @@ export function seedAssets(store) {
 /**
  * Create a field view in `host`: the render engine when available, else the DOM fallback.
  * @param {HTMLElement} host
- * @param {{ tierChips?: 'roman'|'pips'|'color' }|null} [extra] a mode's own view options (render/app.js createFieldView)
+ * @param {{ tierChips?: 'roman'|'pips'|'color', signal?: AbortSignal, requireEngine?: boolean }|null} [extra] mode options; requireEngine rejects instead of substituting a DOM board
  * @returns {Promise<ReturnType<typeof guardView>>}
  */
 export async function mountFieldView(host, extra = null) {
-  const pref = renderPref();
+  const { signal, requireEngine = false, retryDelays: _retryDelays, ...modeOptions } = extra || {};
+  checkActive(signal);
+  const pref = requireEngine ? 'engine' : renderPref();
   const opts = { data, assets: data.get('assets'), audio, settings: settingsStore.get(), padding: hudPadding, hud: hudBands };
-  if (extra) Object.assign(opts, extra);
+  Object.assign(opts, modeOptions);
   if (pref !== 'fallback') {
+    const controller = new AbortController();
+    const onAbort = () => controller.abort(abortError(signal));
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (signal?.aborted) onAbort();
+    let engineView = null;
+    const dispose = (view) => { try { view?.destroy?.(); } catch { /* ignore */ } };
     try {
+      checkActive(controller.signal);
       // the shared asset store (public/js/assets.js) keeps its Spine cache across remounts (next match, reconnect)
-      const am = await withTimeout(import('../assets.js'), LOAD_TIMEOUT_MS, 'asset store import').catch(() => null);
+      const am = await withTimeout(import('../assets.js'), LOAD_TIMEOUT_MS, 'asset store import', controller.signal).catch(() => {
+        checkActive(controller.signal);
+        return null;
+      });
+      checkActive(controller.signal);
       if (am?.assets && typeof am.assets.ready === 'function') {
         opts.assets = am.assets;
         seedAssets(am.assets);
       }
-      const mod = await withTimeout(import('../render/app.js'), LOAD_TIMEOUT_MS, 'render engine import');
+      const mod = await withTimeout(import('../render/app.js'), LOAD_TIMEOUT_MS, 'render engine import', controller.signal);
+      checkActive(controller.signal);
       if (typeof mod?.createFieldView !== 'function') throw new Error('createFieldView missing');
-      const view = await withTimeout(Promise.resolve(mod.createFieldView(host, opts)), FIELD_VIEW_INIT_TIMEOUT_MS, 'createFieldView');
+      // A factory that ignores cancellation still belongs to this attempt when it eventually returns.
+      const pending = Promise.resolve(mod.createFieldView(host, { ...opts, signal: controller.signal })).then((view) => {
+        if (controller.signal.aborted) dispose(view); else engineView = view;
+        return view;
+      });
+      const view = await withTimeout(pending, FIELD_VIEW_INIT_TIMEOUT_MS, 'createFieldView', controller.signal);
+      checkActive(controller.signal);
       const missing = METHODS.filter((k) => typeof view?.[k] !== 'function');
-      if (missing.length) {
-        try { view?.destroy?.(); } catch { /* ignore */ }
-        throw new Error(`view lacks ${missing.join(', ')}`);
-      }
+      if (missing.length) throw new Error(`view lacks ${missing.join(', ')}`);
       return guardView(view, 'engine');
     } catch (err) {
+      controller.abort();
+      dispose(engineView);
+      checkActive(signal);
+      if (requireEngine) throw err;
       console.warn('[field] render engine unavailable, using the simplified view:', err?.message || err);
-      // anything the engine left behind in the host goes
-      try { while (host.firstChild) host.removeChild(host.firstChild); } catch { /* ignore */ }
+    } finally {
+      signal?.removeEventListener('abort', onAbort);
     }
   }
+  checkActive(signal);
   return guardView(createFallbackView(host, { ...opts, assets: data.get('assets') }), 'fallback');
 }
 
 /**
- * Preact hook: mount a field view into `hostRef` once; returns { view, kind } (view null while loading).
+ * Preact hook: mount a field view into `hostRef`; returns { view, kind, error, retry } (view null while loading).
  * @param {{ current: HTMLElement|null }} hostRef
- * @param {{ tierChips?: 'roman'|'pips'|'color' }|null} [extra] view options of the mode (read once, at mount)
+ * @param {{ tierChips?: 'roman'|'pips'|'color', requireEngine?: boolean, retryDelays?: number[] }|null} [extra] mode options (read once)
  */
 export function useFieldView(hostRef, extra = null) {
-  const [state, setState] = useState({ view: null, kind: 'loading' });
+  const optionsRef = useRef(null);
+  if (!optionsRef.current) optionsRef.current = { ...(extra || {}) };
+  const options = optionsRef.current;
+  const [state, setState] = useState({ view: null, kind: 'loading', error: null, retry: null });
   const viewRef = useRef(null);
+  const [generation, setGeneration] = useState(0);
+  const autoAttempt = useRef(0);
+  const retry = useCallback(() => {
+    autoAttempt.current = 0;
+    setState({ view: null, kind: 'loading', error: null, retry });
+    setGeneration((value) => value + 1);
+  }, []);
   useEffect(() => {
     let dead = false;
+    let retryTimer = null;
+    let unsubscribe = () => {};
+    let onResize = null;
+    let mountedView = null;
     const host = hostRef.current;
-    if (!host) return undefined;
-    mountFieldView(host, extra).then((view) => {
+    if (!host) {
+      setState({ view: null, kind: 'error', error: new Error('field host unavailable'), retry });
+      return undefined;
+    }
+    const controller = new AbortController();
+    const { retryDelays: configuredRetryDelays = [], ...modeOptions } = options;
+    const retryDelays = Array.isArray(configuredRetryDelays) ? configuredRetryDelays.slice(0, 2) : [];
+    setState({ view: null, kind: 'loading', error: null, retry });
+    mountFieldView(host, { ...modeOptions, signal: controller.signal }).then((view) => {
       if (dead) { view.destroy(); return; }
+      mountedView = view;
       viewRef.current = view;
       globalThis.__SP_VIEW__ = view; // dev / E2E introspection (view.raw.stats?.())
-      setState({ view, kind: view.kind });
-    }, (err) => console.error('[field] mount failed', err));
-    const unsub = settingsStore.subscribe((s) => viewRef.current?.setSettings?.(s));
-    const onResize = () => viewRef.current?.resize();
-    window.addEventListener('resize', onResize);
+      unsubscribe = settingsStore.subscribe((s) => { if (viewRef.current === view) view.setSettings?.(s); });
+      onResize = () => { if (viewRef.current === view) view.resize(); };
+      window.addEventListener('resize', onResize);
+      setState({ view, kind: view.kind, error: null, retry });
+    }, (err) => {
+      if (dead || controller.signal.aborted) return;
+      console.warn('[field] initialization failed', err);
+      if (options.requireEngine && autoAttempt.current < retryDelays.length) {
+        const delay = Math.max(0, Number(retryDelays[autoAttempt.current]) || 0);
+        autoAttempt.current++;
+        setState({ view: null, kind: 'loading', error: null, retry });
+        retryTimer = setTimeout(() => { if (!dead) setGeneration((value) => value + 1); }, delay);
+      } else {
+        setState({ view: null, kind: 'error', error: err, retry });
+      }
+    });
     return () => {
       dead = true;
-      unsub();
-      window.removeEventListener('resize', onResize);
+      if (retryTimer != null) clearTimeout(retryTimer);
+      controller.abort();
+      unsubscribe();
+      if (onResize) window.removeEventListener('resize', onResize);
       // the dev hook must not keep the destroyed view — and through its host the whole detached match screen — alive
-      if (viewRef.current && globalThis.__SP_VIEW__ === viewRef.current) globalThis.__SP_VIEW__ = null;
-      viewRef.current?.destroy();
-      viewRef.current = null;
+      if (mountedView && globalThis.__SP_VIEW__ === mountedView) globalThis.__SP_VIEW__ = null;
+      mountedView?.destroy();
+      if (viewRef.current === mountedView) viewRef.current = null;
     };
-  }, []);
-  return state;
+  }, [generation, options, retry]);
+  return { ...state, retry };
 }

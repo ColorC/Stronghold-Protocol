@@ -80,5 +80,13 @@
     "public/js/ui/shopBar.js",
     "public/js/ui/assetUrls.js"
   ],
-  "scope": "共鸣专用入口加载原生样式；商店、HUD及基础组件沿用上游组件，通过适配器提供共鸣状态。"
+  "scope": "共鸣专用入口加载原生样式；商店、HUD及基础组件沿用上游组件，通过适配器提供共鸣状态。",
+  "rendererLifecycle": {
+    "upstreamRevision": "030d0a293870734ac11c5f262da3ac30e0806dc5",
+    "files": [
+      "public/js/ui/fieldHost.js",
+      "public/js/render/app.js"
+    ],
+    "adaptation": "将上游分模块生命周期修复继承至现有渲染器；共鸣要求原生战场，超时取消并销毁迟到视图，加载失败自动重试并提供重新载入。"
+  }
 }

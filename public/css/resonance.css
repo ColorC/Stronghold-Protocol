@@ -20,6 +20,11 @@ body { background: #101512; color: var(--rs-text); }
 }
 .screen.gm.rs-game { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 0; overflow: hidden; padding: 0; margin: 0; font-size: .18rem; }
 .gm__field { background: #101512; }
+.rs-field-status { position: absolute; z-index: 3; top: var(--rs-panel-top,2.16rem); bottom: var(--rs-dock-bottom,2.64rem); left: 18%; right: 18%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.rs-field-status__panel { max-width: 100%; padding: .24rem; text-align: center; background: var(--bg-panel,#101b17); pointer-events: auto; }
+.rs-field-status__panel h2 { font-size: .24rem; margin: 0 0 .12rem; }
+.rs-field-status__panel p { margin: 0 0 .18rem; }
+.rs-field-status__panel .btn { margin: .04rem; }
 .gm__hud { font-size: .16rem; }
 .gtop { grid-template-columns: minmax(2.2rem, 1fr) auto minmax(3rem, 1fr); padding: .12rem .18rem 0; gap: .12rem; }
 .gtop__meta { gap: .03rem; }

@@ -1,4 +1,4 @@
-import { html, Button, MicroLabel, DifficultyTag, HexBadge } from '../ui/components.js';
+import { html, Button, MicroLabel, DifficultyTag, HexBadge, Spinner } from '../ui/components.js';
 import { TopBar } from '../ui/hud.js';
 import { ShopBar } from '../ui/shopBar.js';
 import { BondStrip } from '../ui/bondStrip.js';
@@ -30,7 +30,7 @@ export function GameChrome(p) {
   const {state,catalog,host,detail,setDetail,setPanel:setPanelState,panel,busy,act,onLeave,shopCollapsed,setShopCollapsed,
     replay,setReplay,playing,setPlaying,speed,setSpeed,frame,jumpToEnd,view,summary,showReplay,
     move,openDetail,facing,commitFacing,cancelFacing,choiceSelections,setChoiceSelections,strategyTargets,setStrategyTargets,
-    makeChoice,choiceOpen,saleZoneRef,sellingPiece,equipDrop} = p;
+    makeChoice,choiceOpen,saleZoneRef,sellingPiece,equipDrop,fieldKind,fieldError,retryField} = p;
   const setPanel=useCallback(next=>{if(next!=null)setDetail(null);setPanelState(next)},[setPanelState,setDetail]);
   useLayoutEffect(()=>{
     const root=rootRef.current;if(!root)return;
@@ -116,6 +116,9 @@ export function GameChrome(p) {
       <p>利息 ${summary.interest} · 结算金币 ${summary.goldAfter} · 经验 ${summary.xpAfter}</p><button onClick=${()=>showReplay(summary.round)}>回放本场</button></section>`:html`<p>本场结算尚未记录</p>`:null;
   return html`<main ref=${rootRef} class=${`screen gm rs-game ${state.phase==='complete'&&!replay?'is-terminal':''}`} onDragOver=${event=>{if(event.dataTransfer?.types?.includes('application/x-stronghold-equipment'))event.preventDefault()}} onDrop=${equipDrop}>
     <section class="gm__field" ref=${host} aria-label="共鸣战场"><div class="gm__vignette"></div></section>
+    ${fieldKind!=='engine'&&(state.phase!=='complete'||replay)?html`<section class="rs-field-status" aria-live="polite"><div class="panel brackets rs-field-status__panel">
+      ${fieldKind==='error'?html`<h2>战场未能载入</h2><p>检查连接后重试，对局进度已保留。</p><${Button} variant="primary" onClick=${retryField}>重新载入战场</${Button}><${Button} size="sm" onClick=${()=>location.reload()}>刷新页面</${Button}>`:html`<${Spinner} label=${fieldError?'正在重新载入战场…':'正在载入战场…'}/>`}
+    </div></section>`:null}
     <div class="gm__hud">
       <${TopBar} pub=${{round:replay?.round??state.round,phase:replay?'battle':state.phase}} priv=${{lp:state.hp,alive:true}} conn=${null} hud=${null} total=${null} drawer=${panel==='formation'?'info':null} pen=${!replay&&panel==='enemy'} penAvail=${!replay&&!!state.nextEnemies?.length&&state.node?.kind!=='logistics'} onPen=${enabled=>setPanel(enabled?'enemy':null)} onExit=${onLeave} onDrawer=${tab=>setPanel(tab==='info'?(panel==='formation'?null:'formation'):null)} onReady=${()=>{}}
         leftMeta=${html`<div class="rs-gmeta"><${MicroLabel} tone="mint">卫戍协议 · 共鸣</${MicroLabel}>${openingEvent?.id?html`<button type="button" class="rs-gmeta__opening" onClick=${()=>openDetail({kind:'opening',id:openingEvent.id})} aria-label=${`查看开局事件：${openingEvent.id==='none'?'共鸣':openingEvent.name}`}>${openingEvent.id==='none'?'共鸣':openingEvent.name}</button>`:html`<b>共鸣</b>`}<${DifficultyTag} difficulty=${state.difficulty} size="sm"/></div>`}
@@ -137,7 +140,7 @@ export function GameChrome(p) {
           ${!full?html`<${HexBadge} value=${xpPrice} tone=${disabled?'dark':'gold'} size="md" class="lvcard__price"/>`:null}<span class="lvcard__frame"><span class="lvcard__micro">LEVEL</span><b class="lvcard__num num">${state.level}</b></span>
           <span class="lvcard__xp"><i><em style=${{width:`${Math.min(100,state.xp/xpNeed*100)}%`}}></em></i><small>${state.xp}/${xpNeed}</small></span><span class="lvcard__label">${full?'已满级':'购买经验'}</span>${full?null:html`<kbd class="lvcard__key">F</kbd>`}</button>`}}
         renderFunds=${html`<div class="funds rs-funds"><button type="button" class="funds__hex" title="查看收入、利息与连续战绩" onClick=${()=>setPanel('income')} onContextMenu=${event=>{event.preventDefault();setPanel('income')}}><${CoinGlyph} class="funds__coin"/><b class="funds__num num">${state.gold}</b></button><button type="button" class="funds__label" onClick=${()=>setPanel('income')}>金币</button><button type="button" class="rs-interest" title=${`预计利息 ${interestNow} · 每 ${interestRule.perGold??10} 金 +1，最高 ${interestRule.cap??5}（点击查看收益规则）`} onClick=${()=>setPanel('income')}>${Array.from({length:5},(_,i)=>html`<i class=${i<interestNow?'is-on':''}/>`)}<small>利息</small></button><button class="funds__collapse" onClick=${()=>setShopCollapsed(true)}>收起</button></div>`}/>`}
-      ${replay?null:html`<div class="rs-hud-action-row"><${Button} class="rs-start-battle" variant="primary" size="sm" disabled=${busy||state.phase!=='prep'} onClick=${()=>state.node?.kind==='logistics'||!state.nodeStarted?act({type:'advanceSupply'}):act({type:'fight'})}>${state.node?.kind==='logistics'||!state.nodeStarted?'领取补给':'开始战斗'}</${Button}></div>`}
+      ${replay?null:html`<div class="rs-hud-action-row"><${Button} class="rs-start-battle" variant="primary" size="sm" disabled=${busy||state.phase!=='prep'||(!view&&state.nodeStarted&&state.node?.kind!=='logistics')} onClick=${()=>state.node?.kind==='logistics'||!state.nodeStarted?act({type:'advanceSupply'}):act({type:'fight'})}>${state.node?.kind==='logistics'||!state.nodeStarted?'领取补给':'开始战斗'}</${Button}></div>`}
     </div>
     ${!replay&&sellingPiece?html`<aside class="rs-sell-zone" data-drop="sell" ref=${saleZoneRef} aria-label=${`出售${catalog.operators?.[sellingPiece.operatorId]?.name||'干员'}，返还${saleValue}金币`}><b>松开出售</b><span>${catalog.operators?.[sellingPiece.operatorId]?.name||'干员'} · +${saleValue}金</span><small>继续拖回战场可取消</small></aside>`:null}
     ${!replay&&(state.inventory||[]).length?html`<nav class="rs-quick-inventory" aria-label="装备背包">${state.inventory.map(item=>{const record=catalog.equipment?.[item.itemId]||{};const label=`${record.name||'装备'} · ${record.description||'拖到干员身上装备'} · 右键查看合成配方`;return html`<button type="button" class="rs-quick-inventory__item" key=${item.uid} draggable=${!busy&&['prep','choice'].includes(state.phase)} aria-label=${label} title=${label} onDragStart=${event=>{event.dataTransfer?.setData('application/x-stronghold-equipment',String(item.uid));if(event.dataTransfer)event.dataTransfer.effectAllowed='move'}} onClick=${()=>openDetail({kind:'item',id:item.itemId})} onContextMenu=${event=>{event.preventDefault();openDetail({kind:'item',id:item.itemId})}}><${ResonanceItemIcon} catalog=${catalog} itemId=${item.itemId} size="sm" showTier=${true}/></button>`})}</nav>`:null}
