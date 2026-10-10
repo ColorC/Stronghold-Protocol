@@ -32,6 +32,8 @@ let playing = false; let startedAt = 0; let startedSecond = 0; let raf = 0; let 
 let zoomRect = null;
 let rrOffset = 0; let rrMinimumOffsetMs = 0; let mediaId = ''; let narrationTimer = 0; let narrating = false; const explained = new Set();
 let mediaSegments=[];let renderedClips=[];let activeMediaKey='';let mediaLoadGeneration=0;let cancelMediaLoad=null;
+let mediaSeekController = null;
+function cancelPendingMediaSeek() { mediaSeekController?.abort(); mediaSeekController = null; }
 let selectionEvents=[];let paintedSelection=null;
 let initialized=false;let seeking=false;let seekGeneration=0;let playheadSecond=0;
 let replayViewport=null;let initializationError='';
@@ -205,7 +207,11 @@ async function positionMediaAt(second, generation = seekGeneration) {
   if (activeMediaKey !== segment.key || mediaVideo.readyState < 1 || mediaVideo.currentSrc !== segment.url) await loadMediaSegment(segment);
   if (generation !== seekGeneration) throw abortError();
   const target = clampReplayMediaTime(Math.max(0, second - segment.at), mediaDurationForClamp());
-  await waitForVideoSeek(mediaVideo, target);
+  const controller = new AbortController();
+  cancelPendingMediaSeek();
+  mediaSeekController = controller;
+  try { await waitForVideoSeek(mediaVideo, target, { signal: controller.signal }); }
+  finally { if (mediaSeekController === controller) mediaSeekController = null; }
   if (generation !== seekGeneration) throw abortError();
   paintMediaLayer();
   return segment;
@@ -267,14 +273,16 @@ function play() {
 }
 function pause() {
   const now = playing ? offset() : playheadSecond;
+  cancelPendingMediaSeek();
   const generation = ++seekGeneration; seeking = false;
   playing = false; cancelAnimationFrame(raf); player?.pause(); keepReplayAnimationsVisible(); mediaVideo?.pause(); timeline.value = String(now); position(now); playButton.textContent = '播放';
-  if (mediaNeedsLoad(now)) void positionMediaAt(now, generation).catch(error => {
+  if (mediaVideo) void positionMediaAt(now, generation).catch(error => {
     if (generation !== seekGeneration || error?.name === 'AbortError') return;
     status.textContent = error.message || '回放视频定位失败';
   });
 }
 async function seek(value, { resumeAfter } = {}) {
+  cancelPendingMediaSeek();
   const generation=++seekGeneration;
   const second = Math.max(0, Math.min(duration, Number(value) || 0));
   seeking=true;
@@ -290,6 +298,9 @@ async function seek(value, { resumeAfter } = {}) {
     if(generation!==seekGeneration)throw new DOMException('定位已被更新的操作取代','AbortError');
     if (resume) { playing = false; seeking = false; play(); }
     return second;
+  } catch (error) {
+    if (generation !== seekGeneration) throw abortError();
+    throw error;
   } finally {
     if(generation===seekGeneration)seeking=false;
   }
@@ -380,4 +391,4 @@ stage.parentElement.addEventListener('pointerup', (e) => {
   if(reviewMode)initializationError='回放载入失败，请检查链接或稍后重试。';
 });
 
-window.addEventListener('pagehide', () => {cancelAnimationFrame(raf);clearTimeout(narrationTimer);player?.pause();mediaVideo?.pause();});
+window.addEventListener('pagehide', () => {cancelPendingMediaSeek();cancelMediaLoad?.(abortError());cancelAnimationFrame(raf);clearTimeout(narrationTimer);player?.pause();mediaVideo?.pause();});
