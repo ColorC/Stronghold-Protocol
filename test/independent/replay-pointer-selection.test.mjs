@@ -41,4 +41,7 @@ test('replay uses a black-white arrow and paints only in-place selection rectang
   assert.doesNotMatch(replay, /text-selection-label|current\.p\.text/);
   assert.match(replay, /function position\(second\)[\s\S]*paintTextSelection\(second\)/);
   assert.match(replay, /mapViewportRectToOverlay\(rect, bounds, containerRect, viewport, container\)/);
+  assert.match(replay, /wrapper=stage\.querySelector\('\.replayer-wrapper'\)\|\|frame\.parentElement/);
+  assert.match(replay, /wrapper\.style\.transform=`scale\(\$\{scale\}\)`/);
+  assert.match(replay, /stage\.style\.height=`\$\{frame\.clientHeight\*scale\}px`/);
 });

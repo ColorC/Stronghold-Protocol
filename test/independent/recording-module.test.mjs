@@ -41,6 +41,43 @@ test('page capture records ordinary keystrokes, masks password characters, and r
   assert.equal(doc.handlers.get('click').length, 0, 'capture detaches its listeners');
 });
 
+test('selection changes publish synchronously by default, including rapid set-clear and drag geometry updates', async () => {
+  const doc = new FakeDocument(); const win = { innerWidth: 900, innerHeight: 600 };
+  const emitted = [];
+  const stop = startPageCapture({ rrweb: { record: () => () => {} }, emit: (kind, p) => emitted.push({ kind, p }), doc, win });
+  const select = (text, x) => {
+    doc.selection = text ? { rangeCount: 1, isCollapsed: false, toString: () => text, getRangeAt: () => ({ getClientRects: () => [{ x, y: 30, width: 100, height: 18 }] }) }
+      : { rangeCount: 0, isCollapsed: true, toString: () => '' };
+    doc.dispatch('selectionchange');
+  };
+
+  select('拖动中的文字', 20);
+  assert.deepEqual(emitted.filter((event) => event.kind === 'selection').map((event) => [event.p.operation, event.p.rects[0]?.x]), [['set', 20]]);
+  select('拖动中的文字', 35);
+  assert.deepEqual(emitted.filter((event) => event.kind === 'selection').map((event) => [event.p.operation, event.p.rects[0]?.x]), [['set', 20], ['set', 35]], 'changed drag rectangles publish immediately');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  select('', 0);
+  assert.deepEqual(emitted.filter((event) => event.kind === 'selection').map((event) => event.p.operation), ['set', 'set', 'clear']);
+  await new Promise((resolve) => setTimeout(resolve, 15));
+  assert.equal(emitted.filter((event) => event.kind === 'selection').length, 3, 'no delayed set may arrive after clear');
+  stop();
+});
+
+test('custom delayed selection capture flushes a short-lived set before its clear', async () => {
+  const doc = new FakeDocument(); const win = { innerWidth: 900, innerHeight: 600 };
+  const emitted = [];
+  const stop = startPageCapture({ rrweb: { record: () => () => {} }, emit: (kind, p) => emitted.push({ kind, p }), doc, win, selectionDelayMs: 60 });
+  doc.selection = { rangeCount: 1, isCollapsed: false, toString: () => 'brief', getRangeAt: () => ({ getClientRects: () => [{ x: 20, y: 30, width: 40, height: 18 }] }) };
+  doc.dispatch('selectionchange');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  doc.selection = { rangeCount: 0, isCollapsed: true, toString: () => '' };
+  doc.dispatch('selectionchange');
+  assert.deepEqual(emitted.filter((event) => event.kind === 'selection').map((event) => event.p.operation), ['set', 'clear']);
+  await new Promise((resolve) => setTimeout(resolve, 70));
+  assert.deepEqual(emitted.filter((event) => event.kind === 'selection').map((event) => event.p.operation), ['set', 'clear'], 'the canceled delay cannot publish a late set');
+  stop();
+});
+
 test('media defaults capture up to 2560px at 30fps and at least 16 Mbps with bounded URL overrides', () => {
   assert.deepEqual(DEFAULT_MEDIA_OPTIONS, { maxDimension: 2560, fps: 30, videoBitsPerSecond: 16000000, timesliceMs: 1000 });
   assert.deepEqual(fitRecordingDimensions(3840, 2160), { width: 2560, height: 1440 });
