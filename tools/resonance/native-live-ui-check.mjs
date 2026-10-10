@@ -1077,7 +1077,7 @@ async function run() {
       && entrypointEvidence.settings===1 && entrypointEvidence.fullscreen===1 && entrypointEvidence.codex===1 && entrypointEvidence.pact===1
       && entrypointEvidence.income===1 && entrypointEvidence.info===1 && entrypointEvidence.equipment===1
       && entrypointEvidence.equipmentDuplicates===1
-      && JSON.stringify(expectedCorner)===JSON.stringify(['全屏打开','设置'].sort()), entrypointEvidence);
+      && JSON.stringify(expectedCorner)===JSON.stringify(['全屏打开','设置','战术图鉴'].sort()), entrypointEvidence);
     const codexButton = await page.$('.rs-native-match button.rs-native-codex-button[aria-label="战术图鉴"]');
     assert(codexButton, 'the single in-match tactical codex entry is missing');
     const codexBase = await page.evaluate(async () => {
