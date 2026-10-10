@@ -533,22 +533,20 @@ html.is-picking, html.is-picking * { cursor: crosshair !important; }
 .ix-game.is-targeting .gm__field canvas{cursor:crosshair}
 .ix-game:has(.ix-target-prompt) .ix-dpanel{display:none!important}
 
-/* Mobile typography follows the fixed-size detail and reward cards instead of shrinking with rem. */
+/* Mobile shop cards stay large and swipable; full operator copy remains in the detail view. */
 @media (max-width: 600px), (max-height: 460px) {
-  .ix-shop .scard__name { font-size: 16px; }
-  .ix-shop .scard__name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
-  .ix-shop .scard__body { min-height: 0; max-height: 100%; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
-  .ix-shop .scard__body > * { min-width: 0; max-width: 100%; }
+  .ix-shop .shopbar__row { width: calc(100vw - 12px); max-width: calc(100vw - 12px); overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+  .ix-shop .shopbar__row > *, .ix-shop .shopbar__cards, .ix-shop .shopbar__item { flex: none; }
+  .ix-shop .scard { width: 92px; height: 132px; flex: none; }
+  .ix-shop .scard__body { min-width: 0; max-width: 100%; overflow: visible; }
+  .ix-shop .scard__name { font-size: 16px; line-height: 1.2; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .ix-shop .scard__bonds { min-width: 0; }
+  .ix-shop .scard__bond { font-size: 13px; white-space: normal; }
+  .ix-shop .scard__bond > span:last-child { overflow-wrap: anywhere; }
   .ix-shop .scard__class, .ix-shop .scard__skill { font-size: 13px; }
   .ix-shop .scard__mergetag { font-size: 12px; }
-  .ix-shop .scard__bond { font-size: 14px; white-space: normal; overflow-wrap: anywhere; }
-  .ix-shop .scard .ix-trait { flex-wrap: wrap; overflow: visible; font-size: 14px; line-height: 1.35; }
-  .ix-shop .scard :is(.ix-trait__when, .ix-trait__arrow, .ix-trait__cond, .ix-trait__word) { display: initial; }
-  .ix-shop .scard .ix-trait__rule { white-space: normal; flex-wrap: wrap; }
-  .ix-shop .scard .ix-trait__rule, .ix-shop .scard .ix-trait__out { min-width: 0; max-width: 100%; flex-wrap: wrap; }
-  .ix-shop .scard .ix-trait__when, .ix-shop .scard .ix-trait__cond, .ix-shop .scard .ix-trait__word { overflow-wrap: anywhere; }
-  .ix-shop .scard .ix-trait__out b { font-size: 14px; }
-  .ix-shop .scard .ix-trait__out .ix-gear { width: 16px; height: 16px; }
+  .ix-shop .ix-carry > span { font-size: 13px; }
+  .ix-shop .ix-carry .ix-gear { width: 18px; height: 18px; }
   .ix-dtabs__tab { min-height: 40px; padding: 4px 8px; font-size: 14px; }
   .ix-dtabs__tab .num, .ix-dchips__lv, .ix-dchips__lv b { font-size: 13px; }
   .ix-dgear__text, .ix-dgear__att { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
