@@ -205,7 +205,7 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .rs-native-pact-matrix__tier b { color: var(--text-mid); text-align: center; }
 .rs-native-match .rs-native-pact-matrix__tier span { font-size: .105rem; line-height: 1.25; }
 .rs-native-match .rs-native-pact-matrix__tier.is-reached { color: var(--text-hi); border-color: var(--mint-700); }
-.rs-native-match .rs-native-pact-matrix__tier.is-current { background: color-mix(in srgb,var(--mint-700) 35%,rgba(8,13,11,.9)); border-color: var(--mint-300); }
+.rs-native-match .rs-native-pact-matrix__tier.is-current { background: rgba(46,72,59,.9); background: color-mix(in srgb,var(--mint-700) 35%,rgba(8,13,11,.9)); border-color: var(--mint-300); }
 .rs-native-match .rs-native-resonance-panel .rs-equipment-dock { position: relative; inset: auto; width: auto; height: auto; max-height: none; align-items: stretch; pointer-events: auto; }
 .rs-native-match .rs-native-resonance-panel .rs-equipment-dock__items { flex-direction: row; flex-wrap: wrap; align-items: flex-start; overflow: visible; }
 .rs-native-match .rs-native-resonance-panel .rs-equipment-dock__open { display: none; }
@@ -248,9 +248,9 @@ body { background: #101512; color: var(--rs-text); }
 .rs-game .shopbar__cards .scard--t3 { --tc: #329adf; }
 .rs-game .shopbar__cards .scard--t4 { --tc: #a970dc; }
 .rs-game .shopbar__cards .scard--t5 { --tc: #e9bd53; }
-.rs-game .shopbar__cards .scard { border-color: color-mix(in srgb,var(--tc),white 42%); background: color-mix(in srgb,var(--tc) 30%,#111714); box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--tc) 35%,transparent); }
-.rs-game .shopbar__cards .scard__bg { background: radial-gradient(110% 72% at 80% 30%,color-mix(in srgb,var(--tc) 44%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,var(--tc) 24%,#202622),color-mix(in srgb,var(--tc) 17%,#0c100e)); }
-.rs-game .shopbar__cards .scard__body { background: linear-gradient(0deg,color-mix(in srgb,var(--tc) 18%,rgba(8,11,10,.98)) 62%,color-mix(in srgb,var(--tc) 8%,transparent)); }
+.rs-game .shopbar__cards .scard { border-color: rgba(255,255,255,.42); border-color: color-mix(in srgb,var(--tc),white 42%); background: rgba(35,45,39,1); background: color-mix(in srgb,var(--tc) 30%,#111714); box-shadow: inset 0 0 0 1px rgba(50,154,223,.35); box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--tc) 35%,transparent); }
+.rs-game .shopbar__cards .scard__bg { background: radial-gradient(110% 72% at 80% 30%,rgba(50,154,223,.44),transparent 72%),linear-gradient(180deg,#202622,#0c100e); background: radial-gradient(110% 72% at 80% 30%,color-mix(in srgb,var(--tc) 44%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,var(--tc) 24%,#202622),color-mix(in srgb,var(--tc) 17%,#0c100e)); }
+.rs-game .shopbar__cards .scard__body { background: linear-gradient(0deg,rgba(50,154,223,.18) 62%,transparent); background: linear-gradient(0deg,color-mix(in srgb,var(--tc) 18%,rgba(8,11,10,.98)) 62%,color-mix(in srgb,var(--tc) 8%,transparent)); }
 .rs-game .shopbar__cards .scard__name { color: #fff; text-shadow: 0 1px 3px #000,0 0 8px #000; }
 .rs-game .shopbar__cards .scard__top > .tier { display: none; }
 .rs-native-match .shopbar__offer-wrap { position: relative; width: 1.56rem; height: 2.24rem; flex: none; }
@@ -260,9 +260,9 @@ body { background: #101512; color: var(--rs-text); }
 .rs-native-match .shopbar__cards .scard--t3 { --tc: #329adf; }
 .rs-native-match .shopbar__cards .scard--t4 { --tc: #a970dc; }
 .rs-native-match .shopbar__cards .scard--t5 { --tc: #e9bd53; }
-.rs-native-match .shopbar__cards .scard { border-color: color-mix(in srgb,var(--tc),white 42%); background: color-mix(in srgb,var(--tc) 30%,#111714); box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--tc) 35%,transparent); }
-.rs-native-match .shopbar__cards .scard__bg { background: radial-gradient(110% 72% at 80% 30%,color-mix(in srgb,var(--tc) 44%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,var(--tc) 24%,#202622),color-mix(in srgb,var(--tc) 17%,#0c100e)); }
-.rs-native-match .shopbar__cards .scard__body { background: linear-gradient(0deg,color-mix(in srgb,var(--tc) 18%,rgba(8,11,10,.98)) 62%,color-mix(in srgb,var(--tc) 8%,transparent)); }
+.rs-native-match .shopbar__cards .scard { border-color: rgba(255,255,255,.42); border-color: color-mix(in srgb,var(--tc),white 42%); background: rgba(35,45,39,1); background: color-mix(in srgb,var(--tc) 30%,#111714); box-shadow: inset 0 0 0 1px rgba(50,154,223,.35); box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--tc) 35%,transparent); }
+.rs-native-match .shopbar__cards .scard__bg { background: radial-gradient(110% 72% at 80% 30%,rgba(50,154,223,.44),transparent 72%),linear-gradient(180deg,#202622,#0c100e); background: radial-gradient(110% 72% at 80% 30%,color-mix(in srgb,var(--tc) 44%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,var(--tc) 24%,#202622),color-mix(in srgb,var(--tc) 17%,#0c100e)); }
+.rs-native-match .shopbar__cards .scard__body { background: linear-gradient(0deg,rgba(50,154,223,.18) 62%,transparent); background: linear-gradient(0deg,color-mix(in srgb,var(--tc) 18%,rgba(8,11,10,.98)) 62%,color-mix(in srgb,var(--tc) 8%,transparent)); }
 .rs-native-match .shopbar__cards .scard__name { color: #fff; text-shadow: 0 1px 3px #000,0 0 8px #000; }
 .rs-native-match .shopbar__cards .scard__top > .tier { display: none; }
 .rs-native-match .rs-native-choice { pointer-events: auto; background: rgba(4,7,6,.88); }

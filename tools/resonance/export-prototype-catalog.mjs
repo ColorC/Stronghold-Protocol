@@ -1,12 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { getData } from '../../server/data.js';
 import { getResonanceCatalog } from '../../server/modes/resonance/catalog.js';
 import { prototypeSeason } from '../../shared/resonance/prototype-season.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const CANONICAL_DATA = path.resolve(ROOT, '../../../data/resonance-native');
+const GIT_COMMON_DIR = execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: ROOT, encoding: 'utf8' }).trim();
+const CANONICAL_ROOT = path.dirname(path.resolve(ROOT, GIT_COMMON_DIR));
+const CANONICAL_DATA = path.resolve(CANONICAL_ROOT, 'data/resonance-native');
 const dataDir = path.resolve(process.env.SP_DATA_DIR || CANONICAL_DATA);
 if (dataDir.toLowerCase() !== CANONICAL_DATA.toLowerCase()) {
   throw new Error(`PROTOTYPE_CATALOG_REQUIRES_CANONICAL_DATA:${CANONICAL_DATA}`);
