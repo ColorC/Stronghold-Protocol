@@ -61,7 +61,7 @@ test('execution requires an explicit one-shot flag and acceptance gaps remain vi
   }
   assert.ok(REQUIRED_CHECKS.includes('native-fullscreen-open-link'), 'live acceptance must verify the independent current-session full-screen link');
   assert.ok(REQUIRED_CHECKS.includes('native-codex-content-and-detail-visible'), 'live acceptance must verify Codex card/detail geometry and controls');
-  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle']) {
+  for (const check of ['native-entrypoints-unique', 'native-codex-session-and-shortcuts', 'native-panels-open-close', 'native-icons-and-type-readable', 'native-recipe-contrast', 'native-pact-rewards-disclosure', 'native-remaining-controls-live', 'native-visible-text-audit-14px', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once']) {
     assert.ok(REQUIRED_CHECKS.includes(check), `live acceptance must verify ${check}`);
   }
 });
@@ -97,7 +97,7 @@ test('CDP websocket capture records bounded parse failures, b.end reasons and ac
   handlers.get('Network.webSocketCreated')({ url: 'ws://127.0.0.1:19003/resonance/ws?session=test' });
   handlers.get('Network.webSocketFrameSent')({ response: { payloadData: JSON.stringify({ t: 'g.resonance', action: { type: 'unequip' } }) } });
   handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'm.private', phase: 'prep' }) } });
-  handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'b.start', battleId: 'b28', kind: 'boss',
+  handlers.get('Network.webSocketFrameReceived')({ response: { payloadData: JSON.stringify({ t: 'b.start', battleId: 'b28', kind: 'boss', authoritative: true, watch: false, done: false,
     spec: { kind: 'boss', stageId: 'stage-final', round: 14, spawns: Array.from({ length: 50 }, () => ({ id: 'not-captured' })) } }) } });
   const nativeResultWire = JSON.stringify({ t: 'm.result', victory: false, roundsPassed: 29, lastRound: 30,
     players: [{ playerId: 'other', stats: { dmgDealt: 900 } }, { playerId: 'resonance', roundsPassed: 29,
@@ -115,8 +115,9 @@ test('CDP websocket capture records bounded parse failures, b.end reasons and ac
   assert.deepEqual(attempt.ws.sent.map((row) => row.t), ['g.resonance', 'b.result']);
   assert.deepEqual(attempt.ws.received.map((row) => row.t), ['m.private', 'b.start', 'm.result', 'b.end']);
   assert.deepEqual({ kind: attempt.ws.received[1].kind, specKind: attempt.ws.received[1].specKind,
-    specStageId: attempt.ws.received[1].specStageId, specRound: attempt.ws.received[1].specRound },
-  { kind: 'boss', specKind: 'boss', specStageId: 'stage-final', specRound: 14 });
+    specStageId: attempt.ws.received[1].specStageId, specRound: attempt.ws.received[1].specRound,
+    authoritative: attempt.ws.received[1].authoritative, watch: attempt.ws.received[1].watch, done: attempt.ws.received[1].done },
+  { kind: 'boss', specKind: 'boss', specStageId: 'stage-final', specRound: 14, authoritative: true, watch: false, done: false });
   assert.equal('spawns' in attempt.ws.received[1], false, 'capture stores only bounded battle identity fields, not the full spec');
   assert.deepEqual(attempt.ws.received[2].resultSummary,
     { victory: false, roundsPassed: 29, lastRound: 30, stats: { dmgDealt: 130, kills: 4, spent: 7 } });

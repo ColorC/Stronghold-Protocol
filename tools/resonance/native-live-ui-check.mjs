@@ -35,7 +35,7 @@ export const REQUIRED_CHECKS = [
   'equipment-holder-combine', 'inventory-combine', 'whole-card-cost-colors', 'fixed-skill-icons-loaded', 'ground-tier-ring',
   'all-pact-tier-icons-loaded-and-active', 'emissary-exact-count-2-3', 'chem-market-28-effects-readable', 'native-w-deploy-withdraw', 'native-e-sell',
   'xp-interest-graphics', 'refresh-lock', 'combat-ledger-immutable', 'combat-progress-two-seconds',
-  'pause-freezes-and-resume-progresses', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'choice-g-resonance-roundtrip',
+  'pause-freezes-and-resume-progresses', 'combat-speed-1-2-4-same-battle', 'reload-restores-same-battle', 'one-real-settlement', 'second-server-takeover-settlement-once', 'choice-g-resonance-roundtrip',
   'boss-hidden-fixture-result-lineup-gear-chart', 'scrap-temporary-gear-in-combat', 'equipment-detail-unequip',
   'equipment-detail-recycle', 'native-detail-deep-link', 'difficulty-default-copy', 'default-copy-is-product-language',
   'native-fullscreen-open-link',
@@ -550,6 +550,9 @@ export async function attachWsCapture(page, attempt, onSent = null) {
         battleId: message.battleId || null, progress: message.progress || null,
         kind: message.kind ?? null, specKind: message.spec?.kind ?? null,
         specStageId: message.spec?.stageId ?? null, specRound: message.spec?.round ?? null,
+        authoritative: typeof message.authoritative === 'boolean' ? message.authoritative : null,
+        watch: typeof message.watch === 'boolean' ? message.watch : null,
+        done: typeof message.done === 'boolean' ? message.done : null,
         error: message.error || message.code || null, detail: message.detail || null,
         reason: message.t === 'b.end' && typeof message.reason === 'string' ? message.reason : null, rid: message.rid ?? null,
         ready: message.ready ?? null, paused: typeof message.on === 'boolean' ? message.on : (typeof message.paused === 'boolean' ? message.paused : null),
@@ -1658,33 +1661,14 @@ async function run() {
     check('pause-freezes-and-resume-progresses', !!pause && pause.paused === true && !!pausedPublic
       && fastFinishPausedDisabled && pausedFrames.length===0 && !!resume && resume.paused === false && !!resumedPublic && !!resumedFrame,
       { pause, pausedPublic, fastFinishPausedDisabled, beforePauseFrame, pausedFrames, pausedGt, resume, resumedPublic, resumedFrame });
+    const matchBeforeFinish=server?.resonanceLive?.matches?.get(attempt.sessionId)||null;
+    const trackedNativeField=matchBeforeFinish?.fields?.find(field=>field.battleId===attempt.battleId)||null;
+    assert(trackedNativeField,'native match has no in-memory field for the first live battle');
+    const nativeMatchWasRegistered=server?.resonanceLive?.matches?.get(attempt.sessionId)===matchBeforeFinish;
     const fastFinishButton=await page.$('[data-testid="battle-fast-finish"]');
     assert(fastFinishButton&&await fastFinishButton.evaluate(node=>!node.disabled),'fast-finish must be available after combat resumes');
-    const priorBattleIds = new Set(attempt.ws.received.filter((message) => message.t === 'b.start').map((message) => message.battleId));
-    const progressBeforeReload = attempt.ws.sent.filter(message=>message.t==='b.progress'&&message.battleId===attempt.battleId).at(-1);
-    const reloadOffset = attempt.ws.received.length, reloadProgressOffset = attempt.ws.sent.length;
-    const combatUrl = page.url(); await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForSelector('.rs-native-match', { timeout: 40_000 });
-    const restoredStart = await waitReceived(attempt,'b.start',20_000,reloadOffset);
-    const restoredPublic = await waitReceivedWhere(attempt,message=>message.t==='m.public'&&message.phase==='COMBAT',5_000,reloadOffset);
-    const restoredElapsedDelta = Number(restoredStart?.elapsed)-Number(progressBeforeReload?.gt);
-    const progressAfterReload = await waitSentWhere(attempt,message=>message.t==='b.progress'&&message.battleId===attempt.battleId
-      &&Number.isFinite(message.gt)&&message.gt>Number(progressBeforeReload?.gt),8_000,reloadProgressOffset);
-    check('reload-restores-same-battle', !!restoredStart && restoredStart.battleId===attempt.battleId
-      && page.url()===combatUrl && priorBattleIds.size===1 && attempt.ws.connections?.length>=2
-      && Number.isFinite(restoredStart.elapsed) && restoredElapsedDelta>0 && !!restoredPublic && !!progressAfterReload
-      && speedChanges.at(-1)?.start?.speed===2,
-      { url:page.url(),battleIds:[...priorBattleIds],restoredStart,restoredPublic,progressBeforeReload,restoredElapsedDelta,
-        progressAfterReload,connections:attempt.ws.connections,normalSpeed:speedChanges.at(-1)?.start?.speed });
-    assert(progressAfterReload,'same battle did not emit newer runner progress after the normal-speed reload');
-    const matchAtReload=server?.resonanceLive?.matches?.get(attempt.sessionId)||null;
-    const trackedNativeField=matchAtReload?.fields?.find(field=>field.battleId===attempt.battleId)||null;
-    assert(trackedNativeField,'native match has no in-memory field for the live restored battle');
-    const nativeMatchWasRegistered=server?.resonanceLive?.matches?.get(attempt.sessionId)===matchAtReload;
-    const fastFinishAfterReload=await page.$('[data-testid="battle-fast-finish"]');
-    assert(fastFinishAfterReload&&await fastFinishAfterReload.evaluate(node=>!node.disabled),'fast-finish is not available after normal-speed reload');
     const fastFinishOffset=attempt.ws.sent.length, fastStartOffset=attempt.ws.received.length;
-    await clickHandleByMeasuredCenter(page,fastFinishAfterReload,'native fast finish');
+    await clickHandleByMeasuredCenter(page,fastFinishButton,'native fast finish');
     const fastRequest=await waitSentWhere(attempt,row=>row.t==='g.resonanceCombat'&&row.finish===true,5_000,fastFinishOffset);
     const finishingStart=await waitReceivedWhere(attempt,row=>row.t==='b.start'&&row.battleId===attempt.battleId&&row.speed===32,5_000,fastStartOffset);
     assert(fastRequest&&finishingStart,'fast-finish did not accelerate the current native battle');
@@ -1698,7 +1682,7 @@ async function run() {
     while(Date.now()<fieldDeadline){
       const liveField=trackedNativeField;
       if(liveField?.resultSource||liveField?.result||liveField?.done){
-        resultDiagnostics={matchRegisteredAtCapture:nativeMatchWasRegistered,phase:matchAtReload?.phase??null,ended:matchAtReload?.ended===true,
+        resultDiagnostics={matchRegisteredAtCapture:nativeMatchWasRegistered,phase:matchBeforeFinish?.phase??null,ended:matchBeforeFinish?.ended===true,
           fieldPresent:!!liveField,fieldBattleId:liveField?.battleId??null,fieldKind:liveField?.kind??null,fieldDone:liveField?.done===true,
           resultSource:liveField?.resultSource??null,hasResult:liveField?.result!=null,resultReason:liveField?.result?.reason??null,
           hasHeldResult:liveField?.heldResult!=null,hasVerifyJob:!!liveField?.verifyJob,
@@ -1764,6 +1748,65 @@ async function run() {
       const privatePhase = store.get().match.private?.resonance?.state?.phase;
       return !!privatePhase && publicPhase !== 'COMBAT' && !/combat/i.test(String(privatePhase));
     }, { timeout: 20_000 });
+    await page.waitForFunction(async () => {
+      const {store}=await import('./js/store.js'),match=store.get().match,state=match.private?.resonance?.state;
+      return match.public?.phase==='PREP'&&state?.phase==='prep'&&!(state.pendingChoices||[]).length;
+    },{timeout:30_000});
+    const secondBefore=await readState();
+    assert(secondBefore.phase==='prep'&&!(secondBefore.pendingChoices||[]).length,
+      `the second natural round must begin from an editable PREP state: ${JSON.stringify({phase:secondBefore.phase,pendingChoices:secondBefore.pendingChoices?.length,round:secondBefore.round})}`);
+    const secondReady=await page.$('.readybtn:not(:disabled)');
+    assert(secondReady,'second natural round has no enabled ready control');
+    const secondHistoryBefore=secondBefore.history?.filter(row=>row.type==='fight-settled').length||0;
+    const secondStartOffset=attempt.ws.received.length,secondReadyOffset=attempt.ws.sent.length;
+    await clickHandleByMeasuredCenter(page,secondReady,'ready second natural round');
+    const secondStart=await waitReceived(attempt,'b.start',20_000,secondStartOffset);
+    assert(secondStart?.battleId,'second natural round did not emit a Native b.start');
+    attempt.secondBattleId=secondStart.battleId;
+    const secondMatch=server?.resonanceLive?.matches?.get(attempt.sessionId)||null;
+    const secondField=secondMatch?.fields?.find(field=>field.battleId===attempt.secondBattleId)||null;
+    assert(secondField,'second natural round has no Native in-memory field');
+    assert(secondStart.speed===2&&secondStart.authoritative===true&&!secondStart.watch&&!secondStart.done,
+      `second natural round must start at normal speed with client authority: ${JSON.stringify(secondStart)}`);
+    const secondProgress=await waitSentWhere(attempt,row=>row.t==='b.progress'&&row.battleId===attempt.secondBattleId,8_000,secondReadyOffset);
+    assert(secondProgress&&Number.isFinite(secondProgress.gt),'second natural round did not emit an initial runner tick');
+    const secondPageUrl=page.url(),secondReloadOffset=attempt.ws.received.length;
+    await page.reload({waitUntil:'domcontentloaded',timeout:30_000});
+    await page.waitForSelector('.rs-native-match',{timeout:40_000});
+    const secondRestoredStart=await waitReceivedWhere(attempt,row=>row.t==='b.start'&&row.battleId===attempt.secondBattleId,20_000,secondReloadOffset);
+    const secondRestoredPublic=await waitReceivedWhere(attempt,row=>row.t==='m.public'&&row.phase==='COMBAT',5_000,secondReloadOffset);
+    const secondRunnerBase=await page.evaluate(()=>({state:globalThis.__SP_RUNNER__?.state?.()||null,ticks:globalThis.__SP_RUNNER__?.stats?.().ticks??null}));
+    const secondMirrorAdvanced=await page.waitForFunction(({battleId,baseTicks})=>{
+      const runner=globalThis.__SP_RUNNER__,state=runner?.state?.(),ticks=runner?.stats?.().ticks;
+      return state?.battleId===battleId&&state.authoritative===false&&state.watch===false&&state.done===false
+        &&Number.isFinite(ticks)&&Number.isFinite(baseTicks)&&ticks>baseTicks;
+    },{timeout:12_000}, {battleId:attempt.secondBattleId,baseTicks:secondRunnerBase.ticks}).then(()=>true,()=>false);
+    const secondRunnerAfter=await page.evaluate(()=>({state:globalThis.__SP_RUNNER__?.state?.()||null,ticks:globalThis.__SP_RUNNER__?.stats?.().ticks??null}));
+    check('reload-restores-same-battle',page.url()===secondPageUrl&&!!secondRestoredStart&&secondRestoredStart.speed===2
+      &&secondRestoredStart.authoritative===false&&secondRestoredStart.watch===false&&secondRestoredStart.done===false
+      &&Number.isFinite(secondRestoredStart.elapsed)&&Number(secondRestoredStart.elapsed)>Number(secondProgress.gt)
+      &&!!secondRestoredPublic&&secondMirrorAdvanced&&secondRunnerAfter.state?.battleId===attempt.secondBattleId
+      &&secondRunnerAfter.ticks>secondRunnerBase.ticks,
+      {url:page.url(),battleId:attempt.secondBattleId,initialStart:secondStart,progressBeforeReload:secondProgress,
+        restoredStart:secondRestoredStart,restoredPublic,runnerBefore:secondRunnerBase,runnerAfter:secondRunnerAfter,
+        sameField:secondField.battleId,connections:attempt.ws.connections});
+    const serverResultDeadline=Date.now()+60_000;
+    while(Date.now()<serverResultDeadline&&!(secondField.mode==='server'&&secondField.resultSource==='server'&&secondField.done&&secondField.result))await sleep(100);
+    const secondServerResult={mode:secondField.mode??null,resultSource:secondField.resultSource??null,done:secondField.done===true,
+      reason:secondField.result?.reason??null,synthetic:secondField.result?.synthetic===true,
+      statsCount:Object.values(secondField.result?.perPlayer??{}).reduce((sum,row)=>sum+(Array.isArray(row?.unitStats)?row.unitStats.length:0),0),
+      errors:secondField.result?.errors??null};
+    await page.waitForFunction(async id=>{const packet=await(await fetch(`/resonance/api/sessions/${id}`)).json();
+      return(packet.state?.history||[]).filter(row=>row.type==='fight-settled').length===secondHistoryBefore+1;},{timeout:15_000},attempt.sessionId);
+    const secondSettled=await readState(),secondFights=secondSettled.history?.filter(row=>row.type==='fight-settled')||[];
+    const clientResultsForSecond=attempt.ws.sent.filter(row=>row.t==='b.result'&&row.battleId===attempt.secondBattleId);
+    check('second-server-takeover-settlement-once',secondServerResult.mode==='server'&&secondServerResult.resultSource==='server'
+      &&secondServerResult.done&&!secondServerResult.synthetic&&secondServerResult.statsCount>0
+      &&secondServerResult.errors===0&&secondFights.length===secondHistoryBefore+1&&clientResultsForSecond.length===0,
+      {battleId:attempt.secondBattleId,serverResult:secondServerResult,historyCountBefore:secondHistoryBefore,historyCountAfter:secondFights.length,
+        secondFight:secondFights.at(-1),clientResultsForSecond});
+    await page.waitForFunction(async()=>{const {store}=await import('./js/store.js'),m=store.get().match,s=m.private?.resonance?.state;
+      return m.public?.phase!=='COMBAT'&&s?.phase!=='combat';},{timeout:20_000});
     const exitBefore = await page.evaluate(async id => {
       const { store } = await import('./js/store.js');
       const packet = await (await fetch(`/resonance/api/sessions/${id}`)).json();
@@ -1837,7 +1880,7 @@ async function run() {
       attempt.failures.push({ at: now(), error: 'browser or network faults present', runtimeFaults: faults });
     }
     if (attempt.status === 'running') attempt.status = attempt.missingChecks.length ? 'incomplete' : 'passed';
-    if (screenshotCount(attempt.screenshots) > 14) { attempt.status = 'failed'; attempt.failures.push({ at: now(), error: 'screenshot limit exceeded' }); }
+    if (screenshotCount(attempt.screenshots) > 15) { attempt.status = 'failed'; attempt.failures.push({ at: now(), error: 'screenshot limit exceeded' }); }
     receipt.finishedAt = attempt.finishedAt;
     log.push(`status=${attempt.status}`, `session=${attempt.sessionId || 'none'}`, `missingChecks=${attempt.missingChecks.join(',')}`);
     await save(); await writeFile(LOG, `${log.join('\n')}\n`, { flag: 'a' });
