@@ -3,7 +3,7 @@ export function createReplayMediaSurface(stage) {
     throw new TypeError('A stage element is required');
   }
 
-  const canvas = document.createElement('canvas');
+  const canvas = stage.ownerDocument.createElement('canvas');
   canvas.dataset.spCanvasSurface = '1';
   canvas.style.position = 'absolute';
   canvas.style.zIndex = '4';

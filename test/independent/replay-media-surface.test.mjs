@@ -1,9 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import puppeteer from 'puppeteer-core';
 import { createReplayMediaSurface } from '../../public/js/independent/replayMediaSurface.js';
 
-function makeStage() {
+function makeStage(ownerDocument = globalThis.document) {
   return {
+    ownerDocument,
     children: [],
     appendChild(node) { this.children.push(node); node.parentNode = this; return node; },
   };
@@ -100,4 +106,107 @@ test('surface requires a stage and a usable 2D context', (t) => {
   };
   t.after(() => { globalThis.document = previous; });
   assert.throws(() => createReplayMediaSurface(makeStage()), /2D canvas context/i);
+});
+
+test('creates a host canvas in the host ownerDocument even when the parent document differs', (t) => {
+  const previous = globalThis.document;
+  const parentDocument = { createElement: () => { throw new Error('used parent document'); } };
+  const calls = [];
+  const childDocument = {
+    createElement(name) {
+      calls.push(name);
+      return {
+        dataset: {}, style: {}, hidden: true,
+        getContext: () => ({ clearRect() {}, drawImage() {} }),
+        remove() {},
+      };
+    },
+  };
+  globalThis.document = parentDocument;
+  t.after(() => { globalThis.document = previous; });
+  const stage = makeStage(childDocument);
+  const surface = createReplayMediaSurface(stage);
+  assert.deepEqual(calls, ['canvas']);
+  assert.equal(stage.children[0], surface.canvas);
+  surface.destroy();
+});
+
+test('paints an opaque parent-document video into a connected iframe-document canvas', { timeout: 40000 }, async (t) => {
+  const testDir = dirname(fileURLToPath(import.meta.url));
+  const source = await readFile(resolve(testDir, '../../public/js/independent/replayMediaSurface.js'), 'utf8');
+  const server = createServer((req, res) => {
+    if (req.url === '/surface.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      res.end(source);
+    } else {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end('<!doctype html><iframe id="child" srcdoc="<!doctype html><div id=stage></div>"></iframe><video id="source" hidden muted autoplay></video>');
+    }
+  });
+  await new Promise((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+  t.after(() => new Promise((resolveClose) => server.close(resolveClose)));
+
+  const browser = await puppeteer.launch({
+    executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    headless: true,
+    args: ['--no-sandbox', '--disable-dev-shm-usage'],
+  });
+  t.after(async () => { await browser.close().catch(() => {}); });
+  const page = await browser.newPage();
+  await page.goto(`http://127.0.0.1:${server.address().port}/`, { waitUntil: 'load' });
+  const facts = await page.evaluate(async () => {
+    const { createReplayMediaSurface } = await import('/surface.js');
+    const childDocument = document.querySelector('#child').contentDocument;
+    const host = childDocument.querySelector('#stage');
+    const video = document.querySelector('#source');
+    const frame = document.createElement('canvas');
+    frame.width = 2; frame.height = 1;
+    const frameContext = frame.getContext('2d', { alpha: false });
+    frameContext.fillStyle = '#ff0000'; frameContext.fillRect(0, 0, 1, 1);
+    frameContext.fillStyle = '#00ff00'; frameContext.fillRect(1, 0, 1, 1);
+    const stream = frame.captureStream(0);
+    let resolveFrame;
+    let rejectFrame;
+    const frameReady = new Promise((resolve, reject) => { resolveFrame = resolve; rejectFrame = reject; });
+    const frameTimeout = setTimeout(() => rejectFrame(new Error('hidden video frame timeout')), 5000);
+    video.addEventListener('loadeddata', resolveFrame, { once: true });
+    video.srcObject = stream;
+    let playTimeout;
+    try {
+      await Promise.race([
+        video.play(),
+        new Promise((_, reject) => { playTimeout = setTimeout(() => reject(new Error('hidden video play timeout')), 5000); }),
+      ]);
+    } finally {
+      clearTimeout(playTimeout);
+    }
+    stream.getVideoTracks()[0].requestFrame();
+    if (video.readyState >= 2) resolveFrame();
+    await frameReady;
+    clearTimeout(frameTimeout);
+    const surface = createReplayMediaSurface(host);
+    const painted = surface.paint(video);
+    const pixels = surface.canvas.getContext('2d').getImageData(0, 0, 2, 1).data;
+    const result = {
+      distinctDocuments: document !== childDocument,
+      ownerDocument: surface.canvas.ownerDocument === childDocument,
+      connectedToHost: surface.canvas.parentElement === host && host.contains(surface.canvas),
+      hiddenVideo: video.hidden,
+      painted,
+      opaqueContext: surface.canvas.getContext('2d').getContextAttributes().alpha === false,
+      pixels: [[pixels[0], pixels[1], pixels[2]], [pixels[4], pixels[5], pixels[6]]],
+    };
+    surface.destroy();
+    stream.getTracks().forEach(track => track.stop());
+    return result;
+  });
+  assert.deepEqual(facts, {
+    distinctDocuments: true,
+    ownerDocument: true,
+    connectedToHost: true,
+    hiddenVideo: true,
+    painted: true,
+    opaqueContext: true,
+    pixels: [[255, 0, 0], [0, 255, 0]],
+  });
 });
