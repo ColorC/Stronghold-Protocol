@@ -1349,16 +1349,19 @@ async function run() {
         const cards=[...document.querySelectorAll('.shopbar__cards .scard:not(.scard--sold)')];
         const usable=cards.filter(node=>{const r=node.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return r.width>0&&r.height>0&&hit&&(hit===node||node.contains(hit))}).length;
         const controls=['.shopbar__tools .toolbtn--ice','.shopbar__tools .toolbtn--amber','.lvcard','.readybtn'];
-        const hits=controls.map(selector=>{const node=document.querySelector(selector),r=node?.getBoundingClientRect(),hit=r&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{selector,visible:!!r&&r.width>0&&r.height>0,hit:!!hit&&(hit===node||node.contains(hit))}});
-        const remaining=document.querySelector('.gtop__remain,.gtop__deploy-count,[data-testid="deployment-remaining"]'),ready=document.querySelector('.readybtn');
+        const hits=controls.map(selector=>{const node=document.querySelector(selector),r=node?.getBoundingClientRect(),target=r&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{selector,visible:!!r&&r.width>0&&r.height>0,hit:!!target&&(target===node||node.contains(target)),hitTag:target?.tagName||null,hitClass:typeof target?.className==='string'?target.className:null,hitLabel:target?.getAttribute('aria-label')||target?.getAttribute('title')||null,hitText:(target?.innerText||'').trim().slice(0,80)}});
+        const remaining=document.querySelector('.shopbar__remain'),remainingValue=remaining?.querySelector('b'),ready=document.querySelector('.readybtn');
         const rect=node=>{const r=node?.getBoundingClientRect();return r&&{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
         const a=rect(remaining),b=rect(ready),remainingReadyOverlap=!!a&&!!b&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
-        return{viewport:{width:innerWidth,height:innerHeight},cardCount:cards.length,usable,hits,remaining:remaining?.innerText?.trim()||null,remainingRect:a,readyRect:b,remainingReadyOverlap};
+        const remainingText=remainingValue?.innerText?.trim()||'',remainingFont=remainingValue?parseFloat(getComputedStyle(remainingValue).fontSize):null;
+        return{viewport:{width:innerWidth,height:innerHeight},cardCount:cards.length,usable,hits,remaining:{present:!!remaining&&!!a&&a.width>0&&a.height>0,text:remaining?.innerText?.trim()||null,
+          value:remainingText,number:Number.isFinite(Number(remainingText))?Number(remainingText):null,font:remainingFont},remainingRect:a,readyRect:b,remainingReadyOverlap};
       }));
     }
     await page.setViewport({width:1440,height:900,deviceScaleFactor:1});
     check('mobile-shop-panel-safe', viewportSamples.every(sample=>sample.cardCount===5&&sample.usable===5&&sample.hits.every(hit=>hit.visible&&hit.hit)
-      &&(!sample.remainingRect||!sample.readyRect||!sample.remainingReadyOverlap)),viewportSamples);
+      &&sample.remaining?.present&&sample.remaining.number!=null&&sample.remaining.font>=14
+      &&!!sample.remainingRect&&!!sample.readyRect&&!sample.remainingReadyOverlap),viewportSamples);
     const costSurface = await page.$$eval('.shopbar__cards .scard:not(.scard--sold)', (nodes) => nodes.map((node) => {
       const r=node.getBoundingClientRect(), bg=node.querySelector('.scard__bg'), b=bg?.getBoundingClientRect(), tier=node.querySelector('.tier--color');
       return { cls: node.className, color: getComputedStyle(node).backgroundColor, bg: getComputedStyle(bg || node).backgroundImage,
