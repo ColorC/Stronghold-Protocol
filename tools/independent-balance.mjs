@@ -14,7 +14,7 @@ import { modeIdFor } from '../shared/constants.js';
 import { loadoutRecord } from '../shared/loadoutRecord.js';
 import { nativeFactions } from '../shared/independentRules.js';
 import { quantityEquippable } from '../shared/independentInventory.js';
-import { operatorGrowthInfo } from '../shared/independentGrowth.js';
+import { operatorGrowthInfo, levelBodyStats } from '../shared/independentGrowth.js';
 import { createRng, deriveSeed } from '../server/sim/rng.js';
 
 const data = getData({log:{info(){},warn(){},error(){}}});
@@ -33,7 +33,7 @@ const damagePreference = (p) => {
 
 function score(p, route, growthMode='badges', targetId='') {
   const rec = loadoutRecord(rawFor(p), p);
-  const stats = rec?.stats || {};
+  const stats = growthMode==='levels' ? levelBodyStats({...p,growthMode},catalog,rawFor(p)) : rec?.stats || {};
   const gear = totalEquipmentLevel(p, catalog);
   const production = catalog.operators[p.chessId]?.nativeTrait?.effect;
   const prep=production?.prep||[];
@@ -42,6 +42,7 @@ function score(p, route, growthMode='badges', targetId='') {
   const growthSupport=prep.some(x=>x.behavior.startsWith('darkmoon')&&x.behavior.toLowerCase().includes('growth'))?125:0;
   return Number(catalog.operators[p.chessId]?.tier || rec?.tier || 1) * 100 + (p.elite ? 110 : 0) + gear * 15 +
     Number(stats.atk || 0) / 12 + Number(stats.maxHp || 0) / 150 +
+    (growthMode==='levels' ? Math.max(0,(Number(p.growthLevel)||1)-1)*5 : 0) +
     (route === 'defense' ? (blocking(p) ? 20 : damagePreference(p)) : route === 'skill' && production?.combat?.length ? 60 : 0) +
     (production?.prep?.length ? 35 : 0) + growthValue + growthSupport + (targetId&&p.chessId===targetId?10000:0);
 }
@@ -167,8 +168,20 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
         if(result.error?.code==='CAPACITY') break;
         throw new Error(`Merge offer failed: ${result.error?.message}`);
       }
-      const rankedChoices=offer.choices.map((id,index)=>({id,index,value:(catalog.operators?.[id]?score({chessId:id,equipment:[]},route,growthMode,targetId):
-        id==='growth-training-record'&&growthMode==='levels'?600:catalog.badges?.[id]&&growthMode==='levels'?450:catalog.badges?.[id]?350:catalog.equipment?.[id]?.mechanism==='growthTraining'&&growthMode==='levels'?500:0)}))
+      const prizeValue=id=>{
+        const source=catalog.prizes[id]?.params?.sourceId;
+        const weights={BGS_Treasures_009:520,BGS_Treasures_013:250,BGS_Treasures_033:300,
+          BGS_Treasures_011:500,BGS_Treasures_015:450,BGS_Treasures_018:620,BGS_Treasures_020:550,
+          BGS_Treasures_016:650,BGS_Treasures_028:850,BGS_Treasures_032:700,
+          BGS_Treasures_022:400,BGS_Treasures_023:420,BGS_Treasures_025:300};
+        if(source==='TB_Bacon_Secrets_12')return state.lp<20?750:350;
+        if(id==='prize-logistics-production')return 500;
+        if(id==='prize-logistics-refund')return 300;
+        if(id==='prize-logistics-refresh')return 250;
+        return weights[source]||0;
+      };
+      const rankedChoices=offer.choices.map((id,index)=>({id,index,value:(catalog.operators?.[id]?score({chessId:id,equipment:[]},route,growthMode,targetId):prizeValue(id)||
+        (id==='growth-training-record'&&growthMode==='levels'?600:catalog.badges?.[id]&&growthMode==='levels'?450:catalog.badges?.[id]?350:catalog.equipment?.[id]?.mechanism==='growthTraining'&&growthMode==='levels'?500:0))}))
         .sort((a,b)=>b.value-a.value||a.index-b.index);
       for (const choice of rankedChoices) {
         const targets=[undefined,...state.pieces.slice().sort((a,b)=>score(b,route,growthMode,targetId)-score(a,route,growthMode,targetId)).map(p=>p.uid)];
@@ -219,6 +232,7 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
         .sort((a,b)=>{
         const value=({slot})=>slot.kind==='chess' ? score({chessId:slot.id, equipment:[]},route,growthMode,targetId)+factionScore(slot.id,state.pieces)+
             state.pieces.filter(p=>p.chessId===slot.id).length*130 +
+            (!state.pieces.some(primaryDamage)&&primaryDamage({chessId:slot.id})?400:0) +
             (route==='defense'&&blocking({chessId:slot.id})?(state.pieces.filter(blocking).length<2?220:-180):0) +
             (rawFor({chessId:slot.id})?.profession==='MEDIC' && state.pieces.some(p=>!healing(p)) && !state.pieces.some(healing) &&
               (route!=='defense' || state.pieces.some(p=>!healing(p)))?300:0) : -100;
@@ -234,6 +248,8 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
         const shopSlots=shopTargets(state,i); if(shopSlots.length){action.shopSlot=shopSlots[0];action.shopSlots=shopSlots;}
         if (act(action).ok) { bought=true; pickOffers(); if(state.funds<3) break; }
       }
+      // Spend replenished Gold and newly upgraded inventory in the same prep phase.
+      useKeptPrizes();
       if (state.funds>=4 && pass<4) { if (!act({type:'refresh'}).ok) break; }
       else if (!bought) break;
     }
@@ -258,7 +274,12 @@ export function playSeed({seed=1, difficulty, roundLimit=9, route='assault', gro
       if(state.pieces.length<=BENCH_SIZE) break;
       if(!selected.includes(piece)) act({type:'sell',uid:piece.uid},true);
     }
-    for(const piece of state.pieces.slice()) act({type:'bench',uid:piece.uid},true);
+    // Active summoners withdraw first: their unplaced position markers leave the bench with the owner.
+    // This keeps a legal ten-operator roster from temporarily counting an eleventh marker during relayout.
+    placeNativeSummons();
+    const withdrawOrder=state.pieces.slice().sort((a,b)=>
+      Number((state.summons||[]).some(x=>x.ownerUid===b.uid))-Number((state.summons||[]).some(x=>x.ownerUid===a.uid)));
+    for(const piece of withdrawOrder) act({type:'bench',uid:piece.uid},true);
     const selectedUids=selected.map(p=>p.uid);
     for(const item of state.inventory.slice()) {
       const definition=equipmentRecord(catalog,item.id)||catalog.prizes?.[item.id];
