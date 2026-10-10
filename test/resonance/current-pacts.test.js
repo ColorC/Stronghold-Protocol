@@ -46,29 +46,30 @@ function downOperator(battle, unit, killer = null) {
 const star3RedeployOperator = Object.values(current.operators).find((operator) => operator.stars?.[3]?.passive?.kind === 'star3_redeploy');
 assert.ok(star3RedeployOperator, 'catalog has a fixed three-star redeploy passive fixture');
 
-test('current v2 pacts replace only the three intended rows and their player text; v1 remains frozen', () => {
+test('current v2 pact tiers and player text follow the current roster while v1 remains frozen', () => {
   const patched = applyCurrentPacts({ ...legacy, pacts: legacy.pacts, playerText: legacy.playerText });
   assert.equal(patched.pacts.higashi.levels.every((row) => row.effects.find(x => x.kind === 'higashi_redeploy').params.returnSp === 0), true);
   assert.ok(patched.pacts.siracusa.levels.every((row) => row.effects.some(x => x.kind === 'siracusa_harvest')));
-  assert.equal(patched.pacts.ammo.levels[2].effects[0].params.skillAmmo, 3);
+  assert.equal(patched.pacts.ammo.levels[1].effects[0].params.skillAmmo, 2);
+  assert.equal(patched.pacts.ammo.levels.length,2);
   assert.ok(patched.pacts.siracusa.levels[0].effects.find(row => row.kind === 'siracusa_harvest').reference.killToSp.jsonPointer);
   assert.ok(patched.pacts.ammo.levels[0].effects[0].reference.nativeGit);
   assert.match(patched.playerText.pacts.higashi.levels[0].description, /闪避/);
   assert.doesNotMatch(patched.playerText.pacts.higashi.levels[0].description, /四人/);
-  assert.match(patched.playerText.pacts.higashi.levels[2].description, /部署攻击造成80%攻击力真实伤害/);
+  assert.match(patched.playerText.pacts.higashi.levels[1].description, /返场.*80%攻击力真实伤害/);
   assert.doesNotMatch(patched.playerText.pacts.higashi.levels[0].description, /返.*技力/);
   assert.match(patched.playerText.pacts.siracusa.levels[0].description, /击倒.*本人恢复3技力/);
   assert.doesNotMatch(patched.playerText.pacts.siracusa.levels[0].description, /狼影/);
-  assert.match(patched.playerText.pacts.siracusa.levels[3].description, /每20秒，狼影对最近敌人造成最高成员攻击力800%的伤害/);
-  assert.match(patched.playerText.pacts.siracusa.levels[3].description, /每20秒，狼影对最近敌人造成最高成员攻击力800%的伤害/);
-  assert.match(patched.playerText.pacts.ammo.levels[0].description, /载弹量增加1枚/);
+  assert.equal(patched.pacts.siracusa.levels.length,3);
+  assert.ok(patched.playerText.pacts.siracusa.levels.every(row=>!row.description.includes('狼影')));
+  assert.match(patched.playerText.pacts.ammo.levels[0].description, /增加1枚载弹/);
   assert.match(legacy.playerText.pacts.higashi.levels[0].description, /退出后.*技力/);
   assert.match(legacy.playerText.pacts.ammo.levels[0].description, /几率恢复/);
 });
 
 test('v2 Redeploy publishes only supported tier values and references native timer/deploy-AoE mechanics', () => {
   const patched = applyCurrentPacts({ ...legacy, pacts: legacy.pacts, playerText: legacy.playerText });
-  const expected = [[2, .8, 100, 20], [3, .65, 180, 35], [5, .4, 320, 60]];
+  const expected = [[2, .8, 100, 20], [3, .65, 180, 35]];
   for (const [index, [threshold, timer, damage, shorter]] of expected.entries()) {
     const row = patched.pacts.redeploy.levels[index], effect = row.effects.find((x) => x.kind === 'redeploy_return');
     assert.equal(row.threshold, threshold); assert.equal(effect.params.timeMultiplier, timer);
@@ -244,7 +245,7 @@ test('Ammo pact adds real clip rounds on each ammo-skill activation and last rou
   assert.equal(unit.skill.activate('second-pact-ammo-test', { free: true }), true);
   assert.equal(unit.skill.ammoLeft, 3, 'the pact adds rounds again on the next genuine activation');
   assert.equal(battle.errorCount, 0);
-  for (const [count, added] of [[2, 1], [4, 2], [6, 3]]) {
+  for (const [count, added] of [[2, 1], [4, 2]]) {
     const tier = makeBattle('ammo', { ammo: true, count });
     tier.battle.start();
     assert.equal(tier.units[0].skill.activate('tier-ammo-test', { free: true }), true);
@@ -307,7 +308,7 @@ test('v2 Necrosis burst keeps the damage-over-time effect without SP; v1 keeps i
     const target = battle.spawnEnemy('current-necrosis-target', { pos: [units[0].y, units[0].x + 2], def: enemyRec({ key: 'current-necrosis-target', hp: 1e6, atk: 0, speed: 0 }) });
     target.s.flags.necrosis = true;
     target.s.flags.necrosisBurst = true;
-    battle.dealDamage(units[0], target, { amount: 1, type: 'element', element: 'apoptosis', canDodge: false });
+    battle.dealDamage(units[0], target, { amount: catalog===current?target.gaugeMax:1, type: 'element', element: 'apoptosis', canDodge: false });
     assert.equal(sp, expectedSp);
     assert.ok(target.buffs.some((buff) => buff.key === 'resonance:necrosis:pact'), 'the supported burst DOT still applies');
     assert.equal(battle.errorCount, 0);

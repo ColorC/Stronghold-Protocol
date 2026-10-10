@@ -30,6 +30,12 @@ function makeBattle(loadouts,{content=catalog,seed=912,state={pieces:[]},skillKi
   const active=installResonancePacts(battle,{catalog:content,state});
   return {battle,active,units:battle.allyUnits,player};
 }
+function makeNativeBattle(operators){
+  const player={playerId:'resonance',units:operators.map((operator,index)=>({uid:`native-${index+1}`,chessId:operator.sourceChessId,skillIndex:operator.fixedSkillIndex??0,moduleId:'none',row:9,col:2+index,dir:'RIGHT',star:1,items:[],extraPacts:operator.pacts.includes('flight')?['flight']:operator.pacts.includes('crown')?['crown']:[]}))};
+  const state={environmentId:'origin_laterano',pieces:operators.map((_,index)=>({uid:`native-${index+1}`,star:1}))};
+  const battle=new Battle({seed:912,kind:'normal',round:1,timeLimit:60,autoFinish:false,stage:flatStage({id:'resonance-native-pact-test'}),data,players:[player],kits:createResonanceKits(catalog,state,data),content:'independent',recordEvents:false,flags:{startOpCooldown:0,dpInit:20,dpPerSec:1,dpMax:99},extraContent:[b=>installResonanceBattle(b,{catalog,state})]});
+  return {battle,active:null,units:battle.allyUnits,state};
+}
 function advance(battle,seconds){const ticks=Math.ceil(seconds/battle.dt);for(let i=0;i<ticks&&!battle.finished;i++)battle.step();}
 function spawnDummy(battle,pos=[9,10],rank='NORMAL'){return battle.spawnEnemy('resonance-test-enemy',{pos,def:enemyRec({key:'resonance-test-enemy',hp:1e9,atk:0,speed:0,rank})});}
 function cast(battle,unit,seconds=.1){assert.equal(unit.skill?.activate?.('resonance-test',{free:true}),true,`SkillRuntime cast for ${unit.defId} (noSkill=${unit.skill?.noSkill}, active=${unit.skill?.active}, deployed=${unit.deployed})`);advance(battle,seconds);}
@@ -286,10 +292,7 @@ test('Sami cold bonus, Siracusa execute, Burn cooldown, and Crown memory alter r
   const burnTop=makeBattle(uniqueLoadouts('burn',4));burnTop.battle.start();const burnOwner=burnTop.units[0],burnTarget=spawnDummy(burnTop.battle,[9,10]);burnTop.battle.dealDamage(burnOwner,burnTarget,{amount:100,type:'phys',canDodge:false});
   assert.ok(burnTarget.elem.burn>target.elem.burn,'terminal burn tier applies its larger element fill');
 
-  const kings=uniqueLoadouts('crown',1);kings[0].star=3;const crown=makeBattle([...kings,{operator:Object.values(catalog.operators).find((row)=>!row.pacts.includes('crown')),star:1}],{skillKind:'duration'});crown.battle.start();
-  cast(crown.battle,crown.units[1]);assert.equal(crown.units[0].mem.pactCrownBonus,.1,'the terminal star-specific byCast value is retained');
-  castNow(crown.units[0]);const crownTarget=spawnDummy(crown.battle,[9,10]),normalTarget=spawnDummy(crown.battle,[9,11]);const base=crown.battle.dealDamage(crown.units[0],normalTarget,{amount:100,type:'arts',isSkill:false,canDodge:false});const skill=crown.battle.dealDamage(crown.units[0],crownTarget,{amount:100,type:'arts',isSkill:true,canDodge:false});
-  assert.ok(skill>base,`the stored cast memory applies on a real skill-damage event (skill=${skill},base=${base},memory=${crown.units[0].mem.pactCrownSkillBonus},raw=${JSON.stringify({charId:crown.units[0].def.raw?.charId,id:crown.units[0].def.raw?.id})})`);assert.equal(crown.battle.errorCount,0);
+  // Crown is covered below with its actual native S3; this generic fixture has no authored damage skill to test.
   const crownBase=makeBattle([{operator:Object.values(catalog.operators).find((row)=>row.pacts.includes('crown')),star:1,extraPacts:['crown']},{operator:Object.values(catalog.operators).find((row)=>!row.pacts.includes('crown'))}],{skillKind:'duration'});crownBase.battle.start();cast(crownBase.battle,crownBase.units[1]);assert.equal(crownBase.units[0].mem.pactCrownBonus,.03,'the one-star memory uses the configured minimum-star increment');
 });
 
@@ -315,23 +318,43 @@ test('Higashi deploy/retreat, Iberia first block shield, and Flight airborne div
   for(const [count,returnSp] of [[2,15],[4,40]]){
     const setup=makeBattle(uniqueLoadouts('higashi',count));setup.battle.start();const unit=setup.units[0];let gained=0;unit.skill.gainSp=(value)=>{gained+=value;};
     assert.ok(unit.buffs.some((row)=>row.key.includes('higashi-deploy')),'the real initial deploy installs Higashi evasion');
-    setup.battle.retreat(unit);assert.equal(gained,returnSp,'a genuine retreat yields the resolved tier SP');
+    setup.battle.retreat(unit);assert.ok(Math.abs(gained-returnSp)<1e-8,'a genuine retreat yields the resolved tier SP');
     assert.ok(setup.active.get('higashi').effects.find((row)=>row.kind==='higashi_redeploy').params.returnSp===returnSp);
   }
   for(const [count,barrier,breakDamage] of [[2,20,120],[4,45,280]]){
     const iberia=makeBattle(uniqueLoadouts('iberia',count));iberia.battle.start();const blocker=iberia.units[0],attacker=spawnDummy(iberia.battle,[blocker.y,blocker.x+1]),splash=spawnDummy(iberia.battle,[blocker.y,blocker.x+2]);
-    attacker.x=blocker.x;attacker.y=blocker.y;assert.equal(iberia.battle._checkBlock(attacker),true);const shield=blocker.buffs.find((row)=>row.key.includes('iberia-barrier'));assert.ok(shield,'first real block installs Iberia shield');assert.equal(shield.shield,blocker.s.maxHp*barrier/100);
+    attacker.x=blocker.x;attacker.y=blocker.y;assert.equal(iberia.battle._checkBlock(attacker),true);const shield=blocker.buffs.find((row)=>row.key.includes('iberia-barrier'));assert.ok(shield,'first real block installs Iberia shield');assert.ok(Math.abs(shield.shield-blocker.s.maxHp*barrier/100)<1e-8);
     blocker.s.blockCnt=2;const extra=spawnDummy(iberia.battle,[blocker.y,blocker.x+2]);extra.x=blocker.x;extra.y=blocker.y;assert.equal(iberia.battle._checkBlock(extra),true);assert.equal(blocker.buffs.find((row)=>row.key.includes('iberia-barrier')).shield,shield.shield,'subsequent blocks do not grant another first-block shield');
     const splashBefore=splash.hp;iberia.battle.dealDamage(attacker,blocker,{amount:1e9,type:'true',isAttack:true,canDodge:false});
     assert.ok(splashBefore-splash.hp>=blocker.s.atk*breakDamage/100*.99,'breaking the shield sends the tier damage to nearby enemies');assert.equal(iberia.battle.errorCount,0);
   }
 
-  const flight=makeBattle(uniqueLoadouts('flight',1));flight.battle.start();const flyer=flight.units[0],target=spawnDummy(flight.battle,[flyer.y,flyer.x+1]);flyer.motion='FLY';
-  const hp=target.hp;cast(flight.battle,flyer);assert.ok(target.hp<hp,'an airborne member skill end performs its real nearby dive');
-  const hit=spawnDummy(flight.battle,[flyer.y,flyer.x+2]);const reduced=flight.battle.dealDamage(hit,flyer,{amount:100,type:'phys',isAttack:true,canDodge:false});
-  flyer.motion='GROUND';const grounded=flight.battle.dealDamage(hit,flyer,{amount:100,type:'phys',isAttack:true,canDodge:false});assert.ok(reduced<grounded,'flight mitigation applies only while airborne');
-  assert.equal(flight.battle.errorCount,0);
-  const topFlight=makeBattle(uniqueLoadouts('flight',3));topFlight.battle.start();const topFlyer=topFlight.units[0],topTarget=spawnDummy(topFlight.battle,[topFlyer.y,topFlyer.x+1]);topFlyer.motion='FLY';const topHp=topTarget.hp;cast(topFlight.battle,topFlyer);assert.ok(topHp-topTarget.hp>topFlyer.s.atk*2,'terminal Flight tier applies its 240%-ATK dive');
+  // Flight's native S2 semantics are exercised in the fixed-kit test below.
+});
+
+test('Bolivar reads live native slow statuses and stops its bonus when they expire',()=>{
+  const setup=makeBattle(uniqueLoadouts('bolivar',2));setup.battle.start();const [owner]=setup.units,target=spawnDummy(setup.battle,[owner.y,owner.x+1]),hit=()=>setup.battle.dealDamage(owner,target,{amount:100,type:'phys',isAttack:true,canDodge:false});
+  assert.equal(hit(),100);assert.equal(setup.battle.applyStatus(target,'sluggish',{duration:1,source:owner}),true);assert.equal(target.s.flags.sluggish,undefined);assert.equal(hit(),125);
+  advance(setup.battle,1.1);assert.equal(hit(),100);assert.equal(setup.battle.applyStatus(target,'slow',{duration:1,value:.5,source:owner}),true);assert.equal(hit(),125);setup.battle.removeStatus(target,'slow');assert.equal(hit(),100);
+  const outsider=makeBattle([{operator:Object.values(catalog.operators).find(row=>!row.pacts.includes('bolivar'))}]);outsider.battle.start();const enemy=spawnDummy(outsider.battle,[9,10]);outsider.battle.applyStatus(enemy,'sluggish',{duration:1});assert.equal(outsider.battle.dealDamage(outsider.units[0],enemy,{amount:100,type:'phys',canDodge:false}),100);assert.equal(setup.battle.errorCount,0);
+});
+
+test('Flight uses native Tippi S2 liftoff flags, one landing burst and ground-only mitigation',()=>{
+  const tippi=Object.values(catalog.operators).find(row=>row.name==='蒂比'),setup=makeNativeBattle([tippi]);setup.battle.start();const flyer=setup.units[0];assert.equal(flyer.skill.id,'skchr_tippi_2');assert.equal(flyer.motion,'GROUND');
+  const ground=spawnDummy(setup.battle,[flyer.y,flyer.x+1]),air=setup.battle.spawnEnemy('resonance-flyer',{pos:[flyer.y+1,flyer.x+1],def:enemyRec({key:'resonance-flyer',hp:1e9,atk:0,speed:0,motion:'FLY'})});const enemy=spawnDummy(setup.battle,[flyer.y,flyer.x+3]);flyer.skill.charges=1;setup.battle.dealDamage(enemy,flyer,{amount:100,type:'phys',isAttack:true,canDodge:false});
+  assert.equal(flyer.s.flags.liftoff,true);assert.equal(flyer.motion,'GROUND');assert.equal(flyer.buffs.filter(row=>row.key===`resonance:pact:flight-air:${flyer.id}`).length,1);assert.equal(flyer.s.aspd,115);
+  assert.equal(setup.battle.dealDamage(ground,flyer,{amount:100,type:'true',isAttack:true,ignoreSelect:true,canDodge:false}),90);assert.equal(setup.battle.dealDamage(air,flyer,{amount:100,type:'true',isAttack:true,ignoreSelect:true,canDodge:false}),100);
+  const bursts=[];setup.battle.on('damaged',event=>{if(event.source===flyer&&(event.dmg?.tags??[]).includes('resonance'))bursts.push(event.target);});const duration=flyer.skill.timeLeft;advance(setup.battle,duration+.1);assert.equal(!!flyer.s.flags.liftoff,false);assert.equal(bursts.filter(row=>row===ground).length,1);assert.equal(bursts.filter(row=>row===air).length,1,'natural landing applies the anti-air parameter');assert.equal(flyer.buffs.some(row=>row.key===`resonance:pact:flight-air:${flyer.id}`),false);advance(setup.battle,1);assert.equal(bursts.length,2,'landing damage is emitted once and never repeats');assert.equal(setup.battle.errorCount,0);
+  const death=makeNativeBattle([tippi]);death.battle.start();const doomed=death.units[0],near=spawnDummy(death.battle,[doomed.y,doomed.x+1]),killer=spawnDummy(death.battle,[doomed.y,doomed.x+2]);doomed.skill.charges=1;death.battle.dealDamage(killer,doomed,{amount:100,type:'phys',isAttack:true,canDodge:false});assert.equal(doomed.s.flags.liftoff,true);let deathBurst=0;death.battle.on('damaged',event=>{if(event.source===doomed&&(event.dmg?.tags??[]).includes('resonance'))deathBurst++;});death.battle.loseHp(doomed,doomed.hp+1);assert.equal(deathBurst,0,'death during S2 ends the skill without its landing burst');assert.equal(near.alive,true);
+  const retreat=makeNativeBattle([tippi]);retreat.battle.start();const withdrawing=retreat.units[0],retreatHit=spawnDummy(retreat.battle,[withdrawing.y,withdrawing.x+2]);withdrawing.skill.charges=1;retreat.battle.dealDamage(retreatHit,withdrawing,{amount:100,type:'phys',isAttack:true,canDodge:false});let retreatBurst=0;retreat.battle.on('damaged',event=>{if(event.source===withdrawing&&(event.dmg?.tags??[]).includes('resonance'))retreatBurst++;});retreat.battle.retreat(withdrawing);assert.equal(retreatBurst,0,'retreat during S2 is not a natural landing');
+});
+
+test('Crown accumulates same-owner ally casts as persistent ATK and boosts native S3 healing',()=>{
+  const king=Object.values(catalog.operators).find(row=>row.name==='魔王'),ally=Object.values(catalog.operators).find(row=>row!==king),setup=makeNativeBattle([king,ally]);setup.battle.start();const [crown,teammate]=setup.units;assert.equal(crown.skill.id,'skchr_cetsyr_3');
+  const initialStacks=crown.mem.pactCrownStacks??0;assert.ok(teammate.skill.activate('test',{free:true}));assert.equal(crown.mem.pactCrownStacks,initialStacks+1);assert.ok(Math.abs(crown.s.atk-crown.base.atk*(1+(initialStacks+1)*.03))<1e-7);assert.equal(crown.buffs.filter(row=>row.key===`resonance:pact:crown-atk:${crown.id}`).length,1);
+  for(let i=0;i<35;i++){teammate.skill.end('test');teammate.skill.activate('test',{free:true});}assert.equal(crown.mem.pactCrownStacks,30);const buff=crown.buffs.find(row=>row.key===`resonance:pact:crown-atk:${crown.id}`);assert.ok(buff?.persist);const cappedAtk=crown.s.atk;assert.ok(Math.abs(cappedAtk-crown.base.atk*1.9)<1e-7,'30 star-one casts yield 90% ATK without repeated buff multiplication');
+  assert.equal(crown.skill.activate('test',{free:true}),true);assert.equal(crown.skill.active,true);teammate.hp=teammate.s.maxHp/2;const before=teammate.hp,healed=setup.battle.heal(crown,teammate,cappedAtk*(crown.profile.auraRatio??0),{skillHeal:true});assert.ok(healed>0&&teammate.hp>before,'the active native S3 uses the engine healing pipeline');
+  const unstacked=cappedAtk/(1+30*.03)*(crown.profile.auraRatio??0);assert.ok(healed>unstacked);assert.equal(crown.mem.pactCrownStacks,30,'Crown does not accumulate its own cast');setup.battle.loseHp(crown,crown.hp+1);crown.respawnAt=setup.battle.time+.1;advance(setup.battle,1);assert.equal(crown.alive,true);assert.equal(crown.deployed,true);assert.equal(crown.mem.pactCrownStacks,30);assert.ok(Math.abs(crown.s.atk-cappedAtk)<1e-7,'the same single persistent ATK buff survives redeploy without multiplying');assert.equal(setup.battle.errorCount,0);
 });
 
 test('Creation supports a real source token and Redeploy restores a killed operator through native respawn',()=>{

@@ -1,6 +1,6 @@
 import { legalSummonCells,selectedSummonIds } from './summons.js';
 import { resonanceOpenings, selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
-import { resonanceSeason, resonanceSeasonOperatorIds } from '../../../shared/resonance/season-roster.js';
+import { getResonanceSeason } from '../../../shared/resonance/season-roster.js';
 const SCHEMA_VERSION = 1;
 const BENCH_CAPACITY = 9;
 const INVENTORY_CAPACITY = 20;
@@ -151,8 +151,8 @@ function createStarterState({ seed, difficulty, catalog, environmentId }) {
   };
   if (rulesVersion === 2) {
     state.rulesVersion = 2;
-    state.seasonId = resonanceSeason.id;
-    if (catalog.config?.seasonId !== state.seasonId) throw new Error('UNKNOWN_SEASON');
+    state.seasonId = catalog.config?.seasonId;
+    if (!getResonanceSeason(state.seasonId) || catalog.config?.seasonId !== state.seasonId) throw new Error('UNKNOWN_SEASON');
     state.environmentId = null;
     state.openingId = selectResonanceOpening(state.seed);
     if (catalog.config?.openingId !== state.openingId) throw new Error('OPENING_MISMATCH');
@@ -194,9 +194,10 @@ export function validateSession(state, { catalog } = {}) {
   try { if (rulesVersion !== resonanceRulesVersion({rulesVersion:catalog.config?.rulesVersion})) add('RULES_VERSION_MISMATCH'); }
   catch { add('UNKNOWN_CATALOG_RULES_VERSION'); }
   if (rulesVersion === 2) {
-    if (state.seasonId !== resonanceSeason.id || catalog.config?.seasonId !== resonanceSeason.id) add('UNKNOWN_SEASON');
-    if (!Array.isArray(state.activeOperatorIds) || state.activeOperatorIds.length !== resonanceSeasonOperatorIds.length
-      || state.activeOperatorIds.some((id,index)=>id!==resonanceSeasonOperatorIds[index])) add('SEASON_ROSTER_MISMATCH');
+    const season = getResonanceSeason(state.seasonId);
+    if (!season || catalog.config?.seasonId !== state.seasonId) add('UNKNOWN_SEASON');
+    if (season && (!Array.isArray(state.activeOperatorIds) || state.activeOperatorIds.length !== season.operatorIds.length
+      || state.activeOperatorIds.some((id,index)=>id!==season.operatorIds[index]))) add('SEASON_ROSTER_MISMATCH');
     if (!Number.isSafeInteger(state.seed)||state.seed<0||state.seed>0xffffffff) add('BAD_OPENING_SEED');
     if (!own(resonanceOpenings, state.openingId)) add('UNKNOWN_OPENING');
     else if (Number.isSafeInteger(state.seed)&&state.seed>=0&&state.seed<=0xffffffff&&state.openingId !== selectResonanceOpening(state.seed)) add('OPENING_MISMATCH');
@@ -423,14 +424,27 @@ function mergeOperatorCopies(state, catalog, preferredUid = null) {
         ...keep.equipment,
         ...removed.flatMap((piece) => piece.equipment),
       ];
-      const retainedEquipment = allEquipment.slice(0,3);
-      const overflow = allEquipment.slice(3);
+      const retained = { uid:keep.uid, equipment:[] };
+      const overflow = [];
+      const equipmentEvents = [];
+      for (const item of allEquipment) {
+        let plan;
+        try { plan = equipmentPlacement(catalog,retained.equipment,item); }
+        catch (error) {
+          if (!['EQUIPMENT_CAPACITY','UNIQUE_EQUIPMENT_CONFLICT','EQUIPMENT_GRANT_NOT_ALLOWED'].includes(error.message)) throw error;
+          overflow.push(item);
+          continue;
+        }
+        const combined = placeEquipment(state,retained,item,plan);
+        if (combined) equipmentEvents.push(combined);
+      }
       if (state.inventory.length + overflow.length > INVENTORY_CAPACITY) throw new Error('INVENTORY_CAPACITY');
       state.inventory.push(...overflow);
-      keep.equipment = retainedEquipment;
+      keep.equipment = retained.equipment;
       keep.star++;
       state.pieces = state.pieces.filter((piece) => !removed.includes(piece));
       events.push({ type: 'operator-merged', operatorId, uid: keep.uid, star: keep.star, consumedUids: removed.map((piece) => piece.uid), equipmentReturned: overflow.length });
+      events.push(...equipmentEvents);
       merged = true;
       break;
     }
@@ -523,7 +537,7 @@ function updateIdentityTransferChoices(state,catalog) {
   const items=[...state.inventory,...state.pieces.flatMap(piece=>piece.equipment)];
   state.pendingChoices=state.pendingChoices.filter(choice=>choice.type!=='identity_transfer'||items.some(item=>item.uid===choice.itemUid));
   const identities=new Set(Object.values(catalog.environments??{}).map(env=>env.identityPactId).filter(Boolean));
-  const options=[...identities].filter(pact=>Object.values(itemTable(catalog)).some(item=>item.effects?.some(effect=>['pact_transfer','transfer_pact'].includes(effect.kind)&&effect.params?.pactId===pact)));
+  const options=[...identities].filter(pact=>pactGrantAllowed(catalog,pact)&&Object.values(itemTable(catalog)).some(item=>itemGrantAllowed(catalog,item.id)&&item.effects?.some(effect=>['pact_transfer','transfer_pact'].includes(effect.kind)&&effect.params?.pactId===pact)));
   for(const item of items) {
     if(!itemTable(catalog)[item.itemId]?.effects?.some(effect=>effect.kind==='choose_identity_transfer'))continue;
     if(!options.length)throw new Error('IDENTITY_TRANSFER_OPTIONS_MISSING');
@@ -590,8 +604,13 @@ function drawStrategies(state,catalog) {
   return picked;
 }
 function addConsumable(state,kind,source) { state.consumables.push({uid:uid(state,'u'),kind,source}); }
+function pactGrantAllowed(catalog,pactId) { return catalog.config?.rulesVersion!==2||catalog.pacts?.[pactId]?.emblemAllowed!==false; }
+function itemGrantAllowed(catalog,itemId) {
+  const item=itemTable(catalog)[itemId];if(!item)return false;
+  return catalog.config?.rulesVersion!==2||(item.grantAllowed!==false&&(item.effects??[]).every(effect=>!['pact_transfer','transfer_pact'].includes(effect.kind)||pactGrantAllowed(catalog,effect.params?.pactId??effect.params?.pact)));
+}
 function availableItemOptions(catalog,kind) {
-  return Object.values(itemTable(catalog)).filter((item)=>!kind || item.kind===kind).map((item)=>item.id);
+  return Object.values(itemTable(catalog)).filter((item)=>(!kind||item.kind===kind)&&itemGrantAllowed(catalog,item.id)).map((item)=>item.id);
 }
 function viableTransferOptions(catalog) {
   const active=new Set(activeOperatorIds(catalog));
@@ -599,11 +618,11 @@ function viableTransferOptions(catalog) {
   const recipes=new Set((catalog.recipes??[]).map(recipe=>recipe.resultId));
   const byPact=new Map();
   for(const item of Object.values(itemTable(catalog))){
-    if(item.kind!=='emblem')continue;
+    if(item.kind!=='emblem'||!itemGrantAllowed(catalog,item.id))continue;
     for(const effect of item.effects??[]){
       if(!['pact_transfer','transfer_pact'].includes(effect.kind))continue;
       const pactId=effect.params?.pactId??effect.params?.pact;
-      if(!viablePacts.has(pactId))continue;
+      if(!viablePacts.has(pactId)||!pactGrantAllowed(catalog,pactId))continue;
       const candidates=byPact.get(pactId)??[];candidates.push(item);byPact.set(pactId,candidates);
     }
   }
@@ -767,6 +786,7 @@ function claimChoice(state,catalog,choice,optionIds) {
     for(const itemId of optionIds) {
       const item=itemTable(catalog)[itemId];
       if(!item||choice.type==='components'&&item.kind!=='component'||choice.type==='transfer'&&item.kind!=='emblem') throw new Error('INVALID_REWARD_ITEM');
+      if(!itemGrantAllowed(catalog,itemId))throw new Error('EQUIPMENT_GRANT_NOT_ALLOWED');
       state.inventory.push({uid:uid(state,'i'),itemId});
     }
   } else if(choice.type==='operators') {
@@ -791,15 +811,17 @@ function claimChoice(state,catalog,choice,optionIds) {
     if(strategyDefs(catalog)[choice.source]?.effects?.some(effect=>effect.kind==='free_disassemble_and_recipe'))queueRecipeChoice(state,catalog,choice.source);
   } else if(choice.type==='recipe') {
     if(optionIds.length!==1)throw new Error('BAD_REWARD_SELECTION');
-    const recipe=catalog.recipes.find(entry=>entry.resultId===optionIds[0]);const materials=recipe&&recipeMaterials(state,recipe);
+      const recipe=catalog.recipes.find(entry=>entry.resultId===optionIds[0]);const materials=recipe&&recipeMaterials(state,catalog,recipe);
     if(!materials)throw new Error('RECIPE_ITEM_NOT_FOUND');
     combineEquipment(state,catalog,materials,recipe);
   } else if(choice.type==='identity_transfer') {
     if(optionIds.length!==1)throw new Error('BAD_REWARD_SELECTION');
     const found=findEquipment(state,choice.itemUid);
     if(!found||!itemTable(catalog)[found.item.itemId]?.effects?.some(effect=>effect.kind==='choose_identity_transfer'))throw new Error('IDENTITY_TRANSFER_ITEM_MISSING');
-    const replacement=Object.values(itemTable(catalog)).find(item=>item.id===`transfer_${optionIds[0]}`)
-      ??Object.values(itemTable(catalog)).find(item=>item.effects?.some(effect=>['pact_transfer','transfer_pact'].includes(effect.kind)&&effect.params?.pactId===optionIds[0]));
+    if(!pactGrantAllowed(catalog,optionIds[0]))throw new Error('PACT_GRANT_NOT_ALLOWED');
+    const candidates=Object.values(itemTable(catalog)).filter(item=>itemGrantAllowed(catalog,item.id));
+    const replacement=candidates.find(item=>item.id===`transfer_${optionIds[0]}`)
+      ??candidates.find(item=>item.effects?.some(effect=>['pact_transfer','transfer_pact'].includes(effect.kind)&&effect.params?.pactId===optionIds[0]));
     if(!replacement)throw new Error('IDENTITY_TRANSFER_OPTIONS_MISSING');
     found.item.itemId=replacement.id;
   } else if(choice.type==='target_piece') {
@@ -814,11 +836,12 @@ function claimChoice(state,catalog,choice,optionIds) {
     if(optionIds.length!==1)throw new Error('BAD_REWARD_SELECTION');
     const piece=pieceByUid(state,optionIds[0]);if(!piece)throw new Error('PIECE_NOT_FOUND');
     const mechanismIds=new Set(['ammo','combo','control','creation','symbiosis','logistics','redeploy','flight','arts','breaker','burn','necrosis']);
-    const available=Object.keys(catalog.pacts??{}).filter(id=>mechanismIds.has(id)&&!(opTable(catalog)[piece.operatorId]?.pacts??[]).includes(id)&&!(piece.extraPacts??[]).includes(id));if(!available.length)throw new Error('PACT_OPTIONS_MISSING');
+    const available=Object.keys(catalog.pacts??{}).filter(id=>mechanismIds.has(id)&&pactGrantAllowed(catalog,id)&&!(opTable(catalog)[piece.operatorId]?.pacts??[]).includes(id)&&!(piece.extraPacts??[]).includes(id));if(!available.length)throw new Error('PACT_OPTIONS_MISSING');
     addPendingChoice(state,'pact_tag',choice.source,available,1,{pieceUid:piece.uid});
   } else if(choice.type==='pact_tag') {
     if(optionIds.length!==1)throw new Error('BAD_REWARD_SELECTION');
     const piece=pieceByUid(state,choice.pieceUid);if(!piece||!own(catalog.pacts,optionIds[0]))throw new Error('BAD_PACT_OPTION');
+    if(!pactGrantAllowed(catalog,optionIds[0]))throw new Error('PACT_GRANT_NOT_ALLOWED');
     piece.extraPacts??=[];if(!piece.extraPacts.includes(optionIds[0]))piece.extraPacts.push(optionIds[0]);
   } else throw new Error(`UNKNOWN_REWARD_TYPE:${choice.type}`);
   choice.remaining-=optionIds.length;choice.options=choice.options.filter((id)=>!optionIds.includes(id));
@@ -866,11 +889,39 @@ function consumeEquipmentLocation(state, found) {
   else found.owner.equipment.splice(found.index,1);
 }
 function fixedRecipe(catalog, firstId, secondId) {
+  if (itemTable(catalog)[firstId]?.kind !== 'component' || itemTable(catalog)[secondId]?.kind !== 'component') return null;
   return catalog.recipes.find((recipe) => recipe.parts?.length === 2
     && ((recipe.parts[0] === firstId && recipe.parts[1] === secondId)
       || (recipe.parts[0] === secondId && recipe.parts[1] === firstId)));
 }
-function recipeMaterials(state,recipe) {
+function uniqueEquipmentConflict(catalog,equipment,itemId,consumedUids=[]) {
+  return itemTable(catalog)[itemId]?.unique === true
+    && equipment.some(item=>item.itemId===itemId&&!consumedUids.includes(item.uid));
+}
+function equipmentCombinationEvent(materials,result,pieceUid) {
+  return {type:'equipment-combined',itemIds:materials.map(item=>item.itemId),itemUids:materials.map(item=>item.uid),resultId:result.itemId,uid:result.uid,pieceUid};
+}
+function equipmentPlacement(catalog,equipment,incoming) {
+  for (let index=0;index<equipment.length;index++) {
+    const material=equipment[index],recipe=fixedRecipe(catalog,material.itemId,incoming.itemId);
+    if (!recipe) continue;
+    if (!own(itemTable(catalog),recipe.resultId)) throw new Error('RECIPE_RESULT_UNKNOWN');
+    if (!itemGrantAllowed(catalog,recipe.resultId)) throw new Error('EQUIPMENT_GRANT_NOT_ALLOWED');
+    if (uniqueEquipmentConflict(catalog,equipment,recipe.resultId,[material.uid])) throw new Error('UNIQUE_EQUIPMENT_CONFLICT');
+    return {index,recipe,material};
+  }
+  if (uniqueEquipmentConflict(catalog,equipment,incoming.itemId)) throw new Error('UNIQUE_EQUIPMENT_CONFLICT');
+  if (equipment.length>=3) throw new Error('EQUIPMENT_CAPACITY');
+  return null;
+}
+function placeEquipment(state,piece,incoming,plan) {
+  if (!plan) { piece.equipment.push(incoming); return null; }
+  const result={uid:uid(state,'i'),itemId:plan.recipe.resultId};
+  piece.equipment.splice(plan.index,1,result);
+  return equipmentCombinationEvent([plan.material,incoming],result,piece.uid);
+}
+function recipeMaterials(state,catalog,recipe) {
+  if(!itemGrantAllowed(catalog,recipe.resultId))return null;
   if(recipe.parts?.length!==2)return null;
   const items=[...state.inventory,...state.pieces.flatMap(piece=>piece.equipment)];
   for(const first of items.filter(item=>item.itemId===recipe.parts[0]))for(const second of items.filter(item=>item.itemId===recipe.parts[1]&&item.uid!==first.uid)){
@@ -880,14 +931,17 @@ function recipeMaterials(state,recipe) {
   return null;
 }
 function queueRecipeChoice(state,catalog,source) {
-  const options=[...new Set(catalog.recipes.filter(recipe=>recipeMaterials(state,recipe)).map(recipe=>recipe.resultId))];
+  const options=[...new Set(catalog.recipes.filter(recipe=>recipeMaterials(state,catalog,recipe)).map(recipe=>recipe.resultId))];
   if(options.length)addPendingChoice(state,'recipe',source,options,1);
 }
 function combineEquipment(state,catalog,found,recipe) {
+  if(found.some(entry=>itemTable(catalog)[entry.item.itemId]?.kind!=='component'))throw new Error('RECIPE_NOT_FOUND');
   if(!own(itemTable(catalog),recipe.resultId))throw new Error('RECIPE_RESULT_UNKNOWN');
   const owner=found.find(entry=>entry.owner)?.owner??null;
+  if(owner&&uniqueEquipmentConflict(catalog,owner.equipment,recipe.resultId,found.map(entry=>entry.item.uid)))throw new Error('UNIQUE_EQUIPMENT_CONFLICT');
+  const slot=owner?Math.min(...found.filter(entry=>entry.owner===owner).map(entry=>entry.index)):null;
   for(const entry of [...found].sort((a,b)=>b.index-a.index))consumeEquipmentLocation(state,entry);
-  const item={uid:uid(state,'i'),itemId:recipe.resultId};if(owner)owner.equipment.push(item);else state.inventory.push(item);
+  const item={uid:uid(state,'i'),itemId:recipe.resultId};if(owner)owner.equipment.splice(slot,0,item);else state.inventory.push(item);
   return item;
 }
 function resolveDeployedField(state, catalog, fieldResolver) {
@@ -1092,7 +1146,11 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');if(!['UP','RIGHT','DOWN','LEFT'].includes(action.dir))throw new Error('BAD_DIRECTION');piece.dir=action.dir;events.push({type:'piece-turned',uid:piece.uid,dir:piece.dir});break;
       }
       case 'equip': {
-        requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');const index=draft.inventory.findIndex((item)=>item.uid===action.itemUid);if(index<0)throw new Error('ITEM_NOT_IN_INVENTORY');if(piece.equipment.length>=3)throw new Error('EQUIPMENT_CAPACITY');const item=draft.inventory.splice(index,1)[0];piece.equipment.push(item);events.push({type:'item-equipped',uid:item.uid,pieceUid:piece.uid,itemId:item.itemId});break;
+        requirePrep(draft);const piece=pieceByUid(draft,action.pieceUid);if(!piece)throw new Error('PIECE_NOT_FOUND');const index=draft.inventory.findIndex((item)=>item.uid===action.itemUid);if(index<0)throw new Error('ITEM_NOT_IN_INVENTORY');
+        const item=draft.inventory[index],plan=equipmentPlacement(catalog,piece.equipment,item);
+        draft.inventory.splice(index,1);
+        const combined=placeEquipment(draft,piece,item,plan);
+        events.push(combined??{type:'item-equipped',uid:item.uid,pieceUid:piece.uid,itemId:item.itemId});break;
       }
       case 'unequip': {
         requirePrep(draft);const found=findEquipment(draft,action.itemUid);if(!found||found.kind!=='piece')throw new Error('EQUIPPED_ITEM_NOT_FOUND');if(draft.inventory.length>=INVENTORY_CAPACITY)throw new Error('INVENTORY_CAPACITY');consumeEquipmentLocation(draft,found);draft.inventory.push(found.item);events.push({type:'item-unequipped',uid:found.item.uid,pieceUid:found.owner.uid,itemId:found.item.itemId});break;
@@ -1107,7 +1165,7 @@ export function applyAction(state, action, { catalog, battleRunner, fieldResolve
         const recipe=fixedRecipe(catalog,found[0].item.itemId,found[1].item.itemId);if(!recipe)throw new Error('RECIPE_NOT_FOUND');if(!own(itemTable(catalog),recipe.resultId))throw new Error('RECIPE_RESULT_UNKNOWN');
         const equippedOwner=found.find((entry)=>entry.owner)?.owner??null;
         const resultItem=combineEquipment(draft,catalog,found,recipe);
-        events.push({type:'equipment-combined',itemIds:found.map((entry)=>entry.item.itemId),resultId:recipe.resultId,uid:resultItem.uid,pieceUid:equippedOwner?.uid??null});break;
+        events.push(equipmentCombinationEvent(found.map(entry=>entry.item),resultItem,equippedOwner?.uid??null));break;
       }
       case 'advanceSupply': {
         const detail=advanceSupply(draft,catalog);events.push({type:'supply-advanced',...detail});break;

@@ -1061,7 +1061,7 @@ export function statusTexture(key) {
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
 let _chips = null;
-// 'roman' (the original game) | 'pips' (卫戍协议：工坊) | 'color' (共鸣 fee tag), set per mount
+// 'roman' (the original game) | 'pips' (卫戍协议：工坊) | 'color' (共鸣 fee tag) | 'base' (共鸣 ground ring), set per mount
 let _chipLook = 'roman';
 // pip colour per tier (theme.css --tier-1..6)
 const PIP = ['', '#b4b4b4', '#f2f2f2', '#34e6b2', '#34b8d8', '#f8bf00', '#ff8a1a'];
@@ -1161,12 +1161,12 @@ export function refreshTierChips() {
 }
 
 /**
- * The chips' look for the field view being mounted: 'roman' (default, the original game) or 'pips'. A change redraws
+ * The tier presentation for the field view being mounted. A change redraws
  * the atlas in place, so chips already handed out follow.
- * @param {'roman'|'pips'|'color'} look
+ * @param {'roman'|'pips'|'color'|'base'} look
  */
 export function setTierChipLook(look) {
-  const next = look === 'pips' || look === 'color' ? look : 'roman';
+  const next = look === 'pips' || look === 'color' || look === 'base' ? look : 'roman';
   if (next === _chipLook) return;
   _chipLook = next;
   refreshTierChips();

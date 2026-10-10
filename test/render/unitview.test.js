@@ -57,6 +57,50 @@ describe('tier chips', () => {
   });
 });
 
+describe('Resonance ground quality rings', () => {
+  test('quality stays on the ground while stars remain above the operator', async () => {
+    T.setTierChipLook('base');
+    try {
+      const tints = [0x92999d, 0x58b36b, 0x4d8bd2, 0x9b68c9, 0xd9ad3c];
+      for (const [index, tint] of tints.entries()) {
+        const v = view({ tier: index + 1, resonanceStar: 2 }, { prep: true });
+        await tick(); await tick();
+        v.update(1 / 60, cam(), 0);
+        assert.equal(v.chip, null, 'there is no overhead quality chip');
+        assert.equal(v.tierRing.tint, tint);
+        assert.equal(v.tierRing.parent, v.ctx.layers.groundFx);
+        assert.equal(v.tierRing.visible, true);
+        assert.equal(v.resonanceStarText.text, '★★');
+        const ring = v.tierRing, texture = ring.texture, before = fake.canvases.length;
+        v.setWorld(6, 12);
+        for (let i = 0; i < 120; i++) v.update(1 / 60, cam(), i / 60);
+        assert.equal(v.tierRing, ring, 'movement reuses the same sprite');
+        assert.equal(ring.texture, texture);
+        assert.equal(fake.canvases.length, before, 'movement allocates no new textures');
+        v.destroy();
+        assert.equal(ring.destroyed, true);
+        assert.equal(ring.parent, null);
+      }
+    } finally { T.setTierChipLook('roman'); }
+  });
+
+  test('tokens and enemies have no quality ring, and ordinary mode keeps its chip', () => {
+    T.setTierChipLook('base');
+    try {
+      for (const info of [{ kind: 'token' }, { side: 'enemy', kind: 'enemy' }]) {
+        const v = view(info);
+        assert.equal(v.tierRing, null);
+        v.destroy();
+      }
+    } finally { T.setTierChipLook('roman'); }
+    const v = view({ tier: 4 });
+    v.update(1 / 60, cam(), 0);
+    assert.ok(v.chip?.visible);
+    assert.equal(v.tierRing, null);
+    v.destroy();
+  });
+});
+
 describe('fallback portraits (avatar diamonds)', () => {
   test('an avatar that loads builds one diamond — no image-less placeholder first', async () => {
     const before = diamonds().length;

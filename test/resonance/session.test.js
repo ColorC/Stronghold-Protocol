@@ -266,7 +266,7 @@ test('recycleEquipment explicitly destroys inventory or equipped item without go
 test('equipment overflow rejects the whole merge with full inventory',()=>{
   const state=fullBenchFixture();
   const targetPieces=state.pieces.filter((piece)=>piece.operatorId==='m1');
-  targetPieces.forEach((piece,index)=>piece.equipment.push({uid:`merge-gear-${index}-a`,itemId:'part-a'},{uid:`merge-gear-${index}-b`,itemId:'part-b'}));
+  targetPieces.forEach((piece,index)=>piece.equipment.push({uid:`merge-gear-${index}-a`,itemId:'finished'},{uid:`merge-gear-${index}-b`,itemId:'part-c'}));
   state.inventory=Array.from({length:20},(_,index)=>({uid:`inventory-${index}`,itemId:index%2?'part-a':'part-b'}));
   state.nextUid=100;
   assertPoolConserved(state);

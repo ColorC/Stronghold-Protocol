@@ -1,7 +1,7 @@
 import { getData } from '../../data.js';
 import { resonanceContent, buildRecruitmentPool, resonanceSourceSkillGaps } from '../../../shared/resonance/catalog.js';
 import { selectResonanceOpening, resonanceRulesVersion } from '../../../shared/resonance/openings.js';
-import { resonanceSeason, resonanceSeasonTraitOverrides, validateResonanceSeasonRoster } from '../../../shared/resonance/season-roster.js';
+import { resonanceSeason, getResonanceSeason, validateResonanceSeasonRoster } from '../../../shared/resonance/season-roster.js';
 import { applyCurrentStrategies } from '../../../shared/resonance/current-strategies.js';
 import { applyCurrentPacts } from '../../../shared/resonance/current-pacts.js';
 import { applyCurrentOperators } from '../../../shared/resonance/current-operators.js';
@@ -77,13 +77,15 @@ export function getResonanceCatalog(data = getData(), options = {}) {
   }
   const catalog = { ...resonanceContent, operators };
   if (rulesVersion === 2) {
+    const selectedSeason = getResonanceSeason(options.seasonId ?? resonanceSeason.id);
+    if (!selectedSeason) throw new Error(`RESONANCE_UNKNOWN_SEASON:${options.seasonId}`);
     const seasonOperators = { ...operators };
-    for (const [id, additions] of Object.entries(resonanceSeasonTraitOverrides)) {
+    for (const [id, additions] of Object.entries(selectedSeason.traitOverrides)) {
       if (!Object.hasOwn(operators, id)) throw new Error(`RESONANCE_UNKNOWN_SEASON_OPERATOR:${id}`);
       seasonOperators[id] = { ...operators[id], pacts: [...new Set([...operators[id].pacts, ...additions])] };
     }
     catalog.operators = seasonOperators;
-    const activeOperatorIds = validateResonanceSeasonRoster(seasonOperators);
+    const activeOperatorIds = validateResonanceSeasonRoster(seasonOperators, selectedSeason.operatorIds, selectedSeason.quotas);
     const currentCatalog = applyCurrentOperators(applyCurrentPacts(applyCurrentStrategies(applyCurrentEquipment(catalog))));
     const campaign = clone(currentCatalog.campaign);
     campaign.strategyNodes = [5, 13, 20];
@@ -91,8 +93,8 @@ export function getResonanceCatalog(data = getData(), options = {}) {
     campaign.supply.transfers = campaign.supply.transfers.map((entry) => ({ ...entry, selection: 'viable-pact' }));
     campaign.poolByCost = Object.fromEntries([1,2,3,4,5].map((cost) => [cost, activeOperatorIds.filter((id) => operators[id].cost === cost).length]));
     currentCatalog.campaign = campaign;
-    currentCatalog.season = resonanceSeason;
-    currentCatalog.config = { rulesVersion, seasonId: resonanceSeason.id, environmentId: null, openingId: selectResonanceOpening(seed), seed, activeOperatorIds, starterIds: chooseStarterIds(activeOperatorIds, seasonOperators) };
+    currentCatalog.season = { id: selectedSeason.id, displayName: selectedSeason.displayName };
+    currentCatalog.config = { rulesVersion, seasonId: selectedSeason.id, environmentId: null, openingId: selectResonanceOpening(seed), seed, activeOperatorIds, starterIds: chooseStarterIds(activeOperatorIds, seasonOperators) };
     currentCatalog.diagnostics = { sourceSkillGaps: clone(resonanceSourceSkillGaps) };
     return currentCatalog;
   }
@@ -115,7 +117,9 @@ export function getLegacyResonanceCatalog(data = getData(), { environmentId = 'o
 
 export function getResonanceCatalogForState(data, state) {
   const rulesVersion = resonanceRulesVersion(state);
-  return rulesVersion === 1 ? getLegacyResonanceCatalog(data, state) : getResonanceCatalog(data, { rulesVersion, seed: state.seed });
+  if (rulesVersion === 1) return getLegacyResonanceCatalog(data, state);
+  if (!getResonanceSeason(state?.seasonId)) throw new Error(`RESONANCE_UNKNOWN_SEASON:${state?.seasonId}`);
+  return getResonanceCatalog(data, { rulesVersion, seed: state.seed, seasonId: state.seasonId });
 }
 
 export { buildRecruitmentPool, resonanceContent, resonanceSourceSkillGaps };

@@ -105,7 +105,7 @@ test('unmatched entries do not claim competitor evidence and unresolved mechanis
   assert.equal(matrix.records.pacts.holyGun.userExplicit,false,'the legacy audit designation is not carried forward');
   assert.equal(matrix.nativeAuditStatistics.changedStarOverrideOperators,49);
   assert.equal(matrix.nativeAuditStatistics.changedStarOverrideFieldCount,234);
-  assert.equal(Object.values(matrix.records.operators).reduce((sum,row)=>sum+row.nativeSkillFieldDiffs.length,0),234);
+  assert.equal(Object.values(matrix.compatibilityRecords?.operators??{}).reduce((sum,row)=>sum+row.nativeSkillFieldDiffs.length,0),234,'historical audit rows retain the 234-field source record outside the active season roster');
   assert.ok(Object.values(matrix.records.operators).every(row=>row.refs.some(ref=>ref.nativeGit)),'native inherited skills count as concrete mechanism references');
   assert.ok(Object.values(matrix.records.operators).some(row=>row.coverageClass!=='unmatched'));
   assert.ok(Object.values(matrix.records.pacts).filter(row=>row.coverageClass==='unmatched').length<9,'valid current-component evidence must not be discarded by whole-effect-kind changes');
@@ -129,6 +129,25 @@ test('unmatched entries do not claim competitor evidence and unresolved mechanis
   assert.equal(matrix.records.strategies.strategy_35.remainingUnsupported.some(issue=>/仅造物且全队每场首次/.test(issue)),false,'death-triggered resurrection is sourced; eligibility and battle cap are adaptations');
   assert.ok(matrix.records.pacts.babel.externalRefs.some(ref=>/teamfight-tactics-patch-13-1-notes/.test(ref.sourceURL)&&/On Ally Death/.test(ref.sourceEffectText)));
   assert.ok(matrix.records.equipment.azureTear.externalRefs.some(ref=>/teamfight-tactics-patch-12-11-notes/.test(ref.sourceURL)&&/after casting/.test(ref.sourceEffectText)));
+});
+
+test('active symbiosis, Crown, and Burn citations come only from current pact evidence and survive regeneration', () => {
+  const allowed={
+    symbiosis:['https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-11-15-notes/','https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/mechanics-into-the-arcane/'],
+    crown:['https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-12-notes/'],
+    burn:['https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-11-15-notes/'],
+  };
+  for(const [id,urls] of Object.entries(allowed)){
+    const row=matrix.records.pacts[id];
+    assert.deepEqual(row.externalRefs.map(ref=>ref.sourceURL).sort(),[...urls].sort(),`${id} keeps only current official evidence`);
+    assert.equal(row.dimensionEvidence.length,0,`${id} does not reattach prior dimension candidates`);
+    assert.equal(row.candidateRefs.length,0,`${id} does not reattach prior candidate references`);
+    assert.ok(row.adaptations.length>0,`${id} retains explicit adaptation differences`);
+  }
+  const burn=matrix.records.pacts.burn;
+  assert.equal(burn.refs.length,0,'Burn code-level trigger evidence remains in currentPactEvidence, not a fabricated JSON-pointer citation');
+  assert.match(JSON.stringify(burn.adaptations),/灼燃爆发/);
+  assert.doesNotMatch(JSON.stringify(burn),/Skull and Bones|DA_18_Inferno|Inferno/);
 });
 
 test('disabled legacy strategies and transfer items are separate from the active v2 matrix', () => {

@@ -9,70 +9,70 @@
 | 干员 | ID | 费用 | 职责 | 位置 | 可对空 | 盟约 |
 |---|---|---:|---|---|---|---|
 | 角峰 | chess_char_1_02_a | 1 | frontline | MELEE | 否 | 谢拉格、破阵 |
-| 红豆 | chess_char_1_05_a | 1 | damage | MELEE | 否 | 哥伦比亚、后勤 |
-| 刺玫 | chess_char_1_06_a | 1 | damage | RANGED | 是 | 维多利亚、共生 |
 | 普罗旺斯 | chess_char_1_07_a | 1 | damage | RANGED | 是 | 叙拉古、破阵 |
 | 古米 | chess_char_1_10_a | 1 | frontline | MELEE | 否 | 乌萨斯、共生 |
 | 艾丝黛尔 | chess_char_1_12_a | 1 | frontline | MELEE | 否 | 萨尔贡、破阵 |
-| 波登可 | chess_char_1_13_a | 1 | control | RANGED | 是 | 罗德岛、控制 |
+| 调香师 | chess_char_2_14_a | 1 | healer | RANGED | 否 | 罗德岛、共生 |
 | 宴 | chess_char_1_18_a | 1 | frontline | MELEE | 否 | 东、破阵 |
-| 送葬人 | chess_char_2_01_a | 1 | damage | RANGED | 是 | 拉特兰、破阵 |
 | 砾 | chess_char_2_12_a | 1 | damage | MELEE | 否 | 卡西米尔、再部署 |
-| 凯瑟琳 | chess_char_4_11_a | 1 | summoner | MELEE | 否 | 维多利亚、造物 |
-| 红云 | chess_native_char_190_clour_a | 1 | damage | RANGED | 是 | 叙拉古、连击 |
+| 送葬人 | chess_char_2_01_a | 1 | damage | RANGED | 是 | 拉特兰、破阵 |
+| 跃跃 | chess_char_1_09_a | 1 | damage | RANGED | 是 | 玻利瓦尔、连击 |
+| 格雷伊 | chess_char_1_14_a | 1 | control | RANGED | 是 | 玻利瓦尔、控制 |
+| 深靛 | chess_char_1_17_a | 1 | control | RANGED | 是 | 伊比利亚、控制 |
+| 协律 | chess_char_2_15_a | 1 | damage | RANGED | 是 | 莱塔尼亚、术式 |
+| 红豆 | chess_char_1_05_a | 1 | damage | MELEE | 否 | 哥伦比亚、后勤 |
 | 清流 | chess_native_char_385_finlpp_a | 1 | healer | RANGED | 否 | 炎国、共生 |
-| 九色鹿 | chess_native_char_4019_ncdeer_a | 1 | support | RANGED | 是 | 炎国、共生 |
 | 隐现 | chess_char_1_01_a | 2 | damage | RANGED | 是 | 拉特兰、弹药 |
+| 信仰搅拌机 | chess_char_4_01_a | 2 | damage | MELEE | 是 | 拉特兰、弹药 |
+| 地灵 | chess_char_1_11_a | 2 | control | RANGED | 是 | 莱塔尼亚、控制 |
+| 惊蛰 | chess_char_1_03_a | 2 | damage | RANGED | 是 | 炎国、术式 |
 | 深巡 | chess_char_1_04_a | 2 | control | MELEE | 是 | 阿戈尔、控制 |
+| 德克萨斯 | chess_char_1_08_a | 2 | control | MELEE | 否 | 叙拉古、后勤 |
 | 野鬃 | chess_char_1_19_a | 2 | control | MELEE | 否 | 卡西米尔、控制 |
-| 小满 | chess_char_2_04_a | 2 | control | RANGED | 是 | 炎国、控制 |
-| 泡泡 | chess_char_2_08_a | 2 | frontline | MELEE | 否 | 萨尔贡、破阵 |
 | 蒂比 | chess_char_2_13_a | 2 | damage | MELEE | 是 | 哥伦比亚、飞行 |
-| 见行者 | chess_char_3_07_a | 2 | control | MELEE | 否 | 拉特兰、控制 |
-| 蜜蜡 | chess_char_4_05_a | 2 | control | RANGED | 否 | 萨尔贡、造物 |
+| 莎草 | chess_char_2_06_a | 2 | healer | RANGED | 否 | 萨尔贡、共生 |
+| 琳琅诗怀雅 | chess_char_3_04_a | 2 | control | MELEE | 否 | 龙门、造物 |
 | 瑰盐 | chess_char_4_08_a | 2 | healer | RANGED | 否 | 伊比利亚、共生 |
-| 因陀罗 | chess_native_char_155_tiger_a | 2 | damage | MELEE | 否 | 维多利亚、连击 |
-| 奥斯塔 | chess_native_char_346_aosta_a | 2 | damage | RANGED | 是 | 叙拉古、控制 |
-| 但书 | chess_native_char_4032_provs_a | 2 | control | RANGED | 是 | 卡西米尔、控制 |
-| 风絮 | chess_native_char_4222_taraxa_a | 2 | healer | RANGED | 否 | 炎国、共生 |
-| 能天使 | chess_char_3_01_a | 3 | damage | RANGED | 是 | 拉特兰、连击 |
+| 格拉尼 | chess_native_char_220_grani_a | 2 | damage | MELEE | 否 | 维多利亚、后勤 |
+| 小满 | chess_char_2_04_a | 2 | control | RANGED | 是 | 炎国、控制 |
 | 斯卡蒂 | chess_char_3_05_a | 3 | frontline | MELEE | 否 | 阿戈尔、破阵 |
-| 菲莱 | chess_char_3_06_a | 3 | frontline | MELEE | 否 | 萨尔贡、凋亡 |
-| 薄绿 | chess_char_3_08_a | 3 | control | RANGED | 否 | 维多利亚、控制 |
-| 伺夜 | chess_char_3_19_a | 3 | summoner | RANGED | 是 | 叙拉古、造物 |
-| 空弦 | chess_char_3_21_a | 3 | damage | RANGED | 是 | 拉特兰、连击 |
-| 伊内丝 | chess_char_4_04_a | 3 | damage | MELEE | 是 | 巴别塔、再部署 |
 | 歌蕾蒂娅 | chess_char_4_12_a | 3 | control | MELEE | 是 | 阿戈尔、控制 |
-| 灵知 | chess_char_4_13_a | 3 | control | RANGED | 是 | 谢拉格、控制 |
+| 能天使 | chess_char_3_01_a | 3 | damage | RANGED | 是 | 拉特兰、连击 |
+| 雪猎 | chess_char_3_11_a | 3 | damage | RANGED | 是 | 谢拉格、弹药 |
 | 莱恩哈特 | chess_char_4_14_a | 3 | damage | RANGED | 是 | 雷姆必拓、术式 |
-| 白面鸮 | chess_char_4_21_a | 3 | healer | RANGED | 否 | 哥伦比亚、共生 |
-| 仇白 | chess_char_6_15_a | 3 | damage | MELEE | 是 | 炎国、破阵 |
-| 摩根 | chess_native_char_154_morgan_a | 3 | frontline | MELEE | 否 | 维多利亚、破阵 |
+| 断崖 | chess_char_3_02_a | 3 | damage | MELEE | 是 | 雷姆必拓、破阵 |
+| 诗怀雅 | chess_char_3_03_a | 3 | damage | MELEE | 否 | 龙门、连击 |
+| 折桠 | chess_char_2_17_a | 3 | frontline | MELEE | 否 | 乌萨斯、控制 |
+| 伊内丝 | chess_char_4_04_a | 3 | damage | MELEE | 是 | 巴别塔、再部署 |
+| 风丸 | chess_char_2_11_a | 3 | summoner | MELEE | 否 | 东、造物 |
 | 万顷 | chess_native_char_4119_wanqin_a | 3 | damage | MELEE | 否 | 炎国、后勤 |
+| 白面鸮 | chess_char_4_21_a | 3 | healer | RANGED | 否 | 哥伦比亚、共生 |
+| 菲莱 | chess_char_3_06_a | 3 | frontline | MELEE | 否 | 萨尔贡、凋亡 |
+| 伺夜 | chess_char_3_19_a | 3 | summoner | RANGED | 是 | 叙拉古、造物 |
 | 瑕光 | chess_char_3_12_a | 4 | frontline | MELEE | 否 | 卡西米尔、共生 |
 | 初雪 | chess_char_3_14_a | 4 | damage | RANGED | 是 | 谢拉格、术式 |
-| 远牙 | chess_char_4_20_a | 4 | damage | RANGED | 是 | 卡西米尔、破阵 |
-| 铃兰 | chess_char_5_10_a | 4 | control | RANGED | 是 | 叙拉古、控制 |
+| 缄默德克萨斯 | chess_char_4_16_a | 4 | control | MELEE | 否 | 叙拉古、再部署 |
+| 卡涅利安 | chess_char_4_24_a | 4 | control | RANGED | 否 | 莱塔尼亚、控制 |
+| 风笛 | chess_char_4_07_a | 4 | damage | MELEE | 否 | 维多利亚、后勤 |
 | 塞雷娅 | chess_char_5_11_a | 4 | frontline | MELEE | 否 | 哥伦比亚、共生 |
 | 归溟幽灵鲨 | chess_char_5_13_a | 4 | summoner | MELEE | 否 | 阿戈尔、造物 |
 | 山 | chess_char_5_17_a | 4 | damage | MELEE | 否 | 哥伦比亚、连击 |
 | 寒檀 | chess_char_5_21_a | 4 | control | RANGED | 是 | 萨米、控制 |
 | 妮芙 | chess_char_5_22_a | 4 | damage | RANGED | 是 | 罗德岛、凋亡 |
-| 浊心斯卡蒂 | chess_char_6_04_a | 4 | support | RANGED | 否 | 阿戈尔、共生 |
-| 溯光星源 | chess_char_6_16_a | 4 | damage | RANGED | 是 | 哥伦比亚、破阵 |
+| 焰影苇草 | chess_char_6_08_a | 4 | damage | RANGED | 是 | 维多利亚、共生 |
+| 引星棘刺 | chess_char_5_15_a | 4 | damage | RANGED | 是 | 伊比利亚、破阵 |
 | 锏 | chess_char_6_19_a | 4 | damage | MELEE | 否 | 谢拉格、破阵 |
-| 纯烬艾雅法拉 | chess_char_6_20_a | 4 | healer | RANGED | 否 | 莱塔尼亚、共生 |
-| 斥罪 | chess_native_char_4065_judge_a | 4 | frontline | MELEE | 否 | 叙拉古、控制 |
+| 拉普兰德 | chess_char_2_16_a | 4 | damage | MELEE | 是 | 叙拉古、连击 |
 | 魔王 | chess_char_4_25_a | 5 | support | RANGED | 否 | 罗德岛、术式、王冠 |
-| 烛煌 | chess_char_5_03_a | 5 | damage | RANGED | 是 | 罗德岛、灼燃 |
 | 乌尔比安 | chess_char_5_05_a | 5 | frontline | MELEE | 否 | 阿戈尔、破阵 |
 | 圣聆初雪 | chess_char_6_02_a | 5 | control | RANGED | 否 | 谢拉格、控制、耶拉之息 |
 | 余 | chess_char_6_03_a | 5 | frontline | MELEE | 否 | 炎国、连击、岁 |
-| 维娜·维多利亚 | chess_char_6_07_a | 5 | summoner | MELEE | 否 | 维多利亚、造物 |
-| 塑心 | chess_char_6_09_a | 5 | damage | RANGED | 是 | 拉特兰、凋亡 |
-| 缪尔赛思 | chess_char_6_11_a | 5 | control | RANGED | 是 | 哥伦比亚、造物 |
+| 令 | chess_native_char_2023_ling_a | 5 | summoner | RANGED | 是 | 炎国、造物、岁 |
+| 黍 | chess_native_char_2025_shu_a | 5 | frontline | MELEE | 否 | 炎国、共生、岁 |
 | 新约能天使 | chess_char_6_13_a | 5 | damage | RANGED | 是 | 拉特兰、弹药、圣枪 |
-| 耀骑士临光 | chess_char_6_17_a | 5 | frontline | MELEE | 否 | 卡西米尔、造物 |
+| 塑心 | chess_char_6_09_a | 5 | damage | RANGED | 是 | 拉特兰、凋亡 |
+| 维娜·维多利亚 | chess_char_6_07_a | 5 | summoner | MELEE | 否 | 维多利亚、造物 |
+| 烛煌 | chess_char_5_03_a | 5 | damage | RANGED | 是 | 罗德岛、灼燃 |
 
 ## 当前赛季盟约自然成员覆盖
 
@@ -80,40 +80,40 @@
 
 | 盟约 | 自然成员 | 档位 | 最高档差额 |
 |---|---:|---|---:|
-| 阿戈尔 | 6 | 2/4/6/8 | 2 |
-| 拉特兰 | 7 | 2/4/6/8 | 1 |
-| 谢拉格 | 5 | 2/4/7 | 2 |
-| 炎国 | 7 | 3/5/7/10 | 3 |
-| 维多利亚 | 6 | 2/4/6/9 | 3 |
-| 哥伦比亚 | 7 | 2/4/6/10 | 3 |
-| 卡西米尔 | 6 | 2/4/6/9 | 3 |
-| 叙拉古 | 6 | 2/4/6/8 | 2 |
-| 罗德岛 | 4 | 2/4/6 | 2 |
-| 龙门 | 0 | 2/4/6 | 6 |
-| 萨尔贡 | 4 | 2/4/6 | 2 |
-| 莱塔尼亚 | 1 | 2/3/5 | 4 |
-| 伊比利亚 | 1 | 2/3/4 | 3 |
-| 东 | 1 | 2/3/4 | 3 |
-| 乌萨斯 | 1 | 2/3 | 2 |
-| 玻利瓦尔 | 0 | 2 | 2 |
-| 雷姆必拓 | 1 | 2 | 1 |
-| 巴别塔 | 1 | 2 | 1 |
+| 阿戈尔 | 5 | 2/4/6 | 1 |
+| 拉特兰 | 6 | 2/4/6/8 | 2 |
+| 谢拉格 | 5 | 2/4/6 | 1 |
+| 炎国 | 7 | 3/5/7/9 | 2 |
+| 维多利亚 | 4 | 2/4/6 | 2 |
+| 哥伦比亚 | 5 | 2/4/6 | 1 |
+| 卡西米尔 | 3 | 2/3/4 | 1 |
+| 叙拉古 | 5 | 2/4/6 | 1 |
+| 罗德岛 | 4 | 2/3/4 | 0 |
+| 龙门 | 2 | 2/3 | 1 |
+| 萨尔贡 | 3 | 2/3/4 | 1 |
+| 莱塔尼亚 | 3 | 2/3/4 | 1 |
+| 伊比利亚 | 3 | 2/3/4 | 1 |
+| 东 | 2 | 2/3 | 1 |
+| 乌萨斯 | 2 | 2 | 0 |
+| 玻利瓦尔 | 2 | 2 | 0 |
+| 雷姆必拓 | 2 | 2 | 0 |
+| 巴别塔 | 1 | 1 | 0 |
 | 萨米 | 1 | 1 | 0 |
-| 弹药 | 2 | 2/4/6 | 4 |
+| 弹药 | 4 | 2/4 | 0 |
 | 连击 | 6 | 2/4/6 | 0 |
-| 控制 | 14 | 2/4/6 | 0 |
-| 造物 | 7 | 2/4/6 | 0 |
-| 共生 | 11 | 2/4/6 | 0 |
-| 后勤 | 2 | 2/4/6 | 4 |
-| 再部署 | 2 | 2/3/5 | 3 |
-| 飞行 | 1 | 1/2/3 | 2 |
-| 术式 | 3 | 2/4/6 | 3 |
-| 破阵 | 13 | 2/4/6 | 0 |
-| 灼燃 | 1 | 2/3/4 | 3 |
+| 控制 | 11 | 2/4/6 | 0 |
+| 造物 | 6 | 2/4/6 | 0 |
+| 共生 | 10 | 2/4/6 | 0 |
+| 后勤 | 5 | 2/4/6 | 1 |
+| 再部署 | 3 | 2/3 | 0 |
+| 飞行 | 1 | 1 | 0 |
+| 术式 | 5 | 2/4/6 | 1 |
+| 破阵 | 10 | 2/4/6 | 0 |
+| 灼燃 | 1 | 1 | 0 |
 | 凋亡 | 3 | 2/3/4 | 1 |
 | 圣枪 | 1 | 1 | 0 |
 | 耶拉之息 | 1 | 1 | 0 |
-| 岁 | 1 | 1/2/3 | 2 |
+| 岁 | 3 | 1/2/3 | 0 |
 | 王冠 | 1 | 1 | 0 |
 
 职责按正式角色配置读取：魔王与普通吟游者海蒂为支援；职责分类不从职业名推导盟约。二费前线仅泡泡，三至四费治疗按两档合计；原生飞行成员仅蒂比，灼燃成员仅烛煌。
@@ -181,7 +181,7 @@
 - 星3：属性 `{"maxHp":4053,"atk":360,"def":478,"res":5,"cost":19,"blockCnt":3,"bat":1.2,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":0,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"TAKE_DAMAGE","rawRule":"TAKE_DAMAGE","customRangeGrid":null},"duration":27,"bb":{"max_hp":0.3,"def":0.1,"magic_resistance":0.6}}`；天赋覆盖 `[{"index":0,"bb":{"magic_resistance":7},"sourceId":"char_199_yak:talent:0"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：生命上限+30%，防御力+10%，法术抗性+60%
 ### 惊蛰
-- 本赛季可招募：否；charId：char_306_leizi；sourceChessId：chess_char_1_03_a；费用：2；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：是；charId：char_306_leizi；sourceChessId：chess_char_1_03_a；费用：2；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_leizi_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -205,7 +205,7 @@
 - 星3：属性 `{"maxHp":3140,"atk":466,"def":479,"res":0,"cost":22,"blockCnt":3,"bat":1.2,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":39,"initSp":21,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"TAKE_DAMAGE","customRangeGrid":null},"duration":15,"bb":{"atk":0.3,"mode":1,"attack@sluggish":1,"attack_speed":25,"attack@max_target":3}}`；天赋覆盖 `[{"index":0,"bb":{"duration":3,"interval":1,"damage":40,"damage_seamonster":80},"sourceId":"char_4137_udflow:talent:0"}]`；被动 沿用原生天赋，无额外三星被动 `{}`
 - 玩家技能说明：攻击距离加长，攻击力+30%，攻击速度+25，攻击变为向正前方发射的毒性鳍刺，能穿过3个目标且造成1秒停顿。
 ### 刺玫
-- 本赛季可招募：是；charId：char_494_vendla；sourceChessId：chess_char_1_06_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：否；charId：char_494_vendla；sourceChessId：chess_char_1_06_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_vendla_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -229,7 +229,7 @@
 - 星3：属性 `{"maxHp":2783,"atk":421,"def":148,"res":0,"cost":17,"blockCnt":1,"bat":1.6,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":0,"initSp":0,"spType":"ON_DEPLOY","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":0,"bb":{"hp_ratio_drop":0.2,"atk_scale_up":0.12}}`；天赋覆盖 `[{"index":0,"bb":{"prob":0.2,"prob2":0.5,"atk_scale":1.4},"sourceId":"char_145_prove:talent:0"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：目标敌人的生命每降低20%，对其造成伤害时的攻击力+12%
 ### 德克萨斯
-- 本赛季可招募：否；charId：char_102_texas；sourceChessId：chess_char_1_08_a；费用：2；位置：MELEE；职责：control；可部署高台：否
+- 本赛季可招募：是；charId：char_102_texas；sourceChessId：chess_char_1_08_a；费用：2；位置：MELEE；职责：control；可部署高台：否
 - 固定技能：skchr_texas_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -241,7 +241,7 @@
 - 星3：属性 `{"maxHp":3033,"atk":493,"def":260,"res":0,"cost":13,"blockCnt":2,"bat":1.05,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":23,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"SKILL_RANGE","rawRule":"DEFAULT","customRangeGrid":[[2,0],[1,-1],[1,0],[1,1],[0,-2],[0,-1],[0,0],[0,1],[0,2],[-1,-1],[-1,0],[-1,1],[-2,0]]},"duration":0,"bb":{"cost":10,"atk_scale":1.8,"stun":2}}`；天赋覆盖 `[{"index":0,"bb":{"cost":1},"sourceId":"char_102_texas:talent:0"}]`；被动 本场首次产生部署费用时额外获得5点。 `{"firstDp":5,"perBattle":1}`
 - 玩家技能说明：立即获得10点费用；对周围所有敌人造成两次相当于攻击力180%的法术伤害，并令击中目标晕眩2秒
 ### 跃跃
-- 本赛季可招募：否；charId：char_4100_caper；sourceChessId：chess_char_1_09_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：是；charId：char_4100_caper；sourceChessId：chess_char_1_09_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_caper_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -280,7 +280,7 @@
 - 星3：属性 `{"maxHp":4134,"atk":342,"def":252,"res":0,"cost":20,"blockCnt":2,"bat":1.2,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":16,"initSp":10,"spType":"INCREASE_WHEN_TAKEN_DAMAGE","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":15,"bb":{"atk":1,"block_cnt":0}}`；天赋覆盖 `[{"index":0,"bb":{"hp_ratio":0.07},"sourceId":"char_127_estell:talent:0"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击力+100%，不再成为其他角色的治疗目标
 ### 波登可
-- 本赛季可招募：是；charId：char_258_podego；sourceChessId：chess_char_1_13_a；费用：1；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_258_podego；sourceChessId：chess_char_1_13_a；费用：1；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_podego_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -295,7 +295,7 @@
 - 玩家技能说明：立即投掷一个小瓶，碎裂后在周围产生一个持续5秒的孢子群
 孢子群范围内所有敌人被停顿且失去特殊能力，每秒受到相当于攻击力75%的法术伤害
 ### 格雷伊
-- 本赛季可招募：否；charId：char_253_greyy；sourceChessId：chess_char_1_14_a；费用：1；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：是；charId：char_253_greyy；sourceChessId：chess_char_1_14_a；费用：1；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_greyy_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -307,7 +307,7 @@
 - 星3：属性 `{"maxHp":2453,"atk":369,"def":106,"res":15,"cost":32,"blockCnt":1,"bat":2.9,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":0,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":23,"bb":{"attack_speed":50,"talent_scale":1.6}}`；天赋覆盖 `[{"index":0,"bb":{"sluggish":0.4},"sourceId":"char_253_greyy:talent:0"}]`；被动 沿用原生天赋，无额外三星被动 `{}`
 - 玩家技能说明：攻击速度+50，天赋停顿的持续时间提升至2倍
 ### 深靛
-- 本赛季可招募：否；charId：char_469_indigo；sourceChessId：chess_char_1_17_a；费用：1；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：是；charId：char_469_indigo；sourceChessId：chess_char_1_17_a；费用：1；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_indigo_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["indigo_s_2[damage].atk_scale"]；未应用倍率的候选键 ["indigo_s_2[damage].interval"]；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -409,7 +409,7 @@
 - 星3：属性 `{"maxHp":4089,"atk":468,"def":78,"res":10,"cost":17,"blockCnt":1,"bat":2.85,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":37,"initSp":13,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":25,"bb":{"attack_speed":55,"trait_scale":1.6}}`；天赋覆盖 `[{"index":0,"bb":{"ep_damage_resistance":0.12},"sourceId":"char_4114_harold:talent:0"}]`；被动 有效治疗的15%转为目标屏障，同一目标冷却2秒。 `{"healShield":15,"targetCooldown":2}`
 - 玩家技能说明：攻击速度+55，优先治疗元素损伤最严重的目标。治疗元素损伤累计超过一半的目标时，元素损伤回复量提升至160%
 ### 莎草
-- 本赛季可招募：否；charId：char_4139_papyrs；sourceChessId：chess_char_2_06_a；费用：2；位置：RANGED；职责：healer；可部署高台：是
+- 本赛季可招募：是；charId：char_4139_papyrs；sourceChessId：chess_char_2_06_a；费用：2；位置：RANGED；职责：healer；可部署高台：是
 - 固定技能：skchr_papyrs_1（技能索引 0；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["heal_scale","shield_scale_skill"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -439,7 +439,7 @@
 - 玩家技能说明：技能持续期间内干员的生命值始终不会低于1，攻击力+70%
 技能结束后干员晕眩10秒
 ### 泡泡
-- 本赛季可招募：是；charId：char_381_bubble；sourceChessId：chess_char_2_08_a；费用：2；位置：MELEE；职责：frontline；可部署高台：否
+- 本赛季可招募：否；charId：char_381_bubble；sourceChessId：chess_char_2_08_a；费用：2；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_bubble_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -481,7 +481,7 @@
 过载：特性浮游单元伤害上限提升至1.6倍，攻击力+40%，技能结束后晕眩过载持续时间的等长时间
 浮游单元锁敌后直至敌人被击杀或技能结束后返回干员身边
 ### 风丸
-- 本赛季可招募：否；charId：char_4016_kazema；sourceChessId：chess_char_2_11_a；费用：3；位置：MELEE；职责：summoner；可部署高台：否
+- 本赛季可招募：是；charId：char_4016_kazema；sourceChessId：chess_char_2_11_a；费用：3；位置：MELEE；职责：summoner；可部署高台：否
 - 固定技能：skchr_kazema_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[{"tokenId":"token_10022_kazema_shadow","sources":["skill"]}]
@@ -520,7 +520,7 @@
 - 玩家技能说明：立刻起飞，攻击范围扩大，攻击力+20%，攻击变为3连射
 受到攻击后触发，并闪避本次物理或法术伤害
 ### 调香师
-- 本赛季可招募：否；charId：char_181_flower；sourceChessId：chess_char_2_14_a；费用：1；位置：RANGED；职责：healer；可部署高台：是
+- 本赛季可招募：是；charId：char_181_flower；sourceChessId：chess_char_2_14_a；费用：1；位置：RANGED；职责：healer；可部署高台：是
 - 固定技能：skchr_flower_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -532,7 +532,7 @@
 - 星3：属性 `{"maxHp":2858,"atk":331,"def":120,"res":0,"cost":16,"blockCnt":1,"bat":2.85,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":20,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":30,"bb":{"atk":1.8,"attack_speed":-50}}`；天赋覆盖 `[{"index":0,"bb":{"atk_to_hp_recovery_ratio":0.03},"sourceId":"char_181_flower:talent:0"}]`；被动 有效治疗的15%转为目标屏障，同一目标冷却2秒。 `{"healShield":15,"targetCooldown":2}`
 - 玩家技能说明：攻击速度-50，攻击力+180%
 ### 拉普兰德
-- 本赛季可招募：否；charId：char_140_whitew；sourceChessId：chess_char_2_16_a；费用：4；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：是；charId：char_140_whitew；sourceChessId：chess_char_2_16_a；费用：4；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_whitew_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -547,7 +547,7 @@
 - 玩家技能说明：攻击力+75%，伤害类型变为法术，额外攻击一个目标，远程攻击不再降低攻击力
 技能自动开启
 ### 折桠
-- 本赛季可招募：否；charId：char_4207_branch；sourceChessId：chess_char_2_17_a；费用：3；位置：MELEE；职责：frontline；可部署高台：否
+- 本赛季可招募：是；charId：char_4207_branch；sourceChessId：chess_char_2_17_a；费用：3；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_branch_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -601,7 +601,7 @@
 - 玩家技能说明：攻击变为5连射，攻击间隔略微缩短
 技能会自动开启
 ### 断崖
-- 本赛季可招募：否；charId：char_294_ayer；sourceChessId：chess_char_3_02_a；费用：3；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：是；charId：char_294_ayer；sourceChessId：chess_char_3_02_a；费用：3；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_ayer_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@atk_scale","atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -613,7 +613,7 @@
 - 星3：属性 `{"maxHp":3849,"atk":590,"def":311,"res":10,"cost":19,"blockCnt":2,"bat":1.3,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":18,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":20,"bb":{"attack@atk_scale":1.6,"atk_scale":1.6}}`；天赋覆盖 `[{"index":0,"bb":{"attack_speed":8},"sourceId":"char_294_ayer:talent:0"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击范围扩大，伤害类型变为法术；每次攻击时，额外对周围8格友方单位阻挡的所有敌人造成相当于攻击力160%的法术伤害(均视为近战攻击）
 ### 诗怀雅
-- 本赛季可招募：否；charId：char_308_swire；sourceChessId：chess_char_3_03_a；费用：3；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：是；charId：char_308_swire；sourceChessId：chess_char_3_03_a；费用：3；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_swire_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -625,7 +625,7 @@
 - 星3：属性 `{"maxHp":3979,"atk":630,"def":346,"res":0,"cost":16,"blockCnt":2,"bat":1.05,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":10,"initSp":20,"spType":"INCREASE_WHEN_ATTACK","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":18,"bb":{"talent_scale":2.4,"atk":0.4}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.1},"sourceId":"char_308_swire:talent:0"}]`；被动 每第6次攻击额外恢复2技力。 `{"everyAttacks":6,"sp":2}`
 - 玩家技能说明：攻击力+40%，第一天赋效果提升至2.4倍
 ### 琳琅诗怀雅
-- 本赛季可招募：否；charId：char_1033_swire2；sourceChessId：chess_char_3_04_a；费用：2；位置：MELEE；职责：control；可部署高台：否
+- 本赛季可招募：是；charId：char_1033_swire2；sourceChessId：chess_char_3_04_a；费用：2；位置：MELEE；职责：control；可部署高台：否
 - 固定技能：skchr_swire2_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[{"tokenId":"token_10031_swire2_gdtrap","sources":["skill"]}]
@@ -664,7 +664,7 @@
 - 星3：属性 `{"maxHp":5855,"atk":495,"def":435,"res":10,"cost":25,"blockCnt":3,"bat":1.6,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":13,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"TAKE_DAMAGE","rawRule":"TAKE_DAMAGE","customRangeGrid":null},"duration":30,"bb":{"atk_scale":1.76,"ep_damage_ratio":0.4,"atk":0.7,"aoe_cd":2,"max_hp":0.4}}`；天赋覆盖 `[{"index":0,"bb":{"damage_resistance":0.1,"sp":2},"sourceId":"char_4148_philae:talent:0"}]`；被动 沿用原生天赋，无额外三星被动 `{}`
 - 玩家技能说明：停止攻击，生命上限+40%，受到攻击时对周围的地面敌人造成攻击力176%的法术伤害并附带40%攻击力的凋亡损伤（每2秒最多触发一次）；若技能期间受到元素损伤则攻击力+70%至技能结束
 ### 薄绿
-- 本赛季可招募：是；charId：char_388_mint；sourceChessId：chess_char_3_08_a；费用：3；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_388_mint；sourceChessId：chess_char_3_08_a；费用：3；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_mint_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@atk_scale","atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -700,7 +700,7 @@
 - 星3：属性 `{"maxHp":3178,"atk":504,"def":150,"res":0,"cost":30,"blockCnt":1,"bat":2.3,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":30,"initSp":0,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":20,"bb":{"pinecn_s_2[a].atk":0.25,"pinecn_s_2[b].atk":0.45,"pinecn_s_2[c].atk":0.65,"pinecn_s_2[d].atk":0.85}}`；天赋覆盖 `[{"index":0,"bb":{"sp_recovery_per_sec":0.45,"duration":60},"sourceId":"char_440_pinecn:talent:0"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击力+25%，攻击范围缩短；每使用过一次技能额外追加攻击力+20%的效果（最多+60%）
 ### 雪猎
-- 本赛季可招募：否；charId：char_4211_snhunt；sourceChessId：chess_char_3_11_a；费用：3；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：是；charId：char_4211_snhunt；sourceChessId：chess_char_3_11_a；费用：3；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_snhunt_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale_1","atk_scale_2"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -820,7 +820,7 @@
 - 玩家技能说明：浮游单元+1，释放浮游单元锁定敌人攻击，攻击力+29%，自身与浮游单元攻击有15%概率对敌人造成2.5秒寒冷。
 浮游单元锁敌后直至敌人被击杀或技能结束后返回干员身边
 ### 空弦
-- 本赛季可招募：是；charId：char_332_archet；sourceChessId：chess_char_3_21_a；费用：3；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：否；charId：char_332_archet；sourceChessId：chess_char_3_21_a；费用：3；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_archet_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -832,7 +832,7 @@
 - 星3：属性 `{"maxHp":4675,"atk":671,"def":146,"res":0,"cost":14,"blockCnt":1,"bat":1,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":10,"initSp":15,"spType":"INCREASE_WHEN_ATTACK","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":20,"bb":{"atk":0.1,"ability_range_forward_extend":1,"attack@max_target":2,"attack@times":3}}`；天赋覆盖 `[{"index":0,"bb":{"sp":1,"interval":2.5},"sourceId":"char_332_archet:talent:0"},{"index":1,"bb":{"sp":7},"sourceId":"char_332_archet:talent:1"}]`；被动 每第6次攻击额外恢复2技力。 `{"everyAttacks":6,"sp":2}`
 - 玩家技能说明：攻击力+10%，攻击距离+1，攻击变为3连击，每次可以攻击2个敌人
 ### 信仰搅拌机
-- 本赛季可招募：否；charId：char_4194_rmixer；sourceChessId：chess_char_4_01_a；费用：2；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：是；charId：char_4194_rmixer；sourceChessId：chess_char_4_01_a；费用：2；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_rmixer_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -883,7 +883,7 @@
 - 星3：属性 `{"maxHp":4322,"atk":646,"def":148,"res":0,"cost":15,"blockCnt":1,"bat":1,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":15,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":24,"bb":{"base_attack_time":-0.22,"attack@max_stack_count":40}}`；天赋覆盖 `[{"index":0,"bb":{"prob":0.2,"atk_scale":1.5,"stun":0.2},"sourceId":"char_1021_kroos2:talent:0"}]`；被动 每第6次攻击额外恢复2技力。 `{"everyAttacks":6,"sp":2}`
 - 玩家技能说明：攻击间隔少量缩短，攻击变为2连射，击中目标40次后技能剩余时间内攻击变为4连射
 ### 风笛
-- 本赛季可招募：否；charId：char_222_bpipe；sourceChessId：chess_char_4_07_a；费用：4；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：是；charId：char_222_bpipe；sourceChessId：chess_char_4_07_a；费用：4；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_bpipe_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -922,7 +922,7 @@
 - 星3：属性 `{"maxHp":3331,"atk":536,"def":103,"res":20,"cost":33,"blockCnt":1,"bat":2.9,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":20,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":23,"bb":{"atk":0.65,"attack@atk_scale_when_fly_finish":0.975,"attack@duration":15}}`；天赋覆盖 `[{"index":0,"bb":{"levitate_duration":2.5,"damage_scale":1.1},"sourceId":"char_446_aroma:talent:0"}]`；被动 沿用原生天赋，无额外三星被动 `{}`
 - 玩家技能说明：攻击力+65%，攻击范围内浮空状态的敌人结束浮空落地时，对其造成攻击力98%的法术伤害
 ### 凯瑟琳
-- 本赛季可招募：是；charId：char_4162_cathy；sourceChessId：chess_char_4_11_a；费用：1；位置：MELEE；职责：summoner；可部署高台：否
+- 本赛季可招募：否；charId：char_4162_cathy；sourceChessId：chess_char_4_11_a；费用：1；位置：MELEE；职责：summoner；可部署高台：否
 - 固定技能：skchr_cathy_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[{"tokenId":"token_10041_cathy_catsld","sources":["talent","display"]}]
@@ -946,7 +946,7 @@
 - 星3：属性 `{"maxHp":4270,"atk":632,"def":281,"res":0,"cost":16,"blockCnt":2,"bat":1.8,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":22,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":8,"bb":{"atk_scale":1.36,"attack@force":0,"force":0,"projectile_delay_time":9,"interval":1.5,"hit_duration":9,"move_speed":-0.5}}`；天赋覆盖 `[{"index":0,"bb":{"hp_recovery_per_sec_by_max_hp_ratio":0.025,"damage_resistance":0.25},"sourceId":"char_474_glady:talent:0"},{"index":1,"bb":{"value":3,"atk_scale":1.3},"sourceId":"char_474_glady:talent:1"}]`；被动 沿用原生天赋，无额外三星被动 `{}`
 - 玩家技能说明：对一个远处目标束缚并制造一个龙卷风使周围敌人移动速度-50%，每1.5秒造成136%攻击力的法术伤害并小力地拖拽至中心。技能结束时把目标地点周围的敌人小力地拖拽至面前
 ### 灵知
-- 本赛季可招募：是；charId：char_206_gnosis；sourceChessId：chess_char_4_13_a；费用：3；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_206_gnosis；sourceChessId：chess_char_4_13_a；费用：3；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_gnosis_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -973,7 +973,7 @@
 - 玩家技能说明：攻击范围扩大，立即对攻击范围内的所有敌人造成相当于攻击力272%的法术伤害且使其在6秒内法术抗性-8%
 可充能2次
 ### 缄默德克萨斯
-- 本赛季可招募：否；charId：char_1028_texas2；sourceChessId：chess_char_4_16_a；费用：4；位置：MELEE；职责：control；可部署高台：否
+- 本赛季可招募：是；charId：char_1028_texas2；sourceChessId：chess_char_4_16_a；费用：4；位置：MELEE；职责：control；可部署高台：否
 - 固定技能：skchr_texas2_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale","appear.atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1024,7 +1024,7 @@
 - 星3：属性 `{"maxHp":5346,"atk":819,"def":313,"res":0,"cost":14,"blockCnt":2,"bat":1.05,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":21,"initSp":2,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":8,"bb":{"atk":0.45,"cost":1,"prob":0.6,"base_attack_time":0.7,"block_cnt":1,"value":8}}`；天赋覆盖 `[{"index":0,"bb":{},"sourceId":"char_420_flamtl:talent:0"},{"index":1,"bb":{"prob":0.22},"sourceId":"char_420_flamtl:talent:1"}]`；被动 本场首次产生部署费用时额外获得5点。 `{"firstDp":5,"perBattle":1}`
 - 玩家技能说明：技能持续时间内逐渐获得8点部署费用，攻击间隔缩短，攻击力+45%，阻挡数+1，获得60%的物理和法术闪避
 ### 远牙
-- 本赛季可招募：是；charId：char_430_fartth；sourceChessId：chess_char_4_20_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：否；charId：char_430_fartth；sourceChessId：chess_char_4_20_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_fartth_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["damage_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1072,7 +1072,7 @@
 - 星3：属性 `{"maxHp":6969,"atk":572,"def":320,"res":0,"cost":24,"blockCnt":3,"bat":1.2,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":20,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":25,"bb":{"atk":0.85,"attack_speed":60,"damage_resistance":0.5,"final_duration":20,"interval":0.1,"priority":1000,"block_cnt":2}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.1,"def":0.1,"atk_add":0.04,"def_add":0.04},"sourceId":"char_1026_gvial2:talent:0"},{"index":1,"bb":{"heal_scale_1":1.2,"heal_scale_2":1.4,"hp_ratio":0.5},"sourceId":"char_1026_gvial2:talent:1"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击力+85%，攻击速度+60，阻挡数+2，技能期间暂时只受到50%的伤害，其余伤害延后至技能结束，变为持续20秒等量的生命流失效果
 ### 卡涅利安
-- 本赛季可招募：否；charId：char_426_billro；sourceChessId：chess_char_4_24_a；费用：4；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：是；charId：char_426_billro；sourceChessId：chess_char_4_24_a；费用：4；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_billro_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1213,7 +1213,7 @@
 - 玩家技能说明：攻击力+25%，攻击间隔缩短
 过载：攻击力改为+50%，逐渐流失生命（12秒后到达最大生命12%/秒）
 ### 铃兰
-- 本赛季可招募：是；charId：char_358_lisa；sourceChessId：chess_char_5_10_a；费用：4；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_358_lisa；sourceChessId：chess_char_5_10_a；费用：4；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_lisa_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@atk_to_hp_recovery_ratio"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1282,7 +1282,7 @@
 - 玩家技能说明：对前方6名敌人造成攻击力2080%的物理伤害，使其4秒内寒冷且隐匿失效；待部署区中距离“风雪之眼”最近的1名干员费用-11（优先选择右侧近卫/术师/狙击干员）；使“风雪之眼”左侧所有干员部署时以自身攻击力施放一次本技能的范围效果（最多叠加2次）
 可充能2次
 ### 引星棘刺
-- 本赛季可招募：否；charId：char_1039_thorn2；sourceChessId：chess_char_5_15_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：是；charId：char_1039_thorn2；sourceChessId：chess_char_5_15_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_thorn2_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["heal_scale","hp_recovery_per_sec","hp_recovery_per_sec_by_max_hp_ratio","atk_scale","hp_recovery_per_sec_ratio_chr"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1418,7 +1418,7 @@
 - 星3：属性 `{"maxHp":9117,"atk":837,"def":444,"res":10,"cost":26,"blockCnt":3,"bat":1.6,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":24,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"CUSTOM_RANGE","rawRule":"CUSTOM_RANGE_SEARCH_ENEMY","customRangeGrid":[[2,0],[2,1],[2,2],[1,0],[1,1],[1,2],[1,3],[0,0],[0,1],[0,2],[0,3],[-1,0],[-1,1],[-1,2],[-1,3],[-2,0],[-2,1],[-2,2]]},"duration":30,"bb":{"max_hp":0.5,"atk":0.5,"def":0.5,"ep_damage_ratio":0.48,"prob":0.1}}`；天赋覆盖 `[{"index":0,"bb":{"damage_resistance":0.25,"yu_t_1[enemy].atk_scale":0.4,"yu_t_1[enemy].ep_damage_ratio":0.12,"yu_t_1[enemy].interval":1},"sourceId":"char_2026_yu:talent:0"},{"index":1,"bb":{"cnt":4,"ep_heal_ratio":0.015,"hp_recovery_per_sec_by_max_hp_ratio":0.015,"interval":1},"sourceId":"char_2026_yu:talent:1"}]`；被动 每第6次攻击恢复2技力。 `{"everyAttacks":6,"sp":2}`
 - 玩家技能说明：生命上限+50%，攻击力+50%，防御力+50%，将第二天赋效果赋予全场所有干员；生成一面跨越整个战场的火墙，其他友方穿过火墙造成法术伤害时附带相当于余攻击力48%的灼燃损伤，敌方子弹穿过火墙时有10%几率被清除
 ### 浊心斯卡蒂
-- 本赛季可招募：是；charId：char_1012_skadi2；sourceChessId：chess_char_6_04_a；费用：4；位置：RANGED；职责：support；可部署高台：是
+- 本赛季可招募：否；charId：char_1012_skadi2；sourceChessId：chess_char_6_04_a；费用：4；位置：RANGED；职责：support；可部署高台：是
 - 固定技能：skchr_skadi2_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[{"tokenId":"token_10017_skadi2_dedant","sources":["talent","display"]}]
@@ -1466,7 +1466,7 @@
 - 星3：属性 `{"maxHp":5770,"atk":907,"def":348,"res":15,"cost":21,"blockCnt":1,"bat":1.25,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":24,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"CUSTOM_RANGE","rawRule":"CUSTOM_RANGE_SEARCH_ENEMY","customRangeGrid":[[1,-1],[1,0],[1,1],[0,-1],[0,0],[0,1],[-1,-1],[-1,0],[-1,1]]},"duration":25,"bb":{"base_attack_time":-0.25,"atk":1.45,"attack@max_target":2}}`；天赋覆盖 `[{"index":0,"bb":{"damage_resistance":0.2,"atk":0.05},"sourceId":"char_1019_siege2:talent:0"},{"index":1,"bb":{"not_combat":4},"sourceId":"char_1019_siege2:talent:1"}]`；被动 本场首次召唤的造物生命提高20%，攻击提高30%。 召出的剑每轮攻击追加600%攻击力真实伤害，最多存在4把。 `{"swordTrueDamage":600,"maxSwords":4}`
 - 玩家技能说明：立即在天赋一生效范围内可部署地面召唤“黄金盟誓”；技能期间可攻击被天赋一生效范围友方单位阻挡的敌人，攻击力+145%，攻击目标数+1，攻击间隔缩短，攻击时伤害类型变为真实
 ### 焰影苇草
-- 本赛季可招募：否；charId：char_1020_reed2；sourceChessId：chess_char_6_08_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：是；charId：char_1020_reed2；sourceChessId：chess_char_6_08_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_reed2_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["talent@damage_scale"]；未应用倍率的候选键 ["talent@s3_atk_scale"]；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1496,7 +1496,7 @@
 - 玩家技能说明：对一个未处于损伤爆发期间的敌人造成相当于攻击力1680%的法术伤害并附带680%攻击力的凋亡损伤
 可充能2次，技能未开启时无法普通攻击
 ### 缪尔赛思
-- 本赛季可招募：是；charId：char_249_mlyss；sourceChessId：chess_char_6_11_a；费用：5；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_249_mlyss；sourceChessId：chess_char_6_11_a；费用：5；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_mlyss_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[{"tokenId":"token_10030_mlyss_wtrman","sources":["talent","display"]}]
@@ -1550,7 +1550,7 @@
 - 玩家技能说明：攻击力+30%，攻击速度+20，优先治疗处于异常状态中的单位；只在治疗异常状态中的单位时会消耗子弹，使该次治疗量提升至攻击力的216%并解除目标所受的异常状态
 攻击装有4发子弹，打完后技能结束
 ### 仇白
-- 本赛季可招募：是；charId：char_4082_qiubai；sourceChessId：chess_char_6_15_a；费用：3；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：否；charId：char_4082_qiubai；sourceChessId：chess_char_6_15_a；费用：3；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_qiubai_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1562,7 +1562,7 @@
 - 星3：属性 `{"maxHp":3943,"atk":632,"def":333,"res":10,"cost":20,"blockCnt":2,"bat":1.3,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":24,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":30,"bb":{"atk":0.3,"attack_speed":10,"max_stack_cnt":5}}`；天赋覆盖 `[{"index":0,"bb":{"atk_scale":0.4},"sourceId":"char_4082_qiubai:talent:0"},{"index":1,"bb":{"prob":0.2,"duration":1.5},"sourceId":"char_4082_qiubai:talent:1"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击范围扩大，攻击力+30%，伤害类型变为法术，额外攻击2个目标，远程攻击不再降低伤害，每次攻击使自身攻击速度+10（最多叠加5次）
 ### 溯光星源
-- 本赛季可招募：是；charId：char_1047_halo2；sourceChessId：chess_char_6_16_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：否；charId：char_1047_halo2；sourceChessId：chess_char_6_16_a；费用：4；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_halo2_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1574,7 +1574,7 @@
 - 星3：属性 `{"maxHp":5430,"atk":792,"def":105,"res":25,"cost":18,"blockCnt":1,"bat":1.9,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":18,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":25,"bb":{"atk":0.35,"base_attack_time":-0.7,"attack@max_target":2,"attack@atk_share":0.15}}`；天赋覆盖 `[{"index":0,"bb":{"attack_speed":1,"max_stack_cnt":18},"sourceId":"char_1047_halo2:talent:0"},{"index":1,"bb":{"halo2_t_1[weak].damage_scale":1.1,"halo2_t_1[weak].interval":7,"halo2_t_1[weak].damage_scale_add":0.04,"halo2_t_1[weak].damage_scale_max":1.14},"sourceId":"char_1047_halo2:talent:1"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击范围扩大，攻击力+35%，攻击间隔缩短，持续锁定2个敌人进行攻击，被锁定的敌人会互相链接；每个被链接的敌人会把即将受到法术伤害的15%额外传导给其他链接目标
 ### 耀骑士临光
-- 本赛季可招募：是；charId：char_1014_nearl2；sourceChessId：chess_char_6_17_a；费用：5；位置：MELEE；职责：frontline；可部署高台：否
+- 本赛季可招募：否；charId：char_1014_nearl2；sourceChessId：chess_char_6_17_a；费用：5；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_nearl2_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[{"tokenId":"token_10019_nearl2_sword","sources":["skill","display"]}]
@@ -1610,7 +1610,7 @@
 - 星3：属性 `{"maxHp":4740,"atk":752,"def":274,"res":0,"cost":23,"blockCnt":2,"bat":1.3,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":35,"initSp":10,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"SKILL_RANGE","rawRule":"DEFAULT","customRangeGrid":[[2,0],[1,-1],[1,0],[1,1],[0,-2],[0,-1],[0,0],[0,1],[0,2],[-1,-1],[-1,0],[-1,1],[-2,0]]},"duration":0,"bb":{"prob":1,"max_target":5,"d_atk_scale":4.5,"d_hit_interval":0.3,"p_force":1,"p_hit_interval":1,"e_atk_scale_end":7.5,"e_force":2}}`；天赋覆盖 `[{"index":0,"bb":{"prob":0.1,"atk_scale":1.6,"not_combat":5},"sourceId":"char_4116_blkkgt:talent:0"},{"index":1,"bb":{"def_penetrate":0.25},"sourceId":"char_4116_blkkgt:talent:1"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：持续发动总计10次斩击，每次斩击对最多5名敌人造成相当于攻击力450%的物理伤害，天赋的发动概率提升至100%，并持续将敌人中等力度地拖拽至自身中心，之后将造成一次相当于攻击力750%的物理伤害并将敌人较大力地拖拽至自身中心
 ### 纯烬艾雅法拉
-- 本赛季可招募：是；charId：char_1016_agoat2；sourceChessId：chess_char_6_20_a；费用：4；位置：RANGED；职责：healer；可部署高台：是
+- 本赛季可招募：否；charId：char_1016_agoat2；sourceChessId：chess_char_6_20_a；费用：4；位置：RANGED；职责：healer；可部署高台：是
 - 固定技能：skchr_agoat2_3（技能索引 2；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@heal_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1634,7 +1634,7 @@
 - 星3：属性 `{"maxHp":2336,"atk":421,"def":281,"res":0,"cost":11,"blockCnt":1,"bat":1,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":32,"initSp":0,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":22,"bb":{"atk":1.2,"base_attack_time":0.5}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.5,"prob1":0.1,"prob2":0.3},"sourceId":"char_290_vigna:talent:0"}]`；被动 本场首次产生部署费用时额外获得5点。 `{"firstDp":5,"perBattle":1}`
 - 玩家技能说明：攻击间隔略微增大，攻击力+120%
 ### 地灵
-- 本赛季可招募：否；charId：char_183_skgoat；sourceChessId：chess_char_1_11_a；费用：2；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：是；charId：char_183_skgoat；sourceChessId：chess_char_1_11_a；费用：2；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skcom_atk_up[2]（技能索引 0；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1658,7 +1658,7 @@
 - 星3：属性 `{"maxHp":3522,"atk":585,"def":279,"res":0,"cost":13,"blockCnt":2,"bat":1.8,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":22,"initSp":10,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"SKILL_RANGE","rawRule":"DEFAULT","customRangeGrid":[[1,1],[1,2],[1,3],[0,0],[0,1],[0,2],[0,3],[-1,1],[-1,2],[-1,3]]},"duration":0,"bb":{"atk_scale":2.4,"stun":1.5,"max_target":2,"force":1}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.06,"def":0.06},"sourceId":"char_173_slchan:talent:0"}]`；被动 沿用原生天赋，无额外三星被动 `{}`
 - 玩家技能说明：立即将前方大范围内至多2个目标中等力度地拖拽至面前，对其造成相当于自己攻击力240%的真实的伤害，并使其晕眩1.5秒
 ### 协律
-- 本赛季可招募：否；charId：char_4051_akkord；sourceChessId：chess_char_2_15_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：是；charId：char_4051_akkord；sourceChessId：chess_char_2_15_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_akkord_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@aoe_atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1670,7 +1670,7 @@
 - 星3：属性 `{"maxHp":2683,"atk":389,"def":98,"res":15,"cost":32,"blockCnt":1,"bat":2.9,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":20,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":30,"bb":{"atk":0.35,"attack@aoe_atk_scale":0.225,"attack@range_radius":0.9}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.08},"sourceId":"char_4051_akkord:talent:0"}]`；被动 本场首次技能在范围内追加100%攻击力法术伤害。 `{"firstSkillDamage":100,"perBattle":1}`
 - 玩家技能说明：攻击力+35%，每次攻击在攻击范围内的其他干员处施加一次音爆，造成相当于23%攻击力的群体法术伤害
 ### 见行者
-- 本赛季可招募：是；charId：char_4036_forcer；sourceChessId：chess_char_3_07_a；费用：2；位置：MELEE；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_4036_forcer；sourceChessId：chess_char_3_07_a；费用：2；位置：MELEE；职责：control；可部署高台：是
 - 固定技能：skchr_forcer_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1697,7 +1697,7 @@
 - 玩家技能说明：获得一个诅咒娃娃（最多可库存1个）
 诅咒娃娃周围敌人的攻击力和防御力-25%，15秒后自动销毁
 ### 蜜蜡
-- 本赛季可招募：是；charId：char_344_beewax；sourceChessId：chess_char_4_05_a；费用：2；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_344_beewax；sourceChessId：chess_char_4_05_a；费用：2；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_beewax_2（技能索引 1；Kit 来源 kit）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[{"tokenId":"token_10011_beewax_oblisk","sources":["skill","display"]}]
@@ -1826,7 +1826,7 @@
 - 玩家技能说明：攻击力+40%，自身与机动盾牌防御力+40%，机动盾牌持续时间+20秒
 持续时间无限
 ### 格拉尼
-- 本赛季可招募：否；charId：char_220_grani；sourceChessId：chess_native_char_220_grani_a；费用：2；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：是；charId：char_220_grani；sourceChessId：chess_native_char_220_grani_a；费用：2；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_grani_2（技能索引 1；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1850,7 +1850,7 @@
 - 星3：属性 `{"maxHp":2952,"atk":482,"def":192,"res":0,"cost":12,"blockCnt":1,"bat":1,"aspd":100,"respawnTime":35,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":6,"initSp":0,"spType":"INCREASE_WHEN_ATTACK","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":0,"bb":{"atk_scale":3,"cost":3}}`；天赋覆盖 `[{"index":0,"bb":{"hp_ratio":1,"atk_scale":1.1,"sp":1},"sourceId":"char_4017_puzzle:talent:0"}]`；被动 本场首次再部署等待时间减半。 `{"firstRedeployTimeMultiplier":0.5,"perBattle":1}`
 - 玩家技能说明：下次攻击造成相当于攻击力300%的物理伤害，并获得3点部署费用
 ### 因陀罗
-- 本赛季可招募：是；charId：char_155_tiger；sourceChessId：chess_native_char_155_tiger_a；费用：2；位置：MELEE；职责：damage；可部署高台：否
+- 本赛季可招募：否；charId：char_155_tiger；sourceChessId：chess_native_char_155_tiger_a；费用：2；位置：MELEE；职责：damage；可部署高台：否
 - 固定技能：skchr_tiger_1（技能索引 0；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1874,7 +1874,7 @@
 - 星3：属性 `{"maxHp":3117,"atk":500,"def":202,"res":0,"cost":9,"blockCnt":1,"bat":1.3,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":24,"initSp":7,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"SP_FULL","rawRule":"ALWAYS","customRangeGrid":null},"duration":10,"bb":{"atk":0.7,"block_cnt":-3,"attack@atk_to_hp_recovery_ratio":0.1}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.02,"def":0.02},"sourceId":"char_4045_heidi:talent:0"}]`；被动 有效治疗的15%转为目标屏障，同一目标冷却2秒。 `{"healShield":15,"targetCooldown":2}`
 - 玩家技能说明：攻击范围内所有友方单位阻挡数-3，获得相当于海蒂70%攻击力的鼓舞效果
 ### 摩根
-- 本赛季可招募：是；charId：char_154_morgan；sourceChessId：chess_native_char_154_morgan_a；费用：3；位置：MELEE；职责：frontline；可部署高台：否
+- 本赛季可招募：否；charId：char_154_morgan；sourceChessId：chess_native_char_154_morgan_a；费用：3；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_morgan_1（技能索引 0；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -1931,7 +1931,7 @@
 - 星3：属性 `{"maxHp":2501,"atk":308,"def":92,"res":10,"cost":19,"blockCnt":1,"bat":2.85,"aspd":100,"respawnTime":80,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":27,"initSp":10,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":0,"bb":{"heal_scale":3.45}}`；天赋覆盖 `[{"index":0,"bb":{"status_resistance[limit]":2,"one_minus_status_resistance":-0.5},"sourceId":"char_385_finlpp:talent:0"}]`；被动 有效治疗的15%转为目标屏障，同一目标冷却2秒。 `{"healShield":15,"targetCooldown":2}`
 - 玩家技能说明：立即恢复攻击范围内所有友方单位相当于攻击力345%的生命
 ### 九色鹿
-- 本赛季可招募：是；charId：char_4019_ncdeer；sourceChessId：chess_native_char_4019_ncdeer_a；费用：1；位置：RANGED；职责：support；可部署高台：是
+- 本赛季可招募：否；charId：char_4019_ncdeer；sourceChessId：chess_native_char_4019_ncdeer_a；费用：1；位置：RANGED；职责：support；可部署高台：是
 - 固定技能：skchr_ncdeer_1（技能索引 0；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1943,7 +1943,7 @@
 - 星3：属性 `{"maxHp":2738,"atk":414,"def":149,"res":20,"cost":11,"blockCnt":1,"bat":1.6,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":35,"initSp":10,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":20,"bb":{"atk":0.25}}`；天赋覆盖 `[{"index":0,"bb":{"hp_ratio":0.4,"damage_resistance":0.14},"sourceId":"char_4019_ncdeer:talent:0"}]`；被动 有效治疗的15%转为目标屏障，同一目标冷却2秒。 `{"healShield":15,"targetCooldown":2}`
 - 玩家技能说明：攻击力+25%
 ### 风絮
-- 本赛季可招募：是；charId：char_4222_taraxa；sourceChessId：chess_native_char_4222_taraxa_a；费用：2；位置：RANGED；职责：healer；可部署高台：是
+- 本赛季可招募：否；charId：char_4222_taraxa；sourceChessId：chess_native_char_4222_taraxa_a；费用：2；位置：RANGED；职责：healer；可部署高台：是
 - 固定技能：skchr_taraxa_1（技能索引 0；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["attack@heal_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -1970,7 +1970,7 @@
 - 玩家技能说明：停止攻击，逐渐回复总共20点部署费用
 技能期间，每秒治疗周围友方干员相当于万顷19%攻击力的生命值，周围部署方向与万顷相同的干员攻击速度+15
 ### 令
-- 本赛季可招募：否；charId：char_2023_ling；sourceChessId：chess_native_char_2023_ling_a；费用：5；位置：RANGED；职责：summoner；可部署高台：是
+- 本赛季可招募：是；charId：char_2023_ling；sourceChessId：chess_native_char_2023_ling_a；费用：5；位置：RANGED；职责：summoner；可部署高台：是
 - 固定技能：skchr_ling_3（技能索引 2；Kit 来源 generic）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[{"tokenId":"token_10020_ling_soul1","sources":["display","skill"]},{"tokenId":"token_10020_ling_soul2","sources":["display","skill"]},{"tokenId":"token_10020_ling_soul3","sources":["display","skill"]}]
@@ -1988,7 +1988,7 @@
 开启：自身与召唤物攻击力+55%，防御力+50%，召唤物每0.5秒对周围四格敌人造成160%令攻击力的法术伤害
 技能结束时获得1个召唤物
 ### 黍
-- 本赛季可招募：否；charId：char_2025_shu；sourceChessId：chess_native_char_2025_shu_a；费用：5；位置：MELEE；职责：frontline；可部署高台：否
+- 本赛季可招募：是；charId：char_2025_shu；sourceChessId：chess_native_char_2025_shu_a；费用：5；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_shu_3（技能索引 2；Kit 来源 generic）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -2027,7 +2027,7 @@
 - 星3：属性 `{"maxHp":2190,"atk":331,"def":41,"res":0,"cost":3,"blockCnt":1,"bat":1,"aspd":100,"respawnTime":200,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":0,"initSp":0,"spType":"NOT_RECOVER","trigger":{"rule":"NEVER"},"duration":0,"bb":{}}`；天赋覆盖 `[{"index":0,"bb":{"duration":10,"damage_scale":1.1,"jnight_t.taunt_level":-1},"sourceId":"char_4000_jnight:talent:0"}]`；被动 每3秒为2格内生命最低的友方恢复自身攻击力220%，并使其攻速提高20持续3秒；不获得技力。 `{"interval":3,"healFromAtk":220,"aspd":20,"range":2,"aspdDuration":3,"spGeneration":0,"target":"lowestHpAlly"}`
 - 玩家技能说明：每3秒为2格内生命最低的友方恢复自身攻击力220%，并使其攻速提高20持续3秒；不获得技力。
 ### 但书
-- 本赛季可招募：是；charId：char_4032_provs；sourceChessId：chess_native_char_4032_provs_a；费用：2；位置：RANGED；职责：control；可部署高台：是
+- 本赛季可招募：否；charId：char_4032_provs；sourceChessId：chess_native_char_4032_provs_a；费用：2；位置：RANGED；职责：control；可部署高台：是
 - 固定技能：skchr_provs_1（技能索引 0；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -2069,7 +2069,7 @@
 - 玩家技能说明：攻击速度略微降低，但攻击力+60%，攻击范围扩大
 持续时间无限
 ### 红云
-- 本赛季可招募：是；charId：char_190_clour；sourceChessId：chess_native_char_190_clour_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：否；charId：char_190_clour；sourceChessId：chess_native_char_190_clour_a；费用：1；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_clour_2（技能索引 1；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -2081,7 +2081,7 @@
 - 星3：属性 `{"maxHp":2411,"atk":414,"def":133,"res":0,"cost":12,"blockCnt":1,"bat":1,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":27,"initSp":3,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":16,"bb":{"atk":0.2,"attack@max_target":2}}`；天赋覆盖 `[{"index":0,"bb":{"sp_recovery_per_sec":0.15},"sourceId":"char_190_clour:talent:0"}]`；被动 每第6次攻击额外恢复2技力。 `{"everyAttacks":6,"sp":2}`
 - 玩家技能说明：攻击力+20%，每次攻击额外攻击1个目标
 ### 奥斯塔
-- 本赛季可招募：是；charId：char_346_aosta；sourceChessId：chess_native_char_346_aosta_a；费用：2；位置：RANGED；职责：damage；可部署高台：是
+- 本赛季可招募：否；charId：char_346_aosta；sourceChessId：chess_native_char_346_aosta_a；费用：2；位置：RANGED；职责：damage；可部署高台：是
 - 固定技能：skchr_aosta_2（技能索引 1；Kit 来源 generic）
 - 技能倍率审计：直伤/治疗/护盾倍率键 []；未应用倍率的候选键 []；技能文案支持直接伤害判断 否。
 - 当前技能可见造物来源：[]
@@ -2132,7 +2132,7 @@
 - 星3：属性 `{"maxHp":6483,"atk":662,"def":283,"res":0,"cost":21,"blockCnt":2,"bat":1.2,"aspd":100,"respawnTime":70,"spRecovery":1,"hpRecoveryPerSec":0,"moveSpeed":1,"tauntLevel":0,"massLevel":0,"deployLimit":1,"deckStack":0}`；固定技能参数 `{"spCost":40,"initSp":5,"spType":"INCREASE_WITH_TIME","trigger":{"rule":"DEFAULT","rawRule":"DEFAULT","customRangeGrid":null},"duration":26,"bb":{"atk":0.35}}`；天赋覆盖 `[{"index":0,"bb":{"atk":0.06,"def":0.06,"cnt":2},"sourceId":"char_356_broca:talent:0"}]`；被动 对生命低于35%的敌人造成的物理与法术伤害提高20%。 `{"hpBelow":35,"damage":20}`
 - 玩家技能说明：攻击力+35%，普通攻击造成法术伤害
 ### 斥罪
-- 本赛季可招募：是；charId：char_4065_judge；sourceChessId：chess_native_char_4065_judge_a；费用：4；位置：MELEE；职责：frontline；可部署高台：否
+- 本赛季可招募：否；charId：char_4065_judge；sourceChessId：chess_native_char_4065_judge_a；费用：4；位置：MELEE；职责：frontline；可部署高台：否
 - 固定技能：skchr_judge_1（技能索引 0；Kit 来源 skills）
 - 技能倍率审计：直伤/治疗/护盾倍率键 ["atk_scale_2","judge_s_1_enhance_checker.atk_scale"]；未应用倍率的候选键 []；技能文案支持直接伤害判断 是。
 - 当前技能可见造物来源：[]
@@ -2176,137 +2176,123 @@
 
 ## 当前盟约效果
 ### 阿戈尔 (aegir)
-- 2 人：生命上限+25% 每秒恢复最大生命1%；生命上限转攻击2%；受敌人有效攻击后，对1.5格内地面和空中敌人造成最大生命2.5%法术伤害，个人冷却2秒。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":25}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":1,"atkFromHp":2,"retaliation":2.5,"block":0,"cd":2}}]`
-- 4 人：生命上限+45% 每秒恢复最大生命1.5%；生命上限转攻击3%；受敌人有效攻击后，对1.5格内地面和空中敌人造成最大生命4%法术伤害，个人冷却1.5秒。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":45}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":1.5,"atkFromHp":3,"retaliation":4,"block":0,"cd":1.5}}]`
-- 6 人：生命上限+70% 每秒恢复最大生命2%；生命上限转攻击4%；受敌人有效攻击后，对1.5格内地面和空中敌人造成最大生命6%法术伤害，个人冷却1秒，阻挡数+1。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":70}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":2,"atkFromHp":4,"retaliation":6,"block":1,"cd":1}}]`
-- 8 人：生命上限+110% 每秒恢复最大生命3%；生命上限转攻击6%；受敌人有效攻击后，对1.5格内地面和空中敌人造成最大生命10%法术伤害，个人冷却0.8秒，阻挡数+1。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":110}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":3,"atkFromHp":6,"retaliation":10,"block":1,"cd":0.8}}]`
+- 2 人：成员最大生命提高25%。成员每秒恢复1%最大生命，攻击力增加最大生命的2%。受敌方攻击时对1.5格内敌人反击，造成自身最大生命2.5%法术伤害；个人冷却2秒，不递归。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":25}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":1,"atkFromHp":2,"retaliation":2.5,"block":0,"cd":2}}]`
+- 4 人：成员最大生命提高45%。成员每秒恢复1.5%最大生命，攻击力增加最大生命的3%。受敌方攻击时对1.5格内敌人反击，造成自身最大生命4%法术伤害；个人冷却1.5秒，不递归。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":45}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":1.5,"atkFromHp":3,"retaliation":4,"block":0,"cd":1.5}}]`
+- 6 人：成员最大生命提高70%。成员每秒恢复2%最大生命，攻击力增加最大生命的4%。阻挡数+1。受敌方攻击时对1.5格内敌人反击，造成自身最大生命6%法术伤害；个人冷却1秒，不递归。 效果：`[{"kind":"stat","params":{"stat":"maxHp","mode":"percent","value":70}},{"kind":"aegir_cycle","params":{"retaliationRadius":1.5,"damageType":"arts","regen":2,"atkFromHp":4,"retaliation":6,"block":1,"cd":1}}]`
 ### 拉特兰 (laterano)
-- 2 人：攻速+10 技能获得2枚弹药。每消耗6枚弹药，全体成员下一击追加自身攻击力20%物理伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":10}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":2,"ammoSpend":6,"bonus":20}}]`
-- 4 人：攻速+20 技能获得4枚弹药。每消耗5枚弹药，全体成员下一击追加自身攻击力35%物理伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":20}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":4,"ammoSpend":5,"bonus":35}}]`
-- 6 人：攻速+35 技能获得6枚弹药。每消耗4枚弹药，全体成员下一击追加自身攻击力55%物理伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":35}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":6,"ammoSpend":4,"bonus":55}}]`
-- 8 人：攻速+55 技能获得10枚弹药。每消耗3枚弹药，全体成员下一击追加自身攻击力90%物理伤害。8人时无人机每2秒发射3发、每发造成最高成员攻击力180%的对空伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":55}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":10,"ammoSpend":3,"bonus":90}}]`
+- 2 人：成员攻速提高10。成员弹药技能增加2枚载弹；全队累计每消耗6枚弹药，为成员下次攻击追加20%攻击力物理伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":10}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":2,"ammoSpend":6,"bonus":20}}]`
+- 4 人：成员攻速提高20。成员弹药技能增加4枚载弹；全队累计每消耗5枚弹药，为成员下次攻击追加35%攻击力物理伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":20}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":4,"ammoSpend":5,"bonus":35}}]`
+- 6 人：成员攻速提高35。成员弹药技能增加6枚载弹；全队累计每消耗4枚弹药，为成员下次攻击追加55%攻击力物理伤害。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":35}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":6,"ammoSpend":4,"bonus":55}}]`
+- 8 人：成员攻速提高55。成员弹药技能增加10枚载弹；全队累计每消耗3枚弹药，为成员下次攻击追加90%攻击力物理伤害。无人机每2秒对附近敌人连射3次，每次造成最高成员攻击力180%物理伤害，可对空。 效果：`[{"kind":"stat","params":{"stat":"aspd","mode":"add","value":55}},{"kind":"laterano_ammo","params":{"droneAt":8,"droneInterval":2,"droneShots":3,"droneDamage":180,"antiAir":true,"skillAmmo":10,"ammoSpend":3,"bonus":90}}]`
 ### 谢拉格 (kjerag)
-- 2 人：谢拉格成员分别累计普攻，达到5次后为该次攻击目标标记6秒；标记有效期间，任何友方干员随后首次普攻该目标时追加自身攻击力80%物理伤害，同一时间仅标记一个目标且不切换或刷新。 效果：`[{"kind":"kjerag_coordination","params":{"markDuration":6,"markCooldown":6,"crossfireAt":7,"crossfireResponders":3,"crossfireDamage":100,"attackEvery":5,"responseDamage":80}}]`
-- 4 人：谢拉格成员分别累计普攻，达到4次后为该次攻击目标标记6秒；标记有效期间，任何友方干员随后首次普攻该目标时追加自身攻击力140%物理伤害，同一时间仅标记一个目标且不切换或刷新。 效果：`[{"kind":"kjerag_coordination","params":{"markDuration":6,"markCooldown":6,"crossfireAt":7,"crossfireResponders":3,"crossfireDamage":100,"attackEvery":4,"responseDamage":140}}]`
-- 7 人：谢拉格成员分别累计普攻，达到3次后为该次攻击目标标记6秒；标记有效期间，任何友方干员随后首次普攻该目标时追加自身攻击力220%物理伤害，同一时间仅标记一个目标且不切换或刷新。标记期间第三名不同友方响应时，存活在场的谢拉格成员各向该目标援射一次，造成自身攻击力100%物理伤害。 效果：`[{"kind":"kjerag_coordination","params":{"markDuration":6,"markCooldown":6,"crossfireAt":7,"crossfireResponders":3,"crossfireDamage":100,"attackEvery":3,"responseDamage":220}}]`
+- 2 人：成员每5次普通攻击标记目标6秒，标记冷却6秒。其他不同友方干员攻击标记者时，各追加本人80%攻击力物理伤害一次。 效果：`[{"kind":"kjerag_coordination","params":{"markDuration":6,"markCooldown":6,"crossfireAt":6,"crossfireResponders":3,"crossfireDamage":100,"attackEvery":5,"responseDamage":80}}]`
+- 4 人：成员每4次普通攻击标记目标6秒，标记冷却6秒。其他不同友方干员攻击标记者时，各追加本人140%攻击力物理伤害一次。 效果：`[{"kind":"kjerag_coordination","params":{"markDuration":6,"markCooldown":6,"crossfireAt":6,"crossfireResponders":3,"crossfireDamage":100,"attackEvery":4,"responseDamage":140}}]`
+- 6 人：成员每3次普通攻击标记目标6秒，标记冷却6秒。其他不同友方干员攻击标记者时，各追加本人220%攻击力物理伤害一次。3名不同友军响应后，全体存活已部署成员各追加100%攻击力物理伤害一次。 效果：`[{"kind":"kjerag_coordination","params":{"markDuration":6,"markCooldown":6,"crossfireAt":6,"crossfireResponders":3,"crossfireDamage":100,"attackEvery":3,"responseDamage":220}}]`
 ### 炎国 (yan)
-- 3 人：成员施法使其他成员恢复1技力，个人冷却2秒；每5次全队施法，各成员分别对最近目标造成100%攻击力法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":10,"formationInterval":2,"formationDamage":200,"teamSp":1,"comboEvery":5,"comboDamage":100}}]`
-- 5 人：成员施法使其他成员恢复2技力，个人冷却2秒；每4次全队施法，各成员分别对最近目标造成160%攻击力法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":10,"formationInterval":2,"formationDamage":200,"teamSp":2,"comboEvery":4,"comboDamage":160}}]`
-- 7 人：成员施法使其他成员恢复3技力，个人冷却2秒；每3次全队施法，各成员分别对最近目标造成240%攻击力法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":10,"formationInterval":2,"formationDamage":200,"teamSp":3,"comboEvery":3,"comboDamage":240}}]`
-- 10 人：成员施法使其他成员恢复5技力，个人冷却2秒；每2次全队施法，各成员分别对最近目标造成400%攻击力法术伤害。10人时召唤阵每2秒对路格造成最高攻击力200%法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":10,"formationInterval":2,"formationDamage":200,"teamSp":5,"comboEvery":2,"comboDamage":400}}]`
+- 3 人：成员施法为其他成员恢复1技力，施法者冷却2秒；累计每5次触发，全体成员各对最近敌人造成100%攻击力法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":9,"formationInterval":2,"formationDamage":200,"teamSp":1,"comboEvery":5,"comboDamage":100}}]`
+- 5 人：成员施法为其他成员恢复2技力，施法者冷却2秒；累计每4次触发，全体成员各对最近敌人造成160%攻击力法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":9,"formationInterval":2,"formationDamage":200,"teamSp":2,"comboEvery":4,"comboDamage":160}}]`
+- 7 人：成员施法为其他成员恢复3技力，施法者冷却2秒；累计每3次触发，全体成员各对最近敌人造成240%攻击力法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":9,"formationInterval":2,"formationDamage":200,"teamSp":3,"comboEvery":3,"comboDamage":240}}]`
+- 9 人：成员施法为其他成员恢复5技力，施法者冷却2秒；累计每2次触发，全体成员各对最近敌人造成400%攻击力法术伤害。阵势每2秒对最近敌人造成首名成员攻击力200%法术伤害。 效果：`[{"kind":"yan_combo","params":{"receiverCooldown":2,"formationAt":9,"formationInterval":2,"formationDamage":200,"teamSp":5,"comboEvery":2,"comboDamage":400}}]`
 ### 维多利亚 (victoria)
-- 2 人：攻击力+15% 每累计20次攻击，由最高攻击者对同一目标及1.5格范围造成180%攻击力物理伤害。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":15}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"firewallAt":9,"firewallDps":80,"firewallDuration":4,"shots":20,"damage":180}}]`
-- 4 人：攻击力+25% 每累计16次攻击，由最高攻击者对同一目标及1.5格范围造成250%攻击力物理伤害。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":25}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"firewallAt":9,"firewallDps":80,"firewallDuration":4,"shots":16,"damage":250}}]`
-- 6 人：攻击力+40% 每累计12次攻击，由最高攻击者对同一目标及1.5格范围造成350%攻击力物理伤害。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":40}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"firewallAt":9,"firewallDps":80,"firewallDuration":4,"shots":12,"damage":350}}]`
-- 9 人：攻击力+65% 每累计8次攻击，由最高攻击者对同一目标及1.5格范围造成600%攻击力物理伤害。9人时留下4秒火墙，每秒造成80%攻击力伤害。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":65}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"firewallAt":9,"firewallDps":80,"firewallDuration":4,"shots":8,"damage":600}}]`
+- 2 人：成员攻击力提高15%。成员全队累计每20次攻击，对目标1.5格内敌人炮击，造成最高成员攻击力180%物理伤害，可对空。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":15}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"shots":20,"damage":180}}]`
+- 4 人：成员攻击力提高25%。成员全队累计每16次攻击，对目标1.5格内敌人炮击，造成最高成员攻击力250%物理伤害，可对空。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":25}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"shots":16,"damage":250}}]`
+- 6 人：成员攻击力提高40%。成员全队累计每12次攻击，对目标1.5格内敌人炮击，造成最高成员攻击力350%物理伤害，可对空。 效果：`[{"kind":"stat","params":{"stat":"atk","mode":"percent","value":40}},{"kind":"victoria_artillery","params":{"radius":1.5,"antiAir":true,"shots":12,"damage":350}}]`
 ### 哥伦比亚 (columbia)
-- 2 人：造物生命+20%、攻击+15%；无造物时每12秒召唤持续8秒、攻击为主人的35%的无人机，最多2只。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":10,"hp":20,"atk":15,"interval":12,"constructAtk":35}}]`
-- 4 人：造物生命+35%、攻击+30%；无造物时每10秒召唤持续8秒、攻击为主人的45%的无人机，最多2只。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":10,"hp":35,"atk":30,"interval":10,"constructAtk":45}}]`
-- 6 人：造物生命+55%、攻击+50%；无造物时每8秒召唤持续8秒、攻击为主人的60%的无人机，最多2只。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":10,"hp":55,"atk":50,"interval":8,"constructAtk":60}}]`
-- 10 人：造物生命+100%、攻击+100%；无造物时每6秒召唤持续8秒、攻击为主人的90%的无人机，最多2只。10人时首次阵亡造物可重构一次。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":10,"hp":100,"atk":100,"interval":6,"constructAtk":90}}]`
+- 2 人：成员的召唤物最大生命提高20%、攻击力提高15%。每名成员每12秒生成机械造物，基础生命为本人最大生命20%、基础攻击为本人35%，持续8秒，每名成员最多2个；每秒攻击最近敌人。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":6,"hp":20,"atk":15,"interval":12,"constructAtk":35,"rebuildEnabled":false}}]`
+- 4 人：成员的召唤物最大生命提高35%、攻击力提高30%。每名成员每10秒生成机械造物，基础生命为本人最大生命35%、基础攻击为本人45%，持续8秒，每名成员最多2个；每秒攻击最近敌人。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":6,"hp":35,"atk":30,"interval":10,"constructAtk":45,"rebuildEnabled":false}}]`
+- 6 人：成员的召唤物最大生命提高55%、攻击力提高50%。每名成员每8秒生成机械造物，基础生命为本人最大生命55%、基础攻击为本人60%，持续8秒，每名成员最多2个；每秒攻击最近敌人。每名成员首个死亡机械造物可在空位重构一次。 效果：`[{"kind":"columbia_construct","params":{"constructDuration":8,"maxConstructs":2,"rebuildAt":6,"hp":55,"atk":50,"interval":8,"constructAtk":60,"rebuildEnabled":true}}]`
 ### 卡西米尔 (kazimierz)
-- 2 人：攻击穿透防御15%；每3次攻击追加25%攻击力真实伤害。 效果：`[{"kind":"kazimierz_true_damage","params":{"solarAt":9,"solarDuration":2,"solarDps":100,"solarRadius":1.5,"solarCooldown":4,"pierce":15,"attackEvery":3,"trueDamage":25}}]`
-- 4 人：攻击穿透防御25%；每3次攻击追加45%攻击力真实伤害。 效果：`[{"kind":"kazimierz_true_damage","params":{"solarAt":9,"solarDuration":2,"solarDps":100,"solarRadius":1.5,"solarCooldown":4,"pierce":25,"attackEvery":3,"trueDamage":45}}]`
-- 6 人：攻击穿透防御40%；每3次攻击追加75%攻击力真实伤害。 效果：`[{"kind":"kazimierz_true_damage","params":{"solarAt":9,"solarDuration":2,"solarDps":100,"solarRadius":1.5,"solarCooldown":4,"pierce":40,"attackEvery":3,"trueDamage":75}}]`
-- 9 人：攻击穿透防御65%；每3次攻击追加140%攻击力真实伤害。9人时每次施法在目标处召唤2秒耀阳，每秒造成100%攻击力真实伤害，个人冷却4秒。 效果：`[{"kind":"kazimierz_true_damage","params":{"solarAt":9,"solarDuration":2,"solarDps":100,"solarRadius":1.5,"solarCooldown":4,"pierce":65,"attackEvery":3,"trueDamage":140}}]`
+- 2 人：成员无视15%防御；每3次攻击追加25%攻击力真实伤害。 效果：`[{"kind":"kazimierz_true_damage","params":{"pierce":15,"attackEvery":3,"trueDamage":25}}]`
+- 3 人：成员无视25%防御；每3次攻击追加45%攻击力真实伤害。 效果：`[{"kind":"kazimierz_true_damage","params":{"pierce":25,"attackEvery":3,"trueDamage":45}}]`
+- 4 人：成员无视40%防御；每3次攻击追加75%攻击力真实伤害。 效果：`[{"kind":"kazimierz_true_damage","params":{"pierce":40,"attackEvery":3,"trueDamage":75}}]`
 ### 叙拉古 (siracusa)
-- 2 人：敌人生命低于40%时伤害提高15%；成员击倒敌人时本人恢复3技力，并强化本人下一次普通攻击一次，追加60%攻击力物理伤害。 效果：`[{"kind":"siracusa_execute","params":{"personalCooldown":2,"wolfAt":8,"wolfInterval":20,"wolfDamage":800,"bossNoExecute":true,"executeBelow":40,"executeBonus":15},"reference":{"nativeEffectKept":"low-health damage and eight-member wolf remain on the existing siracusa_execute handler."}},{"kind":"siracusa_harvest","params":{"sp":3,"nextHit":60,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"TFTraits first-party publication; community game-data derivative","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"}}}]`
-- 4 人：敌人生命低于40%时伤害提高25%；成员击倒敌人时本人恢复4技力，并强化本人下一次普通攻击一次，追加100%攻击力物理伤害。 效果：`[{"kind":"siracusa_execute","params":{"personalCooldown":2,"wolfAt":8,"wolfInterval":20,"wolfDamage":800,"bossNoExecute":true,"executeBelow":40,"executeBonus":25},"reference":{"nativeEffectKept":"low-health damage and eight-member wolf remain on the existing siracusa_execute handler."}},{"kind":"siracusa_harvest","params":{"sp":4,"nextHit":100,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"TFTraits first-party publication; community game-data derivative","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"}}}]`
-- 6 人：敌人生命低于40%时伤害提高40%；成员击倒敌人时本人恢复5技力，并强化本人下一次普通攻击一次，追加160%攻击力物理伤害。 效果：`[{"kind":"siracusa_execute","params":{"personalCooldown":2,"wolfAt":8,"wolfInterval":20,"wolfDamage":800,"bossNoExecute":true,"executeBelow":40,"executeBonus":40},"reference":{"nativeEffectKept":"low-health damage and eight-member wolf remain on the existing siracusa_execute handler."}},{"kind":"siracusa_harvest","params":{"sp":5,"nextHit":160,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"TFTraits first-party publication; community game-data derivative","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"}}}]`
-- 8 人：敌人生命低于40%时伤害提高70%；成员击倒敌人时本人恢复8技力，并强化本人下一次普通攻击一次，追加300%攻击力物理伤害。每20秒，狼影对最近敌人造成最高成员攻击力800%的伤害。 效果：`[{"kind":"siracusa_execute","params":{"personalCooldown":2,"wolfAt":8,"wolfInterval":20,"wolfDamage":800,"bossNoExecute":true,"executeBelow":40,"executeBonus":70},"reference":{"nativeEffectKept":"low-health damage and eight-member wolf remain on the existing siracusa_execute handler."}},{"kind":"siracusa_harvest","params":{"sp":8,"nextHit":300,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"TFTraits first-party publication; community game-data derivative","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"}}}]`
+- 2 人：攻击生命比例低于40%的敌人时，伤害提高20%。成员击倒敌人时本人恢复3技力，并强化下一次普通攻击一次，追加80%攻击力物理伤害；不叠加、不递归。 效果：`[{"kind":"siracusa_execute","params":{"bossNoExecute":true,"executeBelow":40,"executeBonus":20},"reference":{"adaptation":"低生命比例增伤保留。","removal":"The old eight-member wolf-shadow effect was removed from current v2 tiers; no wolf effect is described or executed."}},{"kind":"siracusa_harvest","params":{"sp":3,"nextHit":80,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"community game-data derivative published by TFTraits; not a first-party source","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"},"removedWolf":"The old eight-member wolf-shadow effect was removed from current v2 tiers; no wolf effect is described or executed."}}]`
+- 4 人：攻击生命比例低于40%的敌人时，伤害提高35%。成员击倒敌人时本人恢复5技力，并强化下一次普通攻击一次，追加140%攻击力物理伤害；不叠加、不递归。 效果：`[{"kind":"siracusa_execute","params":{"bossNoExecute":true,"executeBelow":40,"executeBonus":35},"reference":{"adaptation":"低生命比例增伤保留。","removal":"The old eight-member wolf-shadow effect was removed from current v2 tiers; no wolf effect is described or executed."}},{"kind":"siracusa_harvest","params":{"sp":5,"nextHit":140,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"community game-data derivative published by TFTraits; not a first-party source","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"},"removedWolf":"The old eight-member wolf-shadow effect was removed from current v2 tiers; no wolf effect is described or executed."}}]`
+- 6 人：攻击生命比例低于40%的敌人时，伤害提高60%。成员击倒敌人时本人恢复8技力，并强化下一次普通攻击一次，追加240%攻击力物理伤害；不叠加、不递归。 效果：`[{"kind":"siracusa_execute","params":{"bossNoExecute":true,"executeBelow":40,"executeBonus":60},"reference":{"adaptation":"低生命比例增伤保留。","removal":"The old eight-member wolf-shadow effect was removed from current v2 tiers; no wolf effect is described or executed."}},{"kind":"siracusa_harvest","params":{"sp":8,"nextHit":240,"nextHitOnce":true,"nextHitBasicAttackOnly":true,"noStack":true,"nonRecursive":true},"reference":{"killToSp":{"game":"Teamfight Tactics","version":"Set 18 Patch 18.4 / CommunityDragon publication 16.20.1","recordId":"DA_FloraFatalis18","jsonPointer":"/supplement/publishedTraits/16","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/docs/resonance/reference/tft-set18.json","sourceUrl":"https://tftraits.com/api/display/traits?v=18-18.4.0.BF63CD5E.u09ac2d13s5&lang=en-us","sourceKind":"community game-data derivative published by TFTraits; not a first-party source","officialPatchContextUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-18-4/","sourceEffectText":"Flora Fatalis champions harvest enemies on takedown, gaining 10 Mana; the 2-unit tier also heals the lowest-health ally."},"nextAttack":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Victorious","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"击倒后，下一次攻击根据目标已损失生命值造成额外魔法伤害。"},"removedWolf":"The old eight-member wolf-shadow effect was removed from current v2 tiers; no wolf effect is described or executed."}}]`
 ### 罗德岛 (rhodes)
-- 2 人：每名成员本场首次施法前减伤10%，施法后恢复20%最大生命并获得10秒攻速+15。 效果：`[{"kind":"rhodes_first_cast","params":{"duration":10,"oncePerOperator":true,"mitigation":10,"heal":20,"aspd":15}}]`
-- 4 人：每名成员本场首次施法前减伤20%，施法后恢复30%最大生命并获得10秒攻速+25。 效果：`[{"kind":"rhodes_first_cast","params":{"duration":10,"oncePerOperator":true,"mitigation":20,"heal":30,"aspd":25}}]`
-- 6 人：每名成员本场首次施法前减伤30%，施法后恢复40%最大生命并获得10秒攻速+40。 效果：`[{"kind":"rhodes_first_cast","params":{"duration":10,"oncePerOperator":true,"mitigation":30,"heal":40,"aspd":40}}]`
+- 2 人：每名成员本场首次施法恢复20%最大生命，并获得10%减伤与15攻速，持续10秒。 效果：`[{"kind":"rhodes_first_cast","params":{"duration":10,"oncePerOperator":true,"mitigation":10,"heal":20,"aspd":15}}]`
+- 3 人：每名成员本场首次施法恢复30%最大生命，并获得20%减伤与25攻速，持续10秒。 效果：`[{"kind":"rhodes_first_cast","params":{"duration":10,"oncePerOperator":true,"mitigation":20,"heal":30,"aspd":25}}]`
+- 4 人：每名成员本场首次施法恢复40%最大生命，并获得30%减伤与40攻速，持续10秒。 效果：`[{"kind":"rhodes_first_cast","params":{"duration":10,"oncePerOperator":true,"mitigation":30,"heal":40,"aspd":40}}]`
 ### 龙门 (lungmen)
-- 2 人：前线击倒敌人时全队恢复0.5技力（团队每秒上限3）；获胜每个经营节点获得1金币。每第4次击倒触发半径2格炮击，造成200%最高攻击力物理伤害。 效果：`[{"kind":"lungmen_reward","params":{"teamSpCap":3,"goldOncePerNode":true,"artilleryEvery":4,"artilleryDamage":200,"artilleryRadius":2,"killSp":0.5,"victoryGold":1}}]`
-- 4 人：前线击倒敌人时全队恢复1技力（团队每秒上限5）；获胜每个经营节点获得2金币。每第4次击倒触发半径2格炮击，造成200%最高攻击力物理伤害。 效果：`[{"kind":"lungmen_reward","params":{"teamSpCap":5,"goldOncePerNode":true,"artilleryEvery":4,"artilleryDamage":200,"artilleryRadius":2,"killSp":1,"victoryGold":2}}]`
-- 6 人：前线击倒敌人时全队恢复1.5技力（团队每秒上限8）；获胜每个经营节点获得3金币。每第4次击倒触发半径2格炮击，造成200%最高攻击力物理伤害。 效果：`[{"kind":"lungmen_reward","params":{"teamSpCap":8,"goldOncePerNode":true,"artilleryEvery":4,"artilleryDamage":200,"artilleryRadius":2,"killSp":1.5,"victoryGold":3}}]`
+- 2 人：成员击倒敌人时为全体成员恢复0.5技力，每场前3次击倒有效；胜利结算获得1金币一次。 效果：`[{"kind":"lungmen_reward","params":{"teamSpCap":3,"goldOncePerNode":true,"killSp":0.5,"victoryGold":1}}]`
+- 3 人：成员击倒敌人时为全体成员恢复1技力，每场前5次击倒有效；胜利结算获得2金币一次。 效果：`[{"kind":"lungmen_reward","params":{"teamSpCap":5,"goldOncePerNode":true,"killSp":1,"victoryGold":2}}]`
 ### 萨尔贡 (sargon)
-- 2 人：每12秒治疗生命最低成员15%最大生命，并在其最近敌人处形成4秒流沙：减速25%，每秒造成受益者攻击力30%法术伤害。 效果：`[{"kind":"sargon_sand","params":{"areaRadius":1.5,"duration":4,"interval":12,"heal":15,"slow":25,"dps":30}}]`
-- 4 人：每10秒治疗生命最低成员20%最大生命，并在其最近敌人处形成4秒流沙：减速35%，每秒造成受益者攻击力50%法术伤害。 效果：`[{"kind":"sargon_sand","params":{"areaRadius":1.5,"duration":4,"interval":10,"heal":20,"slow":35,"dps":50}}]`
-- 6 人：每8秒治疗生命最低成员30%最大生命，并在其最近敌人处形成4秒流沙：减速50%，每秒造成受益者攻击力90%法术伤害。 效果：`[{"kind":"sargon_sand","params":{"areaRadius":1.5,"duration":4,"interval":8,"heal":30,"slow":50,"dps":90}}]`
+- 2 人：每12秒选生命比例最低的成员恢复15%最大生命，在其位置生成半径1.5格沙域，持续4秒；域内敌人移速降低25%，每秒受到该成员30%攻击力法术伤害。 效果：`[{"kind":"sargon_sand","params":{"areaRadius":1.5,"duration":4,"interval":12,"heal":15,"slow":25,"dps":30}}]`
+- 3 人：每10秒选生命比例最低的成员恢复20%最大生命，在其位置生成半径1.5格沙域，持续4秒；域内敌人移速降低35%，每秒受到该成员50%攻击力法术伤害。 效果：`[{"kind":"sargon_sand","params":{"areaRadius":1.5,"duration":4,"interval":10,"heal":20,"slow":35,"dps":50}}]`
+- 4 人：每8秒选生命比例最低的成员恢复30%最大生命，在其位置生成半径1.5格沙域，持续4秒；域内敌人移速降低50%，每秒受到该成员90%攻击力法术伤害。 效果：`[{"kind":"sargon_sand","params":{"areaRadius":1.5,"duration":4,"interval":8,"heal":30,"slow":50,"dps":90}}]`
 ### 莱塔尼亚 (leithania)
-- 2 人：法术伤害+15% 每第3次施法留下6秒音域，每秒造成40%攻击力法术伤害；最多3片，同源覆盖。 效果：`[{"kind":"stat","params":{"stat":"artsDamage","mode":"percent","value":15}},{"kind":"leithania_sound","params":{"areaDuration":6,"maxAreas":3,"silenceAt":5,"silenceInterval":2,"silenceDuration":1,"castEvery":3,"dps":40}}]`
-- 3 人：法术伤害+25% 每第3次施法留下6秒音域，每秒造成70%攻击力法术伤害；最多3片，同源覆盖。 效果：`[{"kind":"stat","params":{"stat":"artsDamage","mode":"percent","value":25}},{"kind":"leithania_sound","params":{"areaDuration":6,"maxAreas":3,"silenceAt":5,"silenceInterval":2,"silenceDuration":1,"castEvery":3,"dps":70}}]`
-- 5 人：法术伤害+45% 每第3次施法留下6秒音域，每秒造成120%攻击力法术伤害；最多3片，同源覆盖。5人时音域每2秒沉默1秒。 效果：`[{"kind":"stat","params":{"stat":"artsDamage","mode":"percent","value":45}},{"kind":"leithania_sound","params":{"areaDuration":6,"maxAreas":3,"silenceAt":5,"silenceInterval":2,"silenceDuration":1,"castEvery":3,"dps":120}}]`
+- 2 人：成员法术伤害提高15%。成员累计每3次施法，在最近敌人位置生成半径1.5格声场，持续6秒，最多3个；每秒造成施法者40%攻击力法术伤害。 效果：`[{"kind":"stat","params":{"stat":"artsDamage","mode":"percent","value":15,"silenceAt":4}},{"kind":"leithania_sound","params":{"areaDuration":6,"maxAreas":3,"silenceAt":4,"silenceInterval":2,"silenceDuration":1,"castEvery":3,"dps":40}}]`
+- 3 人：成员法术伤害提高25%。成员累计每3次施法，在最近敌人位置生成半径1.5格声场，持续6秒，最多3个；每秒造成施法者70%攻击力法术伤害。 效果：`[{"kind":"stat","params":{"stat":"artsDamage","mode":"percent","value":25,"silenceAt":4}},{"kind":"leithania_sound","params":{"areaDuration":6,"maxAreas":3,"silenceAt":4,"silenceInterval":2,"silenceDuration":1,"castEvery":3,"dps":70}}]`
+- 4 人：成员法术伤害提高45%。成员累计每3次施法，在最近敌人位置生成半径1.5格声场，持续6秒，最多3个；每秒造成施法者120%攻击力法术伤害。每2秒施加1秒沉默。 效果：`[{"kind":"stat","params":{"stat":"artsDamage","mode":"percent","value":45,"silenceAt":4}},{"kind":"leithania_sound","params":{"areaDuration":6,"maxAreas":3,"silenceAt":4,"silenceInterval":2,"silenceDuration":1,"castEvery":3,"dps":120}}]`
 ### 伊比利亚 (iberia)
-- 2 人：每名成员本场首次阻挡获得最大生命20%屏障；屏障破裂时对2格内地面和空中敌人造成120%攻击力法术伤害。 效果：`[{"kind":"iberia_barrier","params":{"radius":2,"firstBlockOnly":true,"antiAir":true,"barrier":20,"breakDamage":120}}]`
-- 3 人：每名成员本场首次阻挡获得最大生命30%屏障；屏障破裂时对2格内地面和空中敌人造成180%攻击力法术伤害。 效果：`[{"kind":"iberia_barrier","params":{"radius":2,"firstBlockOnly":true,"antiAir":true,"barrier":30,"breakDamage":180}}]`
-- 4 人：每名成员本场首次阻挡获得最大生命45%屏障；屏障破裂时对2格内地面和空中敌人造成280%攻击力法术伤害。 效果：`[{"kind":"iberia_barrier","params":{"radius":2,"firstBlockOnly":true,"antiAir":true,"barrier":45,"breakDamage":280}}]`
+- 2 人：成员本场首次阻挡获得20%最大生命屏障，最多持续10秒；被敌方伤害击破或到期时，对2格内敌人造成本人120%攻击力法术伤害，可对空；仅爆发一次。 效果：`[{"kind":"iberia_barrier","params":{"radius":2,"firstBlockOnly":true,"antiAir":true,"barrier":20,"breakDamage":120,"duration":10}}]`
+- 3 人：成员本场首次阻挡获得30%最大生命屏障，最多持续10秒；被敌方伤害击破或到期时，对2格内敌人造成本人180%攻击力法术伤害，可对空；仅爆发一次。 效果：`[{"kind":"iberia_barrier","params":{"radius":2,"firstBlockOnly":true,"antiAir":true,"barrier":30,"breakDamage":180,"duration":10}}]`
+- 4 人：成员本场首次阻挡获得45%最大生命屏障，最多持续10秒；被敌方伤害击破或到期时，对2格内敌人造成本人280%攻击力法术伤害，可对空；仅爆发一次。 效果：`[{"kind":"iberia_barrier","params":{"radius":2,"firstBlockOnly":true,"antiAir":true,"barrier":45,"breakDamage":280,"duration":10}}]`
 ### 东 (higashi)
-- 2 人：部署后获得8秒隐匿与25%闪避。 效果：`[{"kind":"higashi_redeploy","params":{"returnLimit":2,"deployTrueDamageAt":4,"deployTrueDamage":80,"stealthSeconds":8,"dodge":25,"returnSp":0},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","nativeStealth":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/1","sourceEffectText":"攻击范围扩大，攻击力+60%，自身获得隐匿；技能结束或离场时结束。"},"nativeDodge":{"recordId":"chess_char_2_13_a","jsonPointer":"/chess_char_2_13_a/skills/1","sourceEffectText":"受到攻击后触发，并闪避本次物理或法术伤害。"},"nativeDeployAttack":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/2","sourceEffectText":"重新部署后对穿过的最多4名敌人造成相当于攻击力110%的物理伤害。"},"difference":"这些是具名本体技能候选，不证明东盟约复合机制原样继承；部署触发/限时和物理转真实伤害属于适配。"}}]`
-- 3 人：部署后获得10秒隐匿与35%闪避。 效果：`[{"kind":"higashi_redeploy","params":{"returnLimit":2,"deployTrueDamageAt":4,"deployTrueDamage":80,"stealthSeconds":10,"dodge":35,"returnSp":0},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","nativeStealth":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/1","sourceEffectText":"攻击范围扩大，攻击力+60%，自身获得隐匿；技能结束或离场时结束。"},"nativeDodge":{"recordId":"chess_char_2_13_a","jsonPointer":"/chess_char_2_13_a/skills/1","sourceEffectText":"受到攻击后触发，并闪避本次物理或法术伤害。"},"nativeDeployAttack":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/2","sourceEffectText":"重新部署后对穿过的最多4名敌人造成相当于攻击力110%的物理伤害。"},"difference":"这些是具名本体技能候选，不证明东盟约复合机制原样继承；部署触发/限时和物理转真实伤害属于适配。"}}]`
-- 4 人：部署后获得14秒隐匿与50%闪避。部署攻击造成80%攻击力真实伤害。 效果：`[{"kind":"higashi_redeploy","params":{"returnLimit":2,"deployTrueDamageAt":4,"deployTrueDamage":80,"stealthSeconds":14,"dodge":50,"returnSp":0},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","nativeStealth":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/1","sourceEffectText":"攻击范围扩大，攻击力+60%，自身获得隐匿；技能结束或离场时结束。"},"nativeDodge":{"recordId":"chess_char_2_13_a","jsonPointer":"/chess_char_2_13_a/skills/1","sourceEffectText":"受到攻击后触发，并闪避本次物理或法术伤害。"},"nativeDeployAttack":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/2","sourceEffectText":"重新部署后对穿过的最多4名敌人造成相当于攻击力110%的物理伤害。"},"difference":"这些是具名本体技能候选，不证明东盟约复合机制原样继承；部署触发/限时和物理转真实伤害属于适配。"}}]`
+- 2 人：每次部署获得8秒隐匿与25%物理、法术闪避。 效果：`[{"kind":"higashi_redeploy","params":{"returnLimit":2,"deployTrueDamageAt":3,"deployTrueDamage":80,"stealthSeconds":8,"dodge":25,"returnSp":0},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","nativeStealth":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/1","sourceEffectText":"攻击范围扩大，攻击力+60%，自身获得隐匿；技能结束或离场时结束。"},"nativeDodge":{"recordId":"chess_char_2_13_a","jsonPointer":"/chess_char_2_13_a/skills/1","sourceEffectText":"受到攻击后触发，并闪避本次物理或法术伤害。"},"nativeDeployAttack":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/2","sourceEffectText":"重新部署后对穿过的最多4名敌人造成相当于攻击力110%的物理伤害。"},"difference":"这些是具名本体技能候选，不证明东盟约复合机制原样继承；部署触发/限时和物理转真实伤害属于适配。"}}]`
+- 3 人：每次部署获得10秒隐匿与35%物理、法术闪避。返场时对8格内敌人造成80%攻击力真实伤害。 效果：`[{"kind":"higashi_redeploy","params":{"returnLimit":2,"deployTrueDamageAt":3,"deployTrueDamage":80,"stealthSeconds":10,"dodge":35,"returnSp":0},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","nativeStealth":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/1","sourceEffectText":"攻击范围扩大，攻击力+60%，自身获得隐匿；技能结束或离场时结束。"},"nativeDodge":{"recordId":"chess_char_2_13_a","jsonPointer":"/chess_char_2_13_a/skills/1","sourceEffectText":"受到攻击后触发，并闪避本次物理或法术伤害。"},"nativeDeployAttack":{"recordId":"chess_char_4_04_a","jsonPointer":"/chess_char_4_04_a/skills/2","sourceEffectText":"重新部署后对穿过的最多4名敌人造成相当于攻击力110%的物理伤害。"},"difference":"这些是具名本体技能候选，不证明东盟约复合机制原样继承；部署触发/限时和物理转真实伤害属于适配。"}}]`
 ### 乌萨斯 (ursus)
-- 2 人：相邻盟约成员防御+80；无论胜负，结算时存活成员永久增加25生命，个人成长上限250。 效果：`[{"kind":"ursus_adjacency","params":{"personalGrowthCap":250,"adjacentDef":80,"victoryHp":25}}]`
-- 3 人：相邻盟约成员防御+150；无论胜负，结算时存活成员永久增加50生命，个人成长上限500。 效果：`[{"kind":"ursus_adjacency","params":{"personalGrowthCap":500,"adjacentDef":150,"victoryHp":50}}]`
+- 2 人：与另一名存活已部署乌萨斯成员处于8邻格时，本人防御+80，不按邻居数量叠加。每次战斗结算，存活成员最大生命永久+25，本人累计上限250。 效果：`[{"kind":"ursus_adjacency","params":{"personalGrowthCap":250,"adjacentDef":80,"victoryHp":25}}]`
 ### 玻利瓦尔 (bolivar)
-- 2 人：对减速、寒冷或束缚目标伤害+25%；获胜时成员永久增加10攻击，个人上限100。 效果：`[{"kind":"bolivar_slow","params":{"controlled":["slow","cold","bind"],"growthCap":100,"controlledDamage":25,"victoryAtk":10}}]`
+- 2 人：成员对缓行或停顿、寒冷、冻结或束缚敌人的伤害提高25%；胜利后成员攻击力永久+10，本人累计上限100。 效果：`[{"kind":"bolivar_slow","params":{"controlled":["slow","cold","bind"],"growthCap":100,"controlledDamage":25,"victoryAtk":10}}]`
 ### 雷姆必拓 (rim)
-- 2 人：每5次成员施法获得一份锻造进度，每经营节点最多1份；跨场累计五份进度后，任选1件基础组件并重新累计。 效果：`[{"kind":"rim_forge","params":{"nodeLimit":1,"skillCount":5,"choiceCount":1}}]`
+- 2 人：成员累计每5次施法获得1个组件选择，每节点最多1次。 效果：`[{"kind":"rim_forge","params":{"nodeLimit":1,"skillCount":5,"choiceCount":1}}]`
 ### 巴别塔 (babel)
-- 2 人：成员本场首次退出时全队恢复5技力；胜利后随机一名在场成员永久增加12攻击，个人上限120。 效果：`[{"kind":"babel_exit","params":{"growthCap":120,"exitSp":5,"victoryAtk":12}}]`
+- 1 人：独有盟约。成员本场首次离场时，为同队存活干员恢复5技力；胜利后随机1名存活成员攻击力永久+12，累计上限120。 效果：`[{"kind":"babel_exit","params":{"growthCap":120,"exitSp":5,"victoryAtk":12}}]`
 ### 萨米 (sami)
-- 1 人：对寒冷或冻结目标的伤害与治疗提高20%；本场首次施法为全队恢复10%最大生命。 效果：`[{"kind":"sami_cold","params":{"healPercentMaxHp":true,"coldTargetBonus":20,"firstCastHeal":10}}]`
+- 1 人：对寒冷或冻结敌人的伤害提高20%；成员首次施法为全队存活干员恢复10%最大生命。 效果：`[{"kind":"sami_cold","params":{"healPercentMaxHp":true,"coldTargetBonus":20,"firstCastHeal":10}}]`
 ### 弹药 (ammo)
-- 2 人：所有盟约成员的每次弹药技能载弹量增加1枚；技能最后一发追加80%攻击力物理伤害。 效果：`[{"kind":"ammo_last_round","params":{"refundSp":0,"noCrossRefund":true,"refundChance":0,"lastDamage":80,"skillAmmo":1},"reference":{"game":"卫戍协议原生本体","version":"4ed1ad32ec10da15c23f9d7939dade603950759b","recordId":"chess_char_1_01_a","jsonPointer":"/chess_char_1_01_a/skills/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_1_01_a/skills/1","sourceEffectText":"隐现S2为真实弹药技能，黑板 attack@trigger_time=14；协议提供的 AMMO 技能具备 addAmmo(n)，激活时增加当前载弹并更新载弹条上限。"}}]`
-- 4 人：所有盟约成员的每次弹药技能载弹量增加2枚；技能最后一发追加130%攻击力物理伤害。 效果：`[{"kind":"ammo_last_round","params":{"refundSp":0,"noCrossRefund":true,"refundChance":0,"lastDamage":130,"skillAmmo":2},"reference":{"game":"卫戍协议原生本体","version":"4ed1ad32ec10da15c23f9d7939dade603950759b","recordId":"chess_char_1_01_a","jsonPointer":"/chess_char_1_01_a/skills/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_1_01_a/skills/1","sourceEffectText":"隐现S2为真实弹药技能，黑板 attack@trigger_time=14；协议提供的 AMMO 技能具备 addAmmo(n)，激活时增加当前载弹并更新载弹条上限。"}}]`
-- 6 人：所有盟约成员的每次弹药技能载弹量增加3枚；技能最后一发追加220%攻击力物理伤害。 效果：`[{"kind":"ammo_last_round","params":{"refundSp":0,"noCrossRefund":true,"refundChance":0,"lastDamage":220,"skillAmmo":3},"reference":{"game":"卫戍协议原生本体","version":"4ed1ad32ec10da15c23f9d7939dade603950759b","recordId":"chess_char_1_01_a","jsonPointer":"/chess_char_1_01_a/skills/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_1_01_a/skills/1","sourceEffectText":"隐现S2为真实弹药技能，黑板 attack@trigger_time=14；协议提供的 AMMO 技能具备 addAmmo(n)，激活时增加当前载弹并更新载弹条上限。"}}]`
+- 2 人：成员每次弹药技能增加1枚载弹；最后一枚追加80%攻击力物理伤害一次。 效果：`[{"kind":"ammo_last_round","params":{"refundSp":0,"noCrossRefund":true,"refundChance":0,"lastDamage":80,"skillAmmo":1},"reference":{"game":"卫戍协议原生本体","version":"4ed1ad32ec10da15c23f9d7939dade603950759b","recordId":"chess_char_1_01_a","jsonPointer":"/chess_char_1_01_a/skills/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_1_01_a/skills/1","sourceEffectText":"隐现S2为真实弹药技能，黑板 attack@trigger_time=14；协议提供的 AMMO 技能具备 addAmmo(n)，激活时增加当前载弹并更新载弹条上限。"}}]`
+- 4 人：成员每次弹药技能增加2枚载弹；最后一枚追加130%攻击力物理伤害一次。 效果：`[{"kind":"ammo_last_round","params":{"refundSp":0,"noCrossRefund":true,"refundChance":0,"lastDamage":130,"skillAmmo":2},"reference":{"game":"卫戍协议原生本体","version":"4ed1ad32ec10da15c23f9d7939dade603950759b","recordId":"chess_char_1_01_a","jsonPointer":"/chess_char_1_01_a/skills/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_1_01_a/skills/1","sourceEffectText":"隐现S2为真实弹药技能，黑板 attack@trigger_time=14；协议提供的 AMMO 技能具备 addAmmo(n)，激活时增加当前载弹并更新载弹条上限。"}}]`
 ### 连击 (combo)
-- 2 人：每次攻击攻速+2，最多+20；每第6次攻击追加40%攻击力物理伤害。 效果：`[{"kind":"combo_sixth","params":{"every":6,"otherTargetAt":6,"aspdPerAttack":2,"speedCap":20,"damage":40}}]`
-- 4 人：每次攻击攻速+3，最多+35；每第6次攻击追加70%攻击力物理伤害。 效果：`[{"kind":"combo_sixth","params":{"every":6,"otherTargetAt":6,"aspdPerAttack":3,"speedCap":35,"damage":70}}]`
-- 6 人：每次攻击攻速+4，最多+55；每第6次攻击追加120%攻击力物理伤害。达到6人后额外击打最近另一敌人。 效果：`[{"kind":"combo_sixth","params":{"every":6,"otherTargetAt":6,"aspdPerAttack":4,"speedCap":55,"damage":120}}]`
+- 2 人：成员每次攻击获得2攻速，最多20；每6次攻击追加40%攻击力物理伤害。 效果：`[{"kind":"combo_sixth","params":{"every":6,"otherTargetAt":6,"aspdPerAttack":2,"speedCap":20,"damage":40}}]`
+- 4 人：成员每次攻击获得3攻速，最多35；每6次攻击追加70%攻击力物理伤害。 效果：`[{"kind":"combo_sixth","params":{"every":6,"otherTargetAt":6,"aspdPerAttack":3,"speedCap":35,"damage":70}}]`
+- 6 人：成员每次攻击获得4攻速，最多55；每6次攻击追加120%攻击力物理伤害。同时对另一名敌人追加一次相同伤害。 效果：`[{"kind":"combo_sixth","params":{"every":6,"otherTargetAt":6,"aspdPerAttack":4,"speedCap":55,"damage":120}}]`
 ### 控制 (control)
-- 2 人：每名成员首次控制同一目标时造成40%攻击力法术伤害，目标冷却3秒；控制时间延长10%，领袖抗控规则不变。 效果：`[{"kind":"control_first","params":{"sameTargetCooldown":3,"respectBossResistance":true,"damage":40,"durationBonus":10}}]`
-- 4 人：每名成员首次控制同一目标时造成75%攻击力法术伤害，目标冷却3秒；控制时间延长20%，领袖抗控规则不变。 效果：`[{"kind":"control_first","params":{"sameTargetCooldown":3,"respectBossResistance":true,"damage":75,"durationBonus":20}}]`
-- 6 人：每名成员首次控制同一目标时造成130%攻击力法术伤害，目标冷却3秒；控制时间延长30%，领袖抗控规则不变。 效果：`[{"kind":"control_first","params":{"sameTargetCooldown":3,"respectBossResistance":true,"damage":130,"durationBonus":30}}]`
+- 2 人：成员控制持续时间提高10%；施加控制时追加40%攻击力法术伤害，同目标冷却3秒；遵循首领抗性。 效果：`[{"kind":"control_first","params":{"sameTargetCooldown":3,"respectBossResistance":true,"damage":40,"durationBonus":10}}]`
+- 4 人：成员控制持续时间提高20%；施加控制时追加75%攻击力法术伤害，同目标冷却3秒；遵循首领抗性。 效果：`[{"kind":"control_first","params":{"sameTargetCooldown":3,"respectBossResistance":true,"damage":75,"durationBonus":20}}]`
+- 6 人：成员控制持续时间提高30%；施加控制时追加130%攻击力法术伤害，同目标冷却3秒；遵循首领抗性。 效果：`[{"kind":"control_first","params":{"sameTargetCooldown":3,"respectBossResistance":true,"damage":130,"durationBonus":30}}]`
 ### 造物 (creation)
-- 2 人：造物攻击为主人恢复0.25技力（主人每秒最多1）；主人施法使自身造物恢复15%生命并获得攻速+15，持续6秒。 效果：`[{"kind":"creation_construct","params":{"ownerSpCap":1,"duration":6,"ownerSp":0.25,"heal":15,"aspd":15}}]`
-- 4 人：造物攻击为主人恢复0.4技力（主人每秒最多2）；主人施法使自身造物恢复25%生命并获得攻速+25，持续6秒。 效果：`[{"kind":"creation_construct","params":{"ownerSpCap":2,"duration":6,"ownerSp":0.4,"heal":25,"aspd":25}}]`
-- 6 人：造物攻击为主人恢复0.6技力（主人每秒最多3）；主人施法使自身造物恢复40%生命并获得攻速+40，持续6秒。 效果：`[{"kind":"creation_construct","params":{"ownerSpCap":3,"duration":6,"ownerSp":0.6,"heal":40,"aspd":40}}]`
+- 2 人：召唤物每次攻击为所属成员恢复0.25技力，每秒最多触发1次；成员施法使自己的存活召唤物恢复15%最大生命并获得15攻速，持续6秒。 效果：`[{"kind":"creation_construct","params":{"ownerSpCap":1,"duration":6,"ownerSp":0.25,"heal":15,"aspd":15}}]`
+- 4 人：召唤物每次攻击为所属成员恢复0.4技力，每秒最多触发2次；成员施法使自己的存活召唤物恢复25%最大生命并获得25攻速，持续6秒。 效果：`[{"kind":"creation_construct","params":{"ownerSpCap":2,"duration":6,"ownerSp":0.4,"heal":25,"aspd":25}}]`
+- 6 人：召唤物每次攻击为所属成员恢复0.6技力，每秒最多触发3次；成员施法使自己的存活召唤物恢复40%最大生命并获得40攻速，持续6秒。 效果：`[{"kind":"creation_construct","params":{"ownerSpCap":3,"duration":6,"ownerSp":0.6,"heal":40,"aspd":40}}]`
 ### 共生 (symbiosis)
-- 2 人：有效治疗的15%转为屏障，屏障上限为目标最大生命15%，同一目标冷却2秒；屏障破裂后下一击追加30%攻击力伤害。 效果：`[{"kind":"symbiosis_barrier","params":{"targetCooldown":2,"breakOnce":true,"healToShield":15,"barrierCap":15,"breakBonus":30}}]`
-- 4 人：有效治疗的25%转为屏障，屏障上限为目标最大生命25%，同一目标冷却2秒；屏障破裂后下一击追加50%攻击力伤害。 效果：`[{"kind":"symbiosis_barrier","params":{"targetCooldown":2,"breakOnce":true,"healToShield":25,"barrierCap":25,"breakBonus":50}}]`
-- 6 人：有效治疗的40%转为屏障，屏障上限为目标最大生命40%，同一目标冷却2秒；屏障破裂后下一击追加90%攻击力伤害。 效果：`[{"kind":"symbiosis_barrier","params":{"targetCooldown":2,"breakOnce":true,"healToShield":40,"barrierCap":40,"breakBonus":90}}]`
+- 2 人：共生成员治疗量提高15%。战斗开始及每8秒，为生命比例最低的1名存活已部署友方干员提供其最大生命15%的屏障与20攻速，均持续5秒；同生命比例优先前线。该屏障只刷新、不叠加；破盾后攻速仍持续至结束。 效果：`[{"kind":"symbiosis_guard","params":{"healingBonus":15,"targets":1,"shieldHp":15,"aspd":20,"interval":8,"duration":5},"reference":{"sentinel":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Sentinel","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"战斗开始获得护盾并同时获得攻速；原机制在护盾消失后转移给生命比例最低的友军。"},"protectiveShielding":{"game":"Teamfight Tactics","version":"Into the Arcane","recordId":"Protective Shielding","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/mechanics-into-the-arcane/","sourceEffectText":"战斗开始及每8秒，为自己与两名低血友军提供最大生命20%的护盾，持续5秒。"},"difference":"共鸣将两种机制组合为低生命比例友军的周期屏障与独立定时攻速；成员治疗增益、目标数、百分比和攻速数值均为共鸣适配。没有破盾奖励或盾消失后的转移。"}}]`
+- 4 人：共生成员治疗量提高30%。战斗开始及每8秒，为生命比例最低的2名存活已部署友方干员提供其最大生命25%的屏障与35攻速，均持续5秒；同生命比例优先前线。该屏障只刷新、不叠加；破盾后攻速仍持续至结束。 效果：`[{"kind":"symbiosis_guard","params":{"healingBonus":30,"targets":2,"shieldHp":25,"aspd":35,"interval":8,"duration":5},"reference":{"sentinel":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Sentinel","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"战斗开始获得护盾并同时获得攻速；原机制在护盾消失后转移给生命比例最低的友军。"},"protectiveShielding":{"game":"Teamfight Tactics","version":"Into the Arcane","recordId":"Protective Shielding","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/mechanics-into-the-arcane/","sourceEffectText":"战斗开始及每8秒，为自己与两名低血友军提供最大生命20%的护盾，持续5秒。"},"difference":"共鸣将两种机制组合为低生命比例友军的周期屏障与独立定时攻速；成员治疗增益、目标数、百分比和攻速数值均为共鸣适配。没有破盾奖励或盾消失后的转移。"}}]`
+- 6 人：共生成员治疗量提高50%。战斗开始及每8秒，为生命比例最低的3名存活已部署友方干员提供其最大生命35%的屏障与50攻速，均持续5秒；同生命比例优先前线。该屏障只刷新、不叠加；破盾后攻速仍持续至结束。 效果：`[{"kind":"symbiosis_guard","params":{"healingBonus":50,"targets":3,"shieldHp":35,"aspd":50,"interval":8,"duration":5},"reference":{"sentinel":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Sentinel","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"战斗开始获得护盾并同时获得攻速；原机制在护盾消失后转移给生命比例最低的友军。"},"protectiveShielding":{"game":"Teamfight Tactics","version":"Into the Arcane","recordId":"Protective Shielding","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/mechanics-into-the-arcane/","sourceEffectText":"战斗开始及每8秒，为自己与两名低血友军提供最大生命20%的护盾，持续5秒。"},"difference":"共鸣将两种机制组合为低生命比例友军的周期屏障与独立定时攻速；成员治疗增益、目标数、百分比和攻速数值均为共鸣适配。没有破盾奖励或盾消失后的转移。"}}]`
 ### 后勤 (logistics)
-- 2 人：开局额外储备10点部署费用；每实际产生10点部署费用，全队恢复2技力与3%生命，团队冷却2秒，开局储备不计入产费。部署费用初始20、每秒恢复1、上限99。 效果：`[{"kind":"logistics_dp","params":{"teamCooldown":2,"baseDp":20,"dpPerSecond":1,"dpCap":99,"startingDp":10,"per10DpSp":2,"heal":3}}]`
-- 4 人：开局额外储备20点部署费用；每实际产生10点部署费用，全队恢复3技力与5%生命，团队冷却2秒，开局储备不计入产费。部署费用初始20、每秒恢复1、上限99。 效果：`[{"kind":"logistics_dp","params":{"teamCooldown":2,"baseDp":20,"dpPerSecond":1,"dpCap":99,"startingDp":20,"per10DpSp":3,"heal":5}}]`
-- 6 人：开局额外储备35点部署费用；每实际产生10点部署费用，全队恢复5技力与8%生命，团队冷却2秒，开局储备不计入产费。部署费用初始20、每秒恢复1、上限99。 效果：`[{"kind":"logistics_dp","params":{"teamCooldown":2,"baseDp":20,"dpPerSecond":1,"dpCap":99,"startingDp":35,"per10DpSp":5,"heal":8}}]`
+- 2 人：战斗开始增加10部署费用。累计每获得10费用，为同队存活干员恢复2技力与3%最大生命，全队冷却2秒；初始费用与退场返还不计入。 效果：`[{"kind":"logistics_dp","params":{"teamCooldown":2,"baseDp":20,"dpPerSecond":1,"dpCap":99,"startingDp":10,"per10DpSp":2,"heal":3}}]`
+- 4 人：战斗开始增加20部署费用。累计每获得10费用，为同队存活干员恢复3技力与5%最大生命，全队冷却2秒；初始费用与退场返还不计入。 效果：`[{"kind":"logistics_dp","params":{"teamCooldown":2,"baseDp":20,"dpPerSecond":1,"dpCap":99,"startingDp":20,"per10DpSp":3,"heal":5}}]`
+- 6 人：战斗开始增加35部署费用。累计每获得10费用，为同队存活干员恢复5技力与8%最大生命，全队冷却2秒；初始费用与退场返还不计入。 效果：`[{"kind":"logistics_dp","params":{"teamCooldown":2,"baseDp":20,"dpPerSecond":1,"dpCap":99,"startingDp":35,"per10DpSp":5,"heal":8}}]`
 ### 再部署 (redeploy)
-- 2 人：再部署时间缩短20%；每名成员本场首次返场对范围内敌人造成100%攻击力法术伤害。 效果：`[{"kind":"redeploy_return","params":{"returnLimit":1,"damageType":"arts","timeMultiplier":0.8,"heal":0,"damage":100},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","silverAsh":{"recordId":"chess_char_4_22_a","jsonPointer":"/chess_char_4_22_a/talents/0","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_22_a/talents/0","sourceEffectText":"编入队伍时所有我方单位的再部署时间-10%。"},"skadi":{"recordId":"chess_char_3_05_a","jsonPointer":"/chess_char_3_05_a/talents/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_3_05_a/talents/1","sourceEffectText":"自身再部署时间-10秒。"},"texas":{"recordId":"chess_char_4_16_a","skillId":"skchr_texas2_3","jsonPointer":"/chess_char_4_16_a/skill","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_16_a/skill","sourceEffectText":"部署后立即对周围所有敌人造成两次相当于攻击力115%的法术伤害并使目标晕眩1.5秒。"},"difference":"银灰与斯卡蒂只支持缩短计时器，生效范围/条件不同；德克萨斯支持部署触发范围伤害，不支持返场治疗或仅限返场。返场治疗仍无具名来源，当前数值是适配。"}}]`
-- 3 人：再部署时间缩短35%；每名成员本场首次返场对范围内敌人造成180%攻击力法术伤害。 效果：`[{"kind":"redeploy_return","params":{"returnLimit":1,"damageType":"arts","timeMultiplier":0.65,"heal":0,"damage":180},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","silverAsh":{"recordId":"chess_char_4_22_a","jsonPointer":"/chess_char_4_22_a/talents/0","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_22_a/talents/0","sourceEffectText":"编入队伍时所有我方单位的再部署时间-10%。"},"skadi":{"recordId":"chess_char_3_05_a","jsonPointer":"/chess_char_3_05_a/talents/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_3_05_a/talents/1","sourceEffectText":"自身再部署时间-10秒。"},"texas":{"recordId":"chess_char_4_16_a","skillId":"skchr_texas2_3","jsonPointer":"/chess_char_4_16_a/skill","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_16_a/skill","sourceEffectText":"部署后立即对周围所有敌人造成两次相当于攻击力115%的法术伤害并使目标晕眩1.5秒。"},"difference":"银灰与斯卡蒂只支持缩短计时器，生效范围/条件不同；德克萨斯支持部署触发范围伤害，不支持返场治疗或仅限返场。返场治疗仍无具名来源，当前数值是适配。"}}]`
-- 5 人：再部署时间缩短60%；每名成员本场首次返场对范围内敌人造成320%攻击力法术伤害。 效果：`[{"kind":"redeploy_return","params":{"returnLimit":1,"damageType":"arts","timeMultiplier":0.4,"heal":0,"damage":320},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","silverAsh":{"recordId":"chess_char_4_22_a","jsonPointer":"/chess_char_4_22_a/talents/0","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_22_a/talents/0","sourceEffectText":"编入队伍时所有我方单位的再部署时间-10%。"},"skadi":{"recordId":"chess_char_3_05_a","jsonPointer":"/chess_char_3_05_a/talents/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_3_05_a/talents/1","sourceEffectText":"自身再部署时间-10秒。"},"texas":{"recordId":"chess_char_4_16_a","skillId":"skchr_texas2_3","jsonPointer":"/chess_char_4_16_a/skill","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_16_a/skill","sourceEffectText":"部署后立即对周围所有敌人造成两次相当于攻击力115%的法术伤害并使目标晕眩1.5秒。"},"difference":"银灰与斯卡蒂只支持缩短计时器，生效范围/条件不同；德克萨斯支持部署触发范围伤害，不支持返场治疗或仅限返场。返场治疗仍无具名来源，当前数值是适配。"}}]`
+- 2 人：成员再部署时间缩短20%；每名成员本场首次返场对8格内敌人造成100%攻击力法术伤害。 效果：`[{"kind":"redeploy_return","params":{"returnLimit":1,"damageType":"arts","timeMultiplier":0.8,"heal":0,"damage":100},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","silverAsh":{"recordId":"chess_char_4_22_a","jsonPointer":"/chess_char_4_22_a/talents/0","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_22_a/talents/0","sourceEffectText":"编入队伍时所有我方单位的再部署时间-10%。"},"skadi":{"recordId":"chess_char_3_05_a","jsonPointer":"/chess_char_3_05_a/talents/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_3_05_a/talents/1","sourceEffectText":"自身再部署时间-10秒。"},"texas":{"recordId":"chess_char_4_16_a","skillId":"skchr_texas2_3","jsonPointer":"/chess_char_4_16_a/skill","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_16_a/skill","sourceEffectText":"部署后立即对周围所有敌人造成两次相当于攻击力115%的法术伤害并使目标晕眩1.5秒。"},"difference":"银灰与斯卡蒂只支持缩短计时器，生效范围/条件不同；德克萨斯支持部署触发范围伤害，不支持返场治疗或仅限返场。返场治疗仍无具名来源，当前数值是适配。"}}]`
+- 3 人：成员再部署时间缩短35%；每名成员本场首次返场对8格内敌人造成180%攻击力法术伤害。 效果：`[{"kind":"redeploy_return","params":{"returnLimit":1,"damageType":"arts","timeMultiplier":0.65,"heal":0,"damage":180},"reference":{"nativeCommit":"4ed1ad32ec10da15c23f9d7939dade603950759b","sourcePath":"E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native/chess.json","silverAsh":{"recordId":"chess_char_4_22_a","jsonPointer":"/chess_char_4_22_a/talents/0","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_22_a/talents/0","sourceEffectText":"编入队伍时所有我方单位的再部署时间-10%。"},"skadi":{"recordId":"chess_char_3_05_a","jsonPointer":"/chess_char_3_05_a/talents/1","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_3_05_a/talents/1","sourceEffectText":"自身再部署时间-10秒。"},"texas":{"recordId":"chess_char_4_16_a","skillId":"skchr_texas2_3","jsonPointer":"/chess_char_4_16_a/skill","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:data/chess.json/chess_char_4_16_a/skill","sourceEffectText":"部署后立即对周围所有敌人造成两次相当于攻击力115%的法术伤害并使目标晕眩1.5秒。"},"difference":"银灰与斯卡蒂只支持缩短计时器，生效范围/条件不同；德克萨斯支持部署触发范围伤害，不支持返场治疗或仅限返场。返场治疗仍无具名来源，当前数值是适配。"}}]`
 ### 飞行 (flight)
-- 1 人：腾空期间减伤10%、攻速+15；技能结束对1.5格内地面和空中敌人造成60%攻击力物理伤害。 效果：`[{"kind":"flight_dive","params":{"radius":1.5,"antiAir":true,"mitigation":10,"aspd":15,"dive":60}}]`
-- 2 人：腾空期间减伤20%、攻速+25；技能结束对1.5格内地面和空中敌人造成120%攻击力物理伤害。 效果：`[{"kind":"flight_dive","params":{"radius":1.5,"antiAir":true,"mitigation":20,"aspd":25,"dive":120}}]`
-- 3 人：腾空期间减伤35%、攻速+45；技能结束对1.5格内地面和空中敌人造成240%攻击力物理伤害。 效果：`[{"kind":"flight_dive","params":{"radius":1.5,"antiAir":true,"mitigation":35,"aspd":45,"dive":240}}]`
+- 1 人：蒂比S2起飞期间获得15攻速并仅受到地面敌人10%减伤；存活且仍部署时，S2自然结束对1.5格内地面与空中敌人造成60%攻击力物理伤害一次。 效果：`[{"kind":"flight_dive","params":{"radius":1.5,"antiAir":true,"mitigation":10,"aspd":15,"dive":60}}]`
 ### 术式 (arts)
-- 2 人：自然技力每秒+0.2，法术抗性穿透10%；每第2次技能对最近3名敌人追加60%攻击力法术伤害。 效果：`[{"kind":"arts_cycle","params":{"every":2,"targetCount":3,"sp":0.2,"resPen":10,"damage":60}}]`
-- 4 人：自然技力每秒+0.4，法术抗性穿透18%；每第2次技能对最近3名敌人追加110%攻击力法术伤害。 效果：`[{"kind":"arts_cycle","params":{"every":2,"targetCount":3,"sp":0.4,"resPen":18,"damage":110}}]`
-- 6 人：自然技力每秒+0.7，法术抗性穿透30%；每第2次技能对最近3名敌人追加200%攻击力法术伤害。 效果：`[{"kind":"arts_cycle","params":{"every":2,"targetCount":3,"sp":0.7,"resPen":30,"damage":200}}]`
+- 2 人：成员自然技力回复每秒+0.2，无视10%法抗；每2次施法，对最近3名敌人各造成60%攻击力法术伤害。 效果：`[{"kind":"arts_cycle","params":{"every":2,"targetCount":3,"sp":0.2,"resPen":10,"damage":60}}]`
+- 4 人：成员自然技力回复每秒+0.4，无视18%法抗；每2次施法，对最近3名敌人各造成110%攻击力法术伤害。 效果：`[{"kind":"arts_cycle","params":{"every":2,"targetCount":3,"sp":0.4,"resPen":18,"damage":110}}]`
+- 6 人：成员自然技力回复每秒+0.7，无视30%法抗；每2次施法，对最近3名敌人各造成200%攻击力法术伤害。 效果：`[{"kind":"arts_cycle","params":{"every":2,"targetCount":3,"sp":0.7,"resPen":30,"damage":200}}]`
 ### 破阵 (breaker)
-- 2 人：普通攻击无视10%防御；对被阻挡目标伤害+15%；本场首次击倒精英后攻速+20，持续8秒。 效果：`[{"kind":"breaker_front","params":{"duration":8,"eliteOnce":true,"defPen":10,"blockedBonus":15,"eliteAspd":20}}]`
-- 4 人：普通攻击无视20%防御；对被阻挡目标伤害+25%；本场首次击倒精英后攻速+30，持续8秒。 效果：`[{"kind":"breaker_front","params":{"duration":8,"eliteOnce":true,"defPen":20,"blockedBonus":25,"eliteAspd":30}}]`
-- 6 人：普通攻击无视35%防御；对被阻挡目标伤害+40%；本场首次击倒精英后攻速+50，持续8秒。 效果：`[{"kind":"breaker_front","params":{"duration":8,"eliteOnce":true,"defPen":35,"blockedBonus":40,"eliteAspd":50}}]`
+- 2 人：成员无视10%防御，对被阻挡敌人的伤害提高15%；本人首次击倒精英或首领后获得20攻速，持续8秒。 效果：`[{"kind":"breaker_front","params":{"duration":8,"eliteOnce":true,"defPen":10,"blockedBonus":15,"eliteAspd":20}}]`
+- 4 人：成员无视20%防御，对被阻挡敌人的伤害提高25%；本人首次击倒精英或首领后获得30攻速，持续8秒。 效果：`[{"kind":"breaker_front","params":{"duration":8,"eliteOnce":true,"defPen":20,"blockedBonus":25,"eliteAspd":30}}]`
+- 6 人：成员无视35%防御，对被阻挡敌人的伤害提高40%；本人首次击倒精英或首领后获得50攻速，持续8秒。 效果：`[{"kind":"breaker_front","params":{"duration":8,"eliteOnce":true,"defPen":35,"blockedBonus":40,"eliteAspd":50}}]`
 ### 灼燃 (burn)
-- 2 人：攻击附加10%攻击力灼燃损伤；灼燃爆发时周围敌人额外受到30%攻击力灼燃损伤，同一目标冷却3秒，不继续传播。 效果：`[{"kind":"burn_spread","params":{"targetCooldown":3,"noPropagation":true,"burn":10,"burst":30}}]`
-- 3 人：攻击附加18%攻击力灼燃损伤；灼燃爆发时周围敌人额外受到60%攻击力灼燃损伤，同一目标冷却3秒，不继续传播。 效果：`[{"kind":"burn_spread","params":{"targetCooldown":3,"noPropagation":true,"burn":18,"burst":60}}]`
-- 4 人：攻击附加30%攻击力灼燃损伤；灼燃爆发时周围敌人额外受到100%攻击力灼燃损伤，同一目标冷却3秒，不继续传播。 效果：`[{"kind":"burn_spread","params":{"targetCooldown":3,"noPropagation":true,"burn":30,"burst":100}}]`
+- 1 人：独有盟约。成员伤害附带10%攻击力灼燃损伤，同目标冷却3秒；本人引发灼燃爆发时，对目标1.5格内其它敌人追加30%攻击力法术伤害，不再传播损伤。 效果：`[{"kind":"burn_spread","params":{"targetCooldown":3,"noPropagation":true,"burn":10,"burst":30,"radius":1.5},"reference":{"native":{"game":"卫戍协议原生本体","version":"4ed1ad32ec10da15c23f9d7939dade603950759b","recordId":"burn element gauge / elementBurst","nativeGit":"4ed1ad32ec10da15c23f9d7939dade603950759b:server/sim/damage.js:applyElement/elementBurst","sourceEffectText":"原生元素损伤累积到阈值后触发元素爆发；盟约沿用该爆发事件作为触发点。"},"competitor":{"game":"Teamfight Tactics","version":"Patch 11.15","recordId":"Cannoneer","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-11-15-notes/","sourceEffectText":"枪手每第五次射击，按该次射击伤害的一定比例，对目标周围造成物理爆炸伤害。"},"difference":"采用枪手围绕当前目标爆炸的范围伤害原语，结合原生灼燃爆发事件。触发条件由第五次射击改为本人引发灼燃爆发；伤害改为本人攻击力比例的法术溅射，排除主目标且不传播元素损伤；范围与数值为项目适配。"}}]`
 ### 凋亡 (necrosis)
-- 2 人：凋亡损伤提高20%；凋亡爆发目标每秒额外受到50%最高成员攻击力法术伤害，持续5秒。 效果：`[{"kind":"necrosis_burst","params":{"duration":5,"noSameSourceStack":true,"bonus":20,"firstBurstSp":0,"dps":50}}]`
-- 3 人：凋亡损伤提高40%；凋亡爆发目标每秒额外受到90%最高成员攻击力法术伤害，持续5秒。 效果：`[{"kind":"necrosis_burst","params":{"duration":5,"noSameSourceStack":true,"bonus":40,"firstBurstSp":0,"dps":90}}]`
-- 4 人：凋亡损伤提高70%；凋亡爆发目标每秒额外受到150%最高成员攻击力法术伤害，持续5秒。 效果：`[{"kind":"necrosis_burst","params":{"duration":5,"noSameSourceStack":true,"bonus":70,"firstBurstSp":0,"dps":150}}]`
+- 2 人：成员凋亡损伤提高20%；凋亡爆发目标每秒额外受到触发成员50%攻击力法术伤害，持续5秒；同目标本场只触发一次。 效果：`[{"kind":"necrosis_burst","params":{"duration":5,"noSameSourceStack":true,"bonus":20,"firstBurstSp":0,"dps":50}}]`
+- 3 人：成员凋亡损伤提高40%；凋亡爆发目标每秒额外受到触发成员90%攻击力法术伤害，持续5秒；同目标本场只触发一次。 效果：`[{"kind":"necrosis_burst","params":{"duration":5,"noSameSourceStack":true,"bonus":40,"firstBurstSp":0,"dps":90}}]`
+- 4 人：成员凋亡损伤提高70%；凋亡爆发目标每秒额外受到触发成员150%攻击力法术伤害，持续5秒；同目标本场只触发一次。 效果：`[{"kind":"necrosis_burst","params":{"duration":5,"noSameSourceStack":true,"bonus":70,"firstBurstSp":0,"dps":150}}]`
 ### 圣枪 (holyGun)
-- 1 人：按新约能天使一星/二星/三星，所有拉特兰成员的攻击分别有15%/25%/100%几率呼叫空袭，基础伤害为60%/100%/500%攻击力；每枚本场真实消耗弹药再提高0.5%/0.8%/2%，最多计入100/150/500枚，范围1.5/1.5/2格。新约能天使施法时在全战场随机落下15枚弹药；每名成员每0.4秒至多触发一次。三星空袭命中后赋予50%弹药技能易伤，持续本场。 效果：`[{"kind":"holy_gun","params":{"actionCooldown":0.4,"bombCount":15,"skillId":"skchr_angel2_2","byStar":{"1":{"chance":15,"damage":60,"cap":100,"factor":0.005,"radius":1.5},"2":{"chance":25,"damage":100,"cap":150,"factor":0.008,"radius":1.5},"3":{"chance":100,"damage":500,"cap":500,"factor":0.02,"radius":2}}}}]`
+- 1 人：拉特兰攻击独立触发空袭，每名攻击者冷却0.4秒；依新约能天使星级，概率15/25/100%，基础伤害为其攻击力60/100/500%，半径1.5/1.5/2格。每消耗1枚弹药提高0.5/0.8/2%该伤害，最多计100/150/500枚。固定技能投放15枚随机弹药。 效果：`[{"kind":"holy_gun","params":{"actionCooldown":0.4,"bombCount":15,"skillId":"skchr_angel2_2","byStar":{"1":{"chance":15,"damage":60,"cap":100,"factor":0.005,"radius":1.5},"2":{"chance":25,"damage":100,"cap":150,"factor":0.008,"radius":1.5},"3":{"chance":100,"damage":500,"cap":500,"factor":0.02,"radius":2}}}}]`
 ### 耶拉之息 (yela)
-- 1 人：全行走格与保护目标铺雪；按圣聆初雪一星/二星/三星，每格冷却3/2/3秒，寒冷持续1.5/2/1.5秒。未开技能时每个寒冷或冻结敌人提供每秒0.2独立技力；技能期间每个此类敌人提供攻击+10%、攻速+10。三星技能永久持续，保留防御与法抗加成；攻击仅命中单一目标时追加两次500%攻击力法术伤害，施加1层麻痹。 效果：`[{"kind":"yela_breath","params":{"tileCoverage":"walkable-and-objective","starThreeDoubleHit":500,"paralysis":1,"permanentSkillAt":3,"byStar":{"1":{"tileCooldown":3,"coldDuration":1.5,"perColdSp":0.2,"skillAtk":10,"skillAspd":10},"2":{"tileCooldown":2,"coldDuration":2,"perColdSp":0.2,"skillAtk":10,"skillAspd":10},"3":{"tileCooldown":3,"coldDuration":1.5,"perColdSp":0.2,"skillAtk":10,"skillAspd":10}}}}]`
+- 1 人：圣聆初雪铺设全图可行走格与目标格雪地。依一星/二星/三星，每格冷却3/2/3秒，施加1.5/2/1.5秒寒冷；未施法时，每名寒冷或冻结敌人提供每秒0.2技力；技能期间每名提供10%攻击与10攻速。三星固定技能永久保持，单体攻击追加2次500%攻击力法术伤害并施加1层麻痹。 效果：`[{"kind":"yela_breath","params":{"tileCoverage":"walkable-and-objective","starThreeDoubleHit":500,"paralysis":1,"permanentSkillAt":3,"byStar":{"1":{"tileCooldown":3,"coldDuration":1.5,"perColdSp":0.2,"skillAtk":10,"skillAspd":10},"2":{"tileCooldown":2,"coldDuration":2,"perColdSp":0.2,"skillAtk":10,"skillAspd":10},"3":{"tileCooldown":3,"coldDuration":1.5,"perColdSp":0.2,"skillAtk":10,"skillAspd":10}}}}]`
 ### 岁 (sui)
-- 1 人：首次施法为全队获得20%生命屏障；每10次全队施法召唤岁影8秒，攻击/生命分别为最高岁成员的80%/150%，场上最多1只。 效果：`[{"kind":"sui_shadow","params":{"barrierOnFirstCast":true,"summonDuration":8,"maxSummons":1,"visible":true,"barrier":20,"summonEvery":10,"summonAtk":80,"summonHp":150}}]`
-- 2 人：首次施法为全队获得30%生命屏障；每8次全队施法召唤岁影8秒，攻击/生命分别为最高岁成员的120%/200%，场上最多1只。 效果：`[{"kind":"sui_shadow","params":{"barrierOnFirstCast":true,"summonDuration":8,"maxSummons":1,"visible":true,"barrier":30,"summonEvery":8,"summonAtk":120,"summonHp":200}}]`
-- 3 人：首次施法为全队获得50%生命屏障；每6次全队施法召唤岁影8秒，攻击/生命分别为最高岁成员的200%/300%，场上最多1只。 效果：`[{"kind":"sui_shadow","params":{"barrierOnFirstCast":true,"summonDuration":8,"maxSummons":1,"visible":true,"barrier":50,"summonEvery":6,"summonAtk":200,"summonHp":300}}]`
+- 1 人：全队首次施法为同队存活干员提供20%最大生命屏障；全队累计每10次施法，对最近终点的精英或首领召唤岁影，生命为最高攻击成员的150%、攻击为其80%，持续8秒，最多1个，每秒造成法术伤害。 效果：`[{"kind":"sui_shadow","params":{"barrierOnFirstCast":true,"summonDuration":8,"maxSummons":1,"visible":true,"barrier":20,"summonEvery":10,"summonAtk":80,"summonHp":150}}]`
+- 2 人：全队首次施法为同队存活干员提供30%最大生命屏障；全队累计每8次施法，对最近终点的精英或首领召唤岁影，生命为最高攻击成员的200%、攻击为其120%，持续8秒，最多1个，每秒造成法术伤害。 效果：`[{"kind":"sui_shadow","params":{"barrierOnFirstCast":true,"summonDuration":8,"maxSummons":1,"visible":true,"barrier":30,"summonEvery":8,"summonAtk":120,"summonHp":200}}]`
+- 3 人：全队首次施法为同队存活干员提供50%最大生命屏障；全队累计每6次施法，对最近终点的精英或首领召唤岁影，生命为最高攻击成员的300%、攻击为其200%，持续8秒，最多1个，每秒造成法术伤害。 效果：`[{"kind":"sui_shadow","params":{"barrierOnFirstCast":true,"summonDuration":8,"maxSummons":1,"visible":true,"barrier":50,"summonEvery":6,"summonAtk":200,"summonHp":300}}]`
 ### 王冠 (crown)
-- 1 人：其他成员每次施法使魔王下次技能伤害提高一星/二星/三星3%/5%/10%；本场最多30层。 效果：`[{"kind":"crown_memory","params":{"maxStacks":30,"battleOnly":true,"byStar":{"1":{"perCast":3},"2":{"perCast":5},"3":{"perCast":10}}}}]`
+- 1 人：其他友方干员每次实际施法，为存活且已部署的魔王累计3/5/10%攻击力（一星/二星/三星），本场最多30层；攻击力加成强化魔王实际治疗。 效果：`[{"kind":"crown_memory","params":{"maxStacks":30,"byStar":{"1":{"perCast":3},"2":{"perCast":5},"3":{"perCast":10}}},"reference":{"game":"Teamfight Tactics","version":"Patch 11.12","recordId":"Spellweaver","sourceUrl":"https://teamfighttactics.leagueoflegends.com/en-gb/news/game-updates/teamfight-tactics-patch-11-12-notes/","sourceEffectText":"Spellweavers gain Ability Power and gain more Ability Power whenever they cast a spell.","difference":"The transferable primitive is spell-cast-driven stacking. This pact counts other same-owner operators’ casts, converts Ability Power into Crown ATK to strengthen her native ATK-scaled healing, and sets the per-cast star values and 30-stack cap as project adaptations."}}]`
 
 ## 配方
 

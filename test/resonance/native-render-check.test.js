@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyRequest, compareModuleSources, comparePlayerSnapshot, moduleUrlFor, normalChromeArgs, outputPaths, parseArgs } from '../../tools/resonance/native-render-check.mjs';
+import { classifyRequest, compareModuleSources, comparePlayerSnapshot, moduleUrlFor, normalChromeArgs, outputPaths, parseArgs, WHOLE_UI_MODULES } from '../../tools/resonance/native-render-check.mjs';
 
 test('baseline URL is fixed and candidate URLs use an allowlisted same-origin resonance page',()=>{
  const baseline=parseArgs([]);assert.equal(baseline.phase,'baseline');assert.equal(baseline.url,'https://workshop.colorc.cc/stronghold/resonance.html?session=53ffde79-85b3-4302-89f7-e0d792f78723');
@@ -57,4 +57,17 @@ test('module fetch URLs use the actual redirected resonance page directory',()=>
 test('normal browser launch uses only non-forcing Chrome args',()=>{
  assert.deepEqual(normalChromeArgs(),['--no-first-run','--disable-background-networking']);
  assert.equal(normalChromeArgs().some(arg=>/swiftshader|angle|gpu-blocklist|no-sandbox/i.test(arg)),false);
+});
+
+test('whole UI publication has distinct evidence paths and verifies its result and economy sources',()=>{
+ const options=parseArgs(['--phase','candidate','--published-native','a'.repeat(40),'--capture-suffix','whole-ui','--url','https://workshop.colorc.cc/stronghold/resonance.html']);
+ assert.equal(options.captureSuffix,'whole-ui');
+ const output=outputPaths('candidate','whole-ui');
+ for(const old of [outputPaths('baseline'),outputPaths('candidate'),outputPaths('candidate','strict')])for(const key of Object.keys(output))assert.notEqual(output[key],old[key]);
+ assert.ok(WHOLE_UI_MODULES.includes('public/js/resonance/native/ResultView.js'));
+ assert.ok(WHOLE_UI_MODULES.includes('public/js/resonance/economyPanels.js'));
+ const exact=Object.fromEntries(WHOLE_UI_MODULES.map(file=>[file,`published:${file}`]));
+ assert.ok(compareModuleSources(exact,exact,WHOLE_UI_MODULES).every(row=>row.match));
+ const incomplete={...exact};delete incomplete['public/js/resonance/native/ResultView.js'];
+ assert.equal(compareModuleSources(exact,incomplete,WHOLE_UI_MODULES).find(row=>row.file.endsWith('/ResultView.js')).match,false);
 });

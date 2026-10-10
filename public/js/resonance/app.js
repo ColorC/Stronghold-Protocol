@@ -13,6 +13,7 @@ import { resonanceApi } from './api.js';
 import { parseDetailHash, actionErrorText } from './model.js';
 import { DetailPanel } from './detail.js';
 import { CodexScreen } from './codex.js';
+import { ResultPage } from './native/ResultPage.js';
 
 const LAST = 'rs:lastSession';
 const DIFFICULTIES = [
@@ -63,10 +64,14 @@ export function App() {
   const stepFromUrl = ['difficulty', 'environment', 'briefing'].includes(stepName) ? 1 : 0;
   const [catalog, setCatalog] = useState(null);
   const [activeIds, setActiveIds] = useState([]);
-  const [seed, setSeed] = useState(String(Math.floor(Math.random() * 2 ** 31)));
+  const [seed, setSeed] = useState(() => {
+    const requested = new URL(location.href).searchParams.get('seed');
+    return requested != null && /^\d+$/.test(requested) ? requested : String(Math.floor(Math.random() * 2 ** 31));
+  });
   const [difficulty, setDifficulty] = useState(DIFFICULTIES.some(([id]) => id === query.get('difficulty')) ? query.get('difficulty') : 'NORMAL');
   const [step, setStep] = useState(() => query.has('session') ? 0 : stepFromUrl);
   const [session, setSession] = useState(null);
+  const [replayMode, setReplayMode] = useState(() => /^#replay-[1-9]\d*$/.test(location.hash));
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState(null);
@@ -130,6 +135,7 @@ export function App() {
   useEffect(() => {
     const open = () => {
       const target = parseDetailHash(location.hash);
+      setReplayMode(target?.kind === 'replay');
       if (!target) return;
       if (['operator', 'pact', 'item', 'recipe', 'strategy', 'environment', 'opening'].includes(target.kind)) setDetail(target);
       else if (target.kind === 'section') {
@@ -141,6 +147,8 @@ export function App() {
     addEventListener('hashchange', open);
     return () => removeEventListener('hashchange', open);
   }, [catalog, session]);
+
+  const onSessionState = useCallback(next => setSession(current => current?.id === session?.id ? { ...current, state: next } : current), [session?.id]);
 
   const start = useCallback(async () => {
     if (creatingSession.current || !seedValid || step !== 1 || catalogKey !== String(numericSeed)) return;
@@ -176,11 +184,13 @@ export function App() {
   };
 
   if (failure) return html`<main class="rs-start"><${Panel} title="暂时无法进入共鸣"><p>${failure}</p><${Button} onClick=${() => { setFailure(''); location.reload(); }}>重新载入<//></${Panel}></main>`;
-  if (session?.catalog) return html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${session.catalog} onLeave=${() => {
+  const leaveSession = () => {
     sessionUrl(null);
     const url = new URL(location.href); url.hash = ''; history.replaceState(null, '', url);
-    setDetail(null); setSession(null); setStep(0);
-  }}/> `;
+    setDetail(null); setSession(null); setStep(0); setReplayMode(false);
+  };
+  if (session?.catalog && session.state?.phase === 'complete' && !replayMode) return html`<${ResultPage} state=${session.state} catalog=${session.catalog} onLeave=${leaveSession} onReplay=${round=>{location.hash=`replay-${round}`;setReplayMode(true)}}/>`;
+  if (session?.catalog) return html`<${GameScreen} key=${session.id} id=${session.id} initial=${session.state} catalog=${session.catalog} onState=${onSessionState} onLeave=${leaveSession}/> `;
   if (!catalog || (query.has('session') && !session && !failure && openedSession.current !== query.get('session'))) return html`<main class="rs-start"><${Spinner} label="载入共鸣"/></main>`;
   if (codex) return html`<${CodexScreen} catalog=${catalog} activeIds=${activeIds}
     initialTab=${codexTab}

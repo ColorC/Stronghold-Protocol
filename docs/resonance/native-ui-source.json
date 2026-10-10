@@ -80,7 +80,7 @@
     "public/js/ui/shopBar.js",
     "public/js/ui/assetUrls.js"
   ],
-  "scope": "共鸣专用入口加载原生样式；商店、HUD及基础组件沿用上游组件，通过适配器提供共鸣状态。",
+  "scope": "从最新上游完整MatchScreen与ResultView的根结构重建共鸣入口；保留原生战场、HUD、准备按钮、商店、部署人数、盟约条及右上角控件位置，共鸣的状态和行为通过适配器接入。",
   "rendererLifecycle": {
     "upstreamRevision": "030d0a293870734ac11c5f262da3ac30e0806dc5",
     "files": [
@@ -88,5 +88,76 @@
       "public/js/render/app.js"
     ],
     "adaptation": "将上游分模块生命周期修复继承至现有渲染器；共鸣要求原生战场，超时取消并销毁迟到视图，加载失败自动重试并提供重新载入。"
-  }
+  },
+  "wholeScreenInheritance": {
+    "upstreamRevision": "1db8e51023ae6abaec9370beb81a513d5c4d0b01",
+    "screenSource": "public/js/screens/game.js:MatchScreen",
+    "resultSource": "public/js/screens/result.js:ResultView",
+    "target": "public/js/resonance/gameChrome.js",
+    "terminalTargets": [
+      "public/js/resonance/native/ResultView.js",
+      "public/js/resonance/native/ResultPage.js",
+      "public/js/resonance/app.js"
+    ],
+    "inheritedStructure": [
+      "screen.gm",
+      "gm__field",
+      "gm__vignette",
+      "gm__hud",
+      "TopBar/ReadyToggle",
+      "gm__bonds/BondStrip",
+      "gm__effects/EffectsList",
+      "ShopBar/shopbar__remain",
+      "gm__corner",
+      "dpanel--right/is-shop",
+      "screen.result/result__hero/result__players/rcard"
+    ],
+    "adaptations": [
+      "将单人共鸣经营状态映射到原生HUD与商店模型",
+      "移除本模式不存在的多人准备与队友战斗进度",
+      "增加左侧装备栏、收入与战报详情",
+      "结果单人阵容卡仅展示持久状态实际记录的字段",
+      "最终结算卸载GameScreen与WebGL，回放重新进入战场"
+    ],
+    "notClaimed": "没有把上游多人控制器、网络协议与工坊经营规则整体移入共鸣。"
+  },
+  "interactionReferences": [
+    {
+      "area": "inventory and drag combination",
+      "url": "https://teamfighttactics.leagueoflegends.com/en-gb/news/dev/dev-quality-of-life-improvements/",
+      "published": "2024-11-06"
+    },
+    {
+      "area": "combat recap statistics",
+      "url": "https://teamfighttactics.leagueoflegends.com/en-us/news/game-updates/teamfight-tactics-patch-10-20-notes/",
+      "published": "2020-09-29"
+    }
+  ],
+  "componentReuse": [
+    {
+      "path": "public/js/ui/components.js",
+      "nativeLastChange": "2586424a4302fbaeebb86e787689e1a639d2b68c",
+      "scope": "复用本项目现有的本体组件及其适配接口；整屏结构参考latest upstream，而非声称这些适配模块逐字等于上游。"
+    },
+    {
+      "path": "public/js/ui/hud.js",
+      "nativeLastChange": "89042c33b883ec679a65241e1d26feaa1f22f14c",
+      "scope": "复用本项目现有的本体组件及其适配接口；整屏结构参考latest upstream，而非声称这些适配模块逐字等于上游。"
+    },
+    {
+      "path": "public/js/ui/bondStrip.js",
+      "nativeLastChange": "2586424a4302fbaeebb86e787689e1a639d2b68c",
+      "scope": "复用本项目现有的本体组件及其适配接口；整屏结构参考latest upstream，而非声称这些适配模块逐字等于上游。"
+    },
+    {
+      "path": "public/js/ui/shopBar.js",
+      "nativeLastChange": "498cae5e6b9927df62fa1189b4f92a297be9c2b6",
+      "scope": "复用本项目现有的本体组件及其适配接口；整屏结构参考latest upstream，而非声称这些适配模块逐字等于上游。"
+    },
+    {
+      "path": "public/js/ui/assetUrls.js",
+      "nativeLastChange": "e53b9c8e2e7096492b6a694b3c65c3def91887bb",
+      "scope": "复用本项目现有的本体组件及其适配接口；整屏结构参考latest upstream，而非声称这些适配模块逐字等于上游。"
+    }
+  ]
 }

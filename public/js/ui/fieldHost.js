@@ -213,7 +213,7 @@ export function seedAssets(store) {
 /**
  * Create a field view in `host`: the render engine when available, else the DOM fallback.
  * @param {HTMLElement} host
- * @param {{ tierChips?: 'roman'|'pips'|'color', signal?: AbortSignal, requireEngine?: boolean }|null} [extra] mode options; requireEngine rejects instead of substituting a DOM board
+ * @param {{ tierChips?: 'roman'|'pips'|'color'|'base', signal?: AbortSignal, requireEngine?: boolean }|null} [extra] mode options; requireEngine rejects instead of substituting a DOM board
  * @returns {Promise<ReturnType<typeof guardView>>}
  */
 export async function mountFieldView(host, extra = null) {
@@ -271,7 +271,7 @@ export async function mountFieldView(host, extra = null) {
 /**
  * Preact hook: mount a field view into `hostRef`; returns { view, kind, error, retry } (view null while loading).
  * @param {{ current: HTMLElement|null }} hostRef
- * @param {{ tierChips?: 'roman'|'pips'|'color', requireEngine?: boolean, retryDelays?: number[] }|null} [extra] mode options (read once)
+ * @param {{ tierChips?: 'roman'|'pips'|'color'|'base', requireEngine?: boolean, retryDelays?: number[] }|null} [extra] mode options (read once)
  */
 export function useFieldView(hostRef, extra = null) {
   const optionsRef = useRef(null);

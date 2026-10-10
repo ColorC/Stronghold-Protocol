@@ -29,8 +29,10 @@ function playerFacingDesign(markdown) {
     if (!DESIGN_SECTIONS.has(heading)) continue;
     const body = block.replace(/^#{2,3} .+\r?\n/, '').trim();
     const paragraphs = body.split(/\r?\n\s*\r?\n/).filter(Boolean).filter(paragraph => !(
-      /完整招募目录采用|完整干员资料采用|界面沿用工坊|概率采用当前 Set18|五费名单：|费用映射以现有设计 tier|^- 原[一二三四五六]档|完整内容表需包括|经营状态、配置与战斗核心共用|日常使用 `recording:false`|测试覆盖经济边界|推演后逐次修订|全部配置与完整用户故事|磁盘工具持续计入|每个保留的新增机制|用户明确指定|必须包含的主逻辑/i.test(paragraph)
-    ));
+      /完整招募目录采用|完整干员资料采用|界面沿用工坊|界面以最新上游|概率采用当前 Set18|五费名单：|费用映射以现有设计 tier|^- 原[一二三四五六]档|完整内容表需包括|经营状态、配置与战斗核心共用|日常使用 `recording:false`|测试覆盖经济边界|推演后逐次修订|全部配置与完整用户故事|磁盘工具持续计入|每个保留的新增机制|用户明确指定|必须包含的主逻辑/i.test(paragraph)
+    )).map(paragraph => paragraph
+      .replace(/这个循环参考历史 Sentinel .*?不要求先受伤或等破盾才能获得增益。/g, '屏障与攻速在周期开始时同时获得。')
+      .replace(/未实现的火墙、狼影与其它大档附加效果.*?虚构收益。/g, ''));
     if (paragraphs.length) included.push(`## ${heading}\n\n${paragraphs.join('\n\n')}`);
   }
   const result = included.join('\n\n');

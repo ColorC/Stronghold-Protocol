@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.SP_DATA_DIR = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data';
+process.env.SP_DATA_DIR = 'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native';
 
 const [{ getData }, { getResonanceCatalog }, { Battle }, { installResonanceEquipment }, { installResonancePacts }] = await Promise.all([
   import('../../server/data.js'),

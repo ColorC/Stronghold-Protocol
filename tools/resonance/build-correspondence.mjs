@@ -306,29 +306,31 @@ if(ulpianusEvidence?.jsonPointer&&records.operators.chess_char_5_05_a){
 }
 
 for (const [id, pact] of Object.entries(catalog.pacts)) {
+  const currentEvidenceOnly=['symbiosis','crown','burn'].includes(id);
   const old = auditPacts[id];
   const previous=priorRecord('pacts',id);
   const currentKinds = [...new Set(effectsAtLevels(pact).map(e => e.kind))].sort();
   const priorKinds = [...new Set(old?.effectKinds ?? [])].sort();
-  const dimensions=pactDimensionEvidence(id);
+  const dimensions=currentEvidenceOnly?[]:pactDimensionEvidence(id);
   const oldStillHasCurrentComponent=currentKinds.some(kind=>priorKinds.includes(kind));
   const oldComponentRefs=oldStillHasCurrentComponent?oldRefs(old?.references??[]):[];
   const currentRefs=oldRefs(collectEvidenceRefs(currentPactEvidence[id]??{}));
   const dimensionRefs=dimensions.filter(row=>row.status!=='checked-negative').map(row=>row.reference).filter(Boolean);
-  const persistedRefs=bootstrap?[]:oldRefs(previous?.refs??[]);
-  const refs=uniqueRefs([...currentRefs,...dimensionRefs,...oldComponentRefs,...persistedRefs]);
-  const externalRefs=[...collectExternalSources(currentPactEvidence[id]??{}).map(row=>({game:row.game,version:row.version,recordID:row.recordId??row.recordID??row.name??null,sourceURL:row.sourceURL??row.sourceUrl,sourceKind:row.sourceKind??'direct source text; no local JSON snapshot',sourceEffectText:row.sourceEffectText??null})),...(bootstrap?[]:(previous?.externalRefs??[]))];
+  const persistedRefs=bootstrap||currentEvidenceOnly?[]:oldRefs(previous?.refs??[]);
+  const refs=currentEvidenceOnly?uniqueRefs(currentRefs):uniqueRefs([...currentRefs,...dimensionRefs,...oldComponentRefs,...persistedRefs]);
+  const externalRefs=[...collectExternalSources(currentPactEvidence[id]??{}).map(row=>({game:row.game,version:row.version,recordID:row.recordId??row.recordID??row.name??null,sourceURL:row.sourceURL??row.sourceUrl,sourceKind:row.sourceKind??'direct source text; no local JSON snapshot',sourceEffectText:row.sourceEffectText??null})),...(bootstrap||currentEvidenceOnly?[]:(previous?.externalRefs??[]))];
   for(const row of dimensions){const source=row.source;if(source&&(source.sourceURL||source.sourceUrl)&&!source.jsonPointer)externalRefs.push({game:source.game,version:source.version,recordID:source.recordID??source.recordId??null,sourceURL:source.sourceURL??source.sourceUrl,sourceKind:source.sourceKind??'historical official patch-note text; component-level comparison',sourceSection:source.sourceSection??null,sourceEffectText:source.sourceEffectText??null});}
   for(const row of dimensions){const source=row.source;if(source&&(source.sourceURL||source.sourceUrl)&&!source.jsonPointer)externalRefs.push({game:source.game,version:source.version,recordID:source.recordId??source.recordID??null,sourceURL:source.sourceURL??source.sourceUrl,sourceKind:'official historical patch-note text; component-level comparison',sourceEffectText:source.sourceEffectText??null,sourceSection:source.sourceSection??null});}
   for(const entry of finalPactEvidence?.evidence??[])if(entry.pact===id){for(const candidate of (entry.candidates??(entry.candidate?[entry.candidate]:[])))if((candidate.sourceURL||candidate.sourceUrl)&&!candidate.jsonPointer)externalRefs.push({game:candidate.game,version:candidate.version,recordID:candidate.recordId??candidate.recordID??null,sourceURL:candidate.sourceURL??candidate.sourceUrl,sourceKind:'official patch notes; historical text citation',sourceEffectText:candidate.sourceEffectText??null});}
-  const candidates=uniqueRefs(bootstrap?[...oldRefs(old?.references??[]).filter(ref=>!refs.some(valid=>valid.jsonPointer===ref.jsonPointer&&valid.game===ref.game))]:(previous?.candidateRefs??[]));
+  const candidates=currentEvidenceOnly?[]:uniqueRefs(bootstrap?[...oldRefs(old?.references??[]).filter(ref=>!refs.some(valid=>valid.jsonPointer===ref.jsonPointer&&valid.game===ref.game))]:(previous?.candidateRefs??[]));
   const explicit = userExplicitPacts.has(id);
   const computedDiffs=[
     ...(oldStillHasCurrentComponent&&priorKinds.join('|')!==currentKinds.join('|')?[`Prior source applies only to retained effect component(s) ${currentKinds.filter(kind=>priorKinds.includes(kind)).join(', ')}; removed SP/other effects are not restored.`]:[]),
     ...dimensions.map(row=>`${row.component}: ${row.maps??'component evidence'}${row.difference?` — ${row.difference}`:''}`),
     `Thresholds, targets, timings, values and reset/cap values are taken from the current v2 pact record below; these component sources do not establish the complete composite as an exact match.`,
   ];
-  const diffs=bootstrap?computedDiffs:(previous?.adaptations??computedDiffs);
+  const currentDifference=currentPactEvidence[id]?.difference;
+  const diffs=currentEvidenceOnly?[...(currentDifference?[currentDifference]:[]),'Thresholds, targets, timings, values and reset/cap values follow the current v2 pact; cited mechanisms support only the stated primitives, not an exact composite match.']:(bootstrap?computedDiffs:(previous?.adaptations??computedDiffs));
   const resolvedComponentNames=new Set(dimensions.filter(row=>row.status!=='checked-negative').map(row=>row.component));
   const unresolved=(bootstrap?(nativeAudit?.pactElements?.remainingUnsupported??[]).filter(row=>row.pactId===id&&!String(row.v2Disposition??'').includes('removed-from-v2')&&!resolvedComponentNames.has(row.elementId)).map(row=>`${row.elementId}: ${row.remainingUnsupported}`):priorRecord('pacts',id)?.remainingUnsupported??[]);
   if(bootstrap){const priorAudit=pactOperatorAudit?.pacts?.find(row=>row.id===id);for(const element of priorAudit?.elementEvidence??[])if(element.status==='unmatched'&&!(dimensions.some(row=>row.component===element.elementId&&(row.reference||row.source?.sourceURL||row.source?.sourceUrl)))){const detail=element.trigger??element.benefit??element.elementId;const item=`${element.elementId}: no concrete mechanism source found for ${detail}; retained as an unresolved component.`;if(!unresolved.includes(item))unresolved.push(item);}}
@@ -474,6 +476,7 @@ const nativeAuditStatistics=bootstrap?{
   currentComputedSkillFieldDiffCount:Object.values(records.operators).reduce((sum,row)=>sum+row.currentComputedSkillFieldDiffs.length,0),
   interpretation:'The source audit records 49 operators / 234 changed override fields. This count is preserved as a native-to-overlay difference. Per-operator field changes are retained in nativeAuditStarOverrideDiffs; no competitor correspondence is implied.'
 }:{...previousAuditStats,currentComputedSkillFieldDiffCount:Object.values(records.operators).reduce((sum,row)=>sum+row.currentComputedSkillFieldDiffs.length,0)};
+const compatibilityRecords=priorMatrix?.compatibilityRecords??null;
 const dotaReference=bootstrap?pactOperatorAudit.references.dota:priorMatrix.referenceSourceRegistry.dota;
 const document = {
   schemaVersion:1,
@@ -483,6 +486,7 @@ const document = {
   boundary:{rulesVersion:2,activeOperatorIds:catalog.config.activeOperatorIds,seasonId:catalog.config.seasonId??catalog.season?.id??null,activeFeaturesOnly:true,allMatchesAreMechanismSpecific:false,nativeGitCommit:nativeCommit},
   sourceInputs:{catalog:'server/modes/resonance/catalog.js + shared/resonance/current-*.js',nativeData:nativeChessPath,nativeGitCommit:nativeCommit,initialAuditSources:{priorMechanicalAudit:path.join(STAGING,'strategy-equipment-correspondence-audit.json'),candidateSupplement:path.join(STAGING,'extended-strategy-equipment-candidates.json'),pactOperatorAudit:path.join(STAGING,'pact-operator-correspondence-audit.json'),seasonNativeEvidence:path.join(STAGING,'season-native-mechanism-evidence.json'),finalPactEvidence:path.join(STAGING,'final-pact-evidence.json')},note:'These locations record first-materialization provenance only. Normal regeneration reads annotations from this formal JSON and does not read staging.'},
   nativeAuditStatistics,
+  ...(compatibilityRecords?{compatibilityRecords}:{}),
   referenceSourceRegistry:{tft:{game:'Teamfight Tactics',version:tftVersion,sourceURLs:Object.values(tftUrls),currentOfficialLegality:'unconfirmed'},dota:{game:'Dota Auto Chess',version:dotaReference.version,sourceURL:dotaReference.sourceURL,nativeGit:dotaReference.sourceCommit??dotaReference.nativeGit},currency:{game:'崩坏：星穹铁道「货币战争」',version:currency.version,sourceCommit:currency.sourceCommit},native:{game:'Arknights / Stronghold Protocol native data',version:nativeCommit,jsonFile:nativeChessPath,nativeGit:nativeCommit}},
   coverage:{catalogCounts:{activeOperators:catalog.config.activeOperatorIds.length,pacts:Object.keys(catalog.pacts).length,equipment:Object.keys(catalog.equipment).length,recipes:catalog.recipes.length,strategies:Object.keys(catalog.strategies).length,openingEvents:Object.keys(resonanceOpenings).length},records:summary,removedFeatures},
   records, systems, unresolvedActiveCoreMechanisms,

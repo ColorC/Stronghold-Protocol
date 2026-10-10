@@ -42,6 +42,42 @@ test('all new seeds, opening encounters and difficulties share the same explicit
   }
 });
 
+test('season-2 maps every requested operator name to its real catalog identity and listed cost',()=>{
+  const {catalog}=newRun();
+  const expected=[
+    ['角峰','普罗旺斯','古米','艾丝黛尔','调香师','宴','砾','送葬人','跃跃','格雷伊','深靛','协律','红豆','清流'],
+    ['隐现','信仰搅拌机','地灵','惊蛰','深巡','德克萨斯','野鬃','蒂比','莎草','琳琅诗怀雅','瑰盐','格拉尼','小满'],
+    ['斯卡蒂','歌蕾蒂娅','能天使','雪猎','莱恩哈特','断崖','诗怀雅','折桠','伊内丝','风丸','万顷','白面鸮','菲莱','伺夜'],
+    ['瑕光','初雪','缄默德克萨斯','卡涅利安','风笛','塞雷娅','归溟幽灵鲨','山','寒檀','妮芙','焰影苇草','引星棘刺','锏','拉普兰德'],
+    ['魔王','乌尔比安','圣聆初雪','余','令','黍','新约能天使','塑心','维娜·维多利亚','烛煌'],
+  ];
+  const actual=resonanceSeasonOperatorIds.map(id=>catalog.operators[id]);
+  assert.deepEqual(actual.map(operator=>operator.name),expected.flat());
+  assert.deepEqual(actual.map(operator=>operator.cost),expected.flatMap((names,index)=>names.map(()=>index+1)));
+  assert.deepEqual(Object.fromEntries([1,2,3,4,5].map(cost=>[cost,actual.filter(operator=>operator.cost===cost).length])),{1:14,2:13,3:14,4:14,5:10});
+  const pactCounts=Object.keys(catalog.pacts).map(id=>resonanceSeasonOperatorIds.filter(operatorId=>catalog.operators[operatorId].pacts.includes(id)).length);
+  assert.equal(pactCounts.length,35);assert.ok(pactCounts.every(count=>count>0),'every pact has a natural member in season-2');
+  for(const id of ['babel','flight','burn'])assert.equal(resonanceSeasonOperatorIds.filter(operatorId=>catalog.operators[operatorId].pacts.includes(id)).length,1,id);
+  assert.equal(resonanceSeason.id,'resonance-season-2');
+});
+
+test('existing season-1 v2 states load their original roster and pool without mutation; unknown seasons fail',()=>{
+  const legacyCatalog=getResonanceCatalog(data,{rulesVersion:2,seasonId:'resonance-season-1',seed:812});
+  const created=createSession({seed:812,catalog:legacyCatalog});assert.equal(created.ok,true,created.error);
+  const saved=created.state,snapshot=structuredClone(saved);
+  assert.equal(saved.seasonId,'resonance-season-1');
+  assert.deepEqual(saved.activeOperatorIds,legacyCatalog.config.activeOperatorIds);
+  assert.deepEqual(Object.keys(saved.poolRemaining).sort(),[...legacyCatalog.config.activeOperatorIds].sort());
+  assert.ok(saved.pieces.every(piece=>saved.activeOperatorIds.includes(piece.operatorId)));
+  const restored=getResonanceCatalogForState(data,saved);
+  assert.equal(validateSession(saved,{catalog:restored}).ok,true);
+  assert.deepEqual(restored.config.activeOperatorIds,saved.activeOperatorIds);
+  assert.deepEqual(saved,snapshot,'catalog resolution and validation leave save data byte-for-byte structured-equal');
+  assert.throws(()=>getResonanceCatalog(data,{rulesVersion:2,seasonId:'unknown-season'}),/UNKNOWN_SEASON/);
+  assert.throws(()=>getResonanceCatalogForState(data,{...saved,seasonId:'unknown-season'}),/UNKNOWN_SEASON/);
+  assert.throws(()=>getResonanceCatalogForState(data,{...saved,seasonId:undefined}),/UNKNOWN_SEASON/);
+});
+
 test('the explicit season validates IDs, identities, fees, starter supply and preserves the named terminals and elemental roles',()=>{
   const {catalog}=newRun();const ids=[...resonanceSeasonOperatorIds];
   assert.deepEqual(validateResonanceSeasonRoster(catalog.operators),ids);
@@ -60,7 +96,7 @@ test('the explicit season validates IDs, identities, fees, starter supply and pr
   assert.deepEqual(catalog.operators.chess_char_6_03_a.pacts,['yan','combo','sui']);
   assert.deepEqual(getLegacyResonanceCatalog(data,{environmentId:'origin_yan',seed:19}).operators.chess_char_6_03_a.pacts,['yan','combo'],'new trait must not mutate the operator cache');
   const altered=newRun().state;altered.phase='choice';
-  altered.pendingChoices=[{uid:'invalid-reward',type:'operators',source:'fixture',options:['chess_native_char_2023_ling_a'],remaining:1}];
+  altered.pendingChoices=[{uid:'invalid-reward',type:'operators',source:'fixture',options:['chess_char_6_15_a'],remaining:1}];
   assert.ok(validateSession(altered,{catalog}).errors.some(error=>error.code==='INACTIVE_REWARD_OPERATOR'));
 });
 

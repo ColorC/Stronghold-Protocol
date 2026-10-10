@@ -67,12 +67,14 @@
 
 import { UF, ANIM } from '../../../shared/constants.js';
 import { SpineActor } from './spine.js';
-import { diamondTexture, shadowTexture, fxAtlas, tierChip, statusTexture, itemTexture, hudRings, ringArc, HUD_DISC, ELEMENT_RING } from './textures.js';
+import { diamondTexture, shadowTexture, fxAtlas, tierChip, tierChipLook, statusTexture, itemTexture, hudRings, ringArc, HUD_DISC, ELEMENT_RING } from './textures.js';
 import { COLORS, TIER_COLORS, ENEMY_FRAME, UNIT, PROJ, statusIconKey, statusIconSuppressed } from './style.js';
 import { drawCrate, rowDepthKey, ROW_KEY, deviceBoxOf, DEVICE_BOX } from './tiles.js';
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 const DIRS = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
+// Mirrors resonance shopCostPresentation: costs 1–5 are gray, green, blue, purple, gold.
+const BASE_TIER_TINT = [0, 0x92999d, 0x58b36b, 0x4d8bd2, 0x9b68c9, 0xd9ad3c];
 /** Deploy direction of an ally from a UnitInfo / piece: `dir` (any case), else the legacy `facing` sign. */
 export function unitDir(info) {
   const d = typeof info?.dir === 'string' ? info.dir.toUpperCase() : null;
@@ -584,18 +586,29 @@ export class UnitView {
     // nothing shows until the first HUD update decides (a culled or prep view never draws bars)
     for (const b of [this.hpBg, this.hpGhost, this.hpFill, this.shieldBar, this.spBg, this.spFill, this.spGlow]) b.visible = false;
     this.chip = null;
+    this.tierRing = null;
     this.resonanceStarText = null;
-    // operators only: summon tokens have no tier (hand and field alike)
+    // Operators only: summon tokens have no tier (hand and field alike). The base look replaces
+    // the head chip with one persistent ground sprite; no display object is made during update().
     if (!this.isEnemy && !this.isToken && this.info.kind !== 'device') {
-      this.chip = new P.Sprite(tierChip(this.tier, this.golden));
-      this.chip.anchor.set(0.5);
-      h.addChild(this.chip);
+      if (tierChipLook() === 'base') {
+        this.tierRing = new P.Sprite(ringArc(1));
+        this.tierRing.anchor.set(0.5);
+        this.tierRing.tint = BASE_TIER_TINT[clamp(this.tier, 1, 5)];
+        this.tierRing.alpha = 0.82;
+        this.tierRing.visible = false;
+        this.ctx.layers.groundFx.addChild(this.tierRing);
+      } else {
+        this.chip = new P.Sprite(tierChip(this.tier, this.golden));
+        this.chip.anchor.set(0.5);
+        h.addChild(this.chip);
+      }
       if (this.resonanceStar) {
         this.resonanceStarText = new P.Text('★'.repeat(this.resonanceStar), {
           fontFamily: 'Bender, Oxanium, sans-serif', fontSize: 13, fontWeight: '900',
           fill: '#ffe17a', stroke: '#111713', strokeThickness: 3,
         });
-        this.resonanceStarText.anchor.set(0, 0.5);
+        this.resonanceStarText.anchor.set(this.chip ? 0 : 0.5, 0.5);
         h.addChild(this.resonanceStarText);
       }
     }
@@ -957,6 +970,15 @@ export class UnitView {
     this.root.position.set(bx, by);
     this.root.alpha = alpha;
     this.root.zIndex = unitDepthKey(cam, this.x, this.y, this.lift);
+    if (this.tierRing) {
+      placeOnGround(this.ctx, this.tierRing, this.ctx.layers.groundFx, this.y, this.z);
+      const ground = cam.project(this.x, this.y, this.z, SH_P);
+      const rw = clamp(s * 0.62, 14, 72), rh = clamp(s * 0.19, 6, 22);
+      this.tierRing.scale.set(rw / this.tierRing.texture.width, rh / this.tierRing.texture.height);
+      this.tierRing.position.set(ground.x, ground.y + 1);
+      this.tierRing.alpha = 0.82 * alpha;
+      this.tierRing.visible = this.alive || this.dying > 0;
+    }
     // off-screen: nothing to animate or draw (bounds / hit-testing still follow `screen`)
     if (this._cull(bx, by, s, dt)) return;
     const flip = this.isEnemy ? (ENEMY_MODEL_FACES_LEFT ? -this.visFacing : this.visFacing) : this.visFacing;
@@ -1081,6 +1103,7 @@ export class UnitView {
       this.shadow.visible = !off;
       if (off) { if (this.facingArrow) this.facingArrow.visible = false; this.blockIcon.visible = false; }
     }
+    if (this.tierRing) this.tierRing.visible = !off && (this.alive || this.dying > 0);
     if (off) this._offDt += dt * (this.ctx.animRate?.() || 1);
     return off;
   }
@@ -1149,6 +1172,10 @@ export class UnitView {
           prep ? this.chip.y : this.chip.y,
         );
       }
+    }
+    if (this.resonanceStarText && !this.chip) {
+      this.resonanceStarText.visible = this.alive;
+      this.resonanceStarText.position.set(x, this.screen.top - clamp(s * (prep ? 0.15 : 0.34), prep ? 10 : 28, prep ? 22 : 48));
     }
     // status icons row above the bars
     const icons = this._iconKeys();
@@ -1434,6 +1461,7 @@ export class UnitView {
     this.destroyed = true;
     this._dropActor();
     this.shadow.destroy();
+    if (this.tierRing) this.tierRing.destroy();
     this.blockIcon.destroy();
     if (this.facingArrow) this.facingArrow.destroy();
     this.hud.destroy({ children: true });
