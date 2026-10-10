@@ -1808,7 +1808,7 @@ async function run() {
       attempt, check, capture, waitSent, waitReceived, clickVisibleButtonText, nativePiecePoint });
     attempt.fixtureResults = fixtureResults;
     attempt.fixtures = { fifthChoice: 'passed', emissaryExactCounts: 'passed', boss: fixtureResults.final?.terminalReason || 'passed', hiddenCore: fixtureResults.hidden?.terminalReason || 'passed' };
-    const resultBack = await page.$('.rs-native-result .result__foot button');
+    const resultBack = await page.$('.screen.result .result__foot button');
     assert(resultBack, 'Native terminal result has no return-to-title button');
     const resultBackLabel = await resultBack.evaluate((node) => node.innerText.trim());
     assert(resultBackLabel === '返回首页', `Native result return button label changed: ${resultBackLabel}`);
@@ -1821,7 +1821,7 @@ async function run() {
     const resultBackState = await page.evaluate(async () => {
       const { store } = await import('./js/store.js');
       return { url: location.href, title: !!document.querySelector('.title-screen--presentation'),
-        result: !!document.querySelector('.rs-native-result'), nativeMatch: !!document.querySelector('.rs-native-match'),
+        result: !!document.querySelector('.screen.result'), nativeMatch: !!document.querySelector('.rs-native-match'),
         titleLink: !!document.querySelector('.rs-title-fullscreen'), session: new URL(location.href).searchParams.get('session'),
         phase: store.get().match.public?.phase ?? null };
     });
