@@ -105,3 +105,29 @@ test('a ranged token that can block an unrevealed stealth enemy deploys and atta
   assert.equal(target.blockedBy,marker,'the real blocking state, not a probe mutation, removes stealth');
   const hp=target.hp;h.run(1.2);assert.ok(target.hp<hp,'ranged attack profile can attack its blocked target');assert.equal(target.blockedBy,marker);assert.equal(h.b.errorCount,0,JSON.stringify(h.b.errors));
 });
+
+for (const chessId of ['chess_char_4_11_a', 'chess_char_4_11_b']) for (const skillIndex of [0, 1]) {
+  test(`Catherine ${chessId} skill ${skillIndex} deploys both ALL-terrain devices after an enemy arrives`, () => {
+    const tokenId = 'token_10041_cathy_catsld';
+    const h = makeBattle({ units: [
+      { uid: 'catherine', chessId, row: 12, col: 5, dir: 'RIGHT', skillIndex },
+      { uid: 'high-device', kind: 'token', tokenId, ownerUid: 'catherine', row: 10, col: 2, dir: 'RIGHT', independentSummon: true },
+      { uid: 'ground-device', kind: 'token', tokenId, ownerUid: 'catherine', row: 11, col: 5, dir: 'DOWN', independentSummon: true },
+    ], flags: { independent: true }, content: 'full', autoFinish: false });
+    h.run(.2);
+    const devices = h.b.allyUnits.filter(u => u.defId === tokenId);
+    assert.equal(devices.length, 2);
+    assert.ok(devices.every(u => !u.alive && !u.deployed), 'devices wait while no enemy exists');
+    assert.equal(devices[0].def.position, 'ALL');
+    assert.equal(h.b.grid.tile(10, 2).height, 'HIGH');
+    h.spawn('probe', { pos: [10, 10] });
+    h.run(.3);
+    assert.ok(devices.every(u => u.alive && u.deployed), 'both legal terrain markers release');
+    assert.deepEqual(devices.map(u => [u.tileR, u.tileC]), [[10, 2], [11, 5]], 'explicit markers keep their locations');
+    assert.ok(devices.every(u => !u.mem.nativeEngagementPending));
+    assert.equal(h.eventsOf('spawn').filter(e => e[1]?.defId === tokenId).length, 2);
+    h.run(.5);
+    assert.equal(h.b.allyUnits.filter(u => u.defId === tokenId).length, 2, 'retry creates no duplicate devices');
+    assert.equal(h.b.errorCount, 0, JSON.stringify(h.b.errors));
+  });
+}

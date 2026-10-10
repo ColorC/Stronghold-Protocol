@@ -22,7 +22,7 @@ export class BattleSummons {
     const occ = this._occ[r * COLS + c];
     if (occ && occ !== u && occ.alive && occ.deployed) return false;
     if (this.downOn(r, c, u)) return false;
-    const ranged = u.def?.position === 'RANGED';
+    const ranged = u.def?.position === 'RANGED' || u.def?.position === 'ALL';
     if (!this.grid.canStand(r, c, { ranged })) return false;
     if (!allowOwnReservation) return !this.isReservedTile(r, c);
     for (const a of this.allyUnits) {

@@ -342,3 +342,38 @@ test('named Darkmoon support cards use their declared native token prototype bod
     vigil.nativeGrowth.phases[2].attributesKeyFrames.at(-1).data.atk,
     'wolf and Vigil attack endpoints are independently sourced');
 });
+
+for (const elite of [false, true]) for (const growthMode of ['badges', 'levels']) {
+  test(`Catherine ${elite ? 'elite' : 'normal'} ${growthMode} preserves and deploys two mixed-terrain markers in a real opening wave`, () => {
+    const data = getData(), catalog = getCatalog(data);
+    let state = buyOperator('chess_char_4_11_a', growthMode);
+    const owner = state.pieces[0];
+    if (elite) { owner.chessId = 'chess_char_4_11_b'; owner.elite = true; }
+    const ownerView = viewSession(state, { data, catalog }).pieces.find(p => p.uid === owner.uid);
+    const ownerTile = ownerView.legalTiles[0].split(',').map(Number);
+    const moved = applyAction(state, { type: 'move', uid: owner.uid, row: ownerTile[0], col: ownerTile[1] });
+    assert.equal(moved.ok, true, moved.error?.message);
+    state = moved.state;
+    const stack = state.summons.find(p => p.ownerUid === owner.uid && p.tokenId === 'token_10041_cathy_catsld');
+    assert.equal(stack?.count, 2, 'the native deploy limit supplies two markers');
+    const field = getIndependentField(state, { data, catalog });
+    const cells = viewSession(state, { data, catalog }).pieces.find(p => p.uid === stack.uid).legalTiles.map(k => k.split(',').map(Number));
+    const high = cells.find(([r,c]) => field.deployMap.get(`${r},${c}`) === 'ranged');
+    const low = cells.find(([r,c]) => field.deployMap.get(`${r},${c}`) === 'melee');
+    assert.ok(high && low, 'the real stage offers valid high and ground placement');
+    for (const [row,col] of [high,low]) {
+      const placed = applyAction(state, { type: 'move', uid: stack.uid, row, col, dir: 'RIGHT' });
+      assert.equal(placed.ok, true, placed.error?.message);
+      state = placed.state;
+    }
+    const markers = state.summons.filter(p => p.ownerUid === owner.uid && p.row != null);
+    assert.equal(markers.length, 2);
+    assert.equal(battleUnits(state, catalog, data).filter(u => u.kind === 'token').length, 2);
+    const battle = runIndependentBattle(state, { data, catalog });
+    const spawns = battle.replay.frames.flatMap(f => (f.ev || []).filter(e => e[0] === 'spawn' && e[1]?.defId === stack.tokenId));
+    assert.equal(spawns.length, 2, 'both markers reach the native battle replay');
+    assert.deepEqual(new Set(spawns.map(e => e[1].uid)), new Set(markers.map(p => p.uid)));
+    assert.ok(spawns.every(e => e[1].ownerUid === owner.uid));
+    assert.equal(battle.diagnostics.errorCount, 0);
+  });
+}
