@@ -1,0 +1,84 @@
+{
+  "upstream": "https://github.com/sganggs/Stronghold-Protocol",
+  "revision": "1db8e51023ae6abaec9370beb81a513d5c4d0b01",
+  "files": [
+    {
+      "source": "public/css/theme.css",
+      "target": "public/css/resonance-native/theme.css",
+      "bytes": 14952
+    },
+    {
+      "source": "public/css/components.css",
+      "target": "public/css/resonance-native/components.css",
+      "bytes": 45396
+    },
+    {
+      "source": "public/css/devices.css",
+      "target": "public/css/resonance-native/devices.css",
+      "bytes": 11888
+    },
+    {
+      "source": "public/css/screens/game.css",
+      "target": "public/css/resonance-native/screens/game.css",
+      "bytes": 57713
+    },
+    {
+      "source": "public/css/screens/game-shop.css",
+      "target": "public/css/resonance-native/screens/game-shop.css",
+      "bytes": 21447
+    },
+    {
+      "source": "public/css/screens/game-panels.css",
+      "target": "public/css/resonance-native/screens/game-panels.css",
+      "bytes": 61218
+    },
+    {
+      "source": "public/css/screens/title.css",
+      "target": "public/css/resonance-native/screens/title.css",
+      "bytes": 11478
+    },
+    {
+      "source": "public/css/screens/lobby.css",
+      "target": "public/css/resonance-native/screens/lobby.css",
+      "bytes": 11307
+    },
+    {
+      "source": "public/css/screens/briefing.css",
+      "target": "public/css/resonance-native/screens/briefing.css",
+      "bytes": 10829
+    },
+    {
+      "source": "public/css/screens/draft.css",
+      "target": "public/css/resonance-native/screens/draft.css",
+      "bytes": 11396
+    },
+    {
+      "source": "public/css/screens/result.css",
+      "target": "public/css/resonance-native/screens/result.css",
+      "bytes": 7465
+    },
+    {
+      "source": "public/css/screens/loadout.css",
+      "target": "public/css/resonance-native/screens/loadout.css",
+      "bytes": 53409
+    },
+    {
+      "source": "public/css/screens/guide.css",
+      "target": "public/css/resonance-native/screens/guide.css",
+      "bytes": 6571
+    },
+    {
+      "source": "public/css/screens/room.css",
+      "target": "public/css/resonance-native/screens/room.css",
+      "bytes": 13488
+    }
+  ],
+  "components": [
+    "public/js/ui/components.js",
+    "public/js/ui/hud.js",
+    "public/js/ui/bondStrip.js",
+    "public/js/ui/shopBar.js",
+    "public/js/ui/assetUrls.js"
+  ],
+  "scope": "共鸣专用入口加载原生样式；商店、HUD及基础组件沿用上游组件，通过适配器提供共鸣状态。"
+}

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const read=(file)=>fs.readFileSync(path.join(ROOT,file),'utf8');
 const app=read('public/js/resonance/app.js');
+const entryCss=read('public/css/resonance-entry.css');
 const api=read('public/js/resonance/api.js');
 const codex=read('public/js/resonance/codex.js');
 const panels=read('public/js/resonance/panels.js');
@@ -14,15 +15,38 @@ const detail=read('public/js/resonance/detail.js');
 const chrome=read('public/js/resonance/gameChrome.js');
 const model=read('public/js/resonance/model.js');
 
-test('new entry path is difficulty then briefing, including legacy step URLs',()=>{
- assert.match(app,/stepName === 'difficulty' \? 1 : \['environment', 'briefing'\]\.includes\(stepName\) \? 2/);
- assert.match(app,/step=\$\{2\} title="本局简报"/);
+test('entry is title then native difficulty then direct preparation; legacy extra-step URLs return to difficulty',()=>{
+ assert.match(app,/\['difficulty', 'environment', 'briefing'\]\.includes\(stepName\) \? 1 : 0/);
+ assert.match(app,/const names = \{ 1: 'difficulty' \}/);
  assert.match(app,/step=\$\{step\} of=\$\{2\}/);
- assert.match(app,/查看本局简报/);
- assert.match(app,/本赛季名单/);
- assert.match(app,/本赛季可招募干员 <b class="num">\$\{activeIds\.length\}/);
- assert.match(panels,/本赛季可招募 <b>\$\{activeIds\.length\}/);
+ assert.match(app,/onClick=\$\{start\}>开始备战/);
+ assert.match(app,/if \(creatingSession\.current \|\| !seedValid \|\| step !== 1 \|\| catalogKey !== String\(numericSeed\)\) return/);
+ assert.match(app,/disabled=\$\{busy \|\| !catalogReady\} loading=\$\{busy\} onClick=\$\{start\}/);
+ assert.doesNotMatch(app,/rs-flow--briefing|本局简报|查看本局简报|确认并开始本局|setStep\(2\)/);
+ assert.doesNotMatch(entryCss,/rs-flow--briefing|rs-opening-event|rs-brief-(?:identity|pact|prep|route)/);
  assert.doesNotMatch(app,/选择战场|本局推荐战场|主盟约/);
+});
+
+test('dynamic screen styles use the native theme and never restore the removed briefing gate',()=>{
+ const dynamicStyles=app.match(/const styles = \[(.*?)\];/)?.[1];
+ assert.ok(dynamicStyles,'dynamic stylesheet list exists');
+ for(const screen of ['game','game-shop','game-panels','title','lobby','draft','result','loadout']){
+  assert.ok(dynamicStyles.includes(`./css/resonance-native/screens/${screen}.css`),`${screen} uses its native stylesheet`);
+ }
+ assert.ok(dynamicStyles.includes('./css/resonance-entry.css'));
+ assert.ok(dynamicStyles.includes('./css/resonance-detail.css'));
+ assert.doesNotMatch(dynamicStyles,/\.\/css\/screens\//);
+ assert.doesNotMatch(dynamicStyles,/briefing\.css/);
+});
+
+test('seed refresh disables creation until matching catalog data resolves and resume/codex stay independent',()=>{
+ assert.match(app,/if \(!seedValid\) \{ setCatalogKey\(''\); return; \}/);
+ assert.match(app,/const requestedSeed = numericSeed;\s*setCatalogKey\(''\);\s*const response = await resonanceApi\.catalog\(requestedSeed\)/);
+ assert.match(app,/if \(!alive\) return;[\s\S]*setCatalogKey\(String\(requestedSeed\)\)/);
+ assert.match(app,/useState\(\(\) => query\.has\('session'\) \? 0 : stepFromUrl\)/);
+ assert.match(app,/const openCodex = \(\) => showCodex\('operators'\)/);
+ assert.match(app,/label: busy \? '正在载入…' : '继续上一局'/);
+ assert.match(app,/creatingSession\.current = false; setBusy\(false\)/);
 });
 
 test('catalog and create requests do not send an environment selection',()=>{
@@ -34,9 +58,10 @@ test('catalog and create requests do not send an environment selection',()=>{
  assert.match(app,/url\.searchParams\.delete\('environment'\)/);
 });
 
-test('opening event is shown in the brief, codex, detail, and saved-game header',()=>{
+test('automatic opening event remains seed-bound, with details in the game HUD, codex and saved-game header',()=>{
  assert.match(app,/catalog\.openingEvent/);
- assert.match(app,/kind: 'opening'/);
+ assert.match(app,/catalogReady = seedValid && catalogKey === String\(numericSeed\) && !!openingEvent/);
+ assert.doesNotMatch(app,/kind: 'opening'/);
  assert.match(codex,/\['openingEvents','开局事件'\]/);
  assert.doesNotMatch(codex,/\['environments','环境'\]/);
  assert.match(panels,/group\('开局事件','opening',Object\.entries\(catalog\.openingEvents\)/);

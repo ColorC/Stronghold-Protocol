@@ -1,12 +1,12 @@
-@import url("./screens/game.css");
-@import url("./screens/game-shop.css");
-@import url("./screens/game-panels.css");
-@import url("./screens/title.css");
-@import url("./screens/lobby.css");
-@import url("./screens/briefing.css");
-@import url("./screens/draft.css");
-@import url("./screens/result.css");
-@import url("./screens/loadout.css");
+@import url("./resonance-native/screens/game.css");
+@import url("./resonance-native/screens/game-shop.css");
+@import url("./resonance-native/screens/game-panels.css");
+@import url("./resonance-native/screens/title.css");
+@import url("./resonance-native/screens/lobby.css");
+@import url("./resonance-native/screens/briefing.css");
+@import url("./resonance-native/screens/draft.css");
+@import url("./resonance-native/screens/result.css");
+@import url("./resonance-native/screens/loadout.css");
 @import url("./resonance-entry.css");
 @import url("./resonance-detail.css");
 @import url("./resonance-codex.css");
@@ -27,6 +27,8 @@ body { background: #101512; color: var(--rs-text); }
 .rs-gmeta b { font-size: .2rem; }
 .rs-gmeta .micro, .rs-gmeta .difficulty { font-size: .12rem; }
 .rs-phase { display: inline-flex; align-items: center; justify-content: center; min-width: .75rem; padding: .04rem .08rem; color: var(--gold); font-size: .16rem; font-weight: 700; white-space: nowrap; }
+.rs-hud-action-row { position: absolute; z-index: 4; top: var(--rs-action-top,0px); left: 50%; transform: translateX(-50%); display: flex; justify-content: center; width: max-content; max-width: calc(100vw - 16px); pointer-events: auto; }
+.rs-hud-action-row .rs-start-battle { min-height: .38rem; max-width: 100%; padding: .04rem .1rem; white-space: nowrap; }
 .rs-hud-actions { display: flex; justify-content: flex-end; align-items: flex-start; gap: .06rem; }
 .rs-hud-actions > .btn, .rs-hud-actions > a { min-width: .38rem; min-height: .38rem; padding: .04rem .09rem; font-size: .14rem; }
 .rs-hud-actions .icon { width: .19rem; height: .19rem; }
@@ -82,8 +84,6 @@ body { background: #101512; color: var(--rs-text); }
 .rs-interest i { width: .07rem; height: .07rem; border: 1px solid var(--gold); transform: rotate(45deg); }
 .rs-interest i.is-on { background: var(--gold); }
 .rs-interest small { margin-left: .025rem; font-size: .12rem; }
-.rs-turn-action { position: absolute; right: .2rem; bottom: 3.4rem; pointer-events: auto; }
-.rs-turn-action button { min-height: .48rem; padding: .08rem .17rem; font-size: .16rem; }
 .rs-native-list { display: flex; flex-direction: column; gap: .08rem; max-height: 65dvh; overflow: auto; font-size: .15rem; }
 .rs-native-list article { display: flex; align-items: center; gap: .1rem; padding: .1rem; background: rgba(255,255,255,.035); border-bottom: 1px solid var(--line); }
 .rs-native-list article > span { flex: 1; color: var(--text-lo); }
@@ -173,9 +173,18 @@ body { background: #101512; color: var(--rs-text); }
 .rs-game .rs-dock .btn { min-height: .38rem; font-size: .14rem; }
 .rs-game .rs-dock .icon { flex: none; }
 .rs-game .rs-hud-actions .btn { color: var(--text-hi); }
-.rs-turn-action .btn { min-height: .48rem; padding: .08rem .17rem; font-size: .16rem; }
 .rs-game .shopbar__offer-wrap { position: relative; width: 1.56rem; height: 2.24rem; flex: none; }
 .rs-game .shopbar__offer-wrap > .scard { width: 100%; height: 100%; }
+.rs-game .shopbar__cards .scard--t1 { --tc: #9b9b9b; }
+.rs-game .shopbar__cards .scard--t2 { --tc: #28b66a; }
+.rs-game .shopbar__cards .scard--t3 { --tc: #329adf; }
+.rs-game .shopbar__cards .scard--t4 { --tc: #a970dc; }
+.rs-game .shopbar__cards .scard--t5 { --tc: #e9bd53; }
+.rs-game .shopbar__cards .scard { border-color: color-mix(in srgb,var(--tc),white 42%); background: color-mix(in srgb,var(--tc) 30%,#111714); box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--tc) 35%,transparent); }
+.rs-game .shopbar__cards .scard__bg { background: radial-gradient(110% 72% at 80% 30%,color-mix(in srgb,var(--tc) 44%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,var(--tc) 24%,#202622),color-mix(in srgb,var(--tc) 17%,#0c100e)); }
+.rs-game .shopbar__cards .scard__body { background: linear-gradient(0deg,color-mix(in srgb,var(--tc) 18%,rgba(8,11,10,.98)) 62%,color-mix(in srgb,var(--tc) 8%,transparent)); }
+.rs-game .shopbar__cards .scard__name { color: #fff; text-shadow: 0 1px 3px #000,0 0 8px #000; }
+.rs-game .shopbar__cards .scard__top > .tier { display: none; }
 .rs-result-member summary > img { width: max(.45rem,28px); height: max(.45rem,28px); flex: none; object-fit: cover; object-position: center top; border: 1px solid var(--line-2); }
 @media (max-width: 900px) {
   .gtop { grid-template-columns: minmax(1.6rem,1fr) auto minmax(2.4rem,1fr); }
@@ -184,12 +193,10 @@ body { background: #101512; color: var(--rs-text); }
   .rs-dock button { min-width: .58rem; justify-content: center; }
   .rs-dock button:not(:hover) { font-size: 0; }
   .rs-dock .icon { width: .23rem; height: .23rem; }
-  .rs-turn-action { right: .12rem; bottom: 3.6rem; }
 }
 @media (max-height: 480px) {
   .rs-gm-bonds { top: .78rem; }
   .rs-gm-bonds .bslot { width: .52rem; }
   .rs-dock { bottom: .95rem; gap: .025rem; }
   .rs-dock button { min-height: .3rem; padding: .035rem .06rem; }
-  .rs-turn-action { bottom: 3.28rem; }
 }

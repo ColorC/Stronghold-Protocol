@@ -17,6 +17,8 @@ import { CodexScreen } from './codex.js';
 import { DetailPanel } from './detail.js';
 import { operatorShopPreview, pieceNum, prepView, resolveOpeningEvent, roleLabel, strategyProgressText } from './model.js';
 import { pactIconUrl } from './pactIcon.js';
+import { resolveOperatorSkillIcon } from './operatorSkillIcon.js';
+import { rectanglesOverlap, shopCostPresentation } from './hudPresentation.js';
 
 const xpForLevel = (level) => [6,10,20,36,56,68,68][level-3] || 68;
 const mergeAvailable = (state,id) => (state.pieces||[]).filter(piece=>piece.operatorId===id&&piece.star===1).length >= 2;
@@ -32,19 +34,25 @@ export function GameChrome(p) {
   const setPanel=useCallback(next=>{if(next!=null)setDetail(null);setPanelState(next)},[setPanelState,setDetail]);
   useLayoutEffect(()=>{
     const root=rootRef.current;if(!root)return;
-    const selector='.shopbar__cards .scard, .shopbar__reward .spcard, .shopbar__tools .toolbtn, .lvcard, .rs-turn-action button, .rs-quick-inventory__item, .rs-replay-native button, .rs-replay-native select, .rs-replay-native progress, .rs-sell-zone, .rs-hud-actions button, .rs-hud-actions a';
+    const selector='.shopbar__cards .scard, .shopbar__reward .spcard, .shopbar__tools .toolbtn, .lvcard, .rs-quick-inventory__item, .rs-replay-native button, .rs-replay-native select, .rs-replay-native progress, .rs-sell-zone, .rs-hud-actions button, .rs-hud-actions a, .rs-start-battle';
     let frame=0;const observed=new Set([root]);
     const observer=typeof ResizeObserver==='function'?new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure)}):null;
     observer?.observe(root);
     const measure=()=>{
       let top=Infinity,headerBottom=0,hasHeaderControl=false;const nextObserved=new Set([root]);
+      const nativeHeader=root.querySelector('.gtop');
+      if(nativeHeader){root.style.setProperty('--rs-action-top',`${nativeHeader.getBoundingClientRect().bottom+8}px`);nextObserved.add(nativeHeader)}
+      else root.style.removeProperty('--rs-action-top');
       for(const element of root.querySelectorAll(selector)){
         const rect=element.getBoundingClientRect(),style=getComputedStyle(element);
         if(!element.getClientRects().length||style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0||rect.width<=0||rect.height<=0||rect.bottom<=0||rect.top>=innerHeight)continue;
-        if(element.matches('.rs-hud-actions button, .rs-hud-actions a')){headerBottom=Math.max(headerBottom,rect.bottom);hasHeaderControl=true}
+        if(element.matches('.rs-hud-actions button, .rs-hud-actions a, .rs-start-battle')){headerBottom=Math.max(headerBottom,rect.bottom);hasHeaderControl=true}
         else top=Math.min(top,Math.max(0,rect.top));
         nextObserved.add(element);
       }
+      const remaining=root.querySelector('.shopbar__remain'),start=root.querySelector('.rs-start-battle');
+      const collides=remaining&&start&&remaining.getClientRects().length&&start.getClientRects().length&&rectanglesOverlap(remaining.getBoundingClientRect(),start.getBoundingClientRect());
+      if(collides)root.dataset.hudActionOverlap='true';else delete root.dataset.hudActionOverlap;
       if(Number.isFinite(top))root.style.setProperty('--rs-dock-bottom',`${Math.max(0,innerHeight-top+8)}px`);
       else root.style.removeProperty('--rs-dock-bottom');
       if(hasHeaderControl)root.style.setProperty('--rs-panel-top',`${headerBottom+8}px`);
@@ -54,7 +62,7 @@ export function GameChrome(p) {
     };
     const onResize=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure)};
     measure();addEventListener('resize',onResize);
-    return()=>{removeEventListener('resize',onResize);cancelAnimationFrame(frame);observer?.disconnect();root.style.removeProperty('--rs-dock-bottom');root.style.removeProperty('--rs-panel-top')};
+    return()=>{removeEventListener('resize',onResize);cancelAnimationFrame(frame);observer?.disconnect();root.style.removeProperty('--rs-dock-bottom');root.style.removeProperty('--rs-panel-top');root.style.removeProperty('--rs-action-top')};
   },[state,panel,replay,shopCollapsed,sellingPiece,choiceOpen,busy]);
   const xpNeed=Number(state.actionCosts?.xpToLevel??catalog.campaign?.economy?.xpToLevel?.[state.level]??xpForLevel(state.level));
   const openingEvent=resolveOpeningEvent(state,catalog);
@@ -67,12 +75,12 @@ export function GameChrome(p) {
   const bonds=Object.entries(state.pacts||{}).filter(([,x])=>(x.count||0)>0).map(([bondId,x])=>({bondId,count:x.count||0,layers:0,noStack:true,
     thresholds:(pacts[bondId]?.levels||[]).map(y=>y.threshold),tier:(pacts[bondId]?.levels||[]).filter(y=>y.threshold<=(x.count||0)).length,active:!!x.activeThreshold}));
   const cardPresentation=(slot)=>{const op=catalog.operators?.[slot.id];if(!op)return {};
-    const skill=op.stars?.[1]?.skill||null;
+    const skillIcon=resolveOperatorSkillIcon(op),skill=op.stars?.[1]?.skill||null;
+    const cost=shopCostPresentation(op.cost);
     const previewText=operatorShopPreview(op);
     const copies=state.pieces.filter(x=>x.operatorId===slot.id&&x.star===1).length;
     const nextStar=state.pieces.filter(x=>x.operatorId===slot.id&&x.star===2).length>=2?'三星':'二星';
-    return {record:{...op,tier:op.cost,bonds:op.pacts||[],profession:data.lookup('chess',slot.id)?.profession,subProfessionName:roleLabel(op.role),assets:{...(op.assets||{}),portrait:op.charId||op.assets?.portrait||op.portrait}},
-      skill:skill?{...skill,index:Number.isInteger(skill.index)?skill.index:undefined}:null,
+    return {record:{...op,skill:skill?{...skill,iconId:skillIcon?.iconId||skill.iconId,name:skillIcon?.name||skill.name}:op.skill,tier:cost.tier,costTone:cost.tone,bonds:op.pacts||[],profession:data.lookup('chess',slot.id)?.profession,subProfessionName:roleLabel(op.role),assets:{...(op.assets||{}),portrait:op.charId||op.assets?.portrait||op.portrait,...(skillIcon?.iconId?{skillIcon:skillIcon.iconId}:{})}},
       merge:{copies:Math.min(2,copies),need:3,hint:copies>=2?`干员将晋升为${nextStar}`:''},previewText};
   };
   const reasonFor=(_kind,slot,_priv,editable)=>!editable||busy||!['prep','choice'].includes(state.phase)?'当前阶段无法招募':slot.sold?'已售罄':
@@ -129,7 +137,7 @@ export function GameChrome(p) {
           ${!full?html`<${HexBadge} value=${xpPrice} tone=${disabled?'dark':'gold'} size="md" class="lvcard__price"/>`:null}<span class="lvcard__frame"><span class="lvcard__micro">LEVEL</span><b class="lvcard__num num">${state.level}</b></span>
           <span class="lvcard__xp"><i><em style=${{width:`${Math.min(100,state.xp/xpNeed*100)}%`}}></em></i><small>${state.xp}/${xpNeed}</small></span><span class="lvcard__label">${full?'已满级':'购买经验'}</span>${full?null:html`<kbd class="lvcard__key">F</kbd>`}</button>`}}
         renderFunds=${html`<div class="funds rs-funds"><button type="button" class="funds__hex" title="查看收入、利息与连续战绩" onClick=${()=>setPanel('income')} onContextMenu=${event=>{event.preventDefault();setPanel('income')}}><${CoinGlyph} class="funds__coin"/><b class="funds__num num">${state.gold}</b></button><button type="button" class="funds__label" onClick=${()=>setPanel('income')}>金币</button><button type="button" class="rs-interest" title=${`预计利息 ${interestNow} · 每 ${interestRule.perGold??10} 金 +1，最高 ${interestRule.cap??5}（点击查看收益规则）`} onClick=${()=>setPanel('income')}>${Array.from({length:5},(_,i)=>html`<i class=${i<interestNow?'is-on':''}/>`)}<small>利息</small></button><button class="funds__collapse" onClick=${()=>setShopCollapsed(true)}>收起</button></div>`}/>`}
-      ${replay?null:html`<div class="rs-turn-action"><${Button} variant="primary" size="lg" disabled=${busy||state.phase!=='prep'} onClick=${()=>state.node?.kind==='logistics'||!state.nodeStarted?act({type:'advanceSupply'}):act({type:'fight'})}>${state.node?.kind==='logistics'||!state.nodeStarted?'领取补给':'开始战斗'}</${Button}></div>`}
+      ${replay?null:html`<div class="rs-hud-action-row"><${Button} class="rs-start-battle" variant="primary" size="sm" disabled=${busy||state.phase!=='prep'} onClick=${()=>state.node?.kind==='logistics'||!state.nodeStarted?act({type:'advanceSupply'}):act({type:'fight'})}>${state.node?.kind==='logistics'||!state.nodeStarted?'领取补给':'开始战斗'}</${Button}></div>`}
     </div>
     ${!replay&&sellingPiece?html`<aside class="rs-sell-zone" data-drop="sell" ref=${saleZoneRef} aria-label=${`出售${catalog.operators?.[sellingPiece.operatorId]?.name||'干员'}，返还${saleValue}金币`}><b>松开出售</b><span>${catalog.operators?.[sellingPiece.operatorId]?.name||'干员'} · +${saleValue}金</span><small>继续拖回战场可取消</small></aside>`:null}
     ${!replay&&(state.inventory||[]).length?html`<nav class="rs-quick-inventory" aria-label="装备背包">${state.inventory.map(item=>{const record=catalog.equipment?.[item.itemId]||{};const label=`${record.name||'装备'} · ${record.description||'拖到干员身上装备'} · 右键查看合成配方`;return html`<button type="button" class="rs-quick-inventory__item" key=${item.uid} draggable=${!busy&&['prep','choice'].includes(state.phase)} aria-label=${label} title=${label} onDragStart=${event=>{event.dataTransfer?.setData('application/x-stronghold-equipment',String(item.uid));if(event.dataTransfer)event.dataTransfer.effectAllowed='move'}} onClick=${()=>openDetail({kind:'item',id:item.itemId})} onContextMenu=${event=>{event.preventDefault();openDetail({kind:'item',id:item.itemId})}}><${ResonanceItemIcon} catalog=${catalog} itemId=${item.itemId} size="sm" showTier=${true}/></button>`})}</nav>`:null}
