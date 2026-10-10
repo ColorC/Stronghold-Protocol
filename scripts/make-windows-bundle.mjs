@@ -68,7 +68,7 @@ const LEGAL_FILES = ['LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md'];
 const LOCAL_ASSET_MANIFEST = path.join('data', 'local-assets.json');
 
 function parseArgs(argv) {
-  const o = { out: '', node: true, force: false, nodeSpec: '', sha256: '' };
+  const o = { out: '', node: true, force: false, lite: false, nodeSpec: '', sha256: '' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const [k, v] = a.split('=');
@@ -77,6 +77,7 @@ function parseArgs(argv) {
     else if (k === '--node-version') o.nodeSpec = String(val() || '');
     else if (k === '--sha256') o.sha256 = String(val() || '').toLowerCase();
     else if (a === '--no-node') o.node = false;
+    else if (a === '--lite') o.lite = true;
     else if (a === '--force') o.force = true;
     else if (a === '-h' || a === '--help') o.help = true;
   }
@@ -85,6 +86,7 @@ function parseArgs(argv) {
 
 const HELP = `node scripts/make-windows-bundle.mjs — 生成 Windows 开箱即用便携包
 
+  --lite             不嵌入美术 / 音频 / 字体，首次启动通过 setup 下载；仍自带 Node 与生产依赖
   --out <dir>        产物目录（默认 <仓库上一级>/Stronghold-Protocol-Windows）
   --no-node          不下载便携版 Node（目标机器需自备 Node 22+）
   --force            目录已存在时先删掉（只肯删空目录，或上一次打的便携包；其余情况拒绝）
@@ -184,7 +186,7 @@ function trackedFiles() {
   return r.stdout.toString('utf8').split('\0').filter(Boolean);
 }
 
-/** 按相对路径清单逐个复制（自动建目录）；源文件不存在就跳过（例如素材还没下载）。 */
+/** 按相对路径清单逐个复制（自动建目录）；必须的跟踪文件缺失时失败。 */
 export async function copyFiles(relPaths, dst, root = ROOT) {
   let files = 0; let bytes = 0;
   for (const rel of relPaths) {
@@ -194,8 +196,8 @@ export async function copyFiles(relPaths, dst, root = ROOT) {
     try {
       // eslint-disable-next-line no-await-in-loop
       st = await fsp.stat(from);
-    } catch { continue; }
-    if (!st.isFile()) continue;
+    } catch (error) { throw new Error(`打包源文件缺失：${rel}（${from}）`, { cause: error }); }
+    if (!st.isFile()) throw new Error(`打包源不是普通文件：${rel}（${from}）`);
     // eslint-disable-next-line no-await-in-loop
     await fsp.mkdir(path.dirname(to), { recursive: true });
     // eslint-disable-next-line no-await-in-loop
@@ -387,7 +389,7 @@ function bat(body) {
  * 包内说明。带不带便携版 Node 会影响三处措辞（是否需要预装 Node、许可证在哪、目录结构），
  * 所以先算好片段再拼，别在模板里嵌套引号。
  */
-export function bundleReadme({ version, withNode }) {
+export function bundleReadme({ version, withNode, lite = false }) {
   const nodeNeed = withNode
     ? `目标机器**不需要安装 Node**：包内的 \`node\\node.exe\` 就是便携版 Node ${version}。`
     : '这个包**没有带便携版 Node**，请先在这台机器上安装 Node 22 或 24（LTS）。';
@@ -396,7 +398,7 @@ export function bundleReadme({ version, withNode }) {
     ? `node\\node.exe            便携版 Node ${version}（官方 x64，已经 sha256 校验）
 node\\LICENSE-node.txt    Node 自己的许可证（MIT）
 app\\                    游戏本体：server / shared / public（全部素材）/ data / scripts / tools
-启动游戏.bat             app\\scripts\\launch.mjs --no-setup
+启动游戏.bat             app\\scripts\\launch.mjs${lite ? '' : ' --no-setup'}
 README-开箱即用.md       本文件
 LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md`
     : `app\\                    游戏本体：server / shared / public（全部素材）/ data / scripts / tools
@@ -406,10 +408,15 @@ LICENSE / NOTICE.md / THIRD-PARTY-NOTICES.md
 
 （没有 node\\ 这一层：本包不带便携版 Node，请自行安装 Node 22/24 LTS）`;
 
-  return `# 卫戍协议：盟约 · Windows 开箱即用包
+  const title = lite ? '卫戍协议：工坊 · Windows 轻量包' : '卫戍协议：工坊 · Windows 完整包';
+  const firstRun = lite
+    ? `首次启动需要联网获取公开资源（约 270 MB），窗口会显示下载进度；中断后再次双击会续传。失败时窗口会列明阶段，修复网络后重试。没有本地《明日方舟》客户端资源时，棋盘使用 2D，部分图标和模型使用替代样式。`
+    : `公开资源和依赖已包含在包内，不需要首次下载。没有本地《明日方舟》客户端资源时，棋盘使用 2D，部分图标和模型使用替代样式。`;
+  return `# ${title}
 
-解压后**双击 \`启动游戏.bat\`** 即可，素材与依赖都在包里，不需要再下载任何东西。
+解压后**双击 \`启动游戏.bat\`** 即可。
 ${nodeNeed}
+${firstRun}
 
 **不联网也能玩**：美术 / 音频 / 依赖 / 字体全部在包内，断网时用自带的 \`app\\public\\fonts\`
 （Bender / Novecento Wide）和系统黑体，玩法不受影响。**联网时**页面还会去 Google Fonts 加载
@@ -475,7 +482,7 @@ async function main() {
     }
   }
 
-  console.log(`\n卫戍协议 · Windows 开箱即用包\n  源仓库：${ROOT}\n  产物：  ${out}\n`);
+  console.log(`\n卫戍协议 · Windows ${o.lite ? '轻量' : '完整'}包\n  源仓库：${ROOT}\n  产物：  ${out}\n`);
 
   // --out 指到仓库本身 / 上级目录时直接拒绝；--force 另外只肯删「空目录」或「上一次打的包」。
   if (outDirIsUnsafe(out)) {
@@ -506,14 +513,15 @@ async function main() {
   console.log(`    完成：${copied.files} 个文件 / ${MB(copied.bytes)}`);
 
   // 2) 素材与前端库（不进版本库，必须存在）
-  for (const d of ASSET_DIRS) {
+  const packageAssets = o.lite ? [] : ASSET_DIRS;
+  for (const d of packageAssets) {
     if (!fs.existsSync(path.join(ROOT, d))) {
       throw new Error(`缺少 ${d} —— 先运行 node tools/setup.mjs 把素材 / 前端库准备好`);
     }
   }
-  console.log(`  · 复制素材与前端库（${ASSET_DIRS.join('、')}）…`);
+  console.log(o.lite ? '  · 轻量包跳过 public/assets、public/fonts、public/vendor（首次启动由 setup 获取）…' : `  · 复制素材与前端库（${ASSET_DIRS.join('、')}）…`);
   let assetFiles = 0; let assetBytes = 0;
-  for (const d of ASSET_DIRS) {
+  for (const d of packageAssets) {
     // eslint-disable-next-line no-await-in-loop
     const s = await copyDir(path.join(ROOT, d), path.join(appDir, d));
     assetFiles += s.files; assetBytes += s.bytes;
@@ -556,12 +564,12 @@ async function main() {
     await fsp.copyFile(src, path.join(out, f));
   }
 
-  await fsp.writeFile(path.join(out, '启动游戏.bat'), bat('"%NODE%" "%HERE%app\\scripts\\launch.mjs" --no-setup %*'), 'latin1');
-  await fsp.writeFile(path.join(out, 'README-开箱即用.md'), bundleReadme({ version: nodeVersion, withNode: !!o.node }), 'utf8');
+  await fsp.writeFile(path.join(out, '启动游戏.bat'), bat(`"%NODE%" "%HERE%app\\scripts\\launch.mjs"${o.lite ? '' : ' --no-setup'} %*`), 'latin1');
+  await fsp.writeFile(path.join(out, 'README-开箱即用.md'), bundleReadme({ version: nodeVersion, withNode: !!o.node, lite: o.lite }), 'utf8');
 
   const total = await dirSize(out);
   console.log(`\n✔ 便携包已生成：${out}\n  ${total.files} 个文件 / ${MB(total.bytes)}`);
-  console.log('  双击「启动游戏.bat」即可（本机开服，浏览器自动打开）。');
+  console.log(`  双击「启动游戏.bat」即可（本机开服，浏览器自动打开）${o.lite ? '；首次启动会运行 setup 下载资源' : ''}。`);
   return 0;
 }
 
