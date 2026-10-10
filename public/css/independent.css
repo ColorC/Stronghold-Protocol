@@ -271,8 +271,12 @@
 .ix-dmg small { color: var(--text-lo); }
 .ix-result__box footer, .ix-offer__box footer { display: flex; justify-content: flex-end; }
 
-/* ---- battle controls ---------------------------------------------------------------------------------------------- */
-.ix-battlebar { position: absolute; right: .3rem; top: 1.4rem; display: flex; gap: .06rem; align-items: center; }
+/* ---- replay controls live in the native top-bar clock; keep the center pause card away from exit/end controls ------- */
+.ix-game .ix-replay-controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: max(.06rem, 4px); max-width: 48vw; }
+.ix-replay-controls .gtop__clock { gap: .08rem; }
+.ix-replay-speed { display: flex; align-items: center; gap: max(.03rem, 2px); }
+.ix-replay-pause { position: absolute; z-index: 8; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: max(.12rem, 8px);
+  padding: max(.12rem, 8px) max(.18rem, 12px); color: var(--text-hi); background: rgba(10, 14, 12, .94); border: 1px solid var(--mint-600); box-shadow: 0 .08rem .28rem rgba(0, 0, 0, .65); pointer-events: auto; }
 
 /* ---- phones (css/devices.css breakpoints) ------------------------------------------------------------------------ */
 @media (max-height: 520px) {
