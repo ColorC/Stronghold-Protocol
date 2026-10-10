@@ -81,6 +81,11 @@ test('recording comments reject invalid data, preserve corrupt stores, and keep 
     const response = await fetch(`${f.base}/${f.id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     assert.equal(response.status, 400);
   }
+  const hugeFinite = await fetch(`${f.base}/${f.id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(makeBody(1e308)) });
+  assert.equal(hugeFinite.status, 201);
+  const hugeEntry = await hugeFinite.json();
+  assert.equal(Number.isFinite(hugeEntry.anchor.time_sec), true);
+  assert.equal(hugeEntry.anchor.time_sec, 1e308);
   const tooLarge = await fetch(`${f.base}/${f.id}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ anchor: { time_sec: 0, selector: '#x' }, comment: 'x'.repeat(300_000) }) });
   assert.equal(tooLarge.status, 413);
 

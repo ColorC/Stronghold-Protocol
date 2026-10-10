@@ -54,8 +54,10 @@ function validateAnchor(value) {
       || !Number.isInteger(value.viewport.width) || !Number.isInteger(value.viewport.height)) throw problem(400, 'INVALID_VIEWPORT');
     viewport = { width: value.viewport.width, height: value.viewport.height };
   }
+  const scaledTime = value.time_sec * 1000;
+  const roundedTime = Number.isFinite(scaledTime) ? Math.round(scaledTime) / 1000 : value.time_sec;
   return {
-    time_sec: Math.round(value.time_sec * 1000) / 1000,
+    time_sec: roundedTime,
     selector: value.selector.trim(),
     frame_path: framePath.map((part) => part.slice(0, MAX_SELECTOR)),
     tag: optionalString(value.tag, 'tag', 40),
