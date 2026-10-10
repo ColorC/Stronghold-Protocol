@@ -7,6 +7,7 @@ import { drawRecordingCanvasFrame, recordingCanvasLayout } from './recordingCanv
 import { captureRecordingMediaFrame, startRecordingMediaAtFirstCapture } from './recordingMediaClock.js';
 import { startPageCapture } from '../recording/pageCapture.js';
 import { createCanvasMediaRecorder, resolveMediaOptions } from '../recording/canvasMedia.js';
+import { initialPlaybackId, LAST_COMPLETED_RECORDING_KEY, prepareNewRecordingUrl } from './recordingLifecycle.js';
 
 const API = '/independent/api/';
 const newUuid = () => crypto.randomUUID();
@@ -18,7 +19,7 @@ const MECHANIC_TEXT = Object.freeze({
 
 export function RecordingControls({ sessionId }) {
   const [recording, setRecording] = useState(false);
-  const [recordId, setRecordId] = useState('');
+  const [recordId, setRecordId] = useState(() => initialPlaybackId(location.href, sessionStorage));
   const [message, setMessage] = useState('');
   const ctx = useRef(null);
   const sessionRef = useRef(sessionId || null);
@@ -266,14 +267,22 @@ export function RecordingControls({ sessionId }) {
     if(!stopped.ok){setMessage('生成回放失败，请再次结束录制');return;}
     if(state.mediaSeq && !stopped.mediaPlaybackReady){setMessage('录制画面正在整理，请稍后再次结束录制');return;}
     state.stopped = true;setRecording(false);
+    try { sessionStorage.setItem(LAST_COMPLETED_RECORDING_KEY, state.id); } catch { /* URL retains the completed playback id */ }
     try { sessionStorage.removeItem(`sp:recording-buffer:${state.id}`); } catch { /* private mode */ }
     const url = new URL(location.href); url.searchParams.delete('record'); history.replaceState(null, '', url); setMessage('录制已结束');
+  };
+  const startNewRecording = () => {
+    if (recording) return;
+    const url = prepareNewRecordingUrl(location.href);
+    history.replaceState(null, '', url);
+    setMessage('正在开始新录制');
+    location.reload();
   };
   const playback = recordId ? new URL(`independent-replay.html?recording=${encodeURIComponent(recordId)}`, location.href).href : '';
   return html`<aside class="ix-recording" aria-live="polite">
     <span class=${recording ? 'ix-recording__dot is-live' : 'ix-recording__dot'}></span>
     <span>${message || (recording ? '正在录制' : recordId ? '录制已结束' : '录制未开始')}</span>
-    ${!recording && !recordId ? html`<button type="button" onClick=${() => void ctx.current?.start?.()}>开始录制</button>` : null}
+    ${!recording ? html`<button type="button" onClick=${startNewRecording}>${recordId ? '开始新录制' : '开始录制'}</button>` : null}
     ${recording ? html`<button type="button" onClick=${stop}>结束录制</button>` : null}
     ${playback && !recording ? html`<a href=${playback} target="_blank" rel="noreferrer">打开回放</a>` : null}
   </aside>`;
