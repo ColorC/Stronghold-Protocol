@@ -108,7 +108,8 @@ export function resonanceDisplayCatalog(catalog, data = null) {
     name: pact.name, description: pact.description, summaryDescription:pact.summaryDescription,
     group:pact.group, nativeIconPath:pact.nativeIconPath,
     ...(pact.detailNotes?{detailNotes:pact.detailNotes.map(note=>({name:note.name,text:note.text}))}:{}),
-    ...(pact.rewardThresholds?{rewardThresholds:[...pact.rewardThresholds]}:{}),
+    // a redesigned (season 2) 卡西米尔 has no chest schedule to show
+    ...(pact.rewardThresholds&&!pact.stronghold?{rewardThresholds:[...pact.rewardThresholds]}:{}),
     exactCounts:[...(pact.exactCounts??[])], thresholds: [...(pact.thresholds ?? pact.levels.map((level) => level.minUnits??level.threshold))],
     levels: pact.levels.map((level, index) => ({ threshold: level.threshold, minUnits:level.minUnits??level.threshold,
       maxUnits:Number.isFinite(level.maxUnits)?level.maxUnits:25000,

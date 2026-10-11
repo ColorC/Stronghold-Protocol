@@ -1085,6 +1085,9 @@ function claimPrototypeEconomyChoice(state,catalog,choice,optionIds) {
   } else if(choice.economyKind==='junker_armory'){
     if(economy.junkerKing.pendingArmories<1)throw new Error('JUNKER_ARMORY_NOT_PENDING');
     economy.junkerKing.pendingArmories--;
+  } else if(choice.economyKind==='victoria_hammer'){
+    if(!(economy.victoria?.pendingHammers>=1))throw new Error('VICTORIA_HAMMER_NOT_PENDING');
+    economy.victoria.pendingHammers--;economy.victoria.claimed=(Number(economy.victoria.claimed)||0)+1;
   } else throw new Error(`UNKNOWN_PROTOTYPE_ECONOMY_KIND:${choice.economyKind}`);
   economy.draftedKeys=Array.isArray(economy.draftedKeys)?economy.draftedKeys:[key].filter(Boolean);
 }

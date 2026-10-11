@@ -1,11 +1,14 @@
 import { academySponsorSets, chooseAcademySponsorSet, prototypeEconomyRules, junkerKingUpgrades } from '../../../../shared/resonance/prototype-economy.js';
-import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
+import { prototypeSeasonForCatalog, retiredEconomyTraitIds } from '../../../../shared/resonance/season-registry.js';
+import { STRONGHOLD_HAMMER_ITEM_ID } from '../../../../shared/resonance/stronghold-pacts.js';
 import { setPrototypeRatingBonus, prototypeRatingTotal, resolvePrototypeRatingReference } from './prototype-rating.js';
 
 const clone=(value)=>structuredClone(value);
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 const asObject=(value)=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
 const traitMap=(rows)=>new Map((rows??[]).map((row)=>[row.id,row]));
+// Season 2 retires the sponsor, market, chest and temporary-gear economies of the replaced faction mechanisms.
+const economyTraits=(catalog,rows)=>{const retired=retiredEconomyTraitIds(prototypeSeasonForCatalog(catalog));return traitMap((rows??[]).filter((row)=>!retired.has(row?.id)));};
 const sourceTable=(catalog,key)=>asObject(catalog?.prototypeEconomy?.[key]);
 const economyOf=(state)=>({
   version:1,
@@ -16,12 +19,14 @@ const economyOf=(state)=>({
   conqueror:{conquest:0,openedChests:[],pendingChests:[]},
   family:{heistProgress:0,completedHeists:[],pendingHeists:[],survivorProgress:0},
   junkerKing:{eligibleBattles:0,pendingArmories:0,upgrades:[],},
+  victoria:{eligibleBattles:0,pendingHammers:0,claimed:0},
   ...asObject(state?.prototypeMeta?.economy),
   academy:{sponsoredItemIds:[],claimedItemIds:[],...asObject(state?.prototypeMeta?.economy?.academy)},
   chemBaron:{shimmer:0,marketsOpened:0,marketsSkipped:0,healthFromSkips:0,lossStreak:0,...asObject(state?.prototypeMeta?.economy?.chemBaron)},
   conqueror:{conquest:0,openedChests:[],pendingChests:[],...asObject(state?.prototypeMeta?.economy?.conqueror)},
   family:{heistProgress:0,completedHeists:[],pendingHeists:[],survivorProgress:0,...asObject(state?.prototypeMeta?.economy?.family)},
   junkerKing:{eligibleBattles:0,pendingArmories:0,upgrades:[],...asObject(state?.prototypeMeta?.economy?.junkerKing)},
+  victoria:{eligibleBattles:0,pendingHammers:0,claimed:0,...asObject(state?.prototypeMeta?.economy?.victoria)},
 });
 const appendUnique=(rows,value)=>rows.includes(value)?rows:[...rows,value];
 const pending=(state,kind,key)=>state?.pendingChoices?.some((choice)=>choice?.type==='prototype_economy'&&choice?.economyKind===kind&&choice?.metadata?.key===key);
@@ -60,7 +65,7 @@ function strongestRumblePiece(state,catalog) {
  * Reward pools are injected from pinned, source-backed catalog tables.
  */
 export function onPrototypeEconomyPrep(state,catalog={},activeTraits=[]) {
-  const next=clone(state),economy=economyOf(next),active=traitMap(activeTraits),events=[],choiceDrafts=[];
+  const next=clone(state),economy=economyOf(next),active=economyTraits(catalog,activeTraits),events=[],choiceDrafts=[];
   const academy=active.get(prototypeEconomyRules.academy.traitId);
   if(academy){
     const table=sourceTable(catalog,'academy');
@@ -117,13 +122,22 @@ export function onPrototypeEconomyPrep(state,catalog={},activeTraits=[]) {
     const value=target?draft(next,economy,'junker_armory',key,'armory',displayOptions(bound),{eligibleBattle:kingState.eligibleBattles,upgradeIds:kingState.upgrades,tier:king.tier,targetUid:target.uid,targetStar:target.star}):null;
     if(value)choiceDrafts.push(value);
   }
+  // 维多利亚 (season 2): every earned 维式重锤 waits as a one-option reward until it is claimed
+  const hammer=economy.victoria,hammerItem=catalog?.equipment?.[STRONGHOLD_HAMMER_ITEM_ID];
+  if(hammer.pendingHammers>0&&hammerItem){
+    const value=draft(next,economy,'victoria_hammer',`victoria:${hammer.claimed+1}`,'resistance',displayOptions([{
+      id:'victoria_hammer',label:hammerItem.name,description:String(catalog?.playerText?.equipment?.[hammerItem.id]?.description??hammerItem.description??''),
+      grant:[{kind:'item',id:STRONGHOLD_HAMMER_ITEM_ID}],
+    }]),{pendingHammers:hammer.pendingHammers});
+    if(value)choiceDrafts.push(value);
+  }
   next.prototypeMeta={...(next.prototypeMeta??{}),economy};
   return {state:next,events,choiceDrafts};
 }
 
 /** Exactly-once, source-tier-aware post-combat progression. */
 export function onPrototypeEconomyResult(state,catalog={},activeTraits=[],result={}) {
-  const next=clone(state),economy=economyOf(next),active=traitMap(activeTraits),events=[];
+  const next=clone(state),economy=economyOf(next),active=economyTraits(catalog,activeTraits),events=[];
   const battleId=String(result?.battleId??'');
   if(!battleId)throw new Error('PROTOTYPE_ECONOMY_BATTLE_ID_REQUIRED');
   if(economy.processedBattleIds.includes(battleId))return {state:next,events:[{type:'prototype_economy_duplicate_ignored',battleId}],choiceDrafts:[]};
@@ -174,6 +188,12 @@ export function onPrototypeEconomyResult(state,catalog={},activeTraits=[],result
     const interval=finite(king.variables?.NumRounds1Star,prototypeEconomyRules.junkerKing.roundsPerArmory);
     if(interval>0&&data.eligibleBattles%interval===0){data.pendingArmories++;events.push({type:'junker_armory_unlocked',battleId,battleCount:data.eligibleBattles});}
   }
+  const victoria=prototypeSeasonForCatalog(catalog).strongholdPacts?active.get('resistance'):null;
+  const hammerEvery=finite(victoria?.variables?.hammerEvery);
+  if(hammerEvery>0){
+    const data=economy.victoria;data.eligibleBattles++;
+    if(data.eligibleBattles%hammerEvery===0){data.pendingHammers++;events.push({type:'victoria_hammer_earned',battleId,battleCount:data.eligibleBattles});}
+  }
   next.prototypeMeta={...(next.prototypeMeta??{}),economy};
   return {state:next,events,choiceDrafts:[]};
 }
@@ -187,7 +207,7 @@ export function installPrototypeEconomy(battle,state,catalog={}) {
   battle.resonanceResults.coins??=[];
   const upgrades=state?.prototypeMeta?.economy?.junkerKing?.upgrades??[];
   const activeTraits=state?.prototypeMeta?.activeTraits??[];
-  const active=new Map(activeTraits.map((row)=>[row.id,row]));
+  const active=economyTraits(catalog,activeTraits);
   const pieceRows=state?.pieces??[];
   const inputRows=state?.player?.input?.units??state?.input?.units??state?.units??pieceRows;
   const inputFor=(unit)=>inputRows.find((row)=>[row.uid,row.nativeUid].some((uid)=>uid!=null&&String(uid)===String(unit.uid)))??unit.player?.input?.units?.find((row)=>String(row.uid)===String(unit.uid))??pieceRows.find((row)=>[row.uid,row.nativeUid].some((uid)=>uid!=null&&String(uid)===String(unit.uid)))??null;

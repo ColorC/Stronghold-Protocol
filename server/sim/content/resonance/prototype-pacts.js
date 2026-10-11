@@ -1,4 +1,4 @@
-import { prototypeSeasonForCatalog } from '../../../../shared/resonance/season-registry.js';
+import { prototypeSeasonForCatalog, redesignedTraitIds, retiredEconomyTraitIds } from '../../../../shared/resonance/season-registry.js';
 import { PROTOTYPE_FORM_SWAP, prototypeFormForRow } from '../../../../shared/resonance/prototype-form.js';
 import { resolvePrototypeCritical } from '../../../../shared/resonance/prototype-critical.js';
 import { SkillRuntime } from '../../skills.js';
@@ -6,6 +6,7 @@ import { tftMrToNativeResistance, tftRatingBonusToNative, tftArmorToNativeDefens
 import { setPrototypeRatingBonus } from './prototype-rating.js';
 import { nativeFlatAmount } from '../../../../shared/resonance/native-effect-scale.js';
 import { nativePactCopy } from '../../../../shared/resonance/native-pact-copy.js';
+import { strongholdPactCopy } from '../../../../shared/resonance/stronghold-pacts.js';
 
 const clone = (value) => structuredClone(value);
 const mechanicByTrait = Object.freeze({
@@ -77,15 +78,18 @@ export function applyPrototypePacts(catalog) {
   const season=prototypeSeasonForCatalog(catalog);
   const pacts = {};
   for (const trait of season.traits) {
-    const mechanic = mechanicByTrait[trait.sourceName];
+    const mechanic = trait.mechanic ?? mechanicByTrait[trait.sourceName];
     if (!mechanic) throw new Error(`PROTOTYPE_MECHANIC_MISSING:${trait.sourceName}`);
     const nativeIconId=catalog.pacts?.[trait.id]?.iconId??catalog.pacts?.[trait.id]?.icon??null;
-    const nativeCopy=season.powerModel==='native-pve'?nativePactCopy(trait,season):null;
+    // Season 2 replaces every pact text with handwritten copy; earlier seasons keep their source-derived copy.
+    const nativeCopy=season.strongholdPacts?strongholdPactCopy(trait,season,{itemName:(id)=>catalog.equipment?.[id]?.name??id})
+      :season.powerModel==='native-pve'?{...nativePactCopy(trait,season)}:null;
     const overview=nativeCopy?.overview??trait.description;
     const sourceOperators=trait.members.map((charId)=>season.heroes.find((hero)=>hero.charId===charId)?.sourceChessId).filter(Boolean);
     pacts[trait.id] = {
       id:trait.id, name:trait.name, description:overview, icon:nativeIconId, iconId:nativeIconId,
-      ...(nativeCopy?{summaryDescription:overview,...(nativeCopy.notes.length?{detailNotes:nativeCopy.notes}:{})}:{}),
+      ...(nativeCopy?{summaryDescription:overview,...(nativeCopy.notes?.length?{detailNotes:nativeCopy.notes}:{})}:{}),
+      ...(trait.strongholdPact?{stronghold:true}:{}),
       members:sourceOperators, memberCharIds:[...trait.members], thresholds:trait.effects.map((tier)=>tier.minUnits),
       group:trait.group??'prototype-natural-trait', nativeIconPath:trait.nativeIconPath, unique:false, natural:true, emblemRequired:trait.emblemRequired,
       exactCounts:trait.effects.filter((tier)=>tier.minUnits===tier.maxUnits).map((tier)=>tier.minUnits),
@@ -93,7 +97,7 @@ export function applyPrototypePacts(catalog) {
       levels:trait.effects.map((tier)=>({
         threshold:tier.minUnits,minUnits:tier.minUnits,maxUnits:tier.maxUnits,style:tier.style,
         description:nativeCopy?.tier(tier)??tierDescription(trait.sourceName,tier.variables,tier.minUnits,season),sourceVariables:clone(tier.sourceVariables??tier.variables),
-        effects:[{kind:'prototype_trait',params:{traitId:trait.id,sourceName:trait.sourceName,mechanic,variables:clone(tier.variables),description:tierDescription(trait.sourceName,tier.variables,tier.minUnits,season),sourceReference:clone(trait.reference)}}],
+        effects:[{kind:'prototype_trait',params:{traitId:trait.id,sourceName:trait.sourceName,mechanic,variables:clone(tier.variables),description:season.strongholdPacts?nativeCopy.tier(tier):tierDescription(trait.sourceName,tier.variables,tier.minUnits,season),sourceReference:clone(trait.reference)}}],
       })),
     };
   }
@@ -120,6 +124,7 @@ export function applyPrototypePacts(catalog) {
 
 /** Prepare battle-local Scrap conversions before the ordinary equipment installer runs. */
 export function preparePrototypeScrapGear(battle,state,catalog,activeTraits=[]) {
+  if(retiredEconomyTraitIds(prototypeSeasonForCatalog(catalog)).has('rhodes'))return {converted:0,components:0};
   const tier=activeTraits.find((entry)=>entry.id==='rhodes');
   if(!tier)return {converted:0,components:0};
   const members=new Set((tier.memberUids??[]).map(String));
@@ -191,7 +196,9 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
     if(!effect)throw new Error(`PROTOTYPE_TRAIT_EFFECT_NOT_CONSUMED:${entry.id}:${entry.tier}`);
     return {...entry,variables:clone(effect.params?.variables??{}),mechanic:effect.params?.mechanic??entry.mechanic};
   });
-  const active=new Map(consumedTraits.map((entry)=>[entry.id,entry]));
+  // A redesigned pact (season 2) is installed by stronghold-pacts.js; its season-1 adapter below stays silent.
+  const redesigned=redesignedTraitIds(season);
+  const active=new Map(consumedTraits.filter((entry)=>!redesigned.has(entry.id)).map((entry)=>[entry.id,entry]));
   const operators=catalog?.operators??{};
   const byChar=new Map(Object.values(operators).map((operator)=>[operator.charId,operator]));
   const bySource=new Map(Object.values(operators).map((operator)=>[operator.sourceChessId,operator]));
@@ -616,7 +623,8 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
     const tier=active.get('dominator');if(isActiveMember(unit,'dominator')){
       const spent=Math.max(0,Number(event.skill?.spCost??unit.skill?.spCost??0));
       unit.mem.prototypeDominatorManaSpent=(unit.mem.prototypeDominatorManaSpent??0)+spent;
-      const bonusAp=unit.mem.prototypeDominatorManaSpent*Number(tier.variables?.APPercent??0);
+      const cap=Number(tier.variables?.APCapPercent);
+      const bonusAp=Math.min(Number.isFinite(cap)?cap:Infinity,unit.mem.prototypeDominatorManaSpent*Number(tier.variables?.APPercent??0));
       buff(unit,'dominator-stack',{artsDealtMul:1+bonusAp/100},Infinity);
       metric('dominator','casts');metric('dominator','manaSpent',spent);
     }

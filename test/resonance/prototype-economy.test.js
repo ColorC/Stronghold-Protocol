@@ -19,6 +19,8 @@ import { validateClientResult } from '../../server/match/fields.js';
 const tier=(id,count,variables={},members=[])=>({id,count,tier:count,minUnits:count,maxUnits:count,variables,members});
 const state=(economy={})=>({seed:14,round:1,lossStreak:0,pendingChoices:[],prototypeMeta:{economy}});
 const sourceOptions=(values)=>values.map(([id,label,cost,grant])=>({id,label,description:label,cost,grant}));
+// Sponsors, markets and chests belong to the Set 13 / faction season 1 pacts; faction season 2 retires them.
+const seasonOne=(catalog={})=>({...catalog,config:{...(catalog.config??{}),seasonId:prototypeSeason.id}});
 
 test('economy catalog source pointers and thresholds match the locked 14.23 trait rows',()=>{
   assert.ok(prototypeEconomySources.season.includes('teamfighttactics.leagueoflegends.com'));
@@ -34,7 +36,7 @@ test('economy catalog source pointers and thresholds match the locked 14.23 trai
 
 test('Academy locks three sponsors once and tiers grant only the cumulative new items',()=>{
   const offers=sourceOptions([['item-a','装备甲',0,[{kind:'item',id:'item-a'}]],['item-b','装备乙',0,[{kind:'item',id:'item-b'}]],['item-c','装备丙',0,[{kind:'item',id:'item-c'}]]]);
-  const catalog={prototypeEconomy:{academy:{sponsoredItemIds:['item-a','item-b','item-c'],sponsorOptions:offers}}};
+  const catalog=seasonOne({prototypeEconomy:{academy:{sponsoredItemIds:['item-a','item-b','item-c'],sponsorOptions:offers}}});
   const first=onPrototypeEconomyPrep(state(),catalog,[tier('academy',3)]);
   assert.deepEqual(first.state.prototypeMeta.economy.academy.sponsoredItemIds,['item-a','item-b','item-c']);
   assert.equal(first.choiceDrafts[0].economyKind,'academy_sponsor');
@@ -57,7 +59,7 @@ test('Academy sponsor whitelist chooses only complete, source-listed three-item 
   assert.deepEqual(chooseAcademySponsorSet(14,sets),chooseAcademySponsorSet(14,academySponsorSets));
   assert.deepEqual(catalog.prototypeEconomy.academy.eligibleItemIds,[...new Set(sets.flatMap((set)=>set.itemIds))].sort());
   assert.ok(catalog.prototypeEconomy.academy.sponsorOptions.every((option)=>catalog.equipment[option.id]?.grantAllowed===true));
-  const prepared=onPrototypeEconomyPrep(state(),catalog,[tier('academy',3)]);
+  const prepared=onPrototypeEconomyPrep(state(),seasonOne(catalog),[tier('academy',3)]);
   assert.equal(prepared.choiceDrafts[0].options[0].id,prepared.state.prototypeMeta.economy.academy.sponsoredItemIds[0]);
 });
 
@@ -72,24 +74,24 @@ test('Chem-Baron Shimmer counts the completed combat result, resets on wins, and
   ];
   const results=[];
   for(const row of sequence){
-    const result=onPrototypeEconomyResult(current,{},active,{...row,metrics:{}});results.push(result);current=result.state;
+    const result=onPrototypeEconomyResult(current,seasonOne(),active,{...row,metrics:{}});results.push(result);current=result.state;
     assert.equal(result.events.find((event)=>event.type==='chem_shimmer_gained').amount,row.expected,row.battleId);
     assert.equal(result.state.prototypeMeta.economy.chemBaron.lossStreak,row.streak,row.battleId);
   }
   assert.equal(current.prototypeMeta.economy.chemBaron.shimmer,130);
   const result=results[2];
-  const repeated=onPrototypeEconomyResult(result.state,{},active,{...sequence[2],metrics:{}});
+  const repeated=onPrototypeEconomyResult(result.state,seasonOne(),active,{...sequence[2],metrics:{}});
   assert.equal(repeated.state.prototypeMeta.economy.chemBaron.shimmer,115);
   assert.equal(repeated.events[0].type,'prototype_economy_duplicate_ignored');
   const marketCatalog={prototypeEconomy:{chemBaron:{marketOptions:sourceOptions([['buy-contraband','购买违禁装备',0,[{kind:'item',id:'tft13-crime-bronze'}]],['skip','略过市场',0,[]]]).map((row)=>row.id==='skip'?{...row,action:'skip',description:'略过后险境成员获得额外生命值'}:row)}}};
-  const market=onPrototypeEconomyPrep(result.state,marketCatalog,active);
+  const market=onPrototypeEconomyPrep(result.state,seasonOne(marketCatalog),active);
   assert.equal(market.choiceDrafts[0].economyKind,'chem_market');
   assert.ok(market.choiceDrafts[0].options.some((row)=>row.action==='skip'));
 });
 
 test('Conqueror chest progression consumes genuine installed takedown metrics, not damage or a win',()=>{
   const active=[tier('conqueror',2,{StacksPerKill:1},['char-a','char-b'])];
-  const catalog={prototypeEconomy:{conqueror:{chestOptionsByThreshold:{10:sourceOptions([['gold-2','2枚金币',0,[{kind:'gold',amount:2}] ]])}}}};
+  const catalog=seasonOne({prototypeEconomy:{conqueror:{chestOptionsByThreshold:{10:sourceOptions([['gold-2','2枚金币',0,[{kind:'gold',amount:2}] ]])}}}});
   let current=state({conqueror:{conquest:9,openedChests:[],pendingChests:[]}});
   current=onPrototypeEconomyResult(current,catalog,active,{battleId:'c-1',outcome:{won:false},metrics:{prototypeTraits:{conqueror:{kills:0,conquestStacks:1}}}}).state;
   assert.deepEqual(current.prototypeMeta.economy.conqueror.pendingChests,[10]);

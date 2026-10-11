@@ -43,7 +43,9 @@ export function activePrototypeTraits(state,catalog={}) {
     const memberCharIds=[...new Set(memberUnits.map((unit)=>unit.charId))];
     const tier=tierAtCount(trait,memberCharIds.length);
     if (!tier) continue;
-    activeTraits.push({id:trait.id,count:memberCharIds.length,tier:tier.minUnits,minUnits:tier.minUnits,maxUnits:tier.maxUnits,variables:clone(tier.variables),mechanic:mechanicByTrait[trait.sourceName],members:memberCharIds,memberUids:[...new Set(memberUnits.map((unit)=>unit.uid).filter((uid)=>uid!=null).map(String))],...(trait.id==='experiment'?{labCells:clone(state?.prototypeMeta?.labCells??[])}:{})});
+    // Season 2 replaces the laboratory mechanism: its 萨尔贡 tier carries no laboratory cells.
+    const laboratory=trait.id==='experiment'&&!trait.strongholdPact;
+    activeTraits.push({id:trait.id,count:memberCharIds.length,tier:tier.minUnits,minUnits:tier.minUnits,maxUnits:tier.maxUnits,variables:clone(tier.variables),mechanic:trait.mechanic??mechanicByTrait[trait.sourceName],members:memberCharIds,memberUids:[...new Set(memberUnits.map((unit)=>unit.uid).filter((uid)=>uid!=null).map(String))],...(laboratory?{labCells:clone(state?.prototypeMeta?.labCells??[])}:{})});
   }
   return activeTraits;
 }
@@ -72,7 +74,7 @@ export function onPrototypePrep(state,catalog={},context={}) {
   const next=clone(state);
   const season=prototypeSeasonForCatalog(catalog);
   const activeTraits=activePrototypeTraits(next,catalog);
-  const experiment=activeTraits.find((trait)=>trait.id==='experiment');
+  const experiment=activeTraits.find((trait)=>trait.id==='experiment'&&Array.isArray(trait.labCells));
   const labCells=experiment?prototypeLabCells({
     stageId:context.stageId??next.stageId??next.seasonId??catalog.config?.seasonId??season.id,
     seed:next.seed??0,
