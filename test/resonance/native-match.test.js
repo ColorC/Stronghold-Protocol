@@ -1046,7 +1046,10 @@ test('natural R28 winning session closes through the Native Runner and boss cloc
     assert.equal(directSpecBattle.result().total, direct.result.total);
     assert.equal(directSpecBattle.result().time, direct.result.time);
     assert.equal(progressReports > 0, true);
-    assert.ok(maxGameTime > 100, `Native received too little actual game time: ${maxGameTime}`);
+    // the client path received the whole real fight (the headless run of the same session), not a cut-short clock;
+    // the length itself follows the fixture's gear (native-scale equipment, 3125e361, shortened it from >100 s to 85 s)
+    assert.ok(direct.result.time > 30, `the R28 fixture should be a real fight: ${direct.result.time}`);
+    assert.ok(maxGameTime >= direct.result.time - 1, `Native received too little actual game time: ${maxGameTime} of ${direct.result.time}`);
     assert.equal(resultSent, true);
     assert.equal(field.done, true, `Native boss clock did not settle: phase=${match.phase}, hp=${match.bossPool?.hp}, lp=${match.teamLp}`);
     assert.equal(field.resultSource, 'client', 'the accepted Native terminal result must remain client-authoritative');
