@@ -214,7 +214,7 @@ export function MorphGrantLine({ item, off = null, carried = null }) {
 /** An equipped item of the card: icon, name, effect — and for 变形同构体 / a bond item its pairing (`carried`: the wearer's items). */
 function ItemRow({ itemId, carried = null, off = null }) {
   const it = data.lookup('items', itemId);
-  return html`<div class="ditem">
+  return html`<div class="ditem" data-item-kind=${it?.kind || null}>
     <${UnitThumb} kind="item" id=${itemId} size="sm" />
     <div class="ditem__text"><b>${it?.name || itemId}</b><${RichText} text=${it?.descRaw || it?.desc || ''} class="ditem__desc" />
       ${it?.canGiveBond ? html`<${MorphPairings} off=${off} carried=${carried || []} />` : it?.giveBondId ? html`<${MorphGrantLine} item=${it} off=${off} carried=${carried} />` : null}</div>

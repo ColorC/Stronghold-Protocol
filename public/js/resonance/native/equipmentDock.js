@@ -49,7 +49,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
   }, [hoveredRecipe, hovered?.uid, hoveredResult?.name]);
   // the operator under the dragged component: the preview sits beside that operator on the field
-  const anchored = !!(fieldAnchor && fieldTarget && source);
+  const anchored = !!(fieldAnchor && fieldTarget && source && !hovered);
   useEffect(() => {
     const box = fieldPreviewRef.current;
     if (!anchored || !box) { setFieldPoint(null); return; }
@@ -87,7 +87,7 @@ export function InventoryDock({ state, catalog, onDetail, onOpen, onCombine, fie
     ${hoveredRecipe ? html`<div ref=${previewRef} class="rs-equipment-dock__preview" role="status" style=${previewPoint ? `left:${previewPoint.x}px;top:${previewPoint.y}px;visibility:visible` : 'left:-10000px;top:0;visibility:hidden'}>
       <${MergePreview} catalog=${catalog} resultId=${hoveredRecipe.resultId} lead="松开得到"/>
     </div>` : null}
-    ${fieldTarget && source ? html`<div ref=${fieldPreviewRef} class=${`rs-equipment-dock__field-preview${anchored ? ' is-anchored' : ''}`} role="status" aria-live="polite"
+    ${fieldTarget && source && !hovered ? html`<div ref=${fieldPreviewRef} class=${`rs-equipment-dock__field-preview${anchored ? ' is-anchored' : ''}`} role="status" aria-live="polite"
       style=${!anchored ? undefined : fieldPoint ? `left:${fieldPoint.x}px;top:${fieldPoint.y}px;visibility:visible` : 'left:-10000px;top:0;visibility:hidden'}>
       ${fieldRecipe && !fieldUniqueConflict ? html`<${MergePreview} catalog=${catalog} resultId=${fieldRecipe.recipe.resultId} lead="装备合成为"/>`
         : html`<small>${fieldUniqueConflict ? '该干员已携带此唯一装备' : fieldFull ? `装备栏已满（${RESONANCE_EQUIP_SLOTS}/${RESONANCE_EQUIP_SLOTS}）` : '松开即可装备'}</small>`}

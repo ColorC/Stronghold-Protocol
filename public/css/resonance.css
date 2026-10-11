@@ -41,8 +41,6 @@ body { background: #101512; color: var(--rs-text); }
 .rs-detail-panel__copy { display: inline-flex; align-items: center; justify-content: center; gap: 5px; margin-left: auto; min-height: 32px; padding: 4px 8px; background: var(--bg-1); color: var(--text-hi); border: 1px solid var(--line-2); font-size: 14px; }
 .rs-detail-panel__copy .icon { width: 16px; height: 16px; }
 .rs-item-icon[data-show-quality="true"] { box-sizing: border-box; padding: 3px; background: #151b18; border: 1px solid #56665d; }
-.rs-item-icon[data-show-quality="true"][data-item-kind="completed"] { border-color: #b29864; }
-.rs-item-icon[data-show-quality="true"][data-item-kind="emblem"] { border-color: #879aa2; }
 .rs-native-match .gm__corner > a.rs-fullscreen-small { position: relative; inset: auto; z-index: auto; display: grid; flex: none; place-items: center; box-sizing: border-box; width: .56rem; height: .56rem; padding: 0; color: var(--text-lo); font-size: max(.28rem, 14px); line-height: 1; text-decoration: none; }
 .rs-entry, .rs-entry *, .rs-game, .rs-game *, .rs-native-match, .rs-native-match *, .rs-codex, .rs-codex *, .rs-detail, .rs-detail * {
   -webkit-user-select: text !important;
@@ -544,3 +542,26 @@ body { background: #101512; color: var(--rs-text); }
 .rs-merge-row__partner small { color: var(--text-md, #c3d0ca); font-size: max(.13rem, 13px); white-space: nowrap; }
 .rs-merge-row__result b { color: var(--mint-300); font-size: max(.15rem, 15px); line-height: 1.25; }
 .rs-merge-row__effect { grid-column: 1 / -1; margin: 0; color: var(--text-hi); font-size: max(.13rem, 14px); line-height: 1.45; }
+/* equipment kinds at a glance, wherever an item icon shows: 基础组件 a thin steel frame on a flat plate; 成装 (and
+   special finished gear) a thick gold frame on a warm glowing plate; 盟约徽记 a round cool-blue frame */
+.rs-item-icon[data-item-kind] { --item-kind-line: #66736d; box-sizing: border-box; padding: 2px; border: 1px solid var(--item-kind-line); background: linear-gradient(180deg, #1b2320, #0e1311); }
+.rs-item-icon[data-item-kind="completed"], .rs-item-icon[data-item-kind="passive"] { --item-kind-line: #e0b851; border-width: 2px; background: radial-gradient(circle at 50% 42%, rgba(240,196,92,.42), rgba(92,64,14,.9) 62%, #1c1508); box-shadow: inset 0 0 0 1px rgba(255,230,160,.35); }
+.rs-item-icon[data-item-kind="emblem"] { --item-kind-line: #86cfee; border-width: 2px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, rgba(120,200,240,.38), rgba(14,40,56,.95) 70%); box-shadow: inset 0 0 0 1px rgba(210,242,255,.3); }
+.rs-item-icon--md[data-item-kind], .rs-item-icon--lg[data-item-kind] { padding: 4px; }
+/* the inventory rail's slot is the item's frame: the icon inside drops its own and the slot takes the kind's frame */
+.rs-equipment-dock .rs-equipment-dock__item > .rs-item-icon[data-item-kind] { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.rs-equipment-dock .rs-equipment-dock__item:has(> .rs-item-icon[data-item-kind="completed"]), .rs-equipment-dock .rs-equipment-dock__item:has(> .rs-item-icon[data-item-kind="passive"]) { border: 2px solid #e0b851; background: radial-gradient(circle at 50% 42%, rgba(240,196,92,.42), rgba(92,64,14,.9) 62%, #1c1508); box-shadow: inset 0 0 0 1px rgba(255,230,160,.35), 0 0 6px rgba(224,184,81,.35); }
+.rs-equipment-dock .rs-equipment-dock__item:has(> .rs-item-icon[data-item-kind="emblem"]) { border: 2px solid #86cfee; border-radius: 50%; background: radial-gradient(circle at 50% 42%, rgba(120,200,240,.38), rgba(14,40,56,.95) 70%); box-shadow: inset 0 0 0 1px rgba(210,242,255,.3); }
+.rs-equipment-dock .rs-equipment-dock__slot.is-recipe .rs-equipment-dock__item { border-color: var(--mint-300); }
+/* the rail's 46px item no longer spills out of a smaller slot (its right and bottom frame edges were clipped) */
+.rs-native-match .rs-native-equipment-rail .rs-equipment-dock__slot { width: max(.48rem, 46px); height: max(.48rem, 46px); }
+/* the native operator card's equipment rows (ui/detailPanel.js ItemRow) */
+.ditem[data-item-kind] .uthumb--item .uthumb__art { box-sizing: border-box; border: 1px solid #66736d; background: linear-gradient(180deg, #1b2320, #0e1311); }
+.ditem[data-item-kind="completed"] .uthumb--item .uthumb__art, .ditem[data-item-kind="passive"] .uthumb--item .uthumb__art { border: 2px solid #e0b851; background: radial-gradient(circle at 50% 42%, rgba(240,196,92,.42), rgba(92,64,14,.9) 62%, #1c1508); }
+.ditem[data-item-kind="emblem"] .uthumb--item .uthumb__art { border: 2px solid #86cfee; border-radius: 50%; background: radial-gradient(circle at 50% 42%, rgba(120,200,240,.38), rgba(14,40,56,.95) 70%); }
+/* item detail head */
+.rs-detail-panel .rs-detail__item-head { align-items: center; }
+.rs-detail-panel .rs-detail__item-head > .rs-item-icon { width: max(.6rem, 48px); height: max(.6rem, 48px); flex: none; }
+/* codex: a framed square icon, not a frame round the whole art area */
+.rs-codex .rs-codex__catalog-card .rs-codex__art:has(> .rs-item-icon) { display: grid; place-items: center; }
+.rs-codex .rs-codex__catalog-card .rs-codex__art > .rs-item-icon { width: auto; height: 74%; aspect-ratio: 1; }
