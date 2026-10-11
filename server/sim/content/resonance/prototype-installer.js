@@ -16,11 +16,10 @@ export function prototypePveWinCount(state) {
 export function installPrototypeBattleContent(battle,state,catalog) {
   if(catalog?.prototypeMeta?.rulesVersion!==3)return null;
   if(installedBattles.has(battle))return installedBattles.get(battle);
-  // Season 2 pacts never grow across battles: 号角's share reads a fixed win count instead of the settled wins.
-  const season=prototypeSeasonForCatalog(catalog),fixedWins=season.emissaryFixedWins,redesigned=redesignedTraitIds(season);
+  const redesigned=redesignedTraitIds(prototypeSeasonForCatalog(catalog));
   const activeTraits=activePrototypeTraits(state,catalog).map((trait)=>trait.id==='emissary'?{
     ...trait,
-    pveWins:Number.isFinite(fixedWins)?fixedWins:prototypePveWinCount(state),
+    pveWins:prototypePveWinCount(state),
   }:trait);
   const specialUids=new Set((state?.specialEntities??[]).filter((entity)=>Number.isInteger(entity.row)&&Number.isInteger(entity.col)).map((entity)=>String(entity.uid)));
   for(const unit of battle.allyUnits??[])if(unit?.kind==='token'&&specialUids.has(String(unit.uid)))

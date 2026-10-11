@@ -505,11 +505,17 @@ export function installPrototypePacts(battle,catalog,activeTraits=[]) {
         if(Number(active.get(id)?.count)===4)for(const unit of emissaryUnits)
           buff(unit,'emissary-four-member',{hpFlat:Number(v.BonusHealth??0),dmgDealtMul:1+Number(v.SelfishDamageAmp??0)});
         if(emissaryApis.has('TFT13_Ambessa')&&[1,4].includes(Number(active.get(id)?.count))){
-          const wins=Math.max(0,Math.min(7,Math.floor(Number(active.get(id)?.pveWins??0))));
-          const armor=Number(v.AmbessaArmor_PVE??0);
-          if(wins>0&&armor>0){
-            for(const ally of all)applyRating(ally,'emissary-ambessa',wins*armor,wins*armor);
-            metric('emissary','ambessaWinStacks',wins);
+          if(Number.isFinite(Number(v.AmbessaDefPct))){
+            // season 2: a fixed native DEF% / RES share instead of the win-count armor rating
+            for(const ally of all)buff(ally,'emissary-ambessa',{defPct:Number(v.AmbessaDefPct),resFlat:Number(v.AmbessaResFlat??0)});
+            metric('emissary','ambessaAllies',all.length);
+          }else{
+            const wins=Math.max(0,Math.min(7,Math.floor(Number(active.get(id)?.pveWins??0))));
+            const armor=Number(v.AmbessaArmor_PVE??0);
+            if(wins>0&&armor>0){
+              for(const ally of all)applyRating(ally,'emissary-ambessa',wins*armor,wins*armor);
+              metric('emissary','ambessaWinStacks',wins);
+            }
           }
         }
         if(emissaryApis.size)metric('emissary','championBonuses',emissaryApis.size);

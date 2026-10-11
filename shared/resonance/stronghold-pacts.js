@@ -117,14 +117,14 @@ export const STRONGHOLD_PACT_TUNING = freeze({
   formSwap: tiers({ 2: { DA: 0.15, DR: 0.1 }, 4: { DA: 0.25, DR: 0.2 } }),
   dominator: tiers({ 2: { APCapPercent: 25 }, 4: { APCapPercent: 35 }, 6: { APCapPercent: 45 } }),
   breaker: tiers({ 8: { TrueDamagePercent: 0.35 } }),
+  // 号角: a fixed native DEF% / RES share replaces the win-count armor rating (no growth across battles)
+  emissary: tiers({ 1: { AmbessaDefPct: 0.08, AmbessaResFlat: 8 }, 4: { AmbessaDefPct: 0.08, AmbessaResFlat: 8 } }),
 });
 
 /** Season-1 economies that depend on a replaced faction mechanism; they never trigger in season 2. */
 export const STRONGHOLD_RETIRED_ECONOMY_TRAITS = freeze(['academy', 'risk', 'conqueror', 'rhodes']);
 /** Season-1 augments whose only consumer was a replaced mechanism (sponsor items, crystal blasts). */
 export const STRONGHOLD_RETIRED_AUGMENTS = freeze(['TFT13_Augment_AcademyCrown', 'TFT13_Augment_Automata']);
-/** 号角's defence share counts this many settled wins, fixed: pact effects never grow across battles. */
-export const STRONGHOLD_EMISSARY_FIXED_WINS = 4;
 /** Reward items whose season-1 item no longer exists in season 2, by source item name → the native item granted instead. */
 export const STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS = freeze({ Guardbreaker: 'hurricane' });
 /** The one equipment slot count the temporary 维式重锤 fills up to. */
@@ -160,7 +160,7 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
       v.huntDamage ? `攻击生命低于${p(v.huntThreshold)}的敌人时伤害+${p(v.huntDamage)}；击倒敌人后回复${p(v.killHeal)}最大生命。` : '',
     ]],
     resistance: ['【维多利亚】干员每携带1件装备，攻击力提升；合成装备效果更高。', (v) => [
-      `每件组件攻击力+${p(v.perComponent)}，每件合成装备+${p(v.perCompleted)}。`,
+      `每携带1件组件，攻击力+${p(v.perComponent)}；每携带1件合成装备，攻击力+${p(v.perCompleted)}。`,
       v.hammerEvery ? `每${v.hammerEvery}场战斗获得1件“${hammer}”。` : '',
       v.temporaryHammer ? `开战时，装备未满的【维多利亚】干员临时携带1件${hammer}，战斗结束后消失。` : '',
       v.othersShare ? `其他干员获得一半效果。` : '',
@@ -237,7 +237,7 @@ export function strongholdPactCopy(trait, season, { itemName = (id) => id } = {}
       `靠前时受到的伤害-${p(v.DR)}；靠后时伤害+${p(v.DA)}。`,
     ]],
     emissary: ['仅在恰好上阵1名或4名【领军】干员时生效；每名成员提供自己的效果。', (v, tier) => [
-      `${hero('TFT13_Tristana')}：全体友军每星攻击速度+${Math.round(v.StarAS * 100)}；${hero('TFT13_Nami')}：全体友军每次攻击额外回复${v.NamiMana}点技力；${hero('TFT13_Ambessa')}：全体友军防御和法术抗性提升；${hero('TFT13_Garen')}：自身与左右相邻友军获得其最大生命${p(v.GarenHealthPercent)}的生命。`,
+      `${hero('TFT13_Tristana')}：全体友军每星攻击速度+${Math.round(v.StarAS * 100)}；${hero('TFT13_Nami')}：全体友军每次攻击额外回复${v.NamiMana}点技力；${hero('TFT13_Ambessa')}：全体友军防御力+${p(v.AmbessaDefPct)}，法术抗性+${n(v.AmbessaResFlat)}；${hero('TFT13_Garen')}：自身与左右相邻友军获得其最大生命${p(v.GarenHealthPercent)}的生命。`,
       tier.minUnits === 4 ? `4名【领军】干员各额外获得${Math.round(v.BonusHealth)}点生命，伤害+${p(v.SelfishDamageAmp)}。` : '',
     ]],
     family: ['【同袍】干员攻击速度提升、受到的伤害降低，技能所需技力减少。', (v) => [

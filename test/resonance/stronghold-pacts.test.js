@@ -22,8 +22,9 @@ const close = (actual, expected, message, tolerance = 1e-6) => assert.ok(Math.ab
 const SOURCE_TERMS = ['微光', '黑市', '征服', '战利品', '实验格', '实验室', '晶体', '信号', '冲刺', 'Sion', '赞助', '卫灵', '全能吸血', '法术强度', '护甲', '魔抗', '法力', '暴击', '护盾', '火箭', '每叠加', '层数'];
 
 /** A real Native Battle (preview: no scheduled waves) with the given operators on legal tiles. */
-function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21 } = {}) {
-  const base = { seed, difficulty: 'NORMAL', round: 2, roundLimit: 28, rulesVersion: 3, pieces: [] };
+function arena(operators, { star = 1, equipment = {}, extraPacts = {}, seed = 21, cat = catalog, history = [] } = {}) {
+  const catalog = cat;
+  const base = { seed, difficulty: 'NORMAL', round: 2, roundLimit: 28, rulesVersion: 3, pieces: [], history };
   const field = getResonanceField(base, { data, catalog });
   const tiles = [...field.deployMap].map(([key]) => key.split(',').map(Number)).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
   assert.ok(tiles.length >= operators.length, 'enough legal tiles');
@@ -486,6 +487,34 @@ test('突袭 keeps SP and moves next to the nearest ground enemy after idling', 
   assert.ok(raider.buffs.some((buff) => buff.key.startsWith('stronghold:raid-jump') && Math.abs(buff.mods.atkPct - 0.15) < 1e-9));
   assert.ok(two.tier('redeploy').relocations >= 1);
   assert.equal(two.battle.errorCount, 0);
+});
+
+test('领军 号角 gives every ally a fixed DEF +8% and RES +8 in season 2 while season 1 keeps the win-count rating', () => {
+  assert.match(catalog.pacts.emissary.levels[0].description, /号角：全体友军防御力\+8%，法术抗性\+8；/);
+  const names = ['号角', '格拉尼', '凯瑟琳'];
+  const one = arena(ops(...names));
+  assert.equal(one.tier('emissary')?.ambessaAllies, 3, 'exactly one 领军 member activates the effect');
+  for (const name of names) {
+    const unit = one.unit(name), buff = unit.buffs.find((row) => row.key.startsWith('resonance:v3:emissary-ambessa'));
+    assert.ok(buff, `${name} gets the 号角 share`);
+    close(buff.mods.defPct, 0.08, `${name} DEF +8%`);
+    close(buff.mods.resFlat, 8, `${name} RES +8`);
+    assert.ok(unit.s.res >= unit.base.res + 8 - 1e-9, `${name} RES reaches the battle stats`);
+    assert.equal(unit.mem.prototypeRatingBonuses?.['emissary-ambessa'], undefined, 'no win-count rating in season 2');
+  }
+  assert.equal(one.battle.errorCount, 0);
+  const wins = [1, 2, 3].map(() => ({ type: 'fight-settled', won: true }));
+  const first = arena(ops(...names), { cat: firstCatalog, history: wins });
+  for (const name of names) {
+    const unit = first.unit(name);
+    assert.ok(unit.mem.prototypeRatingBonuses?.['emissary-ambessa'], `${name} keeps the season-1 win-count rating`);
+    assert.ok(!unit.buffs.some((row) => row.key.startsWith('resonance:v3:emissary-ambessa')));
+  }
+  assert.equal(first.battle.errorCount, 0);
+});
+
+test('维多利亚 copy names the carried component and completed item counts on every tier', () => {
+  for (const level of catalog.pacts.resistance.levels) assert.match(level.description, /^每携带1件组件，攻击力\+\d+%；每携带1件合成装备，攻击力\+\d+%。/);
 });
 
 test('技力协同 refunds SP when a member skill ends', () => {

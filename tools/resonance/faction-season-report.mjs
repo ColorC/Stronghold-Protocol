@@ -5,7 +5,7 @@ import {loadData} from '../../server/data.js';
 import {getResonanceCatalog} from '../../server/modes/resonance/catalog.js';
 import {factionSeasonV2 as factionSeason} from '../../shared/resonance/faction-season-v2.js';
 import {factionSeason as firstFactionSeason} from '../../shared/resonance/faction-season.js';
-import {STRONGHOLD_PACT_TUNING,STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_RETIRED_ECONOMY_TRAITS,STRONGHOLD_EMISSARY_FIXED_WINS} from '../../shared/resonance/stronghold-pacts.js';
+import {STRONGHOLD_PACT_TUNING,STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_RETIRED_ECONOMY_TRAITS} from '../../shared/resonance/stronghold-pacts.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 if(!process.env.SP_DATA_DIR)throw new Error('SP_DATA_DIR must name the canonical frozen native data');
 const catalog=getResonanceCatalog(loadData(process.env.SP_DATA_DIR,{log:{warn(){},error(){}}}),{rulesVersion:3,seasonId:factionSeason.id});
@@ -27,7 +27,7 @@ const lines=['# 共鸣：阵营赛季','',
 '- 每个阵营有一条改变战场逻辑的机制（通缉、寒冷与冻结、炎佑、复活、装备、隐匿与恐惧、真实伤害与阻挡、技能联动、屏障、医疗协同），与成员自己的技能、天赋配合；纯数值只作陪衬。强度主要放在干员技能与装备搭配上。',
 '- 狙击、术式、坚阵、突袭、技力协同对应原版精准、奥术、坚守、突袭、迅捷的常规机制；其余十一个职业/机制盟约沿用原实现，数值按同一量级修正（见下）。',
 `- 退出新赛季的经济：${STRONGHOLD_RETIRED_ECONOMY_TRAITS.map(id=>catalog.pacts[id].name).join('、')}原有的赞助装备、交易市场、宝箱与临时合成；同袍、铸军、圣枪的经济不变。维多利亚5人起每3场战斗发放1件${catalog.equipment.blade.name}。`,
-`- 新赛季候选池移除依附被替换机制的强化：${STRONGHOLD_RETIRED_AUGMENTS.map(api=>{const row=firstFactionSeason.augmentCandidates.find(entry=>entry.apiName===api);return `${row?.displayName??row?.name??api}（${api}）`;}).join('、')}。领军中号角的防御加成固定按${STRONGHOLD_EMISSARY_FIXED_WINS}场胜利计算，不随战绩成长。`,
+`- 新赛季候选池移除依附被替换机制的强化：${STRONGHOLD_RETIRED_AUGMENTS.map(api=>{const row=firstFactionSeason.augmentCandidates.find(entry=>entry.apiName===api);return `${row?.displayName??row?.name??api}（${api}）`;}).join('、')}。领军中号角改为固定的全体友军防御力+${Math.round(STRONGHOLD_PACT_TUNING.emissary[1].AmbessaDefPct*100)}%、法术抗性+${STRONGHOLD_PACT_TUNING.emissary[1].AmbessaResFlat}，不随战绩成长。`,
 '','### 沿用盟约的数值修正','',
 ...report.pacts.filter(t=>t.tuning).map(t=>`- ${t.name}：${Object.entries(t.tuning).map(([min,values])=>`${min}人 ${Object.entries(values).map(([key,value])=>`${key}=${value}`).join('，')}`).join('；')}`),
 '','## 一星战斗数值','',

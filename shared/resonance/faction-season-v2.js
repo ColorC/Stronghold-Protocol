@@ -1,6 +1,6 @@
 import {factionSeason} from './faction-season.js';
 import {STRONGHOLD_PACT_TIERS,STRONGHOLD_PACT_TUNING,STRONGHOLD_PACT_IDS,STRONGHOLD_RETIRED_ECONOMY_TRAITS,
-  STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_EMISSARY_FIXED_WINS,STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS} from './stronghold-pacts.js';
+  STRONGHOLD_RETIRED_AUGMENTS,STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS} from './stronghold-pacts.js';
 
 const clone=value=>structuredClone(value);
 const requireValue=(condition,message)=>{if(!condition)throw new Error(message);};
@@ -31,7 +31,6 @@ export const factionSeasonV2=Object.freeze({...factionSeason,
   traits,
   strongholdPacts:Object.freeze([...STRONGHOLD_PACT_IDS]),
   retiredEconomyTraits:Object.freeze([...STRONGHOLD_RETIRED_ECONOMY_TRAITS]),
-  emissaryFixedWins:STRONGHOLD_EMISSARY_FIXED_WINS,
   rewardItemSubstitutions:Object.freeze({...STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS}),
   augmentCandidates:factionSeason.augmentCandidates.filter(row=>!retiredAugments.has(row.apiName)),
   strategyCandidates:factionSeason.strategyCandidates.filter(row=>!retiredAugments.has(row.apiName)),
