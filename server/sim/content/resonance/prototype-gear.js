@@ -1,3 +1,5 @@
+import { equipmentRowInitialSp, equipmentRowMods } from './equipment.js';
+
 const clone=(value)=>structuredClone(value);
 const QUALITY = new Set(['artifact', 'support', 'radiant', 'radiant_conversion']);
 
@@ -26,12 +28,9 @@ export function installPrototypeGearActions(battle, state, catalog = {}) {
       for (const effect of item.effects?.length ? item.effects : item.baseEffects ?? []) {
         unit.mem.resonanceEquipmentEffects ??= [];
         unit.mem.resonanceEquipmentEffects.push({ ...clone(effect), itemId: `scrap:${temp.itemId}`, itemKind: item.kind, temporary: true });
-        if (effect.kind !== 'component_stat') continue;
-        const p = effect.params ?? {};
-        for (const [source, target] of [['atk','atkFlat'],['aspd','aspd'],['def','defFlat'],['res','resFlat'],['hp','hpFlat'],['sp','spRecoveryFlat'],['hpPct','hpPct']]) {
-          const value = Number(p[source] ?? 0);
-          if (Number.isFinite(value) && value) mods[target] = (mods[target] ?? 0) + (source === 'hpPct' ? value / 100 : value);
-        }
+        equipmentRowMods(effect, mods);
+        const initialSp = equipmentRowInitialSp(effect);
+        if (initialSp) unit.mem.resonanceEquipmentInitialSp = (unit.mem.resonanceEquipmentInitialSp ?? 0) + initialSp;
       }
       if (temp.quality === 'radiant') {
         const bonus = qualityEffects.radiant?.[temp.itemId]?.mods;

@@ -51,41 +51,11 @@ function pactEffectText(e, threshold = Infinity) {
   }
 }
 
-function equipmentEffectText(effect) {
-  const p=effect.params??{};
-  switch(effect.kind) {
-    case 'component_stat': return Object.entries(p).map(([k,v])=>({atk:`攻击力+${nfmt(v)}`,aspd:`攻速+${nfmt(v)}`,def:`防御力+${nfmt(v)}`,res:`法术抗性+${nfmt(v)}`,hp:`生命上限+${nfmt(v)}`,maxHp:`生命上限+${nfmt(v)}`,sp:`技力自然回复每秒+${nfmt(v)}`,initialSp:`初始技力+${nfmt(v)}`,initSp:`初始技力+${nfmt(v)}`}[k]??null)).filter(Boolean).join('，') || '无基础属性';
-    case 'giant_slayer': return `攻击最大生命高于${p.healthAbove}的敌人时伤害提高${p.damageBonus}%。`;
-    case 'resistance_shred': return `攻击使目标法术抗性降低${p.resReduction}，持续${p.duration}秒。`;
-    case 'fifth_strike': return `每第${p.every}次攻击追加${p.damage}%攻击力物理伤害。`;
-    case 'armor_pierce': return `攻击无视目标${p.defensePenetration}%防御。`;
-    case 'lifesteal': return `造成的实际物理或法术伤害的${p.actualDamagePercent}%转为治疗，冷却${p.cooldown}秒。`;
-    case 'hit_stack': return `受击时防御+${p.defPerHit}、攻击+${p.atkPercentPerHit}%，最多${p.maxStacks}层。`;
-    case 'first_cast_haste': return `首次施法后攻速+${p.aspd}，持续${p.duration}秒。`;
-    case 'pact_transfer': case 'transfer_pact': return `额外获得${({aegir:'阿戈尔',laterano:'拉特兰',kjerag:'谢拉格',yan:'炎国',victoria:'维多利亚',columbia:'哥伦比亚',kazimierz:'卡西米尔',siracusa:'叙拉古',rhodes:'罗德岛',lungmen:'龙门',sargon:'萨尔贡',leithania:'莱塔尼亚',iberia:'伊比利亚',higashi:'东',ursus:'乌萨斯',bolivar:'玻利瓦尔',rim:'雷姆必拓',babel:'巴别塔',sami:'萨米',ammo:'弹药',combo:'连击',control:'控制',creation:'造物',symbiosis:'共生',logistics:'后勤',redeploy:'再部署',flight:'飞行',arts:'术式',breaker:'破阵',burn:'灼燃',necrosis:'凋亡',holyGun:'圣枪',yela:'耶拉之息',sui:'岁',crown:'王冠'})[p.pactId]??'盟约'}标签。`;
-    case 'skill_damage': return `技能伤害提高${p.skillDamageBonus}%。`;
-    case 'chain_lightning': return `每第${p.every}次攻击对${p.radius}格内敌人造成${p.damage}%攻击力法术伤害。`;
-    case 'counter_magic': return `受击时造成自身防御力${p.damageFromDef}%法术伤害，冷却${p.cooldown}秒。`;
-    case 'spell_vulnerability': return `法术抗性+${p.resBonus}；技能造成伤害后，被命中的敌人受到的法术伤害提高${p.targetArtsVulnerability}%，持续${p.duration}秒。`;
-    case 'periodic_heal': return p.healFromAtk?`每${p.interval}秒为生命最低的友方恢复${p.healFromAtk}%攻击力的生命。`:`每${p.interval}秒为${p.range}格内最多${p.healTargetCount}名友方各恢复${p.healMaxHp}%最大生命，不触发共生。`;
-    case 'cast_stack': return `每次施法攻击提高${p.atkPercentPerCast}%，本场最多提高${p.maxPercent}%。`;
-    case 'attack_stack': return `每次攻击攻速+${p.aspdPerAttack}，最多+${p.maxAspd}。`;
-    case 'death_save': return `本场首次受到致死伤害时免于倒下${p.duration}秒。`;
-    case 'evasion': return `获得${p.physicalDodge}%物理闪避和${p.artsDodge}%法术闪避。`;
-    case 'splash_strike': return `每第${p.every}次攻击，对攻击范围内最近的另一名可选敌人造成${p.otherTargetDamage}%攻击力物理伤害。`;
-    case 'attack_sp': return `每次攻击恢复${p.spPerAttack}技力，每秒最多${p.perSecondCap}。`;
-    case 'thorns': return `受敌人攻击时对${p.radius}格内敌人造成自身防御力${p.damageFromDef}%物理伤害，冷却${p.cooldown}秒。`;
-    case 'block_stack': return `每阻挡一名敌人防御+${p.defPerBlock}、法抗+${p.resPerBlock}，最多${p.maxStacks}层。`;
-    case 'death_barrier': return `生命+${p.baseHpBonus}%；本场首次受到致死伤害时获得${p.hpPercent}%生命屏障。`;
-    case 'cast_stun': return `施法使最近敌人眩晕${p.duration}秒，冷却${p.cooldown}秒。`;
-    case 'resistance_cleanse': return `法术抗性额外+${p.extraRes}；每${p.interval}秒清除寒冷或冻结。`;
-    case 'cast_sp': case 'skill_sp': return `技能结束时恢复${p.sp}技力，冷却${p.cooldown??''}秒。`;
-    case 'regeneration': return `生命+${p.maxHpBonus}%，每秒恢复最大生命${p.healMaxHpPerSecond}%。`;
-    case 'hit_sp': return `受到攻击时恢复${p.spPerHit}技力，每秒最多${p.perSecondCap}。`;
-    case 'choose_identity_transfer': return '可选择一个身份盟约标签，选择结果在领取前保留。';
-    default:return null;
-  }
-}
+// Equipment text is handwritten per item in the native item wording (tools/resonance/build-content.mjs); the compiler
+// only checks that every effect row has a battle consumer (server/sim/content/resonance/equipment.js).
+const EQUIPMENT_EFFECT_KINDS=new Set(['component_stat','item_stat','cast_stack','undying','attack_heal','pegasus_lance','pegasus_helm','attack_element',
+  'attack_stack','attack_status','skill_silence','self_drain','riot_shield','status_immunity','opening_damage','far_damage','flat_reduction','taunt_guard',
+  'opening_stun','first_hit_stealth','revive','skill_barrier','pact_transfer','transfer_pact','choose_identity_transfer']);
 
 function sourceLevel(operator, skillTable) {
   const levels=skillTable?.[operator.fixedSkillId]?.levels;
@@ -155,12 +125,11 @@ export function compileResonancePlayerText(catalog, skillTable) {
     return {threshold:level.threshold,description:sentences.filter(Boolean).join(' ')};
   })}]));
   const equipment=Object.fromEntries(Object.entries(catalog.equipment).map(([id,item])=>{
-    const details=item.effects.map(equipmentEffectText);
-    if(details.some(x=>!x))diagnostics.push({type:'unknown-equipment-effect',itemId:id,kinds:item.effects.filter((_,i)=>!details[i]).map(e=>e.kind)});
-    const base=(item.baseEffects??[]).map(equipmentEffectText);
-    const prose=[...base,...details.slice((item.baseEffects??[]).length)].filter(Boolean);
-    if(item.unique)prose.push(item.kind==='completed'?'同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。':'同名特殊效果仅生效一件。');
-    return [id,{description:prose.join(' ')}];
+    const unknown=(item.effects??[]).map(effect=>effect.kind).filter(kind=>!EQUIPMENT_EFFECT_KINDS.has(kind));
+    if(unknown.length)diagnostics.push({type:'unknown-equipment-effect',itemId:id,kinds:unknown});
+    const description=String(item.description??'').trim();
+    if(!description)diagnostics.push({type:'missing-equipment-text',itemId:id});
+    return [id,{description}];
   }));
   return {schemaVersion:1,operators,pacts,equipment,diagnostics};
 }

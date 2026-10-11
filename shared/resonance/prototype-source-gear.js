@@ -1,32 +1,33 @@
-import { nativeFlatAmount } from './native-effect-scale.js';
 const SOURCE_REFERENCE=Object.freeze({game:'Teamfight Tactics',version:'Set 13 launch patch 14.23',sourceKind:'CommunityDragon extracted client data'});
 
+// Set 13 Crown rewards that named one of these seven source items now grant the native 卫戍协议 completed item whose
+// effect is closest (nativeItemId). The source record stays as provenance only; it is never shown or granted.
+// Saves that already hold an old source-item id keep it as a hidden alias of that native item (same name, icon and
+// effect; grantAllowed false), so no session becomes unreadable.
 export const prototypeSourceGearDefinitions=Object.freeze([
-  {id:'prototype_source_gear_hand_of_justice',sourceApiName:'TFT_Item_UnstableConcoction',sourceName:'Hand Of Justice',name:'正义之手',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_UnstableConcoction.TFT_Set13.tex',composition:['TFT_Item_TearOfTheGoddess','TFT_Item_SparringGloves'],sourceDescription:'Gain 2 effects:<li>@AD_NotStatBar*100@% Attack Damage and @AP_NotStatBar@ Ability Power.<li>@StatOmnivamp_NotStatBar*100@% Omnivamp.<br><br>While above @HealthThreshold*100@% health, double the Attack Damage and Ability Power. While below @HealthThreshold*100@% Health, double the Omnivamp.',sourceEffects:{AD_NotStatBar:.15000000596046448,AP_NotStatBar:15,CritChance:20,HealthThreshold:.5,Mana:15,StatOmnivamp_NotStatBar:.15000000596046448,'{f23e83fc}':2},description:'攻击力+15%，术法伤害+15%，暴击率+20%。生命高于一半时攻击力与术法伤害加倍；生命低于一半时，全能吸血加倍至30%。开战技力按固定技能消耗折算增加15%；造成伤害时恢复相当于伤害15%的生命。',adaptation:'TFT法术强度映射为Native术法伤害倍率；Mana按当前固定技能消耗比例转换为初始技力。'},
-  {id:'prototype_source_gear_morellonomicon',sourceApiName:'TFT_Item_Morellonomicon',sourceName:'Morellonomicon',name:'莫雷洛秘典',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_Morellonomicon.TFT_Set13.tex',composition:['TFT_Item_NeedlesslyLargeRod','TFT_Item_GiantsBelt'],sourceDescription:"Attacks and Abilities deal @BurnPercent@% <TFTKeyword>Burn</TFTKeyword> and @GrievousWoundsPercent@% <TFTKeyword>Wound</TFTKeyword> to enemies for @BurnDuration@ seconds.<br><br><tftitemrules>[Unique - only 1 per champion]<br><tftbold>Burn</tftbold>: Deals a percent of the target's max Health as true damage every second<br><tftbold>Wound</tftbold>: Reduces healing received</tftitemrules>",sourceEffects:{AP:25,AS:10,BurnDuration:10,BurnPercent:1,GrievousWoundsPercent:33,Health:150,MonsterCap:100,TicksPerSecond:1},description:'生命值+150，攻速+10%，术法伤害+25%。攻击或技能命中会灼烧并重伤敌人：每秒造成相当于目标最大生命值1%的真实伤害，持续10秒；受到的治疗降低33%。',adaptation:'TFT法术强度映射为Native术法伤害倍率。'},
-  {id:'prototype_source_gear_last_whisper',sourceApiName:'TFT_Item_LastWhisper',sourceName:'Last Whisper',name:'最后的轻语',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_LastWhisper.TFT_Set13.tex',composition:['TFT_Item_RecurveBow','TFT_Item_SparringGloves'],sourceDescription:'Physical damage @ArmorReductionPercent@% <TFTKeyword>Sunders</TFTKeyword> the target for @ArmorBreakDuration@ seconds. This effect does not stack.<br><br><tftitemrules>[Unique - only 1 per champion]<br><tftbold>Sunder</tftbold>: Reduce Armor</tftitemrules>',sourceEffects:{AD:.15000000596046448,AS:20,ArmorBreakDuration:3,ArmorReductionPercent:30,CritChance:20},description:'攻击力+15%，攻速+20%，暴击率+20%。造成物理伤害会使目标防御降低30%，持续3秒；此效果不叠加。',adaptation:'有来源评分时按总护甲评分转换；Native PvE敌人无来源评分时采用3秒、不叠加的防御降低。'},
-  {id:'prototype_source_gear_protectors_vow',sourceApiName:'TFT_Item_FrozenHeart',sourceName:"Protector's Vow",name:'守护誓约',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_FrozenHeart.TFT_Set13.tex',composition:['TFT_Item_TearOfTheGoddess','TFT_Item_ChainVest'],sourceDescription:'Once per combat at @HealthThreshold@% Health, gain a @ShieldHealthPercent@% max Health Shield that lasts @ShieldDuration@ seconds and gain @Stats@ Armor and @Stats@ Magic Resist.',sourceEffects:{Armor:20,HealthThreshold:40,Mana:30,ShieldDuration:5,ShieldHealthPercent:25,Stats:20},description:'护甲评分+20。开战技力按固定技能消耗折算增加30%。生命首次降至40%时，获得相当于最大生命25%的护盾，持续5秒，并使护甲与法抗评分各提高20。',adaptation:'TFT护甲与法抗评分依照本赛季的统一rating转换，Mana按当前固定技能消耗比例转换为初始技力。'},
-  {id:'prototype_source_gear_guinsoos_rageblade',sourceApiName:'TFT_Item_GuinsoosRageblade',sourceName:"Guinsoo's Rageblade",name:'鬼索的狂暴之刃',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex',composition:['TFT_Item_RecurveBow','TFT_Item_NeedlesslyLargeRod'],sourceDescription:'Attacks grant @AttackSpeedPerStack@% stacking Attack Speed.',sourceEffects:{AP:10,AS:10,AttackSpeedPerStack:5},description:'术法伤害+10%，攻速+10%。每次普攻后，战斗中额外获得5%攻速。',adaptation:'TFT法术强度映射为Native术法伤害倍率。'},
-  {id:'prototype_source_gear_jeweled_gauntlet',sourceApiName:'TFT_Item_JeweledGauntlet',sourceName:'Jeweled Gauntlet',name:'珠光护手',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_JeweledGauntlet.TFT_Set13.tex',composition:['TFT_Item_NeedlesslyLargeRod','TFT_Item_SparringGloves'],sourceDescription:"Abilities can critically strike.<br><br>If the holder's abilities can already critically strike, gain @CritDamageToGive*100@% Critical Strike Damage instead.",sourceEffects:{AP:35,CritChance:35,CritDamageToGive:.10000000149011612},description:'术法伤害+35%，暴击率+35%，技能可暴击。若技能原本已能暴击，暴击伤害再提高10%。',adaptation:'Native技能暴击沿用统一暴击模型；额外暴击伤害只在技能由盟约预先开启暴击时生效。'},
-  {id:'prototype_source_gear_crownguard',sourceApiName:'TFT_Item_Crownguard',sourceName:'Crownguard',name:'皇冠卫士',icon:'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_Crownguard.TFT_Set13.tex',composition:['TFT_Item_NeedlesslyLargeRod','TFT_Item_ChainVest'],sourceDescription:'Combat start: Gain a @ShieldSize@% max Health Shield for @ShieldDuration@ seconds.<br>When the shield expires, gain @ShieldBonusAP@ Ability Power.<br>',sourceEffects:{AP:20,Armor:20,ChillDuration:4,Health:100,HexRange:2,ShieldBonusAP:25,ShieldDuration:8,ShieldSize:25},description:'生命值+100，术法伤害+20%，护甲评分+20。开战时获得相当于最大生命25%的护盾，持续8秒；护盾自然到期后术法伤害再提高25%。',adaptation:'TFT护甲评分依照本赛季的统一rating转换；护盾增幅在8秒自然到期时触发。'},
+  {id:'prototype_source_gear_hand_of_justice',sourceApiName:'TFT_Item_UnstableConcoction',sourceName:'Hand Of Justice',composition:['TFT_Item_TearOfTheGoddess','TFT_Item_SparringGloves'],nativeItemId:'vampBlade',reason:'攻击与全能吸血 → 休眠子裔：攻击力加成并按攻击回复生命'},
+  {id:'prototype_source_gear_morellonomicon',sourceApiName:'TFT_Item_Morellonomicon',sourceName:'Morellonomicon',composition:['TFT_Item_NeedlesslyLargeRod','TFT_Item_GiantsBelt'],nativeItemId:'duelistCrest',reason:'命中灼烧 → 灼燃维式重锤：攻击附带灼燃损伤'},
+  {id:'prototype_source_gear_last_whisper',sourceApiName:'TFT_Item_LastWhisper',sourceName:'Last Whisper',composition:['TFT_Item_RecurveBow','TFT_Item_SparringGloves'],nativeItemId:'quietCape',reason:'削减目标抗性 → 激光发射器：攻击无视法术抗性'},
+  {id:'prototype_source_gear_protectors_vow',sourceApiName:'TFT_Item_FrozenHeart',sourceName:"Protector's Vow",composition:['TFT_Item_TearOfTheGoddess','TFT_Item_ChainVest'],nativeItemId:'armorAxe',reason:'危急时保命 → 坚固维式重锤：致命伤害后不倒'},
+  {id:'prototype_source_gear_guinsoos_rageblade',sourceApiName:'TFT_Item_GuinsoosRageblade',sourceName:"Guinsoo's Rageblade",composition:['TFT_Item_RecurveBow','TFT_Item_NeedlesslyLargeRod'],nativeItemId:'thunderRing',reason:'每次攻击叠攻速 → 有限加速器'},
+  {id:'prototype_source_gear_jeweled_gauntlet',sourceApiName:'TFT_Item_JeweledGauntlet',sourceName:'Jeweled Gauntlet',composition:['TFT_Item_NeedlesslyLargeRod','TFT_Item_SparringGloves'],nativeItemId:'spellblade',reason:'技能强化输出 → 炎国短刀：开启技能叠攻击力'},
+  {id:'prototype_source_gear_crownguard',sourceApiName:'TFT_Item_Crownguard',sourceName:'Crownguard',composition:['TFT_Item_NeedlesslyLargeRod','TFT_Item_ChainVest'],nativeItemId:'vitalEngine',reason:'开战护盾 → 护盾无人机：部署及开启技能获得屏障'},
 ]);
 
 const byApiName=new Map(prototypeSourceGearDefinitions.map(row=>[row.sourceApiName,row]));
 
-/** Add only the seven source-exact items needed by resolved Set 13 Crowns. */
+/** Route the seven Set 13 source items to native completed items; keep their old ids readable as hidden aliases. */
 export function applyPrototypeSourceGear(catalog) {
   const equipment={...catalog.equipment};
   const bySourceApiName={};
   for(const row of prototypeSourceGearDefinitions){
     if(byApiName.get(row.sourceApiName)!==row)throw new Error(`DUPLICATE_PROTOTYPE_SOURCE_GEAR:${row.sourceApiName}`);
     if(equipment[row.id])throw new Error(`PROTOTYPE_SOURCE_GEAR_ID_COLLISION:${row.id}`);
-    bySourceApiName[row.sourceApiName]=row.id;
-    const sourceEffects=structuredClone(row.sourceEffects);
-    const effectiveEffects=structuredClone(sourceEffects);
-    if(Object.hasOwn(effectiveEffects,'Health'))effectiveEffects.Health=nativeFlatAmount(catalog.prototypeSeason,effectiveEffects.Health);
-    let description=row.description;
-    if(effectiveEffects.Health!==sourceEffects.Health)description=description.replace(`生命值+${sourceEffects.Health}`,`生命值+${effectiveEffects.Health}`);
-    equipment[row.id]={id:row.id,name:row.name,description,kind:'completed',parts:[],baseEffects:[],effects:[],unique:/Unique\s*-\s*only\s+1\s+per\s+champion/i.test(row.sourceDescription),grantAllowed:true,prototypeSourceGearId:row.id,sourceApiName:row.sourceApiName,iconId:row.sourceApiName,prototypeSourceEffects:sourceEffects,prototypeEffectiveEffects:effectiveEffects,source:{...SOURCE_REFERENCE,apiName:row.sourceApiName,name:row.sourceName,description:row.sourceDescription,effects:sourceEffects,composition:row.composition,adaptation:row.adaptation}};
+    bySourceApiName[row.sourceApiName]=row.nativeItemId;
+    const native=equipment[row.nativeItemId];
+    if(native?.kind!=='completed')continue;
+    equipment[row.id]={...structuredClone(native),id:row.id,legacyAliasOf:row.nativeItemId,grantAllowed:false,
+      source:{...SOURCE_REFERENCE,apiName:row.sourceApiName,name:row.sourceName,composition:[...row.composition],replacedBy:row.nativeItemId,reason:row.reason}};
   }
   return {...catalog,equipment,prototypeSourceGear:{definitions:prototypeSourceGearDefinitions,bySourceApiName}};
 }

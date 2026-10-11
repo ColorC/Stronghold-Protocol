@@ -22,7 +22,7 @@ const DOC = path.join(ROOT, 'docs/resonance/catalog.md');
 const SKILL_TABLE = process.env.SP_RESONANCE_SKILL_TABLE
   ? path.resolve(process.env.SP_RESONANCE_SKILL_TABLE)
   : path.join(CANONICAL_ROOT, 'data/resonance-reference/arknights/skill-table.json.gz');
-const STAGING=path.join(CANONICAL_ROOT,'.omni/tmp/resonance');
+const STAGING=process.env.SP_RESONANCE_STAGING?path.resolve(process.env.SP_RESONANCE_STAGING):path.join(CANONICAL_ROOT,'.omni/tmp/resonance');
 function publishGenerated(target,content) {
   fs.mkdirSync(STAGING,{recursive:true});fs.mkdirSync(path.dirname(target),{recursive:true});
   const pending=path.join(STAGING,`${path.basename(target)}.pending`);
@@ -162,37 +162,66 @@ profiles('yela','yela_breath',[{byStar:{1:{tileCooldown:3,coldDuration:1.5,perCo
 profiles('sui','sui_shadow',[{barrier:20,summonEvery:10,summonAtk:80,summonHp:150},{barrier:30,summonEvery:8,summonAtk:120,summonHp:200},{barrier:50,summonEvery:6,summonAtk:200,summonHp:300}],{barrierOnFirstCast:true,summonDuration:8,maxSummons:1,visible:true});
 profiles('crown','crown_memory',[{byStar:{1:{perCast:3},2:{perCast:5},3:{perCast:10}}}],{maxStacks:30,battleOnly:true});
 
+// Resonance equipment is the native 卫戍协议 equipment: each item keeps one native item's name, icon and effect
+// (cross-round stacks removed; in-battle effects capped or timed), with numbers at native scale — ATK/DEF/HP in
+// percent, RES/ASPD in points, SP as natural recovery per second or initial SP. A completed item adds its own
+// item_stat and effect rows on top of the stats of its two components. Equipment ids are the save-compatible ids.
 const componentInfo = [
-  ['blade','长刃','攻击力+15'],['staff','法杖','攻击力+10，初始技力回复+0.1'],['bow','弓弦','攻速+10'],['plate','板甲','防御力+40'],['cloak','斗篷','法术抗性+8'],['belt','腰带','生命值+150'],['tear','泪滴','初始技力+5'],['crest','纹章','不提供基础属性，用于合成转职。'],
+  ['blade','维式重锤','攻击力+15%','trap_1041_acarm041','chess_item_1_01_e_a'],['staff','萨尔贡浓茶','技力自然回复速度+0.15/秒','trap_1050_acarm050','chess_item_2_04_e_a'],
+  ['bow','叙拉古正装','攻击速度+15','trap_1121_acarm121','chess_item_3_01_e_a'],['plate','坚守盾牌','防御力+20%','trap_1047_acarm047','chess_item_1_02_e_a'],
+  ['cloak','耶拉冈德之泪','法术抗性+15','trap_1102_acarm102','chess_item_6_06_e_a'],['belt','歌利亚头盔','生命值+20%','trap_1049_acarm049','chess_item_3_06_e_a'],
+  ['tear','迅捷作战粮','初始技力+6','trap_1051_acarm051','chess_item_3_05_e_a'],['crest','随身身份牌','不提供属性；与其他组件合成盟约徽记。','trap_1124_acarm124','chess_item_1_04_e_a'],
 ];
-const componentEffects=[{atk:15},{atk:10,sp:.1},{aspd:10},{def:40},{res:8},{hp:150},{initialSp:5},{ }];
-const equipment=Object.fromEntries(componentInfo.map(([id,name,description],i)=>[id,{id,name,description,kind:'component',effects:[E('component_stat',componentEffects[i])]}]));
-const recipeNames=[
- ['giantSlayer','巨人杀手','对生命值高于5000的敌人造成伤害+25%'],['spellblade','破法刃','攻击使目标法抗降低12，持续3秒'],['rapidBlade','疾射刃','每第5次攻击追加80%攻击力物理伤害'],['armorAxe','破甲斧','攻击穿透25%防御'],['vampBlade','饮血刃','物理或法术实际伤害的10%转为生命，冷却0.5秒'],['titanArmor','泰坦战甲','受击后防御+8、攻击+1%，本场最多20层'],['duelistCrest','决斗徽记','首次施法后攻速+35，持续8秒'],['breakerTransfer','破阵转职','获得破阵盟约'],
- ['resonanceStaff','共鸣法杖','技能伤害+25%'],['thunderRing','雷电环','每第4次攻击对半径1.5内造成80%攻击力法伤'],['counterMirror','反击镜','受击时造成40%防御力法伤，冷却1秒'],['arcaneMantle','奥术披肩','法抗+12，技能目标受到法伤+15%，持续3秒'],['lifeSpring','生命泉杖','每5秒为生命最低的盟友恢复80%攻击力生命'],['archangelStaff','大天使杖','每次施法攻击+8%，本场最多40%'],['artsTransfer','术式转职','获得术式盟约'],
- ['berserkBow','狂战弓','每次攻击攻速+3，最多45'],['ironWing','铁羽翼','每场首次致死时免于倒下2秒'],['lightCloak','轻羽披风','物理与法术闪避15%'],['hurricane','飓风机芯','每第3次攻击追加最近另一敌人60%攻击力物伤'],['quickCharger','快速充能器','攻击获得1技力，每秒最多2'],['ammoTransfer','弹药转职','获得弹药盟约'],
- ['thornArmor','棘刺甲','受敌攻击时对周围造成80%防御力物伤，冷却1秒'],['golemArmor','石像铠','每阻挡敌人防御+20、法抗+4，最多3层'],['guardianPlate','守护板甲','生命+15%，每场首次致死获得15%生命屏障'],['shockShield','震荡盾','施法使最近敌人眩晕1秒，冷却5秒'],['controlTransfer','控制转职','获得控制盟约'],
- ['holyCloak','圣佑斗篷','法抗额外+12，每5秒清除寒冷或冻结'],['redemptionCloak','救赎斗篷','每8秒恢复两格内盟友6%生命，不触发共生'],['quietCape','静谧披风','技能结束恢复4技力'],['symbiosisTransfer','共生转职','获得共生盟约'],
- ['deepSeaBelt','深海腰带','生命+25%，每秒恢复最大生命0.6%'],['vitalEngine','活力引擎','受敌攻击获得1技力，每秒最多2'],['aegirTransfer','阿戈尔转职','获得阿戈尔盟约'],
- ['azureTear','青龙之泪','技能结束返还5技力，冷却3秒'],['yanTransfer','炎国转职','获得炎国盟约'],['doubleCrest','双纹章','选择一个身份盟约转职，领取选择保留至完成'],
+const componentEffects=[{atkPct:15},{sp:.15},{aspd:15},{defPct:20},{res:15},{hpPct:20},{initialSp:6},{ }];
+const equipment=Object.fromEntries(componentInfo.map(([id,name,description,iconId,nativeItemId],i)=>[id,{id,name,description,kind:'component',iconId,nativeItemId,effects:[E('component_stat',componentEffects[i])]}]));
+const S=(params)=>E('item_stat',params);
+// [id, native name, player text (both components' stats + this item), icon, native record, item_stat/effect rows]
+const recipeRows=[
+ ['giantSlayer','铳骑之威','攻击力+40%','trap_1076_acarm076','chess_item_6_02_e_a',[S({atkPct:10})]],
+ ['spellblade','炎国短刀','攻击力+15%，技力自然回复速度+0.15/秒；每开启一次技能，获得5%的攻击力加成（最多叠加10次）','trap_1040_acarm040','chess_item_3_04_e_a',[E('cast_stack',{atkPercentPerCast:5,maxPercent:50})]],
+ ['rapidBlade','加速维式重锤','攻击力+25%，攻击速度+30','trap_1044_acarm044','chess_item_3_10_e_a',[S({atkPct:10,aspd:15})]],
+ ['armorAxe','坚固维式重锤','攻击力+15%，防御力+20%；首次受到致命伤害时生命值不低于1，持续8秒','trap_1043_acarm043','chess_item_3_09_e_a',[E('undying',{duration:8,uses:1})]],
+ ['vampBlade','休眠子裔','攻击力+15%，法术抗性+15；每攻击1个目标，回复自身2%最大生命值','trap_1065_acarm065','chess_item_4_06_e_a',[E('attack_heal',{maxHpPercent:2})]],
+ ['titanArmor','天马之枪','攻击力+30%，生命值+20%；若与“天马之盔”一起装备，造成伤害时额外造成相当于攻击力30%的真实伤害','trap_1117_acarm117','chess_item_6_01_e_a',[S({atkPct:15}),E('pegasus_lance',{partnerId:'guardianPlate',trueDamageAtk:30})]],
+ ['duelistCrest','灼燃维式重锤','攻击力+30%，初始技力+6；攻击时附带相当于攻击力10%的灼燃损伤','trap_1042_acarm042','chess_item_4_09_e_a',[S({atkPct:15}),E('attack_element',{element:'burn',atkPercent:10})]],
+ ['breakerTransfer','破阵转职','获得破阵盟约',null,null,[E('pact_transfer',{pactId:'breaker'})]],
+ ['resonanceStaff','家族徽章','技力自然回复速度+0.35/秒','trap_1122_acarm122','chess_item_6_11_e_a',[S({sp:.05})]],
+ ['thunderRing','有限加速器','攻击速度+15，技力自然回复速度+0.15/秒；每次攻击或治疗后，本场战斗中攻击速度+2，最高20层','trap_1052_acarm052','chess_item_4_03_e_a',[E('attack_stack',{aspdPerAttack:2,maxAspd:40,countsHeals:true})]],
+ ['counterMirror','战栗维式重锤','攻击力+20%，防御力+20%，技力自然回复速度+0.15/秒；攻击时有10%概率使目标战栗2秒','trap_1045_acarm045','chess_item_2_03_e_a',[S({atkPct:20}),E('attack_status',{status:'tremble',chance:10,duration:2})]],
+ ['arcaneMantle','奥术法阵','法术抗性+15，技力自然回复速度+0.15/秒；技能命中的敌人失去特殊能力3秒（同一敌人每8秒最多一次）','trap_1048_acarm048','chess_item_3_08_e_a',[E('skill_silence',{duration:3,targetCooldown:8})]],
+ ['lifeSpring','天师古鼎','生命值+45%，技力自然回复速度+0.15/秒','trap_1077_acarm077','chess_item_6_03_e_a',[S({hpPct:25})]],
+ ['archangelStaff','源石溶剂','攻击力+30%，技力自然回复速度+0.15/秒，初始技力+6；携带者每秒流失1%最大生命值','trap_1125_acarm125','chess_item_1_05_e_a',[S({atkPct:30}),E('self_drain',{maxHpPercentPerSecond:1})]],
+ ['artsTransfer','术式转职','获得术式盟约',null,null,[E('pact_transfer',{pactId:'arts'})]],
+ ['berserkBow','蒸汽之心','攻击速度+35','trap_1079_acarm079','chess_item_6_05_e_a',[S({aspd:5})]],
+ ['ironWing','防暴盾','攻击速度+15，防御力+20%；阻挡敌人时，受到来自非自身阻挡单位的伤害降低40%','trap_1060_acarm060','chess_item_4_05_e_a',[E('riot_shield',{damageReduction:40})]],
+ ['lightCloak','浓缩嗅盐','攻击速度+15，法术抗性+15；生命值大于70%时，免疫晕眩、冻结等特殊状态','trap_1059_acarm059','chess_item_4_10_e_a',[E('status_immunity',{hpAbove:70,statuses:['stun','freeze','sleep','levitate','palsy']})]],
+ ['hurricane','卡西米尔竞技旗','攻击速度+15，生命值+20%；部署后15秒内造成的伤害提升至135%，随后15秒内逐渐衰减','trap_1119_acarm119','chess_item_4_07_e_a',[E('opening_damage',{damagePercent:135,duration:15,decay:15})]],
+ ['quickCharger','精准狙击镜','攻击速度+15，初始技力+6；攻击距离自身3格及以上的目标时，伤害提高30%','trap_1063_acarm063','chess_item_3_02_e_a',[E('far_damage',{distance:3,damageBonus:30})]],
+ ['ammoTransfer','弹药转职','获得弹药盟约',null,null,[E('pact_transfer',{pactId:'ammo'})]],
+ ['thornArmor','海沟实验体','防御力+40%；获得120点伤害减免','trap_1078_acarm078','chess_item_6_04_e_a',[E('flat_reduction',{amount:120})]],
+ ['golemArmor','蜂鸣器','防御力+20%，法术抗性+15；更容易受到攻击，受到的伤害降低10%','trap_1054_acarm054','chess_item_4_02_e_a',[E('taunt_guard',{taunt:1,damageReduction:10})]],
+ ['guardianPlate','天马之盔','防御力+20%，生命值+20%；若与“天马之枪”一起装备，每秒回复3%最大生命值','trap_1118_acarm118','chess_item_5_09_e_a',[E('pegasus_helm',{partnerId:'titanArmor',healMaxHpPercentPerSecond:3})]],
+ ['shockShield','突袭手雷','防御力+20%，初始技力+6；部署后10秒内，攻击时使目标晕眩1秒（同一目标每4秒最多一次）','trap_1064_acarm064','chess_item_3_11_e_a',[E('opening_stun',{window:10,duration:1,targetCooldown:4})]],
+ ['controlTransfer','控制转职','获得控制盟约',null,null,[E('pact_transfer',{pactId:'control'})]],
+ ['holyCloak','谢拉格不融冰','法术抗性+30；攻击时有12%概率对目标施加1.5秒的寒冷','trap_1062_acarm062','chess_item_5_02_e_a',[E('attack_status',{status:'cold',chance:12,duration:1.5})]],
+ ['redemptionCloak','伪装服','生命值+20%，法术抗性+15；首次受到伤害后获得隐匿，持续5秒','trap_1055_acarm055','chess_item_4_04_e_a',[E('first_hit_stealth',{duration:5})]],
+ ['quietCape','激光发射器','法术抗性+15，初始技力+6；攻击无视目标25%法术抗性','trap_1053_acarm053','chess_item_3_03_e_a',[S({resIgnorePct:25})]],
+ ['symbiosisTransfer','共生转职','获得共生盟约',null,null,[E('pact_transfer',{pactId:'symbiosis'})]],
+ ['deepSeaBelt','M3茧甲','生命值+40%；被击倒时立刻复活并恢复30%最大生命值（一场战斗仅1次）','trap_1068_acarm068','chess_item_4_12_e_a',[E('revive',{hpPercent:30,uses:1})]],
+ ['vitalEngine','护盾无人机','生命值+20%，初始技力+6；部署时及每次开启技能时，获得相当于生命上限12%的屏障','trap_1061_acarm061','chess_item_4_11_e_a',[E('skill_barrier',{maxHpPercent:12})]],
+ ['aegirTransfer','阿戈尔转职','获得阿戈尔盟约',null,null,[E('pact_transfer',{pactId:'aegir'})]],
+ ['azureTear','黄沙罗盘','初始技力+25','trap_1103_acarm103','chess_item_6_07_e_a',[S({initialSp:13})]],
+ ['yanTransfer','炎国转职','获得炎国盟约',null,null,[E('pact_transfer',{pactId:'yan'})]],
+ ['doubleCrest','双纹章','选择一个身份盟约转职，领取选择保留至完成',null,null,[E('choose_identity_transfer',{choice:'identityPact',keepsPendingSelection:true})]],
 ];
-const recipeProfiles=[
- ['giant_slayer',{healthAbove:5000,damageBonus:25}],['resistance_shred',{resReduction:12,duration:3}],['fifth_strike',{every:5,damage:80,damageType:'physical'}],['armor_pierce',{defensePenetration:25}],['lifesteal',{actualDamagePercent:10,cooldown:.5}],['hit_stack',{defPerHit:8,atkPercentPerHit:1,maxStacks:20,battleOnly:true}],['first_cast_haste',{aspd:35,duration:8,once:true}],['pact_transfer',{pactId:'breaker'}],
- ['skill_damage',{skillDamageBonus:25}],['chain_lightning',{every:4,radius:1.5,damage:80,damageType:'arts'}],['counter_magic',{damageFromDef:40,cooldown:1}],['spell_vulnerability',{resBonus:12,targetArtsVulnerability:15,duration:3}],['periodic_heal',{interval:5,healFromAtk:80,target:'lowestHpAlly'}],['cast_stack',{atkPercentPerCast:8,maxPercent:40,battleOnly:true}],['pact_transfer',{pactId:'arts'}],
- ['attack_stack',{aspdPerAttack:3,maxAspd:45}],['death_save',{duration:2,uses:1,battleOnly:true}],['evasion',{physicalDodge:15,artsDodge:15}],['splash_strike',{every:3,otherTargetDamage:60}],['attack_sp',{spPerAttack:1,perSecondCap:2}],['pact_transfer',{pactId:'ammo'}],
- ['thorns',{damageFromDef:80,radius:1,cooldown:1}],['block_stack',{defPerBlock:20,resPerBlock:4,maxStacks:3}],['death_barrier',{hpPercent:15,uses:1,battleOnly:true,baseHpBonus:15}],['cast_stun',{duration:1,cooldown:5,target:'nearestEnemy'}],['pact_transfer',{pactId:'control'}],
- ['resistance_cleanse',{extraRes:12,interval:5,cleanses:['cold','freeze']}],['periodic_heal',{interval:8,healTargetCount:2,healMaxHp:6,range:2,noSymbiosisRecursion:true}],['cast_sp',{sp:4,trigger:'skillEnd'}],['pact_transfer',{pactId:'symbiosis'}],
- ['regeneration',{maxHpBonus:25,healMaxHpPerSecond:.6}],['hit_sp',{spPerHit:1,perSecondCap:2}],['pact_transfer',{pactId:'aegir'}],
- ['skill_sp',{sp:5,cooldown:3,trigger:'skillEnd'}],['pact_transfer',{pactId:'yan'}],['choose_identity_transfer',{choice:'identityPact',keepsPendingSelection:true}],
-];
-let idx=0; let recipeNo=0; const recipes=[];
+let recipeNo=0; const recipes=[];
 for(let a=0;a<8;a++) for(let b=a;b<8;b++) {
-  const [id,name,description]=recipeNames[recipeNo];
+  const [id,name,description,iconId,nativeItemId,extra]=recipeRows[recipeNo]??[];
   if(!id) throw new Error(`missing recipe ${recipeNo}`);
   const parts=[componentInfo[a][0],componentInfo[b][0]];
-  const [kind,params]=recipeProfiles[recipeNo];const transfer=kind==='pact_transfer'||kind==='choose_identity_transfer';
+  const transfer=['pact_transfer','choose_identity_transfer'].includes(extra[0].kind);
   const baseEffects=parts.map(part=>E('component_stat',componentEffects[componentInfo.findIndex(x=>x[0]===part)]));
-  equipment[id]={id,name,description,kind:transfer?'emblem':'completed',parts,baseEffects,unique:true,effects:[...baseEffects,E(kind,params)]};
+  equipment[id]={id,name,description,kind:transfer?'emblem':'completed',...(iconId?{iconId,nativeItemId}:{}),parts,baseEffects,unique:true,effects:[...baseEffects,...extra]};
   recipes.push({parts,resultId:id}); recipeNo++;
 }
 for(const id of ids) {
@@ -507,7 +536,7 @@ const content={schemaVersion:1,source:{commit:sourceCommit,worktable:'docs/reson
 if(!fs.existsSync(SKILL_TABLE)) throw new Error(`canonical pinned skill table missing: ${SKILL_TABLE}`);
 const skillTable=JSON.parse(gunzipSync(fs.readFileSync(SKILL_TABLE)).toString('utf8'));
 const playerText=compileResonancePlayerText(content,skillTable);
-const fatalTextIssues=playerText.diagnostics.filter(x=>x.type==='missing-template'||x.type==='missing-blackboard-values'||x.type==='unknown-pact-effect'||x.type==='unknown-equipment-effect');
+const fatalTextIssues=playerText.diagnostics.filter(x=>x.type==='missing-template'||x.type==='missing-blackboard-values'||x.type==='unknown-pact-effect'||x.type==='unknown-equipment-effect'||x.type==='missing-equipment-text');
 if(fatalTextIssues.length) throw new Error(`player text compilation has ${fatalTextIssues.length} unresolved issues: ${JSON.stringify(fatalTextIssues.slice(0,12))}`);
 content.playerText=playerText;
 const catalogSource=`// Generated by tools/resonance/build-content.mjs from the frozen roster and canonical native records.\nexport const resonanceContent = ${JSON.stringify(content,null,2)};\nexport const resonanceSourceSkillGaps = ${JSON.stringify(sourceSkillGaps,null,2)};\nexport { buildRecruitmentPool };\n\n${buildRecruitmentPool.toString()}\nconst poolSeed = ${poolSeed.toString()};\nconst shuffle = ${shuffle.toString()};\n`;

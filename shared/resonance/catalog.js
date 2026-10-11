@@ -379797,108 +379797,123 @@ export const resonanceContent = {
   "equipment": {
     "blade": {
       "id": "blade",
-      "name": "长刃",
-      "description": "攻击力+15",
+      "name": "维式重锤",
+      "description": "攻击力+15%",
       "kind": "component",
+      "iconId": "trap_1041_acarm041",
+      "nativeItemId": "chess_item_1_01_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         }
       ]
     },
     "staff": {
       "id": "staff",
-      "name": "法杖",
-      "description": "攻击力+10，初始技力回复+0.1",
+      "name": "萨尔贡浓茶",
+      "description": "技力自然回复速度+0.15/秒",
       "kind": "component",
+      "iconId": "trap_1050_acarm050",
+      "nativeItemId": "chess_item_2_04_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         }
       ]
     },
     "bow": {
       "id": "bow",
-      "name": "弓弦",
-      "description": "攻速+10",
+      "name": "叙拉古正装",
+      "description": "攻击速度+15",
       "kind": "component",
+      "iconId": "trap_1121_acarm121",
+      "nativeItemId": "chess_item_3_01_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         }
       ]
     },
     "plate": {
       "id": "plate",
-      "name": "板甲",
-      "description": "防御力+40",
+      "name": "坚守盾牌",
+      "description": "防御力+20%",
       "kind": "component",
+      "iconId": "trap_1047_acarm047",
+      "nativeItemId": "chess_item_1_02_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         }
       ]
     },
     "cloak": {
       "id": "cloak",
-      "name": "斗篷",
-      "description": "法术抗性+8",
+      "name": "耶拉冈德之泪",
+      "description": "法术抗性+15",
       "kind": "component",
+      "iconId": "trap_1102_acarm102",
+      "nativeItemId": "chess_item_6_06_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         }
       ]
     },
     "belt": {
       "id": "belt",
-      "name": "腰带",
-      "description": "生命值+150",
+      "name": "歌利亚头盔",
+      "description": "生命值+20%",
       "kind": "component",
+      "iconId": "trap_1049_acarm049",
+      "nativeItemId": "chess_item_3_06_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ]
     },
     "tear": {
       "id": "tear",
-      "name": "泪滴",
-      "description": "初始技力+5",
+      "name": "迅捷作战粮",
+      "description": "初始技力+6",
       "kind": "component",
+      "iconId": "trap_1051_acarm051",
+      "nativeItemId": "chess_item_3_05_e_a",
       "effects": [
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ]
     },
     "crest": {
       "id": "crest",
-      "name": "纹章",
-      "description": "不提供基础属性，用于合成转职。",
+      "name": "随身身份牌",
+      "description": "不提供属性；与其他组件合成盟约徽记。",
       "kind": "component",
+      "iconId": "trap_1124_acarm124",
+      "nativeItemId": "chess_item_1_04_e_a",
       "effects": [
         {
           "kind": "component_stat",
@@ -379908,9 +379923,11 @@ export const resonanceContent = {
     },
     "giantSlayer": {
       "id": "giantSlayer",
-      "name": "巨人杀手",
-      "description": "对生命值高于5000的敌人造成伤害+25%",
+      "name": "铳骑之威",
+      "description": "攻击力+40%",
       "kind": "completed",
+      "iconId": "trap_1076_acarm076",
+      "nativeItemId": "chess_item_6_02_e_a",
       "parts": [
         "blade",
         "blade"
@@ -379919,13 +379936,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         }
       ],
@@ -379934,29 +379951,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
-          "kind": "giant_slayer",
+          "kind": "item_stat",
           "params": {
-            "healthAbove": 5000,
-            "damageBonus": 25
+            "atkPct": 10
           }
         }
       ]
     },
     "spellblade": {
       "id": "spellblade",
-      "name": "破法刃",
-      "description": "攻击使目标法抗降低12，持续3秒",
+      "name": "炎国短刀",
+      "description": "攻击力+15%，技力自然回复速度+0.15/秒；每开启一次技能，获得5%的攻击力加成（最多叠加10次）",
       "kind": "completed",
+      "iconId": "trap_1040_acarm040",
+      "nativeItemId": "chess_item_3_04_e_a",
       "parts": [
         "blade",
         "staff"
@@ -379965,14 +379983,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         }
       ],
@@ -379981,30 +379998,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
-          "kind": "resistance_shred",
+          "kind": "cast_stack",
           "params": {
-            "resReduction": 12,
-            "duration": 3
+            "atkPercentPerCast": 5,
+            "maxPercent": 50
           }
         }
       ]
     },
     "rapidBlade": {
       "id": "rapidBlade",
-      "name": "疾射刃",
-      "description": "每第5次攻击追加80%攻击力物理伤害",
+      "name": "加速维式重锤",
+      "description": "攻击力+25%，攻击速度+30",
       "kind": "completed",
+      "iconId": "trap_1044_acarm044",
+      "nativeItemId": "chess_item_3_10_e_a",
       "parts": [
         "blade",
         "bow"
@@ -380013,13 +380031,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         }
       ],
@@ -380028,30 +380046,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
-          "kind": "fifth_strike",
+          "kind": "item_stat",
           "params": {
-            "every": 5,
-            "damage": 80,
-            "damageType": "physical"
+            "atkPct": 10,
+            "aspd": 15
           }
         }
       ]
     },
     "armorAxe": {
       "id": "armorAxe",
-      "name": "破甲斧",
-      "description": "攻击穿透25%防御",
+      "name": "坚固维式重锤",
+      "description": "攻击力+15%，防御力+20%；首次受到致命伤害时生命值不低于1，持续8秒",
       "kind": "completed",
+      "iconId": "trap_1043_acarm043",
+      "nativeItemId": "chess_item_3_09_e_a",
       "parts": [
         "blade",
         "plate"
@@ -380060,13 +380079,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         }
       ],
@@ -380075,28 +380094,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
-          "kind": "armor_pierce",
+          "kind": "undying",
           "params": {
-            "defensePenetration": 25
+            "duration": 8,
+            "uses": 1
           }
         }
       ]
     },
     "vampBlade": {
       "id": "vampBlade",
-      "name": "饮血刃",
-      "description": "物理或法术实际伤害的10%转为生命，冷却0.5秒",
+      "name": "休眠子裔",
+      "description": "攻击力+15%，法术抗性+15；每攻击1个目标，回复自身2%最大生命值",
       "kind": "completed",
+      "iconId": "trap_1065_acarm065",
+      "nativeItemId": "chess_item_4_06_e_a",
       "parts": [
         "blade",
         "cloak"
@@ -380105,13 +380127,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         }
       ],
@@ -380120,29 +380142,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
-          "kind": "lifesteal",
+          "kind": "attack_heal",
           "params": {
-            "actualDamagePercent": 10,
-            "cooldown": 0.5
+            "maxHpPercent": 2
           }
         }
       ]
     },
     "titanArmor": {
       "id": "titanArmor",
-      "name": "泰坦战甲",
-      "description": "受击后防御+8、攻击+1%，本场最多20层",
+      "name": "天马之枪",
+      "description": "攻击力+30%，生命值+20%；若与“天马之盔”一起装备，造成伤害时额外造成相当于攻击力30%的真实伤害",
       "kind": "completed",
+      "iconId": "trap_1117_acarm117",
+      "nativeItemId": "chess_item_6_01_e_a",
       "parts": [
         "blade",
         "belt"
@@ -380151,13 +380174,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ],
@@ -380166,31 +380189,37 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
-          "kind": "hit_stack",
+          "kind": "item_stat",
           "params": {
-            "defPerHit": 8,
-            "atkPercentPerHit": 1,
-            "maxStacks": 20,
-            "battleOnly": true
+            "atkPct": 15
+          }
+        },
+        {
+          "kind": "pegasus_lance",
+          "params": {
+            "partnerId": "guardianPlate",
+            "trueDamageAtk": 30
           }
         }
       ]
     },
     "duelistCrest": {
       "id": "duelistCrest",
-      "name": "决斗徽记",
-      "description": "首次施法后攻速+35，持续8秒",
+      "name": "灼燃维式重锤",
+      "description": "攻击力+30%，初始技力+6；攻击时附带相当于攻击力10%的灼燃损伤",
       "kind": "completed",
+      "iconId": "trap_1042_acarm042",
+      "nativeItemId": "chess_item_4_09_e_a",
       "parts": [
         "blade",
         "tear"
@@ -380199,13 +380228,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -380214,21 +380243,26 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "first_cast_haste",
+          "kind": "item_stat",
           "params": {
-            "aspd": 35,
-            "duration": 8,
-            "once": true
+            "atkPct": 15
+          }
+        },
+        {
+          "kind": "attack_element",
+          "params": {
+            "element": "burn",
+            "atkPercent": 10
           }
         }
       ]
@@ -380246,7 +380280,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
@@ -380259,7 +380293,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 15
+            "atkPct": 15
           }
         },
         {
@@ -380276,9 +380310,11 @@ export const resonanceContent = {
     },
     "resonanceStaff": {
       "id": "resonanceStaff",
-      "name": "共鸣法杖",
-      "description": "技能伤害+25%",
+      "name": "家族徽章",
+      "description": "技力自然回复速度+0.35/秒",
       "kind": "completed",
+      "iconId": "trap_1122_acarm122",
+      "nativeItemId": "chess_item_6_11_e_a",
       "parts": [
         "staff",
         "staff"
@@ -380287,15 +380323,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         }
       ],
@@ -380304,30 +380338,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
-          "kind": "skill_damage",
+          "kind": "item_stat",
           "params": {
-            "skillDamageBonus": 25
+            "sp": 0.05
           }
         }
       ]
     },
     "thunderRing": {
       "id": "thunderRing",
-      "name": "雷电环",
-      "description": "每第4次攻击对半径1.5内造成80%攻击力法伤",
+      "name": "有限加速器",
+      "description": "攻击速度+15，技力自然回复速度+0.15/秒；每次攻击或治疗后，本场战斗中攻击速度+2，最高20层",
       "kind": "completed",
+      "iconId": "trap_1052_acarm052",
+      "nativeItemId": "chess_item_4_03_e_a",
       "parts": [
         "staff",
         "bow"
@@ -380336,14 +380370,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         }
       ],
@@ -380352,32 +380385,32 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
-          "kind": "chain_lightning",
+          "kind": "attack_stack",
           "params": {
-            "every": 4,
-            "radius": 1.5,
-            "damage": 80,
-            "damageType": "arts"
+            "aspdPerAttack": 2,
+            "maxAspd": 40,
+            "countsHeals": true
           }
         }
       ]
     },
     "counterMirror": {
       "id": "counterMirror",
-      "name": "反击镜",
-      "description": "受击时造成40%防御力法伤，冷却1秒",
+      "name": "战栗维式重锤",
+      "description": "攻击力+20%，防御力+20%，技力自然回复速度+0.15/秒；攻击时有10%概率使目标战栗2秒",
       "kind": "completed",
+      "iconId": "trap_1045_acarm045",
+      "nativeItemId": "chess_item_2_03_e_a",
       "parts": [
         "staff",
         "plate"
@@ -380386,14 +380419,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         }
       ],
@@ -380402,30 +380434,38 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
-          "kind": "counter_magic",
+          "kind": "item_stat",
           "params": {
-            "damageFromDef": 40,
-            "cooldown": 1
+            "atkPct": 20
+          }
+        },
+        {
+          "kind": "attack_status",
+          "params": {
+            "status": "tremble",
+            "chance": 10,
+            "duration": 2
           }
         }
       ]
     },
     "arcaneMantle": {
       "id": "arcaneMantle",
-      "name": "奥术披肩",
-      "description": "法抗+12，技能目标受到法伤+15%，持续3秒",
+      "name": "奥术法阵",
+      "description": "法术抗性+15，技力自然回复速度+0.15/秒；技能命中的敌人失去特殊能力3秒（同一敌人每8秒最多一次）",
       "kind": "completed",
+      "iconId": "trap_1048_acarm048",
+      "nativeItemId": "chess_item_3_08_e_a",
       "parts": [
         "staff",
         "cloak"
@@ -380434,14 +380474,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         }
       ],
@@ -380450,31 +380489,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
-          "kind": "spell_vulnerability",
+          "kind": "skill_silence",
           "params": {
-            "resBonus": 12,
-            "targetArtsVulnerability": 15,
-            "duration": 3
+            "duration": 3,
+            "targetCooldown": 8
           }
         }
       ]
     },
     "lifeSpring": {
       "id": "lifeSpring",
-      "name": "生命泉杖",
-      "description": "每5秒为生命最低的盟友恢复80%攻击力生命",
+      "name": "天师古鼎",
+      "description": "生命值+45%，技力自然回复速度+0.15/秒",
       "kind": "completed",
+      "iconId": "trap_1077_acarm077",
+      "nativeItemId": "chess_item_6_03_e_a",
       "parts": [
         "staff",
         "belt"
@@ -380483,14 +380522,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ],
@@ -380499,31 +380537,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
-          "kind": "periodic_heal",
+          "kind": "item_stat",
           "params": {
-            "interval": 5,
-            "healFromAtk": 80,
-            "target": "lowestHpAlly"
+            "hpPct": 25
           }
         }
       ]
     },
     "archangelStaff": {
       "id": "archangelStaff",
-      "name": "大天使杖",
-      "description": "每次施法攻击+8%，本场最多40%",
+      "name": "源石溶剂",
+      "description": "攻击力+30%，技力自然回复速度+0.15/秒，初始技力+6；携带者每秒流失1%最大生命值",
       "kind": "completed",
+      "iconId": "trap_1125_acarm125",
+      "nativeItemId": "chess_item_1_05_e_a",
       "parts": [
         "staff",
         "tear"
@@ -380532,14 +380569,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -380548,22 +380584,25 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "cast_stack",
+          "kind": "item_stat",
           "params": {
-            "atkPercentPerCast": 8,
-            "maxPercent": 40,
-            "battleOnly": true
+            "atkPct": 30
+          }
+        },
+        {
+          "kind": "self_drain",
+          "params": {
+            "maxHpPercentPerSecond": 1
           }
         }
       ]
@@ -380581,8 +380620,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
@@ -380595,8 +380633,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "atk": 10,
-            "sp": 0.1
+            "sp": 0.15
           }
         },
         {
@@ -380613,9 +380650,11 @@ export const resonanceContent = {
     },
     "berserkBow": {
       "id": "berserkBow",
-      "name": "狂战弓",
-      "description": "每次攻击攻速+3，最多45",
+      "name": "蒸汽之心",
+      "description": "攻击速度+35",
       "kind": "completed",
+      "iconId": "trap_1079_acarm079",
+      "nativeItemId": "chess_item_6_05_e_a",
       "parts": [
         "bow",
         "bow"
@@ -380624,13 +380663,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         }
       ],
@@ -380639,29 +380678,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
-          "kind": "attack_stack",
+          "kind": "item_stat",
           "params": {
-            "aspdPerAttack": 3,
-            "maxAspd": 45
+            "aspd": 5
           }
         }
       ]
     },
     "ironWing": {
       "id": "ironWing",
-      "name": "铁羽翼",
-      "description": "每场首次致死时免于倒下2秒",
+      "name": "防暴盾",
+      "description": "攻击速度+15，防御力+20%；阻挡敌人时，受到来自非自身阻挡单位的伤害降低40%",
       "kind": "completed",
+      "iconId": "trap_1060_acarm060",
+      "nativeItemId": "chess_item_4_05_e_a",
       "parts": [
         "bow",
         "plate"
@@ -380670,13 +380710,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         }
       ],
@@ -380685,30 +380725,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
-          "kind": "death_save",
+          "kind": "riot_shield",
           "params": {
-            "duration": 2,
-            "uses": 1,
-            "battleOnly": true
+            "damageReduction": 40
           }
         }
       ]
     },
     "lightCloak": {
       "id": "lightCloak",
-      "name": "轻羽披风",
-      "description": "物理与法术闪避15%",
+      "name": "浓缩嗅盐",
+      "description": "攻击速度+15，法术抗性+15；生命值大于70%时，免疫晕眩、冻结等特殊状态",
       "kind": "completed",
+      "iconId": "trap_1059_acarm059",
+      "nativeItemId": "chess_item_4_10_e_a",
       "parts": [
         "bow",
         "cloak"
@@ -380717,13 +380757,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         }
       ],
@@ -380732,29 +380772,37 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
-          "kind": "evasion",
+          "kind": "status_immunity",
           "params": {
-            "physicalDodge": 15,
-            "artsDodge": 15
+            "hpAbove": 70,
+            "statuses": [
+              "stun",
+              "freeze",
+              "sleep",
+              "levitate",
+              "palsy"
+            ]
           }
         }
       ]
     },
     "hurricane": {
       "id": "hurricane",
-      "name": "飓风机芯",
-      "description": "每第3次攻击追加最近另一敌人60%攻击力物伤",
+      "name": "卡西米尔竞技旗",
+      "description": "攻击速度+15，生命值+20%；部署后15秒内造成的伤害提升至135%，随后15秒内逐渐衰减",
       "kind": "completed",
+      "iconId": "trap_1119_acarm119",
+      "nativeItemId": "chess_item_4_07_e_a",
       "parts": [
         "bow",
         "belt"
@@ -380763,13 +380811,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ],
@@ -380778,29 +380826,32 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
-          "kind": "splash_strike",
+          "kind": "opening_damage",
           "params": {
-            "every": 3,
-            "otherTargetDamage": 60
+            "damagePercent": 135,
+            "duration": 15,
+            "decay": 15
           }
         }
       ]
     },
     "quickCharger": {
       "id": "quickCharger",
-      "name": "快速充能器",
-      "description": "攻击获得1技力，每秒最多2",
+      "name": "精准狙击镜",
+      "description": "攻击速度+15，初始技力+6；攻击距离自身3格及以上的目标时，伤害提高30%",
       "kind": "completed",
+      "iconId": "trap_1063_acarm063",
+      "nativeItemId": "chess_item_3_02_e_a",
       "parts": [
         "bow",
         "tear"
@@ -380809,13 +380860,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -380824,20 +380875,20 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "attack_sp",
+          "kind": "far_damage",
           "params": {
-            "spPerAttack": 1,
-            "perSecondCap": 2
+            "distance": 3,
+            "damageBonus": 30
           }
         }
       ]
@@ -380855,7 +380906,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
@@ -380868,7 +380919,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "aspd": 10
+            "aspd": 15
           }
         },
         {
@@ -380885,9 +380936,11 @@ export const resonanceContent = {
     },
     "thornArmor": {
       "id": "thornArmor",
-      "name": "棘刺甲",
-      "description": "受敌攻击时对周围造成80%防御力物伤，冷却1秒",
+      "name": "海沟实验体",
+      "description": "防御力+40%；获得120点伤害减免",
       "kind": "completed",
+      "iconId": "trap_1078_acarm078",
+      "nativeItemId": "chess_item_6_04_e_a",
       "parts": [
         "plate",
         "plate"
@@ -380896,13 +380949,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         }
       ],
@@ -380911,30 +380964,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
-          "kind": "thorns",
+          "kind": "flat_reduction",
           "params": {
-            "damageFromDef": 80,
-            "radius": 1,
-            "cooldown": 1
+            "amount": 120
           }
         }
       ]
     },
     "golemArmor": {
       "id": "golemArmor",
-      "name": "石像铠",
-      "description": "每阻挡敌人防御+20、法抗+4，最多3层",
+      "name": "蜂鸣器",
+      "description": "防御力+20%，法术抗性+15；更容易受到攻击，受到的伤害降低10%",
       "kind": "completed",
+      "iconId": "trap_1054_acarm054",
+      "nativeItemId": "chess_item_4_02_e_a",
       "parts": [
         "plate",
         "cloak"
@@ -380943,13 +380996,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         }
       ],
@@ -380958,30 +381011,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
-          "kind": "block_stack",
+          "kind": "taunt_guard",
           "params": {
-            "defPerBlock": 20,
-            "resPerBlock": 4,
-            "maxStacks": 3
+            "taunt": 1,
+            "damageReduction": 10
           }
         }
       ]
     },
     "guardianPlate": {
       "id": "guardianPlate",
-      "name": "守护板甲",
-      "description": "生命+15%，每场首次致死获得15%生命屏障",
+      "name": "天马之盔",
+      "description": "防御力+20%，生命值+20%；若与“天马之枪”一起装备，每秒回复3%最大生命值",
       "kind": "completed",
+      "iconId": "trap_1118_acarm118",
+      "nativeItemId": "chess_item_5_09_e_a",
       "parts": [
         "plate",
         "belt"
@@ -380990,13 +381044,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ],
@@ -381005,31 +381059,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
-          "kind": "death_barrier",
+          "kind": "pegasus_helm",
           "params": {
-            "hpPercent": 15,
-            "uses": 1,
-            "battleOnly": true,
-            "baseHpBonus": 15
+            "partnerId": "titanArmor",
+            "healMaxHpPercentPerSecond": 3
           }
         }
       ]
     },
     "shockShield": {
       "id": "shockShield",
-      "name": "震荡盾",
-      "description": "施法使最近敌人眩晕1秒，冷却5秒",
+      "name": "突袭手雷",
+      "description": "防御力+20%，初始技力+6；部署后10秒内，攻击时使目标晕眩1秒（同一目标每4秒最多一次）",
       "kind": "completed",
+      "iconId": "trap_1064_acarm064",
+      "nativeItemId": "chess_item_3_11_e_a",
       "parts": [
         "plate",
         "tear"
@@ -381038,13 +381092,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -381053,21 +381107,21 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "cast_stun",
+          "kind": "opening_stun",
           "params": {
+            "window": 10,
             "duration": 1,
-            "cooldown": 5,
-            "target": "nearestEnemy"
+            "targetCooldown": 4
           }
         }
       ]
@@ -381085,7 +381139,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
@@ -381098,7 +381152,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "def": 40
+            "defPct": 20
           }
         },
         {
@@ -381115,9 +381169,11 @@ export const resonanceContent = {
     },
     "holyCloak": {
       "id": "holyCloak",
-      "name": "圣佑斗篷",
-      "description": "法抗额外+12，每5秒清除寒冷或冻结",
+      "name": "谢拉格不融冰",
+      "description": "法术抗性+30；攻击时有12%概率对目标施加1.5秒的寒冷",
       "kind": "completed",
+      "iconId": "trap_1062_acarm062",
+      "nativeItemId": "chess_item_5_02_e_a",
       "parts": [
         "cloak",
         "cloak"
@@ -381126,13 +381182,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         }
       ],
@@ -381141,33 +381197,32 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
-          "kind": "resistance_cleanse",
+          "kind": "attack_status",
           "params": {
-            "extraRes": 12,
-            "interval": 5,
-            "cleanses": [
-              "cold",
-              "freeze"
-            ]
+            "status": "cold",
+            "chance": 12,
+            "duration": 1.5
           }
         }
       ]
     },
     "redemptionCloak": {
       "id": "redemptionCloak",
-      "name": "救赎斗篷",
-      "description": "每8秒恢复两格内盟友6%生命，不触发共生",
+      "name": "伪装服",
+      "description": "生命值+20%，法术抗性+15；首次受到伤害后获得隐匿，持续5秒",
       "kind": "completed",
+      "iconId": "trap_1055_acarm055",
+      "nativeItemId": "chess_item_4_04_e_a",
       "parts": [
         "cloak",
         "belt"
@@ -381176,13 +381231,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ],
@@ -381191,32 +381246,30 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
-          "kind": "periodic_heal",
+          "kind": "first_hit_stealth",
           "params": {
-            "interval": 8,
-            "healTargetCount": 2,
-            "healMaxHp": 6,
-            "range": 2,
-            "noSymbiosisRecursion": true
+            "duration": 5
           }
         }
       ]
     },
     "quietCape": {
       "id": "quietCape",
-      "name": "静谧披风",
-      "description": "技能结束恢复4技力",
+      "name": "激光发射器",
+      "description": "法术抗性+15，初始技力+6；攻击无视目标25%法术抗性",
       "kind": "completed",
+      "iconId": "trap_1053_acarm053",
+      "nativeItemId": "chess_item_3_03_e_a",
       "parts": [
         "cloak",
         "tear"
@@ -381225,13 +381278,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -381240,20 +381293,19 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "cast_sp",
+          "kind": "item_stat",
           "params": {
-            "sp": 4,
-            "trigger": "skillEnd"
+            "resIgnorePct": 25
           }
         }
       ]
@@ -381271,7 +381323,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
@@ -381284,7 +381336,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "res": 8
+            "res": 15
           }
         },
         {
@@ -381301,9 +381353,11 @@ export const resonanceContent = {
     },
     "deepSeaBelt": {
       "id": "deepSeaBelt",
-      "name": "深海腰带",
-      "description": "生命+25%，每秒恢复最大生命0.6%",
+      "name": "M3茧甲",
+      "description": "生命值+40%；被击倒时立刻复活并恢复30%最大生命值（一场战斗仅1次）",
       "kind": "completed",
+      "iconId": "trap_1068_acarm068",
+      "nativeItemId": "chess_item_4_12_e_a",
       "parts": [
         "belt",
         "belt"
@@ -381312,13 +381366,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         }
       ],
@@ -381327,29 +381381,31 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
-          "kind": "regeneration",
+          "kind": "revive",
           "params": {
-            "maxHpBonus": 25,
-            "healMaxHpPerSecond": 0.6
+            "hpPercent": 30,
+            "uses": 1
           }
         }
       ]
     },
     "vitalEngine": {
       "id": "vitalEngine",
-      "name": "活力引擎",
-      "description": "受敌攻击获得1技力，每秒最多2",
+      "name": "护盾无人机",
+      "description": "生命值+20%，初始技力+6；部署时及每次开启技能时，获得相当于生命上限12%的屏障",
       "kind": "completed",
+      "iconId": "trap_1061_acarm061",
+      "nativeItemId": "chess_item_4_11_e_a",
       "parts": [
         "belt",
         "tear"
@@ -381358,13 +381414,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -381373,20 +381429,19 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "hit_sp",
+          "kind": "skill_barrier",
           "params": {
-            "spPerHit": 1,
-            "perSecondCap": 2
+            "maxHpPercent": 12
           }
         }
       ]
@@ -381404,7 +381459,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
@@ -381417,7 +381472,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "hp": 150
+            "hpPct": 20
           }
         },
         {
@@ -381434,9 +381489,11 @@ export const resonanceContent = {
     },
     "azureTear": {
       "id": "azureTear",
-      "name": "青龙之泪",
-      "description": "技能结束返还5技力，冷却3秒",
+      "name": "黄沙罗盘",
+      "description": "初始技力+25",
       "kind": "completed",
+      "iconId": "trap_1103_acarm103",
+      "nativeItemId": "chess_item_6_07_e_a",
       "parts": [
         "tear",
         "tear"
@@ -381445,13 +381502,13 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         }
       ],
@@ -381460,21 +381517,19 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
-          "kind": "skill_sp",
+          "kind": "item_stat",
           "params": {
-            "sp": 5,
-            "cooldown": 3,
-            "trigger": "skillEnd"
+            "initialSp": 13
           }
         }
       ]
@@ -381492,7 +381547,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
@@ -381505,7 +381560,7 @@ export const resonanceContent = {
         {
           "kind": "component_stat",
           "params": {
-            "initialSp": 5
+            "initialSp": 6
           }
         },
         {
@@ -386086,19 +386141,19 @@ export const resonanceContent = {
         "levels": [
           {
             "threshold": 2,
-            "description": "敌人生命低于40%时伤害提高15%；每累计造成4000实际伤害，恢复3技力并使下一击追加60%攻击力物理伤害，个人冷却2秒。"
+            "description": "敌人生命低于40%时伤害提高15%。每累计造成4000实际伤害，恢复3技力并使下一击追加60%攻击力物理伤害，个人冷却2秒。"
           },
           {
             "threshold": 4,
-            "description": "敌人生命低于40%时伤害提高25%；每累计造成3500实际伤害，恢复4技力并使下一击追加100%攻击力物理伤害，个人冷却2秒。"
+            "description": "敌人生命低于40%时伤害提高25%。每累计造成3500实际伤害，恢复4技力并使下一击追加100%攻击力物理伤害，个人冷却2秒。"
           },
           {
             "threshold": 6,
-            "description": "敌人生命低于40%时伤害提高40%；每累计造成3000实际伤害，恢复5技力并使下一击追加160%攻击力物理伤害，个人冷却2秒。"
+            "description": "敌人生命低于40%时伤害提高40%。每累计造成3000实际伤害，恢复5技力并使下一击追加160%攻击力物理伤害，个人冷却2秒。"
           },
           {
             "threshold": 8,
-            "description": "敌人生命低于40%时伤害提高70%；每累计造成2000实际伤害，恢复8技力并使下一击追加300%攻击力物理伤害，个人冷却2秒。8人时狼影每20秒对最近敌人造成800%最高攻击力物理伤害，领袖不会被处决。"
+            "description": "敌人生命低于40%时伤害提高70%。每累计造成2000实际伤害，恢复8技力并使下一击追加300%攻击力物理伤害，个人冷却2秒。8人时狼影每20秒对最近敌人造成800%最高攻击力物理伤害，领袖不会被处决。"
           }
         ]
       },
@@ -386186,15 +386241,15 @@ export const resonanceContent = {
         "levels": [
           {
             "threshold": 2,
-            "description": "部署后8秒闪避25%；退出后为最近队友恢复15技力，每名成员每场最多2次。"
+            "description": "部署后8秒闪避25%。退出后为最近队友恢复15技力，每名成员每场最多2次。"
           },
           {
             "threshold": 3,
-            "description": "部署后10秒闪避35%；退出后为最近队友恢复25技力，每名成员每场最多2次。"
+            "description": "部署后10秒闪避35%。退出后为最近队友恢复25技力，每名成员每场最多2次。"
           },
           {
             "threshold": 4,
-            "description": "部署后14秒闪避50%；退出后为最近队友恢复40技力，每名成员每场最多2次。4人时部署造成80%攻击力真实伤害。"
+            "description": "部署后14秒闪避50%。退出后为最近队友恢复40技力，每名成员每场最多2次。4人时部署造成80%攻击力真实伤害。"
           }
         ]
       },
@@ -386477,241 +386532,241 @@ export const resonanceContent = {
     },
     "equipment": {
       "blade": {
-        "description": "攻击力+15"
+        "description": "攻击力+15%"
       },
       "staff": {
-        "description": "攻击力+10，技力自然回复每秒+0.1"
+        "description": "技力自然回复速度+0.15/秒"
       },
       "bow": {
-        "description": "攻速+10"
+        "description": "攻击速度+15"
       },
       "plate": {
-        "description": "防御力+40"
+        "description": "防御力+20%"
       },
       "cloak": {
-        "description": "法术抗性+8"
+        "description": "法术抗性+15"
       },
       "belt": {
-        "description": "生命上限+150"
+        "description": "生命值+20%"
       },
       "tear": {
-        "description": "初始技力+5"
+        "description": "初始技力+6"
       },
       "crest": {
-        "description": "无基础属性"
+        "description": "不提供属性；与其他组件合成盟约徽记。"
       },
       "giantSlayer": {
-        "description": "攻击力+15 攻击力+15 攻击最大生命高于5000的敌人时伤害提高25%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+40%"
       },
       "spellblade": {
-        "description": "攻击力+15 攻击力+10，技力自然回复每秒+0.1 攻击使目标法术抗性降低12，持续3秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+15%，技力自然回复速度+0.15/秒；每开启一次技能，获得5%的攻击力加成（最多叠加10次）"
       },
       "rapidBlade": {
-        "description": "攻击力+15 攻速+10 每第5次攻击追加80%攻击力物理伤害。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+25%，攻击速度+30"
       },
       "armorAxe": {
-        "description": "攻击力+15 防御力+40 攻击无视目标25%防御。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+15%，防御力+20%；首次受到致命伤害时生命值不低于1，持续8秒"
       },
       "vampBlade": {
-        "description": "攻击力+15 法术抗性+8 造成的实际物理或法术伤害的10%转为治疗，冷却0.5秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+15%，法术抗性+15；每攻击1个目标，回复自身2%最大生命值"
       },
       "titanArmor": {
-        "description": "攻击力+15 生命上限+150 受击时防御+8、攻击+1%，最多20层。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+30%，生命值+20%；若与“天马之盔”一起装备，造成伤害时额外造成相当于攻击力30%的真实伤害"
       },
       "duelistCrest": {
-        "description": "攻击力+15 初始技力+5 首次施法后攻速+35，持续8秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+30%，初始技力+6；攻击时附带相当于攻击力10%的灼燃损伤"
       },
       "breakerTransfer": {
-        "description": "攻击力+15 无基础属性 额外获得破阵标签。 同名特殊效果仅生效一件。"
+        "description": "获得破阵盟约"
       },
       "resonanceStaff": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 攻击力+10，技力自然回复每秒+0.1 技能伤害提高25%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "技力自然回复速度+0.35/秒"
       },
       "thunderRing": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 攻速+10 每第4次攻击对1.5格内敌人造成80%攻击力法术伤害。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击速度+15，技力自然回复速度+0.15/秒；每次攻击或治疗后，本场战斗中攻击速度+2，最高20层"
       },
       "counterMirror": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 防御力+40 受击时造成自身防御力40%法术伤害，冷却1秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+20%，防御力+20%，技力自然回复速度+0.15/秒；攻击时有10%概率使目标战栗2秒"
       },
       "arcaneMantle": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 法术抗性+8 法术抗性+12；技能造成伤害后，被命中的敌人受到的法术伤害提高15%，持续3秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "法术抗性+15，技力自然回复速度+0.15/秒；技能命中的敌人失去特殊能力3秒（同一敌人每8秒最多一次）"
       },
       "lifeSpring": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 生命上限+150 每5秒为生命最低的友方恢复80%攻击力的生命。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "生命值+45%，技力自然回复速度+0.15/秒"
       },
       "archangelStaff": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 初始技力+5 每次施法攻击提高8%，本场最多提高40%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击力+30%，技力自然回复速度+0.15/秒，初始技力+6；携带者每秒流失1%最大生命值"
       },
       "artsTransfer": {
-        "description": "攻击力+10，技力自然回复每秒+0.1 无基础属性 额外获得术式标签。 同名特殊效果仅生效一件。"
+        "description": "获得术式盟约"
       },
       "berserkBow": {
-        "description": "攻速+10 攻速+10 每次攻击攻速+3，最多+45。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击速度+35"
       },
       "ironWing": {
-        "description": "攻速+10 防御力+40 本场首次受到致死伤害时免于倒下2秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击速度+15，防御力+20%；阻挡敌人时，受到来自非自身阻挡单位的伤害降低40%"
       },
       "lightCloak": {
-        "description": "攻速+10 法术抗性+8 获得15%物理闪避和15%法术闪避。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击速度+15，法术抗性+15；生命值大于70%时，免疫晕眩、冻结等特殊状态"
       },
       "hurricane": {
-        "description": "攻速+10 生命上限+150 每第3次攻击，对攻击范围内最近的另一名可选敌人造成60%攻击力物理伤害。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击速度+15，生命值+20%；部署后15秒内造成的伤害提升至135%，随后15秒内逐渐衰减"
       },
       "quickCharger": {
-        "description": "攻速+10 初始技力+5 每次攻击恢复1技力，每秒最多2。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "攻击速度+15，初始技力+6；攻击距离自身3格及以上的目标时，伤害提高30%"
       },
       "ammoTransfer": {
-        "description": "攻速+10 无基础属性 额外获得弹药标签。 同名特殊效果仅生效一件。"
+        "description": "获得弹药盟约"
       },
       "thornArmor": {
-        "description": "防御力+40 防御力+40 受敌人攻击时对1格内敌人造成自身防御力80%物理伤害，冷却1秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "防御力+40%；获得120点伤害减免"
       },
       "golemArmor": {
-        "description": "防御力+40 法术抗性+8 每阻挡一名敌人防御+20、法抗+4，最多3层。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "防御力+20%，法术抗性+15；更容易受到攻击，受到的伤害降低10%"
       },
       "guardianPlate": {
-        "description": "防御力+40 生命上限+150 生命+15%；本场首次受到致死伤害时获得15%生命屏障。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "防御力+20%，生命值+20%；若与“天马之枪”一起装备，每秒回复3%最大生命值"
       },
       "shockShield": {
-        "description": "防御力+40 初始技力+5 施法使最近敌人眩晕1秒，冷却5秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "防御力+20%，初始技力+6；部署后10秒内，攻击时使目标晕眩1秒（同一目标每4秒最多一次）"
       },
       "controlTransfer": {
-        "description": "防御力+40 无基础属性 额外获得控制标签。 同名特殊效果仅生效一件。"
+        "description": "获得控制盟约"
       },
       "holyCloak": {
-        "description": "法术抗性+8 法术抗性+8 法术抗性额外+12；每5秒清除寒冷或冻结。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "法术抗性+30；攻击时有12%概率对目标施加1.5秒的寒冷"
       },
       "redemptionCloak": {
-        "description": "法术抗性+8 生命上限+150 每8秒为2格内最多2名友方各恢复6%最大生命，不触发共生。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "生命值+20%，法术抗性+15；首次受到伤害后获得隐匿，持续5秒"
       },
       "quietCape": {
-        "description": "法术抗性+8 初始技力+5 技能结束时恢复4技力，冷却秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "法术抗性+15，初始技力+6；攻击无视目标25%法术抗性"
       },
       "symbiosisTransfer": {
-        "description": "法术抗性+8 无基础属性 额外获得共生标签。 同名特殊效果仅生效一件。"
+        "description": "获得共生盟约"
       },
       "deepSeaBelt": {
-        "description": "生命上限+150 生命上限+150 生命+25%，每秒恢复最大生命0.6%。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "生命值+40%；被击倒时立刻复活并恢复30%最大生命值（一场战斗仅1次）"
       },
       "vitalEngine": {
-        "description": "生命上限+150 初始技力+5 受到攻击时恢复1技力，每秒最多2。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "生命值+20%，初始技力+6；部署时及每次开启技能时，获得相当于生命上限12%的屏障"
       },
       "aegirTransfer": {
-        "description": "生命上限+150 无基础属性 额外获得阿戈尔标签。 同名特殊效果仅生效一件。"
+        "description": "获得阿戈尔盟约"
       },
       "azureTear": {
-        "description": "初始技力+5 初始技力+5 技能结束时恢复5技力，冷却3秒。 同名特殊效果仅生效一件；合成组件属性仍按装备件数叠加。"
+        "description": "初始技力+25"
       },
       "yanTransfer": {
-        "description": "初始技力+5 无基础属性 额外获得炎国标签。 同名特殊效果仅生效一件。"
+        "description": "获得炎国盟约"
       },
       "doubleCrest": {
-        "description": "无基础属性 无基础属性 可选择一个身份盟约标签，选择结果在领取前保留。 同名特殊效果仅生效一件。"
+        "description": "选择一个身份盟约转职，领取选择保留至完成"
       },
       "transfer_aegir": {
-        "description": "额外获得阿戈尔标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得阿戈尔盟约标签。"
       },
       "transfer_laterano": {
-        "description": "额外获得拉特兰标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得拉特兰盟约标签。"
       },
       "transfer_kjerag": {
-        "description": "额外获得谢拉格标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得谢拉格盟约标签。"
       },
       "transfer_yan": {
-        "description": "额外获得炎国标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得炎国盟约标签。"
       },
       "transfer_victoria": {
-        "description": "额外获得维多利亚标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得维多利亚盟约标签。"
       },
       "transfer_columbia": {
-        "description": "额外获得哥伦比亚标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得哥伦比亚盟约标签。"
       },
       "transfer_kazimierz": {
-        "description": "额外获得卡西米尔标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得卡西米尔盟约标签。"
       },
       "transfer_siracusa": {
-        "description": "额外获得叙拉古标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得叙拉古盟约标签。"
       },
       "transfer_rhodes": {
-        "description": "额外获得罗德岛标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得罗德岛盟约标签。"
       },
       "transfer_lungmen": {
-        "description": "额外获得龙门标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得龙门盟约标签。"
       },
       "transfer_sargon": {
-        "description": "额外获得萨尔贡标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得萨尔贡盟约标签。"
       },
       "transfer_leithania": {
-        "description": "额外获得莱塔尼亚标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得莱塔尼亚盟约标签。"
       },
       "transfer_iberia": {
-        "description": "额外获得伊比利亚标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得伊比利亚盟约标签。"
       },
       "transfer_higashi": {
-        "description": "额外获得东标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得东盟约标签。"
       },
       "transfer_ursus": {
-        "description": "额外获得乌萨斯标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得乌萨斯盟约标签。"
       },
       "transfer_bolivar": {
-        "description": "额外获得玻利瓦尔标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得玻利瓦尔盟约标签。"
       },
       "transfer_rim": {
-        "description": "额外获得雷姆必拓标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得雷姆必拓盟约标签。"
       },
       "transfer_babel": {
-        "description": "额外获得巴别塔标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得巴别塔盟约标签。"
       },
       "transfer_sami": {
-        "description": "额外获得萨米标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得萨米盟约标签。"
       },
       "transfer_ammo": {
-        "description": "额外获得弹药标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得弹药盟约标签。"
       },
       "transfer_combo": {
-        "description": "额外获得连击标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得连击盟约标签。"
       },
       "transfer_control": {
-        "description": "额外获得控制标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得控制盟约标签。"
       },
       "transfer_creation": {
-        "description": "额外获得造物标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得造物盟约标签。"
       },
       "transfer_symbiosis": {
-        "description": "额外获得共生标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得共生盟约标签。"
       },
       "transfer_logistics": {
-        "description": "额外获得后勤标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得后勤盟约标签。"
       },
       "transfer_redeploy": {
-        "description": "额外获得再部署标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得再部署盟约标签。"
       },
       "transfer_flight": {
-        "description": "额外获得飞行标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得飞行盟约标签。"
       },
       "transfer_arts": {
-        "description": "额外获得术式标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得术式盟约标签。"
       },
       "transfer_breaker": {
-        "description": "额外获得破阵标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得破阵盟约标签。"
       },
       "transfer_burn": {
-        "description": "额外获得灼燃标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得灼燃盟约标签。"
       },
       "transfer_necrosis": {
-        "description": "额外获得凋亡标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得凋亡盟约标签。"
       },
       "transfer_holyGun": {
-        "description": "额外获得圣枪标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得圣枪盟约标签。"
       },
       "transfer_yela": {
-        "description": "额外获得耶拉之息标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得耶拉之息盟约标签。"
       },
       "transfer_sui": {
-        "description": "额外获得岁标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得岁盟约标签。"
       },
       "transfer_crown": {
-        "description": "额外获得王冠标签。 同名特殊效果仅生效一件。"
+        "description": "穿戴后额外获得王冠盟约标签。"
       }
     },
     "diagnostics": []
