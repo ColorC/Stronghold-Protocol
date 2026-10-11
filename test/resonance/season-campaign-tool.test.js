@@ -78,12 +78,12 @@ test('late season XP uses actual deployable copies and a finite real-gold budget
 test('fixed native skills distinguish physical carry gear from healer and being-hit gear',()=>{
   const catalog=getSeasonCampaignCatalog(1),find=name=>Object.values(catalog.operators).find(o=>o.name===name),physical=find('能天使'),healer=find('白面鸮'),arts=find('蜜蜡');
   assert.equal(campaignCombatProfile(physical,3).skill.index,physical.fixedSkillIndex);
-  for(const id of ['lifeSpring','vitalEngine','counterMirror'])assert.equal(carryItemScore(catalog.equipment[id],physical,3),0,id);
-  for(const id of ['rapidBlade','armorAxe','berserkBow'])assert(carryItemScore(catalog.equipment[id],physical,3)>carryItemScore(catalog.equipment.archangelStaff,physical,3),id);
+  for(const id of ['ironWing','golemArmor','thornArmor'])assert.equal(carryItemScore(catalog.equipment[id],physical,3),0,id);
+  for(const id of ['rapidBlade','giantSlayer','berserkBow'])assert(carryItemScore(catalog.equipment[id],physical,3)>carryItemScore(catalog.equipment.lifeSpring,physical,3),id);
   assert(carryItemScore(catalog.equipment.lifeSpring,healer,2)>carryItemScore(catalog.equipment.lifeSpring,physical,3));
-  assert(carryItemScore(catalog.equipment.archangelStaff,arts,2)>carryItemScore(catalog.equipment.archangelStaff,physical,3));
+  assert(carryItemScore(catalog.equipment.quietCape,arts,2)>carryItemScore(catalog.equipment.quietCape,physical,3),'RES penetration is arts carry gear');
   const ammo=find('隐现');assert.equal(campaignCombatProfile(ammo,2).ammo,true,'AMMO comes from the selected native kit even when the raw durationType is NONE');
-  assert(carryItemScore(catalog.equipment.quickCharger,ammo,2)<carryItemScore(catalog.equipment.quickCharger,physical,3),'a sustained AMMO activation does not value active-skill SP recovery');
+  assert(carryItemScore(catalog.equipment.resonanceStaff,ammo,2)<carryItemScore(catalog.equipment.resonanceStaff,physical,3),'a sustained AMMO activation does not value SP recovery');
 });
 
 test('raw campaign pieces derive boss coverage from native range rather than absent report fields',()=>{

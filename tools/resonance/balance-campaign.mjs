@@ -272,10 +272,20 @@ function chooseStrategy(state,catalog,choice){
   return runAction(state,{type:'chooseStrategy',choiceUid:choice.uid,strategyId:chosen,targets},catalog).state;
 }
 
+// Equipment stats are at native scale (tools/resonance/build-content.mjs): ATK/DEF/HP in percent, ASPD/RES in points,
+// sp = natural SP recovery per second. Each 1% is weighed like one ASPD point (≈1% output) for the role that uses it;
+// the flat atk/def/hp keys of pre-rework fixtures keep their old per-point weights.
+const isStatEffect=(effect)=>effect.kind==='component_stat'||effect.kind==='item_stat';
+function gearStatValue(p,w){
+  return Number(p.atkPct??0)*w.atkPct+Number(p.defPct??0)*w.defPct+Number(p.hpPct??0)*w.hpPct+Number(p.aspd??0)*w.aspd+Number(p.res??0)*.015
+    +Number(p.sp??0)*w.sp+Number(p.initialSp??0)*w.initialSp+Number(p.resIgnorePct??0)*(w.resIgnore??.02)
+    +Number(p.atk??0)*w.atk+Number(p.def??0)*w.def+Number(p.hp??0)*w.hp;
+}
 function itemUtility(item,operator){
   const role=operator?.role??'damage';let value=0;
   for(const effect of item?.effects??[]){const p=effect.params??{};
-    if(effect.kind==='component_stat')value+=Number(p.atk??0)*(role==='damage'?0.08:0.035)+Number(p.aspd??0)*(role==='damage'?0.07:0.025)+Number(p.def??0)*(role==='frontline'?0.04:0.01)+Number(p.hp??0)*(role==='frontline'||role==='healer'?0.018:0.006)+Number(p.res??0)*0.015+Number(p.sp??0)*5+Number(p.initialSp??0)*0.2;
+    if(isStatEffect(effect))value+=gearStatValue(p,{atkPct:role==='damage'?0.08:0.035,defPct:role==='frontline'?0.04:0.01,hpPct:role==='frontline'||role==='healer'?0.05:0.015,
+      atk:role==='damage'?0.08:0.035,aspd:role==='damage'?0.07:0.025,def:role==='frontline'?0.04:0.01,hp:role==='frontline'||role==='healer'?0.018:0.006,sp:5,initialSp:0.2});
     else if(['transfer_pact','pact_transfer'].includes(effect.kind))continue;
     else value+=3;
   }
@@ -325,20 +335,22 @@ export function campaignCombatProfile(operator,star=1){
 }
 export function carryItemScore(item,operator,star=1,legacy=false){
   const profile=campaignCombatProfile(operator,star);
-  // Backline output cannot use healing or being-hit triggers as a normal carry item.
-  if(!legacy&&!profile.melee&&!profile.healer&&(item?.effects??[]).some(e=>['periodic_heal','hit_sp','counter_magic','thorns','block_stack'].includes(e.kind)))return 0;
+  // Backline output cannot use blocking, aggro or being-hit gear as a normal carry item.
+  if(!legacy&&!profile.melee&&!profile.healer&&(item?.effects??[]).some(e=>['riot_shield','taunt_guard','flat_reduction'].includes(e.kind)))return 0;
   const role=operator?.role??'damage',attacker=role==='damage'||role==='control';let value=0;
   for(const effect of item?.effects??[]){const p=effect.params??{};
-    if(effect.kind==='component_stat')value+=Number(p.atk??0)*(attacker ? .08 : .035)+Number(p.aspd??0)*(attacker ? .07 : .025)+Number(p.def??0)*(role==='frontline' ? .05 : .01)+Number(p.hp??0)*(role==='frontline' ? .025 : role==='healer'||role==='support' ? .018 : .006)+Number(p.res??0)*.015+Number(p.sp??0)*5+Number(p.initialSp??0)*.2;
+    if(isStatEffect(effect))value+=gearStatValue(p,{atkPct:attacker ? .08 : .035,defPct:role==='frontline' ? .05 : .01,hpPct:role==='frontline' ? .06 : role==='healer'||role==='support' ? .04 : .015,
+      atk:attacker ? .08 : .035,aspd:attacker ? .07 : .025,def:role==='frontline' ? .05 : .01,hp:role==='frontline' ? .025 : role==='healer'||role==='support' ? .018 : .006,
+      sp:profile.ammo?0:5,initialSp:profile.ammo?0:.2,resIgnore:profile.damageType==='arts'?.3:.02});
     else if(['transfer_pact','pact_transfer'].includes(effect.kind))continue;
     else if(legacy)value+=3;
-    else if(effect.kind==='cast_stack')value+=profile.damageType==='arts'||profile.healer?7:.3;
-    else if(['armor_pierce','fifth_strike'].includes(effect.kind))value+=profile.damageType==='phys'?8:1;
-    else if(['resistance_shred','spell_vulnerability'].includes(effect.kind))value+=profile.damageType==='arts'?8:1;
-    else if(['attack_stack','splash_strike','chain_lightning','giant_slayer'].includes(effect.kind))value+=attacker?8:1;
-    else if(effect.kind==='periodic_heal')value+=profile.healer?10:profile.melee?5:0;
-    else if(['hit_sp','counter_magic','thorns','block_stack','hit_stack','regeneration','death_barrier'].includes(effect.kind))value+=profile.melee?7:1;
-    else if(['attack_sp','cast_sp','skill_sp','skill_damage','first_cast_haste','cast_stun'].includes(effect.kind))value+=profile.ammo?0:profile.skill.spCost?5:0;
+    else if(effect.kind==='cast_stack')value+=attacker&&!profile.ammo&&profile.skill.spCost?7:.3;
+    else if(['attack_element','attack_status','opening_damage','opening_stun'].includes(effect.kind))value+=attacker?8:1;
+    else if(effect.kind==='attack_stack')value+=attacker||profile.healer?8:1;
+    else if(effect.kind==='far_damage')value+=attacker&&!profile.melee?8:1;
+    else if(['undying','revive','riot_shield','taunt_guard','flat_reduction','status_immunity','first_hit_stealth','attack_heal'].includes(effect.kind))value+=profile.melee?7:1;
+    else if(['skill_barrier','skill_silence'].includes(effect.kind))value+=profile.ammo?1:profile.skill.spCost?5:1;
+    else if(effect.kind==='self_drain')value-=2;
     else value+=1;
   }
   return value;

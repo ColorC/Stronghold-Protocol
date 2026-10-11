@@ -14,24 +14,10 @@ import { enemyRec, flatStage } from '../helpers/battleHarness.js';
 const DATA_DIR=process.env.SP_DATA_DIR??'E:/WindowsWorkspace/webworks/apps/stronghold-protocol/data/resonance-native';
 const data=loadData(DATA_DIR,{log:{warn(){},error(){}}});
 
-test('source gear and Chem equipment use native flat amounts while keeping pinned source effects unchanged',()=>{
-  const sourceGear=prototypeSourceGearDefinitions.find(row=>row.id==='prototype_source_gear_morellonomicon');
-  const original=structuredClone(sourceGear.sourceEffects);
-  const nativeGear=applyPrototypeSourceGear({equipment:{},prototypeSeason:{powerModel:'native-pve'}}).equipment[sourceGear.id];
-  const oldGear=applyPrototypeSourceGear({equipment:{},prototypeSeason}).equipment[sourceGear.id];
-  const projectedGear=applyPrototypeSourceGear({equipment:{},prototypeSeason:{powerModel:'native-pve'}}).equipment;
-  for(const row of prototypeSourceGearDefinitions){
-    const item=projectedGear[row.id];
-    assert.deepEqual(item.prototypeSourceEffects,row.sourceEffects,row.id);
-    assert.equal(item.prototypeEffectiveEffects.Health,row.sourceEffects.Health==null?undefined:row.sourceEffects.Health*4,row.id);
-  }
-  assert.equal(nativeGear.prototypeSourceEffects.Health,150);
-  assert.equal(nativeGear.prototypeEffectiveEffects.Health,600);
-  assert.match(nativeGear.description,/生命值\+600/);
-  assert.equal(oldGear.prototypeEffectiveEffects.Health,150,'legacy seasons retain the source value');
-  assert.match(oldGear.description,/生命值\+150/);
-  assert.deepEqual(sourceGear.sourceEffects,original,'projection never mutates the pinned shared source row');
-  assert.deepEqual(nativeGear.source.effects,original,'the catalog keeps an immutable-value source evidence copy');
+test('Chem equipment uses native flat amounts while source items route to native completed items',()=>{
+  const projected=applyPrototypeSourceGear({equipment:{},prototypeSeason:{powerModel:'native-pve'}});
+  assert.deepEqual(Object.keys(projected.equipment),[],'no source item is added as an independent item');
+  for(const row of prototypeSourceGearDefinitions)assert.equal(projected.prototypeSourceGear.bySourceApiName[row.sourceApiName],row.nativeItemId,row.id);
 
   const nativeSeason={...prototypeSeason,powerModel:'native-pve'};
   const nativeEconomy=applyPrototypeEconomy({equipment:{},prototypeSeason:nativeSeason});
@@ -82,7 +68,7 @@ test('native economy descriptions use the active pact names while legacy wording
   assert.equal(otherSeasonNativePower.prototypeEconomy.copy.academy,prototypeEconomyCopy.academy,'native power alone does not change legacy-season wording');
 });
 
-test('equipped native items add scaled health and a real fixed-damage hit',()=>{
+test('an equipped Chem item adds a real native-scaled fixed-damage hit',()=>{
   const catalog=getResonanceCatalog(data,{rulesVersion:3,seasonId:'resonance-factions-1',seed:913});
   for(const [copyId,pactId] of [['academy','academy'],['chemBaron','risk'],['conqueror','conqueror'],['family','family'],['junkerKing','armory']])
     assert.ok(catalog.prototypeEconomy.copy[copyId].includes(catalog.pacts[pactId].name),`${copyId} copy follows pact ${pactId}`);
@@ -91,7 +77,6 @@ test('equipped native items add scaled health and a real fixed-damage hit',()=>{
   const operator=Object.values(catalog.operators).find(row=>row.cost===3);
   const uid='native-scaled-item-holder';
   const equipment=[
-    {uid:'native-morello',itemId:'prototype_source_gear_morellonomicon'},
     {uid:'native-chem-gauntlet',itemId:'prototype_chem_salvaged_gauntlet'},
   ];
   const state={rulesVersion:3,pieces:[{uid,operatorId:operator.id,charId:operator.charId,star:1,row:9,col:2,dir:'RIGHT',equipment,extraPacts:[]}],specialEntities:[],prototypeMeta:{rulesVersion:3,economy:{}}};
@@ -101,7 +86,6 @@ test('equipped native items add scaled health and a real fixed-damage hit',()=>{
   installPrototypeSourceGear(battle,state,catalog,[]);
   installPrototypeEconomy(battle,state,catalog,[]);
   battle.start();
-  assert.equal(holder.s.maxHp-holder.base.maxHp,600,'Morello grants the scaled 150 source health ×4');
   const target=battle.spawnEnemy('native-scaled-target',{pos:[9,8],def:enemyRec({key:'native-scaled-target',hp:100000,atk:0,speed:0,def:0,res:0,rank:'NORMAL'})});
   const before=target.hp;
   battle.dealDamage(holder,target,{amount:1,type:'phys',isAttack:true,canDodge:false});

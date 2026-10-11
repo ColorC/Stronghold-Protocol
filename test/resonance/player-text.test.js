@@ -30,8 +30,8 @@ test('formal player text covers every fixed skill star and all pact/equipment ef
   assert.match(holyGun,/15%\/25%\/100%/);
   assert.match(text.pacts.aegir.levels[0].description,/2\.5%/);
   assert.match(text.pacts.siracusa.levels[0].description,/4000/);
-  assert.match(text.equipment.staff.description,/攻击力\+10/);
-  assert.match(text.equipment.staff.description,/技力自然回复每秒\+0\.1/);
+  assert.equal(text.equipment.staff.description,'技力自然回复速度+0.15/秒');
+  assert.equal(text.equipment.titanArmor.description,resonanceContent.equipment.titanArmor.description,'equipment text is the handwritten item text');
   const cetsyr=Object.values(resonanceContent.operators).find(op=>op.fixedSkillId==='skchr_cetsyr_3');
   assert.match(text.operators[cetsyr.id].stars[3].skillDescription,/520%/);
   assert.match(text.operators[cetsyr.id].stars[3].skillDescription,/65%/);
@@ -84,4 +84,23 @@ test('supply choices and environment text state the actual candidate counts and 
   assert.match(resonanceContent.environments.origin_rim.description,/第8节点/);
   assert.match(resonanceContent.environments.origin_ursus.description,/存活前线.*胜负.*5点生命/);
   assert.deepEqual(resonanceContent.environments.origin_ursus.rule.params,{minFront:2,hp:5,role:'frontline',survivorsOnly:true,anyResult:true});
+});
+
+test('equipment player text uses native item names and wording only',async()=>{
+  const {getResonanceCatalog}=await import('../../server/modes/resonance/catalog.js');
+  const {resonanceDisplayCatalog}=await import('../../server/modes/resonance/display.js');
+  const {getData}=await import('../../server/data.js');
+  const oldNames=/长刃|法杖|弓弦|板甲|斗篷|腰带|泪滴|纹章|巨人杀手|破法刃|疾射刃|破甲斧|饮血刃|泰坦战甲|决斗徽记|共鸣法杖|雷电环|反击镜|奥术披肩|生命泉杖|大天使杖|狂战弓|铁羽翼|轻羽披风|飓风机芯|快速充能器|棘刺甲|石像铠|守护板甲|震荡盾|圣佑斗篷|救赎斗篷|静谧披风|深海腰带|活力引擎|青龙之泪/;
+  const set13=/正义之手|莫雷洛秘典|最后的轻语|守护誓约|鬼索的狂暴之刃|珠光护手|皇冠卫士/;
+  const flat=/(?:攻击力|防御力|生命值|生命上限)\+\d+(?:\.\d+)?(?![\d.%])/;
+  const display=resonanceDisplayCatalog(getResonanceCatalog(getData(),{rulesVersion:3,seed:1}),null);
+  // Chem/black-market rows and the Academy placeholder belong to the economy module (shared/resonance/prototype-economy.js)
+  const ours=Object.entries(display.equipment).filter(([id,item])=>['component','completed'].includes(item.kind)&&!id.startsWith('prototype_chem')&&id!=='prototype_academy_guardbreaker');
+  assert.equal(ours.length,36+7,'36 items and seven hidden source-item aliases');
+  for(const [id,item] of ours){
+    const text=`${item.name} ${item.description}`;
+    assert.doesNotMatch(text,oldNames,id);assert.doesNotMatch(text,set13,id);assert.doesNotMatch(text,flat,id);
+    assert.doesNotMatch(text,/攻速\+|法抗\+|技力回复|undefined|NaN/,id);
+  }
+  for(const recipe of display.recipes)for(const name of [...recipe.names,recipe.resultName])assert.doesNotMatch(name,oldNames,name);
 });

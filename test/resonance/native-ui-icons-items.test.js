@@ -183,7 +183,7 @@ test('overlay keeps stable DOM rows, bounds updates to30Hz and cancels its lifec
  const node=()=>({children:[],style:{setProperty(){},set transform(v){updates++}},dataset:{},classList:{toggle(){}},setAttribute(){},addEventListener(){},append(x){this.children.push(x)},replaceChildren(){this.children=[]},remove(){this.removed=true}});
  const doc={body:{append(x){nodes.push(x)}},head:{append(){}},documentElement:{clientWidth:1440,clientHeight:900},getElementById(){return {}},createElement:node,addEventListener(){},removeEventListener(){}};
  const view={pieceScreenRect(){return {left:400,top:300,right:460,bottom:390,width:60,height:90}}};
- const state={pieces:[{uid:'p4',equipment:[{itemId:'blade'}]}]},catalog={equipment:{blade:{name:'长刃'}}};
+ const state={pieces:[{uid:'p4',equipment:[{itemId:'blade'}]}]},catalog={equipment:{blade:{name:'维式重锤'}}};
  const stop=mountUnitItemOverlay({view,getState:()=>state,getReplay:()=>null,getCatalog:()=>catalog,document:doc,requestFrame(fn){callback=fn;return 7},cancelFrame(id){cancelled=id}});
  callback(0);const row=nodes[0].children[0];callback(16);assert.equal(updates,1);callback(34);assert.equal(updates,2);assert.equal(nodes[0].children[0],row);
  state.pieces=[];callback(70);assert.equal(row.removed,true);stop();assert.equal(cancelled,7);assert.equal(nodes[0].removed,true);
@@ -193,8 +193,8 @@ test('equipped icon hover stays a native tooltip while click and right-click ope
  const roots=[],documentEvents=new Map(),opened=[];let tick,pieceDragging=false;
  const node=()=>({children:[],listeners:new Map(),style:{setProperty(){}},dataset:{},classList:{toggle(name,value){this[name]=value}},setAttribute(){},addEventListener(name,fn){this.listeners.set(name,fn)},append(child){this.children.push(child)},replaceChildren(){this.children=[]},remove(){},dispatch(name,event={}){this.listeners.get(name)?.(event)}});
  const doc={body:{append(root){roots.push(root)}},head:{append(){}},documentElement:{clientWidth:1440,clientHeight:900},getElementById(){return {}},createElement:node,addEventListener(name,fn){documentEvents.set(name,fn)},removeEventListener(name){documentEvents.delete(name)}};
- const stop=mountUnitItemOverlay({view:{pieceScreenRect(){return {left:300,top:200,right:350,bottom:280,width:50,height:80}}},getState:()=>({pieces:[{uid:'p4',equipment:[{itemId:'blade'}]}]}),getReplay:()=>null,getCatalog:()=>({equipment:{blade:{name:'长刃',description:'攻击力提升'}}}),getDragging:()=>pieceDragging,onDetail:detail=>opened.push(detail),document:doc,requestFrame(fn){tick=fn;return 1},cancelFrame(){}});
- tick(0);const button=roots[0].children[0].children[0];assert.equal(button.title,'长刃：攻击力提升');
+ const stop=mountUnitItemOverlay({view:{pieceScreenRect(){return {left:300,top:200,right:350,bottom:280,width:50,height:80}}},getState:()=>({pieces:[{uid:'p4',equipment:[{itemId:'blade'}]}]}),getReplay:()=>null,getCatalog:()=>({equipment:{blade:{name:'维式重锤',description:'攻击力+15%'}}}),getDragging:()=>pieceDragging,onDetail:detail=>opened.push(detail),document:doc,requestFrame(fn){tick=fn;return 1},cancelFrame(){}});
+ tick(0);const button=roots[0].children[0].children[0];assert.equal(button.title,'维式重锤：攻击力+15%');
  button.dispatch('mouseenter');button.dispatch('mouseover');assert.equal(opened.length,0,'hover cannot open a panel');
  const event={stopPropagation(){},preventDefault(){this.defaultPrevented=true}};
  button.dispatch('click',event);button.dispatch('contextmenu',event);assert.equal(opened.length,2);assert.equal(event.defaultPrevented,true);assert.deepEqual(opened[0],{kind:'item',id:'blade',quality:null,temporary:false,source:'member'});
