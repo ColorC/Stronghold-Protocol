@@ -47,8 +47,10 @@ function sourceRewardPlan(augment,catalog,emblemId) {
     if(hero){bonusOperatorIds.push(hero.operatorId);continue;}
     const item=grants.find((row)=>sourceKey(row.name)===key&&!/emblem/i.test(row.name));
     if(!item)return null;
+    // a season may retire a source item it no longer creates and name the native item granted in its place
+    const substituted=Object.entries(catalog.prototypeSeason?.rewardItemSubstitutions??{}).find(([name])=>sourceKey(name)===key)?.[1];
     const sourceGearId=item.apiName?catalog.prototypeSourceGear?.bySourceApiName?.[item.apiName]:null;
-    const ids=sourceGearId?[sourceGearId]:[...(sourceItems.get(key)??[])];
+    const ids=substituted?[substituted]:sourceGearId?[sourceGearId]:[...(sourceItems.get(key)??[])];
     if(ids.length!==1||!catalog.equipment?.[ids[0]]||catalog.equipment[ids[0]].grantAllowed===false)return null;
     seenSourceItems.add(key);bonusRewards.push({kind:'item',itemId:ids[0],sourceApiName:item.apiName,sourceName:item.name});
   }

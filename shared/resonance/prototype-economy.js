@@ -292,7 +292,9 @@ export function applyPrototypeEconomy(catalog={}) {
         sourceKind:'CommunityDragon pinned 14.23 client extract; official overview establishes the trait and item family, not this exact item record'},
       description:record.description,prototypeEconomyTier:record.tier??'Bronze',prototypeEconomyEffect:structuredClone(record.effect),prototypeEconomyStats:structuredClone(record.stats),prototypeSourceEffects:structuredClone(record.sourceEffects??{}),prototypeEffectiveEffects:structuredClone(record.effectiveEffects??record.sourceEffects??{}),...(record.modeAdaptation?{prototypeModeAdaptation:record.modeAdaptation}:{}),effects:[]};
   }
-  if(equipment.giantSlayer&&!equipment.prototype_academy_guardbreaker){
+  // Faction season 2 has no sponsor economy and grants its native replacement instead (rewardItemSubstitutions).
+  const retiredGuardbreaker=Object.hasOwn(catalog.prototypeSeason?.rewardItemSubstitutions??{},'Guardbreaker');
+  if(equipment.giantSlayer&&!equipment.prototype_academy_guardbreaker&&!retiredGuardbreaker){
     equipment.prototype_academy_guardbreaker={...structuredClone(equipment.giantSlayer),id:'prototype_academy_guardbreaker',name:'破障重刃',unique:false,prototype:true,
       description:'攻击增幅装备。',source:{game:'TFT Set 13 Academy Sponsored Items',version:'14.23',apiName:'Guardbreaker',sourceKind:'LoLCHESS Set 13 source table; projected to the existing Resonance damage-amplification effect profile'}};
   }
@@ -316,12 +318,14 @@ export function applyPrototypeEconomy(catalog={}) {
       const item=equipment[id],stats={};
       for(const effect of item.baseEffects??item.effects??[]){if(effect?.kind!=='component_stat')continue;for(const [key,value] of Object.entries(effect.params??{}))if(Number.isFinite(Number(value)))stats[key]=(stats[key]??0)+Number(value);}
       const factor=quality==='artifact'?0.5:quality==='support'?0.25:quality==='radiant'?1:0.5;
+      // the same stat reading as the equipment installer (equipment.js equipmentRowMods): percentages in percent,
+      // ASPD / RES in points, sp = SP per second; flat ATK/DEF/HP only on pre-rework rows. Initial SP is not a battle stat.
       const mods={};
+      for(const [source,target,scale] of [['atkPct','atkPct',0.01],['defPct','defPct',0.01],['hpPct','hpPct',0.01],['resIgnorePct','resIgnorePct',0.01],['aspd','aspd',1],['res','resFlat',1],['sp','spRecoveryFlat',1]])
+        if(stats[source])mods[target]=stats[source]*scale*factor;
       if(stats.hp)mods.hpFlat=Math.round(stats.hp*factor);
       if(stats.atk)mods.atkFlat=Math.round(stats.atk*factor);
       if(stats.def)mods.defFlat=Math.round(stats.def*factor);
-      if(stats.aspd)mods.aspd=stats.aspd*factor;
-      if(stats.sp)mods.spRecoveryFlat=stats.sp*factor;
       qualityEffects[quality][id]={mods,qualityBonus:quality==='artifact'?'装备基础属性提高50%':quality==='support'?'装备基础属性提高25%，并为全队提供小幅支援':quality==='radiant'?'装备基础属性提高100%':'辉光升格后，装备基础属性提高50%',...(quality==='support'?{teamMods:{atkPct:0.05}}:{})};
     }
     const sourceFactor=quality==='artifact'||quality==='radiant_conversion'?0.5:quality==='support'?0.25:1;

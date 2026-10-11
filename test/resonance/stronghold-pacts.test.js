@@ -102,6 +102,47 @@ test('season 2 retires the replaced economies and augments and keeps family, arm
   assert.ok(king.events.some((event) => event.type === 'junker_armory_unlocked'), 'the armory economy stays');
 });
 
+test('season 2 never creates or grants 破障重刃 and the 谢拉格 crown grants 卡西米尔竞技旗 instead', () => {
+  const guardbreaker = 'prototype_academy_guardbreaker';
+  assert.ok(firstCatalog.equipment[guardbreaker], 'season-1 saves still know the sponsor item');
+  assert.equal(catalog.equipment[guardbreaker], undefined, 'season 2 does not create it');
+  const grants = (cat) => Object.values(cat.strategies).flatMap((row) => (row.effects ?? []).flatMap((effect) => [...(effect.params?.bonusRewards ?? []).map((reward) => reward.itemId), ...(effect.params?.itemIds ?? [])]));
+  assert.ok(!grants(catalog).includes(guardbreaker));
+  const economy = catalog.prototypeEconomy;
+  const pools = [...(economy.academy.eligibleItemIds ?? []), ...(economy.academy.sponsorSets ?? []).flatMap((set) => set.itemIds), ...Object.values(economy.gearPools ?? {}).flat(),
+    ...Object.values(economy.family.heistOptionsByThreshold).flat().flatMap((row) => row.grant ?? []).map((grant) => grant.id)];
+  assert.ok(!pools.includes(guardbreaker), 'no reward pool reaches it');
+  const crown = Object.values(catalog.strategies).find((row) => row.source?.recordId === 'TFT13_Augment_AutomataCrown');
+  assert.deepEqual(crown.effects[0].params.bonusRewards.filter((reward) => reward.kind === 'item').map((reward) => reward.itemId), ['hurricane']);
+  assert.match(crown.description, new RegExp(catalog.equipment.hurricane.name));
+  const firstCrown = Object.values(firstCatalog.strategies).find((row) => row.source?.recordId === 'TFT13_Augment_AutomataCrown');
+  assert.ok(firstCrown.effects[0].params.bonusRewards.some((reward) => reward.itemId === guardbreaker), 'season 1 keeps its own crown reward');
+});
+
+test('item quality bonuses scale the native percentage stats and are reachable through the 同袍 heist in season 2', () => {
+  const quality = catalog.prototypeEconomy.qualityEffects;
+  const anvil = Object.values(catalog.prototypeEconomy.family.heistOptionsByThreshold).flat().find((row) => (row.grant ?? []).some((grant) => grant.id === 'prototype_artifact_anvil'));
+  assert.ok(anvil, 'the kept 同袍 heist still offers an artifact anvil');
+  const statsOf = (item) => {
+    const stats = {};
+    for (const effect of item.baseEffects ?? item.effects ?? []) if (effect.kind === 'component_stat') for (const [key, value] of Object.entries(effect.params ?? {})) stats[key] = (stats[key] ?? 0) + value;
+    return stats;
+  };
+  let checked = 0;
+  for (const id of catalog.prototypeEconomy.gearPools.artifact) {
+    const stats = statsOf(catalog.equipment[id]), mods = quality.artifact[id].mods;
+    for (const [source, target, scale] of [['atkPct', 'atkPct', 0.01], ['defPct', 'defPct', 0.01], ['hpPct', 'hpPct', 0.01], ['aspd', 'aspd', 1], ['res', 'resFlat', 1], ['sp', 'spRecoveryFlat', 1]]) {
+      if (!stats[source]) continue;
+      close(mods[target], stats[source] * scale * 0.5, `${id} artifact ${target}`);
+      close(quality.radiant[id].mods[target], stats[source] * scale, `${id} radiant ${target}`);
+      checked++;
+    }
+  }
+  assert.ok(checked >= 10, 'the native item stats all carry a quality bonus');
+  const armorAxe = quality.artifact.armorAxe.mods;
+  assert.ok(armorAxe.atkPct > 0 && armorAxe.defPct > 0, 'a percentage-only item is no longer left without a bonus');
+});
+
 test('维多利亚 earns one hammer every three battles and the session hands it out once', () => {
   const tier = { id: 'resistance', count: 5, tier: 5, minUnits: 5, maxUnits: 6, variables: { perComponent: 0.1, perCompleted: 0.15, hammerEvery: 3 }, members: [] };
   let state = { seed: 4, round: 3, pendingChoices: [], prototypeMeta: { economy: {} } };
@@ -247,7 +288,7 @@ test('深海猎人 revives each member once at half health and hunts wounded ene
 });
 
 test('维多利亚 scales ATK by carried items and lends the temporary hammer to members with a free slot', () => {
-  const completed = Object.values(catalog.equipment).find((item) => item.kind === 'completed' && item.grantAllowed !== false && !item.unique).id;
+  const completed = Object.values(catalog.equipment).find((item) => item.kind === 'completed' && item.grantAllowed !== false).id;
   const three = arena(ops('格拉尼', '凯瑟琳', '谜图'), { equipment: { 格拉尼: ['blade', completed] } });
   const geared = three.unit('格拉尼').buffs.find((buff) => buff.key.startsWith('stronghold:victoria-equipment'));
   close(geared.mods.atkPct, 0.06 + 0.1, 'one component and one completed item');

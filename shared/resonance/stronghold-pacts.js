@@ -125,6 +125,8 @@ export const STRONGHOLD_RETIRED_ECONOMY_TRAITS = freeze(['academy', 'risk', 'con
 export const STRONGHOLD_RETIRED_AUGMENTS = freeze(['TFT13_Augment_AcademyCrown', 'TFT13_Augment_Automata']);
 /** 号角's defence share counts this many settled wins, fixed: pact effects never grow across battles. */
 export const STRONGHOLD_EMISSARY_FIXED_WINS = 4;
+/** Reward items whose season-1 item no longer exists in season 2, by source item name → the native item granted instead. */
+export const STRONGHOLD_REWARD_ITEM_SUBSTITUTIONS = freeze({ Guardbreaker: 'hurricane' });
 /** The one equipment slot count the temporary 维式重锤 fills up to. */
 export const STRONGHOLD_EQUIPMENT_SLOTS = 3;
 /** The component the 维多利亚 pact hands out (its display name comes from the equipment catalogue). */

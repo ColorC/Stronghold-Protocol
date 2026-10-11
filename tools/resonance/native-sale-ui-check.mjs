@@ -3,6 +3,7 @@ import {readFile,writeFile,stat,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
+import {getActivePrototypeSeason} from '../../shared/resonance/season-registry.js';
 const ROOT='E:/WindowsWorkspace/webworks/apps/stronghold-protocol';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const OUT=path.join(ROOT,'runtime/resonance/ui-verification');
@@ -37,7 +38,7 @@ try{
   await page.waitForFunction(async()=>{const {store}=await import('./js/store.js');return store.get().match.public?.phase==='PREP';},{timeout:20000});
   const state=()=>page.evaluate(async()=>{const {store}=await import('./js/store.js');return store.get().match.private.resonance.state;});
   const initial=await state(),piece=initial.pieces.find(p=>p.row==null);assert(piece);
-  receipt.seasonId=initial.seasonId;assert.equal(initial.seasonId,'resonance-factions-1');
+  receipt.seasonId=initial.seasonId;assert.equal(initial.seasonId,getActivePrototypeSeason().id);
   receipt.before={uid:piece.uid,nativeUid:piece.nativeUid,gold:initial.gold,inventory:initial.inventory};
   const item=initial.inventory.find(i=>Number.isSafeInteger(i.nativeUid));assert(item);
   // The normal client intent equips one genuinely owned starting component;
