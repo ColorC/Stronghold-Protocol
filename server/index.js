@@ -729,6 +729,8 @@ export async function startServer(opts = {}) {
         // older than this reloads itself, so a deploy reaches clients that never reload
         build: buildTag(),
         sockets: network.connectionCount, sessions: registry.size, ...lobby.stats(),
+        // Resonance runs on its own sockets (/resonance/ws): check these, not `sockets`, before restarting its service
+        resonance: resonanceLive.stats?.() ?? null,
         admission: admission.stats(),
       });
       return;

@@ -19,6 +19,10 @@ export function createResonanceLive({ store, data, log = console } = {}) {
   const matches = new Map();
   const sockets = new Map();
   const completionWrites = new Map();
+  // the last socket closes (code, reason, how long it lived): /healthz shows them, so a player's reconnects can be told
+  // apart — a service restart, 4001 session replaced (the run opened elsewhere), a client heartbeat timeout (4000) …
+  const recentCloses = [];
+  const RECENT_CLOSES = 50;
   let closing = false;
 
   function releaseCompleted(sessionId, instance) {
@@ -56,6 +60,7 @@ export function createResonanceLive({ store, data, log = console } = {}) {
     const prior = sockets.get(sessionId);
     if (prior && prior !== ws) { try { prior.close(4001, 'session replaced'); } catch { /* closed */ } }
     sockets.set(sessionId, ws);
+    const openedAt = Date.now();
     let match = matches.get(sessionId) || null;
     let hello = false;
     const reply = (msg) => send(ws, msg);
@@ -131,11 +136,19 @@ export function createResonanceLive({ store, data, log = console } = {}) {
         reply(errorMsg(ERR.INTERNAL));
       });
     });
-    ws.on('close', cleanup);
+    ws.on('close', (code, reason) => {
+      recentCloses.push({ at: new Date().toISOString(), session: String(sessionId).slice(0, 8), code: Number(code) || 0,
+        reason: String(reason ?? '').slice(0, 60), seconds: Math.round((Date.now() - openedAt) / 100) / 10 });
+      if (recentCloses.length > RECENT_CLOSES) recentCloses.splice(0, recentCloses.length - RECENT_CLOSES);
+      cleanup();
+    });
     ws.on('error', (error) => log.debug?.('[resonance/ws] socket error', error?.message));
   }
 
-  return Object.freeze({ attach, matches, async close() {
+  /** Live counts for /healthz: Resonance players are not in the multiplayer `sockets` / `sessions` figures. */
+  const stats = () => ({ sockets: sockets.size, matches: matches.size, recentCloses: recentCloses.slice(-10) });
+
+  return Object.freeze({ attach, matches, stats, async close() {
     closing = true;
     await Promise.allSettled([...completionWrites.values()].map((entry) => entry.promise));
     const writes = [];
